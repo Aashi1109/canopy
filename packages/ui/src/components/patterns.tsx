@@ -154,11 +154,13 @@ function FileUploadZone({
   children,
   className,
   description,
+  hint = "Click to browse, or drop files here",
   icon,
   title,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
-  description: ReactNode
+  description?: ReactNode
+  hint?: ReactNode
   icon?: ReactNode
   title: ReactNode
 }) {
@@ -166,15 +168,16 @@ function FileUploadZone({
     <button
       data-slot="file-upload-zone"
       className={cn(
-        "flex w-full flex-col items-center justify-center gap-2.5 rounded-xl border border-primary bg-accent p-6 text-center outline-none transition-[background-color,box-shadow] hover:bg-[#DCE9FF] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-70",
+        "flex min-h-60 w-full min-w-0 flex-col items-center justify-center gap-3 rounded-xl border border-primary bg-accent p-6 text-center outline-none transition-[background-color,box-shadow] hover:bg-primary/15 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-70",
         className
       )}
       type="button"
       {...props}
     >
       <span className="text-primary [&_svg]:size-7">{icon ?? <Upload aria-hidden="true" />}</span>
-      <Strong className="text-foreground">{title}</Strong>
-      <Caption className="text-muted-foreground">{description}</Caption>
+      <Strong className="w-full wrap-break-word font-heading text-heading-4 text-foreground">{title}</Strong>
+      {description ? <Caption className="w-full wrap-break-word font-semibold text-accent-text">{description}</Caption> : null}
+      {hint ? <span className="w-full wrap-break-word font-sans text-sm text-muted-foreground">{hint}</span> : null}
       {children}
     </button>
   )
@@ -258,17 +261,19 @@ function DownloadResult({
   className,
   metadata,
   title,
+  variant = "card",
   ...props
 }: HTMLAttributes<HTMLDivElement> & {
   action?: ReactNode
   metadata: ReactNode
   title: ReactNode
+  variant?: "card" | "action"
 }) {
   return (
     <div
       data-slot="download-result"
       className={cn(
-        "flex items-center gap-3.5 rounded-xl border border-border bg-card p-[18px]",
+        variant === "action" ? "grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 border-t border-border pt-4" : "flex items-center gap-3.5 rounded-xl border border-border bg-card p-[18px]",
         className
       )}
       {...props}
@@ -278,7 +283,7 @@ function DownloadResult({
         <P className="text-foreground">{title}</P>
         <Muted className="mt-[3px] text-muted-foreground">{metadata}</Muted>
       </div>
-      {action}
+      {variant === "action" ? <div className="col-span-2 [&_button]:w-full">{action}</div> : action}
     </div>
   )
 }

@@ -91,6 +91,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  SegmentedControl,
   Tabs,
   TabsContent,
   TabsList,
@@ -501,6 +502,9 @@ export default function DesignSystemPage() {
                   id="showcase-reference"
                 />
               </Field>
+              <Field htmlFor="showcase-width" label="Width" description="Decorative leading icon and unit suffix remain clear at compact densities.">
+                <Input id="showcase-width" type="number" defaultValue={523} leadingIcon={<span>↔</span>} suffix="pt" />
+              </Field>
               <Field htmlFor="showcase-message" label="Message">
                 <Textarea
                   defaultValue="Thanks for your business."
@@ -743,6 +747,9 @@ export default function DesignSystemPage() {
                     <TabsTrigger value="result">Result</TabsTrigger>
                   </TabsList>
                 </Tabs>
+              </Specimen>
+              <Specimen label="Segmented control — field">
+                <SegmentedControl size="field" defaultValue="jpg" aria-label="Output format" items={[{value:"jpg",label:"JPG (JPEG)"},{value:"png",label:"PNG",disabled:true},{value:"webp",label:"WebP"}]} />
               </Specimen>
               <Specimen label="Tooltip">
                 <TooltipProvider>
@@ -1208,6 +1215,7 @@ export default function DesignSystemPage() {
                     metadata="output-file.png · 1.2 MB"
                     title="Your file is ready"
                   />
+                  <DownloadResult variant="action" title="Your cropped PDF is ready" metadata="document-cropped.pdf · 4 pages · 1.2 MiB" action={<Button>Download PDF</Button>} />
                 </div>
                 <ToolOptionsPanel action={<Button className="w-full">Run tool</Button>}>
                   <Field htmlFor="pattern-format" label="Output format">

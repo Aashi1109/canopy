@@ -60,7 +60,7 @@ function PageOrder({
   const images = usePdfPageImages(previews);
   return (
     <PdfPagesSurface
-      description="Drag a page to move it. The output follows this order."
+      description="Drag any page card to reorder. Click to preview; on touch, hold to drag."
       disabled={disabled}
       inspecting={inspecting}
       onOrderChange={(pageNumbers) => onSettingChange(PAGES, [...pageNumbers])}

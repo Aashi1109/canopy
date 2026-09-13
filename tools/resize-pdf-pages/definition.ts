@@ -94,7 +94,7 @@ export default {
   workbenchMark: { text: "PSZ", tone: "accent" },
   labels: {
     empty: "Drop one PDF (up to 50 MiB) to resize its pages.",
-    ready: "The PDF and page size settings are ready.",
+    ready: "Your resized PDF is ready to download.",
     running: "Resizing PDF pages…",
   },
   content: {

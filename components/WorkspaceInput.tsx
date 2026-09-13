@@ -520,7 +520,6 @@ export function WorkspaceInputSurface({
             accept={inputSpec.accept}
             className="min-h-64 flex-1 border-b border-border"
             disabled={disabled}
-            intakeDescription={inputSpec.multiple ? "Drop files here or choose them from your device." : "Drop a file here or choose it from your device."}
             intakeIcon={<Upload aria-hidden="true" />}
             intakeTitle={inputSpec.label}
             maxFiles={Number.MAX_SAFE_INTEGER}

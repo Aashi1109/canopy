@@ -15,6 +15,7 @@ export interface CropFrameProps {
   bounds: { readonly height: number; readonly width: number };
   box: CropBox;
   disabled?: boolean;
+  handles?: "corner" | "all";
   onChange: (box: CropBox) => void;
   /** True when the origin is the bottom-left corner, as in PDF user space. */
   originBottomLeft?: boolean;
@@ -44,8 +45,9 @@ export function CropFrame({
   disabled = false,
   onChange,
   originBottomLeft = false,
+  handles = "corner",
 }: CropFrameProps) {
-  const pointer = useRef<{ mode: "move" | "resize"; x: number; y: number } | null>(
+  const pointer = useRef<{ mode: string; x: number; y: number } | null>(
     null,
   );
 
@@ -75,23 +77,17 @@ export function CropFrame({
   }
 
   /** Grows towards the bottom-right corner on screen, whichever way y runs. */
-  function resize(dx: number, dy: number) {
+  function resize(dx: number, dy: number, handle: string) {
     if (disabled) return;
-    const width = Math.max(1, Math.min(box.width + dx, bounds.width - box.x));
-    const limit = originBottomLeft ? box.y + box.height : bounds.height - box.y;
-    const height = Math.max(1, Math.min(box.height + dy, limit));
-    onChange(
-      roundBox(
-        clamp({
-          height,
-          width,
-          x: box.x,
-          // A bottom-left origin moves down as the box grows downwards; the
-          // edge that stays put is the top one.
-          y: originBottomLeft ? box.y + box.height - height : box.y,
-        }),
-      ),
-    );
+    let left = box.x;
+    let top = originBottomLeft ? bounds.height - box.y - box.height : box.y;
+    let right = left + box.width;
+    let bottom = top + box.height;
+    if (handle.includes('w')) left = Math.max(0, Math.min(right - 1, left + dx));
+    if (handle.includes('e')) right = Math.min(bounds.width, Math.max(left + 1, right + dx));
+    if (handle.includes('n')) top = Math.max(0, Math.min(bottom - 1, top + dy));
+    if (handle.includes('s')) bottom = Math.min(bounds.height, Math.max(top + 1, bottom + dy));
+    onChange(roundBox({x: left, y: originBottomLeft ? bounds.height - bottom : top, width: right - left, height: bottom - top}));
   }
 
   function step(event: KeyboardEvent<HTMLElement>, apply: (dx: number, dy: number) => void) {
@@ -135,7 +131,7 @@ export function CropFrame({
   return (
     <div
       aria-label="Crop area"
-      className="absolute cursor-move border-2 border-primary bg-primary/10 shadow-[0_0_0_999px_rgb(15_23_42_/_0.42)] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="absolute touch-none cursor-move border-2 border-primary bg-primary/10 shadow-[0_0_0_999px_rgb(15_23_42_/_0.42)] outline-none focus-visible:ring-2 focus-visible:ring-ring"
       onKeyDown={(event) => step(event, move)}
       onPointerDown={(event) => {
         if (disabled) return;
@@ -154,6 +150,8 @@ export function CropFrame({
         event.currentTarget.releasePointerCapture(event.pointerId);
         pointer.current = null;
       }}
+      onPointerCancel={() => { pointer.current = null; }}
+      onLostPointerCapture={() => { pointer.current = null; }}
       role="application"
       style={{
         height: `${(box.height / bounds.height) * 100}%`,
@@ -163,32 +161,35 @@ export function CropFrame({
       }}
       tabIndex={disabled ? -1 : 0}
     >
-      <button
-        aria-label="Resize crop area"
-        className="absolute -right-3 -bottom-3 size-6 cursor-nwse-resize rounded-full border-2 border-white bg-primary shadow before:absolute before:inset-[-10px] before:content-[''] focus-visible:ring-2 focus-visible:ring-ring"
+      {(handles === 'all' ? ['nw','n','ne','e','se','s','sw','w'] : ['se']).map(handle => <button
+        key={handle}
+        aria-label={handles === 'corner' ? 'Resize crop area' : `Resize crop ${ {nw:'top left',n:'top',ne:'top right',e:'right',se:'bottom right',s:'bottom',sw:'bottom left',w:'left'}[handle] }`}
+        className={handles === 'all' ? `absolute touch-none border-2 border-primary bg-white hover:bg-primary shadow-sm before:absolute before:inset-[-12px] before:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${handle.length === 2 ? 'size-3 rounded-[3px]' : handle === 'n' || handle === 's' ? 'h-2 w-6 rounded-full' : 'h-6 w-2 rounded-full'}` : "absolute size-6 touch-none rounded-full border-2 border-white bg-primary shadow before:absolute before:inset-[-10px] before:content-[''] focus-visible:ring-2 focus-visible:ring-ring"}
+        style={{left:handle.includes('w')?'0%':handle.includes('e')?'100%':'50%',top:handle.includes('n')?'0%':handle.includes('s')?'100%':'50%',transform:'translate(-50%, -50%)',cursor: `${handle}-resize`}}
         disabled={disabled}
         onKeyDown={(event) => {
-          if (step(event, resize)) event.stopPropagation();
+          if (step(event, (dx, dy) => resize(dx, dy, handle))) event.stopPropagation();
         }}
         onPointerDown={(event) => {
           event.stopPropagation();
           event.currentTarget.setPointerCapture(event.pointerId);
-          pointer.current = { mode: "resize", x: event.clientX, y: event.clientY };
+          pointer.current = { mode: handle, x: event.clientX, y: event.clientY };
         }}
         onPointerMove={(event) => {
-          if (pointer.current?.mode !== "resize") return;
+          if (pointer.current?.mode !== handle) return;
           trackPointer(
             event,
             event.currentTarget.parentElement?.parentElement?.getBoundingClientRect(),
-            resize,
+            (dx, dy) => resize(dx, dy, handle),
           );
         }}
         onPointerUp={(event) => {
           event.currentTarget.releasePointerCapture(event.pointerId);
           pointer.current = null;
         }}
+        onPointerCancel={() => { pointer.current = null; }}
         type="button"
-      />
+      />)}
     </div>
   );
 }

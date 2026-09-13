@@ -4,8 +4,8 @@
  *
  * `buildJobOptions` used to split the `ranges` text on `;` and run each part
  * through `parsePageRange` before the job started (`MediaWorkbench.tsx:1626`,
- * `1702-1706`). That parse now happens here, in `rangeGroups`, throwing the
- * rule's own code and message.
+ * `1702-1706`). The preview and execution now share `splitPageGroups`, which
+ * validates ranges against the actual document before any outputs are written.
  */
 
 import {
@@ -21,24 +21,15 @@ import {
 } from "../../lib/tool-framework/artifacts.ts";
 import {
   createOutputFilename,
-  parsePageRange,
   validatePdfSelection,
-  MEDIA_LIMITS,
 } from "../../lib/tool-framework/media/validation.ts";
 import { writeArtifactBatch } from "../../lib/tool-framework/media/zip.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
+import { splitPageGroups } from "./groups.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
-
-function rangeGroups(ranges: string): number[][] {
-  return ranges.split(";").map((range) => {
-    const result = parsePageRange(range, MEDIA_LIMITS.pdfs.maxStructuralPages);
-    if (!result.ok) throw new ToolError(result.code, result.message);
-    return result.pages;
-  });
-}
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files?.[0];
@@ -53,26 +44,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const source = await loadPdf(input);
   const count = source.getPageCount();
   enforcePageLimit(input, count, false);
-  let groups: number[][];
-  if (ctx.settings.mode === "every-page") {
-    groups = Array.from({ length: count }, (_, index) => [index + 1]);
-  } else if (ctx.settings.mode === "interval") {
-    const interval = ctx.settings.interval;
-    if (!Number.isInteger(interval) || interval < 1) {
-      throw new ToolError(
-        "invalid-interval",
-        "Pages per file must be a positive whole number.",
-      );
-    }
-    groups = [];
-    for (let page = 1; page <= count; page += interval) {
-      groups.push(
-        Array.from({ length: Math.min(interval, count - page + 1) }, (_, index) => page + index),
-      );
-    }
-  } else {
-    groups = rangeGroups(ctx.settings.ranges);
-  }
+  const groups = splitPageGroups(ctx.settings, count);
   if (!groups.length) throw new ToolError("empty-range", "Choose at least one page range.");
 
   const outputs: StoredToolArtifact[] = [];

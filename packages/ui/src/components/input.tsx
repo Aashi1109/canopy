@@ -22,18 +22,26 @@ const inputVariants = cva(
 )
 
 type InputProps = Omit<React.ComponentProps<"input">, "size"> &
-  VariantProps<typeof inputVariants> & { code?: boolean }
+  VariantProps<typeof inputVariants> & { code?: boolean; leadingIcon?: React.ReactNode; suffix?: React.ReactNode }
 
-function Input({ className, code = false, size = "default", type, ...props }: InputProps) {
-  return (
+function Input({ className, code = false, size = "default", type, leadingIcon, suffix, ...props }: InputProps) {
+  const control = (
     <input
       type={type}
       data-slot="input"
       data-size={size}
-      className={cn(inputVariants({ size }), code && "font-mono", "group-data-[variant=auth]/field:px-3.5", className)}
+      data-leading-icon={leadingIcon ? "true" : undefined}
+      data-suffix={suffix ? "true" : undefined}
+      className={cn(inputVariants({ size }), code && "font-mono", leadingIcon && "pl-10", suffix && "pr-10 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none", "group-data-[variant=auth]/field:px-3.5", className)}
       {...props}
     />
   )
+  if (!leadingIcon && !suffix) return control
+  return <span className="relative block min-w-0 w-full">
+    {leadingIcon && <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground [&>svg]:size-4">{leadingIcon}</span>}
+    {control}
+    {suffix && <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-muted-foreground">{suffix}</span>}
+  </span>
 }
 
 export { Input, inputVariants }

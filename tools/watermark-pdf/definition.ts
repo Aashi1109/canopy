@@ -41,7 +41,7 @@ export default {
       watermarkKind: {
         kind: "select",
         label: "Watermark",
-        help: "An image watermark needs a second file: add the JPG or PNG alongside the PDF.",
+        help: "For an image watermark, choose a JPG or PNG in these settings.",
         default: "text",
         choices: [
           { label: "Text", value: "text" },
@@ -57,8 +57,9 @@ export default {
       },
       pages: {
         kind: "pages",
+        presets: true,
         label: "Pages",
-        help: "Use all, odd, even, or ranges such as 1-3,5.",
+        help: "Choose which pages receive the watermark, or select pages directly in the preview.",
         default: "all",
       },
       opacity: {
@@ -83,7 +84,7 @@ export default {
         default: -30,
         min: -180,
         max: 180,
-        suffix: "°",
+        leadingIcon: "rotate-cw",
       },
       position: {
         kind: "position",
@@ -98,13 +99,13 @@ export default {
   workbenchMark: { text: "WM", tone: "accent" },
   labels: {
     empty: "Add a PDF to configure its watermark.",
-    ready: "Watermark settings are ready.",
+    ready: "Your watermarked PDF is ready to download.",
     running: "Applying watermark…",
   },
   content: {
     howToUse: [
       "Add the PDF you want to stamp. It is processed in your browser — nothing is uploaded.",
-      "Choose a text or image watermark. For an image, add the JPG or PNG as a second file; the tool works out which of the two is the document.",
+      "Choose a text or image watermark. For an image, choose a JPG or PNG in the watermark settings.",
       "Set the pages, opacity, size, rotation, and anchor position. Size is a font size in points for text, and a percentage of the page width for an image.",
       "Apply the watermark and download. Check a couple of pages before you distribute the file.",
     ],
@@ -117,8 +118,8 @@ export default {
     ],
     faq: [
       {
-        q: "Why does the file picker also accept JPG and PNG?",
-        a: "Because an image watermark is a second file on the same input. The tool identifies the PDF by its content, so adding an image alone is rejected with a clear message.",
+        q: "Where do I add an image watermark?",
+        a: "Choose JPG or PNG image in the watermark settings, then choose your image. The PDF remains in the main preview while you adjust its watermark.",
       },
       {
         q: "Can someone remove my watermark?",

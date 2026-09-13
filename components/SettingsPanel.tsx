@@ -14,7 +14,7 @@ import {
   Switch,
   Textarea,
 } from "@smarttools/ui";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, RotateCw, Trash2 } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useId } from "react";
 import type { FieldKind, FieldSpec, SettingRow, SettingsSpec, WatermarkPosition } from "@/lib/tool-framework/settings";
 import { cn } from "@smarttools/ui/lib/utils";
@@ -39,6 +39,8 @@ interface FieldRenderContext {
 type FieldRendererRegistry = {
   [Kind in FieldKind]: (field: Extract<FieldSpec, { kind: Kind }>, context: FieldRenderContext) => ReactNode;
 };
+
+const FIELD_ICONS = { "rotate-cw": RotateCw };
 
 interface FieldFrameProps {
   children: ReactNode;
@@ -157,38 +159,38 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
       />
     </FieldFrame>
   ),
-  number: (field, context) => (
-    <FieldFrame help={field.help} id={context.id} label={field.label}>
-      <div className="flex items-center gap-2">
-        <Input
-          aria-describedby={field.help ? `${context.id}-help` : undefined}
-          disabled={context.disabled}
-          id={context.id}
-          max={field.max}
-          min={field.min}
-          onChange={(event) =>
-            context.onChange(
-              Number.isNaN(event.currentTarget.valueAsNumber)
-                ? event.currentTarget.value
-                : event.currentTarget.valueAsNumber,
-            )
-          }
-          step={field.step}
-          type="number"
-          value={
-            typeof context.value === "number" || typeof context.value === "string"
-              ? context.value
-              : field.default
-          }
-        />
-        {field.suffix ? (
-          <Text className="shrink-0 text-muted-foreground">
-            {field.suffix}
-          </Text>
-        ) : null}
-      </div>
-    </FieldFrame>
-  ),
+  number: (field, context) => {
+    const Icon = field.leadingIcon ? FIELD_ICONS[field.leadingIcon] : undefined;
+    return (
+      <FieldFrame help={field.help} id={context.id} label={field.label}>
+        <div className="flex items-center gap-2">
+          <Input
+            aria-describedby={field.help ? `${context.id}-help` : undefined}
+            disabled={context.disabled}
+            id={context.id}
+            max={field.max}
+            min={field.min}
+            leadingIcon={Icon ? <Icon /> : undefined}
+            onChange={(event) =>
+              context.onChange(
+                Number.isNaN(event.currentTarget.valueAsNumber)
+                  ? event.currentTarget.value
+                  : event.currentTarget.valueAsNumber,
+              )
+            }
+            step={field.step}
+            type="number"
+            value={
+              typeof context.value === "number" || typeof context.value === "string"
+                ? context.value
+                : field.default
+            }
+          />
+          {field.suffix ? <Text className="shrink-0 text-muted-foreground">{field.suffix}</Text> : null}
+        </div>
+      </FieldFrame>
+    );
+  },
   slider: (field, context) => {
     const value = numberValue(context.value, field.default);
     return (
@@ -324,12 +326,13 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
     return (
       <fieldset className="grid gap-2">
         <FieldLegend>{field.label}</FieldLegend>
-        <div aria-describedby={field.help ? `${context.id}-help` : undefined} aria-label={field.label} className="grid w-fit grid-cols-3 gap-1" role="radiogroup">
+        <div aria-describedby={field.help ? `${context.id}-help` : undefined} aria-label={field.label} className="flex min-w-0 max-w-full flex-nowrap gap-1.5 overflow-x-auto p-1" role="radiogroup">
           {POSITIONS.map((position, index) => (
             <Button
               aria-checked={position.value === value}
               aria-label={position.label}
-              className="size-11 p-0"
+              className="shrink-0 aria-checked:border-primary aria-checked:bg-accent aria-checked:text-primary"
+              size="icon"
               disabled={context.disabled}
               key={position.value}
               onClick={() => context.onChange(position.value)}
@@ -337,12 +340,15 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
               role="radio"
               tabIndex={position.value === value ? 0 : -1}
               type="button"
-              variant={position.value === value ? "default" : "outline"}
+              variant="outline"
             >
-              <span aria-hidden="true" className="size-2 rounded-full bg-current" />
+              <span aria-hidden="true" className="grid h-6 w-[18px] shrink-0 grid-cols-3 grid-rows-3 rounded-[3px] border border-current p-0.5">
+                <span className="size-1 self-center justify-self-center rounded-full bg-current" style={{ gridColumn: index % 3 + 1, gridRow: Math.floor(index / 3) + 1 }} />
+              </span>
             </Button>
           ))}
         </div>
+        <Caption className="text-muted-foreground">{POSITIONS.find(position => position.value === value)?.label}</Caption>
         {field.help ? <FieldDescription className="text-muted-foreground" id={`${context.id}-help`}>{field.help}</FieldDescription> : null}
       </fieldset>
     );
@@ -355,6 +361,31 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
     const value = Array.isArray(context.value)
       ? context.value.join(",")
       : stringValue(context.value, asExpression(field.default));
+    const keyword = value.trim().toLowerCase();
+    const mode = ["all", "odd", "even"].includes(keyword) ? keyword : "custom";
+    if (field.presets) {
+      return <div className="grid gap-3">
+        <FieldFrame help={field.help} id={context.id} label={field.label}>
+          <Select
+            aria-describedby={field.help ? `${context.id}-help` : undefined}
+            className="w-full"
+            disabled={context.disabled}
+            id={context.id}
+            onChange={(event) => context.onChange(event.currentTarget.value === "custom" ? "" : event.currentTarget.value)}
+            value={mode}
+          >
+            <option value="all">All pages</option>
+            <option value="odd">Odd pages</option>
+            <option value="even">Even pages</option>
+            <option value="custom">Custom ranges</option>
+          </Select>
+        </FieldFrame>
+        {mode === "custom" && <FieldFrame id={`${context.id}-ranges`} label="Page ranges">
+          <Input disabled={context.disabled} id={`${context.id}-ranges`}
+            onChange={(event) => context.onChange(event.currentTarget.value)} placeholder="1,3,5-9" value={value} />
+        </FieldFrame>}
+      </div>;
+    }
     return (
       <FieldFrame help={field.help} id={context.id} label={field.label}>
         <Input

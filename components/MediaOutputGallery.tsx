@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Button, MediaPreview } from "@smarttools/ui";
 import { ArtifactDownloadButton, useFileDownload } from "@/components/ArtifactDownloadButton";
 import { MediaOutputCard } from "@smarttools/ui/components/MediaOutputCard";
@@ -8,47 +8,57 @@ import { Minus, Plus } from "lucide-react";
 import { readArtifact, type StoredToolArtifact } from "@/lib/tool-framework/artifacts";
 
 function sizeLabel(bytes: number) {
-  return bytes < 1_000_000 ? `${Math.round(bytes / 1000)} KB` : `${(bytes / 1_000_000).toFixed(1)} MB`;
+  return bytes < 1000 ? `${bytes} B` : bytes < 1_000_000 ? `${(bytes / 1000).toFixed(1)} KB` : `${(bytes / 1_000_000).toFixed(1)} MB`;
 }
 
-function useImageFile(file: StoredToolArtifact, enabled: boolean) {
-  const [url, setUrl] = useState<string>();
+type ImageFile = File | StoredToolArtifact;
+
+function isArtifact(file: ImageFile): file is StoredToolArtifact {
+  return "storage" in file;
+}
+
+function metadata(file: ImageFile) {
+  const format = file.name.split(".").pop()?.toUpperCase() || "Image";
+  return `${format} · ${sizeLabel(file.size)}`;
+}
+
+function previewFailure(file: ImageFile) {
+  const mime = isArtifact(file) ? file.mime : file.type;
+  return /hei[cf]/i.test(mime) || /\.hei[cf]$/i.test(file.name)
+    ? "This browser could not preview HEIC/HEIF. You can still process this file."
+    : "Preview unavailable. Retry, or replace the source and try again.";
+}
+
+function useImageFile(file: ImageFile, enabled: boolean) {
+  const [loaded, setLoaded] = useState<{ file: ImageFile; attempt: number; url: string }>();
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    setUrl(undefined);
+    setLoaded(undefined);
     setError(false);
     if (!enabled) return;
     let disposed = false;
     let objectUrl: string | undefined;
-    void readArtifact(file).then((blob) => {
+    void (isArtifact(file) ? readArtifact(file) : Promise.resolve(file)).then((blob) => {
       if (disposed) return;
       objectUrl = URL.createObjectURL(blob);
-      setUrl(objectUrl);
+      setLoaded({ file, attempt, url: objectUrl });
     }).catch(() => { if (!disposed) setError(true); });
     return () => {
       disposed = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [file, enabled, attempt]);
+  const url = loaded?.file === file && loaded.attempt === attempt ? loaded.url : undefined;
   return { url, error, fail: () => setError(true), retry: () => setAttempt((value) => value + 1) };
 }
 
-function Thumbnail({ file, cover = false }: { file: StoredToolArtifact; cover?: boolean }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [visible, setVisible] = useState(false);
-  const image = useImageFile(file, visible);
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting), { rootMargin: "200px" });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
+function Thumbnail({ file, cover = false }: { file: ImageFile; cover?: boolean }) {
+  const image = useImageFile(file, true);
   return (
-    <span ref={ref} className="flex h-full w-full items-center justify-center overflow-hidden text-xs text-muted-foreground">
-      {image.error ? "Preview unavailable" : image.url ? (
-        <img src={image.url} alt="" draggable={false} decoding="async" onError={image.fail} className={`h-full w-full ${cover ? "object-cover" : "object-contain"}`} />
+    <span className="flex h-full w-full items-center justify-center overflow-hidden text-xs text-muted-foreground">
+      {image.error ? <span className="whitespace-normal px-4 pt-10 text-center font-normal">{previewFailure(file)} Open Preview to retry.</span> : image.url ? (
+        <img src={image.url} alt="" draggable={false} loading="lazy" decoding="async" onError={image.fail} className={`h-full w-full ${cover ? "object-cover" : "object-contain"}`} />
       ) : "Loading…"}
     </span>
   );
@@ -56,11 +66,12 @@ function Thumbnail({ file, cover = false }: { file: StoredToolArtifact; cover?: 
 
 function OutputCard({ file, onPreview }: { file: StoredToolArtifact; onPreview: () => void }) {
   const { download, downloading, error } = useFileDownload(file);
-  return <MediaOutputCard name={file.name} metadata={sizeLabel(file.size)} onPreview={onPreview} onDownload={() => void download()} downloading={downloading} error={error}><Thumbnail file={file} /></MediaOutputCard>;
+  return <MediaOutputCard name={file.name} metadata={metadata(file)} onPreview={onPreview} onDownload={() => void download()} downloading={downloading} error={error}><Thumbnail file={file} /></MediaOutputCard>;
 }
 
-function ImagePreviewDialog({ files, selected, onSelect, onClose }: {
-  files: readonly StoredToolArtifact[]; selected: number; onSelect: (index: number) => void; onClose: () => void;
+function ImagePreviewDialog({ files, selected, onSelect, onClose, onRemove, disabled }: {
+  files: readonly ImageFile[]; selected: number; onSelect: (index: number) => void; onClose: () => void;
+  onRemove?: (file: File) => void; disabled?: boolean;
 }) {
   const file = files[selected];
   const image = useImageFile(file, true);
@@ -80,7 +91,7 @@ function ImagePreviewDialog({ files, selected, onSelect, onClose }: {
     setZoom(null);
     setDimensions({ width: 0, height: 0 });
     activeThumbnail.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }, [file.id]);
+  }, [file]);
   useEffect(() => {
     const node = viewportNode;
     if (!node) return;
@@ -96,9 +107,9 @@ function ImagePreviewDialog({ files, selected, onSelect, onClose }: {
   }
   return (
     <MediaPreview open onOpenChange={(open) => { if (!open) onClose(); }} title={file.name}
-      actions={<ArtifactDownloadButton file={file} key={file.id} />}
-      description={`Generated image · ${selected + 1} of ${files.length} · ${sizeLabel(file.size)}`}
-      status="Generated output · View only"
+      actions={isArtifact(file) ? <ArtifactDownloadButton file={file} key={file.id} /> : <Button variant="secondary" disabled={disabled} onClick={() => { onClose(); onRemove?.(file); }}>Remove image</Button>}
+      description={`${isArtifact(file) ? "Generated" : "Source"} image · ${selected + 1} of ${files.length} · ${sizeLabel(file.size)}`}
+      status={isArtifact(file) ? "Generated output · View only" : "Source image · View only"}
       hint="Zoom to inspect · Drag to pan"
       viewportClassName="relative overflow-hidden bg-transparent"
       controls={<>
@@ -126,14 +137,14 @@ function ImagePreviewDialog({ files, selected, onSelect, onClose }: {
         onPointerUp={() => { drag.current = null; setPanning(false); }}
         onPointerCancel={() => { drag.current = null; setPanning(false); }}
       >
-        {image.error ? <div role="alert" className="m-auto text-center"><p>Preview unavailable. Retry or convert the source again.</p><Button variant="secondary" className="mt-3" onClick={image.retry}>Retry preview</Button></div> : image.url ? <img alt={file.name} src={image.url} draggable={false} onError={image.fail}
+        {image.error ? <div role="alert" className="m-auto text-center"><p>{previewFailure(file)}</p><Button variant="secondary" className="mt-3" onClick={image.retry}>Retry preview</Button></div> : image.url ? <img alt={file.name} src={image.url} draggable={false} onError={image.fail}
           onLoad={(event) => setDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })}
           className="m-auto max-w-none shrink-0 object-contain"
           style={dimensions.width ? { width: dimensions.width * scale / 100, height: dimensions.height * scale / 100 } : { maxWidth: "100%", maxHeight: "100%" }}
         /> : <p role="status" className="m-auto">Loading preview…</p>}
       </div>
-      {files.length > 1 && <nav aria-label="Output images" className={`absolute bottom-4 left-4 flex max-h-[65%] max-w-[calc(100%-2rem)] gap-3 overflow-auto p-1 sm:top-1/2 sm:bottom-auto sm:max-w-none sm:-translate-y-1/2 sm:flex-col ${panning ? "opacity-0 pointer-events-none" : ""}`}>
-        {files.map((entry, index) => <Button key={entry.id} ref={index === selected ? activeThumbnail : undefined} variant="secondary" aria-label={`Preview image ${index + 1}: ${entry.name}`} aria-current={index === selected ? "true" : undefined}
+      {files.length > 1 && <nav aria-label={isArtifact(file) ? "Output images" : "Source images"} className={`absolute bottom-4 left-4 flex max-h-[65%] max-w-[calc(100%-2rem)] gap-3 overflow-auto p-1 sm:top-1/2 sm:bottom-auto sm:max-w-none sm:-translate-y-1/2 sm:flex-col ${panning ? "opacity-0 pointer-events-none" : ""}`}>
+        {files.map((entry, index) => <Button key={isArtifact(entry) ? entry.id : index} ref={index === selected ? activeThumbnail : undefined} variant="secondary" aria-label={`Preview image ${index + 1}: ${entry.name}`} aria-current={index === selected ? "true" : undefined}
           className={`size-16 shrink-0 overflow-hidden p-0 sm:size-24 ${index === selected ? "ring-2 ring-primary ring-offset-2" : ""}`} onClick={() => onSelect(index)}>
           <Thumbnail file={entry} cover />
         </Button>)}
@@ -142,15 +153,37 @@ function ImagePreviewDialog({ files, selected, onSelect, onClose }: {
   );
 }
 
-export function MediaOutputGallery({ files }: { files: readonly StoredToolArtifact[] }) {
-  const [selected, setSelected] = useState<number | null>(null);
-  return <div className="flex min-h-0 flex-1 flex-col gap-3 p-4" data-slot="media-output-gallery">
-    <p className="shrink-0 text-sm text-muted-foreground">{files.length} images · Preview or download individually.</p>
-    <div role="region" aria-label="Generated image previews" tabIndex={0} className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-sm focus-visible:outline-2 focus-visible:outline-primary">
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,13rem),1fr))] gap-4 pr-2">
-        {files.map((file, index) => <OutputCard file={file} key={file.id} onPreview={() => setSelected(index)} />)}
+function ImageGallery({ files, onRemove, disabled, actions }: {
+  files: readonly ImageFile[]; onRemove?: (file: File) => void; disabled?: boolean; actions?: ReactNode;
+}) {
+  const [selectedFile, setSelectedFile] = useState<ImageFile | null>(null);
+  const selected = selectedFile ? files.indexOf(selectedFile) : -1;
+  const input = Boolean(onRemove);
+  return <div className="flex min-h-0 flex-1 flex-col gap-5 p-4 sm:p-6 max-sm:[&_button]:!min-h-11 max-sm:[&_button]:!min-w-11 [@media(pointer:coarse)]:[&_button]:!min-h-11 [@media(pointer:coarse)]:[&_button]:!min-w-11" data-slot={input ? "media-input-gallery" : "media-output-gallery"}>
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h2 className="text-sm font-semibold">{input ? "Selected images" : "Converted images"}</h2>
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-xs text-muted-foreground">{files.length} {files.length === 1 ? "image" : "images"} · Preview or {input ? "remove" : "download"}</p>
+        {actions}
       </div>
     </div>
-    {selected !== null && files[selected] && <ImagePreviewDialog files={files} selected={selected} onSelect={setSelected} onClose={() => setSelected(null)} />}
+    <div role="region" aria-label={input ? "Selected image previews" : "Generated image previews"} tabIndex={0} className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-sm focus-visible:outline-2 focus-visible:outline-primary">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] items-start gap-4 pr-2">
+        {files.map((file, index) => isArtifact(file)
+          ? <OutputCard file={file} key={file.id} onPreview={() => setSelectedFile(file)} />
+          : <MediaOutputCard key={index} name={file.name} metadata={metadata(file)} onPreview={() => setSelectedFile(file)} onRemove={() => onRemove?.(file)} disabled={disabled}><Thumbnail file={file} /></MediaOutputCard>)}
+      </div>
+    </div>
+    {selected >= 0 && <ImagePreviewDialog files={files} selected={selected} onSelect={(index) => setSelectedFile(files[index])} onClose={() => setSelectedFile(null)} onRemove={onRemove} disabled={disabled} />}
   </div>;
+}
+
+export function MediaOutputGallery({ files }: { files: readonly StoredToolArtifact[] }) {
+  return <ImageGallery files={files} />;
+}
+
+export function MediaInputGallery({ files, onRemove, disabled, actions }: {
+  files: readonly File[]; onRemove: (file: File) => void; disabled?: boolean; actions?: ReactNode;
+}) {
+  return <ImageGallery files={files} onRemove={onRemove} disabled={disabled} actions={actions} />;
 }

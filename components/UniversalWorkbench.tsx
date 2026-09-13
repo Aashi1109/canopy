@@ -61,6 +61,7 @@ type UniversalWorkbenchProps<
   runtimeSpec: ToolRuntimeSpec<Input, Settings, Result>;
   StatusMeta?: ComponentType;
   statusMeta?: ReactNode;
+  validationReason?: string | null;
   Toolbar: ComponentType;
   workbenchIcon?: ReactNode;
   workbenchMark?: ToolWorkbenchMark;
@@ -131,6 +132,7 @@ function WorkbenchFrame<
   relatedTools = [],
   StatusMeta,
   statusMeta,
+  validationReason,
   title,
   Toolbar,
   workbenchIcon,
@@ -153,6 +155,7 @@ function WorkbenchFrame<
         : runtime.notice ||
           runtime.error ||
           runtime.issues[0]?.message ||
+          validationReason ||
           lifecycleLabel(definition, runtime.lifecycle);
   const isMedia = definition.app === "media";
   const usesNetwork = Boolean(definition.capabilities.network);

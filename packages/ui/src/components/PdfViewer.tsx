@@ -28,8 +28,11 @@ export interface PdfOutlineItem {
 export interface PdfViewerProps {
   children?: React.ReactNode;
   className?: string;
+  pageClassName?: string;
   currentPage: number;
   fileName: string;
+  fileSize?: string;
+  fit?: "width" | "page";
   onExpand?: () => void;
   onFitPage?: () => void;
   onPageChange: (page: number) => void;
@@ -45,6 +48,7 @@ export interface PdfViewerProps {
   pagePreviewDelayMs?: number;
   pagePreviewDetail?: React.ReactNode;
   renderPagePreview?: (page: number) => React.ReactNode;
+  rightChildren?: React.ReactNode;
   zoom?: number;
 }
 
@@ -63,8 +67,11 @@ function normalizePage(page: number, pageCount: number) {
 export function PdfViewer({
   children,
   className,
+  pageClassName,
   currentPage,
   fileName,
+  fileSize,
+  fit = "width",
   onExpand,
   onFitPage,
   onPageChange,
@@ -75,6 +82,7 @@ export function PdfViewer({
   pagePreviewDelayMs = 120,
   pagePreviewDetail = "A4 → Letter · fit content",
   renderPagePreview,
+  rightChildren,
   zoom,
 }: PdfViewerProps) {
   const resolvedPageCount = Math.max(
@@ -341,7 +349,7 @@ export function PdfViewer({
       </motion.aside>
 
       <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 p-4 md:px-4.5">
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5 max-sm:[&_button:not([role=checkbox])]:!min-h-11 max-sm:[&_button:not([role=checkbox])]:min-w-11 [@media(pointer:coarse)]:[&_button:not([role=checkbox])]:!min-h-11 [@media(pointer:coarse)]:[&_button:not([role=checkbox])]:min-w-11">
           <Button
             aria-controls={outlineId}
             aria-expanded={outlineOpen}
@@ -354,20 +362,21 @@ export function PdfViewer({
           >
             <MorphIcon icon={outlineOpen ? X : Menu} reducedMotion="user" />
           </Button>
-          <div className="min-w-40 flex-1">
+          <div className="min-w-0 basis-40 flex-1">
             <P className="truncate text-foreground">
               {fileName}
             </P>
             <Muted className="truncate text-muted-foreground">
-              {currentSection?.title ?? "Document"} · page{" "}
-              {resolvedCurrentPage} of {resolvedPageCount}
+              {currentSection && currentSection.title !== `Page ${resolvedCurrentPage}` ? `${currentSection.title} · ` : ""}
+              Page {resolvedCurrentPage} of {resolvedPageCount}
+              {fileSize ? ` · ${fileSize}` : null}
             </Muted>
           </div>
 
-          <div className="flex h-7 items-center gap-1" aria-label="Page jump">
+          <div className="flex items-center gap-1" aria-label="Page jump">
             <input
               aria-label="Current page"
-              className="h-6 w-7 appearance-none rounded border border-border bg-transparent text-center font-caption text-[10px] font-semibold text-foreground outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              className="h-6 w-7 appearance-none rounded border border-border bg-transparent text-center font-caption text-[10px] font-semibold text-foreground outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 max-sm:size-11 [@media(pointer:coarse)]:size-11 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               inputMode="numeric"
               max={resolvedPageCount}
               min={1}
@@ -388,7 +397,7 @@ export function PdfViewer({
             </span>
           </div>
 
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex flex-wrap items-center gap-1.5">
             <Button
               aria-label="Zoom out"
               className="size-[30px]"
@@ -424,11 +433,12 @@ export function PdfViewer({
             >
               <Maximize2 />
             </Button>
+            {rightChildren}
           </div>
         </div>
 
         <div className={cn("flex min-h-[24rem] flex-1 gap-4 overflow-hidden rounded-lg border border-border bg-muted p-4", pages && "min-h-0")}>
-          <div className="flex w-8 shrink-0 items-center justify-start overflow-visible">
+          <div className="flex w-8 shrink-0 items-center justify-start overflow-visible max-sm:hidden [@media(pointer:coarse)]:hidden">
             <ChapterScrubber
               chapters={pageChapters}
               currentIndex={resolvedCurrentPage - 1}
@@ -480,18 +490,22 @@ export function PdfViewer({
               onScroll={syncVisiblePage}
               ref={pageViewport}
               role="region"
+              style={fit === "page" ? { containerType: "size" } : undefined}
               tabIndex={0}
             >
-              <div className="mx-auto flex flex-col gap-4" style={{ width: `${resolvedZoom}%` }}>
+              <div className="mx-auto flex flex-col gap-4" style={{ width: fit === "page" ? "100%" : `${resolvedZoom}%` }}>
                 {pages.map((page) => (
                   <div
-                    className="relative w-full shrink-0 overflow-hidden border border-input bg-card shadow-sm"
+                    className={cn("relative w-full shrink-0 overflow-hidden border border-input bg-card shadow-sm", pageClassName)}
                     key={page.pageNumber}
                     ref={(element) => {
                       if (element) pageElements.current.set(page.pageNumber, element);
                       else pageElements.current.delete(page.pageNumber);
                     }}
-                    style={{ aspectRatio: `${page.width} / ${page.height}` }}
+                    style={{
+                      aspectRatio: `${page.width} / ${page.height}`,
+                      ...(fit === "page" ? { marginInline: "auto", width: `min(${resolvedZoom}cqw, ${resolvedZoom * page.width / page.height}cqh)` } : {}),
+                    }}
                   >
                     {page.content}
                   </div>

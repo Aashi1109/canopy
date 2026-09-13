@@ -18,6 +18,7 @@ export default {
   ],
   name: "Compress Image",
   description: "Reduce image size while keeping its format and dimensions.",
+  optionsPanel: { collapsible: false },
   input: {
     kind: "files",
     label: "Add images to compress",
@@ -68,7 +69,7 @@ export default {
   workbenchMark: { text: "IMG-" },
   labels: {
     empty: "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF files (25 MiB each) to compress them.",
-    ready: "The images and compression settings are ready.",
+    ready: "Your compressed images are ready to download.",
     running: "Compressing images…",
   },
   content: {

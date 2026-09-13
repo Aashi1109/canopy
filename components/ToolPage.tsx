@@ -46,6 +46,7 @@ import { UniversalWorkbench } from "@/components/UniversalWorkbench";
 import { ToolIcon } from "@/components/ToolIcon";
 import type { ResolvedIcon } from "@/lib/tool-framework/icons";
 import { workspaceFileId } from "@/components/FileInput";
+import { resolveImageConversion } from "@/app/media/lib/imageConversion";
 import {
   ToolWorkspace,
   type WorkspaceInputState,
@@ -457,7 +458,7 @@ function ToolToolbar(): ReactElement {
           Undo reset
         </Button>
       ) : null}
-      {primaryAction ? (
+      {primaryAction && !chrome.toolbarActions?.primaryActionInWorkspace ? (
         <Button
           aria-busy={primaryAction.running || undefined}
           disabled={primaryAction.running && primaryAction.onCancel ? false : primaryAction.disabled}
@@ -637,14 +638,16 @@ export default function ToolPage({
       _runtimeSettings: ToolSettings,
       signal: AbortSignal,
     ): Promise<ToolExecutionOutcome<ToolResult>> => {
-      const run = await loadMainThreadRun(definitionKey);
+      const conversion = resolveImageConversion(spec, settings);
+      const runKey = conversion.choices.length ? conversion.key : definitionKey;
+      const run = await loadMainThreadRun(runKey);
       signal.throwIfAborted();
       if (run) {
         // `parseSettings` treats this as `unknown` and coerces every declared
         // field, so the runtime's flat-scalar view is not the trust boundary.
-        return createExecute(spec, run)(
+        return createExecute(conversion.spec, run)(
           await toRunInput(input),
-          settings as ToolSettings,
+          conversion.settings as ToolSettings,
           signal,
         );
       }
@@ -653,9 +656,9 @@ export default function ToolPage({
         const result = await runOnWorker(
           {
             files: toWorkerFiles(input.files),
-            key: definitionKey,
+            key: runKey,
             secondary: input.secondary,
-            settings,
+            settings: conversion.settings,
             text: input.text,
           },
           signal,
@@ -667,7 +670,7 @@ export default function ToolPage({
         if (!(error instanceof ToolError) || error.code !== "unknown-tool") throw error;
       }
 
-      return toOutcome(await runOnServer(definitionKey, input, settings, signal));
+      return toOutcome(await runOnServer(runKey, input, conversion.settings, signal));
     },
     [definitionKey, runOnWorker, settings, spec],
   );
@@ -729,6 +732,7 @@ export default function ToolPage({
         relatedTools={relatedTools}
         runtimeSpec={runtimeSpec}
         statusMeta={toolbarActions?.statusMeta}
+        validationReason={validationReason}
         title={title}
         Toolbar={ToolToolbar}
         workbenchIcon={icon.kind === "url" ? <ToolIcon icon={icon} size={28} /> : undefined}

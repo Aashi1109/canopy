@@ -1,19 +1,19 @@
 "use client";
 
 import { Button, MediaPreview, Muted, PdfViewer } from "@smarttools/ui";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { usePdfPageImages } from "@/components/PdfPagesSurface";
+import { PdfPreviewPage, usePdfPageImages } from "@/components/PdfPagesSurface";
 import { ArtifactDownloadButton } from "@/components/ArtifactDownloadButton";
 import { WorkspaceSurface } from "@/components/Surfaces";
 import { readArtifact, type StoredToolArtifact } from "@/lib/tool-framework/artifacts";
 import { useToolRun } from "@/lib/tool-framework/useToolRun";
 import { createToolRunFile } from "@/lib/tool-framework/workerProtocol";
-import { PDF_PREVIEW_MAX_WIDTH } from "@/lib/tool-framework/limits";
 
-export function GeneratedPdfPreview({ file, definitionKey }: {
+export function GeneratedPdfPreview({ file, definitionKey, fill = false }: {
   file: StoredToolArtifact;
   definitionKey: string;
+  fill?: boolean;
 }) {
   const { inspect, previews, requestThumbnails, state } = useToolRun();
   const pages = usePdfPageImages(previews);
@@ -46,8 +46,9 @@ export function GeneratedPdfPreview({ file, definitionKey }: {
   const error = failure || state.error?.message;
   const viewer = (onExpand?: () => void) => (
     <PdfViewer
-      className={`min-w-0 w-full ${onExpand ? "h-[40rem]" : "h-full"}`}
+      className={`min-w-0 w-full ${onExpand && !fill ? "h-[40rem]" : "h-full"}`}
       currentPage={currentPage}
+      fit={fill ? "page" : "width"}
       fileName={file.name}
       onExpand={onExpand}
       onPageChange={setCurrentPage}
@@ -57,7 +58,7 @@ export function GeneratedPdfPreview({ file, definitionKey }: {
         pageNumber: page.pageNumber,
         width: page.pageWidth,
         height: page.pageHeight,
-        content: <GeneratedPage page={page} requestThumbnails={requestThumbnails} active={!onExpand || !expanded} />,
+        content: <PdfPreviewPage alt={`Generated PDF page ${page.pageNumber}`} page={page} requestThumbnails={requestThumbnails} active={!onExpand || !expanded} />,
       }))}
       pagePreviewDetail={file.name}
       renderPagePreview={(pageNumber) => <PagePreview pageNumber={pageNumber} previews={pages} requestThumbnails={requestThumbnails} />}
@@ -65,6 +66,9 @@ export function GeneratedPdfPreview({ file, definitionKey }: {
   );
   return (
     <WorkspaceSurface
+      className={fill ? "h-full min-h-0" : undefined}
+      contentClassName={fill ? "min-h-0 flex-1 gap-0" : undefined}
+      scroll={fill ? "none" : "content"}
       header="sr-only"
       purpose="preview"
       state={error ? "error" : pages.length ? "ready" : "loading"}
@@ -88,44 +92,6 @@ export function GeneratedPdfPreview({ file, definitionKey }: {
   );
 }
 
-function GeneratedPage({ page, requestThumbnails, active }: {
-  page: ReturnType<typeof usePdfPageImages>[number];
-  requestThumbnails: (pages: readonly number[], renderWidth?: number) => void;
-  active: boolean;
-}) {
-  const element = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const node = element.current;
-    if (!node || !active) return;
-    let visible = false;
-    const render = () => {
-      if (!visible) return;
-      const width = Math.min(PDF_PREVIEW_MAX_WIDTH, Math.ceil(node.getBoundingClientRect().width * window.devicePixelRatio / 64) * 64);
-      if (width > 0 && (!page.url || width > (page.renderWidth ?? 0))) {
-        requestThumbnails([page.pageNumber], width);
-      }
-    };
-    const observer = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting;
-      render();
-    }, { rootMargin: "200px" });
-    const resize = new ResizeObserver(render);
-    observer.observe(node);
-    resize.observe(node);
-    window.addEventListener("resize", render);
-    return () => {
-      observer.disconnect();
-      resize.disconnect();
-      window.removeEventListener("resize", render);
-    };
-  }, [active, page.pageNumber, page.url, page.renderWidth, requestThumbnails]);
-  return (
-    <div className="absolute inset-0" ref={element}>
-      {page.url ? <img alt={`Generated PDF page ${page.pageNumber}`} className="h-full w-full object-contain" src={page.url} />
-        : <Muted role="status">Rendering page {page.pageNumber}…</Muted>}
-    </div>
-  );
-}
 
 function PagePreview({ pageNumber, previews, requestThumbnails }: {
   pageNumber: number;

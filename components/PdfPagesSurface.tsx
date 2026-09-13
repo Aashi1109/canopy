@@ -17,7 +17,11 @@
 import {
   Strong,
   Caption,
+  Muted,
   Button,
+  CheckboxControl,
+  MediaPreview,
+  PdfViewer,
 } from "@smarttools/ui";
 import { OrderableList } from "@smarttools/ui/components/OrderableList";
 import { GripVertical } from "lucide-react";
@@ -34,7 +38,7 @@ import {
 
 import { WorkspaceSurface } from "@/components/Surfaces";
 import type { ToolPagePreview } from "@/lib/tool-framework/run";
-import { PDF_THUMBNAIL_CACHE_SIZE } from "@/lib/tool-framework/limits";
+import { PDF_PREVIEW_MAX_WIDTH, PDF_THUMBNAIL_CACHE_SIZE } from "@/lib/tool-framework/limits";
 import { parsePageSelection } from "@/lib/tool-framework/settings";
 
 /** A rendered page: the declared geometry plus a blob URL for its thumbnail. */
@@ -51,7 +55,7 @@ const NO_IMAGES: readonly PdfPageImage[] = [];
 const THUMBNAIL_MIME = "image/jpeg";
 
 const PdfInspectionContext = createContext<
-  ((pageNumbers: readonly number[]) => void) | null
+  ((pageNumbers: readonly number[], renderWidth?: number) => void) | null
 >(null);
 
 export function PdfInspectionProvider({
@@ -59,7 +63,7 @@ export function PdfInspectionProvider({
   requestThumbnails,
 }: {
   readonly children: ReactNode;
-  readonly requestThumbnails: (pageNumbers: readonly number[]) => void;
+  readonly requestThumbnails: (pageNumbers: readonly number[], renderWidth?: number) => void;
 }): ReactElement {
   return (
     <PdfInspectionContext.Provider value={requestThumbnails}>
@@ -212,7 +216,7 @@ export interface PdfPagesSurfaceProps {
 const PAGE_CLASSES = "min-w-0 rounded-xl border border-border bg-background p-2";
 const THUMBNAIL_CLASSES =
   "mx-auto max-h-44 w-auto rounded-md border border-border bg-white object-contain";
-const GRID_CLASSES = "grid grid-cols-2 gap-3 sm:grid-cols-3";
+const GRID_CLASSES = "grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(0,12rem))]";
 
 export function PageThumbnail({ page }: { page: PdfPageImage }): ReactElement {
   const requestThumbnails = useContext(PdfInspectionContext);
@@ -255,6 +259,7 @@ export function PageThumbnail({ page }: { page: PdfPageImage }): ReactElement {
   return page.url ? (
     <img
       alt=""
+      draggable={false}
       className={THUMBNAIL_CLASSES}
       ref={(node) => {
         targetRef.current = node;
@@ -287,6 +292,9 @@ export function PdfPagesSurface({
   selected,
   title,
 }: PdfPagesSurfaceProps): ReactElement {
+  const requestThumbnails = useContext(PdfInspectionContext);
+  const [previewPage, setPreviewPage] = useState<number | null>(null);
+  const previewIndex = pages.findIndex((page) => page.pageNumber === previewPage);
   return (
     <WorkspaceSurface
       className="min-h-0"
@@ -308,6 +316,7 @@ export function PdfPagesSurface({
           ariaLabel={title}
           className={GRID_CLASSES}
           disabled={disabled || pages.length < 2}
+          dragSurface="card"
           getId={(page) => String(page.pageNumber)}
           getLabel={(page) => `Page ${page.pageNumber}`}
           items={pages}
@@ -315,25 +324,38 @@ export function PdfPagesSurface({
           onReorder={(next) => onOrderChange(next.map(({ pageNumber }) => pageNumber))}
           renderItem={(page, orderable) => (
             <div
-              className={`${PAGE_CLASSES} ${orderable.isDragging ? "shadow-lg ring-1 ring-primary/20" : ""}`}
+              className={`relative min-w-0 rounded-xl border border-border bg-background ${orderable.isDragging ? "shadow-lg ring-1 ring-primary/20" : ""}`}
+              onMouseDown={(event) => orderable.listeners?.onMouseDown?.(event)}
+              onTouchStart={(event) => orderable.listeners?.onTouchStart?.(event)}
             >
               <Button
                 {...orderable.attributes}
                 {...orderable.listeners}
                 aria-label={`Drag page ${page.pageNumber} to reorder`}
-                className="relative mb-2 size-8 cursor-grab touch-none text-muted-foreground before:absolute before:inset-[-6px] before:content-[''] active:cursor-grabbing disabled:cursor-not-allowed"
+                className="absolute left-2 top-2 z-10 size-8 cursor-grab touch-none text-muted-foreground active:cursor-grabbing disabled:cursor-not-allowed"
                 disabled={orderable.disabled}
                 ref={orderable.setActivatorNodeRef}
                 size="icon"
                 type="button"
                 variant="ghost"
+                onMouseDown={undefined}
+                onTouchStart={undefined}
               >
                 <GripVertical aria-hidden="true" className="size-4" />
               </Button>
-              <PageThumbnail page={page} />
-              <Caption className="mt-2 block text-center"><Strong>
-                Page {page.pageNumber}
-              </Strong></Caption>
+              <Button
+                aria-label={`Preview page ${page.pageNumber}`}
+                className="h-auto w-full cursor-grab touch-pan-y select-none flex-col gap-0 rounded-xl p-2 pt-12 active:cursor-grabbing"
+                disabled={disabled}
+                onClick={() => setPreviewPage(page.pageNumber)}
+                type="button"
+                variant="card-action"
+              >
+                <PageThumbnail page={page} />
+                <Caption className="mt-2 block text-center"><Strong>
+                  Page {page.pageNumber}
+                </Strong></Caption>
+              </Button>
             </div>
           )}
         />
@@ -343,12 +365,15 @@ export function PdfPagesSurface({
             const isSelected = selected?.has(page.pageNumber) ?? false;
             const locked = lockedPages?.has(page.pageNumber) ?? false;
             return (
-              <li className={PAGE_CLASSES} key={page.pageNumber}>
+              <li
+                className={`${PAGE_CLASSES} relative ${onToggle && isSelected ? "border-primary ring-1 ring-primary" : ""}`}
+                key={page.pageNumber}
+              >
                 {onToggle ? (
                   <button
                     aria-label={`${isSelected ? "Deselect" : "Select"} page ${page.pageNumber}`}
                     aria-pressed={isSelected}
-                    className="w-full rounded-lg p-1 text-center outline-none transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[selected=true]:bg-accent"
+                    className="w-full rounded-lg p-1 text-center outline-none transition enabled:hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                     data-selected={isSelected}
                     disabled={disabled || locked}
                     onClick={() => onToggle(page.pageNumber)}
@@ -368,11 +393,84 @@ export function PdfPagesSurface({
                     </Strong></Caption>
                   </>
                 )}
+                {onToggle && isSelected && (
+                  <CheckboxControl
+                    aria-hidden="true"
+                    checked
+                    className="pointer-events-none absolute right-3 top-3"
+                    tabIndex={-1}
+                  />
+                )}
               </li>
             );
           })}
         </ol>
       )}
+      {previewIndex >= 0 && (
+        <MediaPreview
+          open
+          onOpenChange={(open) => { if (!open) setPreviewPage(null); }}
+          title={`Page ${previewPage}`}
+          description={`Source PDF · Position ${previewIndex + 1} of ${pages.length}`}
+          viewportClassName="bg-card p-0 text-foreground sm:p-0"
+        >
+          <PdfViewer
+            className="h-full w-full min-w-0"
+            currentPage={previewIndex + 1}
+            fileName={`Page ${previewPage}`}
+            fit="page"
+            onPageChange={(position) => setPreviewPage(pages[position - 1]?.pageNumber ?? null)}
+            outline={pages.map((page, index) => ({ id: `page-${page.pageNumber}`, title: `Page ${page.pageNumber}`, page: index + 1 }))}
+            pageCount={pages.length}
+            pages={pages.map((page, index) => ({
+              pageNumber: index + 1,
+              width: page.pageWidth,
+              height: page.pageHeight,
+              content: <PdfPreviewPage page={page} requestThumbnails={requestThumbnails ?? (() => {})} active />,
+            }))}
+          />
+        </MediaPreview>
+      )}
     </WorkspaceSurface>
+  );
+}
+
+export function PdfPreviewPage({ page, requestThumbnails, active, alt }: {
+  page: ReturnType<typeof usePdfPageImages>[number];
+  requestThumbnails: (pages: readonly number[], renderWidth?: number) => void;
+  active: boolean;
+  alt?: string;
+}) {
+  const element = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const node = element.current;
+    if (!node || !active) return;
+    let visible = false;
+    const render = () => {
+      if (!visible) return;
+      const width = Math.min(PDF_PREVIEW_MAX_WIDTH, Math.ceil(node.getBoundingClientRect().width * window.devicePixelRatio / 64) * 64);
+      if (width > 0 && (!page.url || width > (page.renderWidth ?? 0))) {
+        requestThumbnails([page.pageNumber], width);
+      }
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      render();
+    }, { rootMargin: "200px" });
+    const resize = new ResizeObserver(render);
+    observer.observe(node);
+    resize.observe(node);
+    window.addEventListener("resize", render);
+    return () => {
+      observer.disconnect();
+      resize.disconnect();
+      window.removeEventListener("resize", render);
+    };
+  }, [active, page.pageNumber, page.url, page.renderWidth, requestThumbnails]);
+  return (
+    <div className="absolute inset-0" ref={element}>
+      {page.url ? <img alt={alt ?? `PDF page ${page.pageNumber}`} className="h-full w-full object-contain" src={page.url} />
+        : <Muted role="status">Rendering page {page.pageNumber}…</Muted>}
+    </div>
   );
 }

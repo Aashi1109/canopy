@@ -19,6 +19,7 @@ import {
   useState,
 } from "react";
 
+import { ImageConversionWorkspace } from "@/app/media/components/ImageConversionWorkspace";
 import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
 import { textInputFileIssue } from "@/components/FileInput";
 import { ResultSurface, type ResultSurfaceProps } from "@/components/ResultSurface";
@@ -49,6 +50,7 @@ export type WorkspacePrimaryAction = {
 } | null;
 
 export interface WorkspaceToolbarActions {
+  readonly primaryActionInWorkspace?: boolean;
   readonly afterExample?: ReactNode;
   readonly before?: ReactNode;
   readonly exampleIcon?: ReactNode;
@@ -316,6 +318,9 @@ function TextFileDropTarget({
 
 export function ToolWorkspace(props: WorkspaceProps & Pick<ResultSurfaceProps, "initialJsonView">) {
   if (props.spec.input.kind === "files") {
+    if (props.spec.input.engine === "image" && props.spec.category === "image-conversion") {
+      return <ImageConversionWorkspace {...props} />;
+    }
     return <FileProcessorWorkspace {...props} />;
   }
 

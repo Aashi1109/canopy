@@ -111,14 +111,14 @@ export async function assertRunnableFiles(
     );
     signal?.throwIfAborted();
     if (spec.input.kind === "files") {
-      const signature = validateMediaSignature(
-        prefix,
-        file.mime,
-        spec.input.engine === "pdf"
-          ? ["pdf"]
-          : ["jpeg", "png", "webp", "heic"],
-      );
+      const signature = validateMediaSignature(prefix, file.mime);
       if (!signature.ok) throw new ToolError(signature.code, signature.message);
+      const matchesEngine = spec.input.engine === "pdf"
+        ? signature.kind === "pdf"
+        : signature.kind !== "pdf";
+      if (!matchesEngine && (!limits.accept.trim() || !isAccepted(limits.accept, signature.mime, ""))) {
+        throw new ToolError("unsupported-type", "This file type is not supported by this tool.");
+      }
     } else if (detectMediaKind(prefix)) {
       const signature = validateMediaSignature(prefix, file.mime);
       if (!signature.ok) throw new ToolError(signature.code, signature.message);

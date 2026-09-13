@@ -105,3 +105,15 @@ test("worker file validation rejects a media file whose bytes have no valid sign
     (error) => error?.code === "invalid-signature",
   );
 });
+
+test("PDF tools accept explicitly declared watermark images but reject disguised images", async () => {
+  const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const image = createToolRunFile("logo", new File([png], "logo.png", { type: "image/png" }));
+  const document = createToolRunFile("pdf", new File(["%PDF-1.7"], "source.pdf", { type: "application/pdf" }));
+  await assertRunnableFiles({ input: filesInput({ engine: "pdf", accept: "application/pdf,image/jpeg,image/png" }) }, [document, image]);
+  const disguised = createToolRunFile("fake", new File([png], "fake.pdf", { type: "application/octet-stream" }));
+  await assert.rejects(
+    assertRunnableFiles({ input: filesInput({ engine: "pdf", accept: "application/pdf,.pdf" }) }, [disguised]),
+    (error) => error?.code === "unsupported-type",
+  );
+});

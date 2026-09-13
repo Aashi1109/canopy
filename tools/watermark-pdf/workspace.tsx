@@ -1,193 +1,125 @@
 "use client";
 
-/**
- * Page selection plus an approximate placement preview.
- *
- * The watermark image is the second input file — the spec already accepts two
- * files, so the generic intake picks it up and `run.worker.ts` reads it from
- * `input.files`; this surface only previews it. Everything else is a setting,
- * read here and edited through the settings panel.
- */
-
-import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
-import {
-  PdfPagesSurface,
-  pageExpression,
-  selectedPageNumbers,
-  usePdfPageImages,
-  type PdfPageImage,
-} from "@/components/PdfPagesSurface";
-import { workspaceFileId } from "@/components/FileInput";
-import { Stack } from "@/components/Stacks";
-import { WorkspaceSurface } from "@/components/Surfaces";
+import { Alert, AlertDescription, AlertTitle, Button, Caption, FieldLabel, Input } from "@smarttools/ui";
+import { useEffect, useId, useState } from "react";
+import { validateFileSelection } from "@/components/FileInput";
+import { PdfFileWorkspace, PdfPageSelectionOverlay } from "@/components/PdfFileWorkspace";
+import type { PdfPageImage } from "@/components/PdfPagesSurface";
+import { SettingsPanel } from "@/components/SettingsPanel";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
-import type { ToolPagePreview } from "@/lib/tool-framework/run";
-import { useEffect, useState } from "react";
+import { parsePageRange, validateImageSelection } from "@/lib/tool-framework/media/validation";
+import { parsePageSelection } from "@/lib/tool-framework/settings";
 
-const PAGES = "pages";
-const PDF_MIME = "application/pdf";
-/** Fractional inset of the anchor row and column, matching the run's margin. */
-const EDGE = "14%";
-const CENTER = "50%";
-const FAR_EDGE = "86%";
-
-function textOf(value: unknown, fallback: string): string {
-  return typeof value === "string" && value !== "" ? value : fallback;
+function selectedPages(value: unknown, pageCount: number): number[] {
+  const expression = (Array.isArray(value) ? value.join(",") : String(value ?? "all")).trim().toLowerCase();
+  if (expression === "odd" || expression === "even") {
+    const pages = parsePageSelection(expression, pageCount) as number[];
+    if (!pages.length) throw new Error("No pages match this selection. Choose pages in your PDF.");
+    return pages;
+  }
+  const result = parsePageRange(expression, pageCount);
+  if (!result.ok) throw new Error(result.message);
+  return result.pages;
 }
 
-function numberOf(value: unknown, fallback: number): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-}
-
-function anchor(position: string): { left: string; top: string } {
-  const [vertical, horizontal] = position.split("-");
-  return {
-    left: horizontal === "left" ? EDGE : horizontal === "right" ? FAR_EDGE : CENTER,
-    top: vertical === "top" ? EDGE : vertical === "bottom" ? FAR_EDGE : CENTER,
-  };
-}
-
-/** An object URL for the picked watermark image, revoked when it changes. */
-function useImageUrl(file: File | undefined): string | null {
-  const [url, setUrl] = useState<string | null>(null);
-  const fileKey = file ? `${workspaceFileId(file)}:${file.size}` : "";
-
-  useEffect(() => {
-    if (!file) {
-      setUrl(null);
-      return;
-    }
-    const next = URL.createObjectURL(file);
-    setUrl(next);
-    return () => URL.revokeObjectURL(next);
-    // `file` is read through `fileKey`, which is what actually changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fileKey]);
-
-  return url;
-}
-
-interface PlacementPreviewProps {
+function PlacementPreview({ imageUrl, page, settings }: {
   imageUrl: string | null;
   page: PdfPageImage;
   settings: WorkspaceProps["settings"];
-}
-
-function PlacementPreview({ imageUrl, page, settings }: PlacementPreviewProps) {
-  const asImage = textOf(settings.watermarkKind, "text") === "image";
-  const placement = anchor(textOf(settings.position, "bottom-center"));
-  const opacity = Math.max(0.05, numberOf(settings.opacity, 25) / 100);
-  const size = numberOf(settings.watermarkSize, 48);
-  const rotation = numberOf(settings.watermarkRotation, -30);
-
-  return (
-    <WorkspaceSurface
-      className="min-h-0"
-      contentClassName="place-items-center p-4"
-      description={`Approximate placement on page ${page.pageNumber}; the downloaded PDF is authoritative.`}
-      purpose="preview"
-      title="Watermark preview"
-    >
-      <div className="relative max-h-[340px] max-w-full overflow-hidden border border-border bg-white">
-        <img
-          alt={`Page ${page.pageNumber}`}
-          className="block max-h-[340px] w-auto"
-          src={page.url}
-          style={{ aspectRatio: `${page.pageWidth} / ${page.pageHeight}` }}
-        />
-        {asImage && imageUrl ? (
-          <img
-            alt="Watermark"
-            className="pointer-events-none absolute max-h-[45%] max-w-[45%] object-contain"
-            src={imageUrl}
-            style={{
-              ...placement,
-              opacity,
-              transform: `translate(-50%, -50%) rotate(${rotation}deg) scale(${Math.max(0.1, size / 100)})`,
-            }}
-          />
-        ) : (
-          <span
-            className="pointer-events-none absolute max-w-[85%] text-center font-bold text-foreground"
-            style={{
-              ...placement,
-              fontSize: `${Math.max(12, size / 2)}px`,
-              opacity,
-              transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-            }}
-          >
-            {asImage
-              ? "Add a JPG or PNG alongside the PDF"
-              : textOf(settings.watermarkText, "DRAFT")}
-          </span>
-        )}
-      </div>
-    </WorkspaceSurface>
-  );
-}
-
-interface WatermarkSurfaceProps {
-  disabled: boolean;
-  files: readonly File[];
-  inspecting: boolean;
-  onSettingChange: WorkspaceProps["onSettingChange"];
-  previews: readonly ToolPagePreview[];
-  settings: WorkspaceProps["settings"];
-}
-
-function WatermarkSurface({
-  disabled,
-  files,
-  inspecting,
-  onSettingChange,
-  previews,
-  settings,
-}: WatermarkSurfaceProps) {
-  const images = usePdfPageImages(previews);
-  const selected = selectedPageNumbers(settings[PAGES], images);
-  const imageUrl = useImageUrl(files.find((file) => file.type !== PDF_MIME));
-  const previewPage = images.find(({ pageNumber }) => selected.has(pageNumber));
-
-  return (
-    <Stack className="h-full">
-      <PdfPagesSurface
-        description="Only the selected pages receive the watermark."
-        disabled={disabled}
-        inspecting={inspecting}
-        onToggle={(pageNumber) => {
-          const next = new Set(selected);
-          if (!next.delete(pageNumber)) next.add(pageNumber);
-          onSettingChange(PAGES, pageExpression(next));
-        }}
-        pages={images}
-        selected={selected}
-        title="Pages to watermark"
-      />
-      {previewPage ? (
-        <PlacementPreview
-          imageUrl={imageUrl}
-          page={previewPage}
-          settings={settings}
-        />
-      ) : null}
-    </Stack>
+}) {
+  const [vertical, horizontal] = String(settings.position ?? "bottom-center").split("-");
+  const placement = {
+    left: horizontal === "left" ? "14%" : horizontal === "right" ? "86%" : "50%",
+    top: vertical === "top" ? "14%" : vertical === "bottom" ? "86%" : "50%",
+    opacity: Math.max(0.05, Number(settings.opacity ?? 25) / 100),
+    transform: `translate(-50%, -50%) rotate(${Number(settings.watermarkRotation ?? -30)}deg)`,
+  };
+  const size = Number(settings.watermarkSize ?? 48);
+  return settings.watermarkKind === "image" ? imageUrl && (
+    <img alt="Approximate watermark" className="pointer-events-none absolute h-auto" src={imageUrl}
+      style={{ ...placement, width: `${Math.max(1, Math.min(100, size))}%` }} />
+  ) : (
+    <span className="pointer-events-none absolute max-w-[85%] text-center font-bold text-foreground"
+      style={{ ...placement, fontSize: `${size / page.pageWidth * 100}cqw` }}>
+      {String(settings.watermarkText ?? "DRAFT")}
+    </span>
   );
 }
 
 export default function WatermarkPdfWorkspace(props: WorkspaceProps) {
-  return (
-    <FileProcessorWorkspace
-      {...props}
-      detail={({ disabled, inspecting, previews }) => (
-        <WatermarkSurface
-          disabled={disabled}
-          files={props.input.files}
-          inspecting={inspecting}
-          onSettingChange={props.onSettingChange}
-          previews={previews}
-          settings={props.settings}
-        />
-      )}
-    />
-  );
+  const document = props.input.files.find((file) => file.type === "application/pdf" || /\.pdf$/i.test(file.name));
+  const watermark = props.input.files.find((file) => file !== document);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [inputIssue, setInputIssue] = useState("");
+  const imageInputId = useId();
+  useEffect(() => {
+    setInputIssue("");
+    if (!watermark) { setImageUrl(null); return; }
+    const url = URL.createObjectURL(watermark);
+    setImageUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [document, watermark]);
+  if (props.spec.input.kind !== "files") return null;
+  const inputSpec = props.spec.input;
+  const { watermarkKind, ...watermarkFields } = props.spec.settings.fields;
+  const sourceSpec = { ...props.spec, input: { ...inputSpec, accept: "application/pdf", label: "PDF document", multiple: false, maxFiles: 1 } };
+  const updateFiles = (files: File[]) => {
+    const selection = validateFileSelection([], files, inputSpec);
+    setInputIssue(selection.issue);
+    if (!selection.issue) props.onInputChange({ ...props.input, files: selection.files });
+  };
+  return <PdfFileWorkspace
+    {...props}
+    spec={sourceSpec}
+    input={{ ...props.input, files: document ? [document] : [] }}
+    onInputChange={(input) => updateFiles([...input.files, ...(watermark ? [watermark] : [])])}
+    definitionKey="watermark-pdf"
+    optionsTitle="Watermark settings"
+    getPlan={(settings, pageCount) => {
+      const pages = selectedPages(settings.pages, pageCount);
+      if (settings.watermarkKind === "image") {
+        if (!watermark) throw new Error("Choose a JPG or PNG watermark image.");
+        const image = validateImageSelection([{ size: watermark.size }]);
+        if (!image.ok) throw new Error(image.message);
+      } else if (!String(settings.watermarkText ?? "").trim()) throw new Error("Enter watermark text.");
+      return {
+        title: `${pages.length} ${pages.length === 1 ? "page will" : "pages will"} receive a watermark`,
+        detail: "Placement is approximate. Apply the watermark and check the downloaded PDF. Your original stays unchanged.",
+      };
+    }}
+    pageClassName="rounded-lg border-0 [container-type:inline-size]"
+    renderPageOverlay={(page, pages) => {
+      let selection: number[];
+      try { selection = selectedPages(props.settings.pages, pages.length); } catch { selection = []; }
+      const selected = selection.includes(page.pageNumber);
+      return <>
+        {selected && <PlacementPreview imageUrl={imageUrl} page={page} settings={props.settings} />}
+        <PdfPageSelectionOverlay pageNumber={page.pageNumber} selected={selected} disabled={props.disabled}
+          onToggle={() => props.onSettingChange("pages", (selected ? selection.filter((number) => number !== page.pageNumber) : [...selection, page.pageNumber]).join(","))} />
+      </>;
+    }}
+    renderOptions={() => <>
+      <SettingsPanel disabled={props.disabled} onChange={props.onSettingChange} spec={{ fields: { watermarkKind } }} values={props.settings} />
+      {props.settings.watermarkKind === "image" && <div className="grid gap-2">
+        <FieldLabel htmlFor={imageInputId}>{watermark ? "Replace watermark image" : "Watermark image"}</FieldLabel>
+        <Input accept="image/jpeg,image/png" disabled={props.disabled} id={imageInputId} type="file"
+          onChange={(event) => {
+            const image = event.currentTarget.files?.[0];
+            event.currentTarget.value = "";
+            if (!image) return;
+            const selection = validateFileSelection([], [image], { ...inputSpec, accept: "image/jpeg,image/png", multiple: false, maxFiles: 1 });
+            const valid = validateImageSelection([{ size: image.size }]);
+            if (selection.issue || !valid.ok) { setInputIssue(selection.issue || (!valid.ok ? valid.message : "")); return; }
+            updateFiles([...(document ? [document] : []), image]);
+          }} />
+        <Caption className="text-muted-foreground">JPG or PNG · 25 MiB max · PDF and image combined: 50 MiB max</Caption>
+        {watermark && <div className="flex min-w-0 items-center gap-2">
+          <Caption className="min-w-0 flex-1 break-all">{watermark.name}</Caption>
+          <Button disabled={props.disabled} onClick={() => updateFiles(document ? [document] : [])} size="sm" variant="outline">Remove image</Button>
+        </div>}
+      </div>}
+      {inputIssue && <Alert variant="destructive"><AlertTitle>File not added</AlertTitle><AlertDescription>{inputIssue}</AlertDescription></Alert>}
+      <SettingsPanel disabled={props.disabled} onChange={props.onSettingChange} spec={{ fields: watermarkFields }} values={props.settings} />
+    </>}
+  />;
 }

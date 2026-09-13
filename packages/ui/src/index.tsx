@@ -38,6 +38,7 @@ import {
 import { EcosystemTabFilters } from "./components/EcosystemTabFilters.tsx";
 import { GlobalToolSearch } from "./components/GlobalToolSearch.tsx";
 import { ToolPageIntro } from "./components/patterns.tsx";
+import { ScrollAwareHeader } from "./components/ScrollAwareHeader.tsx";
 import { cn } from "./lib/utils.ts";
 
 export { DESIGN_SYSTEM_COMPONENTS } from "./design-system-manifest.ts";
@@ -276,7 +277,7 @@ export function ProductHeader({
   name: string;
 }) {
   return (
-    <header
+    <ScrollAwareHeader
       aria-label="SmartTools navigation"
       className={cn("border-b border-border bg-card print:hidden", className)}
       data-product-name={name}
@@ -317,7 +318,7 @@ export function ProductHeader({
           {actions}
         </div>
       </AppContainer>
-    </header>
+    </ScrollAwareHeader>
   );
 }
 
@@ -796,10 +797,10 @@ export function AlertBanner({
   variant?: AlertVariant;
 }) {
   const variants: Record<AlertVariant, string> = {
-    info: "border-transparent bg-accent text-foreground",
-    success: "border-transparent bg-success-soft text-foreground",
-    warning: "border-transparent bg-status-warning-soft text-foreground",
-    error: "border-transparent bg-status-danger-soft text-foreground",
+    info: "border-transparent bg-accent text-foreground [&>svg]:text-primary",
+    success: "border-transparent bg-success-soft text-foreground [&>svg]:text-success",
+    warning: "border-transparent bg-status-warning-soft text-foreground [&>svg]:text-status-warning",
+    error: "border-transparent bg-status-danger-soft text-foreground [&>svg]:text-status-danger",
   };
   const urgent = variant === "error";
   const icons = {

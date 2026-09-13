@@ -24,6 +24,7 @@ export default {
     accept: "application/pdf,.pdf",
     multiple: false,
     engine: "pdf",
+    inspect: true,
     maxFiles: 1,
     maxBytes: 104_857_600,
     maxTotalBytes: 104_857_600,
@@ -85,7 +86,7 @@ export default {
   workbenchMark: { text: "PDF-" },
   labels: {
     empty: "Drop one PDF (.pdf, up to 100 MiB) to compress it.",
-    ready: "The PDF and compression settings are ready.",
+    ready: "Your compressed PDF is ready to download.",
     running: "Compressing PDF…",
   },
   content: {

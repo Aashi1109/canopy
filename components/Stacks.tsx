@@ -27,6 +27,7 @@ import {
   type ReactNode,
   useEffect,
   useId,
+  useRef,
   useState,
 } from "react";
 
@@ -132,6 +133,8 @@ export type SplitStackProps = Omit<
   onSizeChange?: (size: number) => void;
   orientation?: SplitOrientation;
   resizable?: boolean;
+  /** Hides the secondary pane until content is available, preserving the primary workspace. */
+  secondaryHidden?: boolean;
   storageKey?: string;
 };
 
@@ -167,6 +170,7 @@ function SplitStack({
   onSizeChange,
   orientation = "horizontal",
   resizable = true,
+  secondaryHidden,
   storageKey,
   style,
   ...props
@@ -177,15 +181,28 @@ function SplitStack({
   const secondaryPaneId = `${splitId}-secondary`;
   const primaryPanelRef = usePanelRef();
   const secondaryPanelRef = usePanelRef();
+  const initialPrimarySize = useRef(secondaryHidden ? 100 : clamp(defaultSize, minSize, maxSize));
   const [size, setSize] = useState(() =>
     clamp(defaultSize, minSize, maxSize),
   );
   const [collapsed, setCollapsed] = useState<SplitCollapseSide | null>(
-    collapsible ? defaultCollapsed ?? null : null,
+    secondaryHidden ? "secondary" : collapsible ? defaultCollapsed ?? null : null,
   );
   const [animateCollapse, setAnimateCollapse] = useState(false);
   const narrow = useNarrowWorkbench();
   const stacked = orientation === "horizontal" && narrow;
+
+  useEffect(() => {
+    if (secondaryHidden === undefined) return;
+    setAnimateCollapse(true);
+    setCollapsed(secondaryHidden ? "secondary" : null);
+    if (!stacked) {
+      if (secondaryHidden) secondaryPanelRef.current?.collapse();
+      else secondaryPanelRef.current?.resize(`${100 - size}%`);
+    }
+    // Keep user-resized proportions; only availability or orientation changes move the pane.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [secondaryHidden, stacked, secondaryPanelRef]);
 
   useEffect(() => {
     if (!storageKey || stacked) return;
@@ -377,12 +394,12 @@ function SplitStack({
           collapsible={collapsible && collapseSide === "primary"}
           collapsedSize="0%"
           data-split-pane="primary"
-          defaultSize={collapsed === "secondary" ? "100%" : collapsed === "primary" ? "0%" : `${size}%`}
+          defaultSize={secondaryHidden !== undefined ? `${initialPrimarySize.current}%` : collapsed === "secondary" ? "100%" : collapsed === "primary" ? "0%" : `${size}%`}
           disabled={!resizable}
           id={primaryPaneId}
           inert={collapsed === "primary" || undefined}
           maxSize={
-            collapsible && collapseSide === "secondary"
+            secondaryHidden !== undefined || (collapsible && collapseSide === "secondary")
               ? "100%"
               : `${maxSize}%`
           }
@@ -397,16 +414,16 @@ function SplitStack({
               ? "Resize workspace panels"
               : "Resize workspace regions"
           }
-          className="z-20 focus-visible:ring-2"
-          disabled={!resizable}
+          className={cn("z-20 focus-visible:ring-2", secondaryHidden && "hidden")}
+          disabled={!resizable || secondaryHidden}
         />
         <ResizablePanel
           aria-hidden={collapsed === "secondary" || undefined}
           className="min-h-0 min-w-0 overflow-hidden"
-          collapsible={collapsible && collapseSide === "secondary"}
+          collapsible={secondaryHidden !== undefined || (collapsible && collapseSide === "secondary")}
           collapsedSize="0%"
           data-split-pane="secondary"
-          defaultSize={collapsed === "primary" ? "100%" : collapsed === "secondary" ? "0%" : `${100 - size}%`}
+          defaultSize={secondaryHidden !== undefined ? `${100 - initialPrimarySize.current}%` : collapsed === "primary" ? "100%" : collapsed === "secondary" ? "0%" : `${100 - size}%`}
           disabled={!resizable}
           id={secondaryPaneId}
           inert={collapsed === "secondary" || undefined}

@@ -16,6 +16,7 @@ export default {
   ],
   name: "Resize Image",
   description: "Resize images by pixels or percentage.",
+  optionsPanel: { collapsible: false },
   input: {
     kind: "files",
     label: "Add images to resize",
@@ -120,7 +121,7 @@ export default {
   labels: {
     empty:
       "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF files (25 MiB each) to resize them.",
-    ready: "The images and resize settings are ready.",
+    ready: "Your resized images are ready to download.",
     running: "Resizing the images…",
   },
   content: {

@@ -279,6 +279,7 @@ export type FileIntakeSurfaceProps = Omit<
   accept?: string;
   disabled?: boolean;
   intakeDescription?: ReactNode;
+  intakeHint?: ReactNode;
   intakeIcon?: ReactNode;
   intakeTitle: string;
   maxFiles?: number;
@@ -290,6 +291,7 @@ function FileIntakeSurface({
   accept,
   disabled = false,
   intakeDescription,
+  intakeHint,
   intakeIcon,
   intakeTitle,
   maxFiles,
@@ -330,12 +332,9 @@ function FileIntakeSurface({
           type="file"
         />
         <FileUploadZone
-          description={
-            intakeDescription ??
-            (multiple
-              ? "Drop files here or choose them from your device."
-              : "Drop a file here or choose it from your device.")
-          }
+          className="max-w-[500px]"
+          description={intakeDescription}
+          hint={intakeHint ?? (multiple ? "Click to browse, or drop files here" : "Click to browse, or drop a file here")}
           disabled={disabled}
           icon={intakeIcon}
           onClick={() => inputRef.current?.click()}

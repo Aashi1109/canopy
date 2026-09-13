@@ -99,7 +99,7 @@ export async function encodeImage(
   format: OutputImageFormat,
   quality = 0.8,
   background = "#ffffff",
-  pngEffort = 6,
+  pngEffort = 0,
 ): Promise<ArrayBuffer> {
   if (format === "jpeg") {
     const { encode } = await import("@jsquash/jpeg");
@@ -111,11 +111,11 @@ export async function encodeImage(
     const { encode } = await import("@jsquash/webp");
     return encode(image, { quality: Math.round(clamp(quality, 0.01, 1) * 100) });
   }
-  const [{ encode }, { optimise }] = await Promise.all([
-    import("@jsquash/png"),
-    import("@jsquash/oxipng"),
-  ]);
+  const { encode } = await import("@jsquash/png");
   const encoded = await encode(image);
+  // Conversion is already lossless; only explicit compression needs another pass.
+  if (pngEffort <= 0) return encoded;
+  const { optimise } = await import("@jsquash/oxipng");
   return optimise(encoded, {
     level: Math.min(6, Math.max(1, Math.round((pngEffort * 2) / 3))),
     interlace: false,

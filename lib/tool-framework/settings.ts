@@ -57,6 +57,7 @@ export type FieldSpec =
       max?: number;
       step?: number;
       suffix?: string;
+      leadingIcon?: "rotate-cw";
     })
   | (Base & {
       kind: "slider";
@@ -80,7 +81,7 @@ export type FieldSpec =
   | (Base & { kind: "color"; default: string; allowTransparent?: boolean })
   | (Base & { kind: "date"; default: string })
   | (Base & { kind: "position"; default: WatermarkPosition })
-  | (Base & { kind: "pages"; default: PageSelection })
+  | (Base & { kind: "pages"; default: PageSelection; presets?: boolean })
   | (Base & {
       kind: "rows";
       default: readonly SettingRow[];

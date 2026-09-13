@@ -31,16 +31,15 @@ export function useFileDownload(file: StoredToolArtifact) {
   return { download, downloading, error };
 }
 
-export function ArtifactDownloadButton({ file }: { file: StoredToolArtifact }) {
+export function ArtifactDownloadButton({ file, label = "Download" }: { file: StoredToolArtifact; label?: string }) {
   const { download, downloading, error } = useFileDownload(file);
   return (
     <div className="flex flex-col items-end gap-1">
-      <Button aria-label={`${error ? "Retry download" : "Download"} ${file.name}`} disabled={downloading} onClick={() => void download()}>
+      <Button aria-label={`${error ? "Retry download" : label} ${file.name}`} disabled={downloading} onClick={() => void download()}>
         <Download aria-hidden="true" />
-        {downloading ? "Preparing…" : error ? "Retry download" : "Download"}
+        {downloading ? "Preparing…" : error ? "Retry download" : label}
       </Button>
       {error && <p className="max-w-48 text-sm text-destructive" role="alert">{error}</p>}
     </div>
   );
 }
-

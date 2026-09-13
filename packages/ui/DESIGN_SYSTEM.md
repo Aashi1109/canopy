@@ -1,6 +1,14 @@
 # SmartTools Design System
 
+`SegmentedControl size="field"` is the full-width setting selector: equal-width segments, 4px track inset, and 37px minimum segment height (45px total). Labels may wrap at narrow widths. Use it for field-sized segmented choices; existing `inline` and `navigation` sizes are unchanged. Image conversion uses the shared Select labeled “Output format” as its last setting, with alphabetically ordered format options.
+
 `@smarttools/ui` — the shared visual layer for every SmartTools surface in this repo.
+
+### Crop PDF control and completion patterns
+
+- `Input` accepts decorative `leadingIcon` and `suffix` slots. Keep a visible associated label; adornments are hidden from assistive technology. Compact workbench density preserves space for both slots.
+- `DownloadResult variant="action"` is the flat, divided completion area below retained settings: success identity and metadata, then a full-width download action. The default `card` variant is unchanged.
+- Crop PDF composes the shared PDF workspace/viewer, exact-point fields, review, generated PDF preview, and Edit crop / Crop another PDF recovery. Editing retains the source and settings; completing replaces the run action rather than adding another result panel.
 
 **Status:** internal, unversioned (`private: true`, `version: 0.0.0`). Consumed as workspace source, not a published build.
 **Design source of truth:** `designs/design.pen` + `designs/SYSTEM.lib.pen` (Pencil).
@@ -221,7 +229,7 @@ So headings and focus rings are correct without any class. Do not re-declare the
 | --- | --- | --- |
 | `AppContainer` | `index.tsx` | — |
 | `BrandLockup` | `index.tsx` | req `href`, `name` |
-| `ProductHeader` | `index.tsx` | `compact?: boolean` (72px vs 88px) |
+| `ProductHeader` | `index.tsx` | `compact?: boolean` (72px vs 88px); main navbar uses `ScrollAwareHeader` to hide after 20px downward travel and reveal after 10px upward travel; stays visible within one header height of the top, during focus, and while a menu is expanded; 350ms gentle exit / 300ms entrance, immediate keyboard reveal and no animation with reduced motion; passive frame-batched scrolling updates only the header attribute, never rerendering children; nested tool scrolling and Admin chrome are unaffected |
 | `AccountNavigation` | `index.tsx` | req `returnTo`, `user \| null` |
 | `UniversalProductHeader` | `patterns.tsx` | req `category`, `description`, `icon`, `title` |
 | `InlineProductHeader` | `patterns.tsx` | req `description`, `icon`, `title` |
@@ -313,7 +321,7 @@ Place `InlineTextEditor` inside the appropriate typography component, such as `H
 | `WorkbenchShell` | `design-system-components.tsx` | `variant: json \| conversion \| media \| utility` (elevation only); req `toolbar` |
 | `JsonFormatterWorkbench` / `DataConversionWorkbench` / `UtilityWorkbench` | same | pre-bound `WorkbenchShell` variants |
 | `ToolPageSystemControls` | same | all-optional slots: `children`, `preferences`, `actions` |
-| `FileUploadZone` | `patterns.tsx` | req `description`, `title`; renders a `<button>` |
+| `FileUploadZone` | `patterns.tsx` | req `title`; optional `description` for formats/limits and `hint` for browse/drop guidance; centered content, 240px minimum height (Pencil `oFvm5`); renders a `<button>` |
 | `FileQueueItem` | `patterns.tsx` | req `metadata`, `name` |
 | `DownloadResult` / `RightPanelResult` | `patterns.tsx` | req `metadata`, `title` |
 | `ToolOptionsPanel` | `patterns.tsx` | `variant: card \| plain` |
@@ -329,21 +337,51 @@ Stateful, own external dependency. Treat as leaf components; do not clone.
 | Component | Source | Notes |
 | --- | --- | --- |
 | `ChapterScrubber` | `ChapterScrubber.tsx` | `motion/react` dock-wave; `density: compact \| default`, `side: left \| right`; hover previews stay open across the gap and select the chapter on click or Enter/Space; Escape dismisses |
-| `OrderableList<Item>` | `OrderableList.tsx` | `@dnd-kit`; `layout: grid \| vertical`; full drag announcements + keyboard sensor |
-| `PdfViewer` | `PdfViewer.tsx` | composes `ChapterScrubber` + `Button`; outline starts collapsed, fits content up to 35% of viewer width, and uses a Morphicons hamburger-to-X toggle with a synchronized 280ms outline/PDF width transition with stable outline content (respects reduced motion); Show outline focuses search, Escape closes and restores toggle focus; 100% zoom fills available page width, zoom clamped 50–200, step 10; optional `pages` enables continuous scrolling with page/outline sync; optional `onExpand` opens a caller-owned full-screen preview |
+| `OrderableList<Item>` | `OrderableList.tsx` | `@dnd-kit`; `layout: grid \| vertical`; `dragSurface: handle` (default) or `card` (mouse drag / 200ms touch hold preserving swipe scrolling); full drag announcements + keyboard sensor |
+| `PdfViewer` | `PdfViewer.tsx` | composes `ChapterScrubber` + `Button`; outline starts collapsed, fits content up to 35% of viewer width, and uses a Morphicons hamburger-to-X toggle with a synchronized 280ms outline/PDF width transition with stable outline content (respects reduced motion); Show outline focuses search, Escape closes and restores toggle focus; 100% zoom fills available page width by default; `fit="page"` fits each complete page inside the viewport at 100%; zoom clamped 50–200, step 10; optional `pages` enables continuous scrolling with page/outline sync; `pageClassName` styles the clipping frame when a tool owns its page selection border; optional `onExpand` opens a caller-owned full-screen preview; `fileSize` adds size to page metadata and `rightChildren` places tool actions beside zoom controls |
 | `MediaPreview` | `MediaPreview.tsx` | `Is1Pt`; controlled full-screen Radix dialog; media-agnostic `children`, optional header `actions` before Exit preview, `controls`, `status`, `hint` slots; Escape/exit, focus trap and return focus |
+
+### PDF file workspaces
+
+`components/FileProcessorWorkspace.tsx` keeps the input full-width until a result
+exists. `SplitStack.secondaryHidden` preserves the input while revealing the
+resizable output pane from the right (without animation under reduced motion).
+On mobile the output follows the input. Progress, cancellation, validation, and
+errors remain visible in the input area before a result is available.
+Single-PDF results use `GeneratedPdfPreview` in the output pane, with the file's
+download action beneath it and a full-screen preview available from Expand.
+
+`components/PdfFileWorkspace.tsx` supplies the shared Split PDF and Extract PDF
+Pages shell: centered intake, source `PdfViewer`, right-side settings, and the
+primary action above one plan/processing/download status slot. Tools supply the
+plan and page overlays. `PdfPageSelectionOverlay` gives Extract and Watermark
+the same whole-page selection button, primary outline, and small checkmark. A single
+PDF uses `DownloadResult`; multiple PDFs keep individual downloads below the ZIP
+download card. The card's download action stays inline with its metadata.
+Page settings can opt into `presets` to use the shared `Select` for All pages,
+Odd pages, Even pages, or Custom ranges, with a range input only for custom
+selection. Watermark uses this pattern; preview selection updates the same value.
 
 ### Generated media output cards
 
-`MediaOutputCard` combines a contained preview, filename/size row, and a joined
-Preview/Download footer inside one bordered card. Its `children` supplies the
-preview; `onPreview`, `onDownload`, `downloading`, and `error` are caller-owned.
-The `card-action` Button variant provides the integrated, square-edged controls.
+`MediaOutputCard` matches the Nswh4/US7ym image cards: an inset, aspect-preserving
+square preview, stacked filename/format/size, and always-visible top-right
+Preview and Download (or Remove) icon buttons with shared accessible tooltips.
+Its `children` supplies the preview; `onPreview`, `onDownload`, `onRemove`,
+`disabled`, `downloading`, and `error` are caller-owned. Existing output callers
+remain supported. Remove is disabled during processing; preview stays available.
+Long filenames wrap rather than depending on native title attributes.
 
-`components/MediaOutputGallery.tsx` consumes stored image artifacts in the Media
-result panel. Only its grid scrolls; the archive download and result facts remain
-outside that scroll area. Thumbnails load near the viewport and release their
-object URLs offscreen. Per-file downloads use the actual generated bytes, not
+`components/MediaOutputGallery.tsx` exports `MediaOutputGallery({ files })` for
+stored image artifacts and `MediaInputGallery({ files, onRemove, disabled? })`
+for `readonly File[]`. Removal passes the original File object to its owner.
+Both reuse the current full-screen preview dialog; source previews offer Remove,
+not Download. HEIC/HEIF decoding is attempted natively; failures explain the
+browser limitation without claiming the file cannot be converted. Failed previews
+open the dialog for retry; failed downloads retain a retry action.
+Only the grid scrolls; archive download and result facts remain outside it.
+Thumbnails load near the viewport and retain URLs until unmount or file change;
+all URLs are revoked on replacement, retry, or unmount, including dialog URLs. Per-file downloads use the actual generated bytes, not
 thumbnail captures. Preview uses `MediaPreview` with a translucent blurred backdrop,
 a scrollable square thumbnail rail, and view-only fit/zoom/pan controls. Rail labels
 remain accessible without adding visible filenames or an Images toggle.

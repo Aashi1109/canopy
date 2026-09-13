@@ -45,7 +45,7 @@ function SegmentedControl({
   ...props
 }: Omit<ComponentProps<typeof Tabs>, "children"> & {
   items: readonly SegmentedControlItem[]
-  size?: "inline" | "navigation"
+  size?: "inline" | "navigation" | "field"
 }) {
   return (
     <Tabs
@@ -54,13 +54,15 @@ function SegmentedControl({
       data-slot="segmented-control"
       {...props}
     >
-      <TabsList className={size === "inline" ? "h-8 p-0" : undefined} variant="segmented">
+      <TabsList className={size === "inline" ? "h-8 p-0" : size === "field" ? "w-full min-w-0 items-stretch p-1" : undefined} variant="segmented">
         {items.map((item) => (
           <TabsTrigger
             className={
               size === "inline"
                 ? "h-8 px-2.5 py-0 before:absolute before:inset-x-0 before:-inset-y-1.5"
-                : undefined
+                : size === "field"
+                  ? "min-h-[37px] min-w-0 basis-0 whitespace-normal px-2! py-2.5! font-semibold leading-[17px]"
+                  : undefined
             }
             disabled={item.disabled}
             key={item.value}
@@ -115,7 +117,7 @@ function WorkbenchShell({
       className={cn(
         "flex h-[calc(100dvh-4.5rem)] min-h-0 w-full flex-col overflow-hidden rounded-xl border border-input bg-card",
         "[&_[data-slot=button]:not([data-variant=card-action])]:h-8 [&_[data-slot=button]:not([data-variant=card-action])]:min-h-8 [&_[data-slot=button]:not([data-variant=card-action])]:gap-1.5 [&_[data-slot=button]:not([data-variant=card-action])]:rounded-lg [&_[data-slot=button]:not([data-variant=card-action])]:px-2.5 [&_[data-slot=button][data-size^=icon]]:size-8 [&_[data-slot=button][data-size^=icon]]:px-0 [&_[data-slot=button]_svg:not([class*=size-])]:size-3.5",
-        "[&_[data-slot=input]]:h-8 [&_[data-slot=input]]:min-h-8 [&_[data-slot=input]]:px-2.5",
+        "[&_[data-slot=input]]:h-8 [&_[data-slot=input]]:min-h-8 [&_[data-slot=input]:not([data-leading-icon])]:pl-2.5 [&_[data-slot=input]:not([data-suffix])]:pr-2.5",
         "[&_[data-slot=select-trigger]]:h-8 [&_[data-slot=select-trigger]]:min-h-8 [&_[data-slot=select-trigger]]:px-2.5 [&_[data-slot=select-trigger]>svg]:size-3.5",
         "[&_[data-slot=workbench-status]_[role=status]>span.text-success]:text-foreground",
         variant === "media" ? "shadow-sm" : variant === "conversion" ? "shadow-md" : "shadow-lg",

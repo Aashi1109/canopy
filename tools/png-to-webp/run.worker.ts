@@ -40,6 +40,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     {
       archiveName: createOutputFilename(ctx.input.files[0].name, "zip", "converted"),
       count: total,
+      retainEntries: true,
     },
     async (write) => {
       for (let index = 0; index < total; index += 1) {
@@ -63,7 +64,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     render: "files",
     files,
     inputBytes: ctx.input.files.reduce((sum, file) => sum + file.size, 0),
-    outputBytes: files.reduce((sum, output) => sum + output.size, 0),
+    outputBytes: files[0].size,
   };
 };
 

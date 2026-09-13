@@ -129,7 +129,7 @@ For code changes:
 1. Run the smallest relevant test while iterating.
 2. Run `pnpm test`.
 3. Run `pnpm lint`.
-4. Run `pnpm build` when runtime, routing, dependency, or configuration behavior changed. Else not for every minor changes.
+4. Never run `pnpm build` unless asked or something type error or issue come in project which may affect build.
 5. Run the affected package's own checks when shared packages changed.
 6. Finish with `git diff --check` and `git status --short`; inspect all changed and untracked files.
 

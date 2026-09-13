@@ -27,10 +27,14 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
  * with the same `invalid-crop` message, so correctness is unchanged; only the
  * pre-run hint is coarser.
  */
-export const validate: ToolValidate<Settings> = (settings) =>
-  settings.cropWidth <= 0 || settings.cropHeight <= 0
+export const validate: ToolValidate<Settings> = (settings) => {
+  if ([settings.cropX, settings.cropY, settings.cropWidth, settings.cropHeight].some(value => !Number.isInteger(value))) {
+    return "Enter whole-number points for Left, Bottom, Width, and Height.";
+  }
+  return settings.cropWidth <= 0 || settings.cropHeight <= 0
     ? "Width and Height must be greater than zero."
     : null;
+};
 
 /**
  * Replaces `applyPdfInspection`'s `crop-pdf` arms
@@ -41,8 +45,8 @@ export const onPagesInspected: ToolPagesInspected<Settings> = (previews) => {
   if (previews.length === 0) return { pages: "all" };
   return {
     pages: "all",
-    cropWidth: Math.min(...previews.map(({ pageWidth }) => pageWidth)),
-    cropHeight: Math.min(...previews.map(({ pageHeight }) => pageHeight)),
+    cropWidth: Math.floor(Math.min(...previews.map(({ pageWidth }) => pageWidth))),
+    cropHeight: Math.floor(Math.min(...previews.map(({ pageHeight }) => pageHeight))),
   };
 };
 
@@ -85,7 +89,7 @@ export const onSettingsChanged: ToolSettingsChanged<Settings> = (
     ...selected.map(({ pageHeight }) => Math.max(1, pageHeight - settings.cropY)),
   );
   return {
-    cropWidth: Math.min(settings.cropWidth, maxWidth),
-    cropHeight: Math.min(settings.cropHeight, maxHeight),
+    cropWidth: Math.floor(Math.min(settings.cropWidth, maxWidth)),
+    cropHeight: Math.floor(Math.min(settings.cropHeight, maxHeight)),
   };
 };

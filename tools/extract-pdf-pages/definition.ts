@@ -25,7 +25,7 @@ export default {
       pages: {
         kind: "pages",
         label: "Pages",
-        help: "The pages to keep, such as 1-3,5,8. They are written out in the order you list them.",
+        help: "Click pages in the preview to select or deselect them, or enter pages such as 1-3,5,8. They are written out in the order you list them.",
         default: [1],
       },
     },
@@ -35,7 +35,7 @@ export default {
   workbenchMark: { text: "PGX" },
   labels: {
     empty: "Drop one PDF (.pdf, up to 50 MiB) to extract selected pages.",
-    ready: "The PDF and page selection are ready.",
+    ready: "Your extracted PDF is ready to download.",
     running: "Extracting pages…",
   },
   content: {

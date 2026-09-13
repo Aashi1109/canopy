@@ -55,7 +55,7 @@ export default {
         kind: "toggle",
         label: "Bundle as ZIP",
         help: "Add a ZIP archive while keeping the individual PDF downloads.",
-        default: false,
+        default: true,
       },
     },
   },
@@ -64,7 +64,7 @@ export default {
   workbenchMark: { text: "P|P", tone: "contrast" },
   labels: {
     empty: "Drop one PDF (up to 50 MiB) to split by page, interval, or range.",
-    ready: "The PDF and split settings are ready.",
+    ready: "Your split PDFs are ready to download.",
     running: "Splitting PDF…",
   },
   content: {

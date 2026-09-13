@@ -15,6 +15,7 @@ export default {
     accept: "application/pdf,.pdf",
     multiple: false,
     engine: "pdf",
+    inspect: true,
     maxFiles: 1,
     maxBytes: 52_428_800,
     maxTotalBytes: 52_428_800,
@@ -60,7 +61,7 @@ export default {
   workbenchMark: { text: "#+" },
   labels: {
     empty: "Drop one PDF (.pdf, up to 50 MiB) to add page numbers.",
-    ready: "The PDF and page number settings are ready.",
+    ready: "Your numbered PDF is ready to download.",
     running: "Adding page numbers…",
   },
   content: {

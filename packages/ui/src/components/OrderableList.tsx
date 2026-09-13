@@ -4,7 +4,9 @@ import {
   closestCenter,
   DndContext,
   KeyboardSensor,
+  MouseSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -34,6 +36,7 @@ type OrderableListProps<Item> = {
   ariaLabel: string;
   className?: string;
   disabled?: boolean;
+  dragSurface?: "handle" | "card";
   getId: (item: Item) => string;
   getLabel?: (item: Item) => string;
   items: readonly Item[];
@@ -85,6 +88,7 @@ export function OrderableList<Item>({
   ariaLabel,
   className,
   disabled = false,
+  dragSurface = "handle",
   getId,
   getLabel,
   items,
@@ -92,9 +96,14 @@ export function OrderableList<Item>({
   onReorder,
   renderItem,
 }: OrderableListProps<Item>) {
+  const pointer = useSensor(PointerSensor, { activationConstraint: { distance: 6 } });
+  const mouse = useSensor(MouseSensor, { activationConstraint: { distance: 6 } });
+  const touch = useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } });
+  const keyboard = useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates });
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    dragSurface === "card" ? mouse : pointer,
+    dragSurface === "card" ? touch : undefined,
+    keyboard,
   );
   const ids = items.map(getId);
   const labels = new Map(
