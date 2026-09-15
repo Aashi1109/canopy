@@ -11,6 +11,9 @@ test-results/
 !.env.example
 
 .next/
+.open-next/
+.wrangler/
+.dev.vars*
 next-env.d.ts
 .pnpm-store/
 .codegraph

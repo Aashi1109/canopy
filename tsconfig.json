@@ -14,6 +14,8 @@
   ],
   "exclude": [
     ".next",
+    ".open-next",
+    ".wrangler",
     "node_modules"
   ]
 }

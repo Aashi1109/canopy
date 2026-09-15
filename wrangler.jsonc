@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "smarttools",
+  "main": "worker.ts",
+  "compatibility_date": "2026-09-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "minify": true,
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "smarttools.lol", "custom_domain": true }
+  ],
+  "hyperdrive": [
+    { "binding": "HYPERDRIVE", "id": "1aebf4d16f0b489b99de75318cdd610d" }
+  ],
+  "vars": {
+    "APP_URL": "https://smarttools.lol"
+  },
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "smarttools"
+    }
+  ],
+  "keep_vars": true,
+  "observability": {
+    "enabled": true
+  }
+}

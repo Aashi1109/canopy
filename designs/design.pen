@@ -134797,6 +134797,1421 @@
           "fontWeight": "normal"
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "XJ0ds",
+      "x": 141327,
+      "y": -30872,
+      "name": "Crop image / Freeform points — existing webpage layout",
+      "context": "Screenshot-matched existing crop webpage layout. Scope: freeform quadrilateral crop points, not rectangular resize handles. Point 2 is shown during an independent drag; the other three points stay fixed. Edges follow points live; outside region is masked. Four points are constrained to source bounds and cannot cross. Dragging inside translates the whole selection. Arrow keys nudge the selected point, Esc restores pre-drag position. X/Y edit the selected point; bounds are read-only. PNG output retains transparency outside the polygon. Proposal requires polygon masking support; current rectangular crop implementation does not implement this. Mountain image is a substitute sample; user screenshot photograph was not available as a reusable asset.",
+      "clip": true,
+      "width": 1864,
+      "height": 1080,
+      "fill": "$surface",
+      "cornerRadius": 16,
+      "stroke": "$border-strong",
+      "strokeWidth": 1,
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "FufnA",
+          "name": "Existing top toolbar",
+          "width": "fill_container",
+          "height": 70,
+          "stroke": "$border-subtle",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "padding": [
+            12,
+            28
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon",
+              "id": "FXhgS",
+              "name": "Crop image tool icon",
+              "width": 26,
+              "height": 26,
+              "icon": "crop",
+              "library": "lucide",
+              "fill": "$accent"
+            },
+            {
+              "id": "RuIxH",
+              "type": "ref",
+              "ref": "o5XSq",
+              "name": "Reset",
+              "descendants": {
+                "Y4AAX": {
+                  "content": "Reset"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "BUBmn",
+          "type": "ref",
+          "ref": "Ouh59",
+          "name": "SmartTools navigation",
+          "width": 1392,
+          "enabled": false
+        },
+        {
+          "type": "text",
+          "id": "rntfT",
+          "x": 24,
+          "y": 132,
+          "name": "Stage",
+          "enabled": false,
+          "fill": "$accent-text",
+          "textGrowth": "fixed-width",
+          "width": 1392,
+          "content": "02 / FRAME YOUR IMAGE",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 12,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "E0t4J9",
+          "x": 24,
+          "y": 169,
+          "name": "Title",
+          "enabled": false,
+          "fill": "$fg-primary",
+          "textGrowth": "fixed-width",
+          "width": 1392,
+          "content": "Crop image",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 30,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "c22RxH",
+          "x": 24,
+          "y": 231,
+          "name": "Description",
+          "enabled": false,
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": 1392,
+          "content": "Keep what matters. Drag the frame to move it, or use the handles to trim the edges.",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 15,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "CvejR",
+          "name": "Crop workspace",
+          "clip": true,
+          "width": "fill_container",
+          "height": 952,
+          "fill": "$surface",
+          "stroke": "$border-strong",
+          "children": [
+            {
+              "type": "frame",
+              "id": "xcC3R",
+              "name": "Direct crop editor",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "f00Qna",
+                  "name": "Compact file and recovery toolbar",
+                  "width": "fill_container",
+                  "height": 64,
+                  "stroke": "$border-subtle",
+                  "strokeWidth": {
+                    "bottom": 1
+                  },
+                  "gap": 12,
+                  "padding": [
+                    10,
+                    22
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Yqb6I",
+                      "name": "Source thumbnail",
+                      "width": 36,
+                      "height": 36,
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1777619559788-91963b6e314c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3ODkzMjI2MzN8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      },
+                      "cornerRadius": "$r-sm"
+                    },
+                    {
+                      "type": "text",
+                      "id": "qHTX2",
+                      "name": "Selected filename",
+                      "fill": "$fg-primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "mountain-lake.jpg · 1.4 MB",
+                      "lineHeight": 1.4,
+                      "fontFamily": "$font-body",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ErCfW",
+                      "x": 22,
+                      "y": 22,
+                      "name": "Source file",
+                      "enabled": false,
+                      "fill": "$fg-primary",
+                      "textGrowth": "fixed-width",
+                      "width": 120,
+                      "content": "SELECTED FILES",
+                      "lineHeight": 1.4,
+                      "fontFamily": "$font-body",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "id": "v0j1d",
+                      "type": "ref",
+                      "ref": "o5XSq",
+                      "name": "Replace image",
+                      "descendants": {
+                        "Y4AAX": {
+                          "content": "↑  Replace"
+                        }
+                      }
+                    },
+                    {
+                      "id": "nLOry",
+                      "type": "ref",
+                      "ref": "LYbwR",
+                      "name": "Remove image",
+                      "descendants": {
+                        "Sha4x": {
+                          "icon": "x"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "uEsJK",
+                  "x": 0,
+                  "y": 64,
+                  "name": "Selected source file",
+                  "enabled": false,
+                  "width": 1304,
+                  "height": 0,
+                  "stroke": "$border-subtle",
+                  "strokeWidth": {
+                    "bottom": 1
+                  },
+                  "gap": 16,
+                  "padding": [
+                    16,
+                    22
+                  ],
+                  "alignItems": "center"
+                },
+                {
+                  "type": "frame",
+                  "id": "ujs6x",
+                  "name": "Inline crop guidance",
+                  "width": "fill_container",
+                  "height": 36,
+                  "stroke": "$border-subtle",
+                  "layout": "vertical",
+                  "padding": [
+                    8,
+                    22
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Tscwa",
+                      "x": 22,
+                      "y": 18,
+                      "name": "Preview label",
+                      "enabled": false,
+                      "fill": "$fg-primary",
+                      "content": "CROP PREVIEW",
+                      "fontFamily": "$font-body",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "hw5ys",
+                      "name": "Freeform drag instructions",
+                      "fill": "$fg-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Drag points to shape the crop · Drag inside to move it",
+                      "fontFamily": "$font-body",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ECbEG",
+                  "name": "Image and crop selection",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "$surface",
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "g5aHy",
+                      "x": 280,
+                      "y": 24,
+                      "name": "Original image — 2400 by 1600",
+                      "width": 744,
+                      "height": 466,
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1777619559788-91963b6e314c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3ODkzMjI2MzN8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      },
+                      "stroke": "#0000001A",
+                      "strokeWidth": 1,
+                      "layout": "none",
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "id": "T11UrF",
+                          "x": 0,
+                          "y": 0,
+                          "name": "Top excluded area",
+                          "enabled": false,
+                          "fill": "#00000080",
+                          "width": 792,
+                          "height": 66
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "dGeoX",
+                          "x": 0,
+                          "y": 462,
+                          "name": "Bottom excluded area",
+                          "enabled": false,
+                          "fill": "#00000080",
+                          "width": 792,
+                          "height": 66
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "roGw7",
+                          "x": 0,
+                          "y": 66,
+                          "name": "Left excluded area",
+                          "enabled": false,
+                          "fill": "#00000080",
+                          "width": 99,
+                          "height": 396
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "rFEVJ",
+                          "x": 693,
+                          "y": 66,
+                          "name": "Right excluded area",
+                          "enabled": false,
+                          "fill": "#00000080",
+                          "width": 99,
+                          "height": 396
+                        },
+                        {
+                          "type": "frame",
+                          "id": "I7Dlf9",
+                          "x": 99,
+                          "y": 66,
+                          "name": "Crop frame — move or resize",
+                          "enabled": false,
+                          "width": 594,
+                          "height": 396,
+                          "stroke": "$accent",
+                          "strokeWidth": 2,
+                          "layout": "none",
+                          "children": [
+                            {
+                              "type": "rectangle",
+                              "id": "FYpCW",
+                              "x": 198,
+                              "y": 0,
+                              "name": "Thirds vertical",
+                              "fill": "#FFFFFF66",
+                              "width": 1,
+                              "height": 396
+                            },
+                            {
+                              "type": "rectangle",
+                              "id": "xlm7x",
+                              "x": 396,
+                              "y": 0,
+                              "name": "Thirds vertical",
+                              "fill": "#FFFFFF66",
+                              "width": 1,
+                              "height": 396
+                            },
+                            {
+                              "type": "rectangle",
+                              "id": "mFczr",
+                              "x": 0,
+                              "y": 132,
+                              "name": "Thirds horizontal",
+                              "fill": "#FFFFFF66",
+                              "width": 594,
+                              "height": 1
+                            },
+                            {
+                              "type": "rectangle",
+                              "id": "KT7b0",
+                              "x": 0,
+                              "y": 264,
+                              "name": "Thirds horizontal",
+                              "fill": "#FFFFFF66",
+                              "width": 594,
+                              "height": 1
+                            },
+                            {
+                              "type": "rectangle",
+                              "cornerRadius": 2,
+                              "id": "c2b6w",
+                              "x": -5,
+                              "y": -5,
+                              "name": "Resize handle — 44px interaction target",
+                              "fill": "$surface",
+                              "width": 10,
+                              "height": 10,
+                              "stroke": "$accent",
+                              "strokeWidth": 2
+                            },
+                            {
+                              "type": "rectangle",
+                              "cornerRadius": 2,
+                              "id": "mHL2y",
+                              "x": 292,
+                              "y": -5,
+                              "name": "Resize handle — 44px interaction target",
+                              "fill": "$surface",
+                              "width": 10,
+                              "height": 10,
+                              "stroke": "$accent",
+                              "strokeWidth": 2
+                            },
+                            {
+                              "type": "rectangle",
+                              "cornerRadius": 2,
+                              "id": "H5SSZY",
+                              "x": 589,
+                              "y": -5,
+                              "name": "Resize handle — 44px interaction target",
+                              "fill": "$surface",
+                              "width": 10,
+                              "height": 10,
+                              "stroke": "$accent",
+                              "strokeWidth": 2
+                            },
+                            {
+                              "type": "rectangle",
+                              "cornerRadius": 2,
+                              "id": "cE1Qr",
+                              "x": -5,
+                              "y": 193,
+                              "name": "Resize handle — 44px interaction target",
+                              "fill": "$surface",
+                              "width": 10,
+                              "height": 10,
+                              "stroke": "$accent",
+                              "strokeWidth": 2
+                            },
+                            {
+                              "type": "rectangle",
+                              "cornerRadius": 2,
+                              "id": "iKIPe",
+                              "x": 589,
+                              "y": 193,
+                              "name": "Resize handle — 44px interaction target",
+                              "fill": "$surface",
+                              "width": 10,
+                              "height": 10,
+                              "stroke": "$accent",
+                              "strokeWidth": 2
+                            },
+                            {
+                              "type": "rectangle",
+                              "cornerRadius": 2,
+                              "id": "a8zyM",
+                              "x": -5,
+                              "y": 391,
+                              "name": "Resize handle — 44px interaction target",
+                              "fill": "$surface",
+                              "width": 10,
+                              "height": 10,
+                              "stroke": "$accent",
+                              "strokeWidth": 2
+                            },
+                            {
+                              "type": "rectangle",
+                              "cornerRadius": 2,
+                              "id": "h5VSA",
+                              "x": 292,
+                              "y": 391,
+                              "name": "Resize handle — 44px interaction target",
+                              "fill": "$surface",
+                              "width": 10,
+                              "height": 10,
+                              "stroke": "$accent",
+                              "strokeWidth": 2
+                            },
+                            {
+                              "type": "rectangle",
+                              "cornerRadius": 2,
+                              "id": "R3m5Zf",
+                              "x": 589,
+                              "y": 391,
+                              "name": "Resize handle — 44px interaction target",
+                              "fill": "$surface",
+                              "width": 10,
+                              "height": 10,
+                              "stroke": "$accent",
+                              "strokeWidth": 2
+                            }
+                          ]
+                        },
+                        {
+                          "type": "path",
+                          "id": "Q9gPA",
+                          "x": 0,
+                          "y": 0,
+                          "name": "Dim everything outside freeform crop",
+                          "geometry": "M0 0h744v466h-744z m98 88l559-43 43 336-570 38z",
+                          "fillRule": "evenodd",
+                          "viewBox": [
+                            0,
+                            0,
+                            744,
+                            466
+                          ],
+                          "fill": "#00000066",
+                          "width": 744,
+                          "height": 466
+                        },
+                        {
+                          "type": "path",
+                          "id": "AZYfc",
+                          "x": 0,
+                          "y": 0,
+                          "name": "Freeform crop — four independent points",
+                          "geometry": "M98 88l559-43 43 336-570 38z",
+                          "viewBox": [
+                            0,
+                            0,
+                            744,
+                            466
+                          ],
+                          "fill": "#0066FF08",
+                          "width": 744,
+                          "height": 466,
+                          "stroke": "$accent",
+                          "strokeWidth": 2
+                        },
+                        {
+                          "id": "OjXVi",
+                          "type": "ref",
+                          "ref": "K1i0iM",
+                          "name": "Point 1 — drag independently",
+                          "x": 76,
+                          "y": 66
+                        },
+                        {
+                          "id": "c35PG",
+                          "type": "ref",
+                          "ref": "K1i0iM",
+                          "name": "Point 2 — drag independently",
+                          "x": 635,
+                          "y": 23
+                        },
+                        {
+                          "id": "RgeJO",
+                          "type": "ref",
+                          "ref": "K1i0iM",
+                          "name": "Point 3 — drag independently",
+                          "x": 678,
+                          "y": 359
+                        },
+                        {
+                          "id": "A2Lwon",
+                          "type": "ref",
+                          "ref": "K1i0iM",
+                          "name": "Point 4 — drag independently",
+                          "x": 108,
+                          "y": 397
+                        },
+                        {
+                          "type": "ellipse",
+                          "id": "nHY2d",
+                          "x": 635,
+                          "y": 23,
+                          "name": "Point 2 — active drag halo",
+                          "fill": "#0066FF22",
+                          "width": 44,
+                          "height": 44,
+                          "stroke": "$accent",
+                          "strokeWidth": 1
+                        },
+                        {
+                          "type": "icon",
+                          "id": "R1N2D",
+                          "x": 667,
+                          "y": 54,
+                          "name": "Dragging cursor",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "mouse-pointer-2",
+                          "library": "lucide",
+                          "fill": "$fg-primary"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "L11jO2",
+              "name": "Crop settings",
+              "width": 560,
+              "height": "fill_container",
+              "stroke": "$border-subtle",
+              "strokeWidth": {
+                "left": 1
+              },
+              "layout": "vertical",
+              "gap": 18,
+              "padding": 30,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "hDlHx",
+                  "name": "Panel title",
+                  "fill": "$fg-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Options",
+                  "lineHeight": 1.4,
+                  "fontFamily": "$font-body",
+                  "fontSize": 28,
+                  "fontWeight": "600"
+                },
+                {
+                  "id": "bEk9b",
+                  "type": "ref",
+                  "ref": "NcoS9",
+                  "name": "Aspect ratio",
+                  "width": "fill_container",
+                  "descendants": {
+                    "zthem": {
+                      "content": "Crop mode"
+                    },
+                    "JtSjO": {
+                      "content": "Freeform points"
+                    }
+                  }
+                },
+                {
+                  "type": "text",
+                  "id": "peR9R",
+                  "name": "Aspect help",
+                  "fill": "$fg-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Each point moves freely. The other points stay in place.",
+                  "lineHeight": 1.4,
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "gwyKp",
+                  "name": "Crop dimensions row",
+                  "width": "fill_container",
+                  "height": 164,
+                  "layout": "vertical",
+                  "gap": 18,
+                  "children": [
+                    {
+                      "id": "FEkcd",
+                      "type": "ref",
+                      "ref": "KYa0C",
+                      "name": "X · from left",
+                      "width": "fill_container",
+                      "descendants": {
+                        "gasMG": {
+                          "content": "X · selected point 2"
+                        },
+                        "yspKK": {
+                          "content": "2119 px"
+                        },
+                        "c97Mm": {
+                          "enabled": false
+                        }
+                      }
+                    },
+                    {
+                      "id": "YjJBk",
+                      "type": "ref",
+                      "ref": "KYa0C",
+                      "name": "Y · from top",
+                      "width": "fill_container",
+                      "descendants": {
+                        "gasMG": {
+                          "content": "Y · selected point 2"
+                        },
+                        "yspKK": {
+                          "content": "155 px"
+                        },
+                        "c97Mm": {
+                          "enabled": false
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "VdGeu",
+                  "name": "Crop dimensions row",
+                  "width": "fill_container",
+                  "height": 164,
+                  "layout": "vertical",
+                  "gap": 18,
+                  "children": [
+                    {
+                      "id": "a8vXa",
+                      "type": "ref",
+                      "ref": "KYa0C",
+                      "name": "Width",
+                      "width": "fill_container",
+                      "context": "Read-only live bounding width; not an editable rectangular constraint.",
+                      "descendants": {
+                        "gasMG": {
+                          "content": "Width · selection bounds"
+                        },
+                        "yspKK": {
+                          "content": "1942 px"
+                        },
+                        "c97Mm": {
+                          "enabled": false
+                        }
+                      }
+                    },
+                    {
+                      "id": "DOOkg",
+                      "type": "ref",
+                      "ref": "KYa0C",
+                      "name": "Height",
+                      "width": "fill_container",
+                      "context": "Read-only live bounding height; not an editable rectangular constraint.",
+                      "descendants": {
+                        "gasMG": {
+                          "content": "Height · selection bounds"
+                        },
+                        "yspKK": {
+                          "content": "1284 px"
+                        },
+                        "c97Mm": {
+                          "enabled": false
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "W0CJwV",
+                  "name": "Dimension behavior",
+                  "fill": "$fg-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Select a point to edit its X and Y. Width and height show the selection’s bounding box.",
+                  "lineHeight": 1.4,
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "id": "mM63r",
+                  "type": "ref",
+                  "ref": "NcoS9",
+                  "name": "Output format",
+                  "width": "fill_container",
+                  "descendants": {
+                    "zthem": {
+                      "content": "Output format"
+                    },
+                    "JtSjO": {
+                      "content": "PNG · transparent outside selection"
+                    }
+                  }
+                },
+                {
+                  "id": "CqerX",
+                  "type": "ref",
+                  "ref": "KYa0C",
+                  "name": "Quality",
+                  "width": 500,
+                  "enabled": false,
+                  "descendants": {
+                    "gasMG": {
+                      "content": "Quality · JPEG / WebP"
+                    },
+                    "yspKK": {
+                      "content": "80%"
+                    },
+                    "c97Mm": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "mDxkw",
+                  "name": "Apply and recovery",
+                  "width": "fill_container",
+                  "height": 98,
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "id": "iG9r5",
+                      "type": "ref",
+                      "ref": "wm1rh",
+                      "name": "Crop image",
+                      "width": "fill_container",
+                      "descendants": {
+                        "i2HLbt": {
+                          "content": "Crop image"
+                        }
+                      }
+                    },
+                    {
+                      "id": "qqyVz",
+                      "type": "ref",
+                      "ref": "o5XSq",
+                      "name": "Reset crop",
+                      "width": "fill_container",
+                      "descendants": {
+                        "Y4AAX": {
+                          "content": "Reset crop"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "FUnLc",
+          "name": "Keyboard and privacy",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Point 2 selected · Drag freely or use arrow keys · Esc cancels the drag · Reset restores the selection",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 16,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ujz5g",
+      "x": 134247,
+      "y": -30872,
+      "name": "Crop image / 01 — Add an image",
+      "clip": true,
+      "width": 1440,
+      "height": 1040,
+      "fill": "$surface-muted",
+      "layout": "vertical",
+      "gap": 20,
+      "padding": 24,
+      "children": [
+        {
+          "id": "fzaj9",
+          "type": "ref",
+          "ref": "Ouh59",
+          "name": "SmartTools navigation",
+          "width": "fill_container"
+        },
+        {
+          "type": "text",
+          "id": "d7HAaX",
+          "name": "Stage",
+          "fill": "$accent-text",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "01 / ADD AN IMAGE",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 12,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "o5Vlor",
+          "name": "Title",
+          "fill": "$fg-primary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Crop image",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 30,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "E7rKvN",
+          "name": "Description",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Trim an image to the area you want to keep. Your file never leaves this device.",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 15,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "e4jTvq",
+          "name": "Upload workspace",
+          "width": "fill_container",
+          "height": 700,
+          "fill": "$surface",
+          "cornerRadius": 12,
+          "stroke": "$border-strong",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 24,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "W6oIxV",
+              "type": "ref",
+              "ref": "vMbTZ",
+              "name": "Add one image",
+              "width": 600,
+              "height": 190,
+              "descendants": {
+                "MAI0Q": {
+                  "content": "Drop an image here"
+                },
+                "ZPKOj": {
+                  "content": "JPG, PNG or WebP · Up to 25 MiB · Under 100 megapixels"
+                },
+                "hzZW7": {
+                  "content": "Click to browse, or drag one image into this area"
+                }
+              }
+            },
+            {
+              "type": "text",
+              "id": "LGP5S",
+              "name": "Upload next step",
+              "fill": "$fg-secondary",
+              "content": "Add an image to open the crop editor.",
+              "fontFamily": "$font-body",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "bvyvx",
+          "name": "Keyboard and privacy",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "One image at a time · HEIC? Convert to JPG or PNG first · Source files are never overwritten",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 12,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "sf1mN",
+      "x": 144407,
+      "y": -30872,
+      "name": "Crop image / 03 — Download cropped image",
+      "clip": true,
+      "width": 1440,
+      "height": 1040,
+      "fill": "$surface-muted",
+      "layout": "vertical",
+      "gap": 20,
+      "padding": 24,
+      "children": [
+        {
+          "id": "e6k7i",
+          "type": "ref",
+          "ref": "Ouh59",
+          "name": "SmartTools navigation",
+          "width": "fill_container"
+        },
+        {
+          "type": "text",
+          "id": "q1a5l8",
+          "name": "Stage",
+          "fill": "$accent-text",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "03 / CROP COMPLETE",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 12,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "I8Gos",
+          "name": "Title",
+          "fill": "$fg-primary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Crop image",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 30,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "HFYYh",
+          "name": "Description",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Your cropped image is ready. Download it, adjust the crop, or start with another image.",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 15,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "W74xJ9",
+          "name": "Crop workspace",
+          "clip": true,
+          "width": "fill_container",
+          "height": 700,
+          "fill": "$surface",
+          "cornerRadius": 12,
+          "stroke": "$border-strong",
+          "strokeWidth": 1,
+          "children": [
+            {
+              "type": "frame",
+              "id": "ugOQy",
+              "name": "Direct crop editor",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "g2V1o0",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Source and recovery toolbar",
+                  "enabled": false,
+                  "width": 1032,
+                  "height": 72,
+                  "stroke": "$border-subtle",
+                  "strokeWidth": {
+                    "bottom": 1
+                  },
+                  "gap": 16,
+                  "padding": [
+                    12,
+                    20
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "n4SYS",
+                      "name": "Source file",
+                      "fill": "$fg-primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "mountain-lake.jpg\n2400 × 1600 px · 1.4 MB",
+                      "lineHeight": 1.4,
+                      "fontFamily": "$font-body",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "id": "n5uYI",
+                      "type": "ref",
+                      "ref": "o5XSq",
+                      "name": "Replace image",
+                      "descendants": {
+                        "Y4AAX": {
+                          "content": "Replace image"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "H8nhww",
+                  "name": "Cropped image preview",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "$surface-muted",
+                  "layout": "vertical",
+                  "gap": 20,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "H7p9s",
+                      "name": "Actual crop preview — same source region",
+                      "clip": true,
+                      "width": 720,
+                      "height": 480,
+                      "stroke": "#0000001A",
+                      "strokeWidth": 1,
+                      "layout": "none",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "NUuAK",
+                          "x": -120,
+                          "y": -80,
+                          "name": "Source translated to selected bounds",
+                          "width": 960,
+                          "height": 640,
+                          "fill": {
+                            "type": "image",
+                            "enabled": true,
+                            "url": "https://images.unsplash.com/photo-1777619559788-91963b6e314c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3ODkzMjI2MzN8&ixlib=rb-4.1.0&q=80&w=1080",
+                            "mode": "fill"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "TQ0WB",
+                      "name": "Preview caption",
+                      "fill": "$fg-secondary",
+                      "content": "Cropped preview · 1800 × 1200 px",
+                      "fontFamily": "$font-body",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "GPf8Z",
+              "name": "Completed result and file actions",
+              "width": 360,
+              "height": "fill_container",
+              "stroke": "$border-subtle",
+              "strokeWidth": {
+                "left": 1
+              },
+              "layout": "vertical",
+              "gap": 20,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "YKbRU",
+                  "name": "Completion feedback",
+                  "fill": "$success-text",
+                  "content": "✓  Crop complete",
+                  "fontFamily": "$font-body",
+                  "fontSize": 20,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "xYnAv",
+                  "name": "Generated filename",
+                  "fill": "$fg-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "mountain-lake-cropped.jpg",
+                  "fontFamily": "$font-body",
+                  "fontSize": 16,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "AHSfH",
+                  "name": "Generated file facts",
+                  "fill": "$fg-secondary",
+                  "content": "1800 × 1200 px\nJPEG · 80% quality\n428 KB",
+                  "lineHeight": 1.8,
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "id": "mZwcn",
+                  "type": "ref",
+                  "ref": "wm1rh",
+                  "name": "Download JPG",
+                  "width": "fill_container",
+                  "descendants": {
+                    "i2HLbt": {
+                      "content": "Download JPG"
+                    }
+                  }
+                },
+                {
+                  "id": "V6Xzgm",
+                  "type": "ref",
+                  "ref": "o5XSq",
+                  "name": "Adjust crop",
+                  "width": "fill_container",
+                  "descendants": {
+                    "Y4AAX": {
+                      "content": "Adjust crop"
+                    }
+                  }
+                },
+                {
+                  "id": "sDogR",
+                  "type": "ref",
+                  "ref": "o5XSq",
+                  "name": "Crop another image",
+                  "width": "fill_container",
+                  "descendants": {
+                    "Y4AAX": {
+                      "content": "Crop another image"
+                    }
+                  }
+                },
+                {
+                  "type": "text",
+                  "id": "qkc5F",
+                  "name": "Original reassurance",
+                  "fill": "$fg-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Your original is unchanged. Adjust crop restores your previous selection.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "WQSkg",
+          "name": "Keyboard and privacy",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Produced by Crop image · Download saves the generated file · Adjust crop returns to the editor with your selection retained",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 12,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Rdc8L",
+      "x": 141327,
+      "y": -29752,
+      "name": "Crop image / Interaction and recovery handoff",
+      "clip": true,
+      "width": 1440,
+      "height": 720,
+      "fill": "$surface",
+      "layout": "vertical",
+      "gap": 20,
+      "padding": 32,
+      "children": [
+        {
+          "type": "text",
+          "id": "wHqij",
+          "name": "Heading",
+          "fill": "$fg-primary",
+          "textGrowth": "fixed-width",
+          "width": 1376,
+          "content": "Crop image · interaction contract",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 26,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "u2qgpB",
+          "name": "Operation model",
+          "fill": "$fg-primary",
+          "textGrowth": "fixed-width",
+          "width": 1376,
+          "content": "Crop one raster image by moving and resizing a visible selection. The image owns the main workspace; persistent settings and the final generated-file actions belong in the right panel.",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 16,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "o8fTBK",
+          "name": "Flow",
+          "fill": "$fg-primary",
+          "textGrowth": "fixed-width",
+          "width": 1376,
+          "content": "01 Add image → 02 Frame image → Crop image → 03 Download. Replace opens the file picker; cancelling keeps the current file. Reset crop restores the full-image selection. Adjust crop restores the source and last selection. Crop another image returns to 01.",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 15,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "xqmuv",
+          "name": "Direct manipulation",
+          "fill": "$fg-primary",
+          "textGrowth": "fixed-width",
+          "width": 1376,
+          "content": "Eight 10 px handles with 44 px invisible hit targets. Drag inside to move; drag a handle to resize. Focused frame: arrows move 1 px, Shift + arrows 10 px. Numeric fields provide keyboard resizing. Constrain the selection to source bounds; all coordinates use source pixels, not preview pixels.",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 15,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "qLaR5",
+          "name": "Settings and output",
+          "fill": "$fg-primary",
+          "textGrowth": "fixed-width",
+          "width": 1376,
+          "content": "Ratio choices: Free / 1:1 / 4:3 / 16:9. Typing width or height releases the ratio lock with an inline notice. Output: Original / JPEG / PNG / WebP. Hide quality for PNG. JPEG warns that transparency becomes white. Dimensions must be positive; show inline errors and disable Crop image until valid.",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 15,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "NsF8v",
+          "name": "Recovery states",
+          "fill": "$fg-primary",
+          "textGrowth": "fixed-width",
+          "width": 1376,
+          "content": "Unsupported file: “Choose a JPG, PNG or WebP image.” Oversize: “Choose an image under 25 MiB and 100 megapixels.” Keep the previous image on replacement failure. While running: “Cropping image…” and Cancel in the action area. Failure: “Could not crop this image. Your selection is saved.” with Retry. Cancel returns to the editor.",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 15,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "SQMQy",
+          "name": "Better UI implementation",
+          "fill": "$fg-primary",
+          "textGrowth": "fixed-width",
+          "width": 1376,
+          "content": "Keep structural dividers. Image outline: 1 px pure black at 10% opacity. Shared buttons use 0.96 press scale; disable motion with reduced-motion/static behavior. No animated crop dragging or page-load entrance. Use one Lucide icon set, visible keyboard focus and shared tooltips. Download does not reset the selection.",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 15,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "V00O0P",
+          "name": "Verification scope",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": 1376,
+          "content": "Desktop canvas proposal; sample file facts are illustrative. Reviewed: problem fit, novice guidance, five-second scan, feedback and recovery. Live keyboard, pointer, motion and mobile behavior require implementation testing. Independent ui_validator and end_user_validator agents are not available in this tool session.",
+          "lineHeight": 1.4,
+          "fontFamily": "$font-body",
+          "fontSize": 13,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "K1i0iM",
+      "x": 104607,
+      "y": -30996,
+      "name": "Component / Freeform crop point — 44px hit target",
+      "reusable": true,
+      "width": 44,
+      "height": 44,
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "ellipse",
+          "id": "DxDnM",
+          "name": "Visible drag point",
+          "fill": "$accent",
+          "width": 18,
+          "height": 18,
+          "stroke": "#FFFFFF",
+          "strokeWidth": 3
+        }
+      ]
     }
   ],
   "variables": {

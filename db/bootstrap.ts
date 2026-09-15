@@ -3,13 +3,15 @@ import { db } from "./index";
 import { usersTable } from "./schema";
 
 let bootstrapped = false;
-let bootstrapPromise: Promise<void> | null = null;
+const bootstrapPromises = new WeakMap<object, Promise<void>>();
 
 export async function ensureDatabaseBootstrapped() {
   if (bootstrapped) return;
-  if (bootstrapPromise) return bootstrapPromise;
+  const client = db.$client;
+  const pending = bootstrapPromises.get(client);
+  if (pending) return pending;
 
-  bootstrapPromise = (async () => {
+  const bootstrapPromise = (async () => {
     try {
       // Create partitioned and isolated tables if not existing
       await db.execute(sql`
@@ -53,9 +55,12 @@ export async function ensureDatabaseBootstrapped() {
       bootstrapped = true;
     } catch (err) {
       console.warn("Database schema bootstrap warning:", err);
+    } finally {
+      bootstrapPromises.delete(client);
     }
   })();
 
+  bootstrapPromises.set(client, bootstrapPromise);
   return bootstrapPromise;
 }
 

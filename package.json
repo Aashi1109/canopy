@@ -11,6 +11,10 @@
     "tool:new": "node scripts/new-tool.mjs",
     "admin:promote": "pnpm --filter @smarttools/database promote-admin",
     "build": "pnpm run prepare:vendor && tsc --noEmit && next build --webpack",
+    "build:docker": "docker buildx build --platform linux/amd64 --target runner --tag aashishpal09/canopy:latest --push .",
+    "build:cloudflare": "opennextjs-cloudflare build && node scripts/clear-cloudflare-build-env.mjs",
+    "preview": "pnpm build:cloudflare && node --env-file-if-exists=.env.local node_modules/wrangler/bin/wrangler.js dev --port 8787 --var APP_URL:http://localhost:8787",
+    "deploy": "pnpm build:cloudflare && opennextjs-cloudflare deploy",
     "start": "next start -p 3000",
     "lint": "tsc --noEmit",
     "test": "node --test tests/*.test.mjs",
@@ -26,6 +30,7 @@
     "@jsquash/png": "^3.1.1",
     "@jsquash/resize": "^2.1.1",
     "@jsquash/webp": "^1.5.0",
+    "@opennextjs/cloudflare": "^1.20.6",
     "@pdfme/common": "6.1.11",
     "@pdfme/generator": "6.1.11",
     "@pdfme/schemas": "6.1.11",
@@ -54,9 +59,9 @@
     "mermaid": "^11.16.0",
     "morphicons": "^1.5.0",
     "motion": "^12.43.0",
-    "next": "^16.2.11",
+    "next": "^16.3.3",
     "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^6.1.200",
+    "pdfjs-dist": "^6.2.108",
     "postgres": "^3.4.9",
     "qpdf-wasm": "^0.1.0",
     "qrcode": "^1.5.4",
@@ -74,8 +79,9 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
-    "postcss": "8.5.21",
+    "postcss": "8.5.23",
     "tailwindcss": "^4.3.3",
-    "typescript": "~7.0.2"
+    "typescript": "~7.0.2",
+    "wrangler": "^4.131.1"
   }
 }

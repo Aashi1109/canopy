@@ -1,6 +1,6 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { createDatabase } from "./runtime.ts";
 import * as schema from "./schema.ts";
+export { sqlClient } from "./runtime.ts";
 
 export {
   and,
@@ -17,16 +17,7 @@ export {
 } from "drizzle-orm";
 export { alias } from "drizzle-orm/pg-core";
 
-const databaseUrl =
-  process.env.DATABASE_URL ?? "postgres://127.0.0.1:1/smarttools_unconfigured";
-
-export const sqlClient = postgres(databaseUrl, {
-  max: 10,
-  idle_timeout: 20,
-  connect_timeout: 10,
-});
-
-export const db = drizzle(sqlClient, { schema });
+export const db = createDatabase(schema);
 
 export function isDatabaseConfigured(): boolean {
   return Boolean(process.env.DATABASE_URL);

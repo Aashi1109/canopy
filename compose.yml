@@ -1,0 +1,24 @@
+name: smarttools
+
+services:
+  web:
+    image: aashishpal09/canopy:latest
+    platform: linux/amd64
+    build:
+      context: .
+      target: runner
+    init: true
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "${DATABASE_URL:?Set DATABASE_URL in .env.local}"
+      APP_URL: "${APP_URL:?Set APP_URL in .env.local}"
+      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env.local}"
+      RESEND_API_KEY: "${RESEND_API_KEY:?Set RESEND_API_KEY in .env.local}"
+      AUTH_EMAIL_FROM: "${AUTH_EMAIL_FROM:?Set AUTH_EMAIL_FROM in .env.local}"
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      SUPPORT_EMAIL: "${SUPPORT_EMAIL:-}"
+      AHREFS_API_KEY: "${AHREFS_API_KEY:-}"
+    ports:
+      - "3000:3000"
