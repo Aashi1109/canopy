@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Button, MediaPreview } from "@smarttools/ui";
+import { Button, MediaPreview, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@smarttools/ui";
 import { ArtifactDownloadButton, useFileDownload } from "@/components/ArtifactDownloadButton";
 import { MediaOutputCard } from "@smarttools/ui/components/MediaOutputCard";
-import { Minus, Plus } from "lucide-react";
+import { OrderableList } from "@smarttools/ui/components/OrderableList";
+import { workspaceFileId } from "@/components/FileInput";
+import { GripVertical, Minus, Plus } from "lucide-react";
 import { readArtifact, type StoredToolArtifact } from "@/lib/tool-framework/artifacts";
 
 function sizeLabel(bytes: number) {
@@ -153,12 +155,16 @@ function ImagePreviewDialog({ files, selected, onSelect, onClose, onRemove, disa
   );
 }
 
-function ImageGallery({ files, onRemove, disabled, actions }: {
-  files: readonly ImageFile[]; onRemove?: (file: File) => void; disabled?: boolean; actions?: ReactNode;
+function ImageGallery<T extends ImageFile>({ files, onRemove, disabled, actions, onReorder }: {
+  files: readonly T[]; onRemove?: (file: File) => void; disabled?: boolean; actions?: ReactNode; onReorder?: (files: T[]) => void;
 }) {
-  const [selectedFile, setSelectedFile] = useState<ImageFile | null>(null);
+  const [selectedFile, setSelectedFile] = useState<T | null>(null);
   const selected = selectedFile ? files.indexOf(selectedFile) : -1;
   const input = Boolean(onRemove);
+  const renderCard = (file: T) => isArtifact(file)
+    ? <OutputCard file={file} key={file.id} onPreview={() => setSelectedFile(file)} />
+    : <MediaOutputCard key={workspaceFileId(file)} name={file.name} metadata={metadata(file)} onPreview={() => setSelectedFile(file)} onRemove={() => onRemove?.(file)} disabled={disabled}><Thumbnail file={file} /></MediaOutputCard>;
+  const gridClassName = "grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] items-start gap-4 pr-2";
   return <div className="flex min-h-0 flex-1 flex-col gap-5 p-4 sm:p-6 max-sm:[&_button]:!min-h-11 max-sm:[&_button]:!min-w-11 [@media(pointer:coarse)]:[&_button]:!min-h-11 [@media(pointer:coarse)]:[&_button]:!min-w-11" data-slot={input ? "media-input-gallery" : "media-output-gallery"}>
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h2 className="text-sm font-semibold">{input ? "Selected images" : "Converted images"}</h2>
@@ -167,12 +173,19 @@ function ImageGallery({ files, onRemove, disabled, actions }: {
         {actions}
       </div>
     </div>
+    {onReorder && <p className="text-xs text-muted-foreground">Drag handles to change image order. With a keyboard, press Space to pick up, arrow keys to move, and Space to drop.</p>}
     <div role="region" aria-label={input ? "Selected image previews" : "Generated image previews"} tabIndex={0} className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-sm focus-visible:outline-2 focus-visible:outline-primary">
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] items-start gap-4 pr-2">
-        {files.map((file, index) => isArtifact(file)
-          ? <OutputCard file={file} key={file.id} onPreview={() => setSelectedFile(file)} />
-          : <MediaOutputCard key={index} name={file.name} metadata={metadata(file)} onPreview={() => setSelectedFile(file)} onRemove={() => onRemove?.(file)} disabled={disabled}><Thumbnail file={file} /></MediaOutputCard>)}
-      </div>
+      {onReorder ? <OrderableList ariaLabel="Images in processing order" className={gridClassName} layout="grid" disabled={disabled || files.length < 2}
+        getId={(file) => isArtifact(file) ? file.id : workspaceFileId(file)} getLabel={(file) => file.name} items={files} onReorder={onReorder}
+        renderItem={(file, orderable) => <div className="relative">
+          {renderCard(file)}
+          <TooltipProvider><Tooltip><TooltipTrigger asChild>
+            <Button {...orderable.attributes} {...orderable.listeners} ref={orderable.setActivatorNodeRef} disabled={orderable.disabled}
+              aria-label={`Drag ${file.name} to reorder`} className="absolute left-4 top-4 cursor-grab touch-none active:cursor-grabbing" size="icon-xs" variant="secondary">
+              <GripVertical aria-hidden="true" />
+            </Button>
+          </TooltipTrigger><TooltipContent>Drag to reorder</TooltipContent></Tooltip></TooltipProvider>
+        </div>} /> : <div className={gridClassName}>{files.map(renderCard)}</div>}
     </div>
     {selected >= 0 && <ImagePreviewDialog files={files} selected={selected} onSelect={(index) => setSelectedFile(files[index])} onClose={() => setSelectedFile(null)} onRemove={onRemove} disabled={disabled} />}
   </div>;
@@ -182,8 +195,8 @@ export function MediaOutputGallery({ files }: { files: readonly StoredToolArtifa
   return <ImageGallery files={files} />;
 }
 
-export function MediaInputGallery({ files, onRemove, disabled, actions }: {
-  files: readonly File[]; onRemove: (file: File) => void; disabled?: boolean; actions?: ReactNode;
+export function MediaInputGallery({ files, onRemove, disabled, actions, onReorder }: {
+  files: readonly File[]; onRemove: (file: File) => void; disabled?: boolean; actions?: ReactNode; onReorder?: (files: File[]) => void;
 }) {
-  return <ImageGallery files={files} onRemove={onRemove} disabled={disabled} actions={actions} />;
+  return <ImageGallery files={files} onRemove={onRemove} disabled={disabled} actions={actions} onReorder={onReorder} />;
 }

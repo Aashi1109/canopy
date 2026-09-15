@@ -16,6 +16,7 @@ export default {
   ],
   name: "Rotate Image",
   description: "Rotate images by 90, 180, or 270 degrees.",
+  optionsPanel: { collapsible: false },
   input: {
     kind: "files",
     label: "Add images to rotate",
@@ -70,7 +71,7 @@ export default {
   workbenchMark: { text: "I90", tone: "accent" },
   labels: {
     empty: "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF images (25 MiB each) to rotate.",
-    ready: "The images and rotation settings are ready.",
+    ready: "Your rotated images are ready to download.",
     running: "Rotating images…",
   },
   content: {

@@ -16,6 +16,7 @@ export default {
   ],
   name: "Combine Images",
   description: "Arrange images horizontally, vertically, or in a grid.",
+  optionsPanel: { collapsible: false },
   layout: "stacked",
   input: {
     kind: "files",
@@ -101,7 +102,7 @@ export default {
   workbenchMark: { text: "IMG+" },
   labels: {
     empty: "Add images to arrange into one canvas.",
-    ready: "Canvas settings are ready.",
+    ready: "Your combined image is ready to download.",
     running: "Combining images…",
   },
   content: {

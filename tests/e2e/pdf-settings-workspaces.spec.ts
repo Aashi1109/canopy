@@ -81,7 +81,21 @@ async function contents(bytes: Buffer) {
       const page = await document.getPage(number);
       const text = await page.getTextContent();
       const operators = await page.getOperatorList();
-      pages.push({ text: text.items.map((item) => "str" in item ? item.str : "").join(" "), hasImage: operators.fnArray.includes(OPS.paintImageXObject) });
+      let fillColor = "#000000";
+      const savedColors: string[] = [];
+      const paintedText: { text: string; color: string }[] = [];
+      operators.fnArray.forEach((operation, index) => {
+        const args: readonly unknown[] = operators.argsArray[index] ?? [];
+        if (operation === OPS.save) savedColors.push(fillColor);
+        if (operation === OPS.restore) fillColor = savedColors.pop() ?? "#000000";
+        if (operation === OPS.setFillRGBColor && typeof args[0] === "string") fillColor = args[0];
+        if (operation === OPS.showText) {
+          const glyphs: readonly unknown[] = Array.isArray(args[0]) ? args[0] : [];
+          const value = glyphs.map((glyph) => glyph && typeof glyph === "object" && "unicode" in glyph && typeof glyph.unicode === "string" ? glyph.unicode : "").join("");
+          paintedText.push({ text: value, color: fillColor });
+        }
+      });
+      pages.push({ text: text.items.map((item) => "str" in item ? item.str : "").join(" "), hasImage: operators.fnArray.includes(OPS.paintImageXObject), paintedText });
     }
     return pages;
   } finally { await loadingTask.destroy(); }
@@ -226,11 +240,32 @@ test("Add Page Numbers produces real numbering from the configured starting numb
   await settings.getByRole("combobox", { name: "Format", exact: true }).click();
   await page.getByRole("option", { name: "Page 1", exact: true }).click();
   await settings.getByRole("spinbutton", { name: "Start at", exact: true }).fill("7");
+  const color = settings.getByRole("textbox", { name: "Text color value", exact: true });
+  await expect(color).toHaveValue("#1a1a1a");
+  for (const invalid of ["red", "#12", "", "#f00", "#ff000080"]) {
+    await color.fill(invalid);
+    await expect(settings.getByRole("button", { name: "Add page numbers", exact: true })).toBeDisabled();
+    await expect(settings.getByRole("alert")).toContainText("Enter a six-digit hex text color, such as #1a1a1a.");
+  }
+  await color.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `/tmp/add-page-numbers-invalid-color-${testInfo.project.name}.png`, animations: "disabled" });
+  await color.fill("#ff0000");
+  await expect(settings.getByRole("button", { name: "Add page numbers", exact: true })).toBeEnabled();
+  await expect(settings.getByRole("alert")).toHaveCount(0);
+  await expect(settings.getByRole("radiogroup", { name: "Position", exact: true })).toBeVisible();
+  await color.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `/tmp/add-page-numbers-text-color-${testInfo.project.name}.png`, animations: "disabled" });
+  await settings.screenshot({ path: `/tmp/add-page-numbers-settings-color-${testInfo.project.name}.png`, animations: "disabled" });
   const numbered = await runAndDownload(page, settings, "Add page numbers", "source-numbered.pdf");
   const output = await contents(numbered);
   expect(output).toHaveLength(2);
   expect(output[0].text).toContain("Page 7");
   expect(output[1].text).toContain("Page 8");
+  expect(output.map((page, index) => page.paintedText.find((entry) => entry.text === `Page ${index + 7}`)?.color)).toEqual(["#ff0000", "#ff0000"]);
+  await color.fill("#0000ff");
+  await expect(settings.getByRole("button", { name: "Download source-numbered.pdf", exact: true })).toHaveCount(0);
+  const blueNumbered = await runAndDownload(page, settings, "Add page numbers", "source-numbered.pdf");
+  expect((await contents(blueNumbered)).map((page, index) => page.paintedText.find((entry) => entry.text === `Page ${index + 7}`)?.color)).toEqual(["#0000ff", "#0000ff"]);
   await expect(source.getByRole("spinbutton", { name: "Current page", exact: true })).toHaveAttribute("max", "2");
   await screenshot(page, "add-page-numbers", "completed", testInfo.project.name);
   await page.getByRole("button", { name: "Reset", exact: true }).click();

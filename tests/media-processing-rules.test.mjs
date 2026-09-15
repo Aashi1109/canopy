@@ -325,12 +325,12 @@ test("social image presets map every published target to exact dimensions", asyn
   ).settings.fields.preset;
   assert.deepEqual(
     Object.fromEntries(
-      choices.map(({ value, label, detail }) => [value, [label, detail]]),
+      choices.map(({ value, label }) => [value, label]),
     ),
     Object.fromEntries(
       Object.entries(EXPECTED).map(([value, [label, width, height]]) => [
         value,
-        [label, `${width} × ${height}`],
+        `${label} · ${width} × ${height}`,
       ]),
     ),
   );

@@ -129592,7 +129592,7 @@
       "x": 114751,
       "y": -7739,
       "name": "Inline image conversion / 01 — Add images",
-      "context": "New proposal: inline output-format switcher. Preserve all existing designs.",
+      "context": "Initial upload proposal only. Operation: convert up to 50 PNG images; browse/drop on left, output and settings on right, explicit Convert after validation, then preview and download in subsequent stages. Switching preserves sources and never auto-runs. Visual checklist: layout, fit, contrast, alignment, initial-state problem fit, novice feasibility, scanability and feedback reviewed. Independent repo validators unavailable in this session.",
       "clip": true,
       "width": 1440,
       "height": 1100,
@@ -129628,7 +129628,7 @@
                   "id": "MxPLt",
                   "name": "Tool title",
                   "fill": "$fg-primary",
-                  "content": "PNG to JPG",
+                  "content": "Image converter",
                   "fontFamily": "$font-heading",
                   "fontSize": 28,
                   "fontWeight": "600"
@@ -129638,7 +129638,7 @@
                   "id": "dvFvp",
                   "name": "Tool description",
                   "fill": "$fg-secondary",
-                  "content": "01 / ADD IMAGES · Choose PNG files to begin.",
+                  "content": "PNG to JPG · Turn PNG images into smaller, shareable JPEG files.",
                   "fontFamily": "$font-body",
                   "fontSize": 14,
                   "fontWeight": "normal"
@@ -129698,10 +129698,24 @@
                       "width": "fill_container"
                     },
                     "hzZW7": {
-                      "content": "Click to browse, or drop files here. Nothing is uploaded.",
+                      "content": "Click to browse, or drop PNG files here. Files stay on your device.",
                       "width": "fill_container"
                     }
                   }
+                },
+                {
+                  "type": "text",
+                  "id": "ufcnn",
+                  "name": "Automatic source detection — no source selector",
+                  "fill": "$fg-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Input format is detected from your files. No source selection needed.",
+                  "lineHeight": 1.5,
+                  "textAlign": "center",
+                  "fontFamily": "$font-body",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "text",
@@ -129726,9 +129740,66 @@
                 "left": 1
               },
               "layout": "vertical",
-              "gap": 24,
+              "gap": 20,
               "padding": 24,
               "children": [
+                {
+                  "type": "frame",
+                  "id": "GcMmG",
+                  "name": "Inline output selection and behavior",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "id": "mhpD3",
+                      "type": "ref",
+                      "ref": "W2WAHC",
+                      "name": "Output format — JPG selected · PNG unavailable · WebP available",
+                      "width": "fill_container",
+                      "descendants": {
+                        "Hs2kp": {
+                          "context": "Selected output: JPG (JPEG)"
+                        },
+                        "mSKyL": {
+                          "context": "Disabled: same-format PNG conversion is unsupported. Expose aria-disabled and associate inline reason; retain keyboard-accessible help."
+                        },
+                        "Eou6S": {
+                          "content": "PNG — N/A"
+                        },
+                        "a6Axy": {
+                          "context": "Available: select WebP, keep uploads, update settings and Convert label; never start conversion."
+                        }
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "WbyrA",
+                      "name": "Unavailable PNG explanation",
+                      "fill": "$fg-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "PNG output unavailable: same-format conversion isn’t supported.",
+                      "lineHeight": 1.5,
+                      "fontFamily": "$font-body",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "hktwy",
+                      "name": "Switching retains uploads and requires explicit action",
+                      "fill": "$fg-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Switching output keeps your images. Nothing runs until you click Convert.",
+                      "lineHeight": 1.5,
+                      "fontFamily": "$font-body",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
                 {
                   "id": "wyLiu",
                   "type": "ref",
@@ -129762,6 +129833,19 @@
               ]
             }
           ]
+        },
+        {
+          "type": "text",
+          "id": "ls6c8",
+          "name": "Developer handoff — entry and next action",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "HANDOFF · Entry /png-to-jpg → JPG (JPEG) selected. Add PNG files → preview & configure. WebP switches output/settings only; retains files, never auto-runs. Convert is enabled after valid input.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 12,
+          "fontWeight": "normal"
         }
       ]
     },
@@ -129771,7 +129855,7 @@
       "x": 116311,
       "y": -7739,
       "name": "Inline image conversion / 02 — JPG selected",
-      "context": "Canvas-only redesign of PNG to JPG completed state. Three input PNGs become three JPGs and one ZIP. Main workspace shows actual generated-image previews. Right panel groups completion, file list, ZIP download, and recovery. Clicking a preview opens it full screen. Edit settings returns to the input/configuration state and clears outdated output after confirmation.",
+      "context": "Populated image converter with three PNG sources and JPG selected. Convert images via inline output selection; source preview cards remain the task surface and right panel owns output settings and explicit conversion. Preview, Remove and Add more images remain available. No generated output yet.",
       "clip": true,
       "width": 1440,
       "height": 1100,
@@ -129807,7 +129891,7 @@
                   "id": "qYzNU",
                   "name": "Tool title",
                   "fill": "$fg-primary",
-                  "content": "PNG to JPG",
+                  "content": "Image converter",
                   "fontFamily": "$font-heading",
                   "fontSize": 28,
                   "fontWeight": "600"
@@ -129817,7 +129901,7 @@
                   "id": "XO3dp",
                   "name": "Tool description",
                   "fill": "$fg-secondary",
-                  "content": "02 / FILES ADDED · Set quality and background, then convert.",
+                  "content": "02 / FILES ADDED · Choose an output format, then convert.",
                   "fontFamily": "$font-body",
                   "fontSize": 14,
                   "fontWeight": "normal"
@@ -130222,6 +130306,19 @@
                       }
                     }
                   ]
+                },
+                {
+                  "type": "text",
+                  "id": "Zy3ge",
+                  "name": "Developer handoff — inline format switching",
+                  "fill": "$fg-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "HANDOFF · After adding 3 PNGs, JPG is selected. Clicking WebP keeps all sources and applicable settings, with no reload or automatic conversion. Update format-specific settings and the primary action to “Convert 3 images to WebP”. PNG is unavailable: “Already PNG” (inline + keyboard-accessible description).",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
                 }
               ]
             },
@@ -130236,9 +130333,49 @@
                 "left": 1
               },
               "layout": "vertical",
-              "gap": 24,
+              "gap": 18,
               "padding": 24,
               "children": [
+                {
+                  "id": "Pjdls",
+                  "type": "ref",
+                  "ref": "W2WAHC",
+                  "name": "Output format — JPG selected, PNG unavailable, WebP available",
+                  "width": "fill_container",
+                  "context": "Accessible single-select format group. JPG (JPEG) selected. PNG aria-disabled with description Already PNG; expose explanation on keyboard focus and inline. WebP switches format in place without reload or automatic conversion.",
+                  "descendants": {
+                    "Hs2kp": {
+                      "stroke": "$accent",
+                      "strokeWidth": 1
+                    },
+                    "Am5H6": {
+                      "fill": "$accent-text"
+                    },
+                    "mSKyL": {
+                      "context": "Unavailable because all three sources are PNG. aria-disabled=true, aria-describedby the inline Already PNG explanation."
+                    },
+                    "Eou6S": {
+                      "content": "PNG",
+                      "fill": "$fg-secondary"
+                    },
+                    "wqENg": {
+                      "fill": "$fg-primary"
+                    }
+                  }
+                },
+                {
+                  "type": "text",
+                  "id": "G1GLp1",
+                  "name": "PNG unavailable — accessible explanation",
+                  "context": "Persistent explanation associated with the PNG option; also available to keyboard and screen-reader users.",
+                  "fill": "$fg-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "PNG unavailable · Already PNG",
+                  "fontFamily": "$font-body",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
                 {
                   "id": "aYXLX",
                   "type": "ref",
@@ -130264,7 +130401,7 @@
                   "width": "fill_container",
                   "descendants": {
                     "i2HLbt": {
-                      "content": "Convert to JPG"
+                      "content": "Convert 3 images to JPG"
                     }
                   }
                 },
@@ -130305,7 +130442,7 @@
       "x": 117871,
       "y": -7739,
       "name": "Inline image conversion / 03 — Switched to WebP",
-      "context": "Canvas-only redesign of PNG to JPG completed state. Three input PNGs become three JPGs and one ZIP. Main workspace shows actual generated-image previews. Right panel groups completion, file list, ZIP download, and recovery. Clicking a preview opens it full screen. Edit settings returns to the input/configuration state and clears outdated output after confirmation.",
+      "context": "Reached by selecting the WebP tab. Convert three retained PNG sources to lossy WebP; preview and remove remain available on each source card. Right panel owns format and quality. Switching formats remembers per-format settings and never starts processing. Convert explicitly starts the batch; cancellation retains sources and settings; completion offers downloads.",
       "clip": true,
       "width": 1440,
       "height": 1100,
@@ -130341,7 +130478,7 @@
                   "id": "rnr9D",
                   "name": "Tool title",
                   "fill": "$fg-primary",
-                  "content": "PNG to JPG",
+                  "content": "Image converter",
                   "fontFamily": "$font-heading",
                   "fontSize": 28,
                   "fontWeight": "600"
@@ -130351,7 +130488,7 @@
                   "id": "dWxRm",
                   "name": "Tool description",
                   "fill": "$fg-secondary",
-                  "content": "02 / FILES ADDED · Set quality and background, then convert.",
+                  "content": "03 / WEBP SELECTED · Review quality, then convert. Your source images are unchanged.",
                   "fontFamily": "$font-body",
                   "fontSize": 14,
                   "fontWeight": "normal"
@@ -130774,11 +130911,88 @@
               "padding": 24,
               "children": [
                 {
+                  "id": "nHRHE",
+                  "type": "ref",
+                  "ref": "W2WAHC",
+                  "name": "Output format — WebP selected",
+                  "width": "fill_container",
+                  "descendants": {
+                    "Hs2kp": {
+                      "fill": "#00000000",
+                      "effect": []
+                    },
+                    "Am5H6": {
+                      "fill": "$fg-secondary"
+                    },
+                    "mSKyL": {
+                      "context": "Unavailable: all source images are already PNG.",
+                      "opacity": 0.45
+                    },
+                    "Eou6S": {
+                      "content": "PNG · N/A"
+                    },
+                    "a6Axy": {
+                      "fill": "$surface",
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#0000000f",
+                        "offset": {
+                          "x": 0,
+                          "y": 1
+                        },
+                        "blur": 2
+                      },
+                      "context": "Selected. Selecting another available format retains sources and restores that format’s settings without processing."
+                    },
+                    "wqENg": {
+                      "fill": "$fg-primary"
+                    }
+                  }
+                },
+                {
+                  "type": "text",
+                  "id": "PjtCd",
+                  "name": "PNG unavailable explanation",
+                  "fill": "$fg-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "PNG unavailable — your images are already PNG.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
                   "id": "Z4GooV",
                   "type": "ref",
                   "ref": "B9mZTI",
-                  "name": "JPG settings",
-                  "width": "fill_container"
+                  "name": "WebP quality settings — local overrides",
+                  "width": "fill_container",
+                  "descendants": {
+                    "xJn2a": {
+                      "content": "WebP settings"
+                    },
+                    "DnDe5": {
+                      "content": "80% balances detail and file size. WebP is lossy; originals are kept. Transparency is preserved."
+                    },
+                    "t201k": {
+                      "enabled": false,
+                      "width": 372
+                    },
+                    "HWoql": {
+                      "enabled": false,
+                      "width": 372
+                    },
+                    "IUBhK": {
+                      "enabled": false,
+                      "width": 372
+                    },
+                    "Y0F9H": {
+                      "enabled": false,
+                      "width": 372
+                    }
+                  }
                 },
                 {
                   "type": "text",
@@ -130798,7 +131012,7 @@
                   "width": "fill_container",
                   "descendants": {
                     "i2HLbt": {
-                      "content": "Convert to JPG"
+                      "content": "Convert 3 images to WebP"
                     }
                   }
                 },
@@ -130830,6 +131044,19 @@
               ]
             }
           ]
+        },
+        {
+          "type": "text",
+          "id": "lMNK8",
+          "name": "Handoff — inline format switch",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "HANDOFF · Reached by WebP tab · Sources retained · No automatic processing · Per-format settings remembered",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 13,
+          "fontWeight": "normal"
         }
       ]
     },
@@ -130839,7 +131066,7 @@
       "x": 119431,
       "y": -7739,
       "name": "Inline image conversion / 04 — Download and convert again",
-      "context": "Canvas-only redesign of PNG to JPG completed state. Three input PNGs become three JPGs and one ZIP. Main workspace shows actual generated-image previews. Right panel groups completion, file list, ZIP download, and recovery. Clicking a preview opens it full screen. Edit settings returns to the input/configuration state and clears outdated output after confirmation.",
+      "context": "Proposal, not implemented: stage 04 follows Convert 3 images to WebP. Previews and ZIP contain generated WebP bytes. Original PNGs are retained. JPG tab opens stage 05 without navigating or deleting this WebP result; same-format PNG output unavailable. New batch resets after explicit action.",
       "clip": true,
       "width": 1440,
       "height": 1100,
@@ -130875,7 +131102,7 @@
                   "id": "Y7gLm",
                   "name": "Tool title",
                   "fill": "$fg-primary",
-                  "content": "PNG to JPG",
+                  "content": "Image converter",
                   "fontFamily": "$font-heading",
                   "fontSize": 28,
                   "fontWeight": "600"
@@ -130885,7 +131112,7 @@
                   "id": "pZ4Za",
                   "name": "Tool description",
                   "fill": "$fg-secondary",
-                  "content": "03 / CONVERSION COMPLETE · Inspect JPGs or download the ZIP.",
+                  "content": "04 / WEBP READY · Download your images, or choose another output format.",
                   "fontFamily": "$font-body",
                   "fontSize": 14,
                   "fontWeight": "normal"
@@ -130920,8 +131147,8 @@
             {
               "type": "frame",
               "id": "D3FpE",
-              "name": "Generated JPG previews",
-              "context": "One list: generated JPG preview cards with filenames, sizes, and top-right Preview/Download icons. Original inputs retained in state for Edit settings, not repeated here.",
+              "name": "Generated WebP previews",
+              "context": "Real generated WebP preview grid; retain source PNGs in state, not as a duplicate list.",
               "width": "fill_container",
               "height": "fill_container",
               "layout": "vertical",
@@ -130951,7 +131178,7 @@
                       "id": "nJ21I",
                       "name": "Preview count",
                       "fill": "$fg-secondary",
-                      "content": "3 JPGs · Click an image to inspect",
+                      "content": "3 WebP images · Click to inspect",
                       "fontFamily": "$font-body",
                       "fontSize": 13,
                       "fontWeight": "normal"
@@ -131002,14 +131229,14 @@
                           "gap": 2
                         },
                         "C5DJ0T": {
-                          "content": "coast-converted.jpg",
+                          "content": "coast-converted.webp",
                           "fontSize": 14,
                           "fontWeight": "600",
                           "textGrowth": "fixed-width",
                           "width": "fill_container"
                         },
                         "HLzlN": {
-                          "content": "Original dimensions · 214 KB",
+                          "content": "Original dimensions · 160 KB",
                           "fontSize": 12,
                           "fill": "$fg-secondary"
                         },
@@ -131044,7 +131271,8 @@
                               "fill": "$fg-primary"
                             },
                             "XnLHd/a4wIXJ": {
-                              "enabled": false
+                              "enabled": false,
+                              "content": "Preview"
                             },
                             "TOtzB": {
                               "name": "Download generated JPG",
@@ -131061,7 +131289,8 @@
                               "fill": "$fg-primary"
                             },
                             "TOtzB/a4wIXJ": {
-                              "enabled": false
+                              "enabled": false,
+                              "content": "Download"
                             }
                           }
                         }
@@ -131104,14 +131333,14 @@
                           "gap": 2
                         },
                         "C5DJ0T": {
-                          "content": "mountains-converted.jpg",
+                          "content": "mountains-converted.webp",
                           "fontSize": 14,
                           "fontWeight": "600",
                           "textGrowth": "fixed-width",
                           "width": "fill_container"
                         },
                         "HLzlN": {
-                          "content": "Original dimensions · 268 KB",
+                          "content": "Original dimensions · 194 KB",
                           "fontSize": 12,
                           "fill": "$fg-secondary"
                         },
@@ -131146,7 +131375,8 @@
                               "fill": "$fg-primary"
                             },
                             "XnLHd/a4wIXJ": {
-                              "enabled": false
+                              "enabled": false,
+                              "content": "Preview"
                             },
                             "TOtzB": {
                               "name": "Download generated JPG",
@@ -131163,7 +131393,8 @@
                               "fill": "$fg-primary"
                             },
                             "TOtzB/a4wIXJ": {
-                              "enabled": false
+                              "enabled": false,
+                              "content": "Download"
                             }
                           }
                         }
@@ -131206,14 +131437,14 @@
                           "gap": 2
                         },
                         "C5DJ0T": {
-                          "content": "forest-converted.jpg",
+                          "content": "forest-converted.webp",
                           "fontSize": 14,
                           "fontWeight": "600",
                           "textGrowth": "fixed-width",
                           "width": "fill_container"
                         },
                         "HLzlN": {
-                          "content": "Original dimensions · 212 KB",
+                          "content": "Original dimensions · 160 KB",
                           "fontSize": 12,
                           "fill": "$fg-secondary"
                         },
@@ -131248,7 +131479,8 @@
                               "fill": "$fg-primary"
                             },
                             "XnLHd/a4wIXJ": {
-                              "enabled": false
+                              "enabled": false,
+                              "content": "Preview"
                             },
                             "TOtzB": {
                               "name": "Download generated JPG",
@@ -131265,7 +131497,8 @@
                               "fill": "$fg-primary"
                             },
                             "TOtzB/a4wIXJ": {
-                              "enabled": false
+                              "enabled": false,
+                              "content": "Download"
                             }
                           }
                         }
@@ -131306,7 +131539,7 @@
                   "fill": "$fg-secondary",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "3 PNGs converted to JPG.\nYour originals are unchanged.",
+                  "content": "3 PNGs converted to WebP.\nYour originals are unchanged.",
                   "lineHeight": 1.5,
                   "fontFamily": "$font-body",
                   "fontSize": 14,
@@ -131320,10 +131553,10 @@
                   "width": "fill_container",
                   "descendants": {
                     "PABeJ": {
-                      "content": "Your files are ready"
+                      "content": "WebP ZIP ready"
                     },
                     "K6qkX": {
-                      "content": "coast-converted.zip · 694 KB",
+                      "content": "coast-webp.zip · 518 KB",
                       "fontSize": 11
                     },
                     "QAXr9": {
@@ -131347,6 +131580,35 @@
                   "height": 1
                 },
                 {
+                  "id": "G9N3zE",
+                  "type": "ref",
+                  "ref": "W2WAHC",
+                  "name": "Choose another output without leaving",
+                  "width": "fill_container",
+                  "context": "JPG enabled; WebP selected; PNG aria-disabled with focus-accessible explanation Already PNG. Selecting JPG keeps WebP previews/download, reveals JPG-specific settings, and does not start processing. Roving keyboard selection and visible focus.",
+                  "descendants": {
+                    "PaMKK": {
+                      "content": "Convert originals to"
+                    },
+                    "Hs2kp": {
+                      "fill": "#00000000",
+                      "effect": []
+                    },
+                    "Am5H6": {
+                      "fill": "$fg-secondary"
+                    },
+                    "mSKyL": {
+                      "opacity": 0.45
+                    },
+                    "a6Axy": {
+                      "fill": "$surface"
+                    },
+                    "wqENg": {
+                      "fill": "$fg-primary"
+                    }
+                  }
+                },
+                {
                   "type": "frame",
                   "id": "OcPUO",
                   "name": "Equal width recovery actions",
@@ -131357,7 +131619,7 @@
                       "id": "VrUFk",
                       "type": "ref",
                       "ref": "o5XSq",
-                      "name": "Edit settings",
+                      "name": "Edit WebP settings",
                       "width": "fill_container",
                       "descendants": {
                         "Y4AAX": {
@@ -131369,11 +131631,11 @@
                       "id": "c6CcG",
                       "type": "ref",
                       "ref": "o5XSq",
-                      "name": "Convert more",
+                      "name": "Start a new batch",
                       "width": "fill_container",
                       "descendants": {
                         "Y4AAX": {
-                          "content": "Convert more"
+                          "content": "New batch"
                         }
                       }
                     }
@@ -131386,13 +131648,40 @@
                   "fill": "$fg-secondary",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "Edit settings to reconvert these images. Convert more starts a new batch.",
+                  "content": "Choose JPG to convert the same original PNGs again. PNG is unavailable: your sources are already PNG. Your WebP download stays available.",
                   "lineHeight": 1.5,
                   "fontFamily": "$font-body",
                   "fontSize": 13,
                   "fontWeight": "normal"
                 }
               ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "L7XX3y",
+          "name": "Developer handoff — completed to alternate output",
+          "width": "fill_container",
+          "fill": "$surface",
+          "cornerRadius": 8,
+          "gap": 8,
+          "padding": [
+            12,
+            16
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "CNUjV",
+              "name": "Completion transition",
+              "fill": "$fg-secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "HANDOFF  04 → 05    Select JPG below the download → keep this WebP result → show JPG settings → convert from originals.",
+              "fontFamily": "$font-body",
+              "fontSize": 12,
+              "fontWeight": "normal"
             }
           ]
         }
@@ -131404,7 +131693,7 @@
       "x": 116311,
       "y": -6459,
       "name": "Inline image conversion / Branch — JPG sources to PNG",
-      "context": "Canvas-only redesign of PNG to JPG completed state. Three input PNGs become three JPGs and one ZIP. Main workspace shows actual generated-image previews. Right panel groups completion, file list, ZIP download, and recovery. Clicking a preview opens it full screen. Edit settings returns to the input/configuration state and clears outdated output after confirmation.",
+      "context": "Alternate JPG-source branch, not a sequential continuation of the PNG-source flow. Entry: add three JPG sources, then select PNG. Primary verb: convert; object: three JPG images. Left workspace owns source previews with preview/remove actions; right panel owns output format and conversion. PNG retains dimensions, removes metadata and adds no further compression loss, but cannot recover JPG detail. JPG is unavailable because sources are already JPG; WebP is available. Convert starts cancellable local processing, then the shared completion pattern offers PNG files and a ZIP download. Originals remain unchanged.",
       "clip": true,
       "width": 1440,
       "height": 1100,
@@ -131440,7 +131729,7 @@
                   "id": "J1k1y",
                   "name": "Tool title",
                   "fill": "$fg-primary",
-                  "content": "PNG to JPG",
+                  "content": "Image converter",
                   "fontFamily": "$font-heading",
                   "fontSize": 28,
                   "fontWeight": "600"
@@ -131450,7 +131739,7 @@
                   "id": "e58uE9",
                   "name": "Tool description",
                   "fill": "$fg-secondary",
-                  "content": "02 / FILES ADDED · Set quality and background, then convert.",
+                  "content": "ALTERNATE JPG-SOURCE BRANCH · 3 JPGs added → PNG selected. Not a continuation of the PNG-source flow.",
                   "fontFamily": "$font-body",
                   "fontSize": 14,
                   "fontWeight": "normal"
@@ -131485,7 +131774,7 @@
             {
               "type": "frame",
               "id": "J1Qpp",
-              "name": "Selected PNG preview grid",
+              "name": "Selected JPG preview grid",
               "context": "One listing only. Each card owns its source preview, filename, size, and Preview/Remove actions. Remove updates the batch count; removing the last file returns to the upload state.",
               "width": "fill_container",
               "height": "fill_container",
@@ -131506,7 +131795,7 @@
                       "id": "l2HJm",
                       "name": "Preview title",
                       "fill": "$fg-primary",
-                      "content": "Selected PNG images",
+                      "content": "Selected JPG images",
                       "fontFamily": "$font-body",
                       "fontSize": 18,
                       "fontWeight": "600"
@@ -131526,7 +131815,7 @@
                 {
                   "type": "frame",
                   "id": "OR1cY",
-                  "name": "Selected PNG cards",
+                  "name": "Selected JPG cards",
                   "width": "fill_container",
                   "gap": 16,
                   "children": [
@@ -131534,7 +131823,7 @@
                       "id": "pzgBs",
                       "type": "ref",
                       "ref": "mU0Eq",
-                      "name": "coast.png source card",
+                      "name": "coast.jpg source card",
                       "width": "fill_container",
                       "height": 352,
                       "layout": "vertical",
@@ -131568,14 +131857,14 @@
                           "gap": 2
                         },
                         "C5DJ0T": {
-                          "content": "coast.png",
+                          "content": "coast.jpg",
                           "fontSize": 15,
                           "fontWeight": "600",
                           "textGrowth": "fixed-width",
                           "width": "fill_container"
                         },
                         "HLzlN": {
-                          "content": "PNG · 59.2 KB",
+                          "content": "JPG · 59.2 KB",
                           "fontSize": 12,
                           "fill": "$fg-secondary"
                         },
@@ -131642,7 +131931,7 @@
                       "id": "e7dxsw",
                       "type": "ref",
                       "ref": "mU0Eq",
-                      "name": "mountains.png source card",
+                      "name": "mountains.jpg source card",
                       "width": "fill_container",
                       "height": 352,
                       "layout": "vertical",
@@ -131676,14 +131965,14 @@
                           "gap": 2
                         },
                         "C5DJ0T": {
-                          "content": "mountains.png",
+                          "content": "mountains.jpg",
                           "fontSize": 15,
                           "fontWeight": "600",
                           "textGrowth": "fixed-width",
                           "width": "fill_container"
                         },
                         "HLzlN": {
-                          "content": "PNG · 1.5 MB",
+                          "content": "JPG · 1.5 MB",
                           "fontSize": 12,
                           "fill": "$fg-secondary"
                         },
@@ -131750,7 +132039,7 @@
                       "id": "HdGZL",
                       "type": "ref",
                       "ref": "mU0Eq",
-                      "name": "forest.png source card",
+                      "name": "forest.jpg source card",
                       "width": "fill_container",
                       "height": 352,
                       "layout": "vertical",
@@ -131784,14 +132073,14 @@
                           "gap": 2
                         },
                         "C5DJ0T": {
-                          "content": "forest.png",
+                          "content": "forest.jpg",
                           "fontSize": 15,
                           "fontWeight": "600",
                           "textGrowth": "fixed-width",
                           "width": "fill_container"
                         },
                         "HLzlN": {
-                          "content": "PNG · 1.8 MB",
+                          "content": "JPG · 1.8 MB",
                           "fontSize": 12,
                           "fill": "$fg-secondary"
                         },
@@ -131873,18 +132162,76 @@
               "padding": 24,
               "children": [
                 {
-                  "id": "H45Zr4",
+                  "id": "EcASu",
                   "type": "ref",
-                  "ref": "B9mZTI",
-                  "name": "JPG settings",
-                  "width": "fill_container"
+                  "ref": "W2WAHC",
+                  "name": "Output format — PNG selected, JPG unavailable",
+                  "width": "fill_container",
+                  "context": "PNG is selected. JPG is disabled and skipped in keyboard navigation; inline Already JPG explains why. WebP is available and switches the output branch without changing sources.",
+                  "height": "fit_content",
+                  "descendants": {
+                    "Hs2kp": {
+                      "fill": "#00000000",
+                      "effect": [],
+                      "context": "Unavailable: all source images are already JPG."
+                    },
+                    "Am5H6": {
+                      "content": "Already JPG",
+                      "fill": "$fg-secondary"
+                    },
+                    "mSKyL": {
+                      "fill": "$surface",
+                      "stroke": "$accent",
+                      "strokeWidth": 1
+                    },
+                    "Eou6S": {
+                      "fill": "$accent-text",
+                      "content": "PNG"
+                    },
+                    "wqENg": {
+                      "fill": "$fg-primary"
+                    }
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "W7rMm",
+                  "name": "PNG output guidance",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "lNVKs",
+                      "name": "Lossless output heading",
+                      "fill": "$fg-primary",
+                      "content": "Lossless PNG output",
+                      "fontFamily": "$font-body",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "MRnD1",
+                      "name": "PNG conversion facts",
+                      "fill": "$fg-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "No further quality loss; detail lost in JPG cannot be recovered. Dimensions retained. Metadata removed.",
+                      "lineHeight": 1.5,
+                      "fontFamily": "$font-body",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
                 },
                 {
                   "type": "text",
                   "id": "ELTXw",
                   "name": "Batch ready summary",
                   "fill": "$fg-primary",
-                  "content": "3 PNG images ready to convert.",
+                  "content": "3 JPG images ready to convert.",
                   "fontFamily": "$font-body",
                   "fontSize": 14,
                   "fontWeight": "normal"
@@ -131897,7 +132244,7 @@
                   "width": "fill_container",
                   "descendants": {
                     "i2HLbt": {
-                      "content": "Convert to JPG"
+                      "content": "Convert 3 images to PNG"
                     }
                   }
                 },
@@ -131905,7 +132252,7 @@
                   "id": "c1N2kK",
                   "type": "ref",
                   "ref": "o5XSq",
-                  "name": "Add more PNG images",
+                  "name": "Add more JPG images",
                   "width": "fill_container",
                   "descendants": {
                     "Y4AAX": {
@@ -131920,7 +132267,7 @@
                   "fill": "$fg-secondary",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "Conversion runs on this device. You can cancel without losing your files or settings.",
+                  "content": "Conversion runs on this device. Cancel without losing your source files. Originals stay unchanged.",
                   "lineHeight": 1.5,
                   "fontFamily": "$font-body",
                   "fontSize": 13,
@@ -132052,6 +132399,2402 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "kqSYo",
+      "x": 120991,
+      "y": -7739,
+      "name": "Inline image conversion / 05 — JPG selected, WebP download retained",
+      "context": "Stage 05 entered by JPG tab after completed WebP result. Keep prior WebP output clearly labelled and downloadable until a new conversion succeeds. Restore JPG options. Convert original PNGs; never recompress generated WebP. Cancellation or failure preserves source, options and prior completed download.",
+      "clip": true,
+      "width": 1440,
+      "height": 1100,
+      "fill": "$surface-muted",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": 24,
+      "children": [
+        {
+          "id": "Lnk8D",
+          "type": "ref",
+          "ref": "Ouh59",
+          "name": "SmartTools navigation",
+          "width": "fill_container"
+        },
+        {
+          "type": "frame",
+          "id": "n9UZM8",
+          "name": "Tool title and status",
+          "width": "fill_container",
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "dDNbo",
+              "name": "Tool introduction",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "WyA24",
+                  "name": "Tool title",
+                  "fill": "$fg-primary",
+                  "content": "Image converter",
+                  "fontFamily": "$font-heading",
+                  "fontSize": 28,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "e6Fi21",
+                  "name": "Tool description",
+                  "fill": "$fg-secondary",
+                  "content": "05 / SWITCHED TO JPG · Your previous WebP download is kept while you convert.",
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "id": "wdVMo",
+              "type": "ref",
+              "ref": "v7W41",
+              "name": "Local processing badge",
+              "descendants": {
+                "DZdRI": {
+                  "content": "Processed locally"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ip5va",
+          "name": "Image conversion workspace",
+          "clip": true,
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "$surface",
+          "cornerRadius": 12,
+          "stroke": "$border-subtle",
+          "strokeWidth": 1,
+          "children": [
+            {
+              "type": "frame",
+              "id": "x1uzH",
+              "name": "Generated WebP previews",
+              "context": "Real generated WebP preview grid; retain source PNGs in state, not as a duplicate list.",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 20,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "xvxU0",
+                  "name": "Preview heading",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "qx0Vx",
+                      "name": "Preview title",
+                      "fill": "$fg-primary",
+                      "content": "Previous result · WebP images",
+                      "fontFamily": "$font-body",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "iMEDp",
+                      "name": "Preview count",
+                      "fill": "$fg-secondary",
+                      "content": "3 WebPs · Click an image to inspect",
+                      "fontFamily": "$font-body",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "LrL1n",
+                  "name": "Generated JPG cards — single listing",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "id": "utG8V",
+                      "type": "ref",
+                      "ref": "mU0Eq",
+                      "name": "coast.jpg generated preview",
+                      "width": "fill_container",
+                      "height": 352,
+                      "layout": "vertical",
+                      "padding": 8,
+                      "gap": 8,
+                      "fill": "$surface",
+                      "stroke": "$border-subtle",
+                      "strokeWidth": 1,
+                      "cornerRadius": 12,
+                      "clip": true,
+                      "descendants": {
+                        "Oqj4A": {
+                          "fill": [
+                            "$surface-muted",
+                            {
+                              "type": "image",
+                              "enabled": true,
+                              "url": "https://images.unsplash.com/photo-1786952964936-2e997bfba8da?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3ODkyMDYwMzd8&ixlib=rb-4.1.0&q=80&w=1080",
+                              "mode": "fit"
+                            }
+                          ],
+                          "cornerRadius": 8,
+                          "strokeWidth": 0
+                        },
+                        "PVtC0": {
+                          "padding": [
+                            0,
+                            4
+                          ],
+                          "gap": 2
+                        },
+                        "C5DJ0T": {
+                          "content": "coast-converted.webp",
+                          "fontSize": 14,
+                          "fontWeight": "600",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container"
+                        },
+                        "HLzlN": {
+                          "content": "Original dimensions · 160 KB",
+                          "fontSize": 12,
+                          "fill": "$fg-secondary"
+                        },
+                        "QE4mO": {
+                          "id": "fRsvr",
+                          "type": "ref",
+                          "ref": "KEdkz",
+                          "name": "Top-right preview and download icons",
+                          "layoutPosition": "absolute",
+                          "x": 213.33333333333331,
+                          "y": 16,
+                          "width": 68,
+                          "height": 32,
+                          "gap": 4,
+                          "padding": 0,
+                          "fill": "#FFFFFF00",
+                          "strokeWidth": 0,
+                          "context": "Maximize opens this generated JPG. Download saves this JPG only. Shared tooltips and accessible labels include the filename. ZIP download stays in the result panel.",
+                          "descendants": {
+                            "XnLHd": {
+                              "name": "Preview generated JPG",
+                              "width": 32,
+                              "height": 32,
+                              "padding": 0,
+                              "cornerRadius": 6,
+                              "fill": "$surface",
+                              "strokeWidth": 0
+                            },
+                            "XnLHd/Uea8A": {
+                              "width": 16,
+                              "height": 16,
+                              "fill": "$fg-primary"
+                            },
+                            "XnLHd/a4wIXJ": {
+                              "enabled": false,
+                              "content": "Preview"
+                            },
+                            "TOtzB": {
+                              "name": "Download generated JPG",
+                              "width": 32,
+                              "height": 32,
+                              "padding": 0,
+                              "cornerRadius": 6,
+                              "fill": "$surface",
+                              "strokeWidth": 0
+                            },
+                            "TOtzB/Uea8A": {
+                              "width": 16,
+                              "height": 16,
+                              "fill": "$fg-primary"
+                            },
+                            "TOtzB/a4wIXJ": {
+                              "enabled": false,
+                              "content": "Download"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "id": "glYV8",
+                      "type": "ref",
+                      "ref": "mU0Eq",
+                      "name": "mountains.jpg generated preview",
+                      "width": "fill_container",
+                      "height": 352,
+                      "layout": "vertical",
+                      "padding": 8,
+                      "gap": 8,
+                      "fill": "$surface",
+                      "stroke": "$border-subtle",
+                      "strokeWidth": 1,
+                      "cornerRadius": 12,
+                      "clip": true,
+                      "descendants": {
+                        "Oqj4A": {
+                          "fill": [
+                            "$surface-muted",
+                            {
+                              "type": "image",
+                              "enabled": true,
+                              "url": "https://images.unsplash.com/photo-1732239613951-0f10063b4589?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3ODkzMTI1OTR8&ixlib=rb-4.1.0&q=80&w=1080",
+                              "mode": "fit"
+                            }
+                          ],
+                          "cornerRadius": 8,
+                          "strokeWidth": 0
+                        },
+                        "PVtC0": {
+                          "padding": [
+                            0,
+                            4
+                          ],
+                          "gap": 2
+                        },
+                        "C5DJ0T": {
+                          "content": "mountains-converted.webp",
+                          "fontSize": 14,
+                          "fontWeight": "600",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container"
+                        },
+                        "HLzlN": {
+                          "content": "Original dimensions · 194 KB",
+                          "fontSize": 12,
+                          "fill": "$fg-secondary"
+                        },
+                        "QE4mO": {
+                          "id": "XAgK4",
+                          "type": "ref",
+                          "ref": "KEdkz",
+                          "name": "Top-right preview and download icons",
+                          "layoutPosition": "absolute",
+                          "x": 213.33333333333331,
+                          "y": 16,
+                          "width": 68,
+                          "height": 32,
+                          "gap": 4,
+                          "padding": 0,
+                          "fill": "#FFFFFF00",
+                          "strokeWidth": 0,
+                          "context": "Maximize opens this generated JPG. Download saves this JPG only. Shared tooltips and accessible labels include the filename. ZIP download stays in the result panel.",
+                          "descendants": {
+                            "XnLHd": {
+                              "name": "Preview generated JPG",
+                              "width": 32,
+                              "height": 32,
+                              "padding": 0,
+                              "cornerRadius": 6,
+                              "fill": "$surface",
+                              "strokeWidth": 0
+                            },
+                            "XnLHd/Uea8A": {
+                              "width": 16,
+                              "height": 16,
+                              "fill": "$fg-primary"
+                            },
+                            "XnLHd/a4wIXJ": {
+                              "enabled": false,
+                              "content": "Preview"
+                            },
+                            "TOtzB": {
+                              "name": "Download generated JPG",
+                              "width": 32,
+                              "height": 32,
+                              "padding": 0,
+                              "cornerRadius": 6,
+                              "fill": "$surface",
+                              "strokeWidth": 0
+                            },
+                            "TOtzB/Uea8A": {
+                              "width": 16,
+                              "height": 16,
+                              "fill": "$fg-primary"
+                            },
+                            "TOtzB/a4wIXJ": {
+                              "enabled": false,
+                              "content": "Download"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "id": "xyDJU",
+                      "type": "ref",
+                      "ref": "mU0Eq",
+                      "name": "forest.jpg generated preview",
+                      "width": "fill_container",
+                      "height": 352,
+                      "layout": "vertical",
+                      "padding": 8,
+                      "gap": 8,
+                      "fill": "$surface",
+                      "stroke": "$border-subtle",
+                      "strokeWidth": 1,
+                      "cornerRadius": 12,
+                      "clip": true,
+                      "descendants": {
+                        "Oqj4A": {
+                          "fill": [
+                            "$surface-muted",
+                            {
+                              "type": "image",
+                              "enabled": true,
+                              "url": "https://images.unsplash.com/photo-1562569665-84986a052d8c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3ODkzMTI1OTR8&ixlib=rb-4.1.0&q=80&w=1080",
+                              "mode": "fit"
+                            }
+                          ],
+                          "cornerRadius": 8,
+                          "strokeWidth": 0
+                        },
+                        "PVtC0": {
+                          "padding": [
+                            0,
+                            4
+                          ],
+                          "gap": 2
+                        },
+                        "C5DJ0T": {
+                          "content": "forest-converted.webp",
+                          "fontSize": 14,
+                          "fontWeight": "600",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container"
+                        },
+                        "HLzlN": {
+                          "content": "Original dimensions · 160 KB",
+                          "fontSize": 12,
+                          "fill": "$fg-secondary"
+                        },
+                        "QE4mO": {
+                          "id": "Z7KVn",
+                          "type": "ref",
+                          "ref": "KEdkz",
+                          "name": "Top-right preview and download icons",
+                          "layoutPosition": "absolute",
+                          "x": 213.33333333333337,
+                          "y": 16,
+                          "width": 68,
+                          "height": 32,
+                          "gap": 4,
+                          "padding": 0,
+                          "fill": "#FFFFFF00",
+                          "strokeWidth": 0,
+                          "context": "Maximize opens this generated JPG. Download saves this JPG only. Shared tooltips and accessible labels include the filename. ZIP download stays in the result panel.",
+                          "descendants": {
+                            "XnLHd": {
+                              "name": "Preview generated JPG",
+                              "width": 32,
+                              "height": 32,
+                              "padding": 0,
+                              "cornerRadius": 6,
+                              "fill": "$surface",
+                              "strokeWidth": 0
+                            },
+                            "XnLHd/Uea8A": {
+                              "width": 16,
+                              "height": 16,
+                              "fill": "$fg-primary"
+                            },
+                            "XnLHd/a4wIXJ": {
+                              "enabled": false,
+                              "content": "Preview"
+                            },
+                            "TOtzB": {
+                              "name": "Download generated JPG",
+                              "width": 32,
+                              "height": 32,
+                              "padding": 0,
+                              "cornerRadius": 6,
+                              "fill": "$surface",
+                              "strokeWidth": 0
+                            },
+                            "TOtzB/Uea8A": {
+                              "width": 16,
+                              "height": 16,
+                              "fill": "$fg-primary"
+                            },
+                            "TOtzB/a4wIXJ": {
+                              "enabled": false,
+                              "content": "Download"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Ps93W",
+              "name": "Results and download",
+              "width": 420,
+              "height": "fill_container",
+              "stroke": "$border-subtle",
+              "strokeWidth": {
+                "left": 1
+              },
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "AfndX",
+                  "name": "Result heading",
+                  "fill": "$fg-primary",
+                  "content": "WebP files ready",
+                  "fontFamily": "$font-heading",
+                  "fontSize": 22,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "fk3TO",
+                  "name": "Result summary",
+                  "fill": "$fg-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Previous result · 3 WebP images\nThe preview and download below are still WebP.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "id": "T3PS2",
+                  "type": "ref",
+                  "ref": "wFMb0",
+                  "name": "Completed ZIP download card",
+                  "width": "fill_container",
+                  "descendants": {
+                    "PABeJ": {
+                      "content": "WebP ZIP ready"
+                    },
+                    "K6qkX": {
+                      "content": "coast-webp.zip · 518 KB",
+                      "fontSize": 11
+                    },
+                    "QAXr9": {
+                      "padding": [
+                        0,
+                        12
+                      ]
+                    },
+                    "QAXr9/i2HLbt": {
+                      "content": "Download ZIP",
+                      "fontSize": 12
+                    }
+                  }
+                },
+                {
+                  "type": "rectangle",
+                  "id": "DPP2Q",
+                  "name": "Recovery divider",
+                  "fill": "$border-subtle",
+                  "width": "fill_container",
+                  "height": 1
+                },
+                {
+                  "id": "zUXiJ",
+                  "type": "ref",
+                  "ref": "W2WAHC",
+                  "name": "Choose another output without leaving",
+                  "width": "fill_container",
+                  "context": "JPG selected for the next run. PNG is unavailable because sources are PNG; WebP returns to completed WebP state. Selection alone never converts or destroys current downloads.",
+                  "descendants": {
+                    "PaMKK": {
+                      "content": "Convert originals to"
+                    },
+                    "Hs2kp": {
+                      "fill": "$surface",
+                      "effect": []
+                    },
+                    "Am5H6": {
+                      "fill": "$fg-primary"
+                    },
+                    "mSKyL": {
+                      "opacity": 0.45
+                    },
+                    "a6Axy": {
+                      "fill": "#00000000"
+                    },
+                    "wqENg": {
+                      "fill": "$fg-secondary"
+                    }
+                  }
+                },
+                {
+                  "id": "UCEW8",
+                  "type": "ref",
+                  "ref": "B9mZTI",
+                  "name": "Restored JPG settings for next conversion",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "descendants": {
+                    "xJn2a": {
+                      "enabled": false
+                    },
+                    "DnDe5": {
+                      "content": "Your previous JPG quality is restored."
+                    },
+                    "HWoql": {
+                      "enabled": false,
+                      "width": 372
+                    },
+                    "IUBhK": {
+                      "content": "JPG cannot keep transparency. Use #RRGGBB."
+                    },
+                    "Y0F9H": {
+                      "enabled": false,
+                      "width": 372
+                    }
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "jJp4S",
+                  "x": 24,
+                  "y": 345,
+                  "name": "Equal width recovery actions",
+                  "enabled": false,
+                  "width": 372,
+                  "gap": 8,
+                  "children": [
+                    {
+                      "id": "z2Kav",
+                      "type": "ref",
+                      "ref": "o5XSq",
+                      "name": "Edit WebP settings",
+                      "width": "fill_container",
+                      "descendants": {
+                        "Y4AAX": {
+                          "content": "Edit settings"
+                        }
+                      }
+                    },
+                    {
+                      "id": "PZedI",
+                      "type": "ref",
+                      "ref": "o5XSq",
+                      "name": "Start a new batch",
+                      "width": "fill_container",
+                      "descendants": {
+                        "Y4AAX": {
+                          "content": "New batch"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "dJyd8",
+                  "name": "Recovery behavior",
+                  "fill": "$fg-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Uses your 3 original PNGs, not these WebP outputs. JPG will flatten transparency. PNG output is unavailable: your sources are already PNG.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "id": "s2n32",
+                  "type": "ref",
+                  "ref": "wm1rh",
+                  "name": "Convert originals to JPG now",
+                  "width": "fill_container",
+                  "descendants": {
+                    "i2HLbt": {
+                      "content": "Convert 3 images to JPG"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "kqOc4",
+          "name": "Developer handoff — completed to alternate output",
+          "width": "fill_container",
+          "fill": "$surface",
+          "cornerRadius": 8,
+          "gap": 8,
+          "padding": [
+            12,
+            16
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "D047Z4",
+              "name": "Completion transition",
+              "fill": "$fg-secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "HANDOFF  05 → PROCESSING → JPG RESULT    Convert uses original PNGs. Lock tabs while processing. Cancel/failure keeps originals, settings and prior WebP download.",
+              "fontFamily": "$font-body",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "YhEpT",
+      "x": 120991,
+      "y": -6519,
+      "name": "Inline image conversion / Behavior and supported formats",
+      "clip": true,
+      "width": 1440,
+      "fill": "$surface",
+      "layout": "vertical",
+      "gap": 20,
+      "padding": 32,
+      "children": [
+        {
+          "type": "text",
+          "id": "pUx6l",
+          "name": "Handoff heading",
+          "fill": "$fg-primary",
+          "content": "One workspace. Original files. Explicit conversion.",
+          "fontFamily": "$font-heading",
+          "fontSize": 26,
+          "fontWeight": "600"
+        },
+        {
+          "type": "frame",
+          "id": "WBVy3",
+          "name": "Behavior rules",
+          "width": "fill_container",
+          "gap": 32,
+          "children": [
+            {
+              "type": "frame",
+              "id": "krSZ3",
+              "name": "SUPPORTED OUTPUTS",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "bo5v8",
+                  "name": "SUPPORTED OUTPUTS title",
+                  "fill": "$fg-secondary",
+                  "content": "SUPPORTED OUTPUTS",
+                  "fontFamily": "$font-body",
+                  "fontSize": 12,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "I6TYb",
+                  "name": "SUPPORTED OUTPUTS details",
+                  "fill": "$fg-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "JPG → PNG / WebP\nPNG → JPG / WebP\nWebP → JPG / PNG\nHEIC / HEIF → JPG / PNG\nJPG and JPEG are one format. No HEIC output.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "sDWSq",
+              "name": "SWITCHING & RECOVERY",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Z6j8RN",
+                  "name": "SWITCHING & RECOVERY title",
+                  "fill": "$fg-secondary",
+                  "content": "SWITCHING & RECOVERY",
+                  "fontFamily": "$font-body",
+                  "fontSize": 12,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "A04GLu",
+                  "name": "SWITCHING & RECOVERY details",
+                  "fill": "$fg-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Format selection never runs a job or navigates away. Keep uploads, card order and per-format settings. During processing, lock format controls; Cancel keeps sources and settings. On failure, show the reason and Retry.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "OWxTF",
+              "name": "RESULT INTEGRITY",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "c6ryBV",
+                  "name": "RESULT INTEGRITY title",
+                  "fill": "$fg-secondary",
+                  "content": "RESULT INTEGRITY",
+                  "fontFamily": "$font-body",
+                  "fontSize": 12,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "lu2JM",
+                  "name": "RESULT INTEGRITY details",
+                  "fill": "$fg-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Changing format keeps the previous result explicitly labelled and downloadable. Convert always uses original uploads. New results replace old results only when successful; cancel/failure retains the prior download. New batch clears sources after an explicit reset action.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "xvRcU",
+          "name": "Accessibility and entry points",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "ENTRY & ACCESSIBILITY   Existing conversion URLs preselect the target; no re-upload on switching. Only one source format per batch in this proposal. Format choices use an accessible single-selection group, visible focus, and keyboard access. Unsupported choices explain why inline and on focus. File preview/remove/download controls retain filename-specific labels.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 13,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "tj7L8",
+      "x": 138567,
+      "y": -30547,
+      "name": "SmartTools / Landing V2 / Consider it done",
+      "clip": true,
+      "width": 1440,
+      "fill": "$surface",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "c4pBX",
+          "type": "ref",
+          "ref": "y1y4Xy",
+          "name": "Shared navigation / streamlined landing",
+          "width": "fill_container",
+          "padding": [
+            8,
+            64
+          ],
+          "descendants": {
+            "sN10s": {
+              "enabled": false
+            },
+            "LP4o4": {
+              "strokeWidth": 0
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "tnIJz",
+          "name": "Hero / The everyday work toolkit",
+          "width": "fill_container",
+          "fill": "$surface",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            64,
+            64,
+            0,
+            64
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "s1V97",
+              "name": "Eyebrow",
+              "fill": "$accent",
+              "content": "ONE TOOLKIT. A LOT LESS BUSYWORK.",
+              "fontFamily": "$font-body",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "letterSpacing": 1.8
+            },
+            {
+              "type": "text",
+              "id": "aVCEJ",
+              "name": "Hero headline",
+              "fill": "$fg-primary",
+              "content": "Small tasks.\nConsider them done.",
+              "lineHeight": 1.02,
+              "textAlign": "center",
+              "fontFamily": "$font-body",
+              "fontSize": 80,
+              "fontWeight": "600",
+              "letterSpacing": -4.2
+            },
+            {
+              "type": "text",
+              "id": "v3vjNA",
+              "name": "Supporting promise",
+              "fill": "$fg-secondary",
+              "content": "Clean up code, transform files, and finish paperwork.\nSimple browser tools that get you back to the good stuff.",
+              "lineHeight": 1.5,
+              "textAlign": "center",
+              "fontFamily": "$font-body",
+              "fontSize": 18,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "QoWv7",
+              "name": "Hero actions",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "QpUgR",
+                  "type": "ref",
+                  "ref": "wm1rh",
+                  "name": "Explore all tools",
+                  "height": 48,
+                  "padding": [
+                    0,
+                    22
+                  ],
+                  "x": 0,
+                  "y": 0,
+                  "opacity": 1,
+                  "descendants": {
+                    "i2HLbt": {
+                      "content": "Explore all tools"
+                    }
+                  }
+                },
+                {
+                  "id": "Mmlh0",
+                  "type": "ref",
+                  "ref": "o5XSq",
+                  "name": "See what you can do",
+                  "height": 48,
+                  "padding": [
+                    0,
+                    22
+                  ],
+                  "x": 172,
+                  "y": 0,
+                  "opacity": 1,
+                  "descendants": {
+                    "Y4AAX": {
+                      "content": "See what you can do ↓"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "PZ9ab",
+              "name": "Low friction promise",
+              "fill": "$fg-secondary",
+              "content": "No installation. Just open a tool and go.",
+              "fontFamily": "$font-body",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "BLQBP",
+              "name": "Product stage / Three kinds of done",
+              "clip": true,
+              "width": "fill_container",
+              "height": 470,
+              "fill": "#EDF2FA",
+              "cornerRadius": 24,
+              "layout": "none",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "f4nHq",
+                  "x": 40,
+                  "y": 66,
+                  "name": "Developer preview / readable JSON",
+                  "width": 480,
+                  "height": 330,
+                  "fill": "$surface-ink",
+                  "cornerRadius": 12,
+                  "effect": [
+                    {
+                      "type": "shadow",
+                      "shadowType": "outer",
+                      "color": "#0000000F",
+                      "blur": 2,
+                      "spread": 1
+                    },
+                    {
+                      "type": "shadow",
+                      "shadowType": "outer",
+                      "color": "#14254714",
+                      "offset": {
+                        "x": 0,
+                        "y": 14
+                      },
+                      "blur": 32
+                    }
+                  ],
+                  "layout": "vertical",
+                  "gap": 18,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "cJVFL",
+                      "name": "Preview title",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "s9Lca",
+                          "name": "Tool",
+                          "fill": "$fg-onink",
+                          "content": "JSON Formatter",
+                          "fontFamily": "$font-body",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "s0hfyE",
+                          "name": "Preview label",
+                          "fill": "$fg-onink-muted",
+                          "content": "DEVELOPER",
+                          "fontFamily": "$font-body",
+                          "fontSize": 10,
+                          "fontWeight": "normal",
+                          "letterSpacing": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "q65oe",
+                      "name": "Before and after",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "layout": "vertical",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "eo9Zb",
+                          "x": 0,
+                          "y": 0,
+                          "name": "Before",
+                          "enabled": false,
+                          "width": 390,
+                          "layout": "vertical",
+                          "gap": 20,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "uHbqL",
+                              "name": "Input label",
+                              "fill": "$fg-onink-muted",
+                              "content": "01 / PASTE",
+                              "fontFamily": "$font-body",
+                              "fontSize": 10,
+                              "fontWeight": "normal",
+                              "letterSpacing": 1
+                            },
+                            {
+                              "type": "text",
+                              "id": "c4Uq9",
+                              "name": "Input JSON",
+                              "fill": "$fg-onink",
+                              "content": "{\"project\":\"next big thing\",\n\"status\":\"ready\",\"ideas\":3}",
+                              "lineHeight": 1.7,
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "zBsU6",
+                          "x": 0,
+                          "y": 0,
+                          "name": "Editor divider",
+                          "enabled": false,
+                          "fill": "#FFFFFF26",
+                          "width": 1,
+                          "height": 192
+                        },
+                        {
+                          "type": "frame",
+                          "id": "FLL1R",
+                          "name": "After",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 20,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "tqjsR",
+                              "name": "Output label",
+                              "fill": "$fg-onink-muted",
+                              "content": "VALID JSON · READY TO COPY",
+                              "fontFamily": "$font-body",
+                              "fontSize": 10,
+                              "fontWeight": "normal",
+                              "letterSpacing": 1
+                            },
+                            {
+                              "type": "text",
+                              "id": "aGYMl",
+                              "name": "Formatted JSON",
+                              "fill": "$fg-onink",
+                              "content": "{\n  \"project\": \"next big thing\",\n  \"status\": \"ready\",\n  \"ideas\": 3\n}",
+                              "lineHeight": 1.65,
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 17,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "AcJQ5",
+                  "x": 878,
+                  "y": 80,
+                  "name": "Paperwork preview / invoice document",
+                  "width": 360,
+                  "height": 342,
+                  "fill": "$surface",
+                  "cornerRadius": 12,
+                  "effect": [
+                    {
+                      "type": "shadow",
+                      "shadowType": "outer",
+                      "color": "#0000000F",
+                      "blur": 2,
+                      "spread": 1
+                    },
+                    {
+                      "type": "shadow",
+                      "shadowType": "outer",
+                      "color": "#14254714",
+                      "offset": {
+                        "x": 0,
+                        "y": 14
+                      },
+                      "blur": 32
+                    }
+                  ],
+                  "layout": "vertical",
+                  "gap": 20,
+                  "padding": 28,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "pQwrw",
+                      "name": "Invoice title row",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "r1pzaz",
+                          "name": "Invoice heading",
+                          "fill": "$fg-primary",
+                          "content": "INVOICE",
+                          "fontFamily": "$font-body",
+                          "fontSize": 23,
+                          "fontWeight": "600",
+                          "letterSpacing": -0.5
+                        },
+                        {
+                          "type": "text",
+                          "id": "Y76Lcf",
+                          "name": "Invoice number",
+                          "fill": "$fg-secondary",
+                          "content": "#INV-024",
+                          "fontFamily": "$font-body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "E52Ur",
+                      "name": "Studio",
+                      "fill": "$fg-secondary",
+                      "content": "NORTHLINE STUDIO\nBrand & digital design",
+                      "lineHeight": 1.6,
+                      "fontFamily": "$font-body",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "lAI7t",
+                      "name": "Invoice items",
+                      "width": "fill_container",
+                      "stroke": "$border-subtle",
+                      "strokeWidth": {
+                        "top": 1,
+                        "bottom": 1
+                      },
+                      "layout": "vertical",
+                      "gap": 12,
+                      "padding": [
+                        14,
+                        0
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "azIh0",
+                          "name": "Brand identity",
+                          "width": "fill_container",
+                          "justifyContent": "space_between",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "WpObK",
+                              "name": "Service",
+                              "fill": "$fg-primary",
+                              "content": "Brand identity",
+                              "fontFamily": "$font-body",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "USEV1",
+                              "name": "Amount",
+                              "fill": "$fg-primary",
+                              "content": "$1,200.00",
+                              "fontFamily": "$font-body",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "wBpYu",
+                          "name": "Website design",
+                          "width": "fill_container",
+                          "justifyContent": "space_between",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "AeGmz",
+                              "name": "Service",
+                              "fill": "$fg-primary",
+                              "content": "Website design",
+                              "fontFamily": "$font-body",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "AO6zS",
+                              "name": "Amount",
+                              "fill": "$fg-primary",
+                              "content": "$2,400.00",
+                              "fontFamily": "$font-body",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "drHGM",
+                      "name": "Invoice total",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "JmYzq",
+                          "name": "Total label",
+                          "fill": "$fg-secondary",
+                          "content": "Total due",
+                          "fontFamily": "$font-body",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "wxhDu",
+                          "name": "Total amount",
+                          "fill": "$fg-primary",
+                          "content": "$3,600.00",
+                          "fontFamily": "$font-body",
+                          "fontSize": 27,
+                          "fontWeight": "600",
+                          "letterSpacing": -1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "hl6ze",
+                      "name": "Document preview caption",
+                      "fill": "$fg-secondary",
+                      "content": "A professional invoice. Ready to send.",
+                      "fontFamily": "$font-body",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "k2gJW",
+                  "x": 515,
+                  "y": 30,
+                  "name": "Media preview / image conversion",
+                  "width": 360,
+                  "height": 378,
+                  "fill": "$surface",
+                  "cornerRadius": 20,
+                  "effect": [
+                    {
+                      "type": "shadow",
+                      "shadowType": "outer",
+                      "color": "#0000000F",
+                      "blur": 2,
+                      "spread": 1
+                    },
+                    {
+                      "type": "shadow",
+                      "shadowType": "outer",
+                      "color": "#14254714",
+                      "offset": {
+                        "x": 0,
+                        "y": 14
+                      },
+                      "blur": 32
+                    }
+                  ],
+                  "layout": "vertical",
+                  "padding": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ReDUi",
+                      "name": "Mountain image preview",
+                      "metadata": {
+                        "type": "unsplash",
+                        "username": "paolobici",
+                        "link": "https://unsplash.com/@paolobici",
+                        "author": "Paolo Bici"
+                      },
+                      "width": "fill_container",
+                      "height": 246,
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1777619559788-91963b6e314c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3ODkzMjI2MzN8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      },
+                      "cornerRadius": 12,
+                      "stroke": "#0000001A",
+                      "strokeWidth": 1
+                    },
+                    {
+                      "type": "frame",
+                      "id": "czdaS",
+                      "name": "Image result metadata",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": [
+                        16,
+                        14
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "WKRVg",
+                          "name": "Image title",
+                          "width": "fill_container",
+                          "justifyContent": "space_between",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "KIPLl",
+                              "name": "Filename",
+                              "fill": "$fg-primary",
+                              "content": "weekend.jpg",
+                              "fontFamily": "$font-body",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "text",
+                              "id": "MAe4e",
+                              "name": "Status",
+                              "fill": "$success-text",
+                              "content": "✓ Converted",
+                              "fontFamily": "$font-body",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "QAjpp",
+                          "name": "Image details",
+                          "fill": "$fg-secondary",
+                          "content": "2400 × 1600  ·  JPG  ·  428 KB",
+                          "fontFamily": "$font-body",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "V3ZDke",
+                  "x": 40,
+                  "y": 434,
+                  "name": "Preview labels",
+                  "width": 1230,
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "X2Eyzx",
+                      "name": "01 / CODE, CLEANED UP",
+                      "fill": "$fg-secondary",
+                      "content": "01 / CODE, CLEANED UP",
+                      "fontFamily": "$font-body",
+                      "fontSize": 10,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1
+                    },
+                    {
+                      "type": "text",
+                      "id": "Q8LrE",
+                      "name": "02 / FILES, READY TO GO",
+                      "fill": "$fg-secondary",
+                      "content": "02 / FILES, READY TO GO",
+                      "fontFamily": "$font-body",
+                      "fontSize": 10,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1
+                    },
+                    {
+                      "type": "text",
+                      "id": "K6g4s",
+                      "name": "03 / PAPERWORK, FINISHED",
+                      "fill": "$fg-secondary",
+                      "content": "03 / PAPERWORK, FINISHED",
+                      "fontFamily": "$font-body",
+                      "fontSize": 10,
+                      "fontWeight": "normal",
+                      "letterSpacing": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "KK9gt",
+          "name": "Find your next shortcut",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 32,
+          "padding": [
+            72,
+            80
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "CwxKM",
+              "name": "Catalog heading",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "end",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "xioUp",
+                  "name": "Heading copy",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "oFKjD",
+                      "name": "Label",
+                      "fill": "$accent",
+                      "content": "THE RIGHT TOOL, RIGHT HERE",
+                      "fontFamily": "$font-body",
+                      "fontSize": 11,
+                      "fontWeight": "600",
+                      "letterSpacing": 1.4
+                    },
+                    {
+                      "type": "text",
+                      "id": "rAPm8",
+                      "name": "Heading",
+                      "fill": "$fg-primary",
+                      "content": "What’s on your to-do list?",
+                      "fontFamily": "$font-body",
+                      "fontSize": 42,
+                      "fontWeight": "500",
+                      "letterSpacing": -1.8
+                    }
+                  ]
+                },
+                {
+                  "id": "AJZSZ",
+                  "type": "ref",
+                  "ref": "o5XSq",
+                  "name": "Browse all tools",
+                  "descendants": {
+                    "Y4AAX": {
+                      "content": "Browse all tools →"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "p417N",
+              "name": "Popular tools",
+              "width": "fill_container",
+              "gap": 20,
+              "children": [
+                {
+                  "id": "v4l65",
+                  "type": "ref",
+                  "ref": "vqrFa",
+                  "name": "JSON Formatter",
+                  "width": "fill_container",
+                  "padding": 24,
+                  "gap": 18,
+                  "strokeWidth": 0,
+                  "effect": [
+                    {
+                      "type": "shadow",
+                      "shadowType": "outer",
+                      "color": "#0000000F",
+                      "blur": 1,
+                      "spread": 1
+                    },
+                    {
+                      "type": "shadow",
+                      "shadowType": "outer",
+                      "color": "#00000008",
+                      "offset": {
+                        "x": 0,
+                        "y": 3
+                      },
+                      "blur": 6
+                    }
+                  ],
+                  "descendants": {
+                    "c2UXK": {
+                      "id": "oEANi",
+                      "type": "ref",
+                      "ref": "QBoAz",
+                      "name": "JSON Formatter logo",
+                      "width": 72,
+                      "height": 72
+                    },
+                    "U4hKc": {
+                      "enabled": false
+                    },
+                    "STMP3": {
+                      "content": "JSON Formatter",
+                      "fontSize": 18
+                    },
+                    "Yduaw": {
+                      "content": "Turn messy JSON into clean, readable code."
+                    },
+                    "mHnsi": {
+                      "content": "Open tool →"
+                    }
+                  }
+                },
+                {
+                  "id": "iNcCW",
+                  "type": "ref",
+                  "ref": "vqrFa",
+                  "name": "Merge PDF",
+                  "width": "fill_container",
+                  "padding": 24,
+                  "gap": 18,
+                  "strokeWidth": 0,
+                  "effect": [
+                    {
+                      "type": "shadow",
+                      "shadowType": "outer",
+                      "color": "#0000000F",
+                      "blur": 1,
+                      "spread": 1
+                    },
+                    {
+                      "type": "shadow",
+                      "shadowType": "outer",
+                      "color": "#00000008",
+                      "offset": {
+                        "x": 0,
+                        "y": 3
+                      },
+                      "blur": 6
+                    }
+                  ],
+                  "descendants": {
+                    "c2UXK": {
+                      "id": "u8KSNp",
+                      "type": "ref",
+                      "ref": "Eo3Yq",
+                      "name": "Merge PDF logo",
+                      "width": 72,
+                      "height": 72
+                    },
+                    "U4hKc": {
+                      "enabled": false
+                    },
+                    "STMP3": {
+                      "content": "Merge PDF",
+                      "fontSize": 18
+                    },
+                    "Yduaw": {
+                      "content": "Bring multiple PDFs together in one file."
+                    },
+                    "mHnsi": {
+                      "content": "Open tool →"
+                    }
+                  }
+                },
+                {
+                  "id": "u3Eo6",
+                  "type": "ref",
+                  "ref": "vqrFa",
+                  "name": "Invoice Generator",
+                  "width": "fill_container",
+                  "padding": 24,
+                  "gap": 18,
+                  "strokeWidth": 0,
+                  "effect": [
+                    {
+                      "type": "shadow",
+                      "shadowType": "outer",
+                      "color": "#0000000F",
+                      "blur": 1,
+                      "spread": 1
+                    },
+                    {
+                      "type": "shadow",
+                      "shadowType": "outer",
+                      "color": "#00000008",
+                      "offset": {
+                        "x": 0,
+                        "y": 3
+                      },
+                      "blur": 6
+                    }
+                  ],
+                  "descendants": {
+                    "c2UXK": {
+                      "id": "MnIbd",
+                      "type": "ref",
+                      "ref": "li0SW",
+                      "name": "Invoice Generator logo",
+                      "width": 72,
+                      "height": 72
+                    },
+                    "U4hKc": {
+                      "enabled": false
+                    },
+                    "STMP3": {
+                      "content": "Invoice Generator",
+                      "fontSize": 18
+                    },
+                    "Yduaw": {
+                      "content": "Create a polished invoice, ready to send."
+                    },
+                    "mHnsi": {
+                      "content": "Open tool →"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "aS5qA",
+              "name": "Browse by category",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "k3LhOl",
+                  "name": "Browse label",
+                  "fill": "$fg-secondary",
+                  "content": "Or browse by category",
+                  "fontFamily": "$font-body",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "id": "e7XGGS",
+                  "type": "ref",
+                  "ref": "o5XSq",
+                  "name": "Developer category",
+                  "height": 36,
+                  "descendants": {
+                    "Y4AAX": {
+                      "content": "Developer",
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "id": "UjwDq",
+                  "type": "ref",
+                  "ref": "o5XSq",
+                  "name": "PDF & images category",
+                  "height": 36,
+                  "descendants": {
+                    "Y4AAX": {
+                      "content": "PDF & images",
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "id": "Z69kET",
+                  "type": "ref",
+                  "ref": "o5XSq",
+                  "name": "Business category",
+                  "height": 36,
+                  "descendants": {
+                    "Y4AAX": {
+                      "content": "Business",
+                      "fontSize": 13
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "gCL39",
+          "name": "Less friction / More flow",
+          "width": "fill_container",
+          "fill": "$surface-muted",
+          "gap": 80,
+          "padding": [
+            64,
+            80
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "jwKDZ",
+              "name": "Value statement",
+              "width": 480,
+              "layout": "vertical",
+              "gap": 18,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "XKYvs",
+                  "name": "Eyebrow",
+                  "fill": "$accent",
+                  "content": "MADE FOR YOUR EVERYDAY",
+                  "fontFamily": "$font-body",
+                  "fontSize": 11,
+                  "fontWeight": "600",
+                  "letterSpacing": 1.5
+                },
+                {
+                  "type": "text",
+                  "id": "aMmhG",
+                  "name": "Value heading",
+                  "fill": "$fg-primary",
+                  "content": "Less friction.\nMore flow.",
+                  "lineHeight": 1.1,
+                  "fontFamily": "$font-body",
+                  "fontSize": 56,
+                  "fontWeight": "500",
+                  "letterSpacing": -2.5
+                },
+                {
+                  "type": "text",
+                  "id": "O9AADL",
+                  "name": "Value description",
+                  "fill": "$fg-secondary",
+                  "content": "Not another platform to learn.\nJust the tool you need, when you need it.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "xHWAL",
+              "name": "Reasons to choose SmartTools",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "NCAri",
+                  "name": "Straight to the task",
+                  "width": "fill_container",
+                  "stroke": "$border-strong",
+                  "strokeWidth": {
+                    "bottom": 1
+                  },
+                  "gap": 16,
+                  "padding": [
+                    0,
+                    0,
+                    24,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "FBc6Z",
+                      "name": "Straight to the task icon",
+                      "width": 22,
+                      "height": 22,
+                      "icon": "zap",
+                      "library": "lucide",
+                      "fill": "$fg-primary"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "D1MJIO",
+                      "name": "Straight to the task copy",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "VIZDI",
+                          "name": "Title",
+                          "fill": "$fg-primary",
+                          "content": "Straight to the task",
+                          "fontFamily": "$font-body",
+                          "fontSize": 18,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "wWkI3",
+                          "name": "Description",
+                          "fill": "$fg-secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Open your browser, pick a tool, and get started.",
+                          "lineHeight": 1.5,
+                          "fontFamily": "$font-body",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "mHGrW",
+                  "name": "Privacy, explained",
+                  "width": "fill_container",
+                  "stroke": "$border-strong",
+                  "strokeWidth": {
+                    "bottom": 1
+                  },
+                  "gap": 16,
+                  "padding": [
+                    0,
+                    0,
+                    24,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "h0H2O",
+                      "name": "Privacy, explained icon",
+                      "width": 22,
+                      "height": 22,
+                      "icon": "shield-check",
+                      "library": "lucide",
+                      "fill": "$fg-primary"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "E90cIy",
+                      "name": "Privacy, explained copy",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "MmOe5",
+                          "name": "Title",
+                          "fill": "$fg-primary",
+                          "content": "Privacy, explained",
+                          "fontFamily": "$font-body",
+                          "fontSize": 18,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "sf8fj",
+                          "name": "Description",
+                          "fill": "$fg-secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Many tools run locally. Each tool tells you how your data is handled.",
+                          "lineHeight": 1.5,
+                          "fontFamily": "$font-body",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "wZIMv",
+                  "name": "A result you can use",
+                  "width": "fill_container",
+                  "stroke": "$border-strong",
+                  "strokeWidth": {
+                    "bottom": 1
+                  },
+                  "gap": 16,
+                  "padding": [
+                    0,
+                    0,
+                    24,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "wCS0g",
+                      "name": "A result you can use icon",
+                      "width": 22,
+                      "height": 22,
+                      "icon": "download",
+                      "library": "lucide",
+                      "fill": "$fg-primary"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "z1RTgt",
+                      "name": "A result you can use copy",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "aNsl1",
+                          "name": "Title",
+                          "fill": "$fg-primary",
+                          "content": "A result you can use",
+                          "fontFamily": "$font-body",
+                          "fontSize": 18,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Wfi8t",
+                          "name": "Description",
+                          "fill": "$fg-secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Copy clean code. Download your files. Send polished documents.",
+                          "lineHeight": 1.5,
+                          "fontFamily": "$font-body",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "B3BiuO",
+          "name": "Final invitation section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "padding": 64,
+          "children": [
+            {
+              "type": "frame",
+              "id": "c3IKH",
+              "name": "Blue invitation",
+              "width": "fill_container",
+              "fill": "$accent",
+              "cornerRadius": 20,
+              "padding": [
+                52,
+                56
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "zaFjR",
+                  "name": "Invitation copy",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "bvAUd",
+                      "name": "Invitation heading",
+                      "fill": "$fg-onink",
+                      "content": "One less thing on your list.",
+                      "fontFamily": "$font-body",
+                      "fontSize": 40,
+                      "fontWeight": "500",
+                      "letterSpacing": -1.6
+                    },
+                    {
+                      "type": "text",
+                      "id": "TqdBG",
+                      "name": "Invitation description",
+                      "fill": "$fg-onink",
+                      "content": "Find your tool. Finish your task. Carry on.",
+                      "fontFamily": "$font-body",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "id": "hpO2Y",
+                  "type": "ref",
+                  "ref": "wm1rh",
+                  "name": "Start with a tool",
+                  "fill": "$surface",
+                  "height": 48,
+                  "padding": [
+                    0,
+                    24
+                  ],
+                  "descendants": {
+                    "i2HLbt": {
+                      "content": "Find your tool →",
+                      "fill": "$accent-text"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "uIjjz",
+          "type": "ref",
+          "ref": "KhiTv",
+          "name": "Shared SmartTools footer",
+          "width": "fill_container",
+          "padding": [
+            48,
+            80,
+            32,
+            80
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "TkJTt",
+      "x": 140107,
+      "y": -30547,
+      "name": "SmartTools / Landing V2 / Better UI motion handoff",
+      "clip": true,
+      "width": 1120,
+      "fill": "$surface-ink",
+      "layout": "vertical",
+      "gap": 32,
+      "padding": 48,
+      "children": [
+        {
+          "type": "text",
+          "id": "wxoq6",
+          "name": "Motion handoff label",
+          "fill": "$fg-onink-muted",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "LANDING PAGE / MOTION & INTERACTION",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 11,
+          "fontWeight": "normal",
+          "letterSpacing": 1.5
+        },
+        {
+          "type": "text",
+          "id": "YoCg9",
+          "name": "Motion headline",
+          "fill": "$fg-onink",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Momentum, not distraction.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 40,
+          "fontWeight": "500",
+          "letterSpacing": -1
+        },
+        {
+          "type": "text",
+          "id": "ybv4Z",
+          "name": "Scope",
+          "fill": "$fg-onink-muted",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "V2 implementation specification. Static product examples are illustrative, not interactive workspaces. Navigation and tool links remain available throughout animation.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 15,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "DmBZK",
+          "name": "Scroll choreography / in user order",
+          "width": "fill_container",
+          "gap": 32,
+          "children": [
+            {
+              "type": "frame",
+              "id": "j3Mkae",
+              "name": "Introduce the promise",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Liw1p",
+                  "name": "Step",
+                  "fill": "$fg-onink-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "01 / ARRIVE",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 11,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "text",
+                  "id": "yf350",
+                  "name": "Intent",
+                  "fill": "$fg-onink",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Introduce the promise",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 22,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "xpPep",
+                  "name": "Behavior",
+                  "fill": "$fg-onink-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Reveal heading, supporting copy, and CTA as semantic chunks with 100ms stagger. TranslateY 12px → 0, opacity 0 → 1, 400ms ease-out. Run only once.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ux1B8",
+              "name": "Bring order to the work",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "r2j7oN",
+                  "name": "Step",
+                  "fill": "$fg-onink-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "02 / SCROLL",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 11,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "text",
+                  "id": "NEbOr",
+                  "name": "Intent",
+                  "fill": "$fg-onink",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Bring order to the work",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 22,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "xPiQY",
+                  "name": "Behavior",
+                  "fill": "$fg-onink-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Over the first 240px of native scroll, settle the three product previews from 12px / 24px / 36px offsets to 0. No pinning, scroll hijacking, spinning, or blur on readable content.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "AbDbS",
+              "name": "Reveal the toolkit",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "lJzf2",
+                  "name": "Step",
+                  "fill": "$fg-onink-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "03 / EXPLORE",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 11,
+                  "fontWeight": "normal",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "text",
+                  "id": "EmpXb",
+                  "name": "Intent",
+                  "fill": "$fg-onink",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Reveal the toolkit",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 22,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "yrwCh",
+                  "name": "Behavior",
+                  "fill": "$fg-onink-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Tool discovery reveals once on entry, 12px → 0 over 300ms. Routine card hover uses only a ≤150ms color change. The action label stays visible at rest.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "DFiMX",
+          "name": "Specification divider",
+          "fill": "#FFFFFF26",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "text",
+          "id": "z05Pc",
+          "name": "Interaction contract",
+          "fill": "$fg-onink-muted",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "LINKS & FEEDBACK",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 11,
+          "fontWeight": "normal",
+          "letterSpacing": 1
+        },
+        {
+          "type": "text",
+          "id": "U7KqGT",
+          "name": "Interactions",
+          "fill": "$fg-onink",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "CTA press: scale .96 with an interruptible 150ms transition; static prop disables this. Explicit transition properties only. Hover and keyboard focus have static visual cues. All-tools actions → catalog; cards → named tools; category actions → category catalogs.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 14,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "Q1pLkS",
+          "name": "Accessibility contract",
+          "fill": "$fg-onink-muted",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "RESPONSIVE & REDUCED MOTION",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 11,
+          "fontWeight": "normal",
+          "letterSpacing": 1
+        },
+        {
+          "type": "text",
+          "id": "zxNAa",
+          "name": "Accessible behavior",
+          "fill": "$fg-onink",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Reduced motion: all content visible, no transforms or stagger. Below 768px: stack hero, previews, tool cards, and CTA; 40px headline / 24px gutters. No will-change unless profiling finds first-frame stutter. Verify hover, focus, active, and motion at 10% speed in implementation.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 14,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "JZs1V",
+          "name": "Review checklist",
+          "fill": "$fg-onink-muted",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "SURFACE RULES  Image radius 12 + inset 8 = outer 20. Neutral black 10% image outline. Layered subtle shadows for elevation; borders for structure. Preserve shared component references.\nVerification: browser export reviewed. Canvas screenshot rendering is currently hiding later V2 content; do not treat that capture as final visual approval.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 12,
+          "fontWeight": "normal"
         }
       ]
     }

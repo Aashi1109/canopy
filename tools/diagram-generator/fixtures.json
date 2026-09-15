@@ -13,13 +13,13 @@
     },
     {
       "expected": {
-        "error": "Direction overrides are only supported for Mermaid flowcharts."
+        "error": "Mermaid diagram rendering requires a browser."
       },
       "input": {
         "primary": "sequenceDiagram\n  Client->>API: Request",
         "secondary": ""
       },
-      "name": "rejects a direction override for non-flowcharts",
+      "name": "ignores legacy direction overrides for non-flowcharts",
       "settings": {
         "direction": "LR"
       }

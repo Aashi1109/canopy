@@ -29,7 +29,7 @@ export type PageSelection = "all" | "odd" | "even" | readonly number[];
 
 export type SettingRow = { readonly key: string; readonly value: string };
 
-export type FieldChoice = { readonly label: string; readonly value: string };
+export type FieldChoice = { readonly label: string; readonly value: string; readonly aspectRatio?: number };
 
 export type PresetChoice = FieldChoice & { readonly detail?: string };
 

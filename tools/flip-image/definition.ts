@@ -15,6 +15,7 @@ export default {
   ],
   name: "Flip Image",
   description: "Flip images horizontally or vertically.",
+  optionsPanel: { collapsible: false },
   input: {
     kind: "files",
     label: "Add images to flip",
@@ -67,7 +68,7 @@ export default {
   workbenchMark: { text: "FLIP" },
   labels: {
     empty: "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF files (25 MiB each) to flip them.",
-    ready: "The images and flip settings are ready.",
+    ready: "Your flipped images are ready to download.",
     running: "Flipping images…",
   },
   content: {

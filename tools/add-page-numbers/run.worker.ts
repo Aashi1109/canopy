@@ -21,6 +21,7 @@ import {
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
+import { parseHexColor } from "../../lib/devtools/shared/color.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
@@ -37,6 +38,8 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   enforcePageLimit(input, pdf.getPageCount(), false);
   ctx.signal.throwIfAborted();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const { red, green, blue } = parseHexColor(ctx.settings.textColor);
+  const color = rgb(red / 255, green / 255, blue / 255);
   const total = pdf.getPageCount();
   pdf.getPages().forEach((page, index) => {
     const number = ctx.settings.start + index;
@@ -50,7 +53,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     ctx.progress({ completed: index, total, stage: "Numbering PDF page" });
     page.drawText(value, {
       ...positionedBox(page, width, ctx.settings.fontSize, ctx.settings.position),
-      color: rgb(0.1, 0.1, 0.1),
+      color,
       font,
       size: ctx.settings.fontSize,
     });

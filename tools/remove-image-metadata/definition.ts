@@ -16,6 +16,7 @@ export default {
   ],
   name: "Remove Image Metadata",
   description: "Apply image orientation and strip embedded metadata.",
+  optionsPanel: { collapsible: false },
   input: {
     kind: "files",
     label: "Add images to remove metadata",
@@ -36,7 +37,7 @@ export default {
   labels: {
     empty:
       "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF files (25 MiB each) to remove their metadata.",
-    ready: "The images are ready for metadata removal.",
+    ready: "Your images with metadata removed are ready to download.",
     running: "Removing metadata from the images…",
   },
   content: {

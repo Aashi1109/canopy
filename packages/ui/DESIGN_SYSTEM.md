@@ -266,7 +266,7 @@ So headings and focus rings are correct without any class. Do not re-declare the
 | `Field` (composition) | `index.tsx` | `variant: default \| auth`; req `htmlFor`, `label`, single-element `children` |
 | `AuthField` | `index.tsx` | `Field` with `variant="auth"` pre-bound |
 | `FieldRoot` + parts | `field.tsx` | `variant: default \| auth`, `orientation: vertical \| horizontal \| responsive` |
-| `Input` | `input.tsx` | `size: xs \| sm \| default \| md \| lg` (native `size` omitted) |
+| `Input` | `input.tsx` | `size: xs \| sm \| default \| md \| lg` (native `size` omitted); native range controls have no text-input padding or border, including inside workbenches, so the thumb reaches both track endpoints |
 | `Textarea` | `textarea.tsx` | — (`min-h-[88px]`, `field-sizing-content`) |
 | `InlineTextEditor` | `InlineTextEditor.tsx` | controlled `value`, `onChange`, accessible `label`; `multiline`, `required`, `maxLength`, `disabled`; inherits parent typography in display and editing states |
 | `Select` + parts | `select.tsx` | `SelectTrigger size: xs \| sm \| default \| md \| lg`; auto-bridges native `<option>` children |

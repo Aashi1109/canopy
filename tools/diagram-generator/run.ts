@@ -19,23 +19,6 @@ import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 const MAX_SOURCE_CHARS = 200_000;
-const FLOWCHART_DECLARATION = /^(\s*(?:flowchart|graph)\s+)(?:TB|TD|BT|RL|LR)(?=\s|$)/m;
-
-function applySettings(source: string, settings: Settings): string {
-  let configured = source;
-  const direction = settings.direction ?? "source";
-  if (direction !== "source") {
-    if (!FLOWCHART_DECLARATION.test(configured)) {
-      throw new ToolError(
-        "diagram-direction-unsupported",
-        "Direction overrides are only supported for Mermaid flowcharts.",
-        "Use the direction declared by this diagram, or enter a flowchart or graph definition.",
-      );
-    }
-    configured = configured.replace(FLOWCHART_DECLARATION, `$1${direction}`);
-  }
-  return configured;
-}
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const source = requireUtilityInput(ctx.input.text, "Mermaid diagram code");
@@ -46,7 +29,6 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "Split the diagram into smaller ones — anything this size is unreadable anyway.",
     );
   }
-  const configuredSource = applySettings(source, ctx.settings);
   if (typeof document === "undefined") {
     throw new ToolError(
       "dom-required",
@@ -62,7 +44,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const id = `smarttools-diagram-${bytesToHex(getCrypto().getRandomValues(new Uint8Array(8)))}`;
   let svg: string;
   try {
-    ({ svg } = await mermaid.render(id, configuredSource));
+    ({ svg } = await mermaid.render(id, source));
   } catch (error) {
     throw new ToolError(
       "diagram-invalid",

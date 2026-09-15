@@ -22,6 +22,35 @@ import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 
+import { parseCropPoints, selectionBounds } from "./geometry.ts";
+
+/** Clip in source pixels, preserving alpha outside the selected polygon. */
+function cropFreeform(image: ImageData, raw: unknown): ImageData {
+  const points = parseCropPoints(raw, image);
+  const bounds = selectionBounds(points);
+  const source = new OffscreenCanvas(image.width, image.height);
+  const canvas = new OffscreenCanvas(bounds.width, bounds.height);
+  try {
+    const sourceContext = source.getContext("2d");
+    const context = canvas.getContext("2d");
+    if (!sourceContext || !context) throw new ToolError("canvas-unavailable", "Unable to create the crop. Please try again.");
+    sourceContext.putImageData(image, 0, 0);
+    context.beginPath();
+    points.forEach((point, index) => {
+      const x = point.x - bounds.x;
+      const y = point.y - bounds.y;
+      if (index === 0) context.moveTo(x, y);
+      else context.lineTo(x, y);
+    });
+    context.closePath();
+    context.clip();
+    context.drawImage(source, -bounds.x, -bounds.y);
+    return context.getImageData(0, 0, bounds.width, bounds.height);
+  } finally {
+    source.width = source.height = canvas.width = canvas.height = 1;
+  }
+}
+
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 const ACCEPTED = ["jpeg", "png", "webp"] as const;
@@ -41,7 +70,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   ctx.signal.throwIfAborted();
 
   const format = resolveOutputFormat(outputFormat(ctx.settings.outputFormat), kind);
-  const cropped = cropImage(image, {
+  const cropped = ctx.settings.cropMode === "freeform" ? cropFreeform(image, ctx.settings.cropPoints) : cropImage(image, {
     x: ctx.settings.cropX,
     y: ctx.settings.cropY,
     width: ctx.settings.cropWidth,

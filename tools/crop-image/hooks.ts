@@ -11,6 +11,7 @@
  * on every input.
  */
 
+import { parseCropPoints } from "./geometry.ts";
 import type { ToolValidate } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 
@@ -35,6 +36,10 @@ export const validate: ToolValidate<Settings> = (settings, files) => {
     if (isHeic(file)) {
       return "HEIC crop previews are not supported. Convert the image to JPEG or PNG first.";
     }
+  }
+  if (settings.cropMode === "freeform") {
+    try { parseCropPoints(settings.cropPoints); return null; }
+    catch { return "Add an image and choose a valid crop selection before processing."; }
   }
   return settings.cropWidth <= 0 || settings.cropHeight <= 0
     ? "Enter a valid crop area before processing."

@@ -5,7 +5,6 @@ import {
   FieldLegend,
   Caption,
   FieldLabel,
-  Text,
   Button,
   Input,
   RadioGroup,
@@ -179,6 +178,7 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
               )
             }
             step={field.step}
+            suffix={field.suffix}
             type="number"
             value={
               typeof context.value === "number" || typeof context.value === "string"
@@ -186,7 +186,6 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
                 : field.default
             }
           />
-          {field.suffix ? <Text className="shrink-0 text-muted-foreground">{field.suffix}</Text> : null}
         </div>
       </FieldFrame>
     );
@@ -247,7 +246,19 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
         value={stringValue(context.value, field.default)}
       >
         {field.choices.map((choice) => (
-          <option key={choice.value} value={choice.value}>{choice.label}</option>
+          <option key={choice.value} value={choice.value}>
+            {choice.aspectRatio ? (
+              <span className="flex min-w-0 max-w-full items-center gap-2">
+                <span aria-hidden="true" className="inline-flex size-4 shrink-0 items-center justify-center">
+                  <span className="rounded-[2px] border-[1.5px] border-current" style={{
+                    width: 14 * Math.min(1, choice.aspectRatio),
+                    height: 14 / Math.max(1, choice.aspectRatio),
+                  }} />
+                </span>
+                <span className="truncate">{choice.label}</span>
+              </span>
+            ) : choice.label}
+          </option>
         ))}
       </Select>
     </FieldFrame>

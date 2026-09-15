@@ -7,6 +7,9 @@ import definition from "./definition";
 
 function getPlan(values: WorkspaceProps["settings"], pageCount: number) {
   const settings = parseSettings(definition.settings, values);
+  if (!/^#[\da-f]{6}$/i.test(String(values.textColor ?? settings.textColor))) {
+    throw new Error("Enter a six-digit hex text color, such as #1a1a1a.");
+  }
   return {
     title: `${pageCount} ${pageCount === 1 ? "page will" : "pages will"} be numbered`,
     detail: `Numbering starts at ${settings.start}. Your original stays unchanged.`,

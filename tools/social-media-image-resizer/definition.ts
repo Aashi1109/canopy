@@ -18,6 +18,7 @@ export default {
   ],
   name: "Social Media Image Resizer",
   description: "Resize images to common social media dimensions.",
+  optionsPanel: { collapsible: false },
   input: {
     kind: "files",
     label: "Add images to resize",
@@ -34,37 +35,37 @@ export default {
   settings: {
     fields: {
       preset: {
-        kind: "preset",
+        kind: "select",
         label: "Platform size",
         help: "Every image is fitted to this exact pixel size, whatever it started as.",
         default: "instagram-square",
         choices: [
           {
-            label: "Instagram square",
+            label: "Instagram square · 1080 × 1080",
             value: "instagram-square",
-            detail: "1080 × 1080",
+            aspectRatio: 1,
           },
           {
-            label: "Instagram portrait",
+            label: "Instagram portrait · 1080 × 1350",
             value: "instagram-portrait",
-            detail: "1080 × 1350",
+            aspectRatio: 1080 / 1350,
           },
-          { label: "Story / Reel", value: "story-reel", detail: "1080 × 1920" },
+          { label: "Story / Reel · 1080 × 1920", value: "story-reel", aspectRatio: 1080 / 1920 },
           {
-            label: "YouTube thumbnail",
+            label: "YouTube thumbnail · 1280 × 720",
             value: "youtube-thumbnail",
-            detail: "1280 × 720",
+            aspectRatio: 1280 / 720,
           },
-          { label: "X landscape", value: "x-landscape", detail: "1600 × 900" },
+          { label: "X landscape · 1600 × 900", value: "x-landscape", aspectRatio: 1600 / 900 },
           {
-            label: "LinkedIn landscape",
+            label: "LinkedIn landscape · 1200 × 627",
             value: "linkedin-landscape",
-            detail: "1200 × 627",
+            aspectRatio: 1200 / 627,
           },
           {
-            label: "Facebook landscape",
+            label: "Facebook landscape · 1200 × 630",
             value: "facebook-landscape",
-            detail: "1200 × 630",
+            aspectRatio: 1200 / 630,
           },
         ],
       },
@@ -112,7 +113,7 @@ export default {
   labels: {
     empty:
       "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF images (25 MiB each) to resize for social media.",
-    ready: "The images and platform size settings are ready.",
+    ready: "Your resized images are ready to download.",
     running: "Resizing social media images…",
   },
   content: {

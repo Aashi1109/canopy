@@ -15,31 +15,14 @@ export default {
   ],
   name: "Diagram Generator",
   description: "Render Mermaid diagram code in the browser.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
     label: "Mermaid diagram code",
     placeholder: "flowchart LR\n  A[Input] --> B[Transform] --> C[Output]",
     maxLength: 200_000,
   },
-  settings: {
-    fields: {
-      direction: {
-        kind: "select",
-        label: "Direction",
-        help: "Override a flowchart's direction or keep the direction in its source.",
-        default: "source",
-        pane: "main",
-        choices: [
-          { label: "Use source", value: "source" },
-          { label: "Left to right", value: "LR" },
-          { label: "Right to left", value: "RL" },
-          { label: "Top to bottom", value: "TB" },
-          { label: "Bottom to top", value: "BT" },
-        ],
-      },
-    },
-  },
+  settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 160 },
   capabilities: { copy: true, download: true },
   workbenchMark: { text: "DIAG" },
@@ -52,7 +35,7 @@ export default {
     howToUse: [
       "Start with a diagram type on the first line — `flowchart LR`, `sequenceDiagram`, `classDiagram`, `erDiagram`, `gantt` — because Mermaid decides everything else from it.",
       "Write the body underneath. The diagram re-renders as you pause typing, so a syntax error shows up on the line you just wrote rather than after a long edit.",
-      "Adjust direction to fit the shape of your content: LR keeps a linear pipeline readable, TD suits a tree or a decision flow.",
+      "For flowcharts, set direction in the source: `flowchart LR` runs left to right; `flowchart TD` runs top to bottom.",
       "Download the SVG when it looks right. It is vector, so it stays sharp in a README, a slide, or a printed design doc.",
     ],
     limitations: [

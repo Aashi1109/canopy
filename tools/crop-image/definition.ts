@@ -15,7 +15,8 @@ export default {
     "cut",
   ],
   name: "Crop Image",
-  description: "Crop an image freely or to a common aspect ratio.",
+  description: "Drag independent points to crop an image, or use a rectangular crop.",
+  optionsPanel: { collapsible: false, layout: "grid" },
   layout: "stacked",
   input: {
     kind: "files",
@@ -28,8 +29,20 @@ export default {
   },
   settings: {
     fields: {
+      cropMode: {
+        kind: "select",
+        label: "Crop mode",
+        default: "freeform",
+        choices: [
+          { label: "Freeform points", value: "freeform" },
+          { label: "Rectangle", value: "rectangle" },
+        ],
+      },
+      cropPointCount: { kind: "number", label: "Freeform point count", default: 4, min: 3, max: 12, step: 1 },
+      cropPoints: { kind: "text", label: "Crop points", default: "", maxLength: 2048 },
       cropAspect: {
         kind: "select",
+        span: "full",
         label: "Aspect ratio",
         help: "Locks the drag handles in the preview. Typing a width or height directly releases the lock.",
         default: "free",
@@ -72,9 +85,10 @@ export default {
       },
       outputFormat: {
         kind: "select",
+        span: "full",
         label: "Output format",
         help: "Original keeps the source format. Choose PNG when the image has transparency you need to keep.",
-        default: "original",
+        default: "png",
         choices: [
           { label: "Original format", value: "original" },
           { label: "JPEG", value: "jpeg" },
@@ -84,6 +98,7 @@ export default {
       },
       quality: {
         kind: "slider",
+        span: "full",
         label: "Quality",
         help: "Applies to JPEG and WebP output. PNG is lossless and ignores it.",
         default: 80,
@@ -98,20 +113,20 @@ export default {
   workbenchMark: { text: "ICUT" },
   labels: {
     empty: "Add an image to crop.",
-    ready: "Crop area is ready.",
+    ready: "Your cropped image is ready to download.",
     running: "Cropping image…",
   },
   content: {
     howToUse: [
       "Add a single JPG, PNG, or WebP. It is decoded in your browser — the image is never uploaded.",
-      "Drag the crop box on the preview, or type X, Y, Width, and Height in pixels. X and Y are measured from the top-left corner.",
-      "Pick an aspect ratio to lock the box to 1:1, 4:3, or 16:9. Typing a width or height directly switches back to Free.",
+      "In Freeform points mode, choose 3–12 points and drag each independently, or select a point and type its X and Y. Drag inside the selection to move it. Width and height show the selection bounds.",
+      "Choose Rectangle mode to use an aspect ratio of 1:1, 4:3, or 16:9. Typing a width or height directly switches the ratio back to Free.",
       "Choose an output format and quality, then run the crop and download the result.",
     ],
     limitations: [
       "One image per run. Crop a batch by repeating the tool, or resize them together with a different tool.",
       "HEIC is not accepted here, because the preview cannot be rendered for it. Convert to JPG or PNG first.",
-      "The crop box is clamped to the image bounds, so a box larger than the image simply yields the whole image.",
+      "Freeform points stay inside the image and edges cannot cross. Output is the selection’s bounding rectangle with transparent pixels outside the polygon; this does not correct perspective.",
       "Choosing JPEG flattens transparency onto white. Keep PNG or WebP if the source has an alpha channel.",
       "Images must be 25 MiB or smaller and under 100 megapixels.",
     ],

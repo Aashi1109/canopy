@@ -11,6 +11,7 @@ import {
   EmptyState,
   ProcessingStatus,
   ToolOptionsPanel,
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@smarttools/ui";
 import { Download, FileText, Upload, X } from "lucide-react";
 import {
@@ -311,6 +312,10 @@ export interface FileProcessorWorkspaceProps extends WorkspaceProps {
   detail?: (state: FileProcessorDetail) => ReactNode;
   /** Shows the reorderable file list, for tools where file order is input. */
   orderFiles?: boolean;
+  /** A single-file editor can keep intake metadata and recovery in one row. */
+  compactFileToolbar?: boolean;
+  /** Tool-owned option controls inside the existing settings boundary. */
+  renderOptions?: () => ReactNode;
 }
 
 export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
@@ -338,7 +343,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
   const hasSettings = fields.length > 0;
   const hasMainSettings = fields.some((field) => field.pane === "main");
   const hasSideSettings = fields.some((field) => field.pane !== "main");
-  const fixedOptions = hasSideSettings && props.spec.optionsPanel?.collapsible === false;
+  const fixedOptions = props.spec.optionsPanel?.collapsible === false;
   const fileInputSpec =
     props.spec.input.kind === "files" ? props.spec.input : null;
   const hasEmptyFileQueue =
@@ -432,7 +437,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
   );
   const inputSurface = fileInputSpec ? (
     <Stack
-      className={hasDetailSurface ? "max-h-60 min-h-32 shrink-0" : "h-full min-h-0"}
+      className={hasDetailSurface ? (props.compactFileToolbar ? "shrink-0" : "max-h-60 min-h-32 shrink-0") : "h-full min-h-0"}
       onDragOver={(event) => {
         if (!hasEmptyFileQueue && !props.disabled && Array.from(event.dataTransfer.types).includes("Files")) {
           event.preventDefault();
@@ -458,9 +463,27 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           onFiles={addFiles}
           title="Input files"
         />
-      ) : fileInputSpec.engine === "image" && !props.orderFiles && !props.detail ? (
+      ) : props.compactFileToolbar && props.input.files.length === 1 ? (
+        <div aria-label="Source image" className="flex min-w-0 flex-wrap items-center gap-3 border-b border-border px-4 py-2">
+          <FileThumbnail file={props.input.files[0]} />
+          <div className="min-w-0 flex-1 truncate">
+            {props.input.files[0].name} <span className="text-muted-foreground">· {formatFileSize(props.input.files[0].size)}</span>
+          </div>
+          {fileActions}
+          <TooltipProvider><Tooltip><TooltipTrigger asChild>
+            <span tabIndex={props.disabled ? 0 : undefined} aria-label={props.disabled ? "Remove image — wait for processing to finish" : undefined}
+              className="rounded-lg focus-visible:outline-2 focus-visible:outline-ring">
+              <Button aria-label={`Remove ${props.input.files[0].name}`} disabled={props.disabled}
+                onClick={() => props.onInputChange({ ...props.input, files: [] })} size="icon" variant="outline">
+                <X aria-hidden="true" />
+              </Button>
+            </span>
+          </TooltipTrigger><TooltipContent>{props.disabled ? "Wait for processing to finish" : "Remove image"}</TooltipContent></Tooltip></TooltipProvider>
+        </div>
+      ) : fileInputSpec.engine === "image" && !props.detail ? (
         <WorkspaceSurface title="Image selection" header="sr-only" className="min-h-0 flex-1" contentClassName="gap-0" scroll="none">
-          <MediaInputGallery actions={fileActions} files={props.input.files} disabled={props.disabled} onRemove={(file) => {
+          <MediaInputGallery actions={fileActions} files={props.input.files} disabled={props.disabled}
+            onReorder={props.orderFiles ? (files) => props.onInputChange({ ...props.input, files }) : undefined} onRemove={(file) => {
             if (props.disabled) return;
             setInputIssue("");
             props.onInputChange({ ...props.input, files: props.input.files.filter((entry) => entry !== file) });
@@ -569,9 +592,11 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
       title="Options"
       variant="plain"
     >
-      {hasSideSettings ? (
+      {props.renderOptions ? props.renderOptions() : hasSideSettings ? (
         <SettingsPanel
+          className={props.spec.optionsPanel?.layout === "grid" ? "grid-cols-2" : undefined}
           disabled={props.disabled}
+          layout={props.spec.optionsPanel?.layout}
           onChange={props.onSettingChange}
           pane="side"
           spec={props.spec.settings}
@@ -679,15 +704,23 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
     </div>
   ) : primaryContent;
 
-  if (!hasSideSettings) return mainContent;
+  if (!hasSideSettings && !fixedOptions) return mainContent;
+  if (fixedOptions) {
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(20rem,30%)] lg:overflow-hidden">
+        <div className="min-h-0 min-w-0 shrink-0 border-b border-border lg:border-r lg:border-b-0">{mainContent}</div>
+        <div className="min-h-0 min-w-0 shrink-0">{settingsContent}</div>
+      </div>
+    );
+  }
 
   return (
     <SplitStack
       className="h-full"
       collapseLabel="settings panel"
       collapseSide="secondary"
-      collapsible={!fixedOptions}
-      defaultCollapsed={fixedOptions || props.spec.optionsPanel?.defaultCollapsed === false ? undefined : "secondary"}
+      collapsible
+      defaultCollapsed={props.spec.optionsPanel?.defaultCollapsed === false ? undefined : "secondary"}
       defaultSize={75}
       minSize={75}
     >

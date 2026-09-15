@@ -32,7 +32,7 @@ function Input({ className, code = false, size = "default", type, leadingIcon, s
       data-size={size}
       data-leading-icon={leadingIcon ? "true" : undefined}
       data-suffix={suffix ? "true" : undefined}
-      className={cn(inputVariants({ size }), code && "font-mono", leadingIcon && "pl-10", suffix && "pr-10 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none", "group-data-[variant=auth]/field:px-3.5", className)}
+      className={cn(inputVariants({ size }), code && "font-mono", leadingIcon && "pl-10", suffix && "pr-10 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none", type === "range" ? "border-0 bg-transparent px-0" : "group-data-[variant=auth]/field:px-3.5", className)}
       {...props}
     />
   )
