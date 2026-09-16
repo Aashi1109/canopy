@@ -35,6 +35,7 @@ import type { ToolApp } from "@smarttools/tool-catalog";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getActorUserId } from "../../lib/admin/access";
+import { errorMessage } from "../../utils/errorMessage.ts";
 
 function text(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -149,7 +150,7 @@ export async function updateRoleAction(formData: FormData) {
     };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Unable to save the role. Please try again.",
+      error: errorMessage(error, "Unable to save the role. Please try again."),
     };
   }
 }
@@ -160,7 +161,7 @@ export async function deleteRoleAction(formData: FormData) {
     await deleteCustomRole(actorUserId, text(formData, "roleId"));
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Unable to delete the role. Please try again.",
+      error: errorMessage(error, "Unable to delete the role. Please try again."),
     };
   }
   redirect("/admin/roles");

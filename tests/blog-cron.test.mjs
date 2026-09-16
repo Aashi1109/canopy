@@ -53,8 +53,21 @@ test("GET cannot publish and failed domain requests never expose internal error 
   assert.equal(calls, 0);
   const failed = await handleBlogPublishRequest(request(`Bearer ${secret}`), secret, publish);
   assert.equal(failed.status, 503);
-  assert.deepEqual(await failed.json(), { error: "Blog publishing is temporarily unavailable." });
+  assert.deepEqual(await failed.json(), { error: "[hidden]" });
   assert.equal(calls, 1);
+});
+
+test("publishing returns the original failure message with a default for empty errors", async () => {
+  for (const [error, expected] of [
+    [new Error("Publishing connection timed out"), "Publishing connection timed out"],
+    [new Error(""), "Blog publishing is temporarily unavailable."],
+  ]) {
+    const response = await handleBlogPublishRequest(request(`Bearer ${secret}`), secret, async () => {
+      throw error;
+    });
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), { error: expected });
+  }
 });
 
 test("scheduled handler uses its service binding and awaits the authenticated POST result", async () => {

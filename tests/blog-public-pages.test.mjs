@@ -312,11 +312,15 @@ test("public load-more action returns only published query data and safe actiona
   const result = await loadMoreBlogPosts({ category: "guides", cursor: "page-2" });
   assert.equal(result.ok, true);
   assert.deepEqual(state.calls, [["posts", { category: "guides", cursor: "page-2" }]]);
-  state.error = new BlogValidationError("Secret internal detail");
+  state.error = new BlogValidationError("Invalid pagination cursor");
   const invalid = await loadMoreBlogPosts({ cursor: "invalid" });
   assert.equal(invalid.ok, false);
-  assert.match(invalid.message, /Refresh the blog/);
-  assert.doesNotMatch(invalid.message, /Secret internal detail/);
+  assert.equal(invalid.message, "Invalid pagination cursor");
+  state.error = new Error("");
+  assert.equal(
+    (await loadMoreBlogPosts({})).message,
+    "Couldn’t load more stories. Your loaded stories are still here. Try again.",
+  );
 });
 
 test("load-more excludes taxonomy pagination fields from the real strict public query boundary", async () => {

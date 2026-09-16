@@ -61,7 +61,8 @@ type Props = {
   onImageRequestHandled?: () => void;
   onUploadImage: (file: File) => Promise<BlogImage | null>;
 };
-const menuClass = "z-50 max-h-[70vh] overflow-y-auto rounded-lg border border-border bg-card p-2 shadow-lg";
+const menuClass =
+  "z-50 max-h-[min(70vh,var(--radix-popover-content-available-height))] overflow-y-auto rounded-lg border border-border bg-card p-2 shadow-lg";
 
 function EditorMenuItem(props: ComponentProps<typeof Button>) {
   return <Button size="xs" variant="ghost" className="justify-start text-sm font-normal" {...props} />;
@@ -235,7 +236,11 @@ export function BlogBlockMenu({
   imageRequest = 0,
   onImageRequestHandled,
   atEnd = false,
-}: Props & { atEnd?: boolean }) {
+  blockPosition,
+  onOpenChange,
+}: Props & { atEnd?: boolean; blockPosition?: number; onOpenChange?: (open: boolean) => void }) {
+  const id = useId();
+  const inline = blockPosition !== undefined;
   const [open, setOpen] = useState(false);
   const [imageMode, setImageMode] = useState(false);
   const [tableMode, setTableMode] = useState(false);
@@ -252,8 +257,12 @@ export function BlogBlockMenu({
     pendingInsertion.current?.dispose();
     pendingInsertion.current = null;
   }
+  function changeOpen(value: boolean) {
+    setOpen(value);
+    onOpenChange?.(value);
+    if (!value) clearInsertion();
+  }
   function backToBlocks() {
-    clearInsertion();
     setImageMode(false);
     setTableMode(false);
     setError("");
@@ -277,8 +286,7 @@ export function BlogBlockMenu({
   function insert(type: string) {
     if (!editor || editor.isDestroyed || !editor.isEditable || disabled) return;
     if (type === "table") {
-      clearInsertion();
-      pendingInsertion.current = captureBlogInsertion(editor, atEnd);
+      pendingInsertion.current ??= captureBlogInsertion(editor, atEnd, blockPosition);
       setError("");
       setTableMode(true);
       return;
@@ -298,16 +306,19 @@ export function BlogBlockMenu({
           }
         : type === "blockquote"
           ? { type, content: [content] }
-          : { type };
+          : type === "heading2" || type === "heading3"
+            ? { type: "heading", attrs: { level: type === "heading2" ? 2 : 3 } }
+            : { type };
     try {
-      const inserted = captureBlogInsertion(editor, atEnd).insert(node);
+      const insertion = pendingInsertion.current ?? captureBlogInsertion(editor, atEnd, blockPosition);
+      const inserted = insertion.insert(node);
       if (!inserted) {
         setError("Couldn’t insert the block. Select a place in the article and try again.");
         return;
       }
       keepEditorFocus.current = true;
       editor.commands.focus();
-      setOpen(false);
+      changeOpen(false);
     } catch {
       setError("Couldn’t insert the block. Select a place in the article and try again.");
     }
@@ -316,15 +327,14 @@ export function BlogBlockMenu({
     if (!editor || editor.isDestroyed || !editor.isEditable || disabled) return;
     try {
       const table = createBlogTable(editor, columns, rows);
-      const insertion = pendingInsertion.current ?? captureBlogInsertion(editor, atEnd);
-      pendingInsertion.current = null;
+      const insertion = pendingInsertion.current ?? captureBlogInsertion(editor, atEnd, blockPosition);
       if (!insertion.insert(table)) {
         setError("Couldn’t insert the table. Select a place in the article and try again.");
         return;
       }
       keepEditorFocus.current = true;
       editor.commands.focus();
-      setOpen(false);
+      changeOpen(false);
     } catch {
       setError("Couldn’t insert the table. Choose 1–20 columns and rows and try again.");
     }
@@ -335,26 +345,33 @@ export function BlogBlockMenu({
       onOpenChange={(value) => {
         if (pending) return;
         clearInsertion();
-        setOpen(value);
+        changeOpen(value);
         if (value) {
+          if (editor) pendingInsertion.current = captureBlogInsertion(editor, atEnd, blockPosition);
           setImageMode(false);
           setTableMode(false);
           setError("");
         }
       }}
     >
-      <Popover.Trigger asChild>
-        <Button
-          size={atEnd ? "sm" : "xs"}
-          variant="ghost"
-          disabled={disabled || !editor}
-          className={atEnd ? styles.addBlock : styles.addContent}
-          aria-label={atEnd ? "Add a block" : "Add content"}
-        >
-          <Plus aria-hidden="true" />
-          {atEnd ? "Add a block" : "Add"}
-        </Button>
-      </Popover.Trigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Popover.Trigger asChild>
+            <Button
+              size={inline ? "icon-xs" : atEnd ? "sm" : "xs"}
+              variant="ghost"
+              disabled={disabled || !editor}
+              className={inline ? "text-muted-foreground" : atEnd ? styles.addBlock : styles.addContent}
+              aria-label={inline ? "Add block here" : atEnd ? "Add a block" : "Add content"}
+              onMouseDown={(event) => event.preventDefault()}
+            >
+              <Plus aria-hidden="true" />
+              {!inline && (atEnd ? "Add a block" : "Add")}
+            </Button>
+          </Popover.Trigger>
+        </TooltipTrigger>
+        <TooltipContent>{inline ? "Add block here" : atEnd ? "Add a block" : "Add content"}</TooltipContent>
+      </Tooltip>
       <Popover.Portal>
         <Popover.Content
           ref={menu}
@@ -390,12 +407,12 @@ export function BlogBlockMenu({
               <p className="text-[13px] font-semibold">{editingImage ? "Edit image" : "Insert image"}</p>
               {!editingImage && (
                 <>
-                  <Label className="text-[13px]" htmlFor={`blog-image-${atEnd}`}>
+                  <Label className="text-[13px]" htmlFor={`${id}-image`}>
                     Article image
                   </Label>
                   <Input
                     size="sm"
-                    id={`blog-image-${atEnd}`}
+                    id={`${id}-image`}
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     disabled={pending}
@@ -404,23 +421,23 @@ export function BlogBlockMenu({
                   <p className="text-xs text-muted-foreground">JPEG, PNG or WebP · Up to 5 MiB</p>
                 </>
               )}
-              <Label className="text-[13px]" htmlFor={`blog-alt-${atEnd}`}>
+              <Label className="text-[13px]" htmlFor={`${id}-alt`}>
                 Image description (required)
               </Label>
               <Input
                 size="sm"
-                id={`blog-alt-${atEnd}`}
+                id={`${id}-alt`}
                 maxLength={500}
                 value={alt}
                 disabled={pending}
                 onChange={(event) => setAlt(event.target.value)}
               />
-              <Label className="text-[13px]" htmlFor={`blog-caption-${atEnd}`}>
+              <Label className="text-[13px]" htmlFor={`${id}-caption`}>
                 Caption (optional)
               </Label>
               <Input
                 size="sm"
-                id={`blog-caption-${atEnd}`}
+                id={`${id}-caption`}
                 maxLength={1000}
                 value={caption}
                 disabled={pending}
@@ -453,13 +470,13 @@ export function BlogBlockMenu({
                       }
                       keepEditorFocus.current = true;
                       editor.commands.focus();
-                      setOpen(false);
+                      changeOpen(false);
                       return;
                     }
                     if (!file) return;
                     setPending(true);
                     setError("");
-                    const insertion = pendingInsertion.current ?? captureBlogInsertion(editor, atEnd);
+                    const insertion = pendingInsertion.current ?? captureBlogInsertion(editor, atEnd, blockPosition);
                     pendingInsertion.current = insertion;
                     try {
                       const image = await onUploadImage(file);
@@ -478,12 +495,10 @@ export function BlogBlockMenu({
                       }
                       keepEditorFocus.current = true;
                       editor.commands.focus();
-                      setOpen(false);
+                      changeOpen(false);
                     } catch {
                       setError("Couldn’t insert the image. Try again.");
                     } finally {
-                      insertion.dispose();
-                      if (pendingInsertion.current === insertion) pendingInsertion.current = null;
                       setPending(false);
                     }
                   }}
@@ -503,6 +518,9 @@ export function BlogBlockMenu({
                 <p className="px-2 py-1.5 text-[13px] font-semibold">Style</p>
                 {(
                   [
+                    ["paragraph", "Text", Pilcrow],
+                    ["heading2", "Heading 2", Heading2],
+                    ["heading3", "Heading 3", Heading3],
                     ["bulletList", "Bullet list", List],
                     ["orderedList", "Numbered list", ListOrdered],
                     ["taskList", "Checklist", ListChecks],
@@ -530,11 +548,14 @@ export function BlogBlockMenu({
                     {label}
                   </EditorMenuItem>
                 ))}
+              </div>
+              <Separator className="my-2" />
+              <div role="group" aria-label="Upload" className="flex flex-col">
+                <p className="px-2 py-1.5 text-[13px] font-semibold">Upload</p>
                 <EditorMenuItem
                   onClick={() => {
-                    const selected = !atEnd && !!editor?.isActive("image");
-                    clearInsertion();
-                    if (editor) pendingInsertion.current = captureBlogInsertion(editor, atEnd);
+                    const selected = !inline && !atEnd && !!editor?.isActive("image");
+                    if (editor) pendingInsertion.current ??= captureBlogInsertion(editor, atEnd, blockPosition);
                     setEditingImage(selected);
                     setFile(null);
                     setAlt(selected ? String(editor?.getAttributes("image").alt ?? "") : "");

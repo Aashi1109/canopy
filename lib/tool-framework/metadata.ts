@@ -12,7 +12,7 @@ import type { Metadata } from "next";
 
 import { resolveToolPage, type CatalogTool } from "./catalog";
 import type { ToolApp } from "./categories";
-import type { ResolvedIcon } from "./icons";
+import { toolFaviconHref } from "./icons";
 
 /**
  * Product suffix for Open Graph titles. Mirrors each app layout's
@@ -23,17 +23,13 @@ const APP_SUFFIX: Readonly<Record<ToolApp, string>> = {
   media: "SmartTools Media Tools",
 };
 
-function iconHref(icon: ResolvedIcon): string {
-  return icon.kind === "url" ? icon.url : `data:image/svg+xml,${encodeURIComponent(icon.svg)}`;
-}
-
 function toolMetadataFor(tool: CatalogTool, app: ToolApp): Metadata {
   return {
     title: tool.seoTitle,
     description: tool.seoDescription,
     keywords: [...tool.keywords],
     alternates: { canonical: tool.href },
-    icons: { icon: iconHref(tool.icon) },
+    icons: { icon: toolFaviconHref(tool.icon) },
     openGraph: {
       title: `${tool.seoTitle} | ${APP_SUFFIX[app]}`,
       description: tool.seoDescription,

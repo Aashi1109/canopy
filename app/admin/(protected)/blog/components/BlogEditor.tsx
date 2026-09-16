@@ -30,9 +30,10 @@ import {
 import type { BlogDocument, BlogImage } from "@/lib/blog/document";
 import { mutateBlogAction, uploadBlogImageAction } from "../actions";
 import { BlogEditorShell } from "./BlogEditorShell";
-import { BlogBlockMenu, BlogFormattingToolbar } from "./BlogFormattingToolbar";
+import { BlogFormattingToolbar } from "./BlogFormattingToolbar";
 import { BlogHistoryPanel } from "./BlogHistoryPanel";
 import { BlogTableControls } from "./BlogTableControls";
+import { BlogBlockControls } from "./BlogBlockControls";
 import { BlogImageView } from "./BlogImageView";
 import { BlogImageCropDialog } from "./BlogImageCropDialog";
 import { BlogImageNode as BaseBlogImageNode, blogEditorImageSource as imageSource } from "../lib/imageNode";
@@ -1216,10 +1217,8 @@ export function BlogEditor({
         </p>
       )}
       <EditorContent className={styles.editorBody} editor={editor} />
+      <BlogBlockControls editor={editor} disabled={!editable || publishing || !!recovery} onUploadImage={uploadInlineImage} />
       <BlogTableControls editor={editor} disabled={!editable || publishing || uploading || !!recovery} />
-      {editable && (
-        <BlogBlockMenu editor={editor} atEnd disabled={publishing || !!recovery} onUploadImage={uploadInlineImage} />
-      )}
       <AlertDialog
         open={lifecycle !== null}
         onOpenChange={(open) => {

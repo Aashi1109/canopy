@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { keyValuePairTable } from "@/db/schema";
 import { ensureDatabaseBootstrapped, ensureUserExists } from "@/db/bootstrap";
+import { errorMessage } from "@/utils/errorMessage";
 import { ApiInputError, assertJsonPayloadSize, assertRequestContentLength } from "../_lib/input";
 import {
   getAnonymousUserId,
@@ -47,6 +48,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
     console.error("Failed to save anonymous Paperwork data", error);
-    return NextResponse.json({ error: "Storage is unavailable." }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error, "Storage is unavailable.") }, { status: 500 });
   }
 }

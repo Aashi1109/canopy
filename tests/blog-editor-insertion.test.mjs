@@ -172,3 +172,60 @@ test("removing an image while editing its description does not change an identic
   assert.equal(editor.state.doc.firstChild.attrs.caption, "");
   editor.destroy();
 });
+
+test("inline insertion uses the hovered whole block instead of the selection", () => {
+  for (const block of [paragraph("First"), image("original"), { type: "blockquote", content: [paragraph("Quote")] }]) {
+    const editor = editorFor([block, paragraph("Last")]);
+    editor.commands.setTextSelection(editor.state.doc.content.size - 1);
+    const pending = captureBlogInsertion(editor, false, 0);
+    assert.equal(pending.insert(paragraph("Added")), true);
+    assert.deepEqual(
+      editor.getJSON().content.map((node) => node.type),
+      [block.type, "paragraph", "paragraph"],
+    );
+    assert.equal(editor.state.doc.child(1).textContent, "Added");
+    assert.equal(editor.state.doc.child(2).textContent, "Last");
+    editor.destroy();
+  }
+});
+
+test("inline insertion reuses an empty line without changing content on cancel", () => {
+  const editor = editorFor([paragraph("Before"), paragraph(), paragraph("After")]);
+  const position = editor.state.doc.firstChild.nodeSize;
+  const cancelled = captureBlogInsertion(editor, false, position);
+  cancelled.dispose();
+  assert.equal(editor.state.doc.childCount, 3);
+  assert.equal(captureBlogInsertion(editor, false, position).insert(image("new")), true);
+  assert.equal(editor.state.doc.childCount, 3);
+  assert.equal(editor.state.doc.child(1).attrs.publicId, "new");
+  editor.destroy();
+});
+
+test("inline insertion follows block edits and rejects a deleted destination", () => {
+  const editor = editorFor([paragraph("Before"), paragraph("After")]);
+  const pending = captureBlogInsertion(editor, false, 0);
+  editor.commands.insertContentAt(1, { type: "text", text: "New " });
+  editor.commands.setTextSelection(editor.state.doc.content.size - 1);
+  assert.equal(pending.insert(image("uploaded")), true);
+  assert.equal(editor.state.doc.child(0).textContent, "New Before");
+  assert.equal(editor.state.doc.child(1).attrs.publicId, "uploaded");
+  const deleted = captureBlogInsertion(editor, false, 0);
+  editor.commands.deleteRange({ from: 0, to: editor.state.doc.firstChild.nodeSize });
+  assert.equal(deleted.insert(paragraph("Wrong place")), false);
+  assert.equal(editor.state.doc.childCount, 2);
+  editor.destroy();
+});
+
+test("inline insertion keeps newly typed empty-line content and follows preceding blocks", () => {
+  const editor = editorFor([paragraph("Before"), paragraph(), paragraph("After")]);
+  const position = editor.state.doc.firstChild.nodeSize;
+  const pending = captureBlogInsertion(editor, false, position);
+  editor.commands.insertContentAt(position + 1, { type: "text", text: "Keep me" });
+  editor.commands.insertContentAt(0, paragraph("First"));
+  assert.equal(pending.insert({ type: "heading", attrs: { level: 2 } }), true);
+  assert.equal(editor.state.doc.child(2).textContent, "Keep me");
+  assert.equal(editor.state.doc.child(3).type.name, "heading");
+  assert.equal(editor.state.doc.child(3).attrs.level, 2);
+  assert.equal(editor.state.doc.child(4).textContent, "After");
+  editor.destroy();
+});

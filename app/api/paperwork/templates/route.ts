@@ -3,6 +3,7 @@ import { DocumentTypeSchema, getDocumentDefinition } from "@smarttools/invoice-t
 import { NextResponse } from "next/server";
 
 import { getToolManifest } from "@/lib/tool-framework/manifest";
+import { errorMessage } from "@/utils/errorMessage";
 
 export async function GET(request: Request) {
   try {
@@ -26,6 +27,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Failed to fetch published document templates", error);
-    return NextResponse.json({ error: "Templates are temporarily unavailable." }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error, "Templates are temporarily unavailable.") }, { status: 500 });
   }
 }

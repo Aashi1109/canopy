@@ -1,5 +1,7 @@
 "use server";
 
+import { errorMessage } from "../../../../utils/errorMessage.ts";
+
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getActorUserId } from "../../../../lib/admin/access";
@@ -52,7 +54,7 @@ function jsonList(formData: FormData, key: string, label: string): unknown[] {
 function failure(error: unknown): ToolContentActionState {
   return {
     status: "error",
-    message: error instanceof Error ? error.message : "The change could not be saved.",
+    message: errorMessage(error, "The change could not be saved."),
   };
 }
 

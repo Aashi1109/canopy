@@ -1,4 +1,5 @@
 import { createHash, timingSafeEqual } from "node:crypto";
+import { errorMessage } from "../../utils/errorMessage.ts";
 
 type PublishCounts = { attempted: number; published: number; failed: number; remaining: number };
 
@@ -52,8 +53,11 @@ export async function handleBlogPublishRequest(
   }
   try {
     return Response.json(publishCounts(await publish()), { headers });
-  } catch {
-    return Response.json({ error: "Blog publishing is temporarily unavailable." }, { status: 503, headers });
+  } catch (error) {
+    return Response.json(
+      { error: errorMessage(error, "Blog publishing is temporarily unavailable.") },
+      { status: 503, headers },
+    );
   }
 }
 

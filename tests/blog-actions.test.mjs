@@ -94,7 +94,29 @@ test("known failures are actionable while unexpected database/provider details s
     state.error = error;
     const result = await actions.mutateBlogAction("save", {});
     assert.equal(result.code, code);
-    assert.doesNotMatch(JSON.stringify(result), /secret|password|Private role data/);
+    assert.doesNotMatch(JSON.stringify(result), /secret|password=hidden|Private role data/);
+    if (code === "TEMPORARY_FAILURE") assert.equal(result.message, "[hidden] password=[hidden]");
+  }
+});
+test("blog actions return original unexpected messages with their existing fallbacks", async () => {
+  reset();
+  const formData = new FormData();
+  formData.set("file", new File(["image"], "image.png", { type: "image/png" }));
+  for (const [invoke, fallback] of [
+    [() => actions.mutateBlogAction("save", {}), "The change could not be saved. Try again."],
+    [() => actions.readBlogAction({ operation: "post", postId: "post" }), "The change could not be saved. Try again."],
+    [
+      () => actions.uploadBlogImageAction(formData),
+      "The image upload failed unexpectedly. Try uploading the image again.",
+    ],
+  ]) {
+    state.error = new Error("Connection timed out");
+    const result = await invoke();
+    assert.equal(result.ok, false);
+    assert.equal(result.message, "Connection timed out");
+    assert.equal("stack" in result, false);
+    state.error = new Error("");
+    assert.equal((await invoke()).message, fallback);
   }
 });
 test("missing session control flow escapes the action error mapping before any operation", async () => {

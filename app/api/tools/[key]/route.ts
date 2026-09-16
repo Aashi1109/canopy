@@ -17,6 +17,7 @@ import type { ToolResult } from "@/lib/tool-framework/result";
 import { ToolError, type ToolRun } from "@/lib/tool-framework/run";
 import { parseSettings } from "@/lib/tool-framework/settings";
 import type { ToolSpec } from "@/lib/tool-framework/spec";
+import { errorMessage } from "@/utils/errorMessage";
 
 type ToolRequestBody = {
   readonly text?: unknown;
@@ -44,7 +45,7 @@ function readRun(module: unknown): ToolRun<never> {
   return run as ToolRun<never>;
 }
 
-/** Never leaks a stack trace, a module path, or an internal message. */
+/** Return the error message without serializing its stack or other properties. */
 function toFailure(error: unknown): NextResponse {
   if (error instanceof ToolError) {
     return NextResponse.json(
@@ -62,7 +63,7 @@ function toFailure(error: unknown): NextResponse {
     {
       error: {
         code: "processing-failed",
-        message: "This tool could not finish. The input may be malformed or unsupported.",
+        message: errorMessage(error, "This tool could not finish. The input may be malformed or unsupported."),
       },
     },
     { status: 500 },
@@ -100,8 +101,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ key
     let body: ToolRequestBody;
     try {
       body = (await request.json()) as ToolRequestBody;
-    } catch {
-      throw new ToolError("invalid-request", "Request body must be JSON.");
+    } catch (error) {
+      throw new ToolError("invalid-request", errorMessage(error, "Request body must be JSON."));
     }
     if (!isRecord(body)) {
       throw new ToolError("invalid-request", "Request body must be JSON.");
@@ -113,8 +114,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ key
         import(`../../../../tools/${key}/definition`),
         import(`../../../../tools/${key}/run.server`),
       ]);
-    } catch {
-      throw new ToolError("unknown-tool", "This tool is not available.");
+    } catch (error) {
+      throw new ToolError("unknown-tool", errorMessage(error, "This tool is not available."));
     }
 
     const spec = readSpec(modules[0]);

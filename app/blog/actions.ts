@@ -3,6 +3,7 @@
 import { ZodError } from "zod";
 import { BlogValidationError } from "@/lib/blog/document";
 import { listPublishedBlogPosts } from "@/lib/blog/queries";
+import { errorMessage } from "@/utils/errorMessage";
 
 export async function loadMoreBlogPosts(input: unknown) {
   try {
@@ -10,10 +11,12 @@ export async function loadMoreBlogPosts(input: unknown) {
   } catch (error) {
     return {
       ok: false as const,
-      message:
+      message: errorMessage(
+        error,
         error instanceof ZodError || error instanceof BlogValidationError
           ? "These filters are no longer valid. Refresh the blog and try again."
           : "Couldn’t load more stories. Your loaded stories are still here. Try again.",
+      ),
     };
   }
 }

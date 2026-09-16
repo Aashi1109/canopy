@@ -1,6 +1,7 @@
 "use server";
 
 import { z, ZodError } from "zod";
+import { errorMessage } from "../../../../utils/errorMessage.ts";
 import { AuthorizationError } from "@smarttools/control-plane";
 import { getActorUserId } from "../../../../lib/admin/access";
 import {
@@ -49,7 +50,7 @@ function failure(error: unknown) {
     return {
       ok: false as const,
       code: "VALIDATION" as const,
-      message: error instanceof ZodError ? "Check the supplied fields and try again." : error.message,
+      message: errorMessage(error, "Check the supplied fields and try again."),
     };
   }
   if (error instanceof AuthorizationError)
@@ -61,7 +62,7 @@ function failure(error: unknown) {
   return {
     ok: false as const,
     code: "TEMPORARY_FAILURE" as const,
-    message: "The change could not be saved. Try again.",
+    message: errorMessage(error, "The change could not be saved. Try again."),
   };
 }
 
@@ -92,7 +93,7 @@ export async function uploadBlogImageAction(formData: FormData) {
       ? {
           ok: false as const,
           code: "UPLOAD_TEMPORARY_FAILURE" as const,
-          message: "The image upload failed unexpectedly. Try uploading the image again.",
+          message: errorMessage(error, "The image upload failed unexpectedly. Try uploading the image again."),
         }
       : result;
   }

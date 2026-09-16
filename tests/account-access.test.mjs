@@ -84,7 +84,13 @@ test("suspension blocks pages, actions and APIs while preserving identity and lo
     assert.equal((await proxy(request(path, method))).headers.get("x-middleware-next"), "1");
   }
   fixture.error = new Error("database unavailable");
-  assert.equal((await proxy(request("/paperwork"))).status, 503);
+  const unavailable = await proxy(request("/paperwork"));
+  assert.equal(unavailable.status, 503);
+  assert.deepEqual(await unavailable.json(), { error: "database unavailable" });
+  fixture.error = new Error("");
+  assert.deepEqual(await (await proxy(request("/paperwork"))).json(), {
+    error: "Unable to check account access. Please try again.",
+  });
   assert.equal((await proxy(request("/api/auth/sign-out", "POST"))).headers.get("x-middleware-next"), "1");
   for (const path of ["/_next/static/chunks/app.js", "/_next/image", "/favicon.ico"]) {
     assert.equal(doesProxyMatch({ config, url: path }), false);

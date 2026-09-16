@@ -180,7 +180,7 @@ export function BlogEditorShell({
             </Button>
           </nav>
         </header>
-        <div className={styles.workspace}>
+        <div className={styles.workspace} data-blog-editor-workspace="true">
           <div className={styles.canvas}>
             <div className={styles.toolbar} aria-label="Formatting tools">
               {toolbar}

@@ -8,12 +8,20 @@ export function createBlogTable(editor: Editor, columns: number, rows: number): 
 }
 
 /** Keep an upload attached to its starting cursor while the article remains editable. */
-export function captureBlogInsertion(editor: Editor, atEnd = false) {
+export function captureBlogInsertion(editor: Editor, atEnd = false, blockPosition?: number) {
   let bookmark = editor.state.selection.getBookmark();
   const originalImage = editor.state.doc.nodeAt(editor.state.selection.from);
   let disposed = false;
+  let blockDeleted = false;
   function map({ transaction, appendedTransactions }: EditorEvents["transaction"]) {
-    for (const change of [transaction, ...(appendedTransactions ?? [])]) bookmark = bookmark.map(change.mapping);
+    for (const change of [transaction, ...(appendedTransactions ?? [])]) {
+      bookmark = bookmark.map(change.mapping);
+      if (blockPosition !== undefined) {
+        const mapped = change.mapping.mapResult(blockPosition, 1);
+        blockDeleted ||= mapped.deleted;
+        blockPosition = mapped.pos;
+      }
+    }
   }
   function dispose() {
     disposed = true;
@@ -28,7 +36,20 @@ export function captureBlogInsertion(editor: Editor, atEnd = false) {
         dispose();
         return false;
       }
-      const position = atEnd ? editor.state.doc.content.size : bookmark.resolve(editor.state.doc);
+      let position: number | { from: number; to: number } = atEnd
+        ? editor.state.doc.content.size
+        : bookmark.resolve(editor.state.doc);
+      if (blockPosition !== undefined) {
+        const block = editor.state.doc.nodeAt(blockPosition);
+        if (blockDeleted || !block || editor.state.doc.resolve(blockPosition).depth !== 0) {
+          dispose();
+          return false;
+        }
+        position =
+          block.type.name === "paragraph" && block.content.size === 0
+            ? { from: blockPosition, to: blockPosition + block.nodeSize }
+            : blockPosition + block.nodeSize;
+      }
       dispose();
       return editor.commands.insertContentAt(
         typeof position === "number" ? position : { from: position.from, to: position.to },

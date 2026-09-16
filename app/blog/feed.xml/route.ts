@@ -1,5 +1,6 @@
 import { listPublishedBlogPosts } from "../../../lib/blog/queries";
 import { buildBlogFeed } from "../../../lib/blog/publication";
+import { errorMessage } from "../../../utils/errorMessage.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -12,8 +13,8 @@ export async function GET() {
         "Cache-Control": "no-store",
       },
     });
-  } catch {
-    return new Response("The blog feed is temporarily unavailable.", {
+  } catch (error) {
+    return new Response(errorMessage(error, "The blog feed is temporarily unavailable."), {
       status: 503,
       headers: { "Cache-Control": "no-store" },
     });

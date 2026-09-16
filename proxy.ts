@@ -1,6 +1,7 @@
 import { auth } from "@smarttools/auth";
 import { getSessionCookie } from "better-auth/cookies";
 import { NextRequest, NextResponse } from "next/server";
+import { errorMessage } from "./utils/errorMessage.ts";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -18,9 +19,9 @@ export async function proxy(request: NextRequest) {
       headers: request.headers,
       query: { disableCookieCache: true, disableRefresh: true },
     });
-  } catch {
+  } catch (error) {
     return NextResponse.json(
-      { error: "Unable to check account access. Please try again." },
+      { error: errorMessage(error, "Unable to check account access. Please try again.") },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
@@ -47,5 +48,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static/|_next/image(?:/|$)|favicon\\.ico$).*)"],
+  matcher: ["/((?!_next/static/|_next/image(?:/|$)|tool-icons/|favicon\\.ico$).*)"],
 };

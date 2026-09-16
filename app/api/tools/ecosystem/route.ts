@@ -4,6 +4,7 @@ import { resolveIcon } from "@/lib/tool-framework/icons";
 import { getToolManifest } from "@/lib/tool-framework/manifest";
 import { getAvailableTools } from "@smarttools/control-plane";
 import { getToolIcons } from "@smarttools/database";
+import { errorMessage } from "@/utils/errorMessage";
 
 const ECOSYSTEMS = [
   { app: "paperwork", href: "/paperwork", id: "documents", label: "Documents" },
@@ -57,7 +58,7 @@ export async function GET() {
     });
 
     return Response.json({ groups });
-  } catch {
-    return Response.json({ error: "Unable to load tool categories" }, { status: 500 });
+  } catch (error) {
+    return Response.json({ error: errorMessage(error, "Unable to load tool categories") }, { status: 500 });
   }
 }
