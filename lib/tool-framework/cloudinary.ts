@@ -4,6 +4,7 @@
  */
 
 import { v2 as cloudinary } from "cloudinary";
+import { cloudinaryFolder } from "../cloudinary/paths.ts";
 import type { ToolIconRow } from "./icons";
 
 const MAX_ICON_BYTES = 1_048_576;
@@ -73,11 +74,13 @@ export async function uploadToolIcon(
     return { ok: false, reason: "Icon uploads are not configured." };
   }
 
+  const folder = cloudinaryFolder("tool-icons");
   try {
     const uploaded = await cloudinary.uploader.upload(
       `data:${normalizedMimeType};base64,${Buffer.from(bytes).toString("base64")}`,
       {
-        public_id: `smarttools/tool-icons/${toolId}`,
+        public_id: `${folder}/${toolId}`,
+        asset_folder: folder,
         overwrite: true,
         invalidate: true,
         resource_type: "image",

@@ -1,17 +1,20 @@
 #!/usr/bin/env node
+// NODE_ENV=production node scripts/upload-tool-icons.mjs [--folder relative/subfolder]
+// --folder is relative to Canopy/${NODE_ENV}.
 import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
+import { cloudinaryFolder } from "../lib/cloudinary/paths.ts";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export async function uploadToolIcons({
   dir = path.join(ROOT, "tmp/tools icon"),
-  folder = "Canopy/platform/assets/default/icons",
+  folder = "platform/assets/default/icons",
   output = path.join(ROOT, "tmp/cloudinary-tool-icons.json"),
   dryRun = false,
   failedOnly = false,
@@ -24,10 +27,7 @@ export async function uploadToolIcons({
   if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 20) {
     throw new Error("--concurrency must be an integer from 1 to 20.");
   }
-  folder = folder.replace(/\/+$/, "");
-  if (!folder.split("/").every((segment) => /^[A-Za-z0-9_-]+$/.test(segment))) {
-    throw new Error("--folder segments may contain only letters, digits, underscores, and hyphens.");
-  }
+  folder = cloudinaryFolder(folder.replace(/\/+$/, ""));
   dir = path.resolve(dir);
   output = path.resolve(output);
   const relativeOutput = path.relative(dir, output);
@@ -115,6 +115,7 @@ export async function uploadToolIcons({
         resource_type: "image",
         allowed_formats: ["svg"],
         public_id: publicId,
+        asset_folder: folder,
         overwrite,
         ...(overwrite ? { invalidate: true } : {}),
       });

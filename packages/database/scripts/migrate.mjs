@@ -50,6 +50,7 @@ try {
   if (template_count === 0) {
     await sql.begin(async (transaction) => {
       for (const template of seedTemplates) {
+        // Drizzle disables the client's JSON/date serializers; bind strings in raw SQL.
         await transaction`
           INSERT INTO invoice_templates (
             id, name, slug, description, category, status, is_default,
@@ -59,9 +60,9 @@ try {
             ${template.id}, ${template.name}, ${template.slug},
             ${template.description}, ${template.category}, ${template.status},
             ${template.isDefault}, ${template.version}, ${template.documentType},
-            ${template.layoutFamily}, ${transaction.json(template.config)},
+            ${template.layoutFamily}, ${JSON.stringify(template.config)}::jsonb,
             ${template.isPremium ?? false}, ${template.requiredPlan ?? "free"},
-            ${new Date(template.createdAt)}, ${new Date(template.updatedAt)}
+            ${new Date(template.createdAt).toISOString()}, ${new Date(template.updatedAt).toISOString()}
           )
         `;
       }

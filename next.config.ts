@@ -6,7 +6,7 @@ const browserEmptyModule = fileURLToPath(new URL("./lib/paperwork/browserEmptyMo
 const development = process.env.NODE_ENV !== "production";
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.googletagmanager.com${development ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.googletagmanager.com https://static.cloudflareinsights.com${development ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data: https://res.cloudinary.com https://*.google-analytics.com https://*.googletagmanager.com",
   "font-src 'self'",

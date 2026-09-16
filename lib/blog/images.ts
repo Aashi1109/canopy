@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { v2 as cloudinary, type UploadApiResponse } from "cloudinary";
 import { db } from "@smarttools/database";
 import { AuthorizationError } from "@smarttools/control-plane";
+import { cloudinaryFolder } from "../cloudinary/paths.ts";
 import { requireTransactionPermission, writeAudit } from "../admin/adminMutations.ts";
 import { BlogValidationError, validateBlogImage, type BlogImage } from "./document.ts";
 
@@ -73,7 +74,8 @@ export async function uploadBlogImage(actorUserId: string, file: File): Promise<
       "UPLOAD_NOT_CONFIGURED",
       "Image uploads are not configured. Ask an administrator to configure the Cloudinary cloud name, API key and API secret on the server.",
     );
-  const publicId = `smarttools/blog/${randomUUID()}`;
+  const folder = cloudinaryFolder("blog");
+  const publicId = `${folder}/${randomUUID()}`;
   let image: BlogImage;
   let uploaded: UploadApiResponse;
   // Avoid holding database locks over the provider request. Its decoder rejects
@@ -84,6 +86,7 @@ export async function uploadBlogImage(actorUserId: string, file: File): Promise<
       api_key: apiKey,
       api_secret: apiSecret,
       public_id: publicId,
+      asset_folder: folder,
       resource_type: "image",
       type: "upload",
       overwrite: false,

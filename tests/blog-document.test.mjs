@@ -296,6 +296,24 @@ test("Cloudinary images use immutable configured-cloud URLs and require alt text
   assert.throws(() => assertBlogPublishable(noAlt), /alt/i);
 });
 
+test("environment-scoped blog assets retain immutable URLs in cover and body revisions", () => {
+  const options = { cloudName: "my-cloud" };
+  for (const environment of ["production", "development", "test"]) {
+    const asset = { ...image, publicId: image.publicId.replace("smarttools", `Canopy/${environment}`) };
+    const value = {
+      ...article(),
+      coverImage: asset,
+      body: { type: "doc", content: [{ type: "image", attrs: asset }] },
+    };
+    const normalized = validateBlogDocument(JSON.parse(JSON.stringify(value)), options);
+    assert.deepEqual(normalized.coverImage, asset);
+    assert.equal(normalized.body.content[0].attrs.publicId, asset.publicId);
+    const url = `https://res.cloudinary.com/my-cloud/image/upload/v1234/${asset.publicId}.webp`;
+    assert.equal(blogImageUrl(normalized.coverImage, options), url);
+    assert.ok(renderBlogDocument(normalized, options).html.includes(url));
+  }
+});
+
 test("body image layout survives document roundtrips without changing intrinsic dimensions or the cover", () => {
   const options = { cloudName: "my-cloud" };
   for (const [alignment, marginLeft, marginRight] of [
@@ -382,6 +400,13 @@ test("images cannot reference mutable Cloudinary assets outside the immutable bl
     "smarttools/blog/95c40d91-c008-4474-765b-71ec2e4f2b81",
     "smarttools/blog/95C40D91-C008-4474-965B-71EC2E4F2B81",
     "smarttools/blog/95c40d91-c008-4474-965b-71ec2e4f2b81/suffix",
+    "Canopy/production/tool-icons/95c40d91-c008-4474-965b-71ec2e4f2b81",
+    "Canopy/preview/blog/95c40d91-c008-4474-965b-71ec2e4f2b81",
+    "Canopy/production/blog/cover",
+    "Canopy/production/blog/95c40d91-c008-1474-965b-71ec2e4f2b81",
+    "Canopy/production/blog/95c40d91-c008-4474-765b-71ec2e4f2b81",
+    "Canopy/production/blog/95c40d91-c008-4474-965b-71ec2e4f2b81/suffix",
+    "Canopy/production/../development/blog/95c40d91-c008-4474-965b-71ec2e4f2b81",
   ]) {
     assert.throws(
       () => validateBlogDocument({ ...article(), coverImage: { ...image, publicId } }, { cloudName: "my-cloud" }),

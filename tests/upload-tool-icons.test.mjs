@@ -2,11 +2,65 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
+import test, { afterEach, beforeEach } from "node:test";
 import { setImmediate } from "node:timers/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { uploadToolIcons } from "../scripts/upload-tool-icons.mjs";
+
+let previousEnv;
+beforeEach(() => {
+  previousEnv = process.env;
+  process.env = { ...process.env, NODE_ENV: "development" };
+});
+afterEach(() => {
+  process.env = previousEnv;
+});
+
+test("confines every upload and custom folder to the configured environment", async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "tool-icons-environment-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const dir = path.join(root, "icons");
+  const output = path.join(root, "manifest.json");
+  await mkdir(dir);
+  await writeFile(path.join(dir, "json-editor.svg"), "<svg/>");
+  const requests = [];
+  const client = {
+    uploader: {
+      upload: async (_source, options) => {
+        requests.push(options);
+        return {
+          public_id: options.public_id,
+          secure_url: `https://res.cloudinary.com/demo/image/upload/v1/${options.public_id}.svg`,
+          version: 1,
+          format: "svg",
+          width: 104,
+          height: 88,
+        };
+      },
+    },
+  };
+  for (const environment of ["production", "development", "test"]) {
+    process.env.NODE_ENV = environment;
+    for (const folder of [undefined, "custom/icons"]) {
+      const result = await uploadToolIcons({ dir, output, folder, client, log() {} });
+      const resolvedFolder = `Canopy/${environment}/${folder ?? "platform/assets/default/icons"}`;
+      assert.equal(result.folder, resolvedFolder);
+      assert.equal(requests.at(-1).asset_folder, resolvedFolder);
+      assert.equal(requests.at(-1).public_id, `${resolvedFolder}/json-editor`);
+    }
+  }
+  const previousRequests = requests.length;
+  for (const folder of ["../outside", "/outside", "valid/../../outside", "a\\outside"]) {
+    await assert.rejects(uploadToolIcons({ dir, output, folder, client, log() {} }));
+  }
+  for (const environment of [undefined, "", "PROD", "../production"]) {
+    if (environment === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = environment;
+    await assert.rejects(uploadToolIcons({ dir, output, client, log() {} }));
+  }
+  assert.equal(requests.length, previousRequests);
+});
 
 test("uploads slug IDs, resolves existing assets, and retains successful URLs after a failure", async (t) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "tool-icons-test-"));
@@ -47,7 +101,7 @@ test("uploads slug IDs, resolves existing assets, and retains successful URLs af
     },
     api: {
       resource: async (publicId, options) => {
-        assert.equal(publicId, "smarttools/tool-icons/json-to-csv");
+        assert.equal(publicId, "Canopy/development/smarttools/tool-icons/json-to-csv");
         assert.deepEqual(options, { resource_type: "image", type: "upload" });
         return resource(publicId);
       },
@@ -65,7 +119,7 @@ test("uploads slug IDs, resolves existing assets, and retains successful URLs af
   );
   assert.equal(
     result.icons[0].secureUrl,
-    "https://res.cloudinary.com/demo/image/upload/v123/smarttools/tool-icons/json-editor.svg",
+    "https://res.cloudinary.com/demo/image/upload/v123/Canopy/development/smarttools/tool-icons/json-editor.svg",
   );
   assert.deepEqual(
     result.failures.map(({ slug }) => slug),
@@ -88,22 +142,23 @@ test("uploads slug IDs, resolves existing assets, and retains successful URLs af
       resource_type: "image",
       allowed_formats: ["svg"],
       public_id: options.public_id,
+      asset_folder: `Canopy/development/${folder}`,
       overwrite: false,
     });
   }
   assert.deepEqual(
     requests.map(({ options }) => options.public_id),
-    ["json-editor", "json-to-csv", "pdf-to-text", "xml-to-json"].map((slug) => `${folder}/${slug}`),
+    ["json-editor", "json-to-csv", "pdf-to-text", "xml-to-json"].map((slug) => `Canopy/development/${folder}/${slug}`),
   );
   const customFolder = await uploadToolIcons({
     dir,
     output,
-    folder: "Canopy/platform/assets/",
+    folder: "platform/assets/",
     dryRun: true,
     log() {},
   });
-  assert.equal(customFolder.icons[0].publicId, "Canopy/platform/assets/json-editor");
-  await assert.rejects(uploadToolIcons({ dir, output, folder: "../bad", dryRun: true }), /segments/);
+  assert.equal(customFolder.icons[0].publicId, "Canopy/development/platform/assets/json-editor");
+  await assert.rejects(uploadToolIcons({ dir, output, folder: "../bad", dryRun: true }));
   await assert.rejects(uploadToolIcons({ dir, output: path.join(dir, "manifest.json"), dryRun: true }), /outside/);
   for (const concurrency of [0, 21, 1.5, "invalid"]) {
     await assert.rejects(uploadToolIcons({ dir, output, concurrency, dryRun: true }), /concurrency/);
@@ -164,7 +219,7 @@ test("identifies nested Admin 403 failures and redacts credentials from logs and
   const root = await mkdtemp(path.join(os.tmpdir(), "tool-icons-permission-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const originalEnv = process.env;
-  process.env = { CLOUDINARY_API_SECRET: "unit-test-secret" };
+  process.env = { NODE_ENV: "development", CLOUDINARY_API_SECRET: "unit-test-secret" };
   t.after(() => {
     process.env = originalEnv;
   });
@@ -200,7 +255,8 @@ test("failed-only retries select recorded failures and preserve successful and p
   t.after(() => rm(root, { recursive: true, force: true }));
   const dir = path.join(root, "icons");
   const output = path.join(root, "manifest.json");
-  const folder = "retry/icons";
+  const subfolder = "retry/icons";
+  const folder = `Canopy/development/${subfolder}`;
   await mkdir(dir);
   for (const slug of ["a", "b", "c", "d", "e"]) await writeFile(path.join(dir, `${slug}.svg`), "<svg/>");
   const previousIcon = {
@@ -246,7 +302,7 @@ test("failed-only retries select recorded failures and preserve successful and p
   const dryRun = await uploadToolIcons({
     dir,
     output,
-    folder,
+    folder: subfolder,
     client,
     failedOnly: true,
     dryRun: true,
@@ -269,18 +325,18 @@ test("failed-only retries select recorded failures and preserve successful and p
       "--output",
       output,
       "--folder",
-      folder,
+      subfolder,
     ],
-    { env: {} },
+    { env: { NODE_ENV: "development" } },
   );
-  assert.match(stdout, /b\.svg -> retry\/icons\/b/);
+  assert.match(stdout, /b\.svg -> Canopy\/development\/retry\/icons\/b/);
   assert.doesNotMatch(stdout, /[ae]\.svg ->/);
   assert.equal(await readFile(output, "utf8"), original);
 
   const result = await uploadToolIcons({
     dir,
     output,
-    folder,
+    folder: subfolder,
     client,
     failedOnly: true,
     concurrency: 1,
@@ -321,7 +377,8 @@ test("failed-only rejects missing or invalid manifests and leaves a completed ma
   t.after(() => rm(root, { recursive: true, force: true }));
   const dir = path.join(root, "icons");
   const output = path.join(root, "manifest.json");
-  const folder = "retry/icons";
+  const subfolder = "retry/icons";
+  const folder = `Canopy/development/${subfolder}`;
   await mkdir(dir);
   await writeFile(path.join(dir, "a.svg"), "<svg/>");
   let requests = 0;
@@ -333,7 +390,7 @@ test("failed-only rejects missing or invalid manifests and leaves a completed ma
       },
     },
   };
-  const options = { dir, output, folder, client, failedOnly: true, log() {} };
+  const options = { dir, output, folder: subfolder, client, failedOnly: true, log() {} };
   await assert.rejects(uploadToolIcons(options));
   await assert.rejects(readFile(output), { code: "ENOENT" });
   const manifest = { folder, generatedAt: "2026-09-08T00:00:00.000Z", icons: [], failures: [] };

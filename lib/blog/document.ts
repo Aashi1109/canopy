@@ -161,7 +161,11 @@ export function validateBlogImage(input: unknown, options: BlogDocumentOptions =
   const object = record(input, "Image");
   keys(object, ["publicId", "version", "format", "width", "height", "alt", "caption", "src"], "Image");
   const publicId = string(object.publicId, "Image public ID", 250);
-  if (!/^smarttools\/blog\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(publicId))
+  if (
+    !/^(?:smarttools|Canopy\/(?:production|development|test))\/blog\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+      publicId,
+    )
+  )
     fail("Image public ID must identify an uploaded immutable blog asset.");
   if (!["jpg", "jpeg", "png", "webp"].includes(object.format as string))
     fail("Image format must be JPEG, PNG or WebP.");

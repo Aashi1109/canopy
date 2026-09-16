@@ -78,7 +78,10 @@ const png = Buffer.from(
 );
 const file = () => new File([png], "original.png", { type: "image/png" });
 const savedEnv = Object.fromEntries(
-  ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"].map((key) => [key, process.env[key]]),
+  ["NODE_ENV", "CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"].map((key) => [
+    key,
+    process.env[key],
+  ]),
 );
 test.beforeEach(() => {
   Object.assign(fixture, {
@@ -96,6 +99,7 @@ test.beforeEach(() => {
   process.env.CLOUDINARY_CLOUD_NAME = "blog-cloud";
   process.env.CLOUDINARY_API_KEY = "test-key";
   process.env.CLOUDINARY_API_SECRET = "test-secret";
+  process.env.NODE_ENV = "development";
 });
 test.after(() => {
   for (const [key, value] of Object.entries(savedEnv)) {
@@ -110,7 +114,7 @@ test("uploads immutable versioned assets with permission checks and audit attrib
   const second = await uploadBlogImage("admin-1", file());
   assert.match(
     first.publicId,
-    /^smarttools\/blog\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    /^Canopy\/development\/blog\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
   );
   assert.notEqual(first.publicId, second.publicId);
   assert.deepEqual(
@@ -119,6 +123,7 @@ test("uploads immutable versioned assets with permission checks and audit attrib
   );
   const { options } = fixture.uploads[0];
   assert.equal(options.overwrite, false);
+  assert.equal(options.asset_folder, "Canopy/development/blog");
   assert.equal(options.resource_type, "image");
   assert.equal(options.cloud_name, "blog-cloud");
   assert.equal(options.timeout, undefined, "use the upload SDK's standard timeout rather than a shortened override");
@@ -130,6 +135,26 @@ test("uploads immutable versioned assets with permission checks and audit attrib
   assert.equal(audit[2], "blog.image.upload");
   assert.equal(audit[4], first.publicId);
   assert.doesNotMatch(JSON.stringify(audit), /test-secret|test-key|original\.png/);
+});
+
+test("blog uploads keep delivery IDs and dashboard folders inside the current environment", async () => {
+  for (const environment of ["production", "development", "test"]) {
+    process.env.NODE_ENV = environment;
+    const image = await uploadBlogImage("admin", file());
+    const folder = `Canopy/${environment}/blog`;
+    assert.equal(image.publicId.slice(0, image.publicId.lastIndexOf("/")), folder);
+    assert.equal(fixture.uploads.at(-1).options.asset_folder, folder);
+    assert.equal(fixture.uploads.at(-1).options.public_id, image.publicId);
+  }
+});
+
+test("missing or invalid upload environments fail before contacting Cloudinary", async () => {
+  for (const environment of [undefined, "", "preview", "../production"]) {
+    if (environment === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = environment;
+    await assert.rejects(() => uploadBlogImage("admin", file()), /NODE_ENV/);
+  }
+  assert.equal(fixture.uploads.length, 0);
 });
 
 test("forbidden uploads never contact Cloudinary", async () => {
