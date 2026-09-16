@@ -243,8 +243,13 @@
   pointer-events: none;
 }
 @media (pointer: coarse) {
-  .editorBody { padding-left: 84px; }
-  .blockControls button { width: 44px; height: 44px; }
+  .editorBody {
+    padding-left: 84px;
+  }
+  .blockControls button {
+    width: 44px;
+    height: 44px;
+  }
 }
 .editorBody :global(.tiptap) > p:last-child:has(> br:only-child) {
   margin-top: 0;
@@ -489,7 +494,9 @@
   }
 }
 @media (max-width: 767px) {
-  .editorBody { padding-left: 80px; }
+  .editorBody {
+    padding-left: 80px;
+  }
   .formatting {
     min-width: 0;
     flex-wrap: wrap;

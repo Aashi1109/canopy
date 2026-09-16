@@ -1217,7 +1217,11 @@ export function BlogEditor({
         </p>
       )}
       <EditorContent className={styles.editorBody} editor={editor} />
-      <BlogBlockControls editor={editor} disabled={!editable || publishing || !!recovery} onUploadImage={uploadInlineImage} />
+      <BlogBlockControls
+        editor={editor}
+        disabled={!editable || publishing || !!recovery}
+        onUploadImage={uploadInlineImage}
+      />
       <BlogTableControls editor={editor} disabled={!editable || publishing || uploading || !!recovery} />
       <AlertDialog
         open={lifecycle !== null}
