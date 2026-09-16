@@ -79,10 +79,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       }
       const data: unknown = await response.json();
       if (!isRecord(data)) {
-        throw new ToolError(
-          "resolver-invalid-response",
-          "DNS service returned an invalid response.",
-        );
+        throw new ToolError("resolver-invalid-response", "DNS service returned an invalid response.");
       }
       return [type, data] as const;
     }),
@@ -103,8 +100,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     return answers.map((answer: unknown) => {
       if (!isRecord(answer)) return `${type}\t—\tInvalid record`;
       const ttl = includeTtl && typeof answer.TTL === "number" ? String(answer.TTL) : "—";
-      const value =
-        typeof answer.data === "string" ? answer.data : JSON.stringify(answer.data ?? "");
+      const value = typeof answer.data === "string" ? answer.data : JSON.stringify(answer.data ?? "");
       return `${type}\t${ttl}\t${value}`;
     });
   });

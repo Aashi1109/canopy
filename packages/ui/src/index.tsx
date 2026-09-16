@@ -1,9 +1,4 @@
-export {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "./components/accordion.tsx";
+export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "./components/accordion.tsx";
 export { InlineTextEditor, type InlineTextEditorProps } from "./components/InlineTextEditor.tsx";
 import {
   Caption,
@@ -47,25 +42,13 @@ export {
 } from "./components/typography.tsx";
 import { Bookmark, CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
 import { cloneElement } from "react";
-import type {
-  AnchorHTMLAttributes,
-  ComponentProps,
-  HTMLAttributes,
-  ReactElement,
-  ReactNode,
-} from "react";
+import type { AnchorHTMLAttributes, ComponentProps, HTMLAttributes, ReactElement, ReactNode } from "react";
 import smartToolsIcon from "./assets/smarttools-icon.png";
 import { Alert, AlertDescription, AlertTitle } from "./components/alert.tsx";
 import { Badge } from "./components/badge.tsx";
 import { Checkbox as CheckboxControl } from "./components/checkbox.tsx";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./components/tooltip.tsx";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-} from "./components/empty.tsx";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia } from "./components/empty.tsx";
 import {
   Field as FieldRoot,
   FieldDescription as FieldPrimitiveDescription,
@@ -91,12 +74,7 @@ export {
 } from "./components/avatar.tsx";
 export { Badge, badgeVariants } from "./components/badge.tsx";
 export { Button, buttonVariants, ToolActionButton } from "./components/button.tsx";
-export {
-  ButtonGroup,
-  ButtonGroupSeparator,
-  ButtonGroupText,
-  buttonGroupVariants,
-} from "./components/button-group.tsx";
+export { ButtonGroup, ButtonGroupSeparator, ButtonGroupText, buttonGroupVariants } from "./components/button-group.tsx";
 export {
   Card,
   CardAction,
@@ -117,14 +95,7 @@ export type { MediaPreviewProps } from "./components/MediaPreview.tsx";
 export { PdfViewer } from "./components/PdfViewer.tsx";
 export type { PdfOutlineItem, PdfViewerProps } from "./components/PdfViewer.tsx";
 export { CheckboxControl };
-export {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "./components/empty.tsx";
+export { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "./components/empty.tsx";
 export {
   FieldContent,
   FieldDescription,
@@ -167,10 +138,7 @@ export {
   UtilityWorkbench,
   WorkbenchShell,
 } from "./components/design-system-components.tsx";
-export type {
-  SegmentedControlItem,
-  WorkbenchShellProps,
-} from "./components/design-system-components.tsx";
+export type { SegmentedControlItem, WorkbenchShellProps } from "./components/design-system-components.tsx";
 export {
   CompactAction,
   DownloadResult,
@@ -193,12 +161,7 @@ export {
   UniversalProductHeader,
 } from "./components/patterns.tsx";
 export { Separator } from "./components/separator.tsx";
-export {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-  usePanelRef,
-} from "./components/resizable.tsx";
+export { ResizableHandle, ResizablePanel, ResizablePanelGroup, usePanelRef } from "./components/resizable.tsx";
 export { ScrollArea, ScrollBar } from "./components/scroll-area.tsx";
 export {
   AlertDialog,
@@ -231,23 +194,13 @@ export { Textarea } from "./components/textarea.tsx";
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/tooltip.tsx";
 
 export function AppContainer({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div className={cn("mx-auto w-full max-w-[1328px] px-4 lg:px-16", className)} {...props} />
-  );
+  return <div className={cn("mx-auto w-full max-w-[1328px] px-4 lg:px-16", className)} {...props} />;
 }
 
 export { AccountNavigation } from "./components/AccountNavigation.tsx";
 export type { AccountNavigationProps } from "./components/AccountNavigation.tsx";
 
-export function BrandLockup({
-  className,
-  href,
-  name,
-}: {
-  className?: string;
-  href: string;
-  name: string;
-}) {
+export function BrandLockup({ className, href, name }: { className?: string; href: string; name: string }) {
   return (
     <a
       className={cn(
@@ -256,18 +209,10 @@ export function BrandLockup({
       )}
       href={href}
     >
-      <img
-        alt=""
-        className="aspect-square h-full w-auto shrink-0"
-        height={30}
-        src={smartToolsIcon.src}
-        width={30}
-      />
+      <img alt="" className="aspect-square h-full w-auto shrink-0" height={30} src={smartToolsIcon.src} width={30} />
       <span className="flex h-full flex-col justify-center gap-1 leading-none">
         <Text className="block">{name}</Text>
-        {name !== "SmartTools" ? (
-          <Caption className="block text-muted-foreground">by SmartTools</Caption>
-        ) : null}
+        {name !== "SmartTools" ? <Caption className="block text-muted-foreground">by SmartTools</Caption> : null}
       </span>
     </a>
   );
@@ -311,10 +256,7 @@ export function ProductHeader({
         >
           <span
             aria-hidden="true"
-            className={cn(
-              "relative block shrink-0 rounded-[10px] bg-surface-ink",
-              compact ? "size-10" : "size-12",
-            )}
+            className={cn("relative block shrink-0 rounded-[10px] bg-surface-ink", compact ? "size-10" : "size-12")}
           >
             <span className="absolute top-3 left-2.5 h-3.5 w-[22px] rounded-[3px] bg-on-ink" />
             <span className="absolute top-[22px] left-4 h-3.5 w-[22px] rounded-[3px] bg-primary" />
@@ -334,12 +276,8 @@ export function ProductHeader({
 
         {!minimal ? <EcosystemTabFilters currentHref={href} /> : null}
 
-        {mobileActions ? (
-          <div className="flex shrink-0 items-center gap-2 xl:hidden">{mobileActions}</div>
-        ) : null}
-        <div
-          className={cn("shrink-0 items-center gap-2", mobileActions ? "hidden xl:flex" : "flex")}
-        >
+        {mobileActions ? <div className="flex shrink-0 items-center gap-2 xl:hidden">{mobileActions}</div> : null}
+        <div className={cn("shrink-0 items-center gap-2", mobileActions ? "hidden xl:flex" : "flex")}>
           {!minimal ? (
             <a
               aria-current={href === "/blog" ? "page" : undefined}
@@ -476,21 +414,13 @@ export function ToolPageShell({
         {showIntro ? (
           <section className="bg-card">
             <AppContainer className="max-w-[1440px] px-4 pt-[18px] sm:px-6 lg:px-10">
-              <ToolPageIntro
-                badge={badge}
-                category={eyebrow ?? category}
-                description={description}
-                title={title}
-              />
+              <ToolPageIntro badge={badge} category={eyebrow ?? category} description={description} title={title} />
             </AppContainer>
           </section>
         ) : null}
 
         <AppContainer
-          className={cn(
-            "max-w-[1440px] px-4 pt-[18px] pb-8 outline-none sm:px-6 lg:px-10",
-            workspaceClassName,
-          )}
+          className={cn("max-w-[1440px] px-4 pt-[18px] pb-8 outline-none sm:px-6 lg:px-10", workspaceClassName)}
           id={workspaceId}
           tabIndex={-1}
         >
@@ -521,9 +451,7 @@ export function ToolNav({
             aria-current={item.current ? "page" : undefined}
             className={cn(
               "inline-flex min-h-10 items-center whitespace-nowrap rounded-lg px-3 font-sans text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              item.current
-                ? "bg-accent font-semibold text-primary"
-                : "text-foreground hover:bg-muted",
+              item.current ? "bg-accent font-semibold text-primary" : "text-foreground hover:bg-muted",
             )}
             href={item.href}
             key={item.href}
@@ -561,20 +489,12 @@ export function PageHero({
       <AppContainer>
         {eyebrow ? (
           <Overline
-            className={cn(
-              "block text-primary",
-              compact ? "mb-3" : "mb-4",
-              align === "center" && "text-center",
-            )}
+            className={cn("block text-primary", compact ? "mb-3" : "mb-4", align === "center" && "text-center")}
           >
             {eyebrow}
           </Overline>
         ) : null}
-        <Title
-          className={cn("max-w-3xl text-foreground", align === "center" && "mx-auto text-center")}
-        >
-          {title}
-        </Title>
+        <Title className={cn("max-w-3xl text-foreground", align === "center" && "mx-auto text-center")}>{title}</Title>
         <Description
           className={cn(
             "max-w-2xl text-muted-foreground",
@@ -586,11 +506,7 @@ export function PageHero({
         </Description>
         {actions ? (
           <div
-            className={cn(
-              compact ? "mt-5" : "mt-8",
-              "flex flex-wrap gap-3",
-              align === "center" && "justify-center",
-            )}
+            className={cn(compact ? "mt-5" : "mt-8", "flex flex-wrap gap-3", align === "center" && "justify-center")}
           >
             {actions}
           </div>
@@ -615,16 +531,9 @@ export function ToolPageHeader({
   inlineEyebrow?: boolean;
   title: ReactNode;
 }) {
-  const titleNode = (
-    <H1 className={cn("text-foreground", inlineEyebrow && "min-w-0 break-words")}>{title}</H1>
-  );
+  const titleNode = <H1 className={cn("text-foreground", inlineEyebrow && "min-w-0 break-words")}>{title}</H1>;
   const eyebrowNode = eyebrow ? (
-    <Overline
-      className={cn(
-        "flex flex-wrap items-center gap-2 text-primary",
-        inlineEyebrow ? "max-w-full" : "mb-2",
-      )}
-    >
+    <Overline className={cn("flex flex-wrap items-center gap-2 text-primary", inlineEyebrow ? "max-w-full" : "mb-2")}>
       {eyebrow}
     </Overline>
   ) : null;
@@ -648,9 +557,7 @@ export function ToolPageHeader({
             {titleNode}
           </>
         )}
-        {description ? (
-          <Muted className="max-w-2xl text-muted-foreground">{description}</Muted>
-        ) : null}
+        {description ? <Muted className="max-w-2xl text-muted-foreground">{description}</Muted> : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </header>
@@ -708,18 +615,14 @@ export function Field({
 }) {
   const descriptionId = description ? `${htmlFor}-description` : undefined;
   const errorId = error ? `${htmlFor}-error` : undefined;
-  const describedBy =
-    [children.props["aria-describedby"], descriptionId].filter(Boolean).join(" ") || undefined;
-  const errorMessage =
-    [children.props["aria-errormessage"], errorId].filter(Boolean).join(" ") || undefined;
+  const describedBy = [children.props["aria-describedby"], descriptionId].filter(Boolean).join(" ") || undefined;
+  const errorMessage = [children.props["aria-errormessage"], errorId].filter(Boolean).join(" ") || undefined;
 
   return (
     <FieldRoot className={className} data-invalid={Boolean(error)} variant={variant}>
       <FieldPrimitiveLabel htmlFor={htmlFor}>
         {label}
-        {required ? (
-          <span className="ml-1 font-medium text-muted-foreground">(required)</span>
-        ) : null}
+        {required ? <span className="ml-1 font-medium text-muted-foreground">(required)</span> : null}
       </FieldPrimitiveLabel>
       {cloneElement(children, {
         "aria-describedby": describedBy,
@@ -727,9 +630,7 @@ export function Field({
         "aria-invalid": error ? true : children.props["aria-invalid"],
         id: htmlFor,
       })}
-      {description ? (
-        <FieldPrimitiveDescription id={descriptionId}>{description}</FieldPrimitiveDescription>
-      ) : null}
+      {description ? <FieldPrimitiveDescription id={descriptionId}>{description}</FieldPrimitiveDescription> : null}
       {error ? <FieldPrimitiveError id={errorId}>{error}</FieldPrimitiveError> : null}
     </FieldRoot>
   );
@@ -757,9 +658,7 @@ export function Checkbox({
       {tooltip && !props.disabled ? <TooltipTrigger asChild>{checkbox}</TooltipTrigger> : checkbox}
       <span>
         <span className="block font-semibold">{label}</span>
-        {description ? (
-          <span className="mt-1 block leading-5 text-muted-foreground">{description}</span>
-        ) : null}
+        {description ? <span className="mt-1 block leading-5 text-muted-foreground">{description}</span> : null}
       </span>
     </label>
   );
@@ -797,10 +696,7 @@ export function SectionCard({ className, ...props }: HTMLAttributes<HTMLElement>
 export function DangerZone({ className, ...props }: HTMLAttributes<HTMLElement>) {
   return (
     <section
-      className={cn(
-        "rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-foreground",
-        className,
-      )}
+      className={cn("rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-foreground", className)}
       {...props}
     />
   );
@@ -909,8 +805,7 @@ export function AlertBanner({
   const variants: Record<AlertVariant, string> = {
     info: "border-transparent bg-accent text-foreground [&>svg]:text-primary",
     success: "border-transparent bg-success-soft text-foreground [&>svg]:text-success",
-    warning:
-      "border-transparent bg-status-warning-soft text-foreground [&>svg]:text-status-warning",
+    warning: "border-transparent bg-status-warning-soft text-foreground [&>svg]:text-status-warning",
     error: "border-transparent bg-status-danger-soft text-foreground [&>svg]:text-status-danger",
   };
   const urgent = variant === "error";
@@ -923,11 +818,7 @@ export function AlertBanner({
 
   return (
     <Alert
-      className={cn(
-        "flex flex-wrap items-start justify-between gap-3 p-4",
-        variants[variant],
-        className,
-      )}
+      className={cn("flex flex-wrap items-start justify-between gap-3 p-4", variants[variant], className)}
       role={urgent ? "alert" : "status"}
       variant={urgent ? "destructive" : "default"}
     >
@@ -969,9 +860,7 @@ export function EmptyState({
           </EmptyMedia>
         ) : null}
         <Heading className="text-foreground">{title}</Heading>
-        {description ? (
-          <EmptyDescription className="mt-2 max-w-md">{description}</EmptyDescription>
-        ) : null}
+        {description ? <EmptyDescription className="mt-2 max-w-md">{description}</EmptyDescription> : null}
       </EmptyHeader>
       {action ? <EmptyContent className="mt-0">{action}</EmptyContent> : null}
     </Empty>

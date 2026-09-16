@@ -66,12 +66,7 @@ test("merged PDF previews the selected file order and clears stale output after 
           canvas.height = node.naturalHeight;
           const context = canvas.getContext("2d")!;
           context.drawImage(node, 0, 0);
-          const [red, , blue] = context.getImageData(
-            canvas.width / 2,
-            canvas.height / 2,
-            1,
-            1,
-          ).data;
+          const [red, , blue] = context.getImageData(canvas.width / 2, canvas.height / 2, 1, 1).data;
           return red > blue + 100 ? "red" : blue > red + 100 ? "blue" : "other";
         }),
       )
@@ -82,17 +77,11 @@ test("merged PDF previews the selected file order and clears stale output after 
     if (await showOutline.isVisible()) await showOutline.click();
     await surface.getByRole("region", { name: "PDF pages", exact: true }).hover();
     await page.mouse.wheel(0, delta);
-    await expect(surface.getByRole("spinbutton", { name: "Current page" })).toHaveValue(
-      String(pageNumber),
-    );
+    await expect(surface.getByRole("spinbutton", { name: "Current page" })).toHaveValue(String(pageNumber));
     await expect(
-      surface
-        .getByRole("listbox", { name: "Document outline" })
-        .getByRole("option", { selected: true }),
+      surface.getByRole("listbox", { name: "Document outline" }).getByRole("option", { selected: true }),
     ).toContainText(`Page ${pageNumber}`);
-    await expect(
-      surface.getByRole("img", { name: `Generated PDF page ${pageNumber}`, exact: true }),
-    ).toBeInViewport();
+    await expect(surface.getByRole("img", { name: `Generated PDF page ${pageNumber}`, exact: true })).toBeInViewport();
   }
   await merge.click();
   await expectPageColor(1, "red");
@@ -107,60 +96,42 @@ test("merged PDF previews the selected file order and clears stale output after 
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("spinbutton", { name: "Current page" })).toHaveValue("2");
-  await expect(
-    dialog.getByRole("img", { name: "Generated PDF page 2", exact: true }),
-  ).toBeVisible();
+  await expect(dialog.getByRole("img", { name: "Generated PDF page 2", exact: true })).toBeVisible();
   await dialog.getByRole("button", { name: "Fit page", exact: true }).click();
   await expect(dialog.getByLabel("Zoom level")).toHaveText("100%");
   await wheelToPage(dialog, -100_000, 1);
   await wheelToPage(dialog, 100_000, 2);
   await dialog.getByRole("option", { name: "Page 1 1", exact: true }).click();
   await expect(dialog.getByRole("spinbutton", { name: "Current page" })).toHaveValue("1");
-  await expect(
-    dialog.getByRole("img", { name: "Generated PDF page 1", exact: true }),
-  ).toBeInViewport();
+  await expect(dialog.getByRole("img", { name: "Generated PDF page 1", exact: true })).toBeInViewport();
   const modalPage = dialog.getByRole("spinbutton", { name: "Current page" });
   const pageScroller = dialog.getByRole("region", { name: "PDF pages", exact: true });
   const pageStart = await pageScroller.evaluate((node) => node.scrollTop);
   await pageScroller.hover();
   await page.mouse.wheel(0, 100);
-  await expect
-    .poll(() => pageScroller.evaluate((node) => node.scrollTop))
-    .toBeGreaterThan(pageStart);
+  await expect.poll(() => pageScroller.evaluate((node) => node.scrollTop)).toBeGreaterThan(pageStart);
   await expect(modalPage).toHaveValue("1");
   await dialog.getByRole("option", { name: "Page 1 1", exact: true }).click();
   await expect.poll(() => pageScroller.evaluate((node) => node.scrollTop)).toBe(pageStart);
   await pageScroller.hover();
   await page.mouse.wheel(0, 100);
-  await expect
-    .poll(() => pageScroller.evaluate((node) => node.scrollTop))
-    .toBeGreaterThan(pageStart);
+  await expect.poll(() => pageScroller.evaluate((node) => node.scrollTop)).toBeGreaterThan(pageStart);
   await modalPage.fill("1");
   await modalPage.press("Enter");
   await expect.poll(() => pageScroller.evaluate((node) => node.scrollTop)).toBe(pageStart);
-  await expect(
-    dialog.getByRole("img", { name: "Generated PDF page 1", exact: true }),
-  ).toBeVisible();
+  await expect(dialog.getByRole("img", { name: "Generated PDF page 1", exact: true })).toBeVisible();
   const scrollBounds = (await pageScroller.boundingBox())!;
-  const nextPageBounds = (await dialog
-    .getByRole("img", { name: "Generated PDF page 2", exact: true })
-    .boundingBox())!;
+  const nextPageBounds = (await dialog.getByRole("img", { name: "Generated PDF page 2", exact: true }).boundingBox())!;
   await pageScroller.hover();
   await page.mouse.wheel(0, nextPageBounds.y - scrollBounds.y - scrollBounds.height / 2);
-  await expect(
-    dialog.getByRole("img", { name: "Generated PDF page 1", exact: true }),
-  ).toBeInViewport();
-  await expect(
-    dialog.getByRole("img", { name: "Generated PDF page 2", exact: true }),
-  ).toBeInViewport();
+  await expect(dialog.getByRole("img", { name: "Generated PDF page 1", exact: true })).toBeInViewport();
+  await expect(dialog.getByRole("img", { name: "Generated PDF page 2", exact: true })).toBeInViewport();
   await page.screenshot({ path: `/tmp/pdf-continuous-seam-${testInfo.project.name}.png` });
   await modalPage.fill("2");
   await modalPage.press("Enter");
   const expandedImage = dialog.getByRole("img", { name: "Generated PDF page 2", exact: true });
   await expect(expandedImage).toBeInViewport();
-  await expect
-    .poll(() => expandedImage.evaluate((image: HTMLImageElement) => image.naturalWidth))
-    .toBeGreaterThan(0);
+  await expect.poll(() => expandedImage.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
   await expect
     .poll(() =>
       expandedImage.evaluate(
@@ -169,19 +140,14 @@ test("merged PDF previews the selected file order and clears stale output after 
       ),
     )
     .toBe(true);
-  expect(
-    await expandedImage.evaluate((image: HTMLImageElement) => sessionStorage.getItem(image.src)),
-  ).toBe("image/png");
-  const normalResolution = await expandedImage.evaluate(
-    (image: HTMLImageElement) => image.naturalWidth,
+  expect(await expandedImage.evaluate((image: HTMLImageElement) => sessionStorage.getItem(image.src))).toBe(
+    "image/png",
   );
+  const normalResolution = await expandedImage.evaluate((image: HTMLImageElement) => image.naturalWidth);
   const normalWidth = (await expandedImage.boundingBox())!.width;
-  for (let index = 0; index < 10; index++)
-    await dialog.getByRole("button", { name: "Zoom in", exact: true }).click();
+  for (let index = 0; index < 10; index++) await dialog.getByRole("button", { name: "Zoom in", exact: true }).click();
   await expect(dialog.getByLabel("Zoom level")).toHaveText("200%");
-  await expect
-    .poll(async () => (await expandedImage.boundingBox())!.width)
-    .toBeGreaterThan(normalWidth * 1.9);
+  await expect.poll(async () => (await expandedImage.boundingBox())!.width).toBeGreaterThan(normalWidth * 1.9);
   await expect
     .poll(() =>
       expandedImage.evaluate(
@@ -190,12 +156,10 @@ test("merged PDF previews the selected file order and clears stale output after 
       ),
     )
     .toBe(true);
-  expect(
-    await expandedImage.evaluate((image: HTMLImageElement) => image.naturalWidth),
-  ).toBeGreaterThan(normalResolution);
-  await expect
-    .poll(() => pageScroller.evaluate((node) => node.scrollWidth > node.clientWidth))
-    .toBe(true);
+  expect(await expandedImage.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(
+    normalResolution,
+  );
+  await expect.poll(() => pageScroller.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await wheelToPage(dialog, -100_000, 1);
   await wheelToPage(dialog, 100_000, 2);
@@ -205,9 +169,7 @@ test("merged PDF previews the selected file order and clears stale output after 
   await dialog.getByRole("button", { name: "Download red-merged.pdf", exact: true }).click();
   const modalArtifact = await modalDownloadEvent;
   expect(modalArtifact.suggestedFilename()).toBe("red-merged.pdf");
-  expect(
-    (await PDFDocument.load(await readFile((await modalArtifact.path())!))).getPageCount(),
-  ).toBe(2);
+  expect((await PDFDocument.load(await readFile((await modalArtifact.path())!))).getPageCount()).toBe(2);
   await expect(dialog).toBeVisible();
   await page.screenshot({ path: `/tmp/merge-pdf-expanded-${testInfo.project.name}.png` });
   await page.keyboard.press("Escape");
@@ -219,9 +181,7 @@ test("merged PDF previews the selected file order and clears stale output after 
   const artifact = await downloadEvent;
   expect(artifact.suggestedFilename()).toBe("red-merged.pdf");
   expect((await PDFDocument.load(await readFile((await artifact.path())!))).getPageCount()).toBe(2);
-  expect(await readFile((await artifact.path())!)).toEqual(
-    await readFile((await modalArtifact.path())!),
-  );
+  expect(await readFile((await artifact.path())!)).toEqual(await readFile((await modalArtifact.path())!));
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
   const firstHandle = page.getByRole("button", { name: "Drag red.pdf to reorder", exact: true });
@@ -232,19 +192,12 @@ test("merged PDF previews the selected file order and clears stale output after 
   await expect(handle).toBeInViewport();
   await handle.focus();
   await handle.press("Space");
-  await expect(
-    page.getByRole("status").filter({ hasText: "blue.pdf is over position 2 of 2." }),
-  ).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "blue.pdf is over position 2 of 2." })).toBeVisible();
   await page.evaluate(
-    () =>
-      new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-      ),
+    () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
   );
   await handle.press("ArrowUp");
-  await expect(
-    page.getByRole("status").filter({ hasText: "blue.pdf is over position 1 of 2." }),
-  ).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "blue.pdf is over position 1 of 2." })).toBeVisible();
   await handle.press("Space");
   await expect(preview).toHaveCount(0);
   await expect(download).toHaveCount(0);
@@ -255,9 +208,7 @@ test("merged PDF previews the selected file order and clears stale output after 
   await download.click();
   const reorderedArtifact = await reorderedDownloadEvent;
   expect(reorderedArtifact.suggestedFilename()).toBe("blue-merged.pdf");
-  expect(
-    (await PDFDocument.load(await readFile((await reorderedArtifact.path())!))).getPageCount(),
-  ).toBe(2);
+  expect((await PDFDocument.load(await readFile((await reorderedArtifact.path())!))).getPageCount()).toBe(2);
   await output.screenshot({ path: `/tmp/merge-pdf-${testInfo.project.name}.png` });
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
@@ -269,17 +220,13 @@ test("merged PDF previews the selected file order and clears stale output after 
   await expect(download).toHaveCount(0);
 });
 
-test("continuous PDF preview reloads earlier pages after browsing a long document", async ({
-  page,
-}) => {
+test("continuous PDF preview reloads earlier pages after browsing a long document", async ({ page }) => {
   test.setTimeout(120_000);
   const files = [];
   for (const count of [29, 1]) {
     const document = await PDFDocument.create();
     for (let index = 0; index < count; index++) {
-      document
-        .addPage([200, 300])
-        .drawRectangle({ x: 0, y: 0, width: 200, height: 300, color: rgb(0.8, 0.1, 0.1) });
+      document.addPage([200, 300]).drawRectangle({ x: 0, y: 0, width: 200, height: 300, color: rgb(0.8, 0.1, 0.1) });
     }
     files.push({
       name: `pages-${count}.pdf`,
@@ -292,17 +239,16 @@ test("continuous PDF preview reloads earlier pages after browsing a long documen
   await page.locator('input[type="file"]').first().setInputFiles(files);
   await page.getByRole("button", { name: "Merge PDFs", exact: true }).click();
   const preview = page.getByRole("region", { name: "Generated PDF", exact: true });
-  await expect(preview.getByRole("img", { name: "Generated PDF page 1", exact: true })).toBeVisible(
-    { timeout: 60_000 },
-  );
+  await expect(preview.getByRole("img", { name: "Generated PDF page 1", exact: true })).toBeVisible({
+    timeout: 60_000,
+  });
   await preview.getByRole("button", { name: "Expand preview", exact: true }).click();
   const dialog = page.getByRole("dialog");
   const currentPage = dialog.getByRole("spinbutton", { name: "Current page" });
   const showOutline = dialog.getByRole("button", { name: "Show outline", exact: true });
   if (await showOutline.isVisible()) await showOutline.click();
   await expect(currentPage).toHaveAttribute("max", "30");
-  for (let index = 0; index < 10; index++)
-    await dialog.getByRole("button", { name: "Zoom in", exact: true }).click();
+  for (let index = 0; index < 10; index++) await dialog.getByRole("button", { name: "Zoom in", exact: true }).click();
   await expect(dialog.getByLabel("Zoom level")).toHaveText("200%");
   for (const number of [...Array.from({ length: 30 }, (_, index) => index + 1), 1]) {
     await currentPage.fill(String(number));
@@ -320,8 +266,6 @@ test("continuous PDF preview reloads earlier pages after browsing a long documen
   }
   await expect(currentPage).toHaveValue("1");
   await expect(
-    dialog
-      .getByRole("listbox", { name: "Document outline" })
-      .getByRole("option", { selected: true }),
+    dialog.getByRole("listbox", { name: "Document outline" }).getByRole("option", { selected: true }),
   ).toContainText("Page 1");
 });

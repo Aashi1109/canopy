@@ -10,11 +10,7 @@
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
-import {
-  parseUtilityTable,
-  serializeTable,
-  utilityDelimiter,
-} from "../../lib/devtools/shared/table.ts";
+import { parseUtilityTable, serializeTable, utilityDelimiter } from "../../lib/devtools/shared/table.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 

@@ -81,11 +81,7 @@ export function GeneratedPdfPreview({
       }))}
       pagePreviewDetail={file.name}
       renderPagePreview={(pageNumber) => (
-        <PagePreview
-          pageNumber={pageNumber}
-          previews={pages}
-          requestThumbnails={requestThumbnails}
-        />
+        <PagePreview pageNumber={pageNumber} previews={pages} requestThumbnails={requestThumbnails} />
       )}
     />
   );
@@ -104,9 +100,7 @@ export function GeneratedPdfPreview({
           </Button>
         ) : undefined
       }
-      stateDescription={
-        error ? `${error} Retry the preview, or download the PDF from Processed output.` : undefined
-      }
+      stateDescription={error ? `${error} Retry the preview, or download the PDF from Processed output.` : undefined}
       stateTitle={error ? "Preview unavailable" : "Opening generated PDF…"}
       title="Generated PDF"
     >

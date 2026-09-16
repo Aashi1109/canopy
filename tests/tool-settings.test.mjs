@@ -13,9 +13,9 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const settingsSource = await readFile(path.join(ROOT, "lib/tool-framework/settings.ts"), "utf8");
 const FIELD_KINDS = new Set(
   [
-    ...(
-      /export type FieldSpec =([\s\S]*?)\nexport type FieldKind/.exec(settingsSource)?.[1] ?? ""
-    ).matchAll(/kind:\s*"([a-z]+)"/g),
+    ...(/export type FieldSpec =([\s\S]*?)\nexport type FieldKind/.exec(settingsSource)?.[1] ?? "").matchAll(
+      /kind:\s*"([a-z]+)"/g,
+    ),
   ].map((match) => match[1]),
 );
 
@@ -126,11 +126,7 @@ test("visibleWhen points at a key in the same spec", () => {
         Object.hasOwn(spec.fields, field.visibleWhen.key),
         `${name}.${key}: visibleWhen references unknown key "${field.visibleWhen.key}"`,
       );
-      assert.notEqual(
-        field.visibleWhen.key,
-        key,
-        `${name}.${key}: visibleWhen is self-referential`,
-      );
+      assert.notEqual(field.visibleWhen.key, key, `${name}.${key}: visibleWhen is self-referential`);
     }
   }
 });
@@ -150,9 +146,7 @@ test("select and preset choices are non-empty and contain the default", () => {
 
 test("declared defaults round-trip through parseSettings unchanged", () => {
   for (const [name, spec] of specsUnderTest) {
-    const defaults = Object.fromEntries(
-      Object.entries(spec.fields).map(([key, field]) => [key, field.default]),
-    );
+    const defaults = Object.fromEntries(Object.entries(spec.fields).map(([key, field]) => [key, field.default]));
     assert.deepEqual(
       parseSettings(spec, defaults),
       defaults,
@@ -173,11 +167,7 @@ test("example settings reference declared fields and survive parsing", () => {
           Object.hasOwn(spec.fields, key),
           `${name}: example "${example.label}" references unknown setting "${key}"`,
         );
-        assert.deepEqual(
-          parsed[key],
-          value,
-          `${name}: example "${example.label}" has an invalid value for "${key}"`,
-        );
+        assert.deepEqual(parsed[key], value, `${name}: example "${example.label}" has an invalid value for "${key}"`);
       }
     }
   }
@@ -216,9 +206,7 @@ const HOSTILE_ROOTS = [
 ];
 
 test("parseSettings never throws on hostile input and always returns defaults", () => {
-  const defaults = Object.fromEntries(
-    Object.entries(FIXTURE.fields).map(([key, field]) => [key, field.default]),
-  );
+  const defaults = Object.fromEntries(Object.entries(FIXTURE.fields).map(([key, field]) => [key, field.default]));
   for (const raw of HOSTILE_ROOTS) {
     let parsed;
     assert.doesNotThrow(
@@ -315,12 +303,8 @@ test("parsePageSelection is total over untrusted strings", () => {
 
 test("rows only accept well-formed key/value pairs", () => {
   assert.deepEqual(parseSettings(FIXTURE, { headers: [] }).headers, []);
-  assert.deepEqual(parseSettings(FIXTURE, { headers: [{ key: "a", value: "b" }] }).headers, [
-    { key: "a", value: "b" },
-  ]);
-  assert.deepEqual(parseSettings(FIXTURE, { headers: ["a=b"] }).headers, [
-    { key: "x", value: "1" },
-  ]);
+  assert.deepEqual(parseSettings(FIXTURE, { headers: [{ key: "a", value: "b" }] }).headers, [{ key: "a", value: "b" }]);
+  assert.deepEqual(parseSettings(FIXTURE, { headers: ["a=b"] }).headers, [{ key: "x", value: "1" }]);
 });
 
 test("colors and dates are validated, not echoed", () => {

@@ -32,9 +32,7 @@ const hooks = registerHooks({
     if (specifier === "@/lib/admin/access")
       return stub('export async function requirePagePermission(){return {user:{id:"admin"}}}');
     if (specifier === "@/lib/blog/queries")
-      return stub(
-        'export async function listBlogTaxonomy(){return {items:[],nextCursor:"next-page"}}',
-      );
+      return stub('export async function listBlogTaxonomy(){return {items:[],nextCursor:"next-page"}}');
     if (specifier === "../actions")
       return stub(
         'export async function mutateBlogAction(){throw Error("Unexpected mutation")} export async function readBlogAction(){throw Error("Unexpected query")}',
@@ -47,8 +45,7 @@ const hooks = registerHooks({
     ) {
       const target = new URL(specifier, context.parentURL);
       for (const extension of ["", ".ts", ".tsx"])
-        if (existsSync(new URL(target.href + extension)))
-          return next(target.href + extension, context);
+        if (existsSync(new URL(target.href + extension))) return next(target.href + extension, context);
     }
     return next(specifier, context);
   },
@@ -81,14 +78,11 @@ const hooks = registerHooks({
   },
 });
 const { BlogPosts } = await import("../app/admin/(protected)/blog/components/BlogPosts.tsx");
-const { BlogPublishPanel } =
-  await import("../app/admin/(protected)/blog/components/BlogPublishPanel.tsx");
+const { BlogPublishPanel } = await import("../app/admin/(protected)/blog/components/BlogPublishPanel.tsx");
 const { BlogPostSettings, filterRelatedTools } =
   await import("../app/admin/(protected)/blog/components/BlogPostSettings.tsx");
-const { historyPageSchema } =
-  await import("../app/admin/(protected)/blog/components/BlogHistoryPanel.tsx");
-const { BlogRevisionList } =
-  await import("../app/admin/(protected)/blog/components/BlogRevisionList.tsx");
+const { historyPageSchema } = await import("../app/admin/(protected)/blog/components/BlogHistoryPanel.tsx");
+const { BlogRevisionList } = await import("../app/admin/(protected)/blog/components/BlogRevisionList.tsx");
 const taxonomy = await import("../app/admin/(protected)/blog/taxonomy/page.tsx");
 test.after(() => {
   hooks.deregister();
@@ -142,29 +136,21 @@ test("post URL copies the full address and recovers from clipboard failure witho
 
   await copy(render()).props.onClick();
   assert.deepEqual(written, ["https://example.test/blog/my-post"]);
-  assert.ok(
-    render().some((node) => node.props.role === "status" && node.props.children === "URL copied."),
-  );
+  assert.ok(render().some((node) => node.props.role === "status" && node.props.children === "URL copied."));
 
   navigator.clipboard.writeText = async () => {
     throw new Error("Permission denied");
   };
   await copy(render()).props.onClick();
   assert.ok(render().some((node) => node.props.children === "https://example.test/blog/my-post"));
-  assert.ok(
-    render().some(
-      (node) => node.props.role === "status" && /copy it manually/.test(node.props.children),
-    ),
-  );
+  assert.ok(render().some((node) => node.props.role === "status" && /copy it manually/.test(node.props.children)));
 
   navigator.clipboard.writeText = async (url) => {
     written.push(url);
   };
   await copy(render()).props.onClick();
   assert.equal(written.length, 2);
-  assert.ok(
-    render().some((node) => node.props.role === "status" && node.props.children === "URL copied."),
-  );
+  assert.ok(render().some((node) => node.props.role === "status" && node.props.children === "URL copied."));
 
   props.slug = null;
   assert.equal(copy(render()), undefined);
@@ -193,8 +179,7 @@ test("history panel accepts paginated revision responses and rejects malformed d
     false,
   );
   assert.equal(
-    historyPageSchema.safeParse({ items: [{ id: "category", name: "News" }], nextCursor: null })
-      .success,
+    historyPageSchema.safeParse({ items: [{ id: "category", name: "News" }], nextCursor: null }).success,
     false,
   );
 });
@@ -225,13 +210,10 @@ function revisionLinks(props) {
       ...props,
     }),
   );
-  return Array.from(
-    html.matchAll(/<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g),
-    ([, href, content]) => ({
-      url: new URL(href.replaceAll("&amp;", "&"), "https://example.test"),
-      label: content.replace(/<[^>]+>/g, "").trim(),
-    }),
-  );
+  return Array.from(html.matchAll(/<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g), ([, href, content]) => ({
+    url: new URL(href.replaceAll("&amp;", "&"), "https://example.test"),
+    label: content.replace(/<[^>]+>/g, "").trim(),
+  }));
 }
 
 test("revision comparison opens and closes without losing pagination; previews retain the selected historical revision", () => {
@@ -353,9 +335,7 @@ test("taxonomy rejects external, traversing, and repeated return destinations", 
     "/admin/blog/../../outside",
     ["/admin/blog/post-1"],
   ]) {
-    const html = renderToStaticMarkup(
-      await taxonomy.default({ searchParams: Promise.resolve({ returnTo }) }),
-    );
+    const html = renderToStaticMarkup(await taxonomy.default({ searchParams: Promise.resolve({ returnTo }) }));
     assert.doesNotMatch(html, /attacker|outside|returnTo=/);
     assert.match(html, /href="\/admin\/blog"/);
   }
@@ -390,9 +370,7 @@ test("publication recovery selects the first failed requirement and blocks publi
         ? [node, ...walk(node.props.children)]
         : [];
   }
-  const action = walk(element).find(
-    (node) => Array.isArray(node.props.children) && node.props.children[0] === "Fix ",
-  );
+  const action = walk(element).find((node) => Array.isArray(node.props.children) && node.props.children[0] === "Fix ");
   action.props.onClick();
   assert.deepEqual(fixed, ["excerpt"]);
   element.props.onSubmit({ preventDefault() {} });

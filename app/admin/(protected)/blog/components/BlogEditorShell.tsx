@@ -3,14 +3,7 @@
 import { useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, ChevronDown, History, PanelRight, X } from "lucide-react";
-import {
-  Button,
-  Popover,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@smarttools/ui";
+import { Button, Popover, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@smarttools/ui";
 
 import styles from "./BlogEditor.module.css";
 
@@ -52,9 +45,7 @@ export function BlogEditorShell({
   initialSettingsOpen = false,
   busy = false,
 }: BlogEditorShellProps) {
-  const [panel, setPanel] = useState<"settings" | "history" | null>(
-    initialSettingsOpen ? "settings" : null,
-  );
+  const [panel, setPanel] = useState<"settings" | "history" | null>(initialSettingsOpen ? "settings" : null);
   const settingsOpen = panel !== null;
   const historyButton = useRef<HTMLButtonElement>(null);
   const mobileHistoryButton = useRef<HTMLButtonElement>(null);
@@ -143,21 +134,11 @@ export function BlogEditorShell({
               <PanelRight aria-hidden="true" />
               <span>Post settings</span>
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onPreview}
-              disabled={busy || saveState === "conflict"}
-            >
+            <Button size="sm" variant="outline" onClick={onPreview} disabled={busy || saveState === "conflict"}>
               Preview
             </Button>
             {canPublish && (
-              <Button
-                size="sm"
-                aria-label="Review & publish"
-                onClick={onReview}
-                disabled={busy || needsRecovery}
-              >
+              <Button size="sm" aria-label="Review & publish" onClick={onReview} disabled={busy || needsRecovery}>
                 <span className="sm:hidden">Review</span>
                 <span className="hidden sm:inline">Review & publish</span>
               </Button>
@@ -194,12 +175,7 @@ export function BlogEditorShell({
                 History
               </Button>
             )}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onPreview}
-              disabled={busy || saveState === "conflict"}
-            >
+            <Button size="sm" variant="outline" onClick={onPreview} disabled={busy || saveState === "conflict"}>
               Preview
             </Button>
           </nav>
@@ -220,15 +196,11 @@ export function BlogEditorShell({
             aria-label={panel === "history" ? "Revision history" : "Post settings"}
           >
             <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 className="text-base font-semibold">
-                {panel === "history" ? "Revision history" : "Post settings"}
-              </h2>
+              <h2 className="text-base font-semibold">{panel === "history" ? "Revision history" : "Post settings"}</h2>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    aria-label={
-                      panel === "history" ? "Close revision history" : "Close post settings"
-                    }
+                    aria-label={panel === "history" ? "Close revision history" : "Close post settings"}
                     size="icon-xs"
                     variant="ghost"
                     onClick={closeSettings}

@@ -1,11 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  blogCanonicalUrl,
-  blogArticleMetadata,
-  blogStructuredData,
-  buildBlogFeed,
-} from "../lib/blog/publication.ts";
+import { blogCanonicalUrl, blogArticleMetadata, blogStructuredData, buildBlogFeed } from "../lib/blog/publication.ts";
 import { createBlogDocument } from "../lib/blog/document.ts";
 
 const post = {
@@ -19,10 +14,7 @@ const post = {
   publishedUpdatedAt: new Date("2026-09-16T01:00:00Z"),
 };
 test("article metadata uses canonical immutable slug, explicit overrides and publication dates", () => {
-  assert.equal(
-    blogCanonicalUrl("first-post", "https://example.test/base"),
-    "https://example.test/blog/first-post",
-  );
+  assert.equal(blogCanonicalUrl("first-post", "https://example.test/base"), "https://example.test/blog/first-post");
   assert.throws(() => blogCanonicalUrl("../private", "https://example.test"));
   assert.throws(() => blogCanonicalUrl("post", "javascript:alert(1)"));
   const metadata = blogArticleMetadata(post, "https://example.test");
@@ -31,10 +23,7 @@ test("article metadata uses canonical immutable slug, explicit overrides and pub
   assert.equal(metadata.alternates.canonical, "https://example.test/blog/first-post");
   assert.equal(metadata.openGraph.publishedTime, "2026-09-16T00:00:00.000Z");
   assert.equal(metadata.openGraph.modifiedTime, "2026-09-16T01:00:00.000Z");
-  assert.throws(
-    () => blogArticleMetadata({ ...post, firstPublishedAt: null }, "https://example.test"),
-    /timestamp/,
-  );
+  assert.throws(() => blogArticleMetadata({ ...post, firstPublishedAt: null }, "https://example.test"), /timestamp/);
   assert.throws(() => blogCanonicalUrl("post", "https://user:pass@example.test"));
   const cloud = process.env.CLOUDINARY_CLOUD_NAME;
   process.env.CLOUDINARY_CLOUD_NAME = "test-cloud";

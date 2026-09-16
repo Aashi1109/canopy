@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type TemplateCategory =
-  "simple" | "professional" | "creative" | "service" | "modern" | "classic";
+export type TemplateCategory = "simple" | "professional" | "creative" | "service" | "modern" | "classic";
 export type TemplateStatus = "draft" | "published" | "archived";
 export type LayoutFamily = "classic" | "modern" | "compact" | "bold" | "minimal" | "service";
 export type TemplateLayoutFamily = LayoutFamily | "advanced";
@@ -20,23 +19,11 @@ export type PageFormat = "A4" | "LETTER" | "RECEIPT_80MM" | "RECEIPT_58MM";
 export type TemplateDocumentType = DocumentType;
 export type TemplatePageFormat = PageFormat;
 export type TemplateScalarControl =
-  | "text"
-  | "textarea"
-  | "email"
-  | "phone"
-  | "number"
-  | "currency"
-  | "percent"
-  | "date"
-  | "time"
-  | "select"
-  | "checkbox";
-export type DocumentFieldValueType =
-  "text" | "number" | "boolean" | "date" | "time" | "table" | "image";
+  "text" | "textarea" | "email" | "phone" | "number" | "currency" | "percent" | "date" | "time" | "select" | "checkbox";
+export type DocumentFieldValueType = "text" | "number" | "boolean" | "date" | "time" | "table" | "image";
 export type DocumentFieldSource = "user" | "computed" | "system" | "reference";
 export type PdfmeBindingType = "text" | "table" | "image";
-export type SensitiveDataClassification =
-  "none" | "contact" | "financial" | "tax" | "masked-tax-id";
+export type SensitiveDataClassification = "none" | "contact" | "financial" | "tax" | "masked-tax-id";
 
 export interface PdfmeSchema {
   name: string;
@@ -188,14 +175,7 @@ export interface InvoiceTemplateConfig {
 
   typography: {
     fontFamily:
-      | "Inter"
-      | "Helvetica"
-      | "Times-Roman"
-      | "Courier"
-      | "Georgia"
-      | "JetBrains Mono"
-      | "Space Grotesk"
-      | "Outfit";
+      "Inter" | "Helvetica" | "Times-Roman" | "Courier" | "Georgia" | "JetBrains Mono" | "Space Grotesk" | "Outfit";
     headingSize: "sm" | "md" | "lg" | "xl";
     bodySize: "xs" | "sm" | "md";
     lineHeight: "tight" | "normal" | "relaxed";
@@ -368,10 +348,7 @@ export interface InvoiceTemplate {
   requiredPlan?: "free" | "pro" | "business";
 }
 
-export interface AdvancedDocumentTemplate extends Omit<
-  InvoiceTemplate,
-  "documentType" | "layoutFamily" | "config"
-> {
+export interface AdvancedDocumentTemplate extends Omit<InvoiceTemplate, "documentType" | "layoutFamily" | "config"> {
   documentType: DocumentType;
   layoutFamily: "advanced";
   config: AdvancedTemplateConfig;

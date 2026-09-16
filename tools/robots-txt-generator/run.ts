@@ -27,10 +27,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     .split(/\r\n|\r|\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  if (
-    (!allowAll && paths.some((path) => !path.startsWith("/"))) ||
-    allowPaths.some((path) => !path.startsWith("/"))
-  ) {
+  if ((!allowAll && paths.some((path) => !path.startsWith("/"))) || allowPaths.some((path) => !path.startsWith("/"))) {
     throw new ToolError(
       "path-root-required",
       "Every path must start with /.",
@@ -46,9 +43,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       `User-agent: ${ctx.settings.userAgent}`,
       ...(allowAll || !paths.length
         ? ["Disallow:"]
-        : paths.map(
-            (path) => `${ctx.settings.newDirective === "allow" ? "Allow" : "Disallow"}: ${path}`,
-          )),
+        : paths.map((path) => `${ctx.settings.newDirective === "allow" ? "Allow" : "Disallow"}: ${path}`)),
       ...allowPaths.map((path) => `Allow: ${path}`),
       ...(crawlDelay ? [`Crawl-delay: ${crawlDelay}`] : []),
       ...(sitemap ? [`Sitemap: ${sitemap}`] : []),

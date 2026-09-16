@@ -27,19 +27,10 @@ export default async function BlogArticlePage({ params }: Props) {
     .catch(() => []);
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: blogStructuredData(post) }}
-      />
-      <BlogArticle
-        document={post.document}
-        publication={{ ...post, categorySlug: post.category.slug }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: blogStructuredData(post) }} />
+      <BlogArticle document={post.document} publication={{ ...post, categorySlug: post.category.slug }} />
       {related.length > 0 && (
-        <section
-          aria-labelledby="related-stories"
-          className="hidden bg-muted px-8 pb-14 pt-10 md:block"
-        >
+        <section aria-labelledby="related-stories" className="hidden bg-muted px-8 pb-14 pt-10 md:block">
           <div className="mx-auto max-w-[920px]">
             <H2 id="related-stories" className="font-sans text-[30px] leading-[1.6]">
               Keep a good thing going.

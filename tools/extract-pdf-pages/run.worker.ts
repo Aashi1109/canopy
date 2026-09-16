@@ -15,10 +15,7 @@ import {
   resolvePageSelection,
   validatePdfInput,
 } from "../../lib/tool-framework/media/pdfDocument.ts";
-import {
-  createOutputFilename,
-  validatePdfSelection,
-} from "../../lib/tool-framework/media/validation.ts";
+import { createOutputFilename, validatePdfSelection } from "../../lib/tool-framework/media/validation.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";

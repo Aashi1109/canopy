@@ -14,8 +14,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 function convertTextCase(value: string, target: string): string {
   const parts = words(value);
   const lower = parts.map((part) => part.toLocaleLowerCase());
-  const capitalize = (part: string) =>
-    part ? part[0].toLocaleUpperCase() + part.slice(1).toLocaleLowerCase() : part;
+  const capitalize = (part: string) => (part ? part[0].toLocaleUpperCase() + part.slice(1).toLocaleLowerCase() : part);
 
   switch (target) {
     case "upper":

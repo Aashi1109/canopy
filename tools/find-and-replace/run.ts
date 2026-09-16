@@ -14,11 +14,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const find = ctx.settings.find;
   if (!find) {
-    throw new ToolError(
-      "find-required",
-      "Find text is required.",
-      "Enter the text or pattern you want to replace.",
-    );
+    throw new ToolError("find-required", "Find text is required.", "Enter the text or pattern you want to replace.");
   }
   const replacement = ctx.settings.replace;
   const text = ctx.input.text;

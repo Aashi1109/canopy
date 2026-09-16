@@ -54,9 +54,7 @@ test("Split PDF keeps one source workspace through validation, all split modes a
     expect(download.suggestedFilename()).toBe(name);
     const bytes = await readFile((await download.path())!);
     const result = await PDFDocument.load(bytes);
-    expect(result.getPages().map((sheet) => sheet.getWidth())).toEqual(
-      pages.map((number) => 200 + number * 10),
-    );
+    expect(result.getPages().map((sheet) => sheet.getWidth())).toEqual(pages.map((number) => 200 + number * 10));
     return bytes;
   }
   async function expectArchive(parts: Buffer[]) {
@@ -67,8 +65,7 @@ test("Split PDF keeps one source workspace through validation, all split modes a
     const entries = unzipSync(new Uint8Array(await readFile((await archive.path())!)));
     const names = parts.map((_, index) => `source-part-${String(index + 1).padStart(2, "0")}.pdf`);
     expect(Object.keys(entries)).toEqual(names);
-    for (const [index, name] of names.entries())
-      expect(Buffer.from(entries[name])).toEqual(parts[index]);
+    for (const [index, name] of names.entries()) expect(Buffer.from(entries[name])).toEqual(parts[index]);
   }
 
   await expect(source).toBeVisible();
@@ -82,9 +79,7 @@ test("Split PDF keeps one source workspace through validation, all split modes a
   await expect(split).toBeEnabled();
   const firstPage = source.getByRole("img", { name: "PDF page 1", exact: true });
   await expect(firstPage).toBeVisible();
-  await expect
-    .poll(() => firstPage.evaluate((image: HTMLImageElement) => image.naturalWidth))
-    .toBeGreaterThan(0);
+  await expect.poll(() => firstPage.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
   await screenshot("uploaded");
   await currentPage.fill("3");
   await currentPage.press("Enter");
@@ -95,9 +90,7 @@ test("Split PDF keeps one source workspace through validation, all split modes a
   const expand = source.getByRole("button", { name: "Expand preview", exact: true });
   await expand.click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog.getByRole("spinbutton", { name: "Current page", exact: true })).toHaveValue(
-    "3",
-  );
+  await expect(dialog.getByRole("spinbutton", { name: "Current page", exact: true })).toHaveValue("3");
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await expect(expand).toBeFocused();
@@ -106,8 +99,7 @@ test("Split PDF keeps one source workspace through validation, all split modes a
   await split.click();
   await expect(downloads).toHaveCount(4, { timeout: 60_000 });
   const everyPageParts = [];
-  for (let number = 1; number <= 4; number++)
-    everyPageParts.push(await downloadPart(number, [number]));
+  for (let number = 1; number <= 4; number++) everyPageParts.push(await downloadPart(number, [number]));
   await expectArchive(everyPageParts);
   await expect(currentPage).toHaveAttribute("max", "4");
   await bundleAsZip.click();
@@ -172,9 +164,7 @@ test("Split PDF keeps one source workspace through validation, all split modes a
     mimeType: "application/pdf",
     buffer: Buffer.from(await replacement.save()),
   });
-  await expect(
-    source.getByRole("button", { name: "Remove replacement.pdf", exact: true }),
-  ).toBeVisible();
+  await expect(source.getByRole("button", { name: "Remove replacement.pdf", exact: true })).toBeVisible();
   await expect(currentPage).toHaveAttribute("max", "1", { timeout: 60_000 });
   await expect(downloads).toHaveCount(0);
   await split.click();
@@ -222,17 +212,13 @@ test("Split PDF rejects invalid input and preserves a valid source after rejecte
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.7\nThis is not a PDF document."),
   });
-  await expect(
-    source.getByRole("button", { name: "Remove corrupt.pdf", exact: true }),
-  ).toBeVisible();
+  await expect(source.getByRole("button", { name: "Remove corrupt.pdf", exact: true })).toBeVisible();
   await expect(source.getByText("Unable to open PDF", { exact: true })).toBeVisible({
     timeout: 60_000,
   });
   await expect(split).toBeDisabled();
   await expect(retry).toBeVisible();
-  await expect(page.getByTestId("tool-status-line")).toContainText(
-    "Replace the PDF or retry opening it.",
-  );
+  await expect(page.getByTestId("tool-status-line")).toContainText("Replace the PDF or retry opening it.");
   await page.screenshot({
     path: `/tmp/split-pdf-rejected-${testInfo.project.name}.png`,
     fullPage: true,
@@ -259,9 +245,7 @@ test("Split PDF rejects invalid input and preserves a valid source after rejecte
     mimeType: "text/plain",
     buffer: Buffer.from("Keep the valid PDF when this replacement is rejected."),
   });
-  await expect(
-    page.getByRole("alert").filter({ hasText: "notes.txt is not an accepted file type." }),
-  ).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: "notes.txt is not an accepted file type." })).toBeVisible();
   await expect(source.getByRole("button", { name: "Remove valid.pdf", exact: true })).toBeVisible();
   await expect(currentPage).toHaveAttribute("max", "1");
   await expect(result).toBeVisible();
@@ -271,9 +255,7 @@ test("Split PDF rejects invalid input and preserves a valid source after rejecte
     (bytes) => {
       const dataTransfer = new DataTransfer();
       for (const name of ["first.pdf", "second.pdf"])
-        dataTransfer.items.add(
-          new File([new Uint8Array(bytes)], name, { type: "application/pdf" }),
-        );
+        dataTransfer.items.add(new File([new Uint8Array(bytes)], name, { type: "application/pdf" }));
       return dataTransfer;
     },
     [...validFile.buffer],

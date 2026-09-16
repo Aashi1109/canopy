@@ -145,14 +145,9 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
   const usesNetwork = Boolean(definition.capabilities.network);
   const productHref = isMedia ? "/media" : "/devtools";
   const productName = isMedia ? "Media tools" : "Developer tools";
-  const privacyBadge = usesNetwork
-    ? "USES ONLINE SERVICE"
-    : isMedia
-      ? "PRIVATE FILE PROCESSING"
-      : "PRIVATE IN BROWSER";
+  const privacyBadge = usesNetwork ? "USES ONLINE SERVICE" : isMedia ? "PRIVATE FILE PROCESSING" : "PRIVATE IN BROWSER";
   const PrivacyIcon = usesNetwork ? Globe2 : LockKeyhole;
-  const capabilityBadge =
-    definition.labels.primaryAction?.toUpperCase() ?? (isMedia ? "FILE TOOL" : "BROWSER TOOL");
+  const capabilityBadge = definition.labels.primaryAction?.toUpperCase() ?? (isMedia ? "FILE TOOL" : "BROWSER TOOL");
   const supportItems = [
     ...(content.limitations?.length
       ? [
@@ -163,9 +158,7 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
           },
         ]
       : []),
-    ...(content.howToUse.length
-      ? [{ icon: ListChecks, eyebrow: "How to use", items: content.howToUse }]
-      : []),
+    ...(content.howToUse.length ? [{ icon: ListChecks, eyebrow: "How to use", items: content.howToUse }] : []),
   ];
 
   return (
@@ -237,10 +230,7 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
             </Caption>
           </footer>
         }
-        statusMeta={
-          statusMeta ??
-          (runtime.lifecycle === "completed" && StatusMeta ? <StatusMeta /> : undefined)
-        }
+        statusMeta={statusMeta ?? (runtime.lifecycle === "completed" && StatusMeta ? <StatusMeta /> : undefined)}
         tabIndex={-1}
         toolbar={
           <IconTile
@@ -304,10 +294,7 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
           {supportItems.map((item) => {
             const Icon = item.icon;
             return (
-              <article
-                className="rounded-lg border border-border bg-muted/55 px-4 py-3"
-                key={item.eyebrow}
-              >
+              <article className="rounded-lg border border-border bg-muted/55 px-4 py-3" key={item.eyebrow}>
                 <Overline className="flex items-center gap-2">
                   <Icon
                     aria-hidden="true"
@@ -341,13 +328,7 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
             className="flex shrink-0 flex-wrap justify-end gap-2 max-[52rem]:justify-start"
           >
             {relatedTools.map((tool) => (
-              <Button
-                className="h-9 rounded-lg"
-                asChild
-                key={tool.href}
-                size="sm"
-                variant="outline"
-              >
+              <Button className="h-9 rounded-lg" asChild key={tool.href} size="sm" variant="outline">
                 <a href={tool.href}>
                   {tool.label}
                   <ArrowUpRight aria-hidden="true" className="size-3.5" />

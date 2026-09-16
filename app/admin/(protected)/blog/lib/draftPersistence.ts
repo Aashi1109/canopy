@@ -1,16 +1,11 @@
 export type DraftSaveState = "idle" | "dirty" | "saving" | "saved" | "error" | "conflict";
-type SaveResult =
-  { ok: true; data: { version: number } } | { ok: false; code: string; message: string };
+type SaveResult = { ok: true; data: { version: number } } | { ok: false; code: string; message: string };
 
 /** One writer per editor: coalesce autosaves, and flush newer edits before leaving or publishing. */
 export function createDraftPersistence<T>(options: {
   document: T;
   version: number;
-  request: (input: {
-    document: T;
-    version: number;
-    mode: "manual" | "autosave";
-  }) => Promise<SaveResult>;
+  request: (input: { document: T; version: number; mode: "manual" | "autosave" }) => Promise<SaveResult>;
   onState: (state: DraftSaveState, message: string) => void;
   onBackupFailure?: () => void;
 }) {
@@ -49,8 +44,7 @@ export function createDraftPersistence<T>(options: {
   }
   function forget() {
     try {
-      if (backupValue && storage?.getItem(storageKey) === backupValue)
-        storage.removeItem(storageKey);
+      if (backupValue && storage?.getItem(storageKey) === backupValue) storage.removeItem(storageKey);
     } catch {
       /* Private browser modes may disable storage. */
     }
@@ -70,9 +64,7 @@ export function createDraftPersistence<T>(options: {
     if (pending) {
       const waitedMode = pendingMode;
       if (!(await pending)) return false;
-      return savedGeneration === generation && !(mode === "manual" && waitedMode === "autosave")
-        ? true
-        : save(mode);
+      return savedGeneration === generation && !(mode === "manual" && waitedMode === "autosave") ? true : save(mode);
     }
     if (mode === "autosave" && generation === savedGeneration) return true;
     clearTimers();
@@ -98,10 +90,7 @@ export function createDraftPersistence<T>(options: {
         const clean = savedGeneration === generation;
         if (clean) forget();
         else remember();
-        emit(
-          clean ? "saved" : "dirty",
-          clean ? "Draft · All changes saved" : "Draft · Saving newer changes shortly",
-        );
+        emit(clean ? "saved" : "dirty", clean ? "Draft · All changes saved" : "Draft · Saving newer changes shortly");
         if (!clean) schedule();
         return true;
       } catch {
@@ -162,10 +151,7 @@ export function createDraftPersistence<T>(options: {
       remember();
       if (baseVersion !== version) {
         conflict = true;
-        emit(
-          "conflict",
-          "The saved post changed after this local draft. Download a backup before reloading.",
-        );
+        emit("conflict", "The saved post changed after this local draft. Download a backup before reloading.");
         return;
       }
       emit("dirty", "Recovered local draft · Unsaved changes");

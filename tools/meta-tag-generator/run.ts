@@ -16,9 +16,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const title = escapeHtml(requireUtilityInput(ctx.input.text, "Page title"));
-  const description = escapeHtml(
-    requireUtilityInput(ctx.input.secondary ?? "", "Meta description"),
-  );
+  const description = escapeHtml(requireUtilityInput(ctx.input.secondary ?? "", "Meta description"));
   const keywords = ctx.settings.keywords.trim();
   const author = ctx.settings.author.trim();
   const canonical = ctx.settings.canonical.trim();
@@ -36,9 +34,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       ...(author ? [`<meta name="author" content="${escapeHtml(author)}">`] : []),
       ...(canonical ? [`<link rel="canonical" href="${escapeHtml(canonical)}">`] : []),
       ...(robots ? [`<meta name="robots" content="${escapeHtml(robots)}">`] : []),
-      ...(ctx.settings.addViewport
-        ? [`<meta name="viewport" content="width=device-width, initial-scale=1">`]
-        : []),
+      ...(ctx.settings.addViewport ? [`<meta name="viewport" content="width=device-width, initial-scale=1">`] : []),
       ...(ctx.settings.includeOpenGraph
         ? [
             `<meta property="og:title" content="${title}">`,

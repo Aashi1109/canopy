@@ -27,19 +27,11 @@ test("every layout family produces an independent valid default config", () => {
 
 test("seed templates are valid with unique slugs and one published default", () => {
   for (const template of seedTemplates) {
-    assert.equal(
-      InvoiceTemplateSchema.safeParse(template).success,
-      true,
-      `${template.slug} is invalid`,
-    );
+    assert.equal(InvoiceTemplateSchema.safeParse(template).success, true, `${template.slug} is invalid`);
   }
 
   assert.equal(new Set(seedTemplates.map((template) => template.slug)).size, seedTemplates.length);
-  assert.equal(
-    seedTemplates.filter((template) => template.status === "published" && template.isDefault)
-      .length,
-    1,
-  );
+  assert.equal(seedTemplates.filter((template) => template.status === "published" && template.isDefault).length, 1);
 });
 
 test("validation rejects unsafe colors, duplicate sections, and unusable invoices", () => {

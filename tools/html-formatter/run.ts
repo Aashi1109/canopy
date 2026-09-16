@@ -19,12 +19,9 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 function formatHtml(input: string, settings: Settings): string {
   requireUtilityInput(input, "HTML input");
-  const indentUnit =
-    settings.indentWidth === "4" ? "    " : settings.indentWidth === "tab" ? "\t" : "  ";
+  const indentUnit = settings.indentWidth === "4" ? "    " : settings.indentWidth === "tab" ? "\t" : "  ";
   const printWidth =
-    settings.printWidth === "unlimited" || !settings.printWidth
-      ? Infinity
-      : Number(settings.printWidth);
+    settings.printWidth === "unlimited" || !settings.printWidth ? Infinity : Number(settings.printWidth);
   const voidTags = new Set([
     "area",
     "base",
@@ -41,8 +38,7 @@ function formatHtml(input: string, settings: Settings): string {
     "track",
     "wbr",
   ]);
-  const tokens =
-    input.replace(/>\s*</g, "><").match(/<!--[\s\S]*?-->|<![^>]*>|<[^>]+>|[^<]+/g) ?? [];
+  const tokens = input.replace(/>\s*</g, "><").match(/<!--[\s\S]*?-->|<![^>]*>|<[^>]+>|[^<]+/g) ?? [];
   const lines: string[] = [];
   let indent = 0;
   for (const raw of tokens) {
@@ -52,8 +48,7 @@ function formatHtml(input: string, settings: Settings): string {
     if (closing) indent = Math.max(0, indent - 1);
     const leading = indentUnit.repeat(indent);
     const startTag = token.match(/^<([A-Za-z][\w:-]*)([\s\S]*?)(\/?)>$/);
-    const attributes =
-      startTag?.[2].match(/[^\s"'=<>`]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?/g) ?? [];
+    const attributes = startTag?.[2].match(/[^\s"'=<>`]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?/g) ?? [];
     const wrapAttributes =
       attributes.length > 0 &&
       (settings.attributeWrapping === "one-per-line" ||
@@ -69,13 +64,7 @@ function formatHtml(input: string, settings: Settings): string {
       lines.push(`${leading}${token}`);
     }
     const tag = token.match(/^<([A-Za-z][\w:-]*)/)?.[1].toLowerCase();
-    if (
-      tag &&
-      !closing &&
-      !token.endsWith("/>") &&
-      !voidTags.has(tag) &&
-      !token.includes(`</${tag}>`)
-    ) {
+    if (tag && !closing && !token.endsWith("/>") && !voidTags.has(tag) && !token.includes(`</${tag}>`)) {
       indent += 1;
     }
   }

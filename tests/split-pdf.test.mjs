@@ -6,17 +6,12 @@ test("split PDF plans the exact parts and rejects invalid settings before creati
   const settings = { mode: "every-page", interval: 3, ranges: "1,3;2-4" };
   assert.deepEqual(splitPageGroups(settings, 4), [[1], [2], [3], [4]]);
   assert.deepEqual(splitPageGroups({ ...settings, mode: "interval" }, 4), [[1, 2, 3], [4]]);
-  assert.deepEqual(splitPageGroups({ ...settings, mode: "interval", interval: 10 }, 4), [
-    [1, 2, 3, 4],
-  ]);
+  assert.deepEqual(splitPageGroups({ ...settings, mode: "interval", interval: 10 }, 4), [[1, 2, 3, 4]]);
   assert.deepEqual(splitPageGroups({ ...settings, mode: "ranges" }, 4), [
     [1, 3],
     [2, 3, 4],
   ]);
-  assert.deepEqual(splitPageGroups({ ...settings, mode: "ranges", ranges: "all;4" }, 4), [
-    [1, 2, 3, 4],
-    [4],
-  ]);
+  assert.deepEqual(splitPageGroups({ ...settings, mode: "ranges", ranges: "all;4" }, 4), [[1, 2, 3, 4], [4]]);
   assert.deepEqual(splitPageGroups(settings, 1), [[1]]);
   for (const interval of [0, -1, 1.5, NaN, Infinity]) {
     assert.throws(() => splitPageGroups({ ...settings, mode: "interval", interval }, 4), {

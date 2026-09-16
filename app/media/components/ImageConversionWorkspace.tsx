@@ -83,14 +83,10 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
   const hasFiles = props.input.files.length > 0;
   const conversion = resolveImageConversion(props.spec, props.settings);
   const activeSpec = conversion.spec;
-  const actionLabel =
-    activeSpec.trigger.mode === "manual" ? activeSpec.trigger.actionLabel : "Convert images";
+  const actionLabel = activeSpec.trigger.mode === "manual" ? activeSpec.trigger.actionLabel : "Convert images";
   const outputFormat = actionLabel.replace(/^Convert to /, "");
   const outputImages = useMemo(
-    () =>
-      props.result?.render === "files"
-        ? props.result.files.filter((file) => file.mime.startsWith("image/"))
-        : [],
+    () => (props.result?.render === "files" ? props.result.files.filter((file) => file.mime.startsWith("image/")) : []),
     [props.result],
   );
   const completed = !running && outputImages.length > 0;
@@ -124,10 +120,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
         settingsIssue = `${field.label} must be between ${field.min ?? 0} and ${field.max ?? 100}.`;
         break;
       }
-    } else if (
-      field.kind === "color" &&
-      (typeof raw !== "string" || !/^#[0-9a-f]{6}$/i.test(raw))
-    ) {
+    } else if (field.kind === "color" && (typeof raw !== "string" || !/^#[0-9a-f]{6}$/i.test(raw))) {
       settingsIssue = `${field.label} must use #RRGGBB, for example #FFFFFF.`;
       break;
     }
@@ -149,8 +142,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
   useEffect(() => {
     if (!completed) return;
     options.current?.focus({ preventScroll: true });
-    if (window.matchMedia("(max-width: 64rem)").matches)
-      options.current?.scrollIntoView({ block: "start" });
+    if (window.matchMedia("(max-width: 64rem)").matches) options.current?.scrollIntoView({ block: "start" });
   }, [completed]);
 
   if (inputSpec.kind !== "files") return null;
@@ -169,15 +161,11 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
   const convertMore = () => {
     setInputIssue("");
     props.onInputChange({ files: [], text: "" });
-    for (const [key, field] of Object.entries(props.spec.settings.fields))
-      props.onSettingChange(key, field.default);
+    for (const [key, field] of Object.entries(props.spec.settings.fields)) props.onSettingChange(key, field.default);
   };
   const progress =
     props.progress && props.progress.total > 0
-      ? Math.min(
-          100,
-          Math.max(0, Math.round((props.progress.completed / props.progress.total) * 100)),
-        )
+      ? Math.min(100, Math.max(0, Math.round((props.progress.completed / props.progress.total) * 100)))
       : undefined;
 
   return (
@@ -185,8 +173,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
       <div
         className={`flex min-h-0 min-w-0 shrink-0 flex-col border-b border-border lg:border-r lg:border-b-0 ${dragging ? "ring-2 ring-inset ring-primary" : ""}`}
         onDragOver={(event) => {
-          if (disabled || completed || !hasFiles || !event.dataTransfer.types.includes("Files"))
-            return;
+          if (disabled || completed || !hasFiles || !event.dataTransfer.types.includes("Files")) return;
           event.preventDefault();
           event.dataTransfer.dropEffect = "copy";
           setDragging(true);
@@ -210,10 +197,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
             contentClassName="gap-0"
             scroll="none"
           >
-            <MediaOutputGallery
-              files={outputImages}
-              key={outputImages.map((file) => file.id).join(":")}
-            />
+            <MediaOutputGallery files={outputImages} key={outputImages.map((file) => file.id).join(":")} />
           </WorkspaceSurface>
         ) : hasFiles ? (
           <WorkspaceSurface
@@ -256,9 +240,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
         {inputIssue && (
           <Alert className="m-4 w-auto shrink-0" variant="destructive">
             <AlertTitle>Some files were not added</AlertTitle>
-            <AlertDescription>
-              {inputIssue} Choose supported images within the limits and try again.
-            </AlertDescription>
+            <AlertDescription>{inputIssue} Choose supported images within the limits and try again.</AlertDescription>
           </Alert>
         )}
         {!hasFiles && (
@@ -295,10 +277,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
               value={conversion.target}
               onChange={(event) => {
                 const value = event.target.value;
-                if (
-                  !disabled &&
-                  conversion.choices.some((entry) => entry.toolId.endsWith(`-to-${value}`))
-                )
+                if (!disabled && conversion.choices.some((entry) => entry.toolId.endsWith(`-to-${value}`)))
                   props.onSettingChange(IMAGE_OUTPUT_KEY, value);
               }}
             >
@@ -310,9 +289,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
                 <option
                   key={item.value}
                   value={item.value}
-                  disabled={
-                    !conversion.choices.some((entry) => entry.toolId.endsWith(`-to-${item.value}`))
-                  }
+                  disabled={!conversion.choices.some((entry) => entry.toolId.endsWith(`-to-${item.value}`))}
                 >
                   {item.label}
                 </option>
@@ -328,8 +305,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
           {completed && primaryOutput ? (
             <>
               <Muted role="status">
-                {outputImages.length}{" "}
-                {outputImages.length === 1 ? "image converted" : "images converted"} to{" "}
+                {outputImages.length} {outputImages.length === 1 ? "image converted" : "images converted"} to{" "}
                 {outputFormat}. Your originals are unchanged.
               </Muted>
               <ConversionDownload file={primaryOutput} key={primaryOutput.id} />
@@ -399,8 +375,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
                     tabIndex={-1}
                     disabled={disabled}
                     onChange={(event) => {
-                      if (event.currentTarget.files)
-                        addFiles(Array.from(event.currentTarget.files));
+                      if (event.currentTarget.files) addFiles(Array.from(event.currentTarget.files));
                       event.currentTarget.value = "";
                     }}
                   />
@@ -416,9 +391,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
                 </>
               )}
               {!hasFiles && (
-                <Caption className="text-muted-foreground">
-                  Add at least one image to enable conversion.
-                </Caption>
+                <Caption className="text-muted-foreground">Add at least one image to enable conversion.</Caption>
               )}
               {hasFiles && (
                 <Caption className="text-muted-foreground">
@@ -429,16 +402,15 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
               )}
               {cancelled && !running && (
                 <Muted role="status">
-                  Conversion cancelled. Your images and settings are kept. Choose {actionLabel} to
-                  try again.
+                  Conversion cancelled. Your images and settings are kept. Choose {actionLabel} to try again.
                 </Muted>
               )}
               {props.error && (
                 <Alert variant="destructive">
                   <AlertTitle>Conversion failed</AlertTitle>
                   <AlertDescription>
-                    {props.error} Remove any unsupported or damaged image, then choose {actionLabel}{" "}
-                    to retry. Your originals are unchanged.
+                    {props.error} Remove any unsupported or damaged image, then choose {actionLabel} to retry. Your
+                    originals are unchanged.
                   </AlertDescription>
                 </Alert>
               )}

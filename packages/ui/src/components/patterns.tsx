@@ -1,13 +1,5 @@
 import { Caption, H1, H2, H3, Metric, Muted, Overline, P, Strong } from "#components/typography";
-import {
-  CircleCheck,
-  Lightbulb,
-  LoaderCircle,
-  Sparkles,
-  TrendingUp,
-  Upload,
-  X,
-} from "lucide-react";
+import { CircleCheck, Lightbulb, LoaderCircle, Sparkles, TrendingUp, Upload, X } from "lucide-react";
 import type { ButtonHTMLAttributes, ComponentProps, HTMLAttributes, ReactNode } from "react";
 
 import { Button } from "#components/button";
@@ -120,10 +112,7 @@ function ToolPageIntro({
   return (
     <header
       data-slot="tool-page-intro"
-      className={cn(
-        "flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between",
-        className,
-      )}
+      className={cn("flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between", className)}
       {...props}
     >
       <div className="flex min-w-0 max-w-[880px] flex-1 flex-col gap-1.5">
@@ -161,19 +150,11 @@ function FileUploadZone({
       {...props}
     >
       <span className="text-primary [&_svg]:size-7">{icon ?? <Upload aria-hidden="true" />}</span>
-      <Strong className="w-full wrap-break-word font-heading text-heading-4 text-foreground">
-        {title}
-      </Strong>
+      <Strong className="w-full wrap-break-word font-heading text-heading-4 text-foreground">{title}</Strong>
       {description ? (
-        <Caption className="w-full wrap-break-word font-semibold text-accent-text">
-          {description}
-        </Caption>
+        <Caption className="w-full wrap-break-word font-semibold text-accent-text">{description}</Caption>
       ) : null}
-      {hint ? (
-        <span className="w-full wrap-break-word font-sans text-sm text-muted-foreground">
-          {hint}
-        </span>
-      ) : null}
+      {hint ? <span className="w-full wrap-break-word font-sans text-sm text-muted-foreground">{hint}</span> : null}
       {children}
     </button>
   );
@@ -225,10 +206,7 @@ function ProcessingStatus({
     <div
       aria-live="polite"
       data-slot="processing-status"
-      className={cn(
-        "flex items-center gap-4 rounded-xl bg-surface-ink px-[18px] py-4 text-on-ink",
-        className,
-      )}
+      className={cn("flex items-center gap-4 rounded-xl bg-surface-ink px-[18px] py-4 text-on-ink", className)}
       {...props}
     >
       <LoaderCircle aria-hidden="true" className="size-5 shrink-0 animate-spin" />
@@ -325,10 +303,7 @@ function HowItWorks({
   return (
     <ol
       data-slot="how-it-works"
-      className={cn(
-        "grid overflow-hidden rounded-xl border border-border bg-card md:grid-cols-3",
-        className,
-      )}
+      className={cn("grid overflow-hidden rounded-xl border border-border bg-card md:grid-cols-3", className)}
       {...props}
     >
       {steps.map((step, index) => (
@@ -362,10 +337,7 @@ function ToolSupportSections({
 }) {
   return (
     <div data-slot="tool-support-sections" className={cn("mt-6 grid gap-6", className)} {...props}>
-      <div
-        className="flex items-start gap-3 rounded-xl bg-success-soft p-4 text-foreground"
-        role="status"
-      >
+      <div className="flex items-start gap-3 rounded-xl bg-success-soft p-4 text-foreground" role="status">
         <CircleCheck aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-success" />
         <div>
           <Strong className="">Your data stays on this device</Strong>
@@ -399,10 +371,7 @@ function CompactAction({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { icon?: ReactNode }) {
   return (
     <Button
-      className={cn(
-        "h-8 gap-1.5 rounded-lg px-2.5 [&_svg]:size-3.5 [&_svg]:text-muted-foreground",
-        className,
-      )}
+      className={cn("h-8 gap-1.5 rounded-lg px-2.5 [&_svg]:size-3.5 [&_svg]:text-muted-foreground", className)}
       size="sm"
       variant="outline"
       {...props}
@@ -515,9 +484,7 @@ function UniversalProductHeader({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2.5">
             <H1 className="text-foreground">{title}</H1>
-            <Caption className="rounded-full bg-muted px-[9px] py-[5px] text-muted-foreground">
-              {category}
-            </Caption>
+            <Caption className="rounded-full bg-muted px-[9px] py-[5px] text-muted-foreground">{category}</Caption>
           </div>
           <Muted className="mt-1 text-muted-foreground">{description}</Muted>
         </div>
@@ -576,14 +543,10 @@ function InlineProductHeader({
         <div className="text-right">
           <div className="flex items-center justify-end gap-[7px]">
             <Sparkles aria-hidden="true" className="size-4 text-primary" />
-            <span className="font-script -rotate-3 text-xl font-semibold text-muted-foreground">
-              by
-            </span>
+            <span className="font-script -rotate-3 text-xl font-semibold text-muted-foreground">by</span>
             <Strong className="text-foreground">SmartTools</Strong>
           </div>
-          <Muted className="mt-1.5 text-muted-foreground">
-            Friendly tools for getting small jobs done.
-          </Muted>
+          <Muted className="mt-1.5 text-muted-foreground">Friendly tools for getting small jobs done.</Muted>
         </div>
       </div>
     </header>
@@ -625,10 +588,7 @@ function ProductFooter({
             </div>
             <P className="text-on-ink-muted">{description}</P>
           </div>
-          <nav
-            aria-label="Footer"
-            className="grid min-w-0 grid-cols-2 gap-8 @min-[640px]/footer:grid-cols-3"
-          >
+          <nav aria-label="Footer" className="grid min-w-0 grid-cols-2 gap-8 @min-[640px]/footer:grid-cols-3">
             {columns.map((column, index) => (
               <div className="flex min-w-0 flex-col gap-3 break-words" key={index}>
                 <Caption className="text-on-ink">

@@ -187,16 +187,8 @@ export function FreeformPreview({
                       points,
                       index,
                       {
-                        x:
-                          point.x +
-                          (event.key === "ArrowLeft"
-                            ? -step
-                            : event.key === "ArrowRight"
-                              ? step
-                              : 0),
-                        y:
-                          point.y +
-                          (event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0),
+                        x: point.x + (event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0),
+                        y: point.y + (event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0),
                       },
                       size,
                     );
@@ -213,12 +205,8 @@ export function FreeformPreview({
           ) : null}
         </div>
       </div>
-      <Muted
-        aria-live={dragging ? "off" : "polite"}
-        className="shrink-0 border-t border-border px-4 py-2"
-      >
-        Point {selected + 1} selected · Arrow keys move 1 px · Shift moves 10 px · Esc cancels a
-        drag
+      <Muted aria-live={dragging ? "off" : "polite"} className="shrink-0 border-t border-border px-4 py-2">
+        Point {selected + 1} selected · Arrow keys move 1 px · Shift moves 10 px · Esc cancels a drag
       </Muted>
     </div>
   );

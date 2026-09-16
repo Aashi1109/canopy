@@ -20,10 +20,7 @@ test("pre-run validation accepts freeform geometry and preserves rectangle valid
   assert.equal(validate(settings, []), null);
   assert.match(validate({ ...settings, cropPoints: "" }, []), /valid crop selection/);
   assert.match(validate({ ...settings, cropMode: "rectangle" }, []), /valid crop area/);
-  assert.equal(
-    validate({ ...settings, cropMode: "rectangle", cropWidth: 10, cropHeight: 20 }, []),
-    null,
-  );
+  assert.equal(validate({ ...settings, cropMode: "rectangle", cropWidth: 10, cropHeight: 20 }, []), null);
   assert.match(validate(settings, [{ name: "source.heic", mime: "image/heic" }]), /HEIC/);
 });
 

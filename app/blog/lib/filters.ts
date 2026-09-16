@@ -20,9 +20,7 @@ const filters = z.object({
 
 export type BlogFilters = z.infer<typeof filters>;
 
-export function parseBlogFilters(
-  params: Record<string, string | string[] | undefined>,
-): BlogFilters {
+export function parseBlogFilters(params: Record<string, string | string[] | undefined>): BlogFilters {
   return filters.parse(
     Object.fromEntries(
       Object.keys(filters.shape).map((key) => {

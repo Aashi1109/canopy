@@ -83,11 +83,7 @@ test("account session uses active users' effective Admin entry grants, including
     roles: [{ id: "user" }, { id: "custom" }],
     access: { admin: { enter: true } },
   });
-  assert.equal(
-    await isAdminUser("user-1"),
-    true,
-    "entry permission may come from any assigned role",
-  );
+  assert.equal(await isAdminUser("user-1"), true, "entry permission may come from any assigned role");
   fixture.authorizations.get("user-1").access = { admin: { enter: false } };
   assert.equal(await isAdminUser("user-1"), false, "revocation is reflected on the next lookup");
   fixture.authorizations.set("user-1", { roles: [], access: {} });

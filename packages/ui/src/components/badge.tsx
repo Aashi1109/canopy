@@ -13,8 +13,7 @@ const badgeVariants = cva(
         secondary: "border-border bg-card text-foreground [a&]:hover:bg-muted",
         destructive:
           "bg-destructive text-destructive-foreground focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-destructive/90",
-        outline:
-          "border-border bg-card text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+        outline: "border-border bg-card text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         ghost: "[a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         tag: "border-border bg-muted px-[11px] font-medium text-foreground",
         link: "text-primary underline-offset-4 [a&]:hover:underline",
@@ -35,12 +34,7 @@ function Badge({
   const Comp = asChild ? Slot.Root : "span";
 
   return (
-    <Comp
-      data-slot="badge"
-      data-variant={variant}
-      className={cn(badgeVariants({ variant }), className)}
-      {...props}
-    />
+    <Comp data-slot="badge" data-variant={variant} className={cn(badgeVariants({ variant }), className)} {...props} />
   );
 }
 

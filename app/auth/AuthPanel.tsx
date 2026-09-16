@@ -32,15 +32,7 @@ function field(form: FormData, name: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function AuthNotice({
-  children,
-  icon,
-  title,
-}: {
-  children: ReactNode;
-  icon: ReactNode;
-  title: ReactNode;
-}) {
+function AuthNotice({ children, icon, title }: { children: ReactNode; icon: ReactNode; title: ReactNode }) {
   return (
     <div className="auth-notice">
       <span aria-hidden="true">{icon}</span>
@@ -66,9 +58,7 @@ export function AuthPanel({
   const [pending, setPending] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState<string>();
-  const [feedback, setFeedback] = useState<Feedback>(
-    initialError ? { kind: "error", text: initialError } : null,
-  );
+  const [feedback, setFeedback] = useState<Feedback>(initialError ? { kind: "error", text: initialError } : null);
 
   function chooseMode(nextMode: AuthMode) {
     setMode(nextMode);
@@ -199,15 +189,9 @@ export function AuthPanel({
   const isForgot = mode === "forgot";
 
   return (
-    <Card
-      aria-labelledby={`${panelId}-title`}
-      className="auth-card w-full max-w-[440px] gap-[18px]"
-      role="region"
-    >
+    <Card aria-labelledby={`${panelId}-title`} className="auth-card w-full max-w-[440px] gap-[18px]" role="region">
       <div className="auth-heading">
-        <H1 id={`${panelId}-title`}>
-          {isSignUp ? "Create your account" : isForgot ? "Reset password" : "Sign in"}
-        </H1>
+        <H1 id={`${panelId}-title`}>{isSignUp ? "Create your account" : isForgot ? "Reset password" : "Sign in"}</H1>
         <P>
           {isSignUp
             ? "Save your paperwork and access it from any device."
@@ -233,13 +217,7 @@ export function AuthPanel({
       {verificationEmail ? (
         <AlertBanner
           action={
-            <Button
-              disabled={pending}
-              onClick={resendVerification}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
+            <Button disabled={pending} onClick={resendVerification} size="sm" type="button" variant="ghost">
               Resend email
             </Button>
           }
@@ -270,20 +248,8 @@ export function AuthPanel({
         </form>
       ) : (
         <>
-          <Button
-            className="w-full"
-            disabled={pending}
-            onClick={signInWithGoogle}
-            type="button"
-            variant="outline"
-          >
-            <img
-              alt=""
-              className="size-4 object-contain"
-              height="16"
-              src="/auth/google-g-logo.png"
-              width="16"
-            />
+          <Button className="w-full" disabled={pending} onClick={signInWithGoogle} type="button" variant="outline">
+            <img alt="" className="size-4 object-contain" height="16" src="/auth/google-g-logo.png" width="16" />
             {isSignUp ? "Sign up with Google" : "Continue with Google"}
           </Button>
 
@@ -372,16 +338,9 @@ export function AuthPanel({
       )}
 
       <div className="auth-card-footer-link">
-        <Text>
-          {isSignUp ? "Already have an account?" : isForgot ? "Remembered it?" : "New here?"}
-        </Text>
-        <button
-          onClick={() => chooseMode(isSignUp || isForgot ? "sign-in" : "sign-up")}
-          type="button"
-        >
-          <Caption>
-            {isSignUp ? "Sign in" : isForgot ? "Back to sign in" : "Create an account"}
-          </Caption>
+        <Text>{isSignUp ? "Already have an account?" : isForgot ? "Remembered it?" : "New here?"}</Text>
+        <button onClick={() => chooseMode(isSignUp || isForgot ? "sign-in" : "sign-up")} type="button">
+          <Caption>{isSignUp ? "Sign in" : isForgot ? "Back to sign in" : "Create an account"}</Caption>
         </button>
       </div>
     </Card>

@@ -36,15 +36,7 @@ type User = {
 
 type Role = { id: string; name: string; description: string | null };
 
-export function ManageUserDialog({
-  user,
-  roles,
-  children,
-}: {
-  user: User;
-  roles: Role[];
-  children: ReactNode;
-}) {
+export function ManageUserDialog({ user, roles, children }: { user: User; roles: Role[]; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState(user.roles);
   const [status, setStatus] = useState(user.status);
@@ -100,9 +92,7 @@ export function ManageUserDialog({
           : "Account suspended and sessions revoked. Role changes have not been saved.",
       );
     } catch {
-      setStatusError(
-        "Account access could not be changed. Try again. Your role selections are unchanged.",
-      );
+      setStatusError("Account access could not be changed. Try again. Your role selections are unchanged.");
     } finally {
       setPending(null);
     }
@@ -124,16 +114,9 @@ export function ManageUserDialog({
         <div className="flex shrink-0 items-start justify-between gap-4 px-6 pb-4 pt-6">
           <AlertDialogHeader className="text-left">
             <AlertDialogTitle>Manage user</AlertDialogTitle>
-            <AlertDialogDescription>
-              Manage roles and account access separately.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Manage roles and account access separately.</AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogCancel
-            aria-label="Close manage user"
-            disabled={pending !== null}
-            size="icon"
-            variant="ghost"
-          >
+          <AlertDialogCancel aria-label="Close manage user" disabled={pending !== null} size="icon" variant="ghost">
             <X aria-hidden="true" />
           </AlertDialogCancel>
         </div>
@@ -162,9 +145,7 @@ export function ManageUserDialog({
             <AccordionItem value="roles">
               <AccordionTrigger>Roles</AccordionTrigger>
               <AccordionContent>
-                <p className="mb-3 text-sm text-muted-foreground">
-                  Select the roles this person should have.
-                </p>
+                <p className="mb-3 text-sm text-muted-foreground">Select the roles this person should have.</p>
                 <div className="divide-y divide-border">
                   {roles.map((role) => (
                     <div className="py-3" key={role.id}>

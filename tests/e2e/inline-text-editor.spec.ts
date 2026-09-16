@@ -103,13 +103,7 @@ test.beforeEach(async ({ page }) => {
 async function typography(element: Locator) {
   return element.evaluate((node) => {
     const style = getComputedStyle(node);
-    return [
-      style.fontFamily,
-      style.fontSize,
-      style.fontWeight,
-      style.lineHeight,
-      style.letterSpacing,
-    ];
+    return [style.fontFamily, style.fontSize, style.fontWeight, style.lineHeight, style.letterSpacing];
   });
 }
 
@@ -119,9 +113,7 @@ async function expectBelow(lower: Locator, upper: Locator) {
   expect(lowerBox.y).toBeGreaterThanOrEqual(upperBox.y + upperBox.height - 1);
 }
 
-test("inline editing inherits typography, updates live, and leaves saving to the parent", async ({
-  page,
-}) => {
+test("inline editing inherits typography, updates live, and leaves saving to the parent", async ({ page }) => {
   const heading = page.getByRole("heading", { name: /Initial role/ });
   const originalTypography = await typography(heading);
   const displayedName = heading.getByText("Initial role", { exact: true });
@@ -132,9 +124,7 @@ test("inline editing inherits typography, updates live, and leaves saving to the
     range.selectNodeContents(node);
     return range.getBoundingClientRect().right;
   });
-  const pencilLeft = (await page
-    .getByRole("button", { name: "Edit Role name", exact: true })
-    .boundingBox())!.x;
+  const pencilLeft = (await page.getByRole("button", { name: "Edit Role name", exact: true }).boundingBox())!.x;
   expect(pencilLeft - textRight).toBeGreaterThanOrEqual(0);
   expect(pencilLeft - textRight).toBeLessThanOrEqual(12);
   await page.screenshot({ path: "/tmp/canopy-inline-idle.png" });
@@ -176,9 +166,7 @@ test("inline editing inherits typography, updates live, and leaves saving to the
   await expect(page.getByLabel("Live role name")).toHaveText("Saved from focus");
   await edit.click();
   await name.fill("Held pointer save");
-  const saveBox = (await page
-    .getByRole("button", { name: "Save role", exact: true })
-    .boundingBox())!;
+  const saveBox = (await page.getByRole("button", { name: "Save role", exact: true }).boundingBox())!;
   await page.mouse.move(saveBox.x + saveBox.width / 2, saveBox.y + saveBox.height / 2);
   await page.mouse.down();
   await page.waitForTimeout(250);
@@ -189,9 +177,7 @@ test("inline editing inherits typography, updates live, and leaves saving to the
   await expect(name).toBeHidden();
 });
 
-test("validation, native length limits, IME input, and disabled fields remain safe", async ({
-  page,
-}) => {
+test("validation, native length limits, IME input, and disabled fields remain safe", async ({ page }) => {
   const edit = page.getByRole("button", { name: "Edit Role name", exact: true });
   await edit.click();
   const name = page.getByRole("textbox", { name: "Role name", exact: true });
@@ -228,9 +214,7 @@ test("validation, native length limits, IME input, and disabled fields remain sa
   await expect(page.getByRole("button", { name: "Edit Read only", exact: true })).toHaveCount(0);
 });
 
-test("multiline edits grow with content and viewport changes and support keyboard completion", async ({
-  page,
-}) => {
+test("multiline edits grow with content and viewport changes and support keyboard completion", async ({ page }) => {
   await page.setViewportSize({ width: 1000, height: 900 });
   const edit = page.getByRole("button", { name: "Edit Description", exact: true });
   const parentTypography = await typography(edit.locator("../.."));
@@ -239,27 +223,18 @@ test("multiline edits grow with content and viewport changes and support keyboar
   await edit.click();
   const description = page.getByRole("textbox", { name: "Description", exact: true });
   expect(await typography(description)).toEqual(parentTypography);
-  const descriptionHint = page.getByText(
-    "Enter to finish · Shift+Enter for new line · Esc to cancel",
-    { exact: true },
-  );
+  const descriptionHint = page.getByText("Enter to finish · Shift+Enter for new line · Esc to cancel", { exact: true });
   await expectBelow(description, page.getByRole("heading", { name: /Initial role/ }));
   await expectBelow(descriptionHint, description);
   const initialHeight = (await description.boundingBox())!.height;
   await description.fill("A longer description that should wrap across several lines. ".repeat(7));
-  await expect
-    .poll(async () => (await description.boundingBox())!.height)
-    .toBeGreaterThan(initialHeight);
+  await expect.poll(async () => (await description.boundingBox())!.height).toBeGreaterThan(initialHeight);
   await page.screenshot({ path: "/tmp/canopy-inline-multiline-editing.png" });
   const wideHeight = (await description.boundingBox())!.height;
   await page.setViewportSize({ width: 320, height: 812 });
-  await expect
-    .poll(async () => (await description.boundingBox())!.height)
-    .toBeGreaterThan(wideHeight);
+  await expect.poll(async () => (await description.boundingBox())!.height).toBeGreaterThan(wideHeight);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  expect(await description.evaluate((node) => node.scrollHeight <= node.clientHeight + 1)).toBe(
-    true,
-  );
+  expect(await description.evaluate((node) => node.scrollHeight <= node.clientHeight + 1)).toBe(true);
   await expectBelow(descriptionHint, description);
   await page.screenshot({ path: "/tmp/canopy-inline-mobile.png" });
   await description.fill("First line");
@@ -285,9 +260,7 @@ test("multiline edits grow with content and viewport changes and support keyboar
   await expect(page.getByLabel("Live description")).toHaveText("Blur finished");
 });
 
-test("Enter clears the pencil highlight until deliberate pointer or keyboard interaction", async ({
-  page,
-}) => {
+test("Enter clears the pencil highlight until deliberate pointer or keyboard interaction", async ({ page }) => {
   for (const label of ["Role name", "Description"]) {
     const pencil = page.getByRole("button", { name: `Edit ${label}`, exact: true });
     const field = page.getByRole("textbox", { name: label, exact: true });
@@ -308,10 +281,7 @@ test("Enter clears the pencil highlight until deliberate pointer or keyboard int
     });
 
     const pencilBox = (await pencil.boundingBox())!;
-    await page.mouse.move(
-      pencilBox.x + pencilBox.width / 2 + 2,
-      pencilBox.y + pencilBox.height / 2,
-    );
+    await page.mouse.move(pencilBox.x + pencilBox.width / 2 + 2, pencilBox.y + pencilBox.height / 2);
     await expect(pencil).toHaveCSS("opacity", "1");
     await page.mouse.move(900, 800);
     await page.keyboard.press("Tab");

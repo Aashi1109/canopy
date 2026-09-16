@@ -39,9 +39,7 @@ const identity = z
   .min(1)
   .max(100)
   .regex(/^[a-zA-Z0-9_-]+$/);
-const postInput = z
-  .object({ postId: identity, version: z.number().int().positive().max(2147483646) })
-  .strict();
+const postInput = z.object({ postId: identity, version: z.number().int().positive().max(2147483646) }).strict();
 const options = () => ({ cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim() });
 
 export class BlogError extends Error {
@@ -62,27 +60,16 @@ async function lockPost(tx: Transaction, input: z.infer<typeof postInput>, allow
   const [post] = await tx.select().from(posts).where(eq(posts.id, input.postId)).for("update");
   if (!post) throw new BlogError("NOT_FOUND", "Article not found.");
   if (post.version !== input.version)
-    throw new BlogError(
-      "CONFLICT",
-      "This article changed. Reload the latest version before saving.",
-    );
-  if (post.trashedAt && !allowTrash)
-    throw new BlogError("VALIDATION", "Restore this article from trash first.");
+    throw new BlogError("CONFLICT", "This article changed. Reload the latest version before saving.");
+  if (post.trashedAt && !allowTrash) throw new BlogError("VALIDATION", "Restore this article from trash first.");
   return post;
 }
 
 /** References are catalog IDs; labels supplied by clients never become authoritative. */
-async function resolveDocument(
-  tx: Transaction,
-  input: unknown,
-  publishing = false,
-): Promise<BlogDocument> {
+async function resolveDocument(tx: Transaction, input: unknown, publishing = false): Promise<BlogDocument> {
   const document = validateBlogDocument(input, options());
   if (document.category) {
-    const [category] = await tx
-      .select()
-      .from(categories)
-      .where(eq(categories.id, document.category.id));
+    const [category] = await tx.select().from(categories).where(eq(categories.id, document.category.id));
     if (!category) throw new BlogError("VALIDATION", "Choose an existing category.");
     document.category = { id: category.id, label: category.name };
   }
@@ -96,8 +83,7 @@ async function resolveDocument(
           document.tags.map((tag) => tag.id),
         ),
       );
-    if (terms.length !== document.tags.length)
-      throw new BlogError("VALIDATION", "Choose existing tags.");
+    if (terms.length !== document.tags.length) throw new BlogError("VALIDATION", "Choose existing tags.");
     document.tags = document.tags.map((tag) => ({
       id: tag.id,
       label: terms.find((term) => term.id === tag.id)!.name,
@@ -162,10 +148,7 @@ async function insertPost(
 ): Promise<Post> {
   const base = blogSlugFromTitle(document.title);
   for (let attempt = 0; attempt < 5; attempt++) {
-    const slug =
-      attempt === 0
-        ? base
-        : `${base.slice(0, 151).replace(/-+$/, "")}-${randomBytes(4).toString("hex")}`;
+    const slug = attempt === 0 ? base : `${base.slice(0, 151).replace(/-+$/, "")}-${randomBytes(4).toString("hex")}`;
     const [post] = await tx
       .insert(posts)
       .values({
@@ -180,14 +163,10 @@ async function insertPost(
       .returning();
     if (!post) continue;
     await checkpoint(tx, post, actor, "create", await databaseNow(tx));
-    await writeAudit(
-      tx,
-      actor,
-      duplicatedFrom ? "blog.duplicate" : "blog.create",
-      "blog_post",
-      post.id,
-      { duplicatedFrom, slug },
-    );
+    await writeAudit(tx, actor, duplicatedFrom ? "blog.duplicate" : "blog.create", "blog_post", post.id, {
+      duplicatedFrom,
+      slug,
+    });
     return post;
   }
   throw new BlogError("CONFLICT", "Could not allocate an article URL. Try again.");
@@ -251,8 +230,7 @@ export async function saveBlogDraft(actor: string, input: unknown): Promise<Post
     const before = post.revisionSequence;
     if (
       value.mode === "manual" ||
-      (changed &&
-        (!post.lastCheckpointAt || now.getTime() - post.lastCheckpointAt.getTime() >= 60000))
+      (changed && (!post.lastCheckpointAt || now.getTime() - post.lastCheckpointAt.getTime() >= 60000))
     ) {
       await checkpoint(tx, post, actor, value.mode === "manual" ? "manual_save" : "autosave", now);
     }
@@ -289,13 +267,9 @@ async function promote(
 ): Promise<Post> {
   // Validate stored content again; never replace the working draft with this frozen revision.
   const document = await resolveDocument(tx, revision.document, true);
-  if (revision.postId !== post.id)
-    throw new BlogError("VALIDATION", "Revision does not belong to this article.");
+  if (revision.postId !== post.id) throw new BlogError("VALIDATION", "Revision does not belong to this article.");
   if (!schedule) await removeSchedule(tx, post.id, actor, "publish_now");
-  else
-    await tx
-      .delete(schedules)
-      .where(and(eq(schedules.id, schedule.id), eq(schedules.postId, post.id)));
+  else await tx.delete(schedules).where(and(eq(schedules.id, schedule.id), eq(schedules.postId, post.id)));
   const [saved] = await tx
     .update(posts)
     .set({
@@ -303,8 +277,7 @@ async function promote(
       publishedCategoryId: document.category!.id,
       publishedSearch: sql`setweight(to_tsvector('english', ${document.title}), 'A') || setweight(to_tsvector('english', ${document.excerpt}), 'B') || to_tsvector('english', ${blogDocumentText(document)})`,
       firstPublishedAt: post.firstPublishedAt ?? now,
-      publishedUpdatedAt:
-        post.publishedRevisionId === revision.id ? (post.publishedUpdatedAt ?? now) : now,
+      publishedUpdatedAt: post.publishedRevisionId === revision.id ? (post.publishedUpdatedAt ?? now) : now,
       version: post.version + 1,
       updatedAt: now,
     })
@@ -312,9 +285,7 @@ async function promote(
     .returning();
   await tx.delete(publishedTags).where(eq(publishedTags.postId, post.id));
   if (document.tags.length)
-    await tx
-      .insert(publishedTags)
-      .values(document.tags.map((tag) => ({ postId: post.id, tagId: tag.id })));
+    await tx.insert(publishedTags).values(document.tags.map((tag) => ({ postId: post.id, tagId: tag.id })));
   await writeAudit(tx, actor, "blog.publish", "blog_post", post.id, {
     revisionId: revision.id,
     scheduleId: schedule?.id,
@@ -393,14 +364,10 @@ export async function retryBlogSchedule(actor: string, input: unknown): Promise<
       .where(and(eq(schedules.postId, post.id), eq(schedules.id, candidate.id)))
       .for("update");
     if (!request || request.scheduledBy !== candidate.scheduledBy) {
-      throw new BlogError(
-        "CONFLICT",
-        "The publication schedule changed. Reload the article before retrying.",
-      );
+      throw new BlogError("CONFLICT", "The publication schedule changed. Reload the article before retrying.");
     }
     const now = await databaseNow(tx);
-    if (request.scheduledAt > now)
-      throw new BlogError("VALIDATION", "This article is scheduled for a future time.");
+    if (request.scheduledAt > now) throw new BlogError("VALIDATION", "This article is scheduled for a future time.");
     const [revision] = await tx
       .select()
       .from(revisions)
@@ -429,8 +396,7 @@ async function lifecycle(
       await requireTransactionPermission(tx, actor, "blog", "publish");
     const now = await databaseNow(tx);
     if (operation === "restore_trash" && !post.trashedAt) return post;
-    const cancelled =
-      operation !== "restore_trash" && (await removeSchedule(tx, post.id, actor, operation));
+    const cancelled = operation !== "restore_trash" && (await removeSchedule(tx, post.id, actor, operation));
     if (operation === "cancel_schedule" && !cancelled) return post;
     if (operation === "unpublish" && !post.publishedRevisionId && !cancelled) return post;
     const clearLive = operation === "unpublish" || operation === "trash";
@@ -438,14 +404,8 @@ async function lifecycle(
     const [saved] = await tx
       .update(posts)
       .set({
-        ...(clearLive
-          ? { publishedRevisionId: null, publishedCategoryId: null, publishedSearch: null }
-          : {}),
-        ...(operation === "trash"
-          ? { trashedAt: now }
-          : operation === "restore_trash"
-            ? { trashedAt: null }
-            : {}),
+        ...(clearLive ? { publishedRevisionId: null, publishedCategoryId: null, publishedSearch: null } : {}),
+        ...(operation === "trash" ? { trashedAt: now } : operation === "restore_trash" ? { trashedAt: null } : {}),
         version: post.version + 1,
         updatedAt: now,
       })
@@ -458,13 +418,10 @@ async function lifecycle(
   });
 }
 
-export const cancelBlogSchedule = (actor: string, input: unknown) =>
-  lifecycle(actor, input, "cancel_schedule");
-export const unpublishBlogPost = (actor: string, input: unknown) =>
-  lifecycle(actor, input, "unpublish");
+export const cancelBlogSchedule = (actor: string, input: unknown) => lifecycle(actor, input, "cancel_schedule");
+export const unpublishBlogPost = (actor: string, input: unknown) => lifecycle(actor, input, "unpublish");
 export const trashBlogPost = (actor: string, input: unknown) => lifecycle(actor, input, "trash");
-export const restoreTrashedBlogPost = (actor: string, input: unknown) =>
-  lifecycle(actor, input, "restore_trash");
+export const restoreTrashedBlogPost = (actor: string, input: unknown) => lifecycle(actor, input, "restore_trash");
 
 export async function restoreBlogRevision(actor: string, input: unknown): Promise<Post> {
   const value = postInput.extend({ revisionId: identity }).strict().parse(input);
@@ -531,19 +488,14 @@ export async function saveBlogTerm(actor: string, input: unknown) {
     .transaction(async (tx) => {
       await requireTransactionPermission(tx, actor, "blog", "edit");
       if (value.id) {
-        const [existing] = await tx
-          .select()
-          .from(table)
-          .where(eq(table.id, value.id))
-          .for("update");
+        const [existing] = await tx.select().from(table).where(eq(table.id, value.id)).for("update");
         if (!existing) throw new BlogError("NOT_FOUND", "Category or tag not found.");
         if (existing.name === value.name) return existing;
         const [conflict] = await tx
           .select({ id: table.id })
           .from(table)
           .where(sql`lower(${table.name}) = lower(${value.name}) AND ${table.id} <> ${value.id}`);
-        if (conflict)
-          throw new BlogError("CONFLICT", "A category or tag with this name already exists.");
+        if (conflict) throw new BlogError("CONFLICT", "A category or tag with this name already exists.");
         const [saved] = await tx
           .update(table)
           .set({ name: value.name, updatedBy: actor, updatedAt: await databaseNow(tx) })
@@ -555,9 +507,7 @@ export async function saveBlogTerm(actor: string, input: unknown) {
       const base = blogSlugFromTitle(value.name);
       for (let attempt = 0; attempt < 5; attempt++) {
         const slug =
-          attempt === 0
-            ? base
-            : `${base.slice(0, 151).replace(/-+$/, "")}-${randomBytes(4).toString("hex")}`;
+          attempt === 0 ? base : `${base.slice(0, 151).replace(/-+$/, "")}-${randomBytes(4).toString("hex")}`;
         const [saved] = await tx
           .insert(table)
           .values({ id: randomUUID(), name: value.name, slug, createdBy: actor, updatedBy: actor })
@@ -571,17 +521,14 @@ export async function saveBlogTerm(actor: string, input: unknown) {
           .select({ id: table.id })
           .from(table)
           .where(sql`lower(${table.name}) = lower(${value.name})`);
-        if (conflict)
-          throw new BlogError("CONFLICT", "A category or tag with this name already exists.");
+        if (conflict) throw new BlogError("CONFLICT", "A category or tag with this name already exists.");
       }
       throw new BlogError("CONFLICT", "Could not allocate the category or tag URL. Try again.");
     })
     .catch((error: unknown) => {
       const code =
-        (error as { cause?: { code?: string }; code?: string })?.cause?.code ??
-        (error as { code?: string })?.code;
-      if (code === "23505")
-        throw new BlogError("CONFLICT", "A category or tag with this name already exists.");
+        (error as { cause?: { code?: string }; code?: string })?.cause?.code ?? (error as { code?: string })?.code;
+      if (code === "23505") throw new BlogError("CONFLICT", "A category or tag with this name already exists.");
       throw error;
     });
 }
@@ -620,8 +567,7 @@ export async function publishDueBlogPosts() {
         const published = await db.transaction(async (tx) => {
           await tx.execute(sql`SET LOCAL lock_timeout = '1s'`);
           await tx.execute(sql`SET LOCAL statement_timeout = '5s'`);
-          if (!candidate.scheduledBy)
-            throw new AuthorizationError("Scheduling account no longer exists.");
+          if (!candidate.scheduledBy) throw new AuthorizationError("Scheduling account no longer exists.");
           // All writers lock authorization rows before the post, and the post before its schedule.
           await requireTransactionPermission(tx, candidate.scheduledBy, "blog", "publish");
           const [post] = await tx
@@ -635,12 +581,7 @@ export async function publishDueBlogPosts() {
             .from(schedules)
             .where(and(eq(schedules.postId, post.id), eq(schedules.id, candidate.id)))
             .for("update");
-          if (
-            !request ||
-            request.scheduledAt > cutoff ||
-            request.scheduledBy !== candidate.scheduledBy
-          )
-            return false;
+          if (!request || request.scheduledAt > cutoff || request.scheduledBy !== candidate.scheduledBy) return false;
           const [revision] = await tx
             .select()
             .from(revisions)

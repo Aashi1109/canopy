@@ -46,11 +46,7 @@ export async function loadToolSpec(toolId: string): Promise<ToolSpec | null> {
 }
 
 /** What the public pages show when the database row overrides nothing. */
-export function inheritedContent(
-  spec: ToolSpec | null,
-  name: string,
-  description: string,
-): InheritedToolContent {
+export function inheritedContent(spec: ToolSpec | null, name: string, description: string): InheritedToolContent {
   return {
     category: spec?.category ?? "",
     keywords: spec?.keywords ?? [],

@@ -23,9 +23,7 @@ function inferJsonSchema(value: unknown): Record<string, unknown> {
   if (isRecord(value)) {
     return {
       type: "object",
-      properties: Object.fromEntries(
-        Object.entries(value).map(([key, child]) => [key, inferJsonSchema(child)]),
-      ),
+      properties: Object.fromEntries(Object.entries(value).map(([key, child]) => [key, inferJsonSchema(child)])),
       required: Object.keys(value),
       additionalProperties: false,
     };

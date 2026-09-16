@@ -83,12 +83,7 @@ test("JSON Viewer Tree metadata and find work across result views", async ({ pag
   expect(searchControlBox).not.toBeNull();
   expect(responsiveNextBox).not.toBeNull();
   expect(
-    Math.round(
-      searchControlBox!.x +
-        searchControlBox!.width -
-        responsiveNextBox!.x -
-        responsiveNextBox!.width,
-    ),
+    Math.round(searchControlBox!.x + searchControlBox!.width - responsiveNextBox!.x - responsiveNextBox!.width),
   ).toBe(10);
 
   await renderer.getByRole("tab", { name: "Tree" }).click();

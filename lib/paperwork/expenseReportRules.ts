@@ -38,18 +38,12 @@ export function calculateExpenseTotals(
   const baseAmount = money(normalizedRows.reduce((total, row) => total + row.amount, 0));
   const taxAmount = money(normalizedRows.reduce((total, row) => total + row.tax, 0));
   const tipAmount = money(normalizedRows.reduce((total, row) => total + row.tip, 0));
-  const expenseTotal = money(
-    normalizedRows.reduce((total, row) => total + getExpenseLineTotal(row), 0),
-  );
+  const expenseTotal = money(normalizedRows.reduce((total, row) => total + getExpenseLineTotal(row), 0));
   const reimbursableTotal = money(
-    normalizedRows
-      .filter((row) => row.reimbursable)
-      .reduce((total, row) => total + getExpenseLineTotal(row), 0),
+    normalizedRows.filter((row) => row.reimbursable).reduce((total, row) => total + getExpenseLineTotal(row), 0),
   );
   const billableTotal = money(
-    normalizedRows
-      .filter((row) => row.billable)
-      .reduce((total, row) => total + getExpenseLineTotal(row), 0),
+    normalizedRows.filter((row) => row.billable).reduce((total, row) => total + getExpenseLineTotal(row), 0),
   );
   const mileageTotal = money(
     mileageRows.reduce((total, row) => total + Number(row.miles || 0) * Number(row.rate || 0), 0),

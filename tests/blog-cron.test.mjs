@@ -31,11 +31,7 @@ test("publishing authenticates before invoking domain logic and returns only saf
     assert.equal(response.headers.get("cache-control"), "no-store");
   }
   for (const configured of [undefined, "", "   ", "secret with spaces"]) {
-    const response = await handleBlogPublishRequest(
-      request(`Bearer ${secret}`),
-      configured,
-      publish,
-    );
+    const response = await handleBlogPublishRequest(request(`Bearer ${secret}`), configured, publish);
     assert.equal(response.status, 503);
   }
   assert.equal(calls, 0);

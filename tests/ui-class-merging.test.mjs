@@ -33,8 +33,5 @@ test("semantic typography sizes survive color changes and conflict with other si
     assert.equal(cn(`text-${size}`, "text-sm"), "text-sm");
     assert.equal(cn("text-sm", `text-${size}`), `text-${size}`);
   }
-  assert.equal(
-    cn("text-heading-2", "text-primary", "text-heading-3"),
-    "text-primary text-heading-3",
-  );
+  assert.equal(cn("text-heading-2", "text-primary", "text-heading-3"), "text-primary text-heading-3");
 });

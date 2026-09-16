@@ -4,11 +4,7 @@ import { typographyStyles } from "#components/typography";
 
 import { cn } from "#lib/utils";
 
-function Textarea({
-  className,
-  code = false,
-  ...props
-}: React.ComponentProps<"textarea"> & { code?: boolean }) {
+function Textarea({ className, code = false, ...props }: React.ComponentProps<"textarea"> & { code?: boolean }) {
   return (
     <textarea
       data-slot="textarea"

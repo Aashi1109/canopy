@@ -106,13 +106,7 @@ const touchTargets =
 const menuClass = `z-[70] w-64 max-w-[var(--radix-popover-content-available-width)] max-h-[min(560px,var(--radix-popover-content-available-height))] overflow-y-auto overscroll-contain rounded-xl border border-border bg-card p-2 text-foreground shadow-lg ${touchTargets}`;
 
 /** Table geometry comes from the live editor; portals keep handles outside its scroll clip. */
-export function BlogTableControls({
-  editor,
-  disabled = false,
-}: {
-  editor: Editor | null;
-  disabled?: boolean;
-}) {
+export function BlogTableControls({ editor, disabled = false }: { editor: Editor | null; disabled?: boolean }) {
   const id = useId();
   const [layout, setLayout] = useState<Layout | null>(null);
   const [open, setOpen] = useState<BlogTableAxis | "cell" | null>(null);
@@ -130,8 +124,7 @@ export function BlogTableControls({
     drag.current = null;
     suppressClick.current = active.moved;
     setDragPreview(null);
-    if (active.button.hasPointerCapture(active.pointerId))
-      active.button.releasePointerCapture(active.pointerId);
+    if (active.button.hasPointerCapture(active.pointerId)) active.button.releasePointerCapture(active.pointerId);
   }
   useEffect(() => {
     if (!editor || disabled) {
@@ -155,8 +148,7 @@ export function BlogTableControls({
         setLayout(null);
         return;
       }
-      const targetState =
-        anchor === null ? editor.state : getBlogTableStateAtCell(editor.state, anchor);
+      const targetState = anchor === null ? editor.state : getBlogTableStateAtCell(editor.state, anchor);
       const context = targetState && getBlogTableContext(targetState);
       if (!context) {
         setLayout(null);
@@ -171,8 +163,7 @@ export function BlogTableControls({
             : tableNode.querySelector("table")
           : null;
       const cellPosition =
-        anchor ??
-        context.tableStart + context.map.map[context.top * context.map.width + context.left];
+        anchor ?? context.tableStart + context.map.map[context.top * context.map.width + context.left];
       const cell = editor.view.nodeDOM(cellPosition);
       if (!table || !(cell instanceof Element)) {
         setLayout(null);
@@ -188,15 +179,11 @@ export function BlogTableControls({
       const selectedContext = showSelection ? focusedContext : context;
       const firstCell = editor.view.nodeDOM(
         selectedContext.tableStart +
-          selectedContext.map.map[
-            selectedContext.top * selectedContext.map.width + selectedContext.left
-          ],
+          selectedContext.map.map[selectedContext.top * selectedContext.map.width + selectedContext.left],
       );
       const lastCell = editor.view.nodeDOM(
         selectedContext.tableStart +
-          selectedContext.map.map[
-            (selectedContext.bottom - 1) * selectedContext.map.width + selectedContext.right - 1
-          ],
+          selectedContext.map.map[(selectedContext.bottom - 1) * selectedContext.map.width + selectedContext.right - 1],
       );
       const first = firstCell instanceof Element ? firstCell.getBoundingClientRect() : box;
       const last = lastCell instanceof Element ? lastCell.getBoundingClientRect() : box;
@@ -207,9 +194,7 @@ export function BlogTableControls({
         bottom: Math.max(first.bottom, last.bottom),
       };
       const scroller = table.closest(".tableWrapper");
-      const editorScroll = editor.view.dom
-        .closest("[data-blog-editor-scroll]")
-        ?.getBoundingClientRect();
+      const editorScroll = editor.view.dom.closest("[data-blog-editor-scroll]")?.getBoundingClientRect();
       const viewport = {
         left: Math.max(4, editorScroll?.left ?? 0),
         right: Math.min(window.innerWidth - 4, editorScroll?.right ?? window.innerWidth),
@@ -264,10 +249,7 @@ export function BlogTableControls({
       const top = Math.max(bounds.top, clip.top);
       const bottom = Math.min(bounds.bottom, clip.bottom);
       const active =
-        box.right > clip.left &&
-        box.left < clip.right &&
-        box.bottom > clip.top &&
-        box.top < clip.bottom
+        box.right > clip.left && box.left < clip.right && box.bottom > clip.top && box.top < clip.bottom
           ? box
           : { left, right, top, bottom };
       const gap = target / 2 + 2;
@@ -278,25 +260,11 @@ export function BlogTableControls({
         bottom: Math.min(selection.bottom, clip.bottom),
       };
       setLayout({
-        row: vertical(
-          Math.max(active.top, clip.top),
-          Math.min(active.bottom, clip.bottom),
-          left - gap,
-        ),
-        column: horizontal(
-          Math.max(active.left, clip.left),
-          Math.min(active.right, clip.right),
-          bounds.top - gap,
-        ),
+        row: vertical(Math.max(active.top, clip.top), Math.min(active.bottom, clip.bottom), left - gap),
+        column: horizontal(Math.max(active.left, clip.left), Math.min(active.right, clip.right), bounds.top - gap),
         addColumn: bounds.right <= clip.right + 1 ? vertical(top, bottom, right + gap) : null,
-        addRow:
-          bounds.bottom <= clip.bottom + 1 ? horizontal(left, right, bounds.bottom + gap) : null,
-        cell: fit(
-          selected.right - target / 2,
-          (selected.top + selected.bottom - target) / 2,
-          target,
-          target,
-        ),
+        addRow: bounds.bottom <= clip.bottom + 1 ? horizontal(left, right, bounds.bottom + gap) : null,
+        cell: fit(selected.right - target / 2, (selected.top + selected.bottom - target) / 2, target, target),
         cellPosition,
         selection:
           showSelection && selected.right > selected.left && selected.bottom > selected.top
@@ -311,9 +279,7 @@ export function BlogTableControls({
                 borderRightWidth: selection.right > clip.right ? 0 : 2,
               }
             : null,
-        width: Math.round(
-          box.width / Number(editor.state.doc.nodeAt(cellPosition)?.attrs.colspan || 1),
-        ),
+        width: Math.round(box.width / Number(editor.state.doc.nodeAt(cellPosition)?.attrs.colspan || 1)),
       });
     }
     function queue() {
@@ -377,8 +343,7 @@ export function BlogTableControls({
           if (anchor.current === null) continue;
           const mapped = change.mapping.mapResult(anchor.current, 1);
           const name = change.doc.nodeAt(mapped.pos)?.type.name;
-          anchor.current =
-            !mapped.deleted && (name === "tableCell" || name === "tableHeader") ? mapped.pos : null;
+          anchor.current = !mapped.deleted && (name === "tableCell" || name === "tableHeader") ? mapped.pos : null;
         }
       }
       queue();
@@ -390,20 +355,12 @@ export function BlogTableControls({
       queue();
       if (!event.altKey || !event.shiftKey || !editor || !getBlogTableContext(editor.state)) return;
       const axis =
-        event.code === "KeyR"
-          ? "row"
-          : event.code === "KeyC"
-            ? "column"
-            : event.code === "KeyT"
-              ? "cell"
-              : null;
+        event.code === "KeyR" ? "row" : event.code === "KeyC" ? "column" : event.code === "KeyT" ? "cell" : null;
       if (!axis) return;
       event.preventDefault();
       const initial = getBlogTableContext(editor.state)!;
-      menuAnchor.current =
-        initial.tableStart + initial.map.map[initial.top * initial.map.width + initial.left];
-      if (axis !== "cell")
-        selectBlogTableAxis(axis)(editor.state, (transaction) => editor.view.dispatch(transaction));
+      menuAnchor.current = initial.tableStart + initial.map.map[initial.top * initial.map.width + initial.left];
+      if (axis !== "cell") selectBlogTableAxis(axis)(editor.state, (transaction) => editor.view.dispatch(transaction));
       setError("");
       const position = menuAnchor.current!;
       const cell = editor.view.nodeDOM(position);
@@ -411,8 +368,7 @@ export function BlogTableControls({
         String(
           cell instanceof Element
             ? Math.round(
-                cell.getBoundingClientRect().width /
-                  Number(editor.state.doc.nodeAt(position)?.attrs.colspan || 1),
+                cell.getBoundingClientRect().width / Number(editor.state.doc.nodeAt(position)?.attrs.colspan || 1),
               )
             : 100,
         ),
@@ -466,16 +422,11 @@ export function BlogTableControls({
   function run(command: Command, keepOpen = false, fromTarget = false) {
     if (!currentEditor.isEditable || currentEditor.isDestroyed || disabled) return;
     const state =
-      fromTarget || !open
-        ? getBlogTableStateAtCell(currentEditor.state, layout!.cellPosition)
-        : currentEditor.state;
+      fromTarget || !open ? getBlogTableStateAtCell(currentEditor.state, layout!.cellPosition) : currentEditor.state;
     if (!state) return;
     let tooLarge = false;
     const success = command(state, (transaction) => {
-      if (
-        transaction.doc.nodeSize >= currentEditor.state.doc.nodeSize &&
-        !blogTableChangeFits(transaction.doc)
-      ) {
+      if (transaction.doc.nodeSize >= currentEditor.state.doc.nodeSize && !blogTableChangeFits(transaction.doc)) {
         tooLarge = true;
         return;
       }
@@ -508,8 +459,7 @@ export function BlogTableControls({
     const target = state && getBlogTableContext(state);
     if (!target) return;
     const node = currentEditor.view.nodeDOM(target.tableStart - 1);
-    const table =
-      node instanceof Element ? (node.matches("table") ? node : node.querySelector("table")) : null;
+    const table = node instanceof Element ? (node.matches("table") ? node : node.querySelector("table")) : null;
     const last = currentEditor.view.nodeDOM(target.tableStart + target.map.map.at(-1)!);
     if (!table || !(last instanceof Element)) return;
     const cell = target.table.nodeAt(target.map.map.at(-1)!)!;
@@ -519,9 +469,7 @@ export function BlogTableControls({
     menuAnchor.current = null;
     hoveredCell.current = layout!.cellPosition;
     setOpen(null);
-    const scroll = currentEditor.view.dom
-      .closest("[data-blog-editor-scroll]")
-      ?.getBoundingClientRect();
+    const scroll = currentEditor.view.dom.closest("[data-blog-editor-scroll]")?.getBoundingClientRect();
     const clip = {
       left: Math.max(0, scroll?.left ?? 0),
       top: Math.max(0, scroll?.top ?? 0),
@@ -529,9 +477,7 @@ export function BlogTableControls({
       bottom: Math.min(window.innerHeight, scroll?.bottom ?? window.innerHeight),
     };
     const edges = Array.from(
-      table.querySelectorAll(
-        axis === "row" ? ":scope > tbody > tr, :scope > tr" : ":scope > colgroup > col",
-      ),
+      table.querySelectorAll(axis === "row" ? ":scope > tbody > tr, :scope > tr" : ":scope > colgroup > col"),
       (element) => {
         const rect = element.getBoundingClientRect();
         return axis === "row" ? rect.top : rect.left;
@@ -580,8 +526,7 @@ export function BlogTableControls({
     });
     const atLimit =
       delta === 0 &&
-      ((distance < 0 && active.count === 1) ||
-        (distance > 0 && active.axis === "column" && active.count === 100));
+      ((distance < 0 && active.count === 1) || (distance > 0 && active.axis === "column" && active.count === 100));
     if (active.moved && active.delta === delta && active.atLimit === atLimit) return;
     const next = { ...active, moved: true, delta, atLimit };
     drag.current = next;
@@ -663,8 +608,7 @@ export function BlogTableControls({
           if (value) {
             const selected = axis === "cell" ? getBlogTableContext(currentEditor.state) : null;
             menuAnchor.current = selected
-              ? selected.tableStart +
-                selected.map.map[selected.top * selected.map.width + selected.left]
+              ? selected.tableStart + selected.map.map[selected.top * selected.map.width + selected.left]
               : layout!.cellPosition;
             if (axis !== "cell") run(selectBlogTableAxis(axis), true, true);
             setWidth(String(layout!.width));
@@ -713,10 +657,7 @@ export function BlogTableControls({
             }}
           >
             {error && (
-              <p
-                role="alert"
-                className="sticky top-0 z-10 mb-2 bg-card px-2 py-1 text-xs text-destructive"
-              >
+              <p role="alert" className="sticky top-0 z-10 mb-2 bg-card px-2 py-1 text-xs text-destructive">
                 {error}
               </p>
             )}
@@ -740,16 +681,8 @@ export function BlogTableControls({
                   !moveBlogTableAxis(axis, 1)(commandState!),
                 )}
                 <div className="my-2 border-t border-border" />
-                {item(
-                  `Insert ${axis} ${row ? "above" : "left"}`,
-                  <Plus />,
-                  row ? addRowBefore : addColumnBefore,
-                )}
-                {item(
-                  `Insert ${axis} ${row ? "below" : "right"}`,
-                  <Plus />,
-                  row ? addRowAfter : addColumnAfter,
-                )}
+                {item(`Insert ${axis} ${row ? "above" : "left"}`, <Plus />, row ? addRowBefore : addColumnBefore)}
+                {item(`Insert ${axis} ${row ? "below" : "right"}`, <Plus />, row ? addRowAfter : addColumnAfter)}
                 {item(`Duplicate ${axis}`, <Copy />, duplicateBlogTableAxis(axis), !canDuplicate)}
                 {context!.merged && (
                   <p className="px-2 py-1 text-xs text-muted-foreground">
@@ -786,35 +719,18 @@ export function BlogTableControls({
                           }
                         }}
                       />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="font-normal"
-                        onClick={resizeColumn}
-                      >
+                      <Button size="sm" variant="outline" className="font-normal" onClick={resizeColumn}>
                         Apply
                       </Button>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Drag a column boundary or enter a width.
-                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">Drag a column boundary or enter a width.</p>
                   </div>
                 )}
               </>
             ) : (
               <>
-                {item(
-                  "Merge selected cells",
-                  <Columns3 />,
-                  mergeCells,
-                  !mergeCells(currentEditor.state),
-                )}
-                {item(
-                  "Split merged cell",
-                  <Columns3 />,
-                  splitCell,
-                  !splitCell(currentEditor.state),
-                )}
+                {item("Merge selected cells", <Columns3 />, mergeCells, !mergeCells(currentEditor.state))}
+                {item("Split merged cell", <Columns3 />, splitCell, !splitCell(currentEditor.state))}
                 {item("Delete table", <Trash2 />, deleteTable)}
               </>
             )}
@@ -867,46 +783,31 @@ export function BlogTableControls({
     ? {
         left: Math.max(
           dragPreview.clip.left,
-          dragPreview.axis === "row"
-            ? dragPreview.bounds.left
-            : Math.min(dragPreview.bounds.right, previewEdge),
+          dragPreview.axis === "row" ? dragPreview.bounds.left : Math.min(dragPreview.bounds.right, previewEdge),
         ),
         top: Math.max(
           dragPreview.clip.top,
-          dragPreview.axis === "row"
-            ? Math.min(dragPreview.bounds.bottom, previewEdge)
-            : dragPreview.bounds.top,
+          dragPreview.axis === "row" ? Math.min(dragPreview.bounds.bottom, previewEdge) : dragPreview.bounds.top,
         ),
         right:
           window.innerWidth -
           Math.min(
             dragPreview.clip.right,
-            dragPreview.axis === "row"
-              ? dragPreview.bounds.right
-              : Math.max(dragPreview.bounds.right, previewEdge),
+            dragPreview.axis === "row" ? dragPreview.bounds.right : Math.max(dragPreview.bounds.right, previewEdge),
           ),
         bottom:
           window.innerHeight -
           Math.min(
             dragPreview.clip.bottom,
-            dragPreview.axis === "row"
-              ? Math.max(dragPreview.bounds.bottom, previewEdge)
-              : dragPreview.bounds.bottom,
+            dragPreview.axis === "row" ? Math.max(dragPreview.bounds.bottom, previewEdge) : dragPreview.bounds.bottom,
           ),
       }
     : undefined;
   return createPortal(
     <div data-blog-table-controls={id} className={tableStyles.tableControls}>
       <TooltipProvider>
-        {layout.selection && (
-          <div aria-hidden="true" className={tableStyles.tableSelection} style={layout.selection} />
-        )}
-        {menu(
-          "row",
-          layout.row,
-          "Row options",
-          <Ellipsis aria-hidden="true" className="rotate-90" />,
-        )}
+        {layout.selection && <div aria-hidden="true" className={tableStyles.tableSelection} style={layout.selection} />}
+        {menu("row", layout.row, "Row options", <Ellipsis aria-hidden="true" className="rotate-90" />)}
         {menu("column", layout.column, "Column options", <Ellipsis aria-hidden="true" />)}
         {layout.selection && menu("cell", layout.cell, "Selected cell options")}
         {layout.addRow && edge("Add row at bottom", "row", layout.addRow)}
@@ -929,9 +830,7 @@ export function BlogTableControls({
                   8,
                   Math.min(
                     window.innerWidth - 288,
-                    dragPreview.axis === "row"
-                      ? dragPreview.bounds.left
-                      : dragPreview.bounds.right + 8,
+                    dragPreview.axis === "row" ? dragPreview.bounds.left : dragPreview.bounds.right + 8,
                   ),
                 ),
                 top: Math.max(

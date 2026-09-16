@@ -94,11 +94,7 @@ export function PdfViewer({
   const pageViewport = React.useRef<HTMLDivElement | null>(null);
   const pageElements = React.useRef(new Map<number, HTMLDivElement>());
   const scrollSelection = React.useRef<number | null>(null);
-  const resolvedZoom = clamp(
-    Number.isFinite(zoom) ? Math.round(zoom ?? 100) : internalZoom,
-    MIN_ZOOM,
-    MAX_ZOOM,
-  );
+  const resolvedZoom = clamp(Number.isFinite(zoom) ? Math.round(zoom ?? 100) : internalZoom, MIN_ZOOM, MAX_ZOOM);
   const pageChapters = React.useMemo(
     () =>
       Array.from({ length: resolvedPageCount }, (_, index) => {
@@ -162,9 +158,7 @@ export function PdfViewer({
   }, [outline, query]);
 
   function sectionAtPage(page: number) {
-    return [...outline]
-      .filter((item) => item.page <= page)
-      .sort((left, right) => right.page - left.page)[0];
+    return [...outline].filter((item) => item.page <= page).sort((left, right) => right.page - left.page)[0];
   }
 
   const currentSection = sectionAtPage(resolvedCurrentPage);
@@ -284,9 +278,7 @@ export function PdfViewer({
                     aria-selected={selected}
                     className={cn(
                       "flex h-8 w-full items-center justify-between gap-2 rounded-lg pr-2.5 text-left text-[11px] outline-none transition-colors hover:bg-card focus-visible:ring-2 focus-visible:ring-ring",
-                      selected
-                        ? "bg-accent font-semibold text-foreground"
-                        : "text-muted-foreground",
+                      selected ? "bg-accent font-semibold text-foreground" : "text-muted-foreground",
                     )}
                     key={item.id}
                     onClick={() => selectPage(item.page)}
@@ -306,9 +298,7 @@ export function PdfViewer({
                       ) : null}
                       <span className="truncate">{item.title}</span>
                     </span>
-                    <Caption
-                      className={cn("", selected ? "text-primary" : "text-muted-foreground")}
-                    >
+                    <Caption className={cn("", selected ? "text-primary" : "text-muted-foreground")}>
                       {item.page}
                     </Caption>
                   </button>
@@ -365,9 +355,7 @@ export function PdfViewer({
               type="number"
               value={pageDraft}
             />
-            <span className="font-caption text-[9px] text-muted-foreground">
-              / {resolvedPageCount}
-            </span>
+            <span className="font-caption text-[9px] text-muted-foreground">/ {resolvedPageCount}</span>
           </div>
 
           <div className="ml-auto flex flex-wrap items-center gap-1.5">

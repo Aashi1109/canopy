@@ -32,8 +32,8 @@ export default async function ImportTemplatePage() {
           <Overline className="block text-primary">Template operations</Overline>
           <H2 className="mt-2 text-foreground">Import a reusable document template</H2>
           <Muted className="mt-2 max-w-2xl text-muted-foreground">
-            Load a SmartTools template export, review its JSON, and create a new draft without
-            changing existing templates.
+            Load a SmartTools template export, review its JSON, and create a new draft without changing existing
+            templates.
           </Muted>
         </div>
 

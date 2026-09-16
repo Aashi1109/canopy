@@ -19,11 +19,7 @@ import type { ToolHooks, ToolPagesInspected, ToolSettingsChanged, ToolValidate }
 function isMissingModule(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   const code: unknown = (error as { code?: unknown }).code;
-  return (
-    code === "MODULE_NOT_FOUND" ||
-    code === "ERR_MODULE_NOT_FOUND" ||
-    /cannot find module/i.test(error.message)
-  );
+  return code === "MODULE_NOT_FOUND" || code === "ERR_MODULE_NOT_FOUND" || /cannot find module/i.test(error.message);
 }
 
 function readHook<T>(module: unknown, name: string): T | undefined {
@@ -34,9 +30,7 @@ function readHook<T>(module: unknown, name: string): T | undefined {
   return typeof value === "function" ? (value as T) : undefined;
 }
 
-export async function loadToolHooks<S = Record<string, unknown>>(
-  toolId: string,
-): Promise<ToolHooks<S>> {
+export async function loadToolHooks<S = Record<string, unknown>>(toolId: string): Promise<ToolHooks<S>> {
   const key = toolId.split(".")[1] ?? "";
   if (!TOOL_SLUG_PATTERN.test(key)) return {};
 

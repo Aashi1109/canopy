@@ -192,19 +192,9 @@ export async function forEachRenderedPdfPage(
   request: RenderPdfRequest,
   onPage: (page: RenderedPdfPage, index: number, total: number) => Promise<void>,
 ): Promise<{ pageCount: number }> {
-  const {
-    file,
-    selection,
-    dpi,
-    background,
-    signal,
-    color = "original",
-    progress,
-    rasterLimit = true,
-  } = request;
+  const { file, selection, dpi, background, signal, color = "original", progress, rasterLimit = true } = request;
   const renderScheduler = {
-    requestAnimationFrame: (callback: FrameRequestCallback) =>
-      setTimeout(() => callback(performance.now()), 0),
+    requestAnimationFrame: (callback: FrameRequestCallback) => setTimeout(() => callback(performance.now()), 0),
     cancelAnimationFrame: (handle: number) => clearTimeout(handle),
   };
   let opened: Awaited<ReturnType<typeof openPdfDocument>> | null = null;
@@ -266,10 +256,7 @@ export async function forEachRenderedPdfPage(
     return { pageCount: document.numPages };
   } catch (error) {
     if (isPasswordError(error)) {
-      throw new ToolError(
-        "encrypted-pdf",
-        "Encrypted or password-protected PDFs are not supported.",
-      );
+      throw new ToolError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.");
     }
     throw error;
   } finally {
@@ -301,17 +288,13 @@ export async function openPdfInspectionSession(
     opened = await openPdfDocument(file, signal);
   } catch (error) {
     if (isPasswordError(error)) {
-      throw new ToolError(
-        "encrypted-pdf",
-        "Encrypted or password-protected PDFs are not supported.",
-      );
+      throw new ToolError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.");
     }
     throw error;
   }
   const pages: PdfInspection["pages"][number][] = [];
   const scheduler = {
-    requestAnimationFrame: (callback: FrameRequestCallback) =>
-      setTimeout(() => callback(performance.now()), 0),
+    requestAnimationFrame: (callback: FrameRequestCallback) => setTimeout(() => callback(performance.now()), 0),
     cancelAnimationFrame: (handle: number) => clearTimeout(handle),
   };
   let closed = false;
@@ -332,8 +315,7 @@ export async function openPdfInspectionSession(
     const unique = [...new Set(pageNumbers)];
     if (
       unique.some(
-        (pageNumber) =>
-          !Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > opened.document.numPages,
+        (pageNumber) => !Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > opened.document.numPages,
       )
     ) {
       throw new ToolError("invalid-page-selection", "A requested PDF preview page does not exist.");
@@ -345,9 +327,7 @@ export async function openPdfInspectionSession(
       const page = await opened.read(opened.document.getPage(pageNumber));
       const point = page.getViewport({ scale: 1 });
       const scale = Math.min(
-        renderWidth === undefined
-          ? Math.min(1, thumbnailWidth / point.width)
-          : renderWidth / point.width,
+        renderWidth === undefined ? Math.min(1, thumbnailWidth / point.width) : renderWidth / point.width,
         Math.sqrt(PDF_PREVIEW_MAX_PIXELS / (point.width * point.height)),
       );
       const viewport = page.getViewport({ scale });
@@ -427,10 +407,7 @@ export async function openPdfInspectionSession(
   } catch (error) {
     await opened.close().catch(() => undefined);
     if (isPasswordError(error)) {
-      throw new ToolError(
-        "encrypted-pdf",
-        "Encrypted or password-protected PDFs are not supported.",
-      );
+      throw new ToolError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.");
     }
     throw error;
   }

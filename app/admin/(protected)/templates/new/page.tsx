@@ -57,8 +57,7 @@ export default async function NewTemplatePage() {
           <div>
             <H3 className="text-foreground">Create a standard template</H3>
             <Caption className="block mt-1.5 max-w-3xl text-muted-foreground">
-              Set the core details and creation defaults. You can refine the template after it has
-              been created.
+              Set the core details and creation defaults. You can refine the template after it has been created.
             </Caption>
           </div>
 
@@ -120,9 +119,7 @@ export default async function NewTemplatePage() {
             <Label className="flex items-center justify-between gap-4">
               <span>
                 <Text className="block text-foreground">Start as a draft</Text>
-                <Caption className="mt-0.5 block text-muted-foreground">
-                  Review before customers can use it
-                </Caption>
+                <Caption className="mt-0.5 block text-muted-foreground">Review before customers can use it</Caption>
               </span>
               <Switch defaultChecked aria-label="Start as a draft" />
             </Label>
@@ -166,20 +163,18 @@ export default async function NewTemplatePage() {
             A dependable starting point
           </H3>
           <Muted className="mt-[22px] text-muted-foreground">
-            Standard templates begin with a proven layout family and safe defaults, so creation
-            stays quick and predictable.
+            Standard templates begin with a proven layout family and safe defaults, so creation stays quick and
+            predictable.
           </Muted>
           <List className="list-none p-0 space-y-0 mt-[22px] grid gap-[22px] text-foreground">
-            {[
-              "Structured document foundation",
-              "Print-safe defaults included",
-              "Ready to refine after creation",
-            ].map((item) => (
-              <li className="flex items-center gap-2.5" key={item}>
-                <CircleCheck aria-hidden="true" className="size-4 shrink-0 text-success" />
-                <Text>{item}</Text>
-              </li>
-            ))}
+            {["Structured document foundation", "Print-safe defaults included", "Ready to refine after creation"].map(
+              (item) => (
+                <li className="flex items-center gap-2.5" key={item}>
+                  <CircleCheck aria-hidden="true" className="size-4 shrink-0 text-success" />
+                  <Text>{item}</Text>
+                </li>
+              ),
+            )}
           </List>
         </aside>
       </div>

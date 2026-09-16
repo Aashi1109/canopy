@@ -9,11 +9,7 @@
 
 import { TOOL_SLUG_PATTERN } from "@smarttools/tool-catalog";
 
-import {
-  ArtifactStorageError,
-  cleanupArtifactJobWithRetry,
-  createArtifactWriter,
-} from "./artifacts";
+import { ArtifactStorageError, cleanupArtifactJobWithRetry, createArtifactWriter } from "./artifacts";
 import { assertRunnableFiles } from "./fileGuard";
 import { assertRunnableText } from "./inputGuard";
 import { createThrottledProgressReporter } from "./progress";
@@ -38,8 +34,7 @@ type WorkerScope = {
 const scope = globalThis as unknown as WorkerScope;
 
 let running: AbortController | null = null;
-let openingInspection: { readonly jobId: string; readonly controller: AbortController } | null =
-  null;
+let openingInspection: { readonly jobId: string; readonly controller: AbortController } | null = null;
 let inspection: {
   readonly jobId: string;
   readonly controller: AbortController;
@@ -160,11 +155,7 @@ async function inspectJob(message: ToolWorkerInspect): Promise<void> {
     const spec = readSpec(specModule);
     signal.throwIfAborted();
     if (message.source !== "output") {
-      if (
-        spec.input.kind !== "files" ||
-        spec.input.inspect !== true ||
-        spec.input.engine !== "pdf"
-      ) {
+      if (spec.input.kind !== "files" || spec.input.inspect !== true || spec.input.engine !== "pdf") {
         throw new ToolError("inspection-unsupported", "This tool does not use page previews.");
       }
       // Input previews apply the same trust boundaries as the run path.
@@ -197,10 +188,7 @@ async function thumbnailJob(message: ToolWorkerThumbnailRequest): Promise<void> 
   const current = inspection;
   if (!current || current.jobId !== message.jobId) return;
   try {
-    const previews = await current.session.renderThumbnails(
-      message.pageNumbers,
-      message.renderWidth,
-    );
+    const previews = await current.session.renderThumbnails(message.pageNumbers, message.renderWidth);
     if (inspection !== current || current.controller.signal.aborted) return;
     scope.postMessage(
       { type: "thumbnails", jobId: message.jobId, previews },
@@ -280,7 +268,5 @@ function readRun(module: unknown): ToolRun<unknown> {
 }
 
 function pick(value: unknown, key: string): unknown {
-  return typeof value === "object" && value !== null
-    ? (value as Record<string, unknown>)[key]
-    : undefined;
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>)[key] : undefined;
 }

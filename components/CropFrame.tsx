@@ -192,10 +192,8 @@ export function CropFrame({
           }}
           onPointerMove={(event) => {
             if (pointer.current?.mode !== handle) return;
-            trackPointer(
-              event,
-              event.currentTarget.parentElement?.parentElement?.getBoundingClientRect(),
-              (dx, dy) => resize(dx, dy, handle),
+            trackPointer(event, event.currentTarget.parentElement?.parentElement?.getBoundingClientRect(), (dx, dy) =>
+              resize(dx, dy, handle),
             );
           }}
           onPointerUp={(event) => {

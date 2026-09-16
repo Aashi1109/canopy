@@ -87,9 +87,7 @@ test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and v
     await roles.delete("all");
   }
   failure = (command) =>
-    command[0] === "GET"
-      ? { data: { result: null } }
-      : Promise.reject(new Error("write failed private-token"));
+    command[0] === "GET" ? { data: { result: null } } : Promise.reject(new Error("write failed private-token"));
   const previousLoads = loads;
   assert.deepEqual(await roles.remember("all", load), [`value-${previousLoads + 1}`]);
   await assert.rejects(
@@ -100,11 +98,7 @@ test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and v
     /DB unavailable/,
   );
   failure = undefined;
-  assert.ok(
-    warnings.every(
-      (warning) => !warning.includes("private-token") && !warning.includes("postgres://"),
-    ),
-  );
+  assert.ok(warnings.every((warning) => !warning.includes("private-token") && !warning.includes("postgres://")));
 
   for (const namespace of ["", " "]) assert.throws(() => new Cache(namespace), /namespace/);
   await assert.rejects(() => roles.get(""), /key/);

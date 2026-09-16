@@ -203,10 +203,7 @@ export function parsePageSelection(input: string, pageCount?: number): number[] 
   if (!normalized) return [];
   if (normalized === "all") return "all";
 
-  const total =
-    typeof pageCount === "number" && Number.isInteger(pageCount) && pageCount > 0
-      ? pageCount
-      : null;
+  const total = typeof pageCount === "number" && Number.isInteger(pageCount) && pageCount > 0 ? pageCount : null;
 
   if (normalized === "odd" || normalized === "even") {
     if (total === null) return [];
@@ -241,9 +238,7 @@ function parseField(field: FieldSpec, raw: unknown): SettingValue {
     case "password": {
       const value = coerceString(raw);
       if (value === null) return field.default;
-      return field.kind === "text" && field.maxLength !== undefined
-        ? value.slice(0, field.maxLength)
-        : value;
+      return field.kind === "text" && field.maxLength !== undefined ? value.slice(0, field.maxLength) : value;
     }
     case "textarea":
       return coerceString(raw) ?? field.default;
@@ -257,9 +252,7 @@ function parseField(field: FieldSpec, raw: unknown): SettingValue {
     case "select":
     case "preset": {
       const value = coerceString(raw);
-      return value !== null && field.choices.some((choice) => choice.value === value)
-        ? value
-        : field.default;
+      return value !== null && field.choices.some((choice) => choice.value === value) ? value : field.default;
     }
     case "color": {
       const value = coerceString(raw)?.trim();
@@ -280,9 +273,7 @@ function parseField(field: FieldSpec, raw: unknown): SettingValue {
     }
     case "position": {
       const value = coerceString(raw);
-      return value !== null && Object.hasOwn(POSITIONS, value)
-        ? (value as WatermarkPosition)
-        : field.default;
+      return value !== null && Object.hasOwn(POSITIONS, value) ? (value as WatermarkPosition) : field.default;
     }
     case "pages": {
       if (raw === "all" || raw === "odd" || raw === "even") return raw;

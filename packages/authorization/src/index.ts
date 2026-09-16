@@ -119,8 +119,7 @@ export const ADMIN_ACCESS = freezeAccess({
 const USER_ROLE = Object.freeze<Role>({
   id: "user",
   name: "User",
-  description:
-    "Default role assigned to every account. Does not grant access to the Admin application.",
+  description: "Default role assigned to every account. Does not grant access to the Admin application.",
   access: freezeAccess({}),
   isSystem: true,
 });
@@ -209,9 +208,7 @@ export function assertAccessPrerequisites(access: unknown): asserts access is Ac
       if (!granted) continue;
       const prerequisite = getMissingPermissionPrerequisite(access, resource, action);
       if (prerequisite) {
-        throw new Error(
-          `Permission ${resource}.${action} requires ${prerequisite.resource}.${prerequisite.action}.`,
-        );
+        throw new Error(`Permission ${resource}.${action} requires ${prerequisite.resource}.${prerequisite.action}.`);
       }
     }
   }
@@ -237,10 +234,7 @@ export function assertCanEditRole(role: Pick<Role, "id" | "isSystem">): void {
   }
 }
 
-export function assertCanDeleteRole(
-  role: Pick<Role, "id" | "isSystem">,
-  assignedUserCount: number,
-): void {
+export function assertCanDeleteRole(role: Pick<Role, "id" | "isSystem">, assignedUserCount: number): void {
   if (isProtectedRole(role)) {
     throw new Error("System roles are protected and cannot be deleted.");
   }
@@ -281,26 +275,17 @@ function assertAnotherAdminRemains(
   }
 }
 
-export function assertCanDemoteUser(
-  user: Pick<User, "roles" | "status">,
-  counts: AdminCounts,
-): void {
+export function assertCanDemoteUser(user: Pick<User, "roles" | "status">, counts: AdminCounts): void {
   assertAnotherAdminRemains(user, counts, "demote");
 }
 
-export function assertCanSuspendUser(
-  user: Pick<User, "roles" | "status">,
-  counts: AdminCounts,
-): void {
+export function assertCanSuspendUser(user: Pick<User, "roles" | "status">, counts: AdminCounts): void {
   assertValidAdminCounts(counts);
   if (isAdmin(user) && user.status === "active" && counts.activeAdminCount <= 1) {
     throw new Error("The final Admin cannot be suspended.");
   }
 }
 
-export function assertCanDeleteUser(
-  user: Pick<User, "roles" | "status">,
-  counts: AdminCounts,
-): void {
+export function assertCanDeleteUser(user: Pick<User, "roles" | "status">, counts: AdminCounts): void {
   assertAnotherAdminRemains(user, counts, "delete");
 }

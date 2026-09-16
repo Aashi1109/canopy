@@ -31,13 +31,7 @@ export function useFileDownload(file: StoredToolArtifact) {
   return { download, downloading, error };
 }
 
-export function ArtifactDownloadButton({
-  file,
-  label = "Download",
-}: {
-  file: StoredToolArtifact;
-  label?: string;
-}) {
+export function ArtifactDownloadButton({ file, label = "Download" }: { file: StoredToolArtifact; label?: string }) {
   const { download, downloading, error } = useFileDownload(file);
   return (
     <div className="flex flex-col items-end gap-1">

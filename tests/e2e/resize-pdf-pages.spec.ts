@@ -18,18 +18,9 @@ test("Resize PDF Pages previews the source and resizes only selected pages from 
       releaseRun?.();
       releaseRun = undefined;
     });
-    Worker.prototype.postMessage = function (
-      message: unknown,
-      options?: Transferable[] | StructuredSerializeOptions,
-    ) {
+    Worker.prototype.postMessage = function (message: unknown, options?: Transferable[] | StructuredSerializeOptions) {
       const dispatch = () => Reflect.apply(postMessage, this, [message, options]);
-      if (
-        holdRun &&
-        typeof message === "object" &&
-        message !== null &&
-        "type" in message &&
-        message.type === "run"
-      ) {
+      if (holdRun && typeof message === "object" && message !== null && "type" in message && message.type === "run") {
         // Pause dispatch for the running-state check, then execute the real job.
         releaseRun = dispatch;
         return;
@@ -71,16 +62,9 @@ test("Resize PDF Pages previews the source and resizes only selected pages from 
     await expect(currentPage).toHaveValue("2");
     await expect
       .poll(async () => {
-        const image = (await source
-          .getByRole("img", { name: "PDF page 2", exact: true })
-          .boundingBox())!;
-        const viewport = (await source
-          .getByRole("region", { name: "PDF pages", exact: true })
-          .boundingBox())!;
-        return Math.min(
-          image.y - viewport.y,
-          viewport.y + viewport.height - image.y - image.height,
-        );
+        const image = (await source.getByRole("img", { name: "PDF page 2", exact: true }).boundingBox())!;
+        const viewport = (await source.getByRole("region", { name: "PDF pages", exact: true }).boundingBox())!;
+        return Math.min(image.y - viewport.y, viewport.y + viewport.height - image.y - image.height);
       })
       .toBeGreaterThanOrEqual(-2);
   }
@@ -106,9 +90,7 @@ test("Resize PDF Pages previews the source and resizes only selected pages from 
   await expect(currentPage).toHaveAttribute("max", "3", { timeout: 60_000 });
   const image = source.getByRole("img", { name: "PDF page 1", exact: true });
   await expect(image).toBeVisible();
-  await expect
-    .poll(() => image.evaluate((node: HTMLImageElement) => node.naturalWidth))
-    .toBeGreaterThan(0);
+  await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.naturalWidth)).toBeGreaterThan(0);
   await expect(resize).toBeEnabled();
   await expect(source.getByRole("button", { name: "Replace PDF", exact: true })).toBeVisible();
   await screenshot("uploaded");
@@ -125,9 +107,7 @@ test("Resize PDF Pages previews the source and resizes only selected pages from 
         canvas.height = image.naturalHeight;
         const context = canvas.getContext("2d")!;
         context.drawImage(image, 0, 0);
-        return Math.abs(
-          context.getImageData(canvas.width / 4, canvas.height / 4, 1, 1).data[0] - 128,
-        );
+        return Math.abs(context.getImageData(canvas.width / 4, canvas.height / 4, 1, 1).data[0] - 128);
       }),
     )
     .toBeLessThan(5);
@@ -214,9 +194,7 @@ test("Resize PDF Pages previews the source and resizes only selected pages from 
     mimeType: "application/pdf",
     buffer: Buffer.from(await replacement.save()),
   });
-  await expect(
-    source.getByRole("button", { name: "Remove replacement.pdf", exact: true }),
-  ).toBeVisible();
+  await expect(source.getByRole("button", { name: "Remove replacement.pdf", exact: true })).toBeVisible();
   await expect(currentPage).toHaveAttribute("max", "1", { timeout: 60_000 });
   await expect(download).toHaveCount(0);
   await expect(resize).toBeDisabled();

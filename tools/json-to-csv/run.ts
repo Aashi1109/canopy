@@ -7,12 +7,7 @@ import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
-  const repairMode =
-    ctx.settings.repairMode === "null"
-      ? "null"
-      : ctx.settings.repairMode === "off"
-        ? "off"
-        : "remove";
+  const repairMode = ctx.settings.repairMode === "null" ? "null" : ctx.settings.repairMode === "off" ? "off" : "remove";
   const result = convertJsonToCsv(ctx.input.text, {
     delimiter: utilityDelimiter(ctx.settings.delimiter),
     repairMode,

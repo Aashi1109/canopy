@@ -6,16 +6,7 @@
  */
 
 import type { DocumentTemplate } from "@smarttools/invoice-templates";
-import {
-  Caption,
-  Button,
-  EmptyState,
-  Input,
-  SectionCard,
-  SectionHeading,
-  Select,
-  StatusBadge,
-} from "@smarttools/ui";
+import { Caption, Button, EmptyState, Input, SectionCard, SectionHeading, Select, StatusBadge } from "@smarttools/ui";
 import { Check, Search, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -137,12 +128,8 @@ export default function TemplateSelector({
                       </StatusBadge>
                     )}
                   </span>
-                  <span className="block text-foreground group-hover:text-primary">
-                    {template.name}
-                  </span>
-                  <Caption className="line-clamp-2 block text-muted-foreground">
-                    {template.description}
-                  </Caption>
+                  <span className="block text-foreground group-hover:text-primary">{template.name}</span>
+                  <Caption className="line-clamp-2 block text-muted-foreground">{template.description}</Caption>
                 </span>
 
                 <Caption className="flex items-center justify-between gap-2 border-t border-border pt-3 text-muted-foreground">
@@ -163,10 +150,7 @@ export default function TemplateSelector({
           })}
         </div>
       ) : (
-        <EmptyState
-          description="Try another search or category."
-          title="No matching published invoice themes"
-        />
+        <EmptyState description="Try another search or category." title="No matching published invoice themes" />
       )}
     </SectionCard>
   );

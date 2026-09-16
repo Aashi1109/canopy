@@ -17,9 +17,7 @@ function reindent(formatted: string, indent: string): string {
   return formatted
     .split("\n")
     .map((line) => {
-      const reindented = quote
-        ? line
-        : line.replace(/^(?: {2})+/, (spaces) => indent.repeat(spaces.length / 2));
+      const reindented = quote ? line : line.replace(/^(?: {2})+/, (spaces) => indent.repeat(spaces.length / 2));
       for (const character of line) {
         if (quote) {
           if (escaped) escaped = false;
@@ -38,9 +36,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const formatted = formatDelimitedCode(ctx.input.text, "javascript");
   const indent = ctx.settings.indentWidth === "4" ? "    " : "\t";
   const text =
-    ctx.settings.indentWidth === "4" || ctx.settings.indentWidth === "tab"
-      ? reindent(formatted, indent)
-      : formatted;
+    ctx.settings.indentWidth === "4" || ctx.settings.indentWidth === "tab" ? reindent(formatted, indent) : formatted;
   return { render: "text", text, downloadName: "formatted.js" };
 };
 

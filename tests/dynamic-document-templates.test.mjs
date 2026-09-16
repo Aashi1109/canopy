@@ -4,8 +4,7 @@ import test from "node:test";
 
 const workspacePath = "app/paperwork/components/AdvancedTemplateWorkspace.tsx";
 const adaptersPath = "lib/paperwork/documentAdapters.ts";
-const editorPath =
-  "app/admin/(protected)/templates/[id]/advanced/components/AdvancedTemplateEditor.tsx";
+const editorPath = "app/admin/(protected)/templates/[id]/advanced/components/AdvancedTemplateEditor.tsx";
 
 test("Paperwork exposes one typed adapter and component mapping for every document kind", async () => {
   const source = await readFile(adaptersPath, "utf8");

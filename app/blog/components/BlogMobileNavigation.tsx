@@ -3,13 +3,7 @@
 import { Button, Input, Label, Popover } from "@smarttools/ui";
 import { Menu, Search } from "lucide-react";
 
-export function BlogMobileNavigation({
-  signedIn,
-  isAdmin,
-}: {
-  signedIn: boolean;
-  isAdmin: boolean;
-}) {
+export function BlogMobileNavigation({ signedIn, isAdmin }: { signedIn: boolean; isAdmin: boolean }) {
   return (
     <>
       <Popover.Root>

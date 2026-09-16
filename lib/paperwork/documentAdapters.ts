@@ -34,12 +34,7 @@ import { calculateInvoiceTotals } from "./utils/calculations";
 import { validateInvoiceData } from "./utils/invoiceValidation";
 import { getInitialBlankInvoice, getSampleInvoice } from "./utils/sampleData";
 import { getInvoiceTemplateInputs, getReceiptTemplateInputs } from "./advancedTemplateData";
-import {
-  calculateReceiptTotals,
-  DEFAULT_RECEIPT_DATA,
-  SAMPLE_RECEIPT_DATA,
-  type ReceiptData,
-} from "./receiptDocument";
+import { calculateReceiptTotals, DEFAULT_RECEIPT_DATA, SAMPLE_RECEIPT_DATA, type ReceiptData } from "./receiptDocument";
 import {
   NEC_INTERNAL_REPORT_DISCLAIMER,
   OFFICIAL_W9_URL,
@@ -100,9 +95,7 @@ export function mergeTemplateInputs(
 }
 
 function withoutFullTin(sampleData: Record<string, string>) {
-  return Object.fromEntries(
-    Object.entries(sampleData).filter(([, value]) => !containsFullTin(value)),
-  );
+  return Object.fromEntries(Object.entries(sampleData).filter(([, value]) => !containsFullTin(value)));
 }
 
 function numberInput(value: unknown): number {
@@ -114,9 +107,7 @@ function documentValues<TDraft>(
   draft: TDraft,
   readField: (draft: TDraft, key: string) => unknown,
 ) {
-  return Object.fromEntries(
-    getDocumentDefinition(documentType).fields.map(({ key }) => [key, readField(draft, key)]),
-  );
+  return Object.fromEntries(getDocumentDefinition(documentType).fields.map(({ key }) => [key, readField(draft, key)]));
 }
 
 function readPath(value: unknown, path: string): unknown {
@@ -124,9 +115,7 @@ function readPath(value: unknown, path: string): unknown {
     .split(".")
     .reduce<unknown>(
       (current, part) =>
-        current && typeof current === "object"
-          ? (current as Record<string, unknown>)[part]
-          : undefined,
+        current && typeof current === "object" ? (current as Record<string, unknown>)[part] : undefined,
       value,
     );
 }
@@ -223,8 +212,7 @@ function writeInvoiceField(draft: InvoiceData, key: string, value: unknown): Inv
       lineItems: value.map((row, index) => {
         const item = row as Record<string, unknown>;
         return {
-          id:
-            typeof item.id === "string" ? item.id : `invoice-item-${index}-${crypto.randomUUID()}`,
+          id: typeof item.id === "string" ? item.id : `invoice-item-${index}-${crypto.randomUUID()}`,
           description: String(item.description ?? ""),
           quantity: item.quantity === "" ? ("" as unknown as number) : Number(item.quantity ?? 0),
           unitPrice: item.rate === "" ? ("" as unknown as number) : Number(item.rate ?? 0),
@@ -327,12 +315,10 @@ function writeReceiptField(draft: ReceiptData, key: string, value: unknown): Rec
       lineItems: value.map((row, index) => {
         const item = row as Record<string, unknown>;
         return {
-          id:
-            typeof item.id === "string" ? item.id : `receipt-item-${index}-${crypto.randomUUID()}`,
+          id: typeof item.id === "string" ? item.id : `receipt-item-${index}-${crypto.randomUUID()}`,
           description: String(item.description ?? ""),
           quantity: item.quantity === "" ? ("" as unknown as number) : Number(item.quantity ?? 0),
-          unitPrice:
-            item.unitPrice === "" ? ("" as unknown as number) : Number(item.unitPrice ?? 0),
+          unitPrice: item.unitPrice === "" ? ("" as unknown as number) : Number(item.unitPrice ?? 0),
           taxable: Boolean(item.taxable),
         };
       }),
@@ -345,10 +331,7 @@ function writeReceiptField(draft: ReceiptData, key: string, value: unknown): Rec
 export const receiptAdapter: DocumentAdapter<ReceiptData> = {
   documentType: "receipt",
   getInitialDraft() {
-    return DataBridge.get<ReceiptData>(
-      DataBridgeKeys.RECEIPT_DRAFT,
-      structuredClone(DEFAULT_RECEIPT_DATA),
-    );
+    return DataBridge.get<ReceiptData>(DataBridgeKeys.RECEIPT_DRAFT, structuredClone(DEFAULT_RECEIPT_DATA));
   },
   getSampleDraft() {
     return structuredClone(SAMPLE_RECEIPT_DATA);
@@ -425,11 +408,7 @@ function readExpenseField(draft: ExpenseReportDraft, key: string): unknown {
   return computed[key];
 }
 
-function writeExpenseField(
-  draft: ExpenseReportDraft,
-  key: string,
-  value: unknown,
-): ExpenseReportDraft {
+function writeExpenseField(draft: ExpenseReportDraft, key: string, value: unknown): ExpenseReportDraft {
   if (key === "expenseRows" && Array.isArray(value)) {
     return normalizeExpenseReportDraft({
       ...draft,
@@ -682,9 +661,7 @@ export const quarterlyTaxAdapter: DocumentAdapter<QuarterlyTaxDraft> = {
   },
   toPdfInputs(draft, template, customValues) {
     const values = documentValues("quarterly-tax-estimator", draft, readQuarterlyTaxField);
-    values.assumptions = [draft.assumptions, ...QUARTERLY_TAX_RULES_2026.assumptions]
-      .filter(Boolean)
-      .join("\n");
+    values.assumptions = [draft.assumptions, ...QUARTERLY_TAX_RULES_2026.assumptions].filter(Boolean).join("\n");
     return mergeTemplateInputs(template.config.sampleData, values, customValues);
   },
   fileName(draft) {
@@ -817,9 +794,7 @@ function readNecField(draft: NecTrackerDraft, key: string): unknown {
   );
   const rule = summary.rule;
   const computed: Record<string, unknown> = {
-    vendorReferences: vendors.map(
-      (vendor) => `${vendor.businessName || vendor.legalName} · ${vendor.w9Status}`,
-    ),
+    vendorReferences: vendors.map((vendor) => `${vendor.businessName || vendor.legalName} · ${vendor.w9Status}`),
     maskedTinReferences: draft.recipientAdjustments
       .filter(({ maskedTinReference }) => maskedTinReference)
       .map(({ vendorId, maskedTinReference }) => `${vendorId} · ${maskedTinReference}`),
@@ -847,12 +822,8 @@ function writeNecField(draft: NecTrackerDraft, key: string, value: unknown): Nec
           date: String(item.date ?? ""),
           vendorId: String(item.vendorId ?? ""),
           amount: numberInput(item.amount),
-          paymentMethod: String(
-            item.paymentMethod || "Other",
-          ) as NecTrackerDraft["payments"][number]["paymentMethod"],
-          category: String(
-            item.category || "Other",
-          ) as NecTrackerDraft["payments"][number]["category"],
+          paymentMethod: String(item.paymentMethod || "Other") as NecTrackerDraft["payments"][number]["paymentMethod"],
+          category: String(item.category || "Other") as NecTrackerDraft["payments"][number]["category"],
           description: String(item.description ?? ""),
           includeIn1099: Boolean(item.includeIn1099),
         };

@@ -36,9 +36,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     const date = parseDate(input, "Date input");
     const locale = ctx.settings.locale === "en-GB" ? "en-GB" : LOCAL_FORMAT_LOCALE;
     const displayInUtc = ctx.settings.displayTimezone === "utc";
-    const readable = displayInUtc
-      ? date.toLocaleString(locale, { timeZone: "UTC" })
-      : date.toLocaleString(locale);
+    const readable = displayInUtc ? date.toLocaleString(locale, { timeZone: "UTC" }) : date.toLocaleString(locale);
     const output = [
       `ISO: ${ctx.settings.preserveOffset === true ? isoWithSourceOffset(date, input) : date.toISOString()}`,
     ];

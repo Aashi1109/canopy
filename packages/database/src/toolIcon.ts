@@ -12,11 +12,7 @@ export async function getToolIcons(): Promise<Record<string, ToolIconRow>> {
 }
 
 export async function getToolIcon(toolId: string): Promise<ToolIconRow | null> {
-  const [row] = await db
-    .select()
-    .from(toolIconsTable)
-    .where(eq(toolIconsTable.toolId, toolId))
-    .limit(1);
+  const [row] = await db.select().from(toolIconsTable).where(eq(toolIconsTable.toolId, toolId)).limit(1);
   return row ? { ...row } : null;
 }
 

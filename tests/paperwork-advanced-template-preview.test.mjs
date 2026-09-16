@@ -51,25 +51,16 @@ test("Paperwork advanced template preview owns the complete pdfme lifecycle", as
 });
 
 test("Paperwork advanced preview fills its container and anchors controls at the bottom", async () => {
-  const [source, styles] = await Promise.all([
-    readFile(previewPath, "utf8"),
-    readFile("app/globals.css", "utf8"),
-  ]);
+  const [source, styles] = await Promise.all([readFile(previewPath, "utf8"), readFile("app/globals.css", "utf8")]);
 
   assert.match(source, /className="pdfme-preview-surface size-full"/);
-  assert.match(
-    styles,
-    /\.pdfme-preview-surface\s*>\s*\.pdfme-designer-root[\s\S]*?height:\s*100%\s*!important/,
-  );
+  assert.match(styles, /\.pdfme-preview-surface\s*>\s*\.pdfme-designer-root[\s\S]*?height:\s*100%\s*!important/);
   assert.match(
     styles,
     /\.pdfme-preview-surface[\s\S]*?:has\(>\s*\.pdfme-ui-control-bar\)[\s\S]*?bottom:\s*16px\s*!important/,
   );
   assert.match(source, /function fitViewerPageToSurface/);
   assert.match(source, /container\.clientWidth - 16/);
-  assert.match(
-    source,
-    /container\.clientHeight - controls\.getBoundingClientRect\(\)\.height - 48/,
-  );
+  assert.match(source, /container\.clientHeight - controls\.getBoundingClientRect\(\)\.height - 48/);
   assert.match(source, /viewer\.updateOptions\(\{\s*zoomLevel\s*\}\)/);
 });

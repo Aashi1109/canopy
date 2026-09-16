@@ -106,9 +106,7 @@ export const TOOL_CATEGORIES = {
 
 export type CategoryKey = keyof typeof TOOL_CATEGORIES;
 
-export const CATEGORY_KEYS: readonly CategoryKey[] = Object.keys(
-  TOOL_CATEGORIES,
-) as readonly CategoryKey[];
+export const CATEGORY_KEYS: readonly CategoryKey[] = Object.keys(TOOL_CATEGORIES) as readonly CategoryKey[];
 
 export function isCategoryKey(value: unknown): value is CategoryKey {
   return typeof value === "string" && Object.hasOwn(TOOL_CATEGORIES, value);

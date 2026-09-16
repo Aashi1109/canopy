@@ -39,14 +39,10 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
   const issues = props.result?.issues ?? [];
   const verdict = props.result?.verdict;
   const inputSpec = props.spec.input;
-  const moduleFormat =
-    typeof props.settings.moduleFormat === "string" ? props.settings.moduleFormat : "none";
+  const moduleFormat = typeof props.settings.moduleFormat === "string" ? props.settings.moduleFormat : "none";
   const outputLanguage =
-    typeof props.settings.outputLanguage === "string"
-      ? props.settings.outputLanguage
-      : "javascript";
-  const requestStyle =
-    typeof props.settings.requestStyle === "string" ? props.settings.requestStyle : "config";
+    typeof props.settings.outputLanguage === "string" ? props.settings.outputLanguage : "javascript";
+  const requestStyle = typeof props.settings.requestStyle === "string" ? props.settings.requestStyle : "config";
 
   useEffect(() => {
     props.onToolbarActionsChange?.({ exampleLabel: "Load example" });
@@ -121,26 +117,15 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
                 className="w-36"
                 disabled={props.disabled}
                 id={languageId}
-                onChange={(event) =>
-                  props.onSettingChange("outputLanguage", event.currentTarget.value)
-                }
+                onChange={(event) => props.onSettingChange("outputLanguage", event.currentTarget.value)}
                 size="xs"
                 value={outputLanguage}
               >
                 <option value="javascript">JavaScript</option>
                 <option value="typescript">TypeScript</option>
               </Select>
-              <ToolActionButton
-                action="copy"
-                disabled={!output}
-                onClick={() => void copyOutput()}
-                type="button"
-              >
-                {copyStatus === "copied"
-                  ? "Copied"
-                  : copyStatus === "failed"
-                    ? "Copy failed"
-                    : "Copy"}
+              <ToolActionButton action="copy" disabled={!output} onClick={() => void copyOutput()} type="button">
+                {copyStatus === "copied" ? "Copied" : copyStatus === "failed" ? "Copy failed" : "Copy"}
               </ToolActionButton>
               <ToolActionButton
                 action="download"
@@ -181,9 +166,7 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
           ) : verdict ? (
             <AlertBanner
               title={verdict.label}
-              variant={
-                verdict.level === "ok" ? "success" : verdict.level === "warn" ? "warning" : "error"
-              }
+              variant={verdict.level === "ok" ? "success" : verdict.level === "warn" ? "warning" : "error"}
             >
               {verdict.detail}
             </AlertBanner>
@@ -221,8 +204,7 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
 
         <AlertBanner title="Unsupported flags are not converted" variant="warning">
           <P>
-            Forms, cookie jars, proxies, redirects, certificates, uploads, and unsupported shell
-            syntax are ignored.
+            Forms, cookie jars, proxies, redirects, certificates, uploads, and unsupported shell syntax are ignored.
           </P>
         </AlertBanner>
       </ToolOptionsPanel>

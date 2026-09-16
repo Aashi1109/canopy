@@ -3,8 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const advancedRoute = "app/admin/(protected)/templates/[id]/advanced/page.tsx";
-const advancedEditor =
-  "app/admin/(protected)/templates/[id]/advanced/components/AdvancedTemplateEditor.tsx";
+const advancedEditor = "app/admin/(protected)/templates/[id]/advanced/components/AdvancedTemplateEditor.tsx";
 const templatesPage = "app/admin/(protected)/templates/page.tsx";
 const advancedCreateRoute = "app/admin/(protected)/templates/new/advanced/page.tsx";
 const nextConfig = "next.config.ts";

@@ -8,13 +8,8 @@ import { ToolList } from "./components/ToolList";
 
 export default async function ToolsPage() {
   await requirePagePermission("tools", "view");
-  const [tools, icons]: [
-    Awaited<ReturnType<typeof getAdminTools>>,
-    Readonly<Record<string, ToolIconRow>>,
-  ] = await Promise.all([
-    getAdminTools(),
-    isDatabaseConfigured() ? getToolIcons() : Promise.resolve({}),
-  ]);
+  const [tools, icons]: [Awaited<ReturnType<typeof getAdminTools>>, Readonly<Record<string, ToolIconRow>>] =
+    await Promise.all([getAdminTools(), isDatabaseConfigured() ? getToolIcons() : Promise.resolve({})]);
 
   return (
     <div className="flex min-h-0 flex-col lg:h-full">

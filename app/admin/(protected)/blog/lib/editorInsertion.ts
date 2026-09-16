@@ -13,8 +13,7 @@ export function captureBlogInsertion(editor: Editor, atEnd = false) {
   const originalImage = editor.state.doc.nodeAt(editor.state.selection.from);
   let disposed = false;
   function map({ transaction, appendedTransactions }: EditorEvents["transaction"]) {
-    for (const change of [transaction, ...(appendedTransactions ?? [])])
-      bookmark = bookmark.map(change.mapping);
+    for (const change of [transaction, ...(appendedTransactions ?? [])]) bookmark = bookmark.map(change.mapping);
   }
   function dispose() {
     disposed = true;
@@ -38,12 +37,7 @@ export function captureBlogInsertion(editor: Editor, atEnd = false) {
       );
     },
     updateImage(attributes: { alt: string; caption: string }) {
-      if (
-        disposed ||
-        editor.isDestroyed ||
-        !editor.isEditable ||
-        originalImage?.type.name !== "image"
-      ) {
+      if (disposed || editor.isDestroyed || !editor.isEditable || originalImage?.type.name !== "image") {
         dispose();
         return false;
       }

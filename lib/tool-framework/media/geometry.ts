@@ -111,9 +111,7 @@ export function rotatedDimensions(width: number, height: number, degrees: Quarte
   if (![0, 90, 180, 270].includes(normalized)) {
     throw new RangeError("Rotation must be 0, 90, 180, or 270 degrees.");
   }
-  return normalized === 90 || normalized === 270
-    ? { width: height, height: width }
-    : { width, height };
+  return normalized === 90 || normalized === 270 ? { width: height, height: width } : { width, height };
 }
 
 export function getExifOrientationTransform(
@@ -159,11 +157,7 @@ export function readExifOrientation(bytes: Uint8Array): ExifOrientation {
   return 1;
 }
 
-function readTiffOrientation(
-  bytes: Uint8Array,
-  tiffStart: number,
-  segmentEnd: number,
-): ExifOrientation {
+function readTiffOrientation(bytes: Uint8Array, tiffStart: number, segmentEnd: number): ExifOrientation {
   if (tiffStart + 8 > segmentEnd) return 1;
   const byteOrder = ascii(bytes, tiffStart, 2);
   if (byteOrder !== "II" && byteOrder !== "MM") return 1;
@@ -195,17 +189,11 @@ function isExifOrientation(value: number): value is ExifOrientation {
 }
 
 function readUint16(bytes: Uint8Array, offset: number, littleEndian: boolean) {
-  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint16(
-    offset,
-    littleEndian,
-  );
+  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint16(offset, littleEndian);
 }
 
 function readUint32(bytes: Uint8Array, offset: number, littleEndian: boolean) {
-  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(
-    offset,
-    littleEndian,
-  );
+  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(offset, littleEndian);
 }
 
 function ascii(bytes: Uint8Array, offset: number, length: number) {

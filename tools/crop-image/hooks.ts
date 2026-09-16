@@ -45,7 +45,5 @@ export const validate: ToolValidate<Settings> = (settings, files) => {
       return "Add an image and choose a valid crop selection before processing.";
     }
   }
-  return settings.cropWidth <= 0 || settings.cropHeight <= 0
-    ? "Enter a valid crop area before processing."
-    : null;
+  return settings.cropWidth <= 0 || settings.cropHeight <= 0 ? "Enter a valid crop area before processing." : null;
 };

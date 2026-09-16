@@ -86,11 +86,7 @@ test("can accept ragged rows or validate a caller-provided width", async () => {
 
   await assert.rejects(
     parseStreamingCsv(["a,b,c"], { expectedColumns: 2 }),
-    (error) =>
-      error instanceof CsvParseError &&
-      error.code === "width" &&
-      error.row === 1 &&
-      error.column === 3,
+    (error) => error instanceof CsvParseError && error.code === "width" && error.row === 1 && error.column === 3,
   );
 });
 
@@ -101,8 +97,7 @@ test("reports quote errors at the logical row and column", async (t) => {
       code: "unexpected-quote",
       row: 2,
       column: 2,
-      message:
-        "Unexpected quote at row 2, column 2. Quotes must start at the beginning of a field.",
+      message: "Unexpected quote at row 2, column 2. Quotes must start at the beginning of a field.",
     },
     {
       input: 'id,name\n1,"Alice"x',

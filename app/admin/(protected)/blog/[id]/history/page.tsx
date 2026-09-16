@@ -40,8 +40,8 @@ export default async function BlogHistoryPage({
   const comparison = compared && (
     <>
       <AlertBanner variant="info" title="Compare before restoring">
-        Both saved versions are preserved. Unsaved editor changes are not shown here. Restoring
-        replaces the whole draft, including its settings and cover; it never publishes a revision.
+        Both saved versions are preserved. Unsaved editor changes are not shown here. Restoring replaces the whole
+        draft, including its settings and cover; it never publishes a revision.
       </AlertBanner>
       <div className={styles.comparison}>
         {[
@@ -55,16 +55,8 @@ export default async function BlogHistoryPage({
             <dl className="mb-6 grid gap-3 border-y border-border py-4 text-sm">
               {[
                 ["Byline", document.authorName || "Not set"],
-                [
-                  "Category",
-                  document.category
-                    ? `${document.category.label} (${document.category.id})`
-                    : "None",
-                ],
-                [
-                  "Tags",
-                  document.tags.map((tag) => `${tag.label} (${tag.id})`).join(", ") || "None",
-                ],
+                ["Category", document.category ? `${document.category.label} (${document.category.id})` : "None"],
+                ["Tags", document.tags.map((tag) => `${tag.label} (${tag.id})`).join(", ") || "None"],
                 ["SEO title", document.seoTitle ?? "Uses article title"],
                 ["SEO description", document.seoDescription ?? "Uses article excerpt"],
                 ["Related tool IDs", document.relatedToolIds.join(", ") || "None"],
@@ -88,8 +80,7 @@ export default async function BlogHistoryPage({
                 />
                 <figcaption className="break-words text-xs text-muted-foreground">
                   Cover: {document.coverImage.publicId} · Version {document.coverImage.version} ·{" "}
-                  {document.coverImage.width} × {document.coverImage.height} ·{" "}
-                  {document.coverImage.format}
+                  {document.coverImage.width} × {document.coverImage.height} · {document.coverImage.format}
                   <br />
                   Alt text: {document.coverImage.alt || "Not set"}
                   <br />
@@ -120,9 +111,7 @@ export default async function BlogHistoryPage({
         </Button>
         <h1 className="text-[30px] font-semibold leading-normal">Revision history</h1>
       </header>
-      <p className="break-words text-lg font-medium">
-        {post.draftDocument.title || "Untitled post"}
-      </p>
+      <p className="break-words text-lg font-medium">{post.draftDocument.title || "Untitled post"}</p>
       <div>
         <h2 className="mb-2 text-xl font-semibold">Saved revisions</h2>
         <p className="mb-6 text-sm text-muted-foreground">
@@ -152,9 +141,7 @@ export default async function BlogHistoryPage({
           )}
           {revisions.nextCursor && (
             <Button asChild variant="outline" size="sm">
-              <Link
-                href={`/admin/blog/${id}/history?${new URLSearchParams({ cursor: revisions.nextCursor })}`}
-              >
+              <Link href={`/admin/blog/${id}/history?${new URLSearchParams({ cursor: revisions.nextCursor })}`}>
                 Older revisions
               </Link>
             </Button>

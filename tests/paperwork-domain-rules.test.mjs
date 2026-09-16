@@ -2,10 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { calculateMileageSummary, getMileageRate } from "../lib/paperwork/mileageRules.ts";
-import {
-  calculateExpenseTotals,
-  normalizeExpenseRows,
-} from "../lib/paperwork/expenseReportRules.ts";
+import { calculateExpenseTotals, normalizeExpenseRows } from "../lib/paperwork/expenseReportRules.ts";
 import {
   calculateNecSummary,
   createEmptyRecipientAdjustment,
@@ -46,10 +43,7 @@ test("mileage adds parking and tolls but excludes fuel from the deduction", () =
 });
 
 test("unsupported mileage years fail instead of using a stale rate", () => {
-  assert.throws(
-    () => getMileageRate("irs-standard", 2027, "2027-01-01", 0),
-    /rules update required/i,
-  );
+  assert.throws(() => getMileageRate("irs-standard", 2027, "2027-01-01", 0), /rules update required/i);
   assert.throws(() => getMileageRate("custom", 2026, "2026-01-01", -1), /custom mileage rate/i);
   assert.throws(() => getMileageRate("irs-standard", 2026, "2025-12-31", 0), /within tax year/i);
 });
@@ -165,10 +159,7 @@ test("1099 summary reports missing vendors and annual box adjustments", () => {
 });
 
 test("unsupported 1099 summaries and empty W-9 settings stay explicit", () => {
-  const summary = calculateNecSummary(
-    { reportingYear: 2027, payments: [], recipientAdjustments: [] },
-    [],
-  );
+  const summary = calculateNecSummary({ reportingYear: 2027, payments: [], recipientAdjustments: [] }, []);
   assert.match(summary.issues[0], /rules update required/i);
   assert.equal(summary.aboveThresholdCount, 0);
   assert.deepEqual(createEmptyRecipientAdjustment("vendor"), {
@@ -242,16 +233,10 @@ test("quarterly tax compares safe harbors, subtracts withholding, and returns pa
   const result = calculateQuarterlyTax(BASE_TAX_DRAFT);
   assert.equal(result.ok, true);
 
-  const expectedSafeHarbor = Math.min(
-    result.estimatedFederalLiability * 0.9,
-    BASE_TAX_DRAFT.priorYearTaxLiability,
-  );
+  const expectedSafeHarbor = Math.min(result.estimatedFederalLiability * 0.9, BASE_TAX_DRAFT.priorYearTaxLiability);
   assert.equal(
     result.requiredAnnualPayment,
-    Math.max(
-      0,
-      expectedSafeHarbor - BASE_TAX_DRAFT.federalWithholding - BASE_TAX_DRAFT.estimatedPaymentsMade,
-    ),
+    Math.max(0, expectedSafeHarbor - BASE_TAX_DRAFT.federalWithholding - BASE_TAX_DRAFT.estimatedPaymentsMade),
   );
   assert.deepEqual(
     result.paymentSchedule.map(({ dueDate }) => dueDate),
@@ -292,10 +277,7 @@ test("quarterly tax rejects unsupported years", () => {
 });
 
 test("quarterly tax normalizes legacy drafts and applies the high-income safe harbor", () => {
-  assert.deepEqual(
-    normalizeQuarterlyTaxDraft({ taxYear: 2026, filingStatus: "invalid" }),
-    DEFAULT_QUARTERLY_TAX_DRAFT,
-  );
+  assert.deepEqual(normalizeQuarterlyTaxDraft({ taxYear: 2026, filingStatus: "invalid" }), DEFAULT_QUARTERLY_TAX_DRAFT);
 
   const result = calculateQuarterlyTax({
     ...BASE_TAX_DRAFT,

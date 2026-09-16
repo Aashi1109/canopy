@@ -1,15 +1,5 @@
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
-import {
-  H3,
-  Caption,
-  Strong,
-  Card,
-  Field,
-  Input,
-  StatusBadge,
-  Textarea,
-  ToolPageHeader,
-} from "@smarttools/ui";
+import { H3, Caption, Strong, Card, Field, Input, StatusBadge, Textarea, ToolPageHeader } from "@smarttools/ui";
 import {
   ChevronRight,
   CreditCard,
@@ -45,9 +35,7 @@ function RoleRow({ role }: { role: Awaited<ReturnType<typeof listRoles>>[number]
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-2">
           <Strong className="text-foreground">{role.name}</Strong>
-          <StatusBadge variant={role.isSystem ? "neutral" : "info"}>
-            {role.isSystem ? "System" : "Custom"}
-          </StatusBadge>
+          <StatusBadge variant={role.isSystem ? "neutral" : "info"}>{role.isSystem ? "System" : "Custom"}</StatusBadge>
         </span>
         <Caption className="mt-1 block text-muted-foreground">{role.description}</Caption>
       </span>
@@ -55,10 +43,7 @@ function RoleRow({ role }: { role: Awaited<ReturnType<typeof listRoles>>[number]
         {Number(role.assignedUsers)} {Number(role.assignedUsers) === 1 ? "user" : "users"}
       </Caption>
       {role.isSystem ? (
-        <LockKeyhole
-          aria-label="Protected system role"
-          className="size-[17px] shrink-0 text-muted-foreground"
-        />
+        <LockKeyhole aria-label="Protected system role" className="size-[17px] shrink-0 text-muted-foreground" />
       ) : (
         <ChevronRight aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
       )}

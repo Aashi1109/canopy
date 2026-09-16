@@ -32,10 +32,7 @@ function editorFor() {
   editor.commands.setTextSelection(9);
   return editor;
 }
-function clipboard(
-  files,
-  items = files.map((image) => ({ kind: "file", type: image.type, getAsFile: () => image })),
-) {
+function clipboard(files, items = files.map((image) => ({ kind: "file", type: image.type, getAsFile: () => image }))) {
   return {
     clipboardData: { files, items },
     defaultPrevented: false,
@@ -82,11 +79,7 @@ test("clipboard previews appear immediately, map through edits, and atomically b
   const preview = editor.state.plugins.find((plugin) => !originalPlugins.has(plugin));
   assert.ok(preview, "a preview decoration is registered before upload finishes");
   assert.equal(preview.props.decorations(editor.state).find()[0].from, 9);
-  assert.deepEqual(
-    editor.getJSON(),
-    originalDocument,
-    "previews are never document/autosave content",
-  );
+  assert.deepEqual(editor.getJSON(), originalDocument, "previews are never document/autosave content");
   assert.deepEqual(
     urls.map(([name]) => name),
     ["one.png", "two.png"],
@@ -147,10 +140,7 @@ test("file-only clipboard works while text, missing data, and unrelated files re
     assert.equal(pasteBlogImages(editor, event, upload, assert.fail), false);
     assert.notEqual(event.defaultPrevented, true);
   }
-  assert.equal(
-    pasteBlogImages(editor, clipboard([file("screenshot.png")], []), upload, assert.fail),
-    true,
-  );
+  assert.equal(pasteBlogImages(editor, clipboard([file("screenshot.png")], []), upload, assert.fail), true);
   await setImmediate();
   assert.equal(uploads, 1);
   editor.destroy();
@@ -203,11 +193,7 @@ test("unavailable editors remove pending previews immediately and never write af
     );
     if (stop === "read-only") editor.setEditable(false);
     else editor.emit("destroy");
-    assert.deepEqual(
-      editor.state.plugins,
-      existing,
-      "remove preview without waiting for the network",
-    );
+    assert.deepEqual(editor.state.plugins, existing, "remove preview without waiting for the network");
     assert.equal(revoked.length, stop === "read-only" ? 2 : 4);
     Object.defineProperty(editor, "isDestroyed", {
       configurable: true,
@@ -216,10 +202,7 @@ test("unavailable editors remove pending previews immediately and never write af
     finish(uploaded("pending.png"));
     await setImmediate();
     assert.deepEqual(editor.getJSON(), before);
-    assert.equal(
-      pasteBlogImages(editor, clipboard([file("later.png")]), assert.fail, assert.fail),
-      false,
-    );
+    assert.equal(pasteBlogImages(editor, clipboard([file("later.png")]), assert.fail, assert.fail), false);
     if (stop === "read-only") assert.equal(errors.length, 1);
     else assert.equal(errors.length, 0);
     editor.destroy();

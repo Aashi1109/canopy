@@ -6,9 +6,7 @@ import { parsePageRange } from "@/lib/tool-framework/media/validation";
 import { parsePageSelection } from "@/lib/tool-framework/settings";
 
 function selectedPages(value: unknown, pageCount: number): number[] {
-  const expression = (Array.isArray(value) ? value.join(",") : String(value ?? ""))
-    .trim()
-    .toLowerCase();
+  const expression = (Array.isArray(value) ? value.join(",") : String(value ?? "")).trim().toLowerCase();
   if (expression === "odd" || expression === "even") {
     const pages = parsePageSelection(expression, pageCount) as number[];
     if (!pages.length) throw new Error("No pages match this selection. Choose pages in your PDF.");
@@ -24,9 +22,7 @@ function getPlan(settings: WorkspaceProps["settings"], pageCount: number) {
   return {
     title: `1 PDF with ${pages.length} ${pages.length === 1 ? "page" : "pages"} will be created`,
     detail: (
-      <div className="max-h-32 overflow-y-auto text-muted-foreground">
-        Pages in output order: {pages.join(", ")}
-      </div>
+      <div className="max-h-32 overflow-y-auto text-muted-foreground">Pages in output order: {pages.join(", ")}</div>
     ),
   };
 }
@@ -55,10 +51,7 @@ export default function ExtractPdfWorkspace(props: WorkspaceProps) {
             onToggle={() =>
               props.onSettingChange(
                 "pages",
-                (selected
-                  ? selection.filter((page) => page !== pageNumber)
-                  : [...selection, pageNumber]
-                ).join(","),
+                (selected ? selection.filter((page) => page !== pageNumber) : [...selection, pageNumber]).join(","),
               )
             }
           />

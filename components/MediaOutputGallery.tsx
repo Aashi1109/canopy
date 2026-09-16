@@ -1,14 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  Button,
-  MediaPreview,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@smarttools/ui";
+import { Button, MediaPreview, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@smarttools/ui";
 import { ArtifactDownloadButton, useFileDownload } from "@/components/ArtifactDownloadButton";
 import { MediaOutputCard } from "@smarttools/ui/components/MediaOutputCard";
 import { OrderableList } from "@smarttools/ui/components/OrderableList";
@@ -341,8 +334,7 @@ function ImageGallery<T extends ImageFile>({
         <Thumbnail file={file} />
       </MediaOutputCard>
     );
-  const gridClassName =
-    "grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] items-start gap-4 pr-2";
+  const gridClassName = "grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] items-start gap-4 pr-2";
   return (
     <div
       className="flex min-h-0 flex-1 flex-col gap-5 p-4 sm:p-6 max-sm:[&_button]:!min-h-11 max-sm:[&_button]:!min-w-11 [@media(pointer:coarse)]:[&_button]:!min-h-11 [@media(pointer:coarse)]:[&_button]:!min-w-11"
@@ -352,16 +344,15 @@ function ImageGallery<T extends ImageFile>({
         <h2 className="text-sm font-semibold">{input ? "Selected images" : "Converted images"}</h2>
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-xs text-muted-foreground">
-            {files.length} {files.length === 1 ? "image" : "images"} · Preview or{" "}
-            {input ? "remove" : "download"}
+            {files.length} {files.length === 1 ? "image" : "images"} · Preview or {input ? "remove" : "download"}
           </p>
           {actions}
         </div>
       </div>
       {onReorder && (
         <p className="text-xs text-muted-foreground">
-          Drag handles to change image order. With a keyboard, press Space to pick up, arrow keys to
-          move, and Space to drop.
+          Drag handles to change image order. With a keyboard, press Space to pick up, arrow keys to move, and Space to
+          drop.
         </p>
       )}
       <div
@@ -440,13 +431,5 @@ export function MediaInputGallery({
   actions?: ReactNode;
   onReorder?: (files: File[]) => void;
 }) {
-  return (
-    <ImageGallery
-      files={files}
-      onRemove={onRemove}
-      disabled={disabled}
-      actions={actions}
-      onReorder={onReorder}
-    />
-  );
+  return <ImageGallery files={files} onRemove={onRemove} disabled={disabled} actions={actions} onReorder={onReorder} />;
 }

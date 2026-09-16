@@ -49,8 +49,8 @@ export default function ContactForm({ supportEmail }: { supportEmail?: string })
         </div>
         <H2>Message ready</H2>
         <Muted className="max-w-md text-muted-foreground">
-          Your email app should be open with the message filled in. Send it there and we’ll reply
-          within one business day.
+          Your email app should be open with the message filled in. Send it there and we’ll reply within one business
+          day.
         </Muted>
         <Button onClick={() => setState("idle")} type="button" variant="ghost">
           Write another message
@@ -64,20 +64,13 @@ export default function ContactForm({ supportEmail }: { supportEmail?: string })
       {error ? <AlertBanner variant="error">{error}</AlertBanner> : null}
       {!supportEmail ? (
         <AlertBanner title="Contact isn’t set up yet" variant="warning">
-          No support email has been configured for this deployment. You can keep using every tool
-          without an account.
+          No support email has been configured for this deployment. You can keep using every tool without an account.
         </AlertBanner>
       ) : null}
       <form className="grid gap-4" onSubmit={submit}>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field htmlFor="contact-name" label="Name" variant="auth">
-            <Input
-              autoComplete="name"
-              id="contact-name"
-              name="name"
-              placeholder="Jane Cooper"
-              required
-            />
+            <Input autoComplete="name" id="contact-name" name="name" placeholder="Jane Cooper" required />
           </Field>
           <Field htmlFor="contact-email" label="Email" variant="auth">
             <Input

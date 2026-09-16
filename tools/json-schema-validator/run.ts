@@ -34,8 +34,7 @@ function validateJsonSchema(value: unknown, schema: unknown, path = "$"): string
     }
     if (isRecord(schema.properties)) {
       for (const [key, childSchema] of Object.entries(schema.properties)) {
-        if (key in value)
-          errors.push(...validateJsonSchema(value[key], childSchema, `${path}.${key}`));
+        if (key in value) errors.push(...validateJsonSchema(value[key], childSchema, `${path}.${key}`));
       }
     }
   }
@@ -69,9 +68,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   );
   return {
     render: "text",
-    text: errors.length
-      ? `Invalid\n${errors.map((error) => `- ${error}`).join("\n")}`
-      : "Valid against schema.",
+    text: errors.length ? `Invalid\n${errors.map((error) => `- ${error}`).join("\n")}` : "Valid against schema.",
     verdict: errors.length
       ? {
           level: "error",

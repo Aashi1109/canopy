@@ -2,22 +2,10 @@
 
 import { H3, Label, Caption, Muted, Text, AlertBanner, Button, Input } from "@smarttools/ui";
 import { ImagePlus, RotateCcw, Trash2, Upload } from "lucide-react";
-import {
-  useActionState,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type ReactElement,
-} from "react";
+import { useActionState, useEffect, useId, useRef, useState, type ChangeEvent, type ReactElement } from "react";
 import { ToolIcon } from "../../../../../../components/ToolIcon";
 import type { ToolIconRow } from "../../../../../../lib/tool-framework/icons";
-import {
-  removeToolIconAction,
-  uploadToolIconAction,
-  type ToolContentActionState,
-} from "../../actions";
+import { removeToolIconAction, uploadToolIconAction, type ToolContentActionState } from "../../actions";
 
 const IDLE: ToolContentActionState = { status: "idle", message: "" };
 
@@ -28,37 +16,26 @@ export interface ToolIconPanelProps {
   readonly uploadsEnabled: boolean;
 }
 
-export function ToolIconPanel({
-  iconRow,
-  name,
-  toolId,
-  uploadsEnabled,
-}: ToolIconPanelProps): ReactElement {
+export function ToolIconPanel({ iconRow, name, toolId, uploadsEnabled }: ToolIconPanelProps): ReactElement {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [state, setState] = useState<ToolContentActionState>(IDLE);
-  const [, uploadAction, isUploading] = useActionState(
-    async (previous: ToolContentActionState, data: FormData) => {
-      // React resets file inputs after a form action; retain the file for retries.
-      if (selectedFile) data.set("icon", selectedFile);
-      const next = await uploadToolIconAction(previous, data);
-      if (next.status === "success") resetSelection();
-      setState(next);
-      return next;
-    },
-    IDLE,
-  );
-  const [, removeAction, isRemoving] = useActionState(
-    async (previous: ToolContentActionState, data: FormData) => {
-      const next = await removeToolIconAction(previous, data);
-      if (next.status === "success") resetSelection();
-      setState(next);
-      return next;
-    },
-    IDLE,
-  );
+  const [, uploadAction, isUploading] = useActionState(async (previous: ToolContentActionState, data: FormData) => {
+    // React resets file inputs after a form action; retain the file for retries.
+    if (selectedFile) data.set("icon", selectedFile);
+    const next = await uploadToolIconAction(previous, data);
+    if (next.status === "success") resetSelection();
+    setState(next);
+    return next;
+  }, IDLE);
+  const [, removeAction, isRemoving] = useActionState(async (previous: ToolContentActionState, data: FormData) => {
+    const next = await removeToolIconAction(previous, data);
+    if (next.status === "success") resetSelection();
+    setState(next);
+    return next;
+  }, IDLE);
   const busy = isUploading || isRemoving;
 
   useEffect(
@@ -93,9 +70,7 @@ export function ToolIconPanel({
       </div>
 
       {state.status !== "idle" ? (
-        <AlertBanner variant={state.status === "success" ? "success" : "error"}>
-          {state.message}
-        </AlertBanner>
+        <AlertBanner variant={state.status === "success" ? "success" : "error"}>{state.message}</AlertBanner>
       ) : null}
 
       <div className="grid gap-5 sm:grid-cols-[150px_minmax(0,1fr)]">
@@ -104,11 +79,7 @@ export function ToolIconPanel({
             {previewUrl ? (
               // This blob URL is local-only and exists solely for the selected-file preview.
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                alt="Selected icon preview"
-                className="size-full object-cover"
-                src={previewUrl}
-              />
+              <img alt="Selected icon preview" className="size-full object-cover" src={previewUrl} />
             ) : (
               <ToolIcon name={name} row={iconRow} size={72} toolId={toolId} />
             )}
@@ -136,13 +107,7 @@ export function ToolIconPanel({
             />
             {selectedFile ? (
               <div className="flex flex-wrap gap-2">
-                <Button
-                  disabled={busy}
-                  onClick={resetSelection}
-                  size="sm"
-                  type="button"
-                  variant="secondary"
-                >
+                <Button disabled={busy} onClick={resetSelection} size="sm" type="button" variant="secondary">
                   <RotateCcw aria-hidden="true" />
                   Reset
                 </Button>
@@ -180,8 +145,7 @@ export function ToolIconPanel({
           </form>
         ) : (
           <AlertBanner title="Icon uploads are disabled" variant="warning">
-            Configure Cloudinary credentials to enable uploads. Existing icons and generated
-            identicons still render.
+            Configure Cloudinary credentials to enable uploads. Existing icons and generated identicons still render.
           </AlertBanner>
         )}
       </div>
@@ -189,13 +153,7 @@ export function ToolIconPanel({
       {iconRow ? (
         <form action={removeAction} className="border-t border-border pt-4">
           <input name="toolId" type="hidden" value={toolId} />
-          <Button
-            disabled={busy}
-            loading={isRemoving}
-            size="sm"
-            type="submit"
-            variant="danger-subtle"
-          >
+          <Button disabled={busy} loading={isRemoving} size="sm" type="submit" variant="danger-subtle">
             <Trash2 aria-hidden="true" />
             Remove uploaded icon
           </Button>

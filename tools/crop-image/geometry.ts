@@ -67,14 +67,7 @@ export function parseCropPoints(raw: unknown, size?: ImageSize): readonly CropPo
   for (let i = 0; i < points.length; i++)
     for (let j = i + 1; j < points.length; j++) {
       if (j === i + 1 || (i === 0 && j === points.length - 1)) continue;
-      if (
-        intersects(
-          points[i],
-          points[(i + 1) % points.length],
-          points[j],
-          points[(j + 1) % points.length],
-        )
-      )
+      if (intersects(points[i], points[(i + 1) % points.length], points[j], points[(j + 1) % points.length]))
         throw new Error(message);
     }
   const area =
@@ -89,13 +82,8 @@ export function parseCropPoints(raw: unknown, size?: ImageSize): readonly CropPo
 }
 
 /** Add along the longest usable edge; remove the least area-changing vertex. */
-export function resizeCropPoints(
-  points: readonly CropPoint[],
-  count: number,
-  size: ImageSize,
-): readonly CropPoint[] {
-  if (!Number.isInteger(count) || count < 3 || count > 12)
-    throw new Error("Choose between 3 and 12 points.");
+export function resizeCropPoints(points: readonly CropPoint[], count: number, size: ImageSize): readonly CropPoint[] {
+  if (!Number.isInteger(count) || count < 3 || count > 12) throw new Error("Choose between 3 and 12 points.");
   let next = parseCropPoints(points, size);
   while (next.length !== count) {
     const adding = next.length < count;
@@ -121,8 +109,7 @@ export function resizeCropPoints(
         return false;
       }
     });
-    if (!valid)
-      throw new Error("This selection is too small for that many points. Choose fewer points.");
+    if (!valid) throw new Error("This selection is too small for that many points. Choose fewer points.");
     next = valid.points;
   }
   return next;

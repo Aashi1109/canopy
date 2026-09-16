@@ -4,16 +4,7 @@ export default {
   toolId: "media.resize-image",
   app: "media",
   category: "image-editing",
-  keywords: [
-    "resize",
-    "image",
-    "scale",
-    "dimensions",
-    "pixels",
-    "percentage",
-    "thumbnail",
-    "batch",
-  ],
+  keywords: ["resize", "image", "scale", "dimensions", "pixels", "percentage", "thumbnail", "batch"],
   name: "Resize Image",
   description: "Resize images by pixels or percentage.",
   optionsPanel: { collapsible: false },
@@ -22,8 +13,7 @@ export default {
     label: "Add images to resize",
     dropzoneDescription:
       "JPG, JPEG, PNG, WebP, HEIC, and HEIF · up to 50 files · 25 MB each · processed on this device",
-    accept:
-      "image/jpeg,image/jpg,.jpg,.jpeg,image/png,.png,image/webp,.webp,image/heic,image/heif,.heic,.heif",
+    accept: "image/jpeg,image/jpg,.jpg,.jpeg,image/png,.png,image/webp,.webp,image/heic,image/heif,.heic,.heif",
     multiple: true,
     engine: "image",
     maxFiles: 50,

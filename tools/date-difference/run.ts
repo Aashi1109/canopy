@@ -46,12 +46,7 @@ function dateInput(value: string, time: string, timezone: Settings["timezone"], 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const timezone = ctx.settings.timezone ?? "as-entered";
   const start = dateInput(ctx.input.text, ctx.settings.startTime ?? "", timezone, "Start date");
-  const end = dateInput(
-    ctx.input.secondary ?? "",
-    ctx.settings.endTime ?? "",
-    timezone,
-    "End date",
-  );
+  const end = dateInput(ctx.input.secondary ?? "", ctx.settings.endTime ?? "", timezone, "End date");
   const milliseconds = end.getTime() - start.getTime();
   const direction = milliseconds < 0 ? "-" : "";
   const hours = Math.abs(milliseconds) / 3_600_000;

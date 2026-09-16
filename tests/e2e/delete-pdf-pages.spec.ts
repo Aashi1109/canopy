@@ -37,12 +37,7 @@ test("Delete PDF Pages previews the generated remaining pages and clears stale o
   const preview = output.getByRole("region", { name: "Generated PDF", exact: true });
   const download = output.getByRole("button", { name: "Download file", exact: true });
 
-  async function expectPage(
-    surface: Locator,
-    number: number,
-    color: "red" | "blue",
-    count: number,
-  ) {
+  async function expectPage(surface: Locator, number: number, color: "red" | "blue", count: number) {
     const current = surface.getByRole("spinbutton", { name: "Current page", exact: true });
     await expect(current).toHaveAttribute("max", String(count), { timeout: 60_000 });
     await current.fill(String(number));
@@ -87,12 +82,11 @@ test("Delete PDF Pages previews the generated remaining pages and clears stale o
   await expect(dialog).toBeHidden();
   await expect(expand).toBeFocused();
   await expectDownloaded([210, 230]);
-  await source
-    .getByRole("button", { name: "Deselect page 2", exact: true })
-    .scrollIntoViewIfNeeded();
-  await expect(
-    source.getByRole("button", { name: "Deselect page 2", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
+  await source.getByRole("button", { name: "Deselect page 2", exact: true }).scrollIntoViewIfNeeded();
+  await expect(source.getByRole("button", { name: "Deselect page 2", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await expect(download).toBeVisible();
 
   await source.getByRole("button", { name: "Select page 1", exact: true }).click();

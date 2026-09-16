@@ -52,28 +52,18 @@ export default async function NewAdvancedTemplatePage() {
         </StatusBadge>
       </header>
 
-      <form
-        action={createAdvancedTemplateAction}
-        className="mx-auto grid w-full max-w-6xl gap-6 p-5 sm:p-7"
-      >
+      <form action={createAdvancedTemplateAction} className="mx-auto grid w-full max-w-6xl gap-6 p-5 sm:p-7">
         <div className="text-center">
           <Overline className="block text-primary">Advanced creation</Overline>
           <H2 className="mt-2 text-foreground">Choose a starting point</H2>
           <Muted className="mx-auto mt-2 max-w-2xl text-muted-foreground">
-            We’ll create the template record first, then hand it off to the existing canvas
-            designer.
+            We’ll create the template record first, then hand it off to the existing canvas designer.
           </Muted>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3" aria-label="Advanced template starting points">
           <Label className="group relative cursor-pointer rounded-xl border-2 border-primary bg-primary/5 p-5 outline-none transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-            <input
-              className="sr-only"
-              defaultChecked
-              name="startingPoint"
-              type="radio"
-              value="blank"
-            />
+            <input className="sr-only" defaultChecked name="startingPoint" type="radio" value="blank" />
             <span className="flex items-start justify-between gap-3">
               <span className="grid size-10 place-items-center rounded-lg bg-primary text-primary-foreground">
                 <Plus aria-hidden="true" className="size-5" />
@@ -156,10 +146,7 @@ export default async function NewAdvancedTemplatePage() {
               <Select defaultValue="invoice:A4" name="starter">
                 {DOCUMENT_DEFINITIONS.flatMap((definition) =>
                   definition.allowedPageFormats.map((format) => (
-                    <option
-                      key={`${definition.documentType}:${format}`}
-                      value={`${definition.documentType}:${format}`}
-                    >
+                    <option key={`${definition.documentType}:${format}`} value={`${definition.documentType}:${format}`}>
                       {definition.label} · {pageFormatLabels[format]}
                     </option>
                   )),
@@ -175,12 +162,7 @@ export default async function NewAdvancedTemplatePage() {
                 ))}
               </Select>
             </Field>
-            <Field
-              className="md:col-span-2"
-              htmlFor="advanced-template-description"
-              label="Description"
-              required
-            >
+            <Field className="md:col-span-2" htmlFor="advanced-template-description" label="Description" required>
               <Textarea
                 className="min-h-24"
                 name="description"

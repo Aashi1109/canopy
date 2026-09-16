@@ -38,18 +38,9 @@ test("page cards preview on click and reorder from the whole card without openin
       releaseRun?.();
       releaseRun = undefined;
     });
-    Worker.prototype.postMessage = function (
-      message: unknown,
-      options?: Transferable[] | StructuredSerializeOptions,
-    ) {
+    Worker.prototype.postMessage = function (message: unknown, options?: Transferable[] | StructuredSerializeOptions) {
       const dispatch = () => Reflect.apply(postMessage, this, [message, options]);
-      if (
-        holdRun &&
-        typeof message === "object" &&
-        message !== null &&
-        "type" in message &&
-        message.type === "run"
-      ) {
+      if (holdRun && typeof message === "object" && message !== null && "type" in message && message.type === "run") {
         // Hold dispatch to inspect the running UI, then execute the real PDF job.
         releaseRun = dispatch;
         return;
@@ -76,9 +67,7 @@ test("page cards preview on click and reorder from the whole card without openin
   async function expectFullWidth(surface: Locator) {
     await expect(surface).toBeVisible();
     await expect
-      .poll(
-        async () => (await surface.boundingBox())!.width / (await workspace.boundingBox())!.width,
-      )
+      .poll(async () => (await surface.boundingBox())!.width / (await workspace.boundingBox())!.width)
       .toBeGreaterThan(0.94);
     await expect(output).toHaveCount(0);
   }
@@ -88,8 +77,7 @@ test("page cards preview on click and reorder from the whole card without openin
     .locator('input[type="file"]')
     .first()
     .setInputFiles(await sourcePdf(3));
-  const card = (number: number) =>
-    page.getByRole("button", { name: `Preview page ${number}`, exact: true });
+  const card = (number: number) => page.getByRole("button", { name: `Preview page ${number}`, exact: true });
   const dialog = page.getByRole("dialog");
   await expect(card(3)).toBeVisible({ timeout: 60_000 });
   await expectFullWidth(selectedFiles);
@@ -106,17 +94,10 @@ test("page cards preview on click and reorder from the whole card without openin
   const cards = page.getByRole("button", { name: /^Preview page \d+$/ });
   const expectOrder = (order: number[]) =>
     expect
-      .poll(() =>
-        cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("aria-label"))),
-      )
+      .poll(() => cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("aria-label"))))
       .toEqual(order.map((number) => `Preview page ${number}`));
 
-  async function preview(
-    target: Locator,
-    number: number,
-    position?: { x: number; y: number },
-    arrangedPage = number,
-  ) {
+  async function preview(target: Locator, number: number, position?: { x: number; y: number }, arrangedPage = number) {
     await target.click(position ? { position } : undefined);
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole("spinbutton", { name: "Current page", exact: true })).toHaveValue(
@@ -124,9 +105,7 @@ test("page cards preview on click and reorder from the whole card without openin
     );
     const image = dialog.getByRole("img", { name: `PDF page ${number}`, exact: true });
     await expect(image).toBeInViewport();
-    await expect
-      .poll(() => image.evaluate((node: HTMLImageElement) => node.naturalWidth))
-      .toBeGreaterThan(300);
+    await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.naturalWidth)).toBeGreaterThan(300);
     await expect
       .poll(() =>
         image.evaluate(
@@ -146,9 +125,7 @@ test("page cards preview on click and reorder from the whole card without openin
   await card(2).focus();
   await card(2).press("Enter");
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("spinbutton", { name: "Current page", exact: true })).toHaveValue(
-    "2",
-  );
+  await expect(dialog.getByRole("spinbutton", { name: "Current page", exact: true })).toHaveValue("2");
   await page.screenshot({ path: `/tmp/reorder-pdf-preview-${testInfo.project.name}.png` });
   await page.keyboard.press("Escape");
 
@@ -165,19 +142,12 @@ test("page cards preview on click and reorder from the whole card without openin
   const handle = page.getByRole("button", { name: "Drag page 3 to reorder", exact: true });
   await handle.focus();
   await handle.press("Space");
-  await expect(
-    page.getByRole("status").filter({ hasText: "Page 3 is over position 1 of 3." }),
-  ).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Page 3 is over position 1 of 3." })).toBeVisible();
   await page.evaluate(
-    () =>
-      new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-      ),
+    () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
   );
   await handle.press("ArrowRight");
-  await expect(
-    page.getByRole("status").filter({ hasText: "Page 3 is over position 2 of 3." }),
-  ).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Page 3 is over position 2 of 3." })).toBeVisible();
   await handle.press("Space");
   await expectOrder([1, 3, 2]);
   await expect(dialog).toBeHidden();
@@ -196,23 +166,20 @@ test("page cards preview on click and reorder from the whole card without openin
   await expect(output).toBeVisible();
   if (testInfo.project.name === "mobile") {
     await expect(download).toBeInViewport();
-    await expect(
-      output.getByRole("img", { name: "Generated PDF page 1", exact: true }),
-    ).toBeInViewport();
+    await expect(output.getByRole("img", { name: "Generated PDF page 1", exact: true })).toBeInViewport();
     await page.screenshot({ path: "/tmp/reorder-pdf-completion-handoff-mobile.png" });
   }
   const generatedPreview = output.getByRole("region", { name: "Generated PDF", exact: true });
-  await expect(
-    generatedPreview.getByRole("spinbutton", { name: "Current page", exact: true }),
-  ).toHaveAttribute("max", "3");
+  await expect(generatedPreview.getByRole("spinbutton", { name: "Current page", exact: true })).toHaveAttribute(
+    "max",
+    "3",
+  );
   const generatedPage = generatedPreview.getByRole("img", {
     name: "Generated PDF page 1",
     exact: true,
   });
   await expect(generatedPage).toBeVisible();
-  await expect
-    .poll(() => generatedPage.evaluate((image: HTMLImageElement) => image.naturalWidth))
-    .toBeGreaterThan(0);
+  await expect.poll(() => generatedPage.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
   const outputPage = generatedPreview.getByRole("spinbutton", {
     name: "Current page",
     exact: true,
@@ -225,16 +192,12 @@ test("page cards preview on click and reorder from the whole card without openin
   const pageScrollTop = await pageScroller.evaluate((node) => node.scrollTop);
   await pageScroller.hover();
   await page.mouse.wheel(0, 120);
-  await expect
-    .poll(() => pageScroller.evaluate((node) => node.scrollTop))
-    .toBeGreaterThan(pageScrollTop);
+  await expect.poll(() => pageScroller.evaluate((node) => node.scrollTop)).toBeGreaterThan(pageScrollTop);
   expect((await download.boundingBox())!.y).toBeCloseTo(footerTop, 0);
   expect(await output.evaluate((node) => node.scrollTop)).toBe(outputScrollTop);
   await outputPage.fill("3");
   await outputPage.press("Enter");
-  await expect(
-    generatedPreview.getByRole("img", { name: "Generated PDF page 3", exact: true }),
-  ).toBeInViewport();
+  await expect(generatedPreview.getByRole("img", { name: "Generated PDF page 3", exact: true })).toBeInViewport();
   expect((await download.boundingBox())!.y).toBeCloseTo(footerTop, 0);
   await outputPage.fill("1");
   await outputPage.press("Enter");
@@ -242,10 +205,7 @@ test("page cards preview on click and reorder from the whole card without openin
   await expect(generatedPreview.getByLabel("Zoom level")).toHaveText("100%");
   if (testInfo.project.name === "desktop") {
     await expect
-      .poll(
-        async () =>
-          (await selectedFiles.boundingBox())!.width / (await workspace.boundingBox())!.width,
-      )
+      .poll(async () => (await selectedFiles.boundingBox())!.width / (await workspace.boundingBox())!.width)
       .toBeLessThan(0.65);
     const sourceBounds = (await selectedFiles.boundingBox())!;
     const outputBounds = (await output.boundingBox())!;
@@ -278,9 +238,7 @@ test("page cards preview on click and reorder from the whole card without openin
 
   const replacement = { ...(await sourcePdf(3)), name: "replacement.pdf" };
   await page.locator('input[type="file"]').first().setInputFiles(replacement);
-  await expect(
-    page.getByRole("button", { name: "Remove replacement.pdf", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Remove replacement.pdf", exact: true })).toBeVisible();
   await card(3).scrollIntoViewIfNeeded();
   await expect(card(3).locator("img")).toBeVisible({ timeout: 60_000 });
   await expectOrder([1, 2, 3]);
@@ -295,9 +253,7 @@ test("page cards preview on click and reorder from the whole card without openin
   await expectOrder([1, 2, 3]);
 });
 
-test("one-page PDFs still open full preview when reordering is disabled", async ({
-  page,
-}, testInfo) => {
+test("one-page PDFs still open full preview when reordering is disabled", async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/media/reorder-pdf-pages");
   await page.waitForLoadState("networkidle");
@@ -310,15 +266,11 @@ test("one-page PDFs still open full preview when reordering is disabled", async 
   const card = page.getByRole("button", { name: "Preview page 1", exact: true });
   await expect(card).toBeVisible({ timeout: 60_000 });
   await expect(output).toHaveCount(0);
-  await expect(
-    page.getByRole("button", { name: "Drag page 1 to reorder", exact: true }),
-  ).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Drag page 1 to reorder", exact: true })).toBeDisabled();
   await card.click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByRole("img", { name: "PDF page 1", exact: true })).toBeVisible();
-  await expect(
-    dialog.getByRole("spinbutton", { name: "Current page", exact: true }),
-  ).toHaveAttribute("max", "1");
+  await expect(dialog.getByRole("spinbutton", { name: "Current page", exact: true })).toHaveAttribute("max", "1");
   await page.screenshot({ path: `/tmp/reorder-pdf-single-${testInfo.project.name}.png` });
   await dialog.getByRole("button", { name: /Exit preview/ }).click();
   await expect(dialog).toBeHidden();
@@ -333,10 +285,7 @@ test("one-page PDFs still open full preview when reordering is disabled", async 
   await expect(page.getByRole("region", { name: "Input files", exact: true })).toBeVisible();
 });
 
-test("touch tap previews and a held card drags while a quick swipe scrolls", async ({
-  page,
-  context,
-}, testInfo) => {
+test("touch tap previews and a held card drags while a quick swipe scrolls", async ({ page, context }, testInfo) => {
   test.skip(!testInfo.project.use.hasTouch, "Touch interaction runs on the mobile viewport.");
   await page.goto("/media/reorder-pdf-pages");
   await page.waitForLoadState("networkidle");
@@ -376,8 +325,7 @@ test("touch tap previews and a held card drags while a quick swipe scrolls", asy
   }
   await touch("touchEnd");
   const cards = page.getByRole("button", { name: /^Preview page \d+$/ });
-  const order = () =>
-    cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("aria-label")));
+  const order = () => cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("aria-label")));
   await expect.poll(order).toEqual(["Preview page 2", "Preview page 1", "Preview page 3"]);
   await expect(dialog).toBeHidden();
 
@@ -385,8 +333,7 @@ test("touch tap previews and a held card drags while a quick swipe scrolls", asy
   box = (await second.boundingBox())!;
   const startY = box.y + box.height * 0.75;
   await touch("touchStart", box.x + box.width / 2, startY);
-  for (let step = 1; step <= 5; step++)
-    await touch("touchMove", box.x + box.width / 2, startY - step * 25);
+  for (let step = 1; step <= 5; step++) await touch("touchMove", box.x + box.width / 2, startY - step * 25);
   await touch("touchEnd");
   await expect.poll(async () => (await second.boundingBox())!.y).toBeLessThan(box.y - 10);
   await expect.poll(order).toEqual(["Preview page 2", "Preview page 1", "Preview page 3"]);

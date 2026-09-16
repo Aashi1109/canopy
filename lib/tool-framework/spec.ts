@@ -68,8 +68,7 @@ export type ToolInputSpec =
       inspect?: boolean;
     };
 
-export type ToolTrigger =
-  { mode: "live"; debounceMs?: number } | { mode: "manual"; actionLabel: string };
+export type ToolTrigger = { mode: "live"; debounceMs?: number } | { mode: "manual"; actionLabel: string };
 
 export type ToolCapabilities = {
   cancel?: boolean;

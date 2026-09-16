@@ -57,9 +57,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 const ACCEPTED = ["jpeg", "png", "webp"] as const;
 
 function outputFormat(requested: string): "original" | OutputImageFormat {
-  return requested === "jpeg" || requested === "png" || requested === "webp"
-    ? requested
-    : "original";
+  return requested === "jpeg" || requested === "png" || requested === "webp" ? requested : "original";
 }
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {

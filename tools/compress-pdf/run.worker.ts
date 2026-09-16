@@ -18,27 +18,12 @@
 
 import { validatePdfInput } from "../../lib/tool-framework/media/pdfDocument.ts";
 import { readToolFile } from "../../lib/tool-framework/media/fileBytes.ts";
-import {
-  encodeCanvas,
-  forEachRenderedPdfPage,
-  type PdfColorMode,
-} from "../../lib/tool-framework/media/pdfRender.ts";
-import {
-  inspectPdfBeforeStructuralRewrite,
-  PdfPreflightError,
-} from "../../lib/tool-framework/media/pdfRules.ts";
+import { encodeCanvas, forEachRenderedPdfPage, type PdfColorMode } from "../../lib/tool-framework/media/pdfRender.ts";
+import { inspectPdfBeforeStructuralRewrite, PdfPreflightError } from "../../lib/tool-framework/media/pdfRules.ts";
 import { preservePdfWithQpdf, QpdfAdapterError } from "../../lib/tool-framework/media/qpdf.ts";
-import {
-  createOutputFilename,
-  validatePdfSelection,
-} from "../../lib/tool-framework/media/validation.ts";
+import { createOutputFilename, validatePdfSelection } from "../../lib/tool-framework/media/validation.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
-import {
-  ToolError,
-  type ToolRun,
-  type ToolRunFile,
-  type ToolRunProgress,
-} from "../../lib/tool-framework/run.ts";
+import { ToolError, type ToolRun, type ToolRunFile, type ToolRunProgress } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
@@ -81,11 +66,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       ? await strongCompress(ctx.settings, input, ctx.signal, ctx.progress)
       : await preserveCompress(ctx.settings, input, ctx.progress);
   const output = await ctx.writeArtifact({
-    name: createOutputFilename(
-      input.name,
-      "pdf",
-      ctx.settings.mode === "strong" ? "strong-compressed" : "compressed",
-    ),
+    name: createOutputFilename(input.name, "pdf", ctx.settings.mode === "strong" ? "strong-compressed" : "compressed"),
     mime: "application/pdf",
     source: bytes,
   });

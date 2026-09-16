@@ -63,9 +63,7 @@ export function EcosystemTabFilters({ currentHref }: { currentHref?: string }) {
           >
             {group.label} <ChevronDown aria-hidden="true" className="size-3" />
           </a>
-          {activeId === group.id ? (
-            <EcosystemMenu group={group} onClose={() => setActiveId(null)} />
-          ) : null}
+          {activeId === group.id ? <EcosystemMenu group={group} onClose={() => setActiveId(null)} /> : null}
         </span>
       ))}
       <a
@@ -94,9 +92,7 @@ function EcosystemMenu({ group, onClose }: { group: Ecosystem; onClose: () => vo
         <div>
           <Strong className="block text-foreground">{group.label} tools</Strong>
           <Caption className="mt-0.5 block text-muted-foreground">
-            {showsCategories
-              ? "Choose a category to see every tool."
-              : "Create, complete, and export paperwork."}
+            {showsCategories ? "Choose a category to see every tool." : "Create, complete, and export paperwork."}
           </Caption>
         </div>
         <span className="rounded-full bg-muted px-2 py-1 font-caption text-overline font-normal text-muted-foreground">
@@ -167,10 +163,7 @@ function CategoryList({ categories }: { categories: readonly CategoryPreview[] }
 
 function PreviewIcon({ icon }: { icon: ToolIcon }) {
   return (
-    <span
-      aria-hidden="true"
-      className="grid size-6 shrink-0 place-items-center overflow-hidden rounded-sm bg-accent"
-    >
+    <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center overflow-hidden rounded-sm bg-accent">
       {icon.kind === "url" ? (
         <img alt="" className="size-full object-cover" crossOrigin="anonymous" src={icon.url} />
       ) : (

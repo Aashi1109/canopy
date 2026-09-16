@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type KeyboardEvent,
-} from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { Pencil } from "lucide-react";
 
 import { Button } from "#components/button";
@@ -134,8 +126,7 @@ export function InlineTextEditor({
     required,
     maxLength,
     value,
-    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      onChange(event.target.value),
+    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(event.target.value),
     onBlur: () => {
       if (error) return;
       if (pointerDown.current) pendingBlur.current = true;
@@ -160,11 +151,7 @@ export function InlineTextEditor({
   return (
     <TooltipProvider>
       <span
-        className={cn(
-          "group/inline-editor relative block min-w-0 outline-none",
-          editing && "pr-9",
-          className,
-        )}
+        className={cn("group/inline-editor relative block min-w-0 outline-none", editing && "pr-9", className)}
         data-slot="inline-text-editor"
         ref={display}
         tabIndex={-1}
@@ -205,9 +192,7 @@ export function InlineTextEditor({
         ) : (
           <Tooltip open={disabled ? false : undefined}>
             <TooltipTrigger asChild>
-              <span
-                className={cn("relative inline-block max-w-full align-top", !disabled && "pr-9")}
-              >
+              <span className={cn("relative inline-block max-w-full align-top", !disabled && "pr-9")}>
                 <span
                   className={cn(
                     "block min-h-[1lh] whitespace-pre-wrap break-words rounded-sm",

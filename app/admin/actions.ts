@@ -67,21 +67,13 @@ export async function reorderToolsAction(app: ToolApp, toolIds: string[]) {
 }
 
 export async function toggleToolAction(formData: FormData) {
-  await setManagedToolEnabled(
-    await getActorUserId(),
-    text(formData, "toolId"),
-    text(formData, "enabled") === "true",
-  );
+  await setManagedToolEnabled(await getActorUserId(), text(formData, "toolId"), text(formData, "enabled") === "true");
   revalidatePath("/admin/tools");
   revalidatePath(`/admin/tools/${encodeURIComponent(text(formData, "toolId"))}`);
 }
 
 export async function archiveToolAction(formData: FormData) {
-  await setManagedToolArchived(
-    await getActorUserId(),
-    text(formData, "toolId"),
-    text(formData, "archived") === "true",
-  );
+  await setManagedToolArchived(await getActorUserId(), text(formData, "toolId"), text(formData, "archived") === "true");
   revalidatePath("/admin/tools");
 }
 
@@ -108,11 +100,7 @@ export async function toggleFeatureAction(formData: FormData) {
 }
 
 export async function assignRolesAction(formData: FormData) {
-  await assignUserRoles(
-    await getActorUserId(),
-    text(formData, "userId"),
-    formData.getAll("roles").map(String),
-  );
+  await assignUserRoles(await getActorUserId(), text(formData, "userId"), formData.getAll("roles").map(String));
   revalidatePath("/admin/users");
 }
 
@@ -172,8 +160,7 @@ export async function deleteRoleAction(formData: FormData) {
     await deleteCustomRole(actorUserId, text(formData, "roleId"));
   } catch (error) {
     return {
-      error:
-        error instanceof Error ? error.message : "Unable to delete the role. Please try again.",
+      error: error instanceof Error ? error.message : "Unable to delete the role. Please try again.",
     };
   }
   redirect("/admin/roles");
@@ -206,11 +193,10 @@ export async function createAdvancedTemplateAction(formData: FormData) {
 }
 
 export async function duplicateTemplateAction(formData: FormData) {
-  const template = await duplicateDocumentTemplate(
-    await getActorUserId(),
-    text(formData, "templateId"),
-    { name: text(formData, "name"), slug: text(formData, "slug") },
-  );
+  const template = await duplicateDocumentTemplate(await getActorUserId(), text(formData, "templateId"), {
+    name: text(formData, "name"),
+    slug: text(formData, "slug"),
+  });
   redirect(
     template.layoutFamily === "advanced"
       ? `/admin/templates/${template.id}/advanced`
@@ -266,10 +252,7 @@ export async function updateAndPublishTemplateAction(formData: FormData) {
   redirect("/admin/templates");
 }
 
-async function templateStateAction(
-  formData: FormData,
-  operation: (actor: string, id: string) => Promise<unknown>,
-) {
+async function templateStateAction(formData: FormData, operation: (actor: string, id: string) => Promise<unknown>) {
   await operation(await getActorUserId(), text(formData, "templateId"));
   revalidatePath("/admin/templates");
 }

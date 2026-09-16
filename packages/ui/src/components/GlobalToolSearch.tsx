@@ -166,8 +166,7 @@ export function GlobalToolSearch() {
           {results.length > 0 ? (
             <>
               <Muted className="border-b border-border px-3 py-2 text-muted-foreground">
-                {results.length} {results.length === 1 ? "result" : "results"} for “
-                {debouncedQuery.trim()}”
+                {results.length} {results.length === 1 ? "result" : "results"} for “{debouncedQuery.trim()}”
               </Muted>
               {results.map((result) => (
                 <a
@@ -178,9 +177,7 @@ export function GlobalToolSearch() {
                   <ToolIcon icon={result.icon} />
                   <span className="min-w-0">
                     <Strong className="block truncate text-foreground">{result.name}</Strong>
-                    <Small className="block truncate text-muted-foreground">
-                      {result.category}
-                    </Small>
+                    <Small className="block truncate text-muted-foreground">{result.category}</Small>
                   </span>
                 </a>
               ))}

@@ -1,11 +1,7 @@
 import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import { ToolIcon } from "@/components/ToolIcon";
 import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
-import {
-  categoriesForApp,
-  TOOL_CATEGORIES,
-  type CategoryKey,
-} from "@/lib/tool-framework/categories";
+import { categoriesForApp, TOOL_CATEGORIES, type CategoryKey } from "@/lib/tool-framework/categories";
 import { getOptionalSession } from "@smarttools/auth/session";
 import { getToolIcons, type ToolIconRow } from "@smarttools/database";
 import {
@@ -78,9 +74,7 @@ export default async function HomePage({
     (tool) =>
       (!category || tool.category === category) &&
       (!normalizedQuery ||
-        `${tool.name} ${tool.description} ${tool.keywords.join(" ")}`
-          .toLocaleLowerCase()
-          .includes(normalizedQuery)),
+        `${tool.name} ${tool.description} ${tool.keywords.join(" ")}`.toLocaleLowerCase().includes(normalizedQuery)),
   );
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -93,18 +87,12 @@ export default async function HomePage({
       <main>
         <section className="bg-primary text-primary-foreground">
           <AppContainer className="py-16 text-center sm:py-24">
-            <Badge
-              className="border-white/25 bg-white/10 px-3 text-primary-foreground"
-              variant="outline"
-            >
+            <Badge className="border-white/25 bg-white/10 px-3 text-primary-foreground" variant="outline">
               Private image and PDF tools
             </Badge>
-            <Display className="mx-auto mt-5 max-w-4xl">
-              Edit media without sending it anywhere.
-            </Display>
+            <Display className="mx-auto mt-5 max-w-4xl">Edit media without sending it anywhere.</Display>
             <Lead className="mx-auto mt-5 max-w-2xl text-primary-foreground/80">
-              Convert, organize, and compress files in dedicated browser workers. Your files stay on
-              this device.
+              Convert, organize, and compress files in dedicated browser workers. Your files stay on this device.
             </Lead>
 
             <form
@@ -190,10 +178,7 @@ export default async function HomePage({
 
         <section className="border-y border-border bg-muted/50 py-14 sm:py-16">
           <AppContainer>
-            <SectionHeading
-              description="Jump directly to the file operation you need."
-              title="Browse by category"
-            />
+            <SectionHeading description="Jump directly to the file operation you need." title="Browse by category" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {categoriesForApp("media").map((key) => {
                 const count = tools.filter((tool) => tool.category === key).length;
@@ -207,12 +192,8 @@ export default async function HomePage({
                       <LayoutGrid aria-hidden="true" className="size-5" />
                     </IconTile>
                     <span className="min-w-0">
-                      <Strong className="block group-hover:text-primary">
-                        {TOOL_CATEGORIES[key].label}
-                      </Strong>
-                      <Caption className="mt-1 block text-muted-foreground">
-                        {TOOL_CATEGORIES[key].description}
-                      </Caption>
+                      <Strong className="block group-hover:text-primary">{TOOL_CATEGORIES[key].label}</Strong>
+                      <Caption className="mt-1 block text-muted-foreground">{TOOL_CATEGORIES[key].description}</Caption>
                       <Caption className="mt-2 block text-primary">{count} enabled</Caption>
                     </span>
                   </TextLink>
@@ -228,8 +209,7 @@ export default async function HomePage({
               {
                 icon: ShieldCheck,
                 title: "Processed locally",
-                description:
-                  "Files and previews never leave your device or enter application logs.",
+                description: "Files and previews never leave your device or enter application logs.",
               },
               {
                 icon: Zap,
@@ -239,8 +219,7 @@ export default async function HomePage({
               {
                 icon: LockKeyhole,
                 title: "No hidden storage",
-                description:
-                  "No server API, IndexedDB, local storage, or service worker keeps your files.",
+                description: "No server API, IndexedDB, local storage, or service worker keeps your files.",
               },
             ].map(({ description, icon: Icon, title }) => (
               <Card className="gap-0 rounded-2xl shadow-none" key={title} role="article">

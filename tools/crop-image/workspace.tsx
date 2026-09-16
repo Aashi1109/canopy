@@ -113,9 +113,7 @@ function CropPreview({ disabled, file, onSettingChange, settings, onImageLoad }:
   useEffect(() => {
     if (size.width === 0 || size.height === 0) return;
     const seeded: CropBox =
-      box.width > 0 && box.height > 0
-        ? box
-        : { height: size.height, width: size.width, x: 0, y: 0 };
+      box.width > 0 && box.height > 0 ? box : { height: size.height, width: size.width, x: 0, y: 0 };
     write(applyAspect(seeded, size, ratio), box);
     // The box is read, not depended on — depending on it would re-seed on
     // every drag.
@@ -124,9 +122,7 @@ function CropPreview({ disabled, file, onSettingChange, settings, onImageLoad }:
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <Muted className="shrink-0 px-4 py-2">
-        Drag handles to shape the crop · Drag inside to move it
-      </Muted>
+      <Muted className="shrink-0 px-4 py-2">Drag handles to shape the crop · Drag inside to move it</Muted>
       <div className="flex min-h-0 flex-1 items-start justify-center overflow-auto p-6">
         {url ? (
           <div className="relative inline-block max-w-full shrink-0 overflow-hidden touch-none select-none">
@@ -180,10 +176,7 @@ function CropEditor(props: WorkspaceProps) {
   } catch {
     /* Not decoded or invalid yet. */
   }
-  const writePoints = useCallback(
-    (next: readonly CropPoint[]) => change("cropPoints", JSON.stringify(next)),
-    [change],
-  );
+  const writePoints = useCallback((next: readonly CropPoint[]) => change("cropPoints", JSON.stringify(next)), [change]);
   useEffect(() => {
     if (size.width && size.height && !settings.cropPoints) {
       try {
@@ -195,8 +188,7 @@ function CropEditor(props: WorkspaceProps) {
   }, [size, settings.cropPoints, pointCount, writePoints]);
   const onSettingChange = useCallback(
     (key: string, value: unknown) => {
-      if ((key === CROP_KEYS.width || key === CROP_KEYS.height) && settings[ASPECT] !== FREE)
-        change(ASPECT, FREE);
+      if ((key === CROP_KEYS.width || key === CROP_KEYS.height) && settings[ASPECT] !== FREE) change(ASPECT, FREE);
       change(key, value);
     },
     [change, settings],
@@ -276,21 +268,13 @@ function CropEditor(props: WorkspaceProps) {
                     }
                     try {
                       if (size.width && size.height)
-                        writePoints(
-                          resizeCropPoints(
-                            points.length >= 3 ? points : fullImagePoints(size),
-                            value,
-                            size,
-                          ),
-                        );
+                        writePoints(resizeCropPoints(points.length >= 3 ? points : fullImagePoints(size), value, size));
                       change("cropPointCount", value);
                       setCountDraft(null);
                       setSelected(0);
                       setPointIssue("");
                     } catch (error) {
-                      setPointIssue(
-                        error instanceof Error ? error.message : "Choose fewer points.",
-                      );
+                      setPointIssue(error instanceof Error ? error.message : "Choose fewer points.");
                     }
                   }}
                 />
@@ -324,12 +308,7 @@ function CropEditor(props: WorkspaceProps) {
                           setPointIssue("Enter a whole-number pixel position.");
                           return;
                         }
-                        const next = moveCropPoint(
-                          points,
-                          selected,
-                          { ...points[selected], [axis]: value },
-                          size,
-                        );
+                        const next = moveCropPoint(points, selected, { ...points[selected], [axis]: value }, size);
                         if (next === points) {
                           setPointIssue("Points cannot overlap or cross the opposite edge.");
                           return;
@@ -354,10 +333,7 @@ function CropEditor(props: WorkspaceProps) {
                   {pointIssue}
                 </Muted>
               ) : null}
-              <Muted>
-                Select a point to edit its X and Y. Width and height show the selection’s bounding
-                box.
-              </Muted>
+              <Muted>Select a point to edit its X and Y. Width and height show the selection’s bounding box.</Muted>
             </>
           ) : (
             <SettingsPanel
@@ -368,9 +344,7 @@ function CropEditor(props: WorkspaceProps) {
               values={settings}
               spec={{
                 fields: Object.fromEntries(
-                  Object.entries(fields).filter(([key]) =>
-                    [ASPECT, ...Object.values(CROP_KEYS)].includes(key),
-                  ),
+                  Object.entries(fields).filter(([key]) => [ASPECT, ...Object.values(CROP_KEYS)].includes(key)),
                 ),
               }}
             />
@@ -383,17 +357,12 @@ function CropEditor(props: WorkspaceProps) {
           />
           {freeform ? (
             <Muted>
-              {settings.outputFormat === "jpeg" ||
-              (settings.outputFormat === "original" && file?.type === "image/jpeg")
+              {settings.outputFormat === "jpeg" || (settings.outputFormat === "original" && file?.type === "image/jpeg")
                 ? "JPEG fills the area outside your selection with white. Choose PNG or WebP to keep it transparent."
                 : "Pixels outside the selection are transparent. This crops the shape; it does not straighten perspective."}
             </Muted>
           ) : null}
-          <Button
-            disabled={props.disabled || !file || !size.width}
-            onClick={resetCrop}
-            variant="outline"
-          >
+          <Button disabled={props.disabled || !file || !size.width} onClick={resetCrop} variant="outline">
             Reset crop
           </Button>
         </>
@@ -411,9 +380,7 @@ function CropEditor(props: WorkspaceProps) {
               size={size}
               selected={selected}
               disabled={disabled}
-              onInvalidMove={() =>
-                setPointIssue("Points cannot overlap or cross the opposite edge.")
-              }
+              onInvalidMove={() => setPointIssue("Points cannot overlap or cross the opposite edge.")}
               onSelect={(index) => {
                 setSelected(index);
                 setPointIssue("");
@@ -456,10 +423,5 @@ function CropEditor(props: WorkspaceProps) {
 
 export default function CropImageWorkspace(props: WorkspaceProps) {
   const file = props.input.files[0];
-  return (
-    <CropEditor
-      key={file ? `${workspaceFileId(file)}:${file.size}:${file.lastModified}` : "empty"}
-      {...props}
-    />
-  );
+  return <CropEditor key={file ? `${workspaceFileId(file)}:${file.size}:${file.lastModified}` : "empty"} {...props} />;
 }

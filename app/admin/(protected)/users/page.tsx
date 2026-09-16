@@ -38,10 +38,7 @@ export default async function UsersPage({
   const query = queryValue ?? "";
   const [allUsers, roles] = await Promise.all([listUsers(query), listRoles()]);
   const selectedRole = roleValue && roles.some((role) => role.id === roleValue) ? roleValue : "all";
-  const users =
-    selectedRole === "all"
-      ? allUsers
-      : allUsers.filter((user) => user.roles.includes(selectedRole));
+  const users = selectedRole === "all" ? allUsers : allUsers.filter((user) => user.roles.includes(selectedRole));
   const roleNames = new Map(roles.map((role) => [role.id, role.name] as const));
 
   return (
@@ -67,10 +64,7 @@ export default async function UsersPage({
       />
 
       {users.length ? (
-        <section
-          aria-label="User accounts"
-          className="overflow-hidden rounded-xl border border-border bg-card"
-        >
+        <section aria-label="User accounts" className="overflow-hidden rounded-xl border border-border bg-card">
           <div className="hidden grid-cols-[minmax(0,1fr)_220px_150px] items-center gap-4 border-b border-border bg-muted px-5 py-3 md:grid">
             {["User", "Role", "Status"].map((heading) => (
               <Overline className="text-muted-foreground" key={heading}>
@@ -94,15 +88,11 @@ export default async function UsersPage({
                   <span className="flex min-w-0 items-center gap-3">
                     <Avatar className="size-9 shrink-0">
                       {user.image ? <AvatarImage alt="" src={user.image} /> : null}
-                      <AvatarFallback className="bg-accent text-primary">
-                        {initials(user.name)}
-                      </AvatarFallback>
+                      <AvatarFallback className="bg-accent text-primary">{initials(user.name)}</AvatarFallback>
                     </Avatar>
                     <span className="min-w-0">
                       <Strong className="block truncate text-foreground">{user.name}</Strong>
-                      <Caption className="mt-0.5 block truncate text-muted-foreground">
-                        {user.email}
-                      </Caption>
+                      <Caption className="mt-0.5 block truncate text-muted-foreground">{user.email}</Caption>
                     </span>
                   </span>
                   <Text
@@ -110,10 +100,7 @@ export default async function UsersPage({
                   >
                     {roleLabel}
                   </Text>
-                  <StatusBadge
-                    className="justify-self-start"
-                    variant={user.status === "active" ? "success" : "danger"}
-                  >
+                  <StatusBadge className="justify-self-start" variant={user.status === "active" ? "success" : "danger"}>
                     {user.status === "active" ? "Active" : "Suspended"}
                   </StatusBadge>
                 </ManageUserDialog>
@@ -131,13 +118,7 @@ export default async function UsersPage({
               ? "No users match these filters. Clear the filters or try another search."
               : "Accounts appear here after registration."
           }
-          icon={
-            query || selectedRole !== "all" ? (
-              <SearchX aria-hidden="true" />
-            ) : (
-              <Users aria-hidden="true" />
-            )
-          }
+          icon={query || selectedRole !== "all" ? <SearchX aria-hidden="true" /> : <Users aria-hidden="true" />}
           title={query || selectedRole !== "all" ? "No users matched" : "No users found"}
         />
       )}

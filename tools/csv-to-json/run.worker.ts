@@ -3,11 +3,7 @@ import { utilityDelimiter } from "../../lib/devtools/shared/table.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
-import {
-  createTextArtifactSink,
-  isLargeCsvRun,
-  parseCsvRun,
-} from "../../lib/devtools/shared/streaming-csv-tool.ts";
+import { createTextArtifactSink, isLargeCsvRun, parseCsvRun } from "../../lib/devtools/shared/streaming-csv-tool.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
@@ -15,9 +11,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const delimiter = utilityDelimiter(ctx.settings.delimiter);
   const normalizeCell = (value: string): string | number => {
     const normalized = ctx.settings.trimWhitespace ? value.trim() : value;
-    return ctx.settings.parseNumbers &&
-      normalized.trim() !== "" &&
-      Number.isFinite(Number(normalized))
+    return ctx.settings.parseNumbers && normalized.trim() !== "" && Number.isFinite(Number(normalized))
       ? Number(normalized)
       : normalized;
   };
@@ -103,14 +97,8 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     if (ctx.settings.trimWhitespace || ctx.settings.parseNumbers) {
       const rows = JSON.parse(result.output) as Array<Record<string, string>>;
       const normalizedRows = rows
-        .map((row) =>
-          Object.fromEntries(
-            Object.entries(row).map(([column, value]) => [column, normalizeCell(value)]),
-          ),
-        )
-        .filter(
-          (row) => !ctx.settings.trimWhitespace || Object.values(row).some((value) => value !== ""),
-        );
+        .map((row) => Object.fromEntries(Object.entries(row).map(([column, value]) => [column, normalizeCell(value)])))
+        .filter((row) => !ctx.settings.trimWhitespace || Object.values(row).some((value) => value !== ""));
       output = JSON.stringify(normalizedRows, null, 2);
       rowCount = normalizedRows.length;
     }

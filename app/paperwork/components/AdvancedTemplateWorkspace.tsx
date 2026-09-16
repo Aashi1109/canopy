@@ -54,9 +54,7 @@ interface AdvancedTemplateWorkspaceProps<TDraft> {
   templates: readonly DocumentTemplate[];
 }
 
-const SELECT_OPTIONS: Readonly<
-  Record<string, readonly (string | { label: string; value: string })[]>
-> = {
+const SELECT_OPTIONS: Readonly<Record<string, readonly (string | { label: string; value: string })[]>> = {
   "invoice:discountType": ["none", "percent", "fixed"],
   "mileage-log:rateMode": [
     { label: "IRS standard rate", value: "irs-standard" },
@@ -68,40 +66,11 @@ const SELECT_OPTIONS: Readonly<
     { label: "Married filing separately", value: "married_separate" },
     { label: "Head of household", value: "head_household" },
   ],
-  "w9-request:requestStatus": [
-    "Not Requested",
-    "Requested",
-    "Received",
-    "Needs Review",
-    "Not Applicable",
-  ],
+  "w9-request:requestStatus": ["Not Requested", "Requested", "Received", "Needs Review", "Not Applicable"],
   "1099-nec-tracker:filingStatus": ["Review required", "Ready for preparer", "Filed externally"],
-  "expense-report:expenseRows.category": [
-    "Travel",
-    "Lodging",
-    "Meals",
-    "Software",
-    "Office supplies",
-    "Other",
-  ],
-  "1099-nec-tracker:paymentRows.paymentMethod": [
-    "Cash",
-    "Check",
-    "ACH",
-    "PayPal",
-    "Venmo",
-    "Zelle",
-    "Card",
-    "Other",
-  ],
-  "1099-nec-tracker:paymentRows.category": [
-    "Services",
-    "Rent",
-    "Legal",
-    "Repairs",
-    "Commissions",
-    "Other",
-  ],
+  "expense-report:expenseRows.category": ["Travel", "Lodging", "Meals", "Software", "Office supplies", "Other"],
+  "1099-nec-tracker:paymentRows.paymentMethod": ["Cash", "Check", "ACH", "PayPal", "Venmo", "Zelle", "Card", "Other"],
+  "1099-nec-tracker:paymentRows.category": ["Services", "Rent", "Legal", "Repairs", "Commissions", "Other"],
 };
 
 function customStorageKey(templateId: string) {
@@ -123,9 +92,7 @@ function normalizeStoredCustomValues(value: unknown): Record<string, unknown> {
               ? {
                   ...row,
                   id:
-                    typeof (row as { id?: unknown }).id === "string"
-                      ? (row as { id: string }).id
-                      : crypto.randomUUID(),
+                    typeof (row as { id?: unknown }).id === "string" ? (row as { id: string }).id : crypto.randomUUID(),
                 }
               : { id: crypto.randomUUID() },
           )
@@ -186,12 +153,7 @@ function templateCustomSampleValues(template: AdvancedDocumentTemplate): Record<
 }
 
 function isEmpty(value: unknown) {
-  return (
-    value === null ||
-    value === undefined ||
-    value === "" ||
-    (Array.isArray(value) && value.length === 0)
-  );
+  return value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0);
 }
 
 function inputType(control: string) {
@@ -205,17 +167,11 @@ function inputType(control: string) {
 
 function fieldOptions(entry: FormEntry | RepeaterColumn, fallbackKey?: string) {
   const options =
-    ("options" in entry ? entry.options : undefined) ??
-    (fallbackKey ? SELECT_OPTIONS[fallbackKey] : undefined);
-  return (options ?? []).map((option) =>
-    typeof option === "string" ? { label: option, value: option } : option,
-  );
+    ("options" in entry ? entry.options : undefined) ?? (fallbackKey ? SELECT_OPTIONS[fallbackKey] : undefined);
+  return (options ?? []).map((option) => (typeof option === "string" ? { label: option, value: option } : option));
 }
 
-function fieldControl(
-  entry: Exclude<FormEntry, RepeaterEntry>,
-  definition?: DocumentFieldDefinition,
-) {
+function fieldControl(entry: Exclude<FormEntry, RepeaterEntry>, definition?: DocumentFieldDefinition) {
   return entry.kind === "builtin" ? (definition?.control ?? "text") : entry.control;
 }
 
@@ -224,10 +180,7 @@ function rowValue(rows: unknown, minRows = 0): RepeaterRow[] {
     ? rows
         .filter((row): row is RepeaterRow =>
           Boolean(
-            row &&
-            typeof row === "object" &&
-            !Array.isArray(row) &&
-            typeof (row as { id?: unknown }).id === "string",
+            row && typeof row === "object" && !Array.isArray(row) && typeof (row as { id?: unknown }).id === "string",
           ),
         )
         .slice(0, MAX_RUNTIME_REPEATER_ROWS)
@@ -258,8 +211,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
       ),
     [adapter.documentType, templates],
   );
-  const fallbackTemplate =
-    availableTemplates.find((template) => template.isDefault) ?? availableTemplates[0];
+  const fallbackTemplate = availableTemplates.find((template) => template.isDefault) ?? availableTemplates[0];
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const selectedTemplate =
     availableTemplates.find((template) => template.id === selectedTemplateId) ?? fallbackTemplate;
@@ -267,8 +219,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const loadedCustomTemplateRef = useRef("");
-  const rejectsFullTin =
-    adapter.documentType === "w9-request" || adapter.documentType === "1099-nec-tracker";
+  const rejectsFullTin = adapter.documentType === "w9-request" || adapter.documentType === "1099-nec-tracker";
 
   useEffect(() => {
     if (!fallbackTemplate) return;
@@ -295,10 +246,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
   }, [customValues, selectedTemplate]);
 
   const fieldDefinitions = useMemo(
-    () =>
-      new Map(
-        getDocumentDefinition(adapter.documentType).fields.map((field) => [field.key, field]),
-      ),
+    () => new Map(getDocumentDefinition(adapter.documentType).fields.map((field) => [field.key, field])),
     [adapter.documentType],
   );
   const pdfInputs = useMemo(
@@ -338,18 +286,13 @@ export default function AdvancedTemplateWorkspace<TDraft>({
         if (rejectsFullTin && containsFullTin(value)) {
           next[entry.key] = "Full TIN, SSN, and EIN values are not accepted.";
         }
-        const fieldDefinition =
-          entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
-        const control =
-          entry.kind === "repeater" ? "repeater" : fieldControl(entry, fieldDefinition);
+        const fieldDefinition = entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
+        const control = entry.kind === "repeater" ? "repeater" : fieldControl(entry, fieldDefinition);
         if (entry.required && (control === "checkbox" ? value !== true : isEmpty(value))) {
           next[entry.key] = `${entry.label} is required.`;
         }
-        const columns =
-          entry.kind === "repeater" ? entry.columns : fieldDefinition?.repeaterColumns;
-        const rows = columns
-          ? rowValue(value, entry.kind === "repeater" ? (entry.minRows ?? 0) : 0)
-          : [];
+        const columns = entry.kind === "repeater" ? entry.columns : fieldDefinition?.repeaterColumns;
+        const rows = columns ? rowValue(value, entry.kind === "repeater" ? (entry.minRows ?? 0) : 0) : [];
         if (entry.kind === "repeater" && rows.length < (entry.minRows ?? 0)) {
           next[entry.key] = `${entry.label} needs at least ${entry.minRows} rows.`;
         }
@@ -357,9 +300,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
           columns?.some(
             (column) =>
               column.required &&
-              rows.some((row) =>
-                column.control === "checkbox" ? row[column.key] !== true : isEmpty(row[column.key]),
-              ),
+              rows.some((row) => (column.control === "checkbox" ? row[column.key] !== true : isEmpty(row[column.key]))),
           )
         ) {
           next[entry.key] = `${entry.label} has an incomplete required column.`;
@@ -450,16 +391,9 @@ export default function AdvancedTemplateWorkspace<TDraft>({
       <Input
         aria-invalid={Boolean(errors[entry.key])}
         id={id}
-        inputMode={
-          control === "currency" || control === "percent" || control === "number"
-            ? "decimal"
-            : undefined
-        }
+        inputMode={control === "currency" || control === "percent" || control === "number" ? "decimal" : undefined}
         onBlur={(event) => {
-          if (
-            event.target.value !== "" &&
-            (control === "currency" || control === "percent" || control === "number")
-          ) {
+          if (event.target.value !== "" && (control === "currency" || control === "percent" || control === "number")) {
             writeEntry(entry, Number(event.target.value));
           }
         }}
@@ -474,8 +408,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
 
   function renderRepeater(entry: FormEntry, columns: readonly RepeaterColumn[], minRows = 0) {
     const rows = rowValue(readEntry(entry), minRows);
-    const updateRows = (next: RepeaterRow[]) =>
-      writeEntry(entry, next.slice(0, MAX_RUNTIME_REPEATER_ROWS));
+    const updateRows = (next: RepeaterRow[]) => writeEntry(entry, next.slice(0, MAX_RUNTIME_REPEATER_ROWS));
 
     return (
       <div className="grid gap-3">
@@ -516,10 +449,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                 {columns.map((column) => {
                   const id = `${entry.key}-${row.id}-${column.key}`;
                   const value = row[column.key];
-                  const options = fieldOptions(
-                    column,
-                    `${adapter.documentType}:${entry.key}.${column.key}`,
-                  );
+                  const options = fieldOptions(column, `${adapter.documentType}:${entry.key}.${column.key}`);
                   return (
                     <div className="grid gap-1" key={column.key}>
                       <Label htmlFor={id}>{column.label}</Label>
@@ -677,14 +607,10 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                   <StatusBadge>{entries.length} fields</StatusBadge>
                 </div>
                 {entries.map((entry) => {
-                  const fieldDefinition =
-                    entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
-                  const repeaterColumns =
-                    entry.kind === "repeater" ? entry.columns : fieldDefinition?.repeaterColumns;
+                  const fieldDefinition = entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
+                  const repeaterColumns = entry.kind === "repeater" ? entry.columns : fieldDefinition?.repeaterColumns;
                   const scalarEntry = entry as Exclude<FormEntry, RepeaterEntry>;
-                  const scalarControl = repeaterColumns?.length
-                    ? null
-                    : fieldControl(scalarEntry, fieldDefinition);
+                  const scalarControl = repeaterColumns?.length ? null : fieldControl(scalarEntry, fieldDefinition);
                   return (
                     <div className="grid gap-1.5" key={entry.key}>
                       {repeaterColumns?.length ? (
@@ -694,15 +620,9 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                               {entry.label}
                               {entry.required ? " *" : ""}
                             </P>
-                            {entry.helpText ? (
-                              <Muted className="text-muted-foreground">{entry.helpText}</Muted>
-                            ) : null}
+                            {entry.helpText ? <Muted className="text-muted-foreground">{entry.helpText}</Muted> : null}
                           </div>
-                          {renderRepeater(
-                            entry,
-                            repeaterColumns,
-                            entry.kind === "repeater" ? entry.minRows : 0,
-                          )}
+                          {renderRepeater(entry, repeaterColumns, entry.kind === "repeater" ? entry.minRows : 0)}
                         </>
                       ) : scalarControl === "checkbox" ? (
                         <div className="grid gap-1.5">
@@ -712,10 +632,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                           ) : null}
                         </div>
                       ) : (
-                        <Label
-                          className="grid gap-1.5"
-                          htmlFor={`advanced-field-${entry.key.replaceAll(".", "-")}`}
-                        >
+                        <Label className="grid gap-1.5" htmlFor={`advanced-field-${entry.key.replaceAll(".", "-")}`}>
                           <span>
                             {entry.label}
                             {entry.required ? " *" : ""}
@@ -738,11 +655,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
             );
           })}
         </div>
-        <AdvancedDocumentPreview
-          className="xl:sticky xl:top-20"
-          data={documentData}
-          template={selectedTemplate}
-        />
+        <AdvancedDocumentPreview className="xl:sticky xl:top-20" data={documentData} template={selectedTemplate} />
       </div>
     </Card>
   );

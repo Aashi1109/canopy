@@ -1,9 +1,5 @@
 import { getOptionalSession } from "@smarttools/auth/session";
-import {
-  getAvailableToolBySlug,
-  getAvailableTools,
-  getPublishedTemplates,
-} from "@smarttools/control-plane";
+import { getAvailableToolBySlug, getAvailableTools, getPublishedTemplates } from "@smarttools/control-plane";
 import type { DocumentType } from "@smarttools/invoice-templates";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";

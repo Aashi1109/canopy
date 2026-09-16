@@ -65,9 +65,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     text: JSON.stringify(
       {
         domain: data.ldhName ?? domain,
-        ...((ctx.settings.showRegistrationDate ?? true)
-          ? { registered: event("registration") }
-          : {}),
+        ...((ctx.settings.showRegistrationDate ?? true) ? { registered: event("registration") } : {}),
         ...((ctx.settings.showExpiryDate ?? true) ? { expires: event("expiration") } : {}),
         updated: event("last changed"),
         status: data.status ?? [],

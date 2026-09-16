@@ -26,17 +26,12 @@ export async function uploadToolIcons({
   }
   folder = folder.replace(/\/+$/, "");
   if (!folder.split("/").every((segment) => /^[A-Za-z0-9_-]+$/.test(segment))) {
-    throw new Error(
-      "--folder segments may contain only letters, digits, underscores, and hyphens.",
-    );
+    throw new Error("--folder segments may contain only letters, digits, underscores, and hyphens.");
   }
   dir = path.resolve(dir);
   output = path.resolve(output);
   const relativeOutput = path.relative(dir, output);
-  if (
-    !relativeOutput ||
-    (!relativeOutput.startsWith(`..${path.sep}`) && !path.isAbsolute(relativeOutput))
-  ) {
+  if (!relativeOutput || (!relativeOutput.startsWith(`..${path.sep}`) && !path.isAbsolute(relativeOutput))) {
     throw new Error("--output must be outside the SVG directory.");
   }
   let previous;
@@ -90,8 +85,7 @@ export async function uploadToolIcons({
     icons = icons.filter(({ slug }) => failedSlugs.has(slug));
     const available = new Set(icons.map(({ slug }) => slug));
     const missing = [...failedSlugs].filter((slug) => !available.has(slug));
-    if (missing.length)
-      throw new Error(`Missing SVG files for failed uploads: ${missing.join(", ")}`);
+    if (missing.length) throw new Error(`Missing SVG files for failed uploads: ${missing.join(", ")}`);
   }
   if (dryRun) {
     for (const { file, publicId } of icons) log(`${file} -> ${publicId}`);
@@ -112,11 +106,8 @@ export async function uploadToolIcons({
     let stage = "upload";
     try {
       let svg = (await readFile(path.join(dir, file), "utf8")).replace(/^\uFEFF/, "").trimStart();
-      const root = svg
-        .replace(/^<\?xml\s[\s\S]*?\?>\s*/, "")
-        .replace(/^(?:<!--[\s\S]*?-->\s*)*/, "");
-      if (!/^<svg(?:\s|\/?>)/.test(root))
-        throw new Error("File does not have an SVG root element.");
+      const root = svg.replace(/^<\?xml\s[\s\S]*?\?>\s*/, "").replace(/^(?:<!--[\s\S]*?-->\s*)*/, "");
+      if (!/^<svg(?:\s|\/?>)/.test(root)) throw new Error("File does not have an SVG root element.");
       // Cloudinary's SVG format detection expects an XML declaration.
       if (!/^<\?xml\s/.test(svg)) svg = `<?xml version="1.0" encoding="UTF-8"?>\n${svg}`;
       const source = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
@@ -136,9 +127,7 @@ export async function uploadToolIcons({
         result.format !== "svg" ||
         typeof result.secure_url !== "string" ||
         !result.secure_url.startsWith("https://") ||
-        ![result.version, result.width, result.height].every(
-          (value) => Number.isInteger(value) && value > 0,
-        )
+        ![result.version, result.width, result.height].every((value) => Number.isInteger(value) && value > 0)
       ) {
         throw new Error("Cloudinary returned an unexpected asset or incomplete metadata.");
       }
@@ -155,21 +144,17 @@ export async function uploadToolIcons({
       return { icon };
     } catch (error) {
       const failure = error?.error ?? error;
-      let message =
-        typeof failure?.message === "string" ? failure.message : "Upload or asset lookup failed";
+      let message = typeof failure?.message === "string" ? failure.message : "Upload or asset lookup failed";
       for (const key of ["CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET", "CLOUDINARY_URL"]) {
         const secret = process.env[key];
         if (secret)
-          message = message
-            .replaceAll(secret, "[redacted]")
-            .replaceAll(encodeURIComponent(secret), "[redacted]");
+          message = message.replaceAll(secret, "[redacted]").replaceAll(encodeURIComponent(secret), "[redacted]");
       }
       message = message.replace(/[\r\n\t]/g, " ").slice(0, 400);
       const httpCode = Number.isInteger(failure?.http_code) ? failure.http_code : undefined;
       if (httpCode) message = `HTTP ${httpCode}: ${message}`;
       if (httpCode === 403)
-        message +=
-          ". Check API key permissions, the Cloudinary product environment, and account restrictions.";
+        message += ". Check API key permissions, the Cloudinary product environment, and account restrictions.";
       log(`FAILED ${slug} (${stage}): ${message}`);
       return {
         failure: { slug, publicId, stage, ...(httpCode ? { httpCode } : {}), error: message },

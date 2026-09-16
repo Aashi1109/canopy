@@ -46,9 +46,7 @@ export function AccessDeniedScreen({
           <span className="grid size-16 place-items-center rounded-xl bg-destructive-soft text-destructive">
             <ShieldX aria-hidden="true" className="size-[30px]" />
           </span>
-          <Caption className="block text-destructive">
-            {suspended ? "ACCOUNT SUSPENDED" : "ERROR 403"}
-          </Caption>
+          <Caption className="block text-destructive">{suspended ? "ACCOUNT SUSPENDED" : "ERROR 403"}</Caption>
           <H1 className="text-foreground" id="denied-title">
             {suspended ? "Your account is suspended" : "You don’t have access to Admin"}
           </H1>

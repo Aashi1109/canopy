@@ -54,14 +54,10 @@ export default async function TemplatesPage({
   const visibleTemplates = templates.filter((template) => {
     const isAdvanced = template.layoutFamily === "advanced";
     return (
-      (!query ||
-        template.name.toLowerCase().includes(query) ||
-        template.slug.toLowerCase().includes(query)) &&
+      (!query || template.name.toLowerCase().includes(query) || template.slug.toLowerCase().includes(query)) &&
       (!filters.type || filters.type === "all" || template.documentType === filters.type) &&
       (!filters.status || filters.status === "all" || template.status === filters.status) &&
-      (!filters.mode ||
-        filters.mode === "all" ||
-        (filters.mode === "advanced" ? isAdvanced : !isAdvanced))
+      (!filters.mode || filters.mode === "all" || (filters.mode === "advanced" ? isAdvanced : !isAdvanced))
     );
   });
 
@@ -83,10 +79,7 @@ export default async function TemplatesPage({
             <Upload aria-hidden="true" className="size-4" />
             Import JSON
           </Link>
-          <Link
-            className={buttonVariants({ className: "rounded-full px-5" })}
-            href="/admin/templates/new"
-          >
+          <Link className={buttonVariants({ className: "rounded-full px-5" })} href="/admin/templates/new">
             <Plus aria-hidden="true" className="size-4" />
             Create template
           </Link>
@@ -160,12 +153,8 @@ export default async function TemplatesPage({
                   <TableRow className="h-[68px]" key={template.id}>
                     <TableCell className="px-[18px]">
                       <Link className="group block" href={`/admin/templates/${template.id}/manage`}>
-                        <Text className="block text-foreground group-hover:text-primary">
-                          {template.name}
-                        </Text>
-                        <Caption className="mt-0.5 block text-muted-foreground">
-                          /{template.slug}
-                        </Caption>
+                        <Text className="block text-foreground group-hover:text-primary">{template.name}</Text>
+                        <Caption className="mt-0.5 block text-muted-foreground">/{template.slug}</Caption>
                       </Link>
                     </TableCell>
                     <TableCell>
@@ -189,10 +178,7 @@ export default async function TemplatesPage({
                       </StatusBadge>
                     </TableCell>
                     <TableCell>
-                      <time
-                        className="text-muted-foreground"
-                        dateTime={template.updatedAt.toISOString()}
-                      >
+                      <time className="text-muted-foreground" dateTime={template.updatedAt.toISOString()}>
                         {updatedAtFormatter.format(template.updatedAt)}
                       </time>
                     </TableCell>

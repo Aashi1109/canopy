@@ -1,8 +1,5 @@
 import { jsonType, parseStrictJson } from "../../lib/devtools/shared/json-input.ts";
-import {
-  isLargeJsonRun,
-  validateStreamingJsonRun,
-} from "../../lib/devtools/shared/streaming-json-tool.ts";
+import { isLargeJsonRun, validateStreamingJsonRun } from "../../lib/devtools/shared/streaming-json-tool.ts";
 import type { ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";

@@ -12,9 +12,7 @@ export function BlogByline({ post }: { post: Pick<Post, "authorName" | "firstPub
           {" "}
           ·{" "}
           <time dateTime={post.firstPublishedAt.toISOString()}>
-            {new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(
-              post.firstPublishedAt,
-            )}
+            {new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(post.firstPublishedAt)}
           </time>
         </>
       )}
@@ -45,20 +43,14 @@ export function BlogTeaser({
         />
       )}
       <Overline className="block font-sans text-xs font-normal leading-normal tracking-normal text-accent-text">
-        <TextLink
-          className="no-underline"
-          href={`/blog?category=${encodeURIComponent(post.category.slug)}`}
-        >
+        <TextLink className="no-underline" href={`/blog?category=${encodeURIComponent(post.category.slug)}`}>
           {post.category.label}
         </TextLink>
       </Overline>
       <H3
         className={`font-sans text-[25px] leading-[1.2] ${variant === "list" ? "lg:text-[23px] lg:leading-[1.25]" : ""}`}
       >
-        <TextLink
-          className="break-words text-foreground no-underline hover:underline"
-          href={`/blog/${post.slug}`}
-        >
+        <TextLink className="break-words text-foreground no-underline hover:underline" href={`/blog/${post.slug}`}>
           {post.title}
         </TextLink>
       </H3>

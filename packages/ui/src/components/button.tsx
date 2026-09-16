@@ -12,8 +12,7 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-[#0052CC] active:bg-[#003D99]",
         strong: "bg-surface-ink text-white hover:bg-[#25272B]",
-        destructive:
-          "bg-destructive text-destructive-foreground hover:bg-[#C51F1F] focus-visible:ring-destructive",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-[#C51F1F] focus-visible:ring-destructive",
         outline: "border border-input bg-card text-foreground hover:bg-muted",
         secondary: "border border-input bg-card text-foreground hover:bg-muted",
         ghost: "bg-transparent text-foreground hover:bg-accent active:bg-accent",
@@ -21,8 +20,7 @@ const buttonVariants = cva(
           "bg-transparent text-foreground hover:bg-muted focus-visible:ring-inset focus-visible:ring-offset-0",
         "input-icon":
           "bg-transparent text-muted-foreground hover:text-foreground focus-visible:ring-inset focus-visible:ring-primary/30 focus-visible:ring-offset-0 disabled:bg-transparent",
-        "danger-subtle":
-          "border border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10",
+        "danger-subtle": "border border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10",
         link: "text-primary underline-offset-4 hover:underline disabled:bg-transparent",
       },
       size: {
@@ -86,9 +84,7 @@ function Button({
       aria-disabled={asChild && (disabled || loading) ? true : props["aria-disabled"]}
       inert={asChild && (disabled || loading) ? true : props.inert}
     >
-      {loading && (
-        <LoaderCircle aria-hidden="true" data-slot="button-spinner" className="animate-spin" />
-      )}
+      {loading && <LoaderCircle aria-hidden="true" data-slot="button-spinner" className="animate-spin" />}
       <Slot.Slottable>{children}</Slot.Slottable>
     </Comp>
   );

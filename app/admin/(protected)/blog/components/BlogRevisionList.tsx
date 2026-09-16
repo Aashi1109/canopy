@@ -78,9 +78,7 @@ export function BlogRevisionList({
   }
   return (
     <>
-      {!revisions.length && (
-        <EmptyState title="No revisions yet" description="Save your draft to create a revision." />
-      )}
+      {!revisions.length && <EmptyState title="No revisions yet" description="Save your draft to create a revision." />}
       <ul className="divide-y divide-border">
         {revisions.map((revision) => {
           const expanded = !compact && comparedRevisionId === revision.id && !!comparison;
@@ -99,9 +97,7 @@ export function BlogRevisionList({
                     <h3 className={compact ? "text-sm font-semibold" : "font-semibold"}>
                       Revision {revision.revisionNumber}
                     </h3>
-                    {publishedRevisionId === revision.id && (
-                      <StatusBadge variant="success">Live</StatusBadge>
-                    )}
+                    {publishedRevisionId === revision.id && <StatusBadge variant="success">Live</StatusBadge>}
                     {compact && (
                       <span className="ml-auto text-xs text-muted-foreground">
                         {revision.reason.replaceAll("_", " ")}
@@ -111,9 +107,7 @@ export function BlogRevisionList({
                   {(!compact || revision.title !== currentTitle) && (
                     <p
                       className={
-                        compact
-                          ? "mt-1 break-words text-xs text-muted-foreground"
-                          : "mt-1 break-words text-[15px]"
+                        compact ? "mt-1 break-words text-xs text-muted-foreground" : "mt-1 break-words text-[15px]"
                       }
                     >
                       {revision.title || "Untitled post"}
@@ -121,9 +115,7 @@ export function BlogRevisionList({
                   )}
                   <p
                     className={
-                      compact
-                        ? "mt-1 text-xs tabular-nums text-muted-foreground"
-                        : "mt-1 text-sm text-muted-foreground"
+                      compact ? "mt-1 text-xs tabular-nums text-muted-foreground" : "mt-1 text-sm text-muted-foreground"
                     }
                   >
                     {new Intl.DateTimeFormat("en", {
@@ -146,14 +138,8 @@ export function BlogRevisionList({
                       {expanded ? "Hide details" : "Compare"}
                     </Link>
                   </Button>
-                  <Button
-                    asChild
-                    variant={compact ? "ghost" : "outline"}
-                    size={compact ? "xs" : "sm"}
-                  >
-                    <Link
-                      href={`/admin/blog/${postId}/preview?${new URLSearchParams({ revision: revision.id })}`}
-                    >
+                  <Button asChild variant={compact ? "ghost" : "outline"} size={compact ? "xs" : "sm"}>
+                    <Link href={`/admin/blog/${postId}/preview?${new URLSearchParams({ revision: revision.id })}`}>
                       <Eye aria-hidden="true" />
                       Preview
                     </Link>
@@ -196,10 +182,9 @@ export function BlogRevisionList({
           <AlertDialogHeader>
             <AlertDialogTitle>Restore revision {selected?.revisionNumber}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Creates a new draft from “{selected?.title || "Untitled post"}”. This restores the
-              article body, cover, byline, topics, SEO, and related tools. Use Compare first to
-              review these changes. Your current draft is backed up first. The current live article
-              and any scheduled version stay unchanged.
+              Creates a new draft from “{selected?.title || "Untitled post"}”. This restores the article body, cover,
+              byline, topics, SEO, and related tools. Use Compare first to review these changes. Your current draft is
+              backed up first. The current live article and any scheduled version stay unchanged.
             </AlertDialogDescription>
           </AlertDialogHeader>
           {error && <AlertBanner variant="error">{error}</AlertBanner>}

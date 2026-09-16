@@ -3,24 +3,15 @@
 
 import { ToolError } from "../../tool-framework/run.ts";
 
-export function stringOption(
-  options: Record<string, string | number | boolean>,
-  key: string,
-): string {
+export function stringOption(options: Record<string, string | number | boolean>, key: string): string {
   return String(options[key] ?? "");
 }
 
-export function numberOption(
-  options: Record<string, string | number | boolean>,
-  key: string,
-): number {
+export function numberOption(options: Record<string, string | number | boolean>, key: string): number {
   return Number(options[key]);
 }
 
-export function booleanOption(
-  options: Record<string, string | number | boolean>,
-  key: string,
-): boolean {
+export function booleanOption(options: Record<string, string | number | boolean>, key: string): boolean {
   return options[key] === true;
 }
 

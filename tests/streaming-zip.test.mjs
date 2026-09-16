@@ -3,11 +3,7 @@ import test from "node:test";
 
 import { unzipSync } from "fflate";
 
-import {
-  ArtifactStorageError,
-  createArtifactWriter,
-  readArtifact,
-} from "../lib/tool-framework/artifacts.ts";
+import { ArtifactStorageError, createArtifactWriter, readArtifact } from "../lib/tool-framework/artifacts.ts";
 import { writeArtifactBatch } from "../lib/tool-framework/media/zip.ts";
 
 test("streams a byte-correct ZIP without retaining separate output artifacts", async () => {
@@ -60,10 +56,7 @@ test("retains individually downloadable images alongside a byte-correct ZIP when
   const archive = unzipSync(new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()));
   for (const file of files.slice(1)) {
     assert.equal(file.mime, "image/jpeg");
-    assert.deepEqual(
-      new Uint8Array(await (await readArtifact(file)).arrayBuffer()),
-      archive[file.name],
-    );
+    assert.deepEqual(new Uint8Array(await (await readArtifact(file)).arrayBuffer()), archive[file.name]);
   }
 });
 
@@ -85,10 +78,7 @@ test("writes one output directly instead of wrapping it in a ZIP", async () => {
   assert.equal(files.length, 1);
   assert.equal(files[0].name, "converted.png");
   assert.equal(files[0].mime, "image/png");
-  assert.deepEqual(
-    new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()),
-    new Uint8Array([1, 2, 3]),
-  );
+  assert.deepEqual(new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()), new Uint8Array([1, 2, 3]));
 });
 
 test("can force a valid ZIP for a one-entry batch", async () => {

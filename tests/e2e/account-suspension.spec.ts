@@ -81,9 +81,7 @@ test("suspension preserves login but blocks product access until reactivation", 
     expect((await unchangedSession.json()).user.name).toBe(E2E_ACCOUNTS.user.name);
 
     await page.getByRole("link", { name: "Check access again" }).click();
-    await expect(page.getByRole("status")).toContainText(
-      "Access checked. Your account is still suspended.",
-    );
+    await expect(page.getByRole("status")).toContainText("Access checked. Your account is still suspended.");
     await page.waitForLoadState("networkidle");
     await expect(header.getByRole("link", { name: "SmartTools home" })).toBeVisible();
     await expect(header.getByRole("button", { name: /Open account menu/ })).toBeVisible();
@@ -92,17 +90,13 @@ test("suspension preserves login but blocks product access until reactivation", 
     await page.screenshot({ path: testInfo.outputPath("account-suspended.png"), fullPage: true });
     await page.route("**/api/auth/sign-out", (route) => route.fulfill({ status: 500, body: "{}" }));
     await page.getByRole("button", { name: "Switch account" }).click();
-    await expect(
-      page.getByRole("alert").filter({ hasText: "Couldn’t log out. Please try again." }),
-    ).toBeVisible();
+    await expect(page.getByRole("alert").filter({ hasText: "Couldn’t log out. Please try again." })).toBeVisible();
     await expect(page).toHaveURL(`${baseURL}/account/suspended?checked=1`);
     await page.getByRole("button", { name: /Open account menu/ }).click();
     await expect(page.getByRole("menuitem", { name: "My profile" })).toHaveCount(0);
     await expect(page.getByRole("menuitem", { name: "Admin page" })).toHaveCount(0);
     await page.getByRole("menuitem", { name: "Log out" }).click();
-    await expect(page.getByRole("menu").getByRole("alert")).toContainText(
-      "Couldn’t log out. Please try again.",
-    );
+    await expect(page.getByRole("menu").getByRole("alert")).toContainText("Couldn’t log out. Please try again.");
     await expect(page).toHaveURL(`${baseURL}/account/suspended?checked=1`);
     await page.unroute("**/api/auth/sign-out");
     await page.getByRole("menuitem", { name: "Log out" }).click();
@@ -126,17 +120,12 @@ test("suspension preserves login but blocks product access until reactivation", 
   }
 });
 
-test("credential forms never put passwords in a URL without JavaScript", async ({
-  browser,
-  baseURL,
-}) => {
+test("credential forms never put passwords in a URL without JavaScript", async ({ browser, baseURL }) => {
   const context = await browser.newContext({ baseURL, javaScriptEnabled: false });
   const page = await context.newPage();
   try {
     await page.goto("/auth");
-    await page
-      .getByRole("textbox", { name: "Email", exact: true })
-      .fill("native-submit@example.test");
+    await page.getByRole("textbox", { name: "Email", exact: true }).fill("native-submit@example.test");
     await page.getByLabel("Password", { exact: true }).fill("synthetic-test-password");
     const navigation = page.waitForRequest(
       (request) => request.isNavigationRequest() && request.frame() === page.mainFrame(),

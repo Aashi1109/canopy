@@ -178,8 +178,7 @@ export function calculateQuarterlyTax(draft: QuarterlyTaxDraft):
       }>;
       assumptions: readonly string[];
     } {
-  const rules =
-    draft.taxYear === QUARTERLY_TAX_RULES_2026.taxYear ? QUARTERLY_TAX_RULES_2026 : null;
+  const rules = draft.taxYear === QUARTERLY_TAX_RULES_2026.taxYear ? QUARTERLY_TAX_RULES_2026 : null;
   if (!rules) {
     return {
       ok: false,
@@ -192,19 +191,13 @@ export function calculateQuarterlyTax(draft: QuarterlyTaxDraft):
     Math.max(0, nonnegative(draft.grossRevenue) - nonnegative(draft.businessExpenses)),
   );
   const netSelfEmploymentEarnings = netSelfEmploymentProfit * 0.9235;
-  const remainingSocialSecurityBase = Math.max(
-    0,
-    rules.socialSecurityWageCap - nonnegative(draft.w2Wages),
-  );
-  const socialSecurityTax =
-    Math.min(netSelfEmploymentEarnings, remainingSocialSecurityBase) * 0.124;
+  const remainingSocialSecurityBase = Math.max(0, rules.socialSecurityWageCap - nonnegative(draft.w2Wages));
+  const socialSecurityTax = Math.min(netSelfEmploymentEarnings, remainingSocialSecurityBase) * 0.124;
   const medicareTax = netSelfEmploymentEarnings * 0.029;
   const additionalMedicareTax =
     Math.max(
       0,
-      nonnegative(draft.w2Wages) +
-        netSelfEmploymentEarnings -
-        rules.additionalMedicareThresholds[draft.filingStatus],
+      nonnegative(draft.w2Wages) + netSelfEmploymentEarnings - rules.additionalMedicareThresholds[draft.filingStatus],
     ) * 0.009;
   const selfEmploymentTax = money(socialSecurityTax + medicareTax + additionalMedicareTax);
   const deductibleSelfEmploymentTax = (socialSecurityTax + medicareTax) / 2;
@@ -218,18 +211,10 @@ export function calculateQuarterlyTax(draft: QuarterlyTaxDraft):
         nonnegative(draft.aboveLineDeductions),
     ),
   );
-  const deductionValue = Math.max(
-    rules.standardDeductions[draft.filingStatus],
-    nonnegative(draft.itemizedDeductions),
-  );
+  const deductionValue = Math.max(rules.standardDeductions[draft.filingStatus], nonnegative(draft.itemizedDeductions));
   const taxableIncome = money(Math.max(0, adjustedGrossIncome - deductionValue));
-  const federalIncomeTax = calculateProgressiveTax(
-    taxableIncome,
-    rules.brackets[draft.filingStatus],
-  );
-  const incomeTaxAfterCredits = money(
-    Math.max(0, federalIncomeTax - nonnegative(draft.taxCredits)),
-  );
+  const federalIncomeTax = calculateProgressiveTax(taxableIncome, rules.brackets[draft.filingStatus]);
+  const incomeTaxAfterCredits = money(Math.max(0, federalIncomeTax - nonnegative(draft.taxCredits)));
   const estimatedFederalLiability = money(incomeTaxAfterCredits + selfEmploymentTax);
   const estimatedStateTax = money(taxableIncome * (nonnegative(draft.stateTaxRate) / 100));
   const estimatedTotalLiability = money(estimatedFederalLiability + estimatedStateTax);
@@ -243,9 +228,7 @@ export function calculateQuarterlyTax(draft: QuarterlyTaxDraft):
         )
       : null;
   const safeHarborTarget =
-    priorYearSafeHarbor === null
-      ? currentYearSafeHarbor
-      : Math.min(currentYearSafeHarbor, priorYearSafeHarbor);
+    priorYearSafeHarbor === null ? currentYearSafeHarbor : Math.min(currentYearSafeHarbor, priorYearSafeHarbor);
   const estimatedTaxAfterWithholding = money(
     Math.max(0, estimatedFederalLiability - nonnegative(draft.federalWithholding)),
   );
@@ -255,9 +238,7 @@ export function calculateQuarterlyTax(draft: QuarterlyTaxDraft):
       : money(
           Math.max(
             0,
-            safeHarborTarget -
-              nonnegative(draft.federalWithholding) -
-              nonnegative(draft.estimatedPaymentsMade),
+            safeHarborTarget - nonnegative(draft.federalWithholding) - nonnegative(draft.estimatedPaymentsMade),
           ),
         );
   const quarterlyPayment = money(requiredAnnualPayment / 4);

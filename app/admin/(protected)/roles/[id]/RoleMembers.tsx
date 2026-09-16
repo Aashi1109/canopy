@@ -104,9 +104,7 @@ export default function RoleMembers({
 
   function toggle(user: RoleUser, checked: boolean) {
     setSelected((users) =>
-      checked
-        ? [...users.filter((item) => item.id !== user.id), user]
-        : users.filter((item) => item.id !== user.id),
+      checked ? [...users.filter((item) => item.id !== user.id), user] : users.filter((item) => item.id !== user.id),
     );
     setSaveError(false);
     if (checked) {
@@ -126,9 +124,7 @@ export default function RoleMembers({
         selected.map((user) => user.id),
       );
       setMembers((current) => {
-        const additions = selected.filter(
-          (user) => !current.users.some((member) => member.id === user.id),
-        );
+        const additions = selected.filter((user) => !current.users.some((member) => member.id === user.id));
         return {
           ...current,
           users: [...additions, ...current.users],
@@ -137,9 +133,7 @@ export default function RoleMembers({
       });
       setOpen(false);
       setSelected([]);
-      toast.success(
-        `${roleName} assigned to ${selected.length} ${selected.length === 1 ? "user" : "users"}.`,
-      );
+      toast.success(`${roleName} assigned to ${selected.length} ${selected.length === 1 ? "user" : "users"}.`);
       router.refresh();
     } catch (error) {
       unstable_rethrow(error);
@@ -181,9 +175,7 @@ export default function RoleMembers({
           disabled={saving || (!checked && selected.length >= 100)}
           onCheckedChange={(value) => toggle(user, value === true)}
         />
-        {user.status === "suspended" ? (
-          <StatusBadge variant="warning">Suspended</StatusBadge>
-        ) : null}
+        {user.status === "suspended" ? <StatusBadge variant="warning">Suspended</StatusBadge> : null}
       </div>
     );
   }
@@ -208,18 +200,13 @@ export default function RoleMembers({
             }
           />
           {canAssign && disabled ? (
-            <p className="mb-3 text-sm text-muted-foreground">
-              Save or revert role changes before assigning users.
-            </p>
+            <p className="mb-3 text-sm text-muted-foreground">Save or revert role changes before assigning users.</p>
           ) : null}
           <div className="flex flex-wrap gap-2">
             {members.users.map((user) => (
               <Popover.Root key={user.id}>
                 <Popover.Trigger asChild>
-                  <Button
-                    variant="outline"
-                    className="h-auto max-w-full rounded-full py-1.5 pr-3 pl-1.5"
-                  >
+                  <Button variant="outline" className="h-auto max-w-full rounded-full py-1.5 pr-3 pl-1.5">
                     <Avatar aria-hidden="true" className="size-7 shrink-0">
                       <AvatarImage src={user.image ?? undefined} alt="" />
                       <AvatarFallback className="text-xs">
@@ -240,10 +227,7 @@ export default function RoleMembers({
                   >
                     <p className="font-medium">{user.name || user.email}</p>
                     <p className="mt-1 break-all text-muted-foreground">{user.email}</p>
-                    <StatusBadge
-                      className="mt-2"
-                      variant={user.status === "active" ? "success" : "warning"}
-                    >
+                    <StatusBadge className="mt-2" variant={user.status === "active" ? "success" : "warning"}>
                       {user.status === "active" ? "Active" : "Suspended"}
                     </StatusBadge>
                   </Popover.Content>
@@ -251,9 +235,7 @@ export default function RoleMembers({
               </Popover.Root>
             ))}
           </div>
-          {!members.total ? (
-            <p className="text-sm text-muted-foreground">No users assigned to this role yet.</p>
-          ) : null}
+          {!members.total ? <p className="text-sm text-muted-foreground">No users assigned to this role yet.</p> : null}
           {memberError ? (
             <AlertBanner variant="error" className="mt-3">
               Could not load members. Try again.
@@ -321,9 +303,7 @@ export default function RoleMembers({
                           event.preventDefault();
                           setResultsOpen(true);
                           requestAnimationFrame(() =>
-                            resultsPanel.current
-                              ?.querySelector<HTMLButtonElement>("button:not(:disabled)")
-                              ?.focus(),
+                            resultsPanel.current?.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus(),
                           );
                         }
                       }}
@@ -379,9 +359,7 @@ export default function RoleMembers({
                             </p>
                           ) : null}
                           {results.total > 0 &&
-                          results.users.every((user) =>
-                            selected.some((item) => item.id === user.id),
-                          ) ? (
+                          results.users.every((user) => selected.some((item) => item.id === user.id)) ? (
                             <p role="status" className="py-4 text-sm text-muted-foreground">
                               All users on this page are selected.
                             </p>
@@ -421,9 +399,7 @@ export default function RoleMembers({
               </Popover.Root>
               {selected.length ? (
                 <div role="group" aria-label="Selected users">
-                  <p className="text-xs font-medium text-muted-foreground">
-                    Selected · {selected.length}
-                  </p>
+                  <p className="text-xs font-medium text-muted-foreground">Selected · {selected.length}</p>
                   {selected.map((user) => userOption(user, true))}
                 </div>
               ) : null}
@@ -438,11 +414,7 @@ export default function RoleMembers({
             </div>
             <AlertDialogFooter className="shrink-0 px-6 pt-2 pb-6 sm:px-7">
               <AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
-              <Button
-                disabled={saving || !selected.length || disabled}
-                loading={saving}
-                onClick={assign}
-              >
+              <Button disabled={saving || !selected.length || disabled} loading={saving} onClick={assign}>
                 {saving
                   ? "Assigning…"
                   : saveError

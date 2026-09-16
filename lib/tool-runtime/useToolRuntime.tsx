@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  type ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import { trackToolEvent } from "@/lib/analytics/ga4";
 
@@ -22,11 +14,7 @@ import type {
   ToolSettings,
 } from "./types";
 
-const ToolRuntimeContext = createContext<ToolRuntimeController<
-  unknown,
-  ToolSettings,
-  unknown
-> | null>(null);
+const ToolRuntimeContext = createContext<ToolRuntimeController<unknown, ToolSettings, unknown> | null>(null);
 
 function initialLifecycle<Input>(input: Input, isEmpty: (input: Input) => boolean): ToolLifecycle {
   return isEmpty(input) ? "empty" : "ready";
@@ -43,13 +31,9 @@ export function ToolRuntimeProvider<Input, Settings extends ToolSettings, Result
 }) {
   const [input, setInputState] = useState(spec.initialInput);
   const [settings, setSettings] = useState(spec.initialSettings);
-  const [lifecycle, setLifecycle] = useState<ToolLifecycle>(() =>
-    initialLifecycle(spec.initialInput, spec.isEmpty),
-  );
+  const [lifecycle, setLifecycle] = useState<ToolLifecycle>(() => initialLifecycle(spec.initialInput, spec.isEmpty));
   const [issues, setIssues] = useState(() =>
-    spec.isEmpty(spec.initialInput)
-      ? []
-      : [...spec.validate(spec.initialInput, spec.initialSettings)],
+    spec.isEmpty(spec.initialInput) ? [] : [...spec.validate(spec.initialInput, spec.initialSettings)],
   );
   const [result, setResult] = useState<Result | null>(null);
   const [artifacts, setArtifacts] = useState<ToolExecutionOutcome<Result>["artifacts"]>([]);
@@ -202,9 +186,7 @@ export function ToolRuntimeProvider<Input, Settings extends ToolSettings, Result
           setNotice(outcome.confirmation.description);
           return;
         }
-        setNotice(
-          cancelledPendingAction ? `Pending action cancelled. ${outcome.notice}` : outcome.notice,
-        );
+        setNotice(cancelledPendingAction ? `Pending action cancelled. ${outcome.notice}` : outcome.notice);
         setLastChanges(outcome.changes ?? []);
         if (outcome.input !== undefined) {
           if (outcome.offerUndo) setUndoSnapshot({ input });
@@ -270,19 +252,17 @@ export function ToolRuntimeProvider<Input, Settings extends ToolSettings, Result
   };
 
   return (
-    <ToolRuntimeContext.Provider
-      value={controller as unknown as ToolRuntimeController<unknown, ToolSettings, unknown>}
-    >
+    <ToolRuntimeContext.Provider value={controller as unknown as ToolRuntimeController<unknown, ToolSettings, unknown>}>
       {children}
     </ToolRuntimeContext.Provider>
   );
 }
 
-export function useToolRuntime<
+export function useToolRuntime<Input, Settings extends ToolSettings, Result>(): ToolRuntimeController<
   Input,
-  Settings extends ToolSettings,
-  Result,
->(): ToolRuntimeController<Input, Settings, Result> {
+  Settings,
+  Result
+> {
   const runtime = useContext(ToolRuntimeContext);
   if (!runtime) {
     throw new Error("useToolRuntime must be used inside ToolRuntimeProvider.");

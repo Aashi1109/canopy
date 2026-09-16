@@ -39,15 +39,14 @@ test("pnpm discovers packages and services without nested applications", async (
 });
 
 test("public tools use scoped server-resolved dynamic slugs", async () => {
-  const [paperworkCatalog, paperworkTool, devtoolsCatalog, devtoolsTool, mediaCatalog, mediaTool] =
-    await Promise.all([
-      readFile(new URL("app/paperwork/page.tsx", root), "utf8"),
-      readFile(new URL("app/paperwork/[slug]/page.tsx", root), "utf8"),
-      readFile(new URL("app/devtools/page.tsx", root), "utf8"),
-      readFile(new URL("app/devtools/[slug]/page.tsx", root), "utf8"),
-      readFile(new URL("app/media/page.tsx", root), "utf8"),
-      readFile(new URL("app/media/[slug]/page.tsx", root), "utf8"),
-    ]);
+  const [paperworkCatalog, paperworkTool, devtoolsCatalog, devtoolsTool, mediaCatalog, mediaTool] = await Promise.all([
+    readFile(new URL("app/paperwork/page.tsx", root), "utf8"),
+    readFile(new URL("app/paperwork/[slug]/page.tsx", root), "utf8"),
+    readFile(new URL("app/devtools/page.tsx", root), "utf8"),
+    readFile(new URL("app/devtools/[slug]/page.tsx", root), "utf8"),
+    readFile(new URL("app/media/page.tsx", root), "utf8"),
+    readFile(new URL("app/media/[slug]/page.tsx", root), "utf8"),
+  ]);
 
   assert.match(paperworkCatalog, /getAvailableTools\(["']paperwork["'][,)]/);
   assert.match(paperworkCatalog, /href=\{`\/paperwork\/\$\{tool\.slug\}`\}/);
@@ -92,26 +91,14 @@ test("root scripts run the root-owned application directly", async () => {
   assert.match(packageJson.scripts["test:media"], /lib\/tool-framework\/media/);
   assert.doesNotMatch(packageJson.scripts.dev, /--filter/);
   assert.doesNotMatch(packageJson.scripts["test:media"], /--filter/);
-  for (const script of [
-    "dev:platform",
-    "dev:paperwork",
-    "dev:devtools",
-    "dev:media",
-    "dev:admin",
-    "dev:auth",
-  ]) {
+  for (const script of ["dev:platform", "dev:paperwork", "dev:devtools", "dev:media", "dev:admin", "dev:auth"]) {
     assert.equal(packageJson.scripts[script], undefined);
   }
 });
 
 test("Paperwork navigation uses scoped paths without URL hashes", async () => {
-  const navigationFiles = [
-    "app/paperwork/components/App.tsx",
-    "app/paperwork/components/RelatedTools.tsx",
-  ];
-  const source = (
-    await Promise.all(navigationFiles.map((path) => readFile(new URL(path, root), "utf8")))
-  ).join("\n");
+  const navigationFiles = ["app/paperwork/components/App.tsx", "app/paperwork/components/RelatedTools.tsx"];
+  const source = (await Promise.all(navigationFiles.map((path) => readFile(new URL(path, root), "utf8")))).join("\n");
 
   assert.doesNotMatch(source, /window\.location\.hash|hashchange|href\s*=\s*["']#|\bhash:\s*["']#/);
   assert.match(source, /["']\/paperwork/);
@@ -196,10 +183,7 @@ test("Paperwork scoped persistence APIs check the owning tool", async () => {
 
 test("Admin and Media ordering use the shared accessible drag-and-drop list", async () => {
   const [editor, toolList, orderableList] = await Promise.all([
-    readFile(
-      new URL("app/admin/(protected)/templates/[id]/components/TemplateEditor.tsx", root),
-      "utf8",
-    ),
+    readFile(new URL("app/admin/(protected)/templates/[id]/components/TemplateEditor.tsx", root), "utf8"),
     readFile(new URL("app/admin/(protected)/tools/components/ToolList.tsx", root), "utf8"),
     readFile(new URL("packages/ui/src/components/OrderableList.tsx", root), "utf8"),
   ]);

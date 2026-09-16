@@ -2,12 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { ADMIN_ACCESS } from "../packages/authorization/src/index.ts";
-import {
-  auditEventsTable,
-  db,
-  toolContentTable,
-  toolIconsTable,
-} from "../packages/database/src/index.ts";
+import { auditEventsTable, db, toolContentTable, toolIconsTable } from "../packages/database/src/index.ts";
 import {
   removeToolIcon,
   saveToolIcon,
@@ -180,10 +175,7 @@ test("every tool content mutation checks its exact permission", async () => {
   for (const [permission, invoke] of cases) {
     const [resource, action] = permission.split(".");
     await withFakeDatabase([permissionRows(accessWithout(resource, action))], async (state) => {
-      await assert.rejects(
-        invoke,
-        new RegExp(`Missing permission: ${permission.replace(".", "\\.")}`),
-      );
+      await assert.rejects(invoke, new RegExp(`Missing permission: ${permission.replace(".", "\\.")}`));
       assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
     });
   }
@@ -328,16 +320,10 @@ test("publishing sets published_at and unpublishing clears it", async () => {
 });
 
 test("content that was never saved cannot be published", async () => {
-  await withFakeDatabase(
-    [permissionRows({ tools: { view: true, toggle: true } }), TOOL_ROW, []],
-    async (state) => {
-      await assert.rejects(
-        () => setToolContentPublished("actor", TOOL_ID, true),
-        /Save tool content before publishing/,
-      );
-      assert.deepEqual(state.updates, []);
-    },
-  );
+  await withFakeDatabase([permissionRows({ tools: { view: true, toggle: true } }), TOOL_ROW, []], async (state) => {
+    await assert.rejects(() => setToolContentPublished("actor", TOOL_ID, true), /Save tool content before publishing/);
+    assert.deepEqual(state.updates, []);
+  });
 });
 
 test("an unpublished row leaves the code values live", () => {
@@ -362,9 +348,7 @@ test("an unpublished row leaves the code values live", () => {
     updatedAt: new Date(),
   };
   assert.deepEqual(resolveContent(spec, draftRow).keywords, ["shipped"]);
-  assert.deepEqual(resolveContent(spec, { ...draftRow, publishedAt: new Date() }).keywords, [
-    "stored",
-  ]);
+  assert.deepEqual(resolveContent(spec, { ...draftRow, publishedAt: new Date() }).keywords, ["stored"]);
 });
 
 // -- icons ------------------------------------------------------------------
@@ -384,9 +368,7 @@ test("an icon over 1 MB is rejected before any database or upload work", async (
 });
 
 test("SVG is rejected by MIME type and by its leading bytes", async () => {
-  const svg = new TextEncoder().encode(
-    '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
-  );
+  const svg = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
 
   await withFakeDatabase([], async () => {
     // Declared as SVG.
@@ -407,14 +389,11 @@ test("SVG is rejected by MIME type and by its leading bytes", async () => {
 });
 
 test("removing an icon deletes the row and falls back to the identicon", async () => {
-  await withFakeDatabase(
-    [permissionRows({ tools: { view: true, edit: true } }), TOOL_ROW],
-    async (state) => {
-      await removeToolIcon("actor", TOOL_ID);
-      assert.equal(state.deletes[0].table, toolIconsTable);
-      assert.equal(auditWrite(state).values.action, "tool.icon-remove");
-    },
-  );
+  await withFakeDatabase([permissionRows({ tools: { view: true, edit: true } }), TOOL_ROW], async (state) => {
+    await removeToolIcon("actor", TOOL_ID);
+    assert.equal(state.deletes[0].table, toolIconsTable);
+    assert.equal(auditWrite(state).values.action, "tool.icon-remove");
+  });
 
   // With no row, `resolveIcon` returns `renderIdenticon(toolId, name)`, so the
   // fallback a removal lands on is this generated SVG.

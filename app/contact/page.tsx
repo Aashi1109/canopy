@@ -26,17 +26,13 @@ export default function ContactPage() {
             <Overline className="block text-primary">Contact</Overline>
             <Display className="mt-2">We’d love to hear from you.</Display>
             <Muted className="mt-3 text-muted-foreground">
-              Questions, feedback, or a bug to report? Send a note and we’ll reply within one
-              business day.
+              Questions, feedback, or a bug to report? Send a note and we’ll reply within one business day.
             </Muted>
           </header>
 
           <div className="flex flex-col gap-3.5">
             {methods.map(({ description, href, icon: Icon, title }) => {
-              const detail =
-                title === "Email us"
-                  ? (supportEmail ?? "Support email not configured")
-                  : description;
+              const detail = title === "Email us" ? (supportEmail ?? "Support email not configured") : description;
               const content = (
                 <>
                   <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-accent text-primary">
@@ -49,8 +45,7 @@ export default function ContactPage() {
                 </>
               );
 
-              const destination =
-                title === "Email us" && supportEmail ? `mailto:${supportEmail}` : href;
+              const destination = title === "Email us" && supportEmail ? `mailto:${supportEmail}` : href;
               return destination ? (
                 <TextLink
                   className="no-underline text-foreground flex items-center gap-3.5 rounded-lg bg-muted p-4 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"

@@ -78,9 +78,7 @@ for (const entry of readdirSync(TOOLS_DIR, { withFileTypes: true })) {
 
   test(`${entry.name} matches captured fixtures`, async (t) => {
     if (!runFile) {
-      t.skip(
-        `tools/${entry.name}/ has fixtures but no run file yet (expected one of: ${RUN_FILES.join(", ")})`,
-      );
+      t.skip(`tools/${entry.name}/ has fixtures but no run file yet (expected one of: ${RUN_FILES.join(", ")})`);
       return;
     }
     let module;
@@ -90,9 +88,7 @@ for (const entry of readdirSync(TOOLS_DIR, { withFileTypes: true })) {
       // A half-migrated tool whose shared framework module does not exist yet
       // is "not migrated", not "broken". Every other import failure is real.
       if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
-      t.skip(
-        `${path.basename(runFile)} imports a module that does not exist yet: ${error.url ?? error.message}`,
-      );
+      t.skip(`${path.basename(runFile)} imports a module that does not exist yet: ${error.url ?? error.message}`);
       return;
     }
     assert.equal(typeof module.run, "function", `tools/${entry.name} must export run()`);

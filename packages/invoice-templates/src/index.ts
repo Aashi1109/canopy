@@ -1,8 +1,4 @@
-export {
-  DEFAULT_LABELS,
-  DEFAULT_SECTION_ORDER,
-  getDefaultTemplateConfigByFamily,
-} from "./templateDefaults.ts";
+export { DEFAULT_LABELS, DEFAULT_SECTION_ORDER, getDefaultTemplateConfigByFamily } from "./templateDefaults.ts";
 export {
   createAdvancedTemplateConfig,
   isSupportedPageFormat,

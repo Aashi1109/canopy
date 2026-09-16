@@ -33,17 +33,10 @@ export function CopyBlogLink({ url, label = "Copy link" }: { url: string; label?
       </span>
       {status === "manual" && (
         <div className="mt-2 space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Copy is unavailable. Select the link and copy it manually.
-          </p>
+          <p className="text-sm text-muted-foreground">Copy is unavailable. Select the link and copy it manually.</p>
           <Label>
             Article link
-            <Input
-              ref={input}
-              readOnly
-              value={url}
-              onFocus={(event) => event.currentTarget.select()}
-            />
+            <Input ref={input} readOnly value={url} onFocus={(event) => event.currentTarget.select()} />
           </Label>
           <Button
             variant="outline"

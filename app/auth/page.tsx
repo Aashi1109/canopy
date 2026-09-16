@@ -27,11 +27,7 @@ export default async function AuthPage({ searchParams }: { searchParams: SearchP
 
   return (
     <AuthScreen projects={authProjectPaths}>
-      <AuthPanel
-        initialError={initialError}
-        initialMode={resolveMode(first(params.mode))}
-        returnTo={returnTo}
-      />
+      <AuthPanel initialError={initialError} initialMode={resolveMode(first(params.mode))} returnTo={returnTo} />
     </AuthScreen>
   );
 }

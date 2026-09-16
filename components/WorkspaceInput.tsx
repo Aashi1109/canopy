@@ -15,15 +15,7 @@ import { cn } from "@smarttools/ui/lib/utils";
 import { Eye, EyeOff } from "lucide";
 import { FileText, Trash2, Upload } from "lucide-react";
 import { MorphIcon } from "morphicons/react";
-import {
-  type ReactNode,
-  type TextareaHTMLAttributes,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { type ReactNode, type TextareaHTMLAttributes, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { textInputFileIssue, validateFileSelection, workspaceFileId } from "@/components/FileInput";
 import { PasswordInput } from "@/components/PasswordInput";
@@ -150,9 +142,7 @@ export function SourceTextarea({
           </pre>
         </div>
       ) : null}
-      <div
-        className={`relative min-h-0 min-w-0 flex-1 overflow-hidden ${showLineNumbers ? "ml-[14px]" : ""}`}
-      >
+      <div className={`relative min-h-0 min-w-0 flex-1 overflow-hidden ${showLineNumbers ? "ml-[14px]" : ""}`}>
         {showHighlight ? (
           <pre
             aria-hidden="true"
@@ -207,13 +197,7 @@ export function SourceTextarea({
     </div>
   );
 }
-export function WorkspaceInputSurface({
-  disabled,
-  input,
-  inputSpec,
-  onInputChange,
-  variant,
-}: InputSurfaceProps) {
+export function WorkspaceInputSurface({ disabled, input, inputSpec, onInputChange, variant }: InputSurfaceProps) {
   const idPrefix = useId();
   const [inputIssue, setInputIssue] = useState("");
   const [revealedSecrets, setRevealedSecrets] = useState<Readonly<Record<string, boolean>>>({});
@@ -225,9 +209,7 @@ export function WorkspaceInputSurface({
   const inputRef = useRef(input);
   inputRef.current = input;
   useEffect(() => {
-    setPasteSupported(
-      typeof navigator !== "undefined" && typeof navigator.clipboard?.readText === "function",
-    );
+    setPasteSupported(typeof navigator !== "undefined" && typeof navigator.clipboard?.readText === "function");
   }, []);
   useEffect(() => setPasteFailed(false), [input.secondary, input.text]);
   useEffect(() => {
@@ -381,8 +363,8 @@ export function WorkspaceInputSurface({
           </div>
           {largeFile ? (
             <Muted className="px-4 pb-3 text-muted-foreground">
-              Showing the first 256 KiB. The complete file stays read-only and is processed locally
-              when you run the tool.
+              Showing the first 256 KiB. The complete file stays read-only and is processed locally when you run the
+              tool.
             </Muted>
           ) : null}
           {inputSpec.secondary ? (
@@ -410,22 +392,17 @@ export function WorkspaceInputSurface({
     }
     case "fields": {
       const primaryField = inputSpec.fields.find((field) => field.channel === "text");
-      const values = inputSpec.fields.map((field) =>
-        field.channel === "text" ? input.text : (input.secondary ?? ""),
-      );
+      const values = inputSpec.fields.map((field) => (field.channel === "text" ? input.text : (input.secondary ?? "")));
       const codeShaped = inputSpec.fields.some(
         (field, index) =>
-          Boolean(field.multiline) &&
-          (isCodeShaped(values[index]) || isCodeShaped(field.placeholder ?? "")),
+          Boolean(field.multiline) && (isCodeShaped(values[index]) || isCodeShaped(field.placeholder ?? "")),
       );
       const hasMultiline = inputSpec.fields.some((field) => field.multiline);
       const cardFields = variant === "card" && hasMultiline;
       return (
         <WorkspaceSurface
           actions={
-            cardFields
-              ? undefined
-              : pasteAction(primaryField?.label ?? "primary input", primaryField?.maxLength)
+            cardFields ? undefined : pasteAction(primaryField?.label ?? "primary input", primaryField?.maxLength)
           }
           className={
             cardFields
@@ -451,8 +428,7 @@ export function WorkspaceInputSurface({
             const value = field.channel === "text" ? input.text : (input.secondary ?? "");
             const fieldCodeShaped = Boolean(field.multiline);
             const revealed = Boolean(revealedSecrets[field.channel]);
-            const updateValue = (nextValue: string) =>
-              onInputChange({ ...input, [field.channel]: nextValue });
+            const updateValue = (nextValue: string) => onInputChange({ ...input, [field.channel]: nextValue });
             return (
               <div
                 className={
@@ -462,13 +438,7 @@ export function WorkspaceInputSurface({
                 }
                 key={field.channel}
               >
-                <div
-                  className={
-                    cardFields
-                      ? "flex min-h-10 items-center justify-between gap-3 px-4 pt-2"
-                      : undefined
-                  }
-                >
+                <div className={cardFields ? "flex min-h-10 items-center justify-between gap-3 px-4 pt-2" : undefined}>
                   <FieldLabel
                     className={
                       cardFields
@@ -518,11 +488,7 @@ export function WorkspaceInputSurface({
                           type="button"
                           variant="input-icon"
                         >
-                          <MorphIcon
-                            icon={revealed ? EyeOff : Eye}
-                            reducedMotion="user"
-                            size={18}
-                          />
+                          <MorphIcon icon={revealed ? EyeOff : Eye} reducedMotion="user" size={18} />
                         </Button>
                       ) : null}
                     </div>
@@ -586,18 +552,14 @@ export function WorkspaceInputSurface({
             className="min-h-48 flex-1"
             getIcon={() => <FileText aria-hidden="true" />}
             getId={workspaceFileId}
-            getMetadata={(file) =>
-              `${file.type || "Unknown type"} · ${file.size.toLocaleString()} bytes`
-            }
+            getMetadata={(file) => `${file.type || "Unknown type"} · ${file.size.toLocaleString()} bytes`}
             getName={(file) => file.name}
             items={input.files}
             renderAction={(file) => (
               <Button
                 aria-label={`Remove ${file.name}`}
                 disabled={disabled}
-                onClick={() =>
-                  onInputChange({ ...input, files: input.files.filter((entry) => entry !== file) })
-                }
+                onClick={() => onInputChange({ ...input, files: input.files.filter((entry) => entry !== file) })}
                 size="icon"
                 type="button"
                 variant="ghost"

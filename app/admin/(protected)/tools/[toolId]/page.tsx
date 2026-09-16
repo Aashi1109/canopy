@@ -33,9 +33,7 @@ const SECTIONS: readonly {
 
 function selectedSection(value: string | string[] | undefined): ConfigurationSection {
   const section = Array.isArray(value) ? value[0] : value;
-  return SECTIONS.some((candidate) => candidate.key === section)
-    ? (section as ConfigurationSection)
-    : "overview";
+  return SECTIONS.some((candidate) => candidate.key === section) ? (section as ConfigurationSection) : "overview";
 }
 
 function publishedAtLabel(row: ToolContentRow | null): string | null {
@@ -99,14 +97,10 @@ export default async function ToolContentPage({
           </Link>
           <div className="mt-2 flex flex-wrap items-center gap-2.5">
             <H1>{tool.name}</H1>
-            <StatusBadge
-              variant={tool.enabled ? "success" : tool.hasDefinition ? "neutral" : "warning"}
-            >
+            <StatusBadge variant={tool.enabled ? "success" : tool.hasDefinition ? "neutral" : "warning"}>
               {tool.enabled ? "Visible" : tool.hasDefinition ? "Hidden" : "Waiting for code"}
             </StatusBadge>
-            <StatusBadge
-              variant={stored.published ? "info" : tool.hasDraftContent ? "warning" : "neutral"}
-            >
+            <StatusBadge variant={stored.published ? "info" : tool.hasDraftContent ? "warning" : "neutral"}>
               {stored.published
                 ? "Database content live"
                 : tool.hasDraftContent
@@ -115,8 +109,8 @@ export default async function ToolContentPage({
             </StatusBadge>
           </div>
           <Muted className="mt-1 max-w-3xl text-muted-foreground">
-            Configure catalog content, supporting documentation, icon assets, and public
-            availability without changing the tool&apos;s code-owned behavior.
+            Configure catalog content, supporting documentation, icon assets, and public availability without changing
+            the tool&apos;s code-owned behavior.
           </Muted>
         </div>
         <div className="text-left sm:text-right">
@@ -125,10 +119,7 @@ export default async function ToolContentPage({
         </div>
       </header>
 
-      <nav
-        aria-label="Tool configuration sections"
-        className="overflow-x-auto border-y border-border bg-card px-1"
-      >
+      <nav aria-label="Tool configuration sections" className="overflow-x-auto border-y border-border bg-card px-1">
         <div className="flex min-w-max gap-1">
           {SECTIONS.map(({ icon: Icon, key, label }) => (
             <Link
@@ -195,9 +186,8 @@ export default async function ToolContentPage({
               <div className="mt-6 border-t border-border pt-5">
                 <H3>What remains code-owned</H3>
                 <Caption className="block mt-1 text-muted-foreground">
-                  Input geometry, settings, execution host, trigger behavior, capabilities, result
-                  labels, and the stable tool ID are declared in the tool folder and deployed with
-                  the application.
+                  Input geometry, settings, execution host, trigger behavior, capabilities, result labels, and the
+                  stable tool ID are declared in the tool folder and deployed with the application.
                 </Caption>
               </div>
             </section>

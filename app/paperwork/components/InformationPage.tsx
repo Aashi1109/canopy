@@ -1,13 +1,6 @@
 import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import { getOptionalSession } from "@smarttools/auth/session";
-import {
-  AccountNavigation,
-  AppContainer,
-  Button,
-  Card,
-  ProductHeader,
-  ToolPageHeader,
-} from "@smarttools/ui";
+import { AccountNavigation, AppContainer, Button, Card, ProductHeader, ToolPageHeader } from "@smarttools/ui";
 import { ArrowLeft } from "lucide-react";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
@@ -45,12 +38,7 @@ export default async function InformationPage({
               Back to Paperwork tools
             </a>
           </Button>
-          <ToolPageHeader
-            className="max-w-3xl"
-            description={description}
-            eyebrow={eyebrow}
-            title={title}
-          />
+          <ToolPageHeader className="max-w-3xl" description={description} eyebrow={eyebrow} title={title} />
           <Card className="max-w-3xl space-y-7 p-6 sm:p-8">{children}</Card>
         </AppContainer>
       </main>

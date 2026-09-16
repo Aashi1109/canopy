@@ -26,10 +26,7 @@ import {
   getPdfContentBox,
   hasTransparentPixels,
 } from "../../lib/tool-framework/media/pdfRules.ts";
-import {
-  sanitizeFileName,
-  validateImageSelection,
-} from "../../lib/tool-framework/media/validation.ts";
+import { sanitizeFileName, validateImageSelection } from "../../lib/tool-framework/media/validation.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun, type ToolRunItem } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
@@ -40,9 +37,7 @@ const ALLOWED: readonly DecodableImageKind[] = ["jpeg", "png", "webp", "heic"];
 const PDF_LIB_MAX_INPUT_BYTES = 50 * 1024 * 1024;
 
 /** Inlined from `app/media/_lib/tools.ts:321-325`. */
-const QUALITY_PRESETS: Readonly<
-  Record<string, { readonly quality: number; readonly reencode: boolean }>
-> = {
+const QUALITY_PRESETS: Readonly<Record<string, { readonly quality: number; readonly reencode: boolean }>> = {
   original: { quality: 1, reencode: false },
   balanced: { quality: 0.82, reencode: true },
   small: { quality: 0.65, reencode: true },
@@ -84,34 +79,19 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     const decoded = await decodeImage(file, ALLOWED);
     const sourceBytes = await readToolFile(file, ctx.signal);
     const image = rotation ? rotateImage(decoded.image, rotation) : decoded.image;
-    const hasExifOrientation =
-      decoded.kind === "jpeg" && readExifOrientation(new Uint8Array(sourceBytes)) !== 1;
+    const hasExifOrientation = decoded.kind === "jpeg" && readExifOrientation(new Uint8Array(sourceBytes)) !== 1;
     const flattenOriginalPng =
       decoded.kind === "png" && !quality.reencode && !rotation && hasTransparentPixels(image.data);
     const embeddedBytes = flattenOriginalPng
-      ? await encodeImage(
-          flattenImage(image, ctx.settings.background),
-          "png",
-          1,
-          ctx.settings.background,
-        )
-      : quality.reencode ||
-          rotation ||
-          hasExifOrientation ||
-          !["jpeg", "png"].includes(decoded.kind)
+      ? await encodeImage(flattenImage(image, ctx.settings.background), "png", 1, ctx.settings.background)
+      : quality.reencode || rotation || hasExifOrientation || !["jpeg", "png"].includes(decoded.kind)
         ? await encodeImage(image, "jpeg", quality.quality, ctx.settings.background)
         : sourceBytes;
     const embedded =
       !quality.reencode && !rotation && !hasExifOrientation && decoded.kind === "png"
         ? await pdf.embedPng(embeddedBytes)
         : await pdf.embedJpg(embeddedBytes);
-    const pageSize = pdfPageSize(
-      ctx.settings.page,
-      ctx.settings.orientation,
-      image.width,
-      image.height,
-      margin,
-    );
+    const pageSize = pdfPageSize(ctx.settings.page, ctx.settings.orientation, image.width, image.height, margin);
     const page = pdf.addPage([pageSize.width, pageSize.height]);
     const inner = getPdfContentBox(pageSize.width, pageSize.height, margin);
     const placement = fitRect(
@@ -135,9 +115,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   }
 
   const requestedName = sanitizeFileName(ctx.settings.filename, "converted-images.pdf");
-  const filename = requestedName.toLowerCase().endsWith(".pdf")
-    ? requestedName
-    : `${requestedName}.pdf`;
+  const filename = requestedName.toLowerCase().endsWith(".pdf") ? requestedName : `${requestedName}.pdf`;
   const output = await ctx.writeArtifact({
     name: filename,
     mime: "application/pdf",
@@ -162,8 +140,7 @@ function pdfPageSize(
 ): { width: number; height: number } {
   let width = page === "a4" ? 595.28 : page === "letter" ? 612 : imageWidth * 0.75 + margin * 2;
   let height = page === "a4" ? 841.89 : page === "letter" ? 792 : imageHeight * 0.75 + margin * 2;
-  const desired =
-    orientation === "auto" ? (imageWidth > imageHeight ? "landscape" : "portrait") : orientation;
+  const desired = orientation === "auto" ? (imageWidth > imageHeight ? "landscape" : "portrait") : orientation;
   if ((desired === "landscape") !== width > height) [width, height] = [height, width];
   return { width, height };
 }

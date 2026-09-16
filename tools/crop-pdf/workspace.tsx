@@ -19,11 +19,7 @@ const DIMENSIONS = [
   ["cropHeight", "Height", MoveVertical],
 ] as const;
 
-function getPlan(
-  settings: WorkspaceProps["settings"],
-  count: number,
-  pages: readonly PdfPageImage[],
-) {
+function getPlan(settings: WorkspaceProps["settings"], count: number, pages: readonly PdfPageImage[]) {
   const { selected } = cropPlan(settings, pages);
   return { title: `${selected.length} of ${count} pages selected`, detail: null };
 }
@@ -72,10 +68,7 @@ function CropSettings({
           disabled={props.disabled}
           value={mode}
           onChange={(event) =>
-            props.onSettingChange(
-              "pages",
-              event.target.value === "custom" ? "" : event.target.value,
-            )
+            props.onSettingChange("pages", event.target.value === "custom" ? "" : event.target.value)
           }
         >
           <option value="all">All pages</option>
@@ -113,10 +106,7 @@ function CropSettings({
               step={1}
               value={String(props.settings[key] ?? 0)}
               onChange={(event) =>
-                props.onSettingChange(
-                  key,
-                  event.target.value === "" ? "" : Math.round(event.target.valueAsNumber),
-                )
+                props.onSettingChange(key, event.target.value === "" ? "" : Math.round(event.target.valueAsNumber))
               }
             />
           </div>
@@ -189,24 +179,17 @@ export default function CropPdfWorkspace(props: WorkspaceProps) {
       secondaryActions={
         <div className="flex flex-wrap gap-2">
           <Caption>
-            Drag to move. Drag an edge or corner to resize. Arrow keys move by 1 pt; Shift moves by
-            10 pt.
+            Drag to move. Drag an edge or corner to resize. Arrow keys move by 1 pt; Shift moves by 10 pt.
           </Caption>
         </div>
       }
-      completedPreview={
-        output ? <GeneratedPdfPreview fill file={output} definitionKey="crop-pdf" /> : undefined
-      }
+      completedPreview={output ? <GeneratedPdfPreview fill file={output} definitionKey="crop-pdf" /> : undefined}
       completionActions={
         <div className="grid w-full grid-cols-2 gap-2">
           <Button className="w-full" variant="outline" onClick={edit}>
             Edit crop
           </Button>
-          <Button
-            className="w-full"
-            variant="outline"
-            onClick={() => inputChange({ ...props.input, files: [] })}
-          >
+          <Button className="w-full" variant="outline" onClick={() => inputChange({ ...props.input, files: [] })}>
             Crop another PDF
           </Button>
         </div>

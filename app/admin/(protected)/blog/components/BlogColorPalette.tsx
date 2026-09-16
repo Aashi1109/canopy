@@ -48,11 +48,7 @@ export function BlogColorPalette({
             <Button
               variant={separateClear ? "ghost" : "outline"}
               size="icon-xs"
-              className={
-                separateClear
-                  ? "size-6 p-0"
-                  : "size-6 rounded-sm border-foreground/20 p-0 shadow-none"
-              }
+              className={separateClear ? "size-6 p-0" : "size-6 rounded-sm border-foreground/20 p-0 shadow-none"}
               aria-label={`Clear ${label.toLowerCase()}`}
               disabled={disabled}
               onMouseDown={(event) => event.preventDefault()}

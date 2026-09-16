@@ -21,10 +21,7 @@ const redirectPolicy = {
 test("profile keeps the auth theme and returns through the validated origin", async () => {
   const [page, backLink] = await Promise.all([
     readFile(new URL("../app/auth/profile/page.tsx", import.meta.url), "utf8"),
-    readFile(
-      new URL("../app/auth/profile/components/ProfileBackLink.tsx", import.meta.url),
-      "utf8",
-    ),
+    readFile(new URL("../app/auth/profile/components/ProfileBackLink.tsx", import.meta.url), "utf8"),
   ]);
 
   assert.match(page, /resolveConfiguredReturnTo\(first\(params\.returnTo\)\)/);
@@ -41,30 +38,15 @@ test("profile uses browser history only for the validated return origin", () => 
   const fallback = "/admin";
   const current = "https://smarttools.test/auth/profile";
 
-  assert.equal(
-    shouldUseBrowserBack(fallback, current, "https://smarttools.test/admin/audit", 2),
-    true,
-  );
+  assert.equal(shouldUseBrowserBack(fallback, current, "https://smarttools.test/admin/audit", 2), true);
   assert.equal(shouldUseBrowserBack(fallback, current, "", 2), false);
-  assert.equal(
-    shouldUseBrowserBack(fallback, current, "https://untrusted.example/profile-link", 2),
-    false,
-  );
-  assert.equal(
-    shouldUseBrowserBack(fallback, current, "https://smarttools.test/admin/audit", 1),
-    false,
-  );
-  assert.equal(
-    shouldUseBrowserBack(fallback, current, "https://smarttools.test/admin/audit", 2, true),
-    false,
-  );
+  assert.equal(shouldUseBrowserBack(fallback, current, "https://untrusted.example/profile-link", 2), false);
+  assert.equal(shouldUseBrowserBack(fallback, current, "https://smarttools.test/admin/audit", 1), false);
+  assert.equal(shouldUseBrowserBack(fallback, current, "https://smarttools.test/admin/audit", 2, true), false);
 });
 
 test("profile photo uses a native image picker instead of a URL field", async () => {
-  const source = await readFile(
-    new URL("../app/auth/profile/ProfileManager.tsx", import.meta.url),
-    "utf8",
-  );
+  const source = await readFile(new URL("../app/auth/profile/ProfileManager.tsx", import.meta.url), "utf8");
 
   assert.match(source, /accept=["']image\/jpeg,image\/png,image\/webp["']/);
   assert.match(source, /type=["']file["']/);
@@ -73,10 +55,7 @@ test("profile photo uses a native image picker instead of a URL field", async ()
 
 test("auth return URLs keep navigation inside the unified application", () => {
   assert.equal(resolveReturnTo("/auth/profile", redirectPolicy), "/auth/profile");
-  assert.equal(
-    resolveReturnTo("/paperwork/invoice-generator", redirectPolicy),
-    "/paperwork/invoice-generator",
-  );
+  assert.equal(resolveReturnTo("/paperwork/invoice-generator", redirectPolicy), "/paperwork/invoice-generator");
   assert.equal(
     resolveReturnTo("https://smarttools.test/devtools/json-formatter", redirectPolicy),
     "https://smarttools.test/devtools/json-formatter",
@@ -97,10 +76,7 @@ test("auth errors never expose server or provider details", () => {
 
   assert.equal(getSafeAuthError({ message: secret }), DEFAULT_AUTH_ERROR);
   assert.doesNotMatch(getSafeAuthError({ message: secret }), /postgres|password/);
-  assert.equal(
-    getSafeAuthError({ code: "TOO_MANY_REQUESTS" }),
-    "Too many attempts. Try again in a few minutes.",
-  );
+  assert.equal(getSafeAuthError({ code: "TOO_MANY_REQUESTS" }), "Too many attempts. Try again in a few minutes.");
   assert.equal(isEmailVerificationError({ code: "EMAIL_NOT_VERIFIED" }), true);
 });
 
@@ -111,10 +87,7 @@ test("account inputs enforce password, image, and deletion boundaries", () => {
   assert.equal(isValidPassword("a".repeat(129)), false);
 
   assert.equal(normalizeProfileImage(""), null);
-  assert.equal(
-    normalizeProfileImage(" https://images.example/avatar.png "),
-    "https://images.example/avatar.png",
-  );
+  assert.equal(normalizeProfileImage(" https://images.example/avatar.png "), "https://images.example/avatar.png");
   assert.throws(() => normalizeProfileImage("javascript:alert(1)"));
 
   assert.equal(canConfirmAccountDeletion(" Person@Example.com ", "person@example.com"), true);

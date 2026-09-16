@@ -42,12 +42,7 @@ test("the document registry defines valid defaults and starters for all seven ki
     DOCUMENT_TYPES,
   );
 
-  for (const [
-    documentType,
-    toolComponentKey,
-    allowedPageFormats,
-    complianceMode,
-  ] of expectedDocuments) {
+  for (const [documentType, toolComponentKey, allowedPageFormats, complianceMode] of expectedDocuments) {
     const definition = getDocumentDefinition(documentType);
     const config = createAdvancedTemplateConfig(documentType, definition.defaultPageFormat);
     const fieldKeys = definition.fields.map((field) => field.key);
@@ -103,10 +98,7 @@ test("page formats are registry-driven and reject every cross-family format", ()
   for (const documentType of DOCUMENT_TYPES) {
     const definition = getDocumentDefinition(documentType);
     for (const pageFormat of ["A4", "LETTER", "RECEIPT_80MM", "RECEIPT_58MM"]) {
-      assert.equal(
-        isSupportedPageFormat(documentType, pageFormat),
-        definition.allowedPageFormats.includes(pageFormat),
-      );
+      assert.equal(isSupportedPageFormat(documentType, pageFormat), definition.allowedPageFormats.includes(pageFormat));
     }
   }
 });
@@ -120,8 +112,7 @@ test("legacy invoice and receipt configs normalize in memory without losing samp
     delete legacy.schemaVersion;
     delete legacy.form;
     legacy.sampleData["custom.legacy-note"] = "Keep me";
-    legacy.template.schemas[0][0].name =
-      documentType === "invoice" ? "invoiceNumber" : "documentNumber";
+    legacy.template.schemas[0][0].name = documentType === "invoice" ? "invoiceNumber" : "documentNumber";
 
     const normalized = normalizeAdvancedTemplateConfig(legacy, documentType);
 
@@ -227,8 +218,7 @@ test("schema validation accepts custom scalar and repeater fields and rejects ma
   assert.equal(AdvancedTemplateConfigSchema.safeParse(duplicateSection).success, false);
 
   const duplicateField = structuredClone(valid);
-  duplicateField.form.sections.at(-1).entries[0].key =
-    duplicateField.form.sections[0].entries[0].key;
+  duplicateField.form.sections.at(-1).entries[0].key = duplicateField.form.sections[0].entries[0].key;
   assert.equal(AdvancedTemplateConfigSchema.safeParse(duplicateField).success, false);
 
   const duplicateColumn = structuredClone(valid);
@@ -279,8 +269,7 @@ test("publish validation enforces bindings, plugin compatibility, compliance, an
   );
 
   const legacyBindings = createAdvancedTemplateConfig("invoice", "A4");
-  legacyBindings.template.schemas.flat().find((schema) => schema.name === "invoiceNumber").name =
-    "documentNumber";
+  legacyBindings.template.schemas.flat().find((schema) => schema.name === "invoiceNumber").name = "documentNumber";
   assert.equal(validateAdvancedTemplateForPublish(legacyBindings, "invoice").valid, true);
 
   for (const documentType of ["w9-request", "1099-nec-tracker"]) {
@@ -294,19 +283,13 @@ test("publish validation enforces bindings, plugin compatibility, compliance, an
 
     const result = validateAdvancedTemplateForPublish(config, documentType);
     assert.equal(result.valid, false);
-    assert.ok(
-      result.errors.some(
-        ({ code, path }) => code === "missing-binding" && path.includes(disclaimer),
-      ),
-    );
+    assert.ok(result.errors.some(({ code, path }) => code === "missing-binding" && path.includes(disclaimer)));
   }
 
   const unsafeW9 = createAdvancedTemplateConfig("w9-request", "A4");
   unsafeW9.sampleData.contractorTin = "123-45-6789";
   assert.ok(
-    validateAdvancedTemplateForPublish(unsafeW9, "w9-request").errors.some(
-      ({ code }) => code === "forbidden-tax-data",
-    ),
+    validateAdvancedTemplateForPublish(unsafeW9, "w9-request").errors.some(({ code }) => code === "forbidden-tax-data"),
   );
   const disguisedW9 = createAdvancedTemplateConfig("w9-request", "A4");
   disguisedW9.sampleData["custom.reference"] = "123-45-6789";
@@ -348,9 +331,7 @@ test("publish validation applies every hard limit without accepting partial over
     })),
   ];
   assert.ok(
-    validateAdvancedTemplateForPublish(elementOverflow, "invoice").errors.some(
-      ({ code }) => code === "element-limit",
-    ),
+    validateAdvancedTemplateForPublish(elementOverflow, "invoice").errors.some(({ code }) => code === "element-limit"),
   );
 
   const formOverflow = createAdvancedTemplateConfig("invoice", "A4");
@@ -366,9 +347,7 @@ test("publish validation applies every hard limit without accepting partial over
     })),
   });
   assert.ok(
-    validateAdvancedTemplateForPublish(formOverflow, "invoice").errors.some(
-      ({ code }) => code === "form-field-limit",
-    ),
+    validateAdvancedTemplateForPublish(formOverflow, "invoice").errors.some(({ code }) => code === "form-field-limit"),
   );
 
   const customOverflow = createAdvancedTemplateConfig("invoice", "A4");
@@ -393,8 +372,6 @@ test("publish validation applies every hard limit without accepting partial over
   const sizeOverflow = createAdvancedTemplateConfig("invoice", "A4");
   sizeOverflow.sampleData["custom.large"] = "x".repeat(5 * 1024 * 1024);
   assert.ok(
-    validateAdvancedTemplateForPublish(sizeOverflow, "invoice").errors.some(
-      ({ code }) => code === "size-limit",
-    ),
+    validateAdvancedTemplateForPublish(sizeOverflow, "invoice").errors.some(({ code }) => code === "size-limit"),
   );
 });

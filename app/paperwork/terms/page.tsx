@@ -17,23 +17,22 @@ export default function TermsPage() {
       <section className="space-y-2">
         <H2>You control the final document</H2>
         <Muted className="text-muted-foreground">
-          Review names, dates, totals, tax settings, payment details, and exported files before
-          sharing them. You are responsible for the information you enter and the documents you
-          issue.
+          Review names, dates, totals, tax settings, payment details, and exported files before sharing them. You are
+          responsible for the information you enter and the documents you issue.
         </Muted>
       </section>
       <section className="space-y-2">
         <H2>Not professional advice</H2>
         <Muted className="text-muted-foreground">
-          Paperwork does not provide legal, accounting, payroll, or tax advice. Consult a qualified
-          professional for obligations specific to your business or location.
+          Paperwork does not provide legal, accounting, payroll, or tax advice. Consult a qualified professional for
+          obligations specific to your business or location.
         </Muted>
       </section>
       <section className="space-y-2">
         <H2>Availability</H2>
         <Muted className="text-muted-foreground">
-          Features may change as the toolkit improves. Keep your own copies of documents and records
-          that matter to your business.
+          Features may change as the toolkit improves. Keep your own copies of documents and records that matter to your
+          business.
         </Muted>
       </section>
     </InformationPage>

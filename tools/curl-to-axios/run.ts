@@ -99,8 +99,7 @@ function curlAsAxios(command: string, settings: Settings): string {
       : settings.moduleFormat === "commonjs"
         ? 'const axios = require("axios");\n\n'
         : "";
-  const responseType =
-    settings.outputLanguage === "typescript" ? ': import("axios").AxiosResponse<unknown>' : "";
+  const responseType = settings.outputLanguage === "typescript" ? ': import("axios").AxiosResponse<unknown>' : "";
   const statement = `const { data }${responseType} = await ${call};`;
   return settings.moduleFormat === "commonjs"
     ? `${moduleLine}(async () => {\n  ${statement.replaceAll("\n", "\n  ")}\n})();`

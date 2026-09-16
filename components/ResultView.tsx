@@ -41,10 +41,7 @@ export interface ResultViewProps {
   result: ToolResult;
 }
 
-type ResultRendererOptions = Pick<
-  ResultViewProps,
-  "hideJsonHeader" | "initialJsonView" | "jsonHeader"
->;
+type ResultRendererOptions = Pick<ResultViewProps, "hideJsonHeader" | "initialJsonView" | "jsonHeader">;
 
 type ResultRendererRegistry = {
   [Kind in ToolRenderKind]: (
@@ -106,11 +103,7 @@ function DownloadButton({
       iconOnly={iconOnly}
       disabled={disabled}
       onClick={() =>
-        href
-          ? saveUrl(href, name, toolKey)
-          : content !== undefined
-            ? saveBlob(content, mime, name, toolKey)
-            : undefined
+        href ? saveUrl(href, name, toolKey) : content !== undefined ? saveBlob(content, mime, name, toolKey) : undefined
       }
       type="button"
     >
@@ -141,11 +134,7 @@ function ArtifactDownloadButton({
       saveUrl(url, artifact.name, toolKey);
       window.setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch (error) {
-      setFailure(
-        error instanceof Error
-          ? error.message
-          : "The generated file is unavailable. Run the tool again.",
-      );
+      setFailure(error instanceof Error ? error.message : "The generated file is unavailable. Run the tool again.");
     } finally {
       setPending(false);
     }
@@ -170,12 +159,7 @@ function ArtifactDownloadButton({
   );
 }
 
-function CopyButton({
-  content,
-  disabled = false,
-  iconOnly = false,
-  label = "Copy",
-}: CopyButtonProps) {
+function CopyButton({ content, disabled = false, iconOnly = false, label = "Copy" }: CopyButtonProps) {
   const toolKey = useAnalyticsToolKey();
   const [feedback, setFeedback] = useState<{
     content: string;
@@ -212,8 +196,7 @@ function CopyButton({
   }
 
   const status = feedback?.content === content ? feedback.status : "idle";
-  const statusLabel =
-    status === "copied" ? "Copied" : status === "failed" ? "Copy failed — try again" : label;
+  const statusLabel = status === "copied" ? "Copied" : status === "failed" ? "Copy failed — try again" : label;
   const StatusIcon = status === "copied" ? Check : status === "failed" ? AlertTriangle : Copy;
 
   return (
@@ -281,9 +264,7 @@ function resultArtifact(result: ToolResult | null): ResultArtifact | null {
       };
     }
     case "table": {
-      const content = [result.columns, ...result.rows]
-        .map((row) => row.map(csvCell).join(","))
-        .join("\n");
+      const content = [result.columns, ...result.rows].map((row) => row.map(csvCell).join(",")).join("\n");
       return {
         copy: content,
         copyLabel: result.truncated ? "Copy shown rows" : undefined,
@@ -320,17 +301,12 @@ function resultArtifact(result: ToolResult | null): ResultArtifact | null {
       };
     case "image":
       return {
-        download: result.downloadName
-          ? { href: result.src, mime: result.mime, name: result.downloadName }
-          : undefined,
+        download: result.downloadName ? { href: result.src, mime: result.mime, name: result.downloadName } : undefined,
       };
     case "diff":
       return {
         copy: result.lines
-          .map(
-            (line) =>
-              `${line.kind === "added" ? "+" : line.kind === "removed" ? "-" : " "}${line.text}`,
-          )
+          .map((line) => `${line.kind === "added" ? "+" : line.kind === "removed" ? "-" : " "}${line.text}`)
           .join("\n"),
       };
     case "files":
@@ -341,9 +317,7 @@ function resultArtifact(result: ToolResult | null): ResultArtifact | null {
 
 function firstStoredArtifact(result: ToolResult | null): StoredToolArtifact | null {
   if (!result) return null;
-  const direct = result.artifacts?.find(
-    (artifact): artifact is StoredToolArtifact => artifact.storage !== "inline",
-  );
+  const direct = result.artifacts?.find((artifact): artifact is StoredToolArtifact => artifact.storage !== "inline");
   if (direct) return direct;
   for (const section of result.sections ?? []) {
     if (section.body.render !== "files") continue;
@@ -415,9 +389,7 @@ export function ResultActions({
 const RESULT_RENDERERS: ResultRendererRegistry = {
   text: (result) => (
     <RenderFrame>
-      <CodeBlock className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4">
-        {result.text}
-      </CodeBlock>
+      <CodeBlock className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4">{result.text}</CodeBlock>
     </RenderFrame>
   ),
   code: (result) => (
@@ -517,9 +489,7 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
           getLabel={(item) => item.label}
           getValue={(item) => item.value}
           items={items}
-          renderAction={(item, index) => (
-            <CopyButton content={item.value} iconOnly label={`Copy item ${index + 1}`} />
-          )}
+          renderAction={(item, index) => <CopyButton content={item.value} iconOnly label={`Copy item ${index + 1}`} />}
         />
       </RenderFrame>
     );
@@ -564,20 +534,14 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
       })}
       {result.inputBytes !== undefined || result.outputBytes !== undefined ? (
         <Muted className="text-muted-foreground">
-          {result.inputBytes !== undefined
-            ? `Input: ${result.inputBytes.toLocaleString()} bytes`
-            : null}
+          {result.inputBytes !== undefined ? `Input: ${result.inputBytes.toLocaleString()} bytes` : null}
           {result.inputBytes !== undefined && result.outputBytes !== undefined ? " · " : null}
-          {result.outputBytes !== undefined
-            ? `Output: ${result.outputBytes.toLocaleString()} bytes`
-            : null}
+          {result.outputBytes !== undefined ? `Output: ${result.outputBytes.toLocaleString()} bytes` : null}
         </Muted>
       ) : null}
     </div>
   ),
-  none: () => (
-    <EmptyState className="min-h-40" title="The action completed without a displayable result." />
-  ),
+  none: () => <EmptyState className="min-h-40" title="The action completed without a displayable result." />,
 };
 
 function renderPrimary(result: ToolRender, options?: ResultRendererOptions): ReactNode {
@@ -593,9 +557,7 @@ function CommonResultDetails({ result }: ResultViewProps) {
     result.sections?.length,
   );
   if (!hasDetails) return null;
-  const generatedFileSections = result.sections?.filter(
-    (section) => section.body.render === "files",
-  );
+  const generatedFileSections = result.sections?.filter((section) => section.body.render === "files");
   const otherSections = result.sections?.filter((section) => section.body.render !== "files");
   return (
     <div className="grid gap-4 border-t border-border p-4">
@@ -617,28 +579,14 @@ function CommonResultDetails({ result }: ResultViewProps) {
           action={
             <StatusBadge
               variant={
-                result.verdict.level === "ok"
-                  ? "success"
-                  : result.verdict.level === "error"
-                    ? "danger"
-                    : "warning"
+                result.verdict.level === "ok" ? "success" : result.verdict.level === "error" ? "danger" : "warning"
               }
             >
-              {result.verdict.level === "ok"
-                ? "OK"
-                : result.verdict.level === "error"
-                  ? "Error"
-                  : "Warning"}
+              {result.verdict.level === "ok" ? "OK" : result.verdict.level === "error" ? "Error" : "Warning"}
             </StatusBadge>
           }
           title={result.verdict.label}
-          variant={
-            result.verdict.level === "ok"
-              ? "success"
-              : result.verdict.level === "error"
-                ? "error"
-                : "warning"
-          }
+          variant={result.verdict.level === "ok" ? "success" : result.verdict.level === "error" ? "error" : "warning"}
         >
           {result.verdict.detail}
         </AlertBanner>
@@ -686,12 +634,7 @@ function CommonResultDetails({ result }: ResultViewProps) {
   );
 }
 
-export function ResultView({
-  hideJsonHeader,
-  initialJsonView,
-  jsonHeader,
-  result,
-}: ResultViewProps) {
+export function ResultView({ hideJsonHeader, initialJsonView, jsonHeader, result }: ResultViewProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       {renderPrimary(result, { hideJsonHeader, initialJsonView, jsonHeader })}

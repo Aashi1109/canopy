@@ -15,9 +15,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const usableAlphabet = ctx.settings.excludeAmbiguous ? alphabet.replace(/[0OIl]/g, "") : alphabet;
   return {
     render: "list",
-    items: Array.from({ length: ctx.settings.count }, () =>
-      randomString(ctx.settings.length, usableAlphabet),
-    ),
+    items: Array.from({ length: ctx.settings.count }, () => randomString(ctx.settings.length, usableAlphabet)),
     downloadName: "passwords.txt",
   };
 };

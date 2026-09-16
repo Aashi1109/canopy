@@ -1,10 +1,4 @@
-import {
-  cloneElement,
-  isValidElement,
-  type ComponentProps,
-  type HTMLAttributes,
-  type ReactNode,
-} from "react";
+import { cloneElement, isValidElement, type ComponentProps, type HTMLAttributes, type ReactNode } from "react";
 
 import { Badge } from "#components/badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "#components/card";
@@ -55,13 +49,7 @@ function SegmentedControl({
       {...props}
     >
       <TabsList
-        className={
-          size === "inline"
-            ? "h-8 p-0"
-            : size === "field"
-              ? "w-full min-w-0 items-stretch p-1"
-              : undefined
-        }
+        className={size === "inline" ? "h-8 p-0" : size === "field" ? "w-full min-w-0 items-stretch p-1" : undefined}
         variant="segmented"
       >
         {items.map((item) => (
@@ -140,10 +128,7 @@ function WorkbenchShell({
       >
         {toolbar}
         {toolbarActions ? (
-          <div
-            data-slot="workbench-toolbar-actions"
-            className="ml-auto flex shrink-0 items-center gap-2"
-          >
+          <div data-slot="workbench-toolbar-actions" className="ml-auto flex shrink-0 items-center gap-2">
             {compactToolbarActions}
           </div>
         ) : null}
@@ -203,11 +188,7 @@ function ToolPageSystemControls({
   title?: ReactNode;
 }) {
   return (
-    <section
-      data-slot="tool-page-system-controls"
-      className={cn("flex w-full flex-col gap-4", className)}
-      {...props}
-    >
+    <section data-slot="tool-page-system-controls" className={cn("flex w-full flex-col gap-4", className)} {...props}>
       <Card>
         <CardHeader>
           <CardTitle>{title}</CardTitle>
@@ -221,18 +202,12 @@ function ToolPageSystemControls({
         {children}
       </div>
       {preferences ? (
-        <div
-          data-slot="tool-system-preferences"
-          className="flex w-full flex-wrap items-center gap-x-5 gap-y-3"
-        >
+        <div data-slot="tool-system-preferences" className="flex w-full flex-wrap items-center gap-x-5 gap-y-3">
           {preferences}
         </div>
       ) : null}
       {actions ? (
-        <div
-          data-slot="tool-system-actions"
-          className="flex w-full flex-wrap items-center justify-end gap-2.5"
-        >
+        <div data-slot="tool-system-actions" className="flex w-full flex-wrap items-center justify-end gap-2.5">
           {actions}
         </div>
       ) : null}

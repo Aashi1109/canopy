@@ -27,17 +27,8 @@ const radioGroupItemVariants = cva(
 type RadioGroupItemProps = React.ComponentProps<typeof RadioGroupPrimitive.Item> &
   VariantProps<typeof radioGroupItemVariants>;
 
-function RadioGroup({
-  className,
-  ...props
-}: React.ComponentProps<typeof RadioGroupPrimitive.Root>) {
-  return (
-    <RadioGroupPrimitive.Root
-      data-slot="radio-group"
-      className={cn("grid gap-3", className)}
-      {...props}
-    />
-  );
+function RadioGroup({ className, ...props }: React.ComponentProps<typeof RadioGroupPrimitive.Root>) {
+  return <RadioGroupPrimitive.Root data-slot="radio-group" className={cn("grid gap-3", className)} {...props} />;
 }
 
 function RadioGroupItem({ className, size = "default", ...props }: RadioGroupItemProps) {

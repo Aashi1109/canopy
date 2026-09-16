@@ -63,16 +63,9 @@ export function InvoiceTemplatePreview({
         : typography.headingSize === "xl"
           ? 32
           : 22;
-  const spacing = thumbnail
-    ? 8
-    : page.margin === "compact"
-      ? 16
-      : page.margin === "spacious"
-        ? 28
-        : 22;
+  const spacing = thumbnail ? 8 : page.margin === "compact" ? 16 : page.margin === "spacious" ? 28 : 22;
   const sectionGap = thumbnail ? 8 : page.margin === "compact" ? 14 : 20;
-  const currency = (amount: number) =>
-    formatInvoicePreviewCurrency(amount, data.invoice.currency || "USD");
+  const currency = (amount: number) => formatInvoicePreviewCurrency(amount, data.invoice.currency || "USD");
   const mutedStyle: CSSProperties = { color: theme.mutedTextColor };
   const sectionLabelStyle: CSSProperties = {
     ...mutedStyle,
@@ -121,11 +114,7 @@ export function InvoiceTemplatePreview({
       />
     ) : null;
   const logoJustify =
-    header.logoPosition === "center"
-      ? "center"
-      : header.logoPosition === "right"
-        ? "flex-end"
-        : "flex-start";
+    header.logoPosition === "center" ? "center" : header.logoPosition === "right" ? "flex-end" : "flex-start";
 
   const standardHeader = (
     <header
@@ -133,9 +122,7 @@ export function InvoiceTemplatePreview({
         alignItems: header.style === "centered" ? "center" : "flex-start",
         background: header.style === "split" ? theme.backgroundColor : undefined,
         borderBottom:
-          header.style === "minimal"
-            ? "none"
-            : `${layoutFamily === "classic" ? 2 : 1}px solid ${theme.borderColor}`,
+          header.style === "minimal" ? "none" : `${layoutFamily === "classic" ? 2 : 1}px solid ${theme.borderColor}`,
         display: "grid",
         gap: thumbnail ? 6 : 18,
         gridTemplateColumns: header.style === "centered" ? "1fr" : "minmax(0, 1fr) auto",
@@ -146,11 +133,7 @@ export function InvoiceTemplatePreview({
       }}
     >
       <div style={{ minWidth: 0 }}>
-        {logo ? (
-          <div style={{ display: "flex", justifyContent: logoJustify, marginBottom: 6 }}>
-            {logo}
-          </div>
-        ) : null}
+        {logo ? <div style={{ display: "flex", justifyContent: logoJustify, marginBottom: 6 }}>{logo}</div> : null}
         {visibility.showBusinessBlock && businessBlock.showBusinessName ? (
           <strong
             style={{
@@ -258,11 +241,7 @@ export function InvoiceTemplatePreview({
         }}
       >
         <div style={{ minWidth: 0 }}>
-          {logo ? (
-            <div style={{ display: "flex", justifyContent: logoJustify, marginBottom: 5 }}>
-              {logo}
-            </div>
-          ) : null}
+          {logo ? <div style={{ display: "flex", justifyContent: logoJustify, marginBottom: 5 }}>{logo}</div> : null}
           {visibility.showBusinessBlock && businessBlock.showBusinessName ? (
             <strong
               style={{
@@ -275,23 +254,17 @@ export function InvoiceTemplatePreview({
             </strong>
           ) : null}
           {visibility.showBusinessBlock && !thumbnail && contactText.length ? (
-            <div style={{ fontSize: "0.8em", marginTop: 5, opacity: 0.82 }}>
-              {contactText.join(" · ")}
-            </div>
+            <div style={{ fontSize: "0.8em", marginTop: 5, opacity: 0.82 }}>{contactText.join(" · ")}</div>
           ) : null}
         </div>
         <div style={{ textAlign: "right" }}>
           {header.showInvoiceTitle ? (
-            <div
-              style={{ fontSize: thumbnail ? 10 : 20, fontWeight: 900, letterSpacing: "0.12em" }}
-            >
+            <div style={{ fontSize: thumbnail ? 10 : 20, fontWeight: 900, letterSpacing: "0.12em" }}>
               {header.invoiceTitleText || labels.invoiceTitle}
             </div>
           ) : null}
           {visibility.showMetaBlock && metaBlock.showInvoiceNumber ? (
-            <strong style={{ display: "block", marginTop: 5 }}>
-              #{data.invoice.invoiceNumber}
-            </strong>
+            <strong style={{ display: "block", marginTop: 5 }}>#{data.invoice.invoiceNumber}</strong>
           ) : null}
           {visibility.showMetaBlock && metaBlock.showDueDate ? (
             <div style={{ fontSize: "0.82em", marginTop: 3 }}>Due {data.invoice.dueDate}</div>
@@ -313,9 +286,7 @@ export function InvoiceTemplatePreview({
               <div>{addressLine([data.business.addressLine1, data.business.addressLine2])}</div>
             ) : null}
             {businessBlock.showAddress ? (
-              <div>
-                {addressLine([data.business.city, data.business.state, data.business.zipCode])}
-              </div>
+              <div>{addressLine([data.business.city, data.business.state, data.business.zipCode])}</div>
             ) : null}
             {businessBlock.showEmail ? <div>{data.business.email}</div> : null}
             {businessBlock.showPhone ? <div>{data.business.phone}</div> : null}
@@ -453,15 +424,9 @@ export function InvoiceTemplatePreview({
             <th style={{ padding: thumbnail ? "4px" : "8px", textAlign: "left", width: "52%" }}>
               {lineItemsTable.descriptionLabel}
             </th>
-            <th style={{ padding: thumbnail ? "4px" : "8px", textAlign: "center" }}>
-              {lineItemsTable.quantityLabel}
-            </th>
-            <th style={{ padding: thumbnail ? "4px" : "8px", textAlign: "right" }}>
-              {lineItemsTable.rateLabel}
-            </th>
-            <th style={{ padding: thumbnail ? "4px" : "8px", textAlign: "right" }}>
-              {lineItemsTable.amountLabel}
-            </th>
+            <th style={{ padding: thumbnail ? "4px" : "8px", textAlign: "center" }}>{lineItemsTable.quantityLabel}</th>
+            <th style={{ padding: thumbnail ? "4px" : "8px", textAlign: "right" }}>{lineItemsTable.rateLabel}</th>
+            <th style={{ padding: thumbnail ? "4px" : "8px", textAlign: "right" }}>{lineItemsTable.amountLabel}</th>
           </tr>
         </thead>
         <tbody>
@@ -469,16 +434,9 @@ export function InvoiceTemplatePreview({
             <tr
               key={item.id}
               style={{
-                background:
-                  lineItemsTable.style === "striped" && index % 2
-                    ? theme.backgroundColor
-                    : undefined,
-                border:
-                  lineItemsTable.style === "bordered"
-                    ? `1px solid ${theme.borderColor}`
-                    : undefined,
-                borderBottom:
-                  lineItemsTable.style === "minimal" ? undefined : `1px solid ${theme.borderColor}`,
+                background: lineItemsTable.style === "striped" && index % 2 ? theme.backgroundColor : undefined,
+                border: lineItemsTable.style === "bordered" ? `1px solid ${theme.borderColor}` : undefined,
+                borderBottom: lineItemsTable.style === "minimal" ? undefined : `1px solid ${theme.borderColor}`,
               }}
             >
               <td
@@ -533,27 +491,11 @@ export function InvoiceTemplatePreview({
 
   const totalRows: Array<[boolean, string, ReactNode]> = [
     [totalsBlock.showSubtotal, labels.subtotal, currency(totals.subtotal)],
-    [
-      totalsBlock.showDiscount && totals.discountAmount > 0,
-      labels.discount,
-      `− ${currency(totals.discountAmount)}`,
-    ],
-    [
-      totalsBlock.showTax && totals.taxAmount > 0,
-      data.totalsConfig.taxLabel || labels.tax,
-      currency(totals.taxAmount),
-    ],
-    [
-      totalsBlock.showShipping && totals.shippingFee > 0,
-      labels.shipping,
-      currency(totals.shippingFee),
-    ],
+    [totalsBlock.showDiscount && totals.discountAmount > 0, labels.discount, `− ${currency(totals.discountAmount)}`],
+    [totalsBlock.showTax && totals.taxAmount > 0, data.totalsConfig.taxLabel || labels.tax, currency(totals.taxAmount)],
+    [totalsBlock.showShipping && totals.shippingFee > 0, labels.shipping, currency(totals.shippingFee)],
     [true, labels.total, currency(totals.total)],
-    [
-      totalsBlock.showAmountPaid && totals.amountPaid > 0,
-      labels.amountPaid,
-      `− ${currency(totals.amountPaid)}`,
-    ],
+    [totalsBlock.showAmountPaid && totals.amountPaid > 0, labels.amountPaid, `− ${currency(totals.amountPaid)}`],
   ];
   const totalsSection = visibility.showTotals ? (
     <section
@@ -589,10 +531,7 @@ export function InvoiceTemplatePreview({
         {totalsBlock.showBalanceDue ? (
           <div
             style={{
-              background:
-                totalsBlock.style === "highlight-total"
-                  ? theme.primaryColor
-                  : theme.backgroundColor,
+              background: totalsBlock.style === "highlight-total" ? theme.primaryColor : theme.backgroundColor,
               border: `1px solid ${theme.primaryColor}`,
               borderRadius: layoutFamily === "minimal" ? 2 : thumbnail ? 4 : 8,
               color: totalsBlock.style === "highlight-total" ? theme.surfaceColor : theme.textColor,
@@ -614,15 +553,12 @@ export function InvoiceTemplatePreview({
   ) : null;
 
   const paymentSection =
-    visibility.showPaymentInstructions &&
-    paymentBlock.showInstructions &&
-    data.payment.instructions ? (
+    visibility.showPaymentInstructions && paymentBlock.showInstructions && data.payment.instructions ? (
       <section
         style={{
           ...(paymentBlock.style === "boxed" ? panelStyle : {}),
           background: paymentBlock.style === "muted" ? theme.backgroundColor : undefined,
-          borderRadius:
-            paymentBlock.style === "muted" ? (layoutFamily === "minimal" ? 2 : 8) : undefined,
+          borderRadius: paymentBlock.style === "muted" ? (layoutFamily === "minimal" ? 2 : 8) : undefined,
           padding: paymentBlock.style === "plain" ? 0 : thumbnail ? 6 : 12,
         }}
       >
@@ -677,8 +613,7 @@ export function InvoiceTemplatePreview({
             style={{
               ...(notesBlock.style === "boxed" ? panelStyle : {}),
               background: notesBlock.style === "muted" ? theme.backgroundColor : undefined,
-              borderRadius:
-                notesBlock.style === "muted" ? (layoutFamily === "minimal" ? 2 : 8) : undefined,
+              borderRadius: notesBlock.style === "muted" ? (layoutFamily === "minimal" ? 2 : 8) : undefined,
               padding: notesBlock.style === "plain" ? 0 : thumbnail ? 6 : 10,
             }}
           >
@@ -693,8 +628,7 @@ export function InvoiceTemplatePreview({
             style={{
               ...(notesBlock.style === "boxed" ? panelStyle : {}),
               background: notesBlock.style === "muted" ? theme.backgroundColor : undefined,
-              borderRadius:
-                notesBlock.style === "muted" ? (layoutFamily === "minimal" ? 2 : 8) : undefined,
+              borderRadius: notesBlock.style === "muted" ? (layoutFamily === "minimal" ? 2 : 8) : undefined,
               padding: notesBlock.style === "plain" ? 0 : thumbnail ? 6 : 10,
             }}
           >
@@ -739,9 +673,7 @@ export function InvoiceTemplatePreview({
   };
   const sectionOrder = config.sectionOrder.length ? config.sectionOrder : fallbackSectionOrder;
   const visibleOrder = thumbnail
-    ? sectionOrder.filter((section) =>
-        ["header", "meta_info", "line_items", "totals"].includes(section),
-      )
+    ? sectionOrder.filter((section) => ["header", "meta_info", "line_items", "totals"].includes(section))
     : sectionOrder;
 
   return (
@@ -760,12 +692,7 @@ export function InvoiceTemplatePreview({
         fontFamily: typography.fontFamily,
         fontSize: thumbnail ? 7 : baseFontSize,
         gap: sectionGap,
-        lineHeight:
-          typography.lineHeight === "tight"
-            ? 1.25
-            : typography.lineHeight === "relaxed"
-              ? 1.7
-              : 1.5,
+        lineHeight: typography.lineHeight === "tight" ? 1.25 : typography.lineHeight === "relaxed" ? 1.7 : 1.5,
         minHeight: thumbnail ? 150 : 680,
         overflow: "hidden",
         padding: spacing,

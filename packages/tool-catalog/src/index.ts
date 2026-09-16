@@ -78,11 +78,7 @@ export function isValidToolSlug(app: ToolApp, slug: unknown): slug is string {
  * can never be enabled — that is the fail-closed edge the whole merge exists
  * to enforce.
  */
-export function mergeManagedTool(
-  manifest: ToolManifestEntry,
-  fallback: ManagedTool,
-  stored: unknown,
-): ManagedTool {
+export function mergeManagedTool(manifest: ToolManifestEntry, fallback: ManagedTool, stored: unknown): ManagedTool {
   if (!isRecord(stored)) return fallback;
 
   const slug = Object.hasOwn(stored, "slug")
@@ -96,15 +92,13 @@ export function mergeManagedTool(
   return {
     toolId: manifest.id,
     slug,
-    name:
-      typeof stored.name === "string" && stored.name.trim() ? stored.name.trim() : fallback.name,
+    name: typeof stored.name === "string" && stored.name.trim() ? stored.name.trim() : fallback.name,
     description:
       typeof stored.description === "string" && stored.description.trim()
         ? stored.description.trim()
         : fallback.description,
     order: Number.isInteger(stored.order) ? (stored.order as number) : fallback.order,
-    enabled:
-      slug !== null && (typeof stored.enabled === "boolean" ? stored.enabled : fallback.enabled),
+    enabled: slug !== null && (typeof stored.enabled === "boolean" ? stored.enabled : fallback.enabled),
     archived: typeof stored.archived === "boolean" ? stored.archived : fallback.archived,
   };
 }
@@ -118,10 +112,7 @@ export function mergeManagedTool(
  * longer ships must not resurrect a route, and a tool nobody has configured
  * must not go live on a guessed slug.
  */
-export function mergeToolManifest(
-  managedTools: unknown,
-  manifest: readonly ToolManifestEntry[],
-): ResolvedTool[] {
+export function mergeToolManifest(managedTools: unknown, manifest: readonly ToolManifestEntry[]): ResolvedTool[] {
   const storedById = new Map<string, unknown>();
 
   if (Array.isArray(managedTools)) {
@@ -156,10 +147,7 @@ export function mergeToolManifest(
   });
 }
 
-export function areToolSlugsUnique(
-  tools: readonly ManagedTool[],
-  manifest: readonly ToolManifestEntry[],
-): boolean {
+export function areToolSlugsUnique(tools: readonly ManagedTool[], manifest: readonly ToolManifestEntry[]): boolean {
   const appById = new Map(manifest.map((entry) => [entry.id, entry.app] as const));
   const slugs = new Set<string>();
 
@@ -177,10 +165,7 @@ export function areToolSlugsUnique(
   return true;
 }
 
-export function assertToolSlugImmutable(
-  previousSlug: string | null,
-  nextSlug: string | null,
-): void {
+export function assertToolSlugImmutable(previousSlug: string | null, nextSlug: string | null): void {
   if (previousSlug !== null && previousSlug !== nextSlug) {
     throw new Error("A saved tool slug is immutable.");
   }
@@ -195,9 +180,7 @@ export function getEnabledTools<T extends ResolvedTool>(
   app?: ToolApp,
 ): Array<T & { slug: string }> {
   return tools
-    .filter(
-      (tool): tool is T & { slug: string } => isToolAvailable(tool) && (!app || tool.app === app),
-    )
+    .filter((tool): tool is T & { slug: string } => isToolAvailable(tool) && (!app || tool.app === app))
     .sort((left, right) => left.order - right.order);
 }
 
@@ -209,8 +192,7 @@ export function findAvailableToolBySlug<T extends ResolvedTool>(
   if (!isValidToolSlug(app, slug)) return undefined;
 
   const matches = tools.filter(
-    (tool): tool is T & { slug: string } =>
-      tool.app === app && tool.slug === slug && isToolAvailable(tool),
+    (tool): tool is T & { slug: string } => tool.app === app && tool.slug === slug && isToolAvailable(tool),
   );
 
   // An ambiguous slug resolves to nothing rather than an arbitrary winner.

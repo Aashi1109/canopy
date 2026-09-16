@@ -5,8 +5,7 @@ import PublicInfoChrome from "@/components/smarttools/PublicInfoChrome";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | SmartTools",
-  description:
-    "How SmartTools handles documents, account information, cookies, and your data controls.",
+  description: "How SmartTools handles documents, account information, cookies, and your data controls.",
 };
 
 const sections = [
@@ -36,8 +35,8 @@ export default function PrivacyPage() {
           <Overline className="block text-primary">Legal · Updated September 2026</Overline>
           <Display className="mt-2">Privacy Policy</Display>
           <Muted className="mt-3 text-muted-foreground">
-            A plain-language summary of how SmartTools handles your information across Paperwork,
-            DevTools, Media, and account features.
+            A plain-language summary of how SmartTools handles your information across Paperwork, DevTools, Media, and
+            account features.
           </Muted>
         </header>
         <div className="mt-8 flex flex-col gap-8">

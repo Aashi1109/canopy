@@ -36,12 +36,7 @@ test(
       await admin.end();
     });
     for (const migration of ["0001_auth_control_plane.sql", "0006_blogs.sql"]) {
-      await sql.unsafe(
-        await readFile(
-          new URL(`../packages/database/drizzle/${migration}`, import.meta.url),
-          "utf8",
-        ),
-      );
+      await sql.unsafe(await readFile(new URL(`../packages/database/drizzle/${migration}`, import.meta.url), "utf8"));
     }
     await sql`INSERT INTO auth_users (id, name, email) VALUES ('viewer', 'Viewer', 'viewer@example.test'), ('denied', 'Denied', 'denied@example.test')`;
     await sql`INSERT INTO roles (id, name, description, access) VALUES ('blog-viewer', 'Blog viewer', 'Blog read-only access', '{"admin":{"enter":true},"blog":{"view":true}}')`;
@@ -104,14 +99,7 @@ test(
         for (const item of first.items) {
           assert.equal(item.title, document.title);
           assert.equal(item.category.label, "Current Category");
-          for (const key of [
-            "body",
-            "document",
-            "draftDocument",
-            "createdBy",
-            "draftUpdatedBy",
-            "publishedSearch",
-          ])
+          for (const key of ["body", "document", "draftDocument", "createdBy", "draftUpdatedBy", "publishedSearch"])
             assert.equal(Object.hasOwn(item, key), false);
         }
         assert.doesNotMatch(JSON.stringify(first), /Secret draft|viewer/);
@@ -127,19 +115,12 @@ test(
       assert.equal((await queries.listPublishedBlogPosts({ search: "quokka" })).items.length, 12);
       assert.equal((await queries.listPublishedBlogPosts({ search: "Secret" })).items.length, 0);
       assert.equal(
-        (await queries.listPublishedBlogPosts({ category: "current-category", tag: "current-tag" }))
-          .items.length,
+        (await queries.listPublishedBlogPosts({ category: "current-category", tag: "current-tag" })).items.length,
         12,
       );
-      assert.equal(
-        (await queries.listPublishedBlogPosts({ category: "unused-category" })).items.length,
-        0,
-      );
+      assert.equal((await queries.listPublishedBlogPosts({ category: "unused-category" })).items.length, 0);
       assert.equal((await queries.listPublishedBlogPosts({ tag: "unused-tag" })).items.length, 0);
-      assert.equal(
-        (await queries.listPublishedBlogPosts({ search: "' OR true --" })).items.length,
-        0,
-      );
+      assert.equal((await queries.listPublishedBlogPosts({ search: "' OR true --" })).items.length, 0);
     });
 
     await context.test(
@@ -156,10 +137,7 @@ test(
           post.relatedToolLinks.map((tool) => tool.href),
           ["/devtools/json-formatter", "/paperwork/expense-report"],
         );
-        assert.deepEqual(post.document.relatedToolIds, [
-          "devtools.json-formatter",
-          "paperwork.expense-report",
-        ]);
+        assert.deepEqual(post.document.relatedToolIds, ["devtools.json-formatter", "paperwork.expense-report"]);
         assert.doesNotMatch(JSON.stringify(post), /Secret draft|viewer/);
         assert.deepEqual((await queries.listPublishedBlogTaxonomy("category")).items, [
           { id: "category", name: "Current Category", slug: "current-category" },
@@ -204,10 +182,7 @@ test(
           (await queries.listBlogPosts("viewer", { status: "trash" })).items.map((row) => row.id),
           ["trashed"],
         );
-        assert.equal(
-          (await queries.listBlogTaxonomy("viewer", "category")).items[0].createdBy,
-          "viewer",
-        );
+        assert.equal((await queries.listBlogTaxonomy("viewer", "category")).items[0].createdBy, "viewer");
       },
     );
   },

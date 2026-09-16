@@ -146,9 +146,7 @@ const specs = loaded.filter((entry) => entry.spec !== null);
 
 test("every migrated definition.ts loads standalone", () => {
   assert.deepEqual(
-    loaded
-      .filter((entry) => entry.error)
-      .map((entry) => `${entry.folder.name}: ${entry.error.message}`),
+    loaded.filter((entry) => entry.error).map((entry) => `${entry.folder.name}: ${entry.error.message}`),
     [],
     "definition.ts must load without a bundler (type-only imports, no aliased values)",
   );
@@ -211,13 +209,9 @@ const dispatchByFile = new Map();
 
 for (const file of sharedFiles) {
   const source = await readFile(path.join(ROOT, file), "utf8");
-  const leaks = scan(source, (line) =>
-    KEY_PATTERNS.filter(([, pattern]) => pattern.test(line)).map(([key]) => key),
-  );
+  const leaks = scan(source, (line) => KEY_PATTERNS.filter(([, pattern]) => pattern.test(line)).map(([key]) => key));
   if (leaks.length > 0) leaksByFile.set(file, leaks);
-  const dispatch = scan(source, (line) =>
-    IDENTITY_DISPATCH.test(line) ? [line.trim().slice(0, 80)] : [],
-  );
+  const dispatch = scan(source, (line) => (IDENTITY_DISPATCH.test(line) ? [line.trim().slice(0, 80)] : []));
   if (dispatch.length > 0) dispatchByFile.set(file, dispatch);
 }
 
@@ -225,8 +219,7 @@ function report(byFile) {
   return [...byFile]
     .sort((a, b) => b[1].length - a[1].length)
     .map(
-      ([file, hits]) =>
-        `  ${file} (${hits.length})\n${hits.map((h) => `    ${file}:${h.line}: ${h.hit}`).join("\n")}`,
+      ([file, hits]) => `  ${file} (${hits.length})\n${hits.map((h) => `    ${file}:${h.line}: ${h.hit}`).join("\n")}`,
     )
     .join("\n");
 }
@@ -249,9 +242,7 @@ test("shared code never names a tool", () => {
 
 test("shared code never dispatches on a tool identity", () => {
   console.log(`[identity dispatch scan] ${dispatchByFile.size} files\n${report(dispatchByFile)}`);
-  const unexpected = [...dispatchByFile.keys()].filter(
-    (file) => !LEGACY_IDENTITY_DISPATCH.has(file),
-  );
+  const unexpected = [...dispatchByFile.keys()].filter((file) => !LEGACY_IDENTITY_DISPATCH.has(file));
   assert.deepEqual(
     unexpected,
     [],
@@ -297,11 +288,7 @@ test("migration progress", () => {
 test("folder name, spec and toolId are one bijection", () => {
   for (const { folder, spec } of specs) {
     assert.ok(spec && typeof spec === "object", `${folder.name}: default export must be a spec`);
-    assert.equal(
-      spec.toolId,
-      `${spec.app}.${folder.name}`,
-      `${folder.name}: toolId must be "<app>.<folderName>"`,
-    );
+    assert.equal(spec.toolId, `${spec.app}.${folder.name}`, `${folder.name}: toolId must be "<app>.<folderName>"`);
   }
   const toolIds = specs.map(({ spec }) => spec.toolId);
   assert.equal(new Set(toolIds).size, toolIds.length, "toolIds must be unique");
@@ -345,10 +332,7 @@ test("every migrated folder declares exactly one execution host", () => {
 
 test("every spec declares a known category", () => {
   for (const { folder, spec } of specs) {
-    assert.ok(
-      Object.hasOwn(TOOL_CATEGORIES, spec.category),
-      `${folder.name}: unknown category "${spec.category}"`,
-    );
+    assert.ok(Object.hasOwn(TOOL_CATEGORIES, spec.category), `${folder.name}: unknown category "${spec.category}"`);
     assert.equal(
       TOOL_CATEGORIES[spec.category].app,
       spec.app,
@@ -416,11 +400,7 @@ test("hooks live in hooks.ts and never reach the media graph", async () => {
       }
     }
   }
-  assert.deepEqual(
-    offenders,
-    [],
-    "hooks must live in hooks.ts and stay off the worker-only media graph",
-  );
+  assert.deepEqual(offenders, [], "hooks must live in hooks.ts and stay off the worker-only media graph");
 });
 
 test("no client or worker module imports a server run module", async () => {

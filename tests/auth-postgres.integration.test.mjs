@@ -133,8 +133,7 @@ test(
     });
     assert.equal(delivered.length, 1);
     const resetUrl = emailActionUrl(delivered.shift());
-    const resetToken =
-      resetUrl.searchParams.get("token") ?? resetUrl.pathname.split("/").filter(Boolean).at(-1);
+    const resetToken = resetUrl.searchParams.get("token") ?? resetUrl.pathname.split("/").filter(Boolean).at(-1);
     assert.ok(resetToken);
     await auth.api.resetPassword({
       body: { token: resetToken, newPassword: nextPassword },

@@ -57,8 +57,7 @@ test(
           await change();
           const after = await timestamps();
           for (const id of Object.keys(before)) {
-            if (ids.includes(id))
-              assert.ok(after[id] > before[id], `${id} gets a distinct millisecond cache key`);
+            if (ids.includes(id)) assert.ok(after[id] > before[id], `${id} gets a distinct millisecond cache key`);
             else assert.equal(after[id], before[id], `${id} is unaffected`);
           }
         }
@@ -69,37 +68,18 @@ test(
           ["a", "b"],
           () => transaction`INSERT INTO user_roles VALUES ('a', 'viewer'), ('b', 'viewer')`,
         );
-        await changesOnly(
-          ["a", "c"],
-          () => transaction`UPDATE user_roles SET user_id = 'c' WHERE user_id = 'a'`,
-        );
-        await changesOnly(
-          ["c"],
-          () => transaction`UPDATE user_roles SET role_id = 'editor' WHERE user_id = 'c'`,
-        );
+        await changesOnly(["a", "c"], () => transaction`UPDATE user_roles SET user_id = 'c' WHERE user_id = 'a'`);
+        await changesOnly(["c"], () => transaction`UPDATE user_roles SET role_id = 'editor' WHERE user_id = 'c'`);
         await changesOnly(
           ["b"],
-          () =>
-            transaction`UPDATE roles SET access = '{"admin":{"enter":true}}' WHERE id = 'viewer'`,
+          () => transaction`UPDATE roles SET access = '{"admin":{"enter":true}}' WHERE id = 'viewer'`,
         );
-        await changesOnly(
-          ["c"],
-          () => transaction`UPDATE roles SET name = 'Renamed editor' WHERE id = 'editor'`,
-        );
-        await changesOnly(
-          [],
-          () => transaction`UPDATE roles SET name = 'Unused' WHERE id = 'free'`,
-        );
-        await changesOnly(
-          ["d"],
-          () => transaction`UPDATE auth_users SET status = 'suspended' WHERE id = 'd'`,
-        );
+        await changesOnly(["c"], () => transaction`UPDATE roles SET name = 'Renamed editor' WHERE id = 'editor'`);
+        await changesOnly([], () => transaction`UPDATE roles SET name = 'Unused' WHERE id = 'free'`);
+        await changesOnly(["d"], () => transaction`UPDATE auth_users SET status = 'suspended' WHERE id = 'd'`);
         await changesOnly(["c"], () => transaction`DELETE FROM roles WHERE id = 'editor'`);
         assert.equal((await transaction`SELECT * FROM user_roles WHERE user_id = 'c'`).length, 0);
-        await changesOnly(
-          ["b"],
-          () => transaction`DELETE FROM user_roles WHERE role_id = 'viewer'`,
-        );
+        await changesOnly(["b"], () => transaction`DELETE FROM user_roles WHERE role_id = 'viewer'`);
 
         const beforeRollback = await timestamps();
         const cancel = new Error("cancel authorization update");
@@ -165,10 +145,7 @@ test(
       INSERT INTO roles (id, name) VALUES ('editor', 'Editor');
     `);
       await sql.unsafe(
-        await readFile(
-          new URL("../packages/database/drizzle/0007_user_role_cache.sql", import.meta.url),
-          "utf8",
-        ),
+        await readFile(new URL("../packages/database/drizzle/0007_user_role_cache.sql", import.meta.url), "utf8"),
       );
     });
     const roleWriter = postgres(process.env.DATABASE_URL, {
@@ -187,8 +164,7 @@ test(
     async function waitsFor(waiter, blocker) {
       const deadline = Date.now() + 3000;
       while (Date.now() < deadline) {
-        const [{ waiting }] =
-          await admin`SELECT ${blocker} = ANY(pg_blocking_pids(${waiter})) AS waiting`;
+        const [{ waiting }] = await admin`SELECT ${blocker} = ANY(pg_blocking_pids(${waiter})) AS waiting`;
         if (waiting) return;
         await setTimeout(10);
       }
@@ -198,8 +174,7 @@ test(
     await roleWriter`BEGIN`;
     await assignmentWriter`BEGIN`;
     await roleWriter`UPDATE roles SET access = '{"admin":{"enter":true}}' WHERE id = 'editor'`;
-    const assignment =
-      assignmentWriter`INSERT INTO user_roles VALUES ('role-first', 'editor')`.execute();
+    const assignment = assignmentWriter`INSERT INTO user_roles VALUES ('role-first', 'editor')`.execute();
     await waitsFor(assignmentPid, rolePid);
     await roleWriter`COMMIT`;
     await assignment;

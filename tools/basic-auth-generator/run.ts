@@ -16,9 +16,7 @@ import { requireUtilityInput } from "../../lib/devtools/shared/options.ts";
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
-  const encoded = encodeBase64(
-    `${requireUtilityInput(ctx.input.text, "Username")}:${ctx.input.secondary ?? ""}`,
-  );
+  const encoded = encodeBase64(`${requireUtilityInput(ctx.input.text, "Username")}:${ctx.input.secondary ?? ""}`);
   const value = `Basic ${encoded}`;
   return {
     render: "text",

@@ -4,18 +4,9 @@ export default {
   toolId: "devtools.curl-to-axios",
   app: "devtools",
   category: "jwt-api-tools",
-  keywords: [
-    "curl",
-    "axios",
-    "convert",
-    "http request",
-    "javascript",
-    "api client",
-    "code generator",
-  ],
+  keywords: ["curl", "axios", "convert", "http request", "javascript", "api client", "code generator"],
   name: "cURL to Axios",
-  description:
-    "Convert common cURL requests to Axios and surface flags that cannot be represented.",
+  description: "Convert common cURL requests to Axios and surface flags that cannot be represented.",
   input: {
     kind: "text",
     label: "cURL command",

@@ -58,9 +58,7 @@ export function BlogTaxonomy({ kind, terms, returnTo }: Props) {
       }
       if (!value.id) setName("");
       if (value.id) setEditing(null);
-      setMessage(
-        value.id ? "Name updated." : `${kind === "category" ? "Category" : "Tag"} created.`,
-      );
+      setMessage(value.id ? "Name updated." : `${kind === "category" ? "Category" : "Tag"} created.`);
       router.refresh();
     } catch {
       setError("Couldn’t save the name. Try again.");
@@ -95,11 +93,7 @@ export function BlogTaxonomy({ kind, terms, returnTo }: Props) {
             onChange={(event) => setName(event.target.value)}
           />
         </div>
-        <Button
-          type="submit"
-          loading={pending && !editing}
-          disabled={pending || !!editing || !name.trim()}
-        >
+        <Button type="submit" loading={pending && !editing} disabled={pending || !!editing || !name.trim()}>
           Add {kind}
         </Button>
       </form>
@@ -143,12 +137,8 @@ export function BlogTaxonomy({ kind, terms, returnTo }: Props) {
                   </p>
                   <details className="mt-2 text-xs text-muted-foreground sm:hidden">
                     <summary className="cursor-pointer">Account attribution</summary>
-                    <p className="mt-2 break-all">
-                      Created by: {term.createdBy ?? "Deleted account"}
-                    </p>
-                    <p className="mt-1 break-all">
-                      Last edited by: {term.updatedBy ?? "Deleted account"}
-                    </p>
+                    <p className="mt-2 break-all">Created by: {term.createdBy ?? "Deleted account"}</p>
+                    <p className="mt-1 break-all">Last edited by: {term.updatedBy ?? "Deleted account"}</p>
                   </details>
                 </TableCell>
                 <TableCell className="hidden max-w-64 whitespace-normal text-xs text-muted-foreground sm:table-cell">
@@ -159,24 +149,15 @@ export function BlogTaxonomy({ kind, terms, returnTo }: Props) {
                   </p>
                   <details className="mt-2">
                     <summary className="cursor-pointer">Account attribution</summary>
-                    <p className="mt-2 break-all">
-                      Created by: {term.createdBy ?? "Deleted account"}
-                    </p>
-                    <p className="mt-1 break-all">
-                      Last edited by: {term.updatedBy ?? "Deleted account"}
-                    </p>
+                    <p className="mt-2 break-all">Created by: {term.createdBy ?? "Deleted account"}</p>
+                    <p className="mt-1 break-all">Last edited by: {term.updatedBy ?? "Deleted account"}</p>
                   </details>
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-2">
                     {editing?.id === term.id ? (
                       <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={pending}
-                          onClick={() => setEditing(null)}
-                        >
+                        <Button variant="ghost" size="sm" disabled={pending} onClick={() => setEditing(null)}>
                           Cancel
                         </Button>
                         <Button

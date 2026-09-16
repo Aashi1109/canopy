@@ -40,8 +40,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     .map((input, index) => ({ input: input.trim(), line: index + 1 }))
     .filter(({ input }) => input);
 
-  if (lines.length <= 1)
-    return { render: "text", text: convert(lines[0]?.input ?? ctx.input.text, ctx.settings) };
+  if (lines.length <= 1) return { render: "text", text: convert(lines[0]?.input ?? ctx.input.text, ctx.settings) };
 
   const items: string[] = [];
   const labels: string[] = [];

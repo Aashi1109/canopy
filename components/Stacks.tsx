@@ -15,15 +15,7 @@ import {
 import { cn } from "@smarttools/ui/lib/utils";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, SlidersHorizontal } from "lucide";
 import { MorphIcon } from "morphicons/react";
-import {
-  Children,
-  type HTMLAttributes,
-  type ReactNode,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from "react";
+import { Children, type HTMLAttributes, type ReactNode, useEffect, useId, useRef, useState } from "react";
 
 type StackDirection = "row" | "column";
 type StackGap = "none" | "xs" | "sm" | "md" | "lg";
@@ -241,10 +233,7 @@ function SplitStack({
   if (stacked) {
     return (
       <div
-        className={cn(
-          "flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto",
-          className,
-        )}
+        className={cn("flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto", className)}
         data-collapsed={collapsed ?? undefined}
         data-orientation={orientation}
         data-stack="split"
@@ -269,11 +258,7 @@ function SplitStack({
         <div
           className={cn(
             "min-w-0 shrink-0 overflow-visible",
-            collapsed === "primary"
-              ? "hidden"
-              : collapsed === "secondary"
-                ? "min-h-0 flex-1"
-                : undefined,
+            collapsed === "primary" ? "hidden" : collapsed === "secondary" ? "min-h-0 flex-1" : undefined,
           )}
           data-split-pane="primary"
           id={primaryPaneId}
@@ -283,11 +268,7 @@ function SplitStack({
         <div
           className={cn(
             "min-w-0 shrink-0 overflow-visible",
-            collapsed === "secondary"
-              ? "hidden"
-              : collapsed === "primary"
-                ? "min-h-0 flex-1"
-                : undefined,
+            collapsed === "secondary" ? "hidden" : collapsed === "primary" ? "min-h-0 flex-1" : undefined,
           )}
           data-split-pane="secondary"
           id={secondaryPaneId}
@@ -306,22 +287,12 @@ function SplitStack({
             top: "calc(100% - 1rem)",
           }
         : {
-            left:
-              collapsed === "primary"
-                ? "1rem"
-                : collapsed === "secondary"
-                  ? "calc(100% - 1rem)"
-                  : `${size}%`,
+            left: collapsed === "primary" ? "1rem" : collapsed === "secondary" ? "calc(100% - 1rem)" : `${size}%`,
             top: collapseControlPosition === "top" ? "4rem" : "50%",
           }
       : {
           left: "50%",
-          top:
-            collapsed === "primary"
-              ? "1rem"
-              : collapsed === "secondary"
-                ? "calc(100% - 1rem)"
-                : `${size}%`,
+          top: collapsed === "primary" ? "1rem" : collapsed === "secondary" ? "calc(100% - 1rem)" : `${size}%`,
         };
 
   return (
@@ -352,9 +323,7 @@ function SplitStack({
           if (nextSize > 0 && nextSize < 100) setSize(nextSize);
           if (collapsible) {
             setCollapsed(
-              layout[collapseSide === "primary" ? primaryPaneId : secondaryPaneId] === 0
-                ? collapseSide
-                : null,
+              layout[collapseSide === "primary" ? primaryPaneId : secondaryPaneId] === 0 ? collapseSide : null,
             );
           }
         }}
@@ -394,9 +363,7 @@ function SplitStack({
           id={primaryPaneId}
           inert={collapsed === "primary" || undefined}
           maxSize={
-            secondaryHidden !== undefined || (collapsible && collapseSide === "secondary")
-              ? "100%"
-              : `${maxSize}%`
+            secondaryHidden !== undefined || (collapsible && collapseSide === "secondary") ? "100%" : `${maxSize}%`
           }
           minSize={`${minSize}%`}
           panelRef={primaryPanelRef}
@@ -404,18 +371,14 @@ function SplitStack({
           {panes[0]}
         </ResizablePanel>
         <ResizableHandle
-          aria-label={
-            orientation === "horizontal" ? "Resize workspace panels" : "Resize workspace regions"
-          }
+          aria-label={orientation === "horizontal" ? "Resize workspace panels" : "Resize workspace regions"}
           className={cn("z-20 focus-visible:ring-2", secondaryHidden && "hidden")}
           disabled={!resizable || secondaryHidden}
         />
         <ResizablePanel
           aria-hidden={collapsed === "secondary" || undefined}
           className="min-h-0 min-w-0 overflow-hidden"
-          collapsible={
-            secondaryHidden !== undefined || (collapsible && collapseSide === "secondary")
-          }
+          collapsible={secondaryHidden !== undefined || (collapsible && collapseSide === "secondary")}
           collapsedSize="0%"
           data-split-pane="secondary"
           defaultSize={
@@ -478,14 +441,7 @@ export type GridStackProps = HTMLAttributes<HTMLDivElement> & {
   minItemWidth?: string;
 };
 
-function GridStack({
-  className,
-  columns,
-  gap = "md",
-  minItemWidth = "14rem",
-  style,
-  ...props
-}: GridStackProps) {
+function GridStack({ className, columns, gap = "md", minItemWidth = "14rem", style, ...props }: GridStackProps) {
   return (
     <div
       className={cn("grid min-h-0 min-w-0", STACK_GAP_CLASSES[gap], className)}
@@ -519,11 +475,7 @@ function OverlayStack({
   ...props
 }: OverlayStackProps) {
   return (
-    <div
-      className={cn("relative min-h-0 min-w-0 overflow-hidden", className)}
-      data-stack="overlay"
-      {...props}
-    >
+    <div className={cn("relative min-h-0 min-w-0 overflow-hidden", className)} data-stack="overlay" {...props}>
       <div className={cn("min-h-0 min-w-0", baseClassName)}>{base}</div>
       {overlay ? (
         <div
@@ -545,13 +497,7 @@ export type ScrollRegionProps = HTMLAttributes<HTMLDivElement> & {
   accessibleName?: string;
 };
 
-function ScrollRegion({
-  accessibleName,
-  children,
-  className,
-  tabIndex,
-  ...props
-}: ScrollRegionProps) {
+function ScrollRegion({ accessibleName, children, className, tabIndex, ...props }: ScrollRegionProps) {
   return (
     <ScrollArea
       className={cn("min-h-0 min-w-0", className)}

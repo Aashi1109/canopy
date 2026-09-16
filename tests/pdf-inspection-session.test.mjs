@@ -50,10 +50,7 @@ test("PDF inspection keeps a range-backed session and returns geometry before ra
     { pageNumber: 2, pageWidth: 500, pageHeight: 600 },
   ]);
   assert.ok(sliceCalls > 0, "PDF.js should request bounded File slices");
-  await assert.rejects(
-    session.renderThumbnails([3]),
-    (error) => error?.code === "invalid-page-selection",
-  );
+  await assert.rejects(session.renderThumbnails([3]), (error) => error?.code === "invalid-page-selection");
   await session.close();
   await session.close();
 });

@@ -1,7 +1,6 @@
 export type MediaKind = "pdf" | "jpeg" | "png" | "webp" | "heic";
 
-export type RuleResult<T extends object = object> =
-  ({ ok: true } & T) | { ok: false; code: string; message: string };
+export type RuleResult<T extends object = object> = ({ ok: true } & T) | { ok: false; code: string; message: string };
 
 const MIB = 1024 * 1024;
 
@@ -76,16 +75,10 @@ export function validateMediaSignature(
     return failure("mime-mismatch", "The file contents do not match its reported type.");
   }
   if (kind === "webp" && isAnimatedWebp(bytes)) {
-    return failure(
-      "animated-image",
-      "Animated WebP files are not supported. Choose a static image.",
-    );
+    return failure("animated-image", "Animated WebP files are not supported. Choose a static image.");
   }
   if (kind === "heic" && readFtypBrands(bytes).some((brand) => HEIC_SEQUENCE_BRANDS.has(brand))) {
-    return failure(
-      "image-sequence",
-      "Multi-image HEIC sequences are not supported. Choose a single image.",
-    );
+    return failure("image-sequence", "Multi-image HEIC sequences are not supported. Choose a single image.");
   }
   return { ok: true, kind, mime: MIME_BY_KIND[kind] };
 }
@@ -128,10 +121,7 @@ export function validatePdfSelection(
   }
   if (options.merge) {
     if (files.length > MEDIA_LIMITS.pdfs.maxMergeFiles) {
-      return failure(
-        "too-many-files",
-        `Merge no more than ${MEDIA_LIMITS.pdfs.maxMergeFiles} PDFs at once.`,
-      );
+      return failure("too-many-files", `Merge no more than ${MEDIA_LIMITS.pdfs.maxMergeFiles} PDFs at once.`);
     }
     if (sum(sizes) > MEDIA_LIMITS.pdfs.maxMergeTotalBytes) {
       return failure("total-too-large", "PDFs selected for merging must total 50 MiB or less.");
@@ -141,9 +131,7 @@ export function validatePdfSelection(
     if (!isPositiveInteger(options.pageCount)) {
       return failure("invalid-page-count", "The PDF page count is invalid.");
     }
-    const limit = options.raster
-      ? MEDIA_LIMITS.pdfs.maxRasterPages
-      : MEDIA_LIMITS.pdfs.maxStructuralPages;
+    const limit = options.raster ? MEDIA_LIMITS.pdfs.maxRasterPages : MEDIA_LIMITS.pdfs.maxStructuralPages;
     if (options.pageCount > limit) {
       return failure("too-many-pages", `This operation supports at most ${limit} pages.`);
     }
@@ -220,12 +208,7 @@ export function createOutputFilename(inputName: string, extension: string, suffi
   return `${base}${safeSuffix}.${sanitizeExtension(extension)}`;
 }
 
-export function createPageOutputFilename(
-  inputName: string,
-  page: number,
-  totalPages: number,
-  extension: string,
-) {
+export function createPageOutputFilename(inputName: string, page: number, totalPages: number, extension: string) {
   if (!isPositiveInteger(page) || !isPositiveInteger(totalPages) || page > totalPages) {
     throw new RangeError("Page numbers must be within the document.");
   }

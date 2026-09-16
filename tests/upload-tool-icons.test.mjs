@@ -41,11 +41,8 @@ test("uploads slug IDs, resolves existing assets, and retains successful URLs af
           persistedBeforeFailure = JSON.parse(await readFile(output, "utf8"));
           throw { http_code: 429, message: "Too many requests" };
         }
-        if (options.public_id.endsWith("/xml-to-json"))
-          return { ...resource(options.public_id), version: undefined };
-        return options.public_id.endsWith("/json-to-csv")
-          ? { existing: true }
-          : resource(options.public_id);
+        if (options.public_id.endsWith("/xml-to-json")) return { ...resource(options.public_id), version: undefined };
+        return options.public_id.endsWith("/json-to-csv") ? { existing: true } : resource(options.public_id);
       },
     },
     api: {
@@ -106,19 +103,10 @@ test("uploads slug IDs, resolves existing assets, and retains successful URLs af
     log() {},
   });
   assert.equal(customFolder.icons[0].publicId, "Canopy/platform/assets/json-editor");
-  await assert.rejects(
-    uploadToolIcons({ dir, output, folder: "../bad", dryRun: true }),
-    /segments/,
-  );
-  await assert.rejects(
-    uploadToolIcons({ dir, output: path.join(dir, "manifest.json"), dryRun: true }),
-    /outside/,
-  );
+  await assert.rejects(uploadToolIcons({ dir, output, folder: "../bad", dryRun: true }), /segments/);
+  await assert.rejects(uploadToolIcons({ dir, output: path.join(dir, "manifest.json"), dryRun: true }), /outside/);
   for (const concurrency of [0, 21, 1.5, "invalid"]) {
-    await assert.rejects(
-      uploadToolIcons({ dir, output, concurrency, dryRun: true }),
-      /concurrency/,
-    );
+    await assert.rejects(uploadToolIcons({ dir, output, concurrency, dryRun: true }), /concurrency/);
   }
 });
 
@@ -128,8 +116,7 @@ test("bounds concurrent uploads and saves a sorted manifest after mixed batch re
   const dir = path.join(root, "icons");
   const output = path.join(root, "manifest.json");
   await mkdir(dir);
-  for (const slug of ["a", "b", "c", "d", "e"])
-    await writeFile(path.join(dir, `${slug}.svg`), "<svg/>");
+  for (const slug of ["a", "b", "c", "d", "e"]) await writeFile(path.join(dir, `${slug}.svg`), "<svg/>");
   let active = 0;
   let maximum = 0;
   let checkpoint;
@@ -215,8 +202,7 @@ test("failed-only retries select recorded failures and preserve successful and p
   const output = path.join(root, "manifest.json");
   const folder = "retry/icons";
   await mkdir(dir);
-  for (const slug of ["a", "b", "c", "d", "e"])
-    await writeFile(path.join(dir, `${slug}.svg`), "<svg/>");
+  for (const slug of ["a", "b", "c", "d", "e"]) await writeFile(path.join(dir, `${slug}.svg`), "<svg/>");
   const previousIcon = {
     slug: "a",
     publicId: `${folder}/a`,

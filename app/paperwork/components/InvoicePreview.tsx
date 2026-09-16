@@ -84,14 +84,8 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
                 <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-slate-950 uppercase font-sans">
                   {data.business.name || "[Your Business Name]"}
                 </h1>
-                {hasBizContact && (
-                  <p className="text-xs text-slate-500 font-medium">{data.business.contactName}</p>
-                )}
-                {hasBizTaxId && (
-                  <p className="text-xs text-slate-500 font-mono">
-                    Tax ID/EIN: {data.business.taxId}
-                  </p>
-                )}
+                {hasBizContact && <p className="text-xs text-slate-500 font-medium">{data.business.contactName}</p>}
+                {hasBizTaxId && <p className="text-xs text-slate-500 font-mono">Tax ID/EIN: {data.business.taxId}</p>}
               </div>
             </div>
 
@@ -104,22 +98,13 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
               </p>
               <div className="text-xs text-slate-500">
                 <p>
-                  Issue Date:{" "}
-                  <span className="font-semibold text-slate-800">
-                    {data.invoice.invoiceDate || "N/A"}
-                  </span>
+                  Issue Date: <span className="font-semibold text-slate-800">{data.invoice.invoiceDate || "N/A"}</span>
                 </p>
                 <p>
-                  Due Date:{" "}
-                  <span className="font-semibold text-slate-800">
-                    {data.invoice.dueDate || "N/A"}
-                  </span>
+                  Due Date: <span className="font-semibold text-slate-800">{data.invoice.dueDate || "N/A"}</span>
                 </p>
                 <p>
-                  Terms:{" "}
-                  <span className="font-semibold text-slate-800">
-                    {data.invoice.paymentTerms || "N/A"}
-                  </span>
+                  Terms: <span className="font-semibold text-slate-800">{data.invoice.paymentTerms || "N/A"}</span>
                 </p>
               </div>
             </div>
@@ -130,12 +115,8 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
           {/* Business and Clients billing info columns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Seller details
-              </span>
-              <p className="font-bold text-slate-900 text-sm">
-                {data.business.name || "[Your Business Name]"}
-              </p>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Seller details</span>
+              <p className="font-bold text-slate-900 text-sm">{data.business.name || "[Your Business Name]"}</p>
               {data.business.addressLine1 && (
                 <p className="text-xs text-slate-600">
                   {data.business.addressLine1}
@@ -144,8 +125,7 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
               )}
               {(data.business.city || data.business.state || data.business.zipCode) && (
                 <p className="text-xs text-slate-600">
-                  {data.business.city || ""}, {data.business.state || ""}{" "}
-                  {data.business.zipCode || ""}
+                  {data.business.city || ""}, {data.business.state || ""} {data.business.zipCode || ""}
                 </p>
               )}
               <p className="text-xs text-slate-600">{data.business.country || "United States"}</p>
@@ -162,12 +142,8 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 Prepared For / Bill To
               </span>
-              <p className="font-bold text-slate-950 text-sm">
-                {data.client.name || "[Client Name Required]"}
-              </p>
-              {hasClientCompany && (
-                <p className="text-xs font-semibold text-slate-700">{data.client.company}</p>
-              )}
+              <p className="font-bold text-slate-950 text-sm">{data.client.name || "[Client Name Required]"}</p>
+              {hasClientCompany && <p className="text-xs font-semibold text-slate-700">{data.client.company}</p>}
               {data.client.addressLine1 && (
                 <p className="text-xs text-slate-600">
                   {data.client.addressLine1}
@@ -193,9 +169,7 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
             <div className="grid grid-cols-2 gap-4 bg-slate-50 border border-slate-200/50 p-3 rounded-xl text-xs">
               {hasProjectName && (
                 <div>
-                  <span className="text-slate-400 font-bold block text-[11px] uppercase tracking-wider">
-                    Project
-                  </span>
+                  <span className="text-slate-400 font-bold block text-[11px] uppercase tracking-wider">Project</span>
                   <span className="font-bold text-slate-800">{data.invoice.projectName}</span>
                 </div>
               )}
@@ -204,9 +178,7 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
                   <span className="text-slate-400 font-bold block text-[11px] uppercase tracking-wider">
                     P.O. Number
                   </span>
-                  <span className="font-bold text-slate-800 font-mono">
-                    {data.invoice.poNumber}
-                  </span>
+                  <span className="font-bold text-slate-800 font-mono">{data.invoice.poNumber}</span>
                 </div>
               )}
             </div>
@@ -246,19 +218,14 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
                   )}
                   {(data.business.city || data.business.state || data.business.zipCode) && (
                     <p>
-                      {data.business.city || ""}, {data.business.state || ""}{" "}
-                      {data.business.zipCode || ""}
+                      {data.business.city || ""}, {data.business.state || ""} {data.business.zipCode || ""}
                     </p>
                   )}
                   <p>{data.business.country || "United States"}</p>
-                  {hasBizTaxId && (
-                    <p className="font-mono text-slate-500">Tax EIN: {data.business.taxId}</p>
-                  )}
+                  {hasBizTaxId && <p className="font-mono text-slate-500">Tax EIN: {data.business.taxId}</p>}
                   {(hasBizEmail || hasBizPhone || hasBizWeb) && (
                     <p className="text-slate-500">
-                      {[data.business.email, data.business.phone, data.business.website]
-                        .filter(Boolean)
-                        .join("  |  ")}
+                      {[data.business.email, data.business.phone, data.business.website].filter(Boolean).join("  |  ")}
                     </p>
                   )}
                 </div>
@@ -266,9 +233,7 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
             </div>
 
             <div className="text-left sm:text-right space-y-1 shrink-0">
-              <h2 className="text-3xl font-light tracking-widest text-slate-800 leading-none">
-                INVOICE
-              </h2>
+              <h2 className="text-3xl font-light tracking-widest text-slate-800 leading-none">INVOICE</h2>
               <div className="text-xs space-y-1 text-slate-600 pt-2">
                 <p>
                   Invoice #{" "}
@@ -278,34 +243,23 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
                 </p>
                 <p>
                   Date of Issue:{" "}
-                  <span className="font-semibold text-slate-900">
-                    {data.invoice.invoiceDate || "N/A"}
-                  </span>
+                  <span className="font-semibold text-slate-900">{data.invoice.invoiceDate || "N/A"}</span>
                 </p>
                 <p>
-                  Date Due:{" "}
-                  <span className="font-semibold text-slate-900">
-                    {data.invoice.dueDate || "N/A"}
-                  </span>
+                  Date Due: <span className="font-semibold text-slate-900">{data.invoice.dueDate || "N/A"}</span>
                 </p>
                 <p>
                   Payment Terms:{" "}
-                  <span className="font-semibold text-slate-900">
-                    {data.invoice.paymentTerms || "N/A"}
-                  </span>
+                  <span className="font-semibold text-slate-900">{data.invoice.paymentTerms || "N/A"}</span>
                 </p>
                 {hasPoNumber && (
                   <p>
-                    P.O. Number:{" "}
-                    <span className="font-mono font-semibold text-slate-900">
-                      {data.invoice.poNumber}
-                    </span>
+                    P.O. Number: <span className="font-mono font-semibold text-slate-900">{data.invoice.poNumber}</span>
                   </p>
                 )}
                 {hasProjectName && (
                   <p>
-                    Project Name:{" "}
-                    <span className="font-semibold text-slate-900">{data.invoice.projectName}</span>
+                    Project Name: <span className="font-semibold text-slate-900">{data.invoice.projectName}</span>
                   </p>
                 )}
               </div>
@@ -318,12 +272,8 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                 Invoice Recipient (Bill To)
               </span>
-              <p className="font-bold text-slate-900 text-sm">
-                {data.client.name || "[Client Name Required]"}
-              </p>
-              {hasClientCompany && (
-                <p className="text-xs font-semibold text-slate-700">{data.client.company}</p>
-              )}
+              <p className="font-bold text-slate-900 text-sm">{data.client.name || "[Client Name Required]"}</p>
+              {hasClientCompany && <p className="text-xs font-semibold text-slate-700">{data.client.company}</p>}
               {data.client.addressLine1 && (
                 <p className="text-xs text-slate-600">
                   {data.client.addressLine1}
@@ -353,18 +303,10 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="border-b border-slate-200 text-slate-500 font-bold">
-              <th className="py-2.5 font-semibold text-[10px] uppercase tracking-wider text-left">
-                Item Description
-              </th>
-              <th className="py-2.5 font-semibold text-[10px] uppercase tracking-wider text-center w-16">
-                Qty
-              </th>
-              <th className="py-2.5 font-semibold text-[10px] uppercase tracking-wider text-right w-24">
-                Unit Price
-              </th>
-              <th className="py-2.5 font-semibold text-[10px] uppercase tracking-wider text-right w-24">
-                Amount
-              </th>
+              <th className="py-2.5 font-semibold text-[10px] uppercase tracking-wider text-left">Item Description</th>
+              <th className="py-2.5 font-semibold text-[10px] uppercase tracking-wider text-center w-16">Qty</th>
+              <th className="py-2.5 font-semibold text-[10px] uppercase tracking-wider text-right w-24">Unit Price</th>
+              <th className="py-2.5 font-semibold text-[10px] uppercase tracking-wider text-right w-24">Amount</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-slate-800">
@@ -376,9 +318,7 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
                 return (
                   <tr key={item.id || idx} className="hover:bg-slate-50/40">
                     <td className="py-3 pr-4 max-w-sm align-top leading-relaxed">
-                      <p className="font-semibold text-slate-900">
-                        {item.description || "[No Description Provided]"}
-                      </p>
+                      <p className="font-semibold text-slate-900">{item.description || "[No Description Provided]"}</p>
                       {item.taxable && (
                         <span className="inline-block mt-1 font-mono text-[11px] bg-slate-100 text-slate-500 px-1 py-0.2 rounded border border-slate-200">
                           Taxable
@@ -429,8 +369,7 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
 
           {getMethodLabels() && (
             <div className="text-[11px] text-slate-500">
-              <span className="font-semibold text-slate-700">Supported Methods:</span>{" "}
-              {getMethodLabels()}
+              <span className="font-semibold text-slate-700">Supported Methods:</span> {getMethodLabels()}
             </div>
           )}
         </div>
@@ -439,23 +378,15 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
         <div className="md:col-span-5 space-y-2 text-xs text-slate-600 font-medium">
           <div className="flex justify-between font-medium">
             <span>Subtotal:</span>
-            <span className="font-mono text-slate-900 text-right">
-              {formatCurrency(totals.subtotal, "USD")}
-            </span>
+            <span className="font-mono text-slate-900 text-right">{formatCurrency(totals.subtotal, "USD")}</span>
           </div>
 
           {totals.discountAmount > 0 && (
             <div className="flex justify-between text-emerald-600">
               <span>
-                Discount{" "}
-                {data.totalsConfig.discountType === "percent"
-                  ? `(${data.totalsConfig.discountValue}%)`
-                  : ""}
-                :
+                Discount {data.totalsConfig.discountType === "percent" ? `(${data.totalsConfig.discountValue}%)` : ""}:
               </span>
-              <span className="font-mono text-right">
-                - {formatCurrency(totals.discountAmount, "USD")}
-              </span>
+              <span className="font-mono text-right">- {formatCurrency(totals.discountAmount, "USD")}</span>
             </div>
           )}
 
@@ -464,18 +395,14 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
               <span className="truncate">
                 {data.totalsConfig.taxLabel || "Sales Tax"} ({data.totalsConfig.taxRate}%):
               </span>
-              <span className="font-mono text-slate-900 text-right">
-                {formatCurrency(totals.taxAmount, "USD")}
-              </span>
+              <span className="font-mono text-slate-900 text-right">{formatCurrency(totals.taxAmount, "USD")}</span>
             </div>
           )}
 
           {totals.shippingFee > 0 && (
             <div className="flex justify-between">
               <span>Shipping &amp; Handling:</span>
-              <span className="font-mono text-slate-900 text-right">
-                {formatCurrency(totals.shippingFee, "USD")}
-              </span>
+              <span className="font-mono text-slate-900 text-right">{formatCurrency(totals.shippingFee, "USD")}</span>
             </div>
           )}
 
@@ -487,18 +414,14 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
           {totals.amountPaid > 0 && (
             <div className="flex justify-between text-slate-500">
               <span>Amount Paid (Partial):</span>
-              <span className="font-mono text-right">
-                - {formatCurrency(totals.amountPaid, "USD")}
-              </span>
+              <span className="font-mono text-right">- {formatCurrency(totals.amountPaid, "USD")}</span>
             </div>
           )}
 
           {/* Balance Due Pill highlighting */}
           <div className="flex justify-between items-center border-t-2 border-slate-900 pt-2 bg-slate-950 text-white rounded-lg p-3 mt-1 shadow-sm">
             <span className="font-bold text-xs">Balance Due (USD):</span>
-            <span className="font-mono text-lg font-black text-right">
-              {formatCurrency(totals.balanceDue, "USD")}
-            </span>
+            <span className="font-mono text-lg font-black text-right">{formatCurrency(totals.balanceDue, "USD")}</span>
           </div>
         </div>
       </div>
@@ -534,9 +457,7 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
           <div className="flex flex-col sm:flex-row justify-between items-start gap-2 pt-2 text-xs border-t border-dashed border-slate-100 text-slate-500">
             <div>
               {hasLateFeeNote && (
-                <p className="font-mono text-[10px] text-red-600 font-semibold">
-                  * Note: {data.payment.lateFeeNote}
-                </p>
+                <p className="font-mono text-[10px] text-red-600 font-semibold">* Note: {data.payment.lateFeeNote}</p>
               )}
             </div>
             <div className="sm:text-right">
@@ -557,9 +478,7 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
               day: "numeric",
             })}
           </span>
-          <span className="font-semibold tracking-wide uppercase text-slate-400">
-            Powered by SmartTools Paperwork
-          </span>
+          <span className="font-semibold tracking-wide uppercase text-slate-400">Powered by SmartTools Paperwork</span>
         </div>
       </div>
     </div>

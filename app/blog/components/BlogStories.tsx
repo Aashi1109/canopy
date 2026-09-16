@@ -19,15 +19,7 @@ type Props = {
   topics: ReactNode;
 };
 
-export function BlogStories({
-  initialPage,
-  filters,
-  featuredId,
-  searchCoverUrl,
-  intro,
-  emptyState,
-  topics,
-}: Props) {
+export function BlogStories({ initialPage, filters, featuredId, searchCoverUrl, intro, emptyState, topics }: Props) {
   const [page, setPage] = useState(initialPage);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -63,9 +55,7 @@ export function BlogStories({
         `${additions.length} more ${additions.length === 1 ? "story" : "stories"} loaded.${result.data.nextCursor ? "" : " You’re up to date."}`,
       );
     } catch {
-      setError(
-        "Couldn’t load more stories. Your loaded stories are still here. Check your connection and try again.",
-      );
+      setError("Couldn’t load more stories. Your loaded stories are still here. Check your connection and try again.");
       setAnnouncement("");
     } finally {
       pending.current = false;
@@ -102,9 +92,7 @@ export function BlogStories({
         </div>
         {!page.items.length && emptyState}
         {featuredId && !stories.length && (
-          <P className="py-6 text-muted-foreground">
-            You’re up to date. More stories are on the way.
-          </P>
+          <P className="py-6 text-muted-foreground">You’re up to date. More stories are on the way.</P>
         )}
       </section>
       {topics}
@@ -129,14 +117,7 @@ export function BlogStories({
                   rel="next"
                   href={blogListingHref(filters, { cursor: page.nextCursor })}
                   onClick={(event) => {
-                    if (
-                      event.button !== 0 ||
-                      event.metaKey ||
-                      event.ctrlKey ||
-                      event.shiftKey ||
-                      event.altKey
-                    )
-                      return;
+                    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                     event.preventDefault();
                     void loadMore();
                   }}

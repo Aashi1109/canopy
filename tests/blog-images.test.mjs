@@ -78,10 +78,7 @@ const png = Buffer.from(
 );
 const file = () => new File([png], "original.png", { type: "image/png" });
 const savedEnv = Object.fromEntries(
-  ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"].map((key) => [
-    key,
-    process.env[key],
-  ]),
+  ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"].map((key) => [key, process.env[key]]),
 );
 test.beforeEach(() => {
   Object.assign(fixture, {
@@ -124,11 +121,7 @@ test("uploads immutable versioned assets with permission checks and audit attrib
   assert.equal(options.overwrite, false);
   assert.equal(options.resource_type, "image");
   assert.equal(options.cloud_name, "blog-cloud");
-  assert.equal(
-    options.timeout,
-    undefined,
-    "use the upload SDK's standard timeout rather than a shortened override",
-  );
+  assert.equal(options.timeout, undefined, "use the upload SDK's standard timeout rather than a shortened override");
   assert.match(fixture.uploads[0].source, /^data:image\/png;base64,/);
   assert.deepEqual(fixture.events[1], ["permission", "admin-1", "blog", "edit"]);
   assert.equal(fixture.events[3], "upload");
@@ -211,18 +204,14 @@ test("recognizes JPEG and WebP signatures and permits the exact byte limit", asy
   }
   assert.equal(fixture.uploads.length, 3);
   webp.writeUInt32LE(99, 4);
-  await assert.rejects(
-    () => uploadBlogImage("admin", new File([webp], "image", { type: "image/webp" })),
-    /content/,
-  );
+  await assert.rejects(() => uploadBlogImage("admin", new File([webp], "image", { type: "image/webp" })), /content/);
 });
 
 test("provider failures do not expose credentials and invalid provider metadata is rejected", async () => {
   fixture.failUpload = true;
   await assert.rejects(
     () => uploadBlogImage("admin", file()),
-    (error) =>
-      error.code === "UPLOAD_TEMPORARY_FAILURE" && !error.message.includes("credential-secret"),
+    (error) => error.code === "UPLOAD_TEMPORARY_FAILURE" && !error.message.includes("credential-secret"),
   );
   fixture.failUpload = false;
   for (const response of [
@@ -246,14 +235,8 @@ test("provider failures distinguish file rejection, account configuration, and t
   for (const [providerError, code] of [
     [{ http_code: 400, message: "Invalid image credential-secret" }, "UPLOAD_REJECTED"],
     [{ http_code: 413, message: "Limit credential-secret" }, "UPLOAD_REJECTED"],
-    [
-      { http_code: 401, message: "Invalid API key credential-secret" },
-      "UPLOAD_CONFIGURATION_ERROR",
-    ],
-    [
-      { http_code: 403, message: "Disabled account credential-secret" },
-      "UPLOAD_CONFIGURATION_ERROR",
-    ],
+    [{ http_code: 401, message: "Invalid API key credential-secret" }, "UPLOAD_CONFIGURATION_ERROR"],
+    [{ http_code: 403, message: "Disabled account credential-secret" }, "UPLOAD_CONFIGURATION_ERROR"],
     [{ http_code: 429, message: "Limit credential-secret" }, "UPLOAD_TEMPORARY_FAILURE"],
     [{ http_code: 499, message: "Timeout credential-secret" }, "UPLOAD_TEMPORARY_FAILURE"],
     [{ http_code: 500, message: "Internal credential-secret" }, "UPLOAD_TEMPORARY_FAILURE"],
@@ -277,9 +260,7 @@ test("database outages stay actionable while permission revocation remains forbi
   await assert.rejects(
     () => uploadBlogImage("admin", file()),
     (error) =>
-      error.code === "UPLOAD_TEMPORARY_FAILURE" &&
-      /access/i.test(error.message) &&
-      !error.message.includes("password"),
+      error.code === "UPLOAD_TEMPORARY_FAILURE" && /access/i.test(error.message) && !error.message.includes("password"),
   );
   assert.equal(fixture.uploads.length, 0);
   fixture.transactionCalls = 0;
@@ -298,28 +279,16 @@ test("database outages stay actionable while permission revocation remains forbi
 test("known upload transport failures expose only safe diagnostic codes with recovery guidance", async () => {
   for (const [providerError, diagnostic, guidance] of [
     [{ code: "ENOTFOUND" }, "ENOTFOUND", /DNS/i],
-    [
-      { error: { code: "ENOTFOUND", message: "credential-secret-private-provider-detail" } },
-      "ENOTFOUND",
-      /DNS/i,
-    ],
+    [{ error: { code: "ENOTFOUND", message: "credential-secret-private-provider-detail" } }, "ENOTFOUND", /DNS/i],
     [{ code: "EAI_AGAIN" }, "EAI_AGAIN", /DNS/i],
     [{ code: "ECONNREFUSED" }, "ECONNREFUSED", /connection|firewall/i],
     [{ code: "ECONNRESET" }, "ECONNRESET", /connection|firewall/i],
     [{ code: "ETIMEDOUT" }, "ETIMEDOUT", /timed out/i],
     [{ code: "ESOCKETTIMEDOUT" }, "ESOCKETTIMEDOUT", /timed out/i],
     [{ http_code: 499 }, "HTTP 499", /timed out/i],
-    [
-      { error: { http_code: 499, message: "credential-secret-private-provider-detail" } },
-      "HTTP 499",
-      /timed out/i,
-    ],
+    [{ error: { http_code: 499, message: "credential-secret-private-provider-detail" } }, "HTTP 499", /timed out/i],
     [{ code: "CERT_HAS_EXPIRED" }, "CERT_HAS_EXPIRED", /certificate/i],
-    [
-      { code: "UNABLE_TO_VERIFY_LEAF_SIGNATURE" },
-      "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
-      /certificate/i,
-    ],
+    [{ code: "UNABLE_TO_VERIFY_LEAF_SIGNATURE" }, "UNABLE_TO_VERIFY_LEAF_SIGNATURE", /certificate/i],
     [{ code: "DEPTH_ZERO_SELF_SIGNED_CERT" }, "DEPTH_ZERO_SELF_SIGNED_CERT", /certificate/i],
     [{ code: "SELF_SIGNED_CERT_IN_CHAIN" }, "SELF_SIGNED_CERT_IN_CHAIN", /certificate/i],
     [{ code: "ERR_TLS_CERT_ALTNAME_INVALID" }, "ERR_TLS_CERT_ALTNAME_INVALID", /certificate/i],
@@ -350,7 +319,6 @@ test("known upload transport failures expose only safe diagnostic codes with rec
   };
   await assert.rejects(
     () => uploadBlogImage("admin", file()),
-    (error) =>
-      error.code === "UPLOAD_TEMPORARY_FAILURE" && !error.message.includes("private-secret"),
+    (error) => error.code === "UPLOAD_TEMPORARY_FAILURE" && !error.message.includes("private-secret"),
   );
 });

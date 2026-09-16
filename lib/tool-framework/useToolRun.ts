@@ -194,10 +194,7 @@ export function useToolRun(): ToolRunHandle {
         .filter((preview) => {
           const buffer = (preview as { readonly buffer?: unknown }).buffer;
           const renderedWidth = (preview as { readonly renderWidth?: number }).renderWidth ?? 0;
-          return (
-            buffer instanceof ArrayBuffer &&
-            (renderWidth === undefined || renderedWidth >= renderWidth)
-          );
+          return buffer instanceof ArrayBuffer && (renderWidth === undefined || renderedWidth >= renderWidth);
         })
         .map((preview) => preview.pageNumber),
     );
@@ -206,16 +203,12 @@ export function useToolRun(): ToolRunHandle {
     const requested = [...new Set(pageNumbers)]
       .filter(
         (pageNumber) =>
-          geometryPages.has(pageNumber) &&
-          !bufferedPages.has(pageNumber) &&
-          !session.inFlight.has(pageNumber),
+          geometryPages.has(pageNumber) && !bufferedPages.has(pageNumber) && !session.inFlight.has(pageNumber),
       )
       .slice(0, room);
     if (requested.length === 0) return;
     for (const pageNumber of requested) session.inFlight.add(pageNumber);
-    worker.postMessage(
-      createToolThumbnailRequest({ jobId: session.jobId, pageNumbers: requested, renderWidth }),
-    );
+    worker.postMessage(createToolThumbnailRequest({ jobId: session.jobId, pageNumbers: requested, renderWidth }));
   }, []);
 
   const closeInspection = useCallback(() => {

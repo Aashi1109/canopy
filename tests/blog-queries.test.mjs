@@ -20,12 +20,7 @@ test("blog date cursors retain database microseconds and reject invalid or misma
   assert.deepEqual(decodeBlogCursor(encodeBlogCursor(cursor), "published"), cursor);
   assert.equal(decodeBlogCursor(undefined, "published"), null);
   assert.throws(() => decodeBlogCursor(encodeBlogCursor(cursor), "admin"), BlogValidationError);
-  for (const input of [
-    "",
-    "!bad",
-    "a".repeat(1201),
-    Buffer.from("not json").toString("base64url"),
-  ]) {
+  for (const input of ["", "!bad", "a".repeat(1201), Buffer.from("not json").toString("base64url")]) {
     assert.throws(() => decodeBlogCursor(input, "published"), /cursor/);
   }
   for (const value of [
@@ -38,11 +33,7 @@ test("blog date cursors retain database microseconds and reject invalid or misma
   }
   assert.throws(() => encodeBlogCursor({ ...cursor, id: "' OR true; --" }));
   assert.throws(
-    () =>
-      decodeBlogCursor(
-        Buffer.from(JSON.stringify({ ...cursor, extra: true })).toString("base64url"),
-        "published",
-      ),
+    () => decodeBlogCursor(Buffer.from(JSON.stringify({ ...cursor, extra: true })).toString("base64url"), "published"),
     /cursor/,
   );
 });
@@ -70,9 +61,7 @@ test("taxonomy and revision cursors retain their own ordering and scope", () => 
   assert.deepEqual(decodeBlogCursor(encodeBlogCursor(revision), "history"), revision);
   assert.throws(() => encodeBlogCursor({ ...revision, value: 0 }));
   assert.throws(() => encodeBlogCursor({ ...revision, value: 2.5 }));
-  assert.throws(() =>
-    encodeBlogCursor({ kind: "category", value: "invalid\u0000name", id: "term-1" }),
-  );
+  assert.throws(() => encodeBlogCursor({ kind: "category", value: "invalid\u0000name", id: "term-1" }));
   assert.throws(() => encodeBlogCursor({ kind: "tag", value: "\ud800", id: "term-1" }));
 });
 
@@ -90,12 +79,7 @@ test("query boundaries reject malformed filters and IDs before opening a databas
     () => listBlogPosts("admin", { categoryId: "invalid id" }),
     () => getBlogPost("admin", ""),
     () => getBlogRevision("admin", "post", "../revision"),
-    () =>
-      listBlogRevisions(
-        "admin",
-        "post",
-        encodeBlogCursor({ kind: "history", value: 1, id: "other-post" }),
-      ),
+    () => listBlogRevisions("admin", "post", encodeBlogCursor({ kind: "history", value: 1, id: "other-post" })),
     () => listBlogTaxonomy("admin", "author"),
     () => listPublishedBlogTaxonomy("category", { createdBy: "admin" }),
   ];

@@ -4,16 +4,7 @@ export default {
   toolId: "media.compress-pdf",
   app: "media",
   category: "pdf-optimization",
-  keywords: [
-    "pdf",
-    "compress",
-    "shrink",
-    "optimize",
-    "reduce size",
-    "qpdf",
-    "flatten",
-    "downsample",
-  ],
+  keywords: ["pdf", "compress", "shrink", "optimize", "reduce size", "qpdf", "flatten", "downsample"],
   name: "Compress PDF",
   description: "Reduce PDF size with structural or strong compression.",
   input: {

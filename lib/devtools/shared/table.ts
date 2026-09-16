@@ -8,11 +8,7 @@ import { escapeHtml } from "./text.ts";
 
 export function utilityDelimiter(value: string): CsvDelimiter {
   if (value === "," || value === ";" || value === "\t" || value === "|") return value;
-  throw new ToolError(
-    "invalid-delimiter",
-    "Choose a valid delimiter.",
-    "Choose comma, semicolon, tab, or pipe.",
-  );
+  throw new ToolError("invalid-delimiter", "Choose a valid delimiter.", "Choose comma, semicolon, tab, or pipe.");
 }
 
 export function parseUtilityTable(input: string, delimiter: CsvDelimiter): string[][] {

@@ -1,23 +1,8 @@
 "use client";
 
-import {
-  Overline,
-  H3,
-  Muted,
-  Caption,
-  Strong,
-  SegmentedControl,
-  ToolOptionsPanel,
-} from "@smarttools/ui";
+import { Overline, H3, Muted, Caption, Strong, SegmentedControl, ToolOptionsPanel } from "@smarttools/ui";
 import { ArrowDownToLine, FileSpreadsheet } from "lucide-react";
-import {
-  type DragEvent,
-  type ReactNode,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { type DragEvent, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { ImageConversionWorkspace } from "@/app/media/components/ImageConversionWorkspace";
 import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
@@ -87,13 +72,10 @@ export interface WorkspaceProps {
 }
 
 function getInputSplitSizes(inputSpec: ToolInputSpec, defaultSize: number, minSize: number) {
-  const allSingleLineFields =
-    inputSpec.kind === "fields" && inputSpec.fields.every((field) => !field.multiline);
+  const allSingleLineFields = inputSpec.kind === "fields" && inputSpec.fields.every((field) => !field.multiline);
   if (!allSingleLineFields) return { defaultSize, minSize };
 
-  return inputSpec.fields.length > 1
-    ? { defaultSize: 36, minSize: 30 }
-    : { defaultSize: 24, minSize: 20 };
+  return inputSpec.fields.length > 1 ? { defaultSize: 36, minSize: 30 } : { defaultSize: 24, minSize: 20 };
 }
 
 function stackedResultTitle(spec: ToolSpec) {
@@ -168,12 +150,7 @@ function InputResultWorkspace({
   }
 
   return (
-    <SplitStack
-      className="h-full"
-      defaultSize={defaultSize}
-      minSize={minSize}
-      orientation="horizontal"
-    >
+    <SplitStack className="h-full" defaultSize={defaultSize} minSize={minSize} orientation="horizontal">
       {input}
       {result}
     </SplitStack>
@@ -201,8 +178,7 @@ function TextFileDropTarget({ children, props }: { children: ReactNode; props: W
 
   if (!acceptedFile) return children;
 
-  const hasFiles = (event: DragEvent<HTMLDivElement>) =>
-    Array.from(event.dataTransfer.types).includes("Files");
+  const hasFiles = (event: DragEvent<HTMLDivElement>) => Array.from(event.dataTransfer.types).includes("Files");
   const resetDrag = () => {
     dragDepth.current = 0;
     setDragActive(false);
@@ -282,8 +258,7 @@ function TextFileDropTarget({ children, props }: { children: ReactNode; props: W
             <div>
               <H3>Release to replace the current {inputName.toLowerCase()}</H3>
               <Muted className="mt-2 text-muted-foreground">
-                Drop anywhere in this workbench. The file stays on this device and replaces the
-                current input.
+                Drop anywhere in this workbench. The file stays on this device and replaces the current input.
               </Muted>
             </div>
             <Caption className="inline-flex items-center gap-2 rounded-full border border-primary bg-card px-4 py-2 shadow-sm">
@@ -313,12 +288,9 @@ export function ToolWorkspace(props: WorkspaceProps & Pick<ResultSurfaceProps, "
   const fields = Object.values(props.spec.settings.fields);
   const settingsOnly = props.spec.input.kind === "none";
   const hasMainSettings = !settingsOnly && fields.some((field) => field.pane === "main");
-  const hasSideSettings = settingsOnly
-    ? fields.length > 0
-    : fields.some((field) => field.pane !== "main");
+  const hasSideSettings = settingsOnly ? fields.length > 0 : fields.some((field) => field.pane !== "main");
   const inputSplit = getInputSplitSizes(props.spec.input, 50, 30);
-  const surfaceVariant =
-    props.spec.input.kind !== "none" && props.spec.layout === "stacked" ? "card" : "panel";
+  const surfaceVariant = props.spec.input.kind !== "none" && props.spec.layout === "stacked" ? "card" : "panel";
   const result = (
     <ResultSurface
       error={props.error}

@@ -34,9 +34,7 @@ const keys = [
   "heic-to-jpg",
   "heic-to-png",
 ];
-const runners = await Promise.all(
-  keys.map(async (key) => [key, (await import(`../tools/${key}/run.worker.ts`)).run]),
-);
+const runners = await Promise.all(keys.map(async (key) => [key, (await import(`../tools/${key}/run.worker.ts`)).run]));
 hooks.deregister();
 
 async function bytes(artifact) {

@@ -6,12 +6,7 @@ import { getActorUserId } from "@/lib/admin/access";
 import { assignRoleToUsers } from "@/lib/admin/adminMutations";
 import { getRole, listRoleUsers } from "@/lib/admin/data";
 
-export async function searchRoleUsersAction(
-  roleId: string,
-  assigned: boolean,
-  search: string,
-  offset: number,
-) {
+export async function searchRoleUsersAction(roleId: string, assigned: boolean, search: string, offset: number) {
   if (
     typeof roleId !== "string" ||
     !roleId.trim() ||

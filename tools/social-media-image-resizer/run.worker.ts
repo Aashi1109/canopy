@@ -20,10 +20,7 @@ import {
   type OutputImageFormat,
 } from "../../lib/tool-framework/media/imageCodec.ts";
 import { writeArtifactBatch } from "../../lib/tool-framework/media/zip.ts";
-import {
-  createOutputFilename,
-  validateImageSelection,
-} from "../../lib/tool-framework/media/validation.ts";
+import { createOutputFilename, validateImageSelection } from "../../lib/tool-framework/media/validation.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
@@ -86,12 +83,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         ctx.progress({ completed: index, total, stage: "Decoding image" });
         const input = ctx.input.files[index];
         const { image } = await decodeImage(input, ALLOWED);
-        const fitted = await fitImage(
-          image,
-          { width: preset.width, height: preset.height },
-          fit,
-          background,
-        );
+        const fitted = await fitImage(image, { width: preset.width, height: preset.height }, fit, background);
         ctx.progress({ completed: index, total, stage: "Encoding image" });
         const buffer = await encodeImage(fitted, format, quality, background);
         await write({

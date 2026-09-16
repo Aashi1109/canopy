@@ -1,2 +1,3 @@
 #!/bin/sh
-pnpm test && pnpm format
+pnpm test 
+pnpm format

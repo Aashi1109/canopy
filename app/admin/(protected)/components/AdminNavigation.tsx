@@ -1,17 +1,7 @@
 "use client";
 
 import { SidebarNavItem } from "@smarttools/ui";
-import {
-  FileText,
-  Newspaper,
-  Flag,
-  History,
-  LayoutDashboard,
-  Palette,
-  ShieldCheck,
-  Users,
-  Wrench,
-} from "lucide-react";
+import { FileText, Newspaper, Flag, History, LayoutDashboard, Palette, ShieldCheck, Users, Wrench } from "lucide-react";
 import { useSelectedLayoutSegment } from "next/navigation";
 
 const links = [
@@ -29,10 +19,7 @@ export function AdminNavigation() {
   const segment = useSelectedLayoutSegment();
 
   return (
-    <nav
-      aria-label="Admin sections"
-      className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible"
-    >
+    <nav aria-label="Admin sections" className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
       <SidebarNavItem
         active={segment === null}
         className="shrink-0"

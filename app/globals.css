@@ -68,10 +68,7 @@ body {
   height: 100% !important;
 }
 
-.pdfme-preview-surface
-  > .pdfme-designer-root
-  > .pdfme-designer-background
-  > div:has(> .pdfme-ui-control-bar) {
+.pdfme-preview-surface > .pdfme-designer-root > .pdfme-designer-background > div:has(> .pdfme-ui-control-bar) {
   bottom: 16px !important;
 }
 

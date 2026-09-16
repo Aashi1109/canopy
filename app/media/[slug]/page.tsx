@@ -17,10 +17,7 @@ export default async function MediaToolPage({ params }: { params: Promise<{ slug
   const tool = await resolveToolPage("media", slug);
   if (!tool) notFound();
 
-  const [related, session] = await Promise.all([
-    relatedTools(tool.toolId),
-    getOptionalSession(await headers()),
-  ]);
+  const [related, session] = await Promise.all([relatedTools(tool.toolId), getOptionalSession(await headers())]);
 
   return (
     <ToolPage

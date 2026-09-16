@@ -18,9 +18,7 @@ function decodeUnicodeEscapes(value: string): string {
       }
       return String.fromCodePoint(point);
     })
-    .replace(/\\u([\da-f]{4})/gi, (_match, code: string) =>
-      String.fromCharCode(Number.parseInt(code, 16)),
-    );
+    .replace(/\\u([\da-f]{4})/gi, (_match, code: string) => String.fromCharCode(Number.parseInt(code, 16)));
 }
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({

@@ -17,11 +17,7 @@ const flag = (name, fallback) => {
 
 const app = flag("app", "devtools");
 const category = flag("category");
-const runFile = rest.includes("--worker")
-  ? "run.worker.ts"
-  : rest.includes("--server")
-    ? "run.server.ts"
-    : "run.ts";
+const runFile = rest.includes("--worker") ? "run.worker.ts" : rest.includes("--server") ? "run.server.ts" : "run.ts";
 
 if (!key || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(key)) throw new Error(USAGE);
 if (TOOL_CATEGORIES[category]?.app !== app) {

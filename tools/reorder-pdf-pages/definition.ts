@@ -4,16 +4,7 @@ export default {
   toolId: "media.reorder-pdf-pages",
   app: "media",
   category: "pdf-organization",
-  keywords: [
-    "pdf",
-    "reorder",
-    "rearrange",
-    "page order",
-    "sort pages",
-    "move pages",
-    "organize",
-    "shuffle",
-  ],
+  keywords: ["pdf", "reorder", "rearrange", "page order", "sort pages", "move pages", "organize", "shuffle"],
   name: "Reorder PDF Pages",
   description: "Rearrange PDF pages with accessible controls.",
   input: {

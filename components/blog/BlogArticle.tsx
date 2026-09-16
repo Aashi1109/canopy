@@ -1,16 +1,5 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import {
-  Avatar,
-  AvatarFallback,
-  Button,
-  Caption,
-  Card,
-  H1,
-  H2,
-  Overline,
-  P,
-  TextLink,
-} from "@smarttools/ui";
+import { Avatar, AvatarFallback, Button, Caption, Card, H1, H2, Overline, P, TextLink } from "@smarttools/ui";
 import { blogImageUrl, renderBlogDocument, type BlogDocument } from "@/lib/blog/document";
 import { blogCanonicalUrl } from "@/lib/blog/publication";
 import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
@@ -39,14 +28,11 @@ export function BlogArticle({ document, publication }: Props) {
   // styling in previews without exposing navigation or keyboard-focusable links.
   const html = publication
     ? content.html
-    : content.html
-        .replace(/<a\b[^>]*>/g, '<span class="preview-link">')
-        .replace(/<\/a>/g, "</span>");
+    : content.html.replace(/<a\b[^>]*>/g, '<span class="preview-link">').replace(/<\/a>/g, "</span>");
   const url = publication ? blogCanonicalUrl(publication.slug) : null;
   const tags = publication?.tags ?? [];
   const relatedToolLinks = publication?.relatedToolLinks ?? [];
-  const date = (value: Date) =>
-    new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(value);
+  const date = (value: Date) => new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(value);
   return (
     <article className={styles.article}>
       <BlogPageContainer>
@@ -141,9 +127,7 @@ export function BlogArticle({ document, publication }: Props) {
                         <a href={`#${heading.id}`}>{heading.text || "Untitled section"}</a>
                       </Button>
                     ) : (
-                      <span className={styles.inactiveLink}>
-                        {heading.text || "Untitled section"}
-                      </span>
+                      <span className={styles.inactiveLink}>{heading.text || "Untitled section"}</span>
                     )}
                   </li>
                 ))}
@@ -158,11 +142,7 @@ export function BlogArticle({ document, publication }: Props) {
                 <P className="text-muted-foreground">Open the tools mentioned in this story.</P>
                 <div className="flex flex-wrap gap-3">
                   {relatedToolLinks.map((tool) => (
-                    <Button
-                      asChild
-                      key={tool.id}
-                      className="max-w-full whitespace-normal text-left"
-                    >
+                    <Button asChild key={tool.id} className="max-w-full whitespace-normal text-left">
                       <a href={tool.href}>
                         {tool.name} <ArrowRight aria-hidden="true" />
                       </a>
@@ -174,29 +154,19 @@ export function BlogArticle({ document, publication }: Props) {
             {tags.length > 0 && (
               <nav aria-label="Article tags" className="my-6 flex flex-wrap gap-3">
                 {tags.map((tag) => (
-                  <Button
-                    asChild
-                    key={tag.id}
-                    variant="outline"
-                    size="sm"
-                    className="max-w-full whitespace-normal"
-                  >
+                  <Button asChild key={tag.id} variant="outline" size="sm" className="max-w-full whitespace-normal">
                     <a href={`/blog?tag=${encodeURIComponent(tag.slug)}`}>{tag.label}</a>
                   </Button>
                 ))}
               </nav>
             )}
             <footer className={styles.authorFooter}>
-              <P className="text-[17px] font-semibold leading-[1.6]">
-                Written by {document.authorName}
-              </P>
+              <P className="text-[17px] font-semibold leading-[1.6]">Written by {document.authorName}</P>
               {url && <CopyBlogLink url={url} label="Share this guide · Copy link" />}
             </footer>
           </div>
           <aside className={styles.utility}>
-            <Overline className="font-sans text-[11px] font-normal text-muted-foreground">
-              SmartTools
-            </Overline>
+            <Overline className="font-sans text-[11px] font-normal text-muted-foreground">SmartTools</Overline>
             <P className="leading-[1.6]">Less busywork. More room for your work.</P>
             {publication ? (
               <Button asChild variant="ghost">

@@ -13,16 +13,15 @@ async function readText(path) {
 }
 
 test("the root-owned frontend has one manifest and merged Next.js configuration", async () => {
-  const [baseTypescript, uiPackage, theme, packageJson, nextConfig, postcssConfig, tsconfig] =
-    await Promise.all([
-      readJson("tsconfig.base.json"),
-      readJson("packages/ui/package.json"),
-      readText("packages/ui/src/theme.css"),
-      readJson("package.json"),
-      readText("next.config.ts"),
-      readText("postcss.config.mjs"),
-      readJson("tsconfig.json"),
-    ]);
+  const [baseTypescript, uiPackage, theme, packageJson, nextConfig, postcssConfig, tsconfig] = await Promise.all([
+    readJson("tsconfig.base.json"),
+    readJson("packages/ui/package.json"),
+    readText("packages/ui/src/theme.css"),
+    readJson("package.json"),
+    readText("next.config.ts"),
+    readText("postcss.config.mjs"),
+    readJson("tsconfig.json"),
+  ]);
 
   assert.equal(packageJson.name, "smarttools");
   assert.equal(packageJson.private, true);
@@ -95,8 +94,8 @@ test("the root-owned frontend has one manifest and merged Next.js configuration"
 });
 
 test("Tailwind and the shared theme are imported once at the root layout", async () => {
-  const stylesheetPaths = (await readdir(new URL("app/", root), { recursive: true })).filter(
-    (path) => path.endsWith(".css"),
+  const stylesheetPaths = (await readdir(new URL("app/", root), { recursive: true })).filter((path) =>
+    path.endsWith(".css"),
   );
   const stylesheets = await Promise.all(
     stylesheetPaths.map(async (path) => ({
@@ -109,21 +108,14 @@ test("Tailwind and the shared theme are imported once at the root layout", async
   const theme = await readText("packages/ui/src/theme.css");
 
   assert.ok(rootStyles);
-  assert.match(
-    rootStyles.source,
-    /^@import "tailwindcss";\n@import "@smarttools\/ui\/theme\.css";/,
-  );
+  assert.match(rootStyles.source, /^@import "tailwindcss";\n@import "@smarttools\/ui\/theme\.css";/);
   assert.equal(
-    stylesheets.reduce(
-      (count, { source }) => count + (source.match(/@import ["']tailwindcss["'];/g) ?? []).length,
-      0,
-    ),
+    stylesheets.reduce((count, { source }) => count + (source.match(/@import ["']tailwindcss["'];/g) ?? []).length, 0),
     1,
   );
   assert.equal(
     stylesheets.reduce(
-      (count, { source }) =>
-        count + (source.match(/@import ["']@smarttools\/ui\/theme\.css["'];/g) ?? []).length,
+      (count, { source }) => count + (source.match(/@import ["']@smarttools\/ui\/theme\.css["'];/g) ?? []).length,
       0,
     ),
     1,
@@ -132,24 +124,20 @@ test("Tailwind and the shared theme are imported once at the root layout", async
   assert.match(layout, /\bGeist_Mono\b/);
   assert.match(layout, /variable:\s*["']--font-geist-mono["']/);
   assert.match(layout, /\bgeistMono\.variable\b/);
-  assert.match(
-    theme,
-    /--font-mono:\s*var\(--font-geist-mono,\s*["']Geist Mono["']\),\s*ui-monospace,\s*monospace;/,
-  );
+  assert.match(theme, /--font-mono:\s*var\(--font-geist-mono,\s*["']Geist Mono["']\),\s*ui-monospace,\s*monospace;/);
 });
 
 test("frontend navigation and browser tests use one origin with scoped paths", async () => {
-  const [environment, platformPage, authPage, adminTools, devtoolsPage, playwright] =
-    await Promise.all([
-      readText(".env.example"),
-      readText("app/page.tsx"),
-      readText("app/auth/page.tsx"),
-      readText("app/admin/(protected)/tools/components/ToolList.tsx"),
-      // Category labels moved out of the catalogue page into the one registry —
-      // now the single source, so there is no second copy left to cross-check.
-      readText("lib/tool-framework/categories.ts"),
-      readText("playwright.config.ts"),
-    ]);
+  const [environment, platformPage, authPage, adminTools, devtoolsPage, playwright] = await Promise.all([
+    readText(".env.example"),
+    readText("app/page.tsx"),
+    readText("app/auth/page.tsx"),
+    readText("app/admin/(protected)/tools/components/ToolList.tsx"),
+    // Category labels moved out of the catalogue page into the one registry —
+    // now the single source, so there is no second copy left to cross-check.
+    readText("lib/tool-framework/categories.ts"),
+    readText("playwright.config.ts"),
+  ]);
 
   assert.match(environment, /^APP_URL=http:\/\/localhost:3000$/m);
   assert.doesNotMatch(environment, /(?:PLATFORM|PAPERWORK|DEVTOOLS|MEDIA)_URL=/);

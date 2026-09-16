@@ -2,9 +2,7 @@ import type { NextConfig } from "next";
 import { fileURLToPath } from "node:url";
 
 const appRoot = fileURLToPath(new URL(".", import.meta.url));
-const browserEmptyModule = fileURLToPath(
-  new URL("./lib/paperwork/browserEmptyModule.ts", import.meta.url),
-);
+const browserEmptyModule = fileURLToPath(new URL("./lib/paperwork/browserEmptyModule.ts", import.meta.url));
 const development = process.env.NODE_ENV !== "production";
 const contentSecurityPolicy = [
   "default-src 'self'",

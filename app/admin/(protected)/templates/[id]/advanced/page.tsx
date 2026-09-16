@@ -9,11 +9,7 @@ import { requirePagePermission } from "../../../../../../lib/admin/access";
 import { getTemplate } from "../../../../../../lib/admin/data";
 import AdvancedTemplateEditor from "./components/AdvancedTemplateEditor";
 
-export default async function AdvancedTemplatePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function AdvancedTemplatePage({ params }: { params: Promise<{ id: string }> }) {
   await requirePagePermission("templates", "view");
   const template = await getTemplate((await params).id);
   if (!template || template.layoutFamily !== "advanced") notFound();
@@ -22,10 +18,7 @@ export default async function AdvancedTemplatePage({
   try {
     normalized = {
       ...template,
-      config: normalizeAdvancedTemplateConfig(
-        template.config,
-        template.documentType as DocumentType,
-      ),
+      config: normalizeAdvancedTemplateConfig(template.config, template.documentType as DocumentType),
       description: template.description ?? "",
       createdAt: template.createdAt.toISOString(),
       updatedAt: template.updatedAt.toISOString(),

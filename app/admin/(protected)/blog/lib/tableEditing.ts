@@ -37,23 +37,15 @@ export function getBlogTableDragDelta({
   edges: readonly number[];
   end: number;
 }) {
-  if (!Number.isFinite(distance) || !Number.isInteger(count) || count < 1 || distance === 0)
-    return 0;
+  if (!Number.isFinite(distance) || !Number.isInteger(count) || count < 1 || distance === 0) return 0;
   if (distance > 0) {
     if (!Number.isFinite(step) || step <= 0) return 0;
-    return Math.min(
-      1000,
-      Math.floor(distance / step),
-      axis === "column" ? Math.max(0, 100 - count) : 1000,
-    );
+    return Math.min(1000, Math.floor(distance / step), axis === "column" ? Math.max(0, 100 - count) : 1000);
   }
   if (
     !Number.isFinite(end) ||
     edges.length !== count ||
-    !edges.every(
-      (edge, index) =>
-        Number.isFinite(edge) && edge < end && (index === 0 || edge > edges[index - 1]),
-    )
+    !edges.every((edge, index) => Number.isFinite(edge) && edge < end && (index === 0 || edge > edges[index - 1]))
   )
     return 0;
   const crossed = edges.slice(1).filter((edge) => end + distance <= edge).length;
@@ -103,29 +95,20 @@ export function getBlogTableContext(state: EditorState) {
 
 /** Resolve a hovered cell without moving the editor's live selection. */
 export function getBlogTableStateAtCell(state: EditorState, position: number) {
-  if (!Number.isInteger(position) || position < 0 || position >= state.doc.content.size)
-    return null;
+  if (!Number.isInteger(position) || position < 0 || position >= state.doc.content.size) return null;
   const name = state.doc.nodeAt(position)?.type.name;
   if (name !== "tableCell" && name !== "tableHeader") return null;
   return state.apply(state.tr.setSelection(CellSelection.create(state.doc, position)));
 }
 
-function selectAxis(
-  transaction: Transaction,
-  tableStart: number,
-  axis: BlogTableAxis,
-  index: number,
-) {
+function selectAxis(transaction: Transaction, tableStart: number, axis: BlogTableAxis, index: number) {
   const table = transaction.doc.nodeAt(tableStart - 1)!;
   const map = TableMap.get(table);
   const first = tableStart + map.map[axis === "row" ? index * map.width : index];
   const last =
-    tableStart +
-    map.map[axis === "row" ? (index + 1) * map.width - 1 : (map.height - 1) * map.width + index];
+    tableStart + map.map[axis === "row" ? (index + 1) * map.width - 1 : (map.height - 1) * map.width + index];
   const selection = axis === "row" ? CellSelection.rowSelection : CellSelection.colSelection;
-  transaction.setSelection(
-    selection(transaction.doc.resolve(first), transaction.doc.resolve(last)),
-  );
+  transaction.setSelection(selection(transaction.doc.resolve(first), transaction.doc.resolve(last)));
 }
 
 export function selectBlogTableAxis(axis: BlogTableAxis): Command {
@@ -146,12 +129,8 @@ export function appendBlogTableAxis(axis: BlogTableAxis): Command {
     if (!context) return false;
     const { map, tableStart } = context;
     const index =
-      axis === "row"
-        ? (map.height - 1) * map.width + context.left
-        : context.top * map.width + map.width - 1;
-    const edgeState = state.apply(
-      state.tr.setSelection(CellSelection.create(state.doc, tableStart + map.map[index])),
-    );
+      axis === "row" ? (map.height - 1) * map.width + context.left : context.top * map.width + map.width - 1;
+    const edgeState = state.apply(state.tr.setSelection(CellSelection.create(state.doc, tableStart + map.map[index])));
     let change: Transaction | undefined;
     (axis === "row" ? addRowAfter : addColumnAfter)(edgeState, (transaction) => {
       change = transaction;
@@ -175,10 +154,7 @@ export function resizeBlogTableAxis(axis: BlogTableAxis, delta: number): Command
     for (let count = 0; count < Math.abs(delta); count++) {
       const table = working.doc.nodeAt(context.tableStart - 1)!;
       const map = TableMap.get(table);
-      const edge = getBlogTableStateAtCell(
-        working,
-        context.tableStart + map.map[map.map.length - 1],
-      )!;
+      const edge = getBlogTableStateAtCell(working, context.tableStart + map.map[map.map.length - 1])!;
       let change: Transaction | undefined;
       if (delta > 0) {
         if (
@@ -250,8 +226,7 @@ export function blogTableChangeFits(doc: Node) {
   let fits = true;
   doc.descendants((node) => {
     nodes++;
-    if (nodes > 10000 || (node.type.name === "table" && TableMap.get(node).width > 100))
-      fits = false;
+    if (nodes > 10000 || (node.type.name === "table" && TableMap.get(node).width > 100)) fits = false;
     return fits;
   });
   return fits;
@@ -289,10 +264,7 @@ export function formatBlogTableCells(attrs: {
       transaction.setNodeMarkup(position, undefined, { ...cell.attrs, ...attrs });
       if ("align" in attrs)
         cell.descendants((node, childOffset) => {
-          if (
-            (node.type.name === "paragraph" || node.type.name === "heading") &&
-            node.attrs.textAlign != null
-          )
+          if ((node.type.name === "paragraph" || node.type.name === "heading") && node.attrs.textAlign != null)
             transaction.setNodeMarkup(position + 1 + childOffset, undefined, {
               ...node.attrs,
               textAlign: null,
@@ -311,10 +283,7 @@ export function setBlogTableColumnWidth(width: number): Command {
     if (!context || !Number.isInteger(width) || width < 25 || width > 10000) return false;
     const transaction = state.tr;
     const offsets = new Set(
-      Array.from(
-        { length: context.map.height },
-        (_, row) => context.map.map[row * context.map.width + context.left],
-      ),
+      Array.from({ length: context.map.height }, (_, row) => context.map.map[row * context.map.width + context.left]),
     );
     for (const offset of offsets) {
       const cell = context.table.nodeAt(offset)!;

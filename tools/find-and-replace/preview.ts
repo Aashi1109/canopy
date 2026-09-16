@@ -57,10 +57,7 @@ function expandReplacement(replacement: string, match: RegExpExecArray, source: 
   });
 }
 
-export function buildReplacementPreview(
-  source: string,
-  settings: FindAndReplacePreviewSettings,
-): ReplacementPreview {
+export function buildReplacementPreview(source: string, settings: FindAndReplacePreviewSettings): ReplacementPreview {
   if (!settings.find) {
     return {
       count: 0,
@@ -73,10 +70,7 @@ export function buildReplacementPreview(
 
   let matcher: RegExp;
   try {
-    matcher = new RegExp(
-      settings.regex ? settings.find : escapeRegExp(settings.find),
-      settings.ci ? "giu" : "gu",
-    );
+    matcher = new RegExp(settings.regex ? settings.find : escapeRegExp(settings.find), settings.ci ? "giu" : "gu");
   } catch {
     return {
       count: 0,

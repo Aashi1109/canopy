@@ -27,10 +27,7 @@ function resolveJsonPath(value: unknown, path: string): unknown {
       .slice(1)
       .replace(/\[['"]([^'"]+)['"]\]/g, ".$1")
       .match(/(?:\.([\w$-]+)|\[(\d+|\*)\])/g) ?? [];
-  if (
-    `$${tokens.join("")}`.replace(/\[['"]([^'"]+)['"]\]/g, ".$1") !==
-    path.replace(/\[['"]([^'"]+)['"]\]/g, ".$1")
-  ) {
+  if (`$${tokens.join("")}`.replace(/\[['"]([^'"]+)['"]\]/g, ".$1") !== path.replace(/\[['"]([^'"]+)['"]\]/g, ".$1")) {
     throw new ToolError(
       "path-unsupported",
       "JSONPath contains unsupported syntax.",

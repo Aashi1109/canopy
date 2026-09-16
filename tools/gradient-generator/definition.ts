@@ -4,15 +4,7 @@ export default {
   toolId: "devtools.gradient-generator",
   app: "devtools",
   category: "color-design-tools",
-  keywords: [
-    "gradient",
-    "css",
-    "linear-gradient",
-    "radial-gradient",
-    "color",
-    "background",
-    "design",
-  ],
+  keywords: ["gradient", "css", "linear-gradient", "radial-gradient", "color", "background", "design"],
   name: "Gradient Generator",
   description: "Generate linear or radial CSS gradients.",
   input: {

@@ -174,9 +174,7 @@ export const InvoiceTemplateSchema = z
   .object({
     id: z.string(),
     name: z.string().min(2, "Template name must be at least 2 characters"),
-    slug: z
-      .string()
-      .regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
+    slug: z.string().regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
     description: z.string(),
     category: z.enum(["simple", "professional", "creative", "service", "modern", "classic"]),
     status: z.enum(["draft", "published", "archived"]),
@@ -434,9 +432,7 @@ const AdvancedTemplateConfigV2Schema = z
         path: ["template", "schemas"],
       });
     }
-    if (
-      new TextEncoder().encode(JSON.stringify(config)).length > ADVANCED_TEMPLATE_LIMITS.maxBytes
-    ) {
+    if (new TextEncoder().encode(JSON.stringify(config)).length > ADVANCED_TEMPLATE_LIMITS.maxBytes) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Advanced template config exceeds the 5 MB limit",
@@ -462,9 +458,7 @@ const AdvancedDocumentTemplateV2Schema = z
   .object({
     id: z.string(),
     name: z.string().min(2, "Template name must be at least 2 characters"),
-    slug: z
-      .string()
-      .regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
+    slug: z.string().regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
     description: z.string(),
     category: z.enum(["simple", "professional", "creative", "service", "modern", "classic"]),
     status: z.enum(["draft", "published", "archived"]),
@@ -482,9 +476,7 @@ const AdvancedDocumentTemplateV2Schema = z
         path: ["config", "pageFormat"],
       });
     }
-    const fields = new Map(
-      getDocumentDefinition(template.documentType).fields.map((field) => [field.key, field]),
-    );
+    const fields = new Map(getDocumentDefinition(template.documentType).fields.map((field) => [field.key, field]));
     for (const [sectionIndex, section] of template.config.form.sections.entries()) {
       for (const [entryIndex, entry] of section.entries.entries()) {
         if (entry.kind !== "builtin") continue;
@@ -492,9 +484,7 @@ const AdvancedDocumentTemplateV2Schema = z
         if (!field || field.source !== "user") {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: field
-              ? `"${entry.key}" is not an editable form field`
-              : `Unknown built-in field "${entry.key}"`,
+            message: field ? `"${entry.key}" is not an editable form field` : `Unknown built-in field "${entry.key}"`,
             path: ["config", "form", "sections", sectionIndex, "entries", entryIndex, "key"],
           });
         }
@@ -518,7 +508,4 @@ export const AdvancedDocumentTemplateSchema = z.preprocess((value) => {
   }
 }, AdvancedDocumentTemplateV2Schema);
 
-export const DocumentTemplateSchema = z.union([
-  InvoiceTemplateSchema,
-  AdvancedDocumentTemplateSchema,
-]);
+export const DocumentTemplateSchema = z.union([InvoiceTemplateSchema, AdvancedDocumentTemplateSchema]);

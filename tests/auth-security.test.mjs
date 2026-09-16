@@ -54,21 +54,12 @@ test("server account fields reject unsafe or oversized profile input", () => {
   assert.throws(() => normalizeAccountName("a".repeat(101)), /name/i);
 
   assert.equal(normalizeProfileImage(""), null);
-  assert.equal(
-    normalizeProfileImage(" https://images.example/avatar.png "),
-    "https://images.example/avatar.png",
-  );
+  assert.equal(normalizeProfileImage(" https://images.example/avatar.png "), "https://images.example/avatar.png");
   const embeddedWebp = "data:image/webp;base64,UklGRnh4eHhXRUJQ";
   assert.equal(normalizeProfileImage(embeddedWebp), embeddedWebp);
   assert.throws(() => normalizeProfileImage("data:image/svg+xml;base64,PHN2Zz4="), /image/i);
   assert.throws(() => normalizeProfileImage("data:image/webp;base64,ZmFrZQ=="), /image/i);
-  assert.throws(
-    () => normalizeProfileImage(`data:image/webp;base64,${"A".repeat(200_001)}`),
-    /image/i,
-  );
+  assert.throws(() => normalizeProfileImage(`data:image/webp;base64,${"A".repeat(200_001)}`), /image/i);
   assert.throws(() => normalizeProfileImage("javascript:alert(1)"), /image/i);
-  assert.throws(
-    () => normalizeProfileImage("https://user:pass@images.example/avatar.png"),
-    /image/i,
-  );
+  assert.throws(() => normalizeProfileImage("https://user:pass@images.example/avatar.png"), /image/i);
 });

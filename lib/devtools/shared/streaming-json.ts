@@ -57,14 +57,7 @@ type ArrayFrame = {
 type Frame = ObjectFrame | ArrayFrame;
 
 type NumberState =
-  | "minus"
-  | "zero"
-  | "integer"
-  | "decimal-point"
-  | "fraction"
-  | "exponent"
-  | "exponent-sign"
-  | "exponent-digits";
+  "minus" | "zero" | "integer" | "decimal-point" | "fraction" | "exponent" | "exponent-sign" | "exponent-digits";
 
 type TokenState =
   | { kind: "default" }
@@ -291,9 +284,7 @@ class IncrementalJsonParser {
     switch (character) {
       case "{":
         if (this.frames.length >= this.maxDepth) {
-          this.fail(
-            `JSON nesting exceeds the ${this.maxDepth.toLocaleString("en-US")} level limit.`,
-          );
+          this.fail(`JSON nesting exceeds the ${this.maxDepth.toLocaleString("en-US")} level limit.`);
         }
         this.beginValue();
         if (this.rootType === null && this.frames.length === 0) this.rootType = "object";
@@ -308,9 +299,7 @@ class IncrementalJsonParser {
         return;
       case "[":
         if (this.frames.length >= this.maxDepth) {
-          this.fail(
-            `JSON nesting exceeds the ${this.maxDepth.toLocaleString("en-US")} level limit.`,
-          );
+          this.fail(`JSON nesting exceeds the ${this.maxDepth.toLocaleString("en-US")} level limit.`);
         }
         this.beginValue();
         if (this.rootType === null && this.frames.length === 0) this.rootType = "array";
@@ -382,8 +371,7 @@ class IncrementalJsonParser {
 
   private beginString() {
     const frame = this.frames.at(-1);
-    const isKey =
-      frame?.kind === "object" && (frame.state === "first-key-or-end" || frame.state === "key");
+    const isKey = frame?.kind === "object" && (frame.state === "first-key-or-end" || frame.state === "key");
 
     if (isKey) {
       if (frame.state === "first-key-or-end") this.emitItemIndent();
@@ -694,17 +682,11 @@ function isJsonWhitespace(value: string) {
 }
 
 function isHexDigit(value: string) {
-  return (
-    (value >= "0" && value <= "9") ||
-    (value >= "a" && value <= "f") ||
-    (value >= "A" && value <= "F")
-  );
+  return (value >= "0" && value <= "9") || (value >= "a" && value <= "f") || (value >= "A" && value <= "F");
 }
 
 function isCompleteNumberState(state: NumberState) {
-  return (
-    state === "zero" || state === "integer" || state === "fraction" || state === "exponent-digits"
-  );
+  return state === "zero" || state === "integer" || state === "fraction" || state === "exponent-digits";
 }
 
 function throwIfAborted(signal?: AbortSignal) {
@@ -846,13 +828,7 @@ export async function processStreamingJson(
   }
 
   const mode = options.mode;
-  const output = new OutputSink(
-    mode !== "validate",
-    outputChunkSize,
-    previewLimit,
-    options.onOutput,
-    options.writable,
-  );
+  const output = new OutputSink(mode !== "validate", outputChunkSize, previewLimit, options.onOutput, options.writable);
   const rawPreview = mode === "validate" ? new BoundedUtf8Preview(previewLimit) : undefined;
   const parser = new IncrementalJsonParser(mode, indentation, output, options.signal, maxDepth);
 

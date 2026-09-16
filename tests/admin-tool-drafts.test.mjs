@@ -37,10 +37,7 @@ const hooks = registerHooks({
         };
       }
       if (specifier === "./categories") {
-        return nextResolve(
-          new URL("../lib/tool-framework/categories.ts", import.meta.url).href,
-          context,
-        );
+        return nextResolve(new URL("../lib/tool-framework/categories.ts", import.meta.url).href, context);
       }
     }
     return nextResolve(specifier, context);

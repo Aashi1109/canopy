@@ -28,15 +28,7 @@ type InputProps = Omit<React.ComponentProps<"input">, "size"> &
     suffix?: React.ReactNode;
   };
 
-function Input({
-  className,
-  code = false,
-  size = "default",
-  type,
-  leadingIcon,
-  suffix,
-  ...props
-}: InputProps) {
+function Input({ className, code = false, size = "default", type, leadingIcon, suffix, ...props }: InputProps) {
   const control = (
     <input
       type={type}
@@ -50,9 +42,7 @@ function Input({
         leadingIcon && "pl-10",
         suffix &&
           "pr-10 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
-        type === "range"
-          ? "border-0 bg-transparent px-0"
-          : "group-data-[variant=auth]/field:px-3.5",
+        type === "range" ? "border-0 bg-transparent px-0" : "group-data-[variant=auth]/field:px-3.5",
         className,
       )}
       {...props}

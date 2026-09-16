@@ -44,10 +44,7 @@ export function resolveFileLimits(input: ToolInputSpec): FileInputLimits | null 
   return null;
 }
 
-export function assertFileSizes(
-  limits: FileInputLimits,
-  files: readonly { readonly size: number }[],
-): void {
+export function assertFileSizes(limits: FileInputLimits, files: readonly { readonly size: number }[]): void {
   if (files.length > limits.maxFiles) {
     throw new ToolError(
       "too-many-files",
@@ -105,12 +102,8 @@ export async function assertRunnableFiles(
     if (spec.input.kind === "files") {
       const signature = validateMediaSignature(prefix, file.mime);
       if (!signature.ok) throw new ToolError(signature.code, signature.message);
-      const matchesEngine =
-        spec.input.engine === "pdf" ? signature.kind === "pdf" : signature.kind !== "pdf";
-      if (
-        !matchesEngine &&
-        (!limits.accept.trim() || !isAccepted(limits.accept, signature.mime, ""))
-      ) {
+      const matchesEngine = spec.input.engine === "pdf" ? signature.kind === "pdf" : signature.kind !== "pdf";
+      if (!matchesEngine && (!limits.accept.trim() || !isAccepted(limits.accept, signature.mime, ""))) {
         throw new ToolError("unsupported-type", "This file type is not supported by this tool.");
       }
     } else if (detectMediaKind(prefix)) {

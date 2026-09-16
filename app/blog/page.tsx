@@ -2,19 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import { ArrowRight, BookOpen, Search } from "lucide-react";
-import {
-  Button,
-  Card,
-  Caption,
-  EmptyState,
-  H1,
-  H2,
-  Input,
-  Label,
-  Overline,
-  P,
-  TextLink,
-} from "@smarttools/ui";
+import { Button, Card, Caption, EmptyState, H1, H2, Input, Label, Overline, P, TextLink } from "@smarttools/ui";
 import { BlogValidationError, blogImageUrl } from "@/lib/blog/document";
 import { listPublishedBlogPosts, listPublishedBlogTaxonomy } from "@/lib/blog/queries";
 import { BlogByline } from "./components/BlogTeaser";
@@ -79,9 +67,7 @@ export default async function BlogPage({ searchParams }: Props) {
             </H1>
           </div>
           <div className="space-y-2">
-            <P className="text-[19px] leading-normal lg:text-[17px]">
-              Practical guides for the work between the work.
-            </P>
+            <P className="text-[19px] leading-normal lg:text-[17px]">Practical guides for the work between the work.</P>
             <P className="text-sm text-muted-foreground">
               <span className="lg:hidden">Documents, data, and everyday shortcuts.</span>
               <span className="hidden lg:inline">Ideas, insights, and practical guides.</span>
@@ -141,14 +127,10 @@ export default async function BlogPage({ searchParams }: Props) {
                   </TextLink>
                 ))}
                 {categoryCursor && (
-                  <TextLink href={blogListingHref(filters, { categoryCursor: undefined })}>
-                    First topics
-                  </TextLink>
+                  <TextLink href={blogListingHref(filters, { categoryCursor: undefined })}>First topics</TextLink>
                 )}
                 {categories.nextCursor && (
-                  <TextLink
-                    href={blogListingHref(filters, { categoryCursor: categories.nextCursor })}
-                  >
+                  <TextLink href={blogListingHref(filters, { categoryCursor: categories.nextCursor })}>
                     More topics →
                   </TextLink>
                 )}
@@ -214,10 +196,7 @@ export default async function BlogPage({ searchParams }: Props) {
               Latest story / {featured.category.label}
             </Overline>
             <H2 className="break-words font-sans text-[30px] leading-[1.12] lg:text-[34px]">
-              <TextLink
-                className="text-foreground no-underline hover:underline"
-                href={`/blog/${featured.slug}`}
-              >
+              <TextLink className="text-foreground no-underline hover:underline" href={`/blog/${featured.slug}`}>
                 {featured.title}
               </TextLink>
             </H2>
@@ -278,9 +257,7 @@ export default async function BlogPage({ searchParams }: Props) {
                 {filters.category && <span>Topic: {activeCategory}</span>}
                 {filters.tag && <span>Tag: {filters.tag}</span>}
                 {filters.search && (
-                  <TextLink
-                    href={blogListingHref(filters, { search: undefined, cursor: undefined })}
-                  >
+                  <TextLink href={blogListingHref(filters, { search: undefined, cursor: undefined })}>
                     Clear search
                   </TextLink>
                 )}
@@ -333,10 +310,7 @@ export default async function BlogPage({ searchParams }: Props) {
                   <span className="hidden lg:inline">Explore topics</span>
                 </H2>
                 {categories.items.map((category) => (
-                  <div
-                    key={category.id}
-                    className="flex flex-col gap-1 border-b border-border py-[18px] lg:py-4"
-                  >
+                  <div key={category.id} className="flex flex-col gap-1 border-b border-border py-[18px] lg:py-4">
                     {topicDescriptions[category.slug] && (
                       <P className="text-lg leading-normal lg:order-2 lg:text-sm lg:text-muted-foreground">
                         {topicDescriptions[category.slug]}
@@ -351,14 +325,10 @@ export default async function BlogPage({ searchParams }: Props) {
                   </div>
                 ))}
                 {categoryCursor && (
-                  <TextLink href={blogListingHref(filters, { categoryCursor: undefined })}>
-                    First topics
-                  </TextLink>
+                  <TextLink href={blogListingHref(filters, { categoryCursor: undefined })}>First topics</TextLink>
                 )}
                 {categories.nextCursor && (
-                  <TextLink
-                    href={blogListingHref(filters, { categoryCursor: categories.nextCursor })}
-                  >
+                  <TextLink href={blogListingHref(filters, { categoryCursor: categories.nextCursor })}>
                     More topics →
                   </TextLink>
                 )}

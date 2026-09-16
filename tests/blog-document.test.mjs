@@ -72,19 +72,13 @@ test("document hashes ignore property order and tag order, but preserve article 
   ];
   const b = Object.fromEntries(Object.entries(a).reverse());
   b.tags = [...a.tags].reverse();
-  assert.equal(
-    blogDocumentHash(validateBlogDocument(a)),
-    blogDocumentHash(validateBlogDocument(b)),
-  );
+  assert.equal(blogDocumentHash(validateBlogDocument(a)), blogDocumentHash(validateBlogDocument(b)));
   assert.notEqual(blogDocumentHash(a), blogDocumentHash({ ...a, title: "Different" }));
 });
 
 test("unknown properties, prototype payloads, cycles and non-JSON input fail closed", () => {
   const polluted = JSON.parse(
-    JSON.stringify(article()).replace(
-      '"schemaVersion":1',
-      '"schemaVersion":1,"__proto__":{"polluted":true}',
-    ),
+    JSON.stringify(article()).replace('"schemaVersion":1', '"schemaVersion":1,"__proto__":{"polluted":true}'),
   );
   for (const value of [
     { ...article(), created_by: "forged" },
@@ -134,9 +128,7 @@ test("normalization is idempotent and rendering supports every basic article blo
         {
           type: "text",
           text: "Read more",
-          marks: [
-            { type: "link", attrs: { href: "/blog/another", target: "_self", rel: "nofollow" } },
-          ],
+          marks: [{ type: "link", attrs: { href: "/blog/another", target: "_self", rel: "nofollow" } }],
         },
       ],
     },
@@ -183,10 +175,7 @@ test("bounded fields, bytes, node count, depth and duplicate selections are enfo
   );
   let nested = paragraph("deep");
   for (let i = 0; i < 33; i++) nested = { type: "blockquote", content: [nested] };
-  assert.throws(
-    () => validateBlogDocument({ ...article(), body: { type: "doc", content: [nested] } }),
-    /depth/i,
-  );
+  assert.throws(() => validateBlogDocument({ ...article(), body: { type: "doc", content: [nested] } }), /depth/i);
   assert.throws(
     () =>
       validateBlogDocument({
@@ -198,10 +187,7 @@ test("bounded fields, bytes, node count, depth and duplicate selections are enfo
       }),
     /duplicate/i,
   );
-  assert.throws(
-    () => validateBlogDocument({ ...article(), relatedToolIds: ["media.a", "media.a"] }),
-    /duplicate/i,
-  );
+  assert.throws(() => validateBlogDocument({ ...article(), relatedToolIds: ["media.a", "media.a"] }), /duplicate/i);
 });
 
 test("malicious links and unsupported attributes cannot reach rendered HTML", () => {
@@ -224,9 +210,7 @@ test("malicious links and unsupported attributes cannot reach rendered HTML", ()
 
 test("links survive the installed editor schema and normalize without extra attributes", () => {
   const value = article();
-  value.body.content[0].content[0].marks = [
-    { type: "link", attrs: { href: "https://example.com/guide" } },
-  ];
+  value.body.content[0].content[0].marks = [{ type: "link", attrs: { href: "https://example.com/guide" } }];
   const schema = getSchema([StarterKit]);
   value.body = schema.nodeFromJSON(value.body).toJSON();
   const normalized = validateBlogDocument(value);
@@ -306,14 +290,9 @@ test("Cloudinary images use immutable configured-cloud URLs and require alt text
     { ...image, width: -1 },
     { ...image, src: "https://evil.example/image.webp" },
   ]) {
-    assert.throws(() =>
-      validateBlogDocument({ ...article(), coverImage: attrs }, { cloudName: "my-cloud" }),
-    );
+    assert.throws(() => validateBlogDocument({ ...article(), coverImage: attrs }, { cloudName: "my-cloud" }));
   }
-  const noAlt = validateBlogDocument(
-    { ...value, coverImage: { ...image, alt: "" } },
-    { cloudName: "my-cloud" },
-  );
+  const noAlt = validateBlogDocument({ ...value, coverImage: { ...image, alt: "" } }, { cloudName: "my-cloud" });
   assert.throws(() => assertBlogPublishable(noAlt), /alt/i);
 });
 
@@ -336,16 +315,9 @@ test("body image layout survives document roundtrips without changing intrinsic 
       const normalized = validateBlogDocument(value, options);
       assert.deepEqual(normalized.body.content[0].attrs, { ...image, displayWidth, alignment });
       assert.deepEqual(normalized.coverImage, image);
-      assert.deepEqual(
-        validateBlogDocument(JSON.parse(JSON.stringify(normalized)), options),
-        normalized,
-      );
+      assert.deepEqual(validateBlogDocument(JSON.parse(JSON.stringify(normalized)), options), normalized);
       const { html } = renderBlogDocument(normalized, options);
-      assert.ok(
-        html.includes(
-          `width:${displayWidth}%;margin-left:${marginLeft};margin-right:${marginRight}`,
-        ),
-      );
+      assert.ok(html.includes(`width:${displayWidth}%;margin-left:${marginLeft};margin-right:${marginRight}`));
       assert.match(html, /width="800" height="600"/);
       assert.match(html, /style="width:100%;height:auto"/);
     }
@@ -372,10 +344,7 @@ test("legacy body images and empty editor layout defaults keep their full-width 
     },
   };
   assert.deepEqual(validateBlogDocument(defaults, options), normalized);
-  assert.equal(
-    renderBlogDocument(legacy, options).html,
-    renderBlogDocument(normalized, options).html,
-  );
+  assert.equal(renderBlogDocument(legacy, options).html, renderBlogDocument(normalized, options).html);
   assert.doesNotThrow(() => assertBlogPublishable(normalized));
   const resized = structuredClone(normalized);
   resized.body.content[0].attrs.displayWidth = 50;
@@ -415,11 +384,7 @@ test("images cannot reference mutable Cloudinary assets outside the immutable bl
     "smarttools/blog/95c40d91-c008-4474-965b-71ec2e4f2b81/suffix",
   ]) {
     assert.throws(
-      () =>
-        validateBlogDocument(
-          { ...article(), coverImage: { ...image, publicId } },
-          { cloudName: "my-cloud" },
-        ),
+      () => validateBlogDocument({ ...article(), coverImage: { ...image, publicId } }, { cloudName: "my-cloud" }),
       /immutable blog asset/,
     );
     assert.throws(
@@ -469,9 +434,7 @@ test("table and list content models reject malformed structures and allow safe m
     ],
   };
   assert.match(
-    renderBlogDocument(
-      validateBlogDocument({ ...article(), body: { type: "doc", content: [rowspan] } }),
-    ).html,
+    renderBlogDocument(validateBlogDocument({ ...article(), body: { type: "doc", content: [rowspan] } })).html,
     /rowspan="2"/,
   );
   for (const node of [
@@ -488,9 +451,7 @@ test("table and list content models reject malformed structures and allow safe m
     { type: "heading", attrs: { level: 1 }, content: [] },
     { type: "codeBlock", content: [{ type: "text", text: "x", marks: [{ type: "bold" }] }] },
   ])
-    assert.throws(() =>
-      validateBlogDocument({ ...article(), body: { type: "doc", content: [node] } }),
-    );
+    assert.throws(() => validateBlogDocument({ ...article(), body: { type: "doc", content: [node] } }));
 });
 
 test("table cell colors and alignment normalize and render without accepting arbitrary CSS", () => {
@@ -533,9 +494,9 @@ test("table cell colors and alignment normalize and render without accepting arb
   }
   for (const attrs of [
     ...["justify", "center;color:red", true, 1].map((align) => ({ align })),
-    ...["red", "#fff", "#ffffffff", "#ffffff;background:url(x)", "var(--primary)", true].map(
-      (backgroundColor) => ({ backgroundColor }),
-    ),
+    ...["red", "#fff", "#ffffffff", "#ffffff;background:url(x)", "var(--primary)", true].map((backgroundColor) => ({
+      backgroundColor,
+    })),
     { style: "background:red" },
   ]) {
     const value = {
@@ -612,10 +573,7 @@ test("resized table columns retain widths through merged cells and rows in publi
     type: "tableRow",
     content: [cell("Auto"), cell("Legacy conflicting width", { colwidth: [300] })],
   });
-  assert.match(
-    renderBlogDocument(value).html,
-    /<colgroup><col><col style="width:220px"><\/colgroup>/,
-  );
+  assert.match(renderBlogDocument(value).html, /<colgroup><col><col style="width:220px"><\/colgroup>/);
 });
 
 test("legacy tables without column sizes retain automatic layout", () => {
@@ -699,18 +657,13 @@ test("highlight colors retain their value through editor, revision, and public r
     ...value,
     body: schema.nodeFromJSON(value.body).toJSON(),
   });
-  assert.deepEqual(normalized.body.content[0].content[0].marks, [
-    { type: "highlight", attrs: { color: "#abcdef" } },
-  ]);
+  assert.deepEqual(normalized.body.content[0].content[0].marks, [{ type: "highlight", attrs: { color: "#abcdef" } }]);
   assert.deepEqual(validateBlogDocument(JSON.parse(JSON.stringify(normalized))), normalized);
   assert.deepEqual(
     validateBlogDocument({ ...normalized, body: schema.nodeFromJSON(normalized.body).toJSON() }),
     normalized,
   );
-  assert.equal(
-    renderBlogDocument(normalized).html,
-    '<p><mark style="background-color:#abcdef">Hello world</mark></p>',
-  );
+  assert.equal(renderBlogDocument(normalized).html, '<p><mark style="background-color:#abcdef">Hello world</mark></p>');
   const recolored = structuredClone(normalized);
   recolored.body.content[0].content[0].marks[0].attrs.color = "#123456";
   assert.notEqual(blogDocumentHash(recolored), blogDocumentHash(normalized));
@@ -722,9 +675,7 @@ test("legacy highlights retain their normalized document hash and yellow default
   const normalized = validateBlogDocument(legacy);
   for (const attrs of [undefined, {}, { color: null }]) {
     const value = structuredClone(legacy);
-    value.body.content[0].content[0].marks = [
-      { type: "highlight", ...(attrs === undefined ? {} : { attrs }) },
-    ];
+    value.body.content[0].content[0].marks = [{ type: "highlight", ...(attrs === undefined ? {} : { attrs }) }];
     const schema = getSchema([StarterKit, ...blogFormattingExtensions]);
     const roundtrip = validateBlogDocument({
       ...value,

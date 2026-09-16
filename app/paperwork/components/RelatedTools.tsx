@@ -4,17 +4,7 @@
  */
 
 import type { ResolvedTool } from "@smarttools/tool-catalog";
-import {
-  Caption,
-  H2,
-  List,
-  Muted,
-  P,
-  Text,
-  Button,
-  CatalogCard,
-  StatusBadge,
-} from "@smarttools/ui";
+import { Caption, H2, List, Muted, P, Text, Button, CatalogCard, StatusBadge } from "@smarttools/ui";
 import {
   CheckCircle2,
   ClipboardCheck,
@@ -90,33 +80,24 @@ export default function RelatedTools({
           </StatusBadge>
           <H2>Streamline Your Business with SmartTools Paperwork Pro</H2>
           <P className="text-background/70">
-            Draft free invoices as long as you want. When your independent freelance practice or
-            contractor operations expand, unlock advanced time-saving features:
+            Draft free invoices as long as you want. When your independent freelance practice or contractor operations
+            expand, unlock advanced time-saving features:
           </P>
 
           <List className="grid gap-3 pt-2 text-background/80 md:grid-cols-2">
             {valueAero.map((item) => (
               <li className="flex items-start gap-2" key={item}>
-                <CheckCircle2
-                  aria-hidden="true"
-                  className="mt-0.5 size-4 shrink-0 text-background/60"
-                />
+                <CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-background/60" />
                 <Text>{item}</Text>
               </li>
             ))}
           </List>
 
           <div className="flex flex-wrap items-center gap-4 pt-4">
-            <Button
-              onClick={() => onTrackClick("upgrade_pro_clicked")}
-              type="button"
-              variant="secondary"
-            >
+            <Button onClick={() => onTrackClick("upgrade_pro_clicked")} type="button" variant="secondary">
               Learn More &amp; Join Waiting List
             </Button>
-            <Caption className="text-background/60">
-              No credit card required • Early Bird Access
-            </Caption>
+            <Caption className="text-background/60">No credit card required • Early Bird Access</Caption>
           </div>
         </div>
       </section>
@@ -125,8 +106,7 @@ export default function RelatedTools({
         <div className="mx-auto max-w-xl space-y-2 text-center">
           <H2 className="text-foreground">Comprehensive Paperwork Toolkit</H2>
           <Muted className="text-muted-foreground">
-            Simplify administrative workflows with professional single-click small business
-            generators.
+            Simplify administrative workflows with professional single-click small business generators.
           </Muted>
         </div>
 

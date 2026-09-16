@@ -24,9 +24,7 @@ export const MAX_TOOL_INPUT_CHARS = 2_000_000;
 
 function limitFor(spec: ToolSpec): number {
   const declared = spec.input.kind === "text" ? spec.input.maxLength : undefined;
-  return typeof declared === "number" && declared > 0
-    ? Math.min(declared, MAX_TOOL_INPUT_CHARS)
-    : MAX_TOOL_INPUT_CHARS;
+  return typeof declared === "number" && declared > 0 ? Math.min(declared, MAX_TOOL_INPUT_CHARS) : MAX_TOOL_INPUT_CHARS;
 }
 
 /**

@@ -50,8 +50,7 @@ function inputDate(input: string, unit: Settings["inputUnit"]): Date {
 
 function relativeTime(date: Date): string {
   const seconds = (date.getTime() - Date.now()) / 1000;
-  const [unit, secondsPerUnit] =
-    RELATIVE_UNITS.find(([, size]) => Math.abs(seconds) >= size) ?? RELATIVE_UNITS.at(-1)!;
+  const [unit, secondsPerUnit] = RELATIVE_UNITS.find(([, size]) => Math.abs(seconds) >= size) ?? RELATIVE_UNITS.at(-1)!;
   return new Intl.RelativeTimeFormat(DISPLAY_LOCALE, { numeric: "always" }).format(
     Math.round(seconds / secondsPerUnit),
     unit,
@@ -72,14 +71,9 @@ function convertTimestamp(input: string, settings: Settings): string {
     lines.push(`ISO: ${date.toISOString()}`, `UTC: ${date.toUTCString()}`);
   }
   if (outputTimezone !== "utc") {
-    lines.push(
-      `${useLocalTimezone ? "Local" : "Locale (UTC)"}: ${date.toLocaleString(DISPLAY_LOCALE, localOptions)}`,
-    );
+    lines.push(`${useLocalTimezone ? "Local" : "Locale (UTC)"}: ${date.toLocaleString(DISPLAY_LOCALE, localOptions)}`);
   }
-  lines.push(
-    `Unix seconds: ${Math.floor(date.getTime() / 1000)}`,
-    `Unix milliseconds: ${date.getTime()}`,
-  );
+  lines.push(`Unix seconds: ${Math.floor(date.getTime() / 1000)}`, `Unix milliseconds: ${date.getTime()}`);
   if (settings.includeRelativeTime) {
     lines.push(`Relative: ${relativeTime(date)}`);
   }
@@ -99,9 +93,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const issues: NonNullable<ToolResult["issues"]>[number][] = [];
   for (const input of inputs) {
     try {
-      items.push(
-        `${input.input} → ${convertTimestamp(input.input, ctx.settings).replaceAll("\n", " · ")}`,
-      );
+      items.push(`${input.input} → ${convertTimestamp(input.input, ctx.settings).replaceAll("\n", " · ")}`);
     } catch (error) {
       issues.push({
         line: input.line,

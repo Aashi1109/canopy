@@ -102,8 +102,7 @@ function integer(input: unknown, label: string, min: number, max: number): numbe
   return input;
 }
 function list(input: unknown, label: string, max: number): unknown[] {
-  if (!Array.isArray(input) || input.length > max)
-    fail(`${label} must be a list of at most ${max} items.`);
+  if (!Array.isArray(input) || input.length > max) fail(`${label} must be a list of at most ${max} items.`);
   return input;
 }
 
@@ -123,15 +122,11 @@ function checkJson(input: unknown) {
       ancestors.add(value);
       if (Array.isArray(value)) {
         if (value.length > 10001) fail("Document has too many nodes.");
-        if (
-          Object.getPrototypeOf(value) !== Array.prototype ||
-          Reflect.ownKeys(value).length !== value.length + 1
-        )
+        if (Object.getPrototypeOf(value) !== Array.prototype || Reflect.ownKeys(value).length !== value.length + 1)
           fail("Document lists must contain only JSON items.");
         for (let i = 0; i < value.length; i++) {
           const descriptor = Object.getOwnPropertyDescriptor(value, String(i));
-          if (!descriptor || !("value" in descriptor))
-            fail("Document lists must contain only JSON items.");
+          if (!descriptor || !("value" in descriptor)) fail("Document lists must contain only JSON items.");
           walk(descriptor.value, depth + 1);
         }
       } else {
@@ -142,18 +137,13 @@ function checkJson(input: unknown) {
           if (["__proto__", "prototype", "constructor"].includes(key))
             fail("Document contains an unsafe JSON property.");
           const descriptor = Object.getOwnPropertyDescriptor(object, key);
-          if (!descriptor || !("value" in descriptor))
-            fail("Document must contain only JSON values.");
+          if (!descriptor || !("value" in descriptor)) fail("Document must contain only JSON values.");
           characters += key.length;
           walk(descriptor.value, depth + 1);
         }
       }
       ancestors.delete(value);
-    } else if (
-      value !== null &&
-      typeof value !== "boolean" &&
-      !(typeof value === "number" && Number.isFinite(value))
-    )
+    } else if (value !== null && typeof value !== "boolean" && !(typeof value === "number" && Number.isFinite(value)))
       fail("Document must contain only JSON values.");
   }
   walk(input, 0);
@@ -169,17 +159,9 @@ export function blogImageUrl(image: BlogImage, options: BlogDocumentOptions): st
 }
 export function validateBlogImage(input: unknown, options: BlogDocumentOptions = {}): BlogImage {
   const object = record(input, "Image");
-  keys(
-    object,
-    ["publicId", "version", "format", "width", "height", "alt", "caption", "src"],
-    "Image",
-  );
+  keys(object, ["publicId", "version", "format", "width", "height", "alt", "caption", "src"], "Image");
   const publicId = string(object.publicId, "Image public ID", 250);
-  if (
-    !/^smarttools\/blog\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
-      publicId,
-    )
-  )
+  if (!/^smarttools\/blog\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(publicId))
     fail("Image public ID must identify an uploaded immutable blog asset.");
   if (!["jpg", "jpeg", "png", "webp"].includes(object.format as string))
     fail("Image format must be JPEG, PNG or WebP.");
@@ -215,17 +197,9 @@ function mark(input: unknown): BlogMark {
   const object = record(input, "Text mark");
   keys(object, ["type", "attrs"], "Text mark");
   if (
-    ![
-      "bold",
-      "italic",
-      "strike",
-      "underline",
-      "code",
-      "link",
-      "highlight",
-      "superscript",
-      "subscript",
-    ].includes(object.type as string)
+    !["bold", "italic", "strike", "underline", "code", "link", "highlight", "superscript", "subscript"].includes(
+      object.type as string,
+    )
   )
     fail("Text mark is unsupported.");
   if (object.type === "highlight") {
@@ -300,8 +274,7 @@ function validateTable(node: BlogNode) {
       while (occupied[row][column]) column++;
       const colspan = Number(cell.attrs?.colspan ?? 1);
       const rowspan = Number(cell.attrs?.rowspan ?? 1);
-      if (column + colspan > 100 || row + rowspan > rows.length)
-        fail("Table spans exceed its dimensions.");
+      if (column + colspan > 100 || row + rowspan > rows.length) fail("Table spans exceed its dimensions.");
       const widths = cell.attrs?.colwidth as number[] | null;
       for (let offset = 0; offset < colspan; offset++) {
         // Older snapshots may only record widths on later rows or contain conflicts.
@@ -319,9 +292,7 @@ function validateTable(node: BlogNode) {
   if (
     !width ||
     occupied.some(
-      (row) =>
-        row.length !== width ||
-        Array.from({ length: width }, (_, x) => row[x]).some((value) => !value),
+      (row) => row.length !== width || Array.from({ length: width }, (_, x) => row[x]).some((value) => !value),
     )
   )
     fail("Table rows must form a complete rectangular grid.");
@@ -336,24 +307,12 @@ function validateBody(input: unknown, options: BlogDocumentOptions): BlogNode {
     const object = record(value, "Editor node");
     const type = object.type as NodeType;
     if (
-      ![
-        "doc",
-        "text",
-        "taskItem",
-        "listItem",
-        "hardBreak",
-        "tableRow",
-        "tableCell",
-        "tableHeader",
-        ...BLOCKS,
-      ].includes(type)
+      !["doc", "text", "taskItem", "listItem", "hardBreak", "tableRow", "tableCell", "tableHeader", ...BLOCKS].includes(
+        type,
+      )
     )
       fail("Editor node type is unsupported.");
-    keys(
-      object,
-      type === "text" ? ["type", "text", "marks"] : ["type", "attrs", "content"],
-      "Editor node",
-    );
+    keys(object, type === "text" ? ["type", "text", "marks"] : ["type", "attrs", "content"], "Editor node");
     const node: BlogNode = { type };
     if (type === "text") {
       node.text = string(object.text, "Article text", 1024 * 1024, false);
@@ -370,11 +329,7 @@ function validateBody(input: unknown, options: BlogDocumentOptions): BlogNode {
     }
     const attrs = object.attrs === undefined ? {} : record(object.attrs, "Node attributes");
     if (type === "heading" || type === "paragraph") {
-      keys(
-        attrs,
-        type === "heading" ? ["level", "textAlign"] : ["textAlign"],
-        "Text block attributes",
-      );
+      keys(attrs, type === "heading" ? ["level", "textAlign"] : ["textAlign"], "Text block attributes");
       if (type === "heading") node.attrs = { level: integer(attrs.level, "Heading level", 2, 6) };
       if (attrs.textAlign != null) {
         if (!["left", "center", "right", "justify"].includes(attrs.textAlign as string))
@@ -402,38 +357,25 @@ function validateBody(input: unknown, options: BlogDocumentOptions): BlogNode {
         fail("Image alignment is unsupported.");
       node.attrs = {
         ...validateBlogImage(asset, options),
-        displayWidth:
-          displayWidth == null ? 100 : integer(displayWidth, "Image display width", 10, 100),
+        displayWidth: displayWidth == null ? 100 : integer(displayWidth, "Image display width", 10, 100),
         alignment: alignment == null ? "center" : (alignment as string),
       };
     } else if (type === "tableCell" || type === "tableHeader") {
-      keys(
-        attrs,
-        ["colspan", "rowspan", "colwidth", "align", "backgroundColor"],
-        "Table cell attributes",
-      );
-      const colspan =
-        attrs.colspan === undefined ? 1 : integer(attrs.colspan, "Column span", 1, 100);
+      keys(attrs, ["colspan", "rowspan", "colwidth", "align", "backgroundColor"], "Table cell attributes");
+      const colspan = attrs.colspan === undefined ? 1 : integer(attrs.colspan, "Column span", 1, 100);
       const rowspan = attrs.rowspan === undefined ? 1 : integer(attrs.rowspan, "Row span", 1, 1000);
       const colwidth =
         attrs.colwidth == null
           ? null
-          : list(attrs.colwidth, "Column widths", colspan).map((width) =>
-              integer(width, "Column width", 0, 10000),
-            );
-      if (colwidth && colwidth.length !== colspan)
-        fail("Column widths must match the column span.");
+          : list(attrs.colwidth, "Column widths", colspan).map((width) => integer(width, "Column width", 0, 10000));
+      if (colwidth && colwidth.length !== colspan) fail("Column widths must match the column span.");
       node.attrs = { colspan, rowspan, colwidth };
       if (attrs.align != null) {
-        if (!["left", "center", "right"].includes(attrs.align as string))
-          fail("Table cell alignment is unsupported.");
+        if (!["left", "center", "right"].includes(attrs.align as string)) fail("Table cell alignment is unsupported.");
         node.attrs.align = attrs.align as string;
       }
       if (attrs.backgroundColor != null) {
-        if (
-          typeof attrs.backgroundColor !== "string" ||
-          !/^#[0-9a-f]{6}$/i.test(attrs.backgroundColor)
-        )
+        if (typeof attrs.backgroundColor !== "string" || !/^#[0-9a-f]{6}$/i.test(attrs.backgroundColor))
           fail("Table cell background color must be a six-digit hexadecimal color.");
         node.attrs.backgroundColor = attrs.backgroundColor.toLowerCase();
       }
@@ -443,17 +385,11 @@ function validateBody(input: unknown, options: BlogDocumentOptions): BlogNode {
       if (object.content !== undefined) fail("Leaf editor nodes cannot contain content.");
       return node;
     }
-    node.content = list(object.content ?? [], "Editor content", 10001).map((child) =>
-      visit(child, depth + 1),
-    );
-    if (node.content.some((child) => !allowed.includes(child.type)))
-      fail(`Invalid child content in ${type}.`);
+    node.content = list(object.content ?? [], "Editor content", 10001).map((child) => visit(child, depth + 1));
+    if (node.content.some((child) => !allowed.includes(child.type))) fail(`Invalid child content in ${type}.`);
     // A row may be fully occupied by cells spanning from the preceding row;
     // validateTable checks its coverage rather than rejecting it as empty here.
-    if (
-      !["doc", "paragraph", "heading", "codeBlock", "tableRow"].includes(type) &&
-      !node.content.length
-    )
+    if (!["doc", "paragraph", "heading", "codeBlock", "tableRow"].includes(type) && !node.content.length)
       fail(`${type} must contain content.`);
     if (["listItem", "taskItem"].includes(type) && node.content[0]?.type !== "paragraph")
       fail("List items must start with a paragraph.");
@@ -472,15 +408,11 @@ function term(input: unknown): BlogTerm {
   keys(object, ["id", "label"], "Taxonomy selection");
   const id = string(object.id, "Taxonomy ID", 100);
   const label = string(object.label, "Taxonomy label", 100);
-  if (!id || !label || !/^[a-zA-Z0-9_-]+$/.test(id))
-    fail("Taxonomy selection requires a valid ID and label.");
+  if (!id || !label || !/^[a-zA-Z0-9_-]+$/.test(id)) fail("Taxonomy selection requires a valid ID and label.");
   return { id, label };
 }
 
-export function validateBlogDocument(
-  input: unknown,
-  options: BlogDocumentOptions = {},
-): BlogDocument {
+export function validateBlogDocument(input: unknown, options: BlogDocumentOptions = {}): BlogDocument {
   checkJson(input);
   const object = record(input, "Article document");
   keys(
@@ -504,15 +436,13 @@ export function validateBlogDocument(
   const tags = list(object.tags, "Tags", 20)
     .map(term)
     .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-  if (new Set(tags.map((tag) => tag.id)).size !== tags.length)
-    fail("Duplicate tags are unsupported.");
+  if (new Set(tags.map((tag) => tag.id)).size !== tags.length) fail("Duplicate tags are unsupported.");
   const relatedToolIds = list(object.relatedToolIds, "Related tools", 12).map((item) => {
     const id = string(item, "Related tool ID", 150);
     if (!/^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/.test(id)) fail("Related tool ID is invalid.");
     return id;
   });
-  if (new Set(relatedToolIds).size !== relatedToolIds.length)
-    fail("Duplicate related tools are unsupported.");
+  if (new Set(relatedToolIds).size !== relatedToolIds.length) fail("Duplicate related tools are unsupported.");
   return {
     schemaVersion: 1,
     title: string(object.title, "Title", 200),
@@ -524,9 +454,7 @@ export function validateBlogDocument(
     tags,
     seoTitle: object.seoTitle === null ? null : string(object.seoTitle, "SEO title", 160) || null,
     seoDescription:
-      object.seoDescription === null
-        ? null
-        : string(object.seoDescription, "SEO description", 320) || null,
+      object.seoDescription === null ? null : string(object.seoDescription, "SEO description", 320) || null,
     relatedToolIds,
   };
 }
@@ -551,13 +479,10 @@ export function createBlogDocument(title: string): BlogDocument {
 
 function nodeText(node: BlogNode): string {
   if (node.type === "text") return node.text ?? "";
-  if (node.type === "image")
-    return [node.attrs?.alt, node.attrs?.caption].filter(Boolean).join(" ");
+  if (node.type === "image") return [node.attrs?.alt, node.attrs?.caption].filter(Boolean).join(" ");
   if (node.type === "hardBreak" || node.type === "horizontalRule") return "\n";
   const text = (node.content ?? []).map(nodeText).join("");
-  return ["doc", "paragraph", "heading", "codeBlock", "tableCell", "tableHeader"].includes(
-    node.type,
-  )
+  return ["doc", "paragraph", "heading", "codeBlock", "tableCell", "tableHeader"].includes(node.type)
     ? `${text}\n`
     : text;
 }
@@ -571,8 +496,7 @@ export function assertBlogPublishable(document: BlogDocument): void {
   if (!document.authorName.trim()) fail("Author name is required for publication.");
   if (!document.category) fail("A category is required for publication.");
   if (!blogDocumentText(document)) fail("Article body must contain meaningful content.");
-  if (document.coverImage && !document.coverImage.alt.trim())
-    fail("Cover image alt text is required for publication.");
+  if (document.coverImage && !document.coverImage.alt.trim()) fail("Cover image alt text is required for publication.");
   function check(node: BlogNode) {
     if (node.type === "image" && !String(node.attrs?.alt ?? "").trim())
       fail("Inline image alt text is required for publication.");
@@ -606,8 +530,7 @@ export function blogDocumentHash(document: BlogDocument): string {
 function escapeHtml(value: unknown): string {
   return String(value).replace(
     /[&<>"']/g,
-    (character) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!,
+    (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!,
   );
 }
 
@@ -716,9 +639,6 @@ export function renderBlogDocument(
   return {
     html,
     headings,
-    readingMinutes: Math.max(
-      1,
-      Math.ceil(blogDocumentText(document).split(/\s+/).filter(Boolean).length / 200),
-    ),
+    readingMinutes: Math.max(1, Math.ceil(blogDocumentText(document).split(/\s+/).filter(Boolean).length / 200)),
   };
 }

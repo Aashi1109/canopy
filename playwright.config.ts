@@ -6,10 +6,7 @@ if (!process.env.DATABASE_URL) {
 
 const appUrl = process.env.PLAYWRIGHT_APP_URL ?? "http://localhost:3000";
 const parsedAppUrl = new URL(appUrl);
-const appPort =
-  process.env.PLAYWRIGHT_PORT ||
-  parsedAppUrl.port ||
-  (parsedAppUrl.protocol === "https:" ? "443" : "80");
+const appPort = process.env.PLAYWRIGHT_PORT || parsedAppUrl.port || (parsedAppUrl.protocol === "https:" ? "443" : "80");
 
 if (!/^\d+$/.test(appPort)) {
   throw new Error("PLAYWRIGHT_PORT must be a valid port number.");
@@ -17,8 +14,7 @@ if (!/^\d+$/.test(appPort)) {
 
 const e2eEnvironment = {
   APP_URL: "http://localhost:3000",
-  BETTER_AUTH_SECRET:
-    process.env.BETTER_AUTH_SECRET ?? "e2e-only-secret-that-is-at-least-32-characters",
+  BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? "e2e-only-secret-that-is-at-least-32-characters",
   RESEND_API_KEY: "re_e2e_mock",
   AUTH_EMAIL_FROM: "SmartTools <auth@example.test>",
   GOOGLE_CLIENT_ID: "google-e2e-client",

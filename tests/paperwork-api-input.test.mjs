@@ -10,10 +10,7 @@ import {
 
 test("Paperwork API payloads have a bounded serialized size", () => {
   assert.doesNotThrow(() => assertJsonPayloadSize({ value: "small" }));
-  assert.throws(
-    () => assertJsonPayloadSize({ value: "x".repeat(MAX_API_JSON_BYTES) }),
-    /too large/i,
-  );
+  assert.throws(() => assertJsonPayloadSize({ value: "x".repeat(MAX_API_JSON_BYTES) }), /too large/i);
   assert.doesNotThrow(() => assertRequestContentLength(null));
   assert.doesNotThrow(() => assertRequestContentLength("1024"));
   assert.throws(() => assertRequestContentLength(String(MAX_API_JSON_BYTES + 1)), /too large/i);

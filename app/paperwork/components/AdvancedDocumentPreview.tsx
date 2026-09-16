@@ -68,23 +68,14 @@ function fitViewerPageToSurface(container: HTMLDivElement, viewer: ViewerInstanc
     const paperRect = paper.getBoundingClientRect();
     const availableWidth = container.clientWidth - 16;
     const availableHeight = container.clientHeight - controls.getBoundingClientRect().height - 48;
-    if (
-      paperRect.width <= 0 ||
-      paperRect.height <= 0 ||
-      availableWidth <= 0 ||
-      availableHeight <= 0
-    ) {
+    if (paperRect.width <= 0 || paperRect.height <= 0 || availableWidth <= 0 || availableHeight <= 0) {
       return;
     }
 
     const currentZoomLevel = viewer.getOptions().zoomLevel ?? 1;
     const zoomLevel = Math.min(
       2,
-      Math.max(
-        0.25,
-        currentZoomLevel *
-          Math.min(availableWidth / paperRect.width, availableHeight / paperRect.height),
-      ),
+      Math.max(0.25, currentZoomLevel * Math.min(availableWidth / paperRect.width, availableHeight / paperRect.height)),
     );
     stop();
     viewer.updateOptions({ zoomLevel });
@@ -105,10 +96,7 @@ function fitViewerPageToSurface(container: HTMLDivElement, viewer: ViewerInstanc
 }
 
 async function generateAdvancedDocumentPdf({ template, data }: AdvancedDocumentPdfOptions) {
-  const [{ generate }, schemas] = await Promise.all([
-    import("@pdfme/generator"),
-    import("@pdfme/schemas"),
-  ]);
+  const [{ generate }, schemas] = await Promise.all([import("@pdfme/generator"), import("@pdfme/schemas")]);
   return generate({
     template: pdfmeTemplate(template),
     inputs: [applyTemplateFormatting(template, data)],
@@ -125,9 +113,7 @@ export async function downloadAdvancedDocumentPdf({
   const objectUrl = URL.createObjectURL(new Blob([pdf], { type: "application/pdf" }));
   const link = document.createElement("a");
   const requestedName = fileName.trim() || template.slug;
-  link.download = requestedName.toLowerCase().endsWith(".pdf")
-    ? requestedName
-    : `${requestedName}.pdf`;
+  link.download = requestedName.toLowerCase().endsWith(".pdf") ? requestedName : `${requestedName}.pdf`;
   link.href = objectUrl;
 
   try {
@@ -139,10 +125,7 @@ export async function downloadAdvancedDocumentPdf({
   }
 }
 
-export async function openAdvancedDocumentPdf({
-  template,
-  data,
-}: AdvancedDocumentPdfOptions): Promise<void> {
+export async function openAdvancedDocumentPdf({ template, data }: AdvancedDocumentPdfOptions): Promise<void> {
   const previewWindow = window.open("", "_blank");
   if (!previewWindow) {
     throw new Error("Allow pop-ups to open the PDF preview.");
@@ -165,12 +148,7 @@ export async function openAdvancedDocumentPdf({
   }
 }
 
-export function AdvancedDocumentPreview({
-  template,
-  data,
-  className,
-  onError,
-}: AdvancedDocumentPreviewProps) {
+export function AdvancedDocumentPreview({ template, data, className, onError }: AdvancedDocumentPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<ViewerInstance | null>(null);
   const fitCleanupRef = useRef<(() => void) | null>(null);
@@ -191,10 +169,7 @@ export function AdvancedDocumentPreview({
 
     async function mountViewer() {
       try {
-        const [{ Viewer }, schemas] = await Promise.all([
-          import("@pdfme/ui"),
-          import("@pdfme/schemas"),
-        ]);
+        const [{ Viewer }, schemas] = await Promise.all([import("@pdfme/ui"), import("@pdfme/schemas")]);
         if (cancelled || !containerRef.current) return;
 
         viewer = new Viewer({

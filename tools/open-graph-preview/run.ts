@@ -44,10 +44,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const previewImage = ctx.settings.safeAreaGuides
     ? `<div style="position:relative">${imageMarkup}<div aria-hidden="true" style="position:absolute;inset:10%;border:1px dashed rgba(255,255,255,.8);pointer-events:none"></div></div>`
     : imageMarkup;
-  const destination =
-    ctx.settings.showDestinationHost && url
-      ? escapeHtml(new URL(url).host)
-      : siteName || escapedUrl;
+  const destination = ctx.settings.showDestinationHost && url ? escapeHtml(new URL(url).host) : siteName || escapedUrl;
   const imageMetadata = ctx.settings.showImageMetadata
     ? `<p>Image URL: ${escapedImage || "not provided"} · Dimensions: not fetched</p>`
     : "";

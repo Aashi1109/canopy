@@ -192,10 +192,7 @@ test("detects a partial OPFS commit and falls back without returning corrupt byt
   });
 
   assert.equal(artifact.storage, "blob");
-  assert.deepEqual(
-    new Uint8Array(await (await readArtifact(artifact)).arrayBuffer()),
-    new Uint8Array([1, 2, 3]),
-  );
+  assert.deepEqual(new Uint8Array(await (await readArtifact(artifact)).arrayBuffer()), new Uint8Array([1, 2, 3]));
 });
 
 test("recovers from an OPFS quota error only within the Blob fallback ceiling", async () => {
@@ -504,10 +501,7 @@ test("retries transient cleanup failures and coalesces the startup stale sweep",
   await cleanupArtifactJobWithRetry("retry-job", { retryDelayMs: 0 });
   await assert.rejects(getJob(root, "retry-job"), { name: "NotFoundError" });
 
-  const [first, second] = await Promise.all([
-    sweepStaleArtifactJobsOnce(),
-    sweepStaleArtifactJobsOnce(),
-  ]);
+  const [first, second] = await Promise.all([sweepStaleArtifactJobsOnce(), sweepStaleArtifactJobsOnce()]);
   assert.equal(first, 1);
   assert.equal(second, 1);
   await assert.rejects(getJob(root, "startup-stale-job"), { name: "NotFoundError" });

@@ -72,10 +72,7 @@ export async function parseStreamingCsv(
   if (delimiter.length !== 1 || delimiter === '"' || delimiter === "\r" || delimiter === "\n") {
     throw new TypeError("CSV delimiter must be one character other than a quote or newline.");
   }
-  if (
-    expectedColumns !== undefined &&
-    (!Number.isInteger(expectedColumns) || expectedColumns < 1)
-  ) {
+  if (expectedColumns !== undefined && (!Number.isInteger(expectedColumns) || expectedColumns < 1)) {
     throw new RangeError("expectedColumns must be a positive integer.");
   }
   if (!Number.isInteger(previewRows) || previewRows < 0) {
@@ -155,8 +152,7 @@ export async function parseStreamingCsv(
 
     if (!columnCount) columnCount = completedRow.length;
     if (validateWidth && completedRow.length !== columnCount) {
-      const errorColumn =
-        completedRow.length < columnCount ? completedRow.length + 1 : columnCount + 1;
+      const errorColumn = completedRow.length < columnCount ? completedRow.length + 1 : columnCount + 1;
       const noun = completedRow.length === 1 ? "column" : "columns";
       const expectedNoun = columnCount === 1 ? "column" : "columns";
       throw new CsvParseError(
@@ -169,10 +165,7 @@ export async function parseStreamingCsv(
 
     rowCount = rowNumber;
     if (preview.length < previewRows) {
-      const nextBytes = completedRow.reduce(
-        (total, value) => total + encoder.encode(value).byteLength,
-        0,
-      );
+      const nextBytes = completedRow.reduce((total, value) => total + encoder.encode(value).byteLength, 0);
       if (nextBytes <= maxPreviewBytes - previewBytes) {
         preview.push(completedRow.slice());
         previewBytes += nextBytes;

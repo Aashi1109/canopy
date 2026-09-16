@@ -1,7 +1,6 @@
 export const CONSENT_KEY = "smarttools.analytics-consent.v1";
 export type AnalyticsConsent = "accepted" | "declined" | null;
-export type ToolEvent =
-  "tool_start" | "tool_complete" | "tool_error" | "result_download" | "result_copy";
+export type ToolEvent = "tool_start" | "tool_complete" | "tool_error" | "result_download" | "result_copy";
 
 type AnalyticsWindow = Window & {
   dataLayer?: unknown[];
@@ -17,29 +16,17 @@ export function measurementId(env: {
 }) {
   const id = env.GA_MEASUREMENT_ID?.trim();
   const enabled =
-    env.NODE_ENV === "production" ||
-    (env.NODE_ENV === "development" && env.GA_ENABLE_IN_DEVELOPMENT === "true");
-  return enabled &&
-    (!env.VERCEL_ENV || env.VERCEL_ENV === "production") &&
-    /^G-[A-Z0-9]+$/.test(id ?? "")
-    ? id!
-    : null;
+    env.NODE_ENV === "production" || (env.NODE_ENV === "development" && env.GA_ENABLE_IN_DEVELOPMENT === "true");
+  return enabled && (!env.VERCEL_ENV || env.VERCEL_ENV === "production") && /^G-[A-Z0-9]+$/.test(id ?? "") ? id! : null;
 }
 
 // Never send arbitrary route segments (document IDs, emails, or pasted text).
 export function publicPath(pathname: string): string | null {
   const path = pathname.split(/[?#]/, 1)[0].replace(/\/$/, "") || "/";
   if (
-    [
-      "/",
-      "/privacy",
-      "/contact",
-      "/media",
-      "/devtools",
-      "/paperwork",
-      "/paperwork/about",
-      "/paperwork/terms",
-    ].includes(path)
+    ["/", "/privacy", "/contact", "/media", "/devtools", "/paperwork", "/paperwork/about", "/paperwork/terms"].includes(
+      path,
+    )
   )
     return path;
   const tool = /^\/(media|devtools|paperwork)\/[a-z0-9-]+$/.exec(path);
@@ -205,13 +192,10 @@ export function createAnalytics(browser: AnalyticsWindow, id: string | null) {
       if (
         !allowed() ||
         !loaded ||
-        !["tool_start", "tool_complete", "tool_error", "result_download", "result_copy"].includes(
-          event,
-        )
+        !["tool_start", "tool_complete", "tool_error", "result_download", "result_copy"].includes(event)
       )
         return;
-      const tool =
-        toolKey && /^[a-z0-9][a-z0-9-]{0,63}$/.test(toolKey) ? { tool_key: toolKey } : {};
+      const tool = toolKey && /^[a-z0-9][a-z0-9-]{0,63}$/.test(toolKey) ? { tool_key: toolKey } : {};
       send("event", event, { ...context(), ...tool });
     },
   };

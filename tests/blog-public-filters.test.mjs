@@ -3,16 +3,13 @@ import test from "node:test";
 import { blogListingHref, parseBlogFilters } from "../app/blog/lib/filters.ts";
 
 test("blog URL filters normalize blank values and reject ambiguous or malformed inputs", () => {
-  assert.deepEqual(
-    parseBlogFilters({ search: "  useful guide  ", category: "", ignored: "tracking" }),
-    {
-      search: "useful guide",
-      category: undefined,
-      tag: undefined,
-      cursor: undefined,
-      categoryCursor: undefined,
-    },
-  );
+  assert.deepEqual(parseBlogFilters({ search: "  useful guide  ", category: "", ignored: "tracking" }), {
+    search: "useful guide",
+    category: undefined,
+    tag: undefined,
+    cursor: undefined,
+    categoryCursor: undefined,
+  });
   for (const input of [
     { search: ["a", "b"] },
     { search: "x".repeat(201) },

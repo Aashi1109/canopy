@@ -3,13 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type {
-  AdvancedTemplateConfig,
-  DocumentType,
-  PageFormat,
-  PdfmeBlankBase,
-  PdfmeSchema,
-} from "./templateTypes.ts";
+import type { AdvancedTemplateConfig, DocumentType, PageFormat, PdfmeBlankBase, PdfmeSchema } from "./templateTypes.ts";
 import { getDocumentDefinition, isPageFormatAllowed } from "./documentDefinitions.ts";
 
 type PageSpec = PdfmeBlankBase;
@@ -97,9 +91,7 @@ function scaleEdges(value: unknown, scaleX: number, scaleY: number, scale: numbe
   return Object.fromEntries(
     Object.entries(value).map(([side, size]) => [
       side,
-      typeof size !== "number"
-        ? size
-        : size * (side === "left" || side === "right" ? scaleX : scaleY),
+      typeof size !== "number" ? size : size * (side === "left" || side === "right" ? scaleX : scaleY),
     ]),
   );
 }
@@ -118,19 +110,13 @@ function scaleSchema(schema: PdfmeSchema, scaleX: number, scaleY: number): Pdfme
     if (key === "padding" || key === "borderWidth") {
       return scaleEdges(value, scaleX, scaleY, scale);
     }
-    if (
-      typeof value === "number" &&
-      (key === "fontSize" || key === "characterSpacing" || key === "borderRadius")
-    ) {
+    if (typeof value === "number" && (key === "fontSize" || key === "characterSpacing" || key === "borderRadius")) {
       return value * scale;
     }
     if (Array.isArray(value)) return value.map((item) => scaleStyles(item));
     if (!value || typeof value !== "object") return value;
     return Object.fromEntries(
-      Object.entries(value).map(([nestedKey, nested]) => [
-        nestedKey,
-        scaleStyles(nested, nestedKey),
-      ]),
+      Object.entries(value).map(([nestedKey, nested]) => [nestedKey, scaleStyles(nested, nestedKey)]),
     );
   }
 
@@ -171,9 +157,7 @@ export function resizeAdvancedTemplateConfig(
     padding: [...pageSpec.padding],
     ...(resized.template.basePdf.staticSchema
       ? {
-          staticSchema: resized.template.basePdf.staticSchema.map((schema) =>
-            scaleSchema(schema, scaleX, scaleY),
-          ),
+          staticSchema: resized.template.basePdf.staticSchema.map((schema) => scaleSchema(schema, scaleX, scaleY)),
         }
       : {}),
   };
@@ -181,9 +165,7 @@ export function resizeAdvancedTemplateConfig(
 }
 
 function definitionSampleData(documentType: DocumentType): Record<string, string> {
-  return Object.fromEntries(
-    getDocumentDefinition(documentType).fields.map((field) => [field.key, field.sampleValue]),
-  );
+  return Object.fromEntries(getDocumentDefinition(documentType).fields.map((field) => [field.key, field.sampleValue]));
 }
 
 function invoiceDefaults(
@@ -577,9 +559,7 @@ function tableSample(field: ReturnType<typeof getDocumentDefinition>["fields"][n
       rows.map((row) => {
         if (!row || typeof row !== "object") return [String(row ?? "")];
         const record = row as Record<string, unknown>;
-        return (columns ?? Object.keys(record).filter((key) => key !== "id")).map((key) =>
-          String(record[key] ?? ""),
-        );
+        return (columns ?? Object.keys(record).filter((key) => key !== "id")).map((key) => String(record[key] ?? ""));
       }),
     );
   } catch {
@@ -667,14 +647,7 @@ export function createAdvancedTemplateConfig(
     return invoiceDefaults(pageFormat as Extract<PageFormat, "A4" | "LETTER">, basePdf);
   }
   if (documentType === "receipt") {
-    return receiptDefaults(
-      pageFormat as Extract<PageFormat, "RECEIPT_80MM" | "RECEIPT_58MM">,
-      basePdf,
-    );
+    return receiptDefaults(pageFormat as Extract<PageFormat, "RECEIPT_80MM" | "RECEIPT_58MM">, basePdf);
   }
-  return genericDocumentDefaults(
-    documentType,
-    pageFormat as Extract<PageFormat, "A4" | "LETTER">,
-    basePdf,
-  );
+  return genericDocumentDefaults(documentType, pageFormat as Extract<PageFormat, "A4" | "LETTER">, basePdf);
 }

@@ -44,14 +44,12 @@ const operations = {
 };
 
 function failure(error: unknown) {
-  if (error instanceof BlogError)
-    return { ok: false as const, code: error.code, message: error.message };
+  if (error instanceof BlogError) return { ok: false as const, code: error.code, message: error.message };
   if (error instanceof BlogValidationError || error instanceof ZodError) {
     return {
       ok: false as const,
       code: "VALIDATION" as const,
-      message:
-        error instanceof ZodError ? "Check the supplied fields and try again." : error.message,
+      message: error instanceof ZodError ? "Check the supplied fields and try again." : error.message,
     };
   }
   if (error instanceof AuthorizationError)
@@ -71,8 +69,7 @@ function failure(error: unknown) {
 export async function mutateBlogAction(operation: keyof typeof operations, input: unknown) {
   const actor = await getActorUserId();
   try {
-    if (!Object.hasOwn(operations, operation))
-      throw new BlogError("VALIDATION", "Unknown blog operation.");
+    if (!Object.hasOwn(operations, operation)) throw new BlogError("VALIDATION", "Unknown blog operation.");
     return { ok: true as const, data: await operations[operation](actor, input) };
   } catch (error) {
     return failure(error);
@@ -84,14 +81,12 @@ export async function uploadBlogImageAction(formData: FormData) {
   try {
     if (!(formData instanceof FormData)) throw new BlogError("VALIDATION", "Choose an image file.");
     const fields = [...formData.keys()];
-    if (fields.length !== 1 || fields[0] !== "file")
-      throw new BlogError("VALIDATION", "Supply one image file.");
+    if (fields.length !== 1 || fields[0] !== "file") throw new BlogError("VALIDATION", "Supply one image file.");
     const file = formData.get("file");
     if (!(file instanceof File)) throw new BlogError("VALIDATION", "Choose an image file.");
     return { ok: true as const, data: await uploadBlogImage(actor, file) };
   } catch (error) {
-    if (error instanceof BlogImageUploadError)
-      return { ok: false as const, code: error.code, message: error.message };
+    if (error instanceof BlogImageUploadError) return { ok: false as const, code: error.code, message: error.message };
     const result = failure(error);
     return result.code === "TEMPORARY_FAILURE"
       ? {
@@ -106,9 +101,7 @@ export async function uploadBlogImageAction(formData: FormData) {
 const readInput = z.discriminatedUnion("operation", [
   z.object({ operation: z.literal("list"), filters: z.unknown().optional() }).strict(),
   z.object({ operation: z.literal("post"), postId: z.string() }).strict(),
-  z
-    .object({ operation: z.literal("history"), postId: z.string(), cursor: z.string().optional() })
-    .strict(),
+  z.object({ operation: z.literal("history"), postId: z.string(), cursor: z.string().optional() }).strict(),
   z
     .object({
       operation: z.literal("preview"),

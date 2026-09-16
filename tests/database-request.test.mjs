@@ -121,11 +121,7 @@ test("database pools stay inside their request through transactions, streams and
     let streamedClient;
     const streaming = await withDatabaseRequest(async (background) => {
       const id = await query();
-      assert.equal(
-        db.$client.url,
-        process.env.DATABASE_URL,
-        "unbound requests use the environment URL",
-      );
+      assert.equal(db.$client.url, process.env.DATABASE_URL, "unbound requests use the environment URL");
       streamedClient = clients.find((client) => client.id === id);
       background(backgroundGate.promise.then(() => query()));
       return new Response(
@@ -207,11 +203,7 @@ test("database pools stay inside their request through transactions, streams and
     await Promise.all(waits.splice(0));
     process.env.DATABASE_URL = "postgres://localhost/test";
     const nodeId = await query();
-    assert.equal(
-      db.$client.url,
-      process.env.DATABASE_URL,
-      "request bindings do not leak into Node pooling",
-    );
+    assert.equal(db.$client.url, process.env.DATABASE_URL, "request bindings do not leak into Node pooling");
     assert.equal(await query(), nodeId, "Node development retains its pooled connection");
     const execute = db.execute;
     db.execute = async () => [{ clientId: "replacement" }];

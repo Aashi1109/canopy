@@ -2,18 +2,7 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import {
-  H1,
-  Muted,
-  Overline,
-  P,
-  TextLink,
-  AlertBanner,
-  Button,
-  Card,
-  Field,
-  Input,
-} from "@smarttools/ui";
+import { H1, Muted, Overline, P, TextLink, AlertBanner, Button, Card, Field, Input } from "@smarttools/ui";
 import { authClient } from "../_lib/authClient";
 import { getSafeAuthError, isValidPassword } from "../_lib/security";
 
@@ -56,9 +45,7 @@ export function ResetPasswordForm({ token, returnTo }: { token?: string; returnT
       <Card className="auth-card w-full max-w-[440px] gap-[18px]">
         <Overline className="block text-primary">Invalid link</Overline>
         <H1>Request a new reset email.</H1>
-        <Muted className="text-muted-foreground">
-          This reset link is missing, invalid, or has expired.
-        </Muted>
+        <Muted className="text-muted-foreground">This reset link is missing, invalid, or has expired.</Muted>
         <Button asChild className="w-full">
           <a href="/auth?mode=forgot">Return to account recovery</a>
         </Button>
@@ -89,12 +76,7 @@ export function ResetPasswordForm({ token, returnTo }: { token?: string; returnT
       </div>
       {error ? <AlertBanner variant="error">{error}</AlertBanner> : null}
       <form className="grid gap-[18px]" onSubmit={submit}>
-        <Field
-          description="12–128 characters"
-          htmlFor="new-password"
-          label="New password"
-          variant="auth"
-        >
+        <Field description="12–128 characters" htmlFor="new-password" label="New password" variant="auth">
           <Input
             autoComplete="new-password"
             id="new-password"

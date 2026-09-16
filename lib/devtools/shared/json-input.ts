@@ -5,9 +5,7 @@ import { ToolError } from "../../tool-framework/run.ts";
 import { repairJson, type JsonRepairMode } from "./json.ts";
 import { requireUtilityInput, stringOption } from "./options.ts";
 
-export function repairModeFromOptions(
-  options: Record<string, string | number | boolean>,
-): JsonRepairMode {
+export function repairModeFromOptions(options: Record<string, string | number | boolean>): JsonRepairMode {
   const mode = stringOption(options, "repairMode") || "remove";
   if (mode === "remove" || mode === "null" || mode === "off") return mode;
   throw new ToolError("invalid-json-repair-mode", "Choose a valid JSON repair mode.");

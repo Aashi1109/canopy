@@ -20,10 +20,7 @@ export function parseDate(input: string, label: string): Date {
 export function describeCron(expression: string): string {
   const fields = expression.trim().split(/\s+/);
   if (fields.length !== 5) {
-    throw new ToolError(
-      "invalid-cron",
-      "Cron expression must contain minute, hour, day, month, and weekday fields.",
-    );
+    throw new ToolError("invalid-cron", "Cron expression must contain minute, hour, day, month, and weekday fields.");
   }
   parseCronField(fields[0], 0, 59, "Minute");
   parseCronField(fields[1], 0, 23, "Hour");
@@ -31,18 +28,11 @@ export function describeCron(expression: string): string {
   parseCronField(fields[3], 1, 12, "Month");
   parseCronField(fields[4], 0, 7, "Weekday", true);
   const [minute, hour, day, month, weekday] = fields;
-  const timing =
-    minute === "*" && hour === "*" ? "every minute" : `at minute ${minute} of hour ${hour}`;
+  const timing = minute === "*" && hour === "*" ? "every minute" : `at minute ${minute} of hour ${hour}`;
   return `${timing}; day ${day}; month ${month}; weekday ${weekday}`;
 }
 
-function parseCronField(
-  field: string,
-  min: number,
-  max: number,
-  label: string,
-  normalizeSunday = false,
-) {
+function parseCronField(field: string, min: number, max: number, label: string, normalizeSunday = false) {
   const values = new Set<number>();
   const wildcard = field === "*" || field.startsWith("*/");
   const add = (value: number) => {
@@ -112,12 +102,7 @@ export function nextCronRuns(expression: string, timezone: "local" | "utc", coun
             ? day.values.has(dayValue)
             : day.values.has(dayValue) || weekday.values.has(weekdayValue);
 
-    if (
-      minute.values.has(minuteValue) &&
-      hour.values.has(hourValue) &&
-      month.values.has(monthValue) &&
-      dayMatches
-    ) {
+    if (minute.values.has(minuteValue) && hour.values.has(hourValue) && month.values.has(monthValue) && dayMatches) {
       runs.push(new Date(cursor));
     }
     if (timezone === "local") cursor.setMinutes(cursor.getMinutes() + 1);

@@ -69,7 +69,6 @@ export function parseCurl(command: string): {
   } catch {
     throw new ToolError("invalid-url", "cURL command needs an absolute http or https URL.");
   }
-  if (!/^https?:/i.test(url))
-    throw new ToolError("invalid-url", "cURL URL must use http or https.");
+  if (!/^https?:/i.test(url)) throw new ToolError("invalid-url", "cURL URL must use http or https.");
   return { url, method: method || "GET", headers, ...(body !== undefined ? { body } : {}) };
 }

@@ -44,10 +44,7 @@ export function textMetrics(
   });
   const wordCount =
     options.countHyphenated === false
-      ? filteredTokens.reduce(
-          (total, token) => total + token.split(/[-‐‑‒–—]+/u).filter(Boolean).length,
-          0,
-        )
+      ? filteredTokens.reduce((total, token) => total + token.split(/[-‐‑‒–—]+/u).filter(Boolean).length, 0)
       : filteredTokens.length;
   return {
     words: wordCount,

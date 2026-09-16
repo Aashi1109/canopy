@@ -14,10 +14,7 @@ import {
   rolesTable,
   userRolesTable,
 } from "../packages/database/src/index.ts";
-import {
-  createAdvancedTemplateConfig,
-  seedTemplates,
-} from "../packages/invoice-templates/src/index.ts";
+import { createAdvancedTemplateConfig, seedTemplates } from "../packages/invoice-templates/src/index.ts";
 import {
   archiveInvoiceTemplate,
   assignUserRoles,
@@ -176,11 +173,7 @@ test("catalog and role caches invalidate only after successful commits", async (
   });
   const tool = toolRoster(["devtools.stored-tool"], "devtools")[0];
   for (const [key, reads, operation] of [
-    [
-      "catalog:all",
-      [permissionRows(ADMIN_ACCESS), [tool]],
-      () => setManagedToolEnabled("actor", tool.toolId, false),
-    ],
+    ["catalog:all", [permissionRows(ADMIN_ACCESS), [tool]], () => setManagedToolEnabled("actor", tool.toolId, false)],
     [
       "roles:all",
       [permissionRows(ADMIN_ACCESS)],
@@ -227,9 +220,7 @@ test("bulk role assignment adds only the requested role, preserves status and is
     async (state) => {
       await assignRoleToUsers("actor", "reviewer", ["b", "a", "a"]);
       assert.deepEqual(
-        state.inserts
-          .filter((entry) => entry.table === userRolesTable)
-          .map((entry) => entry.values),
+        state.inserts.filter((entry) => entry.table === userRolesTable).map((entry) => entry.values),
         [{ userId: "a", roleId: "reviewer" }],
       );
       assert.equal(state.deletes.length, 0);
@@ -242,13 +233,10 @@ test("bulk role assignment adds only the requested role, preserves status and is
 test("bulk assignment rejects invalid selections, missing users and system roles", async () => {
   await assert.rejects(() => assignRoleToUsers("actor", "reviewer", []), /Select/);
   await assert.rejects(() => assignRoleToUsers("actor", "reviewer", Array(101).fill("a")), /100/);
-  await withFakeDatabase(
-    [permissionRows(ADMIN_ACCESS), permissionRows(ADMIN_ACCESS), []],
-    async (state) => {
-      await assert.rejects(() => assignRoleToUsers("actor", "reviewer", ["missing"]), /not found/i);
-      assert.equal(state.inserts.length, 0);
-    },
-  );
+  await withFakeDatabase([permissionRows(ADMIN_ACCESS), permissionRows(ADMIN_ACCESS), []], async (state) => {
+    await assert.rejects(() => assignRoleToUsers("actor", "reviewer", ["missing"]), /not found/i);
+    assert.equal(state.inserts.length, 0);
+  });
   await withFakeDatabase(
     [
       permissionRows(ADMIN_ACCESS),
@@ -356,24 +344,15 @@ test("every privileged mutation checks its exact PostgreSQL permission", async (
     ["tools.toggle", () => setManagedToolEnabled("actor", "paperwork.invoice-generator", true)],
     ["tools.archive", () => setManagedToolArchived("actor", "paperwork.invoice-generator", true)],
     ["features.edit", () => updateFeature("actor", "paperwork", "new-editor", {}, featureManifest)],
-    [
-      "features.toggle",
-      () => setFeatureEnabled("actor", "paperwork", "new-editor", true, featureManifest),
-    ],
+    ["features.toggle", () => setFeatureEnabled("actor", "paperwork", "new-editor", true, featureManifest)],
     ["users.assignRoles", () => assignUserRoles("actor", "target", ["user"])],
     ["users.suspend", () => setUserStatus("actor", "target", "suspended")],
-    [
-      "roles.create",
-      () => createCustomRole("actor", { name: "Editor", description: "Edits templates." }),
-    ],
+    ["roles.create", () => createCustomRole("actor", { name: "Editor", description: "Edits templates." })],
     ["roles.edit", () => updateCustomRole("actor", "role", {})],
     ["roles.delete", () => deleteCustomRole("actor", "role")],
     ["templates.create", () => createInvoiceTemplate("actor", {})],
     ["templates.create", () => createAdvancedDocumentTemplate("actor", {})],
-    [
-      "templates.create",
-      () => duplicateInvoiceTemplate("actor", "template", { name: "Copy", slug: "copy" }),
-    ],
+    ["templates.create", () => duplicateInvoiceTemplate("actor", "template", { name: "Copy", slug: "copy" })],
     ["templates.create", () => importInvoiceTemplate("actor", {})],
     ["templates.edit", () => updateInvoiceTemplate("actor", "template", {})],
     ["templates.publish", () => publishInvoiceTemplate("actor", "template")],
@@ -384,10 +363,7 @@ test("every privileged mutation checks its exact PostgreSQL permission", async (
   for (const [permission, invoke] of cases) {
     const [resource, action] = permission.split(".");
     await withFakeDatabase([permissionRows(accessWithout(resource, action))], async (state) => {
-      await assert.rejects(
-        invoke,
-        new RegExp(`Missing permission: ${permission.replace(".", "\\.")}`),
-      );
+      await assert.rejects(invoke, new RegExp(`Missing permission: ${permission.replace(".", "\\.")}`));
       assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
     });
   }
@@ -431,23 +407,20 @@ test("tool setup validates and stores a code-owned slug with its audit event", a
     archived: false,
   };
 
-  await withFakeDatabase(
-    [permissionRows({ tools: { edit: true } }), [setupRequired], []],
-    async (state) => {
-      await updateManagedTool("actor", "devtools.json-formatter", {
-        slug: "json-formatter",
-        name: "JSON Formatter",
-        description: "Format and validate JSON.",
-      });
+  await withFakeDatabase([permissionRows({ tools: { edit: true } }), [setupRequired], []], async (state) => {
+    await updateManagedTool("actor", "devtools.json-formatter", {
+      slug: "json-formatter",
+      name: "JSON Formatter",
+      description: "Format and validate JSON.",
+    });
 
-      const toolWrite = state.inserts.find(({ table }) => table === managedToolsTable);
-      const auditWrite = state.inserts.find(({ table }) => table === auditEventsTable);
-      assert.equal(toolWrite.values.app, "devtools");
-      assert.equal(toolWrite.values.slug, "json-formatter");
-      assert.equal(auditWrite.values.action, "tool.edit");
-      assert.equal(auditWrite.values.actorUserId, "actor");
-    },
-  );
+    const toolWrite = state.inserts.find(({ table }) => table === managedToolsTable);
+    const auditWrite = state.inserts.find(({ table }) => table === auditEventsTable);
+    assert.equal(toolWrite.values.app, "devtools");
+    assert.equal(toolWrite.values.slug, "json-formatter");
+    assert.equal(auditWrite.values.action, "tool.edit");
+    assert.equal(auditWrite.values.actorUserId, "actor");
+  });
 });
 
 test("tool reordering stores one contiguous app order and one audit event", async () => {
@@ -469,9 +442,8 @@ test("tool reordering stores one contiguous app order and one audit event", asyn
       assert.deepEqual(
         toolIds.map(
           (toolId) =>
-            state.inserts.find(
-              ({ table, values }) => table === managedToolsTable && values.toolId === toolId,
-            ).values.order,
+            state.inserts.find(({ table, values }) => table === managedToolsTable && values.toolId === toolId).values
+              .order,
         ),
         toolIds.map((_, order) => order),
       );
@@ -496,9 +468,8 @@ test("tool reordering accepts a complete app roster in reverse", async () => {
     assert.deepEqual(
       toolIds.map(
         (toolId) =>
-          state.inserts.find(
-            ({ table, values }) => table === managedToolsTable && values.toolId === toolId,
-          ).values.order,
+          state.inserts.find(({ table, values }) => table === managedToolsTable && values.toolId === toolId).values
+            .order,
       ),
       toolIds.map((_, order) => order),
     );
@@ -542,16 +513,13 @@ test("tool reordering rejects incomplete, duplicate, and cross-app orders", asyn
   );
 
   for (const toolIds of invalidOrders) {
-    await withFakeDatabase(
-      [permissionRows({ tools: { edit: true } }), paperworkRoster],
-      async (state) => {
-        await assert.rejects(
-          () => reorderManagedTools("actor", "paperwork", toolIds),
-          /every registered paperwork tool exactly once/,
-        );
-        assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
-      },
-    );
+    await withFakeDatabase([permissionRows({ tools: { edit: true } }), paperworkRoster], async (state) => {
+      await assert.rejects(
+        () => reorderManagedTools("actor", "paperwork", toolIds),
+        /every registered paperwork tool exactly once/,
+      );
+      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    });
   }
 });
 
@@ -600,19 +568,13 @@ test("stored tools toggle, and archiving disables them", async () => {
     },
   );
 
-  await withFakeDatabase(
-    [permissionRows({ tools: { archive: true } }), [stored]],
-    async (state) => {
-      await setManagedToolArchived("actor", stored.toolId, true);
-      const write = state.inserts.find(({ table }) => table === managedToolsTable);
-      assert.equal(write.values.archived, true);
-      assert.equal(write.values.enabled, false);
-      assert.equal(
-        state.inserts.find(({ table }) => table === auditEventsTable).values.action,
-        "tool.archive",
-      );
-    },
-  );
+  await withFakeDatabase([permissionRows({ tools: { archive: true } }), [stored]], async (state) => {
+    await setManagedToolArchived("actor", stored.toolId, true);
+    const write = state.inserts.find(({ table }) => table === managedToolsTable);
+    assert.equal(write.values.archived, true);
+    assert.equal(write.values.enabled, false);
+    assert.equal(state.inserts.find(({ table }) => table === auditEventsTable).values.action, "tool.archive");
+  });
 
   await withFakeDatabase(
     [permissionRows({ tools: { toggle: true } }), [{ ...stored, archived: true }]],
@@ -627,10 +589,7 @@ test("stored tools toggle, and archiving disables them", async () => {
 
   await withFakeDatabase([permissionRows({ tools: { toggle: true } }), [stored]], async (state) => {
     await setManagedToolEnabled("actor", stored.toolId, false);
-    assert.equal(
-      state.inserts.find(({ table }) => table === managedToolsTable).values.enabled,
-      false,
-    );
+    assert.equal(state.inserts.find(({ table }) => table === managedToolsTable).values.enabled, false);
   });
 });
 
@@ -655,25 +614,16 @@ test("tool edits reject unknown tools, invalid slugs, and blank text", async () 
     [storedRows, { name: " " }, /Tool name is required/],
   ];
   for (const [storedRows, input, error] of cases) {
-    await withFakeDatabase(
-      [permissionRows({ tools: { edit: true } }), storedRows],
-      async (state) => {
-        await assert.rejects(
-          () => updateManagedTool("actor", "devtools.json-formatter", input),
-          error,
-        );
-        assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
-      },
-    );
+    await withFakeDatabase([permissionRows({ tools: { edit: true } }), storedRows], async (state) => {
+      await assert.rejects(() => updateManagedTool("actor", "devtools.json-formatter", input), error);
+      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    });
   }
 });
 
 test("unregistered feature keys cannot create overrides", async () => {
   await withFakeDatabase([permissionRows({ features: { edit: true } })], async (state) => {
-    await assert.rejects(
-      () => updateFeature("actor", "paperwork", "unknown", {}, []),
-      /Unknown feature/,
-    );
+    await assert.rejects(() => updateFeature("actor", "paperwork", "unknown", {}, []), /Unknown feature/);
     assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
   });
 });
@@ -743,18 +693,12 @@ test("suspension protects the final admin and retains identity while auditing th
     [permissionRows({ users: { suspend: true } }), [target], [{ roleId: "user" }]],
     async (state) => {
       await setUserStatus("actor", "target", "suspended");
-      assert.equal(
-        state.updates.find(({ table }) => table === authUser).values.status,
-        "suspended",
-      );
+      assert.equal(state.updates.find(({ table }) => table === authUser).values.status, "suspended");
       assert.equal(
         state.deletes.some(({ table }) => table === authSession),
         false,
       );
-      assert.equal(
-        state.inserts.find(({ table }) => table === auditEventsTable).values.action,
-        "user.suspend",
-      );
+      assert.equal(state.inserts.find(({ table }) => table === auditEventsTable).values.action, "user.suspend");
     },
   );
 });
@@ -778,10 +722,7 @@ test("role assignment keeps the default user role and protects the final admin",
       ],
     ],
     async (state) => {
-      assert.deepEqual(await assignUserRoles("actor", "target", ["editor", "editor"]), [
-        "user",
-        "editor",
-      ]);
+      assert.deepEqual(await assignUserRoles("actor", "target", ["editor", "editor"]), ["user", "editor"]);
       assert.deepEqual(state.inserts.find(({ table }) => table === userRolesTable).values, [
         { userId: "target", roleId: "editor" },
       ]);
@@ -807,12 +748,7 @@ test("role assignment keeps the default user role and protects the final admin",
   );
 
   await withFakeDatabase(
-    [
-      permissionRows({ users: { assignRoles: true } }),
-      [target],
-      [{ roleId: "user" }],
-      [{ id: "user", access: {} }],
-    ],
+    [permissionRows({ users: { assignRoles: true } }), [target], [{ roleId: "user" }], [{ id: "user", access: {} }]],
     async (state) => {
       assert.deepEqual(await assignUserRoles("actor", "target", ["user"]), ["user"]);
       assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
@@ -820,17 +756,9 @@ test("role assignment keeps the default user role and protects the final admin",
   );
 
   await withFakeDatabase(
-    [
-      permissionRows({ users: { assignRoles: true } }),
-      [target],
-      [{ roleId: "user" }],
-      [{ id: "user", access: {} }],
-    ],
+    [permissionRows({ users: { assignRoles: true } }), [target], [{ roleId: "user" }], [{ id: "user", access: {} }]],
     async (state) => {
-      await assert.rejects(
-        () => assignUserRoles("actor", "target", ["missing"]),
-        /roles do not exist/,
-      );
+      await assert.rejects(() => assignUserRoles("actor", "target", ["missing"]), /roles do not exist/);
       assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
     },
   );
@@ -855,18 +783,12 @@ test("role assignment keeps the default user role and protects the final admin",
 
 test("inactive actors and invalid user statuses fail before mutation", async () => {
   await withFakeDatabase([[]], async (state) => {
-    await assert.rejects(
-      () => createCustomRole("actor", { name: "Role", description: "Role." }),
-      /Access denied/,
-    );
+    await assert.rejects(() => createCustomRole("actor", { name: "Role", description: "Role." }), /Access denied/);
     assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
   });
 
   await withFakeDatabase([permissionRows({ users: { suspend: true } })], async (state) => {
-    await assert.rejects(
-      () => setUserStatus("actor", "target", "deleted"),
-      /must be active or suspended/,
-    );
+    await assert.rejects(() => setUserStatus("actor", "target", "deleted"), /must be active or suspended/);
     assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
   });
 });
@@ -901,10 +823,7 @@ test("role assignment validates prerequisites across the combined selected roles
           await assert.rejects(() => assignUserRoles("actor", target.id, requested), error);
           assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
         } else {
-          assert.deepEqual(await assignUserRoles("actor", target.id, requested), [
-            "user",
-            ...requested,
-          ]);
+          assert.deepEqual(await assignUserRoles("actor", target.id, requested), ["user", ...requested]);
           if (requested.length) {
             assert.deepEqual(
               state.inserts.find(({ table }) => table === userRolesTable).values,
@@ -928,10 +847,7 @@ test("role saves and direct mutations reject missing prerequisites before writin
     access: {},
     isSystem: false,
   };
-  for (const access of [
-    { tools: { edit: true } },
-    { admin: { enter: true }, tools: { edit: true } },
-  ]) {
+  for (const access of [{ tools: { edit: true } }, { admin: { enter: true }, tools: { edit: true } }]) {
     await withFakeDatabase([permissionRows({ roles: { edit: true } }), [role]], async (state) => {
       await assert.rejects(() => updateCustomRole("actor", role.id, { access }), /requires/);
       assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
@@ -942,10 +858,7 @@ test("role saves and direct mutations reject missing prerequisites before writin
     { roles: { view: false, edit: true } },
   ]) {
     await withFakeDatabase([permissionRows(access)], async (state) => {
-      await assert.rejects(
-        () => updateCustomRole("actor", role.id, { name: "New name" }),
-        /Missing permission/,
-      );
+      await assert.rejects(() => updateCustomRole("actor", role.id, { name: "New name" }), /Missing permission/);
       assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
     });
   }
@@ -1004,29 +917,15 @@ test("custom role saves retain admin entry while accepting only valid entity gra
         ...(input.access ?? role.access),
         admin: { enter: true },
       });
-      assert.deepEqual(
-        state.updates.find(({ table }) => table === rolesTable).values.access,
-        saved.access,
-      );
+      assert.deepEqual(state.updates.find(({ table }) => table === rolesTable).values.access, saved.access);
       assert.ok(
-        state.inserts
-          .find(({ table }) => table === auditEventsTable)
-          .values.metadata.changes.includes("access"),
+        state.inserts.find(({ table }) => table === auditEventsTable).values.metadata.changes.includes("access"),
       );
     });
   }
-  for (const access of [
-    null,
-    [],
-    { admin: null },
-    { admin: { enter: "yes" } },
-    { admin: { unknown: true } },
-  ]) {
+  for (const access of [null, [], { admin: null }, { admin: { enter: "yes" } }, { admin: { unknown: true } }]) {
     await withFakeDatabase([permissionRows({ roles: { edit: true } }), [role]], async (state) => {
-      await assert.rejects(
-        () => updateCustomRole("actor", role.id, { access }),
-        /object|boolean|Unknown permission/,
-      );
+      await assert.rejects(() => updateCustomRole("actor", role.id, { access }), /object|boolean|Unknown permission/);
       assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
     });
   }
@@ -1035,16 +934,13 @@ test("custom role saves retain admin entry while accepting only valid entity gra
     { ...role, id: "user" },
     { ...role, isSystem: true },
   ]) {
-    await withFakeDatabase(
-      [permissionRows({ roles: { edit: true } }), [protectedRole]],
-      async (state) => {
-        await assert.rejects(
-          () => updateCustomRole("actor", protectedRole.id, { access: {} }),
-          /System roles are protected/,
-        );
-        assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
-      },
-    );
+    await withFakeDatabase([permissionRows({ roles: { edit: true } }), [protectedRole]], async (state) => {
+      await assert.rejects(
+        () => updateCustomRole("actor", protectedRole.id, { access: {} }),
+        /System roles are protected/,
+      );
+      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    });
   }
 });
 
@@ -1069,14 +965,11 @@ test("custom role edits validate access and unassigned custom roles can be delet
     assert.ok(state.inserts.some(({ table }) => table === auditEventsTable));
   });
 
-  await withFakeDatabase(
-    [permissionRows({ roles: { delete: true } }), [role], []],
-    async (state) => {
-      await deleteCustomRole("actor", role.id);
-      assert.ok(state.deletes.some(({ table }) => table === rolesTable));
-      assert.ok(state.inserts.some(({ table }) => table === auditEventsTable));
-    },
-  );
+  await withFakeDatabase([permissionRows({ roles: { delete: true } }), [role], []], async (state) => {
+    await deleteCustomRole("actor", role.id);
+    assert.ok(state.deletes.some(({ table }) => table === rolesTable));
+    assert.ok(state.inserts.some(({ table }) => table === auditEventsTable));
+  });
 });
 
 test("template creation uses shared validation and starts as a non-default draft", async () => {
@@ -1121,11 +1014,7 @@ test("advanced template creation validates invoice and receipt drafts", async ()
 
   await withFakeDatabase([permissionRows({ templates: { create: true } })], async (state) => {
     await assert.rejects(
-      () =>
-        createAdvancedDocumentTemplate(
-          "actor",
-          advancedTemplateInput({ pageFormat: "RECEIPT_80MM" }),
-        ),
+      () => createAdvancedDocumentTemplate("actor", advancedTemplateInput({ pageFormat: "RECEIPT_80MM" })),
       /invoice|page format/i,
     );
     assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
@@ -1134,70 +1023,55 @@ test("advanced template creation validates invoice and receipt drafts", async ()
 
 test("template duplicate, import, and edit stay validated and audited", async () => {
   const source = templateRow();
-  await withFakeDatabase(
-    [permissionRows({ templates: { create: true } }), [source], []],
-    async (state) => {
-      await duplicateInvoiceTemplate("actor", source.id, {
-        name: "Classic copy",
-        slug: "classic-copy",
-      });
-      const write = state.inserts.find(({ table }) => table === invoiceTemplatesTable);
-      assert.equal(write.values.name, "Classic copy");
-      assert.equal(write.values.status, "draft");
-    },
-  );
+  await withFakeDatabase([permissionRows({ templates: { create: true } }), [source], []], async (state) => {
+    await duplicateInvoiceTemplate("actor", source.id, {
+      name: "Classic copy",
+      slug: "classic-copy",
+    });
+    const write = state.inserts.find(({ table }) => table === invoiceTemplatesTable);
+    assert.equal(write.values.name, "Classic copy");
+    assert.equal(write.values.status, "draft");
+  });
 
   await withFakeDatabase([permissionRows({ templates: { create: true } }), []], async (state) => {
     await importInvoiceTemplate("actor", {
       ...seedTemplates[1],
       slug: "imported-modern",
     });
-    assert.equal(
-      state.inserts.find(({ table }) => table === auditEventsTable).values.action,
-      "template.import",
-    );
+    assert.equal(state.inserts.find(({ table }) => table === auditEventsTable).values.action, "template.import");
   });
 
-  await withFakeDatabase(
-    [permissionRows({ templates: { edit: true } }), [source], []],
-    async (state) => {
-      await updateInvoiceTemplate("actor", source.id, {
-        name: "Classic updated",
-      });
-      const write = state.updates.find(({ table }) => table === invoiceTemplatesTable);
-      assert.equal(write.values.name, "Classic updated");
-      assert.equal(write.values.version, source.version + 1);
-    },
-  );
+  await withFakeDatabase([permissionRows({ templates: { edit: true } }), [source], []], async (state) => {
+    await updateInvoiceTemplate("actor", source.id, {
+      name: "Classic updated",
+    });
+    const write = state.updates.find(({ table }) => table === invoiceTemplatesTable);
+    assert.equal(write.values.name, "Classic updated");
+    assert.equal(write.values.version, source.version + 1);
+  });
 
-  await withFakeDatabase(
-    [permissionRows({ templates: { edit: true } }), [source]],
-    async (state) => {
-      await assert.rejects(
-        () => updateInvoiceTemplate("actor", source.id, { slug: "changed-slug" }),
-        /Template slug cannot be changed/,
-      );
-      assert.equal(state.updates.length, 0);
-    },
-  );
+  await withFakeDatabase([permissionRows({ templates: { edit: true } }), [source]], async (state) => {
+    await assert.rejects(
+      () => updateInvoiceTemplate("actor", source.id, { slug: "changed-slug" }),
+      /Template slug cannot be changed/,
+    );
+    assert.equal(state.updates.length, 0);
+  });
 });
 
 test("advanced templates can be duplicated, imported, and edited", async () => {
   const source = advancedTemplateRow();
 
-  await withFakeDatabase(
-    [permissionRows({ templates: { create: true } }), [source], []],
-    async (state) => {
-      await duplicateInvoiceTemplate("actor", source.id, {
-        name: "Advanced copy",
-        slug: "advanced-copy",
-      });
-      const write = state.inserts.find(({ table }) => table === invoiceTemplatesTable);
-      assert.equal(write.values.documentType, "invoice");
-      assert.equal(write.values.layoutFamily, "advanced");
-      assert.deepEqual(write.values.config, source.config);
-    },
-  );
+  await withFakeDatabase([permissionRows({ templates: { create: true } }), [source], []], async (state) => {
+    await duplicateInvoiceTemplate("actor", source.id, {
+      name: "Advanced copy",
+      slug: "advanced-copy",
+    });
+    const write = state.inserts.find(({ table }) => table === invoiceTemplatesTable);
+    assert.equal(write.values.documentType, "invoice");
+    assert.equal(write.values.layoutFamily, "advanced");
+    assert.deepEqual(write.values.config, source.config);
+  });
 
   await withFakeDatabase([permissionRows({ templates: { create: true } }), []], async (state) => {
     await importInvoiceTemplate("actor", source);
@@ -1209,19 +1083,16 @@ test("advanced templates can be duplicated, imported, and edited", async () => {
 
   const nextConfig = structuredClone(source.config);
   nextConfig.sampleData.documentNumber = "INV-UPDATED";
-  await withFakeDatabase(
-    [permissionRows({ templates: { edit: true } }), [source], []],
-    async (state) => {
-      await updateInvoiceTemplate("actor", source.id, {
-        name: "Advanced updated",
-        config: nextConfig,
-      });
-      const write = state.updates.find(({ table }) => table === invoiceTemplatesTable);
-      assert.equal(write.values.name, "Advanced updated");
-      assert.equal(write.values.layoutFamily, "advanced");
-      assert.deepEqual(write.values.config, nextConfig);
-    },
-  );
+  await withFakeDatabase([permissionRows({ templates: { edit: true } }), [source], []], async (state) => {
+    await updateInvoiceTemplate("actor", source.id, {
+      name: "Advanced updated",
+      config: nextConfig,
+    });
+    const write = state.updates.find(({ table }) => table === invoiceTemplatesTable);
+    assert.equal(write.values.name, "Advanced updated");
+    assert.equal(write.values.layoutFamily, "advanced");
+    assert.deepEqual(write.values.config, nextConfig);
+  });
 });
 
 test("template publication maintains one default and protects it from archival", async () => {
@@ -1243,40 +1114,25 @@ test("template publication maintains one default and protects it from archival",
   );
 
   const published = templateRow({ id: "other", isDefault: false });
-  await withFakeDatabase(
-    [permissionRows({ templates: { publish: true } }), [published], []],
-    async (state) => {
-      await setDefaultInvoiceTemplate("actor", published.id);
-      const templateUpdates = state.updates.filter(({ table }) => table === invoiceTemplatesTable);
-      assert.equal(templateUpdates.length, 2);
-      assert.equal(templateUpdates[0].values.isDefault, false);
-      assert.equal(templateUpdates[1].values.isDefault, true);
-    },
-  );
+  await withFakeDatabase([permissionRows({ templates: { publish: true } }), [published], []], async (state) => {
+    await setDefaultInvoiceTemplate("actor", published.id);
+    const templateUpdates = state.updates.filter(({ table }) => table === invoiceTemplatesTable);
+    assert.equal(templateUpdates.length, 2);
+    assert.equal(templateUpdates[0].values.isDefault, false);
+    assert.equal(templateUpdates[1].values.isDefault, true);
+  });
 
   const currentDefault = templateRow({ isDefault: true });
-  await withFakeDatabase(
-    [permissionRows({ templates: { archive: true } }), [currentDefault]],
-    async (state) => {
-      await assert.rejects(
-        () => archiveInvoiceTemplate("actor", currentDefault.id),
-        /Set another published default/,
-      );
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
-    },
-  );
+  await withFakeDatabase([permissionRows({ templates: { archive: true } }), [currentDefault]], async (state) => {
+    await assert.rejects(() => archiveInvoiceTemplate("actor", currentDefault.id), /Set another published default/);
+    assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+  });
 
   await withFakeDatabase(
-    [
-      permissionRows({ templates: { archive: true } }),
-      [templateRow({ id: "old", isDefault: false })],
-    ],
+    [permissionRows({ templates: { archive: true } }), [templateRow({ id: "old", isDefault: false })]],
     async (state) => {
       await archiveInvoiceTemplate("actor", "old");
-      assert.equal(
-        state.updates.find(({ table }) => table === invoiceTemplatesTable).values.status,
-        "archived",
-      );
+      assert.equal(state.updates.find(({ table }) => table === invoiceTemplatesTable).values.status, "archived");
     },
   );
 
@@ -1286,10 +1142,7 @@ test("template publication maintains one default and protects it from archival",
       [templateRow({ id: "draft", status: "draft", isDefault: false })],
     ],
     async (state) => {
-      await assert.rejects(
-        () => setDefaultInvoiceTemplate("actor", "draft"),
-        /Only a published template/,
-      );
+      await assert.rejects(() => setDefaultInvoiceTemplate("actor", "draft"), /Only a published template/);
       assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
     },
   );

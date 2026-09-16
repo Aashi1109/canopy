@@ -48,12 +48,10 @@ function highlightCode(source: string): string {
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const source = requireUtilityInput(ctx.input.text, "Markdown input");
   const { marked, Renderer } = await import("marked");
-  const renderer =
-    ctx.settings.safeLinks || ctx.settings.syntaxHighlighting ? new Renderer() : undefined;
+  const renderer = ctx.settings.safeLinks || ctx.settings.syntaxHighlighting ? new Renderer() : undefined;
   if (renderer && ctx.settings.safeLinks) {
     const renderLink = renderer.link.bind(renderer);
-    renderer.link = (token) =>
-      renderLink(token).replace(">", ' target="_blank" rel="noopener noreferrer">');
+    renderer.link = (token) => renderLink(token).replace(">", ' target="_blank" rel="noopener noreferrer">');
   }
   if (renderer && ctx.settings.syntaxHighlighting) {
     renderer.code = ({ text, lang }) => {

@@ -39,8 +39,7 @@ const hooks = registerHooks({
       export async function listPublishedBlogPosts(input){s.calls.push(['posts',input]);if(s.error||s.relatedError)throw s.error||s.relatedError;if(s.pendingRead)return s.pendingRead;return s.posts;}
       export async function listPublishedBlogTaxonomy(kind,input){s.calls.push(['categories',kind,input]);if(s.error)throw s.error;return s.categories;}
     `);
-    if (specifier === "next/navigation")
-      return stub('export function notFound(){throw new Error("TEST_NOT_FOUND")}');
+    if (specifier === "next/navigation") return stub('export function notFound(){throw new Error("TEST_NOT_FOUND")}');
     if (specifier.startsWith("@/")) specifier = new URL(specifier.slice(2), root).href;
     if (
       (specifier.startsWith(".") || specifier.startsWith("file:")) &&
@@ -86,12 +85,10 @@ const hooks = registerHooks({
 const listing = await import("../app/blog/page.tsx");
 const article = await import("../app/blog/[slug]/page.tsx");
 const { BlogArticle } = await import("../components/blog/BlogArticle.tsx");
-const { BlogStories: InteractiveStories } =
-  await import("../app/blog/components/BlogStories.tsx?interaction");
+const { BlogStories: InteractiveStories } = await import("../app/blog/components/BlogStories.tsx?interaction");
 const { loadMoreBlogPosts } = await import("../app/blog/actions.ts");
 const { parseBlogFilters } = await import("../app/blog/lib/filters.ts");
-const { listPublishedBlogPosts: realPublishedQuery, encodeBlogCursor } =
-  await import("../lib/blog/queries.ts");
+const { listPublishedBlogPosts: realPublishedQuery, encodeBlogCursor } = await import("../lib/blog/queries.ts");
 const { db } = await import("../packages/database/src/index.ts");
 test.after(() => {
   hooks.deregister();
@@ -179,30 +176,19 @@ test("empty blog has recovery and categories beyond the first page remain reacha
 
 test("malformed listing inputs do not reach queries and invalid cursors recover through not-found", async () => {
   reset();
-  await assert.rejects(
-    listing.default({ searchParams: Promise.resolve({ search: ["a", "b"] }) }),
-    /TEST_NOT_FOUND/,
-  );
+  await assert.rejects(listing.default({ searchParams: Promise.resolve({ search: ["a", "b"] }) }), /TEST_NOT_FOUND/);
   assert.equal(state.calls.length, 0);
   state.error = new BlogValidationError("Invalid blog pagination cursor.");
-  await assert.rejects(
-    listing.default({ searchParams: Promise.resolve({ cursor: "bad" }) }),
-    /TEST_NOT_FOUND/,
-  );
+  await assert.rejects(listing.default({ searchParams: Promise.resolve({ cursor: "bad" }) }), /TEST_NOT_FOUND/);
   state.error = new Error("Database unavailable");
-  await assert.rejects(
-    listing.default({ searchParams: Promise.resolve({}) }),
-    /Database unavailable/,
-  );
+  await assert.rejects(listing.default({ searchParams: Promise.resolve({}) }), /Database unavailable/);
 });
 
 test("article renders safe live content, heading destinations, tools, tags, metadata and JSON-LD", async () => {
   reset();
   state.post = published();
   state.posts = { items: [summary(state.post)], nextCursor: null };
-  const html = renderToStaticMarkup(
-    await article.default({ params: Promise.resolve({ slug: "live-story" }) }),
-  );
+  const html = renderToStaticMarkup(await article.default({ params: Promise.resolve({ slug: "live-story" }) }));
   assert.match(html, /href="#heading-1"/);
   assert.match(html, /<h2 id="heading-1">First steps<\/h2>/);
   assert.match(html, /&lt;script&gt;unsafe\(\)&lt;\/script&gt;/);
@@ -233,24 +219,16 @@ test("a failure loading optional related stories does not hide the published art
   reset();
   state.post = published();
   state.relatedError = new Error("Related query unavailable");
-  const html = renderToStaticMarkup(
-    await article.default({ params: Promise.resolve({ slug: "live-story" }) }),
-  );
+  const html = renderToStaticMarkup(await article.default({ params: Promise.resolve({ slug: "live-story" }) }));
   assert.match(html, /<h2 id="heading-1">First steps<\/h2>/);
   assert.doesNotMatch(html, /Related query unavailable/);
 });
 
 test("missing and malformed article slugs return not-found without leaking unpublished content", async () => {
   reset();
-  await assert.rejects(
-    article.default({ params: Promise.resolve({ slug: "../draft" }) }),
-    /TEST_NOT_FOUND/,
-  );
+  await assert.rejects(article.default({ params: Promise.resolve({ slug: "../draft" }) }), /TEST_NOT_FOUND/);
   assert.equal(state.calls.length, 0);
-  await assert.rejects(
-    article.default({ params: Promise.resolve({ slug: "unpublished" }) }),
-    /TEST_NOT_FOUND/,
-  );
+  await assert.rejects(article.default({ params: Promise.resolve({ slug: "unpublished" }) }), /TEST_NOT_FOUND/);
   assert.deepEqual(state.calls, [["post", "unpublished"]]);
 });
 
@@ -282,9 +260,7 @@ test("load-more preserves loaded stories on failure, retries the same cursor, an
     if (!element || typeof element !== "object") return undefined;
     if (element.type === "a" && element.props.rel === "next") return element;
     const children = element.props?.children;
-    return (Array.isArray(children) ? children.flat(Infinity) : [children])
-      .map(findNext)
-      .find(Boolean);
+    return (Array.isArray(children) ? children.flat(Infinity) : [children]).map(findNext).find(Boolean);
   }
   const click = (element) =>
     element.props.onClick({
@@ -327,9 +303,7 @@ test("load-more preserves loaded stories on failure, retries the same cursor, an
     state.calls.map(([, input]) => input.cursor),
     ["page-2", "page-3", "page-3"],
   );
-  assert.ok(
-    state.calls.every(([, input]) => input.category === "guides" && input.search === "PDF"),
-  );
+  assert.ok(state.calls.every(([, input]) => input.category === "guides" && input.search === "PDF"));
 });
 
 test("public load-more action returns only published query data and safe actionable failures", async () => {
@@ -370,9 +344,7 @@ test("load-more excludes taxonomy pagination fields from the real strict public 
     if (!element || typeof element !== "object") return undefined;
     if (element.type === "a" && element.props.rel === "next") return element;
     const children = element.props?.children;
-    return (Array.isArray(children) ? children.flat(Infinity) : [children])
-      .map(visit)
-      .find(Boolean);
+    return (Array.isArray(children) ? children.flat(Infinity) : [children]).map(visit).find(Boolean);
   }
   visit(tree).props.onClick({ button: 0, preventDefault() {} });
   await new Promise(setImmediate);

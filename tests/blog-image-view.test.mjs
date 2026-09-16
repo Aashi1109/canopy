@@ -62,8 +62,7 @@ const hooks = registerHooks({
     return next(specifier, context);
   },
   load(url, context, next) {
-    if (url.endsWith(".css"))
-      return { format: "module", shortCircuit: true, source: "export default {};" };
+    if (url.endsWith(".css")) return { format: "module", shortCircuit: true, source: "export default {};" };
     if (url.endsWith(".png"))
       return {
         format: "module",
@@ -193,11 +192,7 @@ function imageViewHarness(t, selected = false) {
   const document = { activeElement: null };
   Object.defineProperty(globalThis, "document", { configurable: true, value: document });
   const walk = (node) =>
-    Array.isArray(node)
-      ? node.flatMap(walk)
-      : node?.props
-        ? [node, ...walk(node.props.children)]
-        : [];
+    Array.isArray(node) ? node.flatMap(walk) : node?.props ? [node, ...walk(node.props.children)] : [];
   function render() {
     let nodes;
     for (let pass = 0; pass < 10; pass++) {
@@ -372,9 +367,7 @@ test("failed uploads leave the current inline image unchanged and reject for ret
   ]) {
     const props = imageEditor();
     const original = props.editor.state.doc.toJSON();
-    await assert.rejects(
-      uploadBlogImageReplacement(new File(["crop"], "crop.png"), source, props, upload, () => true),
-    );
+    await assert.rejects(uploadBlogImageReplacement(new File(["crop"], "crop.png"), source, props, upload, () => true));
     assert.deepEqual(props.editor.state.doc.toJSON(), original);
   }
 });

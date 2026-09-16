@@ -73,10 +73,7 @@ export function buildQpdfArguments(inputPath: string, outputPath: string, remove
 }
 
 function assertQpdfEnvironment() {
-  if (
-    globalThis.crossOriginIsolated !== true ||
-    typeof globalThis.SharedArrayBuffer === "undefined"
-  ) {
+  if (globalThis.crossOriginIsolated !== true || typeof globalThis.SharedArrayBuffer === "undefined") {
     throw new QpdfAdapterError(
       "qpdf-unavailable",
       "Preserve Document compression requires a cross-origin-isolated browser. No fallback was applied.",

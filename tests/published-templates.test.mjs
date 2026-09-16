@@ -3,10 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { db } from "../packages/database/src/index.ts";
-import {
-  createAdvancedTemplateConfig,
-  seedTemplates,
-} from "../packages/invoice-templates/src/index.ts";
+import { createAdvancedTemplateConfig, seedTemplates } from "../packages/invoice-templates/src/index.ts";
 import { getPublishedTemplates } from "../packages/control-plane/src/queries.ts";
 
 function templateRow(overrides = {}) {
@@ -40,9 +37,7 @@ async function withTemplateRows(rows, operation) {
     where: (condition) => {
       whereConditions.push(condition);
       const [, documentType] = queryParts(condition).params;
-      return Promise.resolve(
-        documentType ? rows.filter((row) => row.documentType === documentType) : rows,
-      );
+      return Promise.resolve(documentType ? rows.filter((row) => row.documentType === documentType) : rows);
     },
   };
 
@@ -195,10 +190,7 @@ test("published template query keeps the seed fallback and applies its filter", 
 });
 
 test("templates API validates its document type and defaults to invoices", async () => {
-  const route = await readFile(
-    new URL("../app/api/paperwork/templates/route.ts", import.meta.url),
-    "utf8",
-  );
+  const route = await readFile(new URL("../app/api/paperwork/templates/route.ts", import.meta.url), "utf8");
 
   assert.match(route, /GET\(request:\s*(?:Next)?Request\)/);
   assert.match(route, /getAll\("documentType"\)/);
@@ -206,9 +198,6 @@ test("templates API validates its document type and defaults to invoices", async
   assert.match(route, /documentTypes\.length\s*>\s*1/);
   assert.match(route, /DocumentTypeSchema\.safeParse\(documentType\)/);
   assert.match(route, /status:\s*400/);
-  assert.match(
-    route,
-    /getDocumentDefinition\((?:validated|parsed)?DocumentType(?:\.data)?\)\.toolComponentKey/,
-  );
+  assert.match(route, /getDocumentDefinition\((?:validated|parsed)?DocumentType(?:\.data)?\)\.toolComponentKey/);
   assert.match(route, /getPublishedTemplates\((?:validated|parsed)?DocumentType(?:\.data)?\)/);
 });

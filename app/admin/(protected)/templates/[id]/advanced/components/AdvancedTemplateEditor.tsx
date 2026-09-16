@@ -347,8 +347,7 @@ function withSmarttoolsControls(plugin: PdfmePlugin): PdfmePlugin {
         smarttoolsControls: renderSmarttoolsControls,
       },
       schema: (schemaProps) => {
-        const base =
-          typeof originalSchema === "function" ? originalSchema(schemaProps) : originalSchema;
+        const base = typeof originalSchema === "function" ? originalSchema(schemaProps) : originalSchema;
         return {
           ...base,
           smarttoolsControls: {
@@ -385,9 +384,7 @@ async function loadPlugins(): Promise<Plugins> {
     circleMark: schemas.circleMark,
     ...schemas.barcodes,
   };
-  return Object.fromEntries(
-    Object.entries(raw).map(([key, plugin]) => [key, withSmarttoolsControls(plugin)]),
-  );
+  return Object.fromEntries(Object.entries(raw).map(([key, plugin]) => [key, withSmarttoolsControls(plugin)]));
 }
 
 function blankBase(template: Template): PdfmeBlankBase {
@@ -409,11 +406,7 @@ function schemaBindingType(type: string): "text" | "table" | "image" {
   return "text";
 }
 
-export default function AdvancedTemplateEditor({
-  template,
-}: {
-  template: AdvancedDocumentTemplate;
-}) {
+export default function AdvancedTemplateEditor({ template }: { template: AdvancedDocumentTemplate }) {
   const definition = getDocumentDefinition(template.documentType);
   const fieldDefinitions = new Map(definition.fields.map((field) => [field.key, field]));
   const initialTemplate = useRef(cloneTemplate(template.config.template as Template));
@@ -433,13 +426,7 @@ export default function AdvancedTemplateEditor({
   const restoringHistoryRef = useRef(false);
   const saveFromDesignerRef = useRef<(next: Template) => void>(() => {});
 
-  const [panelQuery, setPanelQuery] = useAdminQueryState("panel", "add", [
-    "add",
-    "layers",
-    "data",
-    "pages",
-    "none",
-  ]);
+  const [panelQuery, setPanelQuery] = useAdminQueryState("panel", "add", ["add", "layers", "data", "pages", "none"]);
   const activePanel: ActivePanel = panelQuery === "none" ? null : panelQuery;
   const setActivePanel = (panel: ActivePanel) => setPanelQuery(panel ?? "none");
   const [addQuery, setAddQuery] = useAdminQueryState<string>("q", "");
@@ -487,28 +474,19 @@ export default function AdvancedTemplateEditor({
   const selectedPdfmeSchema = selectedSchema
     ? currentTemplateRef.current.schemas[selectedSchema.pageIndex]?.[selectedSchema.schemaIndex]
     : undefined;
-  const selectedBindingType = selectedPdfmeSchema
-    ? schemaBindingType(selectedPdfmeSchema.type)
-    : null;
+  const selectedBindingType = selectedPdfmeSchema ? schemaBindingType(selectedPdfmeSchema.type) : null;
   const schemas = currentTemplateRef.current.schemas[currentPage] ?? [];
   const staticSchemas = blankBase(currentTemplateRef.current).staticSchema ?? [];
-  const repeatingHeaderCount = staticSchemas.filter(
-    (schema) => schema.smarttoolsRegion === "header",
-  ).length;
-  const repeatingFooterCount = staticSchemas.filter(
-    (schema) => schema.smarttoolsRegion === "footer",
-  ).length;
+  const repeatingHeaderCount = staticSchemas.filter((schema) => schema.smarttoolsRegion === "header").length;
+  const repeatingFooterCount = staticSchemas.filter((schema) => schema.smarttoolsRegion === "footer").length;
 
   useEffect(() => {
     smarttoolsBridge.deleteElement = () => deleteSelectedElement();
     smarttoolsBridge.toggleRepeat = () => {
-      const region = (selectedPdfmeSchema as { smarttoolsRegion?: string } | undefined)
-        ?.smarttoolsRegion;
+      const region = (selectedPdfmeSchema as { smarttoolsRegion?: string } | undefined)?.smarttoolsRegion;
       if (region) {
         const base = blankBase(currentTemplateRef.current);
-        const index = (base.staticSchema ?? []).findIndex(
-          (schema) => schema.name === selectedPdfmeSchema?.name,
-        );
+        const index = (base.staticSchema ?? []).findIndex((schema) => schema.name === selectedPdfmeSchema?.name);
         if (index >= 0) restoreRepeatingRegion(index);
       } else {
         moveSelectionToRegion("header");
@@ -541,10 +519,7 @@ export default function AdvancedTemplateEditor({
 
     if (restoringHistoryRef.current) return;
     const previous = historyRef.current[historyIndexRef.current] ?? historyRef.current[0];
-    if (
-      previous.pageFormat === pageFormatRef.current &&
-      JSON.stringify(previous.template) === JSON.stringify(next)
-    ) {
+    if (previous.pageFormat === pageFormatRef.current && JSON.stringify(previous.template) === JSON.stringify(next)) {
       return;
     }
 
@@ -666,15 +641,13 @@ export default function AdvancedTemplateEditor({
           if (disposed) return;
           const pageIndex = currentPageRef.current;
           const firstPage = currentTemplateRef.current.schemas[pageIndex] ?? [];
-          const schemaIndex = firstPage.findIndex((schema) =>
-            schema.name.toLowerCase().includes("total"),
-          );
+          const schemaIndex = firstPage.findIndex((schema) => schema.name.toLowerCase().includes("total"));
           const selectedIndex = schemaIndex >= 0 ? schemaIndex : 0;
           const selected = firstPage[selectedIndex];
-          designer.selectSchemas(
-            selected ? [{ name: selected.name, pageIndex, schemaIndex: selectedIndex }] : [],
-            { pageIndex, scroll: true },
-          );
+          designer.selectSchemas(selected ? [{ name: selected.name, pageIndex, schemaIndex: selectedIndex }] : [], {
+            pageIndex,
+            scroll: true,
+          });
         }, 300);
       })
       .catch((loadError) => {
@@ -696,9 +669,7 @@ export default function AdvancedTemplateEditor({
     restoringPageRef.current = designerRef.current?.getPageCursor() !== currentPage;
     const scrollToPage = () => {
       const canvas = container.querySelector<HTMLElement>(".pdfme-designer-canvas");
-      const paper = canvas?.querySelectorAll<HTMLElement>("div[style*=background-image]")[
-        currentPage
-      ];
+      const paper = canvas?.querySelectorAll<HTMLElement>("div[style*=background-image]")[currentPage];
       if (!canvas || !paper) return false;
       if (designerRef.current?.getPageCursor() === currentPage) restoringPageRef.current = false;
       // pdfme's selection API cannot navigate to an empty page; scroll its actual paper.
@@ -715,8 +686,7 @@ export default function AdvancedTemplateEditor({
 
   useEffect(() => {
     if (!designerReady || canvasMode !== "pan") return;
-    const canvas =
-      designerContainerRef.current?.querySelector<HTMLElement>(".pdfme-designer-canvas");
+    const canvas = designerContainerRef.current?.querySelector<HTMLElement>(".pdfme-designer-canvas");
     if (!canvas) return;
 
     let dragging = false;
@@ -840,12 +810,7 @@ export default function AdvancedTemplateEditor({
     const page = next.schemas[currentPage];
     const schema = structuredClone(plugin.propPanel.defaultSchema);
     const usedNames = new Set(next.schemas.flat().map((item) => item.name));
-    const baseName =
-      tool.pluginKey === "qrcode"
-        ? "qrCode"
-        : tool.pluginKey === "code128"
-          ? "barcode"
-          : tool.pluginKey;
+    const baseName = tool.pluginKey === "qrcode" ? "qrCode" : tool.pluginKey === "code128" ? "barcode" : tool.pluginKey;
     let uniqueName = baseName;
     let suffix = 2;
     while (usedNames.has(uniqueName)) {
@@ -1001,13 +966,10 @@ export default function AdvancedTemplateEditor({
   function bindSelection(name: string) {
     const selected = selection?.schemas[0];
     if (!selected) return;
-    const selectedPdfmeSchema =
-      currentTemplateRef.current.schemas[selected.pageIndex]?.[selected.schemaIndex];
+    const selectedPdfmeSchema = currentTemplateRef.current.schemas[selected.pageIndex]?.[selected.schemaIndex];
     if (!selectedPdfmeSchema) return;
     const definitionField = fieldDefinitions.get(name);
-    const formEntry = form.sections
-      .flatMap((section) => section.entries)
-      .find((entry) => entry.key === name);
+    const formEntry = form.sections.flatMap((section) => section.entries).find((entry) => entry.key === name);
     const bindingType = schemaBindingType(selectedPdfmeSchema.type);
     const isCompatible = definitionField
       ? definitionField.allowedBindingTypes.includes(bindingType)
@@ -1031,20 +993,11 @@ export default function AdvancedTemplateEditor({
     setIsDirty(true);
   }
 
-  function updateSection(
-    sectionId: string,
-    update: (section: TemplateFormSection) => TemplateFormSection,
-  ) {
-    setFormSections(
-      form.sections.map((section) => (section.id === sectionId ? update(section) : section)),
-    );
+  function updateSection(sectionId: string, update: (section: TemplateFormSection) => TemplateFormSection) {
+    setFormSections(form.sections.map((section) => (section.id === sectionId ? update(section) : section)));
   }
 
-  function updateFormEntry(
-    sectionId: string,
-    key: string,
-    update: (entry: TemplateFormEntry) => TemplateFormEntry,
-  ) {
+  function updateFormEntry(sectionId: string, key: string, update: (entry: TemplateFormEntry) => TemplateFormEntry) {
     updateSection(sectionId, (section) => ({
       ...section,
       entries: section.entries.map((entry) => (entry.key === key ? update(entry) : entry)),
@@ -1052,9 +1005,7 @@ export default function AdvancedTemplateEditor({
   }
 
   function uniqueCustomKey(base: string) {
-    const used = new Set(
-      form.sections.flatMap((section) => section.entries.map((entry) => entry.key)),
-    );
+    const used = new Set(form.sections.flatMap((section) => section.entries.map((entry) => entry.key)));
     let key = `custom.${base}`;
     let suffix = 2;
     while (used.has(key)) {
@@ -1231,10 +1182,7 @@ export default function AdvancedTemplateEditor({
         inputs: [sampleData],
         plugins,
       });
-      const bytes = pdf.buffer.slice(
-        pdf.byteOffset,
-        pdf.byteOffset + pdf.byteLength,
-      ) as ArrayBuffer;
+      const bytes = pdf.buffer.slice(pdf.byteOffset, pdf.byteOffset + pdf.byteLength) as ArrayBuffer;
       const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
       if (previewWindow) {
         previewWindow.location.href = url;
@@ -1330,9 +1278,7 @@ export default function AdvancedTemplateEditor({
                             </span>
                             <span className="min-w-0 flex-1">
                               <Caption className="block text-foreground">{tool.label}</Caption>
-                              <Caption className="block truncate text-muted-foreground">
-                                {tool.description}
-                              </Caption>
+                              <Caption className="block truncate text-muted-foreground">{tool.description}</Caption>
                             </span>
                             <Plus aria-hidden="true" className="text-muted-foreground" size={13} />
                           </button>
@@ -1352,9 +1298,7 @@ export default function AdvancedTemplateEditor({
               <Caption>
                 {layerItems.length ? "Populated" : "Empty"} · Page {currentPage + 1}
               </Caption>
-              <Caption className="rounded bg-muted px-1.5 py-0.5">
-                {layerItems.length} elements
-              </Caption>
+              <Caption className="rounded bg-muted px-1.5 py-0.5">{layerItems.length} elements</Caption>
             </div>
             {layerItems.length ? (
               <OrderableList
@@ -1366,9 +1310,7 @@ export default function AdvancedTemplateEditor({
                 renderItem={(item, state) => (
                   <div
                     className={`flex h-8 items-center gap-1.5 rounded border px-1.5 ${
-                      state.isDragging
-                        ? "border-primary bg-primary/5 shadow-md"
-                        : "border-border bg-card"
+                      state.isDragging ? "border-primary bg-primary/5 shadow-md" : "border-border bg-card"
                     }`}
                   >
                     <button
@@ -1399,9 +1341,7 @@ export default function AdvancedTemplateEditor({
                   <Layers aria-hidden="true" size={17} />
                 </span>
                 <Caption className="block ">No elements yet</Caption>
-                <Caption className="block text-muted-foreground">
-                  Add an element to start this page.
-                </Caption>
+                <Caption className="block text-muted-foreground">Add an element to start this page.</Caption>
               </div>
             )}
           </div>
@@ -1418,83 +1358,69 @@ export default function AdvancedTemplateEditor({
             </div>
             <Overline className="block mb-2 text-muted-foreground">Canvas bindings</Overline>
             <div className="grid gap-2">
-              {Array.from(new Set(definition.fields.map((field) => field.section))).map(
-                (fieldSection) => (
-                  <section className="grid gap-1.5" key={fieldSection}>
-                    <Overline className="text-muted-foreground">{fieldSection}</Overline>
-                    {definition.fields
-                      .filter((field) => field.section === fieldSection)
-                      .map((field) => {
-                        const readOnly = field.source !== "user";
-                        const compatible =
-                          selectedBindingType !== null &&
-                          field.allowedBindingTypes.includes(selectedBindingType);
-                        return (
-                          <div
-                            className="rounded-lg border border-border bg-card p-2"
-                            key={field.key}
-                          >
-                            <div className="flex items-center gap-2">
-                              <button
-                                aria-expanded={expandedBindingKey === field.key}
-                                className="min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                onClick={() =>
-                                  setExpandedBindingKey((key) =>
-                                    key === field.key ? null : field.key,
-                                  )
-                                }
-                                type="button"
-                              >
-                                <Caption className="block truncate text-foreground">
-                                  {field.label}
-                                </Caption>
-                                <Caption className="block mt-0.5 truncate text-muted-foreground">
-                                  {field.key}
-                                </Caption>
-                              </button>
-                              <Button
-                                className="h-6 px-2"
-                                disabled={!selectedSchema || !compatible}
-                                onClick={() => {
-                                  setExpandedBindingKey(field.key);
-                                  bindSelection(field.key);
-                                }}
-                                size="xs"
-                                type="button"
-                                variant="ghost"
-                              >
-                                Bind
-                              </Button>
-                            </div>
-                            <div className="mt-1.5 flex items-center gap-1.5">
-                              <StatusBadge className="px-1.5 py-0">{field.source}</StatusBadge>
-                              <StatusBadge className="px-1.5 py-0">{field.valueType}</StatusBadge>
-                              <Text className="min-w-0 truncate text-muted-foreground">
-                                {String(sampleData[field.key] ?? field.sampleValue ?? "No sample")}
-                              </Text>
-                            </div>
-                            {expandedBindingKey === field.key ? (
-                              <Textarea
-                                aria-label={`${field.label} sample value`}
-                                className="mt-2 min-h-10 resize-y rounded-md border border-input bg-background px-2 py-1.5 outline-none read-only:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-                                onChange={(event) => {
-                                  if (readOnly) return;
-                                  setSampleData((values) => ({
-                                    ...values,
-                                    [field.key]: event.target.value,
-                                  }));
-                                  setIsDirty(true);
-                                }}
-                                readOnly={readOnly}
-                                value={sampleData[field.key] ?? String(field.sampleValue ?? "")}
-                              />
-                            ) : null}
+              {Array.from(new Set(definition.fields.map((field) => field.section))).map((fieldSection) => (
+                <section className="grid gap-1.5" key={fieldSection}>
+                  <Overline className="text-muted-foreground">{fieldSection}</Overline>
+                  {definition.fields
+                    .filter((field) => field.section === fieldSection)
+                    .map((field) => {
+                      const readOnly = field.source !== "user";
+                      const compatible =
+                        selectedBindingType !== null && field.allowedBindingTypes.includes(selectedBindingType);
+                      return (
+                        <div className="rounded-lg border border-border bg-card p-2" key={field.key}>
+                          <div className="flex items-center gap-2">
+                            <button
+                              aria-expanded={expandedBindingKey === field.key}
+                              className="min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              onClick={() => setExpandedBindingKey((key) => (key === field.key ? null : field.key))}
+                              type="button"
+                            >
+                              <Caption className="block truncate text-foreground">{field.label}</Caption>
+                              <Caption className="block mt-0.5 truncate text-muted-foreground">{field.key}</Caption>
+                            </button>
+                            <Button
+                              className="h-6 px-2"
+                              disabled={!selectedSchema || !compatible}
+                              onClick={() => {
+                                setExpandedBindingKey(field.key);
+                                bindSelection(field.key);
+                              }}
+                              size="xs"
+                              type="button"
+                              variant="ghost"
+                            >
+                              Bind
+                            </Button>
                           </div>
-                        );
-                      })}
-                  </section>
-                ),
-              )}
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            <StatusBadge className="px-1.5 py-0">{field.source}</StatusBadge>
+                            <StatusBadge className="px-1.5 py-0">{field.valueType}</StatusBadge>
+                            <Text className="min-w-0 truncate text-muted-foreground">
+                              {String(sampleData[field.key] ?? field.sampleValue ?? "No sample")}
+                            </Text>
+                          </div>
+                          {expandedBindingKey === field.key ? (
+                            <Textarea
+                              aria-label={`${field.label} sample value`}
+                              className="mt-2 min-h-10 resize-y rounded-md border border-input bg-background px-2 py-1.5 outline-none read-only:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                              onChange={(event) => {
+                                if (readOnly) return;
+                                setSampleData((values) => ({
+                                  ...values,
+                                  [field.key]: event.target.value,
+                                }));
+                                setIsDirty(true);
+                              }}
+                              readOnly={readOnly}
+                              value={sampleData[field.key] ?? String(field.sampleValue ?? "")}
+                            />
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                </section>
+              ))}
             </div>
 
             <details className="mt-4 border-t border-border pt-3">
@@ -1551,9 +1477,7 @@ export default function AdvancedTemplateEditor({
                         <Button
                           aria-label={`Remove ${section.label} section`}
                           onClick={() =>
-                            setFormSections(
-                              form.sections.filter((candidate) => candidate.id !== section.id),
-                            )
+                            setFormSections(form.sections.filter((candidate) => candidate.id !== section.id))
                           }
                           size="icon"
                           type="button"
@@ -1577,11 +1501,8 @@ export default function AdvancedTemplateEditor({
                         }))
                       }
                       renderItem={(entry, entryOrderState) => {
-                        const definitionField =
-                          entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
-                        const coreField = Boolean(
-                          definitionField?.required || definitionField?.computationRequired,
-                        );
+                        const definitionField = entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
+                        const coreField = Boolean(definitionField?.required || definitionField?.computationRequired);
                         const compatible =
                           selectedBindingType !== null &&
                           (definitionField
@@ -1628,12 +1549,8 @@ export default function AdvancedTemplateEditor({
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2">
-                              <StatusBadge>
-                                {entry.kind === "builtin" ? definitionField?.source : "custom"}
-                              </StatusBadge>
-                              <Text className="max-w-48 truncate text-muted-foreground">
-                                {entry.key}
-                              </Text>
+                              <StatusBadge>{entry.kind === "builtin" ? definitionField?.source : "custom"}</StatusBadge>
+                              <Text className="max-w-48 truncate text-muted-foreground">{entry.key}</Text>
                               <span className="ml-auto flex items-center gap-1">
                                 <CheckboxControl
                                   className="size-4"
@@ -1647,10 +1564,7 @@ export default function AdvancedTemplateEditor({
                                     }))
                                   }
                                 />
-                                <Label
-                                  className="text-foreground"
-                                  htmlFor={`${section.id}-${entry.key}-enabled`}
-                                >
+                                <Label className="text-foreground" htmlFor={`${section.id}-${entry.key}-enabled`}>
                                   Enabled
                                 </Label>
                               </span>
@@ -1667,10 +1581,7 @@ export default function AdvancedTemplateEditor({
                                     }))
                                   }
                                 />
-                                <Label
-                                  className="text-foreground"
-                                  htmlFor={`${section.id}-${entry.key}-required`}
-                                >
+                                <Label className="text-foreground" htmlFor={`${section.id}-${entry.key}-required`}>
                                   Required
                                 </Label>
                               </span>
@@ -1696,9 +1607,7 @@ export default function AdvancedTemplateEditor({
                             >
                               <Select
                                 className="h-8"
-                                onChange={(event) =>
-                                  moveFormEntry(section.id, event.target.value, entry.key)
-                                }
+                                onChange={(event) => moveFormEntry(section.id, event.target.value, entry.key)}
                                 value={section.id}
                               >
                                 {form.sections.map((candidate) => (
@@ -1792,9 +1701,7 @@ export default function AdvancedTemplateEditor({
                                   items={entry.columns}
                                   onReorder={(columns) =>
                                     updateFormEntry(section.id, entry.key, (current) =>
-                                      current.kind === "repeater"
-                                        ? { ...current, columns }
-                                        : current,
+                                      current.kind === "repeater" ? { ...current, columns } : current,
                                     )
                                   }
                                   renderItem={(column, columnOrderState) => (
@@ -1845,8 +1752,7 @@ export default function AdvancedTemplateEditor({
                                                     candidate.key === column.key
                                                       ? {
                                                           ...candidate,
-                                                          control: event.target
-                                                            .value as typeof candidate.control,
+                                                          control: event.target.value as typeof candidate.control,
                                                         }
                                                       : candidate,
                                                   ),
@@ -1999,12 +1905,7 @@ export default function AdvancedTemplateEditor({
                 type="button"
                 variant="ghost"
               >
-                <ChevronDown
-                  aria-hidden="true"
-                  className="rotate-90"
-                  size={13}
-                  strokeWidth={1.75}
-                />
+                <ChevronDown aria-hidden="true" className="rotate-90" size={13} strokeWidth={1.75} />
               </Button>
               <button
                 className="min-w-0 flex-1 truncate text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -2025,12 +1926,7 @@ export default function AdvancedTemplateEditor({
                 type="button"
                 variant="ghost"
               >
-                <ChevronDown
-                  aria-hidden="true"
-                  className="-rotate-90"
-                  size={13}
-                  strokeWidth={1.75}
-                />
+                <ChevronDown aria-hidden="true" className="-rotate-90" size={13} strokeWidth={1.75} />
               </Button>
               <span aria-hidden="true" className="mx-1 h-4 w-px bg-border" />
               <Button
@@ -2067,9 +1963,7 @@ export default function AdvancedTemplateEditor({
                     </Text>
                     <span className="min-w-0">
                       <Caption className="block">Page {index + 1}</Caption>
-                      <Caption className="block text-muted-foreground">
-                        {page.length} elements
-                      </Caption>
+                      <Caption className="block text-muted-foreground">{page.length} elements</Caption>
                     </span>
                   </button>
                   <div className="flex shrink-0 items-center gap-0.5">
@@ -2098,17 +1992,14 @@ export default function AdvancedTemplateEditor({
             <div className="mt-4 border-t border-border pt-3">
               <div className="flex items-center justify-between">
                 <Overline className="text-muted-foreground">Repeating regions</Overline>
-                <Caption
-                  className={selection?.schemas.length ? "text-primary" : "text-muted-foreground"}
-                >
+                <Caption className={selection?.schemas.length ? "text-primary" : "text-muted-foreground"}>
                   {selection?.schemas.length ? "Elements ready" : "No selection"}
                 </Caption>
               </div>
               <div className="mt-2 grid gap-2">
                 {(["header", "footer"] as const).map((region) => {
                   const Icon = region === "header" ? PanelTop : PanelBottom;
-                  const assigned =
-                    region === "header" ? repeatingHeaderCount : repeatingFooterCount;
+                  const assigned = region === "header" ? repeatingHeaderCount : repeatingFooterCount;
                   const editing = editingRegion === region;
                   const ready = Boolean(selection?.schemas.length);
                   const state = editing
@@ -2137,9 +2028,7 @@ export default function AdvancedTemplateEditor({
                       />
                       <div className="min-w-0 flex-1">
                         <Caption className="block ">{region}</Caption>
-                        <Muted
-                          className={` ${editing || assigned ? "text-primary" : "text-muted-foreground"}`}
-                        >
+                        <Muted className={` ${editing || assigned ? "text-primary" : "text-muted-foreground"}`}>
                           {state}
                         </Muted>
                       </div>
@@ -2199,13 +2088,10 @@ export default function AdvancedTemplateEditor({
           <Maximize2 aria-hidden="true" className="mx-auto text-primary" size={28} />
           <H1 className="mt-4">Open the advanced designer on desktop</H1>
           <Muted className="mt-2 text-muted-foreground">
-            Freeform positioning needs a larger workspace. You can still preview and use published
-            templates from smaller devices.
+            Freeform positioning needs a larger workspace. You can still preview and use published templates from
+            smaller devices.
           </Muted>
-          <Link
-            className={buttonVariants({ className: "mt-5", variant: "secondary" })}
-            href="/admin/templates"
-          >
+          <Link className={buttonVariants({ className: "mt-5", variant: "secondary" })} href="/admin/templates">
             Back to templates
           </Link>
         </Card>
@@ -2237,9 +2123,7 @@ export default function AdvancedTemplateEditor({
               />
               <Text
                 className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1 ${
-                  template.status === "published"
-                    ? "bg-emerald-50 text-emerald-700"
-                    : "bg-amber-50 text-amber-700"
+                  template.status === "published" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
                 }`}
               >
                 <span
@@ -2251,8 +2135,7 @@ export default function AdvancedTemplateEditor({
               </Text>
             </div>
             <Caption className="block truncate text-muted-foreground">
-              Templates / Advanced · {definition.label} · {PAGE_FORMAT_LABELS[pageFormat]} · Version{" "}
-              {template.version}
+              Templates / Advanced · {definition.label} · {PAGE_FORMAT_LABELS[pageFormat]} · Version {template.version}
             </Caption>
           </div>
           <span className="flex h-9 w-[118px] shrink-0 items-center rounded-lg border border-border bg-muted">
@@ -2633,8 +2516,7 @@ export default function AdvancedTemplateEditor({
                             const textSchema = schema as Schema & {
                               fontWeight?: string;
                             };
-                            textSchema.fontWeight =
-                              textSchema.fontWeight === "bold" ? "normal" : "bold";
+                            textSchema.fontWeight = textSchema.fontWeight === "bold" ? "normal" : "bold";
                           })
                         }
                         size="icon-sm"
@@ -2703,11 +2585,7 @@ export default function AdvancedTemplateEditor({
                 role="status"
               >
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <LoaderCircle
-                    aria-hidden="true"
-                    className="animate-spin text-primary"
-                    size={20}
-                  />
+                  <LoaderCircle aria-hidden="true" className="animate-spin text-primary" size={20} />
                   <Text>Loading designer…</Text>
                 </div>
               </div>
@@ -2795,12 +2673,7 @@ export default function AdvancedTemplateEditor({
                       onClick={openRegionPanel}
                       type="button"
                     >
-                      <PanelTop
-                        aria-hidden="true"
-                        className="shrink-0"
-                        size={13}
-                        strokeWidth={1.75}
-                      />
+                      <PanelTop aria-hidden="true" className="shrink-0" size={13} strokeWidth={1.75} />
                       <Text className="truncate">
                         Header ·{" "}
                         {editingRegion === "header" && activePanel === "pages"
@@ -2825,12 +2698,7 @@ export default function AdvancedTemplateEditor({
                       onClick={openRegionPanel}
                       type="button"
                     >
-                      <PanelBottom
-                        aria-hidden="true"
-                        className="shrink-0"
-                        size={13}
-                        strokeWidth={1.75}
-                      />
+                      <PanelBottom aria-hidden="true" className="shrink-0" size={13} strokeWidth={1.75} />
                       <Text className="truncate">
                         Footer ·{" "}
                         {editingRegion === "footer" && activePanel === "pages"
@@ -2875,9 +2743,7 @@ export default function AdvancedTemplateEditor({
                         ? "No overflow errors"
                         : "Checking template"}
                 </Text>
-                <Text className="hidden 2xl:inline">
-                  {Object.keys(sampleData).length} sample fields
-                </Text>
+                <Text className="hidden 2xl:inline">{Object.keys(sampleData).length} sample fields</Text>
                 <div className="flex h-8 items-center rounded-lg border border-border bg-muted/50">
                   <button
                     aria-label="Zoom out"
@@ -2887,9 +2753,7 @@ export default function AdvancedTemplateEditor({
                   >
                     <Minus aria-hidden="true" size={14} />
                   </button>
-                  <Caption className="min-w-10 text-center text-foreground">
-                    {Math.round(zoom * 100)}%
-                  </Caption>
+                  <Caption className="min-w-10 text-center text-foreground">{Math.round(zoom * 100)}%</Caption>
                   <button
                     aria-label="Zoom in"
                     className="grid size-8 place-items-center rounded-r-lg outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
@@ -2935,42 +2799,25 @@ export default function AdvancedTemplateEditor({
                 <div className="grid gap-0.5">
                   <H3 id="delete-page-title">Delete page {pendingPageRemoval + 1}?</H3>
                   <Caption className="block text-muted-foreground">
-                    Selected page ·{" "}
-                    {currentTemplateRef.current.schemas[pendingPageRemoval]?.length ?? 0} elements
+                    Selected page · {currentTemplateRef.current.schemas[pendingPageRemoval]?.length ?? 0} elements
                   </Caption>
                 </div>
               </div>
-              <div
-                className="min-h-0 flex-1 px-[22px] py-[18px] text-muted-foreground"
-                id="delete-page-description"
-              >
+              <div className="min-h-0 flex-1 px-[22px] py-[18px] text-muted-foreground" id="delete-page-description">
                 <P>
-                  Deleting this page will not remove document fields or data bindings. Header and
-                  footer regions stay unchanged.
+                  Deleting this page will not remove document fields or data bindings. Header and footer regions stay
+                  unchanged.
                 </P>
                 <P className="mt-4">
-                  Page{" "}
-                  {Math.max(
-                    0,
-                    Math.min(pendingPageRemoval, currentTemplateRef.current.schemas.length - 2),
-                  ) + 1}{" "}
+                  Page {Math.max(0, Math.min(pendingPageRemoval, currentTemplateRef.current.schemas.length - 2)) + 1}{" "}
                   becomes selected after deletion. You can undo until the draft is saved.
                 </P>
               </div>
               <div className="flex justify-end gap-2.5 border-t border-border px-[22px] py-4">
-                <Button
-                  autoFocus
-                  onClick={() => setPendingPageRemoval(null)}
-                  type="button"
-                  variant="ghost"
-                >
+                <Button autoFocus onClick={() => setPendingPageRemoval(null)} type="button" variant="ghost">
                   Cancel
                 </Button>
-                <Button
-                  onClick={() => removePage(pendingPageRemoval)}
-                  type="button"
-                  variant="destructive"
-                >
+                <Button onClick={() => removePage(pendingPageRemoval)} type="button" variant="destructive">
                   Delete page {pendingPageRemoval + 1}
                 </Button>
               </div>
@@ -3036,9 +2883,7 @@ export default function AdvancedTemplateEditor({
           pointer-events: auto;
         }
 
-        .advanced-pdfme-designer[data-field-inspector-open="true"]
-          .pdfme-designer-right-sidebar
-          > div {
+        .advanced-pdfme-designer[data-field-inspector-open="true"] .pdfme-designer-right-sidebar > div {
           position: absolute !important;
           inset: 0 !important;
           display: flex !important;

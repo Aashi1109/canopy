@@ -90,10 +90,7 @@ export type ToolPagesInspected<S = never> = (previews: readonly ToolPagePreview[
  *
  * Pure, and must be idempotent: `f(f(s)) === f(s)`.
  */
-export type ToolSettingsChanged<S = never> = (
-  settings: S,
-  previews: readonly ToolPagePreview[],
-) => Partial<S>;
+export type ToolSettingsChanged<S = never> = (settings: S, previews: readonly ToolPagePreview[]) => Partial<S>;
 
 /**
  * Everything `tools/<key>/hooks.ts` may export. Every member is optional —

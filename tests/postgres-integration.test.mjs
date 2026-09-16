@@ -13,10 +13,7 @@ import {
   setUserStatus,
   updateCustomRole,
 } from "../lib/admin/adminMutations.ts";
-import {
-  getAvailableToolBySlug,
-  getUserAuthorization,
-} from "../packages/control-plane/src/queries.ts";
+import { getAvailableToolBySlug, getUserAuthorization } from "../packages/control-plane/src/queries.ts";
 import { sqlClient } from "../packages/database/src/index.ts";
 import { seedTemplates } from "../packages/invoice-templates/src/index.ts";
 
@@ -107,10 +104,7 @@ test(
     await setUserStatus(actorId, targetId, "active");
 
     await setManagedToolEnabled(actorId, "devtools.json-formatter", false);
-    assert.equal(
-      await getAvailableToolBySlug("devtools", "json-formatter", await toolManifest()),
-      undefined,
-    );
+    assert.equal(await getAvailableToolBySlug("devtools", "json-formatter", await toolManifest()), undefined);
     await setManagedToolEnabled(actorId, "devtools.json-formatter", true);
     assert.ok(await getAvailableToolBySlug("devtools", "json-formatter", await toolManifest()));
 

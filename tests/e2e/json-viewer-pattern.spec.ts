@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("JSON result controls disable without a result and recover with valid input", async ({
-  page,
-}) => {
+test("JSON result controls disable without a result and recover with valid input", async ({ page }) => {
   await page.goto("http://localhost:3000/devtools/json-viewer", { waitUntil: "networkidle" });
   const input = page.getByRole("textbox", { name: "JSON input", exact: true });
   const result = page.getByTestId("json-result-renderer");
@@ -57,11 +55,7 @@ test("JSON result views can scroll to the final value", async ({ page }) => {
     await viewport.hover();
     await page.mouse.wheel(0, 100_000);
     await expect
-      .poll(() =>
-        viewport.evaluate(
-          (element) => element.scrollHeight - element.scrollTop - element.clientHeight,
-        ),
-      )
+      .poll(() => viewport.evaluate((element) => element.scrollHeight - element.scrollTop - element.clientHeight))
       .toBeLessThanOrEqual(1);
     const last =
       mode === "code"
@@ -94,13 +88,9 @@ test("JSON Viewer read-only view preserves values and editable Form view", async
   for (const value of ["0", "false", "null", '""', "{0 keys}", "[0 items]"]) {
     await expect(values.getByText(value, { exact: true }).first()).toBeVisible();
   }
-  await expect(
-    values.locator("input, textarea, select, [contenteditable=true], [role=switch]"),
-  ).toHaveCount(0);
+  await expect(values.locator("input, textarea, select, [contenteditable=true], [role=switch]")).toHaveCount(0);
   await expect(result.getByRole("group", { name: "JSON edit history" })).toHaveCount(0);
-  await expect(
-    values.getByRole("button", { name: /Reorder|Delete|Duplicate|Add|Edit|Change/ }),
-  ).toHaveCount(0);
+  await expect(values.getByRole("button", { name: /Reorder|Delete|Duplicate|Add|Edit|Change/ })).toHaveCount(0);
   await expect(result.getByRole("button", { name: "Copy JSON result" })).toBeVisible();
   await expect(result.getByRole("button", { name: "Download JSON result" })).toBeVisible();
   await result.getByRole("button", { name: "Collapse all JSON nodes" }).click();
@@ -121,19 +111,13 @@ test("JSON Viewer read-only view preserves values and editable Form view", async
   await view.click();
   await page.getByRole("option", { name: "View", exact: true }).click();
   await expect(values).toContainText('"Updated"');
-  await expect(
-    values.locator("input, textarea, select, [contenteditable=true], [role=switch]"),
-  ).toHaveCount(0);
+  await expect(values.locator("input, textarea, select, [contenteditable=true], [role=switch]")).toHaveCount(0);
   await expect(input).toHaveValue(source);
   for (const scalar of ['"root value"', "0", "false", "null", "{}", "[]"]) {
     await input.fill(scalar);
     await expect(result.getByRole("tree", { name: "Read-only JSON values" })).toBeVisible();
-    await expect(values).toContainText(
-      scalar === "{}" ? "{0 keys}" : scalar === "[]" ? "[0 items]" : scalar,
-    );
-    await expect(
-      values.locator("input, textarea, select, [contenteditable=true], [role=switch]"),
-    ).toHaveCount(0);
+    await expect(values).toContainText(scalar === "{}" ? "{0 keys}" : scalar === "[]" ? "[0 items]" : scalar);
+    await expect(values.locator("input, textarea, select, [contenteditable=true], [role=switch]")).toHaveCount(0);
   }
 });
 
@@ -153,9 +137,9 @@ test("JSON Viewer matches the approved split-workbench flow", async ({ context, 
   const repair = toolbar.getByRole("button", { name: "Repair & clean" });
 
   await expect(workbench).toHaveAttribute("data-definition-key", "json-viewer");
-  expect(
-    await workbench.evaluate((element) => Math.round(element.getBoundingClientRect().height)),
-  ).toBe(await page.evaluate(() => window.innerHeight - 72));
+  expect(await workbench.evaluate((element) => Math.round(element.getBoundingClientRect().height))).toBe(
+    await page.evaluate(() => window.innerHeight - 72),
+  );
   if ((page.viewportSize()?.width ?? 0) <= 1024) {
     const split = workbench.locator('[data-stack="split"]');
     expect(
@@ -180,15 +164,13 @@ test("JSON Viewer matches the approved split-workbench flow", async ({ context, 
     const primaryPane = workbench.locator('[data-split-pane="primary"]');
     await expect(separator).toHaveAttribute("aria-valuenow", "42");
     await expect(collapsePrimary).toBeVisible();
-    const initialWidth = await primaryPane.evaluate(
-      (element) => element.getBoundingClientRect().width,
-    );
+    const initialWidth = await primaryPane.evaluate((element) => element.getBoundingClientRect().width);
 
     await separator.focus();
     await page.keyboard.press("ArrowRight");
-    expect(
-      await primaryPane.evaluate((element) => element.getBoundingClientRect().width),
-    ).toBeGreaterThan(initialWidth);
+    expect(await primaryPane.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(
+      initialWidth,
+    );
 
     await collapsePrimary.click();
     await expect(primaryPane).toBeHidden();
@@ -198,24 +180,14 @@ test("JSON Viewer matches the approved split-workbench flow", async ({ context, 
     await expect(primaryPane).toBeVisible();
   }
   await expect(workbench.locator('[data-purpose="editor"]')).toHaveAttribute("data-state", "ready");
-  await expect(workbench.locator('[data-purpose="inspector"]')).toHaveAttribute(
-    "data-state",
-    "ready",
-  );
+  await expect(workbench.locator('[data-purpose="inspector"]')).toHaveAttribute("data-state", "ready");
   await expect(page.getByText("JSON TOOL", { exact: true })).toBeVisible();
   await expect(page.getByText("REPAIR & CLEAN", { exact: true })).toBeVisible();
   await expect(page.getByText("PRIVATE IN BROWSER", { exact: true })).toBeVisible();
   await expect(page.getByTestId("tool-workbench-rail")).toHaveCount(0);
   await expect(input).toHaveCSS("font-family", /Geist Mono/);
 
-  for (const action of [
-    "Repair & clean",
-    "Beautify",
-    "Minify",
-    "Example",
-    "Broken example",
-    "Clear",
-  ]) {
+  for (const action of ["Repair & clean", "Beautify", "Minify", "Example", "Broken example", "Clear"]) {
     await expect(toolbar.getByRole("button", { name: action })).toBeVisible();
   }
   await expect(toolbar.getByRole("combobox", { name: "Repair strategy" })).toBeVisible();
@@ -256,9 +228,9 @@ test("JSON Viewer matches the approved split-workbench flow", async ({ context, 
     .getByTestId("json-result-placeholder")
     .getByRole("button", { name: /Go to JSON error at line/i })
     .click();
-  expect(
-    await input.evaluate((element: HTMLTextAreaElement) => element.selectionEnd),
-  ).toBeGreaterThan(await input.evaluate((element: HTMLTextAreaElement) => element.selectionStart));
+  expect(await input.evaluate((element: HTMLTextAreaElement) => element.selectionEnd)).toBeGreaterThan(
+    await input.evaluate((element: HTMLTextAreaElement) => element.selectionStart),
+  );
 
   await toolbar.getByRole("button", { name: "Broken example" }).click();
   const brokenInput = '[{"id":1,"name":"Alice","age":},{"id":2,"name":"Bob","age":30}]';
@@ -281,9 +253,7 @@ test("JSON Viewer matches the approved split-workbench flow", async ({ context, 
   await page.keyboard.press("Escape");
   await expect(confirmation).toHaveCount(0);
   await expect(repair).toBeFocused();
-  await expect(
-    page.getByText("Repair cancelled. Input was not changed.", { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText("Repair cancelled. Input was not changed.", { exact: true })).toBeVisible();
 
   const repairStrategy = toolbar.getByRole("combobox", {
     name: "Repair strategy",
@@ -319,9 +289,7 @@ test("JSON Viewer matches the approved split-workbench flow", async ({ context, 
   await expect(input).toHaveValue(brokenInput);
   const formattedPanel = tree.getByRole("tabpanel");
   await expect(formattedPanel).toHaveText(minifiedInput);
-  expect(
-    await formattedPanel.evaluate((element) => element.scrollWidth <= element.clientWidth),
-  ).toBe(true);
+  expect(await formattedPanel.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
   await tree.getByRole("button", { name: "Copy JSON result" }).click();
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(minifiedInput);
 
@@ -414,16 +382,14 @@ test("JSON search supports Enter and Shift+Enter with wraparound", async ({ page
 
 test("JSON search highlights exact occurrences and only the active line", async ({ page }) => {
   await page.goto("http://localhost:3000/devtools/json-viewer", { waitUntil: "networkidle" });
-  await page
-    .getByRole("textbox", { name: "JSON input", exact: true })
-    .fill(
-      JSON.stringify({
-        first: "match match",
-        second: "MATCH",
-        literal: "a.b [x]",
-        escaped: '<tag> "quoted"',
-      }),
-    );
+  await page.getByRole("textbox", { name: "JSON input", exact: true }).fill(
+    JSON.stringify({
+      first: "match match",
+      second: "MATCH",
+      literal: "a.b [x]",
+      escaped: '<tag> "quoted"',
+    }),
+  );
   const result = page.getByTestId("json-result-renderer");
   const search = result.getByRole("searchbox", { name: "Search JSON result" });
   const code = result.getByRole("tabpanel");

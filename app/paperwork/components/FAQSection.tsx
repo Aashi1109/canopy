@@ -81,10 +81,7 @@ export default function FAQSection() {
                 {isOpen ? (
                   <ChevronUp aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
                 ) : (
-                  <ChevronDown
-                    aria-hidden="true"
-                    className="size-4 shrink-0 text-muted-foreground"
-                  />
+                  <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
                 )}
               </Button>
               {isOpen && (

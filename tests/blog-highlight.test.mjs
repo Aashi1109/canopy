@@ -60,11 +60,7 @@ test("native highlights at the caret apply to typing and clear for following tex
 
 test("highlight clipboard serialization preserves safe color and imports public CSS colors", () => {
   const rendered = highlight.spec.toDOM(highlight.create({ color: "#ABCDEF" }));
-  assert.deepEqual(rendered, [
-    "mark",
-    { "data-color": "#abcdef", style: "background-color: #abcdef" },
-    0,
-  ]);
+  assert.deepEqual(rendered, ["mark", { "data-color": "#abcdef", style: "background-color: #abcdef" }, 0]);
   assert.equal(parse(element(rendered[1]["data-color"])).color, "#abcdef");
   assert.equal(parse(element(null, "rgb(171, 205, 239)")).color, "#abcdef");
   assert.equal(parse(element(null, "#ABCDEF")).color, "#abcdef");
@@ -73,14 +69,7 @@ test("highlight clipboard serialization preserves safe color and imports public 
 });
 
 test("clipboard color parsing and rendering discard untrusted or malformed CSS values", () => {
-  for (const color of [
-    "#fff",
-    "#123456;background:url(x)",
-    "url(evil)",
-    "rgb(999, 0, 0)",
-    "transparent",
-    "",
-  ]) {
+  for (const color of ["#fff", "#123456;background:url(x)", "url(evil)", "rgb(999, 0, 0)", "transparent", ""]) {
     assert.equal(highlight.create(parse(element(color))).attrs.color, null);
     assert.equal(highlight.create(parse(element(null, color))).attrs.color, null);
     assert.deepEqual(highlight.spec.toDOM(highlight.create({ color })), ["mark", {}, 0]);

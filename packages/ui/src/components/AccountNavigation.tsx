@@ -59,12 +59,7 @@ export function SwitchAccountButton({ returnTo }: { returnTo: string }) {
   );
 }
 
-export function AccountNavigation({
-  className,
-  returnTo,
-  restricted = false,
-  user,
-}: AccountNavigationProps) {
+export function AccountNavigation({ className, returnTo, restricted = false, user }: AccountNavigationProps) {
   const { pending, error, signOut } = useSignOut(restricted ? "/auth" : "/");
   const target = `${user ? "/auth/profile" : "/auth"}?${new URLSearchParams({ returnTo })}`;
   const accountName = user?.name.trim() || "Account";
@@ -92,10 +87,7 @@ export function AccountNavigation({
                 {initials}
               </Caption>
               <Caption className="truncate">{accountName}</Caption>
-              <ChevronDown
-                aria-hidden="true"
-                className="size-[13px] shrink-0 text-muted-foreground"
-              />
+              <ChevronDown aria-hidden="true" className="size-[13px] shrink-0 text-muted-foreground" />
             </Button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>

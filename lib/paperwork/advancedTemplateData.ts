@@ -181,11 +181,7 @@ export function getReceiptTemplateInputs(
     customerEmail: data.customer.email,
     customerPhone: data.customer.phone,
     lineItems: JSON.stringify(
-      data.lineItems.map((item) => [
-        item.description,
-        String(item.quantity),
-        money(item.quantity * item.unitPrice),
-      ]),
+      data.lineItems.map((item) => [item.description, String(item.quantity), money(item.quantity * item.unitPrice)]),
     ),
     subtotal: money(totals.subtotal),
     discount: money(totals.discountAmount),

@@ -2,13 +2,7 @@ import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import { getOptionalSession } from "@smarttools/auth/session";
 import { getAvailableTools } from "@smarttools/control-plane";
 import { getToolManifest } from "@/lib/tool-framework/manifest";
-import {
-  AccountNavigation,
-  CatalogCard,
-  PageHero,
-  ProductHeader,
-  StatusBadge,
-} from "@smarttools/ui";
+import { AccountNavigation, CatalogCard, PageHero, ProductHeader, StatusBadge } from "@smarttools/ui";
 import {
   ClipboardCheck,
   ClipboardList,

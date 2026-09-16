@@ -33,12 +33,7 @@ export const IRS_MILEAGE_RATE_SCHEDULE = {
 
 const money = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 
-export function getMileageRate(
-  mode: MileageRateMode,
-  taxYear: number,
-  tripDate: string,
-  customRate: number,
-): number {
+export function getMileageRate(mode: MileageRateMode, taxYear: number, tripDate: string, customRate: number): number {
   const schedule = IRS_MILEAGE_RATE_SCHEDULE[taxYear as keyof typeof IRS_MILEAGE_RATE_SCHEDULE];
   if (!schedule) {
     throw new Error(`IRS mileage rules update required for ${taxYear}.`);
@@ -91,26 +86,16 @@ export function calculateMileageSummary<TTrip extends MileageRuleTrip>(
     }
   });
 
-  const standardMileageDeduction = money(
-    trips.reduce((total, trip) => total + trip.mileageAmount, 0),
-  );
-  const parkingAndTolls = money(
-    trips.reduce((total, trip) => total + trip.parking + trip.tolls, 0),
-  );
-  const totalFuelCost = money(
-    draft.fuelRecords.reduce((total, record) => total + Number(record.cost || 0), 0),
-  );
-  const totalGallons = draft.fuelRecords.reduce(
-    (total, record) => total + Number(record.gallons || 0),
-    0,
-  );
+  const standardMileageDeduction = money(trips.reduce((total, trip) => total + trip.mileageAmount, 0));
+  const parkingAndTolls = money(trips.reduce((total, trip) => total + trip.parking + trip.tolls, 0));
+  const totalFuelCost = money(draft.fuelRecords.reduce((total, record) => total + Number(record.cost || 0), 0));
+  const totalGallons = draft.fuelRecords.reduce((total, record) => total + Number(record.gallons || 0), 0);
   const sortedFuelRecords = [...draft.fuelRecords].sort(
     (left, right) => Number(left.odometer || 0) - Number(right.odometer || 0),
   );
   const odometerDistance =
     sortedFuelRecords.length > 1
-      ? Number(sortedFuelRecords.at(-1)?.odometer || 0) -
-        Number(sortedFuelRecords[0]?.odometer || 0)
+      ? Number(sortedFuelRecords.at(-1)?.odometer || 0) - Number(sortedFuelRecords[0]?.odometer || 0)
       : 0;
   const gallonsAfterFirstFill = sortedFuelRecords
     .slice(1)
@@ -125,9 +110,6 @@ export function calculateMileageSummary<TTrip extends MileageRuleTrip>(
     totalDeduction: money(standardMileageDeduction + parkingAndTolls),
     totalFuelCost,
     totalGallons,
-    fuelEconomy:
-      odometerDistance > 0 && gallonsAfterFirstFill > 0
-        ? odometerDistance / gallonsAfterFirstFill
-        : null,
+    fuelEconomy: odometerDistance > 0 && gallonsAfterFirstFill > 0 ? odometerDistance / gallonsAfterFirstFill : null,
   };
 }

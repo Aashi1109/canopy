@@ -14,15 +14,7 @@
  * through a declared field. Pages without bytes remain as loading placeholders.
  */
 
-import {
-  Strong,
-  Caption,
-  Muted,
-  Button,
-  CheckboxControl,
-  MediaPreview,
-  PdfViewer,
-} from "@smarttools/ui";
+import { Strong, Caption, Muted, Button, CheckboxControl, MediaPreview, PdfViewer } from "@smarttools/ui";
 import { OrderableList } from "@smarttools/ui/components/OrderableList";
 import { GripVertical } from "lucide-react";
 import {
@@ -54,9 +46,9 @@ const NO_IMAGES: readonly PdfPageImage[] = [];
 /** The renderer's own thumbnail type, used when the message carries no MIME. */
 const THUMBNAIL_MIME = "image/jpeg";
 
-const PdfInspectionContext = createContext<
-  ((pageNumbers: readonly number[], renderWidth?: number) => void) | null
->(null);
+const PdfInspectionContext = createContext<((pageNumbers: readonly number[], renderWidth?: number) => void) | null>(
+  null,
+);
 
 export function PdfInspectionProvider({
   children,
@@ -65,11 +57,7 @@ export function PdfInspectionProvider({
   readonly children: ReactNode;
   readonly requestThumbnails: (pageNumbers: readonly number[], renderWidth?: number) => void;
 }): ReactElement {
-  return (
-    <PdfInspectionContext.Provider value={requestThumbnails}>
-      {children}
-    </PdfInspectionContext.Provider>
-  );
+  return <PdfInspectionContext.Provider value={requestThumbnails}>{children}</PdfInspectionContext.Provider>;
 }
 
 function read(value: unknown, key: string): unknown {
@@ -111,9 +99,7 @@ export function usePdfPageImages(previews: readonly ToolPagePreview[]): readonly
 
   useEffect(() => {
     let changed = false;
-    const previewByPage = new Map(
-      previews.map((preview) => [preview.pageNumber, preview] as const),
-    );
+    const previewByPage = new Map(previews.map((preview) => [preview.pageNumber, preview] as const));
     for (const [pageNumber, entry] of cacheRef.current) {
       const preview = previewByPage.get(pageNumber);
       if (
@@ -148,8 +134,7 @@ export function usePdfPageImages(previews: readonly ToolPagePreview[]): readonly
       changed = true;
     }
     while (cacheRef.current.size > PDF_THUMBNAIL_CACHE_SIZE) {
-      const oldest = cacheRef.current.entries().next().value as
-        [number, { readonly url: string }] | undefined;
+      const oldest = cacheRef.current.entries().next().value as [number, { readonly url: string }] | undefined;
       if (!oldest) break;
       URL.revokeObjectURL(oldest[1].url);
       cacheRef.current.delete(oldest[0]);
@@ -179,10 +164,7 @@ function pageExpressionOf(value: unknown): string {
 }
 
 /** The page numbers a `pages` setting selects, resolved against the previews. */
-export function selectedPageNumbers(
-  value: unknown,
-  pages: readonly PdfPageImage[],
-): ReadonlySet<number> {
+export function selectedPageNumbers(value: unknown, pages: readonly PdfPageImage[]): ReadonlySet<number> {
   const available = pages.map(({ pageNumber }) => pageNumber);
   const parsed = parsePageSelection(pageExpressionOf(value), pages.length);
   if (parsed === "all") return new Set(available);
@@ -213,8 +195,7 @@ export interface PdfPagesSurfaceProps {
 }
 
 const PAGE_CLASSES = "min-w-0 rounded-xl border border-border bg-background p-2";
-const THUMBNAIL_CLASSES =
-  "mx-auto max-h-44 w-auto rounded-md border border-border bg-white object-contain";
+const THUMBNAIL_CLASSES = "mx-auto max-h-44 w-auto rounded-md border border-border bg-white object-contain";
 const GRID_CLASSES = "grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(0,12rem))]";
 
 export function PageThumbnail({ page }: { page: PdfPageImage }): ReactElement {
@@ -433,13 +414,7 @@ export function PdfPagesSurface({
               pageNumber: index + 1,
               width: page.pageWidth,
               height: page.pageHeight,
-              content: (
-                <PdfPreviewPage
-                  page={page}
-                  requestThumbnails={requestThumbnails ?? (() => {})}
-                  active
-                />
-              ),
+              content: <PdfPreviewPage page={page} requestThumbnails={requestThumbnails ?? (() => {})} active />,
             }))}
           />
         </MediaPreview>
@@ -494,11 +469,7 @@ export function PdfPreviewPage({
   return (
     <div className="absolute inset-0" ref={element}>
       {page.url ? (
-        <img
-          alt={alt ?? `PDF page ${page.pageNumber}`}
-          className="h-full w-full object-contain"
-          src={page.url}
-        />
+        <img alt={alt ?? `PDF page ${page.pageNumber}`} className="h-full w-full object-contain" src={page.url} />
       ) : (
         <Muted role="status">Rendering page {page.pageNumber}…</Muted>
       )}

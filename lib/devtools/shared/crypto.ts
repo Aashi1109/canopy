@@ -23,15 +23,11 @@ export function secureRandomInt(maxExclusive: number): number {
 }
 
 export function randomString(length: number, alphabet: string): string {
-  if (!alphabet)
-    throw new ToolError("missing-character-group", "Choose at least one character group.");
+  if (!alphabet) throw new ToolError("missing-character-group", "Choose at least one character group.");
   return Array.from({ length }, () => alphabet[secureRandomInt(alphabet.length)]).join("");
 }
 
-export async function digestText(
-  value: string,
-  algorithm: "SHA-1" | "SHA-256" | "SHA-512",
-): Promise<string> {
+export async function digestText(value: string, algorithm: "SHA-1" | "SHA-256" | "SHA-512"): Promise<string> {
   const digest = await getCrypto().subtle.digest(algorithm, new TextEncoder().encode(value));
   return bytesToHex(new Uint8Array(digest));
 }

@@ -27,10 +27,7 @@ async function prepareRequest(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const userId = await prepareRequest(request);
-    const vendors = await db
-      .select()
-      .from(vendorProfilesTable)
-      .where(eq(vendorProfilesTable.userId, userId));
+    const vendors = await db.select().from(vendorProfilesTable).where(eq(vendorProfilesTable.userId, userId));
     return NextResponse.json({ success: true, vendors });
   } catch (error) {
     return handleError(error);

@@ -42,18 +42,14 @@ test("PDF image exports preserve embedded font glyphs", async ({ page }) => {
   );
 
   for (const extension of ["jpg", "png"] as const) {
-    await page.goto(
-      `${process.env.MEDIA_E2E_URL ?? "http://localhost:3000/media"}/pdf-to-${extension}`,
-    );
+    await page.goto(`${process.env.MEDIA_E2E_URL ?? "http://localhost:3000/media"}/pdf-to-${extension}`);
     await page.waitForLoadState("networkidle");
     await page.locator('input[type="file"]').first().setInputFiles({
       name: "embedded-font.pdf",
       mimeType: "application/pdf",
       buffer: pdf,
     });
-    await page
-      .getByRole("button", { name: `Convert to ${extension.toUpperCase()}`, exact: true })
-      .click();
+    await page.getByRole("button", { name: `Convert to ${extension.toUpperCase()}`, exact: true }).click();
     const output = page.getByRole("region", { name: "Generated image previews" });
     await expect(output).toBeVisible({ timeout: 60_000 });
     const downloadEvent = page.waitForEvent("download");
@@ -75,8 +71,7 @@ test("PDF image exports preserve embedded font glyphs", async ({ page }) => {
           canvas.width = Math.ceil(viewport.width);
           canvas.height = Math.ceil(viewport.height);
           const context = canvas.getContext("2d")!;
-          await pdfPage.render({ canvas, canvasContext: context, viewport, background: "#ffffff" })
-            .promise;
+          await pdfPage.render({ canvas, canvasContext: context, viewport, background: "#ffffff" }).promise;
           const reference = context.getImageData(0, 0, canvas.width, canvas.height).data;
           const bitmap = await createImageBitmap(
             new Blob([new Uint8Array(imageBytes)], {
@@ -102,8 +97,6 @@ test("PDF image exports preserve embedded font glyphs", async ({ page }) => {
       },
       { pdfBytes: [...pdf], imageBytes: [...exported], extension },
     );
-    expect(overlap, `${extension} glyph shapes must match native PDF rendering`).toBeGreaterThan(
-      0.98,
-    );
+    expect(overlap, `${extension} glyph shapes must match native PDF rendering`).toBeGreaterThan(0.98);
   }
 });

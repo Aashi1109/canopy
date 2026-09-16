@@ -23,9 +23,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .where(and(eq(keyValuePairTable.userId, userId), eq(keyValuePairTable.key, key)))
       .limit(1);
 
-    return NextResponse.json(
-      rows[0] ? { found: true, value: rows[0].value } : { found: false, value: null },
-    );
+    return NextResponse.json(rows[0] ? { found: true, value: rows[0].value } : { found: false, value: null });
   } catch (error) {
     if (error instanceof PaperworkToolAccessError) {
       return NextResponse.json({ error: error.message }, { status: error.status });

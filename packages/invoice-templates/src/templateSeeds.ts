@@ -38,14 +38,7 @@ const makeBaseConfig = (
 export const seedTemplates: InvoiceTemplate[] = [
   // 1. Classic Professional (Default)
   {
-    ...makeBaseConfig(
-      "tpl_classic_prof",
-      "Classic Professional",
-      "classic-professional",
-      "classic",
-      "classic",
-      true,
-    ),
+    ...makeBaseConfig("tpl_classic_prof", "Classic Professional", "classic-professional", "classic", "classic", true),
     description:
       "Standard formal corporate layout with a safe, traditional grid. Ideal for law firms, consultants, and contractors.",
     config: {
@@ -142,13 +135,7 @@ export const seedTemplates: InvoiceTemplate[] = [
 
   // 3. Compact Service Invoice
   {
-    ...makeBaseConfig(
-      "tpl_compact_service",
-      "Compact Service Invoice",
-      "compact-service",
-      "service",
-      "compact",
-    ),
+    ...makeBaseConfig("tpl_compact_service", "Compact Service Invoice", "compact-service", "service", "compact"),
     description:
       "Density-optimized structural grid designed to pack many rows of fields. Great for handymen, field agents, auto repairs, and cleaning services.",
     config: {
@@ -250,13 +237,7 @@ export const seedTemplates: InvoiceTemplate[] = [
 
   // 5. Minimal Freelancer
   {
-    ...makeBaseConfig(
-      "tpl_minimal_free",
-      "Minimal Freelancer",
-      "minimal-freelancer",
-      "simple",
-      "minimal",
-    ),
+    ...makeBaseConfig("tpl_minimal_free", "Minimal Freelancer", "minimal-freelancer", "simple", "minimal"),
     description:
       "Ultra elegant, sparse, layout with low ink usage and high white-space contrast. Fits copywriters, independent developers, and content writers.",
     config: {
@@ -310,13 +291,7 @@ export const seedTemplates: InvoiceTemplate[] = [
 
   // 6. Detailed Contractor
   {
-    ...makeBaseConfig(
-      "tpl_detailed_contract",
-      "Detailed Contractor",
-      "detailed-contract",
-      "professional",
-      "service",
-    ),
+    ...makeBaseConfig("tpl_detailed_contract", "Detailed Contractor", "detailed-contract", "professional", "service"),
     description:
       "Includes visible placeholders for Purchase Orders, project milestones, complex terms, and detailed payment accounts.",
     config: {

@@ -3,11 +3,7 @@ import { E2E_ACCOUNTS, E2E_PASSWORD } from "./fixtures/accounts";
 import { AuthPage } from "./pages/AuthPage";
 
 test("full-screen preview contains caller content and restores focus on exit", async ({ page }) => {
-  await new AuthPage(page).signIn(
-    E2E_ACCOUNTS.admin.email,
-    E2E_PASSWORD,
-    "http://localhost:3000/admin/design-system",
-  );
+  await new AuthPage(page).signIn(E2E_ACCOUNTS.admin.email, E2E_PASSWORD, "http://localhost:3000/admin/design-system");
   const trigger = page.getByRole("button", { name: "Open full-screen preview" });
   await trigger.click();
   const preview = page.getByRole("dialog", { name: "Preview example" });

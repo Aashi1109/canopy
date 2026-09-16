@@ -24,16 +24,10 @@ function fallbackErrorLocation(input: string) {
 
 function appendJsonPath(path: string, segment: string | number) {
   if (typeof segment === "number") return `${path}[${segment}]`;
-  return /^[A-Za-z_$][\w$]*$/.test(segment)
-    ? `${path}.${segment}`
-    : `${path}[${JSON.stringify(segment)}]`;
+  return /^[A-Za-z_$][\w$]*$/.test(segment) ? `${path}.${segment}` : `${path}[${JSON.stringify(segment)}]`;
 }
 
-function collectMissingValuePaths(
-  nullableValue: unknown,
-  removedValue: unknown,
-  path = "$",
-): string[] {
+function collectMissingValuePaths(nullableValue: unknown, removedValue: unknown, path = "$"): string[] {
   if (
     nullableValue === null ||
     typeof nullableValue !== "object" ||
@@ -94,19 +88,14 @@ export function repairJsonViewerInput(input: string, repairMode: Exclude<JsonRep
   return repairJson(input, repairMode);
 }
 
-export function describeJsonViewerRepair(
-  input: string,
-  repairMode: Exclude<JsonRepairMode, "off">,
-) {
+export function describeJsonViewerRepair(input: string, repairMode: Exclude<JsonRepairMode, "off">) {
   const selectedRepair = repairJson(input, repairMode);
   if (!selectedRepair.ok) return selectedRepair;
 
   const nullableRepair = repairJson(input, "null");
   const removedRepair = repairJson(input, "remove");
   const changedPaths =
-    nullableRepair.ok && removedRepair.ok
-      ? collectMissingValuePaths(nullableRepair.value, removedRepair.value)
-      : [];
+    nullableRepair.ok && removedRepair.ok ? collectMissingValuePaths(nullableRepair.value, removedRepair.value) : [];
 
   return {
     changedPaths,

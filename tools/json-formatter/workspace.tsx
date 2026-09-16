@@ -6,9 +6,7 @@ export default function JsonFormatterWorkspace(props: WorkspaceProps) {
   return (
     <ToolWorkspace
       {...props}
-      initialJsonView={
-        (props.settings.operation ?? "format") === "format" ? "read-only" : undefined
-      }
+      initialJsonView={(props.settings.operation ?? "format") === "format" ? "read-only" : undefined}
     />
   );
 }

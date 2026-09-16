@@ -76,8 +76,7 @@ function xmlToJson(input: string): unknown {
     for (const child of node.children) {
       const childValue = convert(child);
       if (!(child.name in result)) result[child.name] = childValue;
-      else if (Array.isArray(result[child.name]))
-        (result[child.name] as unknown[]).push(childValue);
+      else if (Array.isArray(result[child.name])) (result[child.name] as unknown[]).push(childValue);
       else result[child.name] = [result[child.name], childValue];
     }
     if (text) result["#text"] = text;

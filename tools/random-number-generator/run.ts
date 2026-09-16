@@ -28,8 +28,7 @@ function seededRandomInt(seed: string): (maxExclusive: number) => number {
 }
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
-  const { min, max, count, seed, decimalPlaces, uniqueValues, wholeNumbers, sortResult } =
-    ctx.settings;
+  const { min, max, count, seed, decimalPlaces, uniqueValues, wholeNumbers, sortResult } = ctx.settings;
   if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max)) {
     throw new ToolError(
       "bounds-not-integers",
@@ -38,22 +37,14 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     );
   }
   if (min > max) {
-    throw new ToolError(
-      "bounds-inverted",
-      "Min cannot be greater than max.",
-      "Swap the two values.",
-    );
+    throw new ToolError("bounds-inverted", "Min cannot be greater than max.", "Swap the two values.");
   }
   const places = wholeNumbers ? 0 : Number(decimalPlaces);
   const scale = 10 ** places;
   const scaledMin = min * scale;
   const span = (max - min) * scale + 1;
   if (!Number.isSafeInteger(scaledMin) || !Number.isSafeInteger(span) || span > 0x1_0000_0000) {
-    throw new ToolError(
-      "invalid-random-range",
-      "Random range is too large.",
-      "Reduce the range or decimal places.",
-    );
+    throw new ToolError("invalid-random-range", "Random range is too large.", "Reduce the range or decimal places.");
   }
   if (uniqueValues && count > span) {
     throw new ToolError(

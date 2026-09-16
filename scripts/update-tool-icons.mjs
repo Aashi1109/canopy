@@ -27,20 +27,15 @@ export function planToolIconUpdates(manifest, tools, cloudName) {
       typeof icon.publicId !== "string" ||
       !icon.publicId.split("/").every((part) => /^[A-Za-z0-9_-]+$/.test(part)) ||
       icon.publicId.split("/").at(-1) !== icon.slug ||
-      icon.secureUrl !==
-        `https://res.cloudinary.com/${cloudName}/image/upload/v${icon.version}/${icon.publicId}.svg`
+      icon.secureUrl !== `https://res.cloudinary.com/${cloudName}/image/upload/v${icon.version}/${icon.publicId}.svg`
     ) {
-      throw new Error(
-        `Invalid successful icon at index ${index}: check SVG metadata and Cloudinary delivery cloud.`,
-      );
+      throw new Error(`Invalid successful icon at index ${index}: check SVG metadata and Cloudinary delivery cloud.`);
     }
     if (seen.has(icon.slug)) throw new Error(`Duplicate manifest slug: ${icon.slug}`);
     seen.add(icon.slug);
     const matches = tools.filter((tool) => tool.slug === icon.slug);
     if (matches.length !== 1) {
-      throw new Error(
-        `${matches.length ? "Ambiguous" : "Missing"} database slug: ${icon.slug}. No icons updated.`,
-      );
+      throw new Error(`${matches.length ? "Ambiguous" : "Missing"} database slug: ${icon.slug}. No icons updated.`);
     }
     return {
       tool_id: matches[0].tool_id,
@@ -65,13 +60,9 @@ async function main() {
   }
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required.");
   const manifest = JSON.parse(await readFile(values.manifest, "utf8"));
-  const cloudName =
-    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim() ||
-    process.env.CLOUDINARY_CLOUD_NAME?.trim();
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim() || process.env.CLOUDINARY_CLOUD_NAME?.trim();
   if (!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim() && cloudName) {
-    console.log(
-      `Set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=${cloudName} in the app environment to display imported icons.`,
-    );
+    console.log(`Set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=${cloudName} in the app environment to display imported icons.`);
   }
   const sql = postgres(process.env.DATABASE_URL, { max: 1, connect_timeout: 10 });
   try {
@@ -97,9 +88,7 @@ async function main() {
           IS DISTINCT FROM (EXCLUDED.public_id, EXCLUDED.version, EXCLUDED.format, EXCLUDED.width, EXCLUDED.height)
         RETURNING tool_id
       `;
-      console.log(
-        `Updated ${updated.length} icons; ${rows.length - updated.length} already current.`,
-      );
+      console.log(`Updated ${updated.length} icons; ${rows.length - updated.length} already current.`);
     });
   } finally {
     await sql.end();

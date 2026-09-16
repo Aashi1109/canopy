@@ -17,10 +17,7 @@ export default async function DevtoolsToolPage({ params }: { params: Promise<{ s
   const tool = await resolveToolPage("devtools", slug);
   if (!tool) notFound();
 
-  const [related, session] = await Promise.all([
-    relatedTools(tool.toolId),
-    getOptionalSession(await headers()),
-  ]);
+  const [related, session] = await Promise.all([relatedTools(tool.toolId), getOptionalSession(await headers())]);
 
   return (
     <ToolPage

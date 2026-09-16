@@ -214,8 +214,7 @@ export const longTextInvoiceSample: InvoiceData = {
     name: "Pacific Rim Architectural Foundations & Structured Construction Materials Global Logistics Firm LLC",
     contactName: "Balthazar Montgomery-Hamilton III",
     email: "accounting-and-receivables-group@pacificrimarchitecturalstructures.com",
-    phone:
-      "+1 (800) 555-0199 ext 302, support group lines open Monday through Friday 8am to 6pm PST",
+    phone: "+1 (800) 555-0199 ext 302, support group lines open Monday through Friday 8am to 6pm PST",
     website: "pacificrimarchitecturalstructuresandgloballogistics.com",
     addressLine1: "1000 Waterfront Terminal Industrial Shipping Parkway",
     addressLine2: "Suite 450A, Building C, East Wing Terminal Annex",
@@ -228,14 +227,11 @@ export const longTextInvoiceSample: InvoiceData = {
   },
   client: {
     name: "Metropolitan Civic Infrastructure Developments & Municipal Underground Rail System Advisory Committee",
-    company:
-      "City Planning Commision Task Force Unit & Metropolitan Transit Authority Advisory Group Company Inc",
+    company: "City Planning Commision Task Force Unit & Metropolitan Transit Authority Advisory Group Company Inc",
     email: "receiving-and-accounts-payable@metropolitancivicinfrastructuredevelopments.gov",
     phone: "+1 (206) 555-9000 ext 4591",
-    addressLine1:
-      "Municipal Services Plaza, 550 Fifth Avenue West, Underground Transit Level B, Suite 10",
-    addressLine2:
-      "c/o Department of Public Transportation & Finance Oversight Special Task Committee",
+    addressLine1: "Municipal Services Plaza, 550 Fifth Avenue West, Underground Transit Level B, Suite 10",
+    addressLine2: "c/o Department of Public Transportation & Finance Oversight Special Task Committee",
     city: "Seattle Transit District Area",
     state: "WA",
     zipCode: "98104",
@@ -248,8 +244,7 @@ export const longTextInvoiceSample: InvoiceData = {
     paymentTerms: "Special net ninety days terms agreement with municipal agencies",
     currency: "USD",
     poNumber: "PO-MUN-SEA-TACTICAL-INFRASTRUCTURE-Q2-2026-09218274A",
-    projectName:
-      "Tacoma Underground Tunneling Excavation Phase 3 Core Support Deliverable Milestones",
+    projectName: "Tacoma Underground Tunneling Excavation Phase 3 Core Support Deliverable Milestones",
   },
   lineItems: [
     {

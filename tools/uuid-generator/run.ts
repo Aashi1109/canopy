@@ -31,12 +31,12 @@ function uuidV7(): string {
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const { version, count, hyphens, upper } = ctx.settings;
-  const values = Array.from({ length: count }, () =>
-    version === "v7" ? uuidV7() : getCrypto().randomUUID(),
-  ).map((value) => {
-    const withoutHyphens = hyphens ? value : value.replaceAll("-", "");
-    return upper ? withoutHyphens.toUpperCase() : withoutHyphens;
-  });
+  const values = Array.from({ length: count }, () => (version === "v7" ? uuidV7() : getCrypto().randomUUID())).map(
+    (value) => {
+      const withoutHyphens = hyphens ? value : value.replaceAll("-", "");
+      return upper ? withoutHyphens.toUpperCase() : withoutHyphens;
+    },
+  );
   return { render: "list", items: values, downloadName: "uuids.txt" };
 };
 

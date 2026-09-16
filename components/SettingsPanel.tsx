@@ -15,13 +15,7 @@ import {
 } from "@smarttools/ui";
 import { Plus, RotateCw, Trash2 } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useId } from "react";
-import type {
-  FieldKind,
-  FieldSpec,
-  SettingRow,
-  SettingsSpec,
-  WatermarkPosition,
-} from "@/lib/tool-framework/settings";
+import type { FieldKind, FieldSpec, SettingRow, SettingsSpec, WatermarkPosition } from "@/lib/tool-framework/settings";
 import { cn } from "@smarttools/ui/lib/utils";
 
 export interface SettingsPanelProps {
@@ -42,10 +36,7 @@ interface FieldRenderContext {
 }
 
 type FieldRendererRegistry = {
-  [Kind in FieldKind]: (
-    field: Extract<FieldSpec, { kind: Kind }>,
-    context: FieldRenderContext,
-  ) => ReactNode;
+  [Kind in FieldKind]: (field: Extract<FieldSpec, { kind: Kind }>, context: FieldRenderContext) => ReactNode;
 };
 
 const FIELD_ICONS = { "rotate-cw": RotateCw };
@@ -112,11 +103,7 @@ const POSITIONS: readonly { label: string; value: WatermarkPosition }[] = [
   { label: "Bottom right", value: "bottom-right" },
 ];
 
-function movePosition(
-  event: KeyboardEvent<HTMLButtonElement>,
-  index: number,
-  onChange: (value: unknown) => void,
-) {
+function movePosition(event: KeyboardEvent<HTMLButtonElement>, index: number, onChange: (value: unknown) => void) {
   const row = Math.floor(index / 3);
   const column = index % 3;
   const nextIndex = {
@@ -131,9 +118,7 @@ function movePosition(
   event.preventDefault();
   if (nextIndex === index) return;
   onChange(POSITIONS[nextIndex].value);
-  event.currentTarget.parentElement
-    ?.querySelectorAll<HTMLButtonElement>('[role="radio"]')
-    [nextIndex]?.focus();
+  event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[nextIndex]?.focus();
 }
 
 const FIELD_RENDERERS: FieldRendererRegistry = {
@@ -198,9 +183,7 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
             suffix={field.suffix}
             type="number"
             value={
-              typeof context.value === "number" || typeof context.value === "string"
-                ? context.value
-                : field.default
+              typeof context.value === "number" || typeof context.value === "string" ? context.value : field.default
             }
           />
         </div>
@@ -269,10 +252,7 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
           <option key={choice.value} value={choice.value}>
             {choice.aspectRatio ? (
               <span className="flex min-w-0 max-w-full items-center gap-2">
-                <span
-                  aria-hidden="true"
-                  className="inline-flex size-4 shrink-0 items-center justify-center"
-                >
+                <span aria-hidden="true" className="inline-flex size-4 shrink-0 items-center justify-center">
                   <span
                     className="rounded-[2px] border-[1.5px] border-current"
                     style={{
@@ -303,16 +283,11 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
         {field.choices.map((choice) => {
           const choiceId = `${context.id}-${choice.value}`;
           return (
-            <div
-              className="flex items-start gap-3 rounded-lg border border-border p-3"
-              key={choice.value}
-            >
+            <div className="flex items-start gap-3 rounded-lg border border-border p-3" key={choice.value}>
               <RadioGroupItem id={choiceId} value={choice.value} />
               <FieldLabel className="grid cursor-pointer gap-0.5" htmlFor={choiceId}>
                 <span>{choice.label}</span>
-                {choice.detail ? (
-                  <Caption className="text-muted-foreground">{choice.detail}</Caption>
-                ) : null}
+                {choice.detail ? <Caption className="text-muted-foreground">{choice.detail}</Caption> : null}
               </FieldLabel>
             </div>
           );
@@ -445,9 +420,7 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
               disabled={context.disabled}
               id={context.id}
               onChange={(event) =>
-                context.onChange(
-                  event.currentTarget.value === "custom" ? "" : event.currentTarget.value,
-                )
+                context.onChange(event.currentTarget.value === "custom" ? "" : event.currentTarget.value)
               }
               value={mode}
             >
@@ -487,10 +460,7 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
   rows: (field, context) => {
     const rows = rowsValue(context.value, field.default);
     return (
-      <fieldset
-        aria-describedby={field.help ? `${context.id}-help` : undefined}
-        className="grid gap-3"
-      >
+      <fieldset aria-describedby={field.help ? `${context.id}-help` : undefined} className="grid gap-3">
         <FieldLegend>{field.label}</FieldLegend>
         {rows.map((row, index) => {
           const keyId = `${context.id}-${index}-key`;
@@ -575,16 +545,13 @@ export function SettingsPanel({
   return (
     <div
       className={cn(
-        layout === "grid"
-          ? "grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-4"
-          : "grid gap-5",
+        layout === "grid" ? "grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-4" : "grid gap-5",
         className,
       )}
     >
       {Object.entries(spec.fields).map(([key, field]) => {
         if (pane && (pane === "main" ? field.pane !== "main" : field.pane === "main")) return null;
-        if (field.visibleWhen && values[field.visibleWhen.key] !== field.visibleWhen.equals)
-          return null;
+        if (field.visibleWhen && values[field.visibleWhen.key] !== field.visibleWhen.equals) return null;
         const context: FieldRenderContext = {
           disabled,
           id: `${idPrefix}-${key}`,

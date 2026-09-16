@@ -19,11 +19,7 @@ import {
 import { slugFromName } from "@smarttools/tool-catalog";
 import { Plus } from "lucide-react";
 import { useActionState, useState } from "react";
-import {
-  categoriesForApp,
-  TOOL_CATEGORIES,
-  type ToolApp,
-} from "../../../../../lib/tool-framework/categories";
+import { categoriesForApp, TOOL_CATEGORIES, type ToolApp } from "../../../../../lib/tool-framework/categories";
 import { createToolAction, type ToolContentActionState } from "../actions";
 
 const IDLE: ToolContentActionState = { status: "idle", message: "" };
@@ -68,14 +64,10 @@ export function NewToolDialog() {
       <AlertDialogContent className="inset-0 m-auto h-fit max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] translate-x-0 translate-y-0 overflow-y-auto data-[size=default]:sm:max-w-3xl">
         <AlertDialogHeader>
           <AlertDialogTitle>Create a tool&apos;s configuration</AlertDialogTitle>
-          <AlertDialogDescription>
-            Set up the tool’s details; deploy its code separately.
-          </AlertDialogDescription>
+          <AlertDialogDescription>Set up the tool’s details; deploy its code separately.</AlertDialogDescription>
         </AlertDialogHeader>
 
-        {state.status === "error" ? (
-          <AlertBanner variant="error">{state.message}</AlertBanner>
-        ) : null}
+        {state.status === "error" ? <AlertBanner variant="error">{state.message}</AlertBanner> : null}
 
         <form action={submit} className="grid gap-6">
           <input name="app" type="hidden" value={app} />
@@ -86,11 +78,7 @@ export function NewToolDialog() {
             htmlFor="new-tool-app"
             label="App"
           >
-            <Select
-              id="new-tool-app"
-              onChange={(event) => chooseApp(event.target.value as ToolApp)}
-              value={app}
-            >
+            <Select id="new-tool-app" onChange={(event) => chooseApp(event.target.value as ToolApp)} value={app}>
               {APPS.map((option) => (
                 <option key={option.app} value={option.app}>
                   {option.label}

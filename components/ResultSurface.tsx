@@ -2,12 +2,7 @@
 
 import { Upload } from "lucide-react";
 
-import {
-  getResultCount,
-  ResultActions,
-  ResultView,
-  type ResultViewProps,
-} from "@/components/ResultView";
+import { getResultCount, ResultActions, ResultView, type ResultViewProps } from "@/components/ResultView";
 import { WorkspaceSurface } from "@/components/Surfaces";
 import type { ToolResult } from "@/lib/tool-framework/result";
 import type { ToolSpec } from "@/lib/tool-framework/spec";
@@ -42,14 +37,8 @@ export function ResultSurface({
   const cardJson = result?.render === "json-tree" && variant === "card";
   const hasResultActions =
     result?.render !== "files" &&
-    Boolean(
-      cardJson ||
-      (result?.render !== "json-tree" && (spec.capabilities?.copy || spec.capabilities?.download)),
-    );
-  const jsonHeader =
-    result?.render === "json-tree" && !cardJson ? (
-      <span className="sr-only">{title}</span>
-    ) : undefined;
+    Boolean(cardJson || (result?.render !== "json-tree" && (spec.capabilities?.copy || spec.capabilities?.download)));
+  const jsonHeader = result?.render === "json-tree" && !cardJson ? <span className="sr-only">{title}</span> : undefined;
   return (
     <WorkspaceSurface
       actions={
@@ -67,13 +56,7 @@ export function ResultSurface({
       state={state}
       stateDescription={error ?? (running ? spec.labels.running : spec.labels.empty)}
       stateIcon={running ? <Upload aria-hidden="true" className="animate-pulse" /> : undefined}
-      stateTitle={
-        error
-          ? "Unable to create the result"
-          : running
-            ? spec.labels.running
-            : "Result will appear here"
-      }
+      stateTitle={error ? "Unable to create the result" : running ? spec.labels.running : "Result will appear here"}
       status={
         state === "ready" ? (
           variant === "card" ? undefined : (

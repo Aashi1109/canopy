@@ -17,8 +17,7 @@ import {
   mergeRoleAccess,
 } from "../packages/authorization/src/index.ts";
 
-const USER_DESCRIPTION =
-  "Default role assigned to every account. Does not grant access to the Admin application.";
+const USER_DESCRIPTION = "Default role assigned to every account. Does not grant access to the Admin application.";
 const ADMIN_DESCRIPTION =
   "Protected operational role for managing SmartTools, users, roles, templates, features, and audit history.";
 
@@ -92,11 +91,7 @@ test("system Admin uses current built-in grants even when stored grants predate 
     assert.equal(hasPermission(access, "blog", action), true);
   }
   assert.equal(
-    hasPermission(
-      mergeRoleAccess([customRole({ name: "Admin", access: legacyAccess })]),
-      "blog",
-      "view",
-    ),
+    hasPermission(mergeRoleAccess([customRole({ name: "Admin", access: legacyAccess })]), "blog", "view"),
     false,
   );
   assert.equal(legacyAccess.blog, undefined, "stored grants are not mutated");
@@ -148,22 +143,10 @@ test("multiple roles combine only positive grants and missing grants deny", () =
 
 test("access validation rejects malformed and unknown permissions", () => {
   assert.doesNotThrow(() => assertValidAccess({ tools: { view: true, edit: false } }));
-  assert.throws(
-    () => assertValidAccess({ billing: { view: true } }),
-    /Unknown permission resource: billing/,
-  );
-  assert.throws(
-    () => assertValidAccess({ tools: { launch: true } }),
-    /Unknown permission: tools\.launch/,
-  );
-  assert.throws(
-    () => assertValidAccess({ tools: { view: "yes" } }),
-    /Permission tools\.view must be boolean/,
-  );
-  assert.throws(
-    () => assertValidAccess({ tools: null }),
-    /Permissions for tools must be an object/,
-  );
+  assert.throws(() => assertValidAccess({ billing: { view: true } }), /Unknown permission resource: billing/);
+  assert.throws(() => assertValidAccess({ tools: { launch: true } }), /Unknown permission: tools\.launch/);
+  assert.throws(() => assertValidAccess({ tools: { view: "yes" } }), /Permission tools\.view must be boolean/);
+  assert.throws(() => assertValidAccess({ tools: null }), /Permissions for tools must be an object/);
   assert.throws(() => assertValidAccess(null), /Access must be an object/);
   assert.throws(
     () => mergeRoleAccess([customRole({ access: { tools: { launch: true } } })]),
@@ -185,26 +168,16 @@ test("permission prerequisites apply to effective grants without silently granti
     for (const action of Object.keys(actions)) {
       assert.equal(hasPermission(ADMIN_ACCESS, resource, action), true);
       if (resource === "admin") continue;
-      assert.equal(
-        hasPermission({ [resource]: { view: true, [action]: true } }, resource, action),
-        false,
-      );
+      assert.equal(hasPermission({ [resource]: { view: true, [action]: true } }, resource, action), false);
       if (action !== "view") {
         assert.equal(
-          hasPermission(
-            { admin: { enter: true }, [resource]: { [action]: true } },
-            resource,
-            action,
-          ),
+          hasPermission({ admin: { enter: true }, [resource]: { [action]: true } }, resource, action),
           false,
         );
       }
     }
   }
-  assert.throws(
-    () => assertAccessPrerequisites({ tools: { view: true } }),
-    /tools.view requires admin.enter/,
-  );
+  assert.throws(() => assertAccessPrerequisites({ tools: { view: true } }), /tools.view requires admin.enter/);
   assert.throws(
     () => assertAccessPrerequisites({ admin: { enter: true }, tools: { edit: true } }),
     /tools.edit requires tools.view/,
@@ -273,10 +246,7 @@ test("a suspended final admin remains protected from demotion and deletion", () 
 });
 
 test("invalid role and admin counts fail closed", () => {
-  assert.throws(
-    () => assertCanDeleteRole(customRole(), -1),
-    /Assigned user count must be a non-negative integer/,
-  );
+  assert.throws(() => assertCanDeleteRole(customRole(), -1), /Assigned user count must be a non-negative integer/);
   assert.throws(
     () =>
       assertCanSuspendUser(user({ roles: ["admin"] }), {

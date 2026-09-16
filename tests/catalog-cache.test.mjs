@@ -103,11 +103,7 @@ test("catalog caches database data, preserves published content, and refreshes a
   await catalogCache.delete("all");
   const updated = await getTools();
   assert.equal(updated[0].name, "Updated name");
-  assert.notEqual(
-    updated[0].seoTitle,
-    "Published title",
-    "unpublished content cannot leak from cache",
-  );
+  assert.notEqual(updated[0].seoTitle, "Published title", "unpublished content cannot leak from cache");
   assert.equal(fixture.reads, 2);
 
   cached = "{broken";

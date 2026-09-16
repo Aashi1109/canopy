@@ -16,10 +16,7 @@ import {
   validatePdfInput,
 } from "../../lib/tool-framework/media/pdfDocument.ts";
 import { processStructuralPages } from "../../lib/tool-framework/media/pdfRules.ts";
-import {
-  createOutputFilename,
-  validatePdfSelection,
-} from "../../lib/tool-framework/media/validation.ts";
+import { createOutputFilename, validatePdfSelection } from "../../lib/tool-framework/media/validation.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import { parsePageSelection, type SettingsOf } from "../../lib/tool-framework/settings.ts";
@@ -38,10 +35,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   enforcePageLimit(input, count, false);
 
   const requested = parsePageSelection(ctx.settings.pages, count);
-  const pages = checkedPages(
-    requested === "all" ? Array.from({ length: count }, (_, i) => i + 1) : requested,
-    count,
-  );
+  const pages = checkedPages(requested === "all" ? Array.from({ length: count }, (_, i) => i + 1) : requested, count);
   if (pages.length >= count) {
     throw new ToolError("empty-document", "At least one PDF page must remain.");
   }

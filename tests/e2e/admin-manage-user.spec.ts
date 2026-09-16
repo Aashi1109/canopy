@@ -2,10 +2,7 @@ import { expect, test } from "@playwright/test";
 import { E2E_ACCOUNTS, E2E_PASSWORD } from "./fixtures/accounts";
 import { AuthPage } from "./pages/AuthPage";
 
-test("manage user preserves collapsed role edits and discards them on cancel", async ({
-  page,
-  baseURL,
-}) => {
+test("manage user preserves collapsed role edits and discards them on cancel", async ({ page, baseURL }) => {
   await new AuthPage(page).signIn(
     E2E_ACCOUNTS.admin.email,
     E2E_PASSWORD,

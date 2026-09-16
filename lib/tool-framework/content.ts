@@ -84,10 +84,7 @@ function coalesceText(stored: string | null, fallback: string): string {
  * keywords is always an editing accident, and the same rule already applies to
  * blank stored names in the manifest merge.
  */
-function coalesceKeywords(
-  stored: readonly string[] | null,
-  fallback: readonly string[],
-): readonly string[] {
+function coalesceKeywords(stored: readonly string[] | null, fallback: readonly string[]): readonly string[] {
   if (!Array.isArray(stored)) return fallback;
   const cleaned = stored
     .filter((value): value is string => typeof value === "string")
@@ -153,7 +150,5 @@ export function resolveContentMap(
     if (!rowById.has(row.toolId)) rowById.set(row.toolId, row);
   }
 
-  return new Map(
-    specs.map((spec) => [spec.toolId, resolveContent(spec, rowById.get(spec.toolId) ?? null)]),
-  );
+  return new Map(specs.map((spec) => [spec.toolId, resolveContent(spec, rowById.get(spec.toolId) ?? null)]));
 }

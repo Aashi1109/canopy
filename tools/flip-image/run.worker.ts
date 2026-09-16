@@ -24,10 +24,7 @@ import {
   type OutputImageFormat,
 } from "../../lib/tool-framework/media/imageCodec.ts";
 import { writeArtifactBatch } from "../../lib/tool-framework/media/zip.ts";
-import {
-  createOutputFilename,
-  validateImageSelection,
-} from "../../lib/tool-framework/media/validation.ts";
+import { createOutputFilename, validateImageSelection } from "../../lib/tool-framework/media/validation.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";

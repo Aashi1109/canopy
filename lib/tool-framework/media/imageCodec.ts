@@ -15,11 +15,7 @@ import {
   rotatedDimensions,
   type QuarterTurn,
 } from "./geometry.ts";
-import {
-  validateDecodedImageDimensions,
-  validateMediaSignature,
-  type MediaKind,
-} from "./validation.ts";
+import { validateDecodedImageDimensions, validateMediaSignature, type MediaKind } from "./validation.ts";
 
 export type OutputImageFormat = "jpeg" | "png" | "webp";
 
@@ -52,10 +48,7 @@ export type ResizeRequest = {
   readonly fit: "contain" | "cover" | "stretch";
 };
 
-export async function decodeImage(
-  file: ToolRunFile,
-  allowed: readonly DecodableImageKind[],
-): Promise<DecodedImage> {
+export async function decodeImage(file: ToolRunFile, allowed: readonly DecodableImageKind[]): Promise<DecodedImage> {
   const data = await readToolFile(file);
   const bytes = new Uint8Array(data);
   const signature = validateMediaSignature(bytes, file.mime, allowed);
@@ -195,17 +188,7 @@ export function cropImage(image: ImageData, requested: CropRequest): ImageData {
   );
   const canvas = new OffscreenCanvas(crop.width, crop.height);
   const source = canvasFromImage(image);
-  context2d(canvas).drawImage(
-    source,
-    crop.x,
-    crop.y,
-    crop.width,
-    crop.height,
-    0,
-    0,
-    crop.width,
-    crop.height,
-  );
+  context2d(canvas).drawImage(source, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
   source.width = 1;
   source.height = 1;
   const output = imageFromCanvas(canvas);
@@ -234,10 +217,7 @@ export function flipImage(image: ImageData, axis: "horizontal" | "vertical"): Im
   const source = canvasFromImage(image);
   const canvas = new OffscreenCanvas(image.width, image.height);
   const context = context2d(canvas);
-  context.translate(
-    axis === "horizontal" ? image.width : 0,
-    axis === "vertical" ? image.height : 0,
-  );
+  context.translate(axis === "horizontal" ? image.width : 0, axis === "vertical" ? image.height : 0);
   context.scale(axis === "horizontal" ? -1 : 1, axis === "vertical" ? -1 : 1);
   context.drawImage(source, 0, 0);
   source.width = 1;
@@ -275,8 +255,7 @@ export function imageFromCanvas(canvas: OffscreenCanvas): ImageData {
 
 export function context2d(canvas: OffscreenCanvas): OffscreenCanvasRenderingContext2D {
   const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context)
-    throw new ToolError("canvas-unavailable", "This browser cannot create an image canvas.");
+  if (!context) throw new ToolError("canvas-unavailable", "This browser cannot create an image canvas.");
   return context;
 }
 

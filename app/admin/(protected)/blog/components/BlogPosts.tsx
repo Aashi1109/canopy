@@ -97,9 +97,7 @@ export function BlogPosts({
       }
       setSelected(null);
       setUndo(
-        operation === "trash" && "version" in result.data
-          ? { postId: source.id, version: result.data.version }
-          : null,
+        operation === "trash" && "version" in result.data ? { postId: source.id, version: result.data.version } : null,
       );
       setNotice(
         operation === "trash"
@@ -261,11 +259,7 @@ export function BlogPosts({
         taxonomyHref={canManageTerms ? "/admin/blog/taxonomy" : undefined}
         onFiltersChange={(next) => {
           setFilters(next);
-          if (
-            next.status !== filters.status ||
-            next.category !== filters.category ||
-            (filters.search && !next.search)
-          )
+          if (next.status !== filters.status || next.category !== filters.category || (filters.search && !next.search))
             startNavigation(() => router.push(href(next)));
         }}
         onSearch={() => startNavigation(() => router.push(href(filters)))}
@@ -294,9 +288,7 @@ export function BlogPosts({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              Move this {selected?.status === "draft" ? "draft" : "post"} to trash?
-            </AlertDialogTitle>
+            <AlertDialogTitle>Move this {selected?.status === "draft" ? "draft" : "post"} to trash?</AlertDialogTitle>
             <AlertDialogDescription>
               “{selected?.title || "Untitled post"}” will leave your post list.{" "}
               {selected?.status === "published" || selected?.status === "update-scheduled"

@@ -115,9 +115,7 @@ for (const viewport of [
   { width: 1280, height: 800 },
   { width: 390, height: 844 },
 ]) {
-  test(`navbar follows scroll direction without jumping or jitter at ${viewport.width}px`, async ({
-    page,
-  }) => {
+  test(`navbar follows scroll direction without jumping or jitter at ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await expectHeader(page, true);
     const renders = await page.getByLabel("Navigation child render count").textContent();
@@ -143,16 +141,12 @@ for (const viewport of [
     await expectHeader(page, true);
     await scrollTo(page, 0);
     await expectHeader(page, true);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
-      true,
-    );
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await expect(page.getByLabel("Navigation child render count")).toHaveText(renders!);
   });
 }
 
-test("focus and an open account menu keep navigation available; nested scroll is ignored", async ({
-  page,
-}) => {
+test("focus and an open account menu keep navigation available; nested scroll is ignored", async ({ page }) => {
   const account = page.getByRole("button", { name: "Account", exact: true });
   await account.focus();
   await scrollTo(page, 500);

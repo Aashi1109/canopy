@@ -69,8 +69,7 @@ function canvasFixture(t, result) {
     width: 0,
     height: 0,
     getContext: () => ({ drawImage: (...args) => calls.push(args) }),
-    toBlob: (callback, type) =>
-      callback(result === undefined ? new Blob(["crop"], { type }) : result),
+    toBlob: (callback, type) => callback(result === undefined ? new Blob(["crop"], { type }) : result),
   };
   const previous = globalThis.document;
   globalThis.document = { createElement: () => canvas };
@@ -103,8 +102,7 @@ test("failed, oversized, fallback-format and out-of-bounds crops reject without 
   const box = { x: 0, y: 0, width: 300, height: 200 };
   const { canvas } = canvasFixture(t, null);
   await assert.rejects(cropBlogImage(source, box, "png"), /crop|Crop/);
-  canvas.toBlob = (callback) =>
-    callback(new Blob([new Uint8Array(5 * 1024 * 1024 + 1)], { type: "image/png" }));
+  canvas.toBlob = (callback) => callback(new Blob([new Uint8Array(5 * 1024 * 1024 + 1)], { type: "image/png" }));
   await assert.rejects(cropBlogImage(source, box, "png"), /5 MiB/);
   canvas.toBlob = (callback) => callback(new Blob(["crop"], { type: "image/png" }));
   await assert.rejects(cropBlogImage(source, box, "webp"), /support/);

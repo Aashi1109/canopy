@@ -32,18 +32,11 @@ export function MediaOutputCard({
   error,
   className,
 }: MediaOutputCardProps) {
-  const actionLabel = onRemove
-    ? `Remove ${name}`
-    : error
-      ? `Retry download of ${name}`
-      : `Download ${name}`;
+  const actionLabel = onRemove ? `Remove ${name}` : error ? `Retry download of ${name}` : `Download ${name}`;
   return (
     <TooltipProvider>
       <article
-        className={cn(
-          "flex min-w-0 flex-col gap-2 rounded-xl border border-border bg-card p-2",
-          className,
-        )}
+        className={cn("flex min-w-0 flex-col gap-2 rounded-xl border border-border bg-card p-2", className)}
         data-slot="media-output-card"
       >
         <div className="relative">
@@ -96,11 +89,7 @@ export function MediaOutputCard({
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {downloading
-                    ? "Preparing download…"
-                    : disabled
-                      ? "Wait for processing to finish"
-                      : actionLabel}
+                  {downloading ? "Preparing download…" : disabled ? "Wait for processing to finish" : actionLabel}
                 </TooltipContent>
               </Tooltip>
             )}

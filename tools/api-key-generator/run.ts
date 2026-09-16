@@ -28,13 +28,9 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     );
   }
   const qualifiedPrefix =
-    ctx.settings.environment === "none"
-      ? prefix
-      : [prefix, ctx.settings.environment].filter(Boolean).join("_");
+    ctx.settings.environment === "none" ? prefix : [prefix, ctx.settings.environment].filter(Boolean).join("_");
   const selectedAlphabet = ALPHABETS[ctx.settings.characterSet];
-  const alphabet = ctx.settings.avoidAmbiguous
-    ? selectedAlphabet.replace(/[01IOl]/g, "")
-    : selectedAlphabet;
+  const alphabet = ctx.settings.avoidAmbiguous ? selectedAlphabet.replace(/[01IOl]/g, "") : selectedAlphabet;
   return {
     render: "list",
     items: Array.from({ length: ctx.settings.count }, () => {

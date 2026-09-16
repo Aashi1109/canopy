@@ -21,10 +21,7 @@ const slugSchema = z
   .max(160)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 
-export function blogCanonicalUrl(
-  slug: string,
-  appUrl = process.env.APP_URL ?? "http://localhost:3000",
-): string {
+export function blogCanonicalUrl(slug: string, appUrl = process.env.APP_URL ?? "http://localhost:3000"): string {
   slugSchema.parse(slug);
   const base = new URL(appUrl);
   if (!["https:", "http:"].includes(base.protocol) || base.username || base.password)
@@ -101,10 +98,7 @@ function xml(value: string): string {
   return value
     .toWellFormed()
     .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/gu, "")
-    .replace(
-      /[&<>"']/g,
-      (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[char]!,
-    );
+    .replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[char]!);
 }
 
 /** The caller supplies only published summaries from listPublishedBlogPosts. */

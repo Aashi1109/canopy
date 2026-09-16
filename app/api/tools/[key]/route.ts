@@ -69,10 +69,7 @@ function toFailure(error: unknown): NextResponse {
   );
 }
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ key: string }> },
-): Promise<NextResponse> {
+export async function POST(request: Request, { params }: { params: Promise<{ key: string }> }): Promise<NextResponse> {
   try {
     const { key } = await params;
     // `key` is untrusted and is about to become part of a module path.
@@ -82,8 +79,7 @@ export async function POST(
 
     // This header is spoofable unless a trusted proxy overwrites it. Taking
     // only the first hop makes this a quota speed bump, not authorization.
-    const clientKey =
-      request.headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim() || "unknown-client";
+    const clientKey = request.headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim() || "unknown-client";
     const rateLimit = checkRateLimit(`${key}:${clientKey}`);
     if (!rateLimit.allowed) {
       return NextResponse.json(
@@ -134,10 +130,7 @@ export async function POST(
       signal: request.signal,
       progress: () => {},
       writeArtifact: async () => {
-        throw new ToolError(
-          "artifact-unsupported",
-          "This server-hosted tool cannot create a browser-local artifact.",
-        );
+        throw new ToolError("artifact-unsupported", "This server-hosted tool cannot create a browser-local artifact.");
       },
     });
 

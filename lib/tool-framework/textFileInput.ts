@@ -50,9 +50,6 @@ async function readUtf8Prefix(file: File, limit: number): Promise<string> {
   return new TextDecoder().decode(bytes.subarray(0, end));
 }
 
-export function isLargeTextFile(
-  file: File | undefined,
-  maxEditableBytes = MAX_EDITABLE_TEXT_CHARS,
-): boolean {
+export function isLargeTextFile(file: File | undefined, maxEditableBytes = MAX_EDITABLE_TEXT_CHARS): boolean {
   return Boolean(file && file.size > maxEditableBytes);
 }

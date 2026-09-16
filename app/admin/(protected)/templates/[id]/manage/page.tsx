@@ -1,17 +1,5 @@
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
-import {
-  H3,
-  Caption,
-  H1,
-  P,
-  Text,
-  Field,
-  Input,
-  Select,
-  StatusBadge,
-  Textarea,
-  buttonVariants,
-} from "@smarttools/ui";
+import { H3, Caption, H1, P, Text, Field, Input, Select, StatusBadge, Textarea, buttonVariants } from "@smarttools/ui";
 import { ArrowLeft, Copy, Eye, FilePenLine } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -37,9 +25,7 @@ export default async function ManageTemplatePage({ params }: { params: Promise<{
   if (!template) notFound();
 
   const isAdvanced = template.layoutFamily === "advanced";
-  const editorHref = isAdvanced
-    ? `/admin/templates/${template.id}/advanced`
-    : `/admin/templates/${template.id}`;
+  const editorHref = isAdvanced ? `/admin/templates/${template.id}/advanced` : `/admin/templates/${template.id}`;
   const previewHref = isAdvanced ? editorHref : `/admin/templates/${template.id}/preview`;
 
   return (
@@ -63,27 +49,20 @@ export default async function ManageTemplatePage({ params }: { params: Promise<{
               <StatusBadge
                 className="min-h-6 px-2.5"
                 variant={
-                  template.status === "published"
-                    ? "success"
-                    : template.status === "archived"
-                      ? "archived"
-                      : "warning"
+                  template.status === "published" ? "success" : template.status === "archived" ? "archived" : "warning"
                 }
               >
                 {template.status}
               </StatusBadge>
             </div>
             <Caption className="block mt-1 text-muted-foreground">
-              {template.documentType.replaceAll("-", " ")} · {isAdvanced ? "Advanced" : "Standard"}{" "}
-              editor · /{template.slug}
+              {template.documentType.replaceAll("-", " ")} · {isAdvanced ? "Advanced" : "Standard"} editor · /
+              {template.slug}
             </Caption>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link
-            className={buttonVariants({ className: "rounded-full", variant: "secondary" })}
-            href={previewHref}
-          >
+          <Link className={buttonVariants({ className: "rounded-full", variant: "secondary" })} href={previewHref}>
             <Eye aria-hidden="true" className="size-4" />
             Preview
           </Link>
@@ -121,20 +100,11 @@ export default async function ManageTemplatePage({ params }: { params: Promise<{
                   <Input defaultValue={template.name} name="name" required />
                 </Field>
                 <Field description="Permanent" htmlFor="template-slug" label="Slug">
-                  <Input
-                    className="bg-muted text-muted-foreground"
-                    readOnly
-                    value={template.slug}
-                  />
+                  <Input className="bg-muted text-muted-foreground" readOnly value={template.slug} />
                 </Field>
               </div>
               <Field htmlFor="template-description" label="Description" required>
-                <Textarea
-                  className="min-h-24"
-                  defaultValue={template.description ?? ""}
-                  name="description"
-                  required
-                />
+                <Textarea className="min-h-24" defaultValue={template.description ?? ""} name="description" required />
               </Field>
               <div className="grid gap-5 sm:grid-cols-2">
                 <Field htmlFor="template-document-type" label="Document type">
@@ -185,10 +155,7 @@ export default async function ManageTemplatePage({ params }: { params: Promise<{
         </main>
 
         <aside className="grid gap-4 lg:sticky lg:top-0">
-          <section
-            className="rounded-xl border border-border bg-card p-5 shadow-sm"
-            aria-labelledby="lifecycle-title"
-          >
+          <section className="rounded-xl border border-border bg-card p-5 shadow-sm" aria-labelledby="lifecycle-title">
             <H3 id="lifecycle-title" className="text-foreground">
               Lifecycle
             </H3>
@@ -203,11 +170,7 @@ export default async function ManageTemplatePage({ params }: { params: Promise<{
               </div>
               <StatusBadge
                 variant={
-                  template.status === "published"
-                    ? "success"
-                    : template.status === "archived"
-                      ? "archived"
-                      : "warning"
+                  template.status === "published" ? "success" : template.status === "archived" ? "archived" : "warning"
                 }
               >
                 v{template.version}
@@ -215,9 +178,7 @@ export default async function ManageTemplatePage({ params }: { params: Promise<{
             </div>
             <div className="mt-5 rounded-lg bg-primary/10 p-4">
               <P className="text-primary">v{template.version}</P>
-              <Caption className="block mt-1 text-muted-foreground">
-                current template version
-              </Caption>
+              <Caption className="block mt-1 text-muted-foreground">current template version</Caption>
             </div>
             <div className="mt-5 grid gap-2">
               {template.status === "draft" ? (
@@ -239,10 +200,7 @@ export default async function ManageTemplatePage({ params }: { params: Promise<{
             </div>
           </section>
 
-          <section
-            className="rounded-xl border border-border bg-card p-5 shadow-sm"
-            aria-labelledby="duplicate-title"
-          >
+          <section className="rounded-xl border border-border bg-card p-5 shadow-sm" aria-labelledby="duplicate-title">
             <div className="flex items-center gap-2">
               <Copy aria-hidden="true" className="size-4 text-primary" />
               <H3 id="duplicate-title" className="text-foreground">
@@ -255,12 +213,7 @@ export default async function ManageTemplatePage({ params }: { params: Promise<{
                 <Input defaultValue={`${template.name} Copy`} name="name" required />
               </Field>
               <Field htmlFor="duplicate-slug" label="Unique slug" required>
-                <Input
-                  defaultValue={`${template.slug}-copy`}
-                  name="slug"
-                  pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-                  required
-                />
+                <Input defaultValue={`${template.slug}-copy`} name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required />
               </Field>
               <SubmitButton className="w-full" type="submit" variant="secondary">
                 Duplicate template
@@ -269,10 +222,7 @@ export default async function ManageTemplatePage({ params }: { params: Promise<{
           </section>
 
           {template.status !== "archived" ? (
-            <section
-              className="rounded-xl border border-destructive bg-card p-5"
-              aria-labelledby="archive-title"
-            >
+            <section className="rounded-xl border border-destructive bg-card p-5" aria-labelledby="archive-title">
               <H3 id="archive-title" className="text-destructive">
                 Archive template
               </H3>

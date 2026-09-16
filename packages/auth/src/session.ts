@@ -48,9 +48,7 @@ export async function getSession(requestHeaders: Headers): Promise<AuthServiceSe
   }
 }
 
-export async function getOptionalSession(
-  requestHeaders: Headers,
-): Promise<AuthServiceSession | null> {
+export async function getOptionalSession(requestHeaders: Headers): Promise<AuthServiceSession | null> {
   try {
     return await getSession(requestHeaders);
   } catch (error) {

@@ -27,10 +27,7 @@ import {
   processStructuralPages,
   wrapPageContentsWithClip,
 } from "../../lib/tool-framework/media/pdfRules.ts";
-import {
-  createOutputFilename,
-  validatePdfSelection,
-} from "../../lib/tool-framework/media/validation.ts";
+import { createOutputFilename, validatePdfSelection } from "../../lib/tool-framework/media/validation.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
@@ -65,11 +62,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     (index) => {
       ctx.signal.throwIfAborted();
       const page = pdf.getPage(index);
-      const requested = pdfSize(
-        namedSize(ctx.settings.pageSize),
-        ctx.settings.width,
-        ctx.settings.height,
-      );
+      const requested = pdfSize(namedSize(ctx.settings.pageSize), ctx.settings.width, ctx.settings.height);
       const target =
         ctx.settings.orientation === "landscape" && requested.width < requested.height
           ? { width: requested.height, height: requested.width }

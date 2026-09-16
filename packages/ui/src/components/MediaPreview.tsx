@@ -57,16 +57,12 @@ export function MediaPreview({
           data-slot="media-preview"
           onEscapeKeyDown={(event) => {
             // Nested navigation handles Escape before the full-screen dialog.
-            if (
-              event.target instanceof Element &&
-              event.target.closest("[data-preview-escape-boundary]")
-            ) {
+            if (event.target instanceof Element && event.target.closest("[data-preview-escape-boundary]")) {
               event.preventDefault();
             }
           }}
           onOpenAutoFocus={() => {
-            returnFocusRef.current =
-              document.activeElement instanceof HTMLElement ? document.activeElement : null;
+            returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
           }}
           onCloseAutoFocus={(event) => {
             const target = returnFocusRef.current;
@@ -98,10 +94,7 @@ export function MediaPreview({
               <Dialog.Close asChild>
                 <Button variant="secondary">
                   Exit preview
-                  <kbd
-                    aria-hidden="true"
-                    className="hidden text-xs font-normal text-muted-foreground sm:inline"
-                  >
+                  <kbd aria-hidden="true" className="hidden text-xs font-normal text-muted-foreground sm:inline">
                     Esc
                   </kbd>
                 </Button>
@@ -119,15 +112,9 @@ export function MediaPreview({
           </div>
           {hasFooter && (
             <footer className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-border bg-card/95 px-4 py-4 text-sm sm:min-h-19 sm:px-6">
-              {status != null && (
-                <div className="min-w-0 break-words text-muted-foreground">{status}</div>
-              )}
-              {controls != null && (
-                <div className="flex min-w-0 flex-wrap items-center gap-2">{controls}</div>
-              )}
-              {hint != null && (
-                <div className="min-w-0 break-words text-muted-foreground">{hint}</div>
-              )}
+              {status != null && <div className="min-w-0 break-words text-muted-foreground">{status}</div>}
+              {controls != null && <div className="flex min-w-0 flex-wrap items-center gap-2">{controls}</div>}
+              {hint != null && <div className="min-w-0 break-words text-muted-foreground">{hint}</div>}
             </footer>
           )}
         </Dialog.Content>

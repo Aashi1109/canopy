@@ -35,11 +35,7 @@ test("loading buttons remain labelled and disable activation until ready", () =>
   const ready = renderToStaticMarkup(createElement(Button, null, "Save"));
   assert.doesNotMatch(ready, /disabled=|aria-busy="true"|<svg/);
   const link = renderToStaticMarkup(
-    createElement(
-      Button,
-      { asChild: true, loading: true },
-      createElement("a", { href: "/admin" }, "Open"),
-    ),
+    createElement(Button, { asChild: true, loading: true }, createElement("a", { href: "/admin" }, "Open")),
   );
   assert.match(link, /<a[^>]*inert=""/);
   assert.match(link, /aria-disabled="true"/);

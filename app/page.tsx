@@ -23,8 +23,7 @@ const projects = [
     number: "01",
     category: "Business documents",
     name: "Paperwork",
-    description:
-      "Create invoices, receipts, expense reports, tax estimates, and contractor records.",
+    description: "Create invoices, receipts, expense reports, tax estimates, and contractor records.",
     href: "/paperwork",
   },
   {
@@ -59,9 +58,7 @@ export default async function HomePage() {
         <section className="overflow-hidden border-b border-border bg-card">
           <div className="mx-auto grid max-w-7xl lg:grid-cols-[minmax(0,1.08fr)_minmax(28rem,0.92fr)]">
             <div className="flex min-h-[36rem] flex-col justify-center px-4 py-16 sm:px-6 sm:py-20 lg:min-h-[44rem] lg:border-r lg:border-border lg:px-8 lg:py-24">
-              <Overline className="block mb-6 text-primary">
-                Focused utilities for everyday work
-              </Overline>
+              <Overline className="block mb-6 text-primary">Focused utilities for everyday work</Overline>
               <Display className="max-w-4xl">
                 Less time
                 <br />
@@ -72,8 +69,8 @@ export default async function HomePage() {
                 and done.
               </Display>
               <Muted className="mt-8 max-w-xl text-muted-foreground">
-                SmartTools brings image and PDF tools, business paperwork, and developer utilities
-                into one clear place to start.
+                SmartTools brings image and PDF tools, business paperwork, and developer utilities into one clear place
+                to start.
               </Muted>
               <div className="mt-9 flex flex-wrap gap-3">
                 <Button asChild className="h-auto min-h-12 rounded-none px-5 hover:bg-foreground">
@@ -155,8 +152,7 @@ export default async function HomePage() {
                 </P>
                 <H3 className="mt-10">Create the document</H3>
                 <Muted className="mt-3 text-muted-foreground">
-                  Build invoices, receipts, expense reports, tax estimates, and contractor records
-                  in Paperwork.
+                  Build invoices, receipts, expense reports, tax estimates, and contractor records in Paperwork.
                 </Muted>
               </article>
               <article className="border-b border-border p-6 sm:border-r sm:border-b-0 lg:p-8">

@@ -11,12 +11,7 @@ export function PasswordInput({ className, disabled, ...props }: Omit<InputProps
 
   return (
     <div className="relative w-full">
-      <Input
-        {...props}
-        className={cn("pr-12", className)}
-        disabled={disabled}
-        type={revealed ? "text" : "password"}
-      />
+      <Input {...props} className={cn("pr-12", className)} disabled={disabled} type={revealed ? "text" : "password"} />
       <Button
         aria-label={revealed ? "Hide password" : "Show password"}
         className="absolute right-0 top-0 h-full"

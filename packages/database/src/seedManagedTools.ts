@@ -52,9 +52,7 @@ function parseToolDefinition(definitionKey: string, value: unknown): SeedToolSpe
 
   const expectedToolId = `${value.app}.${definitionKey}`;
   if (value.toolId !== expectedToolId) {
-    throw new Error(
-      `✗ ${location}: toolId must be "${expectedToolId}" to match its app and folder.`,
-    );
+    throw new Error(`✗ ${location}: toolId must be "${expectedToolId}" to match its app and folder.`);
   }
   if (typeof value.name !== "string" || !value.name.trim()) {
     throw new Error(`✗ ${location}: name must be a non-empty string.`);
@@ -65,10 +63,7 @@ function parseToolDefinition(definitionKey: string, value: unknown): SeedToolSpe
   if (typeof value.category !== "string" || !value.category.trim()) {
     throw new Error(`✗ ${location}: category must be a non-empty string.`);
   }
-  if (
-    !Array.isArray(value.keywords) ||
-    !value.keywords.every((keyword) => typeof keyword === "string")
-  ) {
+  if (!Array.isArray(value.keywords) || !value.keywords.every((keyword) => typeof keyword === "string")) {
     throw new Error(`✗ ${location}: keywords must be an array of strings.`);
   }
   for (const field of ["input", "settings", "trigger", "labels", "content"]) {
@@ -136,9 +131,7 @@ export async function loadManagedToolDefinitions(): Promise<ManagedToolSeedScan>
   return result;
 }
 
-export async function seedManagedTools(
-  database: PostgresJsDatabase<typeof schema>,
-): Promise<ManagedToolSeedCounts> {
+export async function seedManagedTools(database: PostgresJsDatabase<typeof schema>): Promise<ManagedToolSeedCounts> {
   const scan = await loadManagedToolDefinitions();
 
   /**

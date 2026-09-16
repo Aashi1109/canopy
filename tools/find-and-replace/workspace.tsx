@@ -39,14 +39,8 @@ function PreviewText({ preview }: { preview: ReplacementPreview }) {
         >
           {part.found || "empty match"}
         </Strong>
-        <ArrowRight
-          aria-hidden="true"
-          className="relative top-0.5 inline size-3 shrink-0 text-muted-foreground"
-        />
-        <Strong
-          className="rounded-sm bg-success/10 px-1 text-foreground"
-          data-preview-role="replacement"
-        >
+        <ArrowRight aria-hidden="true" className="relative top-0.5 inline size-3 shrink-0 text-muted-foreground" />
+        <Strong className="rounded-sm bg-success/10 px-1 text-foreground" data-preview-role="replacement">
           {part.replacement || "delete"}
         </Strong>
       </span>
@@ -207,11 +201,7 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
         )}
       </div>
 
-      <ToolOptionsPanel
-        className="h-full overflow-y-auto bg-card p-[18px]"
-        title="FIND & REPLACE"
-        variant="plain"
-      >
+      <ToolOptionsPanel className="h-full overflow-y-auto bg-card p-[18px]" title="FIND & REPLACE" variant="plain">
         <SettingsPanel
           disabled={props.disabled}
           onChange={props.onSettingChange}
@@ -220,8 +210,8 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
           values={props.settings}
         />
         <Muted className="text-muted-foreground">
-          In the source, a red background marks text that will be removed; a green background marks
-          what will replace it. Applied replacements stay highlighted in the result.
+          In the source, a red background marks text that will be removed; a green background marks what will replace
+          it. Applied replacements stay highlighted in the result.
         </Muted>
         {validationReason ? (
           <Muted
@@ -232,8 +222,8 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
           </Muted>
         ) : preview.truncated ? (
           <Muted className="text-muted-foreground" role="status">
-            {preview.count - preview.previewedCount} additional matches will still be replaced; they
-            are grouped in the source to keep the editor responsive.
+            {preview.count - preview.previewedCount} additional matches will still be replaced; they are grouped in the
+            source to keep the editor responsive.
           </Muted>
         ) : null}
       </ToolOptionsPanel>

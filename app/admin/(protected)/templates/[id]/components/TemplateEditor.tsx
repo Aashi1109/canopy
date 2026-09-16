@@ -161,9 +161,7 @@ function EditorSection({
         <Overline className="block text-muted-foreground">
           {number}. {title}
         </Overline>
-        {description ? (
-          <Caption className="block mt-1 text-muted-foreground">{description}</Caption>
-        ) : null}
+        {description ? <Caption className="block mt-1 text-muted-foreground">{description}</Caption> : null}
       </div>
       <SectionCard className="space-y-3 bg-muted/40 p-4 shadow-none [&_input:not([type=color]):not([type=checkbox]):not([type=range])]:h-8 [&_select]:h-8 [&_textarea]:min-h-20">
         {children}
@@ -223,9 +221,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
   const [description, setDescription] = useState(template.description);
   const [category, setCategory] = useState<TemplateCategory>(template.category);
   const [layoutFamily, setLayoutFamily] = useState<LayoutFamily>(template.layoutFamily);
-  const [config, setConfig] = useState<InvoiceTemplateConfig>(() =>
-    structuredClone(template.config),
-  );
+  const [config, setConfig] = useState<InvoiceTemplateConfig>(() => structuredClone(template.config));
   const [editorMode, setEditorMode] = useAdminQueryState("editor", "fields", ["fields", "json"]);
   const [previewMode, setPreviewMode] = useAdminQueryState("preview", "screen", ["screen", "pdf"]);
   const [mobilePane, setMobilePane] = useAdminQueryState("pane", "edit", ["edit", "preview"]);
@@ -258,10 +254,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
       }),
     [template],
   );
-  const previewTemplate = useMemo<InvoiceTemplate>(
-    () => ({ ...template, ...editable }),
-    [template, editable],
-  );
+  const previewTemplate = useMemo<InvoiceTemplate>(() => ({ ...template, ...editable }), [template, editable]);
   const isDirty = serializedTemplate !== initialTemplate;
   const appliedJsonText = useMemo(() => JSON.stringify(config, null, 2), [config]);
   const jsonText = jsonDraft ?? appliedJsonText;
@@ -275,9 +268,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
     return ratio !== null && ratio < 4.5 ? [`${label} is ${ratio.toFixed(1)}:1`] : [];
   });
   const nameError =
-    showValidation && name.trim().length < 2
-      ? "Template name must be at least 2 characters."
-      : undefined;
+    showValidation && name.trim().length < 2 ? "Template name must be at least 2 characters." : undefined;
   const resetEditor = () => {
     if (
       hasUnsavedChanges &&
@@ -313,9 +304,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
       const result = InvoiceTemplateConfigSchema.safeParse(JSON.parse(jsonText));
       if (!result.success) {
         setJsonMessage({
-          text: result.error.issues
-            .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
-            .join("\n"),
+          text: result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("\n"),
           variant: "error",
         });
         return;
@@ -361,9 +350,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
     const result = InvoiceTemplateSchema.safeParse(previewTemplate);
     if (!result.success) {
       event.preventDefault();
-      const message = result.error.issues
-        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
-        .join("\n");
+      const message = result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("\n");
       setFormError(message);
       return;
     }
@@ -391,11 +378,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
               <StatusBadge
                 className="min-h-5 shrink-0 px-2 py-0"
                 variant={
-                  template.status === "published"
-                    ? "success"
-                    : template.status === "archived"
-                      ? "archived"
-                      : "warning"
+                  template.status === "published" ? "success" : template.status === "archived" ? "archived" : "warning"
                 }
               >
                 {template.status}
@@ -488,9 +471,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
         <Button
           aria-pressed={mobilePane === "edit"}
           className={`h-8 ${
-            mobilePane === "edit"
-              ? "bg-background shadow-sm hover:bg-background"
-              : "text-muted-foreground"
+            mobilePane === "edit" ? "bg-background shadow-sm hover:bg-background" : "text-muted-foreground"
           }`}
           onClick={() => setMobilePane("edit")}
           variant="ghost"
@@ -500,9 +481,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
         <Button
           aria-pressed={mobilePane === "preview"}
           className={`h-8 ${
-            mobilePane === "preview"
-              ? "bg-background shadow-sm hover:bg-background"
-              : "text-muted-foreground"
+            mobilePane === "preview" ? "bg-background shadow-sm hover:bg-background" : "text-muted-foreground"
           }`}
           onClick={() => setMobilePane("preview")}
           variant="ghost"
@@ -521,15 +500,8 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
           <input name="templateId" type="hidden" value={template.id} />
           <input name="template" type="hidden" value={serializedTemplate} />
 
-          <Tabs
-            onValueChange={(value) => selectEditorMode(value as "fields" | "json")}
-            value={editorMode}
-          >
-            <TabsList
-              aria-label="Template editor mode"
-              className="grid w-full grid-cols-2"
-              variant="segmented"
-            >
+          <Tabs onValueChange={(value) => selectEditorMode(value as "fields" | "json")} value={editorMode}>
+            <TabsList aria-label="Template editor mode" className="grid w-full grid-cols-2" variant="segmented">
               <TabsTrigger
                 aria-controls="template-fields-panel"
                 className="h-8 w-full data-[state=active]:bg-background data-[state=active]:ring-1 data-[state=active]:ring-border"
@@ -564,18 +536,9 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
               <EditorSection number={1} title="Theme metadata">
                 <div className="grid gap-4">
                   <Field error={nameError} htmlFor="template-name" label="Template name" required>
-                    <Input
-                      name="name"
-                      onChange={(event) => setName(event.target.value)}
-                      required
-                      value={name}
-                    />
+                    <Input name="name" onChange={(event) => setName(event.target.value)} required value={name} />
                   </Field>
-                  <Field
-                    description="Permanent after creation."
-                    htmlFor="template-slug"
-                    label="Slug"
-                  >
+                  <Field description="Permanent after creation." htmlFor="template-slug" label="Slug">
                     <Input
                       aria-readonly="true"
                       className="bg-muted text-muted-foreground"
@@ -630,17 +593,14 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                       id={`theme-${key}`}
                       key={key}
                       label={label}
-                      onChange={(value) =>
-                        setConfig({ ...config, theme: { ...config.theme, [key]: value } })
-                      }
+                      onChange={(value) => setConfig({ ...config, theme: { ...config.theme, [key]: value } })}
                       value={config.theme[key]}
                     />
                   ))}
                 </div>
                 {lowContrastColors.length ? (
                   <AlertBanner variant="warning">
-                    {lowContrastColors.join(" · ")}. Aim for at least 4.5:1 against the paper
-                    surface.
+                    {lowContrastColors.join(" · ")}. Aim for at least 4.5:1 against the paper surface.
                   </AlertBanner>
                 ) : null}
               </EditorSection>
@@ -654,8 +614,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                           ...config,
                           typography: {
                             ...config.typography,
-                            fontFamily: event.target
-                              .value as InvoiceTemplateConfig["typography"]["fontFamily"],
+                            fontFamily: event.target.value as InvoiceTemplateConfig["typography"]["fontFamily"],
                           },
                         })
                       }
@@ -675,8 +634,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                           ...config,
                           typography: {
                             ...config.typography,
-                            headingSize: event.target
-                              .value as InvoiceTemplateConfig["typography"]["headingSize"],
+                            headingSize: event.target.value as InvoiceTemplateConfig["typography"]["headingSize"],
                           },
                         })
                       }
@@ -695,8 +653,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                           ...config,
                           typography: {
                             ...config.typography,
-                            bodySize: event.target
-                              .value as InvoiceTemplateConfig["typography"]["bodySize"],
+                            bodySize: event.target.value as InvoiceTemplateConfig["typography"]["bodySize"],
                           },
                         })
                       }
@@ -714,8 +671,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                           ...config,
                           typography: {
                             ...config.typography,
-                            lineHeight: event.target
-                              .value as InvoiceTemplateConfig["typography"]["lineHeight"],
+                            lineHeight: event.target.value as InvoiceTemplateConfig["typography"]["lineHeight"],
                           },
                         })
                       }
@@ -742,8 +698,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                           },
                           pdf: {
                             ...config.pdf,
-                            pageSize: event.target
-                              .value as InvoiceTemplateConfig["pdf"]["pageSize"],
+                            pageSize: event.target.value as InvoiceTemplateConfig["pdf"]["pageSize"],
                           },
                         })
                       }
@@ -813,8 +768,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                           ...config,
                           header: {
                             ...config.header,
-                            logoPosition: event.target
-                              .value as InvoiceTemplateConfig["header"]["logoPosition"],
+                            logoPosition: event.target.value as InvoiceTemplateConfig["header"]["logoPosition"],
                           },
                         })
                       }
@@ -832,8 +786,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                           ...config,
                           header: {
                             ...config.header,
-                            logoSize: event.target
-                              .value as InvoiceTemplateConfig["header"]["logoSize"],
+                            logoSize: event.target.value as InvoiceTemplateConfig["header"]["logoSize"],
                           },
                         })
                       }
@@ -930,8 +883,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                             ...config,
                             watermark: {
                               ...config.watermark,
-                              position: event.target
-                                .value as InvoiceTemplateConfig["watermark"]["position"],
+                              position: event.target.value as InvoiceTemplateConfig["watermark"]["position"],
                             },
                           })
                         }
@@ -979,15 +931,11 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                   disabled={config.sectionOrder.length < 2}
                   getId={(section) => section}
                   items={config.sectionOrder}
-                  onReorder={(sectionOrder) =>
-                    setConfig((current) => ({ ...current, sectionOrder }))
-                  }
+                  onReorder={(sectionOrder) => setConfig((current) => ({ ...current, sectionOrder }))}
                   renderItem={(section, orderable) => (
                     <div
                       className={`flex items-center gap-2 rounded-lg border border-border px-2 py-2 transition-shadow ${
-                        orderable.isDragging
-                          ? "bg-card shadow-lg ring-1 ring-primary/20"
-                          : "bg-background"
+                        orderable.isDragging ? "bg-card shadow-lg ring-1 ring-primary/20" : "bg-background"
                       }`}
                     >
                       <Button
@@ -1011,25 +959,19 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
 
               <EditorSection number={9} title="Overriding label dictionary">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {(Object.keys(config.labels) as Array<keyof InvoiceTemplateConfig["labels"]>).map(
-                    (key) => (
-                      <Field
-                        htmlFor={`label-${key}`}
-                        key={key}
-                        label={key.replace(/([A-Z])/g, " $1")}
-                      >
-                        <Input
-                          onChange={(event) =>
-                            setConfig({
-                              ...config,
-                              labels: { ...config.labels, [key]: event.target.value },
-                            })
-                          }
-                          value={config.labels[key]}
-                        />
-                      </Field>
-                    ),
-                  )}
+                  {(Object.keys(config.labels) as Array<keyof InvoiceTemplateConfig["labels"]>).map((key) => (
+                    <Field htmlFor={`label-${key}`} key={key} label={key.replace(/([A-Z])/g, " $1")}>
+                      <Input
+                        onChange={(event) =>
+                          setConfig({
+                            ...config,
+                            labels: { ...config.labels, [key]: event.target.value },
+                          })
+                        }
+                        value={config.labels[key]}
+                      />
+                    </Field>
+                  ))}
                 </div>
               </EditorSection>
             </div>
@@ -1042,8 +984,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
               tabIndex={0}
             >
               <AlertBanner title="Advanced JSON workbench" variant="warning">
-                Apply valid configuration JSON before saving or publishing. Server validation still
-                runs on every write.
+                Apply valid configuration JSON before saving or publishing. Server validation still runs on every write.
               </AlertBanner>
               <Field htmlFor="template-config-json" label="Config-only JSON">
                 <Textarea
@@ -1095,9 +1036,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
               <Button
                 aria-label="Desktop preview"
                 aria-pressed={previewMode === "screen"}
-                className={`size-8 ${
-                  previewMode === "screen" ? "bg-background shadow-sm hover:bg-background" : ""
-                }`}
+                className={`size-8 ${previewMode === "screen" ? "bg-background shadow-sm hover:bg-background" : ""}`}
                 onClick={() => setPreviewMode("screen")}
                 size="icon"
                 variant="ghost"
@@ -1107,9 +1046,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
               <Button
                 aria-label="Page preview"
                 aria-pressed={previewMode === "pdf"}
-                className={`size-8 ${
-                  previewMode === "pdf" ? "bg-background shadow-sm hover:bg-background" : ""
-                }`}
+                className={`size-8 ${previewMode === "pdf" ? "bg-background shadow-sm hover:bg-background" : ""}`}
                 onClick={() => setPreviewMode("pdf")}
                 size="icon"
                 title={`${config.page.size} page preview`}
@@ -1121,20 +1058,13 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
           </div>
           <div
             className={`mx-auto w-full bg-white transition-[max-width,min-height] ${
-              previewMode === "pdf"
-                ? "max-w-[44rem] p-5 [&>article]:min-h-full"
-                : "max-w-2xl rounded-xl"
+              previewMode === "pdf" ? "max-w-[44rem] p-5 [&>article]:min-h-full" : "max-w-2xl rounded-xl"
             }`}
             style={
-              previewMode === "pdf"
-                ? { aspectRatio: config.page.size === "A4" ? "210 / 297" : "8.5 / 11" }
-                : undefined
+              previewMode === "pdf" ? { aspectRatio: config.page.size === "A4" ? "210 / 297" : "8.5 / 11" } : undefined
             }
           >
-            <InvoiceTemplatePreview
-              data={invoicePreviewSamples[activeSample]}
-              template={previewTemplate}
-            />
+            <InvoiceTemplatePreview data={invoicePreviewSamples[activeSample]} template={previewTemplate} />
           </div>
         </SectionCard>
       </div>
@@ -1156,12 +1086,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
             <Input defaultValue={`${template.name} Copy`} name="name" required />
           </Field>
           <Field htmlFor="duplicate-slug" label="Unique slug" required>
-            <Input
-              defaultValue={`${template.slug}-copy`}
-              name="slug"
-              pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-              required
-            />
+            <Input defaultValue={`${template.slug}-copy`} name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required />
           </Field>
           <div className="flex justify-end gap-2">
             <Button popoverTarget="duplicate-template" popoverTargetAction="hide" variant="ghost">

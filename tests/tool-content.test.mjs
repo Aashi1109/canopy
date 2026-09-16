@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  TOOL_CONTENT_DOC_VERSION,
-  resolveContent,
-  resolveContentMap,
-} from "../lib/tool-framework/content.ts";
+import { TOOL_CONTENT_DOC_VERSION, resolveContent, resolveContentMap } from "../lib/tool-framework/content.ts";
 
 const SPEC_CONTENT = {
   seoTitle: "Spec SEO Title",
@@ -199,12 +195,8 @@ test("an empty keywords array is a fallback, not an override", () => {
   const spec = makeSpec();
 
   assert.deepEqual(resolveContent(spec, makeRow({ keywords: [] })).keywords, ["spec-keyword"]);
-  assert.deepEqual(resolveContent(spec, makeRow({ keywords: ["  ", ""] })).keywords, [
-    "spec-keyword",
-  ]);
-  assert.deepEqual(resolveContent(spec, makeRow({ keywords: [" row-keyword "] })).keywords, [
-    "row-keyword",
-  ]);
+  assert.deepEqual(resolveContent(spec, makeRow({ keywords: ["  ", ""] })).keywords, ["spec-keyword"]);
+  assert.deepEqual(resolveContent(spec, makeRow({ keywords: [" row-keyword "] })).keywords, ["row-keyword"]);
 });
 
 test("blank stored text is not an override", () => {
@@ -235,8 +227,5 @@ test("resolveContentMap keeps spec order and drops unknown toolIds", () => {
 
 test("resolveContentMap tolerates an empty row set", () => {
   const specs = [makeSpec()];
-  assert.deepEqual(
-    resolveContentMap(specs, []),
-    new Map([["devtools.fixture-alpha", resolveContent(specs[0], null)]]),
-  );
+  assert.deepEqual(resolveContentMap(specs, []), new Map([["devtools.fixture-alpha", resolveContent(specs[0], null)]]));
 });

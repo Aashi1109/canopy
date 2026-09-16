@@ -27,10 +27,7 @@ function textDiff(left: string, right: string): string {
     );
   }
 
-  const lengths = Array.from(
-    { length: leftLines.length + 1 },
-    () => new Uint32Array(rightLines.length + 1),
-  );
+  const lengths = Array.from({ length: leftLines.length + 1 }, () => new Uint32Array(rightLines.length + 1));
   for (let leftIndex = leftLines.length - 1; leftIndex >= 0; leftIndex -= 1) {
     for (let rightIndex = rightLines.length - 1; rightIndex >= 0; rightIndex -= 1) {
       lengths[leftIndex][rightIndex] =
@@ -54,8 +51,7 @@ function textDiff(left: string, right: string): string {
       rightIndex += 1;
     } else if (
       rightIndex < rightLines.length &&
-      (leftIndex >= leftLines.length ||
-        lengths[leftIndex][rightIndex + 1] > lengths[leftIndex + 1][rightIndex])
+      (leftIndex >= leftLines.length || lengths[leftIndex][rightIndex + 1] > lengths[leftIndex + 1][rightIndex])
     ) {
       output.push(`+ ${rightLines[rightIndex]}`);
       rightIndex += 1;

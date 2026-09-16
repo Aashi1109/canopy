@@ -15,16 +15,13 @@ export interface FeatureOverride {
   enabled: boolean;
 }
 
-export type ResolvedFeature = FeatureManifestEntry &
-  Pick<FeatureOverride, "name" | "description" | "enabled">;
+export type ResolvedFeature = FeatureManifestEntry & Pick<FeatureOverride, "name" | "description" | "enabled">;
 
 export function mergeFeatureOverrides(
   manifest: readonly FeatureManifestEntry[],
   overrides: readonly FeatureOverride[] = [],
 ): ResolvedFeature[] {
-  const stored = new Map(
-    overrides.map((override) => [`${override.app}:${override.key}`, override]),
-  );
+  const stored = new Map(overrides.map((override) => [`${override.app}:${override.key}`, override]));
 
   return manifest.map((entry) => {
     const override = stored.get(`${entry.app}:${entry.key}`);
@@ -37,10 +34,6 @@ export function mergeFeatureOverrides(
   });
 }
 
-export function isFeatureEnabled(
-  features: readonly ResolvedFeature[],
-  app: FeatureApp,
-  key: string,
-): boolean {
+export function isFeatureEnabled(features: readonly ResolvedFeature[], app: FeatureApp, key: string): boolean {
   return features.some((feature) => feature.app === app && feature.key === key && feature.enabled);
 }

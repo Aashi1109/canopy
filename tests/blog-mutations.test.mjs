@@ -27,11 +27,7 @@ import {
   saveBlogTerm,
   publishDueBlogPosts,
 } from "../lib/blog/mutations.ts";
-import {
-  blogDocumentHash,
-  createBlogDocument,
-  validateBlogDocument,
-} from "../lib/blog/document.ts";
+import { blogDocumentHash, createBlogDocument, validateBlogDocument } from "../lib/blog/document.ts";
 
 const NOW = new Date("2026-09-16T10:30:00Z");
 const category = { id: "category-1", name: "Guides", slug: "guides" };
@@ -279,10 +275,9 @@ test("stale versions, trash, and absent articles reject saves without overwritin
     [[], "NOT_FOUND"],
   ]) {
     await withDatabase([permission(), rows], async (state) => {
-      await assert.rejects(
-        () => saveBlogDraft("actor", { postId: "post-1", version: 5, document: document() }),
-        { code },
-      );
+      await assert.rejects(() => saveBlogDraft("actor", { postId: "post-1", version: 5, document: document() }), {
+        code,
+      });
       assert.deepEqual(state.committed, []);
     });
   }
@@ -442,21 +437,18 @@ test("create retries unique slug conflicts with a random suffix and records an i
 
 test("duplicating starts a new draft with its own identity and initial history", async () => {
   const source = post();
-  await withDatabase(
-    [permission(), permission(), [source], [category], [tag], clock(), []],
-    async (state) => {
-      const result = await duplicateBlogPost("actor", { postId: source.id });
-      assert.notEqual(result.id, source.id);
-      assert.deepEqual(result.draftDocument, source.draftDocument);
-      assert.equal(result.publishedRevisionId, null);
-      assert.equal(result.firstPublishedAt, null);
-      assert.equal(result.version, 1);
-      assert.equal(result.revisionSequence, 1);
-      assert.equal(writes(state, revisions).length, 1);
-      assert.equal(writes(state, schedules).length, 0);
-      assert.deepEqual(auditActions(state), ["blog.duplicate"]);
-    },
-  );
+  await withDatabase([permission(), permission(), [source], [category], [tag], clock(), []], async (state) => {
+    const result = await duplicateBlogPost("actor", { postId: source.id });
+    assert.notEqual(result.id, source.id);
+    assert.deepEqual(result.draftDocument, source.draftDocument);
+    assert.equal(result.publishedRevisionId, null);
+    assert.equal(result.firstPublishedAt, null);
+    assert.equal(result.version, 1);
+    assert.equal(result.revisionSequence, 1);
+    assert.equal(writes(state, revisions).length, 1);
+    assert.equal(writes(state, schedules).length, 0);
+    assert.deepEqual(auditActions(state), ["blog.duplicate"]);
+  });
 });
 
 test("unknown taxonomy references and incomplete article content fail before snapshot or publication writes", async () => {
@@ -486,22 +478,12 @@ test("unknown taxonomy references and incomplete article content fail before sna
 test("publishing promotes a snapshot and clears schedule, with audit failure rolling everything back", async () => {
   const current = post();
   const snapshot = revision(current);
-  const reads = () => [
-    permission(),
-    [current],
-    [category],
-    [tag],
-    clock(),
-    [snapshot],
-    [category],
-    [tag],
-  ];
+  const reads = () => [permission(), [current], [category], [tag], clock(), [snapshot], [category], [tag]];
   for (const failAudit of [false, true])
     await withDatabase(
       reads(),
       async (state) => {
-        const invoke = () =>
-          publishBlogPost("actor", { postId: current.id, version: current.version });
+        const invoke = () => publishBlogPost("actor", { postId: current.id, version: current.version });
         if (failAudit) {
           await assert.rejects(invoke, /simulated database write failure/);
           assert.equal(state.committed.length, 0);
@@ -516,9 +498,7 @@ test("publishing promotes a snapshot and clears schedule, with audit failure rol
         assert.deepEqual(result.firstPublishedAt, current.firstPublishedAt);
         assert.deepEqual(result.publishedUpdatedAt, NOW);
         assert.equal(writes(state, schedules, "delete").length, 1);
-        assert.deepEqual(writes(state, publishedTags, "insert")[0].values, [
-          { postId: current.id, tagId: tag.id },
-        ]);
+        assert.deepEqual(writes(state, publishedTags, "insert")[0].values, [{ postId: current.id, tagId: tag.id }]);
         assert.deepEqual(auditActions(state), ["blog.publish"]);
       },
       { post: current, failWrite: (entry) => failAudit && entry.table === auditEventsTable },
@@ -636,9 +616,7 @@ test("taxonomy creation and rename reject names that could corrupt saved article
   for (const name of ["Bad\u0001name", "Invalid\ud800name"]) {
     for (const id of [undefined, category.id])
       await withDatabase([], async (state) => {
-        await assert.rejects(() =>
-          saveBlogTerm("editor", { kind: "category", name, ...(id ? { id } : {}) }),
-        );
+        await assert.rejects(() => saveBlogTerm("editor", { kind: "category", name, ...(id ? { id } : {}) }));
         assert.equal(state.attempts, 0);
         assert.equal(state.committed.length, 0);
       });
@@ -661,18 +639,7 @@ test("scheduler publishes the frozen revision, preserving newer draft and initia
     scheduledBy: "actor",
   };
   await withDatabase(
-    [
-      clock(),
-      [scheduled],
-      permission(),
-      [current],
-      [scheduled],
-      [frozen],
-      clock(),
-      [category],
-      [tag],
-      [{ count: 0 }],
-    ],
+    [clock(), [scheduled], permission(), [current], [scheduled], [frozen], clock(), [category], [tag], [{ count: 0 }]],
     async (state) => {
       assert.deepEqual(await publishDueBlogPosts(), {
         attempted: 1,
@@ -683,10 +650,7 @@ test("scheduler publishes the frozen revision, preserving newer draft and initia
       assert.equal(state.post.publishedRevisionId, frozen.id);
       assert.equal(state.post.draftDocument.title, "Newer unscheduled draft");
       assert.deepEqual(state.post.firstPublishedAt, current.firstPublishedAt);
-      assert.equal(
-        writes(state, schedules, "delete")[0].condition.params.includes(scheduled.id),
-        true,
-      );
+      assert.equal(writes(state, schedules, "delete")[0].condition.params.includes(scheduled.id), true);
       assert.deepEqual(auditActions(state), ["blog.publish"]);
     },
     { post: current },
@@ -710,17 +674,7 @@ test("retry-now publishes only the frozen due revision and records the invoking 
     lastErrorCode: "TEMPORARY_FAILURE",
   };
   await withDatabase(
-    [
-      permission(),
-      [scheduled],
-      permission(),
-      [current],
-      [scheduled],
-      clock(),
-      [frozen],
-      [category],
-      [tag],
-    ],
+    [permission(), [scheduled], permission(), [current], [scheduled], clock(), [frozen], [category], [tag]],
     async (state) => {
       const result = await retryBlogSchedule("retrying-admin", {
         postId: current.id,
@@ -730,10 +684,7 @@ test("retry-now publishes only the frozen due revision and records the invoking 
       assert.equal(result.draftDocument.title, "Newer unscheduled draft");
       assert.equal(result.version, 6);
       assert.equal(writes(state, revisions).length, 0);
-      assert.equal(
-        writes(state, schedules, "delete")[0].condition.params.includes(scheduled.id),
-        true,
-      );
+      assert.equal(writes(state, schedules, "delete")[0].condition.params.includes(scheduled.id), true);
       const event = writes(state, auditEventsTable)[0].values;
       assert.equal(event.actorUserId, "retrying-admin");
       assert.equal(event.action, "blog.publish");
@@ -752,11 +703,7 @@ test("retry-now requires an active original publisher; deleted, suspended and re
     scheduledAt: NOW,
     scheduledBy: "original-publisher",
   };
-  for (const originalPermission of [
-    permission({ missing: "publish" }),
-    permission({ status: "suspended" }),
-    [],
-  ]) {
+  for (const originalPermission of [permission({ missing: "publish" }), permission({ status: "suspended" }), []]) {
     await withDatabase([permission(), [scheduled], originalPermission], async (state) => {
       await assert.rejects(
         () => retryBlogSchedule("retrying-admin", { postId: "post-1", version: 5 }),
@@ -789,23 +736,16 @@ test("retry-now rejects missing, replaced, future and invalid-version schedules 
     [[permission(), [scheduled], [post({ version: 6 })]], "CONFLICT"],
     [[permission(), [scheduled], [post({ trashedAt: NOW })]], "VALIDATION"],
     [
-      [
-        permission(),
-        [scheduled],
-        [current],
-        [{ ...scheduled, scheduledAt: new Date(NOW.getTime() + 1) }],
-        clock(),
-      ],
+      [permission(), [scheduled], [current], [{ ...scheduled, scheduledAt: new Date(NOW.getTime() + 1) }], clock()],
       "VALIDATION",
     ],
     [[permission(), [scheduled], [current], [scheduled], clock(), []], "NOT_FOUND"],
   ];
   for (const [reads, code] of cases)
     await withDatabase(reads, async (state) => {
-      await assert.rejects(
-        () => retryBlogSchedule("actor", { postId: current.id, version: current.version }),
-        { code },
-      );
+      await assert.rejects(() => retryBlogSchedule("actor", { postId: current.id, version: current.version }), {
+        code,
+      });
       assert.equal(state.committed.length, 0);
     });
 });
@@ -830,9 +770,7 @@ test("failed retry publication rolls back schedule removal and live changes when
       assert.equal(state.committed.length, 0);
       assert.equal(state.post.publishedRevisionId, current.publishedRevisionId);
       assert.equal(state.post.version, current.version);
-      assert.ok(
-        state.rolledBack.some((entry) => entry.table === schedules && entry.kind === "delete"),
-      );
+      assert.ok(state.rolledBack.some((entry) => entry.table === schedules && entry.kind === "delete"));
     },
     { post: current, failWrite: (entry) => entry.table === auditEventsTable },
   );
@@ -874,22 +812,19 @@ test("revoked scheduling permissions preserve due work and scope failure diagnos
     scheduledAt: NOW,
     scheduledBy: "actor",
   };
-  await withDatabase(
-    [clock(), [scheduled], permission({ missing: "publish" }), [{ count: 1 }]],
-    async (state) => {
-      assert.deepEqual(await publishDueBlogPosts(), {
-        attempted: 1,
-        published: 0,
-        failed: 1,
-        remaining: 1,
-      });
-      const [diagnostic] = writes(state, schedules, "update");
-      assert.equal(diagnostic.values.lastErrorCode, "PUBLISHER_FORBIDDEN");
-      assert.deepEqual(diagnostic.condition.params, [scheduled.id]);
-      assert.equal(writes(state, posts).length, 0);
-      assert.equal(writes(state, revisions).length, 0);
-    },
-  );
+  await withDatabase([clock(), [scheduled], permission({ missing: "publish" }), [{ count: 1 }]], async (state) => {
+    assert.deepEqual(await publishDueBlogPosts(), {
+      attempted: 1,
+      published: 0,
+      failed: 1,
+      remaining: 1,
+    });
+    const [diagnostic] = writes(state, schedules, "update");
+    assert.equal(diagnostic.values.lastErrorCode, "PUBLISHER_FORBIDDEN");
+    assert.deepEqual(diagnostic.condition.params, [scheduled.id]);
+    assert.equal(writes(state, posts).length, 0);
+    assert.equal(writes(state, revisions).length, 0);
+  });
 });
 
 test("scheduler continues with other posts when diagnostic persistence also fails", async (t) => {
@@ -943,11 +878,7 @@ test("scheduler does not reattempt the same post when rescheduling appears on a 
     });
     assert.equal(state.attempts, 50);
     assert.equal(writes(state, schedules, "update").length, 50);
-    assert.ok(
-      writes(state, schedules, "update").every(
-        (entry) => !entry.condition.params.includes(replacement.id),
-      ),
-    );
+    assert.ok(writes(state, schedules, "update").every((entry) => !entry.condition.params.includes(replacement.id)));
     const laterBatch = state.readQueries.filter((entry) => entry.table === schedules)[1];
     assert.ok(
       laterBatch.condition.params.includes(firstBatch.at(-1).cursorTime),

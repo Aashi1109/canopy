@@ -61,9 +61,7 @@ export function BlogHistoryPanel({ postId, version, publishedRevisionId, current
 
   return (
     <div className="space-y-2">
-      <p className="text-xs text-muted-foreground">
-        Compare to review or restore a saved revision.
-      </p>
+      <p className="text-xs text-muted-foreground">Compare to review or restore a saved revision.</p>
       {error ? (
         <>
           <AlertBanner variant="error">{error}</AlertBanner>
@@ -93,11 +91,7 @@ export function BlogHistoryPanel({ postId, version, publishedRevisionId, current
               </Button>
             )}
             {page.nextCursor && (
-              <Button
-                size="xs"
-                variant="outline"
-                onClick={() => setCursor(page.nextCursor ?? undefined)}
-              >
+              <Button size="xs" variant="outline" onClick={() => setCursor(page.nextCursor ?? undefined)}>
                 Older revisions
               </Button>
             )}

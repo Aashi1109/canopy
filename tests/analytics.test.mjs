@@ -30,16 +30,12 @@ function browserFixture(saved, storageBlocked = false) {
       },
     },
   };
-  const events = () =>
-    (browser.dataLayer ?? []).map((entry) => [...entry]).filter(([command]) => command === "event");
+  const events = () => (browser.dataLayer ?? []).map((entry) => [...entry]).filter(([command]) => command === "event");
   return { browser, scripts, cookies, events };
 }
 
 test("GA4 is valid only in production, never in previews or development", () => {
-  assert.equal(
-    measurementId({ NODE_ENV: "production", GA_MEASUREMENT_ID: "G-ABC123" }),
-    "G-ABC123",
-  );
+  assert.equal(measurementId({ NODE_ENV: "production", GA_MEASUREMENT_ID: "G-ABC123" }), "G-ABC123");
   for (const env of [
     { NODE_ENV: "development", GA_MEASUREMENT_ID: "G-ABC123" },
     { NODE_ENV: "production", VERCEL_ENV: "preview", GA_MEASUREMENT_ID: "G-ABC123" },
@@ -106,9 +102,7 @@ test("opt-in loads once; manual SPA views are deduplicated and payloads contain 
       page_title: "SmartTools",
     },
   ]);
-  const configs = browser.dataLayer
-    .map((entry) => [...entry])
-    .filter(([command]) => command === "config");
+  const configs = browser.dataLayer.map((entry) => [...entry]).filter(([command]) => command === "config");
   assert.ok(
     configs.every(
       (entry) =>
@@ -146,10 +140,7 @@ test("revocation stops collection, clears GA cookies, and regrant works without 
   client.track("tool_complete");
   assert.equal(browser["ga-disable-G-TEST"], true);
   assert.deepEqual(events(), []);
-  assert.deepEqual(cookies, [
-    "_ga=; Max-Age=0; Path=/; SameSite=Lax",
-    "_ga_TEST=; Max-Age=0; Path=/; SameSite=Lax",
-  ]);
+  assert.deepEqual(cookies, ["_ga=; Max-Age=0; Path=/; SameSite=Lax", "_ga_TEST=; Max-Age=0; Path=/; SameSite=Lax"]);
   client.setConsent("accepted");
   assert.equal(events().length, 1);
   assert.equal(scripts.length, 1);

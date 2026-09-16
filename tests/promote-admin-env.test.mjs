@@ -46,9 +46,7 @@ test("admin promotion loads root env files from either cwd and preserves environ
       const { stdout } = await run(process.execPath, [script, "fixture@example.com"], {
         cwd,
         env: {
-          EXPECTED_DATABASE_URL: exported
-            ? "postgres://exported-fixture"
-            : "postgres://local-fixture",
+          EXPECTED_DATABASE_URL: exported ? "postgres://exported-fixture" : "postgres://local-fixture",
           ...(exported ? { DATABASE_URL: "postgres://exported-fixture" } : {}),
         },
       });

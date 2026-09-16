@@ -22,10 +22,7 @@ import {
   type DecodableImageKind,
 } from "../../lib/tool-framework/media/imageCodec.ts";
 import { writeArtifactBatch } from "../../lib/tool-framework/media/zip.ts";
-import {
-  createOutputFilename,
-  validateImageSelection,
-} from "../../lib/tool-framework/media/validation.ts";
+import { createOutputFilename, validateImageSelection } from "../../lib/tool-framework/media/validation.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
@@ -57,8 +54,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       : preset === "smallest"
         ? 0.6
         : 0.8;
-  const pngEffort =
-    PNG_COMPRESSION_PRESETS[preset as keyof typeof PNG_COMPRESSION_PRESETS]?.effort ?? 6;
+  const pngEffort = PNG_COMPRESSION_PRESETS[preset as keyof typeof PNG_COMPRESSION_PRESETS]?.effort ?? 6;
 
   const total = ctx.input.files.length;
   const files = await writeArtifactBatch(

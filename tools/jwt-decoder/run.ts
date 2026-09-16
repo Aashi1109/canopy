@@ -19,9 +19,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const timestamps = Object.fromEntries(
     ["iat", "nbf", "exp"].flatMap((key) => {
       const claim = decoded.payload[key];
-      return typeof claim === "number"
-        ? [[key, new Date(claim * 1000).toISOString()] as const]
-        : [];
+      return typeof claim === "number" ? [[key, new Date(claim * 1000).toISOString()] as const] : [];
     }),
   );
   return {

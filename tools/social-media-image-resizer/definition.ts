@@ -24,8 +24,7 @@ export default {
     label: "Add images to resize",
     dropzoneDescription:
       "JPG, JPEG, PNG, WebP, HEIC, and HEIF · up to 50 files · 25 MB each · processed on this device",
-    accept:
-      "image/jpeg,image/jpg,.jpg,.jpeg,image/png,.png,image/webp,.webp,image/heic,image/heif,.heic,.heif",
+    accept: "image/jpeg,image/jpg,.jpg,.jpeg,image/png,.png,image/webp,.webp,image/heic,image/heif,.heic,.heif",
     multiple: true,
     engine: "image",
     maxFiles: 50,
@@ -111,8 +110,7 @@ export default {
   capabilities: { cancel: true, download: true, progress: true },
   workbenchMark: { text: "1:1", tone: "accent" },
   labels: {
-    empty:
-      "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF images (25 MiB each) to resize for social media.",
+    empty: "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF images (25 MiB each) to resize for social media.",
     ready: "Your resized images are ready to download.",
     running: "Resizing social media images…",
   },

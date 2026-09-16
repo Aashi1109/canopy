@@ -40,9 +40,7 @@ export function ActivationPanel({
       </div>
 
       {state.status !== "idle" ? (
-        <AlertBanner variant={state.status === "success" ? "success" : "error"}>
-          {state.message}
-        </AlertBanner>
+        <AlertBanner variant={state.status === "success" ? "success" : "error"}>{state.message}</AlertBanner>
       ) : null}
 
       <div className="divide-y divide-border border-y border-border">
@@ -80,9 +78,7 @@ export function ActivationPanel({
           <div className="min-w-0 flex-1">
             <P>Public availability</P>
             <Caption className="block mt-1 text-muted-foreground">
-              {hasDefinition
-                ? "The code definition is deployed."
-                : "Deploy the tool definition before enabling it."}
+              {hasDefinition ? "The code definition is deployed." : "Deploy the tool definition before enabling it."}
             </Caption>
           </div>
           <StatusBadge variant={enabled ? "success" : hasDefinition ? "neutral" : "warning"}>

@@ -6,17 +6,12 @@ const safeText = (max: number) =>
   z
     .string()
     .max(max)
-    .refine(
-      (value) =>
-        value.isWellFormed() && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(value),
-    );
+    .refine((value) => value.isWellFormed() && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(value));
 const imageAttributes = z
   .object({
     publicId: z
       .string()
-      .regex(
-        /^smarttools\/blog\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
-      ),
+      .regex(/^smarttools\/blog\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/),
     version: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
     format: z.enum(["jpg", "jpeg", "png", "webp"]),
     width: z.number().int().min(1).max(30000),
@@ -91,8 +86,7 @@ export const BlogImageNode = Node.create<{
             return false;
           try {
             const input: unknown = JSON.parse(metadata);
-            if (input && typeof input === "object" && Object.hasOwn(input, "__proto__"))
-              return false;
+            if (input && typeof input === "object" && Object.hasOwn(input, "__proto__")) return false;
             const parsed = imageAttributes.safeParse(input);
             if (
               !parsed.success ||

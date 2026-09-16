@@ -9,11 +9,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function SuspendedPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ checked?: string }>;
-}) {
+export default async function SuspendedPage({ searchParams }: { searchParams: Promise<{ checked?: string }> }) {
   const session = await getSession(await headers());
   if (!session) redirect("/auth");
   if (session.user.status !== "suspended") redirect("/");

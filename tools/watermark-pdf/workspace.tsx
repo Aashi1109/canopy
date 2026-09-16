@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  Button,
-  Caption,
-  FieldLabel,
-  Input,
-} from "@smarttools/ui";
+import { Alert, AlertDescription, AlertTitle, Button, Caption, FieldLabel, Input } from "@smarttools/ui";
 import { useEffect, useId, useState } from "react";
 import { validateFileSelection } from "@/components/FileInput";
 import { PdfFileWorkspace, PdfPageSelectionOverlay } from "@/components/PdfFileWorkspace";
@@ -19,9 +11,7 @@ import { parsePageRange, validateImageSelection } from "@/lib/tool-framework/med
 import { parsePageSelection } from "@/lib/tool-framework/settings";
 
 function selectedPages(value: unknown, pageCount: number): number[] {
-  const expression = (Array.isArray(value) ? value.join(",") : String(value ?? "all"))
-    .trim()
-    .toLowerCase();
+  const expression = (Array.isArray(value) ? value.join(",") : String(value ?? "all")).trim().toLowerCase();
   if (expression === "odd" || expression === "even") {
     const pages = parsePageSelection(expression, pageCount) as number[];
     if (!pages.length) throw new Error("No pages match this selection. Choose pages in your PDF.");
@@ -69,9 +59,7 @@ function PlacementPreview({
 }
 
 export default function WatermarkPdfWorkspace(props: WorkspaceProps) {
-  const document = props.input.files.find(
-    (file) => file.type === "application/pdf" || /\.pdf$/i.test(file.name),
-  );
+  const document = props.input.files.find((file) => file.type === "application/pdf" || /\.pdf$/i.test(file.name));
   const watermark = props.input.files.find((file) => file !== document);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [inputIssue, setInputIssue] = useState("");
@@ -118,8 +106,7 @@ export default function WatermarkPdfWorkspace(props: WorkspaceProps) {
           if (!watermark) throw new Error("Choose a JPG or PNG watermark image.");
           const image = validateImageSelection([{ size: watermark.size }]);
           if (!image.ok) throw new Error(image.message);
-        } else if (!String(settings.watermarkText ?? "").trim())
-          throw new Error("Enter watermark text.");
+        } else if (!String(settings.watermarkText ?? "").trim()) throw new Error("Enter watermark text.");
         return {
           title: `${pages.length} ${pages.length === 1 ? "page will" : "pages will"} receive a watermark`,
           detail:
@@ -137,9 +124,7 @@ export default function WatermarkPdfWorkspace(props: WorkspaceProps) {
         const selected = selection.includes(page.pageNumber);
         return (
           <>
-            {selected && (
-              <PlacementPreview imageUrl={imageUrl} page={page} settings={props.settings} />
-            )}
+            {selected && <PlacementPreview imageUrl={imageUrl} page={page} settings={props.settings} />}
             <PdfPageSelectionOverlay
               pageNumber={page.pageNumber}
               selected={selected}

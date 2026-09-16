@@ -1,9 +1,4 @@
-import type {
-  PDFContentStream as PDFContentStreamType,
-  PDFDocument,
-  PDFOperator,
-  PDFPage,
-} from "pdf-lib";
+import type { PDFContentStream as PDFContentStreamType, PDFDocument, PDFOperator, PDFPage } from "pdf-lib";
 import { MEDIA_LIMITS } from "./validation.ts";
 
 export type PdfContentBox = {
@@ -34,11 +29,7 @@ export function hasTransparentPixels(data: Uint8Array | Uint8ClampedArray) {
   return false;
 }
 
-export function getPdfContentBox(
-  pageWidth: number,
-  pageHeight: number,
-  margin: number,
-): PdfContentBox {
+export function getPdfContentBox(pageWidth: number, pageHeight: number, margin: number): PdfContentBox {
   return {
     x: margin,
     y: margin,
@@ -60,35 +51,18 @@ export function clipEndOperators(pdfLib: PdfClipApi): PDFOperator[] {
   return [pdfLib.popGraphicsState()];
 }
 
-export function wrapPageContentsWithClip(
-  document: PDFDocument,
-  page: PDFPage,
-  box: PdfContentBox,
-  pdfLib: PdfClipApi,
-) {
+export function wrapPageContentsWithClip(document: PDFDocument, page: PDFPage, box: PdfContentBox, pdfLib: PdfClipApi) {
   const start: PDFContentStreamType = pdfLib.PDFContentStream.of(
     document.context.obj({}),
     clipStartOperators(box, pdfLib),
   );
-  const end: PDFContentStreamType = pdfLib.PDFContentStream.of(
-    document.context.obj({}),
-    clipEndOperators(pdfLib),
-  );
+  const end: PDFContentStreamType = pdfLib.PDFContentStream.of(document.context.obj({}), clipEndOperators(pdfLib));
   page.node.wrapContentStreams(document.context.register(start), document.context.register(end));
 }
 
-export function assertStructuralPdfInspection({
-  isEncrypted,
-  pageCount,
-}: {
-  isEncrypted: boolean;
-  pageCount: number;
-}) {
+export function assertStructuralPdfInspection({ isEncrypted, pageCount }: { isEncrypted: boolean; pageCount: number }) {
   if (isEncrypted) {
-    throw new PdfPreflightError(
-      "encrypted-pdf",
-      "Encrypted or password-protected PDFs are not supported.",
-    );
+    throw new PdfPreflightError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.");
   }
   if (pageCount > MEDIA_LIMITS.pdfs.maxStructuralPages) {
     throw new PdfPreflightError(
@@ -110,14 +84,8 @@ export async function inspectPdfBeforeStructuralRewrite(data: ArrayBuffer) {
     return { pageCount };
   } catch (error) {
     if (error instanceof PdfPreflightError) throw error;
-    if (
-      error instanceof Error &&
-      /password|encrypted|encryption/i.test(`${error.name} ${error.message}`)
-    ) {
-      throw new PdfPreflightError(
-        "encrypted-pdf",
-        "Encrypted or password-protected PDFs are not supported.",
-      );
+    if (error instanceof Error && /password|encrypted|encryption/i.test(`${error.name} ${error.message}`)) {
+      throw new PdfPreflightError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.");
     }
     throw new PdfPreflightError("malformed-pdf", "The PDF is malformed or unsupported.");
   }

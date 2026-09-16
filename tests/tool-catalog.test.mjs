@@ -297,8 +297,7 @@ test("a saved slug is immutable while setup-required tools may receive their fir
 test("disabled, archived, setup-required, and ambiguous tools are blocked", () => {
   const tools = configured();
   const slug = firstPaperwork.componentKey;
-  const patch = (id, changes) =>
-    tools.map((tool) => (tool.id === id ? { ...tool, ...changes } : tool));
+  const patch = (id, changes) => tools.map((tool) => (tool.id === id ? { ...tool, ...changes } : tool));
 
   const enabledPaperwork = getEnabledTools(tools, "paperwork");
   const disabled = patch(firstPaperwork.id, { enabled: false });

@@ -7,8 +7,7 @@ test("crop PDF supports exact editing, direct cropping, output preview, download
 }, info) => {
   test.setTimeout(180_000);
   const pdf = await PDFDocument.create();
-  for (let i = 1; i <= 4; i++)
-    pdf.addPage([595.2756, 841.8898]).drawText(`Page ${i}`, { x: 60, y: 740 });
+  for (let i = 1; i <= 4; i++) pdf.addPage([595.2756, 841.8898]).drawText(`Page ${i}`, { x: 60, y: 740 });
   const file = {
     name: "crop-source.pdf",
     mimeType: "application/pdf",
@@ -51,9 +50,7 @@ test("crop PDF supports exact editing, direct cropping, output preview, download
   await expect(review).toBeDisabled();
   await width.fill("523");
   await expect(review).toBeEnabled();
-  await page
-    .getByTestId("tool-workspace-content")
-    .screenshot({ path: `/tmp/crop-edit-${info.project.name}.png` });
+  await page.getByTestId("tool-workspace-content").screenshot({ path: `/tmp/crop-edit-${info.project.name}.png` });
   await expect(page.getByRole("button", { name: "Review crop", exact: true })).toHaveCount(0);
   await review.click();
   const download = page.getByRole("button", {
@@ -69,9 +66,7 @@ test("crop PDF supports exact editing, direct cropping, output preview, download
   const outputNavigation = page.getByRole("spinbutton", { name: "Current page", exact: true });
   await outputNavigation.fill("2");
   await outputNavigation.press("Enter");
-  await expect(
-    page.getByRole("img", { name: "Generated PDF page 2", exact: true }),
-  ).toBeInViewport();
+  await expect(page.getByRole("img", { name: "Generated PDF page 2", exact: true })).toBeInViewport();
   const pending = page.waitForEvent("download");
   await download.click();
   const saved = await pending;
@@ -80,9 +75,7 @@ test("crop PDF supports exact editing, direct cropping, output preview, download
   expect(result.getPage(0).getCropBox()).toEqual({ x: 0, y: 0, width: 595.2756, height: 841.8898 });
   for (const sheet of result.getPages().slice(1))
     expect(sheet.getCropBox()).toEqual({ x: 36, y: 36, width: 523, height: 770 });
-  await page
-    .getByTestId("tool-workspace-content")
-    .screenshot({ path: `/tmp/crop-complete-${info.project.name}.png` });
+  await page.getByTestId("tool-workspace-content").screenshot({ path: `/tmp/crop-complete-${info.project.name}.png` });
   await page.getByRole("button", { name: "Edit crop", exact: true }).click();
   await expect(review).toBeEnabled();
   await expect(width).toHaveValue("523");
@@ -93,9 +86,7 @@ test("crop PDF supports exact editing, direct cropping, output preview, download
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
-test("crop preview recovers from an invalid file and reseeds replacement geometry", async ({
-  page,
-}) => {
+test("crop preview recovers from an invalid file and reseeds replacement geometry", async ({ page }) => {
   test.setTimeout(120_000);
   await page.goto("/media/crop-pdf");
   await page.waitForLoadState("networkidle");

@@ -11,9 +11,7 @@ test("Media Tools is discoverable and unknown routes fail closed", async ({ page
   await page.goto(PLATFORM_ORIGIN);
   await page.getByRole("link", { name: "Open Media Tools", exact: true }).click();
   await expect(page).toHaveURL(MEDIA_URL);
-  await expect(
-    page.getByRole("heading", { name: "Edit media without sending it anywhere." }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Edit media without sending it anywhere." })).toBeVisible();
 
   await page.getByRole("searchbox", { name: "Search media tools" }).fill("JPG to PNG");
   await page.getByRole("button", { name: "Search", exact: true }).click();
@@ -50,9 +48,7 @@ test("Media tool pages use the shared outer chrome", async ({ page }) => {
   await expect(title).toBeVisible();
   await expect(main.getByRole("heading", { name: "Private by default" })).toBeVisible();
   await expect(main.getByText("Files never leave your device.", { exact: true })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Media Tools footer" })).toContainText(
-    "All Media Tools",
-  );
+  await expect(page.getByRole("navigation", { name: "Media Tools footer" })).toContainText("All Media Tools");
 
   const [workbenchBounds, breadcrumbBounds, titleBounds] = await Promise.all([
     workbench.boundingBox(),
@@ -66,9 +62,7 @@ test("Media tool pages use the shared outer chrome", async ({ page }) => {
   expect(Math.abs(titleBounds!.x - breadcrumbBounds!.x)).toBeLessThan(2);
 });
 
-test("JPG to PNG can cancel, retry, and download without an upload request", async ({
-  page,
-}, testInfo) => {
+test("JPG to PNG can cancel, retry, and download without an upload request", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name.includes("mobile"), "Desktop covers worker processing.");
   test.setTimeout(90_000);
   await page.goto(`${MEDIA_URL}/jpg-to-png`);
@@ -78,9 +72,7 @@ test("JPG to PNG can cancel, retry, and download without an upload request", asy
     mimeType: "image/jpeg",
     buffer: jpeg,
   });
-  await expect(page.getByRole("list", { name: "Selected files" })).toContainText(
-    "local-fixture.jpg",
-  );
+  await expect(page.getByRole("list", { name: "Selected files" })).toContainText("local-fixture.jpg");
   await expect(page.getByRole("button", { name: "Add files", exact: true })).toBeVisible();
 
   const requests: { bodyBytes: number; method: string; url: string }[] = [];
@@ -120,9 +112,7 @@ test("JPG to PNG can cancel, retry, and download without an upload request", asy
   expect(requests.some(({ url }) => new URL(url).pathname.startsWith("/api/"))).toBe(false);
 });
 
-test("file selection and drag ordering work without arrow controls or mobile overflow", async ({
-  page,
-}) => {
+test("file selection and drag ordering work without arrow controls or mobile overflow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${MEDIA_URL}/jpg-to-png`);
   const first = await createJpegFixture(page, 8, 6, "#ef4444");
@@ -160,9 +150,7 @@ test("file selection and drag ordering work without arrow controls or mobile ove
   await page.keyboard.press("ArrowUp");
   await page.keyboard.press("Space");
   await expect(files.getByRole("listitem").first()).toContainText("first.jpg");
-  await expect(page.locator('[role="status"]')).toContainText(
-    "Dropped first.jpg at position 1 of 2.",
-  );
+  await expect(page.locator('[role="status"]')).toContainText("Dropped first.jpg at position 1 of 2.");
 
   const overflow = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
@@ -188,9 +176,9 @@ test("structural PDF merge follows the displayed file order", async ({ page }) =
       { name: "second.pdf", mimeType: "application/pdf", buffer: second },
     ]);
   await dragReorderHandle(page, "Drag second.pdf to reorder", "Drag first.pdf to reorder");
-  await expect(
-    page.getByRole("list", { name: "Selected files" }).getByRole("listitem").first(),
-  ).toContainText("second.pdf");
+  await expect(page.getByRole("list", { name: "Selected files" }).getByRole("listitem").first()).toContainText(
+    "second.pdf",
+  );
   await page.waitForTimeout(250);
 
   await processButton(page, "Merge PDF").click();
@@ -264,10 +252,7 @@ test("PDF to PNG renders selected pages into a zero-padded ZIP", async ({ page }
     unzipSync(data: Uint8Array): Record<string, Uint8Array>;
   };
   const entries = unzipSync(Uint8Array.from(bytes));
-  expect(Object.keys(entries).sort()).toEqual([
-    "raster-pages-page-01.png",
-    "raster-pages-page-03.png",
-  ]);
+  expect(Object.keys(entries).sort()).toEqual(["raster-pages-page-01.png", "raster-pages-page-03.png"]);
   for (const entry of Object.values(entries)) {
     expect([...entry.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
   }
@@ -304,9 +289,7 @@ test("Media responses enforce security headers and serve qpdf locally", async ({
   expect([...(await wasm.body()).subarray(0, 4)]).toEqual([0x00, 0x61, 0x73, 0x6d]);
 });
 
-test("Preserve Document runs through qpdf and returns an openable PDF", async ({
-  page,
-}, testInfo) => {
+test("Preserve Document runs through qpdf and returns an openable PDF", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name.includes("mobile"), "Desktop covers qpdf processing.");
   test.setTimeout(90_000);
   const qpdfResponses: { status: number; url: string }[] = [];
@@ -340,11 +323,7 @@ test("Preserve Document runs through qpdf and returns an openable PDF", async ({
   const { PDFDocument } = requireFromMedia("pdf-lib") as typeof import("pdf-lib");
   const parsed = await PDFDocument.load(pdf);
   expect(parsed.getPageCount()).toBe(1);
-  expect(
-    qpdfResponses.some(
-      ({ status, url }) => status === 200 && url.endsWith("/vendor/qpdf/qpdf.wasm"),
-    ),
-  ).toBe(true);
+  expect(qpdfResponses.some(({ status, url }) => status === 200 && url.endsWith("/vendor/qpdf/qpdf.wasm"))).toBe(true);
 });
 
 async function dragReorderHandle(page: Page, sourceName: string, targetName: string) {
@@ -460,9 +439,7 @@ function createPdfFixture() {
     body += object;
   }
   const xrefOffset = Buffer.byteLength(body, "latin1");
-  const entries = offsets
-    .map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`)
-    .join("");
+  const entries = offsets.map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`).join("");
   body += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${entries}`;
   body += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
   return Buffer.from(body, "latin1");

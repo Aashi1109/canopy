@@ -10,29 +10,22 @@ const icon = {
   format: "svg",
   width: 104,
   height: 88,
-  secureUrl:
-    "https://res.cloudinary.com/demo/image/upload/v123/Canopy/platform/assets/default/icons/json-editor.svg",
+  secureUrl: "https://res.cloudinary.com/demo/image/upload/v123/Canopy/platform/assets/default/icons/json-editor.svg",
 };
 const tools = [{ tool_id: "json_editor_v2", slug: "json-editor" }];
 
 test("maps only successful uploads to database IDs while retaining Cloudinary metadata", () => {
-  assert.deepEqual(
-    planToolIconUpdates({ icons: [icon], failures: [{ slug: "missing-tool" }] }, tools, cloudName),
-    [
-      {
-        tool_id: "json_editor_v2",
-        public_id: icon.publicId,
-        version: "123",
-        format: "svg",
-        width: 104,
-        height: 88,
-      },
-    ],
-  );
-  assert.deepEqual(
-    planToolIconUpdates({ icons: [], failures: [{ slug: "missing-tool" }] }, [], cloudName),
-    [],
-  );
+  assert.deepEqual(planToolIconUpdates({ icons: [icon], failures: [{ slug: "missing-tool" }] }, tools, cloudName), [
+    {
+      tool_id: "json_editor_v2",
+      public_id: icon.publicId,
+      version: "123",
+      format: "svg",
+      width: 104,
+      height: 88,
+    },
+  ]);
+  assert.deepEqual(planToolIconUpdates({ icons: [], failures: [{ slug: "missing-tool" }] }, [], cloudName), []);
 });
 
 test("rejects invalid manifests, duplicate slugs, and inconsistent Cloudinary metadata", () => {
@@ -73,10 +66,6 @@ test("rejects invalid manifests, duplicate slugs, and inconsistent Cloudinary me
 test("requires exactly one database match for every successful slug", () => {
   assert.throws(() => planToolIconUpdates({ icons: [icon] }, [], cloudName));
   assert.throws(() =>
-    planToolIconUpdates(
-      { icons: [icon] },
-      [...tools, { tool_id: "other-id", slug: "json-editor" }],
-      cloudName,
-    ),
+    planToolIconUpdates({ icons: [icon] }, [...tools, { tool_id: "other-id", slug: "json-editor" }], cloudName),
   );
 });

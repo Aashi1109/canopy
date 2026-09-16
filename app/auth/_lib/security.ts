@@ -2,8 +2,7 @@ import { getTrustedOrigins, normalizeProfileImage, safeReturnTo } from "@smartto
 
 export { normalizeProfileImage };
 
-export const DEFAULT_AUTH_ERROR =
-  "Unable to complete that request. Check your details and try again.";
+export const DEFAULT_AUTH_ERROR = "Unable to complete that request. Check your details and try again.";
 
 type RedirectPolicy = {
   baseURL: string;

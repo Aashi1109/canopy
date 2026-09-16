@@ -80,10 +80,7 @@ test("admin links restore allowed filters and fall back for missing or invalid v
 });
 
 test("batched query updates preserve unspecified params and hash through history navigation", (t) => {
-  const calls = browser(
-    t,
-    "/admin/tools?app=media&category=PDF&q=compress&visibility=hidden&ref=shared#catalog",
-  );
+  const calls = browser(t, "/admin/tools?app=media&category=PDF&q=compress&visibility=hidden&ref=shared#catalog");
   updateAdminQuery({ app: "devtools", category: null });
   assert.deepEqual(calls, ["push"]);
   assert.deepEqual(Object.fromEntries(window.location.searchParams), {
@@ -122,10 +119,7 @@ test("search replaces history, filters push history, and defaults remove their k
 });
 
 test("reset clears catalog state together and unchanged state creates no history entry", (t) => {
-  const calls = browser(
-    t,
-    "/admin/tools?q=PDF&app=media&category=PDF&visibility=draft&ref=shared#catalog",
-  );
+  const calls = browser(t, "/admin/tools?q=PDF&app=media&category=PDF&visibility=draft&ref=shared#catalog");
   const reset = { q: null, app: null, category: null, visibility: null };
   updateAdminQuery(reset);
   assert.equal(window.location.href, "https://smarttools.test/admin/tools?ref=shared#catalog");

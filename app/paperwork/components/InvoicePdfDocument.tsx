@@ -385,11 +385,7 @@ function TotalLine({ label, value, color }: { label: string; value: string; colo
   );
 }
 
-function InvoiceTotals({
-  data,
-  template,
-  totals,
-}: InvoicePdfDocumentProps & { totals: CalculatedTotals }) {
+function InvoiceTotals({ data, template, totals }: InvoicePdfDocumentProps & { totals: CalculatedTotals }) {
   const { labels, theme, totalsBlock } = template.config;
   const currency = data.invoice.currency || "USD";
   const highlighted = totalsBlock.style === "highlight-total";
@@ -397,18 +393,13 @@ function InvoiceTotals({
   return (
     <View style={styles.totals} wrap={false}>
       {totalsBlock.showSubtotal ? (
-        <TotalLine
-          label={labels.subtotal || "Subtotal"}
-          value={formatCurrency(totals.subtotal, currency)}
-        />
+        <TotalLine label={labels.subtotal || "Subtotal"} value={formatCurrency(totals.subtotal, currency)} />
       ) : null}
       {totalsBlock.showDiscount && totals.discountAmount > 0 ? (
         <TotalLine
           color="#059669"
           label={`${labels.discount || "Discount"}${
-            data.totalsConfig.discountType === "percent"
-              ? ` (${data.totalsConfig.discountValue}%)`
-              : ""
+            data.totalsConfig.discountType === "percent" ? ` (${data.totalsConfig.discountValue}%)` : ""
           }`}
           value={`- ${formatCurrency(totals.discountAmount, currency)}`}
         />
@@ -420,10 +411,7 @@ function InvoiceTotals({
         />
       ) : null}
       {totalsBlock.showShipping && totals.shippingFee > 0 ? (
-        <TotalLine
-          label={labels.shipping || "Shipping"}
-          value={formatCurrency(totals.shippingFee, currency)}
-        />
+        <TotalLine label={labels.shipping || "Shipping"} value={formatCurrency(totals.shippingFee, currency)} />
       ) : null}
       <View style={[styles.grandTotal, { borderColor: theme.borderColor }]}>
         <Text>{labels.total || "Total Due"}</Text>
@@ -453,12 +441,7 @@ function InvoiceTotals({
           ]}
         >
           <Text style={styles.bold}>{labels.balanceDue || "Balance Due"}</Text>
-          <Text
-            style={[
-              styles.balanceAmount,
-              { color: highlighted ? theme.surfaceColor : theme.primaryColor },
-            ]}
-          >
+          <Text style={[styles.balanceAmount, { color: highlighted ? theme.surfaceColor : theme.primaryColor }]}>
             {formatCurrency(totals.balanceDue, currency)}
           </Text>
         </View>
@@ -503,19 +486,11 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
   const businessAddress = addressLines(data.business);
   const clientAddress = addressLines(data.client);
   const acceptedMethods = paymentMethods(data.payment.methods ?? []);
-  const showProject =
-    visibility.showMetaBlock && metaBlock.showProjectName && data.invoice.projectName;
+  const showProject = visibility.showMetaBlock && metaBlock.showProjectName && data.invoice.projectName;
   const showPo = visibility.showMetaBlock && metaBlock.showPoNumber && data.invoice.poNumber;
   const showNotes = visibility.showNotes && notesBlock.showNotes && data.notes.notes;
   const showTerms = visibility.showTerms && notesBlock.showTerms && data.notes.terms;
-  const logoHeight =
-    header.logoSize === "xs"
-      ? 24
-      : header.logoSize === "sm"
-        ? 32
-        : header.logoSize === "lg"
-          ? 52
-          : 42;
+  const logoHeight = header.logoSize === "xs" ? 24 : header.logoSize === "sm" ? 32 : header.logoSize === "lg" ? 52 : 42;
 
   return (
     <Document
@@ -541,9 +516,7 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
         ]}
         wrap
       >
-        {page.showPageBorder ? (
-          <View fixed style={[styles.pageBorder, { borderColor: theme.primaryColor }]} />
-        ) : null}
+        {page.showPageBorder ? <View fixed style={[styles.pageBorder, { borderColor: theme.primaryColor }]} /> : null}
         {layoutFamily !== "minimal" ? (
           <View fixed style={[styles.topAccent, { backgroundColor: theme.primaryColor }]} />
         ) : null}
@@ -576,18 +549,11 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
             >
               <View style={styles.boldHeaderTop}>
                 {visibility.showLogo && data.business.logo ? (
-                  <Image
-                    src={data.business.logo}
-                    style={[styles.logo, { height: logoHeight, marginBottom: 0 }]}
-                  />
+                  <Image src={data.business.logo} style={[styles.logo, { height: logoHeight, marginBottom: 0 }]} />
                 ) : (
-                  <Text style={[styles.bold, { fontSize: 14 }]}>
-                    {data.business.name || "Business Name"}
-                  </Text>
+                  <Text style={[styles.bold, { fontSize: 14 }]}>{data.business.name || "Business Name"}</Text>
                 )}
-                {header.showInvoiceTitle ? (
-                  <Text style={[styles.bold, { fontSize: headingSize }]}>{title}</Text>
-                ) : null}
+                {header.showInvoiceTitle ? <Text style={[styles.bold, { fontSize: headingSize }]}>{title}</Text> : null}
               </View>
               <View style={styles.boldHeaderBottom}>
                 {visibility.showBusinessBlock ? (
@@ -631,12 +597,7 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
                     <Image src={data.business.logo} style={[styles.logo, { height: logoHeight }]} />
                   ) : null}
                   {businessBlock.showBusinessName ? (
-                    <Text
-                      style={[
-                        styles.businessName,
-                        { color: theme.primaryColor, fontSize: headingSize },
-                      ]}
-                    >
+                    <Text style={[styles.businessName, { color: theme.primaryColor, fontSize: headingSize }]}>
                       {data.business.name || "Business Name"}
                     </Text>
                   ) : null}
@@ -669,19 +630,13 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
               {visibility.showMetaBlock || header.showInvoiceTitle ? (
                 <View style={styles.meta}>
                   {header.showInvoiceTitle ? (
-                    <Text style={[styles.invoiceTitle, { color: theme.primaryColor }]}>
-                      {title}
-                    </Text>
+                    <Text style={[styles.invoiceTitle, { color: theme.primaryColor }]}>{title}</Text>
                   ) : null}
                   {header.showStatusBadge ? <Text style={styles.status}>Saved</Text> : null}
                   {visibility.showMetaBlock && metaBlock.showInvoiceNumber ? (
-                    <Text style={[styles.infoName, styles.right]}>
-                      #{data.invoice.invoiceNumber || "INV-YYYY-001"}
-                    </Text>
+                    <Text style={[styles.infoName, styles.right]}>#{data.invoice.invoiceNumber || "INV-YYYY-001"}</Text>
                   ) : null}
-                  {visibility.showMetaBlock &&
-                  metaBlock.showInvoiceDate &&
-                  data.invoice.invoiceDate ? (
+                  {visibility.showMetaBlock && metaBlock.showInvoiceDate && data.invoice.invoiceDate ? (
                     <DetailLine>
                       {labels.invoiceDate}: {data.invoice.invoiceDate}
                     </DetailLine>
@@ -691,9 +646,7 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
                       {labels.dueDate}: {data.invoice.dueDate}
                     </DetailLine>
                   ) : null}
-                  {visibility.showMetaBlock &&
-                  metaBlock.showPaymentTerms &&
-                  data.invoice.paymentTerms ? (
+                  {visibility.showMetaBlock && metaBlock.showPaymentTerms && data.invoice.paymentTerms ? (
                     <DetailLine>
                       {labels.paymentTerms}: {data.invoice.paymentTerms}
                     </DetailLine>
@@ -709,9 +662,7 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
                 <View
                   style={[
                     styles.infoBlock,
-                    ...(layoutFamily === "modern" ||
-                    layoutFamily === "service" ||
-                    layoutFamily === "bold"
+                    ...(layoutFamily === "modern" || layoutFamily === "service" || layoutFamily === "bold"
                       ? [
                           styles.boxedInfo,
                           {
@@ -743,12 +694,8 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
                   {clientBlock.showAddress
                     ? clientAddress.map((line) => <DetailLine key={line}>{line}</DetailLine>)
                     : null}
-                  {clientBlock.showEmail && data.client.email ? (
-                    <DetailLine>{data.client.email}</DetailLine>
-                  ) : null}
-                  {clientBlock.showPhone && data.client.phone ? (
-                    <DetailLine>{data.client.phone}</DetailLine>
-                  ) : null}
+                  {clientBlock.showEmail && data.client.email ? <DetailLine>{data.client.email}</DetailLine> : null}
+                  {clientBlock.showPhone && data.client.phone ? <DetailLine>{data.client.phone}</DetailLine> : null}
                 </View>
               ) : (
                 <View style={styles.infoBlock} />
@@ -818,9 +765,7 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
                 <Text
                   style={[
                     styles.tableHeaderText,
-                    lineItemsTable.showItemNumbers
-                      ? styles.descriptionColumnWithNumber
-                      : styles.descriptionColumn,
+                    lineItemsTable.showItemNumbers ? styles.descriptionColumnWithNumber : styles.descriptionColumn,
                   ]}
                 >
                   {lineItemsTable.descriptionLabel || "Description"}
@@ -828,9 +773,7 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
                 <Text style={[styles.tableHeaderText, styles.quantityColumn]}>
                   {lineItemsTable.quantityLabel || "Qty"}
                 </Text>
-                <Text style={[styles.tableHeaderText, styles.rateColumn]}>
-                  {lineItemsTable.rateLabel || "Rate"}
-                </Text>
+                <Text style={[styles.tableHeaderText, styles.rateColumn]}>{lineItemsTable.rateLabel || "Rate"}</Text>
                 <Text style={[styles.tableHeaderText, styles.amountColumn]}>
                   {lineItemsTable.amountLabel || "Amount"}
                 </Text>
@@ -856,19 +799,13 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
                       ]}
                       wrap={!pdf.avoidRowSplit}
                     >
-                      {lineItemsTable.showItemNumbers ? (
-                        <Text style={styles.itemNumberColumn}>{index + 1}</Text>
-                      ) : null}
+                      {lineItemsTable.showItemNumbers ? <Text style={styles.itemNumberColumn}>{index + 1}</Text> : null}
                       <View
                         style={
-                          lineItemsTable.showItemNumbers
-                            ? styles.descriptionColumnWithNumber
-                            : styles.descriptionColumn
+                          lineItemsTable.showItemNumbers ? styles.descriptionColumnWithNumber : styles.descriptionColumn
                         }
                       >
-                        <Text style={styles.itemDescription}>
-                          {item.description || "Deliverable item"}
-                        </Text>
+                        <Text style={styles.itemDescription}>{item.description || "Deliverable item"}</Text>
                         {item.taxable && lineItemsTable.showTaxableColumn ? (
                           <Text
                             style={[
@@ -912,10 +849,7 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
                       style={[
                         styles.paymentBox,
                         {
-                          backgroundColor:
-                            paymentBlock.style === "muted"
-                              ? theme.backgroundColor
-                              : theme.surfaceColor,
+                          backgroundColor: paymentBlock.style === "muted" ? theme.backgroundColor : theme.surfaceColor,
                           borderColor: theme.borderColor,
                         },
                       ]}
@@ -952,10 +886,7 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
                         style={[
                           styles.noteBox,
                           {
-                            backgroundColor:
-                              notesBlock.style === "muted"
-                                ? theme.backgroundColor
-                                : theme.surfaceColor,
+                            backgroundColor: notesBlock.style === "muted" ? theme.backgroundColor : theme.surfaceColor,
                             borderColor: theme.borderColor,
                           },
                         ]}
@@ -973,10 +904,7 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
                         style={[
                           styles.noteBox,
                           {
-                            backgroundColor:
-                              notesBlock.style === "muted"
-                                ? theme.backgroundColor
-                                : theme.surfaceColor,
+                            backgroundColor: notesBlock.style === "muted" ? theme.backgroundColor : theme.surfaceColor,
                             borderColor: theme.borderColor,
                           },
                         ]}
@@ -995,9 +923,7 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
                       ? `Late fee notice: ${data.payment.lateFeeNote}`
                       : ""}
                   </Text>
-                  <Text style={styles.thankYou}>
-                    {notesBlock.showThankYouNote ? data.payment.thankYouNote : ""}
-                  </Text>
+                  <Text style={styles.thankYou}>{notesBlock.showThankYouNote ? data.payment.thankYouNote : ""}</Text>
                 </View>
               ) : null}
             </View>
@@ -1005,16 +931,9 @@ export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumen
         </View>
 
         {(visibility.showFooter && footer.showFooter) || pdf.showPageNumbers ? (
-          <View
-            fixed
-            style={[styles.footer, { borderColor: theme.borderColor, color: theme.mutedTextColor }]}
-          >
-            <Text style={{ width: "20%" }}>
-              {footer.showGeneratedWith ? "SmartTools Paperwork" : ""}
-            </Text>
-            <Text style={styles.footerText}>
-              {visibility.showFooter && footer.showFooter ? footer.text : ""}
-            </Text>
+          <View fixed style={[styles.footer, { borderColor: theme.borderColor, color: theme.mutedTextColor }]}>
+            <Text style={{ width: "20%" }}>{footer.showGeneratedWith ? "SmartTools Paperwork" : ""}</Text>
+            <Text style={styles.footerText}>{visibility.showFooter && footer.showFooter ? footer.text : ""}</Text>
             {pdf.showPageNumbers ? (
               <Text
                 render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}

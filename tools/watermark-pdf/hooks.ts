@@ -9,11 +9,7 @@
  * signature it decides on is inlined instead.
  */
 
-import type {
-  ToolPagesInspected,
-  ToolRunFile,
-  ToolValidate,
-} from "../../lib/tool-framework/run.ts";
+import type { ToolPagesInspected, ToolRunFile, ToolValidate } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;

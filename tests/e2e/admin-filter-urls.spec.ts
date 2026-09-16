@@ -6,10 +6,7 @@ test("admin list filter URLs survive reloads and history navigation", async ({ p
   await new AuthPage(page).signIn(
     E2E_ACCOUNTS.admin.email,
     E2E_PASSWORD,
-    new URL(
-      "/admin/templates?query=Invoice&query=ignored&type=invoice&status=draft&mode=advanced",
-      baseURL,
-    ).href,
+    new URL("/admin/templates?query=Invoice&query=ignored&type=invoice&status=draft&mode=advanced", baseURL).href,
   );
   await expect(page.getByLabel("Search templates")).toHaveValue("Invoice");
   await expect(page.getByRole("combobox", { name: "Document type" })).toHaveText("Invoice");
@@ -36,9 +33,7 @@ test("admin list filter URLs survive reloads and history navigation", async ({ p
   await expect(page.getByLabel("Search templates")).toHaveValue("");
   await expect(page.getByLabel("Search templates")).toBeFocused();
   await expect(page.getByRole("button", { name: "Reset", exact: true })).toBeDisabled();
-  await expect(page.getByRole("combobox", { name: "Document type" })).toHaveText(
-    "All document types",
-  );
+  await expect(page.getByRole("combobox", { name: "Document type" })).toHaveText("All document types");
   await page.goBack();
   await expect(page.getByLabel("Search templates")).toHaveValue("Receipt");
   await expect(page.getByRole("combobox", { name: "Editor", exact: true })).toHaveText("Standard");
@@ -52,15 +47,9 @@ test("admin list filter URLs survive reloads and history navigation", async ({ p
   await expect(page.getByRole("button", { name: "Reset", exact: true })).toBeDisabled();
 
   await page.goto("/admin/templates?query=Invoice&type=invalid&status=invalid&mode=invalid");
-  await expect(page.getByRole("combobox", { name: "Document type" })).toHaveText(
-    "All document types",
-  );
-  await expect(page.getByRole("combobox", { name: "Status", exact: true })).toHaveText(
-    "All statuses",
-  );
-  await expect(page.getByRole("combobox", { name: "Editor", exact: true })).toHaveText(
-    "Standard + advanced",
-  );
+  await expect(page.getByRole("combobox", { name: "Document type" })).toHaveText("All document types");
+  await expect(page.getByRole("combobox", { name: "Status", exact: true })).toHaveText("All statuses");
+  await expect(page.getByRole("combobox", { name: "Editor", exact: true })).toHaveText("Standard + advanced");
 
   await page.goto("/admin/users?q=E2E&role=admin");
   const userSearch = page.getByLabel("Search", { exact: true });
@@ -91,9 +80,7 @@ test("admin list filter URLs survive reloads and history navigation", async ({ p
   await role.click();
   await page.getByRole("option", { name: "Admin", exact: true }).click();
   await expect(page).toHaveURL(
-    (url) =>
-      url.searchParams.get("q") === E2E_ACCOUNTS.user.email &&
-      url.searchParams.get("role") === "admin",
+    (url) => url.searchParams.get("q") === E2E_ACCOUNTS.user.email && url.searchParams.get("role") === "admin",
   );
   await expect(page.getByText("No users matched", { exact: true })).toBeVisible();
   await page.goBack();
@@ -115,15 +102,11 @@ test("admin list filter URLs survive reloads and history navigation", async ({ p
   await expect(dateRange).toHaveText("Last 7 days");
   await expect(page.getByLabel("Search events")).toHaveValue("E2E");
   await page.getByLabel("Search events").fill("role");
-  await expect(page).toHaveURL(
-    (url) => url.searchParams.get("q") === "role" && url.searchParams.get("date") === "7",
-  );
+  await expect(page).toHaveURL((url) => url.searchParams.get("q") === "role" && url.searchParams.get("date") === "7");
   await expect(page.getByLabel("Search events")).toBeFocused();
   await dateRange.click();
   await page.getByRole("option", { name: "Last 90 days" }).click();
-  await expect(page).toHaveURL(
-    (url) => url.searchParams.get("q") === "role" && url.searchParams.get("date") === "90",
-  );
+  await expect(page).toHaveURL((url) => url.searchParams.get("q") === "role" && url.searchParams.get("date") === "90");
   await expect(dateRange).toHaveText("Last 90 days");
   await page.goBack();
   await expect(dateRange).toHaveText("Last 7 days");
@@ -138,36 +121,23 @@ test("admin list filter URLs survive reloads and history navigation", async ({ p
   await expect(page.getByLabel("Search events")).toHaveValue("");
   await expect(page.getByLabel("Search events")).toBeFocused();
   await expect(dateRange).toHaveText("Last 30 days");
-  await expect(page.getByRole("combobox", { name: "Action", exact: true })).toHaveText(
-    "All actions",
-  );
+  await expect(page.getByRole("combobox", { name: "Action", exact: true })).toHaveText("All actions");
   await expect(reset).toBeDisabled();
   await page.reload();
   await expect(dateRange).toHaveText("Last 30 days");
   await expect(reset).toBeDisabled();
   await page.goto("/admin/audit?action=template.archive");
-  await expect(page.getByRole("combobox", { name: "Action", exact: true })).toHaveText(
-    "Archived template",
-  );
+  await expect(page.getByRole("combobox", { name: "Action", exact: true })).toHaveText("Archived template");
   await page.reload();
-  await expect(page.getByRole("combobox", { name: "Action", exact: true })).toHaveText(
-    "Archived template",
-  );
+  await expect(page.getByRole("combobox", { name: "Action", exact: true })).toHaveText("Archived template");
   await page.goto("/admin/audit?date=invalid&action=invalid");
   await expect(dateRange).toHaveText("Last 30 days");
   await expect(page.getByRole("combobox", { name: "Action", exact: true })).toHaveText("Invalid");
   await expect(page.getByRole("table")).toHaveCount(0);
 });
 
-test("catalog suites and quick views are mutually exclusive across URLs and history", async ({
-  page,
-  baseURL,
-}) => {
-  await new AuthPage(page).signIn(
-    E2E_ACCOUNTS.admin.email,
-    E2E_PASSWORD,
-    new URL("/admin/tools?q=pdf", baseURL).href,
-  );
+test("catalog suites and quick views are mutually exclusive across URLs and history", async ({ page, baseURL }) => {
+  await new AuthPage(page).signIn(E2E_ACCOUNTS.admin.email, E2E_PASSWORD, new URL("/admin/tools?q=pdf", baseURL).href);
   const rail = page.getByRole("complementary", { name: "Catalog views" });
   const suite = page.getByRole("combobox", { name: "Suite", exact: true });
   const visibility = page.getByRole("combobox", { name: "Visibility", exact: true });
@@ -176,9 +146,7 @@ test("catalog suites and quick views are mutually exclusive across URLs and hist
   const allTools = rail.getByRole("button", { name: /^All tools\b/ });
 
   await media.click();
-  await expect(page).toHaveURL(
-    (url) => url.searchParams.get("app") === "media" && !url.searchParams.has("visibility"),
-  );
+  await expect(page).toHaveURL((url) => url.searchParams.get("app") === "media" && !url.searchParams.has("visibility"));
   await expect(media).toHaveAttribute("aria-pressed", "true");
   await hidden.click();
   await expect(page).toHaveURL(
@@ -214,9 +182,7 @@ test("catalog suites and quick views are mutually exclusive across URLs and hist
   await expect(hidden).toHaveAttribute("aria-pressed", "false");
   await visibility.click();
   await page.getByRole("option", { name: "Drafts", exact: true }).click();
-  await expect(page).toHaveURL(
-    (url) => url.searchParams.get("visibility") === "draft" && !url.searchParams.has("app"),
-  );
+  await expect(page).toHaveURL((url) => url.searchParams.get("visibility") === "draft" && !url.searchParams.has("app"));
   await expect(suite).toHaveText("All suites");
   await expect(allTools).toHaveAttribute("aria-pressed", "false");
 

@@ -50,9 +50,7 @@ export function checkRateLimit(
     const windowMs = positiveInteger(options?.windowMs, DEFAULT_WINDOW_MS);
     const injectedNow = options?.now;
     const now =
-      typeof injectedNow === "number" && Number.isFinite(injectedNow) && injectedNow >= 0
-        ? injectedNow
-        : currentTime();
+      typeof injectedNow === "number" && Number.isFinite(injectedNow) && injectedNow >= 0 ? injectedNow : currentTime();
 
     evictExpired(now);
 

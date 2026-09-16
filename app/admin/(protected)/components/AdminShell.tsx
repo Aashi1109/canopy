@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Caption,
-  BrandLockup,
-  AccountNavigation,
-  type AccountNavigationProps,
-} from "@smarttools/ui";
+import { Caption, BrandLockup, AccountNavigation, type AccountNavigationProps } from "@smarttools/ui";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { AdminNavigation } from "./AdminNavigation";
@@ -19,17 +14,10 @@ function isFullPageTemplateLifecycle(pathname: string) {
   );
 }
 
-export function AdminShell({
-  children,
-  user,
-}: {
-  children: ReactNode;
-  user: AccountNavigationProps["user"];
-}) {
+export function AdminShell({ children, user }: { children: ReactNode; user: AccountNavigationProps["user"] }) {
   const pathname = usePathname();
   const isToolsCatalog = pathname === "/admin/tools";
-  const isBlogDocument =
-    pathname.startsWith("/admin/blog/") && !pathname.startsWith("/admin/blog/taxonomy");
+  const isBlogDocument = pathname.startsWith("/admin/blog/") && !pathname.startsWith("/admin/blog/taxonomy");
 
   if (isBlogDocument) {
     return <main className="fixed inset-0 overflow-hidden bg-card">{children}</main>;
@@ -64,9 +52,7 @@ export function AdminShell({
       <div className="flex min-h-0 w-full flex-1 flex-col lg:flex-row">
         {!isBlogDocument && (
           <aside className="shrink-0 overflow-hidden border-b border-border bg-card px-4 py-3 lg:h-full lg:w-60 lg:border-r lg:border-b-0 lg:px-4 lg:py-6">
-            <Caption className="block mb-3 hidden px-3 text-muted-foreground lg:block">
-              WORKSPACE
-            </Caption>
+            <Caption className="block mb-3 hidden px-3 text-muted-foreground lg:block">WORKSPACE</Caption>
             <AdminNavigation />
             <div className="mt-6 hidden rounded-lg bg-muted p-3 lg:block">
               <Caption className="block">Code is the source</Caption>

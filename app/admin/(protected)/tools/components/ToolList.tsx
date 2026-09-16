@@ -48,12 +48,7 @@ import { updateAdminQuery, useAdminQueryState } from "@/app/admin/hooks/useAdmin
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ToolIcon } from "../../../../../components/ToolIcon";
 import type { ToolIconRow } from "../../../../../lib/tool-framework/icons";
-import {
-  archiveToolAction,
-  reorderToolsAction,
-  toggleToolAction,
-  updateToolAction,
-} from "../../../actions";
+import { archiveToolAction, reorderToolsAction, toggleToolAction, updateToolAction } from "../../../actions";
 
 /**
  * Uploaded icons, keyed by tool id. Nothing here names a tool: a tool without
@@ -155,19 +150,8 @@ function ToolConfiguration({ onClose, tool }: { onClose: () => void; tool: Admin
       <form action={updateToolAction} className="grid gap-4 lg:grid-cols-2">
         <input name="toolId" type="hidden" value={tool.id} />
         <input name="archived" type="hidden" value="true" />
-        <Field
-          className={tool.slug ? "lg:col-span-2" : undefined}
-          htmlFor={`${tool.id}-name`}
-          label="Name"
-          required
-        >
-          <Input
-            defaultValue={tool.name}
-            id={`${tool.id}-name`}
-            maxLength={160}
-            name="name"
-            required
-          />
+        <Field className={tool.slug ? "lg:col-span-2" : undefined} htmlFor={`${tool.id}-name`} label="Name" required>
+          <Input defaultValue={tool.name} id={`${tool.id}-name`} maxLength={160} name="name" required />
         </Field>
         {!tool.slug ? (
           <Field
@@ -185,12 +169,7 @@ function ToolConfiguration({ onClose, tool }: { onClose: () => void; tool: Admin
             />
           </Field>
         ) : null}
-        <Field
-          className="lg:col-span-2"
-          htmlFor={`${tool.id}-description`}
-          label="Description"
-          required
-        >
+        <Field className="lg:col-span-2" htmlFor={`${tool.id}-description`} label="Description" required>
           <Textarea
             defaultValue={tool.description}
             id={`${tool.id}-description`}
@@ -354,10 +333,7 @@ function ToolRow({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button asChild size="icon-sm" variant="ghost">
-                    <Link
-                      aria-label={`Edit ${tool.name}`}
-                      href={`/admin/tools/${encodeURIComponent(tool.id)}`}
-                    >
+                    <Link aria-label={`Edit ${tool.name}`} href={`/admin/tools/${encodeURIComponent(tool.id)}`}>
                       <Pencil aria-hidden="true" className="size-4" />
                     </Link>
                   </Button>
@@ -438,10 +414,7 @@ function ToolGroup({
   }
 
   return (
-    <section
-      aria-labelledby={`${app}-tools-heading`}
-      className="border-b border-border last:border-b-0"
-    >
+    <section aria-labelledby={`${app}-tools-heading`} className="border-b border-border last:border-b-0">
       <div className="flex min-h-9 items-center gap-2 border-b border-border bg-muted px-4">
         <Overline className="text-muted-foreground" id={`${app}-tools-heading`}>
           {title}
@@ -528,10 +501,7 @@ export interface ToolListProps {
 export function ToolList({ icons, tools }: ToolListProps) {
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useAdminQueryState<string>("q", "");
-  const [selectedApp] = useAdminQueryState<AppFilter>("app", "all", [
-    "all",
-    ...GROUPS.map((group) => group.app),
-  ]);
+  const [selectedApp] = useAdminQueryState<AppFilter>("app", "all", ["all", ...GROUPS.map((group) => group.app)]);
   const [visibility] = useAdminQueryState<VisibilityFilter>("visibility", "all", [
     "all",
     "visible",
@@ -584,10 +554,7 @@ export function ToolList({ icons, tools }: ToolListProps) {
     ];
   }, [appFilter, tools]);
 
-  const [categoryFilter, setCategoryFilter] = useAdminQueryState("category", "all", [
-    "all",
-    ...availableCategories,
-  ]);
+  const [categoryFilter, setCategoryFilter] = useAdminQueryState("category", "all", ["all", ...availableCategories]);
 
   const filteredTools = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -596,20 +563,13 @@ export function ToolList({ icons, tools }: ToolListProps) {
       if (categoryFilter !== "all" && tool.category !== categoryFilter) return false;
       if (!matchesVisibility(tool, visibility)) return false;
       if (!normalizedQuery) return true;
-      return [
-        tool.name,
-        tool.slug,
-        tool.componentKey,
-        tool.description,
-        tool.category,
-        ...(tool.keywords ?? []),
-      ].some((value) => value?.toLocaleLowerCase().includes(normalizedQuery));
+      return [tool.name, tool.slug, tool.componentKey, tool.description, tool.category, ...(tool.keywords ?? [])].some(
+        (value) => value?.toLocaleLowerCase().includes(normalizedQuery),
+      );
     });
   }, [appFilter, categoryFilter, query, tools, visibility]);
 
-  const hasFilters = Boolean(
-    query || appFilter !== "all" || categoryFilter !== "all" || visibility !== "all",
-  );
+  const hasFilters = Boolean(query || appFilter !== "all" || categoryFilter !== "all" || visibility !== "all");
   const canReorder = !query.trim() && categoryFilter === "all" && visibility === "all";
   const resultsTitle =
     categoryFilter !== "all"
@@ -765,9 +725,7 @@ export function ToolList({ icons, tools }: ToolListProps) {
             <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-4">
               <div className="flex min-w-0 items-baseline gap-2">
                 <H3 className="truncate">{resultsTitle}</H3>
-                <Caption className="shrink-0 text-muted-foreground">
-                  {filteredTools.length} matches
-                </Caption>
+                <Caption className="shrink-0 text-muted-foreground">{filteredTools.length} matches</Caption>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 {availableCategories.length ? (
@@ -815,12 +773,7 @@ export function ToolList({ icons, tools }: ToolListProps) {
                     <Muted className="mt-1 text-muted-foreground">
                       Try a different search or clear the active filters.
                     </Muted>
-                    <Button
-                      className="mt-4"
-                      onClick={resetFilters}
-                      type="button"
-                      variant="secondary"
-                    >
+                    <Button className="mt-4" onClick={resetFilters} type="button" variant="secondary">
                       Clear filters
                     </Button>
                   </div>

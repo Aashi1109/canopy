@@ -227,10 +227,7 @@ export class PostgresApiProvider implements IDataStoreProvider {
     if (typeof window === "undefined") return "default_user";
     let id = localStorage.getItem("paperwork_kit_user_id");
     if (!id) {
-      id =
-        "usr_" +
-        Math.random().toString(36).substring(2, 15) +
-        Math.random().toString(36).substring(2, 15);
+      id = "usr_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
       localStorage.setItem("paperwork_kit_user_id", id);
     }
     return id;

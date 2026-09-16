@@ -140,23 +140,18 @@ export function ChapterScrubber({
     ? clamp(hoverLengthMultiplier, 1, 12)
     : 4;
   const resolvedPeakLength = resolvedRestLength * resolvedHoverLengthMultiplier;
-  const resolvedPreviewCardGap = Number.isFinite(previewCardGap)
-    ? Math.max(0, previewCardGap)
-    : CARD_GAP;
+  const resolvedPreviewCardGap = Number.isFinite(previewCardGap) ? Math.max(0, previewCardGap) : CARD_GAP;
   const resolvedPreviewCardWidth = Number.isFinite(previewCardWidth)
     ? Math.min(cardMaxWidth, clamp(previewCardWidth ?? CARD_MAX_WIDTH, 96, CARD_MAX_WIDTH))
     : cardMaxWidth;
   const minimumRowHeight = density === "compact" ? 5 : 24;
-  const resolvedRowHeight =
-    Number.isFinite(rowHeight) && rowHeight >= minimumRowHeight ? rowHeight : minimumRowHeight;
+  const resolvedRowHeight = Number.isFinite(rowHeight) && rowHeight >= minimumRowHeight ? rowHeight : minimumRowHeight;
   const resolvedRadius = Number.isFinite(radius) && radius > 0 ? radius : 4;
   const normalizedCurrentIndex =
     currentIndex === undefined || lastIndex < 0
       ? 0
       : clamp(Number.isFinite(currentIndex) ? Math.round(currentIndex) : 0, 0, lastIndex);
-  const rovingIndex = engaged
-    ? clamp(activeIndex, 0, Math.max(lastIndex, 0))
-    : normalizedCurrentIndex;
+  const rovingIndex = engaged ? clamp(activeIndex, 0, Math.max(lastIndex, 0)) : normalizedCurrentIndex;
 
   function updatePointer(nextPointer: number) {
     pointer.set(nextPointer);
@@ -366,11 +361,7 @@ export function ChapterScrubber({
 
   if (chapters.length === 0) {
     return (
-      <div
-        className={cn("text-sm text-muted-foreground", className)}
-        data-slot="chapter-scrubber-empty"
-        role="status"
-      >
+      <div className={cn("text-sm text-muted-foreground", className)} data-slot="chapter-scrubber-empty" role="status">
         No chapters available.
       </div>
     );
@@ -399,8 +390,7 @@ export function ChapterScrubber({
       >
         {chapters.map((chapter, index) => {
           const current = currentIndex !== undefined && index === normalizedCurrentIndex;
-          const description =
-            typeof chapter.description === "string" ? `. ${chapter.description}` : "";
+          const description = typeof chapter.description === "string" ? `. ${chapter.description}` : "";
 
           return (
             <button
@@ -414,11 +404,7 @@ export function ChapterScrubber({
               id={optionId(index)}
               key={chapter.id}
               onClick={() => {
-                if (
-                  showPreviewCard &&
-                  lastPointerTypeRef.current === "touch" &&
-                  touchPreviewRef.current !== index
-                ) {
+                if (showPreviewCard && lastPointerTypeRef.current === "touch" && touchPreviewRef.current !== index) {
                   touchPreviewRef.current = index;
                   engageAt(index, index);
                   return;

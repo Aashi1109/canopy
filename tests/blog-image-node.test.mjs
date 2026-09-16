@@ -5,10 +5,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { history, undo } from "@tiptap/pm/history";
 import { EditorState, NodeSelection } from "@tiptap/pm/state";
 import { EditorView } from "@tiptap/pm/view";
-import {
-  BlogImageNode,
-  blogEditorImageSource,
-} from "../app/admin/(protected)/blog/lib/imageNode.ts";
+import { BlogImageNode, blogEditorImageSource } from "../app/admin/(protected)/blog/lib/imageNode.ts";
 import { createDraftPersistence } from "../app/admin/(protected)/blog/lib/draftPersistence.ts";
 import { createBlogDocument, validateBlogDocument } from "../lib/blog/document.ts";
 
@@ -24,9 +21,7 @@ const image = {
   alignment: "right",
 };
 const schema = getSchema([StarterKit, BlogImageNode.configure({ cloudName: "blog-cloud" })]);
-const parse = schema.nodes.image.spec.parseDOM.find(
-  (rule) => rule.tag === "figure[data-blog-image]",
-).getAttrs;
+const parse = schema.nodes.image.spec.parseDOM.find((rule) => rule.tag === "figure[data-blog-image]").getAttrs;
 function figure(metadata, src = blogEditorImageSource(image, "blog-cloud"), extra = {}) {
   return {
     getAttribute(name) {
@@ -84,9 +79,7 @@ test("native image drops move the image in either direction, preserve metadata, 
     assert.equal(view.dragging, null);
     assert.deepEqual(
       state.doc.toJSON(),
-      schema.nodes.doc
-        .create(null, target === 0 ? [imageNode, before, after] : [before, after, imageNode])
-        .toJSON(),
+      schema.nodes.doc.create(null, target === 0 ? [imageNode, before, after] : [before, after, imageNode]).toJSON(),
     );
     assert.ok(state.selection instanceof NodeSelection);
     assert.deepEqual({ ...state.selection.node.attrs }, image);
@@ -107,10 +100,7 @@ test("the installed image node serializes and parses clipboard metadata without 
   assert.equal(rendered[2][0], "img");
   const parsed = parse(figure(rendered[1]["data-blog-image"], rendered[2][1].src));
   assert.deepEqual(parsed, image);
-  assert.deepEqual(
-    schema.nodes.image.create(parsed).toJSON().attrs,
-    schema.nodes.image.create(image).toJSON().attrs,
-  );
+  assert.deepEqual(schema.nodes.image.create(parsed).toJSON().attrs, schema.nodes.image.create(image).toJSON().attrs);
 });
 
 test("validated clipboard metadata cannot be overridden by arbitrary HTML attributes", () => {
@@ -179,11 +169,7 @@ test("clipboard parsing rejects untrusted URLs, malformed metadata, and values o
     { caption: "\ud800" },
     { src: "https://external.invalid/image.png" },
   ])
-    assert.equal(
-      parse(figure(JSON.stringify({ ...image, ...attrs }))),
-      false,
-      JSON.stringify(attrs),
-    );
+    assert.equal(parse(figure(JSON.stringify({ ...image, ...attrs }))), false, JSON.stringify(attrs));
 });
 
 test("copied image JSON survives the plain Server Action payload and backend validation", async () => {

@@ -73,11 +73,7 @@ export async function parseCsvRun(
 
 export function serializeCsvRow(row: readonly string[], delimiter: string): string {
   return row
-    .map((value) =>
-      value.includes(delimiter) || /["\r\n]/.test(value)
-        ? `"${value.replaceAll('"', '""')}"`
-        : value,
-    )
+    .map((value) => (value.includes(delimiter) || /["\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value))
     .join(delimiter);
 }
 

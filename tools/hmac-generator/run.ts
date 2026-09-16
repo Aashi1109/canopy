@@ -45,11 +45,7 @@ async function hmacText(value: string, key: string, algorithm: string): Promise<
     false,
     ["sign"],
   );
-  const signature = await getCrypto().subtle.sign(
-    "HMAC",
-    cryptoKey,
-    new TextEncoder().encode(value),
-  );
+  const signature = await getCrypto().subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(value));
   return bytesToHex(new Uint8Array(signature));
 }
 

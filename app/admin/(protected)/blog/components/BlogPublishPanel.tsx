@@ -79,9 +79,7 @@ export function BlogPublishPanel({
         if (ready && canPublish && !pending) onSubmit();
       }}
     >
-      <h2 className="text-lg font-semibold">
-        {mode === "schedule" ? "Publication time" : "Publishing options"}
-      </h2>
+      <h2 className="text-lg font-semibold">{mode === "schedule" ? "Publication time" : "Publishing options"}</h2>
       <div className="grid gap-2">
         <Label className="text-[13px]" htmlFor="blog-publish-mode">
           When to publish
@@ -170,8 +168,7 @@ export function BlogPublishPanel({
             </Select>
           </div>
           <p className="text-xs text-muted-foreground">
-            Choose a future time. Publishing runs every 30 minutes; this post goes live on the next
-            eligible run.
+            Choose a future time. Publishing runs every 30 minutes; this post goes live on the next eligible run.
           </p>
           {schedule.date && (
             <p className="text-[13px] font-semibold text-primary">
@@ -256,12 +253,8 @@ export function BlogPublishPanel({
           {error} Your draft is still available.
         </AlertBanner>
       )}
-      {!canPublish && (
-        <p className="text-[13px] text-muted-foreground">Publishing permission is required.</p>
-      )}
-      <div
-        className={`${styles.publishActions} flex items-center justify-end gap-3 border-t border-border pt-4`}
-      >
+      {!canPublish && <p className="text-[13px] text-muted-foreground">Publishing permission is required.</p>}
+      <div className={`${styles.publishActions} flex items-center justify-end gap-3 border-t border-border pt-4`}>
         <Button size="sm" variant="ghost" onClick={onBack} disabled={pending}>
           Keep as draft
         </Button>

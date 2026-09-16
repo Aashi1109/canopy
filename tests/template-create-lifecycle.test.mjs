@@ -11,16 +11,15 @@ const adminShell = "app/admin/(protected)/components/AdminShell.tsx";
 const adminLayout = "app/admin/(protected)/layout.tsx";
 
 test("template lifecycle uses dedicated full-page routes", async () => {
-  const [list, standardCreate, advancedCreate, importRoute, manageRoute, shell, layout] =
-    await Promise.all([
-      readFile(templatesPage, "utf8"),
-      readFile(standardCreatePage, "utf8"),
-      readFile(advancedCreatePage, "utf8"),
-      readFile(importPage, "utf8"),
-      readFile(managePage, "utf8"),
-      readFile(adminShell, "utf8"),
-      readFile(adminLayout, "utf8"),
-    ]);
+  const [list, standardCreate, advancedCreate, importRoute, manageRoute, shell, layout] = await Promise.all([
+    readFile(templatesPage, "utf8"),
+    readFile(standardCreatePage, "utf8"),
+    readFile(advancedCreatePage, "utf8"),
+    readFile(importPage, "utf8"),
+    readFile(managePage, "utf8"),
+    readFile(adminShell, "utf8"),
+    readFile(adminLayout, "utf8"),
+  ]);
 
   assert.match(list, /href="\/admin\/templates\/new"/);
   assert.match(list, /href="\/admin\/templates\/new\/advanced"/);

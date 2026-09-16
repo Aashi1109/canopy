@@ -17,9 +17,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const alphabet = ALPHABETS[ctx.settings.charset];
   return {
     render: "list",
-    items: Array.from({ length: ctx.settings.count }, () =>
-      randomString(ctx.settings.length, alphabet),
-    ),
+    items: Array.from({ length: ctx.settings.count }, () => randomString(ctx.settings.length, alphabet)),
     downloadName: "random-strings.txt",
   };
 };

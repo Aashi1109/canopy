@@ -27,8 +27,7 @@ export type JsonToCsvResult =
   | { ok: false; error: JsonToCsvError };
 
 export type CsvToJsonResult =
-  | { ok: true; columns: string[]; output: string; rowCount: number }
-  | { ok: false; error: JsonToCsvError };
+  { ok: true; columns: string[]; output: string; rowCount: number } | { ok: false; error: JsonToCsvError };
 
 export function flattenRecord(
   value: Record<string, unknown>,
@@ -48,24 +47,14 @@ export function flattenRecord(
 
 export function csvCell(value: unknown, delimiter: CsvDelimiter): string {
   if (value === null || value === undefined) return "";
-  const text =
-    typeof value === "string"
-      ? value
-      : typeof value === "object"
-        ? JSON.stringify(value)
-        : String(value);
+  const text = typeof value === "string" ? value : typeof value === "object" ? JSON.stringify(value) : String(value);
 
-  return text.includes(delimiter) || /["\r\n]/.test(text)
-    ? `"${text.replaceAll('"', '""')}"`
-    : text;
+  return text.includes(delimiter) || /["\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
 export function convertJsonToCsv(
   input: string,
-  {
-    delimiter = ",",
-    repairMode = "remove",
-  }: { delimiter?: CsvDelimiter; repairMode?: JsonRepairMode } = {},
+  { delimiter = ",", repairMode = "remove" }: { delimiter?: CsvDelimiter; repairMode?: JsonRepairMode } = {},
 ): JsonToCsvResult {
   if (!input.trim()) {
     return {
@@ -134,9 +123,7 @@ export function convertJsonToCsv(
   const output = columns.length
     ? [
         columns.map((column) => csvCell(column, delimiter)).join(delimiter),
-        ...flattenedRows.map((row) =>
-          columns.map((column) => csvCell(row[column], delimiter)).join(delimiter),
-        ),
+        ...flattenedRows.map((row) => columns.map((column) => csvCell(row[column], delimiter)).join(delimiter)),
       ].join("\n")
     : "";
 
@@ -268,9 +255,7 @@ export function convertCsvToJson(
     };
   }
 
-  const value = dataRows.map((values) =>
-    Object.fromEntries(columns.map((column, index) => [column, values[index]])),
-  );
+  const value = dataRows.map((values) => Object.fromEntries(columns.map((column, index) => [column, values[index]])));
   return {
     ok: true,
     columns,

@@ -37,9 +37,7 @@ export async function requireAvailableToolForStorageKey(key: string): Promise<vo
 
 export async function requireAnyAvailablePaperworkTool(slugs: readonly string[]): Promise<void> {
   const manifest = await getToolManifest();
-  const tools = await Promise.all(
-    slugs.map((slug) => getAvailableToolBySlug("paperwork", slug, manifest)),
-  );
+  const tools = await Promise.all(slugs.map((slug) => getAvailableToolBySlug("paperwork", slug, manifest)));
   if (!tools.some(Boolean)) throw new PaperworkToolAccessError(404);
 }
 

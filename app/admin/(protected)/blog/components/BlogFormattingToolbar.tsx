@@ -42,16 +42,7 @@ import {
 } from "lucide-react";
 import type { BlogImage } from "@/lib/blog/document";
 import { captureBlogInsertion, createBlogTable } from "../lib/editorInsertion";
-import {
-  Button,
-  Input,
-  Label,
-  Popover,
-  Separator,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@smarttools/ui";
+import { Button, Input, Label, Popover, Separator, Tooltip, TooltipContent, TooltipTrigger } from "@smarttools/ui";
 import styles from "./BlogEditor.module.css";
 import { BlogColorPalette } from "./BlogColorPalette";
 
@@ -70,13 +61,10 @@ type Props = {
   onImageRequestHandled?: () => void;
   onUploadImage: (file: File) => Promise<BlogImage | null>;
 };
-const menuClass =
-  "z-50 max-h-[70vh] overflow-y-auto rounded-lg border border-border bg-card p-2 shadow-lg";
+const menuClass = "z-50 max-h-[70vh] overflow-y-auto rounded-lg border border-border bg-card p-2 shadow-lg";
 
 function EditorMenuItem(props: ComponentProps<typeof Button>) {
-  return (
-    <Button size="xs" variant="ghost" className="justify-start text-sm font-normal" {...props} />
-  );
+  return <Button size="xs" variant="ghost" className="justify-start text-sm font-normal" {...props} />;
 }
 
 function BlogTablePicker({
@@ -95,9 +83,7 @@ function BlogTablePicker({
   const cells = useRef<(HTMLButtonElement | null)[]>([]);
   const columns = Number(size.columns);
   const rows = Number(size.rows);
-  const valid = [columns, rows].every(
-    (value) => Number.isInteger(value) && value >= 1 && value <= 20,
-  );
+  const valid = [columns, rows].every((value) => Number.isInteger(value) && value >= 1 && value <= 20);
   const activeColumn = Math.max(1, Math.min(8, Math.floor(columns) || 1));
   const activeRow = Math.max(1, Math.min(8, Math.floor(rows) || 1));
   function choose(column: number, row: number) {
@@ -202,9 +188,7 @@ function BlogTablePicker({
             value={size.columns}
             disabled={disabled}
             aria-invalid={!Number.isInteger(columns) || columns < 1 || columns > 20}
-            onChange={(event) =>
-              setSize((previous) => ({ ...previous, columns: event.target.value }))
-            }
+            onChange={(event) => setSize((previous) => ({ ...previous, columns: event.target.value }))}
           />
         </div>
         <div className="space-y-1">
@@ -225,9 +209,7 @@ function BlogTablePicker({
           />
         </div>
       </div>
-      <p className="text-[11px] leading-4 text-muted-foreground">
-        1–20 each · First row is a header.
-      </p>
+      <p className="text-[11px] leading-4 text-muted-foreground">1–20 each · First row is a header.</p>
       {(error || !valid) && (
         <p role="alert" className="text-[13px] text-destructive">
           {error || "Enter whole numbers from 1 to 20 for columns and rows."}
@@ -405,9 +387,7 @@ export function BlogBlockMenu({
             />
           ) : imageMode ? (
             <>
-              <p className="text-[13px] font-semibold">
-                {editingImage ? "Edit image" : "Insert image"}
-              </p>
+              <p className="text-[13px] font-semibold">{editingImage ? "Edit image" : "Insert image"}</p>
               {!editingImage && (
                 <>
                   <Label className="text-[13px]" htmlFor={`blog-image-${atEnd}`}>
@@ -468,9 +448,7 @@ export function BlogBlockMenu({
                       });
                       clearInsertion();
                       if (!updated) {
-                        setError(
-                          "The original image changed. Go back, select it, and reopen its description.",
-                        );
+                        setError("The original image changed. Go back, select it, and reopen its description.");
                         return;
                       }
                       keepEditorFocus.current = true;
@@ -481,8 +459,7 @@ export function BlogBlockMenu({
                     if (!file) return;
                     setPending(true);
                     setError("");
-                    const insertion =
-                      pendingInsertion.current ?? captureBlogInsertion(editor, atEnd);
+                    const insertion = pendingInsertion.current ?? captureBlogInsertion(editor, atEnd);
                     pendingInsertion.current = insertion;
                     try {
                       const image = await onUploadImage(file);
@@ -496,9 +473,7 @@ export function BlogBlockMenu({
                         },
                       });
                       if (!inserted) {
-                        setError(
-                          "Couldn’t insert the image. Select a place in the article and try again.",
-                        );
+                        setError("Couldn’t insert the image. Select a place in the article and try again.");
                         return;
                       }
                       keepEditorFocus.current = true;
@@ -535,11 +510,7 @@ export function BlogBlockMenu({
                     ["codeBlock", "Code block", SquareCode],
                   ] as const
                 ).map(([type, label, Icon]) => (
-                  <EditorMenuItem
-                    key={type}
-                    aria-label={`Insert ${label.toLowerCase()}`}
-                    onClick={() => insert(type)}
-                  >
+                  <EditorMenuItem key={type} aria-label={`Insert ${label.toLowerCase()}`} onClick={() => insert(type)}>
                     <Icon aria-hidden="true" />
                     {label}
                   </EditorMenuItem>
@@ -554,11 +525,7 @@ export function BlogBlockMenu({
                     ["horizontalRule", "Divider", Minus],
                   ] as const
                 ).map(([type, label, Icon]) => (
-                  <EditorMenuItem
-                    key={type}
-                    aria-label={`Insert ${label.toLowerCase()}`}
-                    onClick={() => insert(type)}
-                  >
+                  <EditorMenuItem key={type} aria-label={`Insert ${label.toLowerCase()}`} onClick={() => insert(type)}>
                     <Icon aria-hidden="true" />
                     {label}
                   </EditorMenuItem>
@@ -571,9 +538,7 @@ export function BlogBlockMenu({
                     setEditingImage(selected);
                     setFile(null);
                     setAlt(selected ? String(editor?.getAttributes("image").alt ?? "") : "");
-                    setCaption(
-                      selected ? String(editor?.getAttributes("image").caption ?? "") : "",
-                    );
+                    setCaption(selected ? String(editor?.getAttributes("image").caption ?? "") : "");
                     setImageMode(true);
                   }}
                 >
@@ -606,9 +571,7 @@ export function BlogFormattingToolbar({
     const root = toolbar.current;
     if (!root) return;
     function updateEntry() {
-      const buttons = Array.from(
-        root!.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"),
-      );
+      const buttons = Array.from(root!.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"));
       const visible = buttons.filter((button) => button.getClientRects().length);
       const entry =
         visible.find((button) => button === document.activeElement) ??
@@ -651,9 +614,7 @@ export function BlogFormattingToolbar({
         ].map((name) => [name, current?.isActive(name)]),
       ),
       align: String(
-        current?.getAttributes("paragraph").textAlign ??
-          current?.getAttributes("heading").textAlign ??
-          "left",
+        current?.getAttributes("paragraph").textAlign ?? current?.getAttributes("heading").textAlign ?? "left",
       ),
     }),
   });
@@ -698,13 +659,7 @@ export function BlogFormattingToolbar({
         <Tooltip>
           <TooltipTrigger asChild>
             <Popover.Trigger asChild>
-              <Button
-                size="xs"
-                variant="ghost"
-                className={styles.formatMenu}
-                disabled={unavailable}
-                aria-label={label}
-              >
+              <Button size="xs" variant="ghost" className={styles.formatMenu} disabled={unavailable} aria-label={label}>
                 {icon}
                 <ChevronDown aria-hidden="true" className="size-3" />
               </Button>
@@ -757,14 +712,7 @@ export function BlogFormattingToolbar({
       }}
     >
       <div className={styles.formatGroup} data-extra="true">
-        {control(
-          "Undo",
-          <Undo2 />,
-          () => editor?.chain().focus().undo().run(),
-          undefined,
-          !state?.undo,
-          "Ctrl/Cmd+Z",
-        )}
+        {control("Undo", <Undo2 />, () => editor?.chain().focus().undo().run(), undefined, !state?.undo, "Ctrl/Cmd+Z")}
         {control(
           "Redo",
           <Redo2 />,
@@ -777,11 +725,7 @@ export function BlogFormattingToolbar({
       <span className={styles.separator} data-extra="true" />
       <div className={styles.formatGroup}>
         {menu("Text style", <Heading />, [
-          [
-            "Paragraph",
-            () => editor?.chain().focus().setParagraph().run(),
-            <Pilcrow aria-hidden="true" />,
-          ],
+          ["Paragraph", () => editor?.chain().focus().setParagraph().run(), <Pilcrow aria-hidden="true" />],
           ...(
             [
               [2, Heading2],
@@ -843,12 +787,7 @@ export function BlogFormattingToolbar({
             () => editor?.chain().focus().toggleStrike().run(),
             state?.active.strike,
           )}
-          {control(
-            "Inline code",
-            <CodeXml />,
-            () => editor?.chain().focus().toggleCode().run(),
-            state?.active.code,
-          )}
+          {control("Inline code", <CodeXml />, () => editor?.chain().focus().toggleCode().run(), state?.active.code)}
           {control(
             "Underline",
             <Underline />,
@@ -936,11 +875,7 @@ export function BlogFormattingToolbar({
             <TooltipContent>Link</TooltipContent>
           </Tooltip>
           <Popover.Portal>
-            <Popover.Content
-              sideOffset={8}
-              collisionPadding={16}
-              className={`${menuClass} w-80 space-y-3 p-4`}
-            >
+            <Popover.Content sideOffset={8} collisionPadding={16} className={`${menuClass} w-80 space-y-3 p-4`}>
               <Label className="text-[13px]" htmlFor="blog-inline-link">
                 Link URL
               </Label>

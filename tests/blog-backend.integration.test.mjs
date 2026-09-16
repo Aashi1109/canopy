@@ -29,9 +29,7 @@ test(
       await admin.end();
     });
     for (const file of ["0001_auth_control_plane.sql", "0006_blogs.sql"]) {
-      await sql.unsafe(
-        await readFile(new URL(`../packages/database/drizzle/${file}`, import.meta.url), "utf8"),
-      );
+      await sql.unsafe(await readFile(new URL(`../packages/database/drizzle/${file}`, import.meta.url), "utf8"));
     }
     await sql`INSERT INTO auth_users (id,name,email) VALUES ('admin-a','A','a@test.invalid'),('admin-b','B','b@test.invalid'),('viewer','V','v@test.invalid')`;
     await sql`INSERT INTO user_roles (user_id,role_id) VALUES ('admin-a','admin'),('admin-b','admin')`;
@@ -51,13 +49,8 @@ test(
     });
     let post;
     await t.test("permission denial, forged fields, and concurrent slug collisions", async () => {
-      await assert.rejects(
-        m.createBlogPost("viewer", { title: "No access" }),
-        /permission|denied/i,
-      );
-      await assert.rejects(
-        m.saveBlogTerm("admin-a", { kind: "tag", name: "Forgery", createdBy: "viewer" }),
-      );
+      await assert.rejects(m.createBlogPost("viewer", { title: "No access" }), /permission|denied/i);
+      await assert.rejects(m.saveBlogTerm("admin-a", { kind: "tag", name: "Forgery", createdBy: "viewer" }));
       const created = await Promise.all([
         m.createBlogPost("admin-a", { title: "Same Title" }),
         m.createBlogPost("admin-a", { title: "Same Title" }),
@@ -81,47 +74,41 @@ test(
       });
       assert.equal(same.updatedBy, "admin-b");
       assert.deepEqual(same.updatedAt, renamed.updatedAt);
-      await assert.rejects(
-        m.saveBlogTerm("admin-a", { kind: "category", name: "TUTORIALS" }),
-        /exists/i,
-      );
+      await assert.rejects(m.saveBlogTerm("admin-a", { kind: "category", name: "TUTORIALS" }), /exists/i);
     });
-    await t.test(
-      "stale save cannot overwrite draft; slug is immutable and snapshot saves deduplicate",
-      async () => {
-        const initial = post;
-        post = await m.saveBlogDraft("admin-a", {
+    await t.test("stale save cannot overwrite draft; slug is immutable and snapshot saves deduplicate", async () => {
+      const initial = post;
+      post = await m.saveBlogDraft("admin-a", {
+        postId: post.id,
+        version: post.version,
+        document: content("First revision"),
+        mode: "manual",
+      });
+      assert.equal(post.slug, initial.slug);
+      await assert.rejects(
+        m.saveBlogDraft("admin-a", {
+          postId: post.id,
+          version: initial.version,
+          document: content("Lost update"),
+        }),
+        { code: "CONFLICT" },
+      );
+      await assert.rejects(
+        m.saveBlogDraft("admin-a", {
           postId: post.id,
           version: post.version,
-          document: content("First revision"),
-          mode: "manual",
-        });
-        assert.equal(post.slug, initial.slug);
-        await assert.rejects(
-          m.saveBlogDraft("admin-a", {
-            postId: post.id,
-            version: initial.version,
-            document: content("Lost update"),
-          }),
-          { code: "CONFLICT" },
-        );
-        await assert.rejects(
-          m.saveBlogDraft("admin-a", {
-            postId: post.id,
-            version: post.version,
-            document: { ...post.draftDocument, slug: "changed" },
-          }),
-        );
-        const noOp = await m.saveBlogDraft("admin-a", {
-          postId: post.id,
-          version: post.version,
-          document: post.draftDocument,
-          mode: "manual",
-        });
-        assert.equal(noOp.version, post.version);
-        assert.equal(noOp.revisionSequence, post.revisionSequence);
-      },
-    );
+          document: { ...post.draftDocument, slug: "changed" },
+        }),
+      );
+      const noOp = await m.saveBlogDraft("admin-a", {
+        postId: post.id,
+        version: post.version,
+        document: post.draftDocument,
+        mode: "manual",
+      });
+      assert.equal(noOp.version, post.version);
+      assert.equal(noOp.revisionSequence, post.revisionSequence);
+    });
     let firstRevision;
     await t.test(
       "publication and scheduled updates use immutable snapshots while newer drafts stay private",
@@ -153,10 +140,7 @@ test(
         const [stored] = await sql`SELECT * FROM blog_posts WHERE id=${post.id}`;
         assert.equal(stored.published_revision_id, frozen.revision_id);
         assert.equal(stored.draft_document.title, "Private newer draft");
-        assert.equal(
-          (await sql`SELECT * FROM blog_post_schedules WHERE post_id=${post.id}`).length,
-          0,
-        );
+        assert.equal((await sql`SELECT * FROM blog_post_schedules WHERE post_id=${post.id}`).length, 0);
         post = {
           ...post,
           version: stored.version,
@@ -164,59 +148,46 @@ test(
         };
       },
     );
-    await t.test(
-      "restoration backs up draft and preserves live identity; trash returns only to draft",
-      async () => {
-        const live = post.publishedRevisionId;
-        post = await m.restoreBlogRevision("admin-a", {
-          postId: post.id,
-          version: post.version,
-          revisionId: firstRevision,
-        });
-        assert.equal(post.draftDocument.title, "First revision");
-        assert.equal(post.publishedRevisionId, live);
-        const backups =
-          await sql`SELECT document FROM blog_revisions WHERE post_id=${post.id} AND reason='restore_backup'`;
-        assert.ok(backups.some((r) => r.document.title === "Private newer draft"));
-        post = await m.trashBlogPost("admin-a", { postId: post.id, version: post.version });
-        assert.equal(post.publishedRevisionId, null);
-        assert.ok(post.trashedAt);
-        assert.equal(
-          (await sql`SELECT * FROM blog_published_post_tags WHERE post_id=${post.id}`).length,
-          0,
-        );
-        post = await m.restoreTrashedBlogPost("admin-a", {
-          postId: post.id,
-          version: post.version,
-        });
-        assert.equal(post.publishedRevisionId, null);
-        assert.equal(post.trashedAt, null);
-      },
-    );
-    await t.test(
-      "revoked publisher leaves recoverable diagnostics without changing draft/version",
-      async () => {
-        post = await m.scheduleBlogPost("admin-b", {
-          postId: post.id,
-          version: post.version,
-          scheduledAt: new Date(Date.now() + 60000).toISOString(),
-        });
-        await sql`UPDATE blog_post_schedules SET scheduled_at=NOW()-interval '1 minute' WHERE post_id=${post.id}`;
-        await sql`UPDATE auth_users SET status='suspended' WHERE id='admin-b'`;
-        const result = await m.publishDueBlogPosts();
-        assert.equal(result.failed, 1);
-        const [schedule] = await sql`SELECT * FROM blog_post_schedules WHERE post_id=${post.id}`;
-        assert.equal(schedule.last_error_code, "PUBLISHER_FORBIDDEN");
-        const [stored] =
-          await sql`SELECT version, published_revision_id FROM blog_posts WHERE id=${post.id}`;
-        assert.equal(stored.version, post.version);
-        assert.equal(stored.published_revision_id, null);
-        post = await m.cancelBlogSchedule("admin-a", { postId: post.id, version: post.version });
-        assert.equal(
-          (await sql`SELECT * FROM blog_post_schedules WHERE post_id=${post.id}`).length,
-          0,
-        );
-      },
-    );
+    await t.test("restoration backs up draft and preserves live identity; trash returns only to draft", async () => {
+      const live = post.publishedRevisionId;
+      post = await m.restoreBlogRevision("admin-a", {
+        postId: post.id,
+        version: post.version,
+        revisionId: firstRevision,
+      });
+      assert.equal(post.draftDocument.title, "First revision");
+      assert.equal(post.publishedRevisionId, live);
+      const backups =
+        await sql`SELECT document FROM blog_revisions WHERE post_id=${post.id} AND reason='restore_backup'`;
+      assert.ok(backups.some((r) => r.document.title === "Private newer draft"));
+      post = await m.trashBlogPost("admin-a", { postId: post.id, version: post.version });
+      assert.equal(post.publishedRevisionId, null);
+      assert.ok(post.trashedAt);
+      assert.equal((await sql`SELECT * FROM blog_published_post_tags WHERE post_id=${post.id}`).length, 0);
+      post = await m.restoreTrashedBlogPost("admin-a", {
+        postId: post.id,
+        version: post.version,
+      });
+      assert.equal(post.publishedRevisionId, null);
+      assert.equal(post.trashedAt, null);
+    });
+    await t.test("revoked publisher leaves recoverable diagnostics without changing draft/version", async () => {
+      post = await m.scheduleBlogPost("admin-b", {
+        postId: post.id,
+        version: post.version,
+        scheduledAt: new Date(Date.now() + 60000).toISOString(),
+      });
+      await sql`UPDATE blog_post_schedules SET scheduled_at=NOW()-interval '1 minute' WHERE post_id=${post.id}`;
+      await sql`UPDATE auth_users SET status='suspended' WHERE id='admin-b'`;
+      const result = await m.publishDueBlogPosts();
+      assert.equal(result.failed, 1);
+      const [schedule] = await sql`SELECT * FROM blog_post_schedules WHERE post_id=${post.id}`;
+      assert.equal(schedule.last_error_code, "PUBLISHER_FORBIDDEN");
+      const [stored] = await sql`SELECT version, published_revision_id FROM blog_posts WHERE id=${post.id}`;
+      assert.equal(stored.version, post.version);
+      assert.equal(stored.published_revision_id, null);
+      post = await m.cancelBlogSchedule("admin-a", { postId: post.id, version: post.version });
+      assert.equal((await sql`SELECT * FROM blog_post_schedules WHERE post_id=${post.id}`).length, 0);
+    });
   },
 );

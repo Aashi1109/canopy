@@ -241,10 +241,7 @@ test("flattens nested objects and safely quotes arrays, delimiters, and quotes",
   );
 
   assert.equal(result.ok, true);
-  assert.equal(
-    result.output,
-    'id,profile.city,tags,note\n1,Pune,"[""a"",""b""]","A, ""quoted"" value"',
-  );
+  assert.equal(result.output, 'id,profile.city,tags,note\n1,Pune,"[""a"",""b""]","A, ""quoted"" value"');
 });
 
 test("repairs missing property values by removing them or setting them to null", () => {
@@ -277,8 +274,7 @@ test("converts CSV headers and rows to a formatted JSON array", () => {
   assert.deepEqual(convertCsvToJson("id,name\n1,Alice\n2,Bob"), {
     ok: true,
     columns: ["id", "name"],
-    output:
-      '[\n  {\n    "id": "1",\n    "name": "Alice"\n  },\n  {\n    "id": "2",\n    "name": "Bob"\n  }\n]',
+    output: '[\n  {\n    "id": "1",\n    "name": "Alice"\n  },\n  {\n    "id": "2",\n    "name": "Bob"\n  }\n]',
     rowCount: 2,
   });
 });

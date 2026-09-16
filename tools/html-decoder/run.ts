@@ -22,15 +22,11 @@ function decodeHtmlEntities(value: string): string {
   return value.replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, body: string) => {
     if (body.startsWith("#x") || body.startsWith("#X")) {
       const point = Number.parseInt(body.slice(2), 16);
-      return Number.isSafeInteger(point) && point <= 0x10ffff
-        ? String.fromCodePoint(point)
-        : entity;
+      return Number.isSafeInteger(point) && point <= 0x10ffff ? String.fromCodePoint(point) : entity;
     }
     if (body.startsWith("#")) {
       const point = Number.parseInt(body.slice(1), 10);
-      return Number.isSafeInteger(point) && point <= 0x10ffff
-        ? String.fromCodePoint(point)
-        : entity;
+      return Number.isSafeInteger(point) && point <= 0x10ffff ? String.fromCodePoint(point) : entity;
     }
     return NAMED[body.toLowerCase()] ?? entity;
   });

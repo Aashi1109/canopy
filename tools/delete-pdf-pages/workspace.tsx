@@ -10,12 +10,7 @@
  */
 
 import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
-import {
-  PdfPagesSurface,
-  pageExpression,
-  selectedPageNumbers,
-  usePdfPageImages,
-} from "@/components/PdfPagesSurface";
+import { PdfPagesSurface, pageExpression, selectedPageNumbers, usePdfPageImages } from "@/components/PdfPagesSurface";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import type { ToolPagePreview } from "@/lib/tool-framework/run";
 

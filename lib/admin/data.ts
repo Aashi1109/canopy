@@ -32,11 +32,7 @@ export async function listUsers(search = "") {
     })
     .from(authUser)
     .leftJoin(userRolesTable, eq(userRolesTable.userId, authUser.id))
-    .where(
-      query
-        ? or(ilike(authUser.name, `%${query}%`), ilike(authUser.email, `%${query}%`))
-        : undefined,
-    )
+    .where(query ? or(ilike(authUser.name, `%${query}%`), ilike(authUser.email, `%${query}%`)) : undefined)
     .orderBy(authUser.email);
 
   const users = new Map<
@@ -147,10 +143,7 @@ export async function listAuditEvents() {
     .leftJoin(auditActor, eq(auditActor.id, auditEventsTable.actorUserId))
     .leftJoin(
       auditTargetUser,
-      and(
-        eq(auditEventsTable.targetType, "user"),
-        eq(auditTargetUser.id, auditEventsTable.targetId),
-      ),
+      and(eq(auditEventsTable.targetType, "user"), eq(auditTargetUser.id, auditEventsTable.targetId)),
     )
     .orderBy(desc(auditEventsTable.createdAt))
     .limit(200);

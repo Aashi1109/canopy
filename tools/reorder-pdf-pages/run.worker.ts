@@ -14,10 +14,7 @@ import {
   loadPdf,
   validatePdfInput,
 } from "../../lib/tool-framework/media/pdfDocument.ts";
-import {
-  createOutputFilename,
-  validatePdfSelection,
-} from "../../lib/tool-framework/media/validation.ts";
+import { createOutputFilename, validatePdfSelection } from "../../lib/tool-framework/media/validation.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
@@ -33,10 +30,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
 
   const order = ctx.settings.pages;
   if (typeof order === "string") {
-    throw new ToolError(
-      "incomplete-order",
-      "Include every PDF page exactly once in the new order.",
-    );
+    throw new ToolError("incomplete-order", "Include every PDF page exactly once in the new order.");
   }
 
   const { PDFDocument } = await import("pdf-lib");
@@ -45,10 +39,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   enforcePageLimit(input, count, false);
   const pages = checkedPages(order, count, false);
   if (pages.length !== count || new Set(pages).size !== count) {
-    throw new ToolError(
-      "incomplete-order",
-      "Include every PDF page exactly once in the new order.",
-    );
+    throw new ToolError("incomplete-order", "Include every PDF page exactly once in the new order.");
   }
   ctx.signal.throwIfAborted();
 

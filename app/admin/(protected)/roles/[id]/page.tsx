@@ -10,15 +10,8 @@ export default async function RolePage({ params }: { params: Promise<{ id: strin
   const role = await getRole((await params).id);
   if (!role || role.isSystem) notFound();
   const { access } = await getUserAuthorization(session.user.id);
-  const members = hasPermission(access, "users", "view")
-    ? await listRoleUsers(role.id, true)
-    : undefined;
+  const members = hasPermission(access, "users", "view") ? await listRoleUsers(role.id, true) : undefined;
   return (
-    <RoleEditor
-      key={role.id}
-      role={role}
-      members={members}
-      canAssign={hasPermission(access, "users", "assignRoles")}
-    />
+    <RoleEditor key={role.id} role={role} members={members} canAssign={hasPermission(access, "users", "assignRoles")} />
   );
 }

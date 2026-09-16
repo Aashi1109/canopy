@@ -17,12 +17,7 @@ export default async function BlogLayout({ children }: { children: ReactNode }) 
         showSearch={false}
         href="/blog"
         name="SmartTools"
-        mobileActions={
-          <BlogMobileNavigation
-            signedIn={!!session?.user}
-            isAdmin={session?.user.isAdmin ?? false}
-          />
-        }
+        mobileActions={<BlogMobileNavigation signedIn={!!session?.user} isAdmin={session?.user.isAdmin ?? false} />}
         actions={<AccountNavigation returnTo="/blog" user={session?.user ?? null} />}
       />
       <main className="min-w-0 grow" id="blog-main">

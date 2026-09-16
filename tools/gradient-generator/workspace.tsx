@@ -32,12 +32,7 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
 
   return (
     <SplitStack className="h-full" defaultSize={75} minSize={75}>
-      <SplitStack
-        className="h-full max-[64rem]:h-[34rem]"
-        defaultSize={48}
-        minSize={28}
-        orientation="vertical"
-      >
+      <SplitStack className="h-full max-[64rem]:h-[34rem]" defaultSize={48} minSize={28} orientation="vertical">
         <WorkspaceInputSurface
           disabled={props.disabled}
           input={props.input}

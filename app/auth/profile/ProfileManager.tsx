@@ -24,12 +24,7 @@ import {
   StatusBadge,
 } from "@smarttools/ui";
 import { authClient } from "../_lib/authClient";
-import {
-  canConfirmAccountDeletion,
-  getSafeAuthError,
-  isValidPassword,
-  normalizeProfileImage,
-} from "../_lib/security";
+import { canConfirmAccountDeletion, getSafeAuthError, isValidPassword, normalizeProfileImage } from "../_lib/security";
 
 type AccountResult = Awaited<ReturnType<typeof authClient.listAccounts>>;
 type SessionResult = Awaited<ReturnType<typeof authClient.listSessions>>;
@@ -39,14 +34,8 @@ type Feedback = { kind: "error" | "success"; text: string } | null;
 
 function LoadingState({ label }: { label: string }) {
   return (
-    <div
-      className="flex items-center justify-center gap-3 py-10 text-muted-foreground"
-      role="status"
-    >
-      <span
-        aria-hidden="true"
-        className="size-4 animate-spin rounded-full border-2 border-border border-t-primary"
-      />
+    <div className="flex items-center justify-center gap-3 py-10 text-muted-foreground" role="status">
+      <span aria-hidden="true" className="size-4 animate-spin rounded-full border-2 border-border border-t-primary" />
       <Text>{label}</Text>
     </div>
   );
@@ -82,11 +71,7 @@ const MAX_PROFILE_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
 const PROFILE_IMAGE_SIZE = 256;
 
 async function prepareProfileImage(file: File): Promise<string> {
-  if (
-    file.size === 0 ||
-    file.size > MAX_PROFILE_IMAGE_FILE_SIZE ||
-    !PROFILE_IMAGE_TYPES.includes(file.type)
-  ) {
+  if (file.size === 0 || file.size > MAX_PROFILE_IMAGE_FILE_SIZE || !PROFILE_IMAGE_TYPES.includes(file.type)) {
     throw new Error("Choose a JPG, PNG, or WebP image up to 5 MB.");
   }
 
@@ -148,10 +133,7 @@ export function ProfileManager({
 
   const loadSecurityData = useCallback(async () => {
     setLoadingSecurity(true);
-    const [accountResult, sessionResult] = await Promise.all([
-      authClient.listAccounts(),
-      authClient.listSessions(),
-    ]);
+    const [accountResult, sessionResult] = await Promise.all([authClient.listAccounts(), authClient.listSessions()]);
 
     if (accountResult.data) setAccounts(accountResult.data);
     if (sessionResult.data) setSessions(sessionResult.data);
@@ -349,21 +331,14 @@ export function ProfileManager({
   return (
     <>
       <div className="grid gap-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-14">
-        <aside
-          aria-labelledby="account-overview-label"
-          className="min-w-0 lg:sticky lg:top-24 lg:self-start"
-        >
+        <aside aria-labelledby="account-overview-label" className="min-w-0 lg:sticky lg:top-24 lg:self-start">
           <Overline className="block text-primary" id="account-overview-label">
             Account overview
           </Overline>
           <div className="mt-4 flex min-w-0 items-center gap-4 lg:block">
             <Avatar aria-hidden="true" className="size-16 bg-primary ring-4 ring-accent">
-              {profileImage ? (
-                <AvatarImage alt="" referrerPolicy="no-referrer" src={profileImage} />
-              ) : null}
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                {avatarInitial}
-              </AvatarFallback>
+              {profileImage ? <AvatarImage alt="" referrerPolicy="no-referrer" src={profileImage} /> : null}
+              <AvatarFallback className="bg-primary text-primary-foreground">{avatarInitial}</AvatarFallback>
             </Avatar>
             <div className="min-w-0 lg:mt-4">
               <P className="truncate text-foreground">{user.name}</P>
@@ -385,13 +360,7 @@ export function ProfileManager({
             ))}
           </nav>
 
-          <Button
-            className="mt-6 w-full"
-            disabled={Boolean(pending)}
-            onClick={signOut}
-            type="button"
-            variant="outline"
-          >
+          <Button className="mt-6 w-full" disabled={Boolean(pending)} onClick={signOut} type="button" variant="outline">
             {pending === "sign-out" ? "Signing out…" : "Sign out"}
           </Button>
         </aside>
@@ -405,43 +374,23 @@ export function ProfileManager({
 
           <div className="grid gap-12 sm:gap-14">
             <section className="scroll-mt-24" id="profile">
-              <SectionHeading
-                description="Shown anywhere your account appears across SmartTools."
-                title="Profile"
-              />
-              <form
-                aria-busy={pending === "profile"}
-                className="grid max-w-2xl gap-5"
-                onSubmit={updateProfile}
-              >
+              <SectionHeading description="Shown anywhere your account appears across SmartTools." title="Profile" />
+              <form aria-busy={pending === "profile"} className="grid max-w-2xl gap-5" onSubmit={updateProfile}>
                 <Field htmlFor="profile-name" label="Name" variant="auth">
-                  <Input
-                    defaultValue={user.name}
-                    id="profile-name"
-                    maxLength={100}
-                    name="name"
-                    required
-                  />
+                  <Input defaultValue={user.name} id="profile-name" maxLength={100} name="name" required />
                 </Field>
                 <input name="image" readOnly type="hidden" value={profileImage ?? ""} />
                 <div className="flex flex-col gap-4 rounded-xl border border-border bg-muted/30 p-4 sm:flex-row sm:items-center">
                   <Avatar className="size-16 bg-primary">
                     {profileImage ? (
-                      <AvatarImage
-                        alt="Profile preview"
-                        referrerPolicy="no-referrer"
-                        src={profileImage}
-                      />
+                      <AvatarImage alt="Profile preview" referrerPolicy="no-referrer" src={profileImage} />
                     ) : null}
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {avatarInitial}
-                    </AvatarFallback>
+                    <AvatarFallback className="bg-primary text-primary-foreground">{avatarInitial}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <P className="text-foreground">Profile photo</P>
                     <Caption className="block mt-1 text-muted-foreground" id="profile-image-help">
-                      Choose a JPG, PNG, or WebP up to 5 MB. It is cropped and compressed in your
-                      browser.
+                      Choose a JPG, PNG, or WebP up to 5 MB. It is cropped and compressed in your browser.
                     </Caption>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <input
@@ -461,16 +410,8 @@ export function ProfileManager({
                         size="sm"
                         variant="outline"
                       >
-                        <label
-                          aria-disabled={Boolean(pending)}
-                          className="cursor-pointer"
-                          htmlFor="profile-image"
-                        >
-                          {pending === "image"
-                            ? "Preparing…"
-                            : profileImage
-                              ? "Change photo"
-                              : "Choose photo"}
+                        <label aria-disabled={Boolean(pending)} className="cursor-pointer" htmlFor="profile-image">
+                          {pending === "image" ? "Preparing…" : profileImage ? "Change photo" : "Choose photo"}
                         </label>
                       </Button>
                       {profileImage ? (
@@ -494,10 +435,7 @@ export function ProfileManager({
             </section>
 
             <section className="scroll-mt-24" id="sign-in-methods">
-              <SectionHeading
-                description="Ways you can securely access this account."
-                title="Sign-in methods"
-              />
+              <SectionHeading description="Ways you can securely access this account." title="Sign-in methods" />
               {loadingSecurity ? (
                 <LoadingState label="Loading sign-in methods…" />
               ) : accounts.length > 0 ? (
@@ -514,12 +452,8 @@ export function ProfileManager({
                           </AvatarFallback>
                         </Avatar>
                         <div className="grid min-w-0 gap-1">
-                          <Strong className="break-words">
-                            {providerName(account.providerId)}
-                          </Strong>
-                          <Caption className="text-muted-foreground">
-                            Connected {formatDate(account.createdAt)}
-                          </Caption>
+                          <Strong className="break-words">{providerName(account.providerId)}</Strong>
+                          <Caption className="text-muted-foreground">Connected {formatDate(account.createdAt)}</Caption>
                         </div>
                       </div>
                       {account.providerId === "google" && accounts.length > 1 ? (
@@ -538,15 +472,8 @@ export function ProfileManager({
                 </List>
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 p-4">
-                  <Muted className="text-muted-foreground">
-                    Sign-in methods could not be loaded.
-                  </Muted>
-                  <Button
-                    onClick={() => void loadSecurityData()}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
+                  <Muted className="text-muted-foreground">Sign-in methods could not be loaded.</Muted>
+                  <Button onClick={() => void loadSecurityData()} size="sm" type="button" variant="outline">
                     Try again
                   </Button>
                 </div>
@@ -570,10 +497,7 @@ export function ProfileManager({
             </section>
 
             <section className="scroll-mt-24" id="password">
-              <SectionHeading
-                description="Changing your password signs out your other devices."
-                title="Password"
-              />
+              <SectionHeading description="Changing your password signs out your other devices." title="Password" />
               {loadingSecurity ? (
                 <LoadingState label="Checking password access…" />
               ) : accounts.length === 0 ? (
@@ -581,11 +505,7 @@ export function ProfileManager({
                   Password settings are unavailable until sign-in methods load.
                 </Muted>
               ) : hasPassword ? (
-                <form
-                  aria-busy={pending === "password"}
-                  className="grid max-w-2xl gap-5"
-                  onSubmit={changePassword}
-                >
+                <form aria-busy={pending === "password"} className="grid max-w-2xl gap-5" onSubmit={changePassword}>
                   <Field htmlFor="current-password" label="Current password" variant="auth">
                     <Input
                       autoComplete="current-password"
@@ -612,11 +532,7 @@ export function ProfileManager({
                         type="password"
                       />
                     </Field>
-                    <Field
-                      htmlFor="profile-confirm-password"
-                      label="Confirm new password"
-                      variant="auth"
-                    >
+                    <Field htmlFor="profile-confirm-password" label="Confirm new password" variant="auth">
                       <Input
                         autoComplete="new-password"
                         id="profile-confirm-password"
@@ -633,9 +549,7 @@ export function ProfileManager({
                   </Button>
                 </form>
               ) : (
-                <Muted className="text-muted-foreground">
-                  This account currently signs in through Google.
-                </Muted>
+                <Muted className="text-muted-foreground">This account currently signs in through Google.</Muted>
               )}
             </section>
 
@@ -673,8 +587,7 @@ export function ProfileManager({
                             {isCurrent ? "This device" : session.userAgent || "Unknown device"}
                           </Strong>
                           <Caption className="break-words text-muted-foreground">
-                            {session.ipAddress || "IP unavailable"} · Started{" "}
-                            {formatDate(session.createdAt)}
+                            {session.ipAddress || "IP unavailable"} · Started {formatDate(session.createdAt)}
                           </Caption>
                         </div>
                         {isCurrent ? (
@@ -696,15 +609,8 @@ export function ProfileManager({
                 </List>
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 p-4">
-                  <Muted className="text-muted-foreground">
-                    Active sessions could not be loaded.
-                  </Muted>
-                  <Button
-                    onClick={() => void loadSecurityData()}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
+                  <Muted className="text-muted-foreground">Active sessions could not be loaded.</Muted>
+                  <Button onClick={() => void loadSecurityData()} size="sm" type="button" variant="outline">
                     Try again
                   </Button>
                 </div>
@@ -712,11 +618,7 @@ export function ProfileManager({
             </section>
           </div>
 
-          <DangerZone
-            aria-labelledby="delete-account-heading"
-            className="mt-10 space-y-6"
-            id="delete-account"
-          >
+          <DangerZone aria-labelledby="delete-account-heading" className="mt-10 space-y-6" id="delete-account">
             <SectionHeading
               description="Permanently remove your account after email confirmation."
               title="Delete account"
@@ -726,30 +628,16 @@ export function ProfileManager({
                 Account deletion stays locked until your email address is verified.
               </AlertBanner>
             ) : null}
-            <form
-              aria-busy={pending === "delete"}
-              className="grid gap-4"
-              onSubmit={requestDeletion}
-            >
+            <form aria-busy={pending === "delete"} className="grid gap-4" onSubmit={requestDeletion}>
               <Field
                 description={`Type ${user.email} exactly.`}
                 htmlFor="delete-confirmation"
                 label="Confirm your email address"
                 variant="auth"
               >
-                <Input
-                  autoComplete="off"
-                  id="delete-confirmation"
-                  name="confirmation"
-                  required
-                  type="email"
-                />
+                <Input autoComplete="off" id="delete-confirmation" name="confirmation" required type="email" />
               </Field>
-              <Checkbox
-                label="I understand that account deletion cannot be undone."
-                name="understood"
-                required
-              />
+              <Checkbox label="I understand that account deletion cannot be undone." name="understood" required />
               <Button
                 className="w-full sm:w-fit"
                 disabled={Boolean(pending) || !user.emailVerified}

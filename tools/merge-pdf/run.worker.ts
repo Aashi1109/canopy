@@ -14,10 +14,7 @@ import {
   loadPdf,
   validatePdfInput,
 } from "../../lib/tool-framework/media/pdfDocument.ts";
-import {
-  createOutputFilename,
-  validatePdfSelection,
-} from "../../lib/tool-framework/media/validation.ts";
+import { createOutputFilename, validatePdfSelection } from "../../lib/tool-framework/media/validation.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun, type ToolRunFile } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
@@ -53,13 +50,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     const source = await loadPdf(ordered[index]);
     totalPages += source.getPageCount();
     enforcePageLimit(ordered[index], totalPages, false);
-    await addCopiedPagesWithProgress(
-      output,
-      source,
-      source.getPageIndices(),
-      "Copying PDF page",
-      ctx.progress,
-    );
+    await addCopiedPagesWithProgress(output, source, source.getPageIndices(), "Copying PDF page", ctx.progress);
   }
 
   const merged = await ctx.writeArtifact({

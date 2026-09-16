@@ -2,9 +2,7 @@ import { expect, test, type Locator } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { PDFDocument } from "pdf-lib";
 
-test("generated PDF previews its pages and stays downloadable after editing", async ({
-  page,
-}, testInfo) => {
+test("generated PDF previews its pages and stays downloadable after editing", async ({ page }, testInfo) => {
   test.setTimeout(90_000);
   await page.goto("/media/image-to-pdf");
   await page.waitForLoadState("networkidle");
@@ -38,23 +36,15 @@ test("generated PDF previews its pages and stays downloadable after editing", as
     if (await showOutline.isVisible()) await showOutline.click();
     await surface.getByRole("region", { name: "PDF pages", exact: true }).hover();
     await page.mouse.wheel(0, delta);
-    await expect(surface.getByRole("spinbutton", { name: "Current page" })).toHaveValue(
-      String(pageNumber),
-    );
+    await expect(surface.getByRole("spinbutton", { name: "Current page" })).toHaveValue(String(pageNumber));
     await expect(
-      surface
-        .getByRole("listbox", { name: "Document outline" })
-        .getByRole("option", { selected: true }),
+      surface.getByRole("listbox", { name: "Document outline" }).getByRole("option", { selected: true }),
     ).toContainText(`Page ${pageNumber}`);
-    await expect(
-      surface.getByRole("img", { name: `Generated PDF page ${pageNumber}`, exact: true }),
-    ).toBeInViewport();
+    await expect(surface.getByRole("img", { name: `Generated PDF page ${pageNumber}`, exact: true })).toBeInViewport();
   }
   const firstPage = preview.getByRole("img", { name: "Generated PDF page 1", exact: true });
   await expect(firstPage).toBeVisible({ timeout: 60_000 });
-  await expect
-    .poll(() => firstPage.evaluate((image: HTMLImageElement) => image.naturalWidth))
-    .toBeGreaterThan(0);
+  await expect.poll(() => firstPage.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
   await preview.getByRole("spinbutton", { name: "Current page" }).fill("2");
   await preview.getByRole("spinbutton", { name: "Current page" }).press("Enter");
   const secondPage = preview.getByRole("img", { name: "Generated PDF page 2", exact: true });
@@ -82,37 +72,27 @@ test("generated PDF previews its pages and stays downloadable after editing", as
   await expect(dialog).toBeVisible();
   const modalPage = dialog.getByRole("spinbutton", { name: "Current page" });
   await expect(modalPage).toHaveValue("2");
-  await expect(
-    dialog.getByRole("img", { name: "Generated PDF page 2", exact: true }),
-  ).toBeVisible();
+  await expect(dialog.getByRole("img", { name: "Generated PDF page 2", exact: true })).toBeVisible();
   await dialog.getByRole("button", { name: "Fit page", exact: true }).click();
   await expect(dialog.getByLabel("Zoom level")).toHaveText("100%");
   await wheelToPage(dialog, -100_000, 1);
   await wheelToPage(dialog, 100_000, 2);
   await dialog.getByRole("option", { name: "Page 1 1", exact: true }).click();
   await expect(modalPage).toHaveValue("1");
-  await expect(
-    dialog.getByRole("img", { name: "Generated PDF page 1", exact: true }),
-  ).toBeInViewport();
+  await expect(dialog.getByRole("img", { name: "Generated PDF page 1", exact: true })).toBeInViewport();
   await modalPage.fill("1");
   await modalPage.press("Enter");
-  await expect(
-    dialog.getByRole("img", { name: "Generated PDF page 1", exact: true }),
-  ).toBeVisible();
+  await expect(dialog.getByRole("img", { name: "Generated PDF page 1", exact: true })).toBeVisible();
   await modalPage.fill("2");
   await modalPage.press("Enter");
   const expandedImage = dialog.getByRole("img", { name: "Generated PDF page 2", exact: true });
   await expect(expandedImage).toBeInViewport();
-  await expect
-    .poll(() => expandedImage.evaluate((image: HTMLImageElement) => image.naturalWidth))
-    .toBeGreaterThan(0);
+  await expect.poll(() => expandedImage.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
   const modalDownloadEvent = page.waitForEvent("download");
   await dialog.getByRole("button", { name: "Download converted-images.pdf", exact: true }).click();
   const modalArtifact = await modalDownloadEvent;
   expect(modalArtifact.suggestedFilename()).toBe("converted-images.pdf");
-  expect(
-    (await PDFDocument.load(await readFile((await modalArtifact.path())!))).getPageCount(),
-  ).toBe(2);
+  expect((await PDFDocument.load(await readFile((await modalArtifact.path())!))).getPageCount()).toBe(2);
   await expect(dialog).toBeVisible();
   await page.screenshot({ path: `/tmp/image-to-pdf-expanded-${testInfo.project.name}.png` });
   await page.keyboard.press("Escape");
@@ -123,9 +103,7 @@ test("generated PDF previews its pages and stays downloadable after editing", as
   const outputBounds = await output.boundingBox();
   const previewBounds = await preview.boundingBox();
   expect(previewBounds!.x).toBeGreaterThanOrEqual(outputBounds!.x);
-  expect(previewBounds!.x + previewBounds!.width).toBeLessThanOrEqual(
-    outputBounds!.x + outputBounds!.width,
-  );
+  expect(previewBounds!.x + previewBounds!.width).toBeLessThanOrEqual(outputBounds!.x + outputBounds!.width);
   await output.screenshot({ path: `/tmp/image-to-pdf-${testInfo.project.name}.png` });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const downloadEvent = page.waitForEvent("download");
@@ -133,19 +111,14 @@ test("generated PDF previews its pages and stays downloadable after editing", as
   const download = await downloadEvent;
   expect(download.suggestedFilename()).toBe("converted-images.pdf");
   expect((await PDFDocument.load(await readFile((await download.path())!))).getPageCount()).toBe(2);
-  expect(await readFile((await download.path())!)).toEqual(
-    await readFile((await modalArtifact.path())!),
-  );
+  expect(await readFile((await download.path())!)).toEqual(await readFile((await modalArtifact.path())!));
   await expect(page.getByRole("button", { name: "Remove page-2.png" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Download file", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Remove page-2.png" }).click();
   await expect(page.getByRole("button", { name: "Download file", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Create PDF", exact: true }).click();
-  await expect(preview.getByRole("img", { name: "Generated PDF page 1", exact: true })).toBeVisible(
-    { timeout: 60_000 },
-  );
-  await expect(preview.getByRole("spinbutton", { name: "Current page" })).toHaveAttribute(
-    "max",
-    "1",
-  );
+  await expect(preview.getByRole("img", { name: "Generated PDF page 1", exact: true })).toBeVisible({
+    timeout: 60_000,
+  });
+  await expect(preview.getByRole("spinbutton", { name: "Current page" })).toHaveAttribute("max", "1");
 });

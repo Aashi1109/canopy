@@ -24,11 +24,7 @@ export class BoundedUtf8Preview {
 
     this.truncated = true;
     if (remaining <= 0) return;
-    for (
-      let length = Math.min(remaining, encoded.byteLength);
-      length >= Math.max(0, remaining - 3);
-      length -= 1
-    ) {
+    for (let length = Math.min(remaining, encoded.byteLength); length >= Math.max(0, remaining - 3); length -= 1) {
       try {
         this.value += this.decoder.decode(encoded.subarray(0, length));
         this.bytes += length;

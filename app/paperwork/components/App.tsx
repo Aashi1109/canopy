@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ComponentType,
-  type FormEvent,
-  type ReactNode,
-} from "react";
+import { useEffect, useRef, useState, type ComponentType, type FormEvent, type ReactNode } from "react";
 import {
   CheckCircle2,
   CircleX,
@@ -168,9 +161,7 @@ export default function App({
   const [waitlistError, setWaitlistError] = useState("");
   const toastTimerRef = useRef<number | null>(null);
   useEffect(() => {
-    const storedTemplateId = localStorage.getItem(
-      "paperworkkit.advanced-template.invoice.selected",
-    );
+    const storedTemplateId = localStorage.getItem("paperworkkit.advanced-template.invoice.selected");
     const storedTemplate = templates.find(
       (template) => template.id === storedTemplateId && template.status === "published",
     );
@@ -250,10 +241,7 @@ export default function App({
     const errorCount = Object.keys(nextErrors).length;
     if (errorCount) {
       setActiveMobileTab("edit");
-      showToast(
-        `Review ${errorCount} highlighted ${errorCount === 1 ? "field" : "fields"} before exporting.`,
-        "error",
-      );
+      showToast(`Review ${errorCount} highlighted ${errorCount === 1 ? "field" : "fields"} before exporting.`, "error");
       window.requestAnimationFrame(() => {
         formSectionRef.current?.scrollIntoView({ behavior: "smooth" });
       });
@@ -284,9 +272,7 @@ export default function App({
         import("@react-pdf/renderer"),
         import("./InvoicePdfDocument"),
       ]);
-      const blob = await pdf(
-        <InvoicePdfDocument data={invoiceData} template={selectedTemplate} />,
-      ).toBlob();
+      const blob = await pdf(<InvoicePdfDocument data={invoiceData} template={selectedTemplate} />).toBlob();
       const url = URL.createObjectURL(blob);
 
       if (action === "print" && printWindow) {
@@ -362,9 +348,7 @@ export default function App({
       );
     } catch (error) {
       console.error("Failed to save Paperwork Pro interest", error);
-      setWaitlistError(
-        "Your browser could not save this email. Check storage permissions and try again.",
-      );
+      setWaitlistError("Your browser could not save this email. Check storage permissions and try again.");
       return;
     }
 
@@ -424,10 +408,7 @@ export default function App({
             <PageHero
               actions={
                 <>
-                  <Button
-                    onClick={() => formSectionRef.current?.scrollIntoView({ behavior: "smooth" })}
-                    size="lg"
-                  >
+                  <Button onClick={() => formSectionRef.current?.scrollIntoView({ behavior: "smooth" })} size="lg">
                     Start invoice
                   </Button>
                   {selectedTemplate.layoutFamily !== "advanced" ? (
@@ -455,8 +436,8 @@ export default function App({
                     title={`${Object.keys(errors).length} invoice ${Object.keys(errors).length === 1 ? "field needs" : "fields need"} attention`}
                     variant="warning"
                   >
-                    Review the highlighted seller, client, invoice, line-item, and date details.
-                    Correct them before downloading or printing the PDF.
+                    Review the highlighted seller, client, invoice, line-item, and date details. Correct them before
+                    downloading or printing the PDF.
                   </AlertBanner>
                 ) : null}
 
@@ -472,12 +453,7 @@ export default function App({
                       className="grid w-full grid-cols-2 border border-border"
                       variant="segmented"
                     >
-                      <TabsTrigger
-                        aria-controls="editor-panel"
-                        className="min-h-11"
-                        id="mobile-edit-tab"
-                        value="edit"
-                      >
+                      <TabsTrigger aria-controls="editor-panel" className="min-h-11" id="mobile-edit-tab" value="edit">
                         <PenLine aria-hidden="true" className="size-4" />
                         Edit details
                       </TabsTrigger>
@@ -502,9 +478,7 @@ export default function App({
                           <Grid aria-hidden="true" className="size-5 shrink-0 text-primary" />
                           <div className="min-w-0">
                             <H3>Invoice theme: {selectedTemplate.name}</H3>
-                            <Muted className="text-muted-foreground">
-                              Published templates are managed centrally.
-                            </Muted>
+                            <Muted className="text-muted-foreground">Published templates are managed centrally.</Muted>
                           </div>
                         </div>
                         <Button onClick={() => setShowTemplates((shown) => !shown)} size="sm">
@@ -617,8 +591,7 @@ export default function App({
                           </P>
                         ) : null}
                         <Muted className="text-center text-muted-foreground">
-                          Download saves a PDF. Print opens the same PDF in a new tab; allow pop-ups
-                          if prompted.
+                          Download saves a PDF. Print opens the same PDF in a new tab; allow pop-ups if prompted.
                         </Muted>
                       </Card>
                       <Card className="overflow-hidden p-0 shadow-xl">
@@ -640,11 +613,7 @@ export default function App({
             <FAQSection />
           </>
         ) : null}
-        <RelatedTools
-          currentComponentKey={componentKey}
-          onTrackClick={handleTrackClick}
-          tools={tools}
-        />
+        <RelatedTools currentComponentKey={componentKey} onTrackClick={handleTrackClick} tools={tools} />
         <SmartToolsFooter />
       </div>
 
@@ -706,8 +675,8 @@ export default function App({
             <H2 id="sample-dialog-title">Load sample invoice?</H2>
           </div>
           <Muted className="text-muted-foreground">
-            This replaces every current invoice field with fictional example data. Download anything
-            you need before continuing.
+            This replaces every current invoice field with fictional example data. Download anything you need before
+            continuing.
           </Muted>
           <div className="flex flex-wrap justify-end gap-2">
             <Button onClick={() => setActiveDialog(null)} variant="secondary">
@@ -720,11 +689,7 @@ export default function App({
         </div>
       </AppDialog>
 
-      <AppDialog
-        labelledBy="clear-dialog-title"
-        onClose={() => setActiveDialog(null)}
-        open={activeDialog === "clear"}
-      >
+      <AppDialog labelledBy="clear-dialog-title" onClose={() => setActiveDialog(null)} open={activeDialog === "clear"}>
         <div className="space-y-5 p-6">
           <div className="flex items-center gap-3">
             <div className="grid size-10 shrink-0 place-items-center rounded-full border border-destructive/20 bg-destructive/10 text-destructive">
@@ -769,8 +734,8 @@ export default function App({
             <P className="text-primary">Paperwork Pro early access</P>
             <H2 id="upgrade-dialog-title">Join the Paperwork Pro waitlist</H2>
             <Muted className="text-muted-foreground">
-              Save your interest locally for upcoming cloud backups, client delivery, and status
-              tracking. No email is sent from this preview.
+              Save your interest locally for upcoming cloud backups, client delivery, and status tracking. No email is
+              sent from this preview.
             </Muted>
           </div>
           <form className="space-y-4" onSubmit={joinWaitlist}>

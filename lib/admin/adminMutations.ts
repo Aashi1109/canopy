@@ -48,11 +48,7 @@ import {
   type ManagedTool,
   type ToolApp,
 } from "@smarttools/tool-catalog";
-import {
-  AuthorizationError,
-  type FeatureApp,
-  type FeatureManifestEntry,
-} from "@smarttools/control-plane";
+import { AuthorizationError, type FeatureApp, type FeatureManifestEntry } from "@smarttools/control-plane";
 import { z } from "zod";
 import { Cache } from "@smarttools/cache";
 import { isCategoryKey, TOOL_CATEGORIES, type CategoryKey } from "../tool-framework/categories.ts";
@@ -246,10 +242,7 @@ async function getToolForUpdate(transaction: Transaction, toolId: string): Promi
 
 async function saveTool(
   transaction: Transaction,
-  tool: Pick<
-    ToolRow,
-    "toolId" | "app" | "slug" | "name" | "description" | "order" | "enabled" | "archived"
-  >,
+  tool: Pick<ToolRow, "toolId" | "app" | "slug" | "name" | "description" | "order" | "enabled" | "archived">,
 ): Promise<ToolRow> {
   const now = new Date();
   const [saved] = await transaction
@@ -310,10 +303,7 @@ function creatableApp(value: unknown): CreatableToolApp {
   return value;
 }
 
-export async function createManagedTool(
-  actorUserId: string,
-  input: ManagedToolDraft,
-): Promise<ToolRow> {
+export async function createManagedTool(actorUserId: string, input: ManagedToolDraft): Promise<ToolRow> {
   return db
     .transaction(async (transaction) => {
       await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
@@ -406,11 +396,7 @@ export async function createManagedTool(
     .then((result) => invalidateAfterCommit("catalog", result));
 }
 
-export async function updateManagedTool(
-  actorUserId: string,
-  toolId: string,
-  input: ManagedToolEdit,
-): Promise<ToolRow> {
+export async function updateManagedTool(actorUserId: string, toolId: string, input: ManagedToolEdit): Promise<ToolRow> {
   return db
     .transaction(async (transaction) => {
       await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
@@ -423,9 +409,7 @@ export async function updateManagedTool(
       }
       assertToolSlugImmutable(current.slug, slug ?? null);
 
-      const name = Object.hasOwn(input, "name")
-        ? requiredText(input.name, "Tool name", 160)
-        : current.name;
+      const name = Object.hasOwn(input, "name") ? requiredText(input.name, "Tool name", 160) : current.name;
       const description = Object.hasOwn(input, "description")
         ? requiredText(input.description, "Tool description")
         : current.description;
@@ -508,11 +492,7 @@ export async function reorderManagedTools(
     .then((result) => invalidateAfterCommit("catalog", result));
 }
 
-export async function setManagedToolEnabled(
-  actorUserId: string,
-  toolId: string,
-  enabled: boolean,
-): Promise<ToolRow> {
+export async function setManagedToolEnabled(actorUserId: string, toolId: string, enabled: boolean): Promise<ToolRow> {
   return db
     .transaction(async (transaction) => {
       await requireTransactionPermission(transaction, actorUserId, "tools", "toggle");
@@ -534,11 +514,7 @@ export async function setManagedToolEnabled(
     .then((result) => invalidateAfterCommit("catalog", result));
 }
 
-export async function setManagedToolArchived(
-  actorUserId: string,
-  toolId: string,
-  archived: boolean,
-): Promise<ToolRow> {
+export async function setManagedToolArchived(actorUserId: string, toolId: string, archived: boolean): Promise<ToolRow> {
   return db
     .transaction(async (transaction) => {
       await requireTransactionPermission(transaction, actorUserId, "tools", "archive");
@@ -613,13 +589,7 @@ export type ToolIconUpload = {
   readonly mimeType: string;
 };
 
-const CONTENT_FIELDS = [
-  "category",
-  "keywords",
-  "seoTitle",
-  "seoDescription",
-  "contentDoc",
-] as const;
+const CONTENT_FIELDS = ["category", "keywords", "seoTitle", "seoDescription", "contentDoc"] as const;
 
 const CONTENT_DOC_KEYS = ["howToUse", "limitations", "faq", "examples", "relatedToolIds"] as const;
 
@@ -664,12 +634,7 @@ function optionalText(value: unknown, label: string, maxLength: number): string 
   return trimmed;
 }
 
-function optionalTextList(
-  value: unknown,
-  label: string,
-  maxCount: number,
-  maxLength: number,
-): string[] | null {
+function optionalTextList(value: unknown, label: string, maxCount: number, maxLength: number): string[] | null {
   if (value === null || value === undefined) return null;
   if (!Array.isArray(value)) throw new Error(`${label} must be a list.`);
   const cleaned = value.flatMap((entry) => {
@@ -710,9 +675,7 @@ function toolContentDoc(
 
   const parsed = contentDocEditSchema.safeParse(value);
   if (!parsed.success) {
-    throw new Error(
-      `Tool content document is invalid: ${parsed.error.issues[0]?.message ?? "unknown shape"}.`,
-    );
+    throw new Error(`Tool content document is invalid: ${parsed.error.issues[0]?.message ?? "unknown shape"}.`);
   }
 
   for (const relatedToolId of parsed.data.relatedToolIds ?? []) {
@@ -720,9 +683,7 @@ function toolContentDoc(
       throw new Error("A tool cannot be related to itself.");
     }
     if (!knownToolIds.has(relatedToolId)) {
-      throw new Error(
-        `Related tools must be tool ids, not slugs: ${relatedToolId} is not registered.`,
-      );
+      throw new Error(`Related tools must be tool ids, not slugs: ${relatedToolId} is not registered.`);
     }
   }
 
@@ -731,11 +692,7 @@ function toolContentDoc(
   return { version: TOOL_CONTENT_DOC_VERSION, ...parsed.data };
 }
 
-export async function updateToolContent(
-  actorUserId: string,
-  toolId: string,
-  input: ToolContentEdit,
-): Promise<void> {
+export async function updateToolContent(actorUserId: string, toolId: string, input: ToolContentEdit): Promise<void> {
   return db
     .transaction(async (transaction) => {
       await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
@@ -745,9 +702,9 @@ export async function updateToolContent(
       // Related tools are validated against the stored roster, so a curated link
       // can only point at a tool that exists.
       const knownToolIds = new Set(
-        (
-          await transaction.select({ toolId: managedToolsTable.toolId }).from(managedToolsTable)
-        ).map((row) => row.toolId),
+        (await transaction.select({ toolId: managedToolsTable.toolId }).from(managedToolsTable)).map(
+          (row) => row.toolId,
+        ),
       );
       const values = {
         category: toolContentCategory(input.category),
@@ -778,11 +735,7 @@ export async function updateToolContent(
  * `published_at` is what makes the stored row live: while it is NULL the code
  * values are served no matter what else the row holds.
  */
-export async function setToolContentPublished(
-  actorUserId: string,
-  toolId: string,
-  published: boolean,
-): Promise<void> {
+export async function setToolContentPublished(actorUserId: string, toolId: string, published: boolean): Promise<void> {
   return db
     .transaction(async (transaction) => {
       await requireTransactionPermission(transaction, actorUserId, "tools", "toggle");
@@ -827,20 +780,12 @@ function assertUploadableIcon(bytes: unknown, mimeType: unknown): asserts bytes 
   const normalizedMimeType =
     typeof mimeType === "string" ? (mimeType.split(";", 1)[0]?.trim().toLowerCase() ?? "") : "";
   const leadingBytes = new TextDecoder().decode(bytes.subarray(0, 512)).toLowerCase();
-  if (
-    normalizedMimeType === "image/svg+xml" ||
-    leadingBytes.includes("<svg") ||
-    leadingBytes.includes("<?xml")
-  ) {
+  if (normalizedMimeType === "image/svg+xml" || leadingBytes.includes("<svg") || leadingBytes.includes("<?xml")) {
     throw new Error("SVG icons are not supported.");
   }
 }
 
-export async function saveToolIcon(
-  actorUserId: string,
-  toolId: string,
-  upload: ToolIconUpload,
-): Promise<ToolIconRow> {
+export async function saveToolIcon(actorUserId: string, toolId: string, upload: ToolIconUpload): Promise<ToolIconRow> {
   if (!isRecord(upload)) throw new Error("Icon upload must be an object.");
   assertUploadableIcon(upload.bytes, upload.mimeType);
   const mimeType = String(upload.mimeType);
@@ -917,10 +862,7 @@ async function getFeatureForUpdate(transaction: Transaction, entry: FeatureManif
   );
 }
 
-async function saveFeature(
-  transaction: Transaction,
-  feature: typeof featureOverridesTable.$inferInsert,
-) {
+async function saveFeature(transaction: Transaction, feature: typeof featureOverridesTable.$inferInsert) {
   const now = new Date();
   const [saved] = await transaction
     .insert(featureOverridesTable)
@@ -953,9 +895,7 @@ export async function updateFeature(
     const saved = await saveFeature(transaction, {
       app,
       key,
-      name: Object.hasOwn(input, "name")
-        ? requiredText(input.name, "Feature name", 160)
-        : current.name,
+      name: Object.hasOwn(input, "name") ? requiredText(input.name, "Feature name", 160) : current.name,
       description: Object.hasOwn(input, "description")
         ? requiredText(input.description, "Feature description")
         : current.description,
@@ -988,24 +928,13 @@ export async function setFeatureEnabled(
   });
 }
 
-async function getUserForUpdate(
-  transaction: Transaction,
-  userId: string,
-): Promise<typeof authUser.$inferSelect> {
-  const [user] = await transaction
-    .select()
-    .from(authUser)
-    .where(eq(authUser.id, userId))
-    .limit(1)
-    .for("update");
+async function getUserForUpdate(transaction: Transaction, userId: string): Promise<typeof authUser.$inferSelect> {
+  const [user] = await transaction.select().from(authUser).where(eq(authUser.id, userId)).limit(1).for("update");
   if (!user) throw new Error("User not found.");
   return user;
 }
 
-async function getUserRoleIdsForUpdate(
-  transaction: Transaction,
-  userId: string,
-): Promise<string[]> {
+async function getUserRoleIdsForUpdate(transaction: Transaction, userId: string): Promise<string[]> {
   const rows = await transaction
     .select({ roleId: userRolesTable.roleId })
     .from(userRolesTable)
@@ -1050,10 +979,7 @@ export async function assignUserRoles(
       throw new Error("Role assignments must be an array.");
     }
     const nextRoleIds = [
-      ...new Set([
-        "user",
-        ...requestedRoleIds.map((roleId) => requiredText(roleId, "Role id", 200)),
-      ]),
+      ...new Set(["user", ...requestedRoleIds.map((roleId) => requiredText(roleId, "Role id", 200))]),
     ];
     const target = await getUserForUpdate(transaction, targetUserId);
     const currentRoleIds = await getUserRoleIdsForUpdate(transaction, targetUserId);
@@ -1068,10 +994,7 @@ export async function assignUserRoles(
     assertAccessPrerequisites(mergeRoleAccess(existingRoles));
 
     if (currentRoleIds.includes("admin") && !nextRoleIds.includes("admin")) {
-      assertCanDemoteUser(
-        authorizationUser(target, currentRoleIds),
-        await getAdminCounts(transaction),
-      );
+      assertCanDemoteUser(authorizationUser(target, currentRoleIds), await getAdminCounts(transaction));
     }
     if (
       currentRoleIds.length === nextRoleIds.length &&
@@ -1085,17 +1008,10 @@ export async function assignUserRoles(
     if (removedRoleIds.length) {
       await transaction
         .delete(userRolesTable)
-        .where(
-          and(
-            eq(userRolesTable.userId, targetUserId),
-            inArray(userRolesTable.roleId, removedRoleIds),
-          ),
-        );
+        .where(and(eq(userRolesTable.userId, targetUserId), inArray(userRolesTable.roleId, removedRoleIds)));
     }
     if (addedRoleIds.length) {
-      await transaction
-        .insert(userRolesTable)
-        .values(addedRoleIds.map((roleId) => ({ userId: targetUserId, roleId })));
+      await transaction.insert(userRolesTable).values(addedRoleIds.map((roleId) => ({ userId: targetUserId, roleId })));
     }
     await writeAudit(transaction, actorUserId, "user.assign-roles", "user", targetUserId, {
       previousRoleIds: currentRoleIds,
@@ -1116,20 +1032,13 @@ export async function assignRoleToUsers(
     throw new Error("Select at least one user.");
   }
   if (requestedUserIds.length > 100) throw new Error("Assign up to 100 users at a time.");
-  const userIds = [
-    ...new Set(requestedUserIds.map((id) => requiredText(id, "User id", 200))),
-  ].sort();
+  const userIds = [...new Set(requestedUserIds.map((id) => requiredText(id, "User id", 200)))].sort();
   await db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "roles", "view");
     await requireTransactionPermission(transaction, actorUserId, "users", "assignRoles");
     // Match the per-user assignment lock order and lock targets consistently across batches.
     for (const userId of userIds) await getUserForUpdate(transaction, userId);
-    const [role] = await transaction
-      .select()
-      .from(rolesTable)
-      .where(eq(rolesTable.id, roleId))
-      .limit(1)
-      .for("share");
+    const [role] = await transaction.select().from(rolesTable).where(eq(rolesTable.id, roleId)).limit(1).for("share");
     if (!role || role.isSystem) throw new Error("Choose an existing custom role.");
     assertAccessPrerequisites(role.access);
     for (const userId of userIds) {
@@ -1161,10 +1070,7 @@ export async function setUserStatus(
     }
 
     if (target.status !== status) {
-      await transaction
-        .update(authUser)
-        .set({ status, updatedAt: new Date() })
-        .where(eq(authUser.id, targetUserId));
+      await transaction.update(authUser).set({ status, updatedAt: new Date() }).where(eq(authUser.id, targetUserId));
     }
     // Keep the session identity so suspended accounts reach the access screen,
     // rather than regaining anonymous product access when their session vanishes.
@@ -1182,12 +1088,7 @@ export async function setUserStatus(
 }
 
 async function getRoleForUpdate(transaction: Transaction, roleId: string): Promise<RoleRow> {
-  const [role] = await transaction
-    .select()
-    .from(rolesTable)
-    .where(eq(rolesTable.id, roleId))
-    .limit(1)
-    .for("update");
+  const [role] = await transaction.select().from(rolesTable).where(eq(rolesTable.id, roleId)).limit(1).for("update");
   if (!role) throw new Error("Role not found.");
   return role;
 }
@@ -1216,11 +1117,7 @@ export async function createCustomRole(
     .then((result) => invalidateAfterCommit("roles", result));
 }
 
-export async function updateCustomRole(
-  actorUserId: string,
-  roleId: string,
-  input: CustomRoleEdit,
-): Promise<RoleRow> {
+export async function updateCustomRole(actorUserId: string, roleId: string, input: CustomRoleEdit): Promise<RoleRow> {
   return db
     .transaction(async (transaction) => {
       await requireTransactionPermission(transaction, actorUserId, "roles", "edit");
@@ -1233,27 +1130,16 @@ export async function updateCustomRole(
       assertAccessPrerequisites(access);
 
       const changes = {
-        name: Object.hasOwn(input, "name")
-          ? requiredText(input.name, "Role name", 160)
-          : current.name,
+        name: Object.hasOwn(input, "name") ? requiredText(input.name, "Role name", 160) : current.name,
         description: Object.hasOwn(input, "description")
           ? requiredText(input.description, "Role description")
           : current.description,
         access,
         updatedAt: new Date(),
       };
-      const [role] = await transaction
-        .update(rolesTable)
-        .set(changes)
-        .where(eq(rolesTable.id, roleId))
-        .returning();
+      const [role] = await transaction.update(rolesTable).set(changes).where(eq(rolesTable.id, roleId)).returning();
       await writeAudit(transaction, actorUserId, "role.edit", "role", roleId, {
-        changes: [
-          ...new Set([
-            ...Object.keys(input),
-            ...(current.access.admin?.enter === true ? [] : ["access"]),
-          ]),
-        ],
+        changes: [...new Set([...Object.keys(input), ...(current.access.admin?.enter === true ? [] : ["access"])])],
       });
       return role;
     })
@@ -1290,9 +1176,7 @@ async function renderAdvancedTemplateForPublication(template: AdvancedDocumentTe
   const config = normalizeAdvancedTemplateConfig(template.config, template.documentType);
   const validation = validateAdvancedTemplateForPublish(config, template.documentType);
   if (!validation.valid) {
-    throw new Error(
-      `Publication blocked: ${validation.errors.map((issue) => issue.message).join("; ")}`,
-    );
+    throw new Error(`Publication blocked: ${validation.errors.map((issue) => issue.message).join("; ")}`);
   }
   if (validation.warnings.length) {
     console.warn(
@@ -1302,10 +1186,7 @@ async function renderAdvancedTemplateForPublication(template: AdvancedDocumentTe
     );
   }
 
-  const [{ generate }, schemas] = await Promise.all([
-    import("@pdfme/generator"),
-    import("@pdfme/schemas"),
-  ]);
+  const [{ generate }, schemas] = await Promise.all([import("@pdfme/generator"), import("@pdfme/schemas")]);
   await generate({
     template: config.template,
     inputs: [config.sampleData],
@@ -1386,11 +1267,7 @@ function templateInsertValues(
   };
 }
 
-async function assertTemplateSlugAvailable(
-  transaction: Transaction,
-  slug: string,
-  exceptId?: string,
-): Promise<void> {
+async function assertTemplateSlugAvailable(transaction: Transaction, slug: string, exceptId?: string): Promise<void> {
   const where = exceptId
     ? and(eq(invoiceTemplatesTable.slug, slug), ne(invoiceTemplatesTable.id, exceptId))
     : eq(invoiceTemplatesTable.slug, slug);
@@ -1402,10 +1279,7 @@ async function assertTemplateSlugAvailable(
   if (duplicate) throw new Error("Template slug is already in use.");
 }
 
-async function getTemplateForUpdate(
-  transaction: Transaction,
-  templateId: string,
-): Promise<TemplateRow> {
+async function getTemplateForUpdate(transaction: Transaction, templateId: string): Promise<TemplateRow> {
   const [template] = await transaction
     .select()
     .from(invoiceTemplatesTable)
@@ -1424,10 +1298,7 @@ async function insertTemplateDraft(
 ) {
   const template = makeTemplateDraft(input);
   await assertTemplateSlugAvailable(transaction, template.slug);
-  const [saved] = await transaction
-    .insert(invoiceTemplatesTable)
-    .values(templateInsertValues(template))
-    .returning();
+  const [saved] = await transaction.insert(invoiceTemplatesTable).values(templateInsertValues(template)).returning();
   await writeAudit(transaction, actorUserId, auditAction, "template", template.id, {
     name: template.name,
     slug: template.slug,
@@ -1435,18 +1306,10 @@ async function insertTemplateDraft(
   return saved;
 }
 
-export async function createInvoiceTemplate(
-  actorUserId: string,
-  input: InvoiceTemplateContent,
-): Promise<TemplateRow> {
+export async function createInvoiceTemplate(actorUserId: string, input: InvoiceTemplateContent): Promise<TemplateRow> {
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "templates", "create");
-    return insertTemplateDraft(
-      transaction,
-      actorUserId,
-      { ...input, documentType: "invoice" },
-      "template.create",
-    );
+    return insertTemplateDraft(transaction, actorUserId, { ...input, documentType: "invoice" }, "template.create");
   });
 }
 
@@ -1503,10 +1366,7 @@ export async function duplicateDocumentTemplate(
   });
 }
 
-export async function importDocumentTemplate(
-  actorUserId: string,
-  input: unknown,
-): Promise<TemplateRow> {
+export async function importDocumentTemplate(actorUserId: string, input: unknown): Promise<TemplateRow> {
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "templates", "create");
     const imported = templateValidationError(input);
@@ -1580,10 +1440,7 @@ async function updateDocumentTemplateInTransaction(
   return saved;
 }
 
-async function prepareDocumentTemplatePublication(
-  actorUserId: string,
-  templateId: string,
-): Promise<DocumentTemplate> {
+async function prepareDocumentTemplatePublication(actorUserId: string, templateId: string): Promise<DocumentTemplate> {
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "templates", "publish");
     const current = await getTemplateForUpdate(transaction, templateId);
@@ -1591,10 +1448,7 @@ async function prepareDocumentTemplatePublication(
   });
 }
 
-export async function publishDocumentTemplate(
-  actorUserId: string,
-  templateId: string,
-): Promise<TemplateRow> {
+export async function publishDocumentTemplate(actorUserId: string, templateId: string): Promise<TemplateRow> {
   const template = await prepareDocumentTemplatePublication(actorUserId, templateId);
   if (template.layoutFamily === "advanced") {
     await renderAdvancedTemplateForPublication(template);
@@ -1613,9 +1467,7 @@ async function publishDocumentTemplateInTransaction(
   await requireTransactionPermission(transaction, actorUserId, "templates", "publish");
   const current = await getTemplateForUpdate(transaction, templateId);
   if (current.version !== expectedVersion) {
-    throw new Error(
-      "The template changed while its publication preview was rendering. Review and publish again.",
-    );
+    throw new Error("The template changed while its publication preview was rendering. Review and publish again.");
   }
   const template = templateValidationError(storedTemplateInput(current));
   const defaults = await transaction
@@ -1629,8 +1481,7 @@ async function publishDocumentTemplateInTransaction(
       ),
     )
     .for("update");
-  const isDefault =
-    current.isDefault || defaults.some(({ id }) => id === templateId) || defaults.length === 0;
+  const isDefault = current.isDefault || defaults.some(({ id }) => id === templateId) || defaults.length === 0;
   const [saved] = await transaction
     .update(invoiceTemplatesTable)
     .set({ status: "published", isDefault, updatedAt: new Date() })
@@ -1657,10 +1508,7 @@ export async function updateAndPublishDocumentTemplate(
   );
 }
 
-export async function archiveDocumentTemplate(
-  actorUserId: string,
-  templateId: string,
-): Promise<TemplateRow> {
+export async function archiveDocumentTemplate(actorUserId: string, templateId: string): Promise<TemplateRow> {
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "templates", "archive");
     const current = await getTemplateForUpdate(transaction, templateId);
@@ -1677,10 +1525,7 @@ export async function archiveDocumentTemplate(
   });
 }
 
-export async function setDefaultDocumentTemplate(
-  actorUserId: string,
-  templateId: string,
-): Promise<TemplateRow> {
+export async function setDefaultDocumentTemplate(actorUserId: string, templateId: string): Promise<TemplateRow> {
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "templates", "publish");
     const current = await getTemplateForUpdate(transaction, templateId);
@@ -1691,20 +1536,14 @@ export async function setDefaultDocumentTemplate(
       .select({ id: invoiceTemplatesTable.id })
       .from(invoiceTemplatesTable)
       .where(
-        and(
-          eq(invoiceTemplatesTable.documentType, current.documentType),
-          eq(invoiceTemplatesTable.isDefault, true),
-        ),
+        and(eq(invoiceTemplatesTable.documentType, current.documentType), eq(invoiceTemplatesTable.isDefault, true)),
       )
       .for("update");
     await transaction
       .update(invoiceTemplatesTable)
       .set({ isDefault: false, updatedAt: new Date() })
       .where(
-        and(
-          eq(invoiceTemplatesTable.documentType, current.documentType),
-          eq(invoiceTemplatesTable.isDefault, true),
-        ),
+        and(eq(invoiceTemplatesTable.documentType, current.documentType), eq(invoiceTemplatesTable.isDefault, true)),
       );
     const [saved] = await transaction
       .update(invoiceTemplatesTable)

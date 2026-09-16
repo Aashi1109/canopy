@@ -23,10 +23,7 @@ export type ToolExecute = ToolRuntimeSpec<ToolRunInput, ToolSettings, ToolResult
 /** ponytail: main-thread runs report no progress; the worker host carries it. */
 const NO_PROGRESS = (_progress: ToolRunProgress): void => {};
 
-export function createExecute<S extends SettingsSpec>(
-  spec: ToolSpec<S>,
-  run: ToolRun<SettingsOf<S>>,
-): ToolExecute {
+export function createExecute<S extends SettingsSpec>(spec: ToolSpec<S>, run: ToolRun<SettingsOf<S>>): ToolExecute {
   return async (
     input: ToolRunInput,
     settings: ToolSettings,

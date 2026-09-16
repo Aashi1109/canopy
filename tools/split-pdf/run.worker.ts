@@ -16,10 +16,7 @@ import {
   validatePdfInput,
 } from "../../lib/tool-framework/media/pdfDocument.ts";
 import { readArtifact, type StoredToolArtifact } from "../../lib/tool-framework/artifacts.ts";
-import {
-  createOutputFilename,
-  validatePdfSelection,
-} from "../../lib/tool-framework/media/validation.ts";
+import { createOutputFilename, validatePdfSelection } from "../../lib/tool-framework/media/validation.ts";
 import { writeArtifactBatch } from "../../lib/tool-framework/media/zip.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";

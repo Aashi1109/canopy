@@ -105,11 +105,7 @@ export type ToolWorkerCancel = {
 };
 
 export type ToolWorkerMessage =
-  | ToolWorkerRequest
-  | ToolWorkerInspect
-  | ToolWorkerThumbnailRequest
-  | ToolWorkerInspectionClose
-  | ToolWorkerCancel;
+  ToolWorkerRequest | ToolWorkerInspect | ToolWorkerThumbnailRequest | ToolWorkerInspectionClose | ToolWorkerCancel;
 
 export type ToolWorkerProgress = ToolRunProgress & {
   readonly type: "progress";
@@ -215,9 +211,7 @@ export type ToolRunRequestInput = {
   readonly settings: Readonly<Record<string, unknown>>;
 };
 
-export function createToolWorkerRequest(
-  input: ToolRunRequestInput & { readonly jobId: string },
-): ToolWorkerRequest {
+export function createToolWorkerRequest(input: ToolRunRequestInput & { readonly jobId: string }): ToolWorkerRequest {
   if (!input.jobId.trim()) throw new TypeError("Worker job ID is required.");
   if (!input.key.trim()) throw new TypeError("Worker tool key is required.");
   return {
@@ -267,9 +261,7 @@ export type ToolThumbnailRequestInput = {
   readonly renderWidth?: number;
 };
 
-export function createToolThumbnailRequest(
-  input: ToolThumbnailRequestInput,
-): ToolWorkerThumbnailRequest {
+export function createToolThumbnailRequest(input: ToolThumbnailRequestInput): ToolWorkerThumbnailRequest {
   const jobId = input.jobId.trim();
   if (!jobId) throw new TypeError("Worker job ID is required.");
   if (input.renderWidth !== undefined && !isPreviewWidth(input.renderWidth)) {
@@ -283,9 +275,7 @@ export function createToolThumbnailRequest(
     throw new RangeError("Choose at least one thumbnail page.");
   }
   if (pageNumbers.length > PDF_THUMBNAIL_CACHE_SIZE) {
-    throw new RangeError(
-      `At most ${PDF_THUMBNAIL_CACHE_SIZE} thumbnail pages may be requested at once.`,
-    );
+    throw new RangeError(`At most ${PDF_THUMBNAIL_CACHE_SIZE} thumbnail pages may be requested at once.`);
   }
   return {
     type: "inspect-thumbnails",
@@ -347,25 +337,13 @@ export function isToolWorkerResponse(value: unknown): value is ToolWorkerRespons
   if (value.type === "canceled") return true;
   if (value.type === "inspection-closed") return true;
   if (value.type === "progress") {
-    return (
-      typeof value.completed === "number" &&
-      typeof value.total === "number" &&
-      typeof value.stage === "string"
-    );
+    return typeof value.completed === "number" && typeof value.total === "number" && typeof value.stage === "string";
   }
   if (value.type === "failure") {
-    return (
-      typeof value.code === "string" &&
-      typeof value.message === "string" &&
-      isOptionalString(value.recovery)
-    );
+    return typeof value.code === "string" && typeof value.message === "string" && isOptionalString(value.recovery);
   }
   if (value.type === "inspected") {
-    return (
-      typeof value.pageCount === "number" &&
-      Array.isArray(value.previews) &&
-      value.previews.every(isPagePreview)
-    );
+    return typeof value.pageCount === "number" && Array.isArray(value.previews) && value.previews.every(isPagePreview);
   }
   if (value.type === "thumbnails") {
     return (
@@ -376,9 +354,7 @@ export function isToolWorkerResponse(value: unknown): value is ToolWorkerRespons
   }
   // The result is produced by this repo's own worker, so only the envelope is
   // checked here; the render union is the renderer's own exhaustive switch.
-  return (
-    value.type === "success" && isRecord(value.result) && typeof value.result.render === "string"
-  );
+  return value.type === "success" && isRecord(value.result) && typeof value.result.render === "string";
 }
 
 export function beginWorkerJob(state: ToolJobState, jobId: string): ToolJobState {
@@ -395,10 +371,7 @@ export function beginWorkerJob(state: ToolJobState, jobId: string): ToolJobState
   };
 }
 
-export function reduceWorkerJobState(
-  state: ToolJobState,
-  message: ToolWorkerResponse,
-): ToolJobState {
+export function reduceWorkerJobState(state: ToolJobState, message: ToolWorkerResponse): ToolJobState {
   if (message.jobId !== state.jobId) return state;
   if (message.type === "thumbnails") {
     if (state.status !== "completed" || state.pageCount < 1) return state;
@@ -408,10 +381,7 @@ export function reduceWorkerJobState(
   // Inspection completes geometry first; its live session can still fail
   // while rendering requested pages. Conversion results remain terminal.
   const inspectionFailure =
-    message.type === "failure" &&
-    state.status === "completed" &&
-    state.pageCount > 0 &&
-    state.result === null;
+    message.type === "failure" && state.status === "completed" && state.pageCount > 0 && state.result === null;
   if (state.status !== "running" && !inspectionFailure) return state;
   if (message.type === "progress") {
     const { completed, total, stage } = message;
@@ -485,9 +455,7 @@ function mergePageThumbnails(
   });
 }
 
-export function cancelWorkerJob(
-  state: ToolJobState,
-): { state: ToolJobState; message: ToolWorkerCancel } | null {
+export function cancelWorkerJob(state: ToolJobState): { state: ToolJobState; message: ToolWorkerCancel } | null {
   if (state.status !== "running" || !state.jobId) return null;
   return {
     state: { ...state, status: "canceled", progress: null },
@@ -534,8 +502,7 @@ function isPageThumbnail(value: unknown): value is ToolPageThumbnail {
     isPagePreview(value) &&
     readOwn(value, "buffer") instanceof ArrayBuffer &&
     (readOwn(value, "mime") === "image/jpeg" || readOwn(value, "mime") === "image/png") &&
-    (readOwn(value, "renderWidth") === undefined ||
-      isPreviewWidth(readOwn(value, "renderWidth"))) &&
+    (readOwn(value, "renderWidth") === undefined || isPreviewWidth(readOwn(value, "renderWidth"))) &&
     typeof width === "number" &&
     Number.isInteger(width) &&
     width > 0 &&
@@ -547,12 +514,7 @@ function isPageThumbnail(value: unknown): value is ToolPageThumbnail {
 }
 
 function isPreviewWidth(value: unknown): value is number {
-  return (
-    typeof value === "number" &&
-    Number.isInteger(value) &&
-    value > 0 &&
-    value <= PDF_PREVIEW_MAX_WIDTH
-  );
+  return typeof value === "number" && Number.isInteger(value) && value > 0 && value <= PDF_PREVIEW_MAX_WIDTH;
 }
 
 function readOwn(value: unknown, key: string): unknown {
@@ -564,9 +526,6 @@ function isRunItem(value: unknown): value is ToolRunItem {
     isRecord(value) &&
     isNonEmptyString(value.id) &&
     typeof value.selected === "boolean" &&
-    (value.rotation === 0 ||
-      value.rotation === 90 ||
-      value.rotation === 180 ||
-      value.rotation === 270)
+    (value.rotation === 0 || value.rotation === 90 || value.rotation === 180 || value.rotation === 270)
   );
 }

@@ -31,9 +31,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const html = requireUtilityInput(ctx.input.text, "HTML source");
   return {
     render: "html",
-    html: ctx.settings.showOutlines
-      ? html.replace(/^(\s*<!doctype[^>]*>)?/i, `$&${OUTLINE_STYLE}`)
-      : html,
+    html: ctx.settings.showOutlines ? html.replace(/^(\s*<!doctype[^>]*>)?/i, `$&${OUTLINE_STYLE}`) : html,
     downloadName: "preview.html",
   };
 };

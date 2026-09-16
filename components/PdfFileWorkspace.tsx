@@ -247,11 +247,7 @@ export function PdfFileWorkspace({
                   transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
                 }}
               >
-                <PdfPreviewPage
-                  page={page}
-                  requestThumbnails={requestThumbnails}
-                  active={fullScreen || !expanded}
-                />
+                <PdfPreviewPage page={page} requestThumbnails={requestThumbnails} active={fullScreen || !expanded} />
               </div>
               {renderPageOverlay?.(page, pages)}
             </div>
@@ -259,9 +255,7 @@ export function PdfFileWorkspace({
         };
       })}
       pagePreviewDetail={
-        getPageRotation
-          ? "Original thumbnail · changes shown in main preview"
-          : "Original PDF · unchanged"
+        getPageRotation ? "Original thumbnail · changes shown in main preview" : "Original PDF · unchanged"
       }
       rightChildren={fileControls}
       renderPagePreview={(number) => {
@@ -276,8 +270,7 @@ export function PdfFileWorkspace({
   );
   const outputs = props.result?.render === "files" ? props.result.files : [];
   const primaryOutput =
-    outputs.find((output) => output.mime === "application/zip") ??
-    (outputs.length === 1 ? outputs[0] : undefined);
+    outputs.find((output) => output.mime === "application/zip") ?? (outputs.length === 1 ? outputs[0] : undefined);
   const pdfCount = outputs.filter((output) => output.mime === "application/pdf").length;
 
   return (
@@ -321,9 +314,7 @@ export function PdfFileWorkspace({
               state={inspectionError ? "error" : pages.length ? "ready" : "loading"}
               stateTitle={inspectionError ? "Unable to open PDF" : "Opening your PDF…"}
               stateDescription={
-                inspectionError
-                  ? `${inspectionError} Try another PDF, or retry opening this file.`
-                  : undefined
+                inspectionError ? `${inspectionError} Try another PDF, or retry opening this file.` : undefined
               }
               stateAction={
                 inspectionError ? (
@@ -437,8 +428,7 @@ export function PdfFileWorkspace({
           />
         ) : outputs.length > 0 ? (
           <AlertBanner title="Complete" variant="success">
-            {pdfCount} {pdfCount === 1 ? "PDF is" : "PDFs are"} ready to download. Your original is
-            unchanged.
+            {pdfCount} {pdfCount === 1 ? "PDF is" : "PDFs are"} ready to download. Your original is unchanged.
           </AlertBanner>
         ) : !reason && !props.result && plan.summary?.detail ? (
           <AlertBanner title={plan.summary.title}>{plan.summary.detail}</AlertBanner>
@@ -446,23 +436,16 @@ export function PdfFileWorkspace({
         {!props.running && (primaryOutput ? completionActions : secondaryActions)}
         {reason && !plan.error && <Muted role="status">{reason}</Muted>}
         {cancelled && !props.running && (
-          <Muted role="status">
-            Cancelled. Your PDF and settings are kept. Choose {actionLabel} to try again.
-          </Muted>
+          <Muted role="status">Cancelled. Your PDF and settings are kept. Choose {actionLabel} to try again.</Muted>
         )}
         {props.error && (
           <Alert variant="destructive">
             <AlertTitle>Unable to {actionLabel.toLowerCase()}</AlertTitle>
-            <AlertDescription>
-              {props.error} Check the settings and try again, or replace the PDF.
-            </AlertDescription>
+            <AlertDescription>{props.error} Check the settings and try again, or replace the PDF.</AlertDescription>
           </Alert>
         )}
         {outputs.some((output) => output !== primaryOutput) && (
-          <section
-            aria-label={`${props.spec.name} results`}
-            className="grid min-w-0 gap-3 border-t border-border pt-4"
-          >
+          <section aria-label={`${props.spec.name} results`} className="grid min-w-0 gap-3 border-t border-border pt-4">
             {outputs
               .filter((output) => output !== primaryOutput)
               .map((output) => (

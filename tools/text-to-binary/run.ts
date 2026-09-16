@@ -11,9 +11,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({
   render: "text",
-  text: [...new TextEncoder().encode(ctx.input.text)]
-    .map((byte) => byte.toString(2).padStart(8, "0"))
-    .join(" "),
+  text: [...new TextEncoder().encode(ctx.input.text)].map((byte) => byte.toString(2).padStart(8, "0")).join(" "),
 });
 
 export default run;

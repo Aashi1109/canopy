@@ -117,13 +117,7 @@ const JSON_VALUE_TOKEN_PATTERN =
 function risksNumericPrecisionLoss(input: string) {
   for (const match of input.matchAll(JSON_VALUE_TOKEN_PATTERN)) {
     const token = match[0];
-    if (
-      token.startsWith('"') ||
-      token.startsWith("'") ||
-      token.startsWith("//") ||
-      token.startsWith("/*")
-    )
-      continue;
+    if (token.startsWith('"') || token.startsWith("'") || token.startsWith("//") || token.startsWith("/*")) continue;
     const value = Number(token);
     const significantDigits = token
       .split(/[eE]/, 1)[0]
@@ -158,13 +152,8 @@ function JsonSourceEditor({
   const selectedFile = props.input.files[0];
   const acceptedFile = inputSpec.kind === "text" ? inputSpec.acceptFiles : undefined;
   const largeFile = isLargeTextFile(selectedFile, acceptedFile?.maxEditableBytes);
-  const selectedFileMeta = selectedFile
-    ? `${selectedFile.name} · ${selectedFile.size.toLocaleString()} bytes`
-    : null;
-  const inputBytes = useMemo(
-    () => new TextEncoder().encode(props.input.text).length,
-    [props.input.text],
-  );
+  const selectedFileMeta = selectedFile ? `${selectedFile.name} · ${selectedFile.size.toLocaleString()} bytes` : null;
+  const inputBytes = useMemo(() => new TextEncoder().encode(props.input.text).length, [props.input.text]);
   const highlightedInput = useMemo(() => highlightJson(props.input.text), [props.input.text]);
 
   useEffect(() => {
@@ -302,11 +291,7 @@ function JsonResultPlaceholder({
   errorLocation: JsonErrorLocation | null;
   onGoToError: () => void;
 }) {
-  const title = error
-    ? "JSON tree unavailable"
-    : running
-      ? "Parsing JSON…"
-      : "Interactive tree will appear here";
+  const title = error ? "JSON tree unavailable" : running ? "Parsing JSON…" : "Interactive tree will appear here";
   const description = error ?? (running ? "Parsing JSON…" : "Paste JSON to inspect its structure.");
 
   return (
@@ -449,15 +434,10 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     if (!(input instanceof HTMLTextAreaElement)) return;
     const lines = props.input.text.split(/\r\n|\r|\n/);
     const offset =
-      lines
-        .slice(0, Math.max(0, errorLocation.line - 1))
-        .reduce((total, line) => total + line.length + 1, 0) +
+      lines.slice(0, Math.max(0, errorLocation.line - 1)).reduce((total, line) => total + line.length + 1, 0) +
       Math.max(0, errorLocation.column - 1);
     input.focus();
-    input.setSelectionRange(
-      Math.min(offset, props.input.text.length),
-      Math.min(offset + 1, props.input.text.length),
-    );
+    input.setSelectionRange(Math.min(offset, props.input.text.length), Math.min(offset + 1, props.input.text.length));
   }, [editorId, errorLocation, props.input.text]);
   const errorIsInPreview = useMemo(() => {
     if (!errorLocation) return false;
@@ -602,8 +582,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
       }
       setViewerDraft((current) => {
         if (!current) return current;
-        const code =
-          mode === "minify" ? (JSON.stringify(current.value) ?? "null") : prettyJson(current.value);
+        const code = mode === "minify" ? (JSON.stringify(current.value) ?? "null") : prettyJson(current.value);
         if (code === current.code) return current;
         return {
           ...current,
@@ -627,11 +606,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
 
   useEffect(() => {
     const pendingLargeAction = pendingLargeActionRef.current;
-    if (
-      pendingLargeAction === null ||
-      props.settings.largeFileOperation !== pendingLargeAction ||
-      props.running
-    )
+    if (pendingLargeAction === null || props.settings.largeFileOperation !== pendingLargeAction || props.running)
       return;
     const timeout = window.setTimeout(() => {
       if (pendingLargeActionRef.current !== pendingLargeAction) return;
@@ -641,10 +616,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     return () => window.clearTimeout(timeout);
   }, [props.primaryAction, props.running, props.settings.largeFileOperation]);
   const loadBrokenExample = useCallback(() => {
-    applySource(
-      BROKEN_EXAMPLE,
-      "Broken example loaded. Choose a repair strategy, then run Repair & clean.",
-    );
+    applySource(BROKEN_EXAMPLE, "Broken example loaded. Choose a repair strategy, then run Repair & clean.");
   }, [applySource]);
 
   const toolbarActions = useMemo<WorkspaceToolbarActions>(
@@ -868,11 +840,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
                     </P>
                     <Muted className="mt-1 text-muted-foreground">{props.error}</Muted>
                     {errorLocation && errorIsInPreview ? (
-                      <GoToJsonError
-                        className="mt-3"
-                        location={errorLocation}
-                        onClick={goToError}
-                      />
+                      <GoToJsonError className="mt-3" location={errorLocation} onClick={goToError} />
                     ) : errorLocation ? (
                       <Muted className="mt-3 text-destructive">
                         The reported location is beyond the loaded preview.
@@ -884,9 +852,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
                 <div className="grid min-h-0 flex-1 place-items-center p-6 text-center">
                   <div className="max-w-sm">
                     <P>
-                      <Strong>
-                        {props.running ? "Processing the complete JSON file" : "Ready to process"}
-                      </Strong>
+                      <Strong>{props.running ? "Processing the complete JSON file" : "Ready to process"}</Strong>
                     </P>
                     <Muted className="mt-1 text-muted-foreground">
                       {props.running

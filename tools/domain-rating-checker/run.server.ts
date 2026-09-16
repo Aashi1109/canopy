@@ -91,17 +91,11 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     });
   } catch {
     ctx.signal.throwIfAborted();
-    throw new ToolError(
-      "upstream-unreachable",
-      "Domain Rating Checker could not reach Ahrefs. Try again.",
-    );
+    throw new ToolError("upstream-unreachable", "Domain Rating Checker could not reach Ahrefs. Try again.");
   }
 
   if (response.status === 401 || response.status === 403) {
-    throw new ToolError(
-      "upstream-rejected",
-      "Ahrefs rejected the request. Check the API key configuration.",
-    );
+    throw new ToolError("upstream-rejected", "Ahrefs rejected the request. Check the API key configuration.");
   }
   if (response.status === 429) {
     throw new ToolError("upstream-rate-limited", "Ahrefs rate limit reached. Try again later.");

@@ -60,10 +60,7 @@ import type { SettingsOf, SettingsSpec } from "@/lib/tool-framework/settings";
 import type { ToolInputSpec, ToolSpec } from "@/lib/tool-framework/spec";
 import { isLargeTextFile } from "@/lib/tool-framework/textFileInput";
 import { useToolRun } from "@/lib/tool-framework/useToolRun";
-import {
-  cleanupArtifactJobWithRetry,
-  sweepStaleArtifactJobsOnce,
-} from "@/lib/tool-framework/artifacts";
+import { cleanupArtifactJobWithRetry, sweepStaleArtifactJobsOnce } from "@/lib/tool-framework/artifacts";
 import { createToolRunFile, type ToolRunRequestInput } from "@/lib/tool-framework/workerProtocol";
 import { useToolRuntime } from "@/lib/tool-runtime/useToolRuntime";
 import type {
@@ -91,11 +88,7 @@ const NO_ISSUES: readonly ToolValidationIssue[] = [];
 function isMissingModule(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   const code: unknown = (error as { code?: unknown }).code;
-  return (
-    code === "MODULE_NOT_FOUND" ||
-    code === "ERR_MODULE_NOT_FOUND" ||
-    /cannot find module/i.test(error.message)
-  );
+  return code === "MODULE_NOT_FOUND" || code === "ERR_MODULE_NOT_FOUND" || /cannot find module/i.test(error.message);
 }
 
 function readExport(module: unknown, name: string): unknown {
@@ -141,9 +134,7 @@ function resolveWorkspace(key: string): ComponentType<WorkspaceProps> {
       throw error;
     }
     const workspace = readExport(module, "default");
-    return typeof workspace === "function"
-      ? { default: workspace as ComponentType<WorkspaceProps> }
-      : fallback;
+    return typeof workspace === "function" ? { default: workspace as ComponentType<WorkspaceProps> } : fallback;
   });
 }
 
@@ -427,13 +418,7 @@ function ToolToolbar(): ReactElement {
         </Select>
       ) : null}
       {chrome.toolbarActions?.afterExample}
-      <Button
-        disabled={running || resetSnapshot !== null}
-        onClick={reset}
-        size="xs"
-        type="button"
-        variant="outline"
-      >
+      <Button disabled={running || resetSnapshot !== null} onClick={reset} size="xs" type="button" variant="outline">
         Reset
       </Button>
       {resetSnapshot ? (
@@ -445,14 +430,8 @@ function ToolToolbar(): ReactElement {
       {primaryAction && !chrome.toolbarActions?.primaryActionInWorkspace ? (
         <Button
           aria-busy={primaryAction.running || undefined}
-          disabled={
-            primaryAction.running && primaryAction.onCancel ? false : primaryAction.disabled
-          }
-          onClick={
-            primaryAction.running && primaryAction.onCancel
-              ? primaryAction.onCancel
-              : primaryAction.onRun
-          }
+          disabled={primaryAction.running && primaryAction.onCancel ? false : primaryAction.disabled}
+          onClick={primaryAction.running && primaryAction.onCancel ? primaryAction.onCancel : primaryAction.onRun}
           size="xs"
           type="button"
         >
@@ -535,9 +514,7 @@ function cleanupResultArtifacts(result: ToolResult | null): void {
 // ---------------------------------------------------------------------------
 
 function defaultSettings(spec: ToolSpec): RuntimeSettings {
-  return Object.fromEntries(
-    Object.entries(spec.settings.fields).map(([key, field]) => [key, field.default]),
-  );
+  return Object.fromEntries(Object.entries(spec.settings.fields).map(([key, field]) => [key, field.default]));
 }
 
 /**
@@ -554,8 +531,7 @@ function toWorkbenchDefinition(spec: ToolSpec, definitionKey: string): ToolDefin
     iconKey: "",
     input: {
       // The frame reads no input field; "none" has no legacy counterpart.
-      kind:
-        spec.input.kind === "files" ? "files" : spec.input.kind === "fields" ? "fields" : "text",
+      kind: spec.input.kind === "files" ? "files" : spec.input.kind === "fields" ? "fields" : "text",
       label: spec.input.kind === "none" ? spec.name : spec.input.label,
     },
     labels: {
@@ -599,12 +575,7 @@ export default function ToolPage({
   const [validationReason, setValidationReason] = useState<string | null>(null);
   const [toolbarActions, setToolbarActions] = useState<WorkspaceToolbarActions | null>(null);
   const [workspaceKey, setWorkspaceKey] = useState(0);
-  const {
-    cleanupArtifacts: cleanupWorkerArtifacts,
-    progress,
-    reset: resetWorker,
-    run: runOnWorker,
-  } = useWorkerHost();
+  const { cleanupArtifacts: cleanupWorkerArtifacts, progress, reset: resetWorker, run: runOnWorker } = useWorkerHost();
 
   useEffect(() => {
     void sweepStaleArtifactJobsOnce().catch(() => undefined);
@@ -674,8 +645,7 @@ export default function ToolPage({
       initialSettings: RUNTIME_SETTINGS,
       isEmpty: (input) => isEmptyInput(spec.input.kind, input),
       shouldAutoRun: (input) => {
-        const maxEditableBytes =
-          spec.input.kind === "text" ? spec.input.acceptFiles?.maxEditableBytes : undefined;
+        const maxEditableBytes = spec.input.kind === "text" ? spec.input.acceptFiles?.maxEditableBytes : undefined;
         return !isLargeTextFile(input.files[0], maxEditableBytes);
       },
       trigger: spec.trigger.mode,

@@ -3,17 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Copy,
-  Crop,
-  ExternalLink,
-  EyeOff,
-  CalendarX,
-  RotateCw,
-  Replace,
-  Trash2,
-} from "lucide-react";
+import { ArrowLeft, Copy, Crop, ExternalLink, EyeOff, CalendarX, RotateCw, Replace, Trash2 } from "lucide-react";
 import { z } from "zod";
 import type { JSONContent } from "@tiptap/core";
 import { EditorContent, ReactNodeViewRenderer, useEditor } from "@tiptap/react";
@@ -45,10 +35,7 @@ import { BlogHistoryPanel } from "./BlogHistoryPanel";
 import { BlogTableControls } from "./BlogTableControls";
 import { BlogImageView } from "./BlogImageView";
 import { BlogImageCropDialog } from "./BlogImageCropDialog";
-import {
-  BlogImageNode as BaseBlogImageNode,
-  blogEditorImageSource as imageSource,
-} from "../lib/imageNode";
+import { BlogImageNode as BaseBlogImageNode, blogEditorImageSource as imageSource } from "../lib/imageNode";
 import { blogFormattingExtensions } from "../lib/formattingExtensions";
 import { pasteBlogImages } from "../lib/imagePaste";
 import { BlogTableCell, BlogTableHeader } from "../lib/tableEditing";
@@ -197,9 +184,7 @@ export function BlogEditor({
     scheduledAt: post.schedule?.scheduledAt ?? null,
     error: post.schedule?.lastErrorCode ?? null,
   });
-  const [lifecycle, setLifecycle] = useState<
-    "unpublish" | "cancelSchedule" | "retrySchedule" | null
-  >(null);
+  const [lifecycle, setLifecycle] = useState<"unpublish" | "cancelSchedule" | "retrySchedule" | null>(null);
   const [lifecycleError, setLifecycleError] = useState("");
   const [uploadTarget, setUploadTarget] = useState<"cover" | "body" | null>(null);
   const uploading = uploadTarget !== null;
@@ -231,7 +216,8 @@ export function BlogEditor({
     cancelCoverClose();
     coverCloseTimer.current = setTimeout(() => {
       coverCloseTimer.current = null;
-      if (!coverHovered.current && !coverSettings.current?.contains(globalThis.document.activeElement)) setCoverOpen(false);
+      if (!coverHovered.current && !coverSettings.current?.contains(globalThis.document.activeElement))
+        setCoverOpen(false);
     }, 250);
   }
   function openCoverSettings() {
@@ -240,9 +226,12 @@ export function BlogEditor({
     setCoverOpen(true);
     if (coverOpen) globalThis.document.getElementById("blog-cover-alt")?.focus();
   }
-  useEffect(() => () => {
-    if (coverCloseTimer.current) clearTimeout(coverCloseTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (coverCloseTimer.current) clearTimeout(coverCloseTimer.current);
+    },
+    [],
+  );
   const [coverCrop, setCoverCrop] = useState<BlogImage | null>(null);
   const [leaveHref, setLeaveHref] = useState<string | null>(null);
   const allowUnload = useRef(false);
@@ -250,8 +239,7 @@ export function BlogEditor({
     document: EditableDocument;
     version: number;
   } | null>(null);
-  const hasUnsavedChanges =
-    ["dirty", "saving", "error", "conflict"].includes(saveState) || uploading;
+  const hasUnsavedChanges = ["dirty", "saving", "error", "conflict"].includes(saveState) || uploading;
   useEffect(() => {
     if (!hasUnsavedChanges) return;
     function warnBeforeUnload(event: BeforeUnloadEvent) {
@@ -261,21 +249,12 @@ export function BlogEditor({
       }
     }
     function guardNavigation(event: MouseEvent) {
-      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
-        return;
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const anchor = event.target instanceof Element ? event.target.closest("a[href]") : null;
-      if (
-        !(anchor instanceof HTMLAnchorElement) ||
-        anchor.target === "_blank" ||
-        anchor.hasAttribute("download")
-      )
+      if (!(anchor instanceof HTMLAnchorElement) || anchor.target === "_blank" || anchor.hasAttribute("download"))
         return;
       const destination = new URL(anchor.href);
-      if (
-        destination.origin !== window.location.origin ||
-        destination.href === window.location.href
-      )
-        return;
+      if (destination.origin !== window.location.origin || destination.href === window.location.href) return;
       event.preventDefault();
       event.stopPropagation();
       setLeaveHref(destination.pathname + destination.search + destination.hash);
@@ -355,10 +334,7 @@ export function BlogEditor({
   useEffect(() => {
     if (!editable || !editor) return;
     try {
-      const stored = persistence.attachStorage(
-        window.sessionStorage,
-        `blog-draft:${actorId}:${post.id}`,
-      );
+      const stored = persistence.attachStorage(window.sessionStorage, `blog-draft:${actorId}:${post.id}`);
       if (!stored) return;
       const parsed = backupDocument.safeParse(stored.document);
       if (!parsed.success) {
@@ -379,16 +355,11 @@ export function BlogEditor({
   async function uploadImage(file: File, target: "cover" | "body"): Promise<BlogImage | null> {
     if (!editable || !uploadActive.current) return null;
     if (inFlight.current) {
-      showUploadError(
-        "Another change is in progress. Wait for it to finish, then try the image again.",
-      );
+      showUploadError("Another change is in progress. Wait for it to finish, then try the image again.");
       return null;
     }
     showUploadError("");
-    if (
-      file.size > 5 * 1024 * 1024 ||
-      !["image/jpeg", "image/png", "image/webp"].includes(file.type)
-    ) {
+    if (file.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       showUploadError("Choose a JPEG, PNG or WebP image no larger than 5 MiB.");
       return null;
     }
@@ -433,16 +404,13 @@ export function BlogEditor({
         cover?.publicId !== coverCrop.publicId ||
         cover?.version !== coverCrop.version
       ) {
-        throw new Error(
-          "The cover changed or editing is unavailable. Cancel and reopen Crop cover.",
-        );
+        throw new Error("The cover changed or editing is unavailable. Cancel and reopen Crop cover.");
       }
       return cover;
     }
     currentCover();
     const image = await uploadImage(file, "cover");
-    if (!image)
-      throw new Error("Couldn’t upload the crop. Your current cover is unchanged. Try again.");
+    if (!image) throw new Error("Couldn’t upload the crop. Your current cover is unchanged. Try again.");
     const cover = currentCover();
     change({
       ...current.current,
@@ -454,9 +422,7 @@ export function BlogEditor({
   function closeCoverCrop() {
     setCoverCrop(null);
     globalThis.requestAnimationFrame?.(() => {
-      globalThis.document
-        ?.getElementById(current.current.coverImage ? "blog-edit-cover" : "blog-add-cover")
-        ?.focus();
+      globalThis.document?.getElementById(current.current.coverImage ? "blog-edit-cover" : "blog-add-cover")?.focus();
     });
   }
 
@@ -505,8 +471,7 @@ export function BlogEditor({
       if (!("version" in result.data)) throw new Error("Unexpected publication response");
       persistence.version = result.data.version;
       setPublication({
-        published:
-          lifecycle === "retrySchedule" || (lifecycle !== "unpublish" && publication.published),
+        published: lifecycle === "retrySchedule" || (lifecycle !== "unpublish" && publication.published),
         scheduled: false,
         scheduledAt: null,
         error: null,
@@ -716,9 +681,7 @@ export function BlogEditor({
               {
                 id: "images",
                 label: "Inline image descriptions",
-                valid: bodyImages(document.body).every(
-                  (node) => !!String(node.attrs?.alt ?? "").trim(),
-                ),
+                valid: bodyImages(document.body).every((node) => !!String(node.attrs?.alt ?? "").trim()),
               },
             ]}
             searchPreview={{
@@ -981,9 +944,7 @@ export function BlogEditor({
       {(saveState === "conflict" || saveState === "error") && (
         <AlertBanner
           variant="error"
-          title={
-            saveState === "conflict" ? "Another version was saved" : "Draft could not be saved"
-          }
+          title={saveState === "conflict" ? "Another version was saved" : "Draft could not be saved"}
         >
           Your local edits are preserved. Download a backup before leaving or reloading.
           <div className="mt-3 flex flex-wrap gap-2">
@@ -991,11 +952,7 @@ export function BlogEditor({
               Download local draft
             </Button>
             {saveState === "conflict" ? (
-              <Button
-                size="xs"
-                variant="outline"
-                onClick={() => setLeaveHref(`/admin/blog/${post.id}`)}
-              >
+              <Button size="xs" variant="outline" onClick={() => setLeaveHref(`/admin/blog/${post.id}`)}>
                 Reload saved version
               </Button>
             ) : (
@@ -1015,18 +972,13 @@ export function BlogEditor({
       {lifecycleError && !lifecycle && <AlertBanner variant="error">{lifecycleError}</AlertBanner>}
       {backupUnavailable && (
         <AlertBanner variant="warning">
-          This browser couldn’t keep a local recovery copy. Wait for “All changes saved” before
-          leaving the editor.
+          This browser couldn’t keep a local recovery copy. Wait for “All changes saved” before leaving the editor.
         </AlertBanner>
       )}
       {publication.scheduled && (
         <AlertBanner
           variant={publication.error ? "warning" : "info"}
-          title={
-            publication.error
-              ? "Scheduled publication needs attention"
-              : "A saved revision is scheduled"
-          }
+          title={publication.error ? "Scheduled publication needs attention" : "A saved revision is scheduled"}
         >
           {publication.scheduledAt &&
             `${new Date(publication.scheduledAt).toISOString().slice(0, 16).replace("T", " ")} UTC. `}
@@ -1036,9 +988,7 @@ export function BlogEditor({
         </AlertBanner>
       )}
       {post.trashedAt && (
-        <AlertBanner title="This post is in trash">
-          Restore it from the post list before editing.
-        </AlertBanner>
+        <AlertBanner title="This post is in trash">Restore it from the post list before editing.</AlertBanner>
       )}
       <Label htmlFor="blog-title" className="text-xs text-muted-foreground">
         TITLE
@@ -1090,8 +1040,14 @@ export function BlogEditor({
                         setCoverOpen(true);
                       }
                     }}
-                    onPointerLeave={() => { coverHovered.current = false; scheduleCoverClose(); }}
-                    onClick={(event) => { event.preventDefault(); openCoverSettings(); }}
+                    onPointerLeave={() => {
+                      coverHovered.current = false;
+                      scheduleCoverClose();
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      openCoverSettings();
+                    }}
                   >
                     {coverPreview}
                   </Button>
@@ -1120,11 +1076,22 @@ export function BlogEditor({
                 sideOffset={4}
                 collisionPadding={12}
                 aria-label="Cover image settings"
-                onPointerEnter={() => { coverHovered.current = true; cancelCoverClose(); }}
-                onPointerLeave={() => { coverHovered.current = false; scheduleCoverClose(); }}
-                onFocusCapture={() => { coverOpenedByHover.current = false; cancelCoverClose(); }}
+                onPointerEnter={() => {
+                  coverHovered.current = true;
+                  cancelCoverClose();
+                }}
+                onPointerLeave={() => {
+                  coverHovered.current = false;
+                  scheduleCoverClose();
+                }}
+                onFocusCapture={() => {
+                  coverOpenedByHover.current = false;
+                  cancelCoverClose();
+                }}
                 onBlurCapture={scheduleCoverClose}
-                onOpenAutoFocus={(event) => { if (coverOpenedByHover.current) event.preventDefault(); }}
+                onOpenAutoFocus={(event) => {
+                  if (coverOpenedByHover.current) event.preventDefault();
+                }}
                 onCloseAutoFocus={(event) => {
                   if (!current.current.coverImage) {
                     event.preventDefault();
@@ -1154,8 +1121,7 @@ export function BlogEditor({
                       }}
                     />
                     <p id="blog-cover-alt-help" className="text-xs text-muted-foreground">
-                      Describe the image for screen readers. Required before publishing; saves with
-                      your draft.
+                      Describe the image for screen readers. Required before publishing; saves with your draft.
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1250,17 +1216,9 @@ export function BlogEditor({
         </p>
       )}
       <EditorContent className={styles.editorBody} editor={editor} />
-      <BlogTableControls
-        editor={editor}
-        disabled={!editable || publishing || uploading || !!recovery}
-      />
+      <BlogTableControls editor={editor} disabled={!editable || publishing || uploading || !!recovery} />
       {editable && (
-        <BlogBlockMenu
-          editor={editor}
-          atEnd
-          disabled={publishing || !!recovery}
-          onUploadImage={uploadInlineImage}
-        />
+        <BlogBlockMenu editor={editor} atEnd disabled={publishing || !!recovery} onUploadImage={uploadInlineImage} />
       )}
       <AlertDialog
         open={lifecycle !== null}

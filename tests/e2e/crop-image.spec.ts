@@ -24,9 +24,7 @@ async function addImage(page: Page, name = "crop-test.png", width = 400, height 
   await expect(page.getByRole("button", { name: "Crop point 2", exact: true })).toBeVisible();
 }
 
-test("freeform crop supports independent drag, keyboard, recovery and transparent PNG output", async ({
-  page,
-}) => {
+test("freeform crop supports independent drag, keyboard, recovery and transparent PNG output", async ({ page }) => {
   test.setTimeout(120_000);
   await page.goto(`${process.env.MEDIA_E2E_URL ?? "http://localhost:3000/media"}/crop-image`);
   await addImage(page);
@@ -56,9 +54,7 @@ test("freeform crop supports independent drag, keyboard, recovery and transparen
   await page.getByLabel("Y · selected point 2", { exact: true }).fill("60");
   await expect(page.getByLabel("Width · selection bounds", { exact: true })).toHaveValue("400");
   const current = (await point.boundingBox())!;
-  const opposite = (await page
-    .getByRole("button", { name: "Crop point 4", exact: true })
-    .boundingBox())!;
+  const opposite = (await page.getByRole("button", { name: "Crop point 4", exact: true }).boundingBox())!;
   await page.mouse.move(current.x + 22, current.y + 22);
   await page.mouse.down();
   await page.mouse.move(opposite.x + 22, opposite.y + 22);
@@ -101,22 +97,15 @@ test("freeform crop supports independent drag, keyboard, recovery and transparen
     outside: [0, 0, 0, 0],
     inside: [49, 128, 96, 255],
   });
-  const resultImage = page
-    .getByRole("region", { name: "Generated image previews" })
-    .locator("img")
-    .first();
-  await expect
-    .poll(() => resultImage.evaluate((image: HTMLImageElement) => image.naturalWidth))
-    .toBe(400);
+  const resultImage = page.getByRole("region", { name: "Generated image previews" }).locator("img").first();
+  await expect.poll(() => resultImage.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(400);
   await expect(resultImage).toBeVisible();
   await resultImage.evaluate((image: HTMLImageElement) => image.decode());
   await resultImage.screenshot({ path: "/tmp/crop-result-image.png" });
   await page.screenshot({ path: "/tmp/crop-image-result.png", fullPage: true });
 });
 
-test("crop reset, image replacement, rectangle compatibility and mobile layout", async ({
-  page,
-}) => {
+test("crop reset, image replacement, rectangle compatibility and mobile layout", async ({ page }) => {
   await page.goto(`${process.env.MEDIA_E2E_URL ?? "http://localhost:3000/media"}/crop-image`);
   await addImage(page);
   await page.getByRole("button", { name: "Crop point 2", exact: true }).focus();
@@ -152,9 +141,9 @@ test("point-count control updates the editable polygon and exports it", async ({
   await expect(page.getByLabel("X · selected point 8", { exact: true })).toHaveValue("1");
   await page.screenshot({ path: "/tmp/crop-count-grid.png", fullPage: true });
   await page.getByRole("button", { name: "Crop image", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "Download crop-test-cropped.png", exact: true }),
-  ).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole("button", { name: "Download crop-test-cropped.png", exact: true })).toBeVisible({
+    timeout: 60_000,
+  });
   await page.getByLabel("Freeform point count", { exact: true }).fill("3");
   await expect(page.getByRole("button", { name: /^Crop point \d+$/ })).toHaveCount(3);
   await expect(page.getByLabel("X · selected point 1", { exact: true })).toBeEnabled();
@@ -162,9 +151,7 @@ test("point-count control updates the editable polygon and exports it", async ({
 
 test.describe("mobile touch", () => {
   test.use({ hasTouch: true });
-  test("mobile editor can drag, reach actions, return to its selection and download", async ({
-    page,
-  }) => {
+  test("mobile editor can drag, reach actions, return to its selection and download", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${process.env.MEDIA_E2E_URL ?? "http://localhost:3000/media"}/crop-image`);
     await addImage(page);
@@ -203,10 +190,7 @@ test.describe("mobile touch", () => {
     const downloading = page.waitForEvent("download");
     await downloadButton.click();
     expect((await downloading).suggestedFilename()).toBe("crop-test-cropped.png");
-    const image = page
-      .getByRole("region", { name: "Generated image previews" })
-      .locator("img")
-      .first();
+    const image = page.getByRole("region", { name: "Generated image previews" }).locator("img").first();
     await image.evaluate((node: HTMLImageElement) => node.decode());
     await image.screenshot({ path: "/tmp/crop-image-mobile-result.png" });
   });

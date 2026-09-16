@@ -55,8 +55,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         ? numericItem
         : rawItem;
     const current = value[key];
-    value[key] =
-      current === undefined ? item : Array.isArray(current) ? [...current, item] : [current, item];
+    value[key] = current === undefined ? item : Array.isArray(current) ? [...current, item] : [current, item];
   }
   return { render: "text", text: JSON.stringify(value, null, 2) };
 };

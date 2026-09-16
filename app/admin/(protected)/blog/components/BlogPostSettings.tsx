@@ -107,10 +107,7 @@ export function BlogPostSettings({
           <div className="grid gap-2" role="group" aria-labelledby="blog-post-url-label">
             <div className="flex min-w-0 items-center gap-2">
               <div className="flex shrink-0 items-center">
-                <span
-                  id="blog-post-url-label"
-                  className="text-[13px] font-medium text-muted-foreground"
-                >
+                <span id="blog-post-url-label" className="text-[13px] font-medium text-muted-foreground">
                   Post URL
                 </span>
                 <Tooltip>
@@ -145,9 +142,7 @@ export function BlogPostSettings({
                         Copy URL
                       </ToolActionButton>
                     </TooltipTrigger>
-                    <TooltipContent>
-                      {result && !result.failed ? "Copied" : "Copy URL"}
-                    </TooltipContent>
+                    <TooltipContent>{result && !result.failed ? "Copied" : "Copy URL"}</TooltipContent>
                   </Tooltip>
                 </>
               ) : (
@@ -252,18 +247,13 @@ export function BlogPostSettings({
                   onCheckedChange={(checked) =>
                     onChange({
                       ...value,
-                      tagIds:
-                        checked === true
-                          ? [...value.tagIds, tag.id]
-                          : value.tagIds.filter((id) => id !== tag.id),
+                      tagIds: checked === true ? [...value.tagIds, tag.id] : value.tagIds.filter((id) => id !== tag.id),
                     })
                   }
                 />
               ))
             )}
-            <p className="text-xs text-muted-foreground">
-              {value.tagIds.length} of 20 tags selected
-            </p>
+            <p className="text-xs text-muted-foreground">{value.tagIds.length} of 20 tags selected</p>
             {tagPagination}
           </fieldset>
         </TabsContent>
@@ -322,9 +312,7 @@ export function BlogPostSettings({
                 key={tool.id}
                 label={tool.name}
                 checked={value.relatedToolIds.includes(tool.id)}
-                disabled={
-                  !value.relatedToolIds.includes(tool.id) && value.relatedToolIds.length >= 12
-                }
+                disabled={!value.relatedToolIds.includes(tool.id) && value.relatedToolIds.length >= 12}
                 onCheckedChange={(checked) =>
                   onChange({
                     ...value,
@@ -336,9 +324,7 @@ export function BlogPostSettings({
                 }
               />
             ))}
-            <p className="text-xs text-muted-foreground">
-              {value.relatedToolIds.length} of 12 tools selected
-            </p>
+            <p className="text-xs text-muted-foreground">{value.relatedToolIds.length} of 12 tools selected</p>
             {filteredTools.length === 0 && (
               <p className="text-[13px] text-muted-foreground">
                 {tools.length === 0

@@ -46,16 +46,13 @@ function select(editor, rowIndex, column) {
   const map = TableMap.get(table);
   editor.commands.setTextSelection(1 + map.map[rowIndex * map.width + column] + 2);
 }
-const run = (editor, command) =>
-  command(editor.state, (transaction) => editor.view.dispatch(transaction));
+const run = (editor, command) => command(editor.state, (transaction) => editor.view.dispatch(transaction));
 const cells = (editor) =>
   editor
     .getJSON()
     .content[0].content.map((row) =>
       row.content.map((cell) =>
-        cell.content
-          .map((block) => block.content?.map((text) => text.text).join("") ?? "")
-          .join(""),
+        cell.content.map((block) => block.content?.map((text) => text.text).join("") ?? "").join(""),
       ),
     );
 
@@ -152,9 +149,7 @@ test("edge appending preserves merged cells and refuses the persisted column lim
     assert.equal(editor.state.doc.firstChild.firstChild.firstChild.attrs.rowspan, 2);
     editor.destroy();
   }
-  const editor = createEditor([
-    row(...Array.from({ length: 100 }, (_, index) => cell(String(index)))),
-  ]);
+  const editor = createEditor([row(...Array.from({ length: 100 }, (_, index) => cell(String(index))))]);
   select(editor, 0, 0);
   const before = editor.getJSON();
   assert.equal(run(editor, appendBlogTableAxis("column")), false);
@@ -205,8 +200,7 @@ test("duplicate row and column preserve cell attributes and select the copy", ()
     );
     const context = getBlogTableContext(editor.state);
     assert.equal(axis === "row" ? context.top : context.left, 1);
-    const copy =
-      axis === "row" ? context.table.child(1).firstChild : context.table.firstChild.child(1);
+    const copy = axis === "row" ? context.table.child(1).firstChild : context.table.firstChild.child(1);
     assert.equal(copy.attrs.align, "right");
     assert.equal(copy.attrs.backgroundColor, "#dbeafe");
     assert.deepEqual(copy.attrs.colwidth, [180]);
@@ -229,10 +223,7 @@ test("formatting affects selected cells and clearing restores inherited styles",
   const editor = createEditor();
   select(editor, 0, 1);
   assert.equal(run(editor, selectBlogTableAxis("column")), true);
-  assert.equal(
-    run(editor, formatBlogTableCells({ align: "center", backgroundColor: "#fef3c7" })),
-    true,
-  );
+  assert.equal(run(editor, formatBlogTableCells({ align: "center", backgroundColor: "#fef3c7" })), true);
   const table = editor.state.doc.firstChild;
   for (let index = 0; index < 2; index++) {
     assert.equal(table.child(index).child(0).attrs.backgroundColor, null);
@@ -307,9 +298,7 @@ test("native movement keeps merged spans valid and never duplicates merged conte
 });
 
 test("table changes cannot exceed persisted column or article node limits", () => {
-  const editor = createEditor([
-    row(...Array.from({ length: 100 }, (_, index) => cell(String(index)))),
-  ]);
+  const editor = createEditor([row(...Array.from({ length: 100 }, (_, index) => cell(String(index))))]);
   select(editor, 0, 0);
   const before = editor.getJSON();
   assert.equal(run(editor, duplicateBlogTableAxis("column")), false);
@@ -360,10 +349,7 @@ test("drag resizing appends and removes trailing rows or columns with one atomic
 
 test("drag shrinking cuts merged spans at the trailing boundary without deleting retained content", () => {
   for (const axis of ["row", "column"]) {
-    const editor = createEditor([
-      row(cell("Merged", { colspan: 2, rowspan: 2, colwidth: [100, 120] })),
-      row(),
-    ]);
+    const editor = createEditor([row(cell("Merged", { colspan: 2, rowspan: 2, colwidth: [100, 120] })), row()]);
     select(editor, 0, 0);
     assert.equal(run(editor, resizeBlogTableAxis(axis, -1)), true);
     const table = editor.state.doc.firstChild;
@@ -374,10 +360,7 @@ test("drag shrinking cuts merged spans at the trailing boundary without deleting
     assert.equal(table.textContent, "Merged");
     assert.equal(table.firstChild.firstChild.attrs.colspan, axis === "column" ? 1 : 2);
     assert.equal(table.firstChild.firstChild.attrs.rowspan, axis === "row" ? 1 : 2);
-    assert.deepEqual(
-      table.firstChild.firstChild.attrs.colwidth,
-      axis === "column" ? [100] : [100, 120],
-    );
+    assert.deepEqual(table.firstChild.firstChild.attrs.colwidth, axis === "column" ? [100] : [100, 120]);
     assert.equal(run(editor, resizeBlogTableAxis(axis, 2)), true);
     assert.equal(TableMap.get(editor.state.doc.firstChild).problems, null);
     editor.destroy();
@@ -481,9 +464,7 @@ test("typing immediately after a resize stays a separate undo event", () => {
   const expanded = state.doc;
   const map = TableMap.get(state.doc.firstChild);
   const insideLastCell = 1 + map.map.at(-1) + 2;
-  state = state.apply(
-    state.tr.insertText("Typed immediately", insideLastCell).setTime(resizeTime + 1),
-  );
+  state = state.apply(state.tr.insertText("Typed immediately", insideLastCell).setTime(resizeTime + 1));
   assert.equal(undoDepth(state), 2);
   const dispatch = (transaction) => {
     state = state.apply(transaction);
@@ -516,8 +497,7 @@ test("drag delta bounds preserve direction and refuse destructive guesses withou
   const input = { axis: "row", count: 3, edges: [0, 30, 90], end: 120, step: 30, distance: -100 };
   for (const edges of [[], [0, 30], [0, NaN, 90], [0, 90, 30], [0, 30, 30], [0, 30, 120]])
     assert.equal(getBlogTableDragDelta({ ...input, edges }), 0);
-  for (const distance of [NaN, Infinity, -Infinity, 0])
-    assert.equal(getBlogTableDragDelta({ ...input, distance }), 0);
+  for (const distance of [NaN, Infinity, -Infinity, 0]) assert.equal(getBlogTableDragDelta({ ...input, distance }), 0);
   assert.equal(getBlogTableDragDelta({ ...input, count: 1, edges: [0], distance: -500 }), 0);
   assert.equal(getBlogTableDragDelta({ ...input, count: 1200, distance: 90 }), 3);
   assert.equal(getBlogTableDragDelta({ ...input, count: 1200, distance: 999999 }), 1000);

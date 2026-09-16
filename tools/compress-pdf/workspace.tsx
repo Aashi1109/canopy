@@ -16,10 +16,7 @@ export default function CompressPdfWorkspace(props: WorkspaceProps) {
         const settings = parseSettings(definition.settings, values);
         const issue = validate(settings, []);
         if (issue) throw new Error(issue);
-        if (
-          settings.mode === "strong" &&
-          (pageCount > 200 || (props.input.files[0]?.size ?? 0) > 52_428_800)
-        ) {
+        if (settings.mode === "strong" && (pageCount > 200 || (props.input.files[0]?.size ?? 0) > 52_428_800)) {
           throw new Error(
             "Strong Compression supports up to 200 pages and 50 MiB. Use Preserve Document for this PDF.",
           );

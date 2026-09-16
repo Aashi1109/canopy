@@ -26,16 +26,9 @@ export function DiffView({ result }: DiffViewProps) {
           key={`${index}-${line.text}`}
         >
           <span className="sr-only">
-            {line.kind === "added"
-              ? "Added: "
-              : line.kind === "removed"
-                ? "Removed: "
-                : "Unchanged: "}
+            {line.kind === "added" ? "Added: " : line.kind === "removed" ? "Removed: " : "Unchanged: "}
           </span>
-          <span
-            aria-hidden="true"
-            className="inline-block w-8 select-none text-center text-muted-foreground"
-          >
+          <span aria-hidden="true" className="inline-block w-8 select-none text-center text-muted-foreground">
             {line.kind === "added" ? "+" : line.kind === "removed" ? "−" : " "}
           </span>
           <span className="whitespace-pre-wrap break-all">{line.text}</span>

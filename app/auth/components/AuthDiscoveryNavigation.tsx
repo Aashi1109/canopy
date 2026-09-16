@@ -147,20 +147,15 @@ export function AuthDiscoveryNavigation({
   }, []);
 
   const documentsActive =
-    pathname.startsWith("/paperwork/invoice-generator") ||
-    pathname.startsWith("/paperwork/receipt-generator");
-  const businessActive =
-    pathname === projects.paperwork || (pathname.startsWith("/paperwork/") && !documentsActive);
+    pathname.startsWith("/paperwork/invoice-generator") || pathname.startsWith("/paperwork/receipt-generator");
+  const businessActive = pathname === projects.paperwork || (pathname.startsWith("/paperwork/") && !documentsActive);
 
   function toggleMenu(menu: Exclude<MenuName, null>) {
     setSearchOpen(false);
     setOpenMenu((current) => (current === menu ? null : menu));
   }
 
-  function moveMenuFocus(
-    event: ReactKeyboardEvent<HTMLButtonElement>,
-    menu: Exclude<MenuName, null>,
-  ) {
+  function moveMenuFocus(event: ReactKeyboardEvent<HTMLButtonElement>, menu: Exclude<MenuName, null>) {
     if (event.key === "ArrowDown") {
       event.preventDefault();
       setOpenMenu(menu);
@@ -311,9 +306,7 @@ export function AuthDiscoveryNavigation({
             <Caption>Documents </Caption>
             <ChevronDown aria-hidden="true" />
           </button>
-          {openMenu === "documents" ? (
-            <CategoryMenu menu="documents" onClose={() => setOpenMenu(null)} />
-          ) : null}
+          {openMenu === "documents" ? <CategoryMenu menu="documents" onClose={() => setOpenMenu(null)} /> : null}
         </span>
         <span className="auth-category-menu">
           <button
@@ -327,9 +320,7 @@ export function AuthDiscoveryNavigation({
             <Caption>Developer </Caption>
             <ChevronDown aria-hidden="true" />
           </button>
-          {openMenu === "developer" ? (
-            <CategoryMenu menu="developer" onClose={() => setOpenMenu(null)} />
-          ) : null}
+          {openMenu === "developer" ? <CategoryMenu menu="developer" onClose={() => setOpenMenu(null)} /> : null}
         </span>
         <TextLink aria-current={businessActive ? "page" : undefined} href={projects.paperwork}>
           Business
@@ -347,9 +338,7 @@ function CategoryMenu({ menu, onClose }: { menu: Exclude<MenuName, null>; onClos
           href={href}
           key={href}
           onKeyDown={(event) => {
-            const links = Array.from(
-              event.currentTarget.parentElement?.querySelectorAll<HTMLAnchorElement>("a") ?? [],
-            );
+            const links = Array.from(event.currentTarget.parentElement?.querySelectorAll<HTMLAnchorElement>("a") ?? []);
             const index = links.indexOf(event.currentTarget);
             if (event.key === "Escape") {
               onClose();

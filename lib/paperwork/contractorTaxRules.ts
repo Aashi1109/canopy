@@ -37,9 +37,7 @@ export interface W9RequestInput {
 
 export function get1099ReportingRule(
   year: number,
-):
-  | { supported: true; year: number; threshold: number }
-  | { supported: false; year: number; error: string } {
+): { supported: true; year: number; threshold: number } | { supported: false; year: number; error: string } {
   if (year <= 2025) {
     return { supported: true, year, threshold: 600 };
   }
@@ -88,16 +86,10 @@ export function calculateNecSummary(draft: NecRuleDraft, knownVendorIds: readonl
   });
 
   const missingVendorIds = [
-    ...new Set(
-      draft.payments
-        .map((payment) => payment.vendorId)
-        .filter((vendorId) => !knownVendors.has(vendorId)),
-    ),
+    ...new Set(draft.payments.map((payment) => payment.vendorId).filter((vendorId) => !knownVendors.has(vendorId))),
   ];
   const rule = get1099ReportingRule(draft.reportingYear);
-  const issues = missingVendorIds.map(
-    (vendorId) => `Payment references missing vendor "${vendorId}".`,
-  );
+  const issues = missingVendorIds.map((vendorId) => `Payment references missing vendor "${vendorId}".`);
   if ("error" in rule) {
     issues.unshift(rule.error);
   }
@@ -141,8 +133,7 @@ export function createW9Request(input: W9RequestInput) {
       ? `${rule.error} Confirm the current reporting threshold before sending this request.`
       : `For ${input.reportingYear}, the general Form 1099-NEC reporting threshold is $${rule.threshold.toLocaleString("en-US")}.`;
   const secureInstructions =
-    input.secureSubmissionInstructions.trim() ||
-    "Use your organization's approved secure document portal.";
+    input.secureSubmissionInstructions.trim() || "Use your organization's approved secure document portal.";
 
   return {
     subject: `W-9 request for ${input.contractorBusinessName || input.contractorName}`,

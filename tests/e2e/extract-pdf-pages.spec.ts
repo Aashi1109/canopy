@@ -70,13 +70,12 @@ test("Extract PDF Pages selects and reorders real pages in one source workspace 
   await expect(currentPage).toHaveAttribute("max", "4", { timeout: 60_000 });
   const firstPage = source.getByRole("img", { name: "PDF page 1", exact: true });
   await expect(firstPage).toBeVisible();
-  await expect
-    .poll(() => firstPage.evaluate((image: HTMLImageElement) => image.naturalWidth))
-    .toBeGreaterThan(0);
+  await expect.poll(() => firstPage.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
   await expect(extract).toBeEnabled();
-  await expect(
-    source.getByRole("button", { name: "Deselect page 1", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
+  await expect(source.getByRole("button", { name: "Deselect page 1", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await screenshot("uploaded");
   await expectExtracted([1]);
 
@@ -118,12 +117,11 @@ test("Extract PDF Pages selects and reorders real pages in one source workspace 
   const expand = source.getByRole("button", { name: "Expand preview", exact: true });
   await expand.click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog.getByRole("spinbutton", { name: "Current page", exact: true })).toHaveValue(
-    "2",
+  await expect(dialog.getByRole("spinbutton", { name: "Current page", exact: true })).toHaveValue("2");
+  await expect(dialog.getByRole("button", { name: "Deselect page 2", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
   );
-  await expect(
-    dialog.getByRole("button", { name: "Deselect page 2", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
   await dialog.getByRole("button", { name: "Deselect page 2", exact: true }).click();
   await expect(dialog.getByRole("button", { name: "Select page 2", exact: true })).toHaveAttribute(
     "aria-pressed",
@@ -135,9 +133,10 @@ test("Extract PDF Pages selects and reorders real pages in one source workspace 
   const selectFourthPage = dialog.getByRole("button", { name: "Select page 4", exact: true });
   await selectFourthPage.focus();
   await selectFourthPage.press("Space");
-  await expect(
-    dialog.getByRole("button", { name: "Deselect page 4", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
+  await expect(dialog.getByRole("button", { name: "Deselect page 4", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await page.screenshot({
     path: `/tmp/extract-pdf-pages-fullscreen-selected-${testInfo.project.name}.png`,
   });
@@ -164,9 +163,10 @@ test("Extract PDF Pages selects and reorders real pages in one source workspace 
     await page.mouse.wheel(0, -150);
   }
   await expect.poll(() => pageScroller.evaluate((node) => node.scrollTop)).toBeLessThan(scrollTop);
-  await expect(
-    dialog.getByRole("button", { name: "Deselect page 4", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
+  await expect(dialog.getByRole("button", { name: "Deselect page 4", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await expect(expand).toBeFocused();
@@ -176,9 +176,10 @@ test("Extract PDF Pages selects and reorders real pages in one source workspace 
     "aria-pressed",
     "false",
   );
-  await expect(
-    source.getByRole("button", { name: "Deselect page 4", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
+  await expect(source.getByRole("button", { name: "Deselect page 4", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await screenshot("selection");
 
   for (const [value, selectedPages] of [
@@ -224,9 +225,7 @@ test("Extract PDF Pages selects and reorders real pages in one source workspace 
     mimeType: "application/pdf",
     buffer: Buffer.from(await replacement.save()),
   });
-  await expect(
-    source.getByRole("button", { name: "Remove replacement.pdf", exact: true }),
-  ).toBeVisible();
+  await expect(source.getByRole("button", { name: "Remove replacement.pdf", exact: true })).toBeVisible();
   await expect(currentPage).toHaveAttribute("max", "1", { timeout: 60_000 });
   await expect(extract).toBeDisabled();
   await expect(settings.getByRole("alert")).toBeVisible();

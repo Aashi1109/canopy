@@ -12,10 +12,7 @@ test("admin audit history shows readable users without losing deleted-user event
     readFile(new URL("app/admin/(protected)/audit/page.tsx", root), "utf8"),
   ]);
 
-  assert.match(
-    data,
-    /\.leftJoin\(\s*auditActor,\s*eq\(auditActor\.id,\s*auditEventsTable\.actorUserId\),?\s*\)/s,
-  );
+  assert.match(data, /\.leftJoin\(\s*auditActor,\s*eq\(auditActor\.id,\s*auditEventsTable\.actorUserId\),?\s*\)/s);
   assert.match(
     data,
     /\.leftJoin\(\s*auditTargetUser,[\s\S]*eq\(auditEventsTable\.targetType,\s*["']user["']\)[\s\S]*eq\(auditTargetUser\.id,\s*auditEventsTable\.targetId\)/,
@@ -57,9 +54,7 @@ test("admin audit events have readable labels", () => {
   };
 
   assert.deepEqual(
-    Object.fromEntries(
-      Object.keys(expectedLabels).map((action) => [action, auditEventPresentation(action).label]),
-    ),
+    Object.fromEntries(Object.keys(expectedLabels).map((action) => [action, auditEventPresentation(action).label])),
     expectedLabels,
   );
 });

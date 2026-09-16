@@ -13,27 +13,21 @@ import { requireUtilityInput } from "../../lib/devtools/shared/options.ts";
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 function normalizeHexColors(css: string): string {
-  return css.replace(
-    /([:\s,(])#([\da-f]{6}|[\da-f]{8})(?![\da-f])/gi,
-    (match, prefix: string, hex: string) => {
-      const pairs = hex.match(/../g);
-      if (!pairs?.every((pair) => pair[0].toLowerCase() === pair[1].toLowerCase())) {
-        return match;
-      }
-      return `${prefix}#${pairs.map((pair) => pair[0]).join("")}`;
-    },
-  );
+  return css.replace(/([:\s,(])#([\da-f]{6}|[\da-f]{8})(?![\da-f])/gi, (match, prefix: string, hex: string) => {
+    const pairs = hex.match(/../g);
+    if (!pairs?.every((pair) => pair[0].toLowerCase() === pair[1].toLowerCase())) {
+      return match;
+    }
+    return `${prefix}#${pairs.map((pair) => pair[0]).join("")}`;
+  });
 }
 
 function convertAlphaHex(css: string): string {
-  return css.replace(
-    /([:\s,(])#([\da-f]{4}|[\da-f]{8})(?![\da-f])/gi,
-    (_match, prefix: string, hex: string) => {
-      const expanded = hex.length === 4 ? [...hex].map((digit) => digit.repeat(2)).join("") : hex;
-      const [red, green, blue, alpha] = expanded.match(/../g)!.map((pair) => parseInt(pair, 16));
-      return `${prefix}rgba(${red},${green},${blue},${Number((alpha / 255).toFixed(3))})`;
-    },
-  );
+  return css.replace(/([:\s,(])#([\da-f]{4}|[\da-f]{8})(?![\da-f])/gi, (_match, prefix: string, hex: string) => {
+    const expanded = hex.length === 4 ? [...hex].map((digit) => digit.repeat(2)).join("") : hex;
+    const [red, green, blue, alpha] = expanded.match(/../g)!.map((pair) => parseInt(pair, 16));
+    return `${prefix}rgba(${red},${green},${blue},${Number((alpha / 255).toFixed(3))})`;
+  });
 }
 
 function mergeAdjacentRules(css: string): string {

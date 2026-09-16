@@ -35,12 +35,10 @@ export function DeveloperHandoff({ command }: { readonly command: string }): Rea
           {copied ? <Check aria-hidden="true" /> : <Clipboard aria-hidden="true" />}
         </Button>
       </div>
-      <CodeBlock className="block overflow-x-auto whitespace-pre px-4 py-5 text-on-ink">
-        {command}
-      </CodeBlock>
+      <CodeBlock className="block overflow-x-auto whitespace-pre px-4 py-5 text-on-ink">{command}</CodeBlock>
       <Caption className="block border-t border-white/10 px-4 py-3 text-on-ink-muted">
-        Run locally, implement the generated definition and execution file, then deploy. The saved
-        database configuration survives the seed.
+        Run locally, implement the generated definition and execution file, then deploy. The saved database
+        configuration survives the seed.
       </Caption>
     </section>
   );

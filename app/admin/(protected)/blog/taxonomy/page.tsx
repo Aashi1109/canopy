@@ -15,9 +15,7 @@ export default async function BlogTaxonomyPage({
   const { kind = "category", cursor, returnTo } = await searchParams;
   if (kind !== "category" && kind !== "tag") notFound();
   const editorHref =
-    typeof returnTo === "string" && /^\/admin\/blog\/[a-zA-Z0-9_-]{1,100}$/.test(returnTo)
-      ? returnTo
-      : undefined;
+    typeof returnTo === "string" && /^\/admin\/blog\/[a-zA-Z0-9_-]{1,100}$/.test(returnTo) ? returnTo : undefined;
   function taxonomyHref(nextKind: string, nextCursor?: string) {
     return `/admin/blog/taxonomy?${new URLSearchParams({ kind: nextKind, ...(editorHref ? { returnTo: editorHref } : {}), ...(nextCursor ? { cursor: nextCursor } : {}) })}`;
   }
@@ -32,16 +30,11 @@ export default async function BlogTaxonomyPage({
       </Button>
       <div>
         <h1 className="text-3xl font-semibold">Categories & tags</h1>
-        <p className="mt-2 text-muted-foreground">
-          Blog topics are independent of SmartTools workspaces.
-        </p>
+        <p className="mt-2 text-muted-foreground">Blog topics are independent of SmartTools workspaces.</p>
       </div>
       <nav aria-label="Taxonomy type" className="flex gap-2">
         <Button asChild variant={kind === "category" ? "secondary" : "ghost"}>
-          <Link
-            href={taxonomyHref("category")}
-            aria-current={kind === "category" ? "page" : undefined}
-          >
+          <Link href={taxonomyHref("category")} aria-current={kind === "category" ? "page" : undefined}>
             Categories
           </Link>
         </Button>

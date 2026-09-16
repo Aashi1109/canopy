@@ -16,13 +16,8 @@ declare global {
   }
 }
 
-test("JSON Viewer streams a large file without loading it into the page editor", async ({
-  page,
-}, testInfo) => {
-  test.skip(
-    testInfo.project.name.includes("mobile"),
-    "Desktop covers large-file processing and downloads.",
-  );
+test("JSON Viewer streams a large file without loading it into the page editor", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name.includes("mobile"), "Desktop covers large-file processing and downloads.");
   test.setTimeout(90_000);
 
   await page.addInitScript((largeFileThreshold) => {
@@ -92,9 +87,7 @@ test("JSON Viewer streams a large file without loading it into the page editor",
   });
   const validatedPreview = workbench.locator('[data-purpose="result"] code');
   await expect(validatedPreview).toBeVisible();
-  expect(Buffer.byteLength((await validatedPreview.textContent()) ?? "")).toBeLessThanOrEqual(
-    LARGE_TEXT_PREVIEW_BYTES,
-  );
+  expect(Buffer.byteLength((await validatedPreview.textContent()) ?? "")).toBeLessThanOrEqual(LARGE_TEXT_PREVIEW_BYTES);
   expect(await largeFileReadAttempts(page)).toEqual({ arrayBuffer: 0, text: 0 });
 
   await toolbar.getByRole("button", { name: "Beautify", exact: true }).click();

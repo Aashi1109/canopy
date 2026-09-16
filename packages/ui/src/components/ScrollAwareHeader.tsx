@@ -40,8 +40,7 @@ export function ScrollAwareHeader({ className, ...props }: ComponentProps<"heade
       if (!delta) return;
       distance = Math.sign(delta) === Math.sign(distance) ? distance + delta : delta;
 
-      const interacting =
-        header!.contains(document.activeElement) || header!.querySelector('[aria-expanded="true"]');
+      const interacting = header!.contains(document.activeElement) || header!.querySelector('[aria-expanded="true"]');
       if (current <= header!.offsetHeight || interacting) {
         distance = 0;
         setHidden(false);

@@ -17,15 +17,11 @@ function getPlan(settings: WorkspaceProps["settings"], pageCount: number) {
   return {
     title: `${groups.length} ${groups.length === 1 ? "PDF will" : "PDFs will"} be created`,
     detail: (
-      <div
-        className="max-h-32 overflow-y-auto text-muted-foreground"
-        aria-label="Planned PDF parts"
-      >
+      <div className="max-h-32 overflow-y-auto text-muted-foreground" aria-label="Planned PDF parts">
         {groups.map((group, index) => (
           <Fragment key={index}>
             {index > 0 ? index % 2 ? " · " : <br /> : null}
-            Part {String(index + 1).padStart(2, "0")}: {group.length === 1 ? "page" : "pages"}{" "}
-            {group.join(", ")}
+            Part {String(index + 1).padStart(2, "0")}: {group.length === 1 ? "page" : "pages"} {group.join(", ")}
           </Fragment>
         ))}
       </div>
@@ -34,12 +30,5 @@ function getPlan(settings: WorkspaceProps["settings"], pageCount: number) {
 }
 
 export default function SplitPdfWorkspace(props: WorkspaceProps) {
-  return (
-    <PdfFileWorkspace
-      {...props}
-      definitionKey="split-pdf"
-      optionsTitle="Split settings"
-      getPlan={getPlan}
-    />
-  );
+  return <PdfFileWorkspace {...props} definitionKey="split-pdf" optionsTitle="Split settings" getPlan={getPlan} />;
 }

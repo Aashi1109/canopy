@@ -124,10 +124,7 @@ async function buildTool(
 
   // The admin-authored name/description are the live ones, so they, not the
   // shipped strings, are what the SEO fields fall back to.
-  const resolved = resolveContent(
-    { ...spec, name: row.name, description: row.description },
-    contentRow,
-  );
+  const resolved = resolveContent({ ...spec, name: row.name, description: row.description }, contentRow);
 
   return {
     toolId: row.toolId,
@@ -172,23 +169,17 @@ const loadCatalog = cache(async (): Promise<readonly CatalogTool[]> => {
     24 * 60 * 60,
   );
 
-  const contentByToolId = new Map(
-    contentRows.map((contentRow) => [contentRow.toolId, contentRow] as const),
-  );
+  const contentByToolId = new Map(contentRows.map((contentRow) => [contentRow.toolId, contentRow] as const));
 
   const built = await Promise.all(
     rows
       .filter(isToolAvailable)
-      .map((row) =>
-        buildTool(row, contentByToolId.get(row.toolId) ?? null, icons[row.toolId] ?? null),
-      ),
+      .map((row) => buildTool(row, contentByToolId.get(row.toolId) ?? null, icons[row.toolId] ?? null)),
   );
 
   return built
     .filter((tool): tool is CatalogTool => tool !== null)
-    .sort((left, right) =>
-      left.app === right.app ? left.order - right.order : left.app.localeCompare(right.app),
-    );
+    .sort((left, right) => (left.app === right.app ? left.order - right.order : left.app.localeCompare(right.app)));
 });
 
 /** Every enabled, non-archived, slugged tool. Optionally narrowed to one app. */
@@ -203,12 +194,10 @@ export const getTools = cache(async (app?: ToolApp): Promise<readonly CatalogToo
  * An ambiguous slug resolves to nothing rather than to an arbitrary winner —
  * the same guard `findAvailableToolBySlug` applies, for the same reason.
  */
-export const resolveToolPage = cache(
-  async (app: ToolApp, slug: string): Promise<CatalogTool | null> => {
-    const matches = (await loadCatalog()).filter((tool) => tool.app === app && tool.slug === slug);
-    return matches.length === 1 ? matches[0] : null;
-  },
-);
+export const resolveToolPage = cache(async (app: ToolApp, slug: string): Promise<CatalogTool | null> => {
+  const matches = (await loadCatalog()).filter((tool) => tool.app === app && tool.slug === slug);
+  return matches.length === 1 ? matches[0] : null;
+});
 
 /**
  * Curated related tools, falling back to the rest of the same category.
@@ -224,10 +213,7 @@ export const relatedTools = cache(async (toolId: string): Promise<readonly Catal
 
   const seen = new Set(curated.map((candidate) => candidate.toolId));
   const sameCategory = tools.filter(
-    (candidate) =>
-      candidate.toolId !== toolId &&
-      candidate.category === tool.category &&
-      !seen.has(candidate.toolId),
+    (candidate) => candidate.toolId !== toolId && candidate.category === tool.category && !seen.has(candidate.toolId),
   );
 
   return [...curated, ...sameCategory].slice(0, RELATED_LIMIT);

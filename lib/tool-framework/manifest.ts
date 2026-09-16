@@ -22,17 +22,8 @@
 
 import { cache } from "react";
 
-import {
-  db,
-  getToolContentRows,
-  isDatabaseConfigured,
-  managedToolsTable,
-} from "@smarttools/database";
-import {
-  mergeToolManifest,
-  type ResolvedTool,
-  type ToolManifestEntry,
-} from "@smarttools/tool-catalog";
+import { db, getToolContentRows, isDatabaseConfigured, managedToolsTable } from "@smarttools/database";
+import { mergeToolManifest, type ResolvedTool, type ToolManifestEntry } from "@smarttools/tool-catalog";
 
 import { definitionKeyOf, loadSpec } from "./catalog";
 import { TOOL_CATEGORIES } from "./categories";
@@ -118,9 +109,7 @@ export const getAdminTools = cache(async (): Promise<readonly AdminTool[]> => {
     isDatabaseConfigured() ? getToolContentRows() : Promise.resolve([]),
   ]);
   const draftIds = new Set(contentRows.filter(hasDraftToolContent).map((row) => row.toolId));
-  const shippedById = new Map(
-    records.map((record) => [record.entry.id, record.hasDefinition] as const),
-  );
+  const shippedById = new Map(records.map((record) => [record.entry.id, record.hasDefinition] as const));
 
   return mergeToolManifest(
     rows,

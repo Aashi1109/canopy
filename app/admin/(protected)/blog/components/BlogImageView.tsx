@@ -19,28 +19,16 @@ import { blogEditorImageSource } from "../lib/imageNode.ts";
 import { BlogImageCropDialog } from "./BlogImageCropDialog.tsx";
 import styles from "./BlogImageView.module.css";
 
-export function resizedImageWidth(
-  width: number,
-  deltaX: number,
-  containerWidth: number,
-  alignment: string,
-) {
+export function resizedImageWidth(width: number, deltaX: number, containerWidth: number, alignment: string) {
   if (containerWidth <= 0) return width;
   const direction = alignment === "right" ? -1 : alignment === "center" ? 2 : 1;
-  return Math.max(
-    10,
-    Math.min(100, Math.round(width + ((deltaX * direction) / containerWidth) * 100)),
-  );
+  return Math.max(10, Math.min(100, Math.round(width + ((deltaX * direction) / containerWidth) * 100)));
 }
 
 export async function uploadBlogImageReplacement(
   file: File,
   source: Pick<BlogImage, "publicId" | "version">,
-  {
-    editor,
-    getPos,
-    updateAttributes,
-  }: Pick<NodeViewProps, "editor" | "getPos" | "updateAttributes">,
+  { editor, getPos, updateAttributes }: Pick<NodeViewProps, "editor" | "getPos" | "updateAttributes">,
   upload: (file: File) => Promise<BlogImage | null>,
   isMounted: () => boolean,
 ) {
@@ -100,10 +88,7 @@ export function BlogImageView({
   } | null>(null);
   const [editable, setEditable] = useState(editor.isEditable);
   const [pending, setPending] = useState(false);
-  const [cropSource, setCropSource] = useState<Pick<
-    BlogImage,
-    "publicId" | "version" | "format"
-  > | null>(null);
+  const [cropSource, setCropSource] = useState<Pick<BlogImage, "publicId" | "version" | "format"> | null>(null);
   const [message, setMessage] = useState("");
   const [previewWidth, setPreviewWidth] = useState<number | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -114,11 +99,7 @@ export function BlogImageView({
   const visibleWidth = previewWidth ?? width;
   const imageEdge = alignment === "center" ? (100 + visibleWidth) / 2 : visibleWidth;
   const settingsSide =
-    (containerWidth * (100 - imageEdge)) / 100 >= 296
-      ? alignment === "right"
-        ? "left"
-        : "right"
-      : "below";
+    (containerWidth * (100 - imageEdge)) / 100 >= 296 ? (alignment === "right" ? "left" : "right") : "below";
   const [widthText, setWidthText] = useState(String(width));
   const options = extension.options as {
     cloudName: string;
@@ -168,7 +149,8 @@ export function BlogImageView({
   function scheduleClose() {
     cancelClose();
     closeTimer.current = setTimeout(() => {
-      if (!hovered.current && !drag.current && !settings.current?.contains(document.activeElement)) setSettingsVisible(false);
+      if (!hovered.current && !drag.current && !settings.current?.contains(document.activeElement))
+        setSettingsVisible(false);
     }, 250);
   }
   function enterImage(event: PointerEvent<HTMLElement>) {
@@ -194,10 +176,7 @@ export function BlogImageView({
   }
   function commitWidth() {
     const value = Number(widthText);
-    const next =
-      widthText.trim() && Number.isFinite(value)
-        ? Math.max(10, Math.min(100, Math.round(value)))
-        : width;
+    const next = widthText.trim() && Number.isFinite(value) ? Math.max(10, Math.min(100, Math.round(value))) : width;
     setWidthText(String(next));
     change({ displayWidth: next });
   }
@@ -218,12 +197,7 @@ export function BlogImageView({
   function moveResize(event: PointerEvent<HTMLButtonElement>) {
     const current = drag.current;
     if (!current || current.pointerId !== event.pointerId || !editor.isEditable) return;
-    current.latest = resizedImageWidth(
-      current.width,
-      event.clientX - current.x,
-      current.containerWidth,
-      alignment,
-    );
+    current.latest = resizedImageWidth(current.width, event.clientX - current.x, current.containerWidth, alignment);
     setPreviewWidth(current.latest);
   }
   function finishResize(event: PointerEvent<HTMLButtonElement>, cancel = false) {
@@ -252,15 +226,11 @@ export function BlogImageView({
         options.onUploadImage,
         () => mounted.current,
       );
-      setMessage(
-        `${source ? "Image cropped" : "Image replaced"}. Undo is available in the editor toolbar.`,
-      );
+      setMessage(`${source ? "Image cropped" : "Image replaced"}. Undo is available in the editor toolbar.`);
     } catch (error) {
       if (source) throw error;
       if (mounted.current)
-        setMessage(
-          "Image could not be replaced. Your current image is unchanged; choose the file to retry.",
-        );
+        setMessage("Image could not be replaced. Your current image is unchanged; choose the file to retry.");
     } finally {
       uploading.current = false;
       if (mounted.current) setPending(false);
@@ -295,7 +265,9 @@ export function BlogImageView({
         cancelClose();
         setSettingsVisible(false);
       }}
-      onDragEnd={() => { movingImage.current = false; }}
+      onDragEnd={() => {
+        movingImage.current = false;
+      }}
     />
   );
   return (
@@ -306,7 +278,13 @@ export function BlogImageView({
       data-selected={selected}
       data-settings-open={settingsOpen}
     >
-      <Popover.Root open={settingsOpen} onOpenChange={(open) => { cancelClose(); setSettingsVisible(open); }}>
+      <Popover.Root
+        open={settingsOpen}
+        onOpenChange={(open) => {
+          cancelClose();
+          setSettingsVisible(open);
+        }}
+      >
         <Popover.Anchor asChild>
           <figure
             className={styles.figure}
@@ -331,10 +309,7 @@ export function BlogImageView({
                       event.preventDefault();
                       settings.current?.focus();
                     }
-                    if (
-                      (event.metaKey || event.ctrlKey) &&
-                      ["c", "x", "v"].includes(event.key.toLowerCase())
-                    ) {
+                    if ((event.metaKey || event.ctrlKey) && ["c", "x", "v"].includes(event.key.toLowerCase())) {
                       // Clipboard defaults run before Tiptap's deferred focus command.
                       selectImage(true);
                     }
@@ -363,11 +338,7 @@ export function BlogImageView({
                   onPointerCancel={(event) => finishResize(event, true)}
                   onLostPointerCapture={(event) => finishResize(event, true)}
                   onKeyDown={(event) => {
-                    if (
-                      ["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp", "Home", "End"].includes(
-                        event.key,
-                      )
-                    ) {
+                    if (["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp", "Home", "End"].includes(event.key)) {
                       event.preventDefault();
                       const next =
                         event.key === "Home"
@@ -391,9 +362,7 @@ export function BlogImageView({
                 </Button>
               )}
             </div>
-            {node.attrs.caption && (
-              <figcaption className={styles.caption}>{String(node.attrs.caption)}</figcaption>
-            )}
+            {node.attrs.caption && <figcaption className={styles.caption}>{String(node.attrs.caption)}</figcaption>}
           </figure>
         </Popover.Anchor>
         <Popover.Portal>
@@ -407,7 +376,10 @@ export function BlogImageView({
             align="start"
             sideOffset={16}
             collisionPadding={12}
-            onPointerEnter={() => { hovered.current = true; cancelClose(); }}
+            onPointerEnter={() => {
+              hovered.current = true;
+              cancelClose();
+            }}
             onPointerLeave={leaveImage}
             onFocusCapture={cancelClose}
             onBlurCapture={scheduleClose}
@@ -487,12 +459,7 @@ export function BlogImageView({
                   <Crop aria-hidden="true" />
                   Crop
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  loading={pending}
-                  onClick={() => fileInput.current?.click()}
-                >
+                <Button size="sm" variant="outline" loading={pending} onClick={() => fileInput.current?.click()}>
                   <Replace aria-hidden="true" />
                   Replace
                 </Button>
@@ -553,8 +520,8 @@ export function BlogImageView({
                 </div>
               </div>
               <p className={styles.hint}>
-                Drag the image to move it. Drag the corner to resize, or enter a width from 10–100%.
-                Aspect ratio is preserved.
+                Drag the image to move it. Drag the corner to resize, or enter a width from 10–100%. Aspect ratio is
+                preserved.
               </p>
               {message && (
                 <p className={styles.message} role="status">

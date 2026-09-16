@@ -31,15 +31,7 @@ import {
   SectionHeading,
   buttonVariants,
 } from "@smarttools/ui";
-import {
-  ArrowLeft,
-  ArrowRight,
-  ArrowUpRight,
-  LayoutGrid,
-  LockKeyhole,
-  Search,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, LayoutGrid, LockKeyhole, Search, ShieldCheck } from "lucide-react";
 import { headers } from "next/headers";
 import { CategoryFilter } from "./components/CategoryFilter";
 
@@ -93,16 +85,12 @@ export default async function HomePage({
     (tool) =>
       (!category || tool.category === category) &&
       (!normalizedQuery ||
-        `${tool.name} ${tool.description} ${tool.keywords.join(" ")}`
-          .toLocaleLowerCase()
-          .includes(normalizedQuery)),
+        `${tool.name} ${tool.description} ${tool.keywords.join(" ")}`.toLocaleLowerCase().includes(normalizedQuery)),
   );
   // Featured ordering is per-deployment data, not code. Until it has a home
   // beside `sort_order`, `FEATURED_TOOL_IDS` is empty and these sections
   // simply do not render.
-  const featuredTools = FEATURED_TOOL_IDS.flatMap((toolId) =>
-    tools.filter((tool) => tool.toolId === toolId),
-  );
+  const featuredTools = FEATURED_TOOL_IDS.flatMap((toolId) => tools.filter((tool) => tool.toolId === toolId));
   const availableCategories = categoriesForApp("devtools")
     .map((key) => ({
       count: tools.filter((tool) => tool.category === key).length,
@@ -165,17 +153,14 @@ export default async function HomePage({
             <AppContainer className="py-12 sm:py-16 lg:py-20">
               <div className="grid gap-8 lg:grid-cols-[minmax(0,1.12fr)_minmax(26rem,0.88fr)] lg:items-end lg:gap-16">
                 <div>
-                  <Overline className="block text-primary">
-                    {tools.length} focused tools. No sign-up.
-                  </Overline>
+                  <Overline className="block text-primary">{tools.length} focused tools. No sign-up.</Overline>
                   <Display className="mt-5 max-w-4xl">
                     The useful side of <span className="text-primary">your browser.</span>
                   </Display>
                 </div>
                 <div className="lg:pb-1">
                   <Muted className="max-w-xl text-muted-foreground">
-                    Format, convert, inspect, and generate working data without accounts, uploads,
-                    or waiting.
+                    Format, convert, inspect, and generate working data without accounts, uploads, or waiting.
                   </Muted>
                   <div className="mt-7">{searchForm}</div>
                   <InlineGuidance className="mt-4" icon={<ShieldCheck aria-hidden="true" />}>
@@ -205,9 +190,7 @@ export default async function HomePage({
                       href={`/devtools/${tool.slug}`}
                       key={tool.toolId}
                     >
-                      <Caption className="text-muted-foreground">
-                        {String(index + 1).padStart(2, "0")}
-                      </Caption>
+                      <Caption className="text-muted-foreground">{String(index + 1).padStart(2, "0")}</Caption>
                       <Text className="flex items-end justify-between gap-3">
                         {tool.name}
                         <ArrowUpRight
@@ -231,11 +214,7 @@ export default async function HomePage({
                 href={category && !query ? "/devtools?view=all" : "/devtools"}
               >
                 <ArrowLeft aria-hidden="true" className="size-4" />
-                {showAllTools
-                  ? "Back to Devtools"
-                  : category && !query
-                    ? "All tools"
-                    : "Clear search"}
+                {showAllTools ? "Back to Devtools" : category && !query ? "All tools" : "Clear search"}
               </TextLink>
               <SectionHeading
                 action={
@@ -363,8 +342,8 @@ export default async function HomePage({
                       <Overline className="block text-primary">Private by default</Overline>
                       <H2 className="mt-2">Your working data stays yours.</H2>
                       <Lead className="mt-3 max-w-2xl text-card/70">
-                        Core formatting and conversion happens locally in your browser. No file
-                        upload or account is required.
+                        Core formatting and conversion happens locally in your browser. No file upload or account is
+                        required.
                       </Lead>
                     </div>
                   </div>

@@ -24,10 +24,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 type SortableItemState = ReturnType<typeof useSortable>;
 
-export type OrderableItemState = Pick<
-  SortableItemState,
-  "attributes" | "listeners" | "setActivatorNodeRef"
-> & {
+export type OrderableItemState = Pick<SortableItemState, "attributes" | "listeners" | "setActivatorNodeRef"> & {
   disabled: boolean;
   isDragging: boolean;
 };
@@ -56,15 +53,10 @@ function OrderableItem<Item>({
   item: Item;
   renderItem: OrderableListProps<Item>["renderItem"];
 }) {
-  const {
-    attributes,
-    isDragging,
-    listeners,
-    setActivatorNodeRef,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ disabled, id });
+  const { attributes, isDragging, listeners, setActivatorNodeRef, setNodeRef, transform, transition } = useSortable({
+    disabled,
+    id,
+  });
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -146,22 +138,11 @@ export function OrderableList<Item>({
       onDragEnd={handleDragEnd}
       sensors={sensors}
     >
-      <SortableContext
-        items={ids}
-        strategy={layout === "grid" ? rectSortingStrategy : verticalListSortingStrategy}
-      >
+      <SortableContext items={ids} strategy={layout === "grid" ? rectSortingStrategy : verticalListSortingStrategy}>
         <ul aria-label={ariaLabel} className={className}>
           {items.map((item) => {
             const id = getId(item);
-            return (
-              <OrderableItem
-                disabled={disabled}
-                id={id}
-                item={item}
-                key={id}
-                renderItem={renderItem}
-              />
-            );
+            return <OrderableItem disabled={disabled} id={id} item={item} key={id} renderItem={renderItem} />;
           })}
         </ul>
       </SortableContext>

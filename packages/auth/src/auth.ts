@@ -147,10 +147,7 @@ export const auth = betterAuth({
           },
         }),
         after: async (user) => {
-          await db
-            .insert(userRolesTable)
-            .values({ userId: user.id, roleId: "user" })
-            .onConflictDoNothing();
+          await db.insert(userRolesTable).values({ userId: user.id, roleId: "user" }).onConflictDoNothing();
         },
       },
       update: {

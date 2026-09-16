@@ -248,21 +248,12 @@ const handbookOutline: PdfOutlineItem[] = [
 
 function handbookSectionAtPage(page: number) {
   return (
-    [...handbookOutline]
-      .filter((item) => item.page <= page)
-      .sort((left, right) => right.page - left.page)[0] ?? handbookOutline[0]
+    [...handbookOutline].filter((item) => item.page <= page).sort((left, right) => right.page - left.page)[0] ??
+    handbookOutline[0]
   );
 }
 
-function Specimen({
-  children,
-  className,
-  label,
-}: {
-  children: ReactNode;
-  className?: string;
-  label: string;
-}) {
+function Specimen({ children, className, label }: { children: ReactNode; className?: string; label: string }) {
   return (
     <div className={className}>
       <Muted className="mb-3 text-muted-foreground">{label}</Muted>
@@ -277,9 +268,7 @@ export default function DesignSystemPage() {
   const [mediaPreviewOpen, setMediaPreviewOpen] = useState(false);
   const [selectedChapterIndex, setSelectedChapterIndex] = useState(4);
   const [inlineTitle, setInlineTitle] = useState("Viewer");
-  const [inlineDescription, setInlineDescription] = useState(
-    "Can view content without making changes.",
-  );
+  const [inlineDescription, setInlineDescription] = useState("Can view content without making changes.");
   const handbookSection = handbookSectionAtPage(handbookPage);
 
   return (
@@ -307,10 +296,7 @@ export default function DesignSystemPage() {
           <SectionCard>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {swatches.map((swatch) => (
-                <div
-                  className="overflow-hidden rounded-xl border border-border bg-card"
-                  key={swatch.label}
-                >
+                <div className="overflow-hidden rounded-xl border border-border bg-card" key={swatch.label}>
                   <div className={`h-20 ${swatch.className}`} />
                   <div className="flex items-center justify-between gap-3 px-4 py-3">
                     <Caption className="">{swatch.label}</Caption>
@@ -402,8 +388,8 @@ export default function DesignSystemPage() {
               </Specimen>
             </div>
             <Muted id="typography-guidelines">
-              Use named components without font overrides. H1–H6 follow the document hierarchy;
-              fields and controls own their labels. Layout classes stay with the layout.
+              Use named components without font overrides. H1–H6 follow the document hierarchy; fields and controls own
+              their labels. Layout classes stay with the layout.
             </Muted>
             <Separator />
             <Specimen label="App container">
@@ -427,8 +413,8 @@ export default function DesignSystemPage() {
           <SectionCard>
             <Specimen label="Tool actions — shared by every tool">
               <Muted className="text-muted-foreground">
-                Use ToolActionButton for paste, upload, copy, and download. Keep artifact labels and
-                feedback specific; use iconOnly for compact result toolbars.
+                Use ToolActionButton for paste, upload, copy, and download. Keep artifact labels and feedback specific;
+                use iconOnly for compact result toolbars.
               </Muted>
               <div className="flex flex-wrap items-center gap-2">
                 <ToolActionButton action="paste" />
@@ -551,17 +537,12 @@ export default function DesignSystemPage() {
                 />
               </Muted>
               <Caption>
-                Enter finishes editing. Shift+Enter adds a new line in descriptions. Escape cancels.
-                Clicking outside keeps your draft.
+                Enter finishes editing. Shift+Enter adds a new line in descriptions. Escape cancels. Clicking outside
+                keeps your draft.
               </Caption>
               <Specimen label="Disabled">
                 <Muted>
-                  <InlineTextEditor
-                    disabled
-                    label="Locked role name"
-                    onChange={setInlineTitle}
-                    value="Administrator"
-                  />
+                  <InlineTextEditor disabled label="Locked role name" onChange={setInlineTitle} value="Administrator" />
                 </Muted>
               </Specimen>
             </SectionCard>
@@ -579,11 +560,7 @@ export default function DesignSystemPage() {
               >
                 <Input defaultValue="jane@company.com" id="showcase-email" type="email" />
               </Field>
-              <Field
-                error="Enter a valid invoice reference."
-                htmlFor="showcase-reference"
-                label="Invoice reference"
-              >
+              <Field error="Enter a valid invoice reference." htmlFor="showcase-reference" label="Invoice reference">
                 <Input aria-invalid defaultValue="INV /" id="showcase-reference" />
               </Field>
               <Field
@@ -591,13 +568,7 @@ export default function DesignSystemPage() {
                 label="Width"
                 description="Decorative leading icon and unit suffix remain clear at compact densities."
               >
-                <Input
-                  id="showcase-width"
-                  type="number"
-                  defaultValue={523}
-                  leadingIcon={<span>↔</span>}
-                  suffix="pt"
-                />
+                <Input id="showcase-width" type="number" defaultValue={523} leadingIcon={<span>↔</span>} suffix="pt" />
               </Field>
               <Field htmlFor="showcase-message" label="Message">
                 <Textarea defaultValue="Thanks for your business." id="showcase-message" />
@@ -790,16 +761,10 @@ export default function DesignSystemPage() {
                 <TabsContent className="rounded-lg bg-muted p-5 text-muted-foreground" value="edit">
                   Edit fields and document settings here.
                 </TabsContent>
-                <TabsContent
-                  className="rounded-lg bg-muted p-5 text-muted-foreground"
-                  value="items"
-                >
+                <TabsContent className="rounded-lg bg-muted p-5 text-muted-foreground" value="items">
                   Manage line items and totals here.
                 </TabsContent>
-                <TabsContent
-                  className="rounded-lg bg-muted p-5 text-muted-foreground"
-                  value="preview"
-                >
+                <TabsContent className="rounded-lg bg-muted p-5 text-muted-foreground" value="preview">
                   Review the final document here.
                 </TabsContent>
               </Tabs>
@@ -862,13 +827,10 @@ export default function DesignSystemPage() {
                 <div className="max-w-md">
                   <P className="">Jump through a long-running workflow</P>
                   <Muted className="mt-2 text-muted-foreground">
-                    Hover or tap a tick to preview its chapter. On touch, tap it again to choose.
-                    With a keyboard, use the arrow keys, Home, or End to move, then press Enter or
-                    Space to choose.
+                    Hover or tap a tick to preview its chapter. On touch, tap it again to choose. With a keyboard, use
+                    the arrow keys, Home, or End to move, then press Enter or Space to choose.
                   </Muted>
-                  <P className="mt-4 text-primary">
-                    Current · {workflowChapters[selectedChapterIndex].title}
-                  </P>
+                  <P className="mt-4 text-primary">Current · {workflowChapters[selectedChapterIndex].title}</P>
                 </div>
                 <div className="flex min-h-64 items-center justify-start overflow-visible rounded-xl border border-border bg-card py-8 pr-4 pl-3 sm:justify-center sm:px-4">
                   <ChapterScrubber
@@ -893,22 +855,16 @@ export default function DesignSystemPage() {
                 pageCount={24}
                 pagePreviewDetail="A4 → Letter · fit content"
               >
-                <article
-                  className="flex h-full min-h-[26rem] flex-col gap-3 px-9 py-7"
-                  key={handbookSection.id}
-                >
+                <article className="flex h-full min-h-[26rem] flex-col gap-3 px-9 py-7" key={handbookSection.id}>
                   <P className="text-primary">
                     {String(handbookPage).padStart(2, "0")} / {handbookSection.title}
                   </P>
                   <H3 className="text-foreground">
-                    {handbookSection.id === "review"
-                      ? "Review documents with confidence"
-                      : handbookSection.title}
+                    {handbookSection.id === "review" ? "Review documents with confidence" : handbookSection.title}
                   </H3>
                   <span className="h-0.5 w-15 bg-primary" />
                   <Muted className="max-w-xl text-muted-foreground">
-                    Keep decisions moving with focused review queues, clear ownership, and an
-                    audit-ready history.
+                    Keep decisions moving with focused review queues, clear ownership, and an audit-ready history.
                   </Muted>
                   {[
                     ["Assign reviewers", "Route each document to the right person."],
@@ -956,12 +912,12 @@ export default function DesignSystemPage() {
                 <article className="m-auto w-full max-w-2xl shrink-0 bg-card p-8 text-foreground sm:p-12">
                   <H2>Caller-owned content</H2>
                   <P className="mt-4">
-                    This document is passed as children. Images, video, audio, PDF viewers, and
-                    other previews use the same full-screen shell.
+                    This document is passed as children. Images, video, audio, PDF viewers, and other previews use the
+                    same full-screen shell.
                   </P>
                   <Muted className="mt-4">
-                    The caller provides rendering and any playback, navigation, or zoom controls.
-                    Exit preview to return to the component library.
+                    The caller provides rendering and any playback, navigation, or zoom controls. Exit preview to return
+                    to the component library.
                   </Muted>
                 </article>
               </MediaPreview>
@@ -981,9 +937,7 @@ export default function DesignSystemPage() {
               <Alert className="bg-accent">
                 <Info />
                 <AlertTitle>No account needed</AlertTitle>
-                <AlertDescription>
-                  Your data stays in your browser unless you choose to save it.
-                </AlertDescription>
+                <AlertDescription>Your data stays in your browser unless you choose to save it.</AlertDescription>
               </Alert>
               <Alert variant="destructive">
                 <AlertTriangle />
@@ -1004,11 +958,7 @@ export default function DesignSystemPage() {
             <SectionCard>
               <SectionHeading
                 action={
-                  <Button
-                    onClick={() => toast.success("Receipt saved")}
-                    size="sm"
-                    variant="secondary"
-                  >
+                  <Button onClick={() => toast.success("Receipt saved")} size="sm" variant="secondary">
                     <Bell />
                     Show toast
                   </Button>
@@ -1041,9 +991,7 @@ export default function DesignSystemPage() {
                   <FilePlus2 />
                 </EmptyMedia>
                 <EmptyTitle>No documents yet</EmptyTitle>
-                <EmptyDescription>
-                  Create your first receipt or invoice. It takes about a minute.
-                </EmptyDescription>
+                <EmptyDescription>Create your first receipt or invoice. It takes about a minute.</EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
                 <Button size="sm">
@@ -1221,9 +1169,7 @@ export default function DesignSystemPage() {
                       <TableCell>
                         <InlineCode className="text-primary">{component.implementation}</InlineCode>
                       </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                        {component.designId}
-                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">{component.designId}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -1324,12 +1270,7 @@ export default function DesignSystemPage() {
 
             <div className="overflow-hidden rounded-xl border border-border">
               <ProductHeader
-                actions={
-                  <AccountNavigation
-                    returnTo="/admin/design-system"
-                    user={{ name: "Jordan Chen" }}
-                  />
-                }
+                actions={<AccountNavigation returnTo="/admin/design-system" user={{ name: "Jordan Chen" }} />}
                 href="/admin/design-system"
                 name="Paperwork"
               />

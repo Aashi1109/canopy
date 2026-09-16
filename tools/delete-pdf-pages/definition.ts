@@ -11,16 +11,7 @@ export default {
   toolId: "media.delete-pdf-pages",
   app: "media",
   category: "pdf-organization",
-  keywords: [
-    "pdf",
-    "delete pages",
-    "remove pages",
-    "drop pages",
-    "trim",
-    "pages",
-    "organize",
-    "cleanup",
-  ],
+  keywords: ["pdf", "delete pages", "remove pages", "drop pages", "trim", "pages", "organize", "cleanup"],
   name: "Delete PDF Pages",
   description: "Remove selected pages while keeping a valid PDF.",
   input: {

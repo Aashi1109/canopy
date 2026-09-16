@@ -26,10 +26,8 @@ const hooks = registerHooks({
       return stub(
         "export function useEditor() { return {get isEditable() {return globalThis.__coverCropTest.editable}}; } export function ReactNodeViewRenderer() {} export function EditorContent() {}",
       );
-    if (specifier === "@tiptap/starter-kit")
-      return stub("export default {configure() { return {}; }};");
-    if (specifier === "@tiptap/extension-table")
-      return stub("export const TableKit = {configure() { return {}; }};");
+    if (specifier === "@tiptap/starter-kit") return stub("export default {configure() { return {}; }};");
+    if (specifier === "@tiptap/extension-table") return stub("export const TableKit = {configure() { return {}; }};");
     if (specifier === "@smarttools/ui")
       return stub(
         `export const toast = Object.assign(() => {}, {error() {}, success() {}, dismiss() {}}); ${["AlertBanner", "AlertDialog", "AlertDialogContent", "AlertDialogHeader", "AlertDialogTitle", "AlertDialogDescription", "AlertDialogFooter", "AlertDialogCancel", "Button", "FileUploadZone", "Input", "Label", "Textarea", "Toaster"].map((name) => `export function ${name}() {}`).join(" ")} export const Popover = {Root() {}, Trigger() {}, Portal() {}, Content() {}, Arrow() {}};`,
@@ -48,11 +46,9 @@ const hooks = registerHooks({
       return stub(
         "export const BlogImageNode = {extend() {return {configure() {return {}}}}}; export function blogEditorImageSource(image) {return 'https://example.test/' + image.publicId;}",
       );
-    if (specifier === "../lib/formattingExtensions")
-      return stub("export const blogFormattingExtensions = [];");
+    if (specifier === "../lib/formattingExtensions") return stub("export const blogFormattingExtensions = [];");
     if (specifier === "../lib/imagePaste") return stub("export function pasteBlogImages() {}");
-    if (specifier === "../lib/tableEditing")
-      return stub("export const BlogTableCell = {}, BlogTableHeader = {};");
+    if (specifier === "../lib/tableEditing") return stub("export const BlogTableCell = {}, BlogTableHeader = {};");
     if (specifier.endsWith(".css")) return stub("export default {};");
     if (specifier.startsWith("./Blog")) {
       const name = specifier.slice(2);
@@ -127,19 +123,13 @@ test("cover crop preserves metadata and current draft, rejects failures and stal
   };
   const file = new File(["crop"], "crop.png", { type: "image/png" });
   const walk = (node) =>
-    Array.isArray(node)
-      ? node.flatMap(walk)
-      : node?.props
-        ? [node, ...walk(node.props.children)]
-        : [];
+    Array.isArray(node) ? node.flatMap(walk) : node?.props ? [node, ...walk(node.props.children)] : [];
   function render() {
     state.index = 0;
     return walk(BlogEditor(props));
   }
   const button = (nodes, label) =>
-    nodes.find(
-      (node) => node.type.name === "Button" && [node.props.children].flat().includes(label),
-    );
+    nodes.find((node) => node.type.name === "Button" && [node.props.children].flat().includes(label));
   const dialog = () => render().find((node) => node.type.name === "BlogImageCropDialog");
   function reset() {
     state.values = [];
@@ -195,13 +185,38 @@ test("cover hover preserves focus and stays open across the panel, while explici
   state.changes = [];
   state.editable = true;
   const props = {
-    actorId: "admin", canEdit: true, cloudName: "demo", categories: { items: [] }, tags: { items: [] }, tools: [],
-    post: { id: "post", slug: "story", version: 1, draftDocument: {
-      title: "Story", excerpt: "", authorName: "Team", category: null, tags: [], relatedToolIds: [], body: { type: "doc" },
-      coverImage: { publicId: "cover", version: 1, format: "png", width: 800, height: 600, alt: "Cover", caption: "" },
-    } },
+    actorId: "admin",
+    canEdit: true,
+    cloudName: "demo",
+    categories: { items: [] },
+    tags: { items: [] },
+    tools: [],
+    post: {
+      id: "post",
+      slug: "story",
+      version: 1,
+      draftDocument: {
+        title: "Story",
+        excerpt: "",
+        authorName: "Team",
+        category: null,
+        tags: [],
+        relatedToolIds: [],
+        body: { type: "doc" },
+        coverImage: {
+          publicId: "cover",
+          version: 1,
+          format: "png",
+          width: 800,
+          height: 600,
+          alt: "Cover",
+          caption: "",
+        },
+      },
+    },
   };
-  const walk = (node) => Array.isArray(node) ? node.flatMap(walk) : node?.props ? [node, ...walk(node.props.children)] : [];
+  const walk = (node) =>
+    Array.isArray(node) ? node.flatMap(walk) : node?.props ? [node, ...walk(node.props.children)] : [];
   function render() {
     state.index = 0;
     const nodes = walk(BlogEditor(props));
@@ -214,7 +229,14 @@ test("cover hover preserves focus and stays open across the panel, while explici
   const previousDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
   let focused = 0;
   const inside = {};
-  const document = { activeElement: null, getElementById: () => ({ focus() { focused++; } }) };
+  const document = {
+    activeElement: null,
+    getElementById: () => ({
+      focus() {
+        focused++;
+      },
+    }),
+  };
   Object.defineProperty(globalThis, "document", { configurable: true, value: document });
   t.after(() => {
     if (previousDocument) Object.defineProperty(globalThis, "document", previousDocument);
@@ -225,7 +247,11 @@ test("cover hover preserves focus and stays open across the panel, while explici
   render().trigger.onPointerEnter({ pointerType: "mouse" });
   assert.equal(render().root.open, true);
   let prevented = false;
-  render().panel.onOpenAutoFocus({ preventDefault() { prevented = true; } });
+  render().panel.onOpenAutoFocus({
+    preventDefault() {
+      prevented = true;
+    },
+  });
   assert.equal(prevented, true);
   assert.equal(focused, 0);
   render().trigger.onPointerLeave();
@@ -242,7 +268,11 @@ test("cover hover preserves focus and stays open across the panel, while explici
   render().trigger.onClick({ preventDefault() {} });
   assert.equal(render().root.open, true);
   prevented = false;
-  render().panel.onOpenAutoFocus({ preventDefault() { prevented = true; } });
+  render().panel.onOpenAutoFocus({
+    preventDefault() {
+      prevented = true;
+    },
+  });
   assert.equal(prevented, false);
   render().root.onOpenChange(false);
   render().trigger.onPointerEnter({ pointerType: "mouse" });

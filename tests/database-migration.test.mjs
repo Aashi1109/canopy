@@ -35,15 +35,9 @@ async function seededManagedTools() {
   return rows;
 }
 
-const migrationUrl = new URL(
-  "../packages/database/drizzle/0001_auth_control_plane.sql",
-  import.meta.url,
-);
+const migrationUrl = new URL("../packages/database/drizzle/0001_auth_control_plane.sql", import.meta.url);
 const migrationRunnerUrl = new URL("../packages/database/scripts/migrate.mjs", import.meta.url);
-const mediaMigrationUrl = new URL(
-  "../packages/database/drizzle/0002_media_tools.sql",
-  import.meta.url,
-);
+const mediaMigrationUrl = new URL("../packages/database/drizzle/0002_media_tools.sql", import.meta.url);
 const documentTemplateMigrationUrl = new URL(
   "../packages/database/drizzle/0003_document_template_kinds.sql",
   import.meta.url,
@@ -120,16 +114,10 @@ test("every applied managed_tools seed forms one consistent catalogue", async ()
 });
 
 test("the Media migration expands only managed tool ownership", async () => {
-  const [sql, schema] = await Promise.all([
-    readFile(mediaMigrationUrl, "utf8"),
-    readFile(schemaUrl, "utf8"),
-  ]);
+  const [sql, schema] = await Promise.all([readFile(mediaMigrationUrl, "utf8"), readFile(schemaUrl, "utf8")]);
 
   assert.match(sql, /DROP CONSTRAINT IF EXISTS managed_tools_app_check/i);
-  assert.match(
-    sql,
-    /ADD CONSTRAINT managed_tools_app_check[\s\S]+app IN \('paperwork', 'devtools', 'media'\)/i,
-  );
+  assert.match(sql, /ADD CONSTRAINT managed_tools_app_check[\s\S]+app IN \('paperwork', 'devtools', 'media'\)/i);
   assert.match(sql, /ON CONFLICT \(tool_id\) DO NOTHING/i);
 
   assert.match(schema, /managedToolsTable[\s\S]+\$type<"paperwork" \| "devtools" \| "media">\(\)/);
@@ -173,12 +161,8 @@ test("document template kinds are constrained without rewriting existing rows", 
     assert.match(sql, new RegExp(`VALIDATE CONSTRAINT ${constraint}`, "i"));
   }
 
-  const replacementIndex = sql.indexOf(
-    "invoice_templates_published_default_by_document_type_unique",
-  );
-  const oldIndexDrop = sql.indexOf(
-    "DROP INDEX IF EXISTS invoice_templates_published_default_unique",
-  );
+  const replacementIndex = sql.indexOf("invoice_templates_published_default_by_document_type_unique");
+  const oldIndexDrop = sql.indexOf("DROP INDEX IF EXISTS invoice_templates_published_default_unique");
   assert.notEqual(replacementIndex, -1);
   assert.ok(oldIndexDrop > replacementIndex);
   assert.match(

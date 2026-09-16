@@ -26,28 +26,16 @@ export function fitCropRatio(bounds: Bounds, ratio: number | null): CropBox {
 }
 
 // CropFrame's corner handle resizes from the top-left; movement keeps its size.
-export function resizeCrop(
-  next: CropBox,
-  previous: CropBox,
-  bounds: Bounds,
-  ratio: number | null,
-): CropBox {
+export function resizeCrop(next: CropBox, previous: CropBox, bounds: Bounds, ratio: number | null): CropBox {
   if (!ratio || (next.width === previous.width && next.height === previous.height)) return next;
   const widthChange = Math.abs(next.width - previous.width);
   const heightChange = Math.abs(next.height - previous.height) * ratio;
   const requestedWidth = widthChange >= heightChange ? next.width : next.height * ratio;
-  const width = Math.max(
-    1,
-    Math.min(requestedWidth, bounds.width - next.x, (bounds.height - next.y) * ratio),
-  );
+  const width = Math.max(1, Math.min(requestedWidth, bounds.width - next.x, (bounds.height - next.y) * ratio));
   return { ...next, width: Math.round(width), height: Math.max(1, Math.round(width / ratio)) };
 }
 
-export async function cropBlogImage(
-  image: HTMLImageElement,
-  box: CropBox,
-  format: BlogImage["format"],
-): Promise<File> {
+export async function cropBlogImage(image: HTMLImageElement, box: CropBox, format: BlogImage["format"]): Promise<File> {
   validateCropDimensions({ width: image.naturalWidth, height: image.naturalHeight });
   if (
     ![box.x, box.y, box.width, box.height].every(Number.isSafeInteger) ||
@@ -81,9 +69,7 @@ export async function cropBlogImage(
         `This browser does not support ${format.toUpperCase()} export. Try another browser or replace the image with a PNG.`,
       );
     if (blob.size > 5 * 1024 * 1024)
-      throw new Error(
-        "The cropped image exceeds 5 MiB. Select a smaller area or replace it with a smaller image.",
-      );
+      throw new Error("The cropped image exceeds 5 MiB. Select a smaller area or replace it with a smaller image.");
     return new File([blob], `blog-image-crop.${format}`, { type: mime });
   } finally {
     canvas.width = 0;

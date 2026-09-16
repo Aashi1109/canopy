@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  getMissingPermissionPrerequisite,
-  PERMISSION_CATALOG,
-  type Role,
-} from "@smarttools/authorization";
+import { getMissingPermissionPrerequisite, PERMISSION_CATALOG, type Role } from "@smarttools/authorization";
 import {
   AlertBanner,
   AlertDialog,
@@ -35,9 +31,7 @@ import { deleteRoleAction, updateRoleAction } from "../../../actions";
 import type { RoleUsersPage } from "@/lib/admin/data";
 import RoleMembers from "./RoleMembers";
 
-const PERMISSION_SECTIONS = Object.entries(PERMISSION_CATALOG).filter(
-  ([resource]) => resource !== "admin",
-);
+const PERMISSION_SECTIONS = Object.entries(PERMISSION_CATALOG).filter(([resource]) => resource !== "admin");
 
 export default function RoleEditor({
   role,
@@ -71,39 +65,30 @@ export default function RoleEditor({
     },
     null,
   );
-  const [deleteError, deleteAction, deleting] = useActionState(
-    async (_previous: string | null, formData: FormData) => {
-      try {
-        const result = await deleteRoleAction(formData);
-        return result.error;
-      } catch (error) {
-        unstable_rethrow(error);
-        return "Unable to delete the role. Please try again.";
-      }
-    },
-    null,
-  );
+  const [deleteError, deleteAction, deleting] = useActionState(async (_previous: string | null, formData: FormData) => {
+    try {
+      const result = await deleteRoleAction(formData);
+      return result.error;
+    } catch (error) {
+      unstable_rethrow(error);
+      return "Unable to delete the role. Please try again.";
+    }
+  }, null);
   const busy = saving || deleting;
   const hasInvalidDetails =
-    !draft.name.trim() ||
-    draft.name.length > 160 ||
-    !draft.description.trim() ||
-    draft.description.length > 2000;
+    !draft.name.trim() || draft.name.length > 160 || !draft.description.trim() || draft.description.length > 2000;
   const isDirty =
     draft.name.trim() !== saved.name.trim() ||
     draft.description.trim() !== saved.description.trim() ||
     PERMISSION_SECTIONS.some(([resource, definition]) =>
       Object.keys(definition.actions).some(
-        (action) =>
-          (draft.access[resource]?.[action] === true) !==
-          (saved.access[resource]?.[action] === true),
+        (action) => (draft.access[resource]?.[action] === true) !== (saved.access[resource]?.[action] === true),
       ),
     );
   const hasMissingPrerequisites = PERMISSION_SECTIONS.some(([resource, definition]) =>
     Object.keys(definition.actions).some(
       (action) =>
-        draft.access[resource]?.[action] === true &&
-        getMissingPermissionPrerequisite(draft.access, resource, action),
+        draft.access[resource]?.[action] === true && getMissingPermissionPrerequisite(draft.access, resource, action),
     ),
   );
 
@@ -151,8 +136,7 @@ export default function RoleEditor({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete “{saved.name}”?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This permanently deletes the role and cannot be undone. Assigned custom roles
-                    cannot be deleted.
+                    This permanently deletes the role and cannot be undone. Assigned custom roles cannot be deleted.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 {deleteError ? <AlertBanner variant="error">{deleteError}</AlertBanner> : null}
@@ -162,12 +146,7 @@ export default function RoleEditor({
                     <AlertDialogCancel disabled={deleting} type="button">
                       Cancel
                     </AlertDialogCancel>
-                    <Button
-                      disabled={deleting}
-                      loading={deleting}
-                      type="submit"
-                      variant="destructive"
-                    >
+                    <Button disabled={deleting} loading={deleting} type="submit" variant="destructive">
                       {deleting ? "Deleting…" : "Delete role"}
                     </Button>
                   </AlertDialogFooter>
@@ -202,8 +181,8 @@ export default function RoleEditor({
         <SectionHeading title="Permissions" />
         {hasMissingPrerequisites ? (
           <AlertBanner variant="error">
-            Some selected permissions require their section’s View permission. Select View or clear
-            those permissions before saving.
+            Some selected permissions require their section’s View permission. Select View or clear those permissions
+            before saving.
           </AlertBanner>
         ) : null}
         {saveState?.error ? <AlertBanner variant="error">{saveState.error}</AlertBanner> : null}
@@ -226,29 +205,18 @@ export default function RoleEditor({
             <TooltipProvider>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {PERMISSION_SECTIONS.map(([resource, definition]) => (
-                  <FieldSet
-                    className="gap-0 rounded-lg border border-border bg-muted/40 p-4"
-                    key={resource}
-                  >
-                    <FieldLegend className="mb-0 px-1 text-foreground">
-                      {startCase(resource)}
-                    </FieldLegend>
+                  <FieldSet className="gap-0 rounded-lg border border-border bg-muted/40 p-4" key={resource}>
+                    <FieldLegend className="mb-0 px-1 text-foreground">{startCase(resource)}</FieldLegend>
                     <Muted className="mb-4 text-muted-foreground">{definition.description}</Muted>
                     <div className="grid gap-3">
                       {Object.entries(definition.actions).map(([action, help]) => {
-                        const missing = getMissingPermissionPrerequisite(
-                          draft.access,
-                          resource,
-                          action,
-                        );
+                        const missing = getMissingPermissionPrerequisite(draft.access, resource, action);
                         const checked = draft.access[resource]?.[action] === true;
                         return (
                           <Checkbox
                             checked={checked}
                             disabled={Boolean(missing) && !checked}
-                            onCheckedChange={(value) =>
-                              changePermission(resource, action, value === true)
-                            }
+                            onCheckedChange={(value) => changePermission(resource, action, value === true)}
                             description={help.description}
                             key={action}
                             label={startCase(action)}

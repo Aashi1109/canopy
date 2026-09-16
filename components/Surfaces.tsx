@@ -24,16 +24,7 @@ import {
 } from "@smarttools/ui";
 import { OrderableList, type OrderableItemState } from "@smarttools/ui/components/OrderableList";
 import { cn } from "@smarttools/ui/lib/utils";
-import {
-  CircleAlert,
-  File as FileIcon,
-  GripVertical,
-  Inbox,
-  LoaderCircle,
-  Maximize2,
-  Minus,
-  Plus,
-} from "lucide-react";
+import { CircleAlert, File as FileIcon, GripVertical, Inbox, LoaderCircle, Maximize2, Minus, Plus } from "lucide-react";
 import {
   type DragEvent,
   type HTMLAttributes,
@@ -109,9 +100,7 @@ function WorkspaceSurface({
     ) : state === "empty" && purpose === "result" ? (
       <div className="min-h-0 flex-1 px-4 py-3" data-surface-state={state}>
         <Muted className="text-muted-foreground">
-          <Strong className="text-foreground/70">
-            {stateTitle ?? DEFAULT_STATE_TITLES[state]}
-          </Strong>
+          <Strong className="text-foreground/70">{stateTitle ?? DEFAULT_STATE_TITLES[state]}</Strong>
           {stateDescription ? ` — ${stateDescription}` : null}
         </Muted>
         <div aria-hidden="true" className="mt-3 grid gap-2">
@@ -124,15 +113,9 @@ function WorkspaceSurface({
         {stateAction ? <div className="mt-3">{stateAction}</div> : null}
       </div>
     ) : (
-      <Empty
-        className="min-h-72 flex-1 rounded-none border-0 bg-transparent"
-        data-surface-state={state}
-      >
+      <Empty className="min-h-72 flex-1 rounded-none border-0 bg-transparent" data-surface-state={state}>
         <EmptyHeader>
-          <EmptyMedia
-            className={cn(state === "error" ? "text-destructive" : undefined)}
-            variant="icon"
-          >
+          <EmptyMedia className={cn(state === "error" ? "text-destructive" : undefined)} variant="icon">
             {stateIcon ?? DEFAULT_STATE_ICONS[state]}
           </EmptyMedia>
           <EmptyTitle>{stateTitle ?? DEFAULT_STATE_TITLES[state]}</EmptyTitle>
@@ -142,10 +125,7 @@ function WorkspaceSurface({
       </Empty>
     );
   const heading = (
-    <Overline
-      className={cn("truncate", variant === "card" && "text-muted-foreground")}
-      id={headingId}
-    >
+    <Overline className={cn("truncate", variant === "card" && "text-muted-foreground")} id={headingId}>
       {title}
     </Overline>
   );
@@ -165,10 +145,7 @@ function WorkspaceSurface({
               {variant === "card" ? (
                 status
               ) : (
-                <StatusBadge
-                  className="shrink-0"
-                  variant={state === "ready" ? "success" : "neutral"}
-                >
+                <StatusBadge className="shrink-0" variant={state === "ready" ? "success" : "neutral"}>
                   {status}
                 </StatusBadge>
               )}
@@ -176,9 +153,7 @@ function WorkspaceSurface({
           ) : (
             heading
           )}
-          {description ? (
-            <Muted className="mt-0.5 truncate text-muted-foreground">{description}</Muted>
-          ) : null}
+          {description ? <Muted className="mt-0.5 truncate text-muted-foreground">{description}</Muted> : null}
         </div>
         {meta !== undefined && meta !== null ? (
           <div className="ml-auto flex min-w-0 items-center gap-3">
@@ -212,9 +187,7 @@ function WorkspaceSurface({
       <div
         className={cn(
           "flex min-h-0 min-w-0 flex-1 flex-col",
-          variant === "card"
-            ? "overflow-hidden rounded-lg border border-border bg-muted/45"
-            : undefined,
+          variant === "card" ? "overflow-hidden rounded-lg border border-border bg-muted/45" : undefined,
         )}
         data-slot="workspace-card"
       >
@@ -225,15 +198,10 @@ function WorkspaceSurface({
             className="flex-1"
             data-slot="workspace-content"
           >
-            <div className={cn("flex min-h-full min-w-0 flex-col", contentClassName)}>
-              {content}
-            </div>
+            <div className={cn("flex min-h-full min-w-0 flex-col", contentClassName)}>{content}</div>
           </ScrollRegion>
         ) : (
-          <div
-            className={cn("flex min-h-0 min-w-0 flex-1 flex-col", contentClassName)}
-            data-slot="workspace-content"
-          >
+          <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col", contentClassName)} data-slot="workspace-content">
             {content}
           </div>
         )}
@@ -242,10 +210,7 @@ function WorkspaceSurface({
   );
 }
 
-export type FileIntakeSurfaceProps = Omit<
-  WorkspaceSurfaceProps,
-  "children" | "purpose" | "state"
-> & {
+export type FileIntakeSurfaceProps = Omit<WorkspaceSurfaceProps, "children" | "purpose" | "state"> & {
   accept?: string;
   disabled?: boolean;
   intakeDescription?: ReactNode;
@@ -302,10 +267,7 @@ function FileIntakeSurface({
           className="max-w-[500px]"
           description={intakeDescription}
           hint={
-            intakeHint ??
-            (multiple
-              ? "Click to browse, or drop files here"
-              : "Click to browse, or drop a file here")
+            intakeHint ?? (multiple ? "Click to browse, or drop files here" : "Click to browse, or drop a file here")
           }
           disabled={disabled}
           icon={intakeIcon}
@@ -319,10 +281,7 @@ function FileIntakeSurface({
   );
 }
 
-export type FileQueueSurfaceProps<Item> = Omit<
-  WorkspaceSurfaceProps,
-  "children" | "purpose" | "state"
-> & {
+export type FileQueueSurfaceProps<Item> = Omit<WorkspaceSurfaceProps, "children" | "purpose" | "state"> & {
   emptyDescription?: ReactNode;
   disabled?: boolean;
   getIcon?: (item: Item) => ReactNode;
@@ -399,10 +358,7 @@ function FileQueueSurface<Item>({
   );
 }
 
-export type CollectionSurfaceProps<Item> = Omit<
-  WorkspaceSurfaceProps,
-  "children" | "purpose" | "state"
-> & {
+export type CollectionSurfaceProps<Item> = Omit<WorkspaceSurfaceProps, "children" | "purpose" | "state"> & {
   ariaLabel: string;
   disabled?: boolean;
   emptyDescription?: ReactNode;
@@ -440,9 +396,7 @@ function CollectionSurface<Item>({
         <OrderableList
           ariaLabel={ariaLabel}
           className={cn(
-            layout === "grid"
-              ? "grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3"
-              : "space-y-2",
+            layout === "grid" ? "grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3" : "space-y-2",
             listClassName,
           )}
           disabled={disabled}
@@ -460,10 +414,7 @@ function CollectionSurface<Item>({
 
 type CanvasPoint = { x: number; y: number };
 
-export type CanvasSurfaceProps = Omit<
-  WorkspaceSurfaceProps,
-  "actions" | "children" | "purpose" | "state"
-> & {
+export type CanvasSurfaceProps = Omit<WorkspaceSurfaceProps, "actions" | "children" | "purpose" | "state"> & {
   actions?: ReactNode;
   canvasLabel: string;
   children: ReactNode;
@@ -477,15 +428,7 @@ export type CanvasSurfaceProps = Omit<
   zoomStep?: number;
 };
 
-function CanvasAction({
-  children,
-  label,
-  onClick,
-}: {
-  children: ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
+function CanvasAction({ children, label, onClick }: { children: ReactNode; label: string; onClick: () => void }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -554,10 +497,7 @@ function CanvasSurface({
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     if (event.button !== 0) return;
     const target = event.target;
-    if (
-      target instanceof Element &&
-      target.closest("button, input, select, textarea, a, [data-no-canvas-pan]")
-    ) {
+    if (target instanceof Element && target.closest("button, input, select, textarea, a, [data-no-canvas-pan]")) {
       return;
     }
     event.preventDefault();
@@ -632,12 +572,7 @@ function CanvasSurface({
   );
 
   return (
-    <WorkspaceSurface
-      actions={canvasActions}
-      className={className}
-      purpose="preview"
-      {...surfaceProps}
-    >
+    <WorkspaceSurface actions={canvasActions} className={className} purpose="preview" {...surfaceProps}>
       <OverlayStack
         base={
           <div
@@ -675,10 +610,7 @@ function CanvasSurface({
   );
 }
 
-export type NavigatorSurfaceProps<Item> = Omit<
-  WorkspaceSurfaceProps,
-  "children" | "purpose" | "state"
-> & {
+export type NavigatorSurfaceProps<Item> = Omit<WorkspaceSurfaceProps, "children" | "purpose" | "state"> & {
   ariaLabel: string;
   emptyDescription?: ReactNode;
   getDescription?: (item: Item) => ReactNode;
@@ -754,9 +686,7 @@ function NavigatorSurface<Item>({
                   <span className="min-w-0">
                     <span className="block truncate">{getLabel(item)}</span>
                     {getDescription ? (
-                      <Caption className="mt-0.5 block truncate text-muted-foreground">
-                        {getDescription(item)}
-                      </Caption>
+                      <Caption className="mt-0.5 block truncate text-muted-foreground">{getDescription(item)}</Caption>
                     ) : null}
                   </span>
                 </Button>
@@ -790,18 +720,11 @@ function GeneratedList<Item>({
     <ScrollRegion accessibleName="Generated values" className="flex-1">
       <ol className="grid min-w-0 gap-2 p-4">
         {items.map((item, index) => (
-          <li
-            className="flex min-w-0 items-center gap-4 rounded-lg bg-muted/55 px-4 py-3"
-            key={getId(item)}
-          >
+          <li className="flex min-w-0 items-center gap-4 rounded-lg bg-muted/55 px-4 py-3" key={getId(item)}>
             <Caption className="shrink-0 text-muted-foreground">{getLabel(item)}</Caption>
             <div className="min-w-0 flex-1">
-              <InlineCode className="break-words [overflow-wrap:anywhere]">
-                {getValue(item)}
-              </InlineCode>
-              {getDescription ? (
-                <Muted className="mt-1 text-muted-foreground">{getDescription(item)}</Muted>
-              ) : null}
+              <InlineCode className="break-words [overflow-wrap:anywhere]">{getValue(item)}</InlineCode>
+              {getDescription ? <Muted className="mt-1 text-muted-foreground">{getDescription(item)}</Muted> : null}
             </div>
             {renderAction ? <div className="shrink-0">{renderAction(item, index)}</div> : null}
           </li>

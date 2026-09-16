@@ -120,12 +120,7 @@ export function BlogPostList({
           className={styles.statusTabs}
           value={trash ? "all" : filters.status}
           onValueChange={(value) => {
-            if (
-              value === "all" ||
-              value === "draft" ||
-              value === "published" ||
-              value === "scheduled"
-            ) {
+            if (value === "all" || value === "draft" || value === "published" || value === "scheduled") {
               onFiltersChange({
                 ...filters,
                 status: value,
@@ -178,14 +173,8 @@ export function BlogPostList({
             <Select
               value={trash ? "trash" : filters.status}
               onValueChange={(value) => {
-                if (value === "trash")
-                  onFiltersChange({ ...filters, category: "trash", status: "all" });
-                else if (
-                  value === "all" ||
-                  value === "draft" ||
-                  value === "published" ||
-                  value === "scheduled"
-                )
+                if (value === "trash") onFiltersChange({ ...filters, category: "trash", status: "all" });
+                else if (value === "all" || value === "draft" || value === "published" || value === "scheduled")
                   onFiltersChange({
                     ...filters,
                     status: value,
@@ -207,10 +196,7 @@ export function BlogPostList({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="blog-category">Category</Label>
-            <Select
-              value={filters.category}
-              onValueChange={(category) => onFiltersChange({ ...filters, category })}
-            >
+            <Select value={filters.category} onValueChange={(category) => onFiltersChange({ ...filters, category })}>
               <SelectTrigger id="blog-category" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -260,9 +246,7 @@ export function BlogPostList({
           <Table className={styles.postTable}>
             <TableHeader>
               <TableRow>
-                <TableHead>
-                  {posts.some((post) => post.author) ? "Title / author" : "Title"}
-                </TableHead>
+                <TableHead>{posts.some((post) => post.author) ? "Title / author" : "Title"}</TableHead>
                 <TableHead className="hidden md:table-cell">Last edited</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -280,9 +264,7 @@ export function BlogPostList({
                     </Link>
                     {(post.author || post.category !== undefined) && (
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {[post.category ?? "Uncategorized", post.author]
-                          .filter(Boolean)
-                          .join(" · ")}
+                        {[post.category ?? "Uncategorized", post.author].filter(Boolean).join(" · ")}
                       </p>
                     )}
                     <p className="mt-2 text-sm text-muted-foreground md:hidden">
@@ -293,15 +275,10 @@ export function BlogPostList({
                     {post.updatedLabel}
                   </TableCell>
                   <TableCell className={styles.statusCell}>
-                    <StatusBadge
-                      className="whitespace-nowrap"
-                      variant={STATUS[post.status].variant}
-                    >
+                    <StatusBadge className="whitespace-nowrap" variant={STATUS[post.status].variant}>
                       {STATUS[post.status].label}
                     </StatusBadge>
-                    {post.detail && (
-                      <p className="mt-1 max-w-52 text-xs text-muted-foreground">{post.detail}</p>
-                    )}
+                    {post.detail && <p className="mt-1 max-w-52 text-xs text-muted-foreground">{post.detail}</p>}
                   </TableCell>
                   <TableCell>
                     <div className={`flex justify-end gap-1 ${styles.rowActions}`}>
@@ -310,12 +287,7 @@ export function BlogPostList({
                       </Button>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button
-                            asChild
-                            size="icon-sm"
-                            variant="ghost"
-                            className="hidden md:inline-flex"
-                          >
+                          <Button asChild size="icon-sm" variant="ghost" className="hidden md:inline-flex">
                             <Link aria-label={`Edit ${post.title}`} href={post.editHref}>
                               <Pencil aria-hidden="true" />
                             </Link>
@@ -326,10 +298,7 @@ export function BlogPostList({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button asChild size="icon-sm" variant="ghost">
-                            <Link
-                              aria-label={`Revisions for ${post.title}`}
-                              href={post.historyHref}
-                            >
+                            <Link aria-label={`Revisions for ${post.title}`} href={post.historyHref}>
                               <History aria-hidden="true" />
                             </Link>
                           </Button>
@@ -350,9 +319,7 @@ export function BlogPostList({
                               {trash ? <Undo2 aria-hidden="true" /> : <Trash2 aria-hidden="true" />}
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>
-                            {trash ? "Restore as draft" : "Move to trash"}
-                          </TooltipContent>
+                          <TooltipContent>{trash ? "Restore as draft" : "Move to trash"}</TooltipContent>
                         </Tooltip>
                       )}
                       {!trash && (
@@ -394,9 +361,7 @@ export function BlogPostList({
                                 post.status === "scheduled") && (
                                 <Button asChild variant="ghost" className="justify-start">
                                   <Link href={post.editHref}>
-                                    {post.status === "scheduled"
-                                      ? "Manage schedule…"
-                                      : "Manage live post…"}
+                                    {post.status === "scheduled" ? "Manage schedule…" : "Manage live post…"}
                                   </Link>
                                 </Button>
                               )}

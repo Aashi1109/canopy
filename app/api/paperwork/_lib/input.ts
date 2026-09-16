@@ -10,13 +10,7 @@ export class ApiInputError extends Error {
 }
 
 const ENTITY_TYPES = ["Individual", "LLC", "Partnership", "Corporation", "Unknown"] as const;
-const W9_STATUSES = [
-  "Not Requested",
-  "Requested",
-  "Received",
-  "Needs Review",
-  "Not Applicable",
-] as const;
+const W9_STATUSES = ["Not Requested", "Requested", "Received", "Needs Review", "Not Applicable"] as const;
 
 type EntityType = (typeof ENTITY_TYPES)[number];
 type W9Status = (typeof W9_STATUSES)[number];
@@ -72,12 +66,7 @@ function optionalString(value: unknown, label: string, maxLength: number): strin
   return normalized || null;
 }
 
-function enumValue<T extends string>(
-  value: unknown,
-  label: string,
-  allowed: readonly T[],
-  fallback: T,
-): T {
+function enumValue<T extends string>(value: unknown, label: string, allowed: readonly T[], fallback: T): T {
   if (value === undefined || value === null || value === "") return fallback;
   if (typeof value !== "string" || !allowed.includes(value as T)) {
     throw new ApiInputError(`${label} is invalid.`);

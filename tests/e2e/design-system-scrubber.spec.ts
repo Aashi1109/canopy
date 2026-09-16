@@ -27,9 +27,7 @@ async function expectOutlineWidth(viewer: Locator) {
     )
     .toBeLessThan(1);
   const width = (await outlinePanel.boundingBox())!.width;
-  const viewerWidth = await outlinePanel.evaluate(
-    (panel) => panel.parentElement!.getBoundingClientRect().width,
-  );
+  const viewerWidth = await outlinePanel.evaluate((panel) => panel.parentElement!.getBoundingClientRect().width);
   expect(width).toBeGreaterThan(0);
   expect(width).toBeLessThanOrEqual(viewerWidth * 0.35 + 1);
 }
@@ -41,11 +39,7 @@ async function captureViewer(viewer: Locator, path: string) {
   await viewer.screenshot({ path });
 }
 
-async function toggleOutlineWithMotion(
-  viewer: Locator,
-  label: "Show outline" | "Hide outline",
-  animated = true,
-) {
+async function toggleOutlineWithMotion(viewer: Locator, label: "Show outline" | "Hide outline", animated = true) {
   await expect(viewer.getByRole("button", { name: label, exact: true })).toBeEnabled();
   const samples = await viewer.evaluate(async (node, toggleLabel) => {
     const toggle = node.querySelector<HTMLButtonElement>(`button[aria-label="${toggleLabel}"]`)!;
@@ -84,27 +78,18 @@ async function toggleOutlineWithMotion(
   for (const sample of samples) {
     expect(Math.abs(sample.content - first.content)).toBeLessThanOrEqual(1);
     expect(sample.outline).toBeLessThanOrEqual(viewerWidth * 0.35 + 1);
-    expect(
-      Math.abs(sample.outline + sample.pages - first.outline - first.pages),
-    ).toBeLessThanOrEqual(3);
+    expect(Math.abs(sample.outline + sample.pages - first.outline - first.pages)).toBeLessThanOrEqual(3);
   }
 }
 
-async function selectThroughPreview(
-  page: Page,
-  scrubber: Locator,
-  target: Locator,
-  preview: Locator,
-) {
+async function selectThroughPreview(page: Page, scrubber: Locator, target: Locator, preview: Locator) {
   const tickBox = await target.boundingBox();
   const cardBox = await preview.boundingBox();
   if (!tickBox || !cardBox) throw new Error("Scrubber preview is not visible");
   const activeId = await target.getAttribute("id");
   if (!activeId) throw new Error("Scrubber option has no accessible ID");
   const opensRight = cardBox.x > tickBox.x;
-  const gapX = opensRight
-    ? (tickBox.x + tickBox.width + cardBox.x) / 2
-    : (cardBox.x + cardBox.width + tickBox.x) / 2;
+  const gapX = opensRight ? (tickBox.x + tickBox.width + cardBox.x) / 2 : (cardBox.x + cardBox.width + tickBox.x) / 2;
 
   await page.mouse.move(gapX, tickBox.y + tickBox.height / 2, {
     steps: Math.max(1, Math.ceil(Math.abs(gapX - tickBox.x - tickBox.width / 2))),
@@ -143,9 +128,7 @@ async function expectWaveWidths(
   },
 ) {
   const peakLength = restLength * hoverLengthMultiplier;
-  await expect
-    .poll(async () => Math.max(...(await tickWidths(scrubber))))
-    .toBeGreaterThan(peakLength - 1);
+  await expect.poll(async () => Math.max(...(await tickWidths(scrubber)))).toBeGreaterThan(peakLength - 1);
 
   const widths = await tickWidths(scrubber);
   widths.forEach((width, index) => {
@@ -158,11 +141,7 @@ async function expectWaveWidths(
 }
 
 test("shared scrubbers render their wave and preview at runtime", async ({ page }) => {
-  await new AuthPage(page).signIn(
-    E2E_ACCOUNTS.admin.email,
-    E2E_PASSWORD,
-    "http://localhost:3000/admin/design-system",
-  );
+  await new AuthPage(page).signIn(E2E_ACCOUNTS.admin.email, E2E_PASSWORD, "http://localhost:3000/admin/design-system");
 
   const sharedScrubber = page.getByRole("listbox", {
     name: "Tool workflow chapters",
@@ -227,9 +206,7 @@ test("shared scrubbers render their wave and preview at runtime", async ({ page 
   });
   await expect(pageTarget.locator("span")).toHaveCSS("height", "2px");
 
-  const pagePreview = pageScrubber
-    .locator("xpath=..")
-    .getByRole("button", { name: "Go to Page 10", exact: true });
+  const pagePreview = pageScrubber.locator("xpath=..").getByRole("button", { name: "Go to Page 10", exact: true });
   await expect(pagePreview).toHaveCSS("opacity", "1");
   await expect(pagePreview).toHaveCSS("width", "178px");
   await expect(pagePreview).toContainText("Page 10 · Review & approve");
@@ -276,14 +253,12 @@ test("PDF preview stays clickable across the scrubber gap", async ({ page }) => 
   expect((await pages.boundingBox())!.width).toBeLessThan(closedWidth);
   await expectOutlineWidth(viewer);
   await toggleOutlineWithMotion(viewer, "Hide outline");
-  await viewer
-    .getByRole("button", { name: "Show outline", exact: true })
-    .evaluate(async (toggle) => {
-      for (let index = 0; index < 3; index++) {
-        (toggle as HTMLButtonElement).click();
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-      }
-    });
+  await viewer.getByRole("button", { name: "Show outline", exact: true }).evaluate(async (toggle) => {
+    for (let index = 0; index < 3; index++) {
+      (toggle as HTMLButtonElement).click();
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    }
+  });
   await expect(viewer.getByRole("complementary")).toHaveCount(1);
   await expect(search).toBeFocused();
   await expectOutlineWidth(viewer);
@@ -298,9 +273,7 @@ test("PDF preview stays clickable across the scrubber gap", async ({ page }) => 
   const scrubber = viewer.getByRole("listbox", { name: "Page scrubber", exact: true });
   const target = scrubber.getByRole("option", { name: "Page 10", exact: true });
   await target.hover();
-  const preview = scrubber
-    .locator("xpath=..")
-    .getByRole("button", { name: "Go to Page 10", exact: true });
+  const preview = scrubber.locator("xpath=..").getByRole("button", { name: "Go to Page 10", exact: true });
   await expect(preview).toHaveCSS("opacity", "1");
   await captureViewer(viewer, "/tmp/canopy-pdf-viewer-preview.png");
   await selectThroughPreview(page, scrubber, target, preview);
@@ -309,9 +282,7 @@ test("PDF preview stays clickable across the scrubber gap", async ({ page }) => 
   await target.focus();
   await target.press("ArrowDown");
   const nextTarget = scrubber.getByRole("option", { name: "Page 11", exact: true });
-  const nextPreview = scrubber
-    .locator("xpath=..")
-    .getByRole("button", { name: "Go to Page 11", exact: true });
+  const nextPreview = scrubber.locator("xpath=..").getByRole("button", { name: "Go to Page 11", exact: true });
   await expect(nextPreview).toBeVisible();
   await nextTarget.press("Tab");
   await expect(nextPreview).toBeFocused();
@@ -333,9 +304,7 @@ test("PDF preview stays clickable across the scrubber gap", async ({ page }) => 
   expect(Math.abs(fullWidth - availableWidth)).toBeLessThanOrEqual(2);
   await expanded.getByRole("button", { name: "Zoom in", exact: true }).click();
   await expect(expanded.getByLabel("Zoom level")).toHaveText("110%");
-  await expect
-    .poll(async () => (await expandedPage.boundingBox())!.width)
-    .toBeGreaterThan(fullWidth * 1.09);
+  await expect.poll(async () => (await expandedPage.boundingBox())!.width).toBeGreaterThan(fullWidth * 1.09);
   await expanded.getByRole("button", { name: "Fit page", exact: true }).click();
   await expect(expanded.getByLabel("Zoom level")).toHaveText("100%");
   expect(Math.abs((await expandedPage.boundingBox())!.width - fullWidth)).toBeLessThanOrEqual(2);
@@ -350,9 +319,7 @@ test("PDF preview stays clickable across the scrubber gap", async ({ page }) => 
   await expect(expandedPageNumber).toHaveValue("1");
   await expanded.screenshot({ path: "/tmp/canopy-pdf-viewer-full-width-open.png" });
   await expandedSearch.press("Escape");
-  await expect(
-    expanded.getByRole("listbox", { name: "Document outline", exact: true }),
-  ).toBeHidden();
+  await expect(expanded.getByRole("listbox", { name: "Document outline", exact: true })).toBeHidden();
   await expect(expanded.getByRole("button", { name: "Show outline", exact: true })).toBeFocused();
   await expect(expandedPageNumber).toHaveValue("1");
   await page.keyboard.press("Escape");
@@ -379,28 +346,19 @@ test("PDF preview stays clickable across the scrubber gap", async ({ page }) => 
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.setViewportSize({ width: 375, height: 812 });
   await page.evaluate(
-    () =>
-      new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-      ),
+    () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
   );
-  const mobileCurrentPage = await viewer
-    .getByRole("spinbutton", { name: "Current page" })
-    .inputValue();
+  const mobileCurrentPage = await viewer.getByRole("spinbutton", { name: "Current page" }).inputValue();
   await viewer.getByRole("button", { name: "Show outline", exact: true }).click();
   await expect(outline).toBeVisible();
   await expect(search).toBeFocused();
-  await expect(viewer.getByRole("spinbutton", { name: "Current page" })).toHaveValue(
-    mobileCurrentPage,
-  );
+  await expect(viewer.getByRole("spinbutton", { name: "Current page" })).toHaveValue(mobileCurrentPage);
   await expectOutlineWidth(viewer);
   await captureViewer(viewer, "/tmp/canopy-pdf-viewer-mobile-open.png");
   await search.press("Escape");
   await expect(outline).toBeHidden();
   await expect(viewer.getByRole("button", { name: "Show outline", exact: true })).toBeFocused();
-  await expect(viewer.getByRole("spinbutton", { name: "Current page" })).toHaveValue(
-    mobileCurrentPage,
-  );
+  await expect(viewer.getByRole("spinbutton", { name: "Current page" })).toHaveValue(mobileCurrentPage);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await captureViewer(viewer, "/tmp/canopy-pdf-viewer-mobile.png");
 });

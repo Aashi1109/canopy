@@ -6,17 +6,8 @@ import { shouldUseBrowserBack } from "../../_lib/security";
 
 export function ProfileBackLink({ fallbackHref }: { fallbackHref: string }) {
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
-    const modified =
-      event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
-    if (
-      !shouldUseBrowserBack(
-        fallbackHref,
-        window.location.href,
-        document.referrer,
-        window.history.length,
-        modified,
-      )
-    ) {
+    const modified = event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+    if (!shouldUseBrowserBack(fallbackHref, window.location.href, document.referrer, window.history.length, modified)) {
       return;
     }
 

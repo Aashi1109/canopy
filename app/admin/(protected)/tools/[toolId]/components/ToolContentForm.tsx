@@ -24,12 +24,12 @@ import { saveToolContentAction, type ToolContentActionState } from "../../action
 
 const IDLE: ToolContentActionState = { status: "idle", message: "" };
 
-const CATEGORY_OPTIONS: readonly { key: CategoryKey; label: string }[] = Object.entries(
-  TOOL_CATEGORIES,
-).map(([key, category]) => ({
-  key: key as CategoryKey,
-  label: `${category.label} · ${category.app}`,
-}));
+const CATEGORY_OPTIONS: readonly { key: CategoryKey; label: string }[] = Object.entries(TOOL_CATEGORIES).map(
+  ([key, category]) => ({
+    key: key as CategoryKey,
+    label: `${category.label} · ${category.app}`,
+  }),
+);
 
 export interface InheritedContentView {
   readonly category: string;
@@ -105,9 +105,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 }
 
 function strings(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((entry): entry is string => typeof entry === "string")
-    : [];
+  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
 }
 
 function contentRecord(value: unknown): ContentRecord {
@@ -117,9 +115,7 @@ function contentRecord(value: unknown): ContentRecord {
   const faq = Array.isArray(faqValue)
     ? faqValue.flatMap((entry) => {
         const item = asRecord(entry);
-        return typeof item?.q === "string" && typeof item.a === "string"
-          ? [{ q: item.q, a: item.a }]
-          : [];
+        return typeof item?.q === "string" && typeof item.a === "string" ? [{ q: item.q, a: item.a }] : [];
       })
     : [];
   const examples = Array.isArray(examplesValue)
@@ -200,14 +196,7 @@ function FieldHeader({
       <Text className="text-foreground">{label}</Text>
       <span className="flex items-center gap-2">
         {count ? <Caption className="text-muted-foreground">{count}</Caption> : null}
-        <Button
-          className="h-7 px-2"
-          disabled={!overridden}
-          onClick={onRevert}
-          size="xs"
-          type="button"
-          variant="ghost"
-        >
+        <Button className="h-7 px-2" disabled={!overridden} onClick={onRevert} size="xs" type="button" variant="ghost">
           <RotateCcw aria-hidden="true" />
           Revert to code
         </Button>
@@ -216,13 +205,7 @@ function FieldHeader({
   );
 }
 
-function KeywordTagInput({
-  onChange,
-  values,
-}: {
-  onChange: (values: string[]) => void;
-  values: readonly string[];
-}) {
+function KeywordTagInput({ onChange, values }: { onChange: (values: string[]) => void; values: readonly string[] }) {
   const [draft, setDraft] = useState("");
 
   function commitDraft(): void {
@@ -277,11 +260,7 @@ function KeywordTagInput({
   );
 }
 
-function CatalogForm({
-  inherited,
-  stored,
-  toolId,
-}: Omit<ToolContentFormProps, "relatedTools" | "section">) {
+function CatalogForm({ inherited, stored, toolId }: Omit<ToolContentFormProps, "relatedTools" | "section">) {
   const [state, action, pending] = useActionState(saveToolContentAction, IDLE);
   const [category, setCategory] = useState(stored.category ?? "");
   const [keywords, setKeywords] = useState<string[]>([...(stored.keywords ?? [])]);
@@ -307,23 +286,13 @@ function CatalogForm({
       </div>
 
       {state.status !== "idle" ? (
-        <AlertBanner variant={state.status === "success" ? "success" : "error"}>
-          {state.message}
-        </AlertBanner>
+        <AlertBanner variant={state.status === "success" ? "success" : "error"}>{state.message}</AlertBanner>
       ) : null}
 
       <div className="grid gap-x-5 gap-y-6 md:grid-cols-2">
         <div className="grid content-start gap-2">
-          <FieldHeader
-            label="Category"
-            onRevert={() => setCategory("")}
-            overridden={Boolean(category)}
-          />
-          <Select
-            name="category"
-            onChange={(event) => setCategory(event.target.value)}
-            value={category}
-          >
+          <FieldHeader label="Category" onRevert={() => setCategory("")} overridden={Boolean(category)} />
+          <Select name="category" onChange={(event) => setCategory(event.target.value)} value={category}>
             <option value="">Inherit from code</option>
             {CATEGORY_OPTIONS.map((option) => (
               <option key={option.key} value={option.key}>
@@ -403,13 +372,7 @@ function DragHandle({ label, state }: { label: string; state: OrderableItemState
 
 function RemoveButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <Button
-      aria-label={`Delete ${label}`}
-      onClick={onClick}
-      size="icon-sm"
-      type="button"
-      variant="ghost"
-    >
+    <Button aria-label={`Delete ${label}`} onClick={onClick} size="icon-sm" type="button" variant="ghost">
       <Trash2 aria-hidden="true" />
     </Button>
   );
@@ -454,9 +417,7 @@ function TextListEditor({
                 onChange={(event) =>
                   onChange(
                     items.map((candidate) =>
-                      candidate.id === item.id
-                        ? { ...candidate, value: event.target.value }
-                        : candidate,
+                      candidate.id === item.id ? { ...candidate, value: event.target.value } : candidate,
                     ),
                   )
                 }
@@ -484,13 +445,7 @@ function TextListEditor({
   );
 }
 
-function FaqEditor({
-  items,
-  onChange,
-}: {
-  items: readonly FaqItem[];
-  onChange: (items: FaqItem[]) => void;
-}) {
+function FaqEditor({ items, onChange }: { items: readonly FaqItem[]; onChange: (items: FaqItem[]) => void }) {
   return (
     <div>
       <Muted className="mb-4 text-muted-foreground">
@@ -519,9 +474,7 @@ function FaqEditor({
                   onChange={(event) =>
                     onChange(
                       items.map((candidate) =>
-                        candidate.id === item.id
-                          ? { ...candidate, q: event.target.value }
-                          : candidate,
+                        candidate.id === item.id ? { ...candidate, q: event.target.value } : candidate,
                       ),
                     )
                   }
@@ -534,9 +487,7 @@ function FaqEditor({
                   onChange={(event) =>
                     onChange(
                       items.map((candidate) =>
-                        candidate.id === item.id
-                          ? { ...candidate, a: event.target.value }
-                          : candidate,
+                        candidate.id === item.id ? { ...candidate, a: event.target.value } : candidate,
                       ),
                     )
                   }
@@ -588,11 +539,7 @@ function ExamplesEditor({
         renderItem={(item, dragState) => {
           const index = items.findIndex((candidate) => candidate.id === item.id);
           const update = (values: Partial<ExampleItem>) =>
-            onChange(
-              items.map((candidate) =>
-                candidate.id === item.id ? { ...candidate, ...values } : candidate,
-              ),
-            );
+            onChange(items.map((candidate) => (candidate.id === item.id ? { ...candidate, ...values } : candidate)));
           return (
             <div
               className={`flex items-start gap-2 py-3 ${dragState.isDragging ? "bg-accent shadow-sm" : "bg-background"}`}
@@ -637,9 +584,7 @@ function ExamplesEditor({
       />
       <Button
         className="mt-3"
-        onClick={() =>
-          onChange([...items, { id: itemId("example"), label: "", text: "", secondary: "" }])
-        }
+        onClick={() => onChange([...items, { id: itemId("example"), label: "", text: "", secondary: "" }])}
         size="sm"
         type="button"
         variant="ghost"
@@ -664,9 +609,7 @@ function RelatedToolsEditor({
   const selectedIds = new Set(items.map((item) => item.value));
   const matches = tools
     .filter(
-      (tool) =>
-        !selectedIds.has(tool.id) &&
-        `${tool.name} ${tool.id}`.toLowerCase().includes(query.toLowerCase()),
+      (tool) => !selectedIds.has(tool.id) && `${tool.name} ${tool.id}`.toLowerCase().includes(query.toLowerCase()),
     )
     .slice(0, 5);
 
@@ -741,12 +684,7 @@ function RelatedToolsEditor({
   );
 }
 
-function ContentDocumentForm({
-  inherited,
-  relatedTools,
-  stored,
-  toolId,
-}: Omit<ToolContentFormProps, "section">) {
+function ContentDocumentForm({ inherited, relatedTools, stored, toolId }: Omit<ToolContentFormProps, "section">) {
   const [state, action, pending] = useActionState(saveToolContentAction, IDLE);
   const inheritedDoc = contentRecord(inherited.contentDoc);
   const initialDoc = contentRecord(stored.contentDoc ?? inherited.contentDoc);
@@ -762,9 +700,7 @@ function ContentDocumentForm({
   const [limitations, setLimitations] = useState<TextItem[]>(
     initialDoc.limitations.map((value) => ({ id: itemId("limitation"), value })),
   );
-  const [faq, setFaq] = useState<FaqItem[]>(
-    initialDoc.faq.map((item) => ({ id: itemId("faq"), ...item })),
-  );
+  const [faq, setFaq] = useState<FaqItem[]>(initialDoc.faq.map((item) => ({ id: itemId("faq"), ...item })));
   const [examples, setExamples] = useState<ExampleItem[]>(
     initialDoc.examples.map((item) => ({
       id: itemId("example"),
@@ -841,9 +777,7 @@ function ContentDocumentForm({
       </div>
 
       {state.status !== "idle" ? (
-        <AlertBanner variant={state.status === "success" ? "success" : "error"}>
-          {state.message}
-        </AlertBanner>
+        <AlertBanner variant={state.status === "success" ? "success" : "error"}>{state.message}</AlertBanner>
       ) : null}
 
       <div className="grid min-h-[430px] gap-6 lg:grid-cols-[190px_minmax(0,1fr)]">
@@ -868,9 +802,7 @@ function ContentDocumentForm({
         <section className="min-w-0">
           <div className="mb-4 flex items-center justify-between gap-3">
             <H3>{DOCUMENT_SECTIONS.find((section) => section.key === activeSection)?.label}</H3>
-            <Caption className="text-muted-foreground">
-              Drag to reorder · changes save as one document
-            </Caption>
+            <Caption className="text-muted-foreground">Drag to reorder · changes save as one document</Caption>
           </div>
           {activeSection === "howToUse" ? (
             <TextListEditor

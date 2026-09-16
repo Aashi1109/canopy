@@ -7,11 +7,7 @@ test("an Admin publishes a template that Paperwork can consume", async ({ page }
   const suffix = Date.now().toString(36);
   const name = `E2E Published ${suffix}`;
 
-  await new AuthPage(page).signIn(
-    E2E_ACCOUNTS.admin.email,
-    E2E_PASSWORD,
-    "http://localhost:3000/admin/templates",
-  );
+  await new AuthPage(page).signIn(E2E_ACCOUNTS.admin.email, E2E_PASSWORD, "http://localhost:3000/admin/templates");
   const create = page.locator("section").filter({ hasText: "Create template" });
   await create.getByLabel("Name").fill(name);
   await create.getByLabel("Slug").fill(`e2e-published-${suffix}`);
@@ -35,28 +31,20 @@ test("an Admin publishes a template that Paperwork can consume", async ({ page }
   ).toBeVisible();
 });
 
-test("an Admin publishes a dynamic expense form with bound custom fields", async ({
-  page,
-}, testInfo) => {
+test("an Admin publishes a dynamic expense form with bound custom fields", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop", "mutation runs once");
   test.slow();
   const suffix = Date.now().toString(36);
   const name = `E2E Expense ${suffix}`;
 
-  await new AuthPage(page).signIn(
-    E2E_ACCOUNTS.admin.email,
-    E2E_PASSWORD,
-    "http://localhost:3000/admin/templates",
-  );
+  await new AuthPage(page).signIn(E2E_ACCOUNTS.admin.email, E2E_PASSWORD, "http://localhost:3000/admin/templates");
   await page.getByRole("button", { name: "Advanced designer" }).click();
   const create = page.getByRole("dialog", {
     name: "Create an advanced template",
   });
   await create.getByLabel("Name").fill(name);
   await create.getByLabel("Slug").fill(`e2e-expense-${suffix}`);
-  await create
-    .getByLabel("Description")
-    .fill("Dynamic expense form created by the browser integration test.");
+  await create.getByLabel("Description").fill("Dynamic expense form created by the browser integration test.");
   await create.getByLabel("Document and canvas").selectOption("expense-report:LETTER");
   await create.getByRole("button", { name: "Open designer" }).click();
 
@@ -88,9 +76,7 @@ test("an Admin publishes a dynamic expense form with bound custom fields", async
   const repeaterLabel = customSection.getByLabel(/^custom\.table(?:-\d+)? label$/).last();
   await repeaterLabel.fill("Attendees");
   await repeaterLabel.locator("..").getByRole("button", { name: "Bind" }).click();
-  await customSection
-    .getByLabel("Attendees sample value")
-    .fill('[{"id":"attendee-1","value":"Avery"}]');
+  await customSection.getByLabel("Attendees sample value").fill('[{"id":"attendee-1","value":"Avery"}]');
 
   const previewPromise = page.waitForEvent("popup");
   await page.getByRole("button", { name: "Preview PDF" }).click();

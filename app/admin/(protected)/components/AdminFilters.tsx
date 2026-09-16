@@ -34,15 +34,11 @@ export function AdminFilters({
     [search.key, searchParams.get(search.key) ?? ""],
     ...selects.map((select) => {
       const value = searchParams.get(select.key);
-      return [
-        select.key,
-        select.options.find((option) => option.value === value)?.value ?? defaults[select.key],
-      ];
+      return [select.key, select.options.find((option) => option.value === value)?.value ?? defaults[select.key]];
     }),
   ]);
   const hasFilters =
-    hasDraftQuery ||
-    Object.keys(defaults).some((key) => filters[key] !== defaults[key] || searchParams.has(key));
+    hasDraftQuery || Object.keys(defaults).some((key) => filters[key] !== defaults[key] || searchParams.has(key));
   const setFormRef = useCallback((form: HTMLFormElement | null) => {
     formRef.current = form;
     if (!form) clearTimeout(timerRef.current);
@@ -65,14 +61,11 @@ export function AdminFilters({
     }
     const query = next.toString();
     if (query === searchParams.toString()) return;
-    focusRef.current = formRef.current.contains(document.activeElement)
-      ? document.activeElement?.id || null
-      : null;
+    focusRef.current = formRef.current.contains(document.activeElement) ? document.activeElement?.id || null : null;
     startTransition(() =>
-      router[replace ? "replace" : "push"](
-        `${pathname}${query ? `?${query}` : ""}${window.location.hash}`,
-        { scroll: false },
-      ),
+      router[replace ? "replace" : "push"](`${pathname}${query ? `?${query}` : ""}${window.location.hash}`, {
+        scroll: false,
+      }),
     );
   }
 
@@ -88,11 +81,7 @@ export function AdminFilters({
       }}
       ref={setFormRef}
     >
-      <Field
-        className="min-w-0 flex-[2_1_16rem]"
-        htmlFor={`admin-filter-${search.key}`}
-        label={search.label}
-      >
+      <Field className="min-w-0 flex-[2_1_16rem]" htmlFor={`admin-filter-${search.key}`} label={search.label}>
         <Input
           defaultValue={filters[search.key]}
           disabled={isPending}

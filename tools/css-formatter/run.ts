@@ -31,9 +31,7 @@ function sortDeclarations(css: string): string {
     const keepFinalSemicolon = declarations.at(-1)?.trimEnd().endsWith(";") ?? false;
     declarations
       .map((line) => line.replace(/;\s*$/, ""))
-      .sort((left, right) =>
-        left.trimStart().localeCompare(right.trimStart(), "en", { sensitivity: "base" }),
-      )
+      .sort((left, right) => left.trimStart().localeCompare(right.trimStart(), "en", { sensitivity: "base" }))
       .forEach((line, declarationIndex, sorted) => {
         const semicolon = declarationIndex < sorted.length - 1 || keepFinalSemicolon ? ";" : "";
         output.push(`${line}${semicolon}`);
@@ -73,8 +71,7 @@ function wrapLines(css: string, width: number, indent: string): string {
 }
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
-  const indent =
-    ctx.settings.indentWidth === "4" ? "    " : ctx.settings.indentWidth === "tab" ? "\t" : "  ";
+  const indent = ctx.settings.indentWidth === "4" ? "    " : ctx.settings.indentWidth === "tab" ? "\t" : "  ";
   let text = formatDelimitedCode(ctx.input.text, "css");
   if (ctx.settings.propertyOrder === "alphabetical") text = sortDeclarations(text);
   text = applyIndentation(text, indent);

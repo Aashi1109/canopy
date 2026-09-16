@@ -89,8 +89,7 @@ export function getInitialBlankInvoice(): InvoiceData {
     },
     notes: {
       notes: "Services rendered cover design wireframes and production deployment.",
-      terms:
-        "Payment is due by the due date shown above. Please contact us with any questions about this invoice.",
+      terms: "Payment is due by the due date shown above. Please contact us with any questions about this invoice.",
     },
     template: "classic",
   };
@@ -169,14 +168,12 @@ export function getSampleInvoice(): InvoiceData {
       instructions:
         "Direct bank wire to Chase Bank - Route: 121000248, Acct Num: 987654321. Venmo/PayPal via billing@blueridgeweb.com.",
       lateFeeNote: "Late payments are subject to a 1.5% structural monthly interest fee.",
-      thankYouNote:
-        "Thank you for your business. It was a pleasure collaborating with the Acme team!",
+      thankYouNote: "Thank you for your business. It was a pleasure collaborating with the Acme team!",
     },
     notes: {
       notes:
         "Maintenance covers performance reporting & image size compressions. Landing page design includes mobile-responsive components.",
-      terms:
-        "Payment is due by the due date shown above. Please contact us with any questions about this invoice.",
+      terms: "Payment is due by the due date shown above. Please contact us with any questions about this invoice.",
     },
     template: "modern",
   };

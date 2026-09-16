@@ -282,13 +282,10 @@ const invoiceFields = [
     valueType: "number",
     sensitiveData: "financial",
   }),
-  field(
-    "paymentInstructions",
-    "Payment instructions",
-    "payment",
-    "Pay by ACH using the reference above.",
-    { control: "textarea", sensitiveData: "financial" },
-  ),
+  field("paymentInstructions", "Payment instructions", "payment", "Pay by ACH using the reference above.", {
+    control: "textarea",
+    sensitiveData: "financial",
+  }),
   field("notes", "Notes", "notes", "Thank you for your business.", {
     control: "textarea",
   }),
@@ -717,15 +714,9 @@ const quarterlyTaxFields = [
     computationRequired: true,
     sensitiveData: "tax",
   }),
-  field(
-    "assumptions",
-    "Additional assumptions",
-    "assumptions",
-    "Income is earned evenly through the year.",
-    {
-      control: "textarea",
-    },
-  ),
+  field("assumptions", "Additional assumptions", "assumptions", "Income is earned evenly through the year.", {
+    control: "textarea",
+  }),
   computed("adjustedGrossIncome", "Adjusted gross income", "summary", "$65,520.00"),
   computed("taxableIncome", "Taxable income", "summary", "$50,920.00"),
   computed("incomeTax", "Federal income tax", "summary", "$6,053.00"),
@@ -757,16 +748,10 @@ const w9Fields = [
     control: "email",
     sensitiveData: "contact",
   }),
-  field(
-    "requesterAddress",
-    "Requester address",
-    "requester",
-    "42 Market Street, Austin, TX 78701",
-    {
-      control: "textarea",
-      sensitiveData: "contact",
-    },
-  ),
+  field("requesterAddress", "Requester address", "requester", "42 Market Street, Austin, TX 78701", {
+    control: "textarea",
+    sensitiveData: "contact",
+  }),
   field("contractorName", "Contractor legal name", "contractor", "Devon Lane", {
     required: true,
     sensitiveData: "contact",
@@ -810,12 +795,7 @@ const w9Fields = [
   field("requestStatus", "Request status", "status", "Requested", {
     control: "select",
   }),
-  reference(
-    "officialW9Url",
-    "Official IRS W-9",
-    "compliance",
-    "https://www.irs.gov/pub/irs-pdf/fw9.pdf",
-  ),
+  reference("officialW9Url", "Official IRS W-9", "compliance", "https://www.irs.gov/pub/irs-pdf/fw9.pdf"),
   system(
     "requestOnlyDisclaimer",
     "Request-only privacy disclaimer",
@@ -904,21 +884,10 @@ const necFields = [
     ],
     { computationRequired: true, sensitiveData: "tax" },
   ),
-  reference(
-    "vendorReferences",
-    "Vendor and W-9 references",
-    "references",
-    "Devon Dev LLC · W-9 received",
-  ),
-  reference(
-    "maskedTinReferences",
-    "Masked TIN references",
-    "references",
-    "Devon Dev LLC · •••• 4821",
-    {
-      sensitiveData: "masked-tax-id",
-    },
-  ),
+  reference("vendorReferences", "Vendor and W-9 references", "references", "Devon Dev LLC · W-9 received"),
+  reference("maskedTinReferences", "Masked TIN references", "references", "Devon Dev LLC · •••• 4821", {
+    sensitiveData: "masked-tax-id",
+  }),
   field("filingStatus", "Filing status", "status", "Review required", {
     control: "select",
     sensitiveData: "tax",
@@ -955,15 +924,7 @@ export const DOCUMENT_DEFINITIONS = [
       ["payment", "Payment information"],
       ["notes", "Notes and terms"],
     ],
-    requiredBindings: [
-      "businessName",
-      "invoiceNumber",
-      "customerName",
-      "lineItems",
-      "subtotal",
-      "total",
-      "balanceDue",
-    ],
+    requiredBindings: ["businessName", "invoiceNumber", "customerName", "lineItems", "subtotal", "total", "balanceDue"],
     complianceMode: "normal",
   }),
   definition({
@@ -983,14 +944,7 @@ export const DOCUMENT_DEFINITIONS = [
       ["refund", "Refund"],
       ["notes", "Notes and footer"],
     ],
-    requiredBindings: [
-      "businessName",
-      "receiptNumber",
-      "lineItems",
-      "subtotal",
-      "total",
-      "balanceDue",
-    ],
+    requiredBindings: ["businessName", "receiptNumber", "lineItems", "subtotal", "total", "balanceDue"],
     complianceMode: "normal",
   }),
   definition({
@@ -1027,13 +981,7 @@ export const DOCUMENT_DEFINITIONS = [
       ["fuel", "Fuel records"],
       ["notes", "Notes"],
     ],
-    requiredBindings: [
-      "taxYear",
-      "vehicleDescription",
-      "trips",
-      "totalMiles",
-      "standardMileageDeduction",
-    ],
+    requiredBindings: ["taxYear", "vehicleDescription", "trips", "totalMiles", "standardMileageDeduction"],
     complianceMode: "internal-tax-report",
   }),
   definition({
@@ -1113,9 +1061,7 @@ export function getDocumentDefinition(documentType: DocumentType): DocumentDefin
   return DOCUMENT_DEFINITION_BY_TYPE[documentType];
 }
 
-export const LEGACY_FIELD_ALIASES: Readonly<
-  Partial<Record<DocumentType, Readonly<Record<string, string>>>>
-> = {
+export const LEGACY_FIELD_ALIASES: Readonly<Partial<Record<DocumentType, Readonly<Record<string, string>>>>> = {
   invoice: {
     documentNumber: "invoiceNumber",
     invoiceNumber: "invoiceNumber",

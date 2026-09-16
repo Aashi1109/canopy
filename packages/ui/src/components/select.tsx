@@ -44,15 +44,13 @@ function hasNativeOptions(children: React.ReactNode): boolean {
 function textContent(node: React.ReactNode): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(textContent).join("");
-  if (React.isValidElement<{ children?: React.ReactNode }>(node))
-    return textContent(node.props.children);
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) return textContent(node.props.children);
   return "";
 }
 
 function renderNativeOptions(children: React.ReactNode): React.ReactNode {
   return React.Children.map(children, (child, index) => {
-    if (!React.isValidElement<React.ComponentProps<"option"> & { label?: string }>(child))
-      return child;
+    if (!React.isValidElement<React.ComponentProps<"option"> & { label?: string }>(child)) return child;
     if (child.type === React.Fragment) return renderNativeOptions(child.props.children);
     if (child.type === "optgroup") {
       return (
@@ -66,11 +64,7 @@ function renderNativeOptions(children: React.ReactNode): React.ReactNode {
     const label = child.props.label ?? textContent(child.props.children);
     const value = String(child.props.value ?? label);
     return (
-      <SelectItem
-        disabled={child.props.disabled}
-        key={child.key ?? index}
-        value={value || EMPTY_VALUE}
-      >
+      <SelectItem disabled={child.props.disabled} key={child.key ?? index} value={value || EMPTY_VALUE}>
         {child.props.children ?? child.props.label}
       </SelectItem>
     );
@@ -80,10 +74,7 @@ function renderNativeOptions(children: React.ReactNode): React.ReactNode {
 function findEmptyLabel(children: React.ReactNode): React.ReactNode {
   for (const child of React.Children.toArray(children)) {
     if (!React.isValidElement<React.ComponentProps<"option"> & { label?: string }>(child)) continue;
-    if (
-      child.type === "option" &&
-      String(child.props.value ?? textContent(child.props.children)) === ""
-    ) {
+    if (child.type === "option" && String(child.props.value ?? textContent(child.props.children)) === "") {
       return child.props.children ?? child.props.label;
     }
     const nested = findEmptyLabel(child.props.children);
@@ -95,10 +86,7 @@ function findEmptyLabel(children: React.ReactNode): React.ReactNode {
 function findOptionLabel(children: React.ReactNode, selectedValue: string): React.ReactNode {
   for (const child of React.Children.toArray(children)) {
     if (!React.isValidElement<React.ComponentProps<"option"> & { label?: string }>(child)) continue;
-    if (
-      child.type === "option" &&
-      String(child.props.value ?? textContent(child.props.children)) === selectedValue
-    ) {
+    if (child.type === "option" && String(child.props.value ?? textContent(child.props.children)) === selectedValue) {
       return child.props.children ?? child.props.label;
     }
     const nested = findOptionLabel(child.props.children, selectedValue);
@@ -160,10 +148,7 @@ function LegacySelect({
   );
 }
 
-type SelectProps = Omit<
-  React.ComponentProps<typeof SelectPrimitive.Root>,
-  "children" | "defaultValue" | "value"
-> & {
+type SelectProps = Omit<React.ComponentProps<typeof SelectPrimitive.Root>, "children" | "defaultValue" | "value"> & {
   children?: React.ReactNode;
   className?: string;
   defaultValue?: React.ComponentProps<"select">["defaultValue"];
@@ -180,12 +165,7 @@ type SelectProps = Omit<
 
 function Select(props: SelectProps) {
   if (hasNativeOptions(props.children)) return <LegacySelect {...(props as LegacySelectProps)} />;
-  return (
-    <SelectPrimitive.Root
-      data-slot="select"
-      {...(props as React.ComponentProps<typeof SelectPrimitive.Root>)}
-    />
-  );
+  return <SelectPrimitive.Root data-slot="select" {...(props as React.ComponentProps<typeof SelectPrimitive.Root>)} />;
 }
 
 function SelectGroup(props: React.ComponentProps<typeof SelectPrimitive.Group>) {
@@ -266,11 +246,7 @@ function SelectLabel({ className, ...props }: React.ComponentProps<typeof Select
   );
 }
 
-function SelectItem({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Item>) {
+function SelectItem({ className, children, ...props }: React.ComponentProps<typeof SelectPrimitive.Item>) {
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
@@ -288,10 +264,7 @@ function SelectItem({
   );
 }
 
-function SelectSeparator({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Separator>) {
+function SelectSeparator({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.Separator>) {
   return (
     <SelectPrimitive.Separator
       data-slot="select-separator"
@@ -301,10 +274,7 @@ function SelectSeparator({
   );
 }
 
-function SelectScrollUpButton({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.ScrollUpButton>) {
+function SelectScrollUpButton({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.ScrollUpButton>) {
   return (
     <SelectPrimitive.ScrollUpButton
       data-slot="select-scroll-up-button"

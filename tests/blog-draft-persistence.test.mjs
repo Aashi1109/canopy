@@ -35,9 +35,7 @@ test("editor drafts reach React Server Actions during autosave and manual save w
     if (previousWebpackRequire === undefined) delete globalThis.__webpack_require__;
     else globalThis.__webpack_require__ = previousWebpackRequire;
   });
-  const { encodeReply } = createRequire(import.meta.url)(
-    "next/dist/compiled/react-server-dom-webpack/client.browser",
-  );
+  const { encodeReply } = createRequire(import.meta.url)("next/dist/compiled/react-server-dom-webpack/client.browser");
   const schema = getSchema([...blogFormattingExtensions, StarterKit]);
   const document = {
     ...createBlogDocument("I am the best"),
@@ -248,10 +246,7 @@ test("recovery saves use the current version and remove backup only when all loc
 
 test("invalid or unavailable session storage does not block normal saves", async (t) => {
   const { draft } = setup(t);
-  assert.equal(
-    draft.attachStorage({ getItem: () => "{invalid", setItem() {}, removeItem() {} }, "post"),
-    null,
-  );
+  assert.equal(draft.attachStorage({ getItem: () => "{invalid", setItem() {}, removeItem() {} }, "post"), null);
   assert.equal(
     draft.attachStorage(
       {

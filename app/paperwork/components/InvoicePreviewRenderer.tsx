@@ -19,11 +19,7 @@ interface InvoicePreviewRendererProps {
   isPrintMode?: boolean;
 }
 
-export default function InvoicePreviewRenderer({
-  data,
-  template,
-  isPrintMode = false,
-}: InvoicePreviewRendererProps) {
+export default function InvoicePreviewRenderer({ data, template, isPrintMode = false }: InvoicePreviewRendererProps) {
   const totals = calculateInvoiceTotals(data);
   const { config, layoutFamily } = template;
   const {
@@ -105,8 +101,7 @@ export default function InvoicePreviewRenderer({
           ? "text-3xl lg:text-4xl"
           : "text-xl md:text-2xl";
 
-  const logoSizePixels =
-    header.logoSize === "sm" ? "h-10" : header.logoSize === "lg" ? "h-16" : "h-12";
+  const logoSizePixels = header.logoSize === "sm" ? "h-10" : header.logoSize === "lg" ? "h-16" : "h-12";
 
   return (
     <div
@@ -116,8 +111,7 @@ export default function InvoicePreviewRenderer({
         ...styles.rootStyle,
         borderColor: page.showPageBorder ? theme.primaryColor : theme.borderColor,
         minHeight: "297mm",
-        padding:
-          page.margin === "compact" ? "1.2rem" : page.margin === "spacious" ? "3rem" : "2.2rem",
+        padding: page.margin === "compact" ? "1.2rem" : page.margin === "spacious" ? "3rem" : "2.2rem",
         backgroundColor: theme.surfaceColor,
       }}
     >
@@ -150,10 +144,7 @@ export default function InvoicePreviewRenderer({
           <div className="flex flex-col gap-4">
             {/* Header Layout: bold (colored band) */}
             {layoutFamily === "bold" && (
-              <div
-                className="p-6 -mx-9 -mt-9 text-white space-y-4 mb-4 font-sans"
-                style={styles.primaryBg}
-              >
+              <div className="p-6 -mx-9 -mt-9 text-white space-y-4 mb-4 font-sans" style={styles.primaryBg}>
                 <div className="flex justify-between items-center">
                   {visibility.showLogo && data.business.logo ? (
                     <img
@@ -163,9 +154,7 @@ export default function InvoicePreviewRenderer({
                       referrerPolicy="no-referrer"
                     />
                   ) : (
-                    <span className="font-extrabold tracking-tight text-lg">
-                      ★ {data.business.name}
-                    </span>
+                    <span className="font-extrabold tracking-tight text-lg">★ {data.business.name}</span>
                   )}
                   {header.showInvoiceTitle && (
                     <span className="text-xl font-bold tracking-widest uppercase">
@@ -175,9 +164,7 @@ export default function InvoicePreviewRenderer({
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-xs pt-2 border-t border-white/20">
                   <div>
-                    <h4 className="font-bold uppercase tracking-wider text-white/70 text-[10px]">
-                      {labels.from}
-                    </h4>
+                    <h4 className="font-bold uppercase tracking-wider text-white/70 text-[10px]">{labels.from}</h4>
                     <p className="font-bold text-sm">{data.business.name}</p>
                     {hasBizContact && <p>{data.business.contactName}</p>}
                     {hasBizEmail && <p>{data.business.email}</p>}
@@ -185,9 +172,7 @@ export default function InvoicePreviewRenderer({
                   <div className="text-right">
                     <p className="font-bold font-mono">#{data.invoice.invoiceNumber || "INV-1"}</p>
                     {hasInvoiceDate && <p>Date: {data.invoice.invoiceDate}</p>}
-                    {hasDueDate && (
-                      <p className="font-semibold text-rose-200">Due: {data.invoice.dueDate}</p>
-                    )}
+                    {hasDueDate && <p className="font-semibold text-rose-200">Due: {data.invoice.dueDate}</p>}
                   </div>
                 </div>
               </div>
@@ -215,10 +200,7 @@ export default function InvoicePreviewRenderer({
                   ) : null}
 
                   {businessBlock.showBusinessName && (
-                    <h1
-                      className={`font-black tracking-tight ${headingSizeClass}`}
-                      style={styles.primaryColorText}
-                    >
+                    <h1 className={`font-black tracking-tight ${headingSizeClass}`} style={styles.primaryColorText}>
                       {data.business.name || "[Business Name]"}
                     </h1>
                   )}
@@ -226,9 +208,7 @@ export default function InvoicePreviewRenderer({
                   {/* Seller Contacts */}
                   {layoutFamily !== "compact" && (
                     <div className="text-xs space-y-0.5" style={styles.mutedText}>
-                      {hasBizContact && (
-                        <p className="font-semibold text-slate-800">{data.business.contactName}</p>
-                      )}
+                      {hasBizContact && <p className="font-semibold text-slate-800">{data.business.contactName}</p>}
                       {hasBizAddr && (
                         <p>
                           {data.business.addressLine1}
@@ -237,16 +217,13 @@ export default function InvoicePreviewRenderer({
                       )}
                       {(data.business.city || data.business.state || data.business.zipCode) && (
                         <p>
-                          {data.business.city || ""}, {data.business.state || ""}{" "}
-                          {data.business.zipCode || ""}
+                          {data.business.city || ""}, {data.business.state || ""} {data.business.zipCode || ""}
                         </p>
                       )}
                       {hasBizEmail && <p>{data.business.email}</p>}
                       {hasBizPhone && <p>{data.business.phone}</p>}
                       {hasBizWeb && <p className="font-semibold">{data.business.website}</p>}
-                      {hasBizTaxId && (
-                        <p className="font-mono text-[10px]">Tax ID: {data.business.taxId}</p>
-                      )}
+                      {hasBizTaxId && <p className="font-mono text-[10px]">Tax ID: {data.business.taxId}</p>}
                     </div>
                   )}
                 </div>
@@ -270,9 +247,7 @@ export default function InvoicePreviewRenderer({
                   )}
 
                   <div className="text-xs space-y-1 mt-2 text-slate-700">
-                    <p className="font-bold text-slate-900 text-sm">
-                      #{data.invoice.invoiceNumber || "INV-YYYY-001"}
-                    </p>
+                    <p className="font-bold text-slate-900 text-sm">#{data.invoice.invoiceNumber || "INV-YYYY-001"}</p>
                     {hasInvoiceDate && (
                       <p>
                         {labels.invoiceDate || "Issue ID"}:{" "}
@@ -304,18 +279,13 @@ export default function InvoicePreviewRenderer({
             {/* Business Block (Fallback or secondary layout position) */}
             {layoutFamily === "compact" && (
               <div className="space-y-1">
-                <span
-                  className="text-[10px] font-bold uppercase tracking-wider block"
-                  style={styles.mutedText}
-                >
+                <span className="text-[10px] font-bold uppercase tracking-wider block" style={styles.mutedText}>
                   {labels.from || "Seller Details"}
                 </span>
                 <p className="font-bold text-slate-900 text-sm">{data.business.name}</p>
                 {hasBizEmail && <p className="text-xs text-slate-600">{data.business.email}</p>}
                 {hasBizPhone && <p className="text-xs text-slate-600">{data.business.phone}</p>}
-                {hasBizTaxId && (
-                  <p className="text-xs font-mono text-slate-500">EIN: {data.business.taxId}</p>
-                )}
+                {hasBizTaxId && <p className="text-xs font-mono text-slate-500">EIN: {data.business.taxId}</p>}
               </div>
             )}
 
@@ -333,18 +303,11 @@ export default function InvoicePreviewRenderer({
                     : undefined
                 }
               >
-                <span
-                  className="text-[10px] font-bold uppercase tracking-widest block"
-                  style={styles.mutedText}
-                >
+                <span className="text-[10px] font-bold uppercase tracking-widest block" style={styles.mutedText}>
                   {labels.billTo || "Billed To"}
                 </span>
-                <p className="font-extrabold text-slate-900 text-sm">
-                  {data.client.name || "[Client Name]"}
-                </p>
-                {hasClientCompany && (
-                  <p className="text-xs font-semibold text-slate-700">{data.client.company}</p>
-                )}
+                <p className="font-extrabold text-slate-900 text-sm">{data.client.name || "[Client Name]"}</p>
+                {hasClientCompany && <p className="text-xs font-semibold text-slate-700">{data.client.company}</p>}
                 {hasClientAddr && (
                   <p className="text-xs text-slate-600">
                     {data.client.addressLine1}
@@ -401,9 +364,7 @@ export default function InvoicePreviewRenderer({
                   style={styles.tableHeaderBg}
                 >
                   <th className="py-2.5 px-2 font-bold text-[10px] uppercase tracking-wider text-left">
-                    {lineItemsTable.descriptionLabel ||
-                      labels.notes ||
-                      "Description / Task Deliverables"}
+                    {lineItemsTable.descriptionLabel || labels.notes || "Description / Task Deliverables"}
                   </th>
                   <th className="py-2.5 font-bold text-[10px] uppercase tracking-wider text-center w-16">
                     {lineItemsTable.quantityLabel || "Qty"}
@@ -455,9 +416,7 @@ export default function InvoicePreviewRenderer({
                             </span>
                           )}
                         </td>
-                        <td className="py-3 text-center font-mono align-top text-slate-600">
-                          {qty}
-                        </td>
+                        <td className="py-3 text-center font-mono align-top text-slate-600">{qty}</td>
                         <td className="py-3 text-right font-mono align-top text-slate-600">
                           {formatCurrency(price, "USD")}
                         </td>
@@ -497,8 +456,7 @@ export default function InvoicePreviewRenderer({
                     className="text-[11px] leading-relaxed whitespace-pre-wrap p-3 rounded-lg border text-slate-600"
                     style={{
                       borderColor: theme.borderColor,
-                      backgroundColor:
-                        paymentBlock.style === "muted" ? theme.backgroundColor : undefined,
+                      backgroundColor: paymentBlock.style === "muted" ? theme.backgroundColor : undefined,
                     }}
                   >
                     {data.payment.instructions}
@@ -517,9 +475,7 @@ export default function InvoicePreviewRenderer({
               {totalsBlock.showSubtotal && (
                 <div className="flex justify-between font-medium">
                   <span style={styles.mutedText}>{labels.subtotal || "Subtotal"}:</span>
-                  <span className="font-mono text-slate-900 text-right">
-                    {formatCurrency(totals.subtotal, "USD")}
-                  </span>
+                  <span className="font-mono text-slate-900 text-right">{formatCurrency(totals.subtotal, "USD")}</span>
                 </div>
               )}
 
@@ -527,26 +483,18 @@ export default function InvoicePreviewRenderer({
                 <div className="flex justify-between text-emerald-600">
                   <span>
                     {labels.discount || "Discount"}{" "}
-                    {data.totalsConfig.discountType === "percent"
-                      ? `(${data.totalsConfig.discountValue}%)`
-                      : ""}
-                    :
+                    {data.totalsConfig.discountType === "percent" ? `(${data.totalsConfig.discountValue}%)` : ""}:
                   </span>
-                  <span className="font-mono text-right">
-                    - {formatCurrency(totals.discountAmount, "USD")}
-                  </span>
+                  <span className="font-mono text-right">- {formatCurrency(totals.discountAmount, "USD")}</span>
                 </div>
               )}
 
               {totalsBlock.showTax && totals.taxAmount > 0 && (
                 <div className="flex justify-between">
                   <span className="truncate" style={styles.mutedText}>
-                    {data.totalsConfig.taxLabel || labels.tax || "Sales Tax"} (
-                    {data.totalsConfig.taxRate}%):
+                    {data.totalsConfig.taxLabel || labels.tax || "Sales Tax"} ({data.totalsConfig.taxRate}%):
                   </span>
-                  <span className="font-mono text-slate-900 text-right">
-                    {formatCurrency(totals.taxAmount, "USD")}
-                  </span>
+                  <span className="font-mono text-slate-900 text-right">{formatCurrency(totals.taxAmount, "USD")}</span>
                 </div>
               )}
 
@@ -570,9 +518,7 @@ export default function InvoicePreviewRenderer({
               {totalsBlock.showAmountPaid && totals.amountPaid > 0 && (
                 <div className="flex justify-between text-slate-500">
                   <span>{labels.amountPaid || "Amount Paid"}:</span>
-                  <span className="font-mono text-right">
-                    - {formatCurrency(totals.amountPaid, "USD")}
-                  </span>
+                  <span className="font-mono text-right">- {formatCurrency(totals.amountPaid, "USD")}</span>
                 </div>
               )}
 
@@ -596,10 +542,7 @@ export default function InvoicePreviewRenderer({
                   <span
                     className="font-mono text-lg font-black text-right"
                     style={{
-                      color:
-                        totalsBlock.style === "highlight-total"
-                          ? theme.surfaceColor
-                          : theme.primaryColor,
+                      color: totalsBlock.style === "highlight-total" ? theme.surfaceColor : theme.primaryColor,
                     }}
                   >
                     {formatCurrency(totals.balanceDue, "USD")}
@@ -615,15 +558,12 @@ export default function InvoicePreviewRenderer({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {visibility.showNotes && data.notes.notes && (
               <div className="space-y-1">
-                <span className="font-bold text-slate-700 block">
-                  {labels.notes || "Notes & Details"}:
-                </span>
+                <span className="font-bold text-slate-700 block">{labels.notes || "Notes & Details"}:</span>
                 <p
                   className="p-2.5 rounded border text-slate-600 leading-relaxed"
                   style={{
                     borderColor: theme.borderColor,
-                    backgroundColor:
-                      notesBlock.style === "muted" ? theme.backgroundColor : undefined,
+                    backgroundColor: notesBlock.style === "muted" ? theme.backgroundColor : undefined,
                   }}
                 >
                   {data.notes.notes}
@@ -632,15 +572,12 @@ export default function InvoicePreviewRenderer({
             )}
             {visibility.showTerms && data.notes.terms && (
               <div className="space-y-1">
-                <span className="font-bold text-slate-700 block">
-                  {labels.terms || "Terms & Arrangements"}:
-                </span>
+                <span className="font-bold text-slate-700 block">{labels.terms || "Terms & Arrangements"}:</span>
                 <p
                   className="p-2.5 rounded border text-slate-600 leading-relaxed"
                   style={{
                     borderColor: theme.borderColor,
-                    backgroundColor:
-                      notesBlock.style === "muted" ? theme.backgroundColor : undefined,
+                    backgroundColor: notesBlock.style === "muted" ? theme.backgroundColor : undefined,
                   }}
                 >
                   {data.notes.terms}
@@ -661,9 +598,7 @@ export default function InvoicePreviewRenderer({
               </div>
               <div className="sm:text-right">
                 {notesBlock.showThankYouNote && data.payment.thankYouNote && (
-                  <p className="font-extrabold text-slate-800 italic">
-                    {data.payment.thankYouNote}
-                  </p>
+                  <p className="font-extrabold text-slate-800 italic">{data.payment.thankYouNote}</p>
                 )}
               </div>
             </div>
@@ -678,13 +613,9 @@ export default function InvoicePreviewRenderer({
           style={{ borderColor: theme.borderColor }}
         >
           <span>Saved & Generated via PaperworkKit</span>
-          <p className="text-center italic my-1 sm:my-0">
-            {footer.text || "Thank you for your cooperation!"}
-          </p>
+          <p className="text-center italic my-1 sm:my-0">{footer.text || "Thank you for your cooperation!"}</p>
           {footer.showGeneratedWith && (
-            <span className="font-bold uppercase tracking-wider text-slate-400">
-              US-Focused PDF Draft
-            </span>
+            <span className="font-bold uppercase tracking-wider text-slate-400">US-Focused PDF Draft</span>
           )}
         </div>
       )}

@@ -6,8 +6,7 @@ import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { transformSync } from "next/dist/build/swc/index.js";
 
-const pageUrl = new URL("../app/admin/(protected)/blog/[id]/preview/page.tsx", import.meta.url)
-  .href;
+const pageUrl = new URL("../app/admin/(protected)/blog/[id]/preview/page.tsx", import.meta.url).href;
 const isPage = (url) => url?.startsWith("file:") && fileURLToPath(url) === fileURLToPath(pageUrl);
 const state = { calls: [], denied: false, result: null };
 globalThis.__blogPreviewTest = state;
@@ -18,8 +17,7 @@ const stub = (source) => ({
 const hooks = registerHooks({
   resolve(specifier, context, next) {
     if (isPage(context.parentURL)) {
-      if (specifier === "next/navigation")
-        return stub('export function notFound(){throw new Error("NOT_FOUND")}');
+      if (specifier === "next/navigation") return stub('export function notFound(){throw new Error("NOT_FOUND")}');
       if (specifier === "@/lib/admin/access")
         return stub(
           'export async function requirePagePermission(...args){const s=globalThis.__blogPreviewTest;s.calls.push(["permission",...args]);if(s.denied)throw new Error("DENIED");return {user:{id:"admin"}};}',
@@ -33,10 +31,8 @@ const hooks = registerHooks({
             )
             .join("\n"),
         );
-      if (specifier === "next/link")
-        return stub("export default function Link({children}){return children}");
-      if (specifier === "@smarttools/ui")
-        return stub("export function Button({children}){return children}");
+      if (specifier === "next/link") return stub("export default function Link({children}){return children}");
+      if (specifier === "@smarttools/ui") return stub("export function Button({children}){return children}");
       if (specifier === "@/components/blog/BlogArticle")
         return stub("export function BlogArticle({document}){return document.title}");
     }

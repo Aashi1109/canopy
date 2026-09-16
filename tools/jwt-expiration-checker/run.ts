@@ -36,9 +36,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const lines = [
     `Status: ${state}`,
     expiration === undefined ? "Expires: not specified" : `Expires: ${formatDate(expiration)}`,
-    typeof payload.iat === "number"
-      ? `Issued: ${formatDate(payload.iat)}`
-      : "Issued: not specified",
+    typeof payload.iat === "number" ? `Issued: ${formatDate(payload.iat)}` : "Issued: not specified",
   ];
   if (ctx.settings.decodePayload === true) {
     lines.push("Payload:", JSON.stringify(payload, null, 2));

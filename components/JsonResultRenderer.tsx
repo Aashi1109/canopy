@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  type KeyboardEvent,
-  type ReactElement,
-  type ReactNode,
-  useEffect,
-  useId,
-  useMemo,
-  useState,
-} from "react";
+import { type KeyboardEvent, type ReactElement, type ReactNode, useEffect, useId, useMemo, useState } from "react";
 import {
   Muted,
   Strong,
@@ -85,14 +77,7 @@ type InternalJsonEditor = JsonEditorSnapshot & {
 const JSON_TREE_TYPOGRAPHY = `${typographyStyles.codeBlock} whitespace-normal`;
 const JSON_TYPE_BADGE = `${typographyStyles.overline} inline-flex shrink-0 items-center rounded-sm px-[5px] py-0.5`;
 
-const JSON_VALUE_TYPES: readonly JsonValueType[] = [
-  "string",
-  "number",
-  "boolean",
-  "null",
-  "object",
-  "array",
-];
+const JSON_VALUE_TYPES: readonly JsonValueType[] = ["string", "number", "boolean", "null", "object", "array"];
 
 export type JsonResultView = "tree" | "code" | "form" | "read-only";
 export type JsonEditorController = {
@@ -156,11 +141,7 @@ function pathLabel(path: JsonTreePath) {
         .replaceAll(".[", "[");
 }
 
-function updateJsonAtPath(
-  value: unknown,
-  path: JsonTreePath,
-  update: (current: unknown) => unknown,
-): unknown {
+function updateJsonAtPath(value: unknown, path: JsonTreePath, update: (current: unknown) => unknown): unknown {
   if (path.length === 0) return update(value);
   const [segment, ...rest] = path;
   if (Array.isArray(value) && typeof segment === "number") {
@@ -222,9 +203,7 @@ function jsonValueFromDraft(type: JsonValueType, draft: string): unknown {
 function convertJsonValue(value: unknown, type: JsonValueType): unknown {
   if (jsonValueType(value) === type) return value;
   if (type === "string") {
-    return value !== null && typeof value === "object"
-      ? JSON.stringify(value)
-      : String(value ?? "");
+    return value !== null && typeof value === "object" ? JSON.stringify(value) : String(value ?? "");
   }
   if (type === "number") {
     const number = Number(value);
@@ -239,13 +218,7 @@ function convertJsonValue(value: unknown, type: JsonValueType): unknown {
   return {};
 }
 
-function insertJsonNode(
-  value: unknown,
-  parentPath: JsonTreePath,
-  child: unknown,
-  key: string,
-  index: number,
-) {
+function insertJsonNode(value: unknown, parentPath: JsonTreePath, child: unknown, key: string, index: number) {
   return updateJsonAtPath(value, parentPath, (parent) => {
     if (Array.isArray(parent)) {
       const next = [...parent];
@@ -277,14 +250,7 @@ function JsonScalarEditor({
   useEffect(() => setDraft(String(value ?? "")), [value]);
 
   if (type === "boolean") {
-    return (
-      <Switch
-        aria-label={`Set ${label}`}
-        checked={Boolean(value)}
-        onCheckedChange={onChange}
-        size="xs"
-      />
-    );
+    return <Switch aria-label={`Set ${label}`} checked={Boolean(value)} onCheckedChange={onChange} size="xs" />;
   }
   if (type === "null") {
     return <span className="text-violet-700 dark:text-violet-400">null</span>;
@@ -314,9 +280,7 @@ function JsonScalarEditor({
         const next = event.target.value;
         setDraft(next);
         onErrorChange(
-          type === "number" && (!next.trim() || !Number.isFinite(Number(next)))
-            ? "Enter a valid number."
-            : null,
+          type === "number" && (!next.trim() || !Number.isFinite(Number(next))) ? "Enter a valid number." : null,
         );
       }}
       onKeyDown={(event) => {
@@ -368,15 +332,9 @@ function JsonNodeActionPopover({
     : 0;
   const currentKey = typeof path.at(-1) === "string" ? (path.at(-1) as string) : label;
   const defaultKey =
-    action === "edit-key"
-      ? currentKey
-      : objectParent
-        ? uniqueJsonKey(parentValue as Record<string, unknown>)
-        : "";
+    action === "edit-key" ? currentKey : objectParent ? uniqueJsonKey(parentValue as Record<string, unknown>) : "";
   const [open, setOpen] = useState(false);
-  const [nextType, setNextType] = useState<JsonValueType>(
-    action === "change-type" ? jsonValueType(value) : "string",
-  );
+  const [nextType, setNextType] = useState<JsonValueType>(action === "change-type" ? jsonValueType(value) : "string");
   const [draft, setDraft] = useState("");
   const [propertyKey, setPropertyKey] = useState(defaultKey);
   const [insertIndex, setInsertIndex] = useState(defaultInsertIndex);
@@ -398,14 +356,8 @@ function JsonNodeActionPopover({
   const sameKey = action === "edit-key" && propertyKey === currentKey;
   const ActionIcon = action === "add" ? Plus : action === "edit-key" ? PencilLine : Replace;
   const addActionLabel = arrayParent ? "Add item" : "Add property";
-  const triggerLabel =
-    action === "add" ? addActionLabel : action === "edit-key" ? "Edit key" : "Change type";
-  const heading =
-    action === "add"
-      ? addActionLabel
-      : action === "edit-key"
-        ? "Edit object key"
-        : "Change value type";
+  const triggerLabel = action === "add" ? addActionLabel : action === "edit-key" ? "Edit key" : "Change type";
+  const heading = action === "add" ? addActionLabel : action === "edit-key" ? "Edit object key" : "Change value type";
   const objectPath = `root.${pathLabel(path)}`;
   const keyAvailable = action === "edit-key" && !keyError && !sameKey;
 
@@ -418,20 +370,12 @@ function JsonNodeActionPopover({
 
   function confirm() {
     if (action === "change-type") {
-      editor.onValueChange(
-        updateJsonAtPath(rootValue, path, (current) => convertJsonValue(current, nextType)),
-      );
+      editor.onValueChange(updateJsonAtPath(rootValue, path, (current) => convertJsonValue(current, nextType)));
     } else if (action === "edit-key" && objectParent && !keyError && !sameKey) {
       editor.onValueChange(renameJsonObjectKey(rootValue, path, propertyKey));
     } else if (action === "add" && (arrayParent || objectParent) && !keyError && !valueError) {
       editor.onValueChange(
-        insertJsonNode(
-          rootValue,
-          parentPath,
-          jsonValueFromDraft(nextType, draft),
-          propertyKey,
-          insertIndex,
-        ),
+        insertJsonNode(rootValue, parentPath, jsonValueFromDraft(nextType, draft), propertyKey, insertIndex),
       );
     }
     setOpen(false);
@@ -507,21 +451,12 @@ function JsonNodeActionPopover({
               <>
                 <div className="grid gap-1">
                   <FieldLabel htmlFor={`${id}-parent`}>Parent path</FieldLabel>
-                  <Input
-                    code
-                    id={`${id}-parent`}
-                    readOnly
-                    size="xs"
-                    value={pathLabel(parentPath)}
-                  />
+                  <Input code id={`${id}-parent`} readOnly size="xs" value={pathLabel(parentPath)} />
                 </div>
                 {arrayParent ? (
                   <div className="grid gap-1">
                     <FieldLabel htmlFor={`${id}-position`}>Insert position</FieldLabel>
-                    <Select
-                      onValueChange={(next) => setInsertIndex(Number(next))}
-                      value={String(insertIndex)}
-                    >
+                    <Select onValueChange={(next) => setInsertIndex(Number(next))} value={String(insertIndex)}>
                       <SelectTrigger id={`${id}-position`} size="xs">
                         <SelectValue />
                       </SelectTrigger>
@@ -537,10 +472,7 @@ function JsonNodeActionPopover({
                   </div>
                 ) : (
                   <div className="grid gap-1">
-                    <FieldLabel
-                      className={`${keyError ? "text-destructive" : ""}`}
-                      htmlFor={`${id}-key`}
-                    >
+                    <FieldLabel className={`${keyError ? "text-destructive" : ""}`} htmlFor={`${id}-key`}>
                       Property key
                     </FieldLabel>
                     <Input
@@ -562,10 +494,7 @@ function JsonNodeActionPopover({
                   <FieldDescription>Object path: {objectPath}</FieldDescription>
                 </div>
                 <div className="grid gap-1">
-                  <FieldLabel
-                    className={`${keyError ? "text-destructive" : ""}`}
-                    htmlFor={`${id}-new-key`}
-                  >
+                  <FieldLabel className={`${keyError ? "text-destructive" : ""}`} htmlFor={`${id}-new-key`}>
                     New key
                   </FieldLabel>
                   <Input
@@ -590,25 +519,14 @@ function JsonNodeActionPopover({
             ) : (
               <div className="grid gap-1">
                 <FieldLabel htmlFor={`${id}-existing`}>Existing value</FieldLabel>
-                <Input
-                  code
-                  id={`${id}-existing`}
-                  readOnly
-                  size="xs"
-                  value={JSON.stringify(value) ?? String(value)}
-                />
+                <Input code id={`${id}-existing`} readOnly size="xs" value={JSON.stringify(value) ?? String(value)} />
               </div>
             )}
 
             {action !== "edit-key" ? (
               <div className="grid gap-1">
-                <FieldLabel htmlFor={`${id}-type`}>
-                  {action === "add" ? "JSON type" : "New JSON type"}
-                </FieldLabel>
-                <Select
-                  onValueChange={(next) => setNextType(next as JsonValueType)}
-                  value={nextType}
-                >
+                <FieldLabel htmlFor={`${id}-type`}>{action === "add" ? "JSON type" : "New JSON type"}</FieldLabel>
+                <Select onValueChange={(next) => setNextType(next as JsonValueType)} value={nextType}>
                   <SelectTrigger id={`${id}-type`} size="xs">
                     <SelectValue />
                   </SelectTrigger>
@@ -654,10 +572,7 @@ function JsonNodeActionPopover({
             {action === "change-type" ? (
               <div className="flex gap-2 rounded-lg border border-border bg-muted/60 p-2.5 text-muted-foreground">
                 <CircleAlert aria-hidden="true" className="mt-px size-3.5 shrink-0" />
-                <Caption>
-                  Compatible values convert automatically. Object and Array create an empty
-                  container.
-                </Caption>
+                <Caption>Compatible values convert automatically. Object and Array create an empty container.</Caption>
               </div>
             ) : action === "edit-key" && keyAvailable ? (
               <div className="flex gap-2 rounded-lg bg-success-soft p-2.5 text-foreground">
@@ -692,16 +607,8 @@ function JsonNodeActionPopover({
               size="xs"
               type="button"
             >
-              {action === "edit-key" ? (
-                <Check aria-hidden="true" />
-              ) : (
-                <ActionIcon aria-hidden="true" />
-              )}
-              {action === "add"
-                ? addActionLabel
-                : action === "edit-key"
-                  ? "Rename key"
-                  : "Change type"}
+              {action === "edit-key" ? <Check aria-hidden="true" /> : <ActionIcon aria-hidden="true" />}
+              {action === "add" ? addActionLabel : action === "edit-key" ? "Rename key" : "Change type"}
             </Button>
           </div>
         </PopoverPrimitive.Content>
@@ -794,9 +701,7 @@ function deleteJsonNode(value: unknown, path: JsonTreePath): unknown {
       return parent.filter((_, index) => index !== segment);
     }
     if (parent !== null && typeof parent === "object" && typeof segment === "string") {
-      return Object.fromEntries(
-        Object.entries(parent as Record<string, unknown>).filter(([key]) => key !== segment),
-      );
+      return Object.fromEntries(Object.entries(parent as Record<string, unknown>).filter(([key]) => key !== segment));
     }
     return parent;
   });
@@ -838,9 +743,7 @@ function renameJsonObjectKey(value: unknown, path: JsonTreePath, nextKey: string
       return parent;
     }
     return Object.fromEntries(
-      Object.entries(parent).map(([key, child]) =>
-        key === currentKey ? [nextKey, child] : [key, child],
-      ),
+      Object.entries(parent).map(([key, child]) => (key === currentKey ? [nextKey, child] : [key, child])),
     );
   });
 }
@@ -895,10 +798,7 @@ export function highlightJson(
 
     if (match[1]) {
       tokens.push(
-        <span
-          className={match[2] ? `${typographyStyles.strong} text-foreground` : "text-syntax-string"}
-          key={index}
-        >
+        <span className={match[2] ? `${typographyStyles.strong} text-foreground` : "text-syntax-string"} key={index}>
           {highlightText(match[1], index)}
         </span>,
       );
@@ -967,10 +867,7 @@ function visibleTreePaths(value: unknown, query: string, limit: number) {
       if (current.query && !nodeMatches(String(key), child, current.query)) continue;
       pending.push({
         path: [...current.path, key],
-        query:
-          current.query && String(key).toLocaleLowerCase().includes(current.query)
-            ? ""
-            : current.query,
+        query: current.query && String(key).toLocaleLowerCase().includes(current.query) ? "" : current.query,
         value: child,
       });
     }
@@ -1072,9 +969,7 @@ function JsonTreeNode({
             : "bg-muted text-muted-foreground";
   const [open, setOpen] = useState(
     expansion.open ??
-      (defaultOpenDepth === undefined
-        ? depth === 0 || Array.isArray(value)
-        : depth <= defaultOpenDepth),
+      (defaultOpenDepth === undefined ? depth === 0 || Array.isArray(value) : depth <= defaultOpenDepth),
   );
   const [valueError, setValueError] = useState<string | null>(null);
   const isRoot = depth === 0;
@@ -1089,10 +984,7 @@ function JsonTreeNode({
   const matchingEntries =
     entries?.filter(([key, child]) => {
       const childPath = [...path, Array.isArray(value) ? Number(key) : key];
-      return (
-        nodeMatches(key, child, descendantQuery) &&
-        (!visiblePaths || visiblePaths.has(pathKey(childPath)))
-      );
+      return nodeMatches(key, child, descendantQuery) && (!visiblePaths || visiblePaths.has(pathKey(childPath)));
     }) ?? null;
   const canExpand = Boolean(matchingEntries?.length);
   const rowIndent = treeRowIndent(depth);
@@ -1149,9 +1041,7 @@ function JsonTreeNode({
     }
   }
 
-  const selectedClassName = isSearchMatch
-    ? "bg-accent"
-    : "bg-transparent hover:bg-muted/60 focus-visible:bg-muted/60";
+  const selectedClassName = isSearchMatch ? "bg-accent" : "bg-transparent hover:bg-muted/60 focus-visible:bg-muted/60";
   const currentSearchClassName = isCurrentSearchMatch ? "border-l-[3px] border-primary" : "";
   const keyText = isRoot ? (entries ? "root" : "") : displayedLabel;
   const keyLabel = keyText ? (
@@ -1161,8 +1051,7 @@ function JsonTreeNode({
       {keyText}
     </span>
   ) : null;
-  const keyControl =
-    keyLabel && valueError ? <JsonTooltip label={valueError}>{keyLabel}</JsonTooltip> : keyLabel;
+  const keyControl = keyLabel && valueError ? <JsonTooltip label={valueError}>{keyLabel}</JsonTooltip> : keyLabel;
   const dragHandle =
     editMode === "tree" && dragState && !isRoot ? (
       <button
@@ -1498,9 +1387,7 @@ export function JsonResultRenderer({
   const query = controlledSearchQuery ?? internalQuery;
   const searchMatchIndex = controlledSearchMatchIndex ?? internalSearchMatchIndex;
   const [expansion, setExpansion] = useState<TreeExpansion>({ version: 0 });
-  const [internalSelectedPath, setInternalSelectedPath] = useState<JsonTreePath | undefined>(
-    selectedPath,
-  );
+  const [internalSelectedPath, setInternalSelectedPath] = useState<JsonTreePath | undefined>(selectedPath);
   const internalEditorController = useMemo<JsonEditorController>(
     () => ({
       canRedo: internalEditor.future.length > 0,
@@ -1560,10 +1447,7 @@ export function JsonResultRenderer({
     );
   }, [formattedLines, searchTerm]);
   const formattedMatches = useMemo(
-    () =>
-      formattedLineMatches.flatMap((matches, lineIndex) =>
-        matches.map((match) => ({ ...match, lineIndex })),
-      ),
+    () => formattedLineMatches.flatMap((matches, lineIndex) => matches.map((match) => ({ ...match, lineIndex }))),
     [formattedLineMatches],
   );
   const treeMatches = useMemo(
@@ -1571,9 +1455,7 @@ export function JsonResultRenderer({
     [normalizedQuery, resolvedValue],
   );
   const activeSearchCount = view === "code" ? formattedMatches.length : treeMatches.length;
-  const resolvedSearchMatchIndex = activeSearchCount
-    ? Math.min(searchMatchIndex, activeSearchCount - 1)
-    : 0;
+  const resolvedSearchMatchIndex = activeSearchCount ? Math.min(searchMatchIndex, activeSearchCount - 1) : 0;
   const currentFormattedMatch = formattedMatches[resolvedSearchMatchIndex];
   const currentFormattedMatchLine = currentFormattedMatch?.lineIndex;
   const currentTreeSearchPath = treeMatches[resolvedSearchMatchIndex];
@@ -1582,9 +1464,7 @@ export function JsonResultRenderer({
 
   function moveSearchMatch(direction: -1 | 1) {
     if (!activeSearchCount) return;
-    updateSearchMatchIndex(
-      (resolvedSearchMatchIndex + direction + activeSearchCount) % activeSearchCount,
-    );
+    updateSearchMatchIndex((resolvedSearchMatchIndex + direction + activeSearchCount) % activeSearchCount);
   }
 
   useEffect(() => {
@@ -1596,11 +1476,7 @@ export function JsonResultRenderer({
     () =>
       maxVisibleEntries === undefined
         ? null
-        : visibleTreePaths(
-            resolvedValue,
-            normalizedQuery,
-            Math.max(1, Math.floor(maxVisibleEntries)),
-          ),
+        : visibleTreePaths(resolvedValue, normalizedQuery, Math.max(1, Math.floor(maxVisibleEntries))),
     [maxVisibleEntries, normalizedQuery, resolvedValue],
   );
   const resolvedSelectedPath = onSelect ? selectedPath : internalSelectedPath;
@@ -1666,9 +1542,7 @@ export function JsonResultRenderer({
   }
 
   function downloadValue() {
-    const url = URL.createObjectURL(
-      new Blob([artifact], { type: "application/json;charset=utf-8" }),
-    );
+    const url = URL.createObjectURL(new Blob([artifact], { type: "application/json;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
     link.download = downloadName;
@@ -1686,10 +1560,7 @@ export function JsonResultRenderer({
         {header === "visible" ? (
           <header className="flex min-h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-[14px] max-[42rem]:flex-col max-[42rem]:items-stretch max-[42rem]:gap-0 max-[42rem]:pb-2">
             {headerStart ?? (
-              <Select
-                onValueChange={(nextView) => activateView(nextView as JsonResultView)}
-                value={view}
-              >
+              <Select onValueChange={(nextView) => activateView(nextView as JsonResultView)} value={view}>
                 <SelectTrigger
                   aria-label="JSON result view"
                   className="w-[132px] shrink-0"
@@ -1701,9 +1572,7 @@ export function JsonResultRenderer({
                 <SelectContent>
                   {views.map((nextView) => (
                     <SelectItem key={nextView} value={nextView}>
-                      {nextView === "read-only"
-                        ? "View"
-                        : nextView[0].toUpperCase() + nextView.slice(1)}
+                      {nextView === "read-only" ? "View" : nextView[0].toUpperCase() + nextView.slice(1)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1937,8 +1806,7 @@ export function JsonResultRenderer({
                     />
                     {treeView?.truncated ? (
                       <Muted className="px-2 py-3 text-muted-foreground" role="status">
-                        Showing the first {treeView.limit.toLocaleString()} nodes. Search to narrow
-                        the tree.
+                        Showing the first {treeView.limit.toLocaleString()} nodes. Search to narrow the tree.
                       </Muted>
                     ) : null}
                   </div>
@@ -1973,11 +1841,7 @@ export function JsonResultRenderer({
                         key={lineIndex}
                       >
                         {line
-                          ? highlightJson(
-                              line,
-                              matches,
-                              isCurrentMatch ? currentFormattedMatch?.start : undefined,
-                            )
+                          ? highlightJson(line, matches, isCurrentMatch ? currentFormattedMatch?.start : undefined)
                           : "\u00a0"}
                       </span>
                     );

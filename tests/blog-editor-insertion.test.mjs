@@ -3,10 +3,7 @@ import test from "node:test";
 import { Editor, Node } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { TableKit, createTable } from "@tiptap/extension-table";
-import {
-  captureBlogInsertion,
-  createBlogTable,
-} from "../app/admin/(protected)/blog/lib/editorInsertion.ts";
+import { captureBlogInsertion, createBlogTable } from "../app/admin/(protected)/blog/lib/editorInsertion.ts";
 
 const Image = Node.create({
   name: "image",
@@ -123,10 +120,7 @@ test("table dimensions preserve chosen rows, columns, header row, and the existi
     assert.equal(inserted.childCount, rows);
     for (let row = 0; row < rows; row++) {
       assert.equal(inserted.child(row).childCount, columns);
-      assert.equal(
-        inserted.child(row).firstChild.type.name,
-        row === 0 ? "tableHeader" : "tableCell",
-      );
+      assert.equal(inserted.child(row).firstChild.type.name, row === 0 ? "tableHeader" : "tableCell");
     }
     editor.destroy();
   }
@@ -148,10 +142,7 @@ test("image descriptions update the original mapped image after cursor movement"
   const edit = captureBlogInsertion(editor);
   editor.commands.insertContentAt(0, paragraph("Before"));
   editor.commands.setNodeSelection(editor.state.doc.content.size - 1);
-  assert.equal(
-    edit.updateImage({ alt: "Original description", caption: "Original caption" }),
-    true,
-  );
+  assert.equal(edit.updateImage({ alt: "Original description", caption: "Original caption" }), true);
   assert.equal(editor.state.doc.child(1).attrs.alt, "Original description");
   assert.equal(editor.state.doc.child(2).attrs.alt, "");
   editor.destroy();

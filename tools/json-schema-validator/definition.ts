@@ -22,8 +22,7 @@ export default {
       {
         channel: "secondary",
         label: "JSON schema",
-        placeholder:
-          '{"type":"object","required":["name"],"properties":{"name":{"type":"string"}}}',
+        placeholder: '{"type":"object","required":["name"],"properties":{"name":{"type":"string"}}}',
         required: true,
         multiline: true,
       },

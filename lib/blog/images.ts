@@ -48,19 +48,15 @@ async function imageBytes(file: File): Promise<{ bytes: Uint8Array; mimeType: st
       String.fromCharCode(...bytes.subarray(0, 4)) === "RIFF" &&
       String.fromCharCode(...bytes.subarray(8, 12)) === "WEBP" &&
       ["VP8 ", "VP8L", "VP8X"].includes(String.fromCharCode(...bytes.subarray(12, 16))) &&
-      new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(4, true) ===
-        bytes.byteLength - 8;
+      new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(4, true) === bytes.byteLength - 8;
   }
-  if (!valid)
-    throw new BlogValidationError("Image content does not match its JPEG, PNG or WebP file type.");
+  if (!valid) throw new BlogValidationError("Image content does not match its JPEG, PNG or WebP file type.");
   return { bytes, mimeType };
 }
 
 export async function uploadBlogImage(actorUserId: string, file: File): Promise<BlogImage> {
   try {
-    await db.transaction((transaction) =>
-      requireTransactionPermission(transaction, actorUserId, "blog", "edit"),
-    );
+    await db.transaction((transaction) => requireTransactionPermission(transaction, actorUserId, "blog", "edit"));
   } catch (error) {
     if (error instanceof AuthorizationError) throw error;
     throw new BlogImageUploadError(
@@ -83,19 +79,16 @@ export async function uploadBlogImage(actorUserId: string, file: File): Promise<
   // Avoid holding database locks over the provider request. Its decoder rejects
   // truncated/corrupt images after our bounded MIME and signature checks.
   try {
-    uploaded = await cloudinary.uploader.upload(
-      `data:${mimeType};base64,${Buffer.from(bytes).toString("base64")}`,
-      {
-        cloud_name: cloudName,
-        api_key: apiKey,
-        api_secret: apiSecret,
-        public_id: publicId,
-        resource_type: "image",
-        type: "upload",
-        overwrite: false,
-        allowed_formats: ["jpg", "jpeg", "png", "webp"],
-      },
-    );
+    uploaded = await cloudinary.uploader.upload(`data:${mimeType};base64,${Buffer.from(bytes).toString("base64")}`, {
+      cloud_name: cloudName,
+      api_key: apiKey,
+      api_secret: apiSecret,
+      public_id: publicId,
+      resource_type: "image",
+      type: "upload",
+      overwrite: false,
+      allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    });
   } catch (error) {
     // The SDK rejects HTTP errors directly but wraps transport failures in { error }.
     const failure =
@@ -107,13 +100,8 @@ export async function uploadBlogImage(actorUserId: string, file: File): Promise<
         ? error.error
         : error;
     const status =
-      typeof failure === "object" && failure !== null && "http_code" in failure
-        ? failure.http_code
-        : undefined;
-    const code =
-      typeof failure === "object" && failure !== null && "code" in failure
-        ? failure.code
-        : undefined;
+      typeof failure === "object" && failure !== null && "http_code" in failure ? failure.http_code : undefined;
+    const code = typeof failure === "object" && failure !== null && "code" in failure ? failure.code : undefined;
     if (status === 401 || status === 403 || status === 404)
       throw new BlogImageUploadError(
         "UPLOAD_CONFIGURATION_ERROR",
@@ -166,11 +154,7 @@ export async function uploadBlogImage(actorUserId: string, file: File): Promise<
     );
   }
   try {
-    if (
-      uploaded.public_id !== publicId ||
-      uploaded.resource_type !== "image" ||
-      uploaded.type !== "upload"
-    )
+    if (uploaded.public_id !== publicId || uploaded.resource_type !== "image" || uploaded.type !== "upload")
       throw new Error("Unexpected upload response.");
     image = validateBlogImage(
       {
@@ -194,20 +178,13 @@ export async function uploadBlogImage(actorUserId: string, file: File): Promise<
   try {
     return await db.transaction(async (transaction) => {
       await requireTransactionPermission(transaction, actorUserId, "blog", "edit");
-      await writeAudit(
-        transaction,
-        actorUserId,
-        "blog.image.upload",
-        "blog-image",
-        image.publicId,
-        {
-          publicId: image.publicId,
-          version: image.version,
-          format: image.format,
-          width: image.width,
-          height: image.height,
-        },
-      );
+      await writeAudit(transaction, actorUserId, "blog.image.upload", "blog-image", image.publicId, {
+        publicId: image.publicId,
+        version: image.version,
+        format: image.format,
+        width: image.width,
+        height: image.height,
+      });
       return image;
     });
   } catch (error) {

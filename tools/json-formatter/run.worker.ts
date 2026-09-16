@@ -40,9 +40,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     const validated = await validateStreamingJsonRun(ctx);
     return {
       render: "text",
-      text: `Valid JSON\nRoot type: ${jsonRootType(
-        validated.render === "code" ? validated.code : ctx.input.text,
-      )}`,
+      text: `Valid JSON\nRoot type: ${jsonRootType(validated.render === "code" ? validated.code : ctx.input.text)}`,
     };
   }
 
@@ -63,9 +61,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   }
 
   // Match complete strings first so digits in keys and string values are ignored.
-  for (const [, number] of output.matchAll(
-    /"(?:[^"\\]|\\.)*"|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
-  )) {
+  for (const [, number] of output.matchAll(/"(?:[^"\\]|\\.)*"|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g)) {
     if (number !== undefined && String(Number(number)) !== number) {
       return {
         render: "code",

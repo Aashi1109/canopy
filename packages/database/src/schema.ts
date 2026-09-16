@@ -322,10 +322,7 @@ export const blogTagsTable = pgTable(
     uniqueIndex("blog_tags_slug_unique").on(table.slug),
     uniqueIndex("blog_tags_name_unique").on(sql`lower(${table.name})`),
     check("blog_tags_name_check", sql`length(trim(${table.name})) BETWEEN 1 AND 100`),
-    check(
-      "blog_tags_slug_check",
-      sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(${table.slug}) <= 160`,
-    ),
+    check("blog_tags_slug_check", sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(${table.slug}) <= 160`),
   ],
 );
 
@@ -357,16 +354,10 @@ export const blogPostsTable = pgTable(
   },
   (table): PgTableExtraConfigValue[] => [
     uniqueIndex("blog_posts_slug_unique").on(table.slug),
-    check(
-      "blog_posts_slug_check",
-      sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(${table.slug}) <= 160`,
-    ),
+    check("blog_posts_slug_check", sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(${table.slug}) <= 160`),
     check("blog_posts_document_check", sql`jsonb_typeof(${table.draftDocument}) = 'object'`),
     check("blog_posts_version_check", sql`${table.version} > 0 AND ${table.revisionSequence} >= 0`),
-    check(
-      "blog_posts_trash_check",
-      sql`${table.trashedAt} IS NULL OR ${table.publishedRevisionId} IS NULL`,
-    ),
+    check("blog_posts_trash_check", sql`${table.trashedAt} IS NULL OR ${table.publishedRevisionId} IS NULL`),
     check(
       "blog_posts_publication_check",
       sql`${table.publishedRevisionId} IS NULL OR (${table.publishedCategoryId} IS NOT NULL AND ${table.firstPublishedAt} IS NOT NULL AND ${table.publishedUpdatedAt} IS NOT NULL)`,
@@ -405,15 +396,7 @@ export const blogRevisionsTable = pgTable(
     document: jsonb("document").$type<unknown>().notNull(),
     contentHash: text("content_hash").notNull(),
     reason: text("reason")
-      .$type<
-        | "create"
-        | "autosave"
-        | "manual_save"
-        | "publish"
-        | "schedule"
-        | "restore_backup"
-        | "restore"
-      >()
+      .$type<"create" | "autosave" | "manual_save" | "publish" | "schedule" | "restore_backup" | "restore">()
       .notNull(),
     sourceRevisionId: text("source_revision_id"),
     createdBy: text("created_by").references(() => authUser.id, { onDelete: "set null" }),

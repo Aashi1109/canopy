@@ -66,10 +66,7 @@ test("JSON Viewer execution parses, formats, minifies, and repairs without UI st
     value: { ready: null, kept: true },
   });
   assert.deepEqual(
-    describeJsonViewerRepair(
-      '[{"id":1,"name":"Alice","age":},{"id":2,"name":"Bob","age":30}]',
-      "remove",
-    ),
+    describeJsonViewerRepair('[{"id":1,"name":"Alice","age":},{"id":2,"name":"Bob","age":30}]', "remove"),
     {
       changedPaths: ["$[0].age"],
       kind: "remove",

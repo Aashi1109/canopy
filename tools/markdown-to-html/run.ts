@@ -22,8 +22,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const source = requireUtilityInput(ctx.input.text, "Markdown input");
   // Dynamic so marked stays out of the initial bundle.
   const { marked, Renderer } = await import("marked");
-  const renderer =
-    ctx.settings.openLinksSafely || ctx.settings.sanitizeHtml ? new Renderer() : undefined;
+  const renderer = ctx.settings.openLinksSafely || ctx.settings.sanitizeHtml ? new Renderer() : undefined;
   if (renderer) {
     const renderLink = renderer.link.bind(renderer);
     renderer.link = function (token) {
@@ -31,9 +30,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         return this.parser.parseInline(token.tokens);
       }
       const link = renderLink(token);
-      return ctx.settings.openLinksSafely
-        ? link.replace(">", ' target="_blank" rel="noopener noreferrer">')
-        : link;
+      return ctx.settings.openLinksSafely ? link.replace(">", ' target="_blank" rel="noopener noreferrer">') : link;
     };
     if (ctx.settings.sanitizeHtml) {
       const renderImage = renderer.image.bind(renderer);

@@ -79,9 +79,7 @@ test("advanced template canvases resize proportionally between compatible page f
     },
   ]);
   const firstSchema = structuredClone(original.template.schemas[0][0]);
-  const originalTable = structuredClone(
-    original.template.schemas[0].find((schema) => schema.type === "table"),
-  );
+  const originalTable = structuredClone(original.template.schemas[0].find((schema) => schema.type === "table"));
 
   const resized = resizeAdvancedTemplateConfig(original, "receipt", "RECEIPT_58MM");
 
@@ -112,14 +110,8 @@ test("advanced template canvases resize proportionally between compatible page f
   assert.equal(resized.template.schemas[0][0].fontSize, firstSchema.fontSize * (58 / 80));
   const resizedTable = resized.template.schemas[0].find((schema) => schema.type === "table");
   assert.equal(resizedTable.headStyles.fontSize, originalTable.headStyles.fontSize * (58 / 80));
-  assert.equal(
-    resizedTable.headStyles.padding.left,
-    originalTable.headStyles.padding.left * (58 / 80),
-  );
-  assert.equal(
-    resizedTable.headStyles.padding.top,
-    originalTable.headStyles.padding.top * (180 / 200),
-  );
+  assert.equal(resizedTable.headStyles.padding.left, originalTable.headStyles.padding.left * (58 / 80));
+  assert.equal(resizedTable.headStyles.padding.top, originalTable.headStyles.padding.top * (180 / 200));
   assert.deepEqual(resized.sampleData, original.sampleData);
   assert.equal(AdvancedTemplateConfigSchema.safeParse(resized).success, true);
   assert.equal(original.pageFormat, "RECEIPT_80MM");
@@ -154,21 +146,10 @@ test("document template validation accepts standard and advanced templates witho
 });
 
 test("advanced template validation rejects incompatible document and page formats", () => {
+  assert.throws(() => createAdvancedTemplateConfig("invoice", "RECEIPT_80MM"), /not supported for invoice templates/);
+  assert.throws(() => createAdvancedTemplateConfig("receipt", "A4"), /not supported for receipt templates/);
   assert.throws(
-    () => createAdvancedTemplateConfig("invoice", "RECEIPT_80MM"),
-    /not supported for invoice templates/,
-  );
-  assert.throws(
-    () => createAdvancedTemplateConfig("receipt", "A4"),
-    /not supported for receipt templates/,
-  );
-  assert.throws(
-    () =>
-      resizeAdvancedTemplateConfig(
-        createAdvancedTemplateConfig("invoice", "A4"),
-        "invoice",
-        "RECEIPT_80MM",
-      ),
+    () => resizeAdvancedTemplateConfig(createAdvancedTemplateConfig("invoice", "A4"), "invoice", "RECEIPT_80MM"),
     /not supported for invoice templates/,
   );
 

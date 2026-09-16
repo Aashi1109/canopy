@@ -32,16 +32,11 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
           : `#${ctx.input.text.trim().replace(/^#/, "").toUpperCase()}`,
     },
     { label: "RGB", value: rgb },
-    ...((ctx.settings.includeHsl ?? true) || outputFormat === "hsl"
-      ? [{ label: "HSL", value: rgbToHsl(color) }]
-      : []),
+    ...((ctx.settings.includeHsl ?? true) || outputFormat === "hsl" ? [{ label: "HSL", value: rgbToHsl(color) }] : []),
   ];
   return {
     render: "key-value",
-    entries:
-      outputFormat === "all"
-        ? entries
-        : entries.filter(({ label }) => label.toLowerCase() === outputFormat),
+    entries: outputFormat === "all" ? entries : entries.filter(({ label }) => label.toLowerCase() === outputFormat),
   };
 };
 

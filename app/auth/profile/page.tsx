@@ -1,15 +1,7 @@
 import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import { auth } from "@smarttools/auth";
 import { isAdminUser } from "@smarttools/auth/session";
-import {
-  H1,
-  Muted,
-  Overline,
-  AccountNavigation,
-  AppContainer,
-  ProductHeader,
-  StatusBadge,
-} from "@smarttools/ui";
+import { H1, Muted, Overline, AccountNavigation, AppContainer, ProductHeader, StatusBadge } from "@smarttools/ui";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { resolveConfiguredReturnTo } from "../_lib/security";
@@ -38,9 +30,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
   return (
     <div className="auth-shell min-h-screen bg-background text-foreground">
       <ProductHeader
-        actions={
-          <AccountNavigation returnTo={returnTo} user={{ name: session.user.name, isAdmin }} />
-        }
+        actions={<AccountNavigation returnTo={returnTo} user={{ name: session.user.name, isAdmin }} />}
         className="auth-header sticky top-0 z-50"
         href="/"
         name="SmartTools"

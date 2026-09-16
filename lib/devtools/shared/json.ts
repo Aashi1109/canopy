@@ -18,8 +18,7 @@ export type JsonTransformResult =
   { ok: true; output: string; value: unknown } | { ok: false; error: JsonTransformError };
 
 export type JsonRepairResult =
-  | { ok: true; output: string; value: unknown; repaired: boolean }
-  | { ok: false; error: JsonTransformError };
+  { ok: true; output: string; value: unknown; repaired: boolean } | { ok: false; error: JsonTransformError };
 
 export type JsonSummary = {
   arrayCount: number;
@@ -65,10 +64,7 @@ function getErrorLocation(message: string, input: string) {
   };
 }
 
-export function transformJson(
-  input: string,
-  { mode, indentation }: TransformOptions,
-): JsonTransformResult {
+export function transformJson(input: string, { mode, indentation }: TransformOptions): JsonTransformResult {
   if (!input.trim()) {
     return {
       ok: false,
@@ -125,14 +121,9 @@ export function repairMissingPropertyValues(input: string): { input: string; rep
   return { input: nextInput, repaired };
 }
 
-export function resolveMissingValues(
-  value: unknown,
-  repairMode: Exclude<JsonRepairMode, "off">,
-): unknown {
+export function resolveMissingValues(value: unknown, repairMode: Exclude<JsonRepairMode, "off">): unknown {
   if (Array.isArray(value)) {
-    return value.map((item) =>
-      item === MISSING_VALUE ? null : resolveMissingValues(item, repairMode),
-    );
+    return value.map((item) => (item === MISSING_VALUE ? null : resolveMissingValues(item, repairMode)));
   }
   if (!isRecord(value)) return value;
 
@@ -146,9 +137,7 @@ export function resolveMissingValues(
   );
 }
 
-function normalizeJsonLikeText(
-  input: string,
-): { ok: true; output: string; repaired: boolean } | { ok: false } {
+function normalizeJsonLikeText(input: string): { ok: true; output: string; repaired: boolean } | { ok: false } {
   let output = "";
   let repaired = false;
 
@@ -277,10 +266,7 @@ function normalizeJsonLikeText(
   return { ok: true, output: normalized, repaired };
 }
 
-export function repairJson(
-  input: string,
-  repairMode: Exclude<JsonRepairMode, "off">,
-): JsonRepairResult {
+export function repairJson(input: string, repairMode: Exclude<JsonRepairMode, "off">): JsonRepairResult {
   if (!input.trim()) {
     return {
       ok: false,
@@ -366,11 +352,7 @@ function previewJsonNodeValue(value: unknown): string {
   return JSON.stringify(value) ?? String(value);
 }
 
-export function getJsonNodeMetadata(
-  selectedKey: string,
-  value: unknown,
-  previewLimit = 2,
-): JsonNodeMetadata {
+export function getJsonNodeMetadata(selectedKey: string, value: unknown, previewLimit = 2): JsonNodeMetadata {
   const limit = Math.max(0, Math.trunc(previewLimit));
   const preview = Array.isArray(value)
     ? value.slice(0, limit).map((item, index) => ({

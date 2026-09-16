@@ -12,11 +12,7 @@ export async function getToolContentRows(): Promise<ToolContentRow[]> {
 }
 
 export async function getToolContentRow(toolId: string): Promise<ToolContentRow | null> {
-  const [row] = await db
-    .select()
-    .from(toolContentTable)
-    .where(eq(toolContentTable.toolId, toolId))
-    .limit(1);
+  const [row] = await db.select().from(toolContentTable).where(eq(toolContentTable.toolId, toolId)).limit(1);
   return row ? { ...row } : null;
 }
 

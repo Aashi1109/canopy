@@ -5,11 +5,7 @@
  * name or 1-based index.
  */
 
-import {
-  parseUtilityTable,
-  serializeTable,
-  utilityDelimiter,
-} from "../../lib/devtools/shared/table.ts";
+import { parseUtilityTable, serializeTable, utilityDelimiter } from "../../lib/devtools/shared/table.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
@@ -26,11 +22,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const delimiter = utilityDelimiter(ctx.settings.delimiter);
   const query = ctx.settings.query.toLocaleLowerCase();
   if (!query) {
-    throw new ToolError(
-      "filter-required",
-      "Filter text is required.",
-      "Enter the text a row must contain to be kept.",
-    );
+    throw new ToolError("filter-required", "Filter text is required.", "Enter the text a row must contain to be kept.");
   }
   const requested = ctx.settings.column.trim();
   if (isLargeCsvRun(ctx)) {
@@ -46,11 +38,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         delimiter,
         onRow: async (row, rowNumber) => {
           if (rowNumber === 1) {
-            column = requested
-              ? /^\d+$/.test(requested)
-                ? Number(requested) - 1
-                : row.indexOf(requested)
-              : -1;
+            column = requested ? (/^\d+$/.test(requested) ? Number(requested) - 1 : row.indexOf(requested)) : -1;
             if (requested && (column < 0 || column >= row.length)) {
               throw new ToolError(
                 "column-not-found",
@@ -61,9 +49,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
           }
           const keep =
             rowNumber === 1 ||
-            (column >= 0 ? [row[column] ?? ""] : row).some((cell) =>
-              cell.toLocaleLowerCase().includes(query),
-            );
+            (column >= 0 ? [row[column] ?? ""] : row).some((cell) => cell.toLocaleLowerCase().includes(query));
           if (!keep) return;
           if (rowNumber > 1) kept += 1;
           await sink.write(`${wrote ? "\n" : ""}${serializeCsvRow(row, delimiter)}`);
@@ -94,11 +80,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     }
   }
   const [header, ...rows] = parseUtilityTable(ctx.input.text, delimiter);
-  const column = requested
-    ? /^\d+$/.test(requested)
-      ? Number(requested) - 1
-      : header.indexOf(requested)
-    : -1;
+  const column = requested ? (/^\d+$/.test(requested) ? Number(requested) - 1 : header.indexOf(requested)) : -1;
   if (requested && (column < 0 || column >= header.length)) {
     throw new ToolError(
       "column-not-found",

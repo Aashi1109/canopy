@@ -13,8 +13,7 @@ export default {
     label: "Add images to remove metadata",
     dropzoneDescription:
       "JPG, JPEG, PNG, WebP, HEIC, and HEIF · up to 50 files · 25 MB each · processed on this device",
-    accept:
-      "image/jpeg,image/jpg,.jpg,.jpeg,image/png,.png,image/webp,.webp,image/heic,image/heif,.heic,.heif",
+    accept: "image/jpeg,image/jpg,.jpg,.jpeg,image/png,.png,image/webp,.webp,image/heic,image/heif,.heic,.heif",
     multiple: true,
     engine: "image",
     maxFiles: 50,
@@ -26,8 +25,7 @@ export default {
   capabilities: { cancel: true, download: true, progress: true },
   workbenchMark: { text: "EXIF", tone: "accent" },
   labels: {
-    empty:
-      "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF files (25 MiB each) to remove their metadata.",
+    empty: "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF files (25 MiB each) to remove their metadata.",
     ready: "Your images with metadata removed are ready to download.",
     running: "Removing metadata from the images…",
   },

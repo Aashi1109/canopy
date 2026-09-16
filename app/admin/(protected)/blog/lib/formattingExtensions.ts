@@ -9,8 +9,7 @@ const marks = (
 ).map(([name, tag]) =>
   Mark.create({
     name,
-    excludes:
-      name === "superscript" ? "subscript" : name === "subscript" ? "superscript" : "highlight",
+    excludes: name === "superscript" ? "subscript" : name === "subscript" ? "superscript" : "highlight",
     addAttributes: () =>
       name === "highlight"
         ? {
@@ -52,11 +51,8 @@ const alignment = Extension.create({
           textAlign: {
             default: null,
             parseHTML: (element) =>
-              ["left", "center", "right", "justify"].includes(element.style.textAlign)
-                ? element.style.textAlign
-                : null,
-            renderHTML: (attributes) =>
-              attributes.textAlign ? { style: `text-align: ${attributes.textAlign}` } : {},
+              ["left", "center", "right", "justify"].includes(element.style.textAlign) ? element.style.textAlign : null,
+            renderHTML: (attributes) => (attributes.textAlign ? { style: `text-align: ${attributes.textAlign}` } : {}),
           },
         },
       },
@@ -69,11 +65,7 @@ const taskList = Node.create({
   group: "block list",
   content: "taskItem+",
   parseHTML: () => [{ tag: 'ul[data-type="taskList"]' }],
-  renderHTML: ({ HTMLAttributes }) => [
-    "ul",
-    mergeAttributes(HTMLAttributes, { "data-type": "taskList" }),
-    0,
-  ],
+  renderHTML: ({ HTMLAttributes }) => ["ul", mergeAttributes(HTMLAttributes, { "data-type": "taskList" }), 0],
 });
 const taskItem = Node.create({
   name: "taskItem",

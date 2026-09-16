@@ -31,11 +31,7 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   let pattern = PATTERNS[ctx.settings.preset];
   if (!pattern) {
-    throw new ToolError(
-      "preset-invalid",
-      "Regex preset is invalid.",
-      "Choose one of the listed presets.",
-    );
+    throw new ToolError("preset-invalid", "Regex preset is invalid.", "Choose one of the listed presets.");
   }
   const { addNamedGroups, explain, flags, language, multiline } = ctx.settings;
   if (addNamedGroups) {
@@ -55,9 +51,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
           : `~${pattern.replace(/~/g, "\\~")}~${modifiers}`;
   return {
     render: "text",
-    text: explain
-      ? `${language === "python" ? "#" : "//"} ${EXPLANATIONS[ctx.settings.preset]}\n${literal}`
-      : literal,
+    text: explain ? `${language === "python" ? "#" : "//"} ${EXPLANATIONS[ctx.settings.preset]}\n${literal}` : literal,
   };
 };
 

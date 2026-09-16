@@ -4,11 +4,7 @@ import { createRequire } from "node:module";
 import test from "node:test";
 
 import { TOOL_CATEGORIES } from "../lib/tool-framework/categories.ts";
-import {
-  QpdfAdapterError,
-  buildQpdfArguments,
-  preservePdfWithQpdf,
-} from "../lib/tool-framework/media/qpdf.ts";
+import { QpdfAdapterError, buildQpdfArguments, preservePdfWithQpdf } from "../lib/tool-framework/media/qpdf.ts";
 import {
   PdfPreflightError,
   assertStructuralPdfInspection,
@@ -198,20 +194,14 @@ test("crop rejects HEIC at the public input boundary", () => {
 });
 
 test("the tool worker uses the classic runtime emitted by the production build", async () => {
-  const source = await readFile(
-    new URL("../lib/tool-framework/useToolRun.ts", import.meta.url),
-    "utf8",
-  );
+  const source = await readFile(new URL("../lib/tool-framework/useToolRun.ts", import.meta.url), "utf8");
 
   assert.ok((source.match(/new Worker\(/g) ?? []).length > 0);
   assert.doesNotMatch(source, /type:\s*["']module["']/);
 });
 
 test("worker teardown invalidates async continuations before releasing resources", async () => {
-  const source = await readFile(
-    new URL("../lib/tool-framework/useToolRun.ts", import.meta.url),
-    "utf8",
-  );
+  const source = await readFile(new URL("../lib/tool-framework/useToolRun.ts", import.meta.url), "utf8");
   const dispatch = source.indexOf("const dispatch = useCallback(");
   const terminate = source.indexOf("terminate();", dispatch);
   const spawn = source.indexOf("new Worker(", dispatch);
@@ -239,10 +229,7 @@ test("worker teardown invalidates async continuations before releasing resources
  */
 test("preset mappings preserve the product defaults and engine values", async () => {
   const compressImage = await toolSource("compress-image", "run.worker.ts");
-  assert.match(
-    compressImage,
-    /preset === "best"\s*\?\s*0\.9\s*:\s*preset === "smallest"\s*\?\s*0\.6\s*:\s*0\.8/,
-  );
+  assert.match(compressImage, /preset === "best"\s*\?\s*0\.9\s*:\s*preset === "smallest"\s*\?\s*0\.6\s*:\s*0\.8/);
   assert.match(
     compressImage,
     /PNG_COMPRESSION_PRESETS = \{\s*fast: \{ effort: 3 \},\s*balanced: \{ effort: 6 \},\s*maximum: \{ effort: 9 \},\s*\}/,
@@ -263,9 +250,7 @@ test("preset mappings preserve the product defaults and engine values", async ()
 
   // The choices and defaults each tool publishes are the definition's job.
   assert.deepEqual(
-    mediaToolByFolder
-      .get("compress-image")
-      .settings.fields.preset.choices.map(({ value }) => value),
+    mediaToolByFolder.get("compress-image").settings.fields.preset.choices.map(({ value }) => value),
     ["best", "balanced", "smallest", "fast", "maximum"],
   );
   assert.equal(mediaToolByFolder.get("compress-image").settings.fields.preset.default, "balanced");
@@ -274,15 +259,10 @@ test("preset mappings preserve the product defaults and engine values", async ()
     ["original", "balanced", "small"],
   );
   assert.deepEqual(
-    mediaToolByFolder
-      .get("compress-pdf")
-      .settings.fields.strongPreset.choices.map(({ value }) => value),
+    mediaToolByFolder.get("compress-pdf").settings.fields.strongPreset.choices.map(({ value }) => value),
     ["high", "balanced", "smallest"],
   );
-  assert.equal(
-    mediaToolByFolder.get("compress-pdf").settings.fields.strongPreset.default,
-    "balanced",
-  );
+  assert.equal(mediaToolByFolder.get("compress-pdf").settings.fields.strongPreset.default, "balanced");
 });
 
 test("social image presets map every published target to exact dimensions", async () => {
@@ -297,15 +277,11 @@ test("social image presets map every published target to exact dimensions", asyn
   };
 
   // What the picker offers, and the size each option promises the user.
-  const { choices, default: fallback } = mediaToolByFolder.get("social-media-image-resizer")
-    .settings.fields.preset;
+  const { choices, default: fallback } = mediaToolByFolder.get("social-media-image-resizer").settings.fields.preset;
   assert.deepEqual(
     Object.fromEntries(choices.map(({ value, label }) => [value, label])),
     Object.fromEntries(
-      Object.entries(EXPECTED).map(([value, [label, width, height]]) => [
-        value,
-        `${label} · ${width} × ${height}`,
-      ]),
+      Object.entries(EXPECTED).map(([value, [label, width, height]]) => [value, `${label} · ${width} × ${height}`]),
     ),
   );
   assert.equal(fallback, "instagram-square");
@@ -349,37 +325,23 @@ test("signature validation rejects MIME mismatches and unsupported animation", (
     validateMediaSignature(Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]), "image/jpeg", ["png"]).code,
     "unsupported-type",
   );
-  assert.equal(
-    validateMediaSignature(riff("VP8X", Uint8Array.of(0x02)), "image/webp").code,
-    "animated-image",
-  );
+  assert.equal(validateMediaSignature(riff("VP8X", Uint8Array.of(0x02)), "image/webp").code, "animated-image");
   assert.equal(validateMediaSignature(ftyp("hevc", ["msf1"]), "image/heic").code, "image-sequence");
   assert.deepEqual(validateMediaSignature(ftyp("heic", ["mif1"]), ""), {
     ok: true,
     kind: "heic",
     mime: "image/heic",
   });
-  assert.equal(
-    validateMediaSignature(Uint8Array.of(1, 2, 3), "image/jpeg").code,
-    "invalid-signature",
-  );
+  assert.equal(validateMediaSignature(Uint8Array.of(1, 2, 3), "image/jpeg").code, "invalid-signature");
 });
 
 test("image limits enforce per-file, batch, total, and decoded-pixel ceilings", () => {
-  assert.deepEqual(
-    validateImageSelection(
-      Array.from({ length: MEDIA_LIMITS.images.maxFiles }, () => ({ size: 1 })),
-    ),
-    { ok: true },
-  );
+  assert.deepEqual(validateImageSelection(Array.from({ length: MEDIA_LIMITS.images.maxFiles }, () => ({ size: 1 }))), {
+    ok: true,
+  });
+  assert.equal(validateImageSelection([{ size: MEDIA_LIMITS.images.maxFileBytes + 1 }]).code, "file-too-large");
   assert.equal(
-    validateImageSelection([{ size: MEDIA_LIMITS.images.maxFileBytes + 1 }]).code,
-    "file-too-large",
-  );
-  assert.equal(
-    validateImageSelection(
-      Array.from({ length: MEDIA_LIMITS.images.maxFiles + 1 }, () => ({ size: 1 })),
-    ).code,
+    validateImageSelection(Array.from({ length: MEDIA_LIMITS.images.maxFiles + 1 }, () => ({ size: 1 }))).code,
     "too-many-files",
   );
   assert.equal(
@@ -402,10 +364,7 @@ test("PDF limits distinguish merge, structural, and raster jobs", () => {
     }),
     { ok: true },
   );
-  assert.equal(
-    validatePdfSelection([{ size: MEDIA_LIMITS.pdfs.maxFileBytes + 1 }]).code,
-    "file-too-large",
-  );
+  assert.equal(validatePdfSelection([{ size: MEDIA_LIMITS.pdfs.maxFileBytes + 1 }]).code, "file-too-large");
   assert.equal(
     validatePdfSelection(
       Array.from({ length: MEDIA_LIMITS.pdfs.maxMergeFiles + 1 }, () => ({
@@ -423,19 +382,11 @@ test("PDF limits distinguish merge, structural, and raster jobs", () => {
     "total-too-large",
   );
   assert.equal(validatePdfSelection([{ size: 1 }], { pageCount: 501 }).code, "too-many-pages");
-  assert.equal(
-    validatePdfSelection([{ size: 1 }], { pageCount: 201, raster: true }).code,
-    "too-many-pages",
-  );
+  assert.equal(validatePdfSelection([{ size: 1 }], { pageCount: 201, raster: true }).code, "too-many-pages");
 });
 
 test("digitally signed PDFs are detected before a rewriting operation", () => {
-  assert.equal(
-    hasPdfDigitalSignature(
-      new TextEncoder().encode("%PDF-1.7\n/Type /Sig /ByteRange [0 10 20 30]"),
-    ),
-    true,
-  );
+  assert.equal(hasPdfDigitalSignature(new TextEncoder().encode("%PDF-1.7\n/Type /Sig /ByteRange [0 10 20 30]")), true);
   assert.equal(hasPdfDigitalSignature(new TextEncoder().encode("%PDF-1.7\n/Pages 2 0 R")), false);
 });
 
@@ -447,10 +398,7 @@ test("qpdf preserve arguments toggle metadata removal without changing compressi
     "--recompress-flate",
     "--compression-level=9",
   ];
-  assert.deepEqual(buildQpdfArguments("/input.pdf", "/output.pdf", false), [
-    ...base,
-    "/output.pdf",
-  ]);
+  assert.deepEqual(buildQpdfArguments("/input.pdf", "/output.pdf", false), [...base, "/output.pdf"]);
   assert.deepEqual(buildQpdfArguments("/input.pdf", "/output.pdf", true), [
     ...base,
     "--remove-info",
@@ -490,26 +438,15 @@ test("qpdf preserve fails closed outside a cross-origin-isolated browser", async
 });
 
 test("image-to-PDF detects PNG alpha that must be flattened onto the selected background", () => {
-  assert.equal(
-    hasTransparentPixels(Uint8ClampedArray.from([20, 30, 40, 255, 50, 60, 70, 255])),
-    false,
-  );
-  assert.equal(
-    hasTransparentPixels(Uint8ClampedArray.from([20, 30, 40, 255, 50, 60, 70, 64])),
-    true,
-  );
+  assert.equal(hasTransparentPixels(Uint8ClampedArray.from([20, 30, 40, 255, 50, 60, 70, 255])), false);
+  assert.equal(hasTransparentPixels(Uint8ClampedArray.from([20, 30, 40, 255, 50, 60, 70, 64])), true);
 });
 
 test("PDF fill and cover clip exactly to the inner page box", () => {
   const pdfLib = requireFromMedia("pdf-lib");
   const box = getPdfContentBox(612, 792, 18);
   assert.deepEqual(box, { x: 18, y: 18, width: 576, height: 756 });
-  assert.deepEqual(clipStartOperators(box, pdfLib).map(String), [
-    "q",
-    "18 18 576 756 re",
-    "W",
-    "n",
-  ]);
+  assert.deepEqual(clipStartOperators(box, pdfLib).map(String), ["q", "18 18 576 756 re", "W", "n"]);
   assert.deepEqual(clipEndOperators(pdfLib).map(String), ["Q"]);
 });
 
@@ -593,24 +530,15 @@ test("page ranges expand in display order and reject ambiguous selections", () =
 
 test("resize and fit geometry covers aspect lock, no-upscale, contain, cover, and stretch", () => {
   assert.deepEqual(
-    calculateResizeDimensions(
-      { width: 400, height: 200 },
-      { width: 100, lockAspectRatio: true, noUpscale: true },
-    ),
+    calculateResizeDimensions({ width: 400, height: 200 }, { width: 100, lockAspectRatio: true, noUpscale: true }),
     { width: 100, height: 50 },
   );
   assert.deepEqual(
-    calculateResizeDimensions(
-      { width: 400, height: 200 },
-      { percentage: 50, lockAspectRatio: true, noUpscale: true },
-    ),
+    calculateResizeDimensions({ width: 400, height: 200 }, { percentage: 50, lockAspectRatio: true, noUpscale: true }),
     { width: 200, height: 100 },
   );
   assert.deepEqual(
-    calculateResizeDimensions(
-      { width: 400, height: 200 },
-      { width: 800, lockAspectRatio: true, noUpscale: true },
-    ),
+    calculateResizeDimensions({ width: 400, height: 200 }, { width: 800, lockAspectRatio: true, noUpscale: true }),
     { width: 400, height: 200 },
   );
   assert.deepEqual(
@@ -647,18 +575,12 @@ test("resize and fit geometry covers aspect lock, no-upscale, contain, cover, an
 });
 
 test("geometry handles no-op, height-only, upscale, and invalid requests", () => {
+  assert.deepEqual(calculateResizeDimensions({ width: 400, height: 200 }, { lockAspectRatio: true, noUpscale: true }), {
+    width: 400,
+    height: 200,
+  });
   assert.deepEqual(
-    calculateResizeDimensions(
-      { width: 400, height: 200 },
-      { lockAspectRatio: true, noUpscale: true },
-    ),
-    { width: 400, height: 200 },
-  );
-  assert.deepEqual(
-    calculateResizeDimensions(
-      { width: 400, height: 200 },
-      { height: 50, lockAspectRatio: true, noUpscale: false },
-    ),
+    calculateResizeDimensions({ width: 400, height: 200 }, { height: 50, lockAspectRatio: true, noUpscale: false }),
     { width: 100, height: 50 },
   );
   assert.deepEqual(
@@ -669,32 +591,25 @@ test("geometry handles no-op, height-only, upscale, and invalid requests", () =>
     { width: 800, height: 400 },
   );
   assert.deepEqual(
-    calculateResizeDimensions(
-      { width: 400, height: 200 },
-      { lockAspectRatio: false, noUpscale: false },
-    ),
+    calculateResizeDimensions({ width: 400, height: 200 }, { lockAspectRatio: false, noUpscale: false }),
     { width: 400, height: 200 },
   );
   assert.throws(
     () =>
-      calculateResizeDimensions(
-        { width: 400, height: 200 },
-        { percentage: 0, lockAspectRatio: true, noUpscale: true },
-      ),
+      calculateResizeDimensions({ width: 400, height: 200 }, { percentage: 0, lockAspectRatio: true, noUpscale: true }),
     /positive dimensions/,
   );
-  assert.throws(
-    () => fitRect({ width: 1, height: 1 }, { width: 1, height: 1 }, "tile"),
-    /Unknown fit mode/,
-  );
+  assert.throws(() => fitRect({ width: 1, height: 1 }, { width: 1, height: 1 }, "tile"), /Unknown fit mode/);
   assert.throws(() => rotatedDimensions(10, 20, 45), /Rotation must be/);
 });
 
 test("crop, rotation, and EXIF orientation helpers keep pixels in bounds", () => {
-  assert.deepEqual(
-    normalizeCropRect({ x: -10, y: 10, width: 150, height: 100 }, { width: 100, height: 80 }),
-    { x: 0, y: 10, width: 100, height: 70 },
-  );
+  assert.deepEqual(normalizeCropRect({ x: -10, y: 10, width: 150, height: 100 }, { width: 100, height: 80 }), {
+    x: 0,
+    y: 10,
+    width: 100,
+    height: 70,
+  });
   assert.throws(
     () => normalizeCropRect({ x: 0, y: 0, width: 0, height: 10 }, { width: 100, height: 80 }),
     /positive dimensions/,
@@ -721,16 +636,14 @@ test("crop, rotation, and EXIF orientation helpers keep pixels in bounds", () =>
     width: 400,
     height: 200,
   });
-  assert.deepEqual(
-    normalizeCropRect({ x: 10, y: 20, width: 30, height: 40 }, { width: 100, height: 100 }),
-    { x: 10, y: 20, width: 30, height: 40 },
-  );
+  assert.deepEqual(normalizeCropRect({ x: 10, y: 20, width: 30, height: 40 }, { width: 100, height: 100 }), {
+    x: 10,
+    y: 20,
+    width: 30,
+    height: 40,
+  });
   assert.throws(
-    () =>
-      normalizeCropRect(
-        { x: Number.NaN, y: 0, width: 10, height: 10 },
-        { width: 100, height: 100 },
-      ),
+    () => normalizeCropRect({ x: Number.NaN, y: 0, width: 10, height: 10 }, { width: 100, height: 100 }),
     /Coordinates must be finite/,
   );
 });
@@ -764,10 +677,7 @@ test("worker protocol rejects malformed File-backed runs", () => {
 
   assert.throws(() => createToolRunFile(" ", source), /ID/);
   assert.throws(() => createToolRunFile("file", new Blob([Uint8Array.of(1)])), /File/);
-  assert.throws(
-    () => createToolRunFile("file", new File(["x"], "bad.txt", { type: "not a mime" })),
-    /MIME/,
-  );
+  assert.throws(() => createToolRunFile("file", new File(["x"], "bad.txt", { type: "not a mime" })), /MIME/);
   assert.throws(
     () =>
       createToolWorkerRequest({
@@ -807,10 +717,7 @@ test("worker protocol rejects malformed File-backed runs", () => {
 });
 
 test("page inspection requests keep one document and a positive thumbnail width", () => {
-  const file = createToolRunFile(
-    "pdf-1",
-    new File([new ArrayBuffer(8)], "document.pdf", { type: "application/pdf" }),
-  );
+  const file = createToolRunFile("pdf-1", new File([new ArrayBuffer(8)], "document.pdf", { type: "application/pdf" }));
   assert.deepEqual(createToolInspectRequest({ jobId: " inspect-1 ", key: "crop-pdf", file }), {
     type: "inspect",
     jobId: "inspect-1",
@@ -866,10 +773,7 @@ test("page inspection requests keep one document and a positive thumbnail width"
     type: "inspect-close",
     jobId: "inspect-1",
   });
-  assert.throws(
-    () => createToolThumbnailRequest({ jobId: "inspect-1", pageNumbers: [0] }),
-    /positive integers/,
-  );
+  assert.throws(() => createToolThumbnailRequest({ jobId: "inspect-1", pageNumbers: [0] }), /positive integers/);
   assert.throws(
     () =>
       createToolThumbnailRequest({
@@ -897,10 +801,7 @@ test("page inspection requests keep one document and a positive thumbnail width"
 });
 
 test("PDF inspection can target generated output and rejects unknown sources", () => {
-  const file = createToolRunFile(
-    "generated-pdf",
-    new File(["%PDF-1.7"], "images.pdf", { type: "application/pdf" }),
-  );
+  const file = createToolRunFile("generated-pdf", new File(["%PDF-1.7"], "images.pdf", { type: "application/pdf" }));
   const request = createToolInspectRequest({
     jobId: "output-preview",
     key: "image-to-pdf",
@@ -979,21 +880,14 @@ test("large PDF previews evict raster bytes by pixel budget while preserving all
     state.previews.filter((page) => page.buffer).map((page) => page.pageNumber),
     [3, 4, 5, 6],
   );
-  assert.equal(
-    "renderWidth" in state.previews[0],
-    false,
-    "Evicted pages must be eligible to render again.",
-  );
+  assert.equal("renderWidth" in state.previews[0], false, "Evicted pages must be eligible to render again.");
 });
 
 test("worker job state ignores stale responses and cannot complete after cancellation", () => {
   const idle = createToolJobState();
   const started = beginWorkerJob(idle, "job-1");
   assert.deepEqual(idle, createToolJobState(), "beginWorkerJob must not mutate");
-  assert.deepEqual(
-    { status: started.status, jobId: started.jobId },
-    { status: "running", jobId: "job-1" },
-  );
+  assert.deepEqual({ status: started.status, jobId: started.jobId }, { status: "running", jobId: "job-1" });
 
   // A response addressed to another job never advances the running job.
   const stale = reduceWorkerJobState(started, {

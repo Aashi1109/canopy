@@ -74,14 +74,14 @@ function setup(t) {
         return query;
       },
       then(resolve, reject) {
-        if (state.databaseError)
-          return Promise.reject(new Error("Database unavailable")).then(resolve, reject);
+        if (state.databaseError) return Promise.reject(new Error("Database unavailable")).then(resolve, reject);
         const user = state.users.get(userId);
         if (statusQuery) {
           state.statusReads++;
-          return Promise.resolve(
-            user ? [{ status: user.status, updatedAt: user.updatedAt }] : [],
-          ).then(resolve, reject);
+          return Promise.resolve(user ? [{ status: user.status, updatedAt: user.updatedAt }] : []).then(
+            resolve,
+            reject,
+          );
         }
         state.roleReads++;
         const rows = (user?.roles ?? []).map((role) => ({
@@ -92,10 +92,7 @@ function setup(t) {
           roleAccess: structuredClone(role.access),
           roleIsSystem: role.isSystem,
         }));
-        return Promise.resolve(state.roleLoader ? state.roleLoader(rows) : rows).then(
-          resolve,
-          reject,
-        );
+        return Promise.resolve(state.roleLoader ? state.roleLoader(rows) : rows).then(resolve, reject);
       },
     };
     return query;
@@ -122,10 +119,7 @@ test("authorization caches each user's roles for one day while checking current 
   assert.equal(state.statusReads, 3);
   assert.deepEqual(
     [...state.entries.keys()],
-    [
-      `user-roles:alice:${initialTime.toISOString()}`,
-      `user-roles:bob:${initialTime.toISOString()}`,
-    ],
+    [`user-roles:alice:${initialTime.toISOString()}`, `user-roles:bob:${initialTime.toISOString()}`],
   );
   assert.deepEqual(JSON.parse(state.entries.values().next().value), [editor]);
 });

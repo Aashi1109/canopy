@@ -73,23 +73,14 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const linkedLayers =
     (ctx.settings.linkOpacity ?? false)
       ? additionalLayers.map((layer) =>
-          layer.replace(
-            /rgba\(\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*[^)]+\)/gi,
-            `rgba($1, $2, $3, ${alpha})`,
-          ),
+          layer.replace(/rgba\(\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*[^)]+\)/gi, `rgba($1, $2, $3, ${alpha})`),
         )
       : additionalLayers;
-  const layers = [
-    `${x}px ${y}px ${blur}px ${spread}px ${ctx.input.text.trim()}${inset}`,
-    ...linkedLayers,
-  ].join(", ");
+  const layers = [`${x}px ${y}px ${blur}px ${spread}px ${ctx.input.text.trim()}${inset}`, ...linkedLayers].join(", ");
   const declaration = `box-shadow: ${layers};`;
   return {
     render: "text",
-    text:
-      (ctx.settings.showBrowserPrefixes ?? false)
-        ? `-webkit-${declaration}\n${declaration}`
-        : declaration,
+    text: (ctx.settings.showBrowserPrefixes ?? false) ? `-webkit-${declaration}\n${declaration}` : declaration,
   };
 };
 

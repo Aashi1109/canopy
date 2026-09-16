@@ -37,8 +37,7 @@ function relativeTime(date: Date) {
 
 function eventDetail(event: Awaited<ReturnType<typeof listAuditEvents>>[number]) {
   const actor = event.actorName ?? event.actorEmail ?? "An administrator";
-  const target =
-    event.targetUserName ?? event.targetUserEmail ?? `${event.targetType} ${event.targetId}`;
+  const target = event.targetUserName ?? event.targetUserEmail ?? `${event.targetType} ${event.targetId}`;
   return `${actor} changed ${target}`;
 }
 
@@ -47,9 +46,7 @@ export default async function HomePage() {
   const [users, roles, events] = await Promise.all([listUsers(), listRoles(), listAuditEvents()]);
   const customRoles = roles.filter((role) => !role.isSystem);
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const recentEventCount = events.filter(
-    (event) => event.createdAt.getTime() >= thirtyDaysAgo,
-  ).length;
+  const recentEventCount = events.filter((event) => event.createdAt.getTime() >= thirtyDaysAgo).length;
   const recentEvents = events.slice(0, 3);
 
   const metrics: readonly {
@@ -136,14 +133,9 @@ export default async function HomePage() {
                     </span>
                     <span className="min-w-0 flex-1">
                       <Strong className="block truncate">{label}</Strong>
-                      <Caption className="mt-0.5 block truncate text-muted-foreground">
-                        {eventDetail(event)}
-                      </Caption>
+                      <Caption className="mt-0.5 block truncate text-muted-foreground">{eventDetail(event)}</Caption>
                     </span>
-                    <time
-                      className="shrink-0 text-muted-foreground"
-                      dateTime={event.createdAt.toISOString()}
-                    >
+                    <time className="shrink-0 text-muted-foreground" dateTime={event.createdAt.toISOString()}>
                       {relativeTime(event.createdAt)}
                     </time>
                   </div>

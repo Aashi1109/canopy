@@ -4,16 +4,7 @@ export default {
   toolId: "media.webp-to-png",
   app: "media",
   category: "image-conversion",
-  keywords: [
-    "webp",
-    "png",
-    "convert",
-    "image",
-    "lossless",
-    "transparency",
-    "compatibility",
-    "batch",
-  ],
+  keywords: ["webp", "png", "convert", "image", "lossless", "transparency", "compatibility", "batch"],
   name: "WebP to PNG",
   description: "Convert static WebP images to PNG.",
   input: {

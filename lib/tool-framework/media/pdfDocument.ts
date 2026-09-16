@@ -52,19 +52,13 @@ export async function loadPdf(file: ToolRunFile): Promise<PDFDocument> {
       updateMetadata: false,
     });
     if (pdf.isEncrypted) {
-      throw new ToolError(
-        "encrypted-pdf",
-        "Encrypted or password-protected PDFs are not supported.",
-      );
+      throw new ToolError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.");
     }
     return pdf;
   } catch (error) {
     if (error instanceof ToolError) throw error;
     if (isPasswordError(error)) {
-      throw new ToolError(
-        "encrypted-pdf",
-        "Encrypted or password-protected PDFs are not supported.",
-      );
+      throw new ToolError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.");
     }
     throw new ToolError("malformed-pdf", "The PDF is malformed or unsupported.");
   }
@@ -88,11 +82,7 @@ export function enforcePageLimit(file: ToolRunFile, pageCount: number, raster: b
 }
 
 /** Validates a 1-based page list and returns it as 0-based indexes. */
-export function checkedPages(
-  pages: readonly number[],
-  pageCount: number,
-  rejectDuplicates = true,
-): number[] {
+export function checkedPages(pages: readonly number[], pageCount: number, rejectDuplicates = true): number[] {
   if (!pages.length) throw new ToolError("empty-range", "Choose at least one page.");
   const indexes = pages.map((page) => {
     if (!Number.isInteger(page) || page < 1 || page > pageCount) {
@@ -148,11 +138,7 @@ export function positionedBox(
   return { x: Math.max(0, x), y: Math.max(0, y) };
 }
 
-export function pdfSize(
-  size: PdfNamedPageSize,
-  width?: number,
-  height?: number,
-): PdfPageDimensions {
+export function pdfSize(size: PdfNamedPageSize, width?: number, height?: number): PdfPageDimensions {
   if (size === "a4") return { width: 595.28, height: 841.89 };
   if (size === "letter") return { width: 612, height: 792 };
   if (size === "legal") return { width: 612, height: 1008 };
@@ -192,8 +178,5 @@ export function reportStructuralProgress(
 }
 
 export function isPasswordError(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    /password|encrypted|encryption/i.test(`${error.name} ${error.message}`)
-  );
+  return error instanceof Error && /password|encrypted|encryption/i.test(`${error.name} ${error.message}`);
 }

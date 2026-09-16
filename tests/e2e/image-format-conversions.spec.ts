@@ -2,9 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { unzipSync } from "fflate";
 
-const MEDIA_URL =
-  process.env.MEDIA_E2E_URL ??
-  `${process.env.PLATFORM_E2E_ORIGIN ?? "http://localhost:3000"}/media`;
+const MEDIA_URL = process.env.MEDIA_E2E_URL ?? `${process.env.PLATFORM_E2E_ORIGIN ?? "http://localhost:3000"}/media`;
 const CONVERSIONS = [
   ["jpg", "png"],
   ["png", "jpg"],
@@ -49,11 +47,7 @@ async function fixture(page: Page, format: Format, index: number) {
       context.fillStyle = "#ffffff";
       context.fillRect(0, 0, 24, 16);
       const blob = await new Promise<Blob>((resolve, reject) =>
-        canvas.toBlob(
-          (value) => (value ? resolve(value) : reject(new Error("Fixture encoding failed"))),
-          type,
-          0.9,
-        ),
+        canvas.toBlob((value) => (value ? resolve(value) : reject(new Error("Fixture encoding failed"))), type, 0.9),
       );
       if (blob.type !== type) throw new Error(`Browser cannot encode ${type}`);
       return [...new Uint8Array(await blob.arrayBuffer())];
@@ -67,10 +61,7 @@ async function loadedImage(image: Locator) {
   await expect(image).toBeVisible();
   await expect
     .poll(() =>
-      image.evaluate(
-        (node: HTMLImageElement) =>
-          node.complete && node.naturalWidth > 0 && node.naturalHeight > 0,
-      ),
+      image.evaluate((node: HTMLImageElement) => node.complete && node.naturalWidth > 0 && node.naturalHeight > 0),
     )
     .toBe(true);
 }
@@ -86,8 +77,7 @@ async function download(page: Page, control: Locator) {
 }
 
 async function inspectOutput(page: Page, bytes: Uint8Array, format: Format) {
-  if (format === "png")
-    expect([...bytes.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+  if (format === "png") expect([...bytes.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
   if (format === "jpg") expect([...bytes.subarray(0, 3)]).toEqual([255, 216, 255]);
   if (format === "webp") {
     expect(Buffer.from(bytes.subarray(0, 4)).toString()).toBe("RIFF");
@@ -107,21 +97,15 @@ async function inspectOutput(page: Page, bytes: Uint8Array, format: Format) {
 for (const [source, target] of CONVERSIONS) {
   const title = `${formatLabel(source)} to ${formatLabel(target)}`;
   test.describe(title, () => {
-    test("initial Add images is keyboard accessible and conversion requires input", async ({
-      page,
-    }) => {
+    test("initial Add images is keyboard accessible and conversion requires input", async ({ page }) => {
       await page.goto(`${MEDIA_URL}/${source}-to-${target}`);
       await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible();
       const add = page.getByRole("button", {
         name: new RegExp(`^Add (?:${source.toUpperCase()} )?images\\b`, "i"),
       });
       await expect(add).toBeVisible();
-      await expect(
-        page.getByRole("button", { name: `Convert to ${formatLabel(target)}`, exact: true }),
-      ).toBeDisabled();
-      await expect(
-        page.getByRole("heading", { name: "Converted images", exact: true }),
-      ).toHaveCount(0);
+      await expect(page.getByRole("button", { name: `Convert to ${formatLabel(target)}`, exact: true })).toBeDisabled();
+      await expect(page.getByRole("heading", { name: "Converted images", exact: true })).toHaveCount(0);
       await add.focus();
       const chooserEvent = page.waitForEvent("filechooser");
       await page.keyboard.press("Enter");
@@ -129,9 +113,7 @@ for (const [source, target] of CONVERSIONS) {
       expect(chooser.isMultiple()).toBe(true);
     });
 
-    test("real previews, removal, artifact downloads, edit and reset complete the batch flow", async ({
-      page,
-    }) => {
+    test("real previews, removal, artifact downloads, edit and reset complete the batch flow", async ({ page }) => {
       test.skip(
         source === "heic" && !process.env.MEDIA_E2E_HEIC_FIXTURE,
         "No real HEIC fixture in repository. Set MEDIA_E2E_HEIC_FIXTURE to a valid local HEIC file; no fabricated success.",
@@ -146,9 +128,7 @@ for (const [source, target] of CONVERSIONS) {
         })
         .click();
       await (await chooserEvent).setFiles(inputs);
-      await expect(
-        page.getByRole("heading", { name: "Selected images", exact: true }),
-      ).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Selected images", exact: true })).toBeVisible();
       const inputSizes = [];
       for (const input of inputs) {
         const card = page
@@ -163,9 +143,7 @@ for (const [source, target] of CONVERSIONS) {
             height: node.naturalHeight,
           })),
         );
-        await expect(
-          page.getByRole("button", { name: `Remove ${input.name}`, exact: true }),
-        ).toBeVisible();
+        await expect(page.getByRole("button", { name: `Remove ${input.name}`, exact: true })).toBeVisible();
       }
       const sourcePreview = previewButton(page, inputs[0].name);
       await sourcePreview.click();
@@ -177,18 +155,16 @@ for (const [source, target] of CONVERSIONS) {
       await expect(sourcePreview).toBeFocused();
       await page.getByRole("button", { name: `Remove ${inputs[2].name}`, exact: true }).click();
       await expect(page.getByRole("img", { name: inputs[2].name, exact: true })).toHaveCount(0);
-      await expect(
-        page.getByRole("button", { name: `Remove ${inputs[2].name}`, exact: true }),
-      ).toHaveCount(0);
+      await expect(page.getByRole("button", { name: `Remove ${inputs[2].name}`, exact: true })).toHaveCount(0);
       const convert = page.getByRole("button", {
         name: `Convert to ${formatLabel(target)}`,
         exact: true,
       });
       await expect(convert).toBeEnabled();
       await convert.click();
-      await expect(
-        page.getByRole("heading", { name: "Converted images", exact: true }),
-      ).toBeVisible({ timeout: 60_000 });
+      await expect(page.getByRole("heading", { name: "Converted images", exact: true })).toBeVisible({
+        timeout: 60_000,
+      });
       const gallery = page.getByRole("region", { name: "Generated image previews", exact: true });
       await expect(gallery.getByRole("article")).toHaveCount(2);
       const archive = await download(page, page.getByRole("button", { name: /^Download ZIP\b/ }));
@@ -227,10 +203,7 @@ for (const [source, target] of CONVERSIONS) {
         );
         expect(previewMatches).toBe(true);
         expect(await inspectOutput(page, entries[name], target)).toEqual(inputSizes[index]);
-        const single = await download(
-          page,
-          gallery.getByRole("button", { name: `Download ${name}`, exact: true }),
-        );
+        const single = await download(page, gallery.getByRole("button", { name: `Download ${name}`, exact: true }));
         expect(single.name).toBe(name);
         expect(single.bytes).toEqual(Buffer.from(entries[name]));
       }
@@ -248,12 +221,8 @@ for (const [source, target] of CONVERSIONS) {
       await expect(outputPreview).toBeFocused();
 
       await page.getByRole("button", { name: "Edit settings", exact: true }).click();
-      await expect(
-        page.getByRole("heading", { name: "Selected images", exact: true }),
-      ).toBeVisible();
-      await expect(
-        page.getByRole("heading", { name: "Converted images", exact: true }),
-      ).toHaveCount(0);
+      await expect(page.getByRole("heading", { name: "Selected images", exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Converted images", exact: true })).toHaveCount(0);
       await expect(page.getByRole("button", { name: /^Download ZIP\b/ })).toHaveCount(0);
       for (const input of inputs.slice(0, 2))
         await loadedImage(
@@ -264,13 +233,11 @@ for (const [source, target] of CONVERSIONS) {
             })
             .locator("img"),
         );
-      await expect(
-        page.getByRole("button", { name: `Remove ${inputs[2].name}`, exact: true }),
-      ).toHaveCount(0);
+      await expect(page.getByRole("button", { name: `Remove ${inputs[2].name}`, exact: true })).toHaveCount(0);
       await convert.click();
-      await expect(
-        page.getByRole("heading", { name: "Converted images", exact: true }),
-      ).toBeVisible({ timeout: 60_000 });
+      await expect(page.getByRole("heading", { name: "Converted images", exact: true })).toBeVisible({
+        timeout: 60_000,
+      });
       await expect(gallery.getByRole("article")).toHaveCount(2);
       await page.getByRole("button", { name: "Convert more", exact: true }).click();
       await expect(
@@ -280,18 +247,14 @@ for (const [source, target] of CONVERSIONS) {
       ).toBeVisible();
       await expect(convert).toBeDisabled();
       await expect(gallery).toHaveCount(0);
-      await expect(page.getByRole("heading", { name: "Selected images", exact: true })).toHaveCount(
-        0,
-      );
+      await expect(page.getByRole("heading", { name: "Selected images", exact: true })).toHaveCount(0);
       await expect(page.getByRole("button", { name: /^Remove source-/ })).toHaveCount(0);
       await expect(page.getByRole("button", { name: /^Download ZIP\b/ })).toHaveCount(0);
     });
   });
 }
 
-test("PNG settings validation, single-file download and recovery preserve the source", async ({
-  page,
-}) => {
+test("PNG settings validation, single-file download and recovery preserve the source", async ({ page }) => {
   await page.goto(`${MEDIA_URL}/png-to-jpg`);
   const input = await fixture(page, "png", 1);
   await page.locator('input[type="file"]').first().setInputFiles(input);
@@ -299,9 +262,7 @@ test("PNG settings validation, single-file download and recovery preserve the so
   const quality = page.getByRole("spinbutton", { name: "Quality", exact: true });
   await quality.fill("10");
   await expect(convert).toBeDisabled();
-  await expect(page.getByRole("main").getByRole("alert")).toContainText(
-    "Quality must be between 30 and 100",
-  );
+  await expect(page.getByRole("main").getByRole("alert")).toContainText("Quality must be between 30 and 100");
   await quality.fill("92");
   const background = page.getByRole("textbox", { name: "Background value", exact: true });
   await background.fill("oops");
@@ -321,9 +282,7 @@ test("PNG settings validation, single-file download and recovery preserve the so
   await page.getByRole("button", { name: "Edit settings", exact: true }).click();
   await expect(quality).toHaveValue("92");
   await expect(background).toHaveValue("#335577");
-  await expect(
-    page.getByRole("button", { name: "Remove source-1.png", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Remove source-1.png", exact: true })).toBeVisible();
   await convert.click();
   await expect(results).toBeVisible();
   await page.getByRole("button", { name: "Convert more", exact: true }).click();
@@ -339,9 +298,7 @@ test("rejected intake and damaged-image failure keep recovery available", async 
   await (
     await chooserEvent
   ).setFiles({ name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from("Not an image") });
-  await expect(page.getByRole("main").getByRole("alert")).toContainText(
-    "notes.txt is not an accepted file type",
-  );
+  await expect(page.getByRole("main").getByRole("alert")).toContainText("notes.txt is not an accepted file type");
   const convert = page.getByRole("button", { name: "Convert to JPG", exact: true });
   await expect(convert).toBeDisabled();
   await page
@@ -392,9 +349,7 @@ test("cancelling a real batch retains images and settings for retry", async ({ p
   await expect(convert).toBeEnabled();
 });
 
-test("output format dropdown keeps inputs, remembers settings and runs the selected encoder", async ({
-  page,
-}) => {
+test("output format dropdown keeps inputs, remembers settings and runs the selected encoder", async ({ page }) => {
   await page.goto(`${MEDIA_URL}/png-to-jpg`);
   const input = await fixture(page, "png", 1);
   const chooserEvent = page.waitForEvent("filechooser");
@@ -405,9 +360,7 @@ test("output format dropdown keeps inputs, remembers settings and runs the selec
   await format.click();
   await expect(page.getByRole("option", { name: "PNG", exact: true })).toBeDisabled();
   await page.getByRole("option", { name: "WebP", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "Remove source-1.png", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Remove source-1.png", exact: true })).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Background value", exact: true })).toHaveCount(0);
   await page.getByRole("spinbutton", { name: "Quality", exact: true }).fill("75");
   await format.click();

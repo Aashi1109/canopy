@@ -8,22 +8,13 @@ export interface CategoryFilterOption {
   value: string;
 }
 
-export function CategoryFilter({
-  categories,
-  value,
-}: {
-  categories: readonly CategoryFilterOption[];
-  value: string;
-}) {
+export function CategoryFilter({ categories, value }: { categories: readonly CategoryFilterOption[]; value: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   return (
-    <Label
-      className="inline-flex items-center gap-2 text-foreground"
-      htmlFor="devtools-category-filter"
-    >
+    <Label className="inline-flex items-center gap-2 text-foreground" htmlFor="devtools-category-filter">
       Tools
       <Select
         aria-label="Filter tools by category"

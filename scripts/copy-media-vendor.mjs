@@ -8,10 +8,7 @@ const heicRoot = dirname(fileURLToPath(import.meta.resolve("heic-to")));
 const qpdfTarget = join(appRoot, "public/media/vendor/qpdf");
 const licenseTarget = join(appRoot, "public/media/vendor/licenses");
 
-await Promise.all([
-  mkdir(qpdfTarget, { recursive: true }),
-  mkdir(licenseTarget, { recursive: true }),
-]);
+await Promise.all([mkdir(qpdfTarget, { recursive: true }), mkdir(licenseTarget, { recursive: true })]);
 await Promise.all([
   copyFile(join(qpdfRoot, "qpdf.js"), join(qpdfTarget, "qpdf.js")),
   copyFile(join(qpdfRoot, "qpdf.wasm"), join(qpdfTarget, "qpdf.wasm")),

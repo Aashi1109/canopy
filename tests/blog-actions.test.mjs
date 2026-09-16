@@ -21,13 +21,7 @@ const names = [
   "restoreBlogRevision",
   "saveBlogTerm",
 ];
-const reads = [
-  "getBlogPost",
-  "getBlogRevision",
-  "listBlogPosts",
-  "listBlogRevisions",
-  "listBlogTaxonomy",
-];
+const reads = ["getBlogPost", "getBlogRevision", "listBlogPosts", "listBlogRevisions", "listBlogTaxonomy"];
 const state = {
   actor: "session-admin",
   calls: [],
@@ -57,9 +51,7 @@ const hooks = registerHooks({
           "export async function getActorUserId(){const s=globalThis.__blogActionTest;if(s.sessionError)throw s.sessionError;return s.actor;}",
         );
       if (specifier.endsWith("/blog/mutations"))
-        return stub(
-          `export const BlogError=globalThis.__blogActionTest.BlogError;${functions(names)}`,
-        );
+        return stub(`export const BlogError=globalThis.__blogActionTest.BlogError;${functions(names)}`);
       if (specifier.endsWith("/blog/queries")) return stub(functions(reads));
       if (specifier.endsWith("/blog/images"))
         return stub(
@@ -85,9 +77,7 @@ test.after(() => {
 test("blog action identity always comes from session and unknown operations cannot dispatch", async () => {
   reset();
   assert.equal((await actions.mutateBlogAction("create", { title: "Post" })).ok, true);
-  assert.deepEqual(state.calls, [
-    { name: "createBlogPost", args: ["session-admin", { title: "Post" }] },
-  ]);
+  assert.deepEqual(state.calls, [{ name: "createBlogPost", args: ["session-admin", { title: "Post" }] }]);
   for (const operation of ["__proto__", "constructor", "toString", "unknown"]) {
     assert.equal((await actions.mutateBlogAction(operation, {})).code, "VALIDATION");
   }
@@ -111,10 +101,7 @@ test("missing session control flow escapes the action error mapping before any o
   reset();
   state.sessionError = new Error("NEXT_REDIRECT");
   await assert.rejects(actions.mutateBlogAction("publish", {}), /NEXT_REDIRECT/);
-  await assert.rejects(
-    actions.readBlogAction({ operation: "post", postId: "post" }),
-    /NEXT_REDIRECT/,
-  );
+  await assert.rejects(actions.readBlogAction({ operation: "post", postId: "post" }), /NEXT_REDIRECT/);
   assert.equal(state.calls.length, 0);
 });
 test("private preview renders validated content and keeps revision reads bound to post and actor", async () => {
@@ -122,9 +109,7 @@ test("private preview renders validated content and keeps revision reads bound t
   const document = createBlogDocument("Private");
   document.body = {
     type: "doc",
-    content: [
-      { type: "paragraph", content: [{ type: "text", text: "<script>secret draft</script>" }] },
-    ],
+    content: [{ type: "paragraph", content: [{ type: "text", text: "<script>secret draft</script>" }] }],
   };
   state.data = { document };
   const result = await actions.readBlogAction({
@@ -135,14 +120,9 @@ test("private preview renders validated content and keeps revision reads bound t
   assert.equal(result.ok, true);
   assert.equal(result.data.robots, "noindex, nofollow");
   assert.match(result.data.html, /&lt;script&gt;/);
-  assert.deepEqual(state.calls, [
-    { name: "getBlogRevision", args: ["session-admin", "post", "rev"] },
-  ]);
+  assert.deepEqual(state.calls, [{ name: "getBlogRevision", args: ["session-admin", "post", "rev"] }]);
   state.data = null;
-  assert.equal(
-    (await actions.readBlogAction({ operation: "preview", postId: "missing" })).code,
-    "NOT_FOUND",
-  );
+  assert.equal((await actions.readBlogAction({ operation: "preview", postId: "missing" })).code, "NOT_FOUND");
 });
 test("read and upload envelopes reject forged actor fields and extra multipart values", async () => {
   reset();
@@ -171,25 +151,14 @@ test("image upload actions preserve safe upload diagnostics and do not report dr
       "UPLOAD_NOT_CONFIGURED",
       "Configure Cloudinary for image uploads.",
     ],
+    [new BlogImageUploadError("UPLOAD_REJECTED", "Choose another image."), "UPLOAD_REJECTED", "Choose another image."],
     [
-      new BlogImageUploadError("UPLOAD_REJECTED", "Choose another image."),
-      "UPLOAD_REJECTED",
-      "Choose another image.",
-    ],
-    [
-      new BlogImageUploadError(
-        "UPLOAD_FINALIZATION_FAILED",
-        "Image upload could not be recorded. Retry.",
-      ),
+      new BlogImageUploadError("UPLOAD_FINALIZATION_FAILED", "Image upload could not be recorded. Retry."),
       "UPLOAD_FINALIZATION_FAILED",
       "Image upload could not be recorded. Retry.",
     ],
     [new AuthorizationError("private role data"), "FORBIDDEN"],
-    [
-      new BlogValidationError("Use a JPEG, PNG or WebP image."),
-      "VALIDATION",
-      "Use a JPEG, PNG or WebP image.",
-    ],
+    [new BlogValidationError("Use a JPEG, PNG or WebP image."), "VALIDATION", "Use a JPEG, PNG or WebP image."],
     [new Error("cloudinary://key:credential-secret@private"), "UPLOAD_TEMPORARY_FAILURE"],
   ]) {
     state.error = error;

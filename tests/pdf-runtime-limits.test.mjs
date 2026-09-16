@@ -58,8 +58,6 @@ test("Strong PDF Compression rejects input above its 50 MiB runtime ceiling", as
         throw new Error("Strong compression must not write an artifact.");
       },
     }),
-    (error) =>
-      error?.code === "file-too-large" &&
-      /Strong Compression supports PDFs up to 50 MiB/.test(error.message),
+    (error) => error?.code === "file-too-large" && /Strong Compression supports PDFs up to 50 MiB/.test(error.message),
   );
 });

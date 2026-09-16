@@ -80,14 +80,12 @@ export async function createArtifactBatchWriter(
     return {
       async add(input) {
         ctx.signal.throwIfAborted();
-        if (entries.length >= options.count)
-          throw new RangeError("Artifact batch produced too many files.");
+        if (entries.length >= options.count) throw new RangeError("Artifact batch produced too many files.");
         entries.push(await ctx.writeArtifact(input));
       },
       async finish() {
         ctx.signal.throwIfAborted();
-        if (entries.length !== options.count)
-          throw new RangeError("Artifact batch did not produce every file.");
+        if (entries.length !== options.count) throw new RangeError("Artifact batch did not produce every file.");
         // The artifact writer serializes writes. Finish individual files before
         // opening the ZIP stream, then read back one file at a time.
         archive = await createStreamingZip(ctx, options.archiveName);
@@ -130,10 +128,7 @@ type StreamingZip = {
   abort(reason?: unknown): Promise<void>;
 };
 
-async function createStreamingZip(
-  ctx: ArtifactContext,
-  archiveName: string,
-): Promise<StreamingZip> {
+async function createStreamingZip(ctx: ArtifactContext, archiveName: string): Promise<StreamingZip> {
   const { Zip, ZipDeflate } = await import("fflate");
   const channel = new TransformStream<Uint8Array, Uint8Array>();
   const output = channel.writable.getWriter();

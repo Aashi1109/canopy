@@ -15,10 +15,7 @@ export function useBlogTaxonomyOptions(
 ) {
   const [items, setItems] = useState(() => [
     ...new Map(
-      [...selected.map(({ id, label }) => ({ id, name: label })), ...initial.items].map((item) => [
-        item.id,
-        item,
-      ]),
+      [...selected.map(({ id, label }) => ({ id, name: label })), ...initial.items].map((item) => [item.id, item]),
     ).values(),
   ]);
   const [cursor, setCursor] = useState(initial.nextCursor);
@@ -36,15 +33,12 @@ export function useBlogTaxonomyOptions(
         setError(result.message);
         return;
       }
-      if (!("items" in result.data) || !("nextCursor" in result.data))
-        throw new Error("Unexpected taxonomy response");
+      if (!("items" in result.data) || !("nextCursor" in result.data)) throw new Error("Unexpected taxonomy response");
       const terms = result.data.items.map((item) => {
         if (!("name" in item)) throw new Error("Unexpected taxonomy item");
         return { id: item.id, name: item.name };
       });
-      setItems((previous) => [
-        ...new Map([...previous, ...terms].map((item) => [item.id, item])).values(),
-      ]);
+      setItems((previous) => [...new Map([...previous, ...terms].map((item) => [item.id, item])).values()]);
       setCursor(result.data.nextCursor);
     } catch {
       setError("Couldn’t load more topics. Try again.");

@@ -2,9 +2,7 @@ import { expect, test } from "@playwright/test";
 import { PDFDocument } from "pdf-lib";
 import { readFile } from "node:fs/promises";
 
-test("rotate PDF previews selected angles and downloads only the selected page rotation", async ({
-  page,
-}, info) => {
+test("rotate PDF previews selected angles and downloads only the selected page rotation", async ({ page }, info) => {
   const pdf = await PDFDocument.create();
   pdf.addPage([595, 842]).drawText("First page", { x: 80, y: 700 });
   pdf.addPage([595, 842]).drawText("Second page", { x: 80, y: 700 });

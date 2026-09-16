@@ -23,8 +23,7 @@ export default async function BlogPreviewPage({
   if (viewport !== undefined && viewport !== "desktop" && viewport !== "mobile") notFound();
   if (
     !/^[a-zA-Z0-9_-]{1,100}$/.test(id) ||
-    (revision !== undefined &&
-      (typeof revision !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(revision)))
+    (revision !== undefined && (typeof revision !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(revision)))
   )
     notFound();
   const source = revision
@@ -61,11 +60,7 @@ export default async function BlogPreviewPage({
             </Link>
           </Button>
           <Button asChild size="sm" variant={viewport === "mobile" ? "default" : "outline"}>
-            <Link
-              aria-current={viewport === "mobile" ? "page" : undefined}
-              href={previewHref("mobile")}
-              scroll={false}
-            >
+            <Link aria-current={viewport === "mobile" ? "page" : undefined} href={previewHref("mobile")} scroll={false}>
               Mobile
             </Link>
           </Button>
@@ -75,11 +70,7 @@ export default async function BlogPreviewPage({
         </Button>
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div
-          className={
-            viewport === "mobile" ? "mx-auto w-full max-w-[390px]" : "mx-auto w-full max-w-[1440px]"
-          }
-        >
+        <div className={viewport === "mobile" ? "mx-auto w-full max-w-[390px]" : "mx-auto w-full max-w-[1440px]"}>
           <BlogArticle document={document} />
         </div>
         <footer className="border-t border-border bg-muted px-5 py-3 text-xs text-muted-foreground md:px-7">

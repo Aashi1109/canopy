@@ -18,9 +18,7 @@ export function pasteBlogImages(
     .map((item) => item.getAsFile())
     .filter((file): file is File => file !== null);
   // Browsers expose the same files in both collections; prefer items, never concatenate.
-  const files = items.length
-    ? items
-    : Array.from(data.files ?? []).filter((file) => file.type.startsWith("image/"));
+  const files = items.length ? items : Array.from(data.files ?? []).filter((file) => file.type.startsWith("image/"));
   if (!files.length) return false;
   event.preventDefault();
   const destination = captureBlogInsertion(editor);
@@ -42,9 +40,7 @@ export function pasteBlogImages(
   function checkEditable() {
     if (active && !editor.isEditable) {
       cancel();
-      reportError(
-        "The article is no longer editable. Paste your images again when editing is available.",
-      );
+      reportError("The article is no longer editable. Paste your images again when editing is available.");
     }
   }
   function preview() {
@@ -63,10 +59,7 @@ export function pasteBlogImages(
       image.draggable = false;
       const status = document.createElement("span");
       status.className = "blog-image-upload-preview__status";
-      status.textContent =
-        files.length === 1
-          ? "Uploading image…"
-          : `Uploading image ${index + 1} of ${files.length}…`;
+      status.textContent = files.length === 1 ? "Uploading image…" : `Uploading image ${index + 1} of ${files.length}…`;
       item.append(image, status);
       container.append(item);
     }
@@ -122,8 +115,7 @@ export function pasteBlogImages(
         reportError("Couldn’t insert the images. Select a place in the article and paste again.");
       }
     } catch {
-      if (active && !editor.isDestroyed)
-        reportError("Couldn’t paste the images. Try a smaller image or paste again.");
+      if (active && !editor.isDestroyed) reportError("Couldn’t paste the images. Try a smaller image or paste again.");
     } finally {
       destination.dispose();
       cleanup();

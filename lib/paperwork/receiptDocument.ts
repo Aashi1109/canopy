@@ -167,16 +167,13 @@ export function calculateReceiptTotals(data: ReceiptData) {
         : 0;
   const discountedSubtotal = Math.max(0, subtotal - discountAmount);
   const taxableSubtotal = data.lineItems.reduce(
-    (sum, item) =>
-      item.taxable ? sum + Number(item.quantity || 0) * Number(item.unitPrice || 0) : sum,
+    (sum, item) => (item.taxable ? sum + Number(item.quantity || 0) * Number(item.unitPrice || 0) : sum),
     0,
   );
   const discountRatio = subtotal > 0 ? (subtotal - discountAmount) / subtotal : 1;
   const taxAmount = (taxableSubtotal * discountRatio * Number(data.salesTaxRate || 0)) / 100;
-  const total =
-    discountedSubtotal + taxAmount + Number(data.tip || 0) + Number(data.additionalFee || 0);
-  const balanceDue =
-    data.paymentStatus === "Partially Paid" ? Math.max(0, total - data.amountRefunded) : 0;
+  const total = discountedSubtotal + taxAmount + Number(data.tip || 0) + Number(data.additionalFee || 0);
+  const balanceDue = data.paymentStatus === "Partially Paid" ? Math.max(0, total - data.amountRefunded) : 0;
 
   return { subtotal, discountAmount, taxAmount, total, balanceDue };
 }

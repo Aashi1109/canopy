@@ -4,11 +4,7 @@ import { E2E_ACCOUNTS, E2E_PASSWORD } from "./fixtures/accounts";
 import { AuthPage } from "./pages/AuthPage";
 
 async function createPost(page: Page, baseURL: string | undefined, title: string) {
-  await new AuthPage(page).signIn(
-    E2E_ACCOUNTS.admin.email,
-    E2E_PASSWORD,
-    new URL("/admin/blog", baseURL).href,
-  );
+  await new AuthPage(page).signIn(E2E_ACCOUNTS.admin.email, E2E_PASSWORD, new URL("/admin/blog", baseURL).href);
   await page.getByRole("link", { name: "New post", exact: true }).click();
   await page.getByRole("textbox", { name: "Post title", exact: true }).fill(title);
   await page.getByRole("button", { name: "Create draft", exact: true }).click();
@@ -19,10 +15,7 @@ async function createPost(page: Page, baseURL: string | undefined, title: string
 async function trashPost(page: Page, title: string) {
   await page.goto(`/admin/blog?${new URLSearchParams({ search: title })}`);
   await page.getByRole("button", { name: `Move to trash: ${title}`, exact: true }).click();
-  await page
-    .getByRole("alertdialog")
-    .getByRole("button", { name: "Move to trash", exact: true })
-    .click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Move to trash", exact: true }).click();
   await expect(page.getByRole("alertdialog")).toBeHidden();
 }
 
@@ -33,9 +26,7 @@ test("a saved article survives reload, previews privately, and guards unsaved na
   const title = `E2E Blog ${randomUUID()}`;
   const url = await createPost(page, baseURL, title);
   await page.getByRole("button", { name: "Post settings", exact: true }).click();
-  await page
-    .getByRole("textbox", { name: "Public byline", exact: true })
-    .fill("E2E Editorial Team");
+  await page.getByRole("textbox", { name: "Public byline", exact: true }).fill("E2E Editorial Team");
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Post settings", exact: true })).toBeFocused();
   const body = page.getByRole("textbox", { name: "Article body", exact: true });
@@ -69,9 +60,7 @@ test("a saved article survives reload, previews privately, and guards unsaved na
   await expect(page.getByRole("alertdialog")).toContainText("Leave unsaved changes?");
   await page.getByRole("button", { name: "Keep editing", exact: true }).click();
   await expect(page).toHaveURL(url);
-  await expect(page.getByRole("textbox", { name: "TITLE", exact: true })).toHaveValue(
-    `${title} unsaved`,
-  );
+  await expect(page.getByRole("textbox", { name: "TITLE", exact: true })).toHaveValue(`${title} unsaved`);
   await page.getByRole("link", { name: "Posts", exact: true }).click();
   await page.getByRole("button", { name: "Discard changes", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/blog$/);
@@ -89,18 +78,12 @@ test("concurrent saves keep the second editor's work and offer a downloadable re
   const other = await context.newPage();
   await other.goto(url);
   await expect(other.getByRole("textbox", { name: "Article body", exact: true })).toBeVisible();
-  await page
-    .getByRole("textbox", { name: "Article body", exact: true })
-    .fill("The first editor's saved work.");
+  await page.getByRole("textbox", { name: "Article body", exact: true }).fill("The first editor's saved work.");
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("All changes saved");
-  await other
-    .getByRole("textbox", { name: "Article body", exact: true })
-    .fill("The second editor's local work.");
+  await other.getByRole("textbox", { name: "Article body", exact: true }).fill("The second editor's local work.");
   await other.getByRole("button", { name: "Save draft", exact: true }).click();
-  await expect(
-    other.getByRole("button", { name: "Download local draft", exact: true }),
-  ).toBeVisible();
+  await expect(other.getByRole("button", { name: "Download local draft", exact: true })).toBeVisible();
   await expect(other.getByRole("textbox", { name: "Article body", exact: true })).toHaveText(
     "The second editor's local work.",
   );

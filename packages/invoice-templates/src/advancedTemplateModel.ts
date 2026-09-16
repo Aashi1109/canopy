@@ -79,10 +79,7 @@ export function normalizeAdvancedTemplateConfig(
   if (config.schemaVersion === 2 && isRecord(config.form)) {
     return structuredClone(config) as unknown as AdvancedTemplateConfig;
   }
-  if (
-    config.schemaVersion !== undefined ||
-    (documentType !== "invoice" && documentType !== "receipt")
-  ) {
+  if (config.schemaVersion !== undefined || (documentType !== "invoice" && documentType !== "receipt")) {
     throw new TypeError(`Only legacy invoice and receipt configs can omit schemaVersion 2.`);
   }
 
@@ -138,13 +135,7 @@ function addFormStructureIssues(
   for (const [sectionIndex, section] of config.form.sections.entries()) {
     const sectionPath = `form.sections.${sectionIndex}`;
     if (sectionIds.has(section.id)) {
-      errors.push(
-        issue(
-          "duplicate-section",
-          `Section ID "${section.id}" must be unique.`,
-          `${sectionPath}.id`,
-        ),
-      );
+      errors.push(issue("duplicate-section", `Section ID "${section.id}" must be unique.`, `${sectionPath}.id`));
     }
     sectionIds.add(section.id);
 
@@ -152,9 +143,7 @@ function addFormStructureIssues(
       const entryPath = `${sectionPath}.entries.${entryIndex}`;
       formFieldCount += 1;
       if (fieldKeys.has(entry.key)) {
-        errors.push(
-          issue("duplicate-field", `Field key "${entry.key}" must be unique.`, `${entryPath}.key`),
-        );
+        errors.push(issue("duplicate-field", `Field key "${entry.key}" must be unique.`, `${entryPath}.key`));
       }
       fieldKeys.add(entry.key);
 
@@ -164,9 +153,7 @@ function addFormStructureIssues(
           errors.push(
             issue(
               field ? "non-editable-field" : "unknown-built-in-field",
-              field
-                ? `"${entry.key}" is not an editable form field.`
-                : `Unknown built-in field "${entry.key}".`,
+              field ? `"${entry.key}" is not an editable form field.` : `Unknown built-in field "${entry.key}".`,
               `${entryPath}.key`,
             ),
           );
@@ -176,9 +163,7 @@ function addFormStructureIssues(
       if (isCustom(entry)) {
         customFieldCount += 1;
         if (!/^custom\.[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.key)) {
-          errors.push(
-            issue("invalid-custom-key", "Custom keys must use custom.<slug>.", `${entryPath}.key`),
-          );
+          errors.push(issue("invalid-custom-key", "Custom keys must use custom.<slug>.", `${entryPath}.key`));
         }
       }
 
@@ -250,17 +235,11 @@ function addComplianceIssues(
       ...(entry.kind === "repeater" ? entry.columns.map((column) => column.label) : []),
     ]),
   );
-  const fullTinSample = Object.entries(config.sampleData).find(([, value]) =>
-    containsFullTin(value),
-  );
+  const fullTinSample = Object.entries(config.sampleData).find(([, value]) => containsFullTin(value));
 
   if ((documentType === "w9-request" || documentType === "1099-nec-tracker") && fullTinSample) {
     errors.push(
-      issue(
-        "forbidden-tax-data",
-        "Full TIN, SSN, and EIN values are not accepted.",
-        `sampleData.${fullTinSample[0]}`,
-      ),
+      issue("forbidden-tax-data", "Full TIN, SSN, and EIN values are not accepted.", `sampleData.${fullTinSample[0]}`),
     );
   }
 
@@ -279,16 +258,10 @@ function addComplianceIssues(
   }
 
   if (documentType === "1099-nec-tracker") {
-    const unmaskedTin = [...keys, ...labels].find(
-      (key) => containsTaxDataKey(key) && !/masked/i.test(key),
-    );
+    const unmaskedTin = [...keys, ...labels].find((key) => containsTaxDataKey(key) && !/masked/i.test(key));
     if (unmaskedTin) {
       errors.push(
-        issue(
-          "forbidden-tax-data",
-          "1099 trackers can bind only masked TIN references.",
-          `field.${unmaskedTin}`,
-        ),
+        issue("forbidden-tax-data", "1099 trackers can bind only masked TIN references.", `field.${unmaskedTin}`),
       );
     }
     const copyAClaim = [
@@ -296,10 +269,7 @@ function addComplianceIssues(
       ...allSchemas(config).flatMap((schema) =>
         typeof schema.content === "string" ? [[schema.name, schema.content] as const] : [],
       ),
-    ].find(
-      ([key, value]) =>
-        key !== "internalReportDisclaimer" && /\b(?:copy a|fileable (?:form )?1099)/i.test(value),
-    );
+    ].find(([key, value]) => key !== "internalReportDisclaimer" && /\b(?:copy a|fileable (?:form )?1099)/i.test(value));
     if (copyAClaim) {
       errors.push(
         issue(
@@ -322,18 +292,10 @@ export function validateAdvancedTemplateConfig(
   const definition = getDocumentDefinition(documentType);
 
   if (config.schemaVersion !== 2) {
-    errors.push(
-      issue("schema-version", "Advanced templates must use schemaVersion 2.", "schemaVersion"),
-    );
+    errors.push(issue("schema-version", "Advanced templates must use schemaVersion 2.", "schemaVersion"));
   }
   if (!definition.allowedPageFormats.includes(config.pageFormat)) {
-    errors.push(
-      issue(
-        "page-format",
-        `${config.pageFormat} is not supported for ${documentType}.`,
-        "pageFormat",
-      ),
-    );
+    errors.push(issue("page-format", `${config.pageFormat} is not supported for ${documentType}.`, "pageFormat"));
   }
 
   let serializedBytes = 0;
@@ -349,11 +311,7 @@ export function validateAdvancedTemplateConfig(
   const pageCount = config.template.schemas.length;
   if (pageCount > ADVANCED_TEMPLATE_LIMITS.maxPages) {
     errors.push(
-      issue(
-        "page-limit",
-        `Templates are limited to ${ADVANCED_TEMPLATE_LIMITS.maxPages} pages.`,
-        "template.schemas",
-      ),
+      issue("page-limit", `Templates are limited to ${ADVANCED_TEMPLATE_LIMITS.maxPages} pages.`, "template.schemas"),
     );
   }
 
@@ -374,11 +332,7 @@ export function validateAdvancedTemplateConfig(
   for (const [index, schema] of schemas.entries()) {
     if (!KNOWN_PDFME_PLUGIN_TYPES.has(schema.type)) {
       errors.push(
-        issue(
-          "unknown-plugin",
-          `Unknown pdfme plugin type "${schema.type}".`,
-          `template.elements.${index}.type`,
-        ),
+        issue("unknown-plugin", `Unknown pdfme plugin type "${schema.type}".`, `template.elements.${index}.type`),
       );
     }
   }
@@ -394,9 +348,7 @@ export function validateAdvancedTemplateConfig(
       );
     }
 
-    const boundKeys = new Set(
-      schemas.map((schema) => resolveDocumentFieldKey(documentType, schema.name)),
-    );
+    const boundKeys = new Set(schemas.map((schema) => resolveDocumentFieldKey(documentType, schema.name)));
     for (const binding of definition.requiredBindings) {
       if (!boundKeys.has(binding)) {
         errors.push(
@@ -414,48 +366,29 @@ export function validateAdvancedTemplateConfig(
       if (field.source !== "user" || (!field.required && !field.computationRequired)) {
         continue;
       }
-      const entry = formEntries.find(
-        (candidate) => candidate.kind === "builtin" && candidate.key === field.key,
-      );
+      const entry = formEntries.find((candidate) => candidate.kind === "builtin" && candidate.key === field.key);
       if (!entry) {
-        errors.push(
-          issue(
-            "core-field-missing",
-            `Core field "${field.key}" cannot be removed.`,
-            `form.${field.key}`,
-          ),
-        );
+        errors.push(issue("core-field-missing", `Core field "${field.key}" cannot be removed.`, `form.${field.key}`));
       } else {
         if (!entry.enabled) {
           errors.push(
-            issue(
-              "core-field-disabled",
-              `Core field "${field.key}" cannot be disabled.`,
-              `form.${field.key}.enabled`,
-            ),
+            issue("core-field-disabled", `Core field "${field.key}" cannot be disabled.`, `form.${field.key}.enabled`),
           );
         }
         if (field.required && !entry.required) {
           errors.push(
-            issue(
-              "core-field-optional",
-              `Core field "${field.key}" cannot be optional.`,
-              `form.${field.key}.required`,
-            ),
+            issue("core-field-optional", `Core field "${field.key}" cannot be optional.`, `form.${field.key}.required`),
           );
         }
       }
     }
 
-    const customEntries = new Map(
-      formEntries.filter(isCustom).map((entry) => [entry.key, entry] as const),
-    );
+    const customEntries = new Map(formEntries.filter(isCustom).map((entry) => [entry.key, entry] as const));
     for (const [index, schema] of schemas.entries()) {
       const field = findField(documentType, schema.name);
       const custom = customEntries.get(schema.name);
       const allowed =
-        field?.allowedBindingTypes ??
-        (custom ? [custom.kind === "repeater" ? "table" : "text"] : undefined);
+        field?.allowedBindingTypes ?? (custom ? [custom.kind === "repeater" ? "table" : "text"] : undefined);
       if (allowed && !allowed.includes(bindingType(schema))) {
         errors.push(
           issue(
@@ -472,11 +405,7 @@ export function validateAdvancedTemplateConfig(
       const field = entry.kind === "builtin" ? findField(documentType, entry.key) : undefined;
       if (entry.kind !== "builtin" || (!entry.required && !field?.computationRequired)) {
         warnings.push(
-          issue(
-            "unused-field",
-            `Optional field "${entry.key}" is not used on the canvas.`,
-            `form.${entry.key}`,
-          ),
+          issue("unused-field", `Optional field "${entry.key}" is not used on the canvas.`, `form.${entry.key}`),
         );
       }
     }

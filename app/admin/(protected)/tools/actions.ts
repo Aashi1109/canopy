@@ -131,9 +131,7 @@ export async function publishToolContentAction(
     revalidate(toolId);
     return {
       status: "success",
-      message: published
-        ? "Stored content is live."
-        : "Stored content is back to draft; the code values are live.",
+      message: published ? "Stored content is live." : "Stored content is back to draft; the code values are live.",
     };
   } catch (error) {
     return failure(error);

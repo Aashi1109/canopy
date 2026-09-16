@@ -26,15 +26,11 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
  */
 export const validate: ToolValidate<Settings> = (settings) => {
   if (
-    [settings.cropX, settings.cropY, settings.cropWidth, settings.cropHeight].some(
-      (value) => !Number.isInteger(value),
-    )
+    [settings.cropX, settings.cropY, settings.cropWidth, settings.cropHeight].some((value) => !Number.isInteger(value))
   ) {
     return "Enter whole-number points for Left, Bottom, Width, and Height.";
   }
-  return settings.cropWidth <= 0 || settings.cropHeight <= 0
-    ? "Width and Height must be greater than zero."
-    : null;
+  return settings.cropWidth <= 0 || settings.cropHeight <= 0 ? "Width and Height must be greater than zero." : null;
 };
 
 /**
@@ -57,10 +53,7 @@ export const onPagesInspected: ToolPagesInspected<Settings> = (previews) => {
  * enumerated without a page count, but the previews carry the real page
  * numbers, which is the same thing.
  */
-function selectedPages(
-  previews: readonly ToolPagePreview[],
-  pages: PageSelection,
-): readonly ToolPagePreview[] {
+function selectedPages(previews: readonly ToolPagePreview[], pages: PageSelection): readonly ToolPagePreview[] {
   if (pages === "all") return previews;
   if (pages === "odd") return previews.filter((p) => p.pageNumber % 2 === 1);
   if (pages === "even") return previews.filter((p) => p.pageNumber % 2 === 0);
@@ -80,12 +73,8 @@ function selectedPages(
 export const onSettingsChanged: ToolSettingsChanged<Settings> = (settings, previews) => {
   const selected = selectedPages(previews, settings.pages);
   if (selected.length === 0) return {};
-  const maxWidth = Math.min(
-    ...selected.map(({ pageWidth }) => Math.max(1, pageWidth - settings.cropX)),
-  );
-  const maxHeight = Math.min(
-    ...selected.map(({ pageHeight }) => Math.max(1, pageHeight - settings.cropY)),
-  );
+  const maxWidth = Math.min(...selected.map(({ pageWidth }) => Math.max(1, pageWidth - settings.cropX)));
+  const maxHeight = Math.min(...selected.map(({ pageHeight }) => Math.max(1, pageHeight - settings.cropY)));
   return {
     cropWidth: Math.floor(Math.min(settings.cropWidth, maxWidth)),
     cropHeight: Math.floor(Math.min(settings.cropHeight, maxHeight)),

@@ -28,11 +28,7 @@ import {
   type ToolApp,
   type ToolManifestEntry,
 } from "@smarttools/tool-catalog";
-import {
-  mergeFeatureOverrides,
-  type FeatureManifestEntry,
-  type ResolvedFeature,
-} from "./featureFlags.ts";
+import { mergeFeatureOverrides, type FeatureManifestEntry, type ResolvedFeature } from "./featureFlags.ts";
 
 export class AuthorizationError extends Error {
   readonly status = 403;
@@ -49,17 +45,12 @@ const userRolesCache = new Cache("user-roles");
  * catalogue, which manages rows and must see them all — admin enumerates
  * `managed_tools` itself through `lib/tool-framework/manifest.ts`.
  */
-export async function getManagedTools(
-  manifest: readonly ToolManifestEntry[],
-): Promise<ResolvedTool[]> {
+export async function getManagedTools(manifest: readonly ToolManifestEntry[]): Promise<ResolvedTool[]> {
   if (!isDatabaseConfigured()) return mergeToolManifest([], manifest);
   return mergeToolManifest(await db.select().from(managedToolsTable), manifest);
 }
 
-export async function getAvailableTools(
-  app: ToolApp,
-  manifest: readonly ToolManifestEntry[],
-): Promise<ResolvedTool[]> {
+export async function getAvailableTools(app: ToolApp, manifest: readonly ToolManifestEntry[]): Promise<ResolvedTool[]> {
   return getEnabledTools(await getManagedTools(manifest), app);
 }
 
@@ -116,18 +107,11 @@ function mapTemplate(row: typeof invoiceTemplatesTable.$inferSelect): DocumentTe
   return undefined;
 }
 
-function filterTemplates(
-  templates: DocumentTemplate[],
-  documentType?: DocumentType,
-): DocumentTemplate[] {
-  return documentType
-    ? templates.filter((template) => template.documentType === documentType)
-    : templates;
+function filterTemplates(templates: DocumentTemplate[], documentType?: DocumentType): DocumentTemplate[] {
+  return documentType ? templates.filter((template) => template.documentType === documentType) : templates;
 }
 
-export async function getPublishedTemplates(
-  documentType?: DocumentType,
-): Promise<DocumentTemplate[]> {
+export async function getPublishedTemplates(documentType?: DocumentType): Promise<DocumentTemplate[]> {
   try {
     assertDatabaseConfigured();
     const rows = await db
@@ -185,11 +169,7 @@ export async function getUserAuthorization(userId: string): Promise<{
       }
 
       return rows.flatMap((row) =>
-        row.roleId &&
-        row.roleName &&
-        row.roleDescription &&
-        row.roleAccess &&
-        row.roleIsSystem !== null
+        row.roleId && row.roleName && row.roleDescription && row.roleAccess && row.roleIsSystem !== null
           ? [
               {
                 id: row.roleId,
@@ -208,11 +188,7 @@ export async function getUserAuthorization(userId: string): Promise<{
   return { roles, access: mergeRoleAccess(roles) };
 }
 
-export async function requirePermission(
-  userId: string,
-  resource: string,
-  action: string,
-): Promise<void> {
+export async function requirePermission(userId: string, resource: string, action: string): Promise<void> {
   const { access } = await getUserAuthorization(userId);
   if (!hasPermission(access, resource, action)) {
     throw new AuthorizationError(`Missing permission: ${resource}.${action}`);

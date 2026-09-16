@@ -14,8 +14,7 @@ function rotationPlan(settings: WorkspaceProps["settings"], count: number) {
   const raw = settings.rotateSelectedOnly === false ? "all" : settings.pages;
   const expression = Array.isArray(raw) ? raw.join(",") : String(raw ?? "all");
   const parsed = parsePageSelection(expression, count);
-  const selected =
-    parsed === "all" ? Array.from({ length: count }, (_, index) => index + 1) : parsed;
+  const selected = parsed === "all" ? Array.from({ length: count }, (_, index) => index + 1) : parsed;
   if (!selected.length) throw new Error(`Choose pages from 1 to ${count}.`);
   const turn = settings.degrees === "180" ? 180 : settings.degrees === "270" ? 270 : 90;
   return { selected, turn } as const;
@@ -89,10 +88,7 @@ function RotationSettings({
           disabled={props.disabled}
           onChange={(event) => {
             props.onSettingChange("rotateSelectedOnly", true);
-            props.onSettingChange(
-              "pages",
-              event.target.value === "custom" ? "" : event.target.value,
-            );
+            props.onSettingChange("pages", event.target.value === "custom" ? "" : event.target.value);
           }}
         >
           <option value="all">All pages</option>
@@ -147,16 +143,10 @@ export default function RotatePdfPagesWorkspace(props: WorkspaceProps) {
           return 0;
         }
       }}
-      renderOptions={(pages) => (
-        <RotationSettings props={props} pages={pages} completed={Boolean(completed)} />
-      )}
-      secondaryActions={
-        <Caption>Your original stays unchanged. Page order and quality are preserved.</Caption>
-      }
+      renderOptions={(pages) => <RotationSettings props={props} pages={pages} completed={Boolean(completed)} />}
+      secondaryActions={<Caption>Your original stays unchanged. Page order and quality are preserved.</Caption>}
       completedPreview={
-        output ? (
-          <GeneratedPdfPreview fill file={output} definitionKey="rotate-pdf-pages" />
-        ) : undefined
+        output ? <GeneratedPdfPreview fill file={output} definitionKey="rotate-pdf-pages" /> : undefined
       }
       completionActions={
         <div className="grid grid-cols-2 gap-2">

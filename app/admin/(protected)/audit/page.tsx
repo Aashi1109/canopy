@@ -40,14 +40,11 @@ export default async function AuditPage({ searchParams }: { searchParams: AuditS
   const query = valueOf(params.q).trim().toLowerCase();
   const requestedAction = valueOf(params.action);
   const action = requestedAction === "all" ? "" : requestedAction;
-  const actions = [
-    ...new Set([...events.map((event) => event.action), ...(action ? [action] : [])]),
-  ].sort();
+  const actions = [...new Set([...events.map((event) => event.action), ...(action ? [action] : [])])].sort();
   const requestedDate = valueOf(params.date);
   const date = ["7", "30", "90", "all"].includes(requestedDate) ? requestedDate : "30";
   const days = date === "all" ? null : Number(date);
-  const cutoff =
-    days && Number.isFinite(days) ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
+  const cutoff = days && Number.isFinite(days) ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
   const filteredEvents = events.filter((event) => {
     if (action && event.action !== action) return false;
     if (cutoff && event.createdAt < cutoff) return false;
@@ -122,38 +119,28 @@ export default async function AuditPage({ searchParams }: { searchParams: AuditS
                 return (
                   <TableRow className="align-top hover:bg-muted/30" key={event.id}>
                     <TableCell className="whitespace-normal py-3.5">
-                      <Strong className="block text-foreground">
-                        {event.actorName ?? "Deleted user"}
-                      </Strong>
+                      <Strong className="block text-foreground">{event.actorName ?? "Deleted user"}</Strong>
                       <Caption className="mt-0.5 block break-all text-muted-foreground">
                         {event.actorEmail ?? event.actorUserId}
                       </Caption>
                     </TableCell>
                     <TableCell className="whitespace-normal py-3.5 align-middle">
                       <Text className="inline-flex items-center gap-2.5 text-foreground">
-                        <EventIcon
-                          aria-hidden="true"
-                          className="size-[18px] shrink-0 text-primary"
-                          strokeWidth={1.8}
-                        />
+                        <EventIcon aria-hidden="true" className="size-[18px] shrink-0 text-primary" strokeWidth={1.8} />
                         {label}
                       </Text>
                     </TableCell>
                     <TableCell className="whitespace-normal py-3.5">
                       {event.targetType === "user" ? (
                         <>
-                          <Strong className="block text-foreground">
-                            {event.targetUserName ?? "Deleted user"}
-                          </Strong>
+                          <Strong className="block text-foreground">{event.targetUserName ?? "Deleted user"}</Strong>
                           <Caption className="mt-0.5 block break-all text-muted-foreground">
                             {event.targetUserEmail ?? event.targetId}
                           </Caption>
                         </>
                       ) : (
                         <>
-                          <Overline className="block text-muted-foreground">
-                            {event.targetType}
-                          </Overline>
+                          <Overline className="block text-muted-foreground">{event.targetType}</Overline>
                           <InlineCode className="mt-1 block break-all">{event.targetId}</InlineCode>
                         </>
                       )}
@@ -164,9 +151,7 @@ export default async function AuditPage({ searchParams }: { searchParams: AuditS
                       </InlineCode>
                     </TableCell>
                     <TableCell className="whitespace-normal py-3.5 text-muted-foreground">
-                      <time dateTime={event.createdAt.toISOString()}>
-                        {dateTimeFormatter.format(event.createdAt)}
-                      </time>
+                      <time dateTime={event.createdAt.toISOString()}>{dateTimeFormatter.format(event.createdAt)}</time>
                     </TableCell>
                   </TableRow>
                 );
