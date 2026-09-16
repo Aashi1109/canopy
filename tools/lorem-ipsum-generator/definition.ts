@@ -4,14 +4,7 @@ export default {
   toolId: "devtools.lorem-ipsum-generator",
   app: "devtools",
   category: "text-tools",
-  keywords: [
-    "lorem ipsum",
-    "placeholder",
-    "dummy text",
-    "filler",
-    "mockup",
-    "paragraphs",
-  ],
+  keywords: ["lorem ipsum", "placeholder", "dummy text", "filler", "mockup", "paragraphs"],
   name: "Lorem Ipsum Generator",
   description: "Generate placeholder paragraphs.",
   input: { kind: "none" },
@@ -72,12 +65,12 @@ export default {
     ],
     faq: [
       {
-        q: "Why does the classic \"Lorem ipsum dolor sit amet\" opening not appear in every paragraph?",
+        q: 'Why does the classic "Lorem ipsum dolor sit amet" opening not appear in every paragraph?',
         a: "Paragraphs are offset through the sentence pool so the block reads as varied text rather than the same stanza repeated.",
       },
       {
         q: "Should I ship this to production?",
-        a: "No. Placeholder Latin that survives to production is a classic launch bug — search for \"lorem\" before you release.",
+        a: 'No. Placeholder Latin that survives to production is a classic launch bug — search for "lorem" before you release.',
       },
     ],
   },

@@ -9,10 +9,7 @@ import {
   requireAvailableToolForStorageKey,
 } from "@/lib/paperwork/toolAccess";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ key: string }> },
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ key: string }> }) {
   try {
     const { key } = await params;
     await requireAvailableToolForStorageKey(key);
@@ -23,18 +20,11 @@ export async function GET(
     const rows = await db
       .select()
       .from(keyValuePairTable)
-      .where(
-        and(
-          eq(keyValuePairTable.userId, userId),
-          eq(keyValuePairTable.key, key),
-        ),
-      )
+      .where(and(eq(keyValuePairTable.userId, userId), eq(keyValuePairTable.key, key)))
       .limit(1);
 
     return NextResponse.json(
-      rows[0]
-        ? { found: true, value: rows[0].value }
-        : { found: false, value: null },
+      rows[0] ? { found: true, value: rows[0].value } : { found: false, value: null },
     );
   } catch (error) {
     if (error instanceof PaperworkToolAccessError) {

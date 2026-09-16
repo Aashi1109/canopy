@@ -47,8 +47,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       ...(allowAll || !paths.length
         ? ["Disallow:"]
         : paths.map(
-            (path) =>
-              `${ctx.settings.newDirective === "allow" ? "Allow" : "Disallow"}: ${path}`,
+            (path) => `${ctx.settings.newDirective === "allow" ? "Allow" : "Disallow"}: ${path}`,
           )),
       ...allowPaths.map((path) => `Allow: ${path}`),
       ...(crawlDelay ? [`Crawl-delay: ${crawlDelay}`] : []),

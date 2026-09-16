@@ -18,7 +18,7 @@ export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => {
     throw new ToolError(
       "invalid-escape",
       "Escaped string is not valid JSON string content.",
-      "Paste only what sits between the quotes, and escape any inner quote as \\\" and any backslash as \\\\.",
+      'Paste only what sits between the quotes, and escape any inner quote as \\" and any backslash as \\\\.',
     );
   }
 };

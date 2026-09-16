@@ -1,5 +1,29 @@
 "use client";
-import { H1, H2, H3, H4, H5, H6, Display, P, Text, Lead, Large, Small, Muted, Caption, Overline, Metric, Strong, Blockquote, List, OrderedList, InlineCode, CodeBlock, TextLink } from "@smarttools/ui/components/typography";
+import {
+  H1,
+  H2,
+  H3,
+  H4,
+  H5,
+  H6,
+  Display,
+  P,
+  Text,
+  Lead,
+  Large,
+  Small,
+  Muted,
+  Caption,
+  Overline,
+  Metric,
+  Strong,
+  Blockquote,
+  List,
+  OrderedList,
+  InlineCode,
+  CodeBlock,
+  TextLink,
+} from "@smarttools/ui/components/typography";
 
 import { OrderableList } from "@smarttools/ui/components/OrderableList";
 import {
@@ -241,9 +265,7 @@ function Specimen({
 }) {
   return (
     <div className={className}>
-      <Muted className="mb-3 text-muted-foreground">
-        {label}
-      </Muted>
+      <Muted className="mb-3 text-muted-foreground">{label}</Muted>
       {children}
     </div>
   );
@@ -255,7 +277,9 @@ export default function DesignSystemPage() {
   const [mediaPreviewOpen, setMediaPreviewOpen] = useState(false);
   const [selectedChapterIndex, setSelectedChapterIndex] = useState(4);
   const [inlineTitle, setInlineTitle] = useState("Viewer");
-  const [inlineDescription, setInlineDescription] = useState("Can view content without making changes.");
+  const [inlineDescription, setInlineDescription] = useState(
+    "Can view content without making changes.",
+  );
   const handbookSection = handbookSectionAtPage(handbookPage);
 
   return (
@@ -290,40 +314,97 @@ export default function DesignSystemPage() {
                   <div className={`h-20 ${swatch.className}`} />
                   <div className="flex items-center justify-between gap-3 px-4 py-3">
                     <Caption className="">{swatch.label}</Caption>
-                    <InlineCode className="text-muted-foreground">
-                      {swatch.value}
-                    </InlineCode>
+                    <InlineCode className="text-muted-foreground">{swatch.value}</InlineCode>
                   </div>
                 </div>
               ))}
             </div>
             <Separator />
             <div className="grid gap-8 lg:grid-cols-3">
-              <Specimen className="lg:col-span-3" label="Display · Inter · 48px / 700"><Display>Receipts, done right.</Display></Specimen>
-              <Specimen label="H1 · Inter · 32px / 600"><H1>Page heading</H1></Specimen>
-              <Specimen label="H2 · Inter · 24px / 600"><H2>Section heading</H2></Specimen>
-              <Specimen label="H3 · Inter · 20px / 600"><H3>Panel heading</H3></Specimen>
-              <Specimen label="H4 · Inter · 18px / 600"><H4>Subsection heading</H4></Specimen>
-              <Specimen label="H5 · Inter · 16px / 600"><H5>Nested heading</H5></Specimen>
-              <Specimen label="H6 · Inter · 15px / 600"><H6>Deeply nested heading</H6></Specimen>
-              <Specimen label="P · Geist · 15px"><P>Body content wraps naturally without fixed heights.</P></Specimen>
-              <Specimen label="Text · Geist · 15px"><Text>Inline body text.</Text></Specimen>
-              <Specimen label="Lead · Geist · 18px"><Lead>Introductory copy that explains the page.</Lead></Specimen>
-              <Specimen label="Large · Geist · 18px / 600"><Large>Prominent supporting text</Large></Specimen>
-              <Specimen label="Small · Funnel Sans · 13px / 500"><Small>Small supporting text</Small></Specimen>
-              <Specimen label="Muted · Geist · 13px"><Muted>Secondary descriptions and helper copy.</Muted></Specimen>
-              <Specimen label="Caption · Funnel Sans · 13px"><Caption>6 tools · Updated today</Caption></Specimen>
-              <Specimen label="Overline · Funnel Sans · 11px / 600"><Overline>Documents</Overline></Specimen>
-              <Specimen label="Metric · Inter · 32px / 600"><Metric>1,024</Metric></Specimen>
-              <Specimen label="Strong · inherited size / 600"><P>Review the <Strong>final result</Strong> before exporting.</P></Specimen>
-              <Specimen label="Blockquote"><Blockquote>Keep related content together.</Blockquote></Specimen>
-              <Specimen label="List"><List><li>Add your input</li><li>Review the result</li></List></Specimen>
-              <Specimen label="OrderedList"><OrderedList><li>Choose a tool</li><li>Export your result</li></OrderedList></Specimen>
-              <Specimen label="InlineCode · Geist Mono · 12px"><P>Use <InlineCode>JSON.stringify()</InlineCode> to serialize data.</P></Specimen>
-              <Specimen label="CodeBlock · Geist Mono · 12px"><CodeBlock>{'{\n  "ready": true\n}'}</CodeBlock></Specimen>
-              <Specimen label="TextLink · inherited size"><TextLink href="#typography-guidelines">Typography guidelines</TextLink></Specimen>
+              <Specimen className="lg:col-span-3" label="Display · Inter · 48px / 700">
+                <Display>Receipts, done right.</Display>
+              </Specimen>
+              <Specimen label="H1 · Inter · 32px / 600">
+                <H1>Page heading</H1>
+              </Specimen>
+              <Specimen label="H2 · Inter · 24px / 600">
+                <H2>Section heading</H2>
+              </Specimen>
+              <Specimen label="H3 · Inter · 20px / 600">
+                <H3>Panel heading</H3>
+              </Specimen>
+              <Specimen label="H4 · Inter · 18px / 600">
+                <H4>Subsection heading</H4>
+              </Specimen>
+              <Specimen label="H5 · Inter · 16px / 600">
+                <H5>Nested heading</H5>
+              </Specimen>
+              <Specimen label="H6 · Inter · 15px / 600">
+                <H6>Deeply nested heading</H6>
+              </Specimen>
+              <Specimen label="P · Geist · 15px">
+                <P>Body content wraps naturally without fixed heights.</P>
+              </Specimen>
+              <Specimen label="Text · Geist · 15px">
+                <Text>Inline body text.</Text>
+              </Specimen>
+              <Specimen label="Lead · Geist · 18px">
+                <Lead>Introductory copy that explains the page.</Lead>
+              </Specimen>
+              <Specimen label="Large · Geist · 18px / 600">
+                <Large>Prominent supporting text</Large>
+              </Specimen>
+              <Specimen label="Small · Funnel Sans · 13px / 500">
+                <Small>Small supporting text</Small>
+              </Specimen>
+              <Specimen label="Muted · Geist · 13px">
+                <Muted>Secondary descriptions and helper copy.</Muted>
+              </Specimen>
+              <Specimen label="Caption · Funnel Sans · 13px">
+                <Caption>6 tools · Updated today</Caption>
+              </Specimen>
+              <Specimen label="Overline · Funnel Sans · 11px / 600">
+                <Overline>Documents</Overline>
+              </Specimen>
+              <Specimen label="Metric · Inter · 32px / 600">
+                <Metric>1,024</Metric>
+              </Specimen>
+              <Specimen label="Strong · inherited size / 600">
+                <P>
+                  Review the <Strong>final result</Strong> before exporting.
+                </P>
+              </Specimen>
+              <Specimen label="Blockquote">
+                <Blockquote>Keep related content together.</Blockquote>
+              </Specimen>
+              <Specimen label="List">
+                <List>
+                  <li>Add your input</li>
+                  <li>Review the result</li>
+                </List>
+              </Specimen>
+              <Specimen label="OrderedList">
+                <OrderedList>
+                  <li>Choose a tool</li>
+                  <li>Export your result</li>
+                </OrderedList>
+              </Specimen>
+              <Specimen label="InlineCode · Geist Mono · 12px">
+                <P>
+                  Use <InlineCode>JSON.stringify()</InlineCode> to serialize data.
+                </P>
+              </Specimen>
+              <Specimen label="CodeBlock · Geist Mono · 12px">
+                <CodeBlock>{'{\n  "ready": true\n}'}</CodeBlock>
+              </Specimen>
+              <Specimen label="TextLink · inherited size">
+                <TextLink href="#typography-guidelines">Typography guidelines</TextLink>
+              </Specimen>
             </div>
-            <Muted id="typography-guidelines">Use named components without font overrides. H1–H6 follow the document hierarchy; fields and controls own their labels. Layout classes stay with the layout.</Muted>
+            <Muted id="typography-guidelines">
+              Use named components without font overrides. H1–H6 follow the document hierarchy;
+              fields and controls own their labels. Layout classes stay with the layout.
+            </Muted>
             <Separator />
             <Specimen label="App container">
               <div className="rounded-xl bg-muted py-4">
@@ -345,7 +426,10 @@ export default function DesignSystemPage() {
           />
           <SectionCard>
             <Specimen label="Tool actions — shared by every tool">
-              <Muted className="text-muted-foreground">Use ToolActionButton for paste, upload, copy, and download. Keep artifact labels and feedback specific; use iconOnly for compact result toolbars.</Muted>
+              <Muted className="text-muted-foreground">
+                Use ToolActionButton for paste, upload, copy, and download. Keep artifact labels and
+                feedback specific; use iconOnly for compact result toolbars.
+              </Muted>
               <div className="flex flex-wrap items-center gap-2">
                 <ToolActionButton action="paste" />
                 <ToolActionButton action="upload" />
@@ -466,10 +550,18 @@ export default function DesignSystemPage() {
                   value={inlineDescription}
                 />
               </Muted>
-              <Caption>Enter finishes editing. Shift+Enter adds a new line in descriptions. Escape cancels. Clicking outside keeps your draft.</Caption>
+              <Caption>
+                Enter finishes editing. Shift+Enter adds a new line in descriptions. Escape cancels.
+                Clicking outside keeps your draft.
+              </Caption>
               <Specimen label="Disabled">
                 <Muted>
-                  <InlineTextEditor disabled label="Locked role name" onChange={setInlineTitle} value="Administrator" />
+                  <InlineTextEditor
+                    disabled
+                    label="Locked role name"
+                    onChange={setInlineTitle}
+                    value="Administrator"
+                  />
                 </Muted>
               </Specimen>
             </SectionCard>
@@ -485,31 +577,30 @@ export default function DesignSystemPage() {
                 label="Email"
                 required
               >
-                <Input
-                  defaultValue="jane@company.com"
-                  id="showcase-email"
-                  type="email"
-                />
+                <Input defaultValue="jane@company.com" id="showcase-email" type="email" />
               </Field>
               <Field
                 error="Enter a valid invoice reference."
                 htmlFor="showcase-reference"
                 label="Invoice reference"
               >
-                <Input
-                  aria-invalid
-                  defaultValue="INV /"
-                  id="showcase-reference"
-                />
+                <Input aria-invalid defaultValue="INV /" id="showcase-reference" />
               </Field>
-              <Field htmlFor="showcase-width" label="Width" description="Decorative leading icon and unit suffix remain clear at compact densities.">
-                <Input id="showcase-width" type="number" defaultValue={523} leadingIcon={<span>↔</span>} suffix="pt" />
+              <Field
+                htmlFor="showcase-width"
+                label="Width"
+                description="Decorative leading icon and unit suffix remain clear at compact densities."
+              >
+                <Input
+                  id="showcase-width"
+                  type="number"
+                  defaultValue={523}
+                  leadingIcon={<span>↔</span>}
+                  suffix="pt"
+                />
               </Field>
               <Field htmlFor="showcase-message" label="Message">
-                <Textarea
-                  defaultValue="Thanks for your business."
-                  id="showcase-message"
-                />
+                <Textarea defaultValue="Thanks for your business." id="showcase-message" />
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field htmlFor="showcase-document-type" label="Document type">
@@ -557,9 +648,7 @@ export default function DesignSystemPage() {
                     <Switch defaultChecked id="showcase-auto-save" />
                     <FieldContent>
                       <FieldLabel htmlFor="showcase-auto-save">Auto-save drafts</FieldLabel>
-                      <FieldDescription>
-                        Keep local changes while you work.
-                      </FieldDescription>
+                      <FieldDescription>Keep local changes while you work.</FieldDescription>
                     </FieldContent>
                   </FieldRoot>
                   <FieldSeparator>Or choose manually</FieldSeparator>
@@ -567,24 +656,15 @@ export default function DesignSystemPage() {
                     <CheckboxControl defaultChecked id="showcase-confirmation" />
                     <FieldContent>
                       <FieldTitle>Email confirmation</FieldTitle>
-                      <FieldLabel
-                        className="sr-only"
-                        htmlFor="showcase-confirmation"
-                      >
+                      <FieldLabel className="sr-only" htmlFor="showcase-confirmation">
                         Enable email confirmation
                       </FieldLabel>
-                      <FieldDescription>
-                        Send a copy after each successful export.
-                      </FieldDescription>
+                      <FieldDescription>Send a copy after each successful export.</FieldDescription>
                     </FieldContent>
                   </FieldRoot>
                   <FieldRoot data-invalid>
                     <FieldLabel htmlFor="showcase-required-code">Reference code</FieldLabel>
-                    <Input
-                      aria-invalid
-                      id="showcase-required-code"
-                      placeholder="Required"
-                    />
+                    <Input aria-invalid id="showcase-required-code" placeholder="Required" />
                     <FieldError>This field is required.</FieldError>
                   </FieldRoot>
                 </FieldGroup>
@@ -603,11 +683,7 @@ export default function DesignSystemPage() {
                     {controlSizes.map(([size, label]) => (
                       <div className="grid gap-2" key={size}>
                         <Label htmlFor={`input-${size}`}>{label}</Label>
-                        <Input
-                          id={`input-${size}`}
-                          placeholder={`${label} input`}
-                          size={size}
-                        />
+                        <Input id={`input-${size}`} placeholder={`${label} input`} size={size} />
                       </div>
                     ))}
                   </div>
@@ -662,17 +738,10 @@ export default function DesignSystemPage() {
               </div>
               <Separator />
               <Specimen label="Radio sizes">
-                <RadioGroup
-                  className="flex flex-wrap items-center gap-6"
-                  defaultValue="default"
-                >
+                <RadioGroup className="flex flex-wrap items-center gap-6" defaultValue="default">
                   {controlSizes.map(([size, label]) => (
                     <div className="flex items-center gap-2.5" key={size}>
-                      <RadioGroupItem
-                        id={`radio-${size}`}
-                        size={size}
-                        value={size}
-                      />
+                      <RadioGroupItem id={`radio-${size}`} size={size} value={size} />
                       <Label htmlFor={`radio-${size}`}>{label}</Label>
                     </div>
                   ))}
@@ -718,10 +787,7 @@ export default function DesignSystemPage() {
                   <TabsTrigger value="items">Line items</TabsTrigger>
                   <TabsTrigger value="preview">Preview</TabsTrigger>
                 </TabsList>
-                <TabsContent
-                  className="rounded-lg bg-muted p-5 text-muted-foreground"
-                  value="edit"
-                >
+                <TabsContent className="rounded-lg bg-muted p-5 text-muted-foreground" value="edit">
                   Edit fields and document settings here.
                 </TabsContent>
                 <TabsContent
@@ -749,7 +815,16 @@ export default function DesignSystemPage() {
                 </Tabs>
               </Specimen>
               <Specimen label="Segmented control — field">
-                <SegmentedControl size="field" defaultValue="jpg" aria-label="Output format" items={[{value:"jpg",label:"JPG (JPEG)"},{value:"png",label:"PNG",disabled:true},{value:"webp",label:"WebP"}]} />
+                <SegmentedControl
+                  size="field"
+                  defaultValue="jpg"
+                  aria-label="Output format"
+                  items={[
+                    { value: "jpg", label: "JPG (JPEG)" },
+                    { value: "png", label: "PNG", disabled: true },
+                    { value: "webp", label: "WebP" },
+                  ]}
+                />
               </Specimen>
               <Specimen label="Tooltip">
                 <TooltipProvider>
@@ -776,10 +851,7 @@ export default function DesignSystemPage() {
                   ]}
                 />
               </Specimen>
-              <Separator
-                className="hidden min-h-20 lg:block"
-                orientation="vertical"
-              />
+              <Separator className="hidden min-h-20 lg:block" orientation="vertical" />
               <Specimen label="Brand lockup">
                 <BrandLockup href="/admin/design-system" name="Paperwork" />
               </Specimen>
@@ -788,13 +860,11 @@ export default function DesignSystemPage() {
             <Specimen label="Chapter navigation">
               <div className="grid gap-8 rounded-xl border border-border bg-muted/60 p-5 sm:p-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,1fr)] lg:items-center">
                 <div className="max-w-md">
-                  <P className="">
-                    Jump through a long-running workflow
-                  </P>
+                  <P className="">Jump through a long-running workflow</P>
                   <Muted className="mt-2 text-muted-foreground">
-                    Hover or tap a tick to preview its chapter. On touch, tap
-                    it again to choose. With a keyboard, use the arrow keys,
-                    Home, or End to move, then press Enter or Space to choose.
+                    Hover or tap a tick to preview its chapter. On touch, tap it again to choose.
+                    With a keyboard, use the arrow keys, Home, or End to move, then press Enter or
+                    Space to choose.
                   </Muted>
                   <P className="mt-4 text-primary">
                     Current · {workflowChapters[selectedChapterIndex].title}
@@ -828,8 +898,7 @@ export default function DesignSystemPage() {
                   key={handbookSection.id}
                 >
                   <P className="text-primary">
-                    {String(handbookPage).padStart(2, "0")} /{" "}
-                    {handbookSection.title}
+                    {String(handbookPage).padStart(2, "0")} / {handbookSection.title}
                   </P>
                   <H3 className="text-foreground">
                     {handbookSection.id === "review"
@@ -838,8 +907,8 @@ export default function DesignSystemPage() {
                   </H3>
                   <span className="h-0.5 w-15 bg-primary" />
                   <Muted className="max-w-xl text-muted-foreground">
-                    Keep decisions moving with focused review queues, clear
-                    ownership, and an audit-ready history.
+                    Keep decisions moving with focused review queues, clear ownership, and an
+                    audit-ready history.
                   </Muted>
                   {[
                     ["Assign reviewers", "Route each document to the right person."],
@@ -849,12 +918,8 @@ export default function DesignSystemPage() {
                     <div className="flex items-center gap-2.5" key={title}>
                       <span className="size-1.5 shrink-0 rounded-full bg-primary" />
                       <div>
-                        <P className="text-foreground">
-                          {title}
-                        </P>
-                        <Muted className="text-muted-foreground">
-                          {description}
-                        </Muted>
+                        <P className="text-foreground">{title}</P>
+                        <Muted className="text-muted-foreground">{description}</Muted>
                       </div>
                     </div>
                   ))}
@@ -891,12 +956,12 @@ export default function DesignSystemPage() {
                 <article className="m-auto w-full max-w-2xl shrink-0 bg-card p-8 text-foreground sm:p-12">
                   <H2>Caller-owned content</H2>
                   <P className="mt-4">
-                    This document is passed as children. Images, video, audio,
-                    PDF viewers, and other previews use the same full-screen shell.
+                    This document is passed as children. Images, video, audio, PDF viewers, and
+                    other previews use the same full-screen shell.
                   </P>
                   <Muted className="mt-4">
-                    The caller provides rendering and any playback, navigation,
-                    or zoom controls. Exit preview to return to the component library.
+                    The caller provides rendering and any playback, navigation, or zoom controls.
+                    Exit preview to return to the component library.
                   </Muted>
                 </article>
               </MediaPreview>
@@ -923,9 +988,7 @@ export default function DesignSystemPage() {
               <Alert variant="destructive">
                 <AlertTriangle />
                 <AlertTitle>Export failed</AlertTitle>
-                <AlertDescription>
-                  Check the source file and try again.
-                </AlertDescription>
+                <AlertDescription>Check the source file and try again.</AlertDescription>
               </Alert>
               <AlertBanner title="Ready to export" variant="success">
                 All validation checks passed.
@@ -1018,9 +1081,7 @@ export default function DesignSystemPage() {
               </CardHeader>
               <CardContent>
                 <P className="">1,284</P>
-                <P className="mt-1 text-success">
-                  +12% this month
-                </P>
+                <P className="mt-1 text-success">+12% this month</P>
               </CardContent>
               <CardFooter className="border-t">
                 <Button size="sm" variant="secondary">
@@ -1033,10 +1094,7 @@ export default function DesignSystemPage() {
               <SectionHeading className="mb-0" title="Avatars" />
               <AvatarGroup>
                 <Avatar size="lg">
-                  <AvatarImage
-                    alt="Google account"
-                    src="/auth/google-g-logo.png"
-                  />
+                  <AvatarImage alt="Google account" src="/auth/google-g-logo.png" />
                   <AvatarFallback>JC</AvatarFallback>
                   <AvatarBadge />
                 </Avatar>
@@ -1159,13 +1217,9 @@ export default function DesignSystemPage() {
                 <TableBody>
                   {DESIGN_SYSTEM_COMPONENTS.map((component) => (
                     <TableRow key={component.designId}>
-                      <TableCell className="">
-                        {component.designName}
-                      </TableCell>
+                      <TableCell className="">{component.designName}</TableCell>
                       <TableCell>
-                        <InlineCode className="text-primary">
-                          {component.implementation}
-                        </InlineCode>
+                        <InlineCode className="text-primary">{component.implementation}</InlineCode>
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
                         {component.designId}
@@ -1205,7 +1259,11 @@ export default function DesignSystemPage() {
                     name="source-file.png"
                   />
                   <ProcessingStatus
-                    action={<Button size="sm" variant="secondary">Cancel</Button>}
+                    action={
+                      <Button size="sm" variant="secondary">
+                        Cancel
+                      </Button>
+                    }
                     detail="Working on item 2 of 3 · about 4 seconds left"
                     progress={68}
                     title="Processing · 68%"
@@ -1215,7 +1273,12 @@ export default function DesignSystemPage() {
                     metadata="output-file.png · 1.2 MB"
                     title="Your file is ready"
                   />
-                  <DownloadResult variant="action" title="Your cropped PDF is ready" metadata="document-cropped.pdf · 4 pages · 1.2 MiB" action={<Button>Download PDF</Button>} />
+                  <DownloadResult
+                    variant="action"
+                    title="Your cropped PDF is ready"
+                    metadata="document-cropped.pdf · 4 pages · 1.2 MiB"
+                    action={<Button>Download PDF</Button>}
+                  />
                 </div>
                 <ToolOptionsPanel action={<Button className="w-full">Run tool</Button>}>
                   <Field htmlFor="pattern-format" label="Output format">
@@ -1248,7 +1311,9 @@ export default function DesignSystemPage() {
                 </SidebarNavItem>
               </div>
               <div className="flex items-center gap-3">
-                <IconTile><ReceiptText /></IconTile>
+                <IconTile>
+                  <ReceiptText />
+                </IconTile>
                 <RightPanelResult
                   action={<Button className="w-full">Download file</Button>}
                   metadata="output-file · ready to save"

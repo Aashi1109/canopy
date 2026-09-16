@@ -13,13 +13,7 @@ import {
   usePanelRef,
 } from "@smarttools/ui";
 import { cn } from "@smarttools/ui/lib/utils";
-import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  SlidersHorizontal,
-} from "lucide";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, SlidersHorizontal } from "lucide";
 import { MorphIcon } from "morphicons/react";
 import {
   Children,
@@ -34,12 +28,7 @@ import {
 type StackDirection = "row" | "column";
 type StackGap = "none" | "xs" | "sm" | "md" | "lg";
 type StackAlignment = "start" | "center" | "end" | "stretch";
-type StackJustification =
-  | "start"
-  | "center"
-  | "end"
-  | "between"
-  | "around";
+type StackJustification = "start" | "center" | "end" | "between" | "around";
 
 export type StackProps = HTMLAttributes<HTMLDivElement> & {
   align?: StackAlignment;
@@ -101,9 +90,7 @@ function Stack({
         STACK_GAP_CLASSES[gap],
         STACK_ALIGNMENT_CLASSES[align],
         STACK_JUSTIFICATION_CLASSES[justify],
-        responsiveDirection
-          ? STACK_RESPONSIVE_DIRECTION_CLASSES[responsiveDirection]
-          : undefined,
+        responsiveDirection ? STACK_RESPONSIVE_DIRECTION_CLASSES[responsiveDirection] : undefined,
         wrap ? "flex-wrap" : undefined,
         className,
       )}
@@ -117,10 +104,7 @@ function Stack({
 type SplitOrientation = "horizontal" | "vertical";
 type SplitCollapseSide = "primary" | "secondary";
 
-export type SplitStackProps = Omit<
-  HTMLAttributes<HTMLDivElement>,
-  "children" | "onChange"
-> & {
+export type SplitStackProps = Omit<HTMLAttributes<HTMLDivElement>, "children" | "onChange"> & {
   children: ReactNode;
   collapseLabel?: string;
   collapseControlPosition?: "bottom" | "center" | "top";
@@ -182,11 +166,9 @@ function SplitStack({
   const primaryPanelRef = usePanelRef();
   const secondaryPanelRef = usePanelRef();
   const initialPrimarySize = useRef(secondaryHidden ? 100 : clamp(defaultSize, minSize, maxSize));
-  const [size, setSize] = useState(() =>
-    clamp(defaultSize, minSize, maxSize),
-  );
+  const [size, setSize] = useState(() => clamp(defaultSize, minSize, maxSize));
   const [collapsed, setCollapsed] = useState<SplitCollapseSide | null>(
-    secondaryHidden ? "secondary" : collapsible ? defaultCollapsed ?? null : null,
+    secondaryHidden ? "secondary" : collapsible ? (defaultCollapsed ?? null) : null,
   );
   const [animateCollapse, setAnimateCollapse] = useState(false);
   const narrow = useNarrowWorkbench();
@@ -222,11 +204,10 @@ function SplitStack({
   function toggleCollapsedPane() {
     if (!collapsible) return;
     if (stacked) {
-      setCollapsed((current) => current ? null : collapseSide);
+      setCollapsed((current) => (current ? null : collapseSide));
       return;
     }
-    const panel =
-      collapseSide === "primary" ? primaryPanelRef : secondaryPanelRef;
+    const panel = collapseSide === "primary" ? primaryPanelRef : secondaryPanelRef;
     setAnimateCollapse(true);
     if (panel.current?.isCollapsed()) {
       panel.current.resize(`${collapseSide === "primary" ? size : 100 - size}%`);
@@ -243,12 +224,12 @@ function SplitStack({
       ? SlidersHorizontal
       : orientation === "horizontal"
         ? collapseSide === "primary"
-        ? collapsed
-          ? ChevronRight
-          : ChevronLeft
-        : collapsed
-          ? ChevronLeft
-          : ChevronRight
+          ? collapsed
+            ? ChevronRight
+            : ChevronLeft
+          : collapsed
+            ? ChevronLeft
+            : ChevronRight
         : collapseSide === "primary"
           ? collapsed
             ? ChevronDown
@@ -288,7 +269,11 @@ function SplitStack({
         <div
           className={cn(
             "min-w-0 shrink-0 overflow-visible",
-            collapsed === "primary" ? "hidden" : collapsed === "secondary" ? "min-h-0 flex-1" : undefined,
+            collapsed === "primary"
+              ? "hidden"
+              : collapsed === "secondary"
+                ? "min-h-0 flex-1"
+                : undefined,
           )}
           data-split-pane="primary"
           id={primaryPaneId}
@@ -298,7 +283,11 @@ function SplitStack({
         <div
           className={cn(
             "min-w-0 shrink-0 overflow-visible",
-            collapsed === "secondary" ? "hidden" : collapsed === "primary" ? "min-h-0 flex-1" : undefined,
+            collapsed === "secondary"
+              ? "hidden"
+              : collapsed === "primary"
+                ? "min-h-0 flex-1"
+                : undefined,
           )}
           data-split-pane="secondary"
           id={secondaryPaneId}
@@ -337,10 +326,7 @@ function SplitStack({
 
   return (
     <div
-      className={cn(
-        "relative h-full min-h-0 min-w-0 overflow-hidden",
-        className,
-      )}
+      className={cn("relative h-full min-h-0 min-w-0 overflow-hidden", className)}
       data-collapsed={collapsed ?? undefined}
       data-orientation={orientation}
       data-stack="split"
@@ -350,7 +336,8 @@ function SplitStack({
       <ResizablePanelGroup
         className={cn(
           "h-full min-h-0 min-w-0",
-          animateCollapse && "motion-safe:[&>[data-panel]]:transition-[flex-grow] motion-safe:[&>[data-panel]]:duration-200 motion-safe:[&>[data-panel]]:ease-out",
+          animateCollapse &&
+            "motion-safe:[&>[data-panel]]:transition-[flex-grow] motion-safe:[&>[data-panel]]:duration-200 motion-safe:[&>[data-panel]]:ease-out",
           orientation === "horizontal"
             ? "max-[64rem]:!flex-col max-[64rem]:overflow-y-auto max-[64rem]:[&>[data-slot=resizable-handle]]:!hidden"
             : undefined,
@@ -364,16 +351,16 @@ function SplitStack({
           if (!Number.isFinite(nextSize)) return;
           if (nextSize > 0 && nextSize < 100) setSize(nextSize);
           if (collapsible) {
-            setCollapsed(layout[collapseSide === "primary" ? primaryPaneId : secondaryPaneId] === 0 ? collapseSide : null);
+            setCollapsed(
+              layout[collapseSide === "primary" ? primaryPaneId : secondaryPaneId] === 0
+                ? collapseSide
+                : null,
+            );
           }
         }}
         onLayoutChanged={(layout, meta) => {
           const nextSize = layout[primaryPaneId];
-          if (
-            !Number.isFinite(nextSize) ||
-            nextSize <= 0 ||
-            nextSize >= 100
-          ) {
+          if (!Number.isFinite(nextSize) || nextSize <= 0 || nextSize >= 100) {
             return;
           }
           if (!meta.isUserInteraction) return;
@@ -394,7 +381,15 @@ function SplitStack({
           collapsible={collapsible && collapseSide === "primary"}
           collapsedSize="0%"
           data-split-pane="primary"
-          defaultSize={secondaryHidden !== undefined ? `${initialPrimarySize.current}%` : collapsed === "secondary" ? "100%" : collapsed === "primary" ? "0%" : `${size}%`}
+          defaultSize={
+            secondaryHidden !== undefined
+              ? `${initialPrimarySize.current}%`
+              : collapsed === "secondary"
+                ? "100%"
+                : collapsed === "primary"
+                  ? "0%"
+                  : `${size}%`
+          }
           disabled={!resizable}
           id={primaryPaneId}
           inert={collapsed === "primary" || undefined}
@@ -410,9 +405,7 @@ function SplitStack({
         </ResizablePanel>
         <ResizableHandle
           aria-label={
-            orientation === "horizontal"
-              ? "Resize workspace panels"
-              : "Resize workspace regions"
+            orientation === "horizontal" ? "Resize workspace panels" : "Resize workspace regions"
           }
           className={cn("z-20 focus-visible:ring-2", secondaryHidden && "hidden")}
           disabled={!resizable || secondaryHidden}
@@ -420,18 +413,24 @@ function SplitStack({
         <ResizablePanel
           aria-hidden={collapsed === "secondary" || undefined}
           className="min-h-0 min-w-0 overflow-hidden"
-          collapsible={secondaryHidden !== undefined || (collapsible && collapseSide === "secondary")}
+          collapsible={
+            secondaryHidden !== undefined || (collapsible && collapseSide === "secondary")
+          }
           collapsedSize="0%"
           data-split-pane="secondary"
-          defaultSize={secondaryHidden !== undefined ? `${100 - initialPrimarySize.current}%` : collapsed === "primary" ? "100%" : collapsed === "secondary" ? "0%" : `${100 - size}%`}
+          defaultSize={
+            secondaryHidden !== undefined
+              ? `${100 - initialPrimarySize.current}%`
+              : collapsed === "primary"
+                ? "100%"
+                : collapsed === "secondary"
+                  ? "0%"
+                  : `${100 - size}%`
+          }
           disabled={!resizable}
           id={secondaryPaneId}
           inert={collapsed === "secondary" || undefined}
-          maxSize={
-            collapsible && collapseSide === "primary"
-              ? "100%"
-              : `${100 - minSize}%`
-          }
+          maxSize={collapsible && collapseSide === "primary" ? "100%" : `${100 - minSize}%`}
           minSize={`${100 - maxSize}%`}
           panelRef={secondaryPanelRef}
         >
@@ -443,20 +442,18 @@ function SplitStack({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-controls={
-                  collapseSide === "primary"
-                    ? primaryPaneId
-                    : secondaryPaneId
-                }
+                aria-controls={collapseSide === "primary" ? primaryPaneId : secondaryPaneId}
                 aria-label={collapsedPanelLabel}
                 aria-expanded={collapsed !== collapseSide}
                 className={cn(
                   "absolute z-30 !size-8 -translate-x-1/2 -translate-y-1/2 shadow-sm",
-                  animateCollapse && "motion-safe:transition-[left,top,translate] motion-safe:duration-200 motion-safe:ease-out",
-                  collapseSide === "secondary" && orientation === "horizontal" && [
-                    "rounded-r-none",
-                    !collapsed && collapseControlPosition !== "bottom" && "-translate-x-full",
-                  ],
+                  animateCollapse &&
+                    "motion-safe:transition-[left,top,translate] motion-safe:duration-200 motion-safe:ease-out",
+                  collapseSide === "secondary" &&
+                    orientation === "horizontal" && [
+                      "rounded-r-none",
+                      !collapsed && collapseControlPosition !== "bottom" && "-translate-x-full",
+                    ],
                 )}
                 onClick={toggleCollapsedPane}
                 size="icon-xs"
@@ -491,11 +488,7 @@ function GridStack({
 }: GridStackProps) {
   return (
     <div
-      className={cn(
-        "grid min-h-0 min-w-0",
-        STACK_GAP_CLASSES[gap],
-        className,
-      )}
+      className={cn("grid min-h-0 min-w-0", STACK_GAP_CLASSES[gap], className)}
       data-stack="grid"
       style={{
         ...style,
@@ -508,10 +501,7 @@ function GridStack({
   );
 }
 
-export type OverlayStackProps = Omit<
-  HTMLAttributes<HTMLDivElement>,
-  "children"
-> & {
+export type OverlayStackProps = Omit<HTMLAttributes<HTMLDivElement>, "children"> & {
   base: ReactNode;
   baseClassName?: string;
   overlay?: ReactNode;
@@ -539,9 +529,7 @@ function OverlayStack({
         <div
           className={cn(
             "absolute inset-0",
-            overlayPointerEvents === "none"
-              ? "pointer-events-none"
-              : "pointer-events-auto",
+            overlayPointerEvents === "none" ? "pointer-events-none" : "pointer-events-auto",
             overlayClassName,
           )}
           data-overlay-layer="controls"

@@ -6,10 +6,9 @@ import { createThrottledProgressReporter } from "../lib/tool-framework/progress.
 test("progress emits at most once per 100 milliseconds", () => {
   let time = 0;
   const values = [];
-  const report = createThrottledProgressReporter(
-    (value) => values.push(value),
-    { now: () => time },
-  );
+  const report = createThrottledProgressReporter((value) => values.push(value), {
+    now: () => time,
+  });
 
   report("start");
   time = 99;

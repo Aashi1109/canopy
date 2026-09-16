@@ -1,7 +1,5 @@
 "use client";
-import {
-  Caption, P, Small, Strong, Text, TextLink } from "@smarttools/ui";
-
+import { Caption, P, Small, Strong, Text, TextLink } from "@smarttools/ui";
 
 import type { ToolApp } from "@smarttools/tool-catalog";
 import type { CatalogTool } from "@/lib/tool-framework/catalog";
@@ -22,13 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import {
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
 export type AuthProjectPaths = {
@@ -61,15 +53,16 @@ const categoryMenus = {
 } as const;
 
 function ToolIcon({ app, name }: { app: ToolApp; name: string }) {
-  const Icon = app === "media"
-    ? FileImage
-    : app === "devtools"
-      ? name.toLowerCase().includes("csv")
-        ? Table2
-        : Braces
-      : name.toLowerCase().includes("receipt")
-        ? ReceiptText
-        : FileText;
+  const Icon =
+    app === "media"
+      ? FileImage
+      : app === "devtools"
+        ? name.toLowerCase().includes("csv")
+          ? Table2
+          : Braces
+        : name.toLowerCase().includes("receipt")
+          ? ReceiptText
+          : FileText;
 
   return (
     <span aria-hidden="true" className="auth-search-result-icon">
@@ -109,12 +102,7 @@ export function AuthDiscoveryNavigation({
       return {
         results: tools
           .filter((tool) =>
-            [
-              tool.name,
-              tool.description,
-              TOOL_CATEGORIES[tool.category].label,
-              ...tool.keywords,
-            ]
+            [tool.name, tool.description, TOOL_CATEGORIES[tool.category].label, ...tool.keywords]
               .join(" ")
               .toLowerCase()
               .includes(normalized),
@@ -158,25 +146,26 @@ export function AuthDiscoveryNavigation({
     };
   }, []);
 
-  const documentsActive = pathname.startsWith("/paperwork/invoice-generator") ||
+  const documentsActive =
+    pathname.startsWith("/paperwork/invoice-generator") ||
     pathname.startsWith("/paperwork/receipt-generator");
-  const businessActive = pathname === projects.paperwork || (
-    pathname.startsWith("/paperwork/") && !documentsActive
-  );
+  const businessActive =
+    pathname === projects.paperwork || (pathname.startsWith("/paperwork/") && !documentsActive);
 
   function toggleMenu(menu: Exclude<MenuName, null>) {
     setSearchOpen(false);
     setOpenMenu((current) => (current === menu ? null : menu));
   }
 
-  function moveMenuFocus(event: ReactKeyboardEvent<HTMLButtonElement>, menu: Exclude<MenuName, null>) {
+  function moveMenuFocus(
+    event: ReactKeyboardEvent<HTMLButtonElement>,
+    menu: Exclude<MenuName, null>,
+  ) {
     if (event.key === "ArrowDown") {
       event.preventDefault();
       setOpenMenu(menu);
       requestAnimationFrame(() => {
-        rootRef.current
-          ?.querySelector<HTMLAnchorElement>(`[data-menu="${menu}"] a`)
-          ?.focus();
+        rootRef.current?.querySelector<HTMLAnchorElement>(`[data-menu="${menu}"] a`)?.focus();
       });
     }
   }
@@ -241,7 +230,9 @@ export function AuthDiscoveryNavigation({
               <X aria-hidden="true" />
             </button>
           ) : (
-            <kbd aria-label="Keyboard shortcut: slash"><Caption>/</Caption></kbd>
+            <kbd aria-label="Keyboard shortcut: slash">
+              <Caption>/</Caption>
+            </kbd>
           )}
         </div>
 
@@ -262,7 +253,9 @@ export function AuthDiscoveryNavigation({
                 <AlertTriangle aria-hidden="true" />
                 <Strong>Search is temporarily unavailable</Strong>
                 <Text>Try again, or clear your search and use a category.</Text>
-                <button onClick={() => setSearchAttempt((attempt) => attempt + 1)} type="button"><Caption>Try again</Caption></button>
+                <button onClick={() => setSearchAttempt((attempt) => attempt + 1)} type="button">
+                  <Caption>Try again</Caption>
+                </button>
               </div>
             ) : results.length > 0 ? (
               <>
@@ -293,7 +286,9 @@ export function AuthDiscoveryNavigation({
                 <SearchX aria-hidden="true" />
                 <Strong>No tools match “{stableQuery}”</Strong>
                 <Text>Check spelling, try “invoice”, or clear the query.</Text>
-                <button onClick={() => searchRef.current?.select()} type="button"><Caption>Edit search</Caption></button>
+                <button onClick={() => searchRef.current?.select()} type="button">
+                  <Caption>Edit search</Caption>
+                </button>
               </div>
             )}
           </div>
@@ -301,7 +296,9 @@ export function AuthDiscoveryNavigation({
       </div>
 
       <nav aria-label="Tool categories" className="auth-category-nav">
-        <TextLink aria-current={pathname === "/" ? "page" : undefined} href="/">All tools</TextLink>
+        <TextLink aria-current={pathname === "/" ? "page" : undefined} href="/">
+          All tools
+        </TextLink>
         <span className="auth-category-menu">
           <button
             aria-expanded={openMenu === "documents"}
@@ -310,8 +307,9 @@ export function AuthDiscoveryNavigation({
             onClick={() => toggleMenu("documents")}
             onKeyDown={(event) => moveMenuFocus(event, "documents")}
             type="button"
-          ><Caption>
-            Documents </Caption><ChevronDown aria-hidden="true" />
+          >
+            <Caption>Documents </Caption>
+            <ChevronDown aria-hidden="true" />
           </button>
           {openMenu === "documents" ? (
             <CategoryMenu menu="documents" onClose={() => setOpenMenu(null)} />
@@ -325,8 +323,9 @@ export function AuthDiscoveryNavigation({
             onClick={() => toggleMenu("developer")}
             onKeyDown={(event) => moveMenuFocus(event, "developer")}
             type="button"
-          ><Caption>
-            Developer </Caption><ChevronDown aria-hidden="true" />
+          >
+            <Caption>Developer </Caption>
+            <ChevronDown aria-hidden="true" />
           </button>
           {openMenu === "developer" ? (
             <CategoryMenu menu="developer" onClose={() => setOpenMenu(null)} />
@@ -348,7 +347,9 @@ function CategoryMenu({ menu, onClose }: { menu: Exclude<MenuName, null>; onClos
           href={href}
           key={href}
           onKeyDown={(event) => {
-            const links = Array.from(event.currentTarget.parentElement?.querySelectorAll<HTMLAnchorElement>("a") ?? []);
+            const links = Array.from(
+              event.currentTarget.parentElement?.querySelectorAll<HTMLAnchorElement>("a") ?? [],
+            );
             const index = links.indexOf(event.currentTarget);
             if (event.key === "Escape") {
               onClose();

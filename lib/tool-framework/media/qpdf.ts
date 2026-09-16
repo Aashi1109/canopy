@@ -15,10 +15,7 @@ export type PreservePdfOptions = {
 export class QpdfAdapterError extends Error {
   readonly code: "qpdf-failed" | "qpdf-unavailable";
 
-  constructor(
-    code: "qpdf-failed" | "qpdf-unavailable",
-    message: string,
-  ) {
+  constructor(code: "qpdf-failed" | "qpdf-unavailable", message: string) {
     super(message);
     this.code = code;
   }
@@ -26,10 +23,7 @@ export class QpdfAdapterError extends Error {
 
 let modulePromise: Promise<QpdfModule> | null = null;
 
-export async function preservePdfWithQpdf(
-  input: ArrayBuffer,
-  options: PreservePdfOptions,
-) {
+export async function preservePdfWithQpdf(input: ArrayBuffer, options: PreservePdfOptions) {
   assertQpdfEnvironment();
   const qpdf = await getQpdfModule();
   const safeJobId = options.jobId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
@@ -66,11 +60,7 @@ export async function preservePdfWithQpdf(
   }
 }
 
-export function buildQpdfArguments(
-  inputPath: string,
-  outputPath: string,
-  removeMetadata: boolean,
-) {
+export function buildQpdfArguments(inputPath: string, outputPath: string, removeMetadata: boolean) {
   return [
     inputPath,
     "--object-streams=generate",

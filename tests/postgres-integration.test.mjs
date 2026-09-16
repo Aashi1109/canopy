@@ -38,13 +38,13 @@ async function toolManifest() {
   }));
 }
 
-const enabled =
-  process.env.SMARTTOOLS_INTEGRATION === "1" &&
-  Boolean(process.env.DATABASE_URL);
+const enabled = process.env.SMARTTOOLS_INTEGRATION === "1" && Boolean(process.env.DATABASE_URL);
 
 test(
   "PostgreSQL enforces live roles, Admin safeguards, tools, templates, and audit writes",
-  { skip: enabled ? false : "set SMARTTOOLS_INTEGRATION=1 with a migrated disposable DATABASE_URL" },
+  {
+    skip: enabled ? false : "set SMARTTOOLS_INTEGRATION=1 with a migrated disposable DATABASE_URL",
+  },
   async (context) => {
     context.after(async () => sqlClient.end());
 
@@ -91,10 +91,7 @@ test(
       access: { templates: { view: true, edit: true } },
     });
     await assignUserRoles(actorId, targetId, [role.id]);
-    await assert.rejects(
-      () => deleteCustomRole(actorId, role.id),
-      /assigned to users/i,
-    );
+    await assert.rejects(() => deleteCustomRole(actorId, role.id), /assigned to users/i);
     await assignUserRoles(actorId, targetId, ["user"]);
     await deleteCustomRole(actorId, role.id);
 
@@ -111,21 +108,11 @@ test(
 
     await setManagedToolEnabled(actorId, "devtools.json-formatter", false);
     assert.equal(
-      await getAvailableToolBySlug(
-        "devtools",
-        "json-formatter",
-        await toolManifest(),
-      ),
+      await getAvailableToolBySlug("devtools", "json-formatter", await toolManifest()),
       undefined,
     );
     await setManagedToolEnabled(actorId, "devtools.json-formatter", true);
-    assert.ok(
-      await getAvailableToolBySlug(
-        "devtools",
-        "json-formatter",
-        await toolManifest(),
-      ),
-    );
+    assert.ok(await getAvailableToolBySlug("devtools", "json-formatter", await toolManifest()));
 
     const seed = seedTemplates[0];
     const template = await createInvoiceTemplate(actorId, {
@@ -145,14 +132,8 @@ test(
     `;
     assert.equal(defaultCount.count, 1);
 
-    await assert.rejects(
-      () => assignUserRoles(actorId, actorId, ["user"]),
-      /final Admin/i,
-    );
-    await assert.rejects(
-      () => setUserStatus(actorId, actorId, "suspended"),
-      /final Admin/i,
-    );
+    await assert.rejects(() => assignUserRoles(actorId, actorId, ["user"]), /final Admin/i);
+    await assert.rejects(() => setUserStatus(actorId, actorId, "suspended"), /final Admin/i);
     await assert.rejects(
       () => sqlClient`DELETE FROM user_roles WHERE user_id = ${actorId} AND role_id = 'admin'`,
       /final Admin/i,

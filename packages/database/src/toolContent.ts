@@ -4,18 +4,14 @@ import { toolContentTable } from "./schema.ts";
 
 export type ToolContentRow = typeof toolContentTable.$inferSelect;
 
-type ToolContentPatch = Partial<
-  Omit<ToolContentRow, "toolId" | "updatedAt">
->;
+type ToolContentPatch = Partial<Omit<ToolContentRow, "toolId" | "updatedAt">>;
 
 export async function getToolContentRows(): Promise<ToolContentRow[]> {
   const rows = await db.select().from(toolContentTable);
   return rows.map((row) => ({ ...row }));
 }
 
-export async function getToolContentRow(
-  toolId: string,
-): Promise<ToolContentRow | null> {
+export async function getToolContentRow(toolId: string): Promise<ToolContentRow | null> {
   const [row] = await db
     .select()
     .from(toolContentTable)
@@ -24,10 +20,7 @@ export async function getToolContentRow(
   return row ? { ...row } : null;
 }
 
-export async function upsertToolContent(
-  toolId: string,
-  patch: ToolContentPatch,
-): Promise<void> {
+export async function upsertToolContent(toolId: string, patch: ToolContentPatch): Promise<void> {
   const updatedAt = new Date();
   await db
     .insert(toolContentTable)
@@ -38,10 +31,7 @@ export async function upsertToolContent(
     });
 }
 
-async function setToolContentPublishedAt(
-  toolId: string,
-  publishedAt: Date | null,
-): Promise<void> {
+async function setToolContentPublishedAt(toolId: string, publishedAt: Date | null): Promise<void> {
   await db
     .update(toolContentTable)
     .set({ publishedAt, updatedAt: new Date() })

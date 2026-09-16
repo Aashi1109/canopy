@@ -8,11 +8,7 @@ function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function ResetPasswordPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
+export default async function ResetPasswordPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const returnTo = resolveConfiguredReturnTo(first(params.returnTo));
 

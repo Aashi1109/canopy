@@ -16,16 +16,18 @@ test("advanced inputs preserve text configured around sample values", () => {
       },
       template: {
         basePdf: { staticSchema: [] },
-        schemas: [[
-          {
-            name: "dueDate",
-            content: "Due August 22, 2026",
-          },
-          {
-            name: "subtotal",
-            content: "Subtotal  $100.00",
-          },
-        ]],
+        schemas: [
+          [
+            {
+              name: "dueDate",
+              content: "Due August 22, 2026",
+            },
+            {
+              name: "subtotal",
+              content: "Subtotal  $100.00",
+            },
+          ],
+        ],
       },
     },
   };
@@ -201,10 +203,7 @@ test("advanced template inputs replace sample fields with live receipt data", ()
   assert.equal(inputs.businessName, "Northstar Market");
   assert.equal(inputs.documentNumber, "RCP-42");
   assert.equal(inputs.issueDate, "2026-07-23 · 16:32");
-  assert.equal(
-    inputs.lineItems,
-    JSON.stringify([["Design workshop", "2", "$150.00"]]),
-  );
+  assert.equal(inputs.lineItems, JSON.stringify([["Design workshop", "2", "$150.00"]]));
   assert.equal(inputs.paymentMethod, "Card");
   assert.equal(inputs.total, "$170.00");
 });

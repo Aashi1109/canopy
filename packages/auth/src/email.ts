@@ -42,4 +42,3 @@ export async function sendAuthEmail({
 
   if (error) throw new Error("Unable to send authentication email");
 }
-

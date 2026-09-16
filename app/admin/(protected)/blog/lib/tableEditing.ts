@@ -2,21 +2,61 @@ import { TableCell, TableHeader } from "@tiptap/extension-table";
 import type { Command, EditorState, Transaction } from "@tiptap/pm/state";
 import type { Node } from "@tiptap/pm/model";
 import { closeHistory } from "@tiptap/pm/history";
-import { addColumnAfter, addRowAfter, CellSelection, deleteColumn, deleteRow, deleteTable, fixTables, isInTable, moveTableColumn, moveTableRow, removeColumn, removeRow, selectedRect, TableMap } from "@tiptap/pm/tables";
+import {
+  addColumnAfter,
+  addRowAfter,
+  CellSelection,
+  deleteColumn,
+  deleteRow,
+  deleteTable,
+  fixTables,
+  isInTable,
+  moveTableColumn,
+  moveTableRow,
+  removeColumn,
+  removeRow,
+  selectedRect,
+  TableMap,
+} from "@tiptap/pm/tables";
 
 export type BlogTableAxis = "row" | "column";
 
 /** Shrink only after crossing real trailing cell boundaries, never an averaged size. */
-export function getBlogTableDragDelta({ axis, distance, step, count, edges, end }: {
-  axis: BlogTableAxis; distance: number; step: number; count: number; edges: readonly number[]; end: number;
+export function getBlogTableDragDelta({
+  axis,
+  distance,
+  step,
+  count,
+  edges,
+  end,
+}: {
+  axis: BlogTableAxis;
+  distance: number;
+  step: number;
+  count: number;
+  edges: readonly number[];
+  end: number;
 }) {
-  if (!Number.isFinite(distance) || !Number.isInteger(count) || count < 1 || distance === 0) return 0;
+  if (!Number.isFinite(distance) || !Number.isInteger(count) || count < 1 || distance === 0)
+    return 0;
   if (distance > 0) {
     if (!Number.isFinite(step) || step <= 0) return 0;
-    return Math.min(1000, Math.floor(distance / step), axis === "column" ? Math.max(0, 100 - count) : 1000);
+    return Math.min(
+      1000,
+      Math.floor(distance / step),
+      axis === "column" ? Math.max(0, 100 - count) : 1000,
+    );
   }
-  if (!Number.isFinite(end) || edges.length !== count || !edges.every((edge, index) => Number.isFinite(edge) && edge < end && (index === 0 || edge > edges[index - 1]))) return 0;
-  const crossed = edges.slice(1).filter(edge => end + distance <= edge).length;
+  if (
+    !Number.isFinite(end) ||
+    edges.length !== count ||
+    !edges.every(
+      (edge, index) =>
+        Number.isFinite(edge) && edge < end && (index === 0 || edge > edges[index - 1]),
+    )
+  )
+    return 0;
+  const crossed = edges.slice(1).filter((edge) => end + distance <= edge).length;
   return -Math.min(1000, crossed) || 0;
 }
 
@@ -26,37 +66,66 @@ const backgroundColor = {
     const color = element.style.backgroundColor;
     if (/^#[0-9a-f]{6}$/i.test(color)) return color.toLowerCase();
     const rgb = /^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/.exec(color);
-    return rgb ? `#${rgb.slice(1).map(value => Number(value).toString(16).padStart(2, "0")).join("")}` : null;
+    return rgb
+      ? `#${rgb
+          .slice(1)
+          .map((value) => Number(value).toString(16).padStart(2, "0"))
+          .join("")}`
+      : null;
   },
-  renderHTML: (attrs: Record<string, unknown>) => typeof attrs.backgroundColor === "string" && /^#[0-9a-f]{6}$/i.test(attrs.backgroundColor)
-    ? { style: `background-color: ${attrs.backgroundColor}` } : {},
+  renderHTML: (attrs: Record<string, unknown>) =>
+    typeof attrs.backgroundColor === "string" && /^#[0-9a-f]{6}$/i.test(attrs.backgroundColor)
+      ? { style: `background-color: ${attrs.backgroundColor}` }
+      : {},
 };
-export const BlogTableCell = TableCell.extend({ addAttributes() { return { ...this.parent?.(), backgroundColor }; } });
-export const BlogTableHeader = TableHeader.extend({ addAttributes() { return { ...this.parent?.(), backgroundColor }; } });
+export const BlogTableCell = TableCell.extend({
+  addAttributes() {
+    return { ...this.parent?.(), backgroundColor };
+  },
+});
+export const BlogTableHeader = TableHeader.extend({
+  addAttributes() {
+    return { ...this.parent?.(), backgroundColor };
+  },
+});
 
 export function getBlogTableContext(state: EditorState) {
   if (!isInTable(state)) return null;
   const context = selectedRect(state);
   let merged = false;
-  context.table.forEach(row => row.forEach(cell => { if (cell.attrs.colspan > 1 || cell.attrs.rowspan > 1) merged = true; }));
+  context.table.forEach((row) =>
+    row.forEach((cell) => {
+      if (cell.attrs.colspan > 1 || cell.attrs.rowspan > 1) merged = true;
+    }),
+  );
   return { ...context, merged };
 }
 
 /** Resolve a hovered cell without moving the editor's live selection. */
 export function getBlogTableStateAtCell(state: EditorState, position: number) {
-  if (!Number.isInteger(position) || position < 0 || position >= state.doc.content.size) return null;
+  if (!Number.isInteger(position) || position < 0 || position >= state.doc.content.size)
+    return null;
   const name = state.doc.nodeAt(position)?.type.name;
   if (name !== "tableCell" && name !== "tableHeader") return null;
   return state.apply(state.tr.setSelection(CellSelection.create(state.doc, position)));
 }
 
-function selectAxis(transaction: Transaction, tableStart: number, axis: BlogTableAxis, index: number) {
+function selectAxis(
+  transaction: Transaction,
+  tableStart: number,
+  axis: BlogTableAxis,
+  index: number,
+) {
   const table = transaction.doc.nodeAt(tableStart - 1)!;
   const map = TableMap.get(table);
   const first = tableStart + map.map[axis === "row" ? index * map.width : index];
-  const last = tableStart + map.map[axis === "row" ? (index + 1) * map.width - 1 : (map.height - 1) * map.width + index];
+  const last =
+    tableStart +
+    map.map[axis === "row" ? (index + 1) * map.width - 1 : (map.height - 1) * map.width + index];
   const selection = axis === "row" ? CellSelection.rowSelection : CellSelection.colSelection;
-  transaction.setSelection(selection(transaction.doc.resolve(first), transaction.doc.resolve(last)));
+  transaction.setSelection(
+    selection(transaction.doc.resolve(first), transaction.doc.resolve(last)),
+  );
 }
 
 export function selectBlogTableAxis(axis: BlogTableAxis): Command {
@@ -76,10 +145,17 @@ export function appendBlogTableAxis(axis: BlogTableAxis): Command {
     const context = getBlogTableContext(state);
     if (!context) return false;
     const { map, tableStart } = context;
-    const index = axis === "row" ? (map.height - 1) * map.width + context.left : context.top * map.width + map.width - 1;
-    const edgeState = state.apply(state.tr.setSelection(CellSelection.create(state.doc, tableStart + map.map[index])));
+    const index =
+      axis === "row"
+        ? (map.height - 1) * map.width + context.left
+        : context.top * map.width + map.width - 1;
+    const edgeState = state.apply(
+      state.tr.setSelection(CellSelection.create(state.doc, tableStart + map.map[index])),
+    );
     let change: Transaction | undefined;
-    (axis === "row" ? addRowAfter : addColumnAfter)(edgeState, transaction => { change = transaction; });
+    (axis === "row" ? addRowAfter : addColumnAfter)(edgeState, (transaction) => {
+      change = transaction;
+    });
     if (!change || !blogTableChangeFits(change.doc)) return false;
     dispatch?.(change);
     return true;
@@ -99,10 +175,18 @@ export function resizeBlogTableAxis(axis: BlogTableAxis, delta: number): Command
     for (let count = 0; count < Math.abs(delta); count++) {
       const table = working.doc.nodeAt(context.tableStart - 1)!;
       const map = TableMap.get(table);
-      const edge = getBlogTableStateAtCell(working, context.tableStart + map.map[map.map.length - 1])!;
+      const edge = getBlogTableStateAtCell(
+        working,
+        context.tableStart + map.map[map.map.length - 1],
+      )!;
       let change: Transaction | undefined;
       if (delta > 0) {
-        if (!appendBlogTableAxis(axis)(edge, next => { change = next; })) return false;
+        if (
+          !appendBlogTableAxis(axis)(edge, (next) => {
+            change = next;
+          })
+        )
+          return false;
       } else {
         change = edge.tr;
         // A selected merged cell may cover several rows/columns. Remove only
@@ -164,9 +248,10 @@ export function duplicateBlogTableAxis(axis: BlogTableAxis): Command {
 export function blogTableChangeFits(doc: Node) {
   let nodes = 1;
   let fits = true;
-  doc.descendants(node => {
+  doc.descendants((node) => {
     nodes++;
-    if (nodes > 10000 || (node.type.name === "table" && TableMap.get(node).width > 100)) fits = false;
+    if (nodes > 10000 || (node.type.name === "table" && TableMap.get(node).width > 100))
+      fits = false;
     return fits;
   });
   return fits;
@@ -176,24 +261,43 @@ export function deleteBlogTableAxis(axis: BlogTableAxis): Command {
   return (state, dispatch) => {
     const context = getBlogTableContext(state);
     if (!context) return false;
-    const all = axis === "row" ? context.top === 0 && context.bottom === context.map.height : context.left === 0 && context.right === context.map.width;
+    const all =
+      axis === "row"
+        ? context.top === 0 && context.bottom === context.map.height
+        : context.left === 0 && context.right === context.map.width;
     return (all ? deleteTable : axis === "row" ? deleteRow : deleteColumn)(state, dispatch);
   };
 }
 
-export function formatBlogTableCells(attrs: { align?: "left" | "center" | "right" | null; backgroundColor?: string | null }): Command {
+export function formatBlogTableCells(attrs: {
+  align?: "left" | "center" | "right" | null;
+  backgroundColor?: string | null;
+}): Command {
   return (state, dispatch) => {
     const context = getBlogTableContext(state);
-    if (!context || (attrs.backgroundColor != null && !/^#[0-9a-f]{6}$/i.test(attrs.backgroundColor)) || (attrs.align != null && !["left", "center", "right"].includes(attrs.align))) return false;
+    if (
+      !context ||
+      (attrs.backgroundColor != null && !/^#[0-9a-f]{6}$/i.test(attrs.backgroundColor)) ||
+      (attrs.align != null && !["left", "center", "right"].includes(attrs.align))
+    )
+      return false;
     if (!dispatch) return true;
     const transaction = state.tr;
     for (const offset of context.map.cellsInRect(context)) {
       const cell = context.table.nodeAt(offset)!;
       const position = context.tableStart + offset;
       transaction.setNodeMarkup(position, undefined, { ...cell.attrs, ...attrs });
-      if ("align" in attrs) cell.descendants((node, childOffset) => {
-        if ((node.type.name === "paragraph" || node.type.name === "heading") && node.attrs.textAlign != null) transaction.setNodeMarkup(position + 1 + childOffset, undefined, { ...node.attrs, textAlign: null });
-      });
+      if ("align" in attrs)
+        cell.descendants((node, childOffset) => {
+          if (
+            (node.type.name === "paragraph" || node.type.name === "heading") &&
+            node.attrs.textAlign != null
+          )
+            transaction.setNodeMarkup(position + 1 + childOffset, undefined, {
+              ...node.attrs,
+              textAlign: null,
+            });
+        });
     }
     dispatch(transaction);
     return true;
@@ -206,12 +310,20 @@ export function setBlogTableColumnWidth(width: number): Command {
     const context = getBlogTableContext(state);
     if (!context || !Number.isInteger(width) || width < 25 || width > 10000) return false;
     const transaction = state.tr;
-    const offsets = new Set(Array.from({ length: context.map.height }, (_, row) => context.map.map[row * context.map.width + context.left]));
+    const offsets = new Set(
+      Array.from(
+        { length: context.map.height },
+        (_, row) => context.map.map[row * context.map.width + context.left],
+      ),
+    );
     for (const offset of offsets) {
       const cell = context.table.nodeAt(offset)!;
       const widths: number[] = cell.attrs.colwidth?.slice() ?? Array(cell.attrs.colspan).fill(0);
       widths[context.left - context.map.findCell(offset).left] = width;
-      transaction.setNodeMarkup(context.tableStart + offset, undefined, { ...cell.attrs, colwidth: widths });
+      transaction.setNodeMarkup(context.tableStart + offset, undefined, {
+        ...cell.attrs,
+        colwidth: widths,
+      });
     }
     dispatch?.(transaction);
     return true;

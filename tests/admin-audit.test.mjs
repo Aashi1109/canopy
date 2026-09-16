@@ -1,13 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import {
-  Activity,
-  Import,
-  KeyRound,
-  UserRoundCog,
-  UserX,
-} from "lucide-react";
+import { Activity, Import, KeyRound, UserRoundCog, UserX } from "lucide-react";
 import { auditEventPresentation } from "../app/admin/(protected)/audit/eventPresentation.ts";
 
 const root = new URL("../", import.meta.url);
@@ -15,10 +9,7 @@ const root = new URL("../", import.meta.url);
 test("admin audit history shows readable users without losing deleted-user events", async () => {
   const [data, page] = await Promise.all([
     readFile(new URL("lib/admin/data.ts", root), "utf8"),
-    readFile(
-      new URL("app/admin/(protected)/audit/page.tsx", root),
-      "utf8",
-    ),
+    readFile(new URL("app/admin/(protected)/audit/page.tsx", root), "utf8"),
   ]);
 
   assert.match(
@@ -67,10 +58,7 @@ test("admin audit events have readable labels", () => {
 
   assert.deepEqual(
     Object.fromEntries(
-      Object.keys(expectedLabels).map((action) => [
-        action,
-        auditEventPresentation(action).label,
-      ]),
+      Object.keys(expectedLabels).map((action) => [action, auditEventPresentation(action).label]),
     ),
     expectedLabels,
   );
@@ -84,10 +72,7 @@ test("admin audit event icons communicate the event type", () => {
 });
 
 test("admin audit table renders the readable event treatment", async () => {
-  const page = await readFile(
-    new URL("app/admin/(protected)/audit/page.tsx", root),
-    "utf8",
-  );
+  const page = await readFile(new URL("app/admin/(protected)/audit/page.tsx", root), "utf8");
 
   assert.match(page, /auditEventPresentation\(event\.action\)/);
   assert.match(page, /<EventIcon aria-hidden=["']true["']/);
@@ -96,10 +81,7 @@ test("admin audit table renders the readable event treatment", async () => {
 });
 
 test("admin overview reuses the readable event treatment", async () => {
-  const page = await readFile(
-    new URL("app/admin/(protected)/page.tsx", root),
-    "utf8",
-  );
+  const page = await readFile(new URL("app/admin/(protected)/page.tsx", root), "utf8");
 
   assert.match(page, /auditEventPresentation\(event\.action\)/);
   assert.match(page, /const \{ icon: Icon, label \}/);

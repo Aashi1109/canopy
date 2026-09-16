@@ -1,14 +1,51 @@
-export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "./components/accordion.tsx";
+export {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "./components/accordion.tsx";
 export { InlineTextEditor, type InlineTextEditorProps } from "./components/InlineTextEditor.tsx";
-import { Caption, Display, H1, H2, H3, Large, Lead, Muted, Overline, P, Strong, Text } from "./components/typography.tsx";
-export { H1, H2, H3, H4, H5, H6, Display, P, Text, Lead, Large, Small, Muted, Caption, Overline, Metric, Strong, Blockquote, List, OrderedList, InlineCode, TextLink, CodeBlock, typographyStyles } from "./components/typography.tsx";
 import {
-  Bookmark,
-  CircleCheck,
-  CircleX,
-  Info,
-  TriangleAlert,
-} from "lucide-react";
+  Caption,
+  Display,
+  H1,
+  H2,
+  H3,
+  Large,
+  Lead,
+  Muted,
+  Overline,
+  P,
+  Strong,
+  Text,
+} from "./components/typography.tsx";
+export {
+  H1,
+  H2,
+  H3,
+  H4,
+  H5,
+  H6,
+  Display,
+  P,
+  Text,
+  Lead,
+  Large,
+  Small,
+  Muted,
+  Caption,
+  Overline,
+  Metric,
+  Strong,
+  Blockquote,
+  List,
+  OrderedList,
+  InlineCode,
+  TextLink,
+  CodeBlock,
+  typographyStyles,
+} from "./components/typography.tsx";
+import { Bookmark, CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
 import { cloneElement } from "react";
 import type {
   AnchorHTMLAttributes,
@@ -70,10 +107,7 @@ export {
   CardTitle,
 } from "./components/card.tsx";
 export { ChapterScrubber } from "./components/ChapterScrubber.tsx";
-export type {
-  Chapter,
-  ChapterScrubberProps,
-} from "./components/ChapterScrubber.tsx";
+export type { Chapter, ChapterScrubberProps } from "./components/ChapterScrubber.tsx";
 export { OrderableList } from "./components/OrderableList.tsx";
 export type { OrderableItemState } from "./components/OrderableList.tsx";
 export { MediaOutputCard } from "./components/MediaOutputCard.tsx";
@@ -81,10 +115,7 @@ export type { MediaOutputCardProps } from "./components/MediaOutputCard.tsx";
 export { MediaPreview } from "./components/MediaPreview.tsx";
 export type { MediaPreviewProps } from "./components/MediaPreview.tsx";
 export { PdfViewer } from "./components/PdfViewer.tsx";
-export type {
-  PdfOutlineItem,
-  PdfViewerProps,
-} from "./components/PdfViewer.tsx";
+export type { PdfOutlineItem, PdfViewerProps } from "./components/PdfViewer.tsx";
 export { CheckboxControl };
 export {
   Empty,
@@ -124,11 +155,7 @@ export {
   selectTriggerVariants,
 } from "./components/select.tsx";
 export type { SelectProps, SelectSize } from "./components/select.tsx";
-export {
-  RadioGroup,
-  RadioGroupItem,
-  radioGroupItemVariants,
-} from "./components/radio-group.tsx";
+export { RadioGroup, RadioGroupItem, radioGroupItemVariants } from "./components/radio-group.tsx";
 export type { RadioGroupItemProps } from "./components/radio-group.tsx";
 export {
   DataConversionWorkbench,
@@ -199,27 +226,13 @@ export {
   TableHeader,
   TableRow,
 } from "./components/table.tsx";
-export {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  tabsListVariants,
-} from "./components/tabs.tsx";
+export { Tabs, TabsContent, TabsList, TabsTrigger, tabsListVariants } from "./components/tabs.tsx";
 export { Textarea } from "./components/textarea.tsx";
-export {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./components/tooltip.tsx";
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/tooltip.tsx";
 
 export function AppContainer({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
-      className={cn("mx-auto w-full max-w-[1328px] px-4 lg:px-16", className)}
-      {...props}
-    />
+    <div className={cn("mx-auto w-full max-w-[1328px] px-4 lg:px-16", className)} {...props} />
   );
 }
 
@@ -253,9 +266,7 @@ export function BrandLockup({
       <span className="flex h-full flex-col justify-center gap-1 leading-none">
         <Text className="block">{name}</Text>
         {name !== "SmartTools" ? (
-          <Caption className="block text-muted-foreground">
-            by SmartTools
-          </Caption>
+          <Caption className="block text-muted-foreground">by SmartTools</Caption>
         ) : null}
       </span>
     </a>
@@ -287,13 +298,24 @@ export function ProductHeader({
       className={cn("border-b border-border bg-card print:hidden", className)}
       data-product-name={name}
     >
-      <AppContainer className={cn("flex max-w-[1440px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-10", compact ? "min-h-[72px]" : "min-h-[88px]")}>
+      <AppContainer
+        className={cn(
+          "flex max-w-[1440px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-10",
+          compact ? "min-h-[72px]" : "min-h-[88px]",
+        )}
+      >
         <a
           aria-label="SmartTools home"
           className="flex shrink-0 items-center gap-[13px] rounded-lg text-foreground no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           href="/"
         >
-          <span aria-hidden="true" className={cn("relative block shrink-0 rounded-[10px] bg-surface-ink", compact ? "size-10" : "size-12")}>
+          <span
+            aria-hidden="true"
+            className={cn(
+              "relative block shrink-0 rounded-[10px] bg-surface-ink",
+              compact ? "size-10" : "size-12",
+            )}
+          >
             <span className="absolute top-3 left-2.5 h-3.5 w-[22px] rounded-[3px] bg-on-ink" />
             <span className="absolute top-[22px] left-4 h-3.5 w-[22px] rounded-[3px] bg-primary" />
             <span className="absolute top-2.5 left-8 size-[7px] rounded-full bg-success" />
@@ -312,20 +334,30 @@ export function ProductHeader({
 
         {!minimal ? <EcosystemTabFilters currentHref={href} /> : null}
 
-        {mobileActions ? <div className="flex shrink-0 items-center gap-2 xl:hidden">{mobileActions}</div> : null}
-        <div className={cn("shrink-0 items-center gap-2", mobileActions ? "hidden xl:flex" : "flex")}>
-          {!minimal ? <a
-            aria-current={href === "/blog" ? "page" : undefined}
-            className="inline-flex min-h-10 items-center rounded-full px-3 text-xs font-semibold text-muted-foreground no-underline outline-none hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:text-primary xl:hidden"
-            href="/blog"
-          >Blog</a> : null}
-          {!minimal ? <a
-            className="hidden h-10 items-center gap-1.5 rounded-full border border-input bg-card px-3 text-[11px] font-semibold text-foreground no-underline outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex"
-            href="/auth?returnTo=%2Fauth%2Fprofile"
-          >
-            <Bookmark aria-hidden="true" className="size-3.5 text-muted-foreground" />
-            Saved
-          </a> : null}
+        {mobileActions ? (
+          <div className="flex shrink-0 items-center gap-2 xl:hidden">{mobileActions}</div>
+        ) : null}
+        <div
+          className={cn("shrink-0 items-center gap-2", mobileActions ? "hidden xl:flex" : "flex")}
+        >
+          {!minimal ? (
+            <a
+              aria-current={href === "/blog" ? "page" : undefined}
+              className="inline-flex min-h-10 items-center rounded-full px-3 text-xs font-semibold text-muted-foreground no-underline outline-none hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:text-primary xl:hidden"
+              href="/blog"
+            >
+              Blog
+            </a>
+          ) : null}
+          {!minimal ? (
+            <a
+              className="hidden h-10 items-center gap-1.5 rounded-full border border-input bg-card px-3 text-[11px] font-semibold text-foreground no-underline outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex"
+              href="/auth?returnTo=%2Fauth%2Fprofile"
+            >
+              <Bookmark aria-hidden="true" className="size-3.5 text-muted-foreground" />
+              Saved
+            </a>
+          ) : null}
           {actions}
         </div>
       </AppContainer>
@@ -404,7 +436,9 @@ export function ToolPageShell({
                     All tools
                   </a>
                 </li>
-                <li aria-hidden="true" className="text-input">›</li>
+                <li aria-hidden="true" className="text-input">
+                  ›
+                </li>
                 <li>
                   <a
                     className="rounded-sm outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -415,7 +449,9 @@ export function ToolPageShell({
                 </li>
                 {showCategoryInBreadcrumb ? (
                   <>
-                    <li aria-hidden="true" className="text-input">›</li>
+                    <li aria-hidden="true" className="text-input">
+                      ›
+                    </li>
                     <li>
                       <a
                         className="rounded-sm outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -426,7 +462,9 @@ export function ToolPageShell({
                     </li>
                   </>
                 ) : null}
-                <li aria-hidden="true" className="text-input">›</li>
+                <li aria-hidden="true" className="text-input">
+                  ›
+                </li>
                 <li aria-current="page" className="min-w-0 truncate font-semibold text-foreground">
                   {breadcrumbCurrent ?? title}
                 </li>
@@ -521,10 +559,42 @@ export function PageHero({
   return (
     <section className={cn(compact ? "py-10 lg:py-12" : "py-16 lg:py-20", className)}>
       <AppContainer>
-        {eyebrow ? <Overline className={cn("block text-primary", compact ? "mb-3" : "mb-4", align === "center" && "text-center")}>{eyebrow}</Overline> : null}
-        <Title className={cn("max-w-3xl text-foreground", align === "center" && "mx-auto text-center")}>{title}</Title>
-        <Description className={cn("max-w-2xl text-muted-foreground", compact ? "mt-3" : "mt-5", align === "center" && "mx-auto text-center")}>{description}</Description>
-        {actions ? <div className={cn(compact ? "mt-5" : "mt-8", "flex flex-wrap gap-3", align === "center" && "justify-center")}>{actions}</div> : null}
+        {eyebrow ? (
+          <Overline
+            className={cn(
+              "block text-primary",
+              compact ? "mb-3" : "mb-4",
+              align === "center" && "text-center",
+            )}
+          >
+            {eyebrow}
+          </Overline>
+        ) : null}
+        <Title
+          className={cn("max-w-3xl text-foreground", align === "center" && "mx-auto text-center")}
+        >
+          {title}
+        </Title>
+        <Description
+          className={cn(
+            "max-w-2xl text-muted-foreground",
+            compact ? "mt-3" : "mt-5",
+            align === "center" && "mx-auto text-center",
+          )}
+        >
+          {description}
+        </Description>
+        {actions ? (
+          <div
+            className={cn(
+              compact ? "mt-5" : "mt-8",
+              "flex flex-wrap gap-3",
+              align === "center" && "justify-center",
+            )}
+          >
+            {actions}
+          </div>
+        ) : null}
       </AppContainer>
     </section>
   );
@@ -546,14 +616,7 @@ export function ToolPageHeader({
   title: ReactNode;
 }) {
   const titleNode = (
-    <H1
-      className={cn(
-        "text-foreground",
-        inlineEyebrow && "min-w-0 break-words",
-      )}
-    >
-      {title}
-    </H1>
+    <H1 className={cn("text-foreground", inlineEyebrow && "min-w-0 break-words")}>{title}</H1>
   );
   const eyebrowNode = eyebrow ? (
     <Overline
@@ -567,7 +630,12 @@ export function ToolPageHeader({
   ) : null;
 
   return (
-    <header className={cn("mb-8 flex flex-col gap-5 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between", className)}>
+    <header
+      className={cn(
+        "mb-8 flex flex-col gap-5 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between",
+        className,
+      )}
+    >
       <div className={cn(inlineEyebrow && "min-w-0")}>
         {inlineEyebrow ? (
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
@@ -580,7 +648,9 @@ export function ToolPageHeader({
             {titleNode}
           </>
         )}
-        {description ? <Muted className="max-w-2xl text-muted-foreground">{description}</Muted> : null}
+        {description ? (
+          <Muted className="max-w-2xl text-muted-foreground">{description}</Muted>
+        ) : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </header>
@@ -638,17 +708,18 @@ export function Field({
 }) {
   const descriptionId = description ? `${htmlFor}-description` : undefined;
   const errorId = error ? `${htmlFor}-error` : undefined;
-  const describedBy = [children.props["aria-describedby"], descriptionId]
-    .filter(Boolean)
-    .join(" ") || undefined;
-  const errorMessage = [children.props["aria-errormessage"], errorId]
-    .filter(Boolean)
-    .join(" ") || undefined;
+  const describedBy =
+    [children.props["aria-describedby"], descriptionId].filter(Boolean).join(" ") || undefined;
+  const errorMessage =
+    [children.props["aria-errormessage"], errorId].filter(Boolean).join(" ") || undefined;
 
   return (
     <FieldRoot className={className} data-invalid={Boolean(error)} variant={variant}>
       <FieldPrimitiveLabel htmlFor={htmlFor}>
-        {label}{required ? <span className="ml-1 font-medium text-muted-foreground">(required)</span> : null}
+        {label}
+        {required ? (
+          <span className="ml-1 font-medium text-muted-foreground">(required)</span>
+        ) : null}
       </FieldPrimitiveLabel>
       {cloneElement(children, {
         "aria-describedby": describedBy,
@@ -656,7 +727,9 @@ export function Field({
         "aria-invalid": error ? true : children.props["aria-invalid"],
         id: htmlFor,
       })}
-      {description ? <FieldPrimitiveDescription id={descriptionId}>{description}</FieldPrimitiveDescription> : null}
+      {description ? (
+        <FieldPrimitiveDescription id={descriptionId}>{description}</FieldPrimitiveDescription>
+      ) : null}
       {error ? <FieldPrimitiveError id={errorId}>{error}</FieldPrimitiveError> : null}
     </FieldRoot>
   );
@@ -684,7 +757,9 @@ export function Checkbox({
       {tooltip && !props.disabled ? <TooltipTrigger asChild>{checkbox}</TooltipTrigger> : checkbox}
       <span>
         <span className="block font-semibold">{label}</span>
-        {description ? <span className="mt-1 block leading-5 text-muted-foreground">{description}</span> : null}
+        {description ? (
+          <span className="mt-1 block leading-5 text-muted-foreground">{description}</span>
+        ) : null}
       </span>
     </label>
   );
@@ -702,10 +777,14 @@ export function Checkbox({
             {control}
           </span>
         </TooltipTrigger>
-      ) : control}
+      ) : (
+        control
+      )}
       <TooltipContent className="max-w-xs">{tooltip}</TooltipContent>
     </Tooltip>
-  ) : control;
+  ) : (
+    control
+  );
 }
 
 const cardClassName =
@@ -716,7 +795,15 @@ export function SectionCard({ className, ...props }: HTMLAttributes<HTMLElement>
 }
 
 export function DangerZone({ className, ...props }: HTMLAttributes<HTMLElement>) {
-  return <section className={cn("rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-foreground", className)} {...props} />;
+  return (
+    <section
+      className={cn(
+        "rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-foreground",
+        className,
+      )}
+      {...props}
+    />
+  );
 }
 
 export function CatalogCard({
@@ -745,7 +832,10 @@ export function CatalogCard({
       {icon || status ? (
         <span className="flex items-center justify-between gap-3">
           {icon ? (
-            <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-lg bg-accent text-primary [&_svg]:size-[22px]">
+            <span
+              aria-hidden="true"
+              className="grid size-11 shrink-0 place-items-center rounded-lg bg-accent text-primary [&_svg]:size-[22px]"
+            >
               {icon}
             </span>
           ) : null}
@@ -778,9 +868,18 @@ export function StatusBadge({
     neutral: { badge: "border-input bg-card text-muted-foreground", dot: "bg-muted-foreground" },
     info: { badge: "border-transparent bg-accent text-primary", dot: "bg-primary" },
     success: { badge: "border-transparent bg-success-soft text-success", dot: "bg-success" },
-    warning: { badge: "border-transparent bg-status-warning-soft text-status-warning", dot: "bg-status-warning" },
-    danger: { badge: "border-transparent bg-status-danger-soft text-status-danger", dot: "bg-status-danger" },
-    archived: { badge: "border-transparent bg-muted text-muted-foreground", dot: "bg-muted-foreground" },
+    warning: {
+      badge: "border-transparent bg-status-warning-soft text-status-warning",
+      dot: "bg-status-warning",
+    },
+    danger: {
+      badge: "border-transparent bg-status-danger-soft text-status-danger",
+      dot: "bg-status-danger",
+    },
+    archived: {
+      badge: "border-transparent bg-muted text-muted-foreground",
+      dot: "bg-muted-foreground",
+    },
   };
   const styles = variants[variant];
 
@@ -810,7 +909,8 @@ export function AlertBanner({
   const variants: Record<AlertVariant, string> = {
     info: "border-transparent bg-accent text-foreground [&>svg]:text-primary",
     success: "border-transparent bg-success-soft text-foreground [&>svg]:text-success",
-    warning: "border-transparent bg-status-warning-soft text-foreground [&>svg]:text-status-warning",
+    warning:
+      "border-transparent bg-status-warning-soft text-foreground [&>svg]:text-status-warning",
     error: "border-transparent bg-status-danger-soft text-foreground [&>svg]:text-status-danger",
   };
   const urgent = variant === "error";
@@ -823,7 +923,11 @@ export function AlertBanner({
 
   return (
     <Alert
-      className={cn("flex flex-wrap items-start justify-between gap-3 p-4", variants[variant], className)}
+      className={cn(
+        "flex flex-wrap items-start justify-between gap-3 p-4",
+        variants[variant],
+        className,
+      )}
       role={urgent ? "alert" : "status"}
       variant={urgent ? "destructive" : "default"}
     >
@@ -859,9 +963,15 @@ export function EmptyState({
   return (
     <Empty className={cn("gap-3.5 rounded-xl border-solid p-10", className)}>
       <EmptyHeader className="max-w-md gap-0">
-        {icon ? <EmptyMedia className="mb-3.5 size-14 rounded-xl bg-muted text-muted-foreground [&_svg]:size-[26px]">{icon}</EmptyMedia> : null}
+        {icon ? (
+          <EmptyMedia className="mb-3.5 size-14 rounded-xl bg-muted text-muted-foreground [&_svg]:size-[26px]">
+            {icon}
+          </EmptyMedia>
+        ) : null}
         <Heading className="text-foreground">{title}</Heading>
-        {description ? <EmptyDescription className="mt-2 max-w-md">{description}</EmptyDescription> : null}
+        {description ? (
+          <EmptyDescription className="mt-2 max-w-md">{description}</EmptyDescription>
+        ) : null}
       </EmptyHeader>
       {action ? <EmptyContent className="mt-0">{action}</EmptyContent> : null}
     </Empty>

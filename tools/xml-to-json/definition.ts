@@ -4,21 +4,13 @@ export default {
   toolId: "devtools.xml-to-json",
   app: "devtools",
   category: "json-tools",
-  keywords: [
-    "xml",
-    "json",
-    "convert",
-    "parse",
-    "attributes",
-    "soap",
-    "rss",
-  ],
+  keywords: ["xml", "json", "convert", "parse", "attributes", "soap", "rss"],
   name: "XML to JSON",
   description: "Convert XML elements and attributes to JSON.",
   input: {
     kind: "text",
     label: "XML input",
-    placeholder: "<user id=\"1\"><name>Ada</name></user>",
+    placeholder: '<user id="1"><name>Ada</name></user>',
   },
   settings: {
     fields: {},
@@ -62,7 +54,7 @@ export default {
     examples: [
       {
         label: "Element with an attribute",
-        text: "<user id=\"1\"><name>Ada</name><active>true</active></user>",
+        text: '<user id="1"><name>Ada</name><active>true</active></user>',
       },
     ],
   },

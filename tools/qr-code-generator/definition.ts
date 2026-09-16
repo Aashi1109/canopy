@@ -4,17 +4,7 @@ export default {
   toolId: "devtools.qr-code-generator",
   app: "devtools",
   category: "encoding-decoding",
-  keywords: [
-    "qr",
-    "qr code",
-    "barcode",
-    "generator",
-    "url",
-    "wifi",
-    "vcard",
-    "png",
-    "svg",
-  ],
+  keywords: ["qr", "qr code", "barcode", "generator", "url", "wifi", "vcard", "png", "svg"],
   name: "QR Code Generator",
   description: "Generate a downloadable QR code PNG.",
   input: {

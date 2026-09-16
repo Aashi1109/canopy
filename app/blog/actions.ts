@@ -10,9 +10,10 @@ export async function loadMoreBlogPosts(input: unknown) {
   } catch (error) {
     return {
       ok: false as const,
-      message: error instanceof ZodError || error instanceof BlogValidationError
-        ? "These filters are no longer valid. Refresh the blog and try again."
-        : "Couldn’t load more stories. Your loaded stories are still here. Try again.",
+      message:
+        error instanceof ZodError || error instanceof BlogValidationError
+          ? "These filters are no longer valid. Refresh the blog and try again."
+          : "Couldn’t load more stories. Your loaded stories are still here. Try again.",
     };
   }
 }

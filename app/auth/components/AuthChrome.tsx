@@ -18,12 +18,7 @@ export function AuthFooter() {
   return <SmartToolsFooter />;
 }
 
-export function AuthScreen({
-  children,
-}: {
-  children: ReactNode;
-  projects?: AuthProjectPaths;
-}) {
+export function AuthScreen({ children }: { children: ReactNode; projects?: AuthProjectPaths }) {
   return (
     <div className="auth-shell min-h-screen bg-background text-foreground">
       <AuthNavbar />

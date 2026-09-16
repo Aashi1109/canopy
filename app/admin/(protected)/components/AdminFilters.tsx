@@ -5,7 +5,10 @@ import { RotateCcw } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useRef, useState, useTransition } from "react";
 
-export function AdminFilters({ search, selects }: {
+export function AdminFilters({
+  search,
+  selects,
+}: {
   search: { key: string; label: string; placeholder: string };
   selects: readonly {
     key: string;
@@ -31,12 +34,15 @@ export function AdminFilters({ search, selects }: {
     [search.key, searchParams.get(search.key) ?? ""],
     ...selects.map((select) => {
       const value = searchParams.get(select.key);
-      return [select.key, select.options.find((option) => option.value === value)?.value ?? defaults[select.key]];
+      return [
+        select.key,
+        select.options.find((option) => option.value === value)?.value ?? defaults[select.key],
+      ];
     }),
   ]);
-  const hasFilters = hasDraftQuery || Object.keys(defaults).some(
-    (key) => filters[key] !== defaults[key] || searchParams.has(key),
-  );
+  const hasFilters =
+    hasDraftQuery ||
+    Object.keys(defaults).some((key) => filters[key] !== defaults[key] || searchParams.has(key));
   const setFormRef = useCallback((form: HTMLFormElement | null) => {
     formRef.current = form;
     if (!form) clearTimeout(timerRef.current);
@@ -62,9 +68,12 @@ export function AdminFilters({ search, selects }: {
     focusRef.current = formRef.current.contains(document.activeElement)
       ? document.activeElement?.id || null
       : null;
-    startTransition(() => router[replace ? "replace" : "push"](
-      `${pathname}${query ? `?${query}` : ""}${window.location.hash}`, { scroll: false },
-    ));
+    startTransition(() =>
+      router[replace ? "replace" : "push"](
+        `${pathname}${query ? `?${query}` : ""}${window.location.hash}`,
+        { scroll: false },
+      ),
+    );
   }
 
   return (
@@ -73,10 +82,17 @@ export function AdminFilters({ search, selects }: {
       className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4"
       method="get"
       key={searchParams.toString()}
-      onSubmit={(event) => { event.preventDefault(); applyFilters(); }}
+      onSubmit={(event) => {
+        event.preventDefault();
+        applyFilters();
+      }}
       ref={setFormRef}
     >
-      <Field className="min-w-0 flex-[2_1_16rem]" htmlFor={`admin-filter-${search.key}`} label={search.label}>
+      <Field
+        className="min-w-0 flex-[2_1_16rem]"
+        htmlFor={`admin-filter-${search.key}`}
+        label={search.label}
+      >
         <Input
           defaultValue={filters[search.key]}
           disabled={isPending}
@@ -92,9 +108,24 @@ export function AdminFilters({ search, selects }: {
         />
       </Field>
       {selects.map((select) => (
-        <Field className="min-w-0 flex-[1_1_10rem]" htmlFor={`admin-filter-${select.key}`} key={select.key} label={select.label}>
-          <Select defaultValue={filters[select.key]} disabled={isPending} id={`admin-filter-${select.key}`} name={select.key} onChange={(event) => applyFilters({ [select.key]: event.target.value })}>
-            {select.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+        <Field
+          className="min-w-0 flex-[1_1_10rem]"
+          htmlFor={`admin-filter-${select.key}`}
+          key={select.key}
+          label={select.label}
+        >
+          <Select
+            defaultValue={filters[select.key]}
+            disabled={isPending}
+            id={`admin-filter-${select.key}`}
+            name={select.key}
+            onChange={(event) => applyFilters({ [select.key]: event.target.value })}
+          >
+            {select.options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </Select>
         </Field>
       ))}

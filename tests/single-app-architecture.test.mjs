@@ -14,9 +14,7 @@ async function exists(path) {
 }
 
 test("the repository root is the only Next.js application", async () => {
-  const packageJson = JSON.parse(
-    await readFile(new URL("package.json", root), "utf8"),
-  );
+  const packageJson = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
 
   assert.equal(packageJson.name, "smarttools");
   assert.equal(typeof packageJson.dependencies.next, "string");
@@ -59,15 +57,9 @@ test("domain APIs are namespaced in the unified application", async () => {
 });
 
 test("media isolation headers cover pages and their worker bundles", async () => {
-  const source = await readFile(
-    new URL("next.config.ts", root),
-    "utf8",
-  );
+  const source = await readFile(new URL("next.config.ts", root), "utf8");
 
   assert.match(source, /source:\s*["']\/media\/:path\*["']/);
-  assert.match(
-    source,
-    /source:\s*["']\/_next\/static\/chunks\/:path\*["']/,
-  );
+  assert.match(source, /source:\s*["']\/_next\/static\/chunks\/:path\*["']/);
   assert.doesNotMatch(source, /source:\s*["']\/\(\.\*\)["']/);
 });

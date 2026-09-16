@@ -6,10 +6,7 @@ import {
 } from "./streaming-json.ts";
 import { LARGE_TEXT_PREVIEW_BYTES } from "../../tool-framework/limits.ts";
 import type { ToolResult } from "../../tool-framework/result.ts";
-import {
-  ToolError,
-  type ToolRunContext,
-} from "../../tool-framework/run.ts";
+import { ToolError, type ToolRunContext } from "../../tool-framework/run.ts";
 
 export const LARGE_JSON_FILE_BYTES = 2_000_000;
 
@@ -34,11 +31,12 @@ function sourceFor(ctx: ToolRunContext<unknown>): StreamingJsonInput {
 function inputProgress(ctx: ToolRunContext<unknown>) {
   const total = ctx.input.files?.[0]?.size;
   return total
-    ? (completed: number) => ctx.progress({
-        completed,
-        total,
-        stage: "Processing JSON",
-      })
+    ? (completed: number) =>
+        ctx.progress({
+          completed,
+          total,
+          stage: "Processing JSON",
+        })
     : undefined;
 }
 
@@ -52,9 +50,7 @@ function throwJsonError(
   );
 }
 
-export async function validateStreamingJsonRun(
-  ctx: ToolRunContext<unknown>,
-): Promise<ToolResult> {
+export async function validateStreamingJsonRun(ctx: ToolRunContext<unknown>): Promise<ToolResult> {
   const result = await processStreamingJson(sourceFor(ctx), {
     mode: "validate",
     onInputProgress: inputProgress(ctx),

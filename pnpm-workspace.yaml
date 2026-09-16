@@ -3,7 +3,7 @@ packages:
   - "services/*"
 
 allowBuilds:
-  '@google/genai': true
+  "@google/genai": true
   core-js: false
   esbuild: true
   protobufjs: true

@@ -4,14 +4,7 @@ export default {
   toolId: "devtools.duplicate-line-remover",
   app: "devtools",
   category: "text-tools",
-  keywords: [
-    "duplicate",
-    "dedupe",
-    "unique lines",
-    "remove duplicates",
-    "uniq",
-    "list",
-  ],
+  keywords: ["duplicate", "dedupe", "unique lines", "remove duplicates", "uniq", "list"],
   name: "Duplicate Line Remover",
   description: "Remove repeated lines while preserving order.",
   layout: "stacked",
@@ -71,8 +64,6 @@ export default {
         a: "Yes — that is a different tool, Duplicate Word Remover.",
       },
     ],
-    examples: [
-      { label: "Mixed-case list", text: "Alpha\nBeta\nalpha\nGamma" },
-    ],
+    examples: [{ label: "Mixed-case list", text: "Alpha\nBeta\nalpha\nGamma" }],
   },
 } as const satisfies ToolSpec;

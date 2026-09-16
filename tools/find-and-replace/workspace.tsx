@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Strong,
-  FieldLabel,
-  CodeBlock,
-  Muted,
-  ToolOptionsPanel,
-} from "@smarttools/ui";
+import { Strong, FieldLabel, CodeBlock, Muted, ToolOptionsPanel } from "@smarttools/ui";
 import { ArrowRight } from "lucide-react";
 import { Fragment, useEffect, useId, useMemo } from "react";
 
@@ -18,10 +12,7 @@ import { WorkspaceSurface } from "@/components/Surfaces";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import { SourceTextarea } from "@/components/WorkspaceInput";
 
-import {
-  buildReplacementPreview,
-  type ReplacementPreview,
-} from "./preview";
+import { buildReplacementPreview, type ReplacementPreview } from "./preview";
 
 function PreviewText({ preview }: { preview: ReplacementPreview }) {
   return preview.parts.map((part, index) => {
@@ -102,12 +93,13 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
   const find = typeof props.settings.find === "string" ? props.settings.find : "";
   const replace = typeof props.settings.replace === "string" ? props.settings.replace : "";
   const preview = useMemo(
-    () => buildReplacementPreview(props.input.text, {
-      ci: props.settings.ci === true,
-      find,
-      regex: props.settings.regex === true,
-      replace,
-    }),
+    () =>
+      buildReplacementPreview(props.input.text, {
+        ci: props.settings.ci === true,
+        find,
+        regex: props.settings.regex === true,
+        replace,
+      }),
     [find, props.input.text, props.settings.ci, props.settings.regex, replace],
   );
 
@@ -126,9 +118,10 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
     return () => props.onValidationChange?.(null);
   }, [props.onValidationChange, validationReason]);
 
-  const actionLabel = preview.count > 0
-    ? `Apply ${preview.count} ${preview.count === 1 ? "replacement" : "replacements"}`
-    : "Apply replacements";
+  const actionLabel =
+    preview.count > 0
+      ? `Apply ${preview.count} ${preview.count === 1 ? "replacement" : "replacements"}`
+      : "Apply replacements";
 
   useEffect(() => {
     props.onToolbarActionsChange?.({ primaryActionLabel: actionLabel });
@@ -152,17 +145,19 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
         <WorkspaceSurface
           className="h-full"
           contentClassName="bg-background"
-          meta={(
+          meta={
             <>
               <span className="max-[30rem]:hidden">{previewMeta(preview)}</span>
               <span className="hidden max-[30rem]:inline">{compactPreviewMeta(preview)}</span>
             </>
-          )}
+          }
           purpose="source"
           title="Source text"
           variant="card"
         >
-          <FieldLabel className="sr-only" htmlFor={inputId}>{inputSpec.label}</FieldLabel>
+          <FieldLabel className="sr-only" htmlFor={inputId}>
+            {inputSpec.label}
+          </FieldLabel>
           <SourceTextarea
             className="min-h-0 flex-1"
             disabled={props.disabled}
@@ -180,13 +175,13 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
 
         {highlightedResult ? (
           <WorkspaceSurface
-            actions={(
+            actions={
               <ResultActions
                 canCopy={Boolean(props.spec.capabilities?.copy)}
                 canDownload={Boolean(props.spec.capabilities?.download)}
                 result={props.result}
               />
-            )}
+            }
             className="h-full"
             contentClassName="bg-background"
             meta={`${preview.count} ${preview.count === 1 ? "replacement" : "replacements"} applied`}
@@ -225,7 +220,8 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
           values={props.settings}
         />
         <Muted className="text-muted-foreground">
-          In the source, a red background marks text that will be removed; a green background marks what will replace it. Applied replacements stay highlighted in the result.
+          In the source, a red background marks text that will be removed; a green background marks
+          what will replace it. Applied replacements stay highlighted in the result.
         </Muted>
         {validationReason ? (
           <Muted
@@ -236,7 +232,8 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
           </Muted>
         ) : preview.truncated ? (
           <Muted className="text-muted-foreground" role="status">
-            {preview.count - preview.previewedCount} additional matches will still be replaced; they are grouped in the source to keep the editor responsive.
+            {preview.count - preview.previewedCount} additional matches will still be replaced; they
+            are grouped in the source to keep the editor responsive.
           </Muted>
         ) : null}
       </ToolOptionsPanel>

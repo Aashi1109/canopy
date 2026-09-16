@@ -39,7 +39,15 @@ const PERMISSION_SECTIONS = Object.entries(PERMISSION_CATALOG).filter(
   ([resource]) => resource !== "admin",
 );
 
-export default function RoleEditor({ role, members, canAssign = false }: { role: Role; members?: RoleUsersPage; canAssign?: boolean }) {
+export default function RoleEditor({
+  role,
+  members,
+  canAssign = false,
+}: {
+  role: Role;
+  members?: RoleUsersPage;
+  canAssign?: boolean;
+}) {
   const [draft, setDraft] = useState<Role>(() => ({
     ...role,
     access: { ...role.access, admin: { enter: true } },
@@ -76,8 +84,11 @@ export default function RoleEditor({ role, members, canAssign = false }: { role:
     null,
   );
   const busy = saving || deleting;
-  const hasInvalidDetails = !draft.name.trim() || draft.name.length > 160
-    || !draft.description.trim() || draft.description.length > 2000;
+  const hasInvalidDetails =
+    !draft.name.trim() ||
+    draft.name.length > 160 ||
+    !draft.description.trim() ||
+    draft.description.length > 2000;
   const isDirty =
     draft.name.trim() !== saved.name.trim() ||
     draft.description.trim() !== saved.description.trim() ||
@@ -88,10 +99,11 @@ export default function RoleEditor({ role, members, canAssign = false }: { role:
           (saved.access[resource]?.[action] === true),
       ),
     );
-  const hasMissingPrerequisites = PERMISSION_SECTIONS.some(
-    ([resource, definition]) => Object.keys(definition.actions).some(
-      (action) => draft.access[resource]?.[action] === true
-        && getMissingPermissionPrerequisite(draft.access, resource, action),
+  const hasMissingPrerequisites = PERMISSION_SECTIONS.some(([resource, definition]) =>
+    Object.keys(definition.actions).some(
+      (action) =>
+        draft.access[resource]?.[action] === true &&
+        getMissingPermissionPrerequisite(draft.access, resource, action),
     ),
   );
 
@@ -116,7 +128,12 @@ export default function RoleEditor({ role, members, canAssign = false }: { role:
         className="mb-6 border-b-0 pb-0 sm:items-center [&>div:first-child]:min-w-0 [&>div:first-child]:flex-1"
         actions={
           <>
-            <Button disabled={!isDirty || busy || hasMissingPrerequisites || hasInvalidDetails} form="role-details" loading={saving} type="submit">
+            <Button
+              disabled={!isDirty || busy || hasMissingPrerequisites || hasInvalidDetails}
+              form="role-details"
+              loading={saving}
+              type="submit"
+            >
               {saving ? "Saving…" : "Save role"}
             </Button>
             <AlertDialog
@@ -134,20 +151,23 @@ export default function RoleEditor({ role, members, canAssign = false }: { role:
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete “{saved.name}”?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This permanently deletes the role and cannot be undone.
-                    Assigned custom roles cannot be deleted.
+                    This permanently deletes the role and cannot be undone. Assigned custom roles
+                    cannot be deleted.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                {deleteError ? (
-                  <AlertBanner variant="error">{deleteError}</AlertBanner>
-                ) : null}
+                {deleteError ? <AlertBanner variant="error">{deleteError}</AlertBanner> : null}
                 <form action={deleteAction}>
                   <input name="roleId" type="hidden" value={role.id} />
                   <AlertDialogFooter>
                     <AlertDialogCancel disabled={deleting} type="button">
                       Cancel
                     </AlertDialogCancel>
-                    <Button disabled={deleting} loading={deleting} type="submit" variant="destructive">
+                    <Button
+                      disabled={deleting}
+                      loading={deleting}
+                      type="submit"
+                      variant="destructive"
+                    >
                       {deleting ? "Deleting…" : "Delete role"}
                     </Button>
                   </AlertDialogFooter>
@@ -156,21 +176,37 @@ export default function RoleEditor({ role, members, canAssign = false }: { role:
             </AlertDialog>
           </>
         }
-        description={<InlineTextEditor label="Role description" value={draft.description} onChange={(description) => setDraft((current) => ({ ...current, description }))} multiline required maxLength={2000} disabled={busy} />}
-        title={<InlineTextEditor label="Role name" value={draft.name} onChange={(name) => setDraft((current) => ({ ...current, name }))} required maxLength={160} disabled={busy} />}
+        description={
+          <InlineTextEditor
+            label="Role description"
+            value={draft.description}
+            onChange={(description) => setDraft((current) => ({ ...current, description }))}
+            multiline
+            required
+            maxLength={2000}
+            disabled={busy}
+          />
+        }
+        title={
+          <InlineTextEditor
+            label="Role name"
+            value={draft.name}
+            onChange={(name) => setDraft((current) => ({ ...current, name }))}
+            required
+            maxLength={160}
+            disabled={busy}
+          />
+        }
       />
       <SectionCard>
         <SectionHeading title="Permissions" />
         {hasMissingPrerequisites ? (
           <AlertBanner variant="error">
-            Some selected permissions require their section’s View permission. Select View or clear those permissions before saving.
+            Some selected permissions require their section’s View permission. Select View or clear
+            those permissions before saving.
           </AlertBanner>
         ) : null}
-        {saveState?.error ? (
-          <AlertBanner variant="error">
-            {saveState.error}
-          </AlertBanner>
-        ) : null}
+        {saveState?.error ? <AlertBanner variant="error">{saveState.error}</AlertBanner> : null}
         <form
           className="grid gap-6"
           id="role-details"
@@ -197,25 +233,31 @@ export default function RoleEditor({ role, members, canAssign = false }: { role:
                     <FieldLegend className="mb-0 px-1 text-foreground">
                       {startCase(resource)}
                     </FieldLegend>
-                    <Muted className="mb-4 text-muted-foreground">
-                      {definition.description}
-                    </Muted>
+                    <Muted className="mb-4 text-muted-foreground">{definition.description}</Muted>
                     <div className="grid gap-3">
                       {Object.entries(definition.actions).map(([action, help]) => {
-                        const missing = getMissingPermissionPrerequisite(draft.access, resource, action);
+                        const missing = getMissingPermissionPrerequisite(
+                          draft.access,
+                          resource,
+                          action,
+                        );
                         const checked = draft.access[resource]?.[action] === true;
                         return (
                           <Checkbox
                             checked={checked}
                             disabled={Boolean(missing) && !checked}
-                            onCheckedChange={(value) => changePermission(resource, action, value === true)}
+                            onCheckedChange={(value) =>
+                              changePermission(resource, action, value === true)
+                            }
                             description={help.description}
                             key={action}
                             label={startCase(action)}
                             name={`permission:${resource}:${action}`}
-                            tooltip={missing
-                              ? `Select ${startCase(missing.resource)} → ${startCase(missing.action)} first.`
-                              : help.description}
+                            tooltip={
+                              missing
+                                ? `Select ${startCase(missing.resource)} → ${startCase(missing.action)} first.`
+                                : help.description
+                            }
                           />
                         );
                       })}
@@ -227,7 +269,15 @@ export default function RoleEditor({ role, members, canAssign = false }: { role:
           </fieldset>
         </form>
       </SectionCard>
-      {members ? <RoleMembers roleId={role.id} roleName={saved.name} initial={members} canAssign={canAssign} disabled={isDirty || busy} /> : null}
+      {members ? (
+        <RoleMembers
+          roleId={role.id}
+          roleName={saved.name}
+          initial={members}
+          canAssign={canAssign}
+          disabled={isDirty || busy}
+        />
+      ) : null}
     </>
   );
 }

@@ -36,9 +36,7 @@ test("streams a byte-correct ZIP without retaining separate output artifacts", a
   assert.equal(files.length, 1);
   assert.equal(files[0].name, "images.zip");
   assert.equal(files[0].mime, "application/zip");
-  const archive = unzipSync(
-    new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()),
-  );
+  const archive = unzipSync(new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()));
   assert.deepEqual(Object.keys(archive), ["first.txt", "second.txt"]);
   assert.equal(new TextDecoder().decode(archive["first.txt"]), "first payload");
   assert.equal(new TextDecoder().decode(archive["second.txt"]), "second payload");
@@ -55,11 +53,17 @@ test("retains individually downloadable images alongside a byte-correct ZIP when
       await write({ name: "page-2.jpg", mime: "image/jpeg", source: new Uint8Array([1, 2, 3]) });
     },
   );
-  assert.deepEqual(files.map((file) => file.name), ["images.zip", "page-1.jpg", "page-2.jpg"]);
+  assert.deepEqual(
+    files.map((file) => file.name),
+    ["images.zip", "page-1.jpg", "page-2.jpg"],
+  );
   const archive = unzipSync(new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()));
   for (const file of files.slice(1)) {
     assert.equal(file.mime, "image/jpeg");
-    assert.deepEqual(new Uint8Array(await (await readArtifact(file)).arrayBuffer()), archive[file.name]);
+    assert.deepEqual(
+      new Uint8Array(await (await readArtifact(file)).arrayBuffer()),
+      archive[file.name],
+    );
   }
 });
 
@@ -70,11 +74,12 @@ test("writes one output directly instead of wrapping it in a ZIP", async () => {
   const files = await writeArtifactBatch(
     { signal, writeArtifact: artifacts.write },
     { archiveName: "unused.zip", count: 1 },
-    (write) => write({
-      name: "converted.png",
-      mime: "image/png",
-      source: new Uint8Array([1, 2, 3]),
-    }),
+    (write) =>
+      write({
+        name: "converted.png",
+        mime: "image/png",
+        source: new Uint8Array([1, 2, 3]),
+      }),
   );
 
   assert.equal(files.length, 1);
@@ -93,17 +98,16 @@ test("can force a valid ZIP for a one-entry batch", async () => {
   const files = await writeArtifactBatch(
     { signal, writeArtifact: artifacts.write },
     { archiveName: "single.zip", count: 1, forceArchive: true },
-    (write) => write({
-      name: "part.pdf",
-      mime: "application/pdf",
-      source: new Uint8Array([37, 80, 68, 70]),
-    }),
+    (write) =>
+      write({
+        name: "part.pdf",
+        mime: "application/pdf",
+        source: new Uint8Array([37, 80, 68, 70]),
+      }),
   );
 
   assert.equal(files[0].mime, "application/zip");
-  const archive = unzipSync(
-    new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()),
-  );
+  const archive = unzipSync(new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()));
   assert.deepEqual(archive["part.pdf"], new Uint8Array([37, 80, 68, 70]));
 });
 
@@ -128,9 +132,7 @@ test("renames duplicate entry filenames so a batch cannot overwrite data", async
     },
   );
 
-  const archive = unzipSync(
-    new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()),
-  );
+  const archive = unzipSync(new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()));
   assert.deepEqual(Object.keys(archive), ["same.txt", "same-2.txt"]);
   assert.equal(new TextDecoder().decode(archive["same.txt"]), "first");
   assert.equal(new TextDecoder().decode(archive["same-2.txt"]), "second");
@@ -189,8 +191,7 @@ test("propagates the artifact output ceiling while the ZIP is streaming", async 
         });
       },
     ),
-    (error) =>
-      error instanceof ArtifactStorageError && error.code === "output-too-large",
+    (error) => error instanceof ArtifactStorageError && error.code === "output-too-large",
   );
   assert.equal(artifacts.bytesWritten, 0);
 });

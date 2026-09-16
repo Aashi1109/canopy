@@ -1,14 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  CsvParseError,
-  parseStreamingCsv,
-} from "../lib/devtools/shared/streaming-csv.ts";
+import { CsvParseError, parseStreamingCsv } from "../lib/devtools/shared/streaming-csv.ts";
 
 test("parses UTF-8, quotes, embedded newlines, BOM, and CRLF across byte boundaries", async () => {
-  const source =
-    '\uFEFFid,note\r\n1,"héllo, ""world"""\r\n2,"line one\r\nline two"';
+  const source = '\uFEFFid,note\r\n1,"héllo, ""world"""\r\n2,"line one\r\nline two"';
   const bytes = new TextEncoder().encode(source);
   const chunks = Array.from(bytes, (_, index) => bytes.subarray(index, index + 1));
   const rows = [];
@@ -37,12 +33,7 @@ test("parses UTF-8, quotes, embedded newlines, BOM, and CRLF across byte boundar
 });
 
 test("supports string chunks and does not add a row after a trailing CRLF", async () => {
-  const result = await parseStreamingCsv([
-    "\uFEFFname,active\r",
-    "\nAda,tr",
-    "ue\r",
-    "\n",
-  ]);
+  const result = await parseStreamingCsv(["\uFEFFname,active\r", "\nAda,tr", "ue\r", "\n"]);
 
   assert.deepEqual(result.preview, [
     ["name", "active"],
@@ -73,38 +64,25 @@ test("waits for asynchronous row consumers to provide backpressure", async () =>
     },
   });
 
-  assert.deepEqual(events, [
-    "start:a",
-    "end:a",
-    "start:b",
-    "end:b",
-    "start:c",
-    "end:c",
-  ]);
+  assert.deepEqual(events, ["start:a", "end:a", "start:b", "end:b", "start:c", "end:c"]);
 });
 
 test("validates row width against the first row by default", async () => {
-  await assert.rejects(
-    parseStreamingCsv(["id,name\n1,Ada\n2"]),
-    (error) => {
-      assert.ok(error instanceof CsvParseError);
-      assert.equal(error.code, "width");
-      assert.equal(error.row, 3);
-      assert.equal(error.column, 2);
-      assert.equal(error.message, "Row 3 has 1 column; expected 2 columns.");
-      return true;
-    },
-  );
+  await assert.rejects(parseStreamingCsv(["id,name\n1,Ada\n2"]), (error) => {
+    assert.ok(error instanceof CsvParseError);
+    assert.equal(error.code, "width");
+    assert.equal(error.row, 3);
+    assert.equal(error.column, 2);
+    assert.equal(error.message, "Row 3 has 1 column; expected 2 columns.");
+    return true;
+  });
 });
 
 test("can accept ragged rows or validate a caller-provided width", async () => {
   const ragged = await parseStreamingCsv(["a,b\n1"], {
     validateWidth: false,
   });
-  assert.deepEqual(ragged.preview, [
-    ["a", "b"],
-    ["1"],
-  ]);
+  assert.deepEqual(ragged.preview, [["a", "b"], ["1"]]);
 
   await assert.rejects(
     parseStreamingCsv(["a,b,c"], { expectedColumns: 2 }),
@@ -119,7 +97,7 @@ test("can accept ragged rows or validate a caller-provided width", async () => {
 test("reports quote errors at the logical row and column", async (t) => {
   const cases = [
     {
-      input: "id,name\n1,Al\"ice",
+      input: 'id,name\n1,Al"ice',
       code: "unexpected-quote",
       row: 2,
       column: 2,
@@ -131,8 +109,7 @@ test("reports quote errors at the logical row and column", async (t) => {
       code: "unexpected-character",
       row: 2,
       column: 2,
-      message:
-        'Unexpected character "x" after a closing quote at row 2, column 2.',
+      message: 'Unexpected character "x" after a closing quote at row 2, column 2.',
     },
     {
       input: 'id,name\n1,"Alice',
@@ -158,9 +135,7 @@ test("reports quote errors at the logical row and column", async (t) => {
 });
 
 test("keeps only the first 1,000 preview rows while streaming every row", async () => {
-  const csv = Array.from({ length: 1002 }, (_, index) => String(index)).join(
-    "\n",
-  );
+  const csv = Array.from({ length: 1002 }, (_, index) => String(index)).join("\n");
   let streamedRows = 0;
 
   const result = await parseStreamingCsv([csv], {
@@ -208,15 +183,12 @@ test("supports an empty preview and an empty input", async () => {
     rowCount: 0,
   });
 
-  assert.deepEqual(
-    await parseStreamingCsv(["a\nb"], { previewRows: 0 }),
-    {
-      columnCount: 1,
-      preview: [],
-      previewTruncated: true,
-      rowCount: 2,
-    },
-  );
+  assert.deepEqual(await parseStreamingCsv(["a\nb"], { previewRows: 0 }), {
+    columnCount: 1,
+    preview: [],
+    previewTruncated: true,
+    rowCount: 2,
+  });
 });
 
 test("stops parsing when its AbortSignal is aborted", async () => {

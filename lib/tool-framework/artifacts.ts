@@ -1,8 +1,5 @@
 import { sanitizeFileName } from "./media/validation.ts";
-import {
-  BLOB_FALLBACK_MAX_BYTES,
-  PLATFORM_MAX_BYTES,
-} from "./limits.ts";
+import { BLOB_FALLBACK_MAX_BYTES, PLATFORM_MAX_BYTES } from "./limits.ts";
 
 export { BLOB_FALLBACK_MAX_BYTES, PLATFORM_MAX_BYTES } from "./limits.ts";
 export const PLATFORM_MAX_OUTPUT_BYTES = PLATFORM_MAX_BYTES;
@@ -54,10 +51,7 @@ export type BlobStoredArtifact = StoredArtifactCommon & {
 /** Both variants are structured-cloneable across the worker boundary. */
 export type StoredToolArtifact = OpfsStoredArtifact | BlobStoredArtifact;
 
-export type ArtifactSource =
-  | Blob
-  | Uint8Array
-  | ReadableStream<Uint8Array>;
+export type ArtifactSource = Blob | Uint8Array | ReadableStream<Uint8Array>;
 
 export type ArtifactWriteInput = {
   readonly name: string;
@@ -100,10 +94,7 @@ export function createArtifactWriter(
     write(input) {
       const operation = tail.then(async () => {
         options.signal?.throwIfAborted();
-        await warnAboutStoragePressure(
-          input.source,
-          options.onStorageWarning,
-        );
+        await warnAboutStoragePressure(input.source, options.onStorageWarning);
         const artifact = await writeArtifact({
           input: normalizeInput(input),
           jobId: safeJobId,
@@ -130,11 +121,8 @@ async function warnAboutStoragePressure(
   onWarning: ArtifactWriterOptions["onStorageWarning"],
 ): Promise<void> {
   if (!onWarning || typeof navigator === "undefined") return;
-  const requiredBytes = source instanceof Blob
-    ? source.size
-    : source instanceof Uint8Array
-      ? source.byteLength
-      : null;
+  const requiredBytes =
+    source instanceof Blob ? source.size : source instanceof Uint8Array ? source.byteLength : null;
   if (requiredBytes === null) return;
   const estimate = navigator.storage?.estimate;
   if (typeof estimate !== "function") return;
@@ -146,7 +134,8 @@ async function warnAboutStoragePressure(
       typeof usage !== "number" ||
       !Number.isFinite(quota) ||
       !Number.isFinite(usage)
-    ) return;
+    )
+      return;
     const availableBytes = Math.max(0, quota - usage);
     if (availableBytes >= requiredBytes) return;
     onWarning({
@@ -308,7 +297,15 @@ async function writeArtifact(state: WriteState): Promise<StoredToolArtifact> {
   try {
     job = await createJobDirectory(root, state.jobId, state.createdAt);
     const size = await writeOpfsFile(job, id, state, replay);
-    return { storage: "opfs", id, jobId: state.jobId, name: state.input.name, mime: state.input.mime, size, createdAt: state.createdAt };
+    return {
+      storage: "opfs",
+      id,
+      jobId: state.jobId,
+      name: state.input.name,
+      mime: state.input.mime,
+      size,
+      createdAt: state.createdAt,
+    };
   } catch (error) {
     if (job) await removeEntry(job, id);
     if (isNamedError(error, "AbortError")) throw error;
@@ -339,7 +336,10 @@ async function writeOpfsFile(
         break;
       }
       if (!(value instanceof Uint8Array)) {
-        throw new ArtifactStorageError("invalid-artifact", "Artifact streams must contain byte chunks.");
+        throw new ArtifactStorageError(
+          "invalid-artifact",
+          "Artifact streams must contain byte chunks.",
+        );
       }
       if (value.byteLength > state.remainingBytes - written) throwOutputTooLarge();
       replay.add(value);
@@ -351,7 +351,10 @@ async function writeOpfsFile(
     committed = true;
     const file = await handle.getFile();
     if (file.size !== written) {
-      throw new ArtifactStorageError("artifact-write-failed", "The generated file could not be saved completely.");
+      throw new ArtifactStorageError(
+        "artifact-write-failed",
+        "The generated file could not be saved completely.",
+      );
     }
     return written;
   } finally {
@@ -371,7 +374,10 @@ async function writeBlobFallback(state: WriteState, id: string): Promise<BlobSto
       const { done, value } = await reader.read();
       if (done) break;
       if (!(value instanceof Uint8Array)) {
-        throw new ArtifactStorageError("invalid-artifact", "Artifact streams must contain byte chunks.");
+        throw new ArtifactStorageError(
+          "invalid-artifact",
+          "Artifact streams must contain byte chunks.",
+        );
       }
       if (value.byteLength > state.remainingBytes - size) throwOutputTooLarge();
       if (value.byteLength > state.remainingBlobFallbackBytes - size) {
@@ -416,7 +422,8 @@ async function createJobDirectory(
   createdAt: number,
 ): Promise<FileSystemDirectoryHandle> {
   const jobs = await getJobsDirectory(root, true);
-  if (!jobs) throw new ArtifactStorageError("storage-unavailable", "Browser storage is unavailable.");
+  if (!jobs)
+    throw new ArtifactStorageError("storage-unavailable", "Browser storage is unavailable.");
   let job: FileSystemDirectoryHandle;
   try {
     job = await jobs.getDirectoryHandle(jobId);
@@ -521,14 +528,18 @@ function createReplayBuffer(source: ArtifactSource): ReplayBuffer {
     return {
       add() {},
       complete() {},
-      toBlob: (mime) => source.size <= BLOB_FALLBACK_MAX_BYTES ? source.slice(0, source.size, mime) : null,
+      toBlob: (mime) =>
+        source.size <= BLOB_FALLBACK_MAX_BYTES ? source.slice(0, source.size, mime) : null,
     };
   }
   if (source instanceof Uint8Array) {
     return {
       add() {},
       complete() {},
-      toBlob: (mime) => source.byteLength <= BLOB_FALLBACK_MAX_BYTES ? new Blob([copyBytes(source)], { type: mime }) : null,
+      toBlob: (mime) =>
+        source.byteLength <= BLOB_FALLBACK_MAX_BYTES
+          ? new Blob([copyBytes(source)], { type: mime })
+          : null,
     };
   }
   const chunks: Uint8Array<ArrayBuffer>[] = [];
@@ -575,7 +586,11 @@ function normalizeStoredArtifact(artifact: StoredToolArtifact): StoredToolArtifa
   }
   assertSafeId(artifact.id, "Artifact ID");
   assertSafeId(artifact.jobId, "Artifact job ID");
-  if (!Number.isInteger(artifact.size) || artifact.size < 0 || artifact.size > PLATFORM_MAX_OUTPUT_BYTES) {
+  if (
+    !Number.isInteger(artifact.size) ||
+    artifact.size < 0 ||
+    artifact.size > PLATFORM_MAX_OUTPUT_BYTES
+  ) {
     throw new ArtifactStorageError("invalid-artifact", "Artifact size is invalid.");
   }
   if (!Number.isFinite(artifact.createdAt) || artifact.createdAt < 0) {
@@ -604,10 +619,7 @@ function assertSafeId(value: string, label: string): string {
 }
 
 function throwOutputTooLarge(): never {
-  throw new ArtifactStorageError(
-    "output-too-large",
-    "Generated files must total 100 MiB or less.",
-  );
+  throw new ArtifactStorageError("output-too-large", "Generated files must total 100 MiB or less.");
 }
 
 function storageError(error: unknown): ArtifactStorageError {

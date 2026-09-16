@@ -17,9 +17,9 @@ const DEVTOOL_SPECS = (
       .map(
         async (entry) =>
           (
-            (await import(
-              new URL(`${entry.name}/definition.ts`, TOOLS_URL).href
-            )) as { default: ToolSpec }
+            (await import(new URL(`${entry.name}/definition.ts`, TOOLS_URL).href)) as {
+              default: ToolSpec;
+            }
           ).default,
       ),
   )
@@ -30,9 +30,7 @@ const DEVTOOL_SPECS = (
 const AVAILABLE_DEVTOOL_HREFS = DEVTOOL_SPECS.map(
   (spec) => `/${spec.slug ?? slugFromName(spec.name)}`,
 ).sort();
-const DEVTOOLS_CATEGORY_COUNT = new Set(
-  DEVTOOL_SPECS.map((spec) => spec.category),
-).size;
+const DEVTOOLS_CATEGORY_COUNT = new Set(DEVTOOL_SPECS.map((spec) => spec.category)).size;
 
 test.describe("Devtools catalog navigation", () => {
   test("homepage uses public availability language", async ({ page }) => {
@@ -41,37 +39,26 @@ test.describe("Devtools catalog navigation", () => {
     const facts = page.getByRole("region", { name: "Devtools facts" });
     await expect(facts.getByText("Available tools", { exact: true })).toBeVisible();
     await expect(facts.getByText("Enabled tools", { exact: true })).toHaveCount(0);
-    await expect(
-      page.getByRole("link", { name: /\b\d+ available\b/i }),
-    ).toHaveCount(DEVTOOLS_CATEGORY_COUNT);
-    await expect(
-      page.getByRole("link", { name: /\b\d+ enabled\b/i }),
-    ).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /\b\d+ available\b/i })).toHaveCount(
+      DEVTOOLS_CATEGORY_COUNT,
+    );
+    await expect(page.getByRole("link", { name: /\b\d+ enabled\b/i })).toHaveCount(0);
   });
 
-  test("Popular Tools View all opens one complete All Tools listing", async ({
-    page,
-  }) => {
+  test("Popular Tools View all opens one complete All Tools listing", async ({ page }) => {
     await page.goto(DEVTOOLS_URL);
 
-    await expect(
-      page.getByRole("heading", { name: "Popular Tools", exact: true }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Popular Tools", exact: true })).toBeVisible();
     const viewAll = page.getByRole("link", { name: "View all", exact: true });
     await expect(viewAll).toBeVisible();
     await viewAll.click();
 
-    await expect(page).toHaveURL((url) =>
-      url.pathname === "/devtools" && url.searchParams.get("view") === "all",
+    await expect(page).toHaveURL(
+      (url) => url.pathname === "/devtools" && url.searchParams.get("view") === "all",
     );
-    await expect(
-      page.getByRole("heading", { name: "All Tools", exact: true }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "All Tools", exact: true })).toBeVisible();
 
-    const toolLinks = page
-      .getByRole("main")
-      .getByRole("link")
-      .filter({ hasText: "Open tool →" });
+    const toolLinks = page.getByRole("main").getByRole("link").filter({ hasText: "Open tool →" });
     await expect(toolLinks).toHaveCount(AVAILABLE_DEVTOOL_HREFS.length);
     const actualHrefs = await toolLinks.evaluateAll((links) =>
       links.map((link) => link.getAttribute("href")).sort(),
@@ -96,9 +83,7 @@ test.describe("Devtools catalog navigation", () => {
       title: "Word Counter",
     },
   ]) {
-    test(`${title} breadcrumb links to All Tools and its category listing`, async ({
-      page,
-    }) => {
+    test(`${title} breadcrumb links to All Tools and its category listing`, async ({ page }) => {
       const toolUrl = `${DEVTOOLS_URL}/${slug}`;
       await page.goto(toolUrl);
 
@@ -127,24 +112,24 @@ test.describe("Devtools catalog navigation", () => {
       );
 
       await allTools.click();
-      await expect(page).toHaveURL((url) =>
-        url.pathname === "/devtools" &&
-        url.searchParams.get("view") === "all" &&
-        !url.searchParams.has("category"),
+      await expect(page).toHaveURL(
+        (url) =>
+          url.pathname === "/devtools" &&
+          url.searchParams.get("view") === "all" &&
+          !url.searchParams.has("category"),
       );
-      await expect(
-        page.getByRole("heading", { name: "All Tools", exact: true }),
-      ).toBeVisible();
+      await expect(page.getByRole("heading", { name: "All Tools", exact: true })).toBeVisible();
 
       await page.goto(toolUrl);
       await page
         .getByRole("navigation", { name: "Breadcrumb" })
         .getByRole("link", { name: category, exact: true })
         .click();
-      await expect(page).toHaveURL((url) =>
-        url.pathname === "/devtools" &&
-        !url.searchParams.has("view") &&
-        url.searchParams.get("category") === category,
+      await expect(page).toHaveURL(
+        (url) =>
+          url.pathname === "/devtools" &&
+          !url.searchParams.has("view") &&
+          url.searchParams.get("category") === category,
       );
       await expect(page.getByText(`Tools in ${category}.`, { exact: true })).toBeVisible();
     });
@@ -179,7 +164,10 @@ test("anonymous visitors can discover and use the public tools", async ({ contex
   await expect(page.getByRole("heading", { name: "Recently Added Tools" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Browse by Category" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Why use SmartTools?" })).toBeVisible();
-  await page.getByRole("link", { name: /JSON to CSV/ }).first().click();
+  await page
+    .getByRole("link", { name: /JSON to CSV/ })
+    .first()
+    .click();
   await expect(page).toHaveURL("http://localhost:3000/devtools/json-to-csv");
   await page.getByRole("button", { name: "Load example" }).click();
   await expect(page.getByRole("textbox", { name: "CSV output" })).toHaveValue(
@@ -220,9 +208,7 @@ test("anonymous visitors can discover and use the public tools", async ({ contex
 
   await page.goto("http://localhost:3000/devtools/json-formatter");
   await page.getByRole("button", { name: "Clear JSON input" }).click();
-  await page
-    .getByRole("textbox", { name: "JSON input", exact: true })
-    .fill('{"ready":true}');
+  await page.getByRole("textbox", { name: "JSON input", exact: true }).fill('{"ready":true}');
   await page.getByRole("button", { name: "Validate" }).click();
   await expect(page.getByRole("status")).toContainText("JSON is valid.");
 });
@@ -230,13 +216,9 @@ test("anonymous visitors can discover and use the public tools", async ({ contex
 test("JSON formatter skip link focuses the editor", async ({ page }) => {
   await page.goto(`${DEVTOOLS_URL}/json-formatter`);
   await page.keyboard.press("Tab");
-  await expect(
-    page.getByRole("link", { name: "Skip to JSON input" }),
-  ).toBeFocused();
+  await expect(page.getByRole("link", { name: "Skip to JSON input" })).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(
-    page.getByRole("textbox", { name: "JSON input", exact: true }),
-  ).toBeFocused();
+  await expect(page.getByRole("textbox", { name: "JSON input", exact: true })).toBeFocused();
 });
 
 test("developer tool variants share the canonical responsive workspace", async ({
@@ -260,9 +242,7 @@ test("developer tool variants share the canonical responsive workspace", async (
     }
   });
   const isMobile = testInfo.project.name.includes("mobile");
-  await page.setViewportSize(
-    isMobile ? { height: 844, width: 390 } : { height: 982, width: 1512 },
-  );
+  await page.setViewportSize(isMobile ? { height: 844, width: 390 } : { height: 982, width: 1512 });
 
   const framedTools: Record<
     string,
@@ -300,8 +280,7 @@ test("developer tool variants share the canonical responsive workspace", async (
     },
     "json-viewer": {
       category: "JSON Tools",
-      description:
-        "Explore nested JSON in a searchable tree without uploading your data.",
+      description: "Explore nested JSON in a searchable tree without uploading your data.",
       support: "Private by default",
       title: "JSON Viewer",
     },
@@ -331,9 +310,7 @@ test("developer tool variants share the canonical responsive workspace", async (
     },
   };
 
-  async function expectRoundedThemeFrame(
-    workspace: ReturnType<typeof page.getByTestId>,
-  ) {
+  async function expectRoundedThemeFrame(workspace: ReturnType<typeof page.getByTestId>) {
     const frameStyle = await workspace.evaluate((element) => {
       const style = getComputedStyle(element);
       const canvas = document.createElement("canvas");
@@ -460,24 +437,16 @@ test("developer tool variants share the canonical responsive workspace", async (
       expect(workspaceStyle).toEqual({ boxShadow: "none" });
       if (isMobile) {
         expect(viewport!.width).toBe(390);
-        for (const elementBounds of [
-          titleBounds!,
-          runsLocallyBounds!,
-          categoryTagBounds!,
-        ]) {
+        for (const elementBounds of [titleBounds!, runsLocallyBounds!, categoryTagBounds!]) {
           expect(elementBounds.x).toBeGreaterThanOrEqual(-1);
-          expect(elementBounds.x + elementBounds.width).toBeLessThanOrEqual(
-            viewport!.width + 1,
-          );
+          expect(elementBounds.x + elementBounds.width).toBeLessThanOrEqual(viewport!.width + 1);
         }
       } else {
         expect(viewport!.width).toBe(1512);
         for (const tagBounds of [runsLocallyBounds!, categoryTagBounds!]) {
           const verticalOverlap =
-            Math.min(
-              titleBounds!.y + titleBounds!.height,
-              tagBounds.y + tagBounds.height,
-            ) - Math.max(titleBounds!.y, tagBounds.y);
+            Math.min(titleBounds!.y + titleBounds!.height, tagBounds.y + tagBounds.height) -
+            Math.max(titleBounds!.y, tagBounds.y);
           expect(verticalOverlap).toBeGreaterThan(0);
         }
         expect(descriptionBounds!.y).toBeGreaterThan(
@@ -515,10 +484,7 @@ test("developer tool variants share the canonical responsive workspace", async (
     names: Array<"input" | "output" | "details">,
   ) {
     const panels = Object.fromEntries(
-      names.map((name) => [
-        name,
-        content.locator(`[data-workspace-panel="${name}"]`),
-      ]),
+      names.map((name) => [name, content.locator(`[data-workspace-panel="${name}"]`)]),
     );
     for (const panel of Object.values(panels)) await expect(panel).toBeAttached();
     const bounds = await Promise.all(
@@ -584,11 +550,7 @@ test("developer tool variants share the canonical responsive workspace", async (
       name: "JSON inspector",
     });
     const preview = inspector.getByRole("table", { name: "Data Preview" });
-    async function expectNodeMetadata(
-      key: string,
-      type: string,
-      previewText: string[],
-    ) {
+    async function expectNodeMetadata(key: string, type: string, previewText: string[]) {
       await expect(inspector.getByText(`"${key}"`, { exact: true })).toBeVisible();
       await expect(inspector.getByText(type, { exact: true })).toBeVisible();
       for (const text of previewText) await expect(preview).toContainText(text);
@@ -596,12 +558,7 @@ test("developer tool variants share the canonical responsive workspace", async (
 
     const root = tree.getByRole("treeitem", { name: "root", exact: true });
     await expect(root).toHaveAttribute("aria-selected", "true");
-    await expectNodeMetadata("root", "Object {4}", [
-      "id",
-      '"12345"',
-      "name",
-      '"Project Apollo"',
-    ]);
+    await expectNodeMetadata("root", "Object {4}", ["id", '"12345"', "name", '"Project Apollo"']);
 
     const details = tree.getByRole("treeitem", { name: "details", exact: true });
     await details.focus();
@@ -664,9 +621,9 @@ test("developer tool variants share the canonical responsive workspace", async (
     const { content, toolbar, workspace } = await openWorkspace("json-to-csv", true);
     await expectNoFormatterChrome(toolbar);
     await expectPanels(content, ["input", "output"]);
-    await expect(
-      content.locator(':scope > [data-workspace-panel="input"] > header'),
-    ).toContainText(/input/i);
+    await expect(content.locator(':scope > [data-workspace-panel="input"] > header')).toContainText(
+      /input/i,
+    );
     await expect(
       content.locator(':scope > [data-workspace-panel="output"] > header'),
     ).toContainText(/output/i);
@@ -687,9 +644,9 @@ test("developer tool variants share the canonical responsive workspace", async (
     const { content, toolbar, workspace } = await openWorkspace("word-counter", true);
     await expectNoFormatterChrome(toolbar);
     await expectPanels(content, ["input", "output"]);
-    await expect(
-      content.locator(':scope > [data-workspace-panel="input"] > header'),
-    ).toContainText("Input");
+    await expect(content.locator(':scope > [data-workspace-panel="input"] > header')).toContainText(
+      "Input",
+    );
     await expect(
       content.locator(':scope > [data-workspace-panel="output"] > header'),
     ).toContainText("Output");
@@ -714,7 +671,9 @@ test("developer tool variants share the canonical responsive workspace", async (
     await expect(workspace.getByRole("button", { name: "Copy output" })).toBeDisabled();
     await toolbar.getByRole("button", { name: "Load example" }).click();
     await run.click();
-    await expect(page.getByRole("textbox", { name: "Text Diff Checker output" })).not.toHaveValue("");
+    await expect(page.getByRole("textbox", { name: "Text Diff Checker output" })).not.toHaveValue(
+      "",
+    );
   });
 
   await test.step("generator", async () => {
@@ -727,7 +686,9 @@ test("developer tool variants share the canonical responsive workspace", async (
     await expect(clear).toBeDisabled();
     await expect(workspace.getByRole("button", { name: "Copy output" })).toBeDisabled();
     await generate.click();
-    await expect(page.getByRole("textbox", { name: "Password Generator output" })).toHaveValue(/.+/);
+    await expect(page.getByRole("textbox", { name: "Password Generator output" })).toHaveValue(
+      /.+/,
+    );
     await expect(clear).toBeEnabled();
     await expect(workspace.getByRole("button", { name: "Copy output" })).toBeEnabled();
   });
@@ -758,9 +719,9 @@ test("developer tool variants share the canonical responsive workspace", async (
     const preview = page.locator('iframe[title="HTML Viewer preview"]');
     await expect(preview).toBeVisible();
     await expect(preview).toHaveAttribute("sandbox", "");
-    await expect(page.frameLocator('iframe[title="HTML Viewer preview"]').locator("body")).toContainText(
-      "Hello",
-    );
+    await expect(
+      page.frameLocator('iframe[title="HTML Viewer preview"]').locator("body"),
+    ).toContainText("Hello");
     await expect(workspace.getByRole("button", { name: "Copy output" })).toBeEnabled();
   });
 
@@ -776,7 +737,9 @@ test("developer tool variants share the canonical responsive workspace", async (
     await generate.click();
     const image = page.getByRole("img", { name: "QR Code Generator result" });
     await expect(image).toBeVisible();
-    expect(await image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+    expect(
+      await image.evaluate((element: HTMLImageElement) => element.naturalWidth),
+    ).toBeGreaterThan(0);
   });
 
   await test.step("JSON Viewer", async () => {
@@ -796,12 +759,8 @@ test("developer tool variants share the canonical responsive workspace", async (
     await expect(clear).toBeEnabled();
     const renderer = workspace.getByTestId("json-result-renderer");
     await expect(renderer).toContainText("CodeUtilityKit");
-    await expect(
-      renderer.getByRole("button", { name: "Copy JSON result" }),
-    ).toBeEnabled();
-    await expect(
-      renderer.getByRole("button", { name: "Download JSON result" }),
-    ).toBeEnabled();
+    await expect(renderer.getByRole("button", { name: "Copy JSON result" })).toBeEnabled();
+    await expect(renderer.getByRole("button", { name: "Download JSON result" })).toBeEnabled();
     await expect(workspace.getByTestId("tool-workbench-rail")).toHaveCount(0);
   });
 
@@ -816,9 +775,7 @@ test("invoice workflow exposes protected actions and supporting content", async 
 }, testInfo) => {
   await page.goto("http://localhost:3000/paperwork/invoice-generator");
 
-  await expect(
-    page.getByRole("heading", { name: "Frequently Asked Questions" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Frequently Asked Questions" })).toBeVisible();
   await expect(
     page.locator("#related-tools-block").getByRole("link", {
       name: /Invoice Generator/,
@@ -867,7 +824,9 @@ test("header menus include every document tool and valid category filters", asyn
   const { groups } = await response.json();
   const documents = groups.find((group: { id: string }) => group.id === "documents");
   expect(documents.tools.length).toBe(documents.count);
-  expect(new Set(documents.tools.map((tool: { href: string }) => tool.href)).size).toBe(documents.count);
+  expect(new Set(documents.tools.map((tool: { href: string }) => tool.href)).size).toBe(
+    documents.count,
+  );
   for (const id of ["developer", "media"]) {
     const group = groups.find((item: { id: string }) => item.id === id);
     expect(group.categories.length).toBeGreaterThan(0);

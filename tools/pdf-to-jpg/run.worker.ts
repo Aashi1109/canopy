@@ -9,10 +9,7 @@
  */
 
 import { validatePdfInput } from "../../lib/tool-framework/media/pdfDocument.ts";
-import {
-  encodeCanvas,
-  forEachRenderedPdfPage,
-} from "../../lib/tool-framework/media/pdfRender.ts";
+import { encodeCanvas, forEachRenderedPdfPage } from "../../lib/tool-framework/media/pdfRender.ts";
 import {
   createPageArchiveFilename,
   createPageOutputFilename,

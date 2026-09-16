@@ -142,12 +142,8 @@ export function ProfileManager({
   const [profileImage, setProfileImage] = useState(initialUser.image);
 
   const user = liveSession?.user ?? initialUser;
-  const hasPassword = accounts.some(
-    (account) => account.providerId === "credential",
-  );
-  const googleAccount = accounts.find(
-    (account) => account.providerId === "google",
-  );
+  const hasPassword = accounts.some((account) => account.providerId === "credential");
+  const googleAccount = accounts.find((account) => account.providerId === "google");
   const avatarInitial = user.name.trim().charAt(0).toUpperCase() || "S";
 
   const loadSecurityData = useCallback(async () => {
@@ -184,10 +180,7 @@ export function ProfileManager({
     } catch (error) {
       setFeedback({
         kind: "error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Choose a valid profile image.",
+        text: error instanceof Error ? error.message : "Choose a valid profile image.",
       });
     }
     setPending(undefined);
@@ -208,10 +201,7 @@ export function ProfileManager({
     } catch (error) {
       setFeedback({
         kind: "error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Choose a valid profile image.",
+        text: error instanceof Error ? error.message : "Choose a valid profile image.",
       });
       return;
     }
@@ -363,23 +353,13 @@ export function ProfileManager({
           aria-labelledby="account-overview-label"
           className="min-w-0 lg:sticky lg:top-24 lg:self-start"
         >
-          <Overline
-            className="block text-primary"
-            id="account-overview-label"
-          >
+          <Overline className="block text-primary" id="account-overview-label">
             Account overview
           </Overline>
           <div className="mt-4 flex min-w-0 items-center gap-4 lg:block">
-            <Avatar
-              aria-hidden="true"
-              className="size-16 bg-primary ring-4 ring-accent"
-            >
+            <Avatar aria-hidden="true" className="size-16 bg-primary ring-4 ring-accent">
               {profileImage ? (
-                <AvatarImage
-                  alt=""
-                  referrerPolicy="no-referrer"
-                  src={profileImage}
-                />
+                <AvatarImage alt="" referrerPolicy="no-referrer" src={profileImage} />
               ) : null}
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {avatarInitial}
@@ -387,16 +367,11 @@ export function ProfileManager({
             </Avatar>
             <div className="min-w-0 lg:mt-4">
               <P className="truncate text-foreground">{user.name}</P>
-              <Muted className="mt-1 break-all text-muted-foreground">
-                {user.email}
-              </Muted>
+              <Muted className="mt-1 break-all text-muted-foreground">{user.email}</Muted>
             </div>
           </div>
 
-          <nav
-            aria-label="Profile sections"
-            className="mt-6 hidden gap-1 lg:grid"
-          >
+          <nav aria-label="Profile sections" className="mt-6 hidden gap-1 lg:grid">
             {[
               ["Profile", "#profile"],
               ["Sign-in methods", "#sign-in-methods"],
@@ -448,12 +423,7 @@ export function ProfileManager({
                     required
                   />
                 </Field>
-                <input
-                  name="image"
-                  readOnly
-                  type="hidden"
-                  value={profileImage ?? ""}
-                />
+                <input name="image" readOnly type="hidden" value={profileImage ?? ""} />
                 <div className="flex flex-col gap-4 rounded-xl border border-border bg-muted/30 p-4 sm:flex-row sm:items-center">
                   <Avatar className="size-16 bg-primary">
                     {profileImage ? (
@@ -468,15 +438,10 @@ export function ProfileManager({
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <P className="text-foreground">
-                      Profile photo
-                    </P>
-                    <Caption
-                      className="block mt-1 text-muted-foreground"
-                      id="profile-image-help"
-                    >
-                      Choose a JPG, PNG, or WebP up to 5 MB. It is cropped and
-                      compressed in your browser.
+                    <P className="text-foreground">Profile photo</P>
+                    <Caption className="block mt-1 text-muted-foreground" id="profile-image-help">
+                      Choose a JPG, PNG, or WebP up to 5 MB. It is cropped and compressed in your
+                      browser.
                     </Caption>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <input
@@ -522,20 +487,13 @@ export function ProfileManager({
                     </div>
                   </div>
                 </div>
-                <Button
-                  className="w-full sm:w-fit"
-                  disabled={Boolean(pending)}
-                  type="submit"
-                >
+                <Button className="w-full sm:w-fit" disabled={Boolean(pending)} type="submit">
                   {pending === "profile" ? "Saving…" : "Save profile"}
                 </Button>
               </form>
             </section>
 
-            <section
-              className="scroll-mt-24"
-              id="sign-in-methods"
-            >
+            <section className="scroll-mt-24" id="sign-in-methods">
               <SectionHeading
                 description="Ways you can securely access this account."
                 title="Sign-in methods"
@@ -670,11 +628,7 @@ export function ProfileManager({
                       />
                     </Field>
                   </div>
-                  <Button
-                    className="w-full sm:w-fit"
-                    disabled={Boolean(pending)}
-                    type="submit"
-                  >
+                  <Button className="w-full sm:w-fit" disabled={Boolean(pending)} type="submit">
                     {pending === "password" ? "Updating…" : "Change password"}
                   </Button>
                 </form>
@@ -685,10 +639,7 @@ export function ProfileManager({
               )}
             </section>
 
-            <section
-              className="scroll-mt-24"
-              id="active-sessions"
-            >
+            <section className="scroll-mt-24" id="active-sessions">
               <SectionHeading
                 action={
                   sessions.length > 1 ? (
@@ -719,9 +670,7 @@ export function ProfileManager({
                       >
                         <div className="grid min-w-0 gap-1">
                           <Strong className="break-words">
-                            {isCurrent
-                              ? "This device"
-                              : session.userAgent || "Unknown device"}
+                            {isCurrent ? "This device" : session.userAgent || "Unknown device"}
                           </Strong>
                           <Caption className="break-words text-muted-foreground">
                             {session.ipAddress || "IP unavailable"} · Started{" "}
@@ -738,9 +687,7 @@ export function ProfileManager({
                             type="button"
                             variant="danger-subtle"
                           >
-                            {pending === `session:${session.id}`
-                              ? "Revoking…"
-                              : "Revoke"}
+                            {pending === `session:${session.id}` ? "Revoking…" : "Revoke"}
                           </Button>
                         )}
                       </li>
@@ -770,48 +717,48 @@ export function ProfileManager({
             className="mt-10 space-y-6"
             id="delete-account"
           >
-          <SectionHeading
-            description="Permanently remove your account after email confirmation."
-            title="Delete account"
-          />
-          {!user.emailVerified ? (
-            <AlertBanner title="Verify your email first" variant="warning">
-              Account deletion stays locked until your email address is verified.
-            </AlertBanner>
-          ) : null}
-          <form
-            aria-busy={pending === "delete"}
-            className="grid gap-4"
-            onSubmit={requestDeletion}
-          >
-            <Field
-              description={`Type ${user.email} exactly.`}
-              htmlFor="delete-confirmation"
-              label="Confirm your email address"
-              variant="auth"
-            >
-              <Input
-                autoComplete="off"
-                id="delete-confirmation"
-                name="confirmation"
-                required
-                type="email"
-              />
-            </Field>
-            <Checkbox
-              label="I understand that account deletion cannot be undone."
-              name="understood"
-              required
+            <SectionHeading
+              description="Permanently remove your account after email confirmation."
+              title="Delete account"
             />
-            <Button
-              className="w-full sm:w-fit"
-              disabled={Boolean(pending) || !user.emailVerified}
-              type="submit"
-              variant="destructive"
+            {!user.emailVerified ? (
+              <AlertBanner title="Verify your email first" variant="warning">
+                Account deletion stays locked until your email address is verified.
+              </AlertBanner>
+            ) : null}
+            <form
+              aria-busy={pending === "delete"}
+              className="grid gap-4"
+              onSubmit={requestDeletion}
             >
-              {pending === "delete" ? "Sending confirmation…" : "Send deletion email"}
-            </Button>
-          </form>
+              <Field
+                description={`Type ${user.email} exactly.`}
+                htmlFor="delete-confirmation"
+                label="Confirm your email address"
+                variant="auth"
+              >
+                <Input
+                  autoComplete="off"
+                  id="delete-confirmation"
+                  name="confirmation"
+                  required
+                  type="email"
+                />
+              </Field>
+              <Checkbox
+                label="I understand that account deletion cannot be undone."
+                name="understood"
+                required
+              />
+              <Button
+                className="w-full sm:w-fit"
+                disabled={Boolean(pending) || !user.emailVerified}
+                type="submit"
+                variant="destructive"
+              >
+                {pending === "delete" ? "Sending confirmation…" : "Send deletion email"}
+              </Button>
+            </form>
           </DangerZone>
         </div>
       </div>

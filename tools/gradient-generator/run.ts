@@ -24,9 +24,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
 
   return {
     render: "text",
-    text: ctx.settings.includeFallback
-      ? `background: ${start.trim()};\n${gradient}`
-      : gradient,
+    text: ctx.settings.includeFallback ? `background: ${start.trim()};\n${gradient}` : gradient,
     downloadName: "gradient.css",
   };
 };

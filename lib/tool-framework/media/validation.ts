@@ -1,8 +1,7 @@
 export type MediaKind = "pdf" | "jpeg" | "png" | "webp" | "heic";
 
 export type RuleResult<T extends object = object> =
-  | ({ ok: true } & T)
-  | { ok: false; code: string; message: string };
+  ({ ok: true } & T) | { ok: false; code: string; message: string };
 
 const MIB = 1024 * 1024;
 
@@ -41,15 +40,7 @@ const ACCEPTED_MIMES: Record<MediaKind, readonly string[]> = {
 const ALL_KINDS = Object.keys(MIME_BY_KIND) as MediaKind[];
 const GENERIC_MIMES = new Set(["", "application/octet-stream"]);
 const HEIC_SINGLE_BRANDS = new Set(["heic", "heix", "heif", "mif1"]);
-const HEIC_SEQUENCE_BRANDS = new Set([
-  "hevc",
-  "hevx",
-  "heim",
-  "heis",
-  "hevm",
-  "hevs",
-  "msf1",
-]);
+const HEIC_SEQUENCE_BRANDS = new Set(["hevc", "hevx", "heim", "heis", "hevm", "hevs", "msf1"]);
 
 export function detectMediaKind(bytes: Uint8Array): MediaKind | null {
   if (startsWith(bytes, [0x25, 0x50, 0x44, 0x46, 0x2d])) return "pdf";
@@ -81,14 +72,8 @@ export function validateMediaSignature(
   }
 
   const normalizedMime = declaredMime.trim().toLowerCase();
-  if (
-    !GENERIC_MIMES.has(normalizedMime) &&
-    !ACCEPTED_MIMES[kind].includes(normalizedMime)
-  ) {
-    return failure(
-      "mime-mismatch",
-      "The file contents do not match its reported type.",
-    );
+  if (!GENERIC_MIMES.has(normalizedMime) && !ACCEPTED_MIMES[kind].includes(normalizedMime)) {
+    return failure("mime-mismatch", "The file contents do not match its reported type.");
   }
   if (kind === "webp" && isAnimatedWebp(bytes)) {
     return failure(
@@ -105,15 +90,10 @@ export function validateMediaSignature(
   return { ok: true, kind, mime: MIME_BY_KIND[kind] };
 }
 
-export function validateImageSelection(
-  files: readonly { size: number }[],
-): RuleResult {
+export function validateImageSelection(files: readonly { size: number }[]): RuleResult {
   if (files.length === 0) return failure("no-files", "Choose at least one image.");
   if (files.length > MEDIA_LIMITS.images.maxFiles) {
-    return failure(
-      "too-many-files",
-      `Choose no more than ${MEDIA_LIMITS.images.maxFiles} images.`,
-    );
+    return failure("too-many-files", `Choose no more than ${MEDIA_LIMITS.images.maxFiles} images.`);
   }
   const sizes = validSizes(files);
   if (!sizes) return failure("invalid-size", "A selected file has an invalid size.");
@@ -126,10 +106,7 @@ export function validateImageSelection(
   return { ok: true };
 }
 
-export function validateDecodedImageDimensions(
-  width: number,
-  height: number,
-): RuleResult {
+export function validateDecodedImageDimensions(width: number, height: number): RuleResult {
   if (!isPositiveInteger(width) || !isPositiveInteger(height)) {
     return failure("invalid-dimensions", "The image dimensions are invalid.");
   }
@@ -174,10 +151,7 @@ export function validatePdfSelection(
   return { ok: true };
 }
 
-export function parsePageRange(
-  input: string,
-  pageCount: number,
-): RuleResult<{ pages: number[] }> {
+export function parsePageRange(input: string, pageCount: number): RuleResult<{ pages: number[] }> {
   if (!isPositiveInteger(pageCount)) {
     throw new RangeError("Page count must be a positive integer.");
   }
@@ -200,10 +174,7 @@ export function parsePageRange(
       return failure("reversed-range", "Page ranges must run from lower to higher pages.");
     }
     if (start < 1 || end > pageCount) {
-      return failure(
-        "page-out-of-range",
-        `Choose pages between 1 and ${pageCount}.`,
-      );
+      return failure("page-out-of-range", `Choose pages between 1 and ${pageCount}.`);
     }
     for (let page = start; page <= end; page += 1) {
       if (seen.has(page)) {
@@ -243,11 +214,7 @@ export function sanitizeFileName(input: string, fallback = "download") {
   return extension ? `${base}.${extension}` : base;
 }
 
-export function createOutputFilename(
-  inputName: string,
-  extension: string,
-  suffix?: string,
-) {
+export function createOutputFilename(inputName: string, extension: string, suffix?: string) {
   const base = sanitizeBaseName(withoutExtension(inputName));
   const safeSuffix = suffix ? `-${sanitizeBaseName(suffix, "output")}` : "";
   return `${base}${safeSuffix}.${sanitizeExtension(extension)}`;
@@ -263,11 +230,7 @@ export function createPageOutputFilename(
     throw new RangeError("Page numbers must be within the document.");
   }
   const width = Math.max(2, String(totalPages).length);
-  return createOutputFilename(
-    inputName,
-    extension,
-    `page-${String(page).padStart(width, "0")}`,
-  );
+  return createOutputFilename(inputName, extension, `page-${String(page).padStart(width, "0")}`);
 }
 
 export function createPageArchiveFilename(inputName: string) {
@@ -279,7 +242,7 @@ export function hasPdfDigitalSignature(bytes: Uint8Array) {
 }
 
 function isAnimatedWebp(bytes: Uint8Array) {
-  for (let offset = 12; offset + 8 <= bytes.length; ) {
+  for (let offset = 12; offset + 8 <= bytes.length;) {
     const chunk = ascii(bytes, offset, 4);
     const size = readUint32LittleEndian(bytes, offset + 4);
     if (chunk === "ANIM" || chunk === "ANMF") return true;
@@ -323,7 +286,10 @@ function withoutExtension(input: string) {
 }
 
 function sanitizeExtension(extension: string) {
-  const safe = extension.replace(/^\.+/, "").replace(/[^a-z0-9]+/gi, "").toLowerCase();
+  const safe = extension
+    .replace(/^\.+/, "")
+    .replace(/[^a-z0-9]+/gi, "")
+    .toLowerCase();
   if (!safe) throw new RangeError("Output extension is required.");
   return safe.slice(0, 12);
 }
@@ -350,10 +316,7 @@ function readUint32BigEndian(bytes: Uint8Array, offset: number) {
 }
 
 function readUint32LittleEndian(bytes: Uint8Array, offset: number) {
-  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(
-    offset,
-    true,
-  );
+  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(offset, true);
 }
 
 function validSizes(files: readonly { size: number }[]) {

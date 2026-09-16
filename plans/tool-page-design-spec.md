@@ -5,22 +5,22 @@ Node ids come from `packages/ui/src/design-system-manifest.ts`.
 
 Exported captures (read these images before implementing):
 
-| Node | Design name | PNG |
-| --- | --- | --- |
-| `x9bDiO` | Generic Utility Workbench | `<design>/x9bDiO.png` |
-| `b55XX` | JSON Formatter Viewer | `<design>/b55XX.png` |
-| `xWzlR` | Data Conversion workbench | `<design>/xWzlR.png` |
-| `QQ11z` | Tool Options Panel | `<design>/QQ11z.png` |
-| `vMbTZ` | File Upload Zone | `<design>/vMbTZ.png` |
-| `A3D8lv` | File Queue Item | `<design>/A3D8lv.png` |
-| `kfEw4` | Processing Status | `<design>/kfEw4.png` |
-| `wFMb0` | Download Result | `<design>/wFMb0.png` |
+| Node              | Design name                     | PNG                                        |
+| ----------------- | ------------------------------- | ------------------------------------------ |
+| `x9bDiO`          | Generic Utility Workbench       | `<design>/x9bDiO.png`                      |
+| `b55XX`           | JSON Formatter Viewer           | `<design>/b55XX.png`                       |
+| `xWzlR`           | Data Conversion workbench       | `<design>/xWzlR.png`                       |
+| `QQ11z`           | Tool Options Panel              | `<design>/QQ11z.png`                       |
+| `vMbTZ`           | File Upload Zone                | `<design>/vMbTZ.png`                       |
+| `A3D8lv`          | File Queue Item                 | `<design>/A3D8lv.png`                      |
+| `kfEw4`           | Processing Status               | `<design>/kfEw4.png`                       |
+| `wFMb0`           | Download Result                 | `<design>/wFMb0.png`                       |
 | `hGI6k` / `bWOKG` | Right Panel Processing / Result | `<design>/hGI6k.png`, `<design>/bWOKG.png` |
-| `NnxxQ` | Tool Page Intro | `<design>/NnxxQ.png` |
-| `g9TdB` | Tool Page System Controls | `<design>/g9TdB.png` |
-| `e8vqr` | Toolbar Inline Guidance | `<design>/e8vqr.png` |
-| `eAeak` | Tool How It Works | `<design>/eAeak.png` |
-| `hZUnl` | SegmentedControl / Input Result | `<design>/hZUnl.png` |
+| `NnxxQ`           | Tool Page Intro                 | `<design>/NnxxQ.png`                       |
+| `g9TdB`           | Tool Page System Controls       | `<design>/g9TdB.png`                       |
+| `e8vqr`           | Toolbar Inline Guidance         | `<design>/e8vqr.png`                       |
+| `eAeak`           | Tool How It Works               | `<design>/eAeak.png`                       |
+| `hZUnl`           | SegmentedControl / Input Result | `<design>/hZUnl.png`                       |
 
 `<design>` = `/private/tmp/claude-503/-Users-ashishpal-Desktop-coding-projects-canopy/7d95a886-c596-4572-a191-fdd177066169/scratchpad/design`
 
@@ -50,6 +50,7 @@ Left: a rounded-square icon tile (~44px). `b55XX` and `xWzlR` use a black tile w
 a white `{ }` glyph; `x9bDiO` uses a pale-amber tile with a dark glyph.
 
 Right, in this order:
+
 - a **blue text link** — `Example` (x9bDiO), `Load sample` (b55XX)
 - an **outlined button** — `Reset` (x9bDiO), `Clear` (b55XX)
 - a **solid blue primary** — `Format JSON` (b55XX)
@@ -60,6 +61,7 @@ column instead.
 ### Status bar — MISSING ENTIRELY
 
 Inside the card, below the columns, separated by a top border.
+
 - Left: green check glyph + green text. `Valid JSON · parsed in 4 ms` (b55XX),
   `Converted 3 records · 0 skipped` (xWzlR).
 - Right: grey monospace meta. `Spaces: 2   UTF-8   Ln 1, Col 1` (b55XX),
@@ -92,12 +94,14 @@ outlined button with a copy glyph beside a green `READY` chip.
 The layout for the ~94 source-result tools. **Two columns.**
 
 **Left column (~66%)** — input over output, stacked:
+
 - `Text to test` (sentence-case label, grey) + right-aligned `128 characters`
 - input textarea, muted fill, monospace
 - `OUTPUT` uppercase micro-label + right: green `READY` chip + outlined `Copy` button
 - output area, muted fill, monospace placeholder
 
 **Right column (~34%)**:
+
 - `OPTIONS` uppercase micro-label
 - option rows: **bold name, grey description underneath, toggle right-aligned**
   (`Global search` / "Find every match")
@@ -144,6 +148,7 @@ The layout for the ~94 source-result tools. **Two columns.**
 ## File Upload Zone (`vMbTZ`)
 
 Pale-blue fill, blue 1px border, generous radius, centred:
+
 - blue upload glyph
 - **short bold title** — `Add or upload images`
 - one grey description line of **dot-separated meta** —
@@ -156,17 +161,17 @@ crammed into the title.
 
 ## Confirmed gaps against the current implementation
 
-| # | Gap | Where |
-| --- | --- | --- |
-| 1 | No header row at all — no icon tile, no `Example`/`Load sample` link, no `Reset`/`Clear`, no solid blue primary | `UniversalWorkbench` toolbar slot |
-| 2 | Primary action is a small `size="sm"` button in the toolbar; design puts a **full-width solid blue** button at the bottom of the options column | `ToolPage` toolbar / `SettingsPanel` |
-| 3 | Pane headers carry no meta readout (`97 bytes`, `128 characters`, `3 rows`) and no green status chip | `Surfaces.tsx` |
-| 4 | Inline actions are outlined buttons in a separate strip; design uses **blue text links** in the pane header row | `ResultView` `RenderFrame` |
-| 5 | No bottom status bar — `WorkbenchShell` has a `status` slot and it is fed the page footer instead | `UniversalWorkbench` |
-| 6 | Input is a white bordered textarea; design is a **muted `#F6F7F9` fill with a line-number gutter** | `SourceResultWorkspace` |
-| 7 | Option rows are label-above-control; design is **bold name + grey description + right-aligned toggle** | `SettingsPanel` |
-| 8 | Conversion tools render two columns; design is **three** | `SourceResultWorkspace` |
-| 9 | Upload zone title carries the format/limit string; design keeps the title short and puts meta in the description | 21 media `definition.ts` |
+| #   | Gap                                                                                                                                             | Where                                |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| 1   | No header row at all — no icon tile, no `Example`/`Load sample` link, no `Reset`/`Clear`, no solid blue primary                                 | `UniversalWorkbench` toolbar slot    |
+| 2   | Primary action is a small `size="sm"` button in the toolbar; design puts a **full-width solid blue** button at the bottom of the options column | `ToolPage` toolbar / `SettingsPanel` |
+| 3   | Pane headers carry no meta readout (`97 bytes`, `128 characters`, `3 rows`) and no green status chip                                            | `Surfaces.tsx`                       |
+| 4   | Inline actions are outlined buttons in a separate strip; design uses **blue text links** in the pane header row                                 | `ResultView` `RenderFrame`           |
+| 5   | No bottom status bar — `WorkbenchShell` has a `status` slot and it is fed the page footer instead                                               | `UniversalWorkbench`                 |
+| 6   | Input is a white bordered textarea; design is a **muted `#F6F7F9` fill with a line-number gutter**                                              | `SourceResultWorkspace`              |
+| 7   | Option rows are label-above-control; design is **bold name + grey description + right-aligned toggle**                                          | `SettingsPanel`                      |
+| 8   | Conversion tools render two columns; design is **three**                                                                                        | `SourceResultWorkspace`              |
+| 9   | Upload zone title carries the format/limit string; design keeps the title short and puts meta in the description                                | 21 media `definition.ts`             |
 
 ---
 
@@ -175,6 +180,7 @@ crammed into the title.
 ### File Queue Item (`A3D8lv`)
 
 One row, bottom-bordered:
+
 - LEFT: a pale-blue rounded icon tile with a blue file glyph.
 - Bold black filename — `source-file.png`.
 - Grey metadata line, dot-separated — `2400 × 1600 px · 3.8 MB`. Image DIMENSIONS
@@ -184,6 +190,7 @@ One row, bottom-bordered:
 ### Processing Status (`kfEw4`)
 
 A **BLACK card** (the `--surface-ink` token, `#111214`), generous radius:
+
 - LEFT: a white spinner glyph.
 - Bold WHITE title with the percentage inline — `Processing · 68%`.
 - Grey sub-line — `Working on item 2 of 3 · about 4 seconds left`. Item counter and
@@ -193,6 +200,7 @@ A **BLACK card** (the `--surface-ink` token, `#111214`), generous radius:
 ### Download Result (`wFMb0`)
 
 A white bordered card:
+
 - LEFT: a pale-green rounded tile with a green check glyph.
 - Bold black title — `Your file is ready`.
 - Grey metadata — `output-file.png · 1.2 MB`. Filename and human-readable size.
@@ -200,9 +208,9 @@ A white bordered card:
 
 ### Additional gaps
 
-| # | Gap | Where |
-| --- | --- | --- |
-| 10 | File queue metadata shows MIME type and a raw byte count (`image/png · 3801234 bytes`); design shows image dimensions and a human size (`2400 × 1600 px · 3.8 MB`) | `Surfaces.tsx` / `FileProcessorWorkspace.tsx` |
-| 11 | Remove control is a ghost trash icon; design is an outlined square `×` | `FileProcessorWorkspace.tsx` |
-| 12 | Progress has no black `ProcessingStatus` card, no percentage, no item counter, no time estimate, no Cancel | `FileProcessorWorkspace.tsx` |
-| 13 | Finished files render as plain cards; design is `DownloadResult` — green check tile, human size, solid blue `Download file` | `FileProcessorWorkspace.tsx` |
+| #   | Gap                                                                                                                                                                | Where                                         |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| 10  | File queue metadata shows MIME type and a raw byte count (`image/png · 3801234 bytes`); design shows image dimensions and a human size (`2400 × 1600 px · 3.8 MB`) | `Surfaces.tsx` / `FileProcessorWorkspace.tsx` |
+| 11  | Remove control is a ghost trash icon; design is an outlined square `×`                                                                                             | `FileProcessorWorkspace.tsx`                  |
+| 12  | Progress has no black `ProcessingStatus` card, no percentage, no item counter, no time estimate, no Cancel                                                         | `FileProcessorWorkspace.tsx`                  |
+| 13  | Finished files render as plain cards; design is `DownloadResult` — green check tile, human size, solid blue `Download file`                                        | `FileProcessorWorkspace.tsx`                  |

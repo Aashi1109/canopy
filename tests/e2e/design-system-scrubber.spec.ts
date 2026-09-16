@@ -16,21 +16,36 @@ async function tickWidths(scrubber: Locator) {
 async function expectOutlineWidth(viewer: Locator) {
   const outlinePanel = viewer.getByRole("complementary");
   await expect(outlinePanel).toBeVisible();
-  await expect.poll(() => outlinePanel.evaluate((panel) => Math.abs(
-    panel.getBoundingClientRect().width - Math.min(panel.scrollWidth, panel.parentElement!.getBoundingClientRect().width * 0.35),
-  ))).toBeLessThan(1);
+  await expect
+    .poll(() =>
+      outlinePanel.evaluate((panel) =>
+        Math.abs(
+          panel.getBoundingClientRect().width -
+            Math.min(panel.scrollWidth, panel.parentElement!.getBoundingClientRect().width * 0.35),
+        ),
+      ),
+    )
+    .toBeLessThan(1);
   const width = (await outlinePanel.boundingBox())!.width;
-  const viewerWidth = await outlinePanel.evaluate((panel) => panel.parentElement!.getBoundingClientRect().width);
+  const viewerWidth = await outlinePanel.evaluate(
+    (panel) => panel.parentElement!.getBoundingClientRect().width,
+  );
   expect(width).toBeGreaterThan(0);
   expect(width).toBeLessThanOrEqual(viewerWidth * 0.35 + 1);
 }
 
 async function captureViewer(viewer: Locator, path: string) {
-  await viewer.evaluate((node) => window.scrollTo(0, Math.max(0, window.scrollY + node.getBoundingClientRect().top - 120)));
+  await viewer.evaluate((node) =>
+    window.scrollTo(0, Math.max(0, window.scrollY + node.getBoundingClientRect().top - 120)),
+  );
   await viewer.screenshot({ path });
 }
 
-async function toggleOutlineWithMotion(viewer: Locator, label: "Show outline" | "Hide outline", animated = true) {
+async function toggleOutlineWithMotion(
+  viewer: Locator,
+  label: "Show outline" | "Hide outline",
+  animated = true,
+) {
   await expect(viewer.getByRole("button", { name: label, exact: true })).toBeEnabled();
   const samples = await viewer.evaluate(async (node, toggleLabel) => {
     const toggle = node.querySelector<HTMLButtonElement>(`button[aria-label="${toggleLabel}"]`)!;
@@ -53,7 +68,10 @@ async function toggleOutlineWithMotion(viewer: Locator, label: "Show outline" | 
     });
     return widths;
   }, label);
-  await writeFile(`/tmp/canopy-pdf-outline-${animated ? "animated" : "reduced"}-${label === "Show outline" ? "open" : "close"}.json`, JSON.stringify(samples));
+  await writeFile(
+    `/tmp/canopy-pdf-outline-${animated ? "animated" : "reduced"}-${label === "Show outline" ? "open" : "close"}.json`,
+    JSON.stringify(samples),
+  );
   const first = samples[0];
   const last = samples[samples.length - 1];
   for (const key of ["outline", "pages"] as const) {
@@ -66,7 +84,9 @@ async function toggleOutlineWithMotion(viewer: Locator, label: "Show outline" | 
   for (const sample of samples) {
     expect(Math.abs(sample.content - first.content)).toBeLessThanOrEqual(1);
     expect(sample.outline).toBeLessThanOrEqual(viewerWidth * 0.35 + 1);
-    expect(Math.abs(sample.outline + sample.pages - first.outline - first.pages)).toBeLessThanOrEqual(3);
+    expect(
+      Math.abs(sample.outline + sample.pages - first.outline - first.pages),
+    ).toBeLessThanOrEqual(3);
   }
 }
 
@@ -91,14 +111,17 @@ async function selectThroughPreview(
   });
   await expect(preview).toHaveCSS("opacity", "1");
   await expect(scrubber).toHaveAttribute("aria-activedescendant", activeId);
-  await page.mouse.move(
-    cardBox.x + cardBox.width / 2,
-    cardBox.y + cardBox.height / 2,
-    { steps: Math.max(1, Math.ceil(Math.hypot(
-      cardBox.x + cardBox.width / 2 - gapX,
-      cardBox.y + cardBox.height / 2 - tickBox.y - tickBox.height / 2,
-    ))) },
-  );
+  await page.mouse.move(cardBox.x + cardBox.width / 2, cardBox.y + cardBox.height / 2, {
+    steps: Math.max(
+      1,
+      Math.ceil(
+        Math.hypot(
+          cardBox.x + cardBox.width / 2 - gapX,
+          cardBox.y + cardBox.height / 2 - tickBox.y - tickBox.height / 2,
+        ),
+      ),
+    ),
+  });
   await expect(preview).toHaveCSS("opacity", "1");
   await expect(scrubber).toHaveAttribute("aria-activedescendant", activeId);
   await preview.click();
@@ -128,18 +151,13 @@ async function expectWaveWidths(
   widths.forEach((width, index) => {
     const distance = Math.abs(index - centerIndex);
     const standardDeviation = radius / 2.25;
-    const wave =
-      distance >= radius
-        ? 0
-        : Math.exp(-0.5 * (distance / standardDeviation) ** 2);
+    const wave = distance >= radius ? 0 : Math.exp(-0.5 * (distance / standardDeviation) ** 2);
     const expectedWidth = restLength + wave * (peakLength - restLength);
     expect(width).toBeCloseTo(expectedWidth, 1);
   });
 }
 
-test("shared scrubbers render their wave and preview at runtime", async ({
-  page,
-}) => {
+test("shared scrubbers render their wave and preview at runtime", async ({ page }) => {
   await new AuthPage(page).signIn(
     E2E_ACCOUNTS.admin.email,
     E2E_PASSWORD,
@@ -165,10 +183,7 @@ test("shared scrubbers render their wave and preview at runtime", async ({
     radius: 4.5,
     restLength: 14,
   });
-  await expect(sharedTarget.locator("span")).toHaveCSS(
-    "background-color",
-    "rgb(26, 26, 26)",
-  );
+  await expect(sharedTarget.locator("span")).toHaveCSS("background-color", "rgb(26, 26, 26)");
   await expect(sharedTarget.locator("span")).toHaveCSS("height", "2px");
   const sharedPreview = sharedScrubber
     .locator("xpath=..")
@@ -231,13 +246,18 @@ test("PDF preview stays clickable across the scrubber gap", async ({ page }) => 
   const buffer = Buffer.from(await pdfDocument.save());
   await page.goto("/media/merge-pdf");
   await page.waitForLoadState("networkidle");
-  await page.locator('input[type="file"]').first().setInputFiles([
-    { name: "scrubber-pages.pdf", mimeType: "application/pdf", buffer },
-    { name: "more-pages.pdf", mimeType: "application/pdf", buffer },
-  ]);
+  await page
+    .locator('input[type="file"]')
+    .first()
+    .setInputFiles([
+      { name: "scrubber-pages.pdf", mimeType: "application/pdf", buffer },
+      { name: "more-pages.pdf", mimeType: "application/pdf", buffer },
+    ]);
   await page.getByRole("button", { name: "Merge PDFs", exact: true }).click();
   const viewer = page.getByRole("region", { name: "Generated PDF", exact: true });
-  await expect(viewer.getByRole("spinbutton", { name: "Current page" })).toHaveValue("1", { timeout: 60_000 });
+  await expect(viewer.getByRole("spinbutton", { name: "Current page" })).toHaveValue("1", {
+    timeout: 60_000,
+  });
   const outline = viewer.getByRole("listbox", { name: "Document outline", exact: true });
   await expect(outline).toBeHidden();
   const pages = viewer.getByRole("region", { name: "PDF pages", exact: true });
@@ -256,12 +276,14 @@ test("PDF preview stays clickable across the scrubber gap", async ({ page }) => 
   expect((await pages.boundingBox())!.width).toBeLessThan(closedWidth);
   await expectOutlineWidth(viewer);
   await toggleOutlineWithMotion(viewer, "Hide outline");
-  await viewer.getByRole("button", { name: "Show outline", exact: true }).evaluate(async (toggle) => {
-    for (let index = 0; index < 3; index++) {
-      (toggle as HTMLButtonElement).click();
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    }
-  });
+  await viewer
+    .getByRole("button", { name: "Show outline", exact: true })
+    .evaluate(async (toggle) => {
+      for (let index = 0; index < 3; index++) {
+        (toggle as HTMLButtonElement).click();
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      }
+    });
   await expect(viewer.getByRole("complementary")).toHaveCount(1);
   await expect(search).toBeFocused();
   await expectOutlineWidth(viewer);
@@ -276,7 +298,9 @@ test("PDF preview stays clickable across the scrubber gap", async ({ page }) => 
   const scrubber = viewer.getByRole("listbox", { name: "Page scrubber", exact: true });
   const target = scrubber.getByRole("option", { name: "Page 10", exact: true });
   await target.hover();
-  const preview = scrubber.locator("xpath=..").getByRole("button", { name: "Go to Page 10", exact: true });
+  const preview = scrubber
+    .locator("xpath=..")
+    .getByRole("button", { name: "Go to Page 10", exact: true });
   await expect(preview).toHaveCSS("opacity", "1");
   await captureViewer(viewer, "/tmp/canopy-pdf-viewer-preview.png");
   await selectThroughPreview(page, scrubber, target, preview);
@@ -285,7 +309,9 @@ test("PDF preview stays clickable across the scrubber gap", async ({ page }) => 
   await target.focus();
   await target.press("ArrowDown");
   const nextTarget = scrubber.getByRole("option", { name: "Page 11", exact: true });
-  const nextPreview = scrubber.locator("xpath=..").getByRole("button", { name: "Go to Page 11", exact: true });
+  const nextPreview = scrubber
+    .locator("xpath=..")
+    .getByRole("button", { name: "Go to Page 11", exact: true });
   await expect(nextPreview).toBeVisible();
   await nextTarget.press("Tab");
   await expect(nextPreview).toBeFocused();
@@ -307,19 +333,26 @@ test("PDF preview stays clickable across the scrubber gap", async ({ page }) => 
   expect(Math.abs(fullWidth - availableWidth)).toBeLessThanOrEqual(2);
   await expanded.getByRole("button", { name: "Zoom in", exact: true }).click();
   await expect(expanded.getByLabel("Zoom level")).toHaveText("110%");
-  await expect.poll(async () => (await expandedPage.boundingBox())!.width).toBeGreaterThan(fullWidth * 1.09);
+  await expect
+    .poll(async () => (await expandedPage.boundingBox())!.width)
+    .toBeGreaterThan(fullWidth * 1.09);
   await expanded.getByRole("button", { name: "Fit page", exact: true }).click();
   await expect(expanded.getByLabel("Zoom level")).toHaveText("100%");
   expect(Math.abs((await expandedPage.boundingBox())!.width - fullWidth)).toBeLessThanOrEqual(2);
   await expanded.screenshot({ path: "/tmp/canopy-pdf-viewer-full-width.png" });
   await expanded.getByRole("button", { name: "Show outline", exact: true }).click();
   await expectOutlineWidth(expanded);
-  const expandedSearch = expanded.getByRole("searchbox", { name: "Search document outline", exact: true });
+  const expandedSearch = expanded.getByRole("searchbox", {
+    name: "Search document outline",
+    exact: true,
+  });
   await expect(expandedSearch).toBeFocused();
   await expect(expandedPageNumber).toHaveValue("1");
   await expanded.screenshot({ path: "/tmp/canopy-pdf-viewer-full-width-open.png" });
   await expandedSearch.press("Escape");
-  await expect(expanded.getByRole("listbox", { name: "Document outline", exact: true })).toBeHidden();
+  await expect(
+    expanded.getByRole("listbox", { name: "Document outline", exact: true }),
+  ).toBeHidden();
   await expect(expanded.getByRole("button", { name: "Show outline", exact: true })).toBeFocused();
   await expect(expandedPageNumber).toHaveValue("1");
   await page.keyboard.press("Escape");
@@ -327,12 +360,17 @@ test("PDF preview stays clickable across the scrubber gap", async ({ page }) => 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.reload();
   await page.waitForLoadState("networkidle");
-  await page.locator('input[type="file"]').first().setInputFiles([
-    { name: "scrubber-pages.pdf", mimeType: "application/pdf", buffer },
-    { name: "more-pages.pdf", mimeType: "application/pdf", buffer },
-  ]);
+  await page
+    .locator('input[type="file"]')
+    .first()
+    .setInputFiles([
+      { name: "scrubber-pages.pdf", mimeType: "application/pdf", buffer },
+      { name: "more-pages.pdf", mimeType: "application/pdf", buffer },
+    ]);
   await page.getByRole("button", { name: "Merge PDFs", exact: true }).click();
-  await expect(viewer.getByRole("spinbutton", { name: "Current page" })).toHaveValue("1", { timeout: 60_000 });
+  await expect(viewer.getByRole("spinbutton", { name: "Current page" })).toHaveValue("1", {
+    timeout: 60_000,
+  });
   await toggleOutlineWithMotion(viewer, "Show outline", false);
   await expect(search).toBeFocused();
   await search.press("Escape");
@@ -340,18 +378,29 @@ test("PDF preview stays clickable across the scrubber gap", async ({ page }) => 
   await expect(viewer.getByRole("button", { name: "Show outline", exact: true })).toBeFocused();
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-  const mobileCurrentPage = await viewer.getByRole("spinbutton", { name: "Current page" }).inputValue();
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  const mobileCurrentPage = await viewer
+    .getByRole("spinbutton", { name: "Current page" })
+    .inputValue();
   await viewer.getByRole("button", { name: "Show outline", exact: true }).click();
   await expect(outline).toBeVisible();
   await expect(search).toBeFocused();
-  await expect(viewer.getByRole("spinbutton", { name: "Current page" })).toHaveValue(mobileCurrentPage);
+  await expect(viewer.getByRole("spinbutton", { name: "Current page" })).toHaveValue(
+    mobileCurrentPage,
+  );
   await expectOutlineWidth(viewer);
   await captureViewer(viewer, "/tmp/canopy-pdf-viewer-mobile-open.png");
   await search.press("Escape");
   await expect(outline).toBeHidden();
   await expect(viewer.getByRole("button", { name: "Show outline", exact: true })).toBeFocused();
-  await expect(viewer.getByRole("spinbutton", { name: "Current page" })).toHaveValue(mobileCurrentPage);
+  await expect(viewer.getByRole("spinbutton", { name: "Current page" })).toHaveValue(
+    mobileCurrentPage,
+  );
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await captureViewer(viewer, "/tmp/canopy-pdf-viewer-mobile.png");
 });

@@ -15,9 +15,7 @@ type CloudinaryCredentials = {
   api_secret: string;
 };
 
-export type ToolIconUploadResult =
-  | { ok: true; row: ToolIconRow }
-  | { ok: false; reason: string };
+export type ToolIconUploadResult = { ok: true; row: ToolIconRow } | { ok: false; reason: string };
 
 function readCredentials(): CloudinaryCredentials | null {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
@@ -28,10 +26,7 @@ function readCredentials(): CloudinaryCredentials | null {
 }
 
 function looksLikeSvg(bytes: Uint8Array): boolean {
-  return new TextDecoder()
-    .decode(bytes)
-    .toLowerCase()
-    .includes("<svg");
+  return new TextDecoder().decode(bytes).toLowerCase().includes("<svg");
 }
 
 function hasExpectedRasterSignature(bytes: Uint8Array, mimeType: string): boolean {
@@ -43,9 +38,11 @@ function hasExpectedRasterSignature(bytes: Uint8Array, mimeType: string): boolea
   if (mimeType === "image/jpeg") {
     return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
   }
-  return bytes.length >= 12
-    && String.fromCharCode(...bytes.subarray(0, 4)) === "RIFF"
-    && String.fromCharCode(...bytes.subarray(8, 12)) === "WEBP";
+  return (
+    bytes.length >= 12 &&
+    String.fromCharCode(...bytes.subarray(0, 4)) === "RIFF" &&
+    String.fromCharCode(...bytes.subarray(8, 12)) === "WEBP"
+  );
 }
 
 const credentials = readCredentials();
@@ -65,9 +62,9 @@ export async function uploadToolIcon(
     return { ok: false, reason: "SVG icons are not supported." };
   }
   if (
-    !bytes.byteLength
-    || !ALLOWED_MIME_TYPES.has(normalizedMimeType)
-    || !hasExpectedRasterSignature(bytes, normalizedMimeType)
+    !bytes.byteLength ||
+    !ALLOWED_MIME_TYPES.has(normalizedMimeType) ||
+    !hasExpectedRasterSignature(bytes, normalizedMimeType)
   ) {
     return { ok: false, reason: "Use a PNG, JPG, or WebP image." };
   }

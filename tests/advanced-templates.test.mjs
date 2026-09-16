@@ -41,28 +41,18 @@ test("advanced defaults are valid blank-base pdfme templates with realistic samp
     assert.deepEqual(config.template.basePdf, {
       width,
       height,
-      padding:
-        documentType === "invoice"
-          ? [15, 15, 15, 15]
-          : [5, 5, 5, 5],
+      padding: documentType === "invoice" ? [15, 15, 15, 15] : [5, 5, 5, 5],
     });
     assert.equal(config.template.schemas.length, 1);
     assert.ok(config.template.schemas[0].length > 0);
-    const textSchema = config.template.schemas[0].find(
-      (schema) => schema.type === "text",
-    );
-    const tableSchema = config.template.schemas[0].find(
-      (schema) => schema.type === "table",
-    );
+    const textSchema = config.template.schemas[0].find((schema) => schema.type === "text");
+    const tableSchema = config.template.schemas[0].find((schema) => schema.type === "table");
     assert.equal(textSchema.verticalAlignment, "top");
     assert.equal(typeof textSchema.backgroundColor, "string");
     assert.equal(tableSchema.repeatHead, true);
     assert.equal(typeof tableSchema.tableStyles.borderWidth, "number");
     assert.equal(typeof tableSchema.headStyles.padding.left, "number");
-    assert.equal(
-      typeof tableSchema.bodyStyles.alternateBackgroundColor,
-      "string",
-    );
+    assert.equal(typeof tableSchema.bodyStyles.alternateBackgroundColor, "string");
     assert.deepEqual(tableSchema.columnStyles, {});
     assert.equal(typeof config.sampleData.documentNumber, "string");
     assert.equal(typeof config.sampleData.lineItems, "string");
@@ -93,11 +83,7 @@ test("advanced template canvases resize proportionally between compatible page f
     original.template.schemas[0].find((schema) => schema.type === "table"),
   );
 
-  const resized = resizeAdvancedTemplateConfig(
-    original,
-    "receipt",
-    "RECEIPT_58MM",
-  );
+  const resized = resizeAdvancedTemplateConfig(original, "receipt", "RECEIPT_58MM");
 
   assert.equal(resized.pageFormat, "RECEIPT_58MM");
   assert.deepEqual(resized.template.basePdf, {
@@ -115,37 +101,17 @@ test("advanced template canvases resize proportionally between compatible page f
       },
     ],
   });
-  assert.equal(
-    resized.template.schemas[0][0].position.x,
-    firstSchema.position.x * (58 / 80),
-  );
-  assert.equal(
-    resized.template.schemas[0][0].position.y,
-    firstSchema.position.y * (180 / 200),
-  );
-  assert.equal(
-    resized.template.schemas[0][0].width,
-    firstSchema.width * (58 / 80),
-  );
-  assert.equal(
-    resized.template.schemas[0][0].height,
-    firstSchema.height * (180 / 200),
-  );
+  assert.equal(resized.template.schemas[0][0].position.x, firstSchema.position.x * (58 / 80));
+  assert.equal(resized.template.schemas[0][0].position.y, firstSchema.position.y * (180 / 200));
+  assert.equal(resized.template.schemas[0][0].width, firstSchema.width * (58 / 80));
+  assert.equal(resized.template.schemas[0][0].height, firstSchema.height * (180 / 200));
   assert.deepEqual(resized.template.schemas[1][0].position, {
     x: 10 * (58 / 80),
     y: 20 * (180 / 200),
   });
-  assert.equal(
-    resized.template.schemas[0][0].fontSize,
-    firstSchema.fontSize * (58 / 80),
-  );
-  const resizedTable = resized.template.schemas[0].find(
-    (schema) => schema.type === "table",
-  );
-  assert.equal(
-    resizedTable.headStyles.fontSize,
-    originalTable.headStyles.fontSize * (58 / 80),
-  );
+  assert.equal(resized.template.schemas[0][0].fontSize, firstSchema.fontSize * (58 / 80));
+  const resizedTable = resized.template.schemas[0].find((schema) => schema.type === "table");
+  assert.equal(resizedTable.headStyles.fontSize, originalTable.headStyles.fontSize * (58 / 80));
   assert.equal(
     resizedTable.headStyles.padding.left,
     originalTable.headStyles.padding.left * (58 / 80),
@@ -155,10 +121,7 @@ test("advanced template canvases resize proportionally between compatible page f
     originalTable.headStyles.padding.top * (180 / 200),
   );
   assert.deepEqual(resized.sampleData, original.sampleData);
-  assert.equal(
-    AdvancedTemplateConfigSchema.safeParse(resized).success,
-    true,
-  );
+  assert.equal(AdvancedTemplateConfigSchema.safeParse(resized).success, true);
   assert.equal(original.pageFormat, "RECEIPT_80MM");
   assert.equal(original.template.basePdf.width, 80);
 
@@ -170,10 +133,7 @@ test("advanced template canvases resize proportionally between compatible page f
   assert.equal(resizedInvoice.pageFormat, "LETTER");
   assert.equal(resizedInvoice.template.basePdf.width, 215.9);
   assert.equal(resizedInvoice.template.basePdf.height, 279.4);
-  assert.equal(
-    AdvancedTemplateConfigSchema.safeParse(resizedInvoice).success,
-    true,
-  );
+  assert.equal(AdvancedTemplateConfigSchema.safeParse(resizedInvoice).success, true);
 });
 
 test("document template validation accepts standard and advanced templates without widening the standard schema", () => {
@@ -212,23 +172,14 @@ test("advanced template validation rejects incompatible document and page format
     /not supported for invoice templates/,
   );
 
-  const invoiceOnReceiptPaper = createAdvancedTemplate(
-    "receipt",
-    "RECEIPT_58MM",
-  );
+  const invoiceOnReceiptPaper = createAdvancedTemplate("receipt", "RECEIPT_58MM");
   invoiceOnReceiptPaper.documentType = "invoice";
 
   const receiptOnLetterPaper = createAdvancedTemplate("invoice", "LETTER");
   receiptOnLetterPaper.documentType = "receipt";
 
-  assert.equal(
-    AdvancedDocumentTemplateSchema.safeParse(invoiceOnReceiptPaper).success,
-    false,
-  );
-  assert.equal(
-    DocumentTemplateSchema.safeParse(receiptOnLetterPaper).success,
-    false,
-  );
+  assert.equal(AdvancedDocumentTemplateSchema.safeParse(invoiceOnReceiptPaper).success, false);
+  assert.equal(DocumentTemplateSchema.safeParse(receiptOnLetterPaper).success, false);
 });
 
 test("advanced config validation rejects malformed pdfme blank bases", () => {

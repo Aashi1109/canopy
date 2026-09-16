@@ -5,15 +5,7 @@ export default {
   app: "devtools",
   slug: "http-status-codes",
   category: "jwt-api-tools",
-  keywords: [
-    "http",
-    "status code",
-    "404",
-    "500",
-    "reference",
-    "lookup",
-    "response",
-  ],
+  keywords: ["http", "status code", "404", "500", "reference", "lookup", "response"],
   name: "HTTP Status Code Lookup",
   description: "Look up common HTTP status codes by code or phrase.",
   input: {
@@ -74,7 +66,7 @@ export default {
   content: {
     howToUse: [
       "Type a number (404), a partial number (40 matches the whole 4xx family listed here), or part of a phrase (gateway).",
-      "Results filter as you type and show every match as \"<code> <reason phrase>\".",
+      'Results filter as you type and show every match as "<code> <reason phrase>".',
       "Use a shorter query when you want to broaden the result list.",
     ],
     limitations: [
@@ -89,7 +81,7 @@ export default {
       },
       {
         q: "Can I search by phrase?",
-        a: "Yes. Typing \"timeout\" returns both 408 Request Timeout and 504 Gateway Timeout.",
+        a: 'Yes. Typing "timeout" returns both 408 Request Timeout and 504 Gateway Timeout.',
       },
     ],
     examples: [

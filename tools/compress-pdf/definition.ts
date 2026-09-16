@@ -19,8 +19,7 @@ export default {
   input: {
     kind: "files",
     label: "Add a PDF to compress",
-    dropzoneDescription:
-      "PDF · 1 file · 100 MiB max · processed on this device",
+    dropzoneDescription: "PDF · 1 file · 100 MiB max · processed on this device",
     accept: "application/pdf,.pdf",
     multiple: false,
     engine: "pdf",

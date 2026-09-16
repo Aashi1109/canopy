@@ -82,13 +82,15 @@ export function getInitialBlankInvoice(): InvoiceData {
     },
     payment: {
       methods: ["bank", "check"],
-      instructions: "Please make bank transfers to: routing: 021000021, account: 123456789. Or write checks payable to Blue Ridge Web Studio.",
+      instructions:
+        "Please make bank transfers to: routing: 021000021, account: 123456789. Or write checks payable to Blue Ridge Web Studio.",
       lateFeeNote: "Late payments may incur an interest fee of 1.5% per month.",
       thankYouNote: "Thank you for your business. We appreciate your partnership!",
     },
     notes: {
       notes: "Services rendered cover design wireframes and production deployment.",
-      terms: "Payment is due by the due date shown above. Please contact us with any questions about this invoice.",
+      terms:
+        "Payment is due by the due date shown above. Please contact us with any questions about this invoice.",
     },
     template: "classic",
   };
@@ -164,13 +166,17 @@ export function getSampleInvoice(): InvoiceData {
     },
     payment: {
       methods: ["bank", "check", "paypal"],
-      instructions: "Direct bank wire to Chase Bank - Route: 121000248, Acct Num: 987654321. Venmo/PayPal via billing@blueridgeweb.com.",
+      instructions:
+        "Direct bank wire to Chase Bank - Route: 121000248, Acct Num: 987654321. Venmo/PayPal via billing@blueridgeweb.com.",
       lateFeeNote: "Late payments are subject to a 1.5% structural monthly interest fee.",
-      thankYouNote: "Thank you for your business. It was a pleasure collaborating with the Acme team!",
+      thankYouNote:
+        "Thank you for your business. It was a pleasure collaborating with the Acme team!",
     },
     notes: {
-      notes: "Maintenance covers performance reporting & image size compressions. Landing page design includes mobile-responsive components.",
-      terms: "Payment is due by the due date shown above. Please contact us with any questions about this invoice.",
+      notes:
+        "Maintenance covers performance reporting & image size compressions. Landing page design includes mobile-responsive components.",
+      terms:
+        "Payment is due by the due date shown above. Please contact us with any questions about this invoice.",
     },
     template: "modern",
   };

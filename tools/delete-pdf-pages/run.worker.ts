@@ -22,10 +22,7 @@ import {
 } from "../../lib/tool-framework/media/validation.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
-import {
-  parsePageSelection,
-  type SettingsOf,
-} from "../../lib/tool-framework/settings.ts";
+import { parsePageSelection, type SettingsOf } from "../../lib/tool-framework/settings.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 

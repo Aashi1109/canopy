@@ -26,9 +26,7 @@ export function normalizeExpenseRows<T extends ExpenseAmounts>(
 }
 
 export function getExpenseLineTotal(row: ExpenseAmounts): number {
-  return money(
-    Number(row.amount || 0) + Number(row.tax || 0) + Number(row.tip || 0),
-  );
+  return money(Number(row.amount || 0) + Number(row.tax || 0) + Number(row.tip || 0));
 }
 
 export function calculateExpenseTotals(
@@ -37,15 +35,9 @@ export function calculateExpenseTotals(
   advanceReceived: number,
 ) {
   const normalizedRows = normalizeExpenseRows(rows);
-  const baseAmount = money(
-    normalizedRows.reduce((total, row) => total + row.amount, 0),
-  );
-  const taxAmount = money(
-    normalizedRows.reduce((total, row) => total + row.tax, 0),
-  );
-  const tipAmount = money(
-    normalizedRows.reduce((total, row) => total + row.tip, 0),
-  );
+  const baseAmount = money(normalizedRows.reduce((total, row) => total + row.amount, 0));
+  const taxAmount = money(normalizedRows.reduce((total, row) => total + row.tax, 0));
+  const tipAmount = money(normalizedRows.reduce((total, row) => total + row.tip, 0));
   const expenseTotal = money(
     normalizedRows.reduce((total, row) => total + getExpenseLineTotal(row), 0),
   );
@@ -60,21 +52,13 @@ export function calculateExpenseTotals(
       .reduce((total, row) => total + getExpenseLineTotal(row), 0),
   );
   const mileageTotal = money(
-    mileageRows.reduce(
-      (total, row) => total + Number(row.miles || 0) * Number(row.rate || 0),
-      0,
-    ),
+    mileageRows.reduce((total, row) => total + Number(row.miles || 0) * Number(row.rate || 0), 0),
   );
-  const totalMiles = mileageRows.reduce(
-    (total, row) => total + Number(row.miles || 0),
-    0,
-  );
+  const totalMiles = mileageRows.reduce((total, row) => total + Number(row.miles || 0), 0);
   const categoryTotals: Record<string, number> = {};
   normalizedRows.forEach((row) => {
     const category = row.category || "Other";
-    categoryTotals[category] = money(
-      (categoryTotals[category] || 0) + getExpenseLineTotal(row),
-    );
+    categoryTotals[category] = money((categoryTotals[category] || 0) + getExpenseLineTotal(row));
   });
 
   return {
@@ -88,9 +72,7 @@ export function calculateExpenseTotals(
     totalMiles,
     advanceReceived: money(Number(advanceReceived || 0)),
     reportTotal: money(expenseTotal + mileageTotal),
-    amountDue: money(
-      reimbursableTotal + mileageTotal - Number(advanceReceived || 0),
-    ),
+    amountDue: money(reimbursableTotal + mileageTotal - Number(advanceReceived || 0)),
     categoryTotals,
   };
 }

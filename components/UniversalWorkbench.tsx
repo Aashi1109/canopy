@@ -38,10 +38,7 @@ import {
 } from "lucide-react";
 import { type ComponentType, type ReactNode } from "react";
 
-import {
-  ToolRuntimeProvider,
-  useToolRuntime,
-} from "@/lib/tool-runtime/useToolRuntime";
+import { ToolRuntimeProvider, useToolRuntime } from "@/lib/tool-runtime/useToolRuntime";
 import type { ToolContent, ToolWorkbenchMark } from "@/lib/tool-framework/spec";
 import type {
   ToolLifecycle,
@@ -51,11 +48,10 @@ import type {
   ToolSettings,
 } from "@/lib/tool-runtime/types";
 
-type UniversalWorkbenchProps<
-  Input,
-  Settings extends ToolSettings,
-  Result,
-> = Omit<ToolPageComponentProps, "definitionKey"> & {
+type UniversalWorkbenchProps<Input, Settings extends ToolSettings, Result> = Omit<
+  ToolPageComponentProps,
+  "definitionKey"
+> & {
   content: ToolContent;
   definition: ToolDefinition;
   runtimeSpec: ToolRuntimeSpec<Input, Settings, Result>;
@@ -95,35 +91,27 @@ function ConfirmationDialog({
       >
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {description}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         {changes.length > 0 ? (
           <List className="max-h-32 space-y-1 overflow-auto rounded-md bg-muted p-3">
             {changes.map((change) => (
-              <li key={change}><InlineCode>{change}</InlineCode></li>
+              <li key={change}>
+                <InlineCode>{change}</InlineCode>
+              </li>
             ))}
           </List>
         ) : null}
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>
-            Cancel
-          </AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>
-            {confirmLabel}
-          </AlertDialogAction>
+          <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>{confirmLabel}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
 }
 
-function WorkbenchFrame<
-  Input,
-  Settings extends ToolSettings,
-  Result,
->({
+function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
   account,
   category,
   content,
@@ -142,16 +130,12 @@ function WorkbenchFrame<
   const runtime = useToolRuntime<Input, Settings, Result>();
   const workbenchMarkText = workbenchMark?.text.trim();
   const isBusy = runtime.lifecycle === "running";
-  const factSummary = runtime.facts
-    .map((fact) => `${fact.label}: ${fact.value}`)
-    .join(" · ");
+  const factSummary = runtime.facts.map((fact) => `${fact.label}: ${fact.value}`).join(" · ");
   const status =
     runtime.lifecycle === "running"
       ? definition.labels.running
       : runtime.lifecycle === "completed"
-        ? [definition.labels.ready.replace(/[.!?]+$/, ""), factSummary]
-            .filter(Boolean)
-            .join(" · ")
+        ? [definition.labels.ready.replace(/[.!?]+$/, ""), factSummary].filter(Boolean).join(" · ")
         : runtime.notice ||
           runtime.error ||
           runtime.issues[0]?.message ||
@@ -168,8 +152,7 @@ function WorkbenchFrame<
       : "PRIVATE IN BROWSER";
   const PrivacyIcon = usesNetwork ? Globe2 : LockKeyhole;
   const capabilityBadge =
-    definition.labels.primaryAction?.toUpperCase() ??
-    (isMedia ? "FILE TOOL" : "BROWSER TOOL");
+    definition.labels.primaryAction?.toUpperCase() ?? (isMedia ? "FILE TOOL" : "BROWSER TOOL");
   const supportItems = [
     ...(content.limitations?.length
       ? [
@@ -230,33 +213,28 @@ function WorkbenchFrame<
               className={`inline-flex min-w-0 items-center gap-2 ${
                 runtime.lifecycle === "completed" ? "text-success" : ""
               }`}
-            ><Strong className="contents">
-              {runtime.lifecycle === "completed" ? (
-                <CheckCircle2
-                  aria-hidden="true"
-                  className="size-4 text-success"
-                />
-              ) : runtime.lifecycle === "invalid" ||
-                runtime.lifecycle === "failed" ? (
-                <AlertCircle
-                  aria-hidden="true"
-                  className="size-4 text-destructive"
-                />
-              ) : null}
-              <span className="truncate">{status}</span>
-              {runtime.canUndo && !runtime.pendingConfirmation ? (
-                <Button
-                  className="relative h-7 px-2 after:absolute after:-inset-x-1 after:-inset-y-2"
-                  onClick={runtime.undo}
-                  size="sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  <Undo2 aria-hidden="true" className="size-3.5" />
-                  Undo
-                </Button>
-              ) : null}
-            </Strong></Caption>
+            >
+              <Strong className="contents">
+                {runtime.lifecycle === "completed" ? (
+                  <CheckCircle2 aria-hidden="true" className="size-4 text-success" />
+                ) : runtime.lifecycle === "invalid" || runtime.lifecycle === "failed" ? (
+                  <AlertCircle aria-hidden="true" className="size-4 text-destructive" />
+                ) : null}
+                <span className="truncate">{status}</span>
+                {runtime.canUndo && !runtime.pendingConfirmation ? (
+                  <Button
+                    className="relative h-7 px-2 after:absolute after:-inset-x-1 after:-inset-y-2"
+                    onClick={runtime.undo}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Undo2 aria-hidden="true" className="size-3.5" />
+                    Undo
+                  </Button>
+                ) : null}
+              </Strong>
+            </Caption>
           </footer>
         }
         statusMeta={
@@ -270,13 +248,14 @@ function WorkbenchFrame<
             className="size-[34px] bg-transparent text-foreground"
             tone={workbenchMarkText ? workbenchMark?.tone : undefined}
           >
-            {workbenchIcon ?? (workbenchMarkText ? (
-              <Caption><Strong>
-                {workbenchMarkText}
-              </Strong></Caption>
-            ) : (
-              <Wrench />
-            ))}
+            {workbenchIcon ??
+              (workbenchMarkText ? (
+                <Caption>
+                  <Strong>{workbenchMarkText}</Strong>
+                </Caption>
+              ) : (
+                <Wrench />
+              ))}
           </IconTile>
         }
         toolbarActions={
@@ -382,10 +361,7 @@ function WorkbenchFrame<
   );
 }
 
-function lifecycleLabel(
-  definition: ToolDefinition,
-  lifecycle: ToolLifecycle,
-) {
+function lifecycleLabel(definition: ToolDefinition, lifecycle: ToolLifecycle) {
   switch (lifecycle) {
     case "empty":
       return "Ready for input.";
@@ -402,11 +378,7 @@ function lifecycleLabel(
   }
 }
 
-export function UniversalWorkbench<
-  Input,
-  Settings extends ToolSettings,
-  Result,
->({
+export function UniversalWorkbench<Input, Settings extends ToolSettings, Result>({
   runtimeSpec,
   ...props
 }: UniversalWorkbenchProps<Input, Settings, Result>) {

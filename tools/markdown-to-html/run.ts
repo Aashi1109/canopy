@@ -5,8 +5,7 @@ import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-const HTML_CHARACTER_REFERENCE =
-  /&(?:#\d+;?|#x[\da-f]+;?|[a-z][a-z\d]+;)/i;
+const HTML_CHARACTER_REFERENCE = /&(?:#\d+;?|#x[\da-f]+;?|[a-z][a-z\d]+;)/i;
 
 function isSafeUrl(value: string): boolean {
   const schemeCandidate = /^[^/?]*/.exec(value.trimStart())?.[0] ?? "";
@@ -24,9 +23,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   // Dynamic so marked stays out of the initial bundle.
   const { marked, Renderer } = await import("marked");
   const renderer =
-    ctx.settings.openLinksSafely || ctx.settings.sanitizeHtml
-      ? new Renderer()
-      : undefined;
+    ctx.settings.openLinksSafely || ctx.settings.sanitizeHtml ? new Renderer() : undefined;
   if (renderer) {
     const renderLink = renderer.link.bind(renderer);
     renderer.link = function (token) {
@@ -35,19 +32,14 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       }
       const link = renderLink(token);
       return ctx.settings.openLinksSafely
-        ? link.replace(
-            ">",
-            ' target="_blank" rel="noopener noreferrer">',
-          )
+        ? link.replace(">", ' target="_blank" rel="noopener noreferrer">')
         : link;
     };
     if (ctx.settings.sanitizeHtml) {
       const renderImage = renderer.image.bind(renderer);
       renderer.html = () => "";
       renderer.image = function (token) {
-        return isSafeUrl(token.href)
-          ? renderImage(token)
-          : this.parser.parseInline(token.tokens);
+        return isSafeUrl(token.href) ? renderImage(token) : this.parser.parseInline(token.tokens);
       };
     }
   }

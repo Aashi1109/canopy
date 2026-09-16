@@ -25,10 +25,7 @@ export const DOCUMENT_TYPES = [
 ] as const satisfies readonly DocumentType[];
 
 type FieldOptions = Partial<
-  Omit<
-    DocumentFieldDefinition,
-    "key" | "label" | "description" | "section" | "sampleValue"
-  >
+  Omit<DocumentFieldDefinition, "key" | "label" | "description" | "section" | "sampleValue">
 > & {
   description?: string;
 };
@@ -52,9 +49,7 @@ function field(
     computationRequired: options.computationRequired ?? false,
     sampleValue,
     allowedBindingTypes: options.allowedBindingTypes ?? ["text"],
-    ...(options.repeaterColumns
-      ? { repeaterColumns: options.repeaterColumns }
-      : {}),
+    ...(options.repeaterColumns ? { repeaterColumns: options.repeaterColumns } : {}),
     sensitiveData: options.sensitiveData ?? "none",
   };
 }
@@ -75,9 +70,7 @@ function column(
     valueType:
       control === "checkbox"
         ? "boolean"
-        : control === "number" ||
-            control === "currency" ||
-            control === "percent"
+        : control === "number" || control === "currency" || control === "percent"
           ? "number"
           : control === "date"
             ? "date"
@@ -190,13 +183,10 @@ const invoiceFields = [
     required: true,
     sensitiveData: "contact",
   }),
-  field(
-    "businessAddress",
-    "Business address",
-    "business",
-    "42 Market Street\nAustin, TX 78701",
-    { control: "textarea", sensitiveData: "contact" },
-  ),
+  field("businessAddress", "Business address", "business", "42 Market Street\nAustin, TX 78701", {
+    control: "textarea",
+    sensitiveData: "contact",
+  }),
   field("businessEmail", "Business email", "business", "hello@northstar.example", {
     control: "email",
     sensitiveData: "contact",
@@ -210,13 +200,10 @@ const invoiceFields = [
     sensitiveData: "contact",
   }),
   field("customerCompany", "Customer company", "customer", "Brightside Labs"),
-  field(
-    "customerAddress",
-    "Customer address",
-    "customer",
-    "18 Congress Avenue\nAustin, TX 78701",
-    { control: "textarea", sensitiveData: "contact" },
-  ),
+  field("customerAddress", "Customer address", "customer", "18 Congress Avenue\nAustin, TX 78701", {
+    control: "textarea",
+    sensitiveData: "contact",
+  }),
   field("customerEmail", "Customer email", "customer", "avery@example.com", {
     control: "email",
     sensitiveData: "contact",
@@ -321,13 +308,10 @@ const receiptFields = [
     required: true,
     sensitiveData: "contact",
   }),
-  field(
-    "businessAddress",
-    "Merchant address",
-    "merchant",
-    "42 Market Street\nAustin, TX 78701",
-    { control: "textarea", sensitiveData: "contact" },
-  ),
+  field("businessAddress", "Merchant address", "merchant", "42 Market Street\nAustin, TX 78701", {
+    control: "textarea",
+    sensitiveData: "contact",
+  }),
   field("businessPhone", "Merchant phone", "merchant", "+1 512 555 0184", {
     control: "phone",
     sensitiveData: "contact",
@@ -733,9 +717,15 @@ const quarterlyTaxFields = [
     computationRequired: true,
     sensitiveData: "tax",
   }),
-  field("assumptions", "Additional assumptions", "assumptions", "Income is earned evenly through the year.", {
-    control: "textarea",
-  }),
+  field(
+    "assumptions",
+    "Additional assumptions",
+    "assumptions",
+    "Income is earned evenly through the year.",
+    {
+      control: "textarea",
+    },
+  ),
   computed("adjustedGrossIncome", "Adjusted gross income", "summary", "$65,520.00"),
   computed("taxableIncome", "Taxable income", "summary", "$50,920.00"),
   computed("incomeTax", "Federal income tax", "summary", "$6,053.00"),
@@ -767,10 +757,16 @@ const w9Fields = [
     control: "email",
     sensitiveData: "contact",
   }),
-  field("requesterAddress", "Requester address", "requester", "42 Market Street, Austin, TX 78701", {
-    control: "textarea",
-    sensitiveData: "contact",
-  }),
+  field(
+    "requesterAddress",
+    "Requester address",
+    "requester",
+    "42 Market Street, Austin, TX 78701",
+    {
+      control: "textarea",
+      sensitiveData: "contact",
+    },
+  ),
   field("contractorName", "Contractor legal name", "contractor", "Devon Lane", {
     required: true,
     sensitiveData: "contact",
@@ -908,10 +904,21 @@ const necFields = [
     ],
     { computationRequired: true, sensitiveData: "tax" },
   ),
-  reference("vendorReferences", "Vendor and W-9 references", "references", "Devon Dev LLC · W-9 received"),
-  reference("maskedTinReferences", "Masked TIN references", "references", "Devon Dev LLC · •••• 4821", {
-    sensitiveData: "masked-tax-id",
-  }),
+  reference(
+    "vendorReferences",
+    "Vendor and W-9 references",
+    "references",
+    "Devon Dev LLC · W-9 received",
+  ),
+  reference(
+    "maskedTinReferences",
+    "Masked TIN references",
+    "references",
+    "Devon Dev LLC · •••• 4821",
+    {
+      sensitiveData: "masked-tax-id",
+    },
+  ),
   field("filingStatus", "Filing status", "status", "Review required", {
     control: "select",
     sensitiveData: "tax",
@@ -1003,13 +1010,7 @@ export const DOCUMENT_DEFINITIONS = [
       ["evidence", "Evidence"],
       ["approval", "Certification and approval"],
     ],
-    requiredBindings: [
-      "reportNumber",
-      "submitterName",
-      "expenseRows",
-      "reportTotal",
-      "amountDue",
-    ],
+    requiredBindings: ["reportNumber", "submitterName", "expenseRows", "reportTotal", "amountDue"],
     complianceMode: "normal",
   }),
   definition({
@@ -1075,12 +1076,7 @@ export const DOCUMENT_DEFINITIONS = [
       ["message", "Message and secure submission"],
       ["status", "Status"],
     ],
-    requiredBindings: [
-      "requesterName",
-      "contractorName",
-      "officialW9Url",
-      "requestOnlyDisclaimer",
-    ],
+    requiredBindings: ["requesterName", "contractorName", "officialW9Url", "requestOnlyDisclaimer"],
     complianceMode: "tax-request",
   }),
   definition({
@@ -1113,9 +1109,7 @@ export const DOCUMENT_DEFINITION_BY_TYPE = Object.fromEntries(
   DOCUMENT_DEFINITIONS.map((item) => [item.documentType, item]),
 ) as Readonly<Record<DocumentType, DocumentDefinition>>;
 
-export function getDocumentDefinition(
-  documentType: DocumentType,
-): DocumentDefinition {
+export function getDocumentDefinition(documentType: DocumentType): DocumentDefinition {
   return DOCUMENT_DEFINITION_BY_TYPE[documentType];
 }
 
@@ -1142,10 +1136,7 @@ export const LEGACY_FIELD_ALIASES: Readonly<
   },
 };
 
-export function resolveDocumentFieldKey(
-  documentType: DocumentType,
-  key: string,
-): string {
+export function resolveDocumentFieldKey(documentType: DocumentType, key: string): string {
   return LEGACY_FIELD_ALIASES[documentType]?.[key] ?? key;
 }
 
@@ -1153,11 +1144,6 @@ export function isDocumentType(value: string): value is DocumentType {
   return (DOCUMENT_TYPES as readonly string[]).includes(value);
 }
 
-export function isPageFormatAllowed(
-  documentType: DocumentType,
-  pageFormat: PageFormat,
-): boolean {
-  return getDocumentDefinition(documentType).allowedPageFormats.includes(
-    pageFormat,
-  );
+export function isPageFormatAllowed(documentType: DocumentType, pageFormat: PageFormat): boolean {
+  return getDocumentDefinition(documentType).allowedPageFormats.includes(pageFormat);
 }

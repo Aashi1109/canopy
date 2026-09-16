@@ -111,12 +111,7 @@ export function NewToolDialog() {
           </Field>
 
           <Field htmlFor="new-tool-description" label="Description">
-            <Textarea
-              id="new-tool-description"
-              name="description"
-              required
-              rows={2}
-            />
+            <Textarea id="new-tool-description" name="description" required rows={2} />
           </Field>
 
           <Field

@@ -27,11 +27,7 @@ import { SettingsPanel } from "@/components/SettingsPanel";
 import { SplitStack } from "@/components/Stacks";
 import { WorkspaceInputSurface } from "@/components/WorkspaceInput";
 import type { ToolResult } from "@/lib/tool-framework/result";
-import type {
-  ToolInputSpec,
-  ToolLayout,
-  ToolSpec,
-} from "@/lib/tool-framework/spec";
+import type { ToolInputSpec, ToolLayout, ToolSpec } from "@/lib/tool-framework/spec";
 import { readTextFileForEditor } from "@/lib/tool-framework/textFileInput";
 import type { ToolLifecycle } from "@/lib/tool-runtime/types";
 
@@ -90,14 +86,9 @@ export interface WorkspaceProps {
   spec: ToolSpec;
 }
 
-function getInputSplitSizes(
-  inputSpec: ToolInputSpec,
-  defaultSize: number,
-  minSize: number,
-) {
+function getInputSplitSizes(inputSpec: ToolInputSpec, defaultSize: number, minSize: number) {
   const allSingleLineFields =
-    inputSpec.kind === "fields" &&
-    inputSpec.fields.every((field) => !field.multiline);
+    inputSpec.kind === "fields" && inputSpec.fields.every((field) => !field.multiline);
   if (!allSingleLineFields) return { defaultSize, minSize };
 
   return inputSpec.fields.length > 1
@@ -107,10 +98,11 @@ function getInputSplitSizes(
 
 function stackedResultTitle(spec: ToolSpec) {
   if (spec.labels.result) return spec.labels.result;
-  return spec.labels.ready
-    .replace(/^The\s+/i, "")
-    .replace(/\s+(?:is|are)\s+(?:ready.*|valid|current|up to date)\.?$/i, "")
-    || "Result";
+  return (
+    spec.labels.ready
+      .replace(/^The\s+/i, "")
+      .replace(/\s+(?:is|are)\s+(?:ready.*|valid|current|up to date)\.?$/i, "") || "Result"
+  );
 }
 
 const INPUT_RESULT_ITEMS = [
@@ -188,28 +180,19 @@ function InputResultWorkspace({
   );
 }
 
-function TextFileDropTarget({
-  children,
-  props,
-}: {
-  children: ReactNode;
-  props: WorkspaceProps;
-}) {
+function TextFileDropTarget({ children, props }: { children: ReactNode; props: WorkspaceProps }) {
   const [dragActive, setDragActive] = useState(false);
   const [dropIssue, setDropIssue] = useState("");
   const dragDepth = useRef(0);
   const fileReadRequestRef = useRef(0);
-  const acceptedFile = props.spec.input.kind === "text"
-    ? props.spec.input.acceptFiles
-    : undefined;
-  const inputName = props.spec.input.kind === "text"
-    ? props.spec.input.label
-    : "file";
-  const acceptedDescription = acceptedFile?.accept
-    .split(",")
-    .filter((entry) => entry.trim().startsWith("."))
-    .map((entry) => entry.trim().slice(1).toUpperCase())
-    .join(" or ") || "Accepted text file";
+  const acceptedFile = props.spec.input.kind === "text" ? props.spec.input.acceptFiles : undefined;
+  const inputName = props.spec.input.kind === "text" ? props.spec.input.label : "file";
+  const acceptedDescription =
+    acceptedFile?.accept
+      .split(",")
+      .filter((entry) => entry.trim().startsWith("."))
+      .map((entry) => entry.trim().slice(1).toUpperCase())
+      .join(" or ") || "Accepted text file";
 
   useEffect(() => {
     fileReadRequestRef.current += 1;
@@ -256,9 +239,7 @@ function TextFileDropTarget({
       const request = ++fileReadRequestRef.current;
       const loaded = await readTextFileForEditor(file, {
         maxEditableBytes: acceptedFile.maxEditableBytes,
-        maxLength: props.spec.input.kind === "text"
-          ? props.spec.input.maxLength
-          : undefined,
+        maxLength: props.spec.input.kind === "text" ? props.spec.input.maxLength : undefined,
       });
       if (request !== fileReadRequestRef.current) return;
       setDropIssue("");
@@ -301,14 +282,19 @@ function TextFileDropTarget({
             <div>
               <H3>Release to replace the current {inputName.toLowerCase()}</H3>
               <Muted className="mt-2 text-muted-foreground">
-                Drop anywhere in this workbench. The file stays on this device and replaces the current input.
+                Drop anywhere in this workbench. The file stays on this device and replaces the
+                current input.
               </Muted>
             </div>
-            <Caption className="inline-flex items-center gap-2 rounded-full border border-primary bg-card px-4 py-2 shadow-sm"><Strong className="contents">
-              <FileSpreadsheet aria-hidden="true" className="size-4 text-primary" />
-              {acceptedDescription}
-            </Strong></Caption>
-            <Muted className="text-success"><Strong>Release now · nothing is uploaded</Strong></Muted>
+            <Caption className="inline-flex items-center gap-2 rounded-full border border-primary bg-card px-4 py-2 shadow-sm">
+              <Strong className="contents">
+                <FileSpreadsheet aria-hidden="true" className="size-4 text-primary" />
+                {acceptedDescription}
+              </Strong>
+            </Caption>
+            <Muted className="text-success">
+              <Strong>Release now · nothing is uploaded</Strong>
+            </Muted>
           </div>
         </div>
       ) : null}
@@ -331,9 +317,8 @@ export function ToolWorkspace(props: WorkspaceProps & Pick<ResultSurfaceProps, "
     ? fields.length > 0
     : fields.some((field) => field.pane !== "main");
   const inputSplit = getInputSplitSizes(props.spec.input, 50, 30);
-  const surfaceVariant = props.spec.input.kind !== "none" && props.spec.layout === "stacked"
-    ? "card"
-    : "panel";
+  const surfaceVariant =
+    props.spec.input.kind !== "none" && props.spec.layout === "stacked" ? "card" : "panel";
   const result = (
     <ResultSurface
       error={props.error}
@@ -345,25 +330,26 @@ export function ToolWorkspace(props: WorkspaceProps & Pick<ResultSurfaceProps, "
       variant={surfaceVariant}
     />
   );
-  const primaryContent = props.spec.input.kind === "none" ? (
-    result
-  ) : (
-    <InputResultWorkspace
-      defaultSize={inputSplit.defaultSize}
-      input={(
-        <WorkspaceInputSurface
-          disabled={props.disabled}
-          input={props.input}
-          inputSpec={props.spec.input}
-          onInputChange={props.onInputChange}
-          variant={surfaceVariant}
-        />
-      )}
-      layout={props.spec.layout ?? "side-by-side"}
-      minSize={inputSplit.minSize}
-      result={result}
-    />
-  );
+  const primaryContent =
+    props.spec.input.kind === "none" ? (
+      result
+    ) : (
+      <InputResultWorkspace
+        defaultSize={inputSplit.defaultSize}
+        input={
+          <WorkspaceInputSurface
+            disabled={props.disabled}
+            input={props.input}
+            inputSpec={props.spec.input}
+            onInputChange={props.onInputChange}
+            variant={surfaceVariant}
+          />
+        }
+        layout={props.spec.layout ?? "side-by-side"}
+        minSize={inputSplit.minSize}
+        result={result}
+      />
+    );
   const mainContent = hasMainSettings ? (
     <div className="flex h-full min-h-0 flex-col">
       <SettingsPanel
@@ -377,7 +363,9 @@ export function ToolWorkspace(props: WorkspaceProps & Pick<ResultSurfaceProps, "
       />
       <div className="min-h-0 flex-1">{primaryContent}</div>
     </div>
-  ) : primaryContent;
+  ) : (
+    primaryContent
+  );
 
   if (!hasSideSettings) {
     return <TextFileDropTarget props={props}>{mainContent}</TextFileDropTarget>;

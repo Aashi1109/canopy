@@ -2,8 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const workspacePath =
-  "app/paperwork/components/AdvancedTemplateWorkspace.tsx";
+const workspacePath = "app/paperwork/components/AdvancedTemplateWorkspace.tsx";
 const adaptersPath = "lib/paperwork/documentAdapters.ts";
 const editorPath =
   "app/admin/(protected)/templates/[id]/advanced/components/AdvancedTemplateEditor.tsx";
@@ -77,24 +76,15 @@ test("the admin fields panel is registry-driven and edits ordered form sections"
 });
 
 test("advanced invoices use only the shared pdfme workspace export path", async () => {
-  const source = await readFile(
-    "app/paperwork/components/App.tsx",
-    "utf8",
-  );
+  const source = await readFile("app/paperwork/components/App.tsx", "utf8");
 
   assert.match(source, /<AdvancedTemplateWorkspace/);
-  assert.match(
-    source,
-    /isInvoice\s*&&\s*selectedTemplate\.layoutFamily\s*!==\s*"advanced"/,
-  );
+  assert.match(source, /isInvoice\s*&&\s*selectedTemplate\.layoutFamily\s*!==\s*"advanced"/);
   assert.doesNotMatch(source, /advancedInvoiceInputs/);
 });
 
 test("every enabled Paperwork component key loads its matching templates", async () => {
-  const source = await readFile(
-    "app/paperwork/[slug]/page.tsx",
-    "utf8",
-  );
+  const source = await readFile("app/paperwork/[slug]/page.tsx", "utf8");
 
   for (const [componentKey, documentType] of [
     ["invoice-generator", "invoice"],
@@ -105,10 +95,7 @@ test("every enabled Paperwork component key loads its matching templates", async
     ["w9-request", "w9-request"],
     ["1099-nec-tracker", "1099-nec-tracker"],
   ]) {
-    assert.match(
-      source,
-      new RegExp(`"${componentKey}"\\s*:\\s*"${documentType}"`),
-    );
+    assert.match(source, new RegExp(`"${componentKey}"\\s*:\\s*"${documentType}"`));
   }
   assert.match(source, /getPublishedTemplates\(documentType\)/);
 });
@@ -138,8 +125,5 @@ test("document template publishing validates and renders outside its final trans
   assert.match(mutations, /current\.version !== expectedVersion/);
   assert.match(actions, /5_000_000/);
   assert.match(nextConfig, /bodySizeLimit:\s*"6mb"/);
-  assert.match(
-    mutations,
-    /eq\(invoiceTemplatesTable\.documentType,\s*template\.documentType\)/,
-  );
+  assert.match(mutations, /eq\(invoiceTemplatesTable\.documentType,\s*template\.documentType\)/);
 });

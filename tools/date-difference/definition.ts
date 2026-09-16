@@ -8,14 +8,7 @@ export default {
   // frozen at first insert, so it is declared explicitly.
   slug: "date-difference",
   category: "date-time-tools",
-  keywords: [
-    "date difference",
-    "elapsed",
-    "duration",
-    "days between",
-    "timestamp",
-    "hours",
-  ],
+  keywords: ["date difference", "elapsed", "duration", "days between", "timestamp", "hours"],
   name: "Date Difference Calculator",
   description: "Calculate elapsed time between two dates.",
   layout: "stacked",

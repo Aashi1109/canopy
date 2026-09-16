@@ -4,15 +4,7 @@ export default {
   toolId: "devtools.json-array-to-table",
   app: "devtools",
   category: "json-tools",
-  keywords: [
-    "json",
-    "array",
-    "table",
-    "html",
-    "flatten",
-    "objects",
-    "grid",
-  ],
+  keywords: ["json", "array", "table", "html", "flatten", "objects", "grid"],
   name: "JSON Array to Table",
   description: "Render an array of JSON objects as an HTML table.",
   input: {
@@ -73,7 +65,7 @@ export default {
     faq: [
       {
         q: "Why are my columns named with dots?",
-        a: "Nested objects are flattened. {\"address\":{\"city\":\"Lisbon\"}} becomes a column called address.city.",
+        a: 'Nested objects are flattened. {"address":{"city":"Lisbon"}} becomes a column called address.city.',
       },
       {
         q: "Is the output safe to inject into a page?",
@@ -83,7 +75,7 @@ export default {
     examples: [
       {
         label: "List of records",
-        text: "[{\"name\":\"Ada\",\"role\":\"Admin\"},{\"name\":\"Lin\",\"role\":\"Editor\"}]",
+        text: '[{"name":"Ada","role":"Admin"},{"name":"Lin","role":"Editor"}]',
       },
     ],
   },

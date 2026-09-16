@@ -23,25 +23,19 @@ export class PaperworkToolAccessError extends Error {
   }
 }
 
-export async function requireAvailablePaperworkTool(
-  slug: string,
-): Promise<void> {
+export async function requireAvailablePaperworkTool(slug: string): Promise<void> {
   if (!(await getAvailableToolBySlug("paperwork", slug, await getToolManifest()))) {
     throw new PaperworkToolAccessError(404);
   }
 }
 
-export async function requireAvailableToolForStorageKey(
-  key: string,
-): Promise<void> {
+export async function requireAvailableToolForStorageKey(key: string): Promise<void> {
   const slug = STORAGE_TOOL_SLUGS[key];
   if (!slug) throw new PaperworkToolAccessError(400);
   await requireAvailablePaperworkTool(slug);
 }
 
-export async function requireAnyAvailablePaperworkTool(
-  slugs: readonly string[],
-): Promise<void> {
+export async function requireAnyAvailablePaperworkTool(slugs: readonly string[]): Promise<void> {
   const manifest = await getToolManifest();
   const tools = await Promise.all(
     slugs.map((slug) => getAvailableToolBySlug("paperwork", slug, manifest)),

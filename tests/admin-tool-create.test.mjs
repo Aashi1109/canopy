@@ -14,9 +14,7 @@ import { TOOL_CATEGORIES } from "../lib/tool-framework/categories.ts";
 
 const APP = "devtools";
 // Resolved from the registry: no category or tool is named here.
-const CATEGORY = Object.keys(TOOL_CATEGORIES).find(
-  (key) => TOOL_CATEGORIES[key].app === APP,
-);
+const CATEGORY = Object.keys(TOOL_CATEGORIES).find((key) => TOOL_CATEGORIES[key].app === APP);
 const OTHER_APP_CATEGORY = Object.keys(TOOL_CATEGORIES).find(
   (key) => TOOL_CATEGORIES[key].app !== APP,
 );
@@ -61,10 +59,7 @@ function createFakeTransaction(selectResults) {
       for: () => chain,
       then: (resolve, reject) =>
         result === undefined
-          ? Promise.reject(new Error("Unexpected database read")).then(
-              resolve,
-              reject,
-            )
+          ? Promise.reject(new Error("Unexpected database read")).then(resolve, reject)
           : Promise.resolve(result).then(resolve, reject),
     };
     return chain;
@@ -155,26 +150,20 @@ function siblings(...rows) {
 // -- authorization ----------------------------------------------------------
 
 test("creating a tool requires tools.edit and writes nothing without it", async () => {
-  await withFakeDatabase(
-    [permissionRows(accessWithout("tools", "edit"))],
-    async (state) => {
-      await assert.rejects(
-        () => createManagedTool("actor", DRAFT),
-        /Missing permission: tools\.edit/,
-      );
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
-    },
-  );
+  await withFakeDatabase([permissionRows(accessWithout("tools", "edit"))], async (state) => {
+    await assert.rejects(
+      () => createManagedTool("actor", DRAFT),
+      /Missing permission: tools\.edit/,
+    );
+    assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+  });
 });
 
 // -- identity ---------------------------------------------------------------
 
 test("a tool id that already exists is rejected", async () => {
   await withFakeDatabase(
-    [
-      EDITOR,
-      siblings({ toolId: `${APP}.${KEY}`, slug: "something-else", order: 0 }),
-    ],
+    [EDITOR, siblings({ toolId: `${APP}.${KEY}`, slug: "something-else", order: 0 })],
     async (state) => {
       await assert.rejects(
         () => createManagedTool("actor", DRAFT),
@@ -223,10 +212,7 @@ test("a slug already used by the same app is rejected", async () => {
   await withFakeDatabase(
     [EDITOR, siblings({ toolId: `${APP}.other`, slug: "aardvark-widget", order: 0 })],
     async (state) => {
-      await assert.rejects(
-        () => createManagedTool("actor", DRAFT),
-        /already in use/,
-      );
+      await assert.rejects(() => createManagedTool("actor", DRAFT), /already in use/);
       assert.deepEqual(state.inserts, []);
     },
   );
@@ -343,9 +329,6 @@ test("name and description are required and stored trimmed", async () => {
       description: "  Does an aardvark-shaped thing.  ",
     });
     assert.equal(toolWrite(state).values.name, "Aardvark Widget");
-    assert.equal(
-      toolWrite(state).values.description,
-      "Does an aardvark-shaped thing.",
-    );
+    assert.equal(toolWrite(state).values.description, "Does an aardvark-shaped thing.");
   });
 });

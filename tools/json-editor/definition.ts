@@ -58,7 +58,7 @@ export default {
     faq: [
       {
         q: "What is the difference between the two auto-fix modes?",
-        a: "\"Remove broken parts\" drops the unrecoverable key or element entirely; \"Set broken values to null\" keeps the key and gives it a null value. Use the second when downstream code expects the key to exist.",
+        a: '"Remove broken parts" drops the unrecoverable key or element entirely; "Set broken values to null" keeps the key and gives it a null value. Use the second when downstream code expects the key to exist.',
       },
       {
         q: "How do I check whether my JSON is actually valid?",

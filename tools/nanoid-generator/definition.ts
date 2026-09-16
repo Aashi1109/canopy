@@ -8,15 +8,7 @@ export default {
   // first insert, so it is declared explicitly here.
   slug: "nanoid-generator",
   category: "hashing-crypto",
-  keywords: [
-    "nanoid",
-    "id",
-    "identifier",
-    "random",
-    "url safe",
-    "uuid alternative",
-    "primary key",
-  ],
+  keywords: ["nanoid", "id", "identifier", "random", "url safe", "uuid alternative", "primary key"],
   name: "Nano ID Generator",
   description: "Generate URL-safe random identifiers.",
   // A pure generator: the output depends only on the settings and the secure

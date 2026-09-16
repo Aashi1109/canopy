@@ -4,22 +4,13 @@ export default {
   toolId: "devtools.json-to-csv",
   app: "devtools",
   category: "json-tools",
-  keywords: [
-    "json",
-    "csv",
-    "convert",
-    "spreadsheet",
-    "flatten",
-    "delimiter",
-    "tabular data",
-  ],
+  keywords: ["json", "csv", "convert", "spreadsheet", "flatten", "delimiter", "tabular data"],
   name: "JSON to CSV",
   description: "Convert JSON object records to spreadsheet-ready CSV.",
   input: {
     kind: "text",
     label: "JSON input",
-    placeholder:
-      '[{"name":"Maya","role":"Engineer"},{"name":"Noah","role":"Designer"}]',
+    placeholder: '[{"name":"Maya","role":"Engineer"},{"name":"Noah","role":"Designer"}]',
     maxLength: 2_000_000,
   },
   settings: {
@@ -77,7 +68,7 @@ export default {
       },
       {
         q: "What does auto-fix repair?",
-        a: "It only handles object properties whose value is missing, such as {\"name\":}. Other invalid JSON is rejected.",
+        a: 'It only handles object properties whose value is missing, such as {"name":}. Other invalid JSON is rejected.',
       },
       {
         q: "Is the JSON uploaded?",

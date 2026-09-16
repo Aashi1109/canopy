@@ -19,23 +19,23 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const now = Date.now() / 1000;
   const expiration = typeof payload.exp === "number" ? payload.exp : undefined;
   const notBefore = typeof payload.nbf === "number" ? payload.nbf : undefined;
-  const formatDate = (seconds: number) => ctx.settings.useLocalTime === true
-    ? new Date(seconds * 1000).toLocaleString()
-    : new Date(seconds * 1000).toISOString();
-  const state = expiration === undefined
-    ? "No expiration claim"
-    : expiration <= now
-      ? "Expired"
-      : notBefore !== undefined && notBefore > now
-        ? "Not active yet"
-        : ctx.settings.warnBeforeExpiry === true && expiration <= now + 300
-          ? "Expiring soon"
-          : "Active";
+  const formatDate = (seconds: number) =>
+    ctx.settings.useLocalTime === true
+      ? new Date(seconds * 1000).toLocaleString()
+      : new Date(seconds * 1000).toISOString();
+  const state =
+    expiration === undefined
+      ? "No expiration claim"
+      : expiration <= now
+        ? "Expired"
+        : notBefore !== undefined && notBefore > now
+          ? "Not active yet"
+          : ctx.settings.warnBeforeExpiry === true && expiration <= now + 300
+            ? "Expiring soon"
+            : "Active";
   const lines = [
     `Status: ${state}`,
-    expiration === undefined
-      ? "Expires: not specified"
-      : `Expires: ${formatDate(expiration)}`,
+    expiration === undefined ? "Expires: not specified" : `Expires: ${formatDate(expiration)}`,
     typeof payload.iat === "number"
       ? `Issued: ${formatDate(payload.iat)}`
       : "Issued: not specified",

@@ -4,15 +4,7 @@ export default {
   toolId: "devtools.json-to-typescript",
   app: "devtools",
   category: "json-tools",
-  keywords: [
-    "json",
-    "typescript",
-    "interface",
-    "types",
-    "codegen",
-    "schema",
-    "dto",
-  ],
+  keywords: ["json", "typescript", "interface", "types", "codegen", "schema", "dto"],
   name: "JSON to TypeScript",
   description: "Generate TypeScript interfaces from sample JSON.",
   input: {

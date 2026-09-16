@@ -3,11 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type {
-  InvoiceTemplate,
-  LayoutFamily,
-  TemplateCategory,
-} from "./templateTypes.ts";
+import type { InvoiceTemplate, LayoutFamily, TemplateCategory } from "./templateTypes.ts";
 import { getDefaultTemplateConfigByFamily } from "./templateDefaults.ts";
 
 const makeBaseConfig = (
@@ -19,7 +15,7 @@ const makeBaseConfig = (
   isDefault = false,
 ): InvoiceTemplate => {
   const baseConfig = getDefaultTemplateConfigByFamily(layoutFamily);
-  
+
   return {
     id,
     name,
@@ -42,8 +38,16 @@ const makeBaseConfig = (
 export const seedTemplates: InvoiceTemplate[] = [
   // 1. Classic Professional (Default)
   {
-    ...makeBaseConfig("tpl_classic_prof", "Classic Professional", "classic-professional", "classic", "classic", true),
-    description: "Standard formal corporate layout with a safe, traditional grid. Ideal for law firms, consultants, and contractors.",
+    ...makeBaseConfig(
+      "tpl_classic_prof",
+      "Classic Professional",
+      "classic-professional",
+      "classic",
+      "classic",
+      true,
+    ),
+    description:
+      "Standard formal corporate layout with a safe, traditional grid. Ideal for law firms, consultants, and contractors.",
     config: {
       ...getDefaultTemplateConfigByFamily("classic"),
       theme: {
@@ -85,7 +89,8 @@ export const seedTemplates: InvoiceTemplate[] = [
   // 2. Modern Clean
   {
     ...makeBaseConfig("tpl_modern_clean", "Modern Clean", "modern-clean", "modern", "modern"),
-    description: "A clean, spacious layout using elegant typography and airy spacing. Perfect for software engineers and digital design studios.",
+    description:
+      "A clean, spacious layout using elegant typography and airy spacing. Perfect for software engineers and digital design studios.",
     config: {
       ...getDefaultTemplateConfigByFamily("modern"),
       theme: {
@@ -137,8 +142,15 @@ export const seedTemplates: InvoiceTemplate[] = [
 
   // 3. Compact Service Invoice
   {
-    ...makeBaseConfig("tpl_compact_service", "Compact Service Invoice", "compact-service", "service", "compact"),
-    description: "Density-optimized structural grid designed to pack many rows of fields. Great for handymen, field agents, auto repairs, and cleaning services.",
+    ...makeBaseConfig(
+      "tpl_compact_service",
+      "Compact Service Invoice",
+      "compact-service",
+      "service",
+      "compact",
+    ),
+    description:
+      "Density-optimized structural grid designed to pack many rows of fields. Great for handymen, field agents, auto repairs, and cleaning services.",
     config: {
       ...getDefaultTemplateConfigByFamily("compact"),
       theme: {
@@ -185,7 +197,8 @@ export const seedTemplates: InvoiceTemplate[] = [
   // 4. Bold Agency
   {
     ...makeBaseConfig("tpl_bold_agency", "Bold Agency", "bold-agency", "creative", "bold"),
-    description: "Highly colorful, premium grid with high visual confidence. Designed specifically for advertising, creative consulting, and brand strategy agencies.",
+    description:
+      "Highly colorful, premium grid with high visual confidence. Designed specifically for advertising, creative consulting, and brand strategy agencies.",
     config: {
       ...getDefaultTemplateConfigByFamily("bold"),
       theme: {
@@ -237,8 +250,15 @@ export const seedTemplates: InvoiceTemplate[] = [
 
   // 5. Minimal Freelancer
   {
-    ...makeBaseConfig("tpl_minimal_free", "Minimal Freelancer", "minimal-freelancer", "simple", "minimal"),
-    description: "Ultra elegant, sparse, layout with low ink usage and high white-space contrast. Fits copywriters, independent developers, and content writers.",
+    ...makeBaseConfig(
+      "tpl_minimal_free",
+      "Minimal Freelancer",
+      "minimal-freelancer",
+      "simple",
+      "minimal",
+    ),
+    description:
+      "Ultra elegant, sparse, layout with low ink usage and high white-space contrast. Fits copywriters, independent developers, and content writers.",
     config: {
       ...getDefaultTemplateConfigByFamily("minimal"),
       theme: {
@@ -290,8 +310,15 @@ export const seedTemplates: InvoiceTemplate[] = [
 
   // 6. Detailed Contractor
   {
-    ...makeBaseConfig("tpl_detailed_contract", "Detailed Contractor", "detailed-contract", "professional", "service"),
-    description: "Includes visible placeholders for Purchase Orders, project milestones, complex terms, and detailed payment accounts.",
+    ...makeBaseConfig(
+      "tpl_detailed_contract",
+      "Detailed Contractor",
+      "detailed-contract",
+      "professional",
+      "service",
+    ),
+    description:
+      "Includes visible placeholders for Purchase Orders, project milestones, complex terms, and detailed payment accounts.",
     config: {
       ...getDefaultTemplateConfigByFamily("service"),
       theme: {

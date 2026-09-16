@@ -16,10 +16,7 @@ import { requireUtilityInput } from "../../lib/devtools/shared/options.ts";
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
-  const input = requireUtilityInput(
-    ctx.input.text,
-    "Authorization header or token",
-  ).trim();
+  const input = requireUtilityInput(ctx.input.text, "Authorization header or token").trim();
   const inputFormat = ctx.settings.inputFormat ?? "auto";
   if (inputFormat === "header" && !/^Bearer\s+/i.test(input)) {
     throw new ToolError(
@@ -28,8 +25,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "Paste the whole Authorization header or choose Raw token.",
     );
   }
-  const token =
-    inputFormat === "raw" ? input : input.replace(/^Bearer\s+/i, "");
+  const token = inputFormat === "raw" ? input : input.replace(/^Bearer\s+/i, "");
   if (!token) {
     throw new ToolError(
       "token-required",
@@ -37,8 +33,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "Paste the token itself, not just the Bearer prefix.",
     );
   }
-  const displayedToken =
-    ctx.settings.maskRawToken === true ? "••••••••" : token;
+  const displayedToken = ctx.settings.maskRawToken === true ? "••••••••" : token;
   if ((ctx.settings.decodeJwtParts ?? true) && token.split(".").length === 3) {
     const decoded = decodeJwt(token);
     const value = {

@@ -1,7 +1,4 @@
-import {
-  LARGE_TEXT_PREVIEW_BYTES,
-  MAX_EDITABLE_TEXT_CHARS,
-} from "./limits.ts";
+import { LARGE_TEXT_PREVIEW_BYTES, MAX_EDITABLE_TEXT_CHARS } from "./limits.ts";
 
 export type TextFileReadResult = {
   readonly large: boolean;
@@ -18,20 +15,14 @@ export async function readTextFileForEditor(
 ): Promise<TextFileReadResult> {
   const maxEditableBytes = Math.max(
     0,
-    Math.min(
-      options.maxEditableBytes ?? MAX_EDITABLE_TEXT_CHARS,
-      MAX_EDITABLE_TEXT_CHARS,
-    ),
+    Math.min(options.maxEditableBytes ?? MAX_EDITABLE_TEXT_CHARS, MAX_EDITABLE_TEXT_CHARS),
   );
   const large = file.size > maxEditableBytes;
   if (!large) {
     const text = await file.text();
     return {
       large: false,
-      text:
-        options.maxLength === undefined
-          ? text
-          : text.slice(0, Math.max(0, options.maxLength)),
+      text: options.maxLength === undefined ? text : text.slice(0, Math.max(0, options.maxLength)),
     };
   }
 
@@ -46,9 +37,7 @@ export async function readTextFileForEditor(
 }
 
 async function readUtf8Prefix(file: File, limit: number): Promise<string> {
-  const bytes = new Uint8Array(
-    await file.slice(0, Math.min(file.size, limit)).arrayBuffer(),
-  );
+  const bytes = new Uint8Array(await file.slice(0, Math.min(file.size, limit)).arrayBuffer());
   const end = Math.min(limit, bytes.byteLength);
   const decoder = new TextDecoder("utf-8", { fatal: true });
   for (let length = end; length >= Math.max(0, end - 3); length -= 1) {

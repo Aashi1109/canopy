@@ -55,8 +55,10 @@ export function resolveTemplateStyles(config: InvoiceTemplateConfig): StyleResol
       color: theme.textColor,
       borderColor: theme.borderColor,
       fontFamily: customFontFamily || undefined,
-      lineHeight: typography.lineHeight === "tight" ? 1.25 : typography.lineHeight === "relaxed" ? 1.75 : 1.5,
-      fontSize: typography.bodySize === "xs" ? "12px" : typography.bodySize === "md" ? "15px" : "14px",
+      lineHeight:
+        typography.lineHeight === "tight" ? 1.25 : typography.lineHeight === "relaxed" ? 1.75 : 1.5,
+      fontSize:
+        typography.bodySize === "xs" ? "12px" : typography.bodySize === "md" ? "15px" : "14px",
     },
     primaryColorText: {
       color: theme.primaryColor,
@@ -67,7 +69,7 @@ export function resolveTemplateStyles(config: InvoiceTemplateConfig): StyleResol
     primaryBorder: {
       borderColor: theme.primaryColor,
     },
-    tableHeaderBg: config.lineItemsTable.headerBackground 
+    tableHeaderBg: config.lineItemsTable.headerBackground
       ? { backgroundColor: theme.primaryColor, color: theme.surfaceColor }
       : { backgroundColor: theme.backgroundColor, color: theme.textColor },
     accentBg: {

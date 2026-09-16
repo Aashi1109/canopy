@@ -8,7 +8,12 @@ import {
   Muted,
   P,
   Strong,
-  Text, AlertBanner, Button, Field, Textarea } from "@smarttools/ui";
+  Text,
+  AlertBanner,
+  Button,
+  Field,
+  Textarea,
+} from "@smarttools/ui";
 import { CheckCircle2, FileJson2, UploadCloud, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { importTemplateAction } from "../../../actions";
@@ -24,7 +29,10 @@ export default function ImportTemplateForm() {
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
         return { valid: false, message: "The JSON root must be a template object." };
       }
-      return { valid: true, message: "Valid JSON structure. Server-side schema validation runs during import." };
+      return {
+        valid: true,
+        message: "Valid JSON structure. Server-side schema validation runs during import.",
+      };
     } catch (error) {
       return {
         valid: false,
@@ -61,9 +69,7 @@ export default function ImportTemplateForm() {
             <span className="mx-auto grid size-14 place-items-center rounded-xl bg-primary/10 text-primary">
               <UploadCloud aria-hidden="true" className="size-7" />
             </span>
-            <Strong className="mt-4 block text-foreground">
-              Drop a template file here
-            </Strong>
+            <Strong className="mt-4 block text-foreground">Drop a template file here</Strong>
             <Text className="mt-2 block text-muted-foreground">
               or choose a JSON file from your computer
             </Text>
@@ -88,7 +94,9 @@ export default function ImportTemplateForm() {
             <div className="min-w-0 flex-1">
               <P className="truncate text-foreground">{fileName}</P>
               <Caption className="block mt-0.5 text-muted-foreground">
-                {source ? `${source.length.toLocaleString()} characters loaded` : "Choose a .json file"}
+                {source
+                  ? `${source.length.toLocaleString()} characters loaded`
+                  : "Choose a .json file"}
               </Caption>
             </div>
             <Button
@@ -108,21 +116,27 @@ export default function ImportTemplateForm() {
         ) : null}
 
         <AlertBanner title="Imports never overwrite existing templates" variant="info">
-          If the slug already exists, the import is rejected so the existing template stays unchanged.
+          If the slug already exists, the import is rejected so the existing template stays
+          unchanged.
         </AlertBanner>
       </div>
 
-      <section className="grid content-start gap-5 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6" aria-labelledby="import-review-title">
+      <section
+        className="grid content-start gap-5 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6"
+        aria-labelledby="import-review-title"
+      >
         <div>
           <H3 id="import-review-title" className="text-foreground">
             Review before import
           </H3>
           <Muted className="mt-2 text-muted-foreground">
-            Imported templates always start as drafts. Paste JSON directly or load a file to validate it locally.
+            Imported templates always start as drafts. Paste JSON directly or load a file to
+            validate it locally.
           </Muted>
         </div>
         <Field htmlFor="import-template-json" label="Template JSON" required>
-          <Textarea code
+          <Textarea
+            code
             className="min-h-72"
             maxLength={5_000_000}
             name="template"
@@ -141,15 +155,15 @@ export default function ImportTemplateForm() {
             {validation.message}
           </AlertBanner>
         ) : (
-          <div className="rounded-lg bg-muted p-4 text-muted-foreground"><Text>
-            Add template JSON to see validation status.
-          </Text></div>
+          <div className="rounded-lg bg-muted p-4 text-muted-foreground">
+            <Text>Add template JSON to see validation status.</Text>
+          </div>
         )}
         <div className="rounded-lg bg-muted p-4">
           <div className="flex items-center gap-2 text-foreground">
-            <CheckCircle2 aria-hidden="true" className="size-4 text-success" /><Text>
-            Imported as a draft
-          </Text></div>
+            <CheckCircle2 aria-hidden="true" className="size-4 text-success" />
+            <Text>Imported as a draft</Text>
+          </div>
           <Caption className="block mt-1.5 text-muted-foreground">
             Nothing becomes available in Paperwork until you review and publish it.
           </Caption>

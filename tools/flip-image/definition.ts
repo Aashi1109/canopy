@@ -4,15 +4,7 @@ export default {
   toolId: "media.flip-image",
   app: "media",
   category: "image-editing",
-  keywords: [
-    "flip",
-    "image",
-    "mirror",
-    "horizontal",
-    "vertical",
-    "reverse",
-    "batch",
-  ],
+  keywords: ["flip", "image", "mirror", "horizontal", "vertical", "reverse", "batch"],
   name: "Flip Image",
   description: "Flip images horizontally or vertically.",
   optionsPanel: { collapsible: false },
@@ -21,7 +13,8 @@ export default {
     label: "Add images to flip",
     dropzoneDescription:
       "JPG, JPEG, PNG, WebP, HEIC, and HEIF · up to 50 files · 25 MB each · processed on this device",
-    accept: "image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif",
+    accept:
+      "image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif",
     multiple: true,
     engine: "image",
     maxFiles: 50,

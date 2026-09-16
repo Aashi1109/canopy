@@ -9,7 +9,7 @@ const requestKey = Symbol.for("smarttools.database.request");
 const runtime = globalThis as typeof globalThis & {
   [requestKey]?: AsyncLocalStorage<DatabaseRequest>;
 };
-const requests = runtime[requestKey] ??= new AsyncLocalStorage<DatabaseRequest>();
+const requests = (runtime[requestKey] ??= new AsyncLocalStorage<DatabaseRequest>());
 let nodeClient: SqlClient | undefined;
 
 function getSqlClient(): SqlClient {

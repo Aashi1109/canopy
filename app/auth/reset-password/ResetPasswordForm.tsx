@@ -7,17 +7,17 @@ import {
   Muted,
   Overline,
   P,
-  TextLink, AlertBanner, Button, Card, Field, Input } from "@smarttools/ui";
+  TextLink,
+  AlertBanner,
+  Button,
+  Card,
+  Field,
+  Input,
+} from "@smarttools/ui";
 import { authClient } from "../_lib/authClient";
 import { getSafeAuthError, isValidPassword } from "../_lib/security";
 
-export function ResetPasswordForm({
-  token,
-  returnTo,
-}: {
-  token?: string;
-  returnTo: string;
-}) {
+export function ResetPasswordForm({ token, returnTo }: { token?: string; returnTo: string }) {
   const [pending, setPending] = useState(false);
   const [complete, setComplete] = useState(false);
   const [error, setError] = useState<string>();
@@ -54,12 +54,8 @@ export function ResetPasswordForm({
   if (!token) {
     return (
       <Card className="auth-card w-full max-w-[440px] gap-[18px]">
-        <Overline className="block text-primary">
-          Invalid link
-        </Overline>
-        <H1 >
-          Request a new reset email.
-        </H1>
+        <Overline className="block text-primary">Invalid link</Overline>
+        <H1>Request a new reset email.</H1>
         <Muted className="text-muted-foreground">
           This reset link is missing, invalid, or has expired.
         </Muted>
@@ -73,19 +69,13 @@ export function ResetPasswordForm({
   if (complete) {
     return (
       <Card className="auth-card w-full max-w-[440px] gap-[18px]">
-        <Overline className="block text-success">
-          Password updated
-        </Overline>
-        <H1 >
-          Your new password is ready.
-        </H1>
+        <Overline className="block text-success">Password updated</Overline>
+        <H1>Your new password is ready.</H1>
         <Muted className="text-muted-foreground">
           Sign in again. Other sessions were revoked when the reset completed.
         </Muted>
         <Button asChild className="w-full">
-          <a href={`/auth?returnTo=${encodeURIComponent(returnTo)}`}>
-            Continue to sign in
-          </a>
+          <a href={`/auth?returnTo=${encodeURIComponent(returnTo)}`}>Continue to sign in</a>
         </Button>
       </Card>
     );
@@ -115,11 +105,7 @@ export function ResetPasswordForm({
             type="password"
           />
         </Field>
-        <Field
-          htmlFor="confirm-new-password"
-          label="Confirm new password"
-          variant="auth"
-        >
+        <Field htmlFor="confirm-new-password" label="Confirm new password" variant="auth">
           <Input
             autoComplete="new-password"
             id="confirm-new-password"

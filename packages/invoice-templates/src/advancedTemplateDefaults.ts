@@ -10,10 +10,7 @@ import type {
   PdfmeBlankBase,
   PdfmeSchema,
 } from "./templateTypes.ts";
-import {
-  getDocumentDefinition,
-  isPageFormatAllowed,
-} from "./documentDefinitions.ts";
+import { getDocumentDefinition, isPageFormatAllowed } from "./documentDefinitions.ts";
 
 type PageSpec = PdfmeBlankBase;
 
@@ -90,20 +87,11 @@ function withPdfmeDefaults(schema: PdfmeSchema): PdfmeSchema {
   return schema;
 }
 
-export function isSupportedPageFormat(
-  documentType: DocumentType,
-  pageFormat: PageFormat,
-): boolean {
-  return Boolean(PAGE_SPECS[pageFormat]) &&
-    isPageFormatAllowed(documentType, pageFormat);
+export function isSupportedPageFormat(documentType: DocumentType, pageFormat: PageFormat): boolean {
+  return Boolean(PAGE_SPECS[pageFormat]) && isPageFormatAllowed(documentType, pageFormat);
 }
 
-function scaleEdges(
-  value: unknown,
-  scaleX: number,
-  scaleY: number,
-  scale: number,
-) {
+function scaleEdges(value: unknown, scaleX: number, scaleY: number, scale: number) {
   if (typeof value === "number") return value * scale;
   if (!value || typeof value !== "object" || Array.isArray(value)) return value;
   return Object.fromEntries(
@@ -116,11 +104,7 @@ function scaleEdges(
   );
 }
 
-function scaleSchema(
-  schema: PdfmeSchema,
-  scaleX: number,
-  scaleY: number,
-): PdfmeSchema {
+function scaleSchema(schema: PdfmeSchema, scaleX: number, scaleY: number): PdfmeSchema {
   const scale = Math.min(scaleX, scaleY);
   const next = structuredClone(schema);
   next.position = {
@@ -136,9 +120,7 @@ function scaleSchema(
     }
     if (
       typeof value === "number" &&
-      (key === "fontSize" ||
-        key === "characterSpacing" ||
-        key === "borderRadius")
+      (key === "fontSize" || key === "characterSpacing" || key === "borderRadius")
     ) {
       return value * scale;
     }
@@ -167,9 +149,7 @@ export function resizeAdvancedTemplateConfig(
 ): AdvancedTemplateConfig {
   const pageSpec = PAGE_SPECS[pageFormat];
   if (!pageSpec || !isSupportedPageFormat(documentType, pageFormat)) {
-    throw new RangeError(
-      `${pageFormat} is not supported for ${documentType} templates.`,
-    );
+    throw new RangeError(`${pageFormat} is not supported for ${documentType} templates.`);
   }
 
   const currentBase = config.template.basePdf;
@@ -200,14 +180,9 @@ export function resizeAdvancedTemplateConfig(
   return resized;
 }
 
-function definitionSampleData(
-  documentType: DocumentType,
-): Record<string, string> {
+function definitionSampleData(documentType: DocumentType): Record<string, string> {
   return Object.fromEntries(
-    getDocumentDefinition(documentType).fields.map((field) => [
-      field.key,
-      field.sampleValue,
-    ]),
+    getDocumentDefinition(documentType).fields.map((field) => [field.key, field.sampleValue]),
   );
 }
 
@@ -247,167 +222,169 @@ function invoiceDefaults(
     pageFormat,
     template: {
       basePdf,
-      schemas: [[
-        {
-          name: "businessName",
-          type: "text",
-          content: sampleData.businessName,
-          position: { x, y: 15 },
-          width: width * 0.58,
-          height: 10,
-          fontSize: 20,
-          fontColor: "#111827",
-        },
-        {
-          name: "businessAddress",
-          type: "text",
-          content: sampleData.businessAddress,
-          position: { x, y: 27 },
-          width: width * 0.58,
-          height: 12,
-          fontSize: 9,
-          fontColor: "#64748B",
-        },
-        {
-          name: "documentTitle",
-          type: "text",
-          content: sampleData.documentTitle,
-          position: { x: x + width * 0.68, y: 15 },
-          width: width * 0.32,
-          height: 10,
-          fontSize: 18,
-          fontColor: "#2563EB",
-          alignment: "right",
-        },
-        {
-          name: "invoiceNumber",
-          type: "text",
-          content: sampleData.documentNumber,
-          position: { x: x + width * 0.68, y: 28 },
-          width: width * 0.32,
-          height: 6,
-          fontSize: 9,
-          fontColor: "#334155",
-          alignment: "right",
-        },
-        {
-          name: "issueDate",
-          type: "text",
-          content: sampleData.issueDate,
-          position: { x: x + width * 0.68, y: 35 },
-          width: width * 0.32,
-          height: 6,
-          fontSize: 9,
-          fontColor: "#334155",
-          alignment: "right",
-        },
-        {
-          name: "dueDate",
-          type: "text",
-          content: `Due ${sampleData.dueDate}`,
-          position: { x: x + width * 0.68, y: 42 },
-          width: width * 0.32,
-          height: 6,
-          fontSize: 9,
-          fontColor: "#334155",
-          alignment: "right",
-        },
-        {
-          name: "customerLabel",
-          type: "text",
-          content: sampleData.customerLabel,
-          position: { x, y: 55 },
-          width: width * 0.45,
-          height: 6,
-          fontSize: 8,
-          fontColor: "#2563EB",
-        },
-        {
-          name: "customerName",
-          type: "text",
-          content: sampleData.customerName,
-          position: { x, y: 63 },
-          width: width * 0.45,
-          height: 7,
-          fontSize: 11,
-          fontColor: "#111827",
-        },
-        {
-          name: "customerAddress",
-          type: "text",
-          content: sampleData.customerAddress,
-          position: { x, y: 71 },
-          width: width * 0.45,
-          height: 18,
-          fontSize: 9,
-          fontColor: "#475569",
-        },
-        {
-          name: "lineItems",
-          type: "table",
-          content: sampleData.lineItems,
-          position: { x, y: 98 },
-          width,
-          height: 58,
-          showHead: true,
-          head: ["Description", "Qty", "Rate", "Amount"],
-          headWidthPercentages: [52, 10, 18, 20],
-        },
-        {
-          name: "subtotal",
-          type: "text",
-          content: `Subtotal  ${sampleData.subtotal}`,
-          position: { x: x + width * 0.62, y: 166 },
-          width: width * 0.38,
-          height: 7,
-          fontSize: 9,
-          fontColor: "#334155",
-          alignment: "right",
-        },
-        {
-          name: "tax",
-          type: "text",
-          content: `Tax  ${sampleData.tax}`,
-          position: { x: x + width * 0.62, y: 175 },
-          width: width * 0.38,
-          height: 7,
-          fontSize: 9,
-          fontColor: "#334155",
-          alignment: "right",
-        },
-        {
-          name: "total",
-          type: "text",
-          content: `Total  ${sampleData.total}`,
-          position: { x: x + width * 0.58, y: 186 },
-          width: width * 0.42,
-          height: 10,
-          fontSize: 14,
-          fontColor: "#2563EB",
-          alignment: "right",
-        },
-        {
-          name: "balanceDue",
-          type: "text",
-          content: `Balance due  ${sampleData.balanceDue}`,
-          position: { x: x + width * 0.58, y: 198 },
-          width: width * 0.42,
-          height: 8,
-          fontSize: 11,
-          fontColor: "#111827",
-          alignment: "right",
-        },
-        {
-          name: "notes",
-          type: "text",
-          content: sampleData.notes,
-          position: { x, y: 218 },
-          width,
-          height: 14,
-          fontSize: 9,
-          fontColor: "#64748B",
-        },
-      ].map(withPdfmeDefaults)],
+      schemas: [
+        [
+          {
+            name: "businessName",
+            type: "text",
+            content: sampleData.businessName,
+            position: { x, y: 15 },
+            width: width * 0.58,
+            height: 10,
+            fontSize: 20,
+            fontColor: "#111827",
+          },
+          {
+            name: "businessAddress",
+            type: "text",
+            content: sampleData.businessAddress,
+            position: { x, y: 27 },
+            width: width * 0.58,
+            height: 12,
+            fontSize: 9,
+            fontColor: "#64748B",
+          },
+          {
+            name: "documentTitle",
+            type: "text",
+            content: sampleData.documentTitle,
+            position: { x: x + width * 0.68, y: 15 },
+            width: width * 0.32,
+            height: 10,
+            fontSize: 18,
+            fontColor: "#2563EB",
+            alignment: "right",
+          },
+          {
+            name: "invoiceNumber",
+            type: "text",
+            content: sampleData.documentNumber,
+            position: { x: x + width * 0.68, y: 28 },
+            width: width * 0.32,
+            height: 6,
+            fontSize: 9,
+            fontColor: "#334155",
+            alignment: "right",
+          },
+          {
+            name: "issueDate",
+            type: "text",
+            content: sampleData.issueDate,
+            position: { x: x + width * 0.68, y: 35 },
+            width: width * 0.32,
+            height: 6,
+            fontSize: 9,
+            fontColor: "#334155",
+            alignment: "right",
+          },
+          {
+            name: "dueDate",
+            type: "text",
+            content: `Due ${sampleData.dueDate}`,
+            position: { x: x + width * 0.68, y: 42 },
+            width: width * 0.32,
+            height: 6,
+            fontSize: 9,
+            fontColor: "#334155",
+            alignment: "right",
+          },
+          {
+            name: "customerLabel",
+            type: "text",
+            content: sampleData.customerLabel,
+            position: { x, y: 55 },
+            width: width * 0.45,
+            height: 6,
+            fontSize: 8,
+            fontColor: "#2563EB",
+          },
+          {
+            name: "customerName",
+            type: "text",
+            content: sampleData.customerName,
+            position: { x, y: 63 },
+            width: width * 0.45,
+            height: 7,
+            fontSize: 11,
+            fontColor: "#111827",
+          },
+          {
+            name: "customerAddress",
+            type: "text",
+            content: sampleData.customerAddress,
+            position: { x, y: 71 },
+            width: width * 0.45,
+            height: 18,
+            fontSize: 9,
+            fontColor: "#475569",
+          },
+          {
+            name: "lineItems",
+            type: "table",
+            content: sampleData.lineItems,
+            position: { x, y: 98 },
+            width,
+            height: 58,
+            showHead: true,
+            head: ["Description", "Qty", "Rate", "Amount"],
+            headWidthPercentages: [52, 10, 18, 20],
+          },
+          {
+            name: "subtotal",
+            type: "text",
+            content: `Subtotal  ${sampleData.subtotal}`,
+            position: { x: x + width * 0.62, y: 166 },
+            width: width * 0.38,
+            height: 7,
+            fontSize: 9,
+            fontColor: "#334155",
+            alignment: "right",
+          },
+          {
+            name: "tax",
+            type: "text",
+            content: `Tax  ${sampleData.tax}`,
+            position: { x: x + width * 0.62, y: 175 },
+            width: width * 0.38,
+            height: 7,
+            fontSize: 9,
+            fontColor: "#334155",
+            alignment: "right",
+          },
+          {
+            name: "total",
+            type: "text",
+            content: `Total  ${sampleData.total}`,
+            position: { x: x + width * 0.58, y: 186 },
+            width: width * 0.42,
+            height: 10,
+            fontSize: 14,
+            fontColor: "#2563EB",
+            alignment: "right",
+          },
+          {
+            name: "balanceDue",
+            type: "text",
+            content: `Balance due  ${sampleData.balanceDue}`,
+            position: { x: x + width * 0.58, y: 198 },
+            width: width * 0.42,
+            height: 8,
+            fontSize: 11,
+            fontColor: "#111827",
+            alignment: "right",
+          },
+          {
+            name: "notes",
+            type: "text",
+            content: sampleData.notes,
+            position: { x, y: 218 },
+            width,
+            height: 14,
+            fontSize: 9,
+            fontColor: "#64748B",
+          },
+        ].map(withPdfmeDefaults),
+      ],
     },
     sampleData,
     form: structuredClone(getDocumentDefinition("invoice").defaultForm),
@@ -448,140 +425,142 @@ function receiptDefaults(
     pageFormat,
     template: {
       basePdf,
-      schemas: [[
-        {
-          name: "businessName",
-          type: "text",
-          content: sampleData.businessName,
-          position: { x, y: 7 },
-          width,
-          height: 8,
-          fontSize: pageFormat === "RECEIPT_58MM" ? 13 : 16,
-          fontColor: "#111827",
-          alignment: "center",
-        },
-        {
-          name: "businessAddress",
-          type: "text",
-          content: sampleData.businessAddress,
-          position: { x, y: 17 },
-          width,
-          height: 12,
-          fontSize: 7,
-          fontColor: "#64748B",
-          alignment: "center",
-        },
-        {
-          name: "documentTitle",
-          type: "text",
-          content: sampleData.documentTitle,
-          position: { x, y: 32 },
-          width,
-          height: 7,
-          fontSize: 9,
-          fontColor: "#111827",
-          alignment: "center",
-        },
-        {
-          name: "receiptNumber",
-          type: "text",
-          content: sampleData.documentNumber,
-          position: { x, y: 41 },
-          width,
-          height: 5,
-          fontSize: 7,
-          fontColor: "#475569",
-          alignment: "center",
-        },
-        {
-          name: "issueDate",
-          type: "text",
-          content: sampleData.issueDate,
-          position: { x, y: 47 },
-          width,
-          height: 5,
-          fontSize: 7,
-          fontColor: "#475569",
-          alignment: "center",
-        },
-        {
-          name: "lineItems",
-          type: "table",
-          content: sampleData.lineItems,
-          position: { x, y: 58 },
-          width,
-          height: 54,
-          showHead: true,
-          head: ["Item", "Qty", "Amount"],
-          headWidthPercentages: [58, 12, 30],
-        },
-        {
-          name: "subtotal",
-          type: "text",
-          content: `Subtotal  ${sampleData.subtotal}`,
-          position: { x, y: 119 },
-          width,
-          height: 6,
-          fontSize: 8,
-          fontColor: "#334155",
-          alignment: "right",
-        },
-        {
-          name: "tax",
-          type: "text",
-          content: `Tax  ${sampleData.tax}`,
-          position: { x, y: 126 },
-          width,
-          height: 6,
-          fontSize: 8,
-          fontColor: "#334155",
-          alignment: "right",
-        },
-        {
-          name: "total",
-          type: "text",
-          content: `TOTAL  ${sampleData.total}`,
-          position: { x, y: 135 },
-          width,
-          height: 8,
-          fontSize: 11,
-          fontColor: "#111827",
-          alignment: "right",
-        },
-        {
-          name: "balanceDue",
-          type: "text",
-          content: `Balance  ${sampleData.balanceDue}`,
-          position: { x, y: 144 },
-          width,
-          height: 6,
-          fontSize: 8,
-          fontColor: "#334155",
-          alignment: "right",
-        },
-        {
-          name: "paymentMethod",
-          type: "text",
-          content: sampleData.paymentMethod,
-          position: { x, y: 153 },
-          width,
-          height: 6,
-          fontSize: 7,
-          fontColor: "#475569",
-          alignment: "center",
-        },
-        {
-          name: "notes",
-          type: "text",
-          content: sampleData.notes,
-          position: { x, y: 166 },
-          width,
-          height: 8,
-          fontSize: 8,
-          fontColor: "#334155",
-          alignment: "center",
-        },
-      ].map(withPdfmeDefaults)],
+      schemas: [
+        [
+          {
+            name: "businessName",
+            type: "text",
+            content: sampleData.businessName,
+            position: { x, y: 7 },
+            width,
+            height: 8,
+            fontSize: pageFormat === "RECEIPT_58MM" ? 13 : 16,
+            fontColor: "#111827",
+            alignment: "center",
+          },
+          {
+            name: "businessAddress",
+            type: "text",
+            content: sampleData.businessAddress,
+            position: { x, y: 17 },
+            width,
+            height: 12,
+            fontSize: 7,
+            fontColor: "#64748B",
+            alignment: "center",
+          },
+          {
+            name: "documentTitle",
+            type: "text",
+            content: sampleData.documentTitle,
+            position: { x, y: 32 },
+            width,
+            height: 7,
+            fontSize: 9,
+            fontColor: "#111827",
+            alignment: "center",
+          },
+          {
+            name: "receiptNumber",
+            type: "text",
+            content: sampleData.documentNumber,
+            position: { x, y: 41 },
+            width,
+            height: 5,
+            fontSize: 7,
+            fontColor: "#475569",
+            alignment: "center",
+          },
+          {
+            name: "issueDate",
+            type: "text",
+            content: sampleData.issueDate,
+            position: { x, y: 47 },
+            width,
+            height: 5,
+            fontSize: 7,
+            fontColor: "#475569",
+            alignment: "center",
+          },
+          {
+            name: "lineItems",
+            type: "table",
+            content: sampleData.lineItems,
+            position: { x, y: 58 },
+            width,
+            height: 54,
+            showHead: true,
+            head: ["Item", "Qty", "Amount"],
+            headWidthPercentages: [58, 12, 30],
+          },
+          {
+            name: "subtotal",
+            type: "text",
+            content: `Subtotal  ${sampleData.subtotal}`,
+            position: { x, y: 119 },
+            width,
+            height: 6,
+            fontSize: 8,
+            fontColor: "#334155",
+            alignment: "right",
+          },
+          {
+            name: "tax",
+            type: "text",
+            content: `Tax  ${sampleData.tax}`,
+            position: { x, y: 126 },
+            width,
+            height: 6,
+            fontSize: 8,
+            fontColor: "#334155",
+            alignment: "right",
+          },
+          {
+            name: "total",
+            type: "text",
+            content: `TOTAL  ${sampleData.total}`,
+            position: { x, y: 135 },
+            width,
+            height: 8,
+            fontSize: 11,
+            fontColor: "#111827",
+            alignment: "right",
+          },
+          {
+            name: "balanceDue",
+            type: "text",
+            content: `Balance  ${sampleData.balanceDue}`,
+            position: { x, y: 144 },
+            width,
+            height: 6,
+            fontSize: 8,
+            fontColor: "#334155",
+            alignment: "right",
+          },
+          {
+            name: "paymentMethod",
+            type: "text",
+            content: sampleData.paymentMethod,
+            position: { x, y: 153 },
+            width,
+            height: 6,
+            fontSize: 7,
+            fontColor: "#475569",
+            alignment: "center",
+          },
+          {
+            name: "notes",
+            type: "text",
+            content: sampleData.notes,
+            position: { x, y: 166 },
+            width,
+            height: 8,
+            fontSize: 8,
+            fontColor: "#334155",
+            alignment: "center",
+          },
+        ].map(withPdfmeDefaults),
+      ],
     },
     sampleData,
     form: structuredClone(getDocumentDefinition("receipt").defaultForm),
@@ -598,8 +577,8 @@ function tableSample(field: ReturnType<typeof getDocumentDefinition>["fields"][n
       rows.map((row) => {
         if (!row || typeof row !== "object") return [String(row ?? "")];
         const record = row as Record<string, unknown>;
-        return (columns ?? Object.keys(record).filter((key) => key !== "id")).map(
-          (key) => String(record[key] ?? ""),
+        return (columns ?? Object.keys(record).filter((key) => key !== "id")).map((key) =>
+          String(record[key] ?? ""),
         );
       }),
     );
@@ -646,13 +625,9 @@ function genericDocumentDefaults(
         height,
         ...(isTable
           ? {
-              head:
-                field.repeaterColumns?.map(({ label }) => label) ??
-                ["Item", "Value"],
+              head: field.repeaterColumns?.map(({ label }) => label) ?? ["Item", "Value"],
               headWidthPercentages: field.repeaterColumns
-                ? field.repeaterColumns.map(
-                    () => 100 / field.repeaterColumns!.length,
-                  )
+                ? field.repeaterColumns.map(() => 100 / field.repeaterColumns!.length)
                 : [50, 50],
             }
           : {}),
@@ -680,9 +655,7 @@ export function createAdvancedTemplateConfig(
 ): AdvancedTemplateConfig {
   const pageSpec = PAGE_SPECS[pageFormat];
   if (!pageSpec || !isSupportedPageFormat(documentType, pageFormat)) {
-    throw new RangeError(
-      `${pageFormat} is not supported for ${documentType} templates.`,
-    );
+    throw new RangeError(`${pageFormat} is not supported for ${documentType} templates.`);
   }
 
   const basePdf = {
@@ -691,17 +664,11 @@ export function createAdvancedTemplateConfig(
     padding: [...pageSpec.padding],
   } as PdfmeBlankBase;
   if (documentType === "invoice") {
-    return invoiceDefaults(
-      pageFormat as Extract<PageFormat, "A4" | "LETTER">,
-      basePdf,
-    );
+    return invoiceDefaults(pageFormat as Extract<PageFormat, "A4" | "LETTER">, basePdf);
   }
   if (documentType === "receipt") {
     return receiptDefaults(
-      pageFormat as Extract<
-        PageFormat,
-        "RECEIPT_80MM" | "RECEIPT_58MM"
-      >,
+      pageFormat as Extract<PageFormat, "RECEIPT_80MM" | "RECEIPT_58MM">,
       basePdf,
     );
   }

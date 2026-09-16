@@ -59,7 +59,8 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
               );
             }
           }
-          const keep = rowNumber === 1 ||
+          const keep =
+            rowNumber === 1 ||
             (column >= 0 ? [row[column] ?? ""] : row).some((cell) =>
               cell.toLocaleLowerCase().includes(query),
             );
@@ -80,10 +81,12 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
           { label: "Matched rows", value: String(kept) },
           { label: "Scanned rows", value: String(Math.max(0, parsed.rowCount - 1)) },
         ],
-        sections: [{
-          title: sink.previewTruncated ? "Complete filtered file" : "Download",
-          body: { render: "files", files: [artifact], outputBytes: artifact.size },
-        }],
+        sections: [
+          {
+            title: sink.previewTruncated ? "Complete filtered file" : "Download",
+            body: { render: "files", files: [artifact], outputBytes: artifact.size },
+          },
+        ],
       };
     } catch (error) {
       await sink.abort(error);
@@ -104,9 +107,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     );
   }
   const filtered = rows.filter((row) =>
-    (column >= 0 ? [row[column]] : row).some((cell) =>
-      cell.toLocaleLowerCase().includes(query),
-    ),
+    (column >= 0 ? [row[column]] : row).some((cell) => cell.toLocaleLowerCase().includes(query)),
   );
 
   return {

@@ -9,13 +9,7 @@ export class ApiInputError extends Error {
   }
 }
 
-const ENTITY_TYPES = [
-  "Individual",
-  "LLC",
-  "Partnership",
-  "Corporation",
-  "Unknown",
-] as const;
+const ENTITY_TYPES = ["Individual", "LLC", "Partnership", "Corporation", "Unknown"] as const;
 const W9_STATUSES = [
   "Not Requested",
   "Requested",
@@ -66,11 +60,7 @@ export function assertRequestContentLength(value: string | null): void {
   }
 }
 
-function optionalString(
-  value: unknown,
-  label: string,
-  maxLength: number,
-): string | null {
+function optionalString(value: unknown, label: string, maxLength: number): string | null {
   if (value === undefined || value === null || value === "") return null;
   if (typeof value !== "string") {
     throw new ApiInputError(`${label} must be text.`);
@@ -107,10 +97,7 @@ export function normalizeVendorPayload(value: unknown): NormalizedVendor[] {
     if (!isRecord(vendor)) {
       throw new ApiInputError(`Vendor ${index + 1} is invalid.`);
     }
-    if (
-      typeof vendor.id !== "string" ||
-      !/^[a-zA-Z0-9_-]{1,128}$/.test(vendor.id)
-    ) {
+    if (typeof vendor.id !== "string" || !/^[a-zA-Z0-9_-]{1,128}$/.test(vendor.id)) {
       throw new ApiInputError(`Vendor ${index + 1} has an invalid id.`);
     }
     if (typeof vendor.legalName !== "string") {
@@ -118,9 +105,7 @@ export function normalizeVendorPayload(value: unknown): NormalizedVendor[] {
     }
     const legalName = vendor.legalName.trim();
     if (!legalName || legalName.length > 200) {
-      throw new ApiInputError(
-        `Vendor ${index + 1} has an invalid legal name.`,
-      );
+      throw new ApiInputError(`Vendor ${index + 1} has an invalid legal name.`);
     }
 
     return {
@@ -133,18 +118,8 @@ export function normalizeVendorPayload(value: unknown): NormalizedVendor[] {
       city: optionalString(vendor.city, "City", 120),
       state: optionalString(vendor.state, "State", 120),
       zipCode: optionalString(vendor.zipCode, "Postal code", 32),
-      entityType: enumValue(
-        vendor.entityType,
-        "Entity type",
-        ENTITY_TYPES,
-        "Unknown",
-      ),
-      w9Status: enumValue(
-        vendor.w9Status,
-        "W-9 status",
-        W9_STATUSES,
-        "Not Requested",
-      ),
+      entityType: enumValue(vendor.entityType, "Entity type", ENTITY_TYPES, "Unknown"),
+      w9Status: enumValue(vendor.w9Status, "W-9 status", W9_STATUSES, "Not Requested"),
       notes: optionalString(vendor.notes, "Notes", 2_000),
     };
   });

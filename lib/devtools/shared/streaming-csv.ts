@@ -1,7 +1,4 @@
-import {
-  CSV_MAX_FIELD_BYTES,
-  CSV_MAX_ROW_BYTES,
-} from "../../tool-framework/limits.ts";
+import { CSV_MAX_FIELD_BYTES, CSV_MAX_ROW_BYTES } from "../../tool-framework/limits.ts";
 
 export type CsvChunk = string | Uint8Array;
 
@@ -19,12 +16,7 @@ export class CsvParseError extends Error {
   readonly row: number;
   readonly column: number;
 
-  constructor(
-    code: CsvParseErrorCode,
-    message: string,
-    row: number,
-    column: number,
-  ) {
+  constructor(code: CsvParseErrorCode, message: string, row: number, column: number) {
     super(message);
     this.name = "CsvParseError";
     this.code = code;
@@ -36,10 +28,7 @@ export class CsvParseError extends Error {
 export type ParseStreamingCsvOptions = {
   delimiter?: string;
   expectedColumns?: number;
-  onRow?: (
-    row: readonly string[],
-    rowNumber: number,
-  ) => void | Promise<void>;
+  onRow?: (row: readonly string[], rowNumber: number) => void | Promise<void>;
   /** Receives the cumulative UTF-8 bytes consumed from the input. */
   onInputProgress?: (bytes: number) => void;
   previewRows?: number;
@@ -80,12 +69,7 @@ export async function parseStreamingCsv(
     maxRowBytes = CSV_MAX_ROW_BYTES,
   } = options;
 
-  if (
-    delimiter.length !== 1 ||
-    delimiter === '"' ||
-    delimiter === "\r" ||
-    delimiter === "\n"
-  ) {
+  if (delimiter.length !== 1 || delimiter === '"' || delimiter === "\r" || delimiter === "\n") {
     throw new TypeError("CSV delimiter must be one character other than a quote or newline.");
   }
   if (
@@ -172,9 +156,7 @@ export async function parseStreamingCsv(
     if (!columnCount) columnCount = completedRow.length;
     if (validateWidth && completedRow.length !== columnCount) {
       const errorColumn =
-        completedRow.length < columnCount
-          ? completedRow.length + 1
-          : columnCount + 1;
+        completedRow.length < columnCount ? completedRow.length + 1 : columnCount + 1;
       const noun = completedRow.length === 1 ? "column" : "columns";
       const expectedNoun = columnCount === 1 ? "column" : "columns";
       throw new CsvParseError(
@@ -210,7 +192,6 @@ export async function parseStreamingCsv(
     }
 
     for (const character of text) {
-
       if (skipLfAfterCr) {
         skipLfAfterCr = false;
         if (character === "\n") continue;
@@ -278,9 +259,7 @@ export async function parseStreamingCsv(
           ignoreBOM: !atDocumentStart,
         });
       }
-      return chunk
-        ? decoder.decode(chunk, { stream: true })
-        : decoder.decode();
+      return chunk ? decoder.decode(chunk, { stream: true }) : decoder.decode();
     } catch {
       throw new CsvParseError(
         "encoding",

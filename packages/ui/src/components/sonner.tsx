@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   CircleCheckIcon,
@@ -6,8 +6,8 @@ import {
   Loader2Icon,
   OctagonXIcon,
   TriangleAlertIcon,
-} from "lucide-react"
-import { toast, Toaster as Sonner, type ToasterProps } from "sonner"
+} from "lucide-react";
+import { toast, Toaster as Sonner, type ToasterProps } from "sonner";
 
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
@@ -29,7 +29,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "w-[420px]! max-w-[calc(100vw-2rem)]! gap-2.5! border-0! px-4! py-[13px]! font-sans! text-sm! font-medium! shadow-[0_8px_24px_#00000026]!",
           description: "text-on-ink-muted!",
           icon: "m-0! size-5!",
-          actionButton: "bg-transparent! px-0! font-semibold! text-on-ink-muted! hover:text-on-ink!",
+          actionButton:
+            "bg-transparent! px-0! font-semibold! text-on-ink-muted! hover:text-on-ink!",
         },
       }}
       style={
@@ -42,7 +43,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }
       {...props}
     />
-  )
-}
+  );
+};
 
-export { toast, Toaster }
+export { toast, Toaster };

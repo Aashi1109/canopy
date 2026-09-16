@@ -3,13 +3,22 @@ import { expect, test } from "@playwright/test";
 import { E2E_ACCOUNTS, E2E_PASSWORD } from "./fixtures/accounts";
 import { AuthPage } from "./pages/AuthPage";
 
-test("custom role membership searches, preserves selections, cancels and adds a role", async ({ page, baseURL }, testInfo) => {
+test("custom role membership searches, preserves selections, cancels and adds a role", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop", "role lifecycle runs once");
   const name = `Membership ${randomUUID()}`;
   const user = E2E_ACCOUNTS.user;
-  await new AuthPage(page).signIn(E2E_ACCOUNTS.admin.email, E2E_PASSWORD, new URL("/admin/roles", baseURL).href);
+  await new AuthPage(page).signIn(
+    E2E_ACCOUNTS.admin.email,
+    E2E_PASSWORD,
+    new URL("/admin/roles", baseURL).href,
+  );
   await page.getByRole("textbox", { name: /^Role name\b/ }).fill(name);
-  await page.getByRole("textbox", { name: /^Description\b/ }).fill("Temporary membership test role.");
+  await page
+    .getByRole("textbox", { name: /^Description\b/ })
+    .fill("Temporary membership test role.");
   await page.getByRole("button", { name: "Create role", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/roles\/[^/]+$/);
   const roleUrl = page.url();
@@ -59,7 +68,10 @@ test("custom role membership searches, preserves selections, cancels and adds a 
     }
     await page.goto(roleUrl);
     await page.getByRole("button", { name: "Delete role", exact: true }).click();
-    await page.getByRole("alertdialog").getByRole("button", { name: "Delete role", exact: true }).click();
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Delete role", exact: true })
+      .click();
     await expect(page).toHaveURL(/\/admin\/roles$/);
   }
 });

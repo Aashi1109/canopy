@@ -33,9 +33,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 const ALLOWED: readonly DecodableImageKind[] = ["jpeg", "png", "webp", "heic"];
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
-  const selection = validateImageSelection(
-    ctx.input.files.map((file) => ({ size: file.size })),
-  );
+  const selection = validateImageSelection(ctx.input.files.map((file) => ({ size: file.size })));
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
 
   const total = ctx.input.files.length;
@@ -55,11 +53,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         ctx.progress({ completed: index, total, stage: "Encoding image" });
         const buffer = await encodeImage(image, format, 0.8, "#ffffff", 6);
         await write({
-          name: createOutputFilename(
-            input.name,
-            extensionFor(format),
-            "metadata-removed",
-          ),
+          name: createOutputFilename(input.name, extensionFor(format), "metadata-removed"),
           mime: mimeFor(format),
           source: new Uint8Array(buffer),
         });

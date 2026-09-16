@@ -27,9 +27,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     url.search = "";
   }
   const normalizeValue = (value: string) =>
-    ctx.settings.normalization === "lowercase"
-      ? value.trim().toLocaleLowerCase()
-      : value.trim();
+    ctx.settings.normalization === "lowercase" ? value.trim().toLocaleLowerCase() : value.trim();
 
   for (const [key, settingKey] of PARAMETERS) {
     const value = normalizeValue(ctx.settings[settingKey]);

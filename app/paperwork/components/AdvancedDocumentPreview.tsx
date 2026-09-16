@@ -1,8 +1,5 @@
 "use client";
-import {
-  P,
-  Text,
-} from "@smarttools/ui";
+import { P, Text } from "@smarttools/ui";
 
 import type { Template } from "@pdfme/common";
 import type { AdvancedDocumentTemplate } from "@smarttools/invoice-templates";
@@ -17,8 +14,7 @@ interface AdvancedDocumentPdfOptions {
   data: Record<string, string>;
 }
 
-interface DownloadAdvancedDocumentPdfOptions
-  extends AdvancedDocumentPdfOptions {
+interface DownloadAdvancedDocumentPdfOptions extends AdvancedDocumentPdfOptions {
   fileName: string;
 }
 
@@ -54,10 +50,7 @@ function pdfmeTemplate(template: AdvancedDocumentTemplate): Template {
   return template.config.template as unknown as Template;
 }
 
-function fitViewerPageToSurface(
-  container: HTMLDivElement,
-  viewer: ViewerInstance,
-) {
+function fitViewerPageToSurface(container: HTMLDivElement, viewer: ViewerInstance) {
   let timer = 0;
   const observer = new MutationObserver(scheduleFit);
 
@@ -67,20 +60,14 @@ function fitViewerPageToSurface(
   }
 
   function fit() {
-    const background = container.querySelector<HTMLElement>(
-      ".pdfme-designer-background",
-    );
-    const paper =
-      background?.lastElementChild?.firstElementChild?.firstElementChild;
-    const controls = container.querySelector<HTMLElement>(
-      ".pdfme-ui-control-bar",
-    )?.parentElement;
+    const background = container.querySelector<HTMLElement>(".pdfme-designer-background");
+    const paper = background?.lastElementChild?.firstElementChild?.firstElementChild;
+    const controls = container.querySelector<HTMLElement>(".pdfme-ui-control-bar")?.parentElement;
     if (!(paper instanceof HTMLElement) || !controls) return;
 
     const paperRect = paper.getBoundingClientRect();
     const availableWidth = container.clientWidth - 16;
-    const availableHeight =
-      container.clientHeight - controls.getBoundingClientRect().height - 48;
+    const availableHeight = container.clientHeight - controls.getBoundingClientRect().height - 48;
     if (
       paperRect.width <= 0 ||
       paperRect.height <= 0 ||
@@ -96,10 +83,7 @@ function fitViewerPageToSurface(
       Math.max(
         0.25,
         currentZoomLevel *
-          Math.min(
-            availableWidth / paperRect.width,
-            availableHeight / paperRect.height,
-          ),
+          Math.min(availableWidth / paperRect.width, availableHeight / paperRect.height),
       ),
     );
     stop();
@@ -120,10 +104,7 @@ function fitViewerPageToSurface(
   return stop;
 }
 
-async function generateAdvancedDocumentPdf({
-  template,
-  data,
-}: AdvancedDocumentPdfOptions) {
+async function generateAdvancedDocumentPdf({ template, data }: AdvancedDocumentPdfOptions) {
   const [{ generate }, schemas] = await Promise.all([
     import("@pdfme/generator"),
     import("@pdfme/schemas"),
@@ -141,9 +122,7 @@ export async function downloadAdvancedDocumentPdf({
   fileName,
 }: DownloadAdvancedDocumentPdfOptions): Promise<void> {
   const pdf = await generateAdvancedDocumentPdf({ template, data });
-  const objectUrl = URL.createObjectURL(
-    new Blob([pdf], { type: "application/pdf" }),
-  );
+  const objectUrl = URL.createObjectURL(new Blob([pdf], { type: "application/pdf" }));
   const link = document.createElement("a");
   const requestedName = fileName.trim() || template.slug;
   link.download = requestedName.toLowerCase().endsWith(".pdf")
@@ -173,9 +152,7 @@ export async function openAdvancedDocumentPdf({
   let objectUrl: string | null = null;
   try {
     const pdf = await generateAdvancedDocumentPdf({ template, data });
-    objectUrl = URL.createObjectURL(
-      new Blob([pdf], { type: "application/pdf" }),
-    );
+    objectUrl = URL.createObjectURL(new Blob([pdf], { type: "application/pdf" }));
     previewWindow.location.replace(objectUrl);
     const loadedUrl = objectUrl;
     objectUrl = null;
@@ -223,16 +200,11 @@ export function AdvancedDocumentPreview({
         viewer = new Viewer({
           domContainer: containerRef.current,
           template: pdfmeTemplate(templateRef.current),
-          inputs: [
-            applyTemplateFormatting(templateRef.current, dataRef.current),
-          ],
+          inputs: [applyTemplateFormatting(templateRef.current, dataRef.current)],
           plugins: allPdfmePlugins(schemas),
         });
         viewerRef.current = viewer;
-        fitCleanupRef.current = fitViewerPageToSurface(
-          containerRef.current,
-          viewer,
-        );
+        fitCleanupRef.current = fitViewerPageToSurface(containerRef.current, viewer);
         setIsLoading(false);
       } catch {
         if (cancelled) return;
@@ -262,15 +234,9 @@ export function AdvancedDocumentPreview({
       viewer.updateTemplate(pdfmeTemplate(template));
       viewer.setInputs([applyTemplateFormatting(template, data)]);
       const templateKey = `${template.id}:${template.version}`;
-      if (
-        fittedTemplateRef.current !== templateKey &&
-        containerRef.current
-      ) {
+      if (fittedTemplateRef.current !== templateKey && containerRef.current) {
         fitCleanupRef.current?.();
-        fitCleanupRef.current = fitViewerPageToSurface(
-          containerRef.current,
-          viewer,
-        );
+        fitCleanupRef.current = fitViewerPageToSurface(containerRef.current, viewer);
         fittedTemplateRef.current = templateKey;
       }
       setError("");
@@ -288,25 +254,19 @@ export function AdvancedDocumentPreview({
         aria-label={`${template.name} PDF preview`}
         className="relative h-[48rem] min-h-[32rem] overflow-hidden rounded-xl border border-border bg-muted/30"
       >
-        <div
-          className="pdfme-preview-surface size-full"
-          ref={containerRef}
-        />
+        <div className="pdfme-preview-surface size-full" ref={containerRef} />
         {isLoading ? (
           <div
             aria-live="polite"
             className="absolute inset-0 grid place-items-center bg-background/80 text-muted-foreground"
             role="status"
-          ><Text>
-            Loading PDF preview…
-          </Text></div>
+          >
+            <Text>Loading PDF preview…</Text>
+          </div>
         ) : null}
       </div>
       {error ? (
-        <P
-          className="mt-2 text-destructive"
-          role="alert"
-        >
+        <P className="mt-2 text-destructive" role="alert">
           {error}
         </P>
       ) : null}

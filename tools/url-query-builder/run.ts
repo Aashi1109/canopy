@@ -17,10 +17,7 @@ import { safeUrl } from "../../lib/devtools/shared/url.ts";
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
-  const url = safeUrl(
-    requireUtilityInput(ctx.input.text, "Base URL"),
-    "Base URL",
-  );
+  const url = safeUrl(requireUtilityInput(ctx.input.text, "Base URL"), "Base URL");
   const rows: { key: string; value: string }[] = [];
   for (const line of (ctx.input.secondary ?? "").split(/\r\n|\r|\n/)) {
     if (!line.trim()) continue;
@@ -51,9 +48,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     rows.push({ key, value });
   }
 
-  const appended = ctx.settings.skipEmptyRows
-    ? rows.filter((row) => row.value !== "")
-    : rows;
+  const appended = ctx.settings.skipEmptyRows ? rows.filter((row) => row.value !== "") : rows;
   let text: string;
   if (ctx.settings.encodeValues !== false) {
     for (const row of appended) url.searchParams.append(row.key, row.value);
@@ -73,7 +68,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       })),
     ];
     if (ctx.settings.sortParameters) {
-      entries.sort((left, right) => left.key < right.key ? -1 : left.key > right.key ? 1 : 0);
+      entries.sort((left, right) => (left.key < right.key ? -1 : left.key > right.key ? 1 : 0));
     }
     url.search = "";
     text = `${url.toString()}${entries.length ? `?${entries.map((entry) => entry.text).join("&")}` : ""}${hash}`;

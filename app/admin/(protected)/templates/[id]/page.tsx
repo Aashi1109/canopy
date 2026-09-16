@@ -5,11 +5,7 @@ import { requirePagePermission } from "../../../../../lib/admin/access";
 import { getTemplate } from "../../../../../lib/admin/data";
 import TemplateEditor from "./components/TemplateEditor";
 
-export default async function TemplatePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function TemplatePage({ params }: { params: Promise<{ id: string }> }) {
   await requirePagePermission("templates", "view");
   const template = await getTemplate((await params).id);
   if (!template) notFound();

@@ -19,10 +19,36 @@ import {
 // manifest, not for one particular list of shipped tools. Every expectation
 // below is derived from this fixture, never from a literal count.
 const MANIFEST = [
-  { id: "paperwork.alpha", app: "paperwork", componentKey: "alpha", defaultName: "Alpha", defaultDescription: "The first." },
-  { id: "paperwork.beta", app: "paperwork", componentKey: "beta", defaultName: "Beta", defaultDescription: "The second." },
-  { id: "devtools.gamma", app: "devtools", category: "Fixtures", componentKey: "gamma", defaultName: "Gamma", defaultDescription: "The third." },
-  { id: "media.delta", app: "media", category: "Fixtures", componentKey: "delta", defaultName: "Delta", defaultDescription: "The fourth." },
+  {
+    id: "paperwork.alpha",
+    app: "paperwork",
+    componentKey: "alpha",
+    defaultName: "Alpha",
+    defaultDescription: "The first.",
+  },
+  {
+    id: "paperwork.beta",
+    app: "paperwork",
+    componentKey: "beta",
+    defaultName: "Beta",
+    defaultDescription: "The second.",
+  },
+  {
+    id: "devtools.gamma",
+    app: "devtools",
+    category: "Fixtures",
+    componentKey: "gamma",
+    defaultName: "Gamma",
+    defaultDescription: "The third.",
+  },
+  {
+    id: "media.delta",
+    app: "media",
+    category: "Fixtures",
+    componentKey: "delta",
+    defaultName: "Delta",
+    defaultDescription: "The fourth.",
+  },
 ];
 
 const manifestFor = (app) => MANIFEST.filter((entry) => entry.app === app);
@@ -48,7 +74,11 @@ function row(entry, changes = {}) {
 }
 
 /** Every tool configured and live, which is what most assertions start from. */
-const configured = () => mergeToolManifest(MANIFEST.map((entry) => row(entry)), MANIFEST);
+const configured = () =>
+  mergeToolManifest(
+    MANIFEST.map((entry) => row(entry)),
+    MANIFEST,
+  );
 
 function merge(...storedRows) {
   return mergeToolManifest(storedRows, MANIFEST);
@@ -108,16 +138,19 @@ test("merging keeps every code registration and drops unknown stored tool ids", 
   );
 
   assert.equal(tools.length, MANIFEST.length);
-  assert.deepEqual(tools.find((tool) => tool.id === secondPaperwork.id), {
-    ...secondPaperwork,
-    toolId: secondPaperwork.id,
-    slug: "receipts",
-    name: "Receipt Maker",
-    description: "Create a receipt.",
-    order: STORED_ORDER,
-    enabled: false,
-    archived: true,
-  });
+  assert.deepEqual(
+    tools.find((tool) => tool.id === secondPaperwork.id),
+    {
+      ...secondPaperwork,
+      toolId: secondPaperwork.id,
+      slug: "receipts",
+      name: "Receipt Maker",
+      description: "Create a receipt.",
+      order: STORED_ORDER,
+      enabled: false,
+      archived: true,
+    },
+  );
   assert.equal(
     tools.some((tool) => tool.id === "removed.unknown-tool"),
     false,
@@ -241,8 +274,7 @@ test("slugFromName produces a valid slug or refuses", () => {
 test("tool slugs are unique within an application but may repeat across applications", () => {
   const tools = configured();
   const takenSlug = firstPaperwork.componentKey;
-  const withSlug = (id, slug) =>
-    tools.map((tool) => (tool.id === id ? { ...tool, slug } : tool));
+  const withSlug = (id, slug) => tools.map((tool) => (tool.id === id ? { ...tool, slug } : tool));
 
   assert.equal(areToolSlugsUnique(tools, MANIFEST), true);
   assert.equal(areToolSlugsUnique(withSlug(secondPaperwork.id, takenSlug), MANIFEST), false);
@@ -257,13 +289,8 @@ test("tool slugs are unique within an application but may repeat across applicat
 
 test("a saved slug is immutable while setup-required tools may receive their first slug", () => {
   assert.doesNotThrow(() => assertToolSlugImmutable(null, "proposal-builder"));
-  assert.doesNotThrow(() =>
-    assertToolSlugImmutable("invoice-generator", "invoice-generator"),
-  );
-  assert.throws(
-    () => assertToolSlugImmutable("invoice-generator", "invoices"),
-    /immutable/i,
-  );
+  assert.doesNotThrow(() => assertToolSlugImmutable("invoice-generator", "invoice-generator"));
+  assert.throws(() => assertToolSlugImmutable("invoice-generator", "invoices"), /immutable/i);
   assert.throws(() => assertToolSlugImmutable("invoice-generator", null), /immutable/i);
 });
 
@@ -282,9 +309,7 @@ test("disabled, archived, setup-required, and ambiguous tools are blocked", () =
   assert.equal(isToolAvailable(tools[0]), true);
   assert.deepEqual(
     getEnabledTools(disabled, "paperwork").map((tool) => tool.id),
-    enabledPaperwork
-      .filter((tool) => tool.id !== firstPaperwork.id)
-      .map((tool) => tool.id),
+    enabledPaperwork.filter((tool) => tool.id !== firstPaperwork.id).map((tool) => tool.id),
     "disabling one tool removes exactly that tool, in stored order",
   );
   assert.deepEqual(
@@ -313,10 +338,7 @@ test("disabled, archived, setup-required, and ambiguous tools are blocked", () =
     );
   }
 
-  assert.equal(
-    findAvailableToolBySlug(tools, "paperwork", slug)?.id,
-    firstPaperwork.id,
-  );
+  assert.equal(findAvailableToolBySlug(tools, "paperwork", slug)?.id, firstPaperwork.id);
   for (const reserved of reservedToolSlugs.paperwork) {
     assert.equal(findAvailableToolBySlug(tools, "paperwork", reserved), undefined);
   }

@@ -5,6 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@11.14.0",
   "scripts": {
+    "hooks:install": "git config core.hooksPath .githooks",
     "prepare:vendor": "node scripts/copy-media-vendor.mjs",
     "dev": "pnpm run prepare:vendor && next dev -p 3000",
     "db:migrate": "pnpm --filter @smarttools/database migrate",

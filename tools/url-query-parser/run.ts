@@ -23,15 +23,18 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
           : new URLSearchParams(input.replace(/^\?/, ""));
       entries = [...parameters];
     } else {
-      const query = input.includes("?") || /^[a-z][a-z\d+.-]*:/i.test(input)
-        ? new URL(input).search.slice(1)
-        : input.replace(/^\?/, "");
-      entries = query ? query.split("&").map((part) => {
-        const separator = part.indexOf("=");
-        const rawKey = separator < 0 ? part : part.slice(0, separator);
-        const key = new URLSearchParams(`${rawKey}=`).keys().next().value ?? "";
-        return [key, separator < 0 ? "" : part.slice(separator + 1)];
-      }) : [];
+      const query =
+        input.includes("?") || /^[a-z][a-z\d+.-]*:/i.test(input)
+          ? new URL(input).search.slice(1)
+          : input.replace(/^\?/, "");
+      entries = query
+        ? query.split("&").map((part) => {
+            const separator = part.indexOf("=");
+            const rawKey = separator < 0 ? part : part.slice(0, separator);
+            const key = new URLSearchParams(`${rawKey}=`).keys().next().value ?? "";
+            return [key, separator < 0 ? "" : part.slice(separator + 1)];
+          })
+        : [];
     }
   } catch {
     throw new ToolError(
@@ -45,17 +48,15 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   for (const [key, rawItem] of entries) {
     if (!ctx.settings.keepEmptyValues && rawItem === "") continue;
     const numericItem = Number(rawItem);
-    const item = ctx.settings.coerceNumbers && /^-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(rawItem)
-      && Number.isFinite(numericItem)
-      ? numericItem
-      : rawItem;
+    const item =
+      ctx.settings.coerceNumbers &&
+      /^-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(rawItem) &&
+      Number.isFinite(numericItem)
+        ? numericItem
+        : rawItem;
     const current = value[key];
     value[key] =
-      current === undefined
-        ? item
-        : Array.isArray(current)
-          ? [...current, item]
-          : [current, item];
+      current === undefined ? item : Array.isArray(current) ? [...current, item] : [current, item];
   }
   return { render: "text", text: JSON.stringify(value, null, 2) };
 };

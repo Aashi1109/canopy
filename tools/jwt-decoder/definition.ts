@@ -4,15 +4,7 @@ export default {
   toolId: "devtools.jwt-decoder",
   app: "devtools",
   category: "encoding-decoding",
-  keywords: [
-    "jwt",
-    "json web token",
-    "decode",
-    "claims",
-    "header",
-    "payload",
-    "bearer",
-  ],
+  keywords: ["jwt", "json web token", "decode", "claims", "header", "payload", "bearer"],
   name: "JWT Decoder",
   description: "Decode JWT header and payload without verifying the signature.",
   input: {

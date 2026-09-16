@@ -32,9 +32,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     return transformLargeJsonRun(ctx, {
       indentation: indentationFrom(ctx.settings.indentation),
       mode: operation === "minify" ? "minify" : "format",
-      name: operation === "minify"
-        ? "smarttools-minified.json"
-        : "smarttools-formatted.json",
+      name: operation === "minify" ? "smarttools-minified.json" : "smarttools-formatted.json",
     });
   }
 
@@ -65,7 +63,9 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   }
 
   // Match complete strings first so digits in keys and string values are ignored.
-  for (const [, number] of output.matchAll(/"(?:[^"\\]|\\.)*"|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g)) {
+  for (const [, number] of output.matchAll(
+    /"(?:[^"\\]|\\.)*"|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
+  )) {
     if (number !== undefined && String(Number(number)) !== number) {
       return {
         render: "code",
@@ -75,7 +75,8 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         verdict: {
           level: "ok",
           label: "Exact numbers preserved",
-          detail: "Shown as code because a tree view would change some numeric values. Copy and download keep the original numbers.",
+          detail:
+            "Shown as code because a tree view would change some numeric values. Copy and download keep the original numbers.",
         },
       };
     }

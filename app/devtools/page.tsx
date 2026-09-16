@@ -43,8 +43,7 @@ import {
 import { headers } from "next/headers";
 import { CategoryFilter } from "./components/CategoryFilter";
 
-const SECTION_HEADING_CLASS =
-  "mb-8 items-end";
+const SECTION_HEADING_CLASS = "mb-8 items-end";
 
 type IconRows = Readonly<Record<string, ToolIconRow>>;
 
@@ -68,13 +67,7 @@ function ToolCard({ icons, tool }: { icons: IconRows; tool: CatalogTool }) {
       className="min-h-48 rounded-[1.25rem] p-5 shadow-none duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg [&>span:last-child]:inline-flex [&>span:last-child]:items-center [&>span:last-child]:gap-1.5"
       description={tool.description}
       href={`/devtools/${tool.slug}`}
-      icon={
-        <ToolIcon
-          name={tool.name}
-          row={icons[tool.toolId] ?? null}
-          toolId={tool.toolId}
-        />
-      }
+      icon={<ToolIcon name={tool.name} row={icons[tool.toolId] ?? null} toolId={tool.toolId} />}
       title={tool.name}
     />
   );
@@ -119,8 +112,7 @@ export default async function HomePage({
     }))
     .filter(({ count }) => count > 0);
   const hasFilter = Boolean(query || category);
-  const showAllTools =
-    !hasFilter && (first(params.view) === "all" || featuredTools.length === 0);
+  const showAllTools = !hasFilter && (first(params.view) === "all" || featuredTools.length === 0);
   const categoryLabel = category ? TOOL_CATEGORIES[category].label : "";
   const searchForm = (
     <form
@@ -151,12 +143,7 @@ export default async function HomePage({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <ProductHeader
-        actions={
-          <AccountNavigation
-            returnTo="/devtools"
-            user={session?.user ?? null}
-          />
-        }
+        actions={<AccountNavigation returnTo="/devtools" user={session?.user ?? null} />}
         className="sticky top-0 z-50 bg-card/90 supports-[backdrop-filter]:bg-card/85 supports-[backdrop-filter]:backdrop-blur-xl"
         href="/devtools"
         name="Devtools"
@@ -167,12 +154,8 @@ export default async function HomePage({
           <section className="border-b border-border bg-card">
             <AppContainer className="grid gap-6 py-8 sm:py-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(26rem,1.2fr)] lg:items-end">
               <div>
-                <Overline className="block text-primary">
-                  Devtools catalog
-                </Overline>
-                <Display className="mt-2">
-                  Find the right tool.
-                </Display>
+                <Overline className="block text-primary">Devtools catalog</Overline>
+                <Display className="mt-2">Find the right tool.</Display>
               </div>
               {searchForm}
             </AppContainer>
@@ -186,20 +169,16 @@ export default async function HomePage({
                     {tools.length} focused tools. No sign-up.
                   </Overline>
                   <Display className="mt-5 max-w-4xl">
-                    The useful side of{" "}
-                    <span className="text-primary">your browser.</span>
+                    The useful side of <span className="text-primary">your browser.</span>
                   </Display>
                 </div>
                 <div className="lg:pb-1">
                   <Muted className="max-w-xl text-muted-foreground">
-                    Format, convert, inspect, and generate working data without
-                    accounts, uploads, or waiting.
+                    Format, convert, inspect, and generate working data without accounts, uploads,
+                    or waiting.
                   </Muted>
                   <div className="mt-7">{searchForm}</div>
-                  <InlineGuidance
-                    className="mt-4"
-                    icon={<ShieldCheck aria-hidden="true" />}
-                  >
+                  <InlineGuidance className="mt-4" icon={<ShieldCheck aria-hidden="true" />}>
                     Core tools process your content locally in this browser.
                   </InlineGuidance>
                 </div>
@@ -210,9 +189,7 @@ export default async function HomePage({
                 className="mt-12 overflow-hidden rounded-2xl border border-border bg-border lg:mt-16"
               >
                 <div className="flex min-h-12 items-center justify-between gap-4 bg-background px-4">
-                  <Overline className="block text-muted-foreground">
-                    Popular now
-                  </Overline>
+                  <Overline className="block text-muted-foreground">Popular now</Overline>
                   <TextLink
                     className="inline-flex min-h-11 items-center gap-1.5 text-primary outline-none hover:underline focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     href="/devtools?view=all"
@@ -349,37 +326,28 @@ export default async function HomePage({
                   title="Browse by Category"
                 />
                 <div className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
-                  {availableCategories.map(
-                    ({ count, description, key, label }) => (
-                      <TextLink
-                        className="no-underline group flex min-h-28 items-start gap-4 bg-card p-5 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset lg:last:col-span-2"
-                        href={`/devtools?category=${encodeURIComponent(key)}`}
-                        key={key}
-                      >
-                        <IconTile
-                          className="rounded-xl group-hover:bg-background"
-                          size="sm"
-                        >
-                          <LayoutGrid aria-hidden="true" className="size-5" />
-                        </IconTile>
-                        <span className="min-w-0 flex-1">
-                          <Strong className="block">
-                            {label}
-                          </Strong>
-                          <Text className="mt-1 block text-muted-foreground">
-                            {description}
-                          </Text>
-                          <Caption className="mt-2 block text-primary">
-                            {count} {count === 1 ? "tool" : "tools"}
-                          </Caption>
-                        </span>
-                        <ArrowUpRight
-                          aria-hidden="true"
-                          className="size-4 shrink-0 text-muted-foreground transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary"
-                        />
-                      </TextLink>
-                    ),
-                  )}
+                  {availableCategories.map(({ count, description, key, label }) => (
+                    <TextLink
+                      className="no-underline group flex min-h-28 items-start gap-4 bg-card p-5 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset lg:last:col-span-2"
+                      href={`/devtools?category=${encodeURIComponent(key)}`}
+                      key={key}
+                    >
+                      <IconTile className="rounded-xl group-hover:bg-background" size="sm">
+                        <LayoutGrid aria-hidden="true" className="size-5" />
+                      </IconTile>
+                      <span className="min-w-0 flex-1">
+                        <Strong className="block">{label}</Strong>
+                        <Text className="mt-1 block text-muted-foreground">{description}</Text>
+                        <Caption className="mt-2 block text-primary">
+                          {count} {count === 1 ? "tool" : "tools"}
+                        </Caption>
+                      </span>
+                      <ArrowUpRight
+                        aria-hidden="true"
+                        className="size-4 shrink-0 text-muted-foreground transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary"
+                      />
+                    </TextLink>
+                  ))}
                 </div>
               </AppContainer>
             </section>
@@ -392,22 +360,15 @@ export default async function HomePage({
                       <LockKeyhole aria-hidden="true" className="size-6" />
                     </IconTile>
                     <div>
-                      <Overline className="block text-primary">
-                        Private by default
-                      </Overline>
-                      <H2 className="mt-2">
-                        Your working data stays yours.
-                      </H2>
+                      <Overline className="block text-primary">Private by default</Overline>
+                      <H2 className="mt-2">Your working data stays yours.</H2>
                       <Lead className="mt-3 max-w-2xl text-card/70">
-                        Core formatting and conversion happens locally in your
-                        browser. No file upload or account is required.
+                        Core formatting and conversion happens locally in your browser. No file
+                        upload or account is required.
                       </Lead>
                     </div>
                   </div>
-                  <a
-                    className={buttonVariants({ size: "lg" })}
-                    href="/devtools?view=all"
-                  >
+                  <a className={buttonVariants({ size: "lg" })} href="/devtools?view=all">
                     Browse all {tools.length} tools
                     <ArrowRight aria-hidden="true" className="size-4" />
                   </a>

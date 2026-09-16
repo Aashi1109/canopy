@@ -17,9 +17,7 @@ import type { ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { digestText } from "../../lib/devtools/shared/crypto.ts";
 
-export const run: ToolRun<Record<string, never>> = async (
-  ctx,
-): Promise<ToolResult> => {
+export const run: ToolRun<Record<string, never>> = async (ctx): Promise<ToolResult> => {
   const primary = ctx.input.text;
   const [sha1, sha256, sha512] = await Promise.all([
     digestText(primary, "SHA-1"),

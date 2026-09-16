@@ -46,9 +46,7 @@ const PNG_COMPRESSION_PRESETS = {
 } as const;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
-  const selection = validateImageSelection(
-    ctx.input.files.map((file) => ({ size: file.size })),
-  );
+  const selection = validateImageSelection(ctx.input.files.map((file) => ({ size: file.size })));
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
 
   const preset = ctx.settings.preset;

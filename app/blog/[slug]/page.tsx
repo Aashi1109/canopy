@@ -23,11 +23,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function BlogArticlePage({ params }: Props) {
   const post = await loadPost((await params).slug);
   const related = await listPublishedBlogPosts({ category: post.category.slug })
-    .then(page => page.items.filter(item => item.id !== post.id).slice(0, 2))
+    .then((page) => page.items.filter((item) => item.id !== post.id).slice(0, 2))
     .catch(() => []);
-  return <>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: blogStructuredData(post) }} />
-    <BlogArticle document={post.document} publication={{ ...post, categorySlug: post.category.slug }} />
-    {related.length > 0 && <section aria-labelledby="related-stories" className="hidden bg-muted px-8 pb-14 pt-10 md:block"><div className="mx-auto max-w-[920px]"><H2 id="related-stories" className="font-sans text-[30px] leading-[1.6]">Keep a good thing going.</H2><div className="mt-7 grid grid-cols-2 gap-10">{related.map(item => <BlogTeaser key={item.id} post={item} />)}</div></div></section>}
-  </>;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: blogStructuredData(post) }}
+      />
+      <BlogArticle
+        document={post.document}
+        publication={{ ...post, categorySlug: post.category.slug }}
+      />
+      {related.length > 0 && (
+        <section
+          aria-labelledby="related-stories"
+          className="hidden bg-muted px-8 pb-14 pt-10 md:block"
+        >
+          <div className="mx-auto max-w-[920px]">
+            <H2 id="related-stories" className="font-sans text-[30px] leading-[1.6]">
+              Keep a good thing going.
+            </H2>
+            <div className="mt-7 grid grid-cols-2 gap-10">
+              {related.map((item) => (
+                <BlogTeaser key={item.id} post={item} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+    </>
+  );
 }

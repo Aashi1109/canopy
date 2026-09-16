@@ -39,10 +39,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   }
   const { addNamedGroups, explain, flags, language, multiline } = ctx.settings;
   if (addNamedGroups) {
-    pattern =
-      language === "python"
-        ? `(?P<match>${pattern})`
-        : `(?<match>${pattern})`;
+    pattern = language === "python" ? `(?P<match>${pattern})` : `(?<match>${pattern})`;
   }
   const global = flags.includes("global");
   const modifiers = `${flags.includes("ignore-case") ? "i" : ""}${multiline ? "m" : ""}`;

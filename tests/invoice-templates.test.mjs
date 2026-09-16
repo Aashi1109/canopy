@@ -10,14 +10,7 @@ import {
   seedTemplates,
 } from "../packages/invoice-templates/src/index.ts";
 
-const layoutFamilies = [
-  "classic",
-  "modern",
-  "compact",
-  "bold",
-  "minimal",
-  "service",
-];
+const layoutFamilies = ["classic", "modern", "compact", "bold", "minimal", "service"];
 
 test("every layout family produces an independent valid default config", () => {
   const configs = layoutFamilies.map(getDefaultTemplateConfigByFamily);
@@ -41,14 +34,10 @@ test("seed templates are valid with unique slugs and one published default", () 
     );
   }
 
+  assert.equal(new Set(seedTemplates.map((template) => template.slug)).size, seedTemplates.length);
   assert.equal(
-    new Set(seedTemplates.map((template) => template.slug)).size,
-    seedTemplates.length,
-  );
-  assert.equal(
-    seedTemplates.filter(
-      (template) => template.status === "published" && template.isDefault,
-    ).length,
+    seedTemplates.filter((template) => template.status === "published" && template.isDefault)
+      .length,
     1,
   );
 });

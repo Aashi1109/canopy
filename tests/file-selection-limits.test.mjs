@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  textInputFileIssue,
-  validateFileSelection,
-} from "../lib/tool-framework/fileSelection.ts";
+import { textInputFileIssue, validateFileSelection } from "../lib/tool-framework/fileSelection.ts";
 import { PLATFORM_MAX_BYTES } from "../lib/tool-framework/limits.ts";
 
 const filesSpec = {

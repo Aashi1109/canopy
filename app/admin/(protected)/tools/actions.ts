@@ -52,8 +52,7 @@ function jsonList(formData: FormData, key: string, label: string): unknown[] {
 function failure(error: unknown): ToolContentActionState {
   return {
     status: "error",
-    message:
-      error instanceof Error ? error.message : "The change could not be saved.",
+    message: error instanceof Error ? error.message : "The change could not be saved.",
   };
 }
 
@@ -174,7 +173,10 @@ export async function removeToolIconAction(
   try {
     await removeToolIcon(await getActorUserId(), toolId);
     revalidate(toolId);
-    return { status: "success", message: "Icon removed; the tool falls back to its generated identicon." };
+    return {
+      status: "success",
+      message: "Icon removed; the tool falls back to its generated identicon.",
+    };
   } catch (error) {
     return failure(error);
   }

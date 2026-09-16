@@ -16,17 +16,22 @@ const moduleUrl = (source) => `data:text/javascript,${encodeURIComponent(source)
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
     if (context.parentURL === sessionUrl && specifier === "./auth.ts") {
-      return { shortCircuit: true, url: moduleUrl(`
+      return {
+        shortCircuit: true,
+        url: moduleUrl(`
         const fixture = globalThis.__smarttoolsSessionTest;
         export const auth = { api: { async getSession({ headers }) {
           fixture.headers = headers;
           if (fixture.authError) throw fixture.authError;
           return fixture.session;
         } } };
-      `) };
+      `),
+      };
     }
     if (context.parentURL === sessionUrl && specifier === "@smarttools/control-plane") {
-      return { shortCircuit: true, url: moduleUrl(`
+      return {
+        shortCircuit: true,
+        url: moduleUrl(`
         const fixture = globalThis.__smarttoolsSessionTest;
         export class AuthorizationError extends Error {}
         export async function getUserAuthorization(userId) {
@@ -36,7 +41,8 @@ const hooks = registerHooks({
           if (!result) throw new AuthorizationError("Access denied");
           return result;
         }
-      `) };
+      `),
+      };
     }
     return nextResolve(specifier, context);
   },
@@ -45,9 +51,14 @@ const { AuthServiceError, getSession, getOptionalSession, isAdminUser } = await 
 hooks.deregister();
 
 test("account session uses active users' effective Admin entry grants, including custom roles", async (t) => {
-  t.after(() => { delete globalThis.__smarttoolsSessionTest; });
+  t.after(() => {
+    delete globalThis.__smarttoolsSessionTest;
+  });
   const headers = new Headers({ cookie: "session=test" });
-  fixture.session = { session: { id: "session-1" }, user: { id: "user-1", name: "Ashish", status: "active" } };
+  fixture.session = {
+    session: { id: "session-1" },
+    user: { id: "user-1", name: "Ashish", status: "active" },
+  };
 
   for (const [status, roleId, id, access, expected] of [
     ["active", "admin", "user-1", { admin: { enter: true } }, true],
@@ -72,7 +83,11 @@ test("account session uses active users' effective Admin entry grants, including
     roles: [{ id: "user" }, { id: "custom" }],
     access: { admin: { enter: true } },
   });
-  assert.equal(await isAdminUser("user-1"), true, "entry permission may come from any assigned role");
+  assert.equal(
+    await isAdminUser("user-1"),
+    true,
+    "entry permission may come from any assigned role",
+  );
   fixture.authorizations.get("user-1").access = { admin: { enter: false } };
   assert.equal(await isAdminUser("user-1"), false, "revocation is reflected on the next lookup");
   fixture.authorizations.set("user-1", { roles: [], access: {} });
@@ -84,14 +99,18 @@ test("account session uses active users' effective Admin entry grants, including
   assert.equal(fixture.queries, queries);
 
   fixture.authError = new Error("auth unavailable");
-  await assert.rejects(getSession(headers), error =>
-    error instanceof AuthServiceError && error.cause === fixture.authError);
+  await assert.rejects(
+    getSession(headers),
+    (error) => error instanceof AuthServiceError && error.cause === fixture.authError,
+  );
   assert.equal(await getOptionalSession(headers), null);
   fixture.authError = null;
   fixture.session = { session: { id: "session-1" }, user: { id: "user-1", name: "Ashish" } };
   fixture.authorizationError = new Error("database unavailable");
-  await assert.rejects(isAdminUser("user-1"), error => error === fixture.authorizationError);
-  await assert.rejects(getSession(headers), error =>
-    error instanceof AuthServiceError && error.cause === fixture.authorizationError);
+  await assert.rejects(isAdminUser("user-1"), (error) => error === fixture.authorizationError);
+  await assert.rejects(
+    getSession(headers),
+    (error) => error instanceof AuthServiceError && error.cause === fixture.authorizationError,
+  );
   assert.equal(await getOptionalSession(headers), null);
 });

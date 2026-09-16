@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  Caption,
-  CodeBlock,
-  Overline, Button } from "@smarttools/ui";
+import { Caption, CodeBlock, Overline, Button } from "@smarttools/ui";
 import { Check, Clipboard, Code2 } from "lucide-react";
 import { useState, type ReactElement } from "react";
 
@@ -42,7 +39,8 @@ export function DeveloperHandoff({ command }: { readonly command: string }): Rea
         {command}
       </CodeBlock>
       <Caption className="block border-t border-white/10 px-4 py-3 text-on-ink-muted">
-        Run locally, implement the generated definition and execution file, then deploy. The saved database configuration survives the seed.
+        Run locally, implement the generated definition and execution file, then deploy. The saved
+        database configuration survives the seed.
       </Caption>
     </section>
   );

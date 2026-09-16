@@ -4,15 +4,7 @@ export default {
   toolId: "devtools.json-schema-generator",
   app: "devtools",
   category: "json-tools",
-  keywords: [
-    "json schema",
-    "schema",
-    "infer",
-    "validation",
-    "draft",
-    "contract",
-    "sample data",
-  ],
+  keywords: ["json schema", "schema", "infer", "validation", "draft", "contract", "sample data"],
   name: "JSON Schema Generator",
   description: "Infer a JSON Schema from sample data.",
   input: {
@@ -66,7 +58,7 @@ export default {
       },
       {
         q: "How do I handle a field that can be null?",
-        a: "Sample data with a non-null value, then widen that property by hand to `{ \"anyOf\": [ …, { \"type\": \"null\" } ] }`.",
+        a: 'Sample data with a non-null value, then widen that property by hand to `{ "anyOf": [ …, { "type": "null" } ] }`.',
       },
     ],
     examples: [

@@ -6,8 +6,7 @@ export const metadata: Metadata = {
     default: "SmartTools Media Tools",
     template: "%s | SmartTools Media Tools",
   },
-  description:
-    "Private image and PDF tools that process files entirely in your browser.",
+  description: "Private image and PDF tools that process files entirely in your browser.",
 };
 
 export const viewport: Viewport = {
@@ -15,8 +14,6 @@ export const viewport: Viewport = {
   themeColor: "#f8fafc",
 };
 
-export default function MediaLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function MediaLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <div className="media-shell min-h-screen">{children}</div>;
 }

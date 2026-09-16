@@ -5,21 +5,8 @@ import {
   type ToolContentRow,
   type ToolIconRow,
 } from "@smarttools/database";
-import {
-  Text,
-  Caption,
-  H1,
-  H3,
-  InlineCode,
-  Muted,
-  Overline, StatusBadge } from "@smarttools/ui";
-import {
-  FileText,
-  Image,
-  LayoutDashboard,
-  Search,
-  type LucideIcon,
-} from "lucide-react";
+import { Text, Caption, H1, H3, InlineCode, Muted, Overline, StatusBadge } from "@smarttools/ui";
+import { FileText, Image, LayoutDashboard, Search, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePagePermission } from "../../../../../lib/admin/access";
@@ -111,14 +98,25 @@ export default async function ToolContentPage({
             ← Back to tool catalog
           </Link>
           <div className="mt-2 flex flex-wrap items-center gap-2.5">
-            <H1 >{tool.name}</H1>
-            <StatusBadge variant={tool.enabled ? "success" : tool.hasDefinition ? "neutral" : "warning"}>
+            <H1>{tool.name}</H1>
+            <StatusBadge
+              variant={tool.enabled ? "success" : tool.hasDefinition ? "neutral" : "warning"}
+            >
               {tool.enabled ? "Visible" : tool.hasDefinition ? "Hidden" : "Waiting for code"}
             </StatusBadge>
-            <StatusBadge variant={stored.published ? "info" : tool.hasDraftContent ? "warning" : "neutral"}>{stored.published ? "Database content live" : tool.hasDraftContent ? "Draft content" : "Using default content"}</StatusBadge>
+            <StatusBadge
+              variant={stored.published ? "info" : tool.hasDraftContent ? "warning" : "neutral"}
+            >
+              {stored.published
+                ? "Database content live"
+                : tool.hasDraftContent
+                  ? "Draft content"
+                  : "Using default content"}
+            </StatusBadge>
           </div>
           <Muted className="mt-1 max-w-3xl text-muted-foreground">
-            Configure catalog content, supporting documentation, icon assets, and public availability without changing the tool&apos;s code-owned behavior.
+            Configure catalog content, supporting documentation, icon assets, and public
+            availability without changing the tool&apos;s code-owned behavior.
           </Muted>
         </div>
         <div className="text-left sm:text-right">
@@ -127,7 +125,10 @@ export default async function ToolContentPage({
         </div>
       </header>
 
-      <nav aria-label="Tool configuration sections" className="overflow-x-auto border-y border-border bg-card px-1">
+      <nav
+        aria-label="Tool configuration sections"
+        className="overflow-x-auto border-y border-border bg-card px-1"
+      >
         <div className="flex min-w-max gap-1">
           {SECTIONS.map(({ icon: Icon, key, label }) => (
             <Link
@@ -136,7 +137,8 @@ export default async function ToolContentPage({
               href={`/admin/tools/${encodeURIComponent(tool.id)}?section=${key}`}
               key={key}
             >
-              <Icon aria-hidden="true" className="size-4" />{label}
+              <Icon aria-hidden="true" className="size-4" />
+              {label}
             </Link>
           ))}
         </div>
@@ -147,30 +149,56 @@ export default async function ToolContentPage({
           <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.72fr)]">
             <section>
               <div className="border-b border-border pb-5">
-                <H3 >Configuration overview</H3>
-                <Muted className="mt-1 text-muted-foreground">Code owns execution and identity. This workspace owns the database layer.</Muted>
+                <H3>Configuration overview</H3>
+                <Muted className="mt-1 text-muted-foreground">
+                  Code owns execution and identity. This workspace owns the database layer.
+                </Muted>
               </div>
               <dl className="grid gap-x-5 gap-y-5 pt-5 sm:grid-cols-2">
                 <div>
-                  <dt className="text-muted-foreground"><Overline>Suite</Overline></dt>
-                  <dd className="mt-1"><Text>{tool.app}</Text></dd>
+                  <dt className="text-muted-foreground">
+                    <Overline>Suite</Overline>
+                  </dt>
+                  <dd className="mt-1">
+                    <Text>{tool.app}</Text>
+                  </dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground"><Overline>Published slug</Overline></dt>
-                  <dd className="mt-1"><Text>{tool.slug ?? "Not set"}</Text></dd>
+                  <dt className="text-muted-foreground">
+                    <Overline>Published slug</Overline>
+                  </dt>
+                  <dd className="mt-1">
+                    <Text>{tool.slug ?? "Not set"}</Text>
+                  </dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground"><Overline>Definition</Overline></dt>
-                  <dd className="mt-1"><StatusBadge variant={spec ? "success" : "warning"}>{spec ? "definition.ts deployed" : "Definition missing"}</StatusBadge></dd>
+                  <dt className="text-muted-foreground">
+                    <Overline>Definition</Overline>
+                  </dt>
+                  <dd className="mt-1">
+                    <StatusBadge variant={spec ? "success" : "warning"}>
+                      {spec ? "definition.ts deployed" : "Definition missing"}
+                    </StatusBadge>
+                  </dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground"><Overline>Content source</Overline></dt>
-                  <dd className="mt-1"><StatusBadge variant={stored.published ? "info" : "neutral"}>{stored.published ? "Database override" : "Shipped code"}</StatusBadge></dd>
+                  <dt className="text-muted-foreground">
+                    <Overline>Content source</Overline>
+                  </dt>
+                  <dd className="mt-1">
+                    <StatusBadge variant={stored.published ? "info" : "neutral"}>
+                      {stored.published ? "Database override" : "Shipped code"}
+                    </StatusBadge>
+                  </dd>
                 </div>
               </dl>
               <div className="mt-6 border-t border-border pt-5">
-                <H3 >What remains code-owned</H3>
-                <Caption className="block mt-1 text-muted-foreground">Input geometry, settings, execution host, trigger behavior, capabilities, result labels, and the stable tool ID are declared in the tool folder and deployed with the application.</Caption>
+                <H3>What remains code-owned</H3>
+                <Caption className="block mt-1 text-muted-foreground">
+                  Input geometry, settings, execution host, trigger behavior, capabilities, result
+                  labels, and the stable tool ID are declared in the tool folder and deployed with
+                  the application.
+                </Caption>
               </div>
             </section>
             <DeveloperHandoff command={scaffoldCommand} />
@@ -178,13 +206,21 @@ export default async function ToolContentPage({
         ) : null}
 
         {section === "catalog" ? (
-          <ToolContentForm inherited={inheritedView} relatedTools={[]} section="catalog" stored={stored} toolId={tool.id} />
+          <ToolContentForm
+            inherited={inheritedView}
+            relatedTools={[]}
+            section="catalog"
+            stored={stored}
+            toolId={tool.id}
+          />
         ) : null}
 
         {section === "content" ? (
           <ToolContentForm
             inherited={inheritedView}
-            relatedTools={tools.filter((candidate) => candidate.id !== tool.id).map((candidate) => ({ id: candidate.id, name: candidate.name }))}
+            relatedTools={tools
+              .filter((candidate) => candidate.id !== tool.id)
+              .map((candidate) => ({ id: candidate.id, name: candidate.name }))}
             section="content"
             stored={stored}
             toolId={tool.id}
@@ -194,7 +230,12 @@ export default async function ToolContentPage({
         {section === "assets" ? (
           <div className="grid gap-8 lg:grid-cols-2 lg:gap-0 lg:divide-x lg:divide-border">
             <div className="min-w-0 lg:pr-8">
-              <ToolIconPanel iconRow={iconRow} name={tool.name} toolId={tool.id} uploadsEnabled={iconUploadsConfigured()} />
+              <ToolIconPanel
+                iconRow={iconRow}
+                name={tool.name}
+                toolId={tool.id}
+                uploadsEnabled={iconUploadsConfigured()}
+              />
             </div>
             <div className="lg:pl-8">
               <ActivationPanel

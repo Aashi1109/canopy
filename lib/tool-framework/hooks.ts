@@ -13,12 +13,7 @@
 
 import { TOOL_SLUG_PATTERN } from "@smarttools/tool-catalog";
 
-import type {
-  ToolHooks,
-  ToolPagesInspected,
-  ToolSettingsChanged,
-  ToolValidate,
-} from "./run";
+import type { ToolHooks, ToolPagesInspected, ToolSettingsChanged, ToolValidate } from "./run";
 
 /** A folder without a hooks file is the normal case, not an error. */
 function isMissingModule(error: unknown): boolean {

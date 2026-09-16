@@ -7,14 +7,8 @@
  * pulls in no vendor chunk.
  */
 
-import type {
-  ToolPagesInspected,
-  ToolValidate,
-} from "../../lib/tool-framework/run.ts";
-import {
-  parsePageSelection,
-  type SettingsOf,
-} from "../../lib/tool-framework/settings.ts";
+import type { ToolPagesInspected, ToolValidate } from "../../lib/tool-framework/run.ts";
+import { parsePageSelection, type SettingsOf } from "../../lib/tool-framework/settings.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
@@ -30,9 +24,7 @@ export const validate: ToolValidate<Settings> = (settings) => {
   // returns `[]` for them — which is intent, not emptiness.
   if (value === "odd" || value === "even") return null;
   const parsed = parsePageSelection(value);
-  return parsed === "all" || parsed.length > 0
-    ? null
-    : "Choose at least one page to delete.";
+  return parsed === "all" || parsed.length > 0 ? null : "Choose at least one page to delete.";
 };
 
 /**

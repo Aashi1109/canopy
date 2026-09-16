@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  calculateMileageSummary,
-  getMileageRate,
-} from "../lib/paperwork/mileageRules.ts";
+import { calculateMileageSummary, getMileageRate } from "../lib/paperwork/mileageRules.ts";
 import {
   calculateExpenseTotals,
   normalizeExpenseRows,
@@ -53,14 +50,8 @@ test("unsupported mileage years fail instead of using a stale rate", () => {
     () => getMileageRate("irs-standard", 2027, "2027-01-01", 0),
     /rules update required/i,
   );
-  assert.throws(
-    () => getMileageRate("custom", 2026, "2026-01-01", -1),
-    /custom mileage rate/i,
-  );
-  assert.throws(
-    () => getMileageRate("irs-standard", 2026, "2025-12-31", 0),
-    /within tax year/i,
-  );
+  assert.throws(() => getMileageRate("custom", 2026, "2026-01-01", -1), /custom mileage rate/i);
+  assert.throws(() => getMileageRate("irs-standard", 2026, "2025-12-31", 0), /within tax year/i);
 });
 
 test("mileage reports invalid trip dates and computes MPG from later fills", () => {
@@ -116,14 +107,10 @@ test("expense totals make base, tax, tip, mileage, and advance semantics explici
 });
 
 test("legacy expense rows normalize missing tax and tip to zero", () => {
-  assert.deepEqual(
-    normalizeExpenseRows([{ id: "legacy", amount: 25 }]),
-    [{ id: "legacy", amount: 25, tax: 0, tip: 0 }],
-  );
-  assert.deepEqual(
-    calculateExpenseTotals([{ amount: 10 }], [{}], 0).categoryTotals,
-    { Other: 10 },
-  );
+  assert.deepEqual(normalizeExpenseRows([{ id: "legacy", amount: 25 }]), [
+    { id: "legacy", amount: 25, tax: 0, tip: 0 },
+  ]);
+  assert.deepEqual(calculateExpenseTotals([{ amount: 10 }], [{}], 0).categoryTotals, { Other: 10 });
 });
 
 test("1099 thresholds are year-owned and unknown future years fail safely", () => {
@@ -184,20 +171,17 @@ test("unsupported 1099 summaries and empty W-9 settings stay explicit", () => {
   );
   assert.match(summary.issues[0], /rules update required/i);
   assert.equal(summary.aboveThresholdCount, 0);
-  assert.deepEqual(
-    createEmptyRecipientAdjustment("vendor"),
-    {
-      vendorId: "vendor",
-      cashTips: 0,
-      occupationCodes: "",
-      qualifiedOvertime: 0,
-      federalWithholding: 0,
-      state: "",
-      stateIncome: 0,
-      stateWithholding: 0,
-      maskedTinReference: "",
-    },
-  );
+  assert.deepEqual(createEmptyRecipientAdjustment("vendor"), {
+    vendorId: "vendor",
+    cashTips: 0,
+    occupationCodes: "",
+    qualifiedOvertime: 0,
+    federalWithholding: 0,
+    state: "",
+    stateIncome: 0,
+    stateWithholding: 0,
+    maskedTinReference: "",
+  });
   const futureRequest = createW9Request({
     reportingYear: 2027,
     contractorName: "",
@@ -246,18 +230,10 @@ const BASE_TAX_DRAFT = {
 };
 
 test("quarterly tax uses the versioned 2026 pack for every filing status", () => {
-  for (const filingStatus of [
-    "single",
-    "married_joint",
-    "married_separate",
-    "head_household",
-  ]) {
+  for (const filingStatus of ["single", "married_joint", "married_separate", "head_household"]) {
     const result = calculateQuarterlyTax({ ...BASE_TAX_DRAFT, filingStatus });
     assert.equal(result.ok, true);
-    assert.equal(
-      result.deductionValue,
-      QUARTERLY_TAX_RULES_2026.standardDeductions[filingStatus],
-    );
+    assert.equal(result.deductionValue, QUARTERLY_TAX_RULES_2026.standardDeductions[filingStatus]);
     assert.equal(result.calculationVersion, QUARTERLY_TAX_RULES_2026.version);
   }
 });
@@ -274,9 +250,7 @@ test("quarterly tax compares safe harbors, subtracts withholding, and returns pa
     result.requiredAnnualPayment,
     Math.max(
       0,
-      expectedSafeHarbor -
-        BASE_TAX_DRAFT.federalWithholding -
-        BASE_TAX_DRAFT.estimatedPaymentsMade,
+      expectedSafeHarbor - BASE_TAX_DRAFT.federalWithholding - BASE_TAX_DRAFT.estimatedPaymentsMade,
     ),
   );
   assert.deepEqual(
@@ -311,13 +285,10 @@ test("quarterly tax keeps self-employment tax outside nonrefundable credits and 
 });
 
 test("quarterly tax rejects unsupported years", () => {
-  assert.deepEqual(
-    calculateQuarterlyTax({ ...BASE_TAX_DRAFT, taxYear: 2027 }),
-    {
-      ok: false,
-      error: "Quarterly tax rules update required for 2027.",
-    },
-  );
+  assert.deepEqual(calculateQuarterlyTax({ ...BASE_TAX_DRAFT, taxYear: 2027 }), {
+    ok: false,
+    error: "Quarterly tax rules update required for 2027.",
+  });
 });
 
 test("quarterly tax normalizes legacy drafts and applies the high-income safe harbor", () => {

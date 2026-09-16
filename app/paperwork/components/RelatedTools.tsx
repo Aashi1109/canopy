@@ -88,17 +88,19 @@ export default function RelatedTools({
             <Zap aria-hidden="true" className="size-3" />
             Excellent upgrade options
           </StatusBadge>
-          <H2>
-            Streamline Your Business with SmartTools Paperwork Pro
-          </H2>
+          <H2>Streamline Your Business with SmartTools Paperwork Pro</H2>
           <P className="text-background/70">
-            Draft free invoices as long as you want. When your independent freelance practice or contractor operations expand, unlock advanced time-saving features:
+            Draft free invoices as long as you want. When your independent freelance practice or
+            contractor operations expand, unlock advanced time-saving features:
           </P>
 
           <List className="grid gap-3 pt-2 text-background/80 md:grid-cols-2">
             {valueAero.map((item) => (
               <li className="flex items-start gap-2" key={item}>
-                <CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-background/60" />
+                <CheckCircle2
+                  aria-hidden="true"
+                  className="mt-0.5 size-4 shrink-0 text-background/60"
+                />
                 <Text>{item}</Text>
               </li>
             ))}
@@ -121,11 +123,10 @@ export default function RelatedTools({
 
       <section className="space-y-6" id="related-tools-block">
         <div className="mx-auto max-w-xl space-y-2 text-center">
-          <H2 className="text-foreground">
-            Comprehensive Paperwork Toolkit
-          </H2>
+          <H2 className="text-foreground">Comprehensive Paperwork Toolkit</H2>
           <Muted className="text-muted-foreground">
-            Simplify administrative workflows with professional single-click small business generators.
+            Simplify administrative workflows with professional single-click small business
+            generators.
           </Muted>
         </div>
 

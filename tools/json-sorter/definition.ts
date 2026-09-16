@@ -4,14 +4,7 @@ export default {
   toolId: "devtools.json-sorter",
   app: "devtools",
   category: "json-tools",
-  keywords: [
-    "json",
-    "sort",
-    "keys",
-    "alphabetical",
-    "normalize",
-    "diff",
-  ],
+  keywords: ["json", "sort", "keys", "alphabetical", "normalize", "diff"],
   name: "JSON Sorter",
   description: "Sort object keys recursively.",
   input: {
@@ -96,7 +89,7 @@ export default {
     examples: [
       {
         label: "Nested object",
-        text: "{\"z\":1,\"a\":{\"d\":4,\"b\":2}}",
+        text: '{"z":1,"a":{"d":4,"b":2}}',
       },
     ],
   },

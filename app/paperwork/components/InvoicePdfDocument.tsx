@@ -1,11 +1,4 @@
-import {
-  Document,
-  Image,
-  Page,
-  StyleSheet,
-  Text,
-  View,
-} from "@react-pdf/renderer";
+import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { InvoiceTemplate } from "@smarttools/invoice-templates";
 import type { ReactNode } from "react";
 import type { CalculatedTotals, InvoiceData } from "@/lib/paperwork/types";
@@ -383,15 +376,7 @@ function DetailLine({ children }: { children: ReactNode }) {
   return <Text style={styles.detailLine}>{children}</Text>;
 }
 
-function TotalLine({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string;
-  color?: string;
-}) {
+function TotalLine({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <View style={styles.totalLine}>
       <Text style={color ? { color } : undefined}>{label}</Text>
@@ -482,10 +467,7 @@ function InvoiceTotals({
   );
 }
 
-export default function InvoicePdfDocument({
-  data,
-  template,
-}: InvoicePdfDocumentProps) {
+export default function InvoicePdfDocument({ data, template }: InvoicePdfDocumentProps) {
   const totals = calculateInvoiceTotals(data);
   const { config, layoutFamily } = template;
   const {
@@ -521,12 +503,19 @@ export default function InvoicePdfDocument({
   const businessAddress = addressLines(data.business);
   const clientAddress = addressLines(data.client);
   const acceptedMethods = paymentMethods(data.payment.methods ?? []);
-  const showProject = visibility.showMetaBlock && metaBlock.showProjectName && data.invoice.projectName;
+  const showProject =
+    visibility.showMetaBlock && metaBlock.showProjectName && data.invoice.projectName;
   const showPo = visibility.showMetaBlock && metaBlock.showPoNumber && data.invoice.poNumber;
   const showNotes = visibility.showNotes && notesBlock.showNotes && data.notes.notes;
   const showTerms = visibility.showTerms && notesBlock.showTerms && data.notes.terms;
   const logoHeight =
-    header.logoSize === "xs" ? 24 : header.logoSize === "sm" ? 32 : header.logoSize === "lg" ? 52 : 42;
+    header.logoSize === "xs"
+      ? 24
+      : header.logoSize === "sm"
+        ? 32
+        : header.logoSize === "lg"
+          ? 52
+          : 42;
 
   return (
     <Document
@@ -553,25 +542,17 @@ export default function InvoicePdfDocument({
         wrap
       >
         {page.showPageBorder ? (
-          <View
-            fixed
-            style={[styles.pageBorder, { borderColor: theme.primaryColor }]}
-          />
+          <View fixed style={[styles.pageBorder, { borderColor: theme.primaryColor }]} />
         ) : null}
         {layoutFamily !== "minimal" ? (
-          <View
-            fixed
-            style={[styles.topAccent, { backgroundColor: theme.primaryColor }]}
-          />
+          <View fixed style={[styles.topAccent, { backgroundColor: theme.primaryColor }]} />
         ) : null}
         {watermark.enabled ? (
           <Text
             fixed
             style={[
               styles.watermark,
-              watermark.position === "center"
-                ? styles.watermarkCenter
-                : styles.watermarkCorner,
+              watermark.position === "center" ? styles.watermarkCenter : styles.watermarkCorner,
               { color: theme.primaryColor, opacity: watermark.opacity },
             ]}
           >
@@ -629,27 +610,25 @@ export default function InvoicePdfDocument({
                       <Text style={styles.infoName}>#{data.invoice.invoiceNumber || "INV-1"}</Text>
                     ) : null}
                     {metaBlock.showInvoiceDate && data.invoice.invoiceDate ? (
-                      <DetailLine>{labels.invoiceDate}: {data.invoice.invoiceDate}</DetailLine>
+                      <DetailLine>
+                        {labels.invoiceDate}: {data.invoice.invoiceDate}
+                      </DetailLine>
                     ) : null}
                     {metaBlock.showDueDate && data.invoice.dueDate ? (
-                      <DetailLine>{labels.dueDate}: {data.invoice.dueDate}</DetailLine>
+                      <DetailLine>
+                        {labels.dueDate}: {data.invoice.dueDate}
+                      </DetailLine>
                     ) : null}
                   </View>
                 ) : null}
               </View>
             </View>
           ) : (
-            <View
-              style={[styles.header, { borderColor: theme.borderColor }]}
-              wrap={false}
-            >
+            <View style={[styles.header, { borderColor: theme.borderColor }]} wrap={false}>
               {visibility.showBusinessBlock ? (
                 <View style={styles.brand}>
                   {visibility.showLogo && data.business.logo ? (
-                    <Image
-                      src={data.business.logo}
-                      style={[styles.logo, { height: logoHeight }]}
-                    />
+                    <Image src={data.business.logo} style={[styles.logo, { height: logoHeight }]} />
                   ) : null}
                   {businessBlock.showBusinessName ? (
                     <Text
@@ -700,14 +679,24 @@ export default function InvoicePdfDocument({
                       #{data.invoice.invoiceNumber || "INV-YYYY-001"}
                     </Text>
                   ) : null}
-                  {visibility.showMetaBlock && metaBlock.showInvoiceDate && data.invoice.invoiceDate ? (
-                    <DetailLine>{labels.invoiceDate}: {data.invoice.invoiceDate}</DetailLine>
+                  {visibility.showMetaBlock &&
+                  metaBlock.showInvoiceDate &&
+                  data.invoice.invoiceDate ? (
+                    <DetailLine>
+                      {labels.invoiceDate}: {data.invoice.invoiceDate}
+                    </DetailLine>
                   ) : null}
                   {visibility.showMetaBlock && metaBlock.showDueDate && data.invoice.dueDate ? (
-                    <DetailLine>{labels.dueDate}: {data.invoice.dueDate}</DetailLine>
+                    <DetailLine>
+                      {labels.dueDate}: {data.invoice.dueDate}
+                    </DetailLine>
                   ) : null}
-                  {visibility.showMetaBlock && metaBlock.showPaymentTerms && data.invoice.paymentTerms ? (
-                    <DetailLine>{labels.paymentTerms}: {data.invoice.paymentTerms}</DetailLine>
+                  {visibility.showMetaBlock &&
+                  metaBlock.showPaymentTerms &&
+                  data.invoice.paymentTerms ? (
+                    <DetailLine>
+                      {labels.paymentTerms}: {data.invoice.paymentTerms}
+                    </DetailLine>
                   ) : null}
                 </View>
               ) : null}
@@ -720,7 +709,9 @@ export default function InvoicePdfDocument({
                 <View
                   style={[
                     styles.infoBlock,
-                    ...(layoutFamily === "modern" || layoutFamily === "service" || layoutFamily === "bold"
+                    ...(layoutFamily === "modern" ||
+                    layoutFamily === "service" ||
+                    layoutFamily === "bold"
                       ? [
                           styles.boxedInfo,
                           {
@@ -730,7 +721,13 @@ export default function InvoicePdfDocument({
                         ]
                       : []),
                     ...(layoutFamily === "classic"
-                      ? [{ borderLeftWidth: 3, borderLeftColor: theme.primaryColor, paddingLeft: 9 }]
+                      ? [
+                          {
+                            borderLeftWidth: 3,
+                            borderLeftColor: theme.primaryColor,
+                            paddingLeft: 9,
+                          },
+                        ]
                       : []),
                   ]}
                 >
@@ -990,8 +987,8 @@ export default function InvoicePdfDocument({
                   ) : null}
                 </View>
               ) : null}
-              {paymentBlock.showLateFeeNote && data.payment.lateFeeNote ||
-              notesBlock.showThankYouNote && data.payment.thankYouNote ? (
+              {(paymentBlock.showLateFeeNote && data.payment.lateFeeNote) ||
+              (notesBlock.showThankYouNote && data.payment.thankYouNote) ? (
                 <View style={[styles.notices, { borderColor: theme.borderColor }]}>
                   <Text style={styles.lateFee}>
                     {paymentBlock.showLateFeeNote && data.payment.lateFeeNote
@@ -1007,7 +1004,7 @@ export default function InvoicePdfDocument({
           ) : null}
         </View>
 
-        {visibility.showFooter && footer.showFooter || pdf.showPageNumbers ? (
+        {(visibility.showFooter && footer.showFooter) || pdf.showPageNumbers ? (
           <View
             fixed
             style={[styles.footer, { borderColor: theme.borderColor, color: theme.mutedTextColor }]}

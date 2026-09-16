@@ -39,19 +39,19 @@ export default {
     howToUse: [
       "Paste the JSON document you want as XML. The top-level value is wrapped in a `<root>` element.",
       "Convert, then check the element names: a JSON key that is not a legal XML name is emitted as `<item>` rather than failing.",
-      "Copy the result, which is prefixed with an `<?xml version=\"1.0\" encoding=\"UTF-8\"?>` declaration.",
+      'Copy the result, which is prefixed with an `<?xml version="1.0" encoding="UTF-8"?>` declaration.',
     ],
     limitations: [
-      "The mapping is one-way and lossy. Types disappear — 42, \"42\", and true all become the text `42` / `true` — so converting back gives you strings.",
-      "Arrays repeat the parent element name rather than nesting a wrapper, so `{\"tag\":[1,2]}` becomes `<tag>1</tag><tag>2</tag>`.",
+      'The mapping is one-way and lossy. Types disappear — 42, "42", and true all become the text `42` / `true` — so converting back gives you strings.',
+      'Arrays repeat the parent element name rather than nesting a wrapper, so `{"tag":[1,2]}` becomes `<tag>1</tag><tag>2</tag>`.',
       "Nothing becomes an XML attribute; every JSON key becomes a child element.",
-      "Keys that do not match `[A-Za-z_][\\w.-]*` are replaced with `item`, so `{\"1st\":\"x\"}` yields `<item>x</item>` and the original key is lost.",
+      'Keys that do not match `[A-Za-z_][\\w.-]*` are replaced with `item`, so `{"1st":"x"}` yields `<item>x</item>` and the original key is lost.',
       "Values are escaped as HTML entities (&, <, >, \", '), which is valid XML but escapes more than the XML minimum.",
     ],
     faq: [
       {
         q: "Can I choose the root element name?",
-        a: "Not here — it is always `root`. Wrap your JSON in a single-key object such as `{\"order\":{…}}` and rename or unwrap the root afterwards.",
+        a: 'Not here — it is always `root`. Wrap your JSON in a single-key object such as `{"order":{…}}` and rename or unwrap the root afterwards.',
       },
       {
         q: "How is null represented?",
@@ -62,8 +62,6 @@ export default {
         a: "No. The XML is emitted on one line after the declaration. Run it through an XML formatter if you need indentation.",
       },
     ],
-    examples: [
-      { label: "Nested object", text: '{"user":{"name":"Ada","active":true}}' },
-    ],
+    examples: [{ label: "Nested object", text: '{"user":{"name":"Ada","active":true}}' }],
   },
 } as const satisfies ToolSpec;

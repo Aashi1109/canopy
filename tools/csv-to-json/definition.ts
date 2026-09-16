@@ -4,21 +4,17 @@ export default {
   toolId: "devtools.csv-to-json",
   app: "devtools",
   category: "csv-data-tools",
-  keywords: [
-    "csv",
-    "json",
-    "convert",
-    "parse",
-    "spreadsheet",
-    "delimiter",
-    "records",
-  ],
+  keywords: ["csv", "json", "convert", "parse", "spreadsheet", "delimiter", "records"],
   name: "CSV to JSON",
   description: "Convert delimited rows to a formatted JSON array.",
   input: {
     kind: "text",
     label: "CSV input",
-    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
+    acceptFiles: {
+      accept: ".csv,.tsv,text/csv,text/tab-separated-values",
+      maxBytes: 104_857_600,
+      maxEditableBytes: 2_000_000,
+    },
     placeholder: "name,role,active\nMaya,Engineer,true\nNoah,Designer,false",
     maxLength: 2_000_000,
   },
@@ -83,7 +79,7 @@ export default {
         a: "Yes. Select the correct delimiter and wrap the field in double quotes. Represent a literal double quote inside it as two double quotes.",
       },
       {
-        q: "Why is true written as \"true\" in the JSON?",
+        q: 'Why is true written as "true" in the JSON?',
         a: "CSV has no standard type metadata, so values stay as text by default. Parse numbers converts numeric cells only; booleans and dates remain text.",
       },
       {

@@ -9,10 +9,7 @@ import type {
   ToolSettingsChanged,
   ToolValidate,
 } from "../../lib/tool-framework/run.ts";
-import type {
-  PageSelection,
-  SettingsOf,
-} from "../../lib/tool-framework/settings.ts";
+import type { PageSelection, SettingsOf } from "../../lib/tool-framework/settings.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
@@ -28,7 +25,11 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
  * pre-run hint is coarser.
  */
 export const validate: ToolValidate<Settings> = (settings) => {
-  if ([settings.cropX, settings.cropY, settings.cropWidth, settings.cropHeight].some(value => !Number.isInteger(value))) {
+  if (
+    [settings.cropX, settings.cropY, settings.cropWidth, settings.cropHeight].some(
+      (value) => !Number.isInteger(value),
+    )
+  ) {
     return "Enter whole-number points for Left, Bottom, Width, and Height.";
   }
   return settings.cropWidth <= 0 || settings.cropHeight <= 0
@@ -76,10 +77,7 @@ function selectedPages(
  * first. And the empty-selection arm no longer writes `pages: ""`: the page
  * selection is the user's edit, not this hook's to rewrite.
  */
-export const onSettingsChanged: ToolSettingsChanged<Settings> = (
-  settings,
-  previews,
-) => {
+export const onSettingsChanged: ToolSettingsChanged<Settings> = (settings, previews) => {
   const selected = selectedPages(previews, settings.pages);
   if (selected.length === 0) return {};
   const maxWidth = Math.min(

@@ -29,22 +29,14 @@ interface PagePickerProps {
   value: unknown;
 }
 
-function PagePicker({
-  disabled,
-  inspecting,
-  onSettingChange,
-  previews,
-  value,
-}: PagePickerProps) {
+function PagePicker({ disabled, inspecting, onSettingChange, previews, value }: PagePickerProps) {
   const images = usePdfPageImages(previews);
   const selected = selectedPageNumbers(value, images);
   // Deleting every page would leave no document, so the last unselected page
   // cannot be selected. Locking it says so instead of failing at run time.
   const locked = new Set(
     selected.size >= images.length - 1
-      ? images
-          .map(({ pageNumber }) => pageNumber)
-          .filter((pageNumber) => !selected.has(pageNumber))
+      ? images.map(({ pageNumber }) => pageNumber).filter((pageNumber) => !selected.has(pageNumber))
       : [],
   );
 

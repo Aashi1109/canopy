@@ -161,9 +161,7 @@ export async function updateRoleAction(formData: FormData) {
     };
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error.message
-        : "Unable to save the role. Please try again.",
+      error: error instanceof Error ? error.message : "Unable to save the role. Please try again.",
     };
   }
 }
@@ -174,9 +172,8 @@ export async function deleteRoleAction(formData: FormData) {
     await deleteCustomRole(actorUserId, text(formData, "roleId"));
   } catch (error) {
     return {
-      error: error instanceof Error
-        ? error.message
-        : "Unable to delete the role. Please try again.",
+      error:
+        error instanceof Error ? error.message : "Unable to delete the role. Please try again.",
     };
   }
   redirect("/admin/roles");
@@ -197,17 +194,14 @@ export async function createTemplateAction(formData: FormData) {
 
 export async function createAdvancedTemplateAction(formData: FormData) {
   const [documentType, pageFormat] = text(formData, "starter").split(":");
-  const template = await createAdvancedDocumentTemplate(
-    await getActorUserId(),
-    {
-      name: text(formData, "name"),
-      slug: text(formData, "slug"),
-      description: text(formData, "description"),
-      category: text(formData, "category") as TemplateCategory,
-      documentType: documentType as TemplateDocumentType,
-      pageFormat: pageFormat as TemplatePageFormat,
-    },
-  );
+  const template = await createAdvancedDocumentTemplate(await getActorUserId(), {
+    name: text(formData, "name"),
+    slug: text(formData, "slug"),
+    description: text(formData, "description"),
+    category: text(formData, "category") as TemplateCategory,
+    documentType: documentType as TemplateDocumentType,
+    pageFormat: pageFormat as TemplatePageFormat,
+  });
   redirect(`/admin/templates/${template.id}/advanced`);
 }
 
@@ -252,12 +246,7 @@ export async function updateTemplateAction(formData: FormData) {
   await updateDocumentTemplate(
     await getActorUserId(),
     templateId,
-    json<Partial<DocumentTemplateContent>>(
-      formData,
-      "template",
-      "Template changes",
-      5_000_000,
-    ),
+    json<Partial<DocumentTemplateContent>>(formData, "template", "Template changes", 5_000_000),
   );
   revalidatePath("/admin/templates");
   revalidatePath(`/admin/templates/${templateId}`);
@@ -269,12 +258,7 @@ export async function updateAndPublishTemplateAction(formData: FormData) {
   await updateAndPublishDocumentTemplate(
     await getActorUserId(),
     templateId,
-    json<Partial<DocumentTemplateContent>>(
-      formData,
-      "template",
-      "Template changes",
-      5_000_000,
-    ),
+    json<Partial<DocumentTemplateContent>>(formData, "template", "Template changes", 5_000_000),
   );
   revalidatePath("/admin/templates");
   revalidatePath(`/admin/templates/${templateId}`);

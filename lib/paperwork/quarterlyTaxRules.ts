@@ -1,8 +1,4 @@
-export type FilingStatus =
-  | "single"
-  | "married_joint"
-  | "married_separate"
-  | "head_household";
+export type FilingStatus = "single" | "married_joint" | "married_separate" | "head_household";
 
 export interface QuarterlyTaxDraft {
   taxYear: number;
@@ -125,16 +121,11 @@ export const SAMPLE_QUARTERLY_TAX_DRAFT: QuarterlyTaxDraft = {
   assumptions: "Income is expected to be earned evenly through the year.",
 };
 
-export function normalizeQuarterlyTaxDraft(
-  draft: Partial<QuarterlyTaxDraft>,
-): QuarterlyTaxDraft {
-  const filingStatus = [
-    "single",
-    "married_joint",
-    "married_separate",
-    "head_household",
-  ].includes(draft.filingStatus || "")
-    ? draft.filingStatus as FilingStatus
+export function normalizeQuarterlyTaxDraft(draft: Partial<QuarterlyTaxDraft>): QuarterlyTaxDraft {
+  const filingStatus = ["single", "married_joint", "married_separate", "head_household"].includes(
+    draft.filingStatus || "",
+  )
+    ? (draft.filingStatus as FilingStatus)
     : DEFAULT_QUARTERLY_TAX_DRAFT.filingStatus;
   return {
     ...DEFAULT_QUARTERLY_TAX_DRAFT,
@@ -146,10 +137,7 @@ export function normalizeQuarterlyTaxDraft(
 
 const money = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 
-function calculateProgressiveTax(
-  taxableIncome: number,
-  brackets: readonly TaxBracket[],
-): number {
+function calculateProgressiveTax(taxableIncome: number, brackets: readonly TaxBracket[]): number {
   let tax = 0;
   let lower = 0;
   for (const bracket of brackets) {
@@ -165,9 +153,7 @@ function calculateProgressiveTax(
   return money(tax);
 }
 
-export function calculateQuarterlyTax(
-  draft: QuarterlyTaxDraft,
-):
+export function calculateQuarterlyTax(draft: QuarterlyTaxDraft):
   | { ok: false; error: string }
   | {
       ok: true;
@@ -193,9 +179,7 @@ export function calculateQuarterlyTax(
       assumptions: readonly string[];
     } {
   const rules =
-    draft.taxYear === QUARTERLY_TAX_RULES_2026.taxYear
-      ? QUARTERLY_TAX_RULES_2026
-      : null;
+    draft.taxYear === QUARTERLY_TAX_RULES_2026.taxYear ? QUARTERLY_TAX_RULES_2026 : null;
   if (!rules) {
     return {
       ok: false,
@@ -222,9 +206,7 @@ export function calculateQuarterlyTax(
         netSelfEmploymentEarnings -
         rules.additionalMedicareThresholds[draft.filingStatus],
     ) * 0.009;
-  const selfEmploymentTax = money(
-    socialSecurityTax + medicareTax + additionalMedicareTax,
-  );
+  const selfEmploymentTax = money(socialSecurityTax + medicareTax + additionalMedicareTax);
   const deductibleSelfEmploymentTax = (socialSecurityTax + medicareTax) / 2;
   const adjustedGrossIncome = money(
     Math.max(
@@ -248,25 +230,16 @@ export function calculateQuarterlyTax(
   const incomeTaxAfterCredits = money(
     Math.max(0, federalIncomeTax - nonnegative(draft.taxCredits)),
   );
-  const estimatedFederalLiability = money(
-    incomeTaxAfterCredits + selfEmploymentTax,
-  );
-  const estimatedStateTax = money(
-    taxableIncome * (nonnegative(draft.stateTaxRate) / 100),
-  );
-  const estimatedTotalLiability = money(
-    estimatedFederalLiability + estimatedStateTax,
-  );
+  const estimatedFederalLiability = money(incomeTaxAfterCredits + selfEmploymentTax);
+  const estimatedStateTax = money(taxableIncome * (nonnegative(draft.stateTaxRate) / 100));
+  const estimatedTotalLiability = money(estimatedFederalLiability + estimatedStateTax);
   const currentYearSafeHarbor = money(estimatedFederalLiability * 0.9);
-  const highIncomeThreshold =
-    draft.filingStatus === "married_separate" ? 75000 : 150000;
+  const highIncomeThreshold = draft.filingStatus === "married_separate" ? 75000 : 150000;
   const priorYearSafeHarbor =
     nonnegative(draft.priorYearTaxLiability) > 0
       ? money(
           nonnegative(draft.priorYearTaxLiability) *
-            (nonnegative(draft.priorYearAdjustedGrossIncome) > highIncomeThreshold
-              ? 1.1
-              : 1),
+            (nonnegative(draft.priorYearAdjustedGrossIncome) > highIncomeThreshold ? 1.1 : 1),
         )
       : null;
   const safeHarborTarget =
@@ -274,10 +247,7 @@ export function calculateQuarterlyTax(
       ? currentYearSafeHarbor
       : Math.min(currentYearSafeHarbor, priorYearSafeHarbor);
   const estimatedTaxAfterWithholding = money(
-    Math.max(
-      0,
-      estimatedFederalLiability - nonnegative(draft.federalWithholding),
-    ),
+    Math.max(0, estimatedFederalLiability - nonnegative(draft.federalWithholding)),
   );
   const requiredAnnualPayment =
     estimatedTaxAfterWithholding < 1000
@@ -313,10 +283,7 @@ export function calculateQuarterlyTax(
       dueDate,
       amount:
         index === rules.paymentDates.length - 1
-          ? money(
-              requiredAnnualPayment -
-                quarterlyPayment * (rules.paymentDates.length - 1),
-            )
+          ? money(requiredAnnualPayment - quarterlyPayment * (rules.paymentDates.length - 1))
           : quarterlyPayment,
     })),
     assumptions: rules.assumptions,

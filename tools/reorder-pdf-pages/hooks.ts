@@ -15,6 +15,4 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
  * ordering cannot be expressed as `"all"`.
  */
 export const onPagesInspected: ToolPagesInspected<Settings> = (previews) =>
-  previews.length > 0
-    ? { pages: previews.map(({ pageNumber }) => pageNumber) }
-    : {};
+  previews.length > 0 ? { pages: previews.map(({ pageNumber }) => pageNumber) } : {};

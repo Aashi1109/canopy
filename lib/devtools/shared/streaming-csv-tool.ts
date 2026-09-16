@@ -8,10 +8,7 @@ import {
 import { BoundedUtf8Preview } from "./bounded-text-preview.ts";
 import { LARGE_TEXT_PREVIEW_BYTES } from "../../tool-framework/limits.ts";
 import type { ToolResult } from "../../tool-framework/result.ts";
-import {
-  ToolError,
-  type ToolRunContext,
-} from "../../tool-framework/run.ts";
+import { ToolError, type ToolRunContext } from "../../tool-framework/run.ts";
 
 export const LARGE_CSV_FILE_BYTES = 2_000_000;
 
@@ -49,18 +46,19 @@ export async function parseCsvRun(
   try {
     return await parseStreamingCsv(chunksFor(ctx), {
       ...options,
-      onInputProgress: total || options.onInputProgress
-        ? (completed) => {
-            options.onInputProgress?.(completed);
-            if (total) {
-              ctx.progress({
-                completed,
-                total,
-                stage: "Processing delimited data",
-              });
+      onInputProgress:
+        total || options.onInputProgress
+          ? (completed) => {
+              options.onInputProgress?.(completed);
+              if (total) {
+                ctx.progress({
+                  completed,
+                  total,
+                  stage: "Processing delimited data",
+                });
+              }
             }
-          }
-        : undefined,
+          : undefined,
       signal: ctx.signal,
     });
   } catch (error) {
@@ -73,10 +71,7 @@ export async function parseCsvRun(
   }
 }
 
-export function serializeCsvRow(
-  row: readonly string[],
-  delimiter: string,
-): string {
+export function serializeCsvRow(row: readonly string[], delimiter: string): string {
   return row
     .map((value) =>
       value.includes(delimiter) || /["\r\n]/.test(value)

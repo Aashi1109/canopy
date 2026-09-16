@@ -29,11 +29,7 @@ function bytesToHex(bytes: Uint8Array): string {
   return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function hmacText(
-  value: string,
-  key: string,
-  algorithm: string,
-): Promise<string> {
+async function hmacText(value: string, key: string, algorithm: string): Promise<string> {
   if (!key) {
     throw new ToolError(
       "secret-required",
@@ -41,8 +37,7 @@ async function hmacText(
       "Enter the shared secret used by the verifying system.",
     );
   }
-  const hash =
-    algorithm === "sha1" ? "SHA-1" : algorithm === "sha512" ? "SHA-512" : "SHA-256";
+  const hash = algorithm === "sha1" ? "SHA-1" : algorithm === "sha512" ? "SHA-512" : "SHA-256";
   const cryptoKey = await getCrypto().subtle.importKey(
     "raw",
     new TextEncoder().encode(key),
@@ -59,11 +54,7 @@ async function hmacText(
 }
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
-  const digest = await hmacText(
-    ctx.input.text,
-    ctx.input.secondary ?? "",
-    ctx.settings.algo,
-  );
+  const digest = await hmacText(ctx.input.text, ctx.input.secondary ?? "", ctx.settings.algo);
   ctx.signal.throwIfAborted();
   return { render: "text", text: digest, downloadName: "hmac-digest.txt" };
 };

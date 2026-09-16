@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  createArtifactWriter,
-  readArtifact,
-} from "../lib/tool-framework/artifacts.ts";
+import { createArtifactWriter, readArtifact } from "../lib/tool-framework/artifacts.ts";
 import { LARGE_TEXT_PREVIEW_BYTES } from "../lib/tool-framework/limits.ts";
 import { run as formatJson } from "../tools/json-formatter/run.worker.ts";
 import { run as viewCsv } from "../tools/csv-viewer/run.worker.ts";
@@ -17,10 +14,14 @@ test("JSON formatter streams a complete large File into an artifact with a bound
   const input = `{"payload":"${payload}"}`;
   const expected = `{\n  "payload": "${payload}"\n}`;
   const file = new File([input], "large.json", { type: "application/json" });
-  const { context } = runContext(file, {
-    indentation: "2",
-    operation: "format",
-  }, "large-json-format");
+  const { context } = runContext(
+    file,
+    {
+      indentation: "2",
+      operation: "format",
+    },
+    "large-json-format",
+  );
 
   const result = await formatJson(context);
 
@@ -76,13 +77,15 @@ function runContext(file, settings, jobId) {
     artifacts,
     context: {
       input: {
-        files: [{
-          id: `${jobId}-input`,
-          mime: file.type,
-          name: file.name,
-          size: file.size,
-          source: file,
-        }],
+        files: [
+          {
+            id: `${jobId}-input`,
+            mime: file.type,
+            name: file.name,
+            size: file.size,
+            source: file,
+          },
+        ],
         text: "",
       },
       progress() {},
@@ -108,10 +111,7 @@ function statValue(result, label) {
 function largeCsvFixture() {
   const dataRows = 1_500;
   const value = "v".repeat(1_400);
-  const rows = Array.from(
-    { length: dataRows },
-    (_, index) => `${index + 1},${value}`,
-  );
+  const rows = Array.from({ length: dataRows }, (_, index) => `${index + 1},${value}`);
   return {
     csv: ["id,value", ...rows].join("\n"),
     dataRows,

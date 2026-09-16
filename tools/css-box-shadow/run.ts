@@ -26,9 +26,7 @@ function isRgbColor(value: string): boolean {
 }
 
 function isShadowLayer(value: string): boolean {
-  const color = /(?:#(?:[\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})|rgba?\([^()]*\))$/i.exec(
-    value,
-  )?.[0];
+  const color = /(?:#(?:[\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})|rgba?\([^()]*\))$/i.exec(value)?.[0];
   if (color && /^rgba?\(/i.test(color) && !isRgbColor(color)) return false;
   const parts = value
     .slice(0, color ? -color.length : undefined)
@@ -63,10 +61,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     throw new ToolError("too-many-layers", "Add no more than 20 shadow layers.");
   }
   if (additionalLayers.some((layer) => /[;{}]/.test(layer))) {
-    throw new ToolError(
-      "invalid-layer",
-      "Shadow layers cannot contain declarations or blocks.",
-    );
+    throw new ToolError("invalid-layer", "Shadow layers cannot contain declarations or blocks.");
   }
   const invalidLayer = additionalLayers.findIndex((layer) => !isShadowLayer(layer));
   if (invalidLayer >= 0) {
@@ -75,14 +70,15 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       `Shadow layer ${invalidLayer + 1} must use two to four 0/px lengths and an optional HEX or rgb() color.`,
     );
   }
-  const linkedLayers = (ctx.settings.linkOpacity ?? false)
-    ? additionalLayers.map((layer) =>
-        layer.replace(
-          /rgba\(\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*[^)]+\)/gi,
-          `rgba($1, $2, $3, ${alpha})`,
-        ),
-      )
-    : additionalLayers;
+  const linkedLayers =
+    (ctx.settings.linkOpacity ?? false)
+      ? additionalLayers.map((layer) =>
+          layer.replace(
+            /rgba\(\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*[^)]+\)/gi,
+            `rgba($1, $2, $3, ${alpha})`,
+          ),
+        )
+      : additionalLayers;
   const layers = [
     `${x}px ${y}px ${blur}px ${spread}px ${ctx.input.text.trim()}${inset}`,
     ...linkedLayers,
@@ -90,9 +86,10 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const declaration = `box-shadow: ${layers};`;
   return {
     render: "text",
-    text: (ctx.settings.showBrowserPrefixes ?? false)
-      ? `-webkit-${declaration}\n${declaration}`
-      : declaration,
+    text:
+      (ctx.settings.showBrowserPrefixes ?? false)
+        ? `-webkit-${declaration}\n${declaration}`
+        : declaration,
   };
 };
 

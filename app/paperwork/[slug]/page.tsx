@@ -20,11 +20,7 @@ const DOCUMENT_TYPE_BY_COMPONENT_KEY: Record<string, DocumentType> = {
   "1099-nec-tracker": "1099-nec-tracker",
 };
 
-export default async function ToolPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function ToolPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const requestHeaders = await headers();
   const manifest = await getToolManifest();

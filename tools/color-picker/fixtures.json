@@ -50,9 +50,7 @@
       },
       "expected": {
         "render": "key-value",
-        "entries": [
-          { "label": "HEX", "value": "#3366FF" }
-        ]
+        "entries": [{ "label": "HEX", "value": "#3366FF" }]
       }
     }
   ]

@@ -1,9 +1,5 @@
 import { readFile, readdir } from "node:fs/promises";
-import {
-  isValidToolSlug,
-  slugFromName,
-  type ToolApp,
-} from "@smarttools/tool-catalog";
+import { isValidToolSlug, slugFromName, type ToolApp } from "@smarttools/tool-catalog";
 import { eq, max } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "./schema.ts";
@@ -45,10 +41,7 @@ function isSeedToolApp(value: unknown): value is SeedToolApp {
   return value === "devtools" || value === "media";
 }
 
-function parseToolDefinition(
-  definitionKey: string,
-  value: unknown,
-): SeedToolSpec {
+function parseToolDefinition(definitionKey: string, value: unknown): SeedToolSpec {
   const location = `tools/${definitionKey}/definition.ts`;
   if (!isRecord(value)) {
     throw new Error(`✗ ${location}: default export must be an object literal.`);
@@ -78,22 +71,12 @@ function parseToolDefinition(
   ) {
     throw new Error(`✗ ${location}: keywords must be an array of strings.`);
   }
-  for (const field of [
-    "input",
-    "settings",
-    "trigger",
-    "labels",
-    "content",
-  ]) {
+  for (const field of ["input", "settings", "trigger", "labels", "content"]) {
     if (!Object.hasOwn(value, field)) {
       throw new Error(`✗ ${location}: default export is missing ${field}.`);
     }
   }
-  if (
-    Object.hasOwn(value, "slug") &&
-    value.slug !== undefined &&
-    typeof value.slug !== "string"
-  ) {
+  if (Object.hasOwn(value, "slug") && value.slug !== undefined && typeof value.slug !== "string") {
     throw new Error(`✗ ${location}: slug must be a string when provided.`);
   }
 
@@ -120,27 +103,17 @@ export async function loadManagedToolDefinitions(): Promise<ManagedToolSeedScan>
   let skipped = 0;
 
   for (const definitionKey of folders) {
-    const definitionUrl = new URL(
-      `${definitionKey}/definition.ts`,
-      toolsDirectory,
-    );
+    const definitionUrl = new URL(`${definitionKey}/definition.ts`, toolsDirectory);
     const source = await readFile(definitionUrl, "utf8");
     if (!/^\s*export\s+default\b/m.test(source)) {
-      console.warn(
-        `Skipping tools/${definitionKey}: definition.ts has no default export.`,
-      );
+      console.warn(`Skipping tools/${definitionKey}: definition.ts has no default export.`);
       skipped += 1;
       continue;
     }
 
-    const imported = (await import(definitionUrl.href)) as Record<
-      string,
-      unknown
-    >;
+    const imported = (await import(definitionUrl.href)) as Record<string, unknown>;
     if (!Object.hasOwn(imported, "default")) {
-      console.warn(
-        `Skipping tools/${definitionKey}: definition.ts has no default export.`,
-      );
+      console.warn(`Skipping tools/${definitionKey}: definition.ts has no default export.`);
       skipped += 1;
       continue;
     }

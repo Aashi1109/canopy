@@ -33,7 +33,8 @@ function cropFreeform(image: ImageData, raw: unknown): ImageData {
   try {
     const sourceContext = source.getContext("2d");
     const context = canvas.getContext("2d");
-    if (!sourceContext || !context) throw new ToolError("canvas-unavailable", "Unable to create the crop. Please try again.");
+    if (!sourceContext || !context)
+      throw new ToolError("canvas-unavailable", "Unable to create the crop. Please try again.");
     sourceContext.putImageData(image, 0, 0);
     context.beginPath();
     points.forEach((point, index) => {
@@ -70,12 +71,15 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   ctx.signal.throwIfAborted();
 
   const format = resolveOutputFormat(outputFormat(ctx.settings.outputFormat), kind);
-  const cropped = ctx.settings.cropMode === "freeform" ? cropFreeform(image, ctx.settings.cropPoints) : cropImage(image, {
-    x: ctx.settings.cropX,
-    y: ctx.settings.cropY,
-    width: ctx.settings.cropWidth,
-    height: ctx.settings.cropHeight,
-  });
+  const cropped =
+    ctx.settings.cropMode === "freeform"
+      ? cropFreeform(image, ctx.settings.cropPoints)
+      : cropImage(image, {
+          x: ctx.settings.cropX,
+          y: ctx.settings.cropY,
+          width: ctx.settings.cropWidth,
+          height: ctx.settings.cropHeight,
+        });
   ctx.signal.throwIfAborted();
 
   ctx.progress({ completed: 0, total: 1, stage: "Encoding image" });

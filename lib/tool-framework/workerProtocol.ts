@@ -18,14 +18,14 @@
 // Extension-qualified so this module loads under plain `node --test`, which is
 // how its job-state reducer is covered. The type-only imports below are erased.
 import { sanitizeFileName } from "./media/validation.ts";
-import { PDF_PREVIEW_CACHE_PIXELS, PDF_PREVIEW_MAX_PIXELS, PDF_PREVIEW_MAX_WIDTH, PDF_THUMBNAIL_CACHE_SIZE } from "./limits.ts";
+import {
+  PDF_PREVIEW_CACHE_PIXELS,
+  PDF_PREVIEW_MAX_PIXELS,
+  PDF_PREVIEW_MAX_WIDTH,
+  PDF_THUMBNAIL_CACHE_SIZE,
+} from "./limits.ts";
 import type { ToolResult } from "./result";
-import type {
-  ToolPagePreview,
-  ToolRunFile,
-  ToolRunItem,
-  ToolRunProgress,
-} from "./run";
+import type { ToolPagePreview, ToolRunFile, ToolRunItem, ToolRunProgress } from "./run";
 
 /** The 3x3 placement grid used by watermarks and page numbering. */
 export type WatermarkPosition =
@@ -43,20 +43,13 @@ export type WatermarkPosition =
  * Builds the structured-clone input. The original `File` remains the byte
  * source; only its untrusted metadata is normalised at the boundary.
  */
-export function createToolRunFile(
-  id: string,
-  source: File,
-): ToolRunFile {
+export function createToolRunFile(id: string, source: File): ToolRunFile {
   if (!id.trim()) throw new TypeError("Worker input ID is required.");
   if (!(source instanceof File)) {
     throw new TypeError("Worker input source must be a File.");
   }
-  const normalizedMime = (source.type || "application/octet-stream")
-    .trim()
-    .toLowerCase();
-  if (
-    !/^[a-z0-9][a-z0-9!#$&^_.+-]*\/[a-z0-9][a-z0-9!#$&^_.+-]*$/.test(normalizedMime)
-  ) {
+  const normalizedMime = (source.type || "application/octet-stream").trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9!#$&^_.+-]*\/[a-z0-9][a-z0-9!#$&^_.+-]*$/.test(normalizedMime)) {
     throw new TypeError("Worker input MIME type is invalid.");
   }
   return {
@@ -182,12 +175,7 @@ export type ToolWorkerResponse =
   | ToolWorkerFailure
   | ToolWorkerCanceled;
 
-export type ToolJobStatus =
-  | "idle"
-  | "running"
-  | "completed"
-  | "failed"
-  | "canceled";
+export type ToolJobStatus = "idle" | "running" | "completed" | "failed" | "canceled";
 
 export type ToolJobError = {
   readonly code: string;
@@ -287,11 +275,7 @@ export function createToolThumbnailRequest(
   if (input.renderWidth !== undefined && !isPreviewWidth(input.renderWidth)) {
     throw new RangeError(`Preview width must be an integer from 1 to ${PDF_PREVIEW_MAX_WIDTH}.`);
   }
-  if (
-    input.pageNumbers.some(
-      (pageNumber) => !Number.isInteger(pageNumber) || pageNumber < 1,
-    )
-  ) {
+  if (input.pageNumbers.some((pageNumber) => !Number.isInteger(pageNumber) || pageNumber < 1)) {
     throw new RangeError("Thumbnail page numbers must be positive integers.");
   }
   const pageNumbers = [...new Set(input.pageNumbers)];
@@ -303,12 +287,15 @@ export function createToolThumbnailRequest(
       `At most ${PDF_THUMBNAIL_CACHE_SIZE} thumbnail pages may be requested at once.`,
     );
   }
-  return { type: "inspect-thumbnails", jobId, pageNumbers, ...(input.renderWidth === undefined ? {} : { renderWidth: input.renderWidth }) };
+  return {
+    type: "inspect-thumbnails",
+    jobId,
+    pageNumbers,
+    ...(input.renderWidth === undefined ? {} : { renderWidth: input.renderWidth }),
+  };
 }
 
-export function createToolInspectionCloseRequest(
-  jobId: string,
-): ToolWorkerInspectionClose {
+export function createToolInspectionCloseRequest(jobId: string): ToolWorkerInspectionClose {
   const normalized = jobId.trim();
   if (!normalized) throw new TypeError("Worker job ID is required.");
   return { type: "inspect-close", jobId: normalized };
@@ -318,9 +305,7 @@ export function createToolInspectionCloseRequest(
  * Structured-clone payloads are untrusted on both sides of the boundary, so
  * both directions are shape-checked before anything reads a field.
  */
-export function isToolWorkerMessage(
-  value: unknown,
-): value is ToolWorkerMessage {
+export function isToolWorkerMessage(value: unknown): value is ToolWorkerMessage {
   if (!isRecord(value) || !isNonEmptyString(value.jobId)) return false;
   if (value.type === "cancel") return true;
   if (value.type === "inspect-close") return true;
@@ -330,9 +315,7 @@ export function isToolWorkerMessage(
       Array.isArray(value.pageNumbers) &&
       value.pageNumbers.length > 0 &&
       value.pageNumbers.length <= PDF_THUMBNAIL_CACHE_SIZE &&
-      value.pageNumbers.every(
-        (pageNumber) => Number.isInteger(pageNumber) && pageNumber > 0,
-      ) &&
+      value.pageNumbers.every((pageNumber) => Number.isInteger(pageNumber) && pageNumber > 0) &&
       new Set(value.pageNumbers).size === value.pageNumbers.length
     );
   }
@@ -354,15 +337,12 @@ export function isToolWorkerMessage(
     isOptionalString(value.secondary) &&
     Array.isArray(value.files) &&
     value.files.every(isToolRunFile) &&
-    (value.items === undefined ||
-      (Array.isArray(value.items) && value.items.every(isRunItem))) &&
+    (value.items === undefined || (Array.isArray(value.items) && value.items.every(isRunItem))) &&
     isRecord(value.settings)
   );
 }
 
-export function isToolWorkerResponse(
-  value: unknown,
-): value is ToolWorkerResponse {
+export function isToolWorkerResponse(value: unknown): value is ToolWorkerResponse {
   if (!isRecord(value) || !isNonEmptyString(value.jobId)) return false;
   if (value.type === "canceled") return true;
   if (value.type === "inspection-closed") return true;
@@ -397,16 +377,11 @@ export function isToolWorkerResponse(
   // The result is produced by this repo's own worker, so only the envelope is
   // checked here; the render union is the renderer's own exhaustive switch.
   return (
-    value.type === "success" &&
-    isRecord(value.result) &&
-    typeof value.result.render === "string"
+    value.type === "success" && isRecord(value.result) && typeof value.result.render === "string"
   );
 }
 
-export function beginWorkerJob(
-  state: ToolJobState,
-  jobId: string,
-): ToolJobState {
+export function beginWorkerJob(state: ToolJobState, jobId: string): ToolJobState {
   if (!jobId.trim()) throw new TypeError("Worker job ID is required.");
   return {
     ...state,
@@ -432,8 +407,11 @@ export function reduceWorkerJobState(
   if (message.type === "inspection-closed") return state;
   // Inspection completes geometry first; its live session can still fail
   // while rendering requested pages. Conversion results remain terminal.
-  const inspectionFailure = message.type === "failure" &&
-    state.status === "completed" && state.pageCount > 0 && state.result === null;
+  const inspectionFailure =
+    message.type === "failure" &&
+    state.status === "completed" &&
+    state.pageCount > 0 &&
+    state.result === null;
   if (state.status !== "running" && !inspectionFailure) return state;
   if (message.type === "progress") {
     const { completed, total, stage } = message;
@@ -484,9 +462,7 @@ function mergePageThumbnails(
   pages: readonly ToolPagePreview[],
   incoming: readonly ToolPageThumbnail[],
 ): readonly ToolPagePreview[] {
-  const incomingByPage = new Map(
-    incoming.map((preview) => [preview.pageNumber, preview] as const),
-  );
+  const incomingByPage = new Map(incoming.map((preview) => [preview.pageNumber, preview] as const));
   const bufferedOrder = pages
     .filter((preview) => readOwn(preview, "buffer") instanceof ArrayBuffer)
     .map((preview) => preview.pageNumber)
@@ -558,15 +534,25 @@ function isPageThumbnail(value: unknown): value is ToolPageThumbnail {
     isPagePreview(value) &&
     readOwn(value, "buffer") instanceof ArrayBuffer &&
     (readOwn(value, "mime") === "image/jpeg" || readOwn(value, "mime") === "image/png") &&
-    (readOwn(value, "renderWidth") === undefined || isPreviewWidth(readOwn(value, "renderWidth"))) &&
-    typeof width === "number" && Number.isInteger(width) && width > 0 &&
-    typeof height === "number" && Number.isInteger(height) && height > 0 &&
+    (readOwn(value, "renderWidth") === undefined ||
+      isPreviewWidth(readOwn(value, "renderWidth"))) &&
+    typeof width === "number" &&
+    Number.isInteger(width) &&
+    width > 0 &&
+    typeof height === "number" &&
+    Number.isInteger(height) &&
+    height > 0 &&
     width * height <= PDF_PREVIEW_MAX_PIXELS
   );
 }
 
 function isPreviewWidth(value: unknown): value is number {
-  return typeof value === "number" && Number.isInteger(value) && value > 0 && value <= PDF_PREVIEW_MAX_WIDTH;
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value > 0 &&
+    value <= PDF_PREVIEW_MAX_WIDTH
+  );
 }
 
 function readOwn(value: unknown, key: string): unknown {

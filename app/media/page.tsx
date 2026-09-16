@@ -31,13 +31,7 @@ import {
   StatusBadge,
   buttonVariants,
 } from "@smarttools/ui";
-import {
-  LayoutGrid,
-  LockKeyhole,
-  Search,
-  ShieldCheck,
-  Zap,
-} from "lucide-react";
+import { LayoutGrid, LockKeyhole, Search, ShieldCheck, Zap } from "lucide-react";
 import { headers } from "next/headers";
 
 type IconRows = Readonly<Record<string, ToolIconRow>>;
@@ -56,13 +50,7 @@ function ToolCard({ icons, tool }: { icons: IconRows; tool: CatalogTool }) {
       action="Open tool →"
       description={tool.description}
       href={`/media/${tool.slug}`}
-      icon={
-        <ToolIcon
-          name={tool.name}
-          row={icons[tool.toolId] ?? null}
-          toolId={tool.toolId}
-        />
-      }
+      icon={<ToolIcon name={tool.name} row={icons[tool.toolId] ?? null} toolId={tool.toolId} />}
       status={<StatusBadge variant="success">Browser only</StatusBadge>}
       title={tool.name}
     />
@@ -97,12 +85,7 @@ export default async function HomePage({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <ProductHeader
-        actions={
-          <AccountNavigation
-            returnTo="/media"
-            user={session?.user ?? null}
-          />
-        }
+        actions={<AccountNavigation returnTo="/media" user={session?.user ?? null} />}
         href="/media"
         name="Media Tools"
       />
@@ -120,7 +103,8 @@ export default async function HomePage({
               Edit media without sending it anywhere.
             </Display>
             <Lead className="mx-auto mt-5 max-w-2xl text-primary-foreground/80">
-              Convert, organize, and compress files in dedicated browser workers. Your files stay on this device.
+              Convert, organize, and compress files in dedicated browser workers. Your files stay on
+              this device.
             </Lead>
 
             <form
@@ -170,10 +154,7 @@ export default async function HomePage({
             <SectionHeading
               action={
                 query || category ? (
-                  <a
-                    className={buttonVariants({ size: "sm", variant: "outline" })}
-                    href="/media"
-                  >
+                  <a className={buttonVariants({ size: "sm", variant: "outline" })} href="/media">
                     Clear filters
                   </a>
                 ) : undefined
@@ -247,7 +228,8 @@ export default async function HomePage({
               {
                 icon: ShieldCheck,
                 title: "Processed locally",
-                description: "Files and previews never leave your device or enter application logs.",
+                description:
+                  "Files and previews never leave your device or enter application logs.",
               },
               {
                 icon: Zap,
@@ -257,7 +239,8 @@ export default async function HomePage({
               {
                 icon: LockKeyhole,
                 title: "No hidden storage",
-                description: "No server API, IndexedDB, local storage, or service worker keeps your files.",
+                description:
+                  "No server API, IndexedDB, local storage, or service worker keeps your files.",
               },
             ].map(({ description, icon: Icon, title }) => (
               <Card className="gap-0 rounded-2xl shadow-none" key={title} role="article">

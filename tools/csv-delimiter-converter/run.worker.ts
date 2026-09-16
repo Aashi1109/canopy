@@ -13,10 +13,7 @@ import {
   serializeTable,
   utilityDelimiter,
 } from "../../lib/devtools/shared/table.ts";
-import {
-  isLargeCsvRun,
-  streamCsvRows,
-} from "../../lib/devtools/shared/streaming-csv-tool.ts";
+import { isLargeCsvRun, streamCsvRows } from "../../lib/devtools/shared/streaming-csv-tool.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 

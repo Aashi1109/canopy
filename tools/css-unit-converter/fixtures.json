@@ -69,16 +69,8 @@
       },
       "expected": {
         "render": "list",
-        "items": [
-          "1rem",
-          "Error: Value must be a number.",
-          "2rem"
-        ],
-        "labels": [
-          "16",
-          "nope",
-          "32"
-        ]
+        "items": ["1rem", "Error: Value must be a number.", "2rem"],
+        "labels": ["16", "nope", "32"]
       }
     }
   ]

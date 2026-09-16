@@ -1,8 +1,8 @@
 export type DesignSystemComponentDefinition = {
-  designId: string
-  designName: string
-  implementation: string
-}
+  designId: string;
+  designName: string;
+  implementation: string;
+};
 
 export const DESIGN_SYSTEM_COMPONENTS = [
   { designId: "wm1rh", designName: "Button/Primary", implementation: "Button[default]" },
@@ -25,16 +25,44 @@ export const DESIGN_SYSTEM_COMPONENTS = [
   { designId: "M0akV", designName: "Input/Text — Medium", implementation: "Input[size=md]" },
   { designId: "T4Nkey", designName: "Input/Text — Large", implementation: "Input[size=lg]" },
   { designId: "rUGqU", designName: "Input/Textarea", implementation: "Textarea" },
-  { designId: "vRUj9", designName: "Input/Select — Extra Small", implementation: "SelectTrigger[size=xs]" },
-  { designId: "nqd2l", designName: "Input/Select — Small", implementation: "SelectTrigger[size=sm]" },
-  { designId: "NcoS9", designName: "Input/Select — Default", implementation: "SelectTrigger[size=default]" },
-  { designId: "LV8j8", designName: "Input/Select — Medium", implementation: "SelectTrigger[size=md]" },
-  { designId: "F1Cpx", designName: "Input/Select — Large", implementation: "SelectTrigger[size=lg]" },
+  {
+    designId: "vRUj9",
+    designName: "Input/Select — Extra Small",
+    implementation: "SelectTrigger[size=xs]",
+  },
+  {
+    designId: "nqd2l",
+    designName: "Input/Select — Small",
+    implementation: "SelectTrigger[size=sm]",
+  },
+  {
+    designId: "NcoS9",
+    designName: "Input/Select — Default",
+    implementation: "SelectTrigger[size=default]",
+  },
+  {
+    designId: "LV8j8",
+    designName: "Input/Select — Medium",
+    implementation: "SelectTrigger[size=md]",
+  },
+  {
+    designId: "F1Cpx",
+    designName: "Input/Select — Large",
+    implementation: "SelectTrigger[size=lg]",
+  },
   { designId: "wsb4b", designName: "Toggle", implementation: "Switch" },
   { designId: "zfYOu", designName: "Checkbox", implementation: "Checkbox" },
-  { designId: "FDvYe", designName: "Radio — Extra Small", implementation: "RadioGroupItem[size=xs]" },
+  {
+    designId: "FDvYe",
+    designName: "Radio — Extra Small",
+    implementation: "RadioGroupItem[size=xs]",
+  },
   { designId: "Hvwjy", designName: "Radio — Small", implementation: "RadioGroupItem[size=sm]" },
-  { designId: "J0wTF9", designName: "Radio — Default", implementation: "RadioGroupItem[size=default]" },
+  {
+    designId: "J0wTF9",
+    designName: "Radio — Default",
+    implementation: "RadioGroupItem[size=default]",
+  },
   { designId: "VSDn7", designName: "Radio — Medium", implementation: "RadioGroupItem[size=md]" },
   { designId: "zbKIJ", designName: "Radio — Large", implementation: "RadioGroupItem[size=lg]" },
   { designId: "dV2U8", designName: "Alert", implementation: "AlertBanner" },
@@ -42,30 +70,94 @@ export const DESIGN_SYSTEM_COMPONENTS = [
   { designId: "Z22Y1n", designName: "Metric", implementation: "MetricCard" },
   { designId: "dvTGe", designName: "SectionHeading", implementation: "SectionHeading" },
   { designId: "p6bKLP", designName: "SidebarNavItem", implementation: "SidebarNavItem" },
-  { designId: "hZUnl", designName: "SegmentedControl/Input Result", implementation: "SegmentedControl" },
+  {
+    designId: "hZUnl",
+    designName: "SegmentedControl/Input Result",
+    implementation: "SegmentedControl",
+  },
   { designId: "vTel8", designName: "Tabs", implementation: "Tabs" },
   { designId: "WNQ3F", designName: "EmptyState", implementation: "EmptyState" },
   { designId: "s7j05", designName: "TableRow", implementation: "TableRow" },
   { designId: "DHoar", designName: "Card", implementation: "Card" },
-  { designId: "b55XX", designName: "WorkbenchFamily/JSON Formatter Viewer", implementation: "JsonFormatterWorkbench" },
-  { designId: "xWzlR", designName: "WorkbenchFamily/Data Conversion", implementation: "DataConversionWorkbench" },
-  { designId: "x9bDiO", designName: "Component/Generic Utility Workbench", implementation: "UtilityWorkbench" },
-  { designId: "g9TdB", designName: "Component/Tool Page System Controls", implementation: "ToolPageSystemControls" },
+  {
+    designId: "b55XX",
+    designName: "WorkbenchFamily/JSON Formatter Viewer",
+    implementation: "JsonFormatterWorkbench",
+  },
+  {
+    designId: "xWzlR",
+    designName: "WorkbenchFamily/Data Conversion",
+    implementation: "DataConversionWorkbench",
+  },
+  {
+    designId: "x9bDiO",
+    designName: "Component/Generic Utility Workbench",
+    implementation: "UtilityWorkbench",
+  },
+  {
+    designId: "g9TdB",
+    designName: "Component/Tool Page System Controls",
+    implementation: "ToolPageSystemControls",
+  },
   { designId: "NnxxQ", designName: "Component/Tool Page Intro", implementation: "ToolPageIntro" },
   { designId: "vMbTZ", designName: "Component/File Upload Zone", implementation: "FileUploadZone" },
   { designId: "A3D8lv", designName: "Component/File Queue Item", implementation: "FileQueueItem" },
-  { designId: "kfEw4", designName: "Component/Processing Status", implementation: "ProcessingStatus" },
+  {
+    designId: "kfEw4",
+    designName: "Component/Processing Status",
+    implementation: "ProcessingStatus",
+  },
   { designId: "wFMb0", designName: "Component/Download Result", implementation: "DownloadResult" },
-  { designId: "QQ11z", designName: "Component/Tool Options Panel", implementation: "ToolOptionsPanel" },
+  {
+    designId: "QQ11z",
+    designName: "Component/Tool Options Panel",
+    implementation: "ToolOptionsPanel",
+  },
   { designId: "eAeak", designName: "Component/Tool How It Works", implementation: "HowItWorks" },
   { designId: "ODEcI", designName: "Button/Compact Action", implementation: "CompactAction" },
-  { designId: "e8vqr", designName: "Component/Toolbar Inline Guidance", implementation: "InlineGuidance" },
-  { designId: "ngC1X", designName: "Component/Universal Product Header", implementation: "UniversalProductHeader" },
-  { designId: "Mncoc", designName: "Component/Universal Product Header — Inline Friendly", implementation: "InlineProductHeader" },
-  { designId: "hGI6k", designName: "Component/Right Panel Processing Action", implementation: "RightPanelProcessing" },
-  { designId: "bWOKG", designName: "Component/Right Panel Result Action", implementation: "RightPanelResult" },
-  { designId: "FM7qR", designName: "Component/PDF Page Navigator — Scrubber + Outline", implementation: "PdfViewer" },
-  { designId: "mU0Eq", designName: "Component/Generated JPG Preview", implementation: "MediaOutputCard" },
-  { designId: "KEdkz", designName: "Component/Media File Actions — Integrated card footer", implementation: "MediaOutputCard" },
-  { designId: "Is1Pt", designName: "Media Preview / Full screen — Image", implementation: "MediaPreview" },
-] as const satisfies readonly DesignSystemComponentDefinition[]
+  {
+    designId: "e8vqr",
+    designName: "Component/Toolbar Inline Guidance",
+    implementation: "InlineGuidance",
+  },
+  {
+    designId: "ngC1X",
+    designName: "Component/Universal Product Header",
+    implementation: "UniversalProductHeader",
+  },
+  {
+    designId: "Mncoc",
+    designName: "Component/Universal Product Header — Inline Friendly",
+    implementation: "InlineProductHeader",
+  },
+  {
+    designId: "hGI6k",
+    designName: "Component/Right Panel Processing Action",
+    implementation: "RightPanelProcessing",
+  },
+  {
+    designId: "bWOKG",
+    designName: "Component/Right Panel Result Action",
+    implementation: "RightPanelResult",
+  },
+  {
+    designId: "FM7qR",
+    designName: "Component/PDF Page Navigator — Scrubber + Outline",
+    implementation: "PdfViewer",
+  },
+  {
+    designId: "mU0Eq",
+    designName: "Component/Generated JPG Preview",
+    implementation: "MediaOutputCard",
+  },
+  {
+    designId: "KEdkz",
+    designName: "Component/Media File Actions — Integrated card footer",
+    implementation: "MediaOutputCard",
+  },
+  {
+    designId: "Is1Pt",
+    designName: "Media Preview / Full screen — Image",
+    implementation: "MediaPreview",
+  },
+] as const satisfies readonly DesignSystemComponentDefinition[];

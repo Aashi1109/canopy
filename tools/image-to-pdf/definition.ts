@@ -4,16 +4,7 @@ export default {
   toolId: "media.image-to-pdf",
   app: "media",
   category: "pdf-conversion",
-  keywords: [
-    "image",
-    "pdf",
-    "convert",
-    "jpg",
-    "png",
-    "scan",
-    "document",
-    "pages",
-  ],
+  keywords: ["image", "pdf", "convert", "jpg", "png", "scan", "document", "pages"],
   name: "Image to PDF",
   description: "Combine local images into one PDF.",
   input: {

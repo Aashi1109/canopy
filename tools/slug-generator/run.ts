@@ -16,7 +16,11 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => ({
   render: "text",
   text: ctx.input.text
     .split(/\r\n|\r|\n/)
-    .map((line) => words(line).map((word) => word.toLocaleLowerCase()).join("-"))
+    .map((line) =>
+      words(line)
+        .map((word) => word.toLocaleLowerCase())
+        .join("-"),
+    )
     .filter(Boolean)
     .join("\n"),
   downloadName: "slugs.txt",

@@ -1,27 +1,25 @@
 export function getTrustedOrigins(value: string | undefined): string[] {
   if (!value?.trim()) return [];
 
-  return [...new Set(value.split(",").map((origin) => origin.trim()))].map(
-    (origin) => {
-      let parsed: URL;
-      try {
-        parsed = new URL(origin);
-      } catch {
-        throw new Error(`Invalid trusted origin: ${origin}`);
-      }
+  return [...new Set(value.split(",").map((origin) => origin.trim()))].map((origin) => {
+    let parsed: URL;
+    try {
+      parsed = new URL(origin);
+    } catch {
+      throw new Error(`Invalid trusted origin: ${origin}`);
+    }
 
-      if (
-        !["http:", "https:"].includes(parsed.protocol) ||
-        parsed.origin !== origin ||
-        parsed.username ||
-        parsed.password
-      ) {
-        throw new Error(`Invalid trusted origin: ${origin}`);
-      }
+    if (
+      !["http:", "https:"].includes(parsed.protocol) ||
+      parsed.origin !== origin ||
+      parsed.username ||
+      parsed.password
+    ) {
+      throw new Error(`Invalid trusted origin: ${origin}`);
+    }
 
-      return parsed.origin;
-    },
-  );
+    return parsed.origin;
+  });
 }
 
 export function safeReturnTo(
@@ -42,11 +40,7 @@ export function safeReturnTo(
 
   try {
     const parsed = new URL(value);
-    if (
-      !parsed.username &&
-      !parsed.password &&
-      trustedOrigins.includes(parsed.origin)
-    ) {
+    if (!parsed.username && !parsed.password && trustedOrigins.includes(parsed.origin)) {
       return parsed.toString();
     }
   } catch {
@@ -66,8 +60,7 @@ export function normalizeAccountName(value: unknown): string {
 }
 
 const MAX_PROFILE_IMAGE_DATA_URL_LENGTH = 200_000;
-const PROFILE_IMAGE_DATA_URL =
-  /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/;
+const PROFILE_IMAGE_DATA_URL = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/;
 
 function hasImageSignature(mime: string, payload: string): boolean {
   let header: string;
@@ -94,11 +87,7 @@ export function normalizeProfileImage(value: unknown): string | null {
       throw new Error("Profile image is invalid.");
     }
     const match = PROFILE_IMAGE_DATA_URL.exec(normalized);
-    if (
-      !match ||
-      match[2].length % 4 !== 0 ||
-      !hasImageSignature(match[1], match[2])
-    ) {
+    if (!match || match[2].length % 4 !== 0 || !hasImageSignature(match[1], match[2])) {
       throw new Error("Profile image is invalid.");
     }
     return normalized;
@@ -113,11 +102,7 @@ export function normalizeProfileImage(value: unknown): string | null {
   } catch {
     throw new Error("Profile image is invalid.");
   }
-  if (
-    !["http:", "https:"].includes(parsed.protocol) ||
-    parsed.username ||
-    parsed.password
-  ) {
+  if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) {
     throw new Error("Profile image is invalid.");
   }
   return parsed.toString();

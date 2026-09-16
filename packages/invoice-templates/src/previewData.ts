@@ -188,14 +188,62 @@ export const manyLineItemsInvoiceSample: InvoicePreviewData = {
     invoiceNumber: "INV-LOAD-992",
   },
   lineItems: [
-    { id: "row-1", description: "Design System Tokens", quantity: 1, unitPrice: 400, taxable: false },
-    { id: "row-2", description: "Vite Bundler Optimizations", quantity: 6, unitPrice: 150, taxable: false },
-    { id: "row-3", description: "Prisma Schema migrations", quantity: 2, unitPrice: 120, taxable: false },
-    { id: "row-4", description: "Express route sanitization middleware", quantity: 8, unitPrice: 100, taxable: false },
-    { id: "row-5", description: "User session cookie audits", quantity: 2, unitPrice: 150, taxable: false },
-    { id: "row-6", description: "SSL Certificate configurations", quantity: 1, unitPrice: 80, taxable: false },
-    { id: "row-7", description: "PostgreSQL Database tuning", quantity: 4, unitPrice: 180, taxable: false },
-    { id: "row-8", description: "QA regression run with mock users", quantity: 10, unitPrice: 75, taxable: false },
+    {
+      id: "row-1",
+      description: "Design System Tokens",
+      quantity: 1,
+      unitPrice: 400,
+      taxable: false,
+    },
+    {
+      id: "row-2",
+      description: "Vite Bundler Optimizations",
+      quantity: 6,
+      unitPrice: 150,
+      taxable: false,
+    },
+    {
+      id: "row-3",
+      description: "Prisma Schema migrations",
+      quantity: 2,
+      unitPrice: 120,
+      taxable: false,
+    },
+    {
+      id: "row-4",
+      description: "Express route sanitization middleware",
+      quantity: 8,
+      unitPrice: 100,
+      taxable: false,
+    },
+    {
+      id: "row-5",
+      description: "User session cookie audits",
+      quantity: 2,
+      unitPrice: 150,
+      taxable: false,
+    },
+    {
+      id: "row-6",
+      description: "SSL Certificate configurations",
+      quantity: 1,
+      unitPrice: 80,
+      taxable: false,
+    },
+    {
+      id: "row-7",
+      description: "PostgreSQL Database tuning",
+      quantity: 4,
+      unitPrice: 180,
+      taxable: false,
+    },
+    {
+      id: "row-8",
+      description: "QA regression run with mock users",
+      quantity: 10,
+      unitPrice: 75,
+      taxable: false,
+    },
   ],
   totalsConfig: {
     discountType: "fixed",
@@ -237,7 +285,8 @@ export const longTextInvoiceSample: InvoicePreviewData = {
     name: "Pacific Rim Architectural Foundations & Structured Construction Materials Global Logistics Firm LLC",
     contactName: "Balthazar Montgomery-Hamilton III",
     email: "accounting-and-receivables-group@pacificrimarchitecturalstructures.com",
-    phone: "+1 (800) 555-0199 ext 302, support group lines open Monday through Friday 8am to 6pm PST",
+    phone:
+      "+1 (800) 555-0199 ext 302, support group lines open Monday through Friday 8am to 6pm PST",
     website: "pacificrimarchitecturalstructuresandgloballogistics.com",
     addressLine1: "1000 Waterfront Terminal Industrial Shipping Parkway",
     addressLine2: "Suite 450A, Building C, East Wing Terminal Annex",
@@ -250,11 +299,14 @@ export const longTextInvoiceSample: InvoicePreviewData = {
   },
   client: {
     name: "Metropolitan Civic Infrastructure Developments & Municipal Underground Rail System Advisory Committee",
-    company: "City Planning Commision Task Force Unit & Metropolitan Transit Authority Advisory Group Company Inc",
+    company:
+      "City Planning Commision Task Force Unit & Metropolitan Transit Authority Advisory Group Company Inc",
     email: "receiving-and-accounts-payable@metropolitancivicinfrastructuredevelopments.gov",
     phone: "+1 (206) 555-9000 ext 4591",
-    addressLine1: "Municipal Services Plaza, 550 Fifth Avenue West, Underground Transit Level B, Suite 10",
-    addressLine2: "c/o Department of Public Transportation & Finance Oversight Special Task Committee",
+    addressLine1:
+      "Municipal Services Plaza, 550 Fifth Avenue West, Underground Transit Level B, Suite 10",
+    addressLine2:
+      "c/o Department of Public Transportation & Finance Oversight Special Task Committee",
     city: "Seattle Transit District Area",
     state: "WA",
     zipCode: "98104",
@@ -267,19 +319,22 @@ export const longTextInvoiceSample: InvoicePreviewData = {
     paymentTerms: "Special net ninety days terms agreement with municipal agencies",
     currency: "USD",
     poNumber: "PO-MUN-SEA-TACTICAL-INFRASTRUCTURE-Q2-2026-09218274A",
-    projectName: "Tacoma Underground Tunneling Excavation Phase 3 Core Support Deliverable Milestones",
+    projectName:
+      "Tacoma Underground Tunneling Excavation Phase 3 Core Support Deliverable Milestones",
   },
   lineItems: [
     {
       id: "l-s1",
-      description: "Sub-surface tectonic analysis and seismic vibrations dampening simulation reporting. Deliverables include twelve copies of physical report bound in heavy leather and virtual 3D rendering delivered on high capacity flash storage with cryptographic verification hashes signed on site.",
+      description:
+        "Sub-surface tectonic analysis and seismic vibrations dampening simulation reporting. Deliverables include twelve copies of physical report bound in heavy leather and virtual 3D rendering delivered on high capacity flash storage with cryptographic verification hashes signed on site.",
       quantity: 1,
       unitPrice: 18500,
       taxable: true,
     },
     {
       id: "l-s2",
-      description: "Hydro-geological drilling samples core analysis. Drilled core samples extracted from the Northwest segment between milestones 104 and 108. Includes testing for arsenic, lead, and chemical runoffs under deep core pressure levels.",
+      description:
+        "Hydro-geological drilling samples core analysis. Drilled core samples extracted from the Northwest segment between milestones 104 and 108. Includes testing for arsenic, lead, and chemical runoffs under deep core pressure levels.",
       quantity: 140,
       unitPrice: 150,
       taxable: true,
@@ -295,13 +350,17 @@ export const longTextInvoiceSample: InvoicePreviewData = {
   },
   payment: {
     methods: ["bank"],
-    instructions: "Wire transfers are to be routed exclusively using ACH Federal Reserve Core System. Routing Code: US-FED-981273. Receiving Transit Institution: Federal Commerce and Trust of the Northwest. Account: 99182736152. Reference mandatory: SEATTLE-TUNNEL-PHASE-3. Please confirm with our Chief Financial Officer after sending the wire notification copy.",
-    lateFeeNote: "Late payments trigger an administrative investigation and interest under state code Chapter 12.",
+    instructions:
+      "Wire transfers are to be routed exclusively using ACH Federal Reserve Core System. Routing Code: US-FED-981273. Receiving Transit Institution: Federal Commerce and Trust of the Northwest. Account: 99182736152. Reference mandatory: SEATTLE-TUNNEL-PHASE-3. Please confirm with our Chief Financial Officer after sending the wire notification copy.",
+    lateFeeNote:
+      "Late payments trigger an administrative investigation and interest under state code Chapter 12.",
     thankYouNote: "We look forward to Phase 4 underground logistics execution next winter!",
   },
   notes: {
-    notes: "Environmental clearances have been pre-approved under code Seattle-Geo-2026. Drilling is monitored by certified structural engineers.",
-    terms: "Payment must be received within 90 days. Disputes must be filed within fifteen days of receiving this statement.",
+    notes:
+      "Environmental clearances have been pre-approved under code Seattle-Geo-2026. Drilling is monitored by certified structural engineers.",
+    terms:
+      "Payment must be received within 90 days. Disputes must be filed within fifteen days of receiving this statement.",
   },
   template: "classic",
 };

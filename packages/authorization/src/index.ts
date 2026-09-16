@@ -134,10 +134,7 @@ const ADMIN_ROLE = Object.freeze<Role>({
   isSystem: true,
 });
 
-export const SYSTEM_ROLES: readonly Role[] = Object.freeze([
-  USER_ROLE,
-  ADMIN_ROLE,
-]);
+export const SYSTEM_ROLES: readonly Role[] = Object.freeze([USER_ROLE, ADMIN_ROLE]);
 
 function freezeAccess(access: Access): Access {
   for (const actions of Object.values(access)) Object.freeze(actions);
@@ -176,9 +173,7 @@ export function assertValidAccess(access: unknown): asserts access is Access {
   }
 }
 
-export function mergeRoleAccess(
-  roles: readonly Pick<Role, "id" | "access">[],
-): Access {
+export function mergeRoleAccess(roles: readonly Pick<Role, "id" | "access">[]): Access {
   const merged: Access = {};
 
   for (const role of roles) {
@@ -222,11 +217,7 @@ export function assertAccessPrerequisites(access: unknown): asserts access is Ac
   }
 }
 
-export function hasPermission(
-  access: Access,
-  resource: string,
-  action: string,
-): boolean {
+export function hasPermission(access: Access, resource: string, action: string): boolean {
   const catalog: PermissionCatalog = PERMISSION_CATALOG;
   return (
     Object.hasOwn(catalog, resource) &&
@@ -240,9 +231,7 @@ function isProtectedRole(role: Pick<Role, "id" | "isSystem">): boolean {
   return role.isSystem || role.id === "user" || role.id === "admin";
 }
 
-export function assertCanEditRole(
-  role: Pick<Role, "id" | "isSystem">,
-): void {
+export function assertCanEditRole(role: Pick<Role, "id" | "isSystem">): void {
   if (isProtectedRole(role)) {
     throw new Error("System roles are protected and cannot be edited.");
   }
@@ -287,10 +276,7 @@ function assertAnotherAdminRemains(
   assertValidAdminCounts(counts);
   if (!isAdmin(user)) return;
 
-  if (
-    counts.adminCount <= 1 ||
-    (user.status === "active" && counts.activeAdminCount <= 1)
-  ) {
+  if (counts.adminCount <= 1 || (user.status === "active" && counts.activeAdminCount <= 1)) {
     throw new Error(`The final Admin cannot be ${action}d.`);
   }
 }
@@ -307,11 +293,7 @@ export function assertCanSuspendUser(
   counts: AdminCounts,
 ): void {
   assertValidAdminCounts(counts);
-  if (
-    isAdmin(user) &&
-    user.status === "active" &&
-    counts.activeAdminCount <= 1
-  ) {
+  if (isAdmin(user) && user.status === "active" && counts.activeAdminCount <= 1) {
     throw new Error("The final Admin cannot be suspended.");
   }
 }

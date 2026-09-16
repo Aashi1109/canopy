@@ -56,9 +56,7 @@ test("file size checks accept exact boundaries and reject one byte over", () => 
 });
 
 test("lower per-tool and aggregate limits remain authoritative", () => {
-  const limits = resolveFileLimits(
-    filesInput({ maxBytes: 25, maxFiles: 2, maxTotalBytes: 40 }),
-  );
+  const limits = resolveFileLimits(filesInput({ maxBytes: 25, maxFiles: 2, maxTotalBytes: 40 }));
   assert.ok(limits);
   assert.doesNotThrow(() => assertFileSizes(limits, [{ size: 20 }, { size: 20 }]));
   assert.throws(
@@ -79,11 +77,9 @@ test("worker file validation reads only a bounded signature prefix", async () =>
       return super.slice(start, end, type);
     }
   }
-  const source = new TrackingFile(
-    [Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0, 0])],
-    "photo.jpg",
-    { type: "image/jpeg" },
-  );
+  const source = new TrackingFile([Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0, 0])], "photo.jpg", {
+    type: "image/jpeg",
+  });
   const spec = {
     input: filesInput({ maxBytes: 25, maxTotalBytes: 25 }),
   };
@@ -109,11 +105,22 @@ test("worker file validation rejects a media file whose bytes have no valid sign
 test("PDF tools accept explicitly declared watermark images but reject disguised images", async () => {
   const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
   const image = createToolRunFile("logo", new File([png], "logo.png", { type: "image/png" }));
-  const document = createToolRunFile("pdf", new File(["%PDF-1.7"], "source.pdf", { type: "application/pdf" }));
-  await assertRunnableFiles({ input: filesInput({ engine: "pdf", accept: "application/pdf,image/jpeg,image/png" }) }, [document, image]);
-  const disguised = createToolRunFile("fake", new File([png], "fake.pdf", { type: "application/octet-stream" }));
+  const document = createToolRunFile(
+    "pdf",
+    new File(["%PDF-1.7"], "source.pdf", { type: "application/pdf" }),
+  );
+  await assertRunnableFiles(
+    { input: filesInput({ engine: "pdf", accept: "application/pdf,image/jpeg,image/png" }) },
+    [document, image],
+  );
+  const disguised = createToolRunFile(
+    "fake",
+    new File([png], "fake.pdf", { type: "application/octet-stream" }),
+  );
   await assert.rejects(
-    assertRunnableFiles({ input: filesInput({ engine: "pdf", accept: "application/pdf,.pdf" }) }, [disguised]),
+    assertRunnableFiles({ input: filesInput({ engine: "pdf", accept: "application/pdf,.pdf" }) }, [
+      disguised,
+    ]),
     (error) => error?.code === "unsupported-type",
   );
 });

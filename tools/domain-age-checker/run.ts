@@ -32,13 +32,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
 
   let response: Response;
   try {
-    response = await fetch(
-      `https://rdap.org/domain/${encodeURIComponent(domain)}`,
-      {
-        headers: { accept: "application/rdap+json, application/json" },
-        signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
-      },
-    );
+    response = await fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`, {
+      headers: { accept: "application/rdap+json, application/json" },
+      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+    });
   } catch {
     throw new ToolError(
       "rdap-unreachable",
@@ -55,36 +52,28 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   }
   const data: unknown = await response.json();
   if (!isRecord(data)) {
-    throw new ToolError(
-      "rdap-invalid-response",
-      "RDAP service returned an invalid response.",
-    );
+    throw new ToolError("rdap-invalid-response", "RDAP service returned an invalid response.");
   }
   ctx.signal.throwIfAborted();
 
   const events = Array.isArray(data.events) ? data.events.filter(isRecord) : [];
   const event = (action: string): unknown =>
-    events.find((candidate) => candidate.eventAction === action)?.eventDate ??
-    null;
+    events.find((candidate) => candidate.eventAction === action)?.eventDate ?? null;
 
   return {
     render: "text",
     text: JSON.stringify(
       {
         domain: data.ldhName ?? domain,
-        ...(ctx.settings.showRegistrationDate ?? true
+        ...((ctx.settings.showRegistrationDate ?? true)
           ? { registered: event("registration") }
           : {}),
-        ...(ctx.settings.showExpiryDate ?? true
-          ? { expires: event("expiration") }
-          : {}),
+        ...((ctx.settings.showExpiryDate ?? true) ? { expires: event("expiration") } : {}),
         updated: event("last changed"),
         status: data.status ?? [],
         nameservers: Array.isArray(data.nameservers)
           ? data.nameservers.flatMap((server: unknown) =>
-              isRecord(server) && typeof server.ldhName === "string"
-                ? [server.ldhName]
-                : [],
+              isRecord(server) && typeof server.ldhName === "string" ? [server.ldhName] : [],
             )
           : [],
       },

@@ -31,7 +31,8 @@ export function describeCron(expression: string): string {
   parseCronField(fields[3], 1, 12, "Month");
   parseCronField(fields[4], 0, 7, "Weekday", true);
   const [minute, hour, day, month, weekday] = fields;
-  const timing = minute === "*" && hour === "*" ? "every minute" : `at minute ${minute} of hour ${hour}`;
+  const timing =
+    minute === "*" && hour === "*" ? "every minute" : `at minute ${minute} of hour ${hour}`;
   return `${timing}; day ${day}; month ${month}; weekday ${weekday}`;
 }
 
@@ -76,11 +77,7 @@ function parseCronField(
   return { values, wildcard };
 }
 
-export function nextCronRuns(
-  expression: string,
-  timezone: "local" | "utc",
-  count = 5,
-) {
+export function nextCronRuns(expression: string, timezone: "local" | "utc", count = 5) {
   const fields = expression.trim().split(/\s+/);
   if (fields.length !== 5) {
     throw new ToolError("invalid-cron", "Cron expression must contain five fields.");
@@ -101,16 +98,11 @@ export function nextCronRuns(
   }
 
   for (let checked = 0; checked < 1_051_200 && runs.length < count; checked += 1) {
-    const minuteValue =
-      timezone === "local" ? cursor.getMinutes() : cursor.getUTCMinutes();
-    const hourValue =
-      timezone === "local" ? cursor.getHours() : cursor.getUTCHours();
-    const dayValue =
-      timezone === "local" ? cursor.getDate() : cursor.getUTCDate();
-    const monthValue =
-      (timezone === "local" ? cursor.getMonth() : cursor.getUTCMonth()) + 1;
-    const weekdayValue =
-      timezone === "local" ? cursor.getDay() : cursor.getUTCDay();
+    const minuteValue = timezone === "local" ? cursor.getMinutes() : cursor.getUTCMinutes();
+    const hourValue = timezone === "local" ? cursor.getHours() : cursor.getUTCHours();
+    const dayValue = timezone === "local" ? cursor.getDate() : cursor.getUTCDate();
+    const monthValue = (timezone === "local" ? cursor.getMonth() : cursor.getUTCMonth()) + 1;
+    const weekdayValue = timezone === "local" ? cursor.getDay() : cursor.getUTCDay();
     const dayMatches =
       day.wildcard && weekday.wildcard
         ? true

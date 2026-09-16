@@ -30,18 +30,18 @@ export default async function NewTemplatePage() {
         <div className="flex min-w-0 items-center gap-3">
           <Link
             aria-label="Back to templates"
-            className={buttonVariants({ className: "size-8 shrink-0 rounded-lg", size: "icon", variant: "ghost" })}
+            className={buttonVariants({
+              className: "size-8 shrink-0 rounded-lg",
+              size: "icon",
+              variant: "ghost",
+            })}
             href="/admin/templates"
           >
             <ArrowLeft aria-hidden="true" className="size-[18px]" />
           </Link>
           <div className="min-w-0">
-            <H1 className="truncate text-foreground">
-              New standard template
-            </H1>
-            <Caption className="block mt-0.5 text-muted-foreground">
-              Templates / Create
-            </Caption>
+            <H1 className="truncate text-foreground">New standard template</H1>
+            <Caption className="block mt-0.5 text-muted-foreground">Templates / Create</Caption>
           </div>
         </div>
         <Caption className="text-warning">Not saved</Caption>
@@ -55,11 +55,10 @@ export default async function NewTemplatePage() {
           <input name="category" type="hidden" value="professional" />
 
           <div>
-            <H3 className="text-foreground">
-              Create a standard template
-            </H3>
+            <H3 className="text-foreground">Create a standard template</H3>
             <Caption className="block mt-1.5 max-w-3xl text-muted-foreground">
-              Set the core details and creation defaults. You can refine the template after it has been created.
+              Set the core details and creation defaults. You can refine the template after it has
+              been created.
             </Caption>
           </div>
 
@@ -70,12 +69,7 @@ export default async function NewTemplatePage() {
               label="Template name"
               required
             >
-              <Input
-                autoComplete="off"
-                name="name"
-                placeholder="Service Invoice"
-                required
-              />
+              <Input autoComplete="off" name="name" placeholder="Service Invoice" required />
             </Field>
             <Field
               description="Used in URLs and locked after creation."
@@ -148,7 +142,10 @@ export default async function NewTemplatePage() {
               Creates one standard template with these settings.
             </Caption>
             <div className="flex items-center justify-end gap-2.5">
-              <Link className={buttonVariants({ className: "rounded-full px-5", variant: "ghost" })} href="/admin/templates">
+              <Link
+                className={buttonVariants({ className: "rounded-full px-5", variant: "ghost" })}
+                href="/admin/templates"
+              >
                 Cancel
               </Link>
               <SubmitButton className="rounded-full px-6" size="lg" type="submit">
@@ -158,7 +155,10 @@ export default async function NewTemplatePage() {
           </div>
         </form>
 
-        <aside className="flex flex-col rounded-xl border border-border bg-card p-7 shadow-sm" aria-labelledby="standard-guidance-title">
+        <aside
+          className="flex flex-col rounded-xl border border-border bg-card p-7 shadow-sm"
+          aria-labelledby="standard-guidance-title"
+        >
           <span className="grid size-[52px] place-items-center rounded-xl bg-primary/10 text-primary">
             <LayoutTemplate aria-hidden="true" className="size-6" />
           </span>
@@ -166,7 +166,8 @@ export default async function NewTemplatePage() {
             A dependable starting point
           </H3>
           <Muted className="mt-[22px] text-muted-foreground">
-            Standard templates begin with a proven layout family and safe defaults, so creation stays quick and predictable.
+            Standard templates begin with a proven layout family and safe defaults, so creation
+            stays quick and predictable.
           </Muted>
           <List className="list-none p-0 space-y-0 mt-[22px] grid gap-[22px] text-foreground">
             {[

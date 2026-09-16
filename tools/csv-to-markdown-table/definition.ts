@@ -4,21 +4,17 @@ export default {
   toolId: "devtools.csv-to-markdown-table",
   app: "devtools",
   category: "csv-data-tools",
-  keywords: [
-    "csv",
-    "markdown",
-    "table",
-    "readme",
-    "github",
-    "tsv",
-    "convert",
-  ],
+  keywords: ["csv", "markdown", "table", "readme", "github", "tsv", "convert"],
   name: "CSV to Markdown Table",
   description: "Convert CSV rows to a Markdown table.",
   input: {
     kind: "text",
     label: "CSV input",
-    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
+    acceptFiles: {
+      accept: ".csv,.tsv,text/csv,text/tab-separated-values",
+      maxBytes: 104_857_600,
+      maxEditableBytes: 2_000_000,
+    },
     placeholder: "name,role\nAda,Admin\nLin,Editor",
   },
   settings: {
@@ -56,12 +52,12 @@ export default {
       "The first row is always treated as the header. There is no headerless mode.",
       "Alignment is not configurable — the separator row is always `---`.",
       "Pipes and backslashes inside cells are escaped, and embedded newlines become `<br>`, which renders on GitHub but not in every Markdown flavour.",
-      "Quoted fields are parsed per RFC 4180, so a comma inside `\"a,b\"` stays in one cell.",
+      'Quoted fields are parsed per RFC 4180, so a comma inside `"a,b"` stays in one cell.',
     ],
     faq: [
       {
         q: "My data has commas inside a field. Will it break?",
-        a: "Not if the field is quoted (`\"Smith, Ada\"`). Quoted fields are parsed properly. Unquoted commas are genuinely field separators and will split the cell.",
+        a: 'Not if the field is quoted (`"Smith, Ada"`). Quoted fields are parsed properly. Unquoted commas are genuinely field separators and will split the cell.',
       },
       {
         q: "Why does it say every row must have the same number of fields?",

@@ -4,21 +4,18 @@ export default {
   toolId: "devtools.csv-validator",
   app: "devtools",
   category: "csv-data-tools",
-  keywords: [
-    "csv",
-    "validate",
-    "headers",
-    "quoting",
-    "rows",
-    "lint",
-  ],
+  keywords: ["csv", "validate", "headers", "quoting", "rows", "lint"],
   name: "CSV Validator",
   description: "Validate CSV quoting, headers, and row widths.",
   layout: "stacked",
   input: {
     kind: "text",
     label: "CSV input",
-    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
+    acceptFiles: {
+      accept: ".csv,.tsv,text/csv,text/tab-separated-values",
+      maxBytes: 104_857_600,
+      maxEditableBytes: 2_000_000,
+    },
     placeholder: "name,age\nAda,36",
   },
   settings: {
@@ -70,7 +67,7 @@ export default {
     limitations: [
       "Only structure is validated. Column types, value ranges, and required fields are not checked.",
       "The first row is always treated as the header. A headerless file will report its first data row as headers.",
-      "Header uniqueness is compared after trimming, so \"name\" and \"name \" count as a duplicate.",
+      'Header uniqueness is compared after trimming, so "name" and "name " count as a duplicate.',
     ],
     faq: [
       {

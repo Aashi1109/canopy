@@ -12,9 +12,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     ctx.settings.numbers ? "0123456789" : "",
     ctx.settings.symbols ? "!@#$%^&*()-_=+[]{}" : "",
   ].join("");
-  const usableAlphabet = ctx.settings.excludeAmbiguous
-    ? alphabet.replace(/[0OIl]/g, "")
-    : alphabet;
+  const usableAlphabet = ctx.settings.excludeAmbiguous ? alphabet.replace(/[0OIl]/g, "") : alphabet;
   return {
     render: "list",
     items: Array.from({ length: ctx.settings.count }, () =>

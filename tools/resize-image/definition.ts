@@ -119,8 +119,7 @@ export default {
   capabilities: { cancel: true, download: true, progress: true },
   workbenchMark: { text: "ISZ", tone: "accent" },
   labels: {
-    empty:
-      "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF files (25 MiB each) to resize them.",
+    empty: "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF files (25 MiB each) to resize them.",
     ready: "Your resized images are ready to download.",
     running: "Resizing the images…",
   },

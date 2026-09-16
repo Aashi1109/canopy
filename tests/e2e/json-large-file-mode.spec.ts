@@ -74,24 +74,16 @@ test("JSON Viewer streams a large file without loading it into the page editor",
   await expect(editor).toContainText("Large-file mode");
   await expect(input).toHaveJSProperty("readOnly", true);
   const inputPreview = await input.inputValue();
-  expect(Buffer.byteLength(inputPreview)).toBeLessThanOrEqual(
-    LARGE_TEXT_PREVIEW_BYTES,
-  );
+  expect(Buffer.byteLength(inputPreview)).toBeLessThanOrEqual(LARGE_TEXT_PREVIEW_BYTES);
   expect(inputPreview.length).toBeGreaterThan(0);
   expect(source.startsWith(inputPreview)).toBe(true);
   expect(await largeFileReadAttempts(page)).toEqual({ arrayBuffer: 0, text: 0 });
 
-  await expect(
-    workbench.getByText("Large JSON result", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    workbench.getByText("Read-only · bounded preview", { exact: true }),
-  ).toBeVisible();
+  await expect(workbench.getByText("Large JSON result", { exact: true })).toBeVisible();
+  await expect(workbench.getByText("Read-only · bounded preview", { exact: true })).toBeVisible();
   await expect(workbench.getByTestId("json-result-renderer")).toHaveCount(0);
   await expect(workbench.getByRole("tab", { name: "Tree" })).toHaveCount(0);
-  await expect(
-    workbench.getByRole("combobox", { name: "JSON result view" }),
-  ).toHaveCount(0);
+  await expect(workbench.getByRole("combobox", { name: "JSON result view" })).toHaveCount(0);
 
   const toolbar = workbench.getByTestId("tool-action-toolbar");
   await toolbar.getByRole("button", { name: "Validate", exact: true }).click();
@@ -100,21 +92,19 @@ test("JSON Viewer streams a large file without loading it into the page editor",
   });
   const validatedPreview = workbench.locator('[data-purpose="result"] code');
   await expect(validatedPreview).toBeVisible();
-  expect(
-    Buffer.byteLength((await validatedPreview.textContent()) ?? ""),
-  ).toBeLessThanOrEqual(LARGE_TEXT_PREVIEW_BYTES);
+  expect(Buffer.byteLength((await validatedPreview.textContent()) ?? "")).toBeLessThanOrEqual(
+    LARGE_TEXT_PREVIEW_BYTES,
+  );
   expect(await largeFileReadAttempts(page)).toEqual({ arrayBuffer: 0, text: 0 });
 
   await toolbar.getByRole("button", { name: "Beautify", exact: true }).click();
-  await expect(
-    workbench.getByRole("heading", { name: "Complete generated file" }),
-  ).toBeVisible({ timeout: 60_000 });
+  await expect(workbench.getByRole("heading", { name: "Complete generated file" })).toBeVisible({
+    timeout: 60_000,
+  });
   const formattedPreview = workbench.locator('[data-purpose="result"] code');
   await expect(formattedPreview).toBeVisible();
   const formattedPreviewText = (await formattedPreview.textContent()) ?? "";
-  expect(Buffer.byteLength(formattedPreviewText)).toBeLessThanOrEqual(
-    LARGE_TEXT_PREVIEW_BYTES,
-  );
+  expect(Buffer.byteLength(formattedPreviewText)).toBeLessThanOrEqual(LARGE_TEXT_PREVIEW_BYTES);
   expect(expectedBeautified.startsWith(formattedPreviewText)).toBe(true);
   expect(formattedPreviewText.length).toBeLessThan(expectedBeautified.length);
 
@@ -126,31 +116,21 @@ test("JSON Viewer streams a large file without loading it into the page editor",
     .getByRole("button", { name: "Download file", exact: true })
     .click();
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe(
-    "smarttools-json-viewer-formatted.json",
-  );
+  expect(download.suggestedFilename()).toBe("smarttools-json-viewer-formatted.json");
   const downloadedBytes = await readDownload(download);
-  expect(downloadedBytes.byteLength).toBe(
-    Buffer.byteLength(expectedBeautified),
-  );
+  expect(downloadedBytes.byteLength).toBe(Buffer.byteLength(expectedBeautified));
   expect(downloadedBytes.equals(Buffer.from(expectedBeautified))).toBe(true);
 
-  await editor
-    .getByRole("button", { name: "Remove large-source.json" })
-    .click();
+  await editor.getByRole("button", { name: "Remove large-source.json" }).click();
   await expect(input).toHaveValue("");
   await expect(input).toHaveJSProperty("readOnly", false);
   await expect(editor).not.toContainText("Large-file mode");
-  await expect(
-    workbench.getByRole("heading", { name: "Complete generated file" }),
-  ).toHaveCount(0);
+  await expect(workbench.getByRole("heading", { name: "Complete generated file" })).toHaveCount(0);
   if (artifactJobs !== null) {
     await expect
       .poll(async () => {
         const currentJobs = await artifactJobIds(page);
-        return currentJobs === null
-          ? false
-          : artifactJobs.some((id) => currentJobs.includes(id));
+        return currentJobs === null ? false : artifactJobs.some((id) => currentJobs.includes(id));
       })
       .toBe(false);
   }

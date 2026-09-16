@@ -14,7 +14,8 @@ export type AccountNavigationProps = {
   user: { name: string; isAdmin?: boolean } | null;
 };
 
-const itemClassName = "flex min-h-10 cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4";
+const itemClassName =
+  "flex min-h-10 cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4";
 
 function useSignOut(destination: string) {
   const [pending, setPending] = useState(false);
@@ -49,16 +50,29 @@ export function SwitchAccountButton({ returnTo }: { returnTo: string }) {
       <Button disabled={pending} onClick={() => void signOut()} variant="secondary">
         {pending ? "Signing out…" : "Switch account"}
       </Button>
-      {error ? <P className="mt-2 text-destructive" role="alert">{error}</P> : null}
+      {error ? (
+        <P className="mt-2 text-destructive" role="alert">
+          {error}
+        </P>
+      ) : null}
     </div>
   );
 }
 
-export function AccountNavigation({ className, returnTo, restricted = false, user }: AccountNavigationProps) {
+export function AccountNavigation({
+  className,
+  returnTo,
+  restricted = false,
+  user,
+}: AccountNavigationProps) {
   const { pending, error, signOut } = useSignOut(restricted ? "/auth" : "/");
   const target = `${user ? "/auth/profile" : "/auth"}?${new URLSearchParams({ returnTo })}`;
   const accountName = user?.name.trim() || "Account";
-  const initials = accountName.split(/\s+/).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join("");
+  const initials = accountName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
 
   return (
     <nav aria-label="Account" className={cn("flex items-center", className)}>
@@ -71,39 +85,68 @@ export function AccountNavigation({ className, returnTo, restricted = false, use
               title={accountName}
               variant="ghost"
             >
-              <Caption aria-hidden="true" className="grid size-[30px] shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+              <Caption
+                aria-hidden="true"
+                className="grid size-[30px] shrink-0 place-items-center rounded-full bg-primary text-primary-foreground"
+              >
                 {initials}
               </Caption>
               <Caption className="truncate">{accountName}</Caption>
-              <ChevronDown aria-hidden="true" className="size-[13px] shrink-0 text-muted-foreground" />
+              <ChevronDown
+                aria-hidden="true"
+                className="size-[13px] shrink-0 text-muted-foreground"
+              />
             </Button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
-            <DropdownMenu.Content align="end" sideOffset={8} collisionPadding={12} className="z-[100] w-56 max-w-[calc(100vw-24px)] rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-lg">
+            <DropdownMenu.Content
+              align="end"
+              sideOffset={8}
+              collisionPadding={12}
+              className="z-[100] w-56 max-w-[calc(100vw-24px)] rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-lg"
+            >
               {!restricted && user.isAdmin ? (
                 <DropdownMenu.Item asChild className={itemClassName}>
-                  <a href="/admin"><Shield aria-hidden="true" />Admin page</a>
+                  <a href="/admin">
+                    <Shield aria-hidden="true" />
+                    Admin page
+                  </a>
                 </DropdownMenu.Item>
               ) : null}
-              {!restricted ? <DropdownMenu.Item asChild className={itemClassName}>
-                <a href={target}><UserRound aria-hidden="true" />My profile</a>
-              </DropdownMenu.Item> : null}
+              {!restricted ? (
+                <DropdownMenu.Item asChild className={itemClassName}>
+                  <a href={target}>
+                    <UserRound aria-hidden="true" />
+                    My profile
+                  </a>
+                </DropdownMenu.Item>
+              ) : null}
               {!restricted ? <DropdownMenu.Separator className="my-1 h-px bg-border" /> : null}
               <DropdownMenu.Item
                 aria-label={pending ? "Logging out…" : "Log out"}
                 className={cn(itemClassName, "text-destructive")}
                 disabled={pending}
-                onSelect={(event) => { event.preventDefault(); void signOut(); }}
+                onSelect={(event) => {
+                  event.preventDefault();
+                  void signOut();
+                }}
               >
                 <LogOut aria-hidden="true" />
                 <span role="status">{pending ? "Logging out…" : "Log out"}</span>
               </DropdownMenu.Item>
-              {error ? <P className="px-3 py-2 text-destructive" role="alert">{error}</P> : null}
+              {error ? (
+                <P className="px-3 py-2 text-destructive" role="alert">
+                  {error}
+                </P>
+              ) : null}
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
       ) : (
-        <a className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground no-underline outline-none transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" href={target}>
+        <a
+          className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground no-underline outline-none transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          href={target}
+        >
           Sign in
         </a>
       )}

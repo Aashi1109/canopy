@@ -91,7 +91,14 @@ test("system Admin uses current built-in grants even when stored grants predate 
   for (const action of Object.keys(PERMISSION_CATALOG.blog.actions)) {
     assert.equal(hasPermission(access, "blog", action), true);
   }
-  assert.equal(hasPermission(mergeRoleAccess([customRole({ name: "Admin", access: legacyAccess })]), "blog", "view"), false);
+  assert.equal(
+    hasPermission(
+      mergeRoleAccess([customRole({ name: "Admin", access: legacyAccess })]),
+      "blog",
+      "view",
+    ),
+    false,
+  );
   assert.equal(legacyAccess.blog, undefined, "stored grants are not mutated");
 });
 
@@ -140,9 +147,7 @@ test("multiple roles combine only positive grants and missing grants deny", () =
 });
 
 test("access validation rejects malformed and unknown permissions", () => {
-  assert.doesNotThrow(() =>
-    assertValidAccess({ tools: { view: true, edit: false } }),
-  );
+  assert.doesNotThrow(() => assertValidAccess({ tools: { view: true, edit: false } }));
   assert.throws(
     () => assertValidAccess({ billing: { view: true } }),
     /Unknown permission resource: billing/,
@@ -168,24 +173,42 @@ test("access validation rejects malformed and unknown permissions", () => {
 
 test("permission prerequisites apply to effective grants without silently granting access", () => {
   assert.deepEqual(getMissingPermissionPrerequisite({}, "tools", "edit"), {
-    resource: "admin", action: "enter",
+    resource: "admin",
+    action: "enter",
   });
   assert.deepEqual(getMissingPermissionPrerequisite({ admin: { enter: true } }, "tools", "edit"), {
-    resource: "tools", action: "view",
+    resource: "tools",
+    action: "view",
   });
   assert.equal(getMissingPermissionPrerequisite({}, "admin", "enter"), null);
   for (const [resource, { actions }] of Object.entries(PERMISSION_CATALOG)) {
     for (const action of Object.keys(actions)) {
       assert.equal(hasPermission(ADMIN_ACCESS, resource, action), true);
       if (resource === "admin") continue;
-      assert.equal(hasPermission({ [resource]: { view: true, [action]: true } }, resource, action), false);
+      assert.equal(
+        hasPermission({ [resource]: { view: true, [action]: true } }, resource, action),
+        false,
+      );
       if (action !== "view") {
-        assert.equal(hasPermission({ admin: { enter: true }, [resource]: { [action]: true } }, resource, action), false);
+        assert.equal(
+          hasPermission(
+            { admin: { enter: true }, [resource]: { [action]: true } },
+            resource,
+            action,
+          ),
+          false,
+        );
       }
     }
   }
-  assert.throws(() => assertAccessPrerequisites({ tools: { view: true } }), /tools.view requires admin.enter/);
-  assert.throws(() => assertAccessPrerequisites({ admin: { enter: true }, tools: { edit: true } }), /tools.edit requires tools.view/);
+  assert.throws(
+    () => assertAccessPrerequisites({ tools: { view: true } }),
+    /tools.view requires admin.enter/,
+  );
+  assert.throws(
+    () => assertAccessPrerequisites({ admin: { enter: true }, tools: { edit: true } }),
+    /tools.edit requires tools.view/,
+  );
   assert.throws(() => assertAccessPrerequisites({ tools: { view: "true" } }), /must be boolean/);
   assert.doesNotThrow(() => assertAccessPrerequisites({ tools: { edit: false } }));
   assert.doesNotThrow(() => assertAccessPrerequisites({}));
@@ -211,14 +234,8 @@ test("protected roles cannot be edited or deleted and assigned custom roles cann
 
   const assignedRole = customRole();
   assert.doesNotThrow(() => assertCanEditRole(assignedRole));
-  assert.throws(
-    () => assertCanEditRole(customRole({ isSystem: true })),
-    /protected/,
-  );
-  assert.throws(
-    () => assertCanDeleteRole(assignedRole, 1),
-    /assigned to users/,
-  );
+  assert.throws(() => assertCanEditRole(customRole({ isSystem: true })), /protected/);
+  assert.throws(() => assertCanDeleteRole(assignedRole, 1), /assigned to users/);
   assert.doesNotThrow(() => assertCanDeleteRole(assignedRole, 0));
 });
 

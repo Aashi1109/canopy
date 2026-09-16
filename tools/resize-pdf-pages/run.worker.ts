@@ -46,9 +46,7 @@ function fitMode(value: string): FitMode {
 }
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
-  const selection = validatePdfSelection(
-    ctx.input.files.map((file) => ({ size: file.size })),
-  );
+  const selection = validatePdfSelection(ctx.input.files.map((file) => ({ size: file.size })));
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
   for (const file of ctx.input.files) await validatePdfInput(file);
 
@@ -79,11 +77,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
             ? { width: requested.height, height: requested.width }
             : requested;
       const inner = getPdfContentBox(target.width, target.height, ctx.settings.margin);
-      const placement = fitRect(
-        { width: page.getWidth(), height: page.getHeight() },
-        inner,
-        fit,
-      );
+      const placement = fitRect({ width: page.getWidth(), height: page.getHeight() }, inner, fit);
       page.scaleContent(placement.scaleX, placement.scaleY);
       page.scaleAnnotations(placement.scaleX, placement.scaleY);
       const translateX = inner.x + placement.x;
@@ -91,11 +85,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       page.translateContent(translateX, translateY);
       const annotations = page.node.Annots();
       if (annotations) {
-        for (
-          let annotationIndex = 0;
-          annotationIndex < annotations.size();
-          annotationIndex += 1
-        ) {
+        for (let annotationIndex = 0; annotationIndex < annotations.size(); annotationIndex += 1) {
           const annotation = annotations.lookupMaybe(annotationIndex, PDFDict);
           const rect = annotation?.lookupMaybe(PDFName.of("Rect"), PDFArray);
           if (!rect || rect.size() < 4) continue;

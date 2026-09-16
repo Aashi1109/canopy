@@ -26,14 +26,7 @@ import {
   Trash2,
   WandSparkles,
 } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import {
   highlightJson,
@@ -47,14 +40,8 @@ import { WorkspaceSurface } from "@/components/Surfaces";
 import { SourceTextarea } from "@/components/WorkspaceInput";
 import { textInputFileIssue } from "@/components/FileInput";
 import { ResultView } from "@/components/ResultView";
-import type {
-  WorkspaceProps,
-  WorkspaceToolbarActions,
-} from "@/components/ToolWorkspace";
-import {
-  isLargeTextFile,
-  readTextFileForEditor,
-} from "@/lib/tool-framework/textFileInput";
+import type { WorkspaceProps, WorkspaceToolbarActions } from "@/components/ToolWorkspace";
+import { isLargeTextFile, readTextFileForEditor } from "@/lib/tool-framework/textFileInput";
 
 import { describeJsonViewerRepair } from "./execution";
 
@@ -123,8 +110,7 @@ function GoToJsonError({
   );
 }
 
-const BROKEN_EXAMPLE =
-  '[{"id":1,"name":"Alice","age":},{"id":2,"name":"Bob","age":30}]';
+const BROKEN_EXAMPLE = '[{"id":1,"name":"Alice","age":},{"id":2,"name":"Bob","age":30}]';
 const JSON_VALUE_TOKEN_PATTERN =
   /"(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"|'(?:\\.|[^\\'])*'|\/\/[^\r\n]*|\/\*[\s\S]*?\*\/|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
 
@@ -136,7 +122,8 @@ function risksNumericPrecisionLoss(input: string) {
       token.startsWith("'") ||
       token.startsWith("//") ||
       token.startsWith("/*")
-    ) continue;
+    )
+      continue;
     const value = Number(token);
     const significantDigits = token
       .split(/[eE]/, 1)[0]
@@ -149,7 +136,8 @@ function risksNumericPrecisionLoss(input: string) {
       (Number.isInteger(value) && !Number.isSafeInteger(value)) ||
       significantDigits > 15 ||
       (value === 0 && /[1-9]/.test(token))
-    ) return true;
+    )
+      return true;
   }
   return false;
 }
@@ -177,10 +165,7 @@ function JsonSourceEditor({
     () => new TextEncoder().encode(props.input.text).length,
     [props.input.text],
   );
-  const highlightedInput = useMemo(
-    () => highlightJson(props.input.text),
-    [props.input.text],
-  );
+  const highlightedInput = useMemo(() => highlightJson(props.input.text), [props.input.text]);
 
   useEffect(() => {
     fileReadRequestRef.current += 1;
@@ -210,7 +195,7 @@ function JsonSourceEditor({
 
   return (
     <WorkspaceSurface
-      actions={(
+      actions={
         <div className="flex items-center gap-1">
           {acceptedFile ? (
             <>
@@ -225,7 +210,8 @@ function JsonSourceEditor({
                 ref={fileInputRef}
                 type="file"
               />
-              <ToolActionButton action="upload"
+              <ToolActionButton
+                action="upload"
                 disabled={props.disabled}
                 onClick={() => fileInputRef.current?.click()}
                 type="button"
@@ -250,7 +236,8 @@ function JsonSourceEditor({
               ) : null}
             </>
           ) : null}
-          <ToolActionButton action="copy"
+          <ToolActionButton
+            action="copy"
             aria-label={largeFile ? "Copy JSON preview" : "Copy JSON input"}
             disabled={props.input.text.length === 0}
             onClick={async () => {
@@ -266,19 +253,29 @@ function JsonSourceEditor({
             {largeFile ? "Copy preview" : "Copy"}
           </ToolActionButton>
         </div>
-      )}
+      }
       className="h-full"
       contentClassName="bg-background"
-      meta={selectedFile
-        ? largeFile
-          ? <><span className="sr-only">{selectedFileMeta} · </span>Large-file mode</>
-          : selectedFileMeta
-        : `${inputBytes} bytes`}
+      meta={
+        selectedFile ? (
+          largeFile ? (
+            <>
+              <span className="sr-only">{selectedFileMeta} · </span>Large-file mode
+            </>
+          ) : (
+            selectedFileMeta
+          )
+        ) : (
+          `${inputBytes} bytes`
+        )
+      }
       description={largeFile ? selectedFileMeta : undefined}
       purpose="editor"
       title="JSON input"
     >
-      <FieldLabel className="sr-only" htmlFor={editorId}>{inputSpec.label}</FieldLabel>
+      <FieldLabel className="sr-only" htmlFor={editorId}>
+        {inputSpec.label}
+      </FieldLabel>
       <SourceTextarea
         className="min-h-0 flex-1"
         disabled={props.disabled}
@@ -310,8 +307,7 @@ function JsonResultPlaceholder({
     : running
       ? "Parsing JSON…"
       : "Interactive tree will appear here";
-  const description =
-    error ?? (running ? "Parsing JSON…" : "Paste JSON to inspect its structure.");
+  const description = error ?? (running ? "Parsing JSON…" : "Paste JSON to inspect its structure.");
 
   return (
     <div
@@ -320,14 +316,12 @@ function JsonResultPlaceholder({
       role="status"
     >
       <div className="max-w-sm">
-        <P className="text-foreground"><Strong>{title}</Strong></P>
+        <P className="text-foreground">
+          <Strong>{title}</Strong>
+        </P>
         <Muted className="mt-1 text-muted-foreground">{description}</Muted>
         {error && errorLocation ? (
-          <GoToJsonError
-            className="mt-3"
-            location={errorLocation}
-            onClick={onGoToError}
-          />
+          <GoToJsonError className="mt-3" location={errorLocation} onClick={onGoToError} />
         ) : null}
       </div>
     </div>
@@ -370,7 +364,12 @@ function JsonResultPane({
 
   return (
     <div className="relative h-full min-h-0">
-      <fieldset aria-disabled={!ready || undefined} className="m-0 h-full min-w-0 border-0 p-0" disabled={!ready} inert={!ready}>
+      <fieldset
+        aria-disabled={!ready || undefined}
+        className="m-0 h-full min-w-0 border-0 p-0"
+        disabled={!ready}
+        inert={!ready}
+      >
         <JsonResultRenderer
           artifactValue={output}
           className="h-full [&_header>div:last-child>button]:!text-muted-foreground"
@@ -384,10 +383,7 @@ function JsonResultPane({
               await navigator.clipboard.writeText(value);
               onStatusChange(`${label} copied.`, "success");
             } catch {
-              onStatusChange(
-                "Copy failed. Select the value and copy it manually.",
-                "warning",
-              );
+              onStatusChange("Copy failed. Select the value and copy it manually.", "warning");
             }
           }}
           onSearchMatchIndexChange={onSearchMatchIndexChange}
@@ -418,11 +414,8 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
   const [resultView, setResultView] = useState<JsonResultView>("code");
   const [resultSearchQuery, setResultSearchQuery] = useState("");
   const [resultSearchMatchIndex, setResultSearchMatchIndex] = useState(0);
-  const pendingLargeActionRef = useRef<
-    "format" | "minify" | "validate" | null
-  >(null);
-  const [transformPreview, setTransformPreview] =
-    useState<JsonTransformPreview>(null);
+  const pendingLargeActionRef = useRef<"format" | "minify" | "validate" | null>(null);
+  const [transformPreview, setTransformPreview] = useState<JsonTransformPreview>(null);
   const [viewerDraft, setViewerDraft] = useState<JsonViewerDraft | null>(null);
   const tree = useMemo<JsonTreeResult>(
     () =>
@@ -431,13 +424,8 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
         : null,
     [props.result],
   );
-  const acceptedFile = props.spec.input.kind === "text"
-    ? props.spec.input.acceptFiles
-    : undefined;
-  const largeFile = isLargeTextFile(
-    props.input.files[0],
-    acceptedFile?.maxEditableBytes,
-  );
+  const acceptedFile = props.spec.input.kind === "text" ? props.spec.input.acceptFiles : undefined;
+  const largeFile = isLargeTextFile(props.input.files[0], acceptedFile?.maxEditableBytes);
   const precisionWarning = useMemo(
     () => !largeFile && risksNumericPrecisionLoss(props.input.text),
     [largeFile, props.input.text],
@@ -446,12 +434,9 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     const match = /line (\d+), column (\d+)/i.exec(props.error ?? "");
     return match ? { column: Number(match[2]), line: Number(match[1]) } : null;
   }, [props.error]);
-  const displayedTree =
-    transformPreview?.input === props.input.text ? transformPreview : tree;
+  const displayedTree = transformPreview?.input === props.input.text ? transformPreview : tree;
   const workingOutput = viewerDraft?.code ?? displayedTree?.text ?? props.input.text;
-  const workingTree = viewerDraft
-    ? { text: workingOutput, value: viewerDraft.value }
-    : null;
+  const workingTree = viewerDraft ? { text: workingOutput, value: viewerDraft.value } : null;
   const formattedViewerValue = viewerDraft
     ? prettyJson(viewerDraft.value)
     : displayedTree
@@ -463,9 +448,10 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     const input = document.getElementById(editorId);
     if (!(input instanceof HTMLTextAreaElement)) return;
     const lines = props.input.text.split(/\r\n|\r|\n/);
-    const offset = lines
-      .slice(0, Math.max(0, errorLocation.line - 1))
-      .reduce((total, line) => total + line.length + 1, 0) +
+    const offset =
+      lines
+        .slice(0, Math.max(0, errorLocation.line - 1))
+        .reduce((total, line) => total + line.length + 1, 0) +
       Math.max(0, errorLocation.column - 1);
     input.focus();
     input.setSelectionRange(
@@ -498,49 +484,52 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     },
     [props.input.text, updateSource],
   );
-  const editorController = useMemo<JsonEditorController>(() => ({
-    canRedo: Boolean(viewerDraft?.future.length),
-    canUndo: Boolean(viewerDraft?.past.length),
-    code: viewerDraft?.code ?? "",
-    onRedo: () => {
-      setViewerDraft((current) => {
-        if (!current || current.future.length === 0) return current;
-        const next = current.future[current.future.length - 1];
-        return {
-          ...current,
-          ...next,
-          future: current.future.slice(0, -1),
-          past: [...current.past, { code: current.code, value: current.value }],
-        };
-      });
-    },
-    onUndo: () => {
-      setViewerDraft((current) => {
-        if (!current || current.past.length === 0) return current;
-        const previous = current.past[current.past.length - 1];
-        return {
-          ...current,
-          ...previous,
-          future: [...current.future, { code: current.code, value: current.value }],
-          past: current.past.slice(0, -1),
-        };
-      });
-    },
-    onValueChange: (value) => {
-      setViewerDraft((current) => {
-        if (!current) return current;
-        const code = prettyJson(value);
-        if (code === prettyJson(current.value)) return current;
-        return {
-          ...current,
-          code,
-          future: [],
-          past: [...current.past, { code: current.code, value: current.value }],
-          value,
-        };
-      });
-    },
-  }), [viewerDraft]);
+  const editorController = useMemo<JsonEditorController>(
+    () => ({
+      canRedo: Boolean(viewerDraft?.future.length),
+      canUndo: Boolean(viewerDraft?.past.length),
+      code: viewerDraft?.code ?? "",
+      onRedo: () => {
+        setViewerDraft((current) => {
+          if (!current || current.future.length === 0) return current;
+          const next = current.future[current.future.length - 1];
+          return {
+            ...current,
+            ...next,
+            future: current.future.slice(0, -1),
+            past: [...current.past, { code: current.code, value: current.value }],
+          };
+        });
+      },
+      onUndo: () => {
+        setViewerDraft((current) => {
+          if (!current || current.past.length === 0) return current;
+          const previous = current.past[current.past.length - 1];
+          return {
+            ...current,
+            ...previous,
+            future: [...current.future, { code: current.code, value: current.value }],
+            past: current.past.slice(0, -1),
+          };
+        });
+      },
+      onValueChange: (value) => {
+        setViewerDraft((current) => {
+          if (!current) return current;
+          const code = prettyJson(value);
+          if (code === prettyJson(current.value)) return current;
+          return {
+            ...current,
+            code,
+            future: [],
+            past: [...current.past, { code: current.code, value: current.value }],
+            value,
+          };
+        });
+      },
+    }),
+    [viewerDraft],
+  );
 
   useEffect(() => {
     setTransformPreview(null);
@@ -575,10 +564,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
   }, [applySource]);
   const repairSource = useCallback(() => {
     if (precisionWarning) {
-      showJsonNotice(
-        "Repair blocked because it could change a high-precision number.",
-        "warning",
-      );
+      showJsonNotice("Repair blocked because it could change a high-precision number.", "warning");
       return;
     }
     const repairMode = props.settings.repairMode === "null" ? "null" : "remove";
@@ -604,35 +590,31 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
         ? `JSON repaired with the “${repairMode === "null" ? "Set broken values to null" : "Remove broken properties"}” strategy.`
         : "JSON was already valid; formatting was applied.",
     );
-  }, [
-    precisionWarning,
-    props.input.text,
-    props.settings.repairMode,
-    showTransformResult,
-    tree,
-  ]);
-  const transformViewerCode = useCallback((mode: "beautify" | "minify") => {
-    if (precisionWarning) {
-      showJsonNotice(
-        `${mode === "minify" ? "Minify" : "Beautify"} blocked because it could change a high-precision number.`,
-        "warning",
-      );
-      return;
-    }
-    setViewerDraft((current) => {
-      if (!current) return current;
-      const code = mode === "minify"
-        ? JSON.stringify(current.value) ?? "null"
-        : prettyJson(current.value);
-      if (code === current.code) return current;
-      return {
-        ...current,
-        code,
-        future: [],
-        past: [...current.past, { code: current.code, value: current.value }],
-      };
-    });
-  }, [precisionWarning]);
+  }, [precisionWarning, props.input.text, props.settings.repairMode, showTransformResult, tree]);
+  const transformViewerCode = useCallback(
+    (mode: "beautify" | "minify") => {
+      if (precisionWarning) {
+        showJsonNotice(
+          `${mode === "minify" ? "Minify" : "Beautify"} blocked because it could change a high-precision number.`,
+          "warning",
+        );
+        return;
+      }
+      setViewerDraft((current) => {
+        if (!current) return current;
+        const code =
+          mode === "minify" ? (JSON.stringify(current.value) ?? "null") : prettyJson(current.value);
+        if (code === current.code) return current;
+        return {
+          ...current,
+          code,
+          future: [],
+          past: [...current.past, { code: current.code, value: current.value }],
+        };
+      });
+    },
+    [precisionWarning],
+  );
   const canTransformCode = Boolean(viewerDraft);
   const requestLargeAction = useCallback(
     (operation: "format" | "minify" | "validate") => {
@@ -649,18 +631,15 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
       pendingLargeAction === null ||
       props.settings.largeFileOperation !== pendingLargeAction ||
       props.running
-    ) return;
+    )
+      return;
     const timeout = window.setTimeout(() => {
       if (pendingLargeActionRef.current !== pendingLargeAction) return;
       pendingLargeActionRef.current = null;
       props.primaryAction?.onRun();
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, [
-    props.primaryAction,
-    props.running,
-    props.settings.largeFileOperation,
-  ]);
+  }, [props.primaryAction, props.running, props.settings.largeFileOperation]);
   const loadBrokenExample = useCallback(() => {
     applySource(
       BROKEN_EXAMPLE,
@@ -678,7 +657,9 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
         ) : (
           <span className="text-destructive">Error is beyond the loaded preview</span>
         )
-      ) : "UTF-8",
+      ) : (
+        "UTF-8"
+      ),
       before: (
         <div className="flex min-w-0 items-center gap-2 max-[56rem]:w-full max-[56rem]:flex-wrap max-[56rem]:justify-end">
           {largeFile ? (
@@ -781,9 +762,9 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
                   className="relative w-[168px] gap-1.5 after:absolute after:inset-x-0 after:-inset-y-1.5 after:content-['']"
                   size="xs"
                 >
-                  <Caption className="text-muted-foreground"><Strong>
-                    REPAIR
-                  </Strong></Caption>
+                  <Caption className="text-muted-foreground">
+                    <Strong>REPAIR</Strong>
+                  </Caption>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -882,7 +863,9 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
               ) : props.error ? (
                 <div className="grid min-h-0 flex-1 place-items-center p-6 text-center">
                   <div className="max-w-md">
-                    <P className="text-destructive"><Strong>JSON validation failed</Strong></P>
+                    <P className="text-destructive">
+                      <Strong>JSON validation failed</Strong>
+                    </P>
                     <Muted className="mt-1 text-muted-foreground">{props.error}</Muted>
                     {errorLocation && errorIsInPreview ? (
                       <GoToJsonError
@@ -900,9 +883,11 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
               ) : (
                 <div className="grid min-h-0 flex-1 place-items-center p-6 text-center">
                   <div className="max-w-sm">
-                    <P><Strong>
-                      {props.running ? "Processing the complete JSON file" : "Ready to process"}
-                    </Strong></P>
+                    <P>
+                      <Strong>
+                        {props.running ? "Processing the complete JSON file" : "Ready to process"}
+                      </Strong>
+                    </P>
                     <Muted className="mt-1 text-muted-foreground">
                       {props.running
                         ? "The file stays local while the worker reads it incrementally."
@@ -913,23 +898,23 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
               )}
             </WorkspaceSurface>
           ) : (
-          <JsonResultPane
-            editor={editorController}
-            error={props.error}
-            errorLocation={errorLocation}
-            formattedValue={formattedViewerValue}
-            onGoToError={goToError}
-            onSearchMatchIndexChange={setResultSearchMatchIndex}
-            onSearchQueryChange={setResultSearchQuery}
-            onStatusChange={showJsonNotice}
-            onViewChange={setResultView}
-            running={props.running}
-            searchMatchIndex={resultSearchMatchIndex}
-            searchQuery={resultSearchQuery}
-            source={workingOutput}
-            tree={workingTree}
-            view={resultView}
-          />
+            <JsonResultPane
+              editor={editorController}
+              error={props.error}
+              errorLocation={errorLocation}
+              formattedValue={formattedViewerValue}
+              onGoToError={goToError}
+              onSearchMatchIndexChange={setResultSearchMatchIndex}
+              onSearchQueryChange={setResultSearchQuery}
+              onStatusChange={showJsonNotice}
+              onViewChange={setResultView}
+              running={props.running}
+              searchMatchIndex={resultSearchMatchIndex}
+              searchQuery={resultSearchQuery}
+              source={workingOutput}
+              tree={workingTree}
+              view={resultView}
+            />
           )}
         </div>
       </SplitStack>

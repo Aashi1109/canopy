@@ -34,10 +34,7 @@ export default function TemplateSelector({
 }: TemplateSelectorProps) {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
-  const label =
-    documentLabel ??
-    templates[0]?.documentType.replaceAll("-", " ") ??
-    "document";
+  const label = documentLabel ?? templates[0]?.documentType.replaceAll("-", " ") ?? "document";
 
   const categories = useMemo(() => {
     const list = new Set<string>();
@@ -50,17 +47,13 @@ export default function TemplateSelector({
       const matchSearch =
         template.name.toLowerCase().includes(search.toLowerCase()) ||
         template.description.toLowerCase().includes(search.toLowerCase());
-      const matchCategory =
-        activeCategory === "all" || template.category === activeCategory;
+      const matchCategory = activeCategory === "all" || template.category === activeCategory;
       return matchSearch && matchCategory;
     });
   }, [templates, search, activeCategory]);
 
   return (
-    <SectionCard
-      className="print:hidden"
-      id="template-selector-container"
-    >
+    <SectionCard className="print:hidden" id="template-selector-container">
       <SectionHeading
         action={<StatusBadge variant="info">{templates.length} published styles</StatusBadge>}
         description="Dynamic structure scales immediately based on layout. No lost draft."

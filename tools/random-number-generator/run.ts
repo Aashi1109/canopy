@@ -28,16 +28,8 @@ function seededRandomInt(seed: string): (maxExclusive: number) => number {
 }
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
-  const {
-    min,
-    max,
-    count,
-    seed,
-    decimalPlaces,
-    uniqueValues,
-    wholeNumbers,
-    sortResult,
-  } = ctx.settings;
+  const { min, max, count, seed, decimalPlaces, uniqueValues, wholeNumbers, sortResult } =
+    ctx.settings;
   if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max)) {
     throw new ToolError(
       "bounds-not-integers",
@@ -85,9 +77,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
 
   return {
     render: "list",
-    items: values.map((value) =>
-      wholeNumbers ? String(value) : (value / scale).toFixed(places),
-    ),
+    items: values.map((value) => (wholeNumbers ? String(value) : (value / scale).toFixed(places))),
     downloadName: "random-numbers.txt",
   };
 };

@@ -4,14 +4,7 @@ export default {
   toolId: "devtools.basic-auth-generator",
   app: "devtools",
   category: "jwt-api-tools",
-  keywords: [
-    "basic auth",
-    "authorization header",
-    "http",
-    "credentials",
-    "base64",
-    "curl",
-  ],
+  keywords: ["basic auth", "authorization header", "http", "credentials", "base64", "curl"],
   name: "Basic Auth Generator",
   description: "Generate an HTTP Basic Authorization header.",
   layout: "stacked",
@@ -72,8 +65,6 @@ export default {
         a: "Yes. Token-style APIs often use the key as the username and an empty password; the encoded value still contains the trailing colon, which is what the server expects.",
       },
     ],
-    examples: [
-      { label: "Username and password", text: "Ada", secondary: "secret" },
-    ],
+    examples: [{ label: "Username and password", text: "Ada", secondary: "secret" }],
   },
 } as const satisfies ToolSpec;

@@ -123,8 +123,7 @@ const folders = await Promise.all(
       definitionPath,
       definitionSource,
       runFiles,
-      migrated:
-        definitionSource !== null && /^\s*export\s+default\b/m.test(definitionSource),
+      migrated: definitionSource !== null && /^\s*export\s+default\b/m.test(definitionSource),
     };
   }),
 );
@@ -225,7 +224,10 @@ for (const file of sharedFiles) {
 function report(byFile) {
   return [...byFile]
     .sort((a, b) => b[1].length - a[1].length)
-    .map(([file, hits]) => `  ${file} (${hits.length})\n${hits.map((h) => `    ${file}:${h.line}: ${h.hit}`).join("\n")}`)
+    .map(
+      ([file, hits]) =>
+        `  ${file} (${hits.length})\n${hits.map((h) => `    ${file}:${h.line}: ${h.hit}`).join("\n")}`,
+    )
     .join("\n");
 }
 
@@ -235,9 +237,7 @@ test("shared code never names a tool", () => {
     `[tool-name leak scan] ${sharedFiles.length} shared files, ${leaksByFile.size} leaking, ${totalHits} hits\n${report(leaksByFile)}`,
   );
 
-  const unexpected = [...leaksByFile.keys()].filter(
-    (file) => !LEGACY_TOOL_NAME_LEAKS.has(file),
-  );
+  const unexpected = [...leaksByFile.keys()].filter((file) => !LEGACY_TOOL_NAME_LEAKS.has(file));
   assert.deepEqual(
     unexpected,
     [],
@@ -248,9 +248,7 @@ test("shared code never names a tool", () => {
 });
 
 test("shared code never dispatches on a tool identity", () => {
-  console.log(
-    `[identity dispatch scan] ${dispatchByFile.size} files\n${report(dispatchByFile)}`,
-  );
+  console.log(`[identity dispatch scan] ${dispatchByFile.size} files\n${report(dispatchByFile)}`);
   const unexpected = [...dispatchByFile.keys()].filter(
     (file) => !LEGACY_IDENTITY_DISPATCH.has(file),
   );
@@ -286,8 +284,7 @@ test("the legacy allowlists only shrink", () => {
 
 // Prefer the exported pattern; fall back to the catalogue's own literal while
 // `TOOL_SLUG_PATTERN` is still module-private (see report).
-const TOOL_SLUG_PATTERN =
-  catalog.TOOL_SLUG_PATTERN ?? /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const TOOL_SLUG_PATTERN = catalog.TOOL_SLUG_PATTERN ?? /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 test("migration progress", () => {
   console.log(
@@ -308,11 +305,7 @@ test("folder name, spec and toolId are one bijection", () => {
   }
   const toolIds = specs.map(({ spec }) => spec.toolId);
   assert.equal(new Set(toolIds).size, toolIds.length, "toolIds must be unique");
-  assert.equal(
-    new Set(toolFolders).size,
-    toolFolders.length,
-    "folder names must be unique",
-  );
+  assert.equal(new Set(toolFolders).size, toolFolders.length, "folder names must be unique");
 });
 
 test("folder names are valid tool slugs", () => {

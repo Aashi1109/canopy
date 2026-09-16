@@ -10,7 +10,9 @@ export function updateAdminQuery(updates: Record<string, string | null>, replace
   }
   if (url.href === window.location.href) return;
   window.history[replace ? "replaceState" : "pushState"](
-    null, "", `${url.pathname}${url.search}${url.hash}`,
+    null,
+    "",
+    `${url.pathname}${url.search}${url.hash}`,
   );
 }
 
@@ -21,9 +23,10 @@ export function useAdminQueryState<T extends string>(
 ) {
   const searchParams = useSearchParams();
   const rawValue = searchParams.get(key);
-  const value = rawValue !== null && (!allowedValues || allowedValues.includes(rawValue as T))
-    ? rawValue as T
-    : defaultValue;
+  const value =
+    rawValue !== null && (!allowedValues || allowedValues.includes(rawValue as T))
+      ? (rawValue as T)
+      : defaultValue;
 
   function setValue(nextValue: T, replace = false) {
     updateAdminQuery({ [key]: nextValue === defaultValue ? null : nextValue }, replace);

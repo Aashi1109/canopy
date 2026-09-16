@@ -70,10 +70,14 @@ test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and v
   stored.set("roles:all", { value: "{broken", expires: Infinity });
   assert.deepEqual(await roles.remember("all", load), ["value-3"]);
   for (const response of [
-    () => { throw new Error("private-token postgres://private-database"); },
+    () => {
+      throw new Error("private-token postgres://private-database");
+    },
     () => ({ data: { error: "private-token" } }),
     () => ({ data: { result: { unexpected: true } } }),
-    () => { throw new axios.AxiosError("Request failed with status code 503", "ERR_BAD_RESPONSE"); },
+    () => {
+      throw new axios.AxiosError("Request failed with status code 503", "ERR_BAD_RESPONSE");
+    },
   ]) {
     failure = response;
     const previousLoads = loads;
@@ -82,14 +86,25 @@ test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and v
     await roles.set("all", []);
     await roles.delete("all");
   }
-  failure = (command) => command[0] === "GET"
-    ? { data: { result: null } }
-    : Promise.reject(new Error("write failed private-token"));
+  failure = (command) =>
+    command[0] === "GET"
+      ? { data: { result: null } }
+      : Promise.reject(new Error("write failed private-token"));
   const previousLoads = loads;
   assert.deepEqual(await roles.remember("all", load), [`value-${previousLoads + 1}`]);
-  await assert.rejects(() => roles.remember("all", async () => { throw new Error("DB unavailable"); }), /DB unavailable/);
+  await assert.rejects(
+    () =>
+      roles.remember("all", async () => {
+        throw new Error("DB unavailable");
+      }),
+    /DB unavailable/,
+  );
   failure = undefined;
-  assert.ok(warnings.every((warning) => !warning.includes("private-token") && !warning.includes("postgres://")));
+  assert.ok(
+    warnings.every(
+      (warning) => !warning.includes("private-token") && !warning.includes("postgres://"),
+    ),
+  );
 
   for (const namespace of ["", " "]) assert.throws(() => new Cache(namespace), /namespace/);
   await assert.rejects(() => roles.get(""), /key/);

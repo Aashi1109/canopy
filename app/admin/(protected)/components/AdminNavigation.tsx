@@ -29,7 +29,10 @@ export function AdminNavigation() {
   const segment = useSelectedLayoutSegment();
 
   return (
-    <nav aria-label="Admin sections" className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+    <nav
+      aria-label="Admin sections"
+      className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible"
+    >
       <SidebarNavItem
         active={segment === null}
         className="shrink-0"

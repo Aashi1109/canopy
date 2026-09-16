@@ -61,4 +61,3 @@ test("known overrides merge and unknown keys are ignored", () => {
   assert.equal(isFeatureEnabled(flags, "paperwork", "unknown"), false);
   assert.equal(isFeatureEnabled(flags, "devtools", "invoice-reminders"), false);
 });
-

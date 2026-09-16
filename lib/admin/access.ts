@@ -1,8 +1,5 @@
 import { getSession } from "@smarttools/auth/session";
-import {
-  AuthorizationError,
-  requirePermission,
-} from "@smarttools/control-plane";
+import { AuthorizationError, requirePermission } from "@smarttools/control-plane";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -16,10 +13,7 @@ export async function getActorUserId(): Promise<string> {
   return session.user.id;
 }
 
-export async function requirePagePermission(
-  resource: string,
-  action: string,
-) {
+export async function requirePagePermission(resource: string, action: string) {
   const session = await getSession(await headers());
   if (!session) redirect(authEntryUrl());
 

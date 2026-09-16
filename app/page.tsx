@@ -11,7 +11,11 @@ import {
   Overline,
   P,
   Text,
-  TextLink, AccountNavigation, Button, ProductHeader } from "@smarttools/ui";
+  TextLink,
+  AccountNavigation,
+  Button,
+  ProductHeader,
+} from "@smarttools/ui";
 import { headers } from "next/headers";
 
 const projects = [
@@ -27,16 +31,14 @@ const projects = [
     number: "02",
     category: "Browser utilities",
     name: "Devtools",
-    description:
-      "Format, convert, and inspect working data with focused browser tools.",
+    description: "Format, convert, and inspect working data with focused browser tools.",
     href: "/devtools",
   },
   {
     number: "03",
     category: "Private media processing",
     name: "Media Tools",
-    description:
-      "Convert, organize, edit, and compress images and PDFs entirely in your browser.",
+    description: "Convert, organize, edit, and compress images and PDFs entirely in your browser.",
     href: "/media",
   },
 ] as const;
@@ -47,12 +49,7 @@ export default async function HomePage() {
   return (
     <div className="platform-shell min-h-screen bg-background text-foreground">
       <ProductHeader
-        actions={
-          <AccountNavigation
-            returnTo="/"
-            user={session?.user ?? null}
-          />
-        }
+        actions={<AccountNavigation returnTo="/" user={session?.user ?? null} />}
         className="platform-header sticky top-0 z-50"
         href="/"
         name="SmartTools"
@@ -75,14 +72,11 @@ export default async function HomePage() {
                 and done.
               </Display>
               <Muted className="mt-8 max-w-xl text-muted-foreground">
-                SmartTools brings image and PDF tools, business paperwork, and
-                developer utilities into one clear place to start.
+                SmartTools brings image and PDF tools, business paperwork, and developer utilities
+                into one clear place to start.
               </Muted>
               <div className="mt-9 flex flex-wrap gap-3">
-                <Button
-                  asChild
-                  className="h-auto min-h-12 rounded-none px-5 hover:bg-foreground"
-                >
+                <Button asChild className="h-auto min-h-12 rounded-none px-5 hover:bg-foreground">
                   <a href={projects[0].href}>Explore Paperwork</a>
                 </Button>
                 <Button
@@ -129,9 +123,7 @@ export default async function HomePage() {
                         <Overline className="text-muted-foreground transition-colors group-hover:text-white/70">
                           {project.category}
                         </Overline>
-                        <H3 className="mt-3">
-                          {project.name}
-                        </H3>
+                        <H3 className="mt-3">{project.name}</H3>
                         <Text className="mt-4 max-w-sm text-muted-foreground transition-colors group-hover:text-white/80">
                           {project.description}
                         </Text>
@@ -150,42 +142,37 @@ export default async function HomePage() {
         <section aria-labelledby="projects-title" className="border-b border-border">
           <div className="mx-auto grid max-w-7xl lg:grid-cols-[minmax(18rem,0.7fr)_minmax(0,1.3fr)]">
             <div className="border-b border-border px-4 py-12 sm:px-6 lg:border-r lg:border-b-0 lg:px-8 lg:py-20">
-              <Overline className="block text-primary">
-                What you can do
-              </Overline>
-              <H2
-                className="mt-5 max-w-md"
-                id="projects-title"
-              >
+              <Overline className="block text-primary">What you can do</Overline>
+              <H2 className="mt-5 max-w-md" id="projects-title">
                 Start with the task in front of you.
               </H2>
             </div>
 
             <div className="grid sm:grid-cols-3">
               <article className="border-b border-border p-6 sm:border-r sm:border-b-0 lg:p-8">
-                <P aria-hidden="true" className="text-primary">01</P>
-                <H3 className="mt-10">
-                  Create the document
-                </H3>
+                <P aria-hidden="true" className="text-primary">
+                  01
+                </P>
+                <H3 className="mt-10">Create the document</H3>
                 <Muted className="mt-3 text-muted-foreground">
-                  Build invoices, receipts, expense reports, tax estimates, and
-                  contractor records in Paperwork.
+                  Build invoices, receipts, expense reports, tax estimates, and contractor records
+                  in Paperwork.
                 </Muted>
               </article>
               <article className="border-b border-border p-6 sm:border-r sm:border-b-0 lg:p-8">
-                <P aria-hidden="true" className="text-primary">02</P>
-                <H3 className="mt-10">
-                  Process the media
-                </H3>
+                <P aria-hidden="true" className="text-primary">
+                  02
+                </P>
+                <H3 className="mt-10">Process the media</H3>
                 <Muted className="mt-3 text-muted-foreground">
                   Convert, organize, edit, and compress images and PDFs in Media Tools.
                 </Muted>
               </article>
               <article className="p-6 lg:p-8">
-                <P aria-hidden="true" className="text-primary">03</P>
-                <H3 className="mt-10">
-                  Handle the data
-                </H3>
+                <P aria-hidden="true" className="text-primary">
+                  03
+                </P>
+                <H3 className="mt-10">Handle the data</H3>
                 <Muted className="mt-3 text-muted-foreground">
                   Format, convert, inspect, and generate developer data in Devtools.
                 </Muted>

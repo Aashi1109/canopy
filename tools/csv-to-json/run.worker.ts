@@ -1,7 +1,4 @@
-import {
-  convertCsvToJson,
-  parseDelimitedRows,
-} from "../../lib/devtools/shared/csv.ts";
+import { convertCsvToJson, parseDelimitedRows } from "../../lib/devtools/shared/csv.ts";
 import { utilityDelimiter } from "../../lib/devtools/shared/table.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
@@ -73,10 +70,12 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
           { label: "Rows", value: String(outputRows) },
           { label: "Columns", value: String(columnCount) },
         ],
-        sections: [{
-          title: sink.previewTruncated ? "Complete JSON file" : "Download",
-          body: { render: "files", files: [artifact], outputBytes: artifact.size },
-        }],
+        sections: [
+          {
+            title: sink.previewTruncated ? "Complete JSON file" : "Download",
+            body: { render: "files", files: [artifact], outputBytes: artifact.size },
+          },
+        ],
       };
     } catch (error) {
       await sink.abort(error);
@@ -110,9 +109,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
           ),
         )
         .filter(
-          (row) =>
-            !ctx.settings.trimWhitespace ||
-            Object.values(row).some((value) => value !== ""),
+          (row) => !ctx.settings.trimWhitespace || Object.values(row).some((value) => value !== ""),
         );
       output = JSON.stringify(normalizedRows, null, 2);
       rowCount = normalizedRows.length;
@@ -122,10 +119,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       throw new ToolError("empty", "Paste CSV to convert it to JSON.");
     }
     if (ctx.input.text.length > 2_000_000) {
-      throw new ToolError(
-        "too-large",
-        "CSV must be 2,000,000 characters or fewer.",
-      );
+      throw new ToolError("too-large", "CSV must be 2,000,000 characters or fewer.");
     }
 
     const parsed = parseDelimitedRows(ctx.input.text, delimiter);
@@ -144,10 +138,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
 
     const rows = parsed.rows
       .map((row) => row.map(normalizeCell))
-      .filter(
-        (row) =>
-          !ctx.settings.trimWhitespace || row.some((value) => value !== ""),
-      );
+      .filter((row) => !ctx.settings.trimWhitespace || row.some((value) => value !== ""));
     output = JSON.stringify(rows, null, 2);
     rowCount = rows.length;
   }

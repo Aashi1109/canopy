@@ -1,12 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  motion,
-  useMotionValue,
-  useTransform,
-  type MotionValue,
-} from "motion/react";
+import { motion, useMotionValue, useTransform, type MotionValue } from "motion/react";
 
 import { cn } from "#lib/utils";
 
@@ -75,15 +70,13 @@ const ChapterTick = React.memo(function ChapterTick({
   strength,
 }: ChapterTickProps) {
   const width = useTransform(() => {
-    const rise =
-      strength.get() * waveStrength(Math.abs(index - pointer.get()), radius);
+    const rise = strength.get() * waveStrength(Math.abs(index - pointer.get()), radius);
     const peakLength = initialLength * hoverLengthMultiplier;
     return restLength + rise * (peakLength - restLength);
   });
   const opacity = useTransform(() => {
     if (active) return 1;
-    const rise =
-      strength.get() * waveStrength(Math.abs(index - pointer.get()), radius);
+    const rise = strength.get() * waveStrength(Math.abs(index - pointer.get()), radius);
     const restingOpacity = current ? 0.82 : 0.46;
     return restingOpacity + rise * (0.72 - restingOpacity);
   });
@@ -92,11 +85,7 @@ const ChapterTick = React.memo(function ChapterTick({
       aria-hidden="true"
       className={cn(
         "block h-0.5 rounded-full",
-        active
-          ? "bg-foreground"
-          : current
-            ? "bg-primary"
-            : "bg-muted-foreground",
+        active ? "bg-foreground" : current ? "bg-primary" : "bg-muted-foreground",
       )}
       style={{ opacity, width }}
     />
@@ -146,38 +135,25 @@ export function ChapterScrubber({
 
   const lastIndex = chapters.length - 1;
   const optionId = (index: number) => `${baseId}-option-${index}`;
-  const resolvedRestLength = Number.isFinite(restLength)
-    ? clamp(restLength, 2, 80)
-    : 14;
+  const resolvedRestLength = Number.isFinite(restLength) ? clamp(restLength, 2, 80) : 14;
   const resolvedHoverLengthMultiplier = Number.isFinite(hoverLengthMultiplier)
     ? clamp(hoverLengthMultiplier, 1, 12)
     : 4;
-  const resolvedPeakLength =
-    resolvedRestLength * resolvedHoverLengthMultiplier;
+  const resolvedPeakLength = resolvedRestLength * resolvedHoverLengthMultiplier;
   const resolvedPreviewCardGap = Number.isFinite(previewCardGap)
     ? Math.max(0, previewCardGap)
     : CARD_GAP;
   const resolvedPreviewCardWidth = Number.isFinite(previewCardWidth)
-    ? Math.min(
-        cardMaxWidth,
-        clamp(previewCardWidth ?? CARD_MAX_WIDTH, 96, CARD_MAX_WIDTH),
-      )
+    ? Math.min(cardMaxWidth, clamp(previewCardWidth ?? CARD_MAX_WIDTH, 96, CARD_MAX_WIDTH))
     : cardMaxWidth;
   const minimumRowHeight = density === "compact" ? 5 : 24;
   const resolvedRowHeight =
-    Number.isFinite(rowHeight) && rowHeight >= minimumRowHeight
-      ? rowHeight
-      : minimumRowHeight;
-  const resolvedRadius =
-    Number.isFinite(radius) && radius > 0 ? radius : 4;
+    Number.isFinite(rowHeight) && rowHeight >= minimumRowHeight ? rowHeight : minimumRowHeight;
+  const resolvedRadius = Number.isFinite(radius) && radius > 0 ? radius : 4;
   const normalizedCurrentIndex =
     currentIndex === undefined || lastIndex < 0
       ? 0
-      : clamp(
-          Number.isFinite(currentIndex) ? Math.round(currentIndex) : 0,
-          0,
-          lastIndex,
-        );
+      : clamp(Number.isFinite(currentIndex) ? Math.round(currentIndex) : 0, 0, lastIndex);
   const rovingIndex = engaged
     ? clamp(activeIndex, 0, Math.max(lastIndex, 0))
     : normalizedCurrentIndex;
@@ -198,10 +174,7 @@ export function ChapterScrubber({
 
   React.useEffect(() => {
     const activeChapter = engaged ? chapters[activeIndex] : undefined;
-    onActiveChange?.(
-      activeChapter ?? null,
-      activeChapter ? activeIndex : -1,
-    );
+    onActiveChange?.(activeChapter ?? null, activeChapter ? activeIndex : -1);
   }, [activeIndex, chapters, engaged, onActiveChange]);
 
   React.useEffect(() => {
@@ -210,9 +183,7 @@ export function ChapterScrubber({
       return;
     }
 
-    const resolvedDelay = Number.isFinite(previewDelayMs)
-      ? Math.max(0, previewDelayMs)
-      : 0;
+    const resolvedDelay = Number.isFinite(previewDelayMs) ? Math.max(0, previewDelayMs) : 0;
     if (resolvedDelay === 0) {
       setPreviewCardReady(true);
       return;
@@ -247,22 +218,13 @@ export function ChapterScrubber({
     const updatePlacement = () => {
       const rect = container.getBoundingClientRect();
       const viewportWidth = view?.innerWidth ?? 0;
-      const rightSpace =
-        viewportWidth - rect.right - resolvedPreviewCardGap - 8;
+      const rightSpace = viewportWidth - rect.right - resolvedPreviewCardGap - 8;
       const leftSpace = rect.left - resolvedPreviewCardGap - 8;
       let openRight = side === "right";
 
-      if (
-        openRight &&
-        rightSpace < CARD_MAX_WIDTH &&
-        leftSpace > rightSpace
-      ) {
+      if (openRight && rightSpace < CARD_MAX_WIDTH && leftSpace > rightSpace) {
         openRight = false;
-      } else if (
-        !openRight &&
-        leftSpace < CARD_MAX_WIDTH &&
-        rightSpace > leftSpace
-      ) {
+      } else if (!openRight && leftSpace < CARD_MAX_WIDTH && rightSpace > leftSpace) {
         openRight = true;
       }
 
@@ -279,13 +241,7 @@ export function ChapterScrubber({
       view?.removeEventListener("resize", updatePlacement);
       observer.disconnect();
     };
-  }, [
-    activeIndex,
-    engaged,
-    resolvedPreviewCardGap,
-    showPreviewCard,
-    side,
-  ]);
+  }, [activeIndex, engaged, resolvedPreviewCardGap, showPreviewCard, side]);
 
   React.useEffect(() => {
     if (lastIndex < 0) {
@@ -300,14 +256,7 @@ export function ChapterScrubber({
     }
   }, [lastIndex]);
 
-  const resolvedSide =
-    side === "right"
-      ? flipped
-        ? "left"
-        : "right"
-      : flipped
-        ? "right"
-        : "left";
+  const resolvedSide = side === "right" ? (flipped ? "left" : "right") : flipped ? "right" : "left";
   const totalHeight = chapters.length * resolvedRowHeight;
 
   const cardTop = useTransform(pointer, (position) => {
@@ -320,11 +269,7 @@ export function ChapterScrubber({
     return center - halfHeight;
   });
   const cardScale = useTransform(strength, [0, 1], [0.97, 1]);
-  const cardX = useTransform(
-    strength,
-    [0, 1],
-    [resolvedSide === "right" ? -6 : 6, 0],
-  );
+  const cardX = useTransform(strength, [0, 1], [resolvedSide === "right" ? -6 : 6, 0]);
 
   function engageAt(pointerRow: number, activeAt: number) {
     if (lastIndex < 0) return;
@@ -444,9 +389,7 @@ export function ChapterScrubber({
       style={{ width: resolvedPeakLength }}
     >
       <div
-        aria-activedescendant={
-          engaged && chapters[activeIndex] ? optionId(activeIndex) : undefined
-        }
+        aria-activedescendant={engaged && chapters[activeIndex] ? optionId(activeIndex) : undefined}
         aria-label={label}
         aria-orientation="vertical"
         className="flex w-full flex-col"
@@ -455,12 +398,9 @@ export function ChapterScrubber({
         role="listbox"
       >
         {chapters.map((chapter, index) => {
-          const current =
-            currentIndex !== undefined && index === normalizedCurrentIndex;
+          const current = currentIndex !== undefined && index === normalizedCurrentIndex;
           const description =
-            typeof chapter.description === "string"
-              ? `. ${chapter.description}`
-              : "";
+            typeof chapter.description === "string" ? `. ${chapter.description}` : "";
 
           return (
             <button

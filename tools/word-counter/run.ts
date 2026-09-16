@@ -18,10 +18,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     excludeEmails: ctx.settings.excludeEmails,
     ignoreNumbers: ctx.settings.ignoreNumbers,
   });
-  const estimatedWords = Math.max(
-    metrics.words,
-    Math.ceil(metrics.charactersWithoutSpaces / 5),
-  );
+  const estimatedWords = Math.max(metrics.words, Math.ceil(metrics.charactersWithoutSpaces / 5));
   const readingSeconds = Math.ceil(estimatedWords * 0.3);
   const readingTime =
     estimatedWords < 200

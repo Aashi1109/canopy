@@ -5,16 +5,9 @@
  * The order is `input.files` itself, which `run.worker.ts` reads directly.
  */
 
-import {
-  FileProcessorWorkspace,
-} from "@/components/FileProcessorWorkspace";
+import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 
 export default function Workspace(props: WorkspaceProps) {
-  return (
-    <FileProcessorWorkspace
-      {...props}
-      orderFiles
-    />
-  );
+  return <FileProcessorWorkspace {...props} orderFiles />;
 }

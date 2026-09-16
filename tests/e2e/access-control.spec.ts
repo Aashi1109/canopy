@@ -11,9 +11,7 @@ test("a regular account shares its session but cannot enter Admin", async ({ pag
   await expect(page).toHaveURL("http://localhost:3000/admin/denied");
 
   await page.goto("http://localhost:3000/paperwork");
-  await expect(
-    page.getByRole("link", { name: E2E_ACCOUNTS.user.name }),
-  ).toBeVisible();
+  await expect(page.getByRole("link", { name: E2E_ACCOUNTS.user.name })).toBeVisible();
 });
 
 test("a custom role combines explicit grants and denies missing ones", async ({ page }) => {
@@ -40,9 +38,7 @@ test("the Admin header highlights the current section", async ({ page }) => {
     "aria-current",
     "page",
   );
-  await expect(navigation.getByRole("link", { name: "Tools" })).not.toHaveAttribute(
-    "aria-current",
-  );
+  await expect(navigation.getByRole("link", { name: "Tools" })).not.toHaveAttribute("aria-current");
 
   await navigation.getByRole("link", { name: "Roles" }).click();
   await expect(page).toHaveURL("http://localhost:3000/admin/roles");
@@ -55,9 +51,7 @@ test("the Admin header highlights the current section", async ({ page }) => {
   );
 });
 
-test("an Admin can disable a tool and its direct route is blocked", async ({
-  page,
-}, testInfo) => {
+test("an Admin can disable a tool and its direct route is blocked", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop", "mutation runs once");
 
   await new AuthPage(page).signIn(
@@ -75,9 +69,7 @@ test("an Admin can disable a tool and its direct route is blocked", async ({
     expect(blocked?.status()).toBe(404);
   } finally {
     await page.goto("http://localhost:3000/admin/tools");
-    const currentTool = page
-      .locator("article")
-      .filter({ hasText: "JSON Formatter" });
+    const currentTool = page.locator("article").filter({ hasText: "JSON Formatter" });
     const enable = currentTool.getByRole("button", { name: "Enable" });
     if (await enable.isVisible()) await enable.click();
   }

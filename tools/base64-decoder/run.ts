@@ -32,9 +32,10 @@ export const run: ToolRun<Record<string, never>> = async (ctx): Promise<ToolResu
   const dataUri = /^data:[^,]*;base64,(.*)$/is.exec(input.trim());
   const bytes = base64ToBytes(dataUri?.[1] ?? input);
   const mediaKind = detectMediaKind(bytes);
-  const image = mediaKind && mediaKind in IMAGE_TYPES
-    ? IMAGE_TYPES[mediaKind as keyof typeof IMAGE_TYPES]
-    : null;
+  const image =
+    mediaKind && mediaKind in IMAGE_TYPES
+      ? IMAGE_TYPES[mediaKind as keyof typeof IMAGE_TYPES]
+      : null;
 
   if (image) {
     return {

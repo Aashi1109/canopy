@@ -53,13 +53,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   ctx.signal.throwIfAborted();
 
   const output = await PDFDocument.create();
-  await addCopiedPagesWithProgress(
-    output,
-    source,
-    pages,
-    "Reordering PDF page",
-    ctx.progress,
-  );
+  await addCopiedPagesWithProgress(output, source, pages, "Reordering PDF page", ctx.progress);
 
   const file = await ctx.writeArtifact({
     name: createOutputFilename(input.name, "pdf", "reordered"),

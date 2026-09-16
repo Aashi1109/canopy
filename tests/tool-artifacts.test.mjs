@@ -91,11 +91,13 @@ test("warns about estimated storage pressure without treating the estimate as au
   });
 
   assert.equal(artifact.size, 3);
-  assert.deepEqual(warnings, [{
-    availableBytes: 1,
-    requiredBytes: 3,
-    message: "Browser storage may be low. The tool will still try to save the result.",
-  }]);
+  assert.deepEqual(warnings, [
+    {
+      availableBytes: 1,
+      requiredBytes: 3,
+      message: "Browser storage may be low. The tool will still try to save the result.",
+    },
+  ]);
 });
 
 test("enforces the aggregate output limit while consuming an unknown stream", async () => {
@@ -261,17 +263,20 @@ test("preserves cancellation and removes the partial OPFS file", async () => {
     writer.write({
       name: "cancel.bin",
       mime: "application/octet-stream",
-      source: new ReadableStream({
-        pull(stream) {
-          pulls += 1;
-          if (pulls === 1) {
-            stream.enqueue(new Uint8Array([1]));
-          } else {
-            controller.abort();
-            stream.close();
-          }
+      source: new ReadableStream(
+        {
+          pull(stream) {
+            pulls += 1;
+            if (pulls === 1) {
+              stream.enqueue(new Uint8Array([1]));
+            } else {
+              controller.abort();
+              stream.close();
+            }
+          },
         },
-      }, { highWaterMark: 0 }),
+        { highWaterMark: 0 },
+      ),
     }),
     { name: "AbortError" },
   );
@@ -324,20 +329,41 @@ test("rejects invalid boundary data and missing or corrupt artifacts", async () 
     null,
     { storage: "unknown" },
     {
-      storage: "opfs", id: "artifact", jobId: "job-invalid", name: "bad.txt",
-      mime: "text/plain", size: -1, createdAt: Date.now(),
+      storage: "opfs",
+      id: "artifact",
+      jobId: "job-invalid",
+      name: "bad.txt",
+      mime: "text/plain",
+      size: -1,
+      createdAt: Date.now(),
     },
     {
-      storage: "opfs", id: "artifact", jobId: "job-invalid", name: "bad.txt",
-      mime: "text/plain", size: 1, createdAt: Number.NaN,
+      storage: "opfs",
+      id: "artifact",
+      jobId: "job-invalid",
+      name: "bad.txt",
+      mime: "text/plain",
+      size: 1,
+      createdAt: Number.NaN,
     },
     {
-      storage: "opfs", id: "artifact", jobId: "job-invalid", name: "../bad.txt",
-      mime: "text/plain", size: 1, createdAt: Date.now(),
+      storage: "opfs",
+      id: "artifact",
+      jobId: "job-invalid",
+      name: "../bad.txt",
+      mime: "text/plain",
+      size: 1,
+      createdAt: Date.now(),
     },
     {
-      storage: "blob", id: "artifact", jobId: "job-invalid", name: "bad.txt",
-      mime: "text/plain", size: 1, createdAt: Date.now(), blob: "not-a-blob",
+      storage: "blob",
+      id: "artifact",
+      jobId: "job-invalid",
+      name: "bad.txt",
+      mime: "text/plain",
+      size: 1,
+      createdAt: Date.now(),
+      blob: "not-a-blob",
     },
   ]) {
     await assert.rejects(
@@ -353,7 +379,11 @@ test("validates streamed chunks in both OPFS and fallback modes", async () => {
     createArtifactWriter("job-invalid-fallback").write({
       name: "bad.bin",
       mime: "application/octet-stream",
-      source: new ReadableStream({ start(controller) { controller.enqueue("bad"); } }),
+      source: new ReadableStream({
+        start(controller) {
+          controller.enqueue("bad");
+        },
+      }),
     }),
     (error) => error instanceof ArtifactStorageError && error.code === "invalid-artifact",
   );
@@ -363,7 +393,11 @@ test("validates streamed chunks in both OPFS and fallback modes", async () => {
     createArtifactWriter("job-invalid-opfs").write({
       name: "bad.bin",
       mime: "application/octet-stream",
-      source: new ReadableStream({ start(controller) { controller.enqueue("bad"); } }),
+      source: new ReadableStream({
+        start(controller) {
+          controller.enqueue("bad");
+        },
+      }),
     }),
     (error) => error instanceof ArtifactStorageError && error.code === "invalid-artifact",
   );
@@ -395,7 +429,13 @@ test("maps worker storage failures to stable recoverable codes", async () => {
 
   Object.defineProperty(globalThis, "navigator", {
     configurable: true,
-    value: { storage: { getDirectory: async () => { throw new DOMException("Denied", "SecurityError"); } } },
+    value: {
+      storage: {
+        getDirectory: async () => {
+          throw new DOMException("Denied", "SecurityError");
+        },
+      },
+    },
   });
   const fallback = await createArtifactWriter("job-root-denied").write({
     name: "fallback.txt",

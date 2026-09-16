@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { ScrollArea as ScrollAreaPrimitive } from "radix-ui"
+import * as React from "react";
+import { ScrollArea as ScrollAreaPrimitive } from "radix-ui";
 
-import { cn } from "#lib/utils"
+import { cn } from "#lib/utils";
 
 function ScrollArea({
   className,
@@ -12,8 +12,8 @@ function ScrollArea({
   viewportProps,
   ...props
 }: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
-  viewportClassName?: string
-  viewportProps?: React.ComponentProps<typeof ScrollAreaPrimitive.Viewport>
+  viewportClassName?: string;
+  viewportProps?: React.ComponentProps<typeof ScrollAreaPrimitive.Viewport>;
 }) {
   return (
     <ScrollAreaPrimitive.Root
@@ -25,7 +25,7 @@ function ScrollArea({
         data-slot="scroll-area-viewport"
         className={cn(
           "size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1",
-          viewportClassName
+          viewportClassName,
         )}
         {...viewportProps}
       >
@@ -34,7 +34,7 @@ function ScrollArea({
       <ScrollBar />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
-  )
+  );
 }
 
 function ScrollBar({
@@ -48,11 +48,9 @@ function ScrollBar({
       orientation={orientation}
       className={cn(
         "flex touch-none p-px transition-colors select-none",
-        orientation === "vertical" &&
-          "h-full w-2.5 border-l border-l-transparent",
-        orientation === "horizontal" &&
-          "h-2.5 flex-col border-t border-t-transparent",
-        className
+        orientation === "vertical" && "h-full w-2.5 border-l border-l-transparent",
+        orientation === "horizontal" && "h-2.5 flex-col border-t border-t-transparent",
+        className,
       )}
       {...props}
     >
@@ -61,7 +59,7 @@ function ScrollBar({
         className="relative flex-1 rounded-full bg-border"
       />
     </ScrollAreaPrimitive.ScrollAreaScrollbar>
-  )
+  );
 }
 
-export { ScrollArea, ScrollBar }
+export { ScrollArea, ScrollBar };

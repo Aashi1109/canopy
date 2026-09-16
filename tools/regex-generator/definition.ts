@@ -93,7 +93,7 @@ export default {
   content: {
     howToUse: [
       "Pick the thing you want to match. The pattern itself is the same for every language.",
-      "Pick the target language. That decides the literal wrapper and which delimiter gets escaped: /…/ for JavaScript, r\"…\" for Python, ~…~ for PHP.",
+      'Pick the target language. That decides the literal wrapper and which delimiter gets escaped: /…/ for JavaScript, r"…" for Python, ~…~ for PHP.',
       "Generate, then paste the literal straight into your code — no further escaping is needed.",
     ],
     limitations: [

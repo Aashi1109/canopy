@@ -12,10 +12,5 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": [
-    ".next",
-    ".open-next",
-    ".wrangler",
-    "node_modules"
-  ]
+  "exclude": [".next", ".open-next", ".wrangler", "node_modules"]
 }

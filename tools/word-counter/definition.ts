@@ -14,8 +14,7 @@ export default {
     "seo",
   ],
   name: "Word Counter",
-  description:
-    "Count words, characters, sentences, paragraphs, lines, and reading time.",
+  description: "Count words, characters, sentences, paragraphs, lines, and reading time.",
   layout: "stacked",
   input: {
     kind: "text",

@@ -11,11 +11,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const TOOLS_DIR = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "tools",
-);
+const TOOLS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "tools");
 
 /** Run-file names, in resolution order. */
 // All three execution hosts. `run.server.ts` belongs here even though it is a
@@ -67,8 +63,7 @@ function assertCase(expected, actual) {
   assert.equal(actual.render, expected.render, "render kind");
   assert.match(actual.output, new RegExp(expected.pattern), "output charset");
   assert.ok(
-    actual.output.length >= expected.length.min &&
-      actual.output.length <= expected.length.max,
+    actual.output.length >= expected.length.min && actual.output.length <= expected.length.max,
     `length ${actual.output.length} outside ${expected.length.min}..${expected.length.max}`,
   );
 }
@@ -95,7 +90,9 @@ for (const entry of readdirSync(TOOLS_DIR, { withFileTypes: true })) {
       // A half-migrated tool whose shared framework module does not exist yet
       // is "not migrated", not "broken". Every other import failure is real.
       if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
-      t.skip(`${path.basename(runFile)} imports a module that does not exist yet: ${error.url ?? error.message}`);
+      t.skip(
+        `${path.basename(runFile)} imports a module that does not exist yet: ${error.url ?? error.message}`,
+      );
       return;
     }
     assert.equal(typeof module.run, "function", `tools/${entry.name} must export run()`);

@@ -11,9 +11,10 @@ function fallbackErrorLocation(input: string) {
   const missingValue = /:\s*([,}\]])/.exec(input);
   const trailingComma = /,\s*([}\]])/.exec(input);
   const matchedDelimiter = missingValue ?? trailingComma;
-  const offset = matchedDelimiter?.index !== undefined
-    ? matchedDelimiter.index + matchedDelimiter[0].lastIndexOf(matchedDelimiter[1])
-    : Math.max(0, input.trimEnd().length - 1);
+  const offset =
+    matchedDelimiter?.index !== undefined
+      ? matchedDelimiter.index + matchedDelimiter[0].lastIndexOf(matchedDelimiter[1])
+      : Math.max(0, input.trimEnd().length - 1);
   const lines = input.slice(0, offset).split(/\r\n|\r|\n/);
   return {
     column: (lines.at(-1)?.length ?? 0) + 1,
@@ -45,11 +46,7 @@ function collectMissingValuePaths(
   if (Array.isArray(nullableValue)) {
     if (!Array.isArray(removedValue)) return [];
     return nullableValue.flatMap((child, index) =>
-      collectMissingValuePaths(
-        child,
-        removedValue[index],
-        appendJsonPath(path, index),
-      ),
+      collectMissingValuePaths(child, removedValue[index], appendJsonPath(path, index)),
     );
   }
 
@@ -65,10 +62,7 @@ function collectMissingValuePaths(
 export function executeJsonViewer(input: string): JsonViewerExecutionResult {
   const result = transformJson(input, { indentation: 2, mode: "format" });
   if (!result.ok) {
-    if (
-      result.error.kind !== "syntax" ||
-      (result.error.line && result.error.column)
-    ) {
+    if (result.error.kind !== "syntax" || (result.error.line && result.error.column)) {
       return result;
     }
     const location = fallbackErrorLocation(input);
@@ -96,10 +90,7 @@ export function minifyJsonViewerInput(input: string): JsonTransformResult {
   return transformJson(input, { indentation: 2, mode: "minify" });
 }
 
-export function repairJsonViewerInput(
-  input: string,
-  repairMode: Exclude<JsonRepairMode, "off">,
-) {
+export function repairJsonViewerInput(input: string, repairMode: Exclude<JsonRepairMode, "off">) {
   return repairJson(input, repairMode);
 }
 

@@ -25,8 +25,7 @@ import { requireUtilityInput } from "../../lib/devtools/shared/options.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-const OUTLINE_STYLE =
-  "<style>*,*::before,*::after{outline:1px solid #2563eb!important}</style>";
+const OUTLINE_STYLE = "<style>*,*::before,*::after{outline:1px solid #2563eb!important}</style>";
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const html = requireUtilityInput(ctx.input.text, "HTML source");

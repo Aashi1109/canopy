@@ -8,12 +8,18 @@ import { AuthorizationError, getUserAuthorization } from "@smarttools/control-pl
 const initialTime = new Date("2026-09-16T00:00:00.000Z");
 const changedTime = new Date("2026-09-16T00:00:01.000Z");
 const editor = {
-  id: "editor", name: "Editor", description: "Edit tools",
-  access: { tools: { view: true, edit: true } }, isSystem: false,
+  id: "editor",
+  name: "Editor",
+  description: "Edit tools",
+  access: { tools: { view: true, edit: true } },
+  isSystem: false,
 };
 const reader = {
-  id: "reader", name: "Reader", description: "Read tools",
-  access: { tools: { view: true } }, isSystem: false,
+  id: "reader",
+  name: "Reader",
+  description: "Read tools",
+  access: { tools: { view: true } },
+  isSystem: false,
 };
 
 function setup(t) {
@@ -37,8 +43,13 @@ function setup(t) {
       ["alice", { status: "active", updatedAt: initialTime, roles: [editor] }],
       ["bob", { status: "active", updatedAt: initialTime, roles: [reader] }],
     ]),
-    entries: new Map(), commands: [], statusReads: 0, roleReads: 0,
-    redisError: false, databaseError: false, roleLoader: undefined,
+    entries: new Map(),
+    commands: [],
+    statusReads: 0,
+    roleReads: 0,
+    redisError: false,
+    databaseError: false,
+    roleLoader: undefined,
   };
   const dialect = new PgDialect();
   db.select = (fields) => {
@@ -49,27 +60,42 @@ function setup(t) {
         if (statusQuery) assert.equal(table, authUser);
         return query;
       },
-      leftJoin() { return query; },
-      innerJoin() { return query; },
+      leftJoin() {
+        return query;
+      },
+      innerJoin() {
+        return query;
+      },
       where(condition) {
         [userId] = dialect.sqlToQuery(condition).params;
         return query;
       },
-      limit() { return query; },
+      limit() {
+        return query;
+      },
       then(resolve, reject) {
-        if (state.databaseError) return Promise.reject(new Error("Database unavailable")).then(resolve, reject);
+        if (state.databaseError)
+          return Promise.reject(new Error("Database unavailable")).then(resolve, reject);
         const user = state.users.get(userId);
         if (statusQuery) {
           state.statusReads++;
-          return Promise.resolve(user ? [{ status: user.status, updatedAt: user.updatedAt }] : []).then(resolve, reject);
+          return Promise.resolve(
+            user ? [{ status: user.status, updatedAt: user.updatedAt }] : [],
+          ).then(resolve, reject);
         }
         state.roleReads++;
         const rows = (user?.roles ?? []).map((role) => ({
           status: user.status,
-          roleId: role.id, roleName: role.name, roleDescription: role.description,
-          roleAccess: structuredClone(role.access), roleIsSystem: role.isSystem,
+          roleId: role.id,
+          roleName: role.name,
+          roleDescription: role.description,
+          roleAccess: structuredClone(role.access),
+          roleIsSystem: role.isSystem,
         }));
-        return Promise.resolve(state.roleLoader ? state.roleLoader(rows) : rows).then(resolve, reject);
+        return Promise.resolve(state.roleLoader ? state.roleLoader(rows) : rows).then(
+          resolve,
+          reject,
+        );
       },
     };
     return query;
@@ -94,10 +120,13 @@ test("authorization caches each user's roles for one day while checking current 
   assert.deepEqual(await getUserAuthorization("bob"), { roles: [reader], access: reader.access });
   assert.equal(state.roleReads, 2);
   assert.equal(state.statusReads, 3);
-  assert.deepEqual([...state.entries.keys()], [
-    `user-roles:alice:${initialTime.toISOString()}`,
-    `user-roles:bob:${initialTime.toISOString()}`,
-  ]);
+  assert.deepEqual(
+    [...state.entries.keys()],
+    [
+      `user-roles:alice:${initialTime.toISOString()}`,
+      `user-roles:bob:${initialTime.toISOString()}`,
+    ],
+  );
   assert.deepEqual(JSON.parse(state.entries.values().next().value), [editor]);
 });
 
@@ -147,11 +176,14 @@ test("a late cache fill from before an update cannot replace current authorizati
   const state = setup(t);
   let release;
   let started;
-  const loading = new Promise((resolve) => { started = resolve; });
-  state.roleLoader = (rows) => new Promise((resolve) => {
-    release = () => resolve(rows);
-    started();
+  const loading = new Promise((resolve) => {
+    started = resolve;
   });
+  state.roleLoader = (rows) =>
+    new Promise((resolve) => {
+      release = () => resolve(rows);
+      started();
+    });
   const staleRead = getUserAuthorization("alice");
   await loading;
   state.users.set("alice", { status: "active", updatedAt: changedTime, roles: [reader] });

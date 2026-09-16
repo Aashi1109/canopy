@@ -28,18 +28,11 @@ const ToolRuntimeContext = createContext<ToolRuntimeController<
   unknown
 > | null>(null);
 
-function initialLifecycle<Input>(
-  input: Input,
-  isEmpty: (input: Input) => boolean,
-): ToolLifecycle {
+function initialLifecycle<Input>(input: Input, isEmpty: (input: Input) => boolean): ToolLifecycle {
   return isEmpty(input) ? "empty" : "ready";
 }
 
-export function ToolRuntimeProvider<
-  Input,
-  Settings extends ToolSettings,
-  Result,
->({
+export function ToolRuntimeProvider<Input, Settings extends ToolSettings, Result>({
   analyticsToolKey,
   children,
   spec,
@@ -59,12 +52,8 @@ export function ToolRuntimeProvider<
       : [...spec.validate(spec.initialInput, spec.initialSettings)],
   );
   const [result, setResult] = useState<Result | null>(null);
-  const [artifacts, setArtifacts] = useState<
-    ToolExecutionOutcome<Result>["artifacts"]
-  >([]);
-  const [facts, setFacts] = useState<
-    ToolExecutionOutcome<Result>["facts"]
-  >([]);
+  const [artifacts, setArtifacts] = useState<ToolExecutionOutcome<Result>["artifacts"]>([]);
+  const [facts, setFacts] = useState<ToolExecutionOutcome<Result>["facts"]>([]);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [lastChanges, setLastChanges] = useState<readonly string[]>([]);
@@ -72,52 +61,47 @@ export function ToolRuntimeProvider<
     outcome: ToolCommandOutcome<Input>;
     previousInput: Input;
   } | null>(null);
-  const [undoSnapshot, setUndoSnapshot] = useState<{ input: Input } | null>(
-    null,
-  );
+  const [undoSnapshot, setUndoSnapshot] = useState<{ input: Input } | null>(null);
   const revisionRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
 
-  const execute = useCallback(async (manual = false) => {
-    const revision = ++revisionRef.current;
-    abortRef.current?.abort();
-    const abortController = new AbortController();
-    abortRef.current = abortController;
-    setLifecycle("running");
-    setError("");
-    setResult(null);
-    setArtifacts([]);
-    setFacts([]);
-
-    if (manual) trackToolEvent("tool_start", analyticsToolKey);
-    try {
-      const outcome = await spec.execute(
-        input,
-        settings,
-        abortController.signal,
-      );
-      if (revision !== revisionRef.current || abortController.signal.aborted) {
-        return;
-      }
-      setResult(outcome.result);
-      setArtifacts(outcome.artifacts ?? []);
-      setFacts(outcome.facts ?? []);
-      setLifecycle("completed");
-      if (manual) trackToolEvent("tool_complete", analyticsToolKey);
-    } catch (caught) {
-      if (revision !== revisionRef.current || abortController.signal.aborted) {
-        return;
-      }
+  const execute = useCallback(
+    async (manual = false) => {
+      const revision = ++revisionRef.current;
+      abortRef.current?.abort();
+      const abortController = new AbortController();
+      abortRef.current = abortController;
+      setLifecycle("running");
+      setError("");
       setResult(null);
       setArtifacts([]);
       setFacts([]);
-      setError(
-        caught instanceof Error ? caught.message : "Unable to run this tool.",
-      );
-      setLifecycle("failed");
-      if (manual) trackToolEvent("tool_error", analyticsToolKey);
-    }
-  }, [analyticsToolKey, input, settings, spec]);
+
+      if (manual) trackToolEvent("tool_start", analyticsToolKey);
+      try {
+        const outcome = await spec.execute(input, settings, abortController.signal);
+        if (revision !== revisionRef.current || abortController.signal.aborted) {
+          return;
+        }
+        setResult(outcome.result);
+        setArtifacts(outcome.artifacts ?? []);
+        setFacts(outcome.facts ?? []);
+        setLifecycle("completed");
+        if (manual) trackToolEvent("tool_complete", analyticsToolKey);
+      } catch (caught) {
+        if (revision !== revisionRef.current || abortController.signal.aborted) {
+          return;
+        }
+        setResult(null);
+        setArtifacts([]);
+        setFacts([]);
+        setError(caught instanceof Error ? caught.message : "Unable to run this tool.");
+        setLifecycle("failed");
+        if (manual) trackToolEvent("tool_error", analyticsToolKey);
+      }
+    },
+    [analyticsToolKey, input, settings, spec],
+  );
 
   useEffect(() => {
     revisionRef.current += 1;
@@ -146,10 +130,7 @@ export function ToolRuntimeProvider<
     setLifecycle("ready");
     if (spec.trigger !== "live" || spec.shouldAutoRun?.(input) === false) return;
 
-    const timeout = window.setTimeout(
-      () => void execute(),
-      spec.debounceMs ?? 200,
-    );
+    const timeout = window.setTimeout(() => void execute(), spec.debounceMs ?? 200);
     return () => window.clearTimeout(timeout);
   }, [execute, input, settings, spec]);
 
@@ -161,25 +142,20 @@ export function ToolRuntimeProvider<
     [],
   );
 
-  const setInput = useCallback((nextInput: Input) => {
-    setNotice(
-      pendingCommand
-        ? "Pending action cancelled because input changed."
-        : "",
-    );
-    setLastChanges([]);
-    setPendingCommand(null);
-    setUndoSnapshot(null);
-    setInputState(nextInput);
-  }, [pendingCommand]);
+  const setInput = useCallback(
+    (nextInput: Input) => {
+      setNotice(pendingCommand ? "Pending action cancelled because input changed." : "");
+      setLastChanges([]);
+      setPendingCommand(null);
+      setUndoSnapshot(null);
+      setInputState(nextInput);
+    },
+    [pendingCommand],
+  );
 
   const updateSetting = useCallback(
     (key: keyof Settings, value: ToolSettingValue) => {
-      setNotice(
-        pendingCommand
-          ? "Pending action cancelled because settings changed."
-          : "",
-      );
+      setNotice(pendingCommand ? "Pending action cancelled because settings changed." : "");
       setLastChanges([]);
       setPendingCommand(null);
       setSettings((current) => ({ ...current, [key]: value }));
@@ -199,22 +175,14 @@ export function ToolRuntimeProvider<
     revisionRef.current += 1;
     abortRef.current?.abort();
     abortRef.current = null;
-    const nextIssues = spec.isEmpty(input)
-      ? []
-      : [...spec.validate(input, settings)];
+    const nextIssues = spec.isEmpty(input) ? [] : [...spec.validate(input, settings)];
     setIssues(nextIssues);
     setResult(null);
     setArtifacts([]);
     setFacts([]);
     setError("");
     setNotice("Processing cancelled. Your input is unchanged.");
-    setLifecycle(
-      spec.isEmpty(input)
-        ? "empty"
-        : nextIssues.length > 0
-          ? "invalid"
-          : "ready",
-    );
+    setLifecycle(spec.isEmpty(input) ? "empty" : nextIssues.length > 0 ? "invalid" : "ready");
   }, [input, lifecycle, settings, spec]);
 
   const runCommand = useCallback(
@@ -235,9 +203,7 @@ export function ToolRuntimeProvider<
           return;
         }
         setNotice(
-          cancelledPendingAction
-            ? `Pending action cancelled. ${outcome.notice}`
-            : outcome.notice,
+          cancelledPendingAction ? `Pending action cancelled. ${outcome.notice}` : outcome.notice,
         );
         setLastChanges(outcome.changes ?? []);
         if (outcome.input !== undefined) {
@@ -245,9 +211,7 @@ export function ToolRuntimeProvider<
           setInputState(outcome.input);
         }
       } catch (caught) {
-        setNotice(
-          caught instanceof Error ? caught.message : "Unable to run that action.",
-        );
+        setNotice(caught instanceof Error ? caught.message : "Unable to run that action.");
       }
     },
     [input, pendingCommand, result, settings, spec.commands],
@@ -307,13 +271,7 @@ export function ToolRuntimeProvider<
 
   return (
     <ToolRuntimeContext.Provider
-      value={
-        controller as unknown as ToolRuntimeController<
-          unknown,
-          ToolSettings,
-          unknown
-        >
-      }
+      value={controller as unknown as ToolRuntimeController<unknown, ToolSettings, unknown>}
     >
       {children}
     </ToolRuntimeContext.Provider>

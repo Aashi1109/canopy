@@ -39,13 +39,10 @@ test("JSON Viewer execution parses, formats, minifies, and repairs without UI st
     repairJsonViewerInput,
   } = await import("../tools/json-viewer/execution.ts");
 
-  const parsed = executeJsonViewer(
-    '{"name":"SmartTools","nested":{"enabled":true}}',
-  );
+  const parsed = executeJsonViewer('{"name":"SmartTools","nested":{"enabled":true}}');
   assert.deepEqual(parsed, {
     ok: true,
-    formattedValue:
-      '{\n  "name": "SmartTools",\n  "nested": {\n    "enabled": true\n  }\n}',
+    formattedValue: '{\n  "name": "SmartTools",\n  "nested": {\n    "enabled": true\n  }\n}',
     value: { name: "SmartTools", nested: { enabled: true } },
   });
 
@@ -54,32 +51,20 @@ test("JSON Viewer execution parses, formats, minifies, and repairs without UI st
   assert.equal(invalid.error.kind, "syntax");
   assert.match(invalid.error.message, /isn't valid/i);
 
-  assert.equal(
-    formatJsonViewerInput('{"ready":true}').output,
-    '{\n  "ready": true\n}',
-  );
-  assert.equal(
-    minifyJsonViewerInput('{\n  "ready": true\n}').output,
-    '{"ready":true}',
-  );
-  assert.deepEqual(
-    repairJsonViewerInput('{"ready":,"kept":true}', "remove"),
-    {
-      ok: true,
-      output: '{\n  "kept": true\n}',
-      repaired: true,
-      value: { kept: true },
-    },
-  );
-  assert.deepEqual(
-    repairJsonViewerInput('{"ready":,"kept":true}', "null"),
-    {
-      ok: true,
-      output: '{\n  "ready": null,\n  "kept": true\n}',
-      repaired: true,
-      value: { ready: null, kept: true },
-    },
-  );
+  assert.equal(formatJsonViewerInput('{"ready":true}').output, '{\n  "ready": true\n}');
+  assert.equal(minifyJsonViewerInput('{\n  "ready": true\n}').output, '{"ready":true}');
+  assert.deepEqual(repairJsonViewerInput('{"ready":,"kept":true}', "remove"), {
+    ok: true,
+    output: '{\n  "kept": true\n}',
+    repaired: true,
+    value: { kept: true },
+  });
+  assert.deepEqual(repairJsonViewerInput('{"ready":,"kept":true}', "null"), {
+    ok: true,
+    output: '{\n  "ready": null,\n  "kept": true\n}',
+    repaired: true,
+    value: { ready: null, kept: true },
+  });
   assert.deepEqual(
     describeJsonViewerRepair(
       '[{"id":1,"name":"Alice","age":},{"id":2,"name":"Bob","age":30}]',
@@ -93,13 +78,10 @@ test("JSON Viewer execution parses, formats, minifies, and repairs without UI st
         '[\n  {\n    "id": 1,\n    "name": "Alice"\n  },\n  {\n    "id": 2,\n    "name": "Bob",\n    "age": 30\n  }\n]',
     },
   );
-  assert.deepEqual(
-    describeJsonViewerRepair('{"ready":,"kept":true}', "null"),
-    {
-      changedPaths: ["$.ready"],
-      kind: "null",
-      ok: true,
-      output: '{\n  "ready": null,\n  "kept": true\n}',
-    },
-  );
+  assert.deepEqual(describeJsonViewerRepair('{"ready":,"kept":true}', "null"), {
+    changedPaths: ["$.ready"],
+    kind: "null",
+    ok: true,
+    output: '{\n  "ready": null,\n  "kept": true\n}',
+  });
 });

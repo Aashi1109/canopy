@@ -59,10 +59,12 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
           { label: "Rows", value: String(Math.max(0, parsed.rowCount - 1)) },
           { label: "Columns", value: String(parsed.columnCount) },
         ],
-        sections: [{
-          title: sink.previewTruncated ? "Complete HTML table" : "Download",
-          body: { render: "files", files: [artifact], outputBytes: artifact.size },
-        }],
+        sections: [
+          {
+            title: sink.previewTruncated ? "Complete HTML table" : "Download",
+            body: { render: "files", files: [artifact], outputBytes: artifact.size },
+          },
+        ],
       };
     } catch (error) {
       await sink.abort(error);

@@ -1,11 +1,6 @@
 "use client";
 
-import type {
-  Plugins,
-  PropPanelWidgetProps,
-  Schema,
-  Template,
-} from "@pdfme/common";
+import type { Plugins, PropPanelWidgetProps, Schema, Template } from "@pdfme/common";
 import {
   getDocumentDefinition,
   resizeAdvancedTemplateConfig,
@@ -90,22 +85,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { updateAdminQuery, useAdminQueryState } from "@/app/admin/hooks/useAdminQueryState";
-import {
-  startTransition,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import type {
-  Designer,
-  DesignerSelection,
-} from "@pdfme/ui";
-import {
-  updateAndPublishTemplateAction,
-  updateTemplateAction,
-} from "../../../../../actions";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Designer, DesignerSelection } from "@pdfme/ui";
+import { updateAndPublishTemplateAction, updateTemplateAction } from "../../../../../actions";
 
 type ActivePanel = "add" | "layers" | "data" | "pages" | null;
 type Region = "header" | "footer";
@@ -118,13 +100,9 @@ type HistoryEntry = {
   pageFormat: PageFormat;
   template: Template;
 };
-type TemplateFormSection =
-  AdvancedTemplateConfig["form"]["sections"][number];
+type TemplateFormSection = AdvancedTemplateConfig["form"]["sections"][number];
 type TemplateFormEntry = TemplateFormSection["entries"][number];
-type CustomTemplateFormEntry = Exclude<
-  TemplateFormEntry,
-  { kind: "builtin" }
->;
+type CustomTemplateFormEntry = Exclude<TemplateFormEntry, { kind: "builtin" }>;
 type AddTool = {
   description: string;
   group: "Content" | "Layout" | "Fields" | "Codes";
@@ -311,17 +289,14 @@ function renderSmarttoolsControls(props: PropPanelWidgetProps): void {
   try {
     const { rootElement, activeSchema } = props;
     rootElement.replaceChildren();
-    const repeating = Boolean(
-      (activeSchema as { smarttoolsRegion?: string }).smarttoolsRegion,
-    );
+    const repeating = Boolean((activeSchema as { smarttoolsRegion?: string }).smarttoolsRegion);
 
     const wrap = document.createElement("div");
     wrap.style.cssText =
       "display:flex;flex-direction:column;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #eaecef;";
 
     const row = document.createElement("div");
-    row.style.cssText =
-      "display:flex;align-items:center;justify-content:space-between;gap:8px;";
+    row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;";
     const text = document.createElement("div");
     text.innerHTML =
       `<div class="${typographyStyles.strong}" style="color:#1a1a1a;">Repeat on every page</div>` +
@@ -373,9 +348,7 @@ function withSmarttoolsControls(plugin: PdfmePlugin): PdfmePlugin {
       },
       schema: (schemaProps) => {
         const base =
-          typeof originalSchema === "function"
-            ? originalSchema(schemaProps)
-            : originalSchema;
+          typeof originalSchema === "function" ? originalSchema(schemaProps) : originalSchema;
         return {
           ...base,
           smarttoolsControls: {
@@ -413,10 +386,7 @@ async function loadPlugins(): Promise<Plugins> {
     ...schemas.barcodes,
   };
   return Object.fromEntries(
-    Object.entries(raw).map(([key, plugin]) => [
-      key,
-      withSmarttoolsControls(plugin),
-    ]),
+    Object.entries(raw).map(([key, plugin]) => [key, withSmarttoolsControls(plugin)]),
   );
 }
 
@@ -445,12 +415,8 @@ export default function AdvancedTemplateEditor({
   template: AdvancedDocumentTemplate;
 }) {
   const definition = getDocumentDefinition(template.documentType);
-  const fieldDefinitions = new Map(
-    definition.fields.map((field) => [field.key, field]),
-  );
-  const initialTemplate = useRef(
-    cloneTemplate(template.config.template as Template),
-  );
+  const fieldDefinitions = new Map(definition.fields.map((field) => [field.key, field]));
+  const initialTemplate = useRef(cloneTemplate(template.config.template as Template));
   const deletePageDialogRef = useRef<HTMLDialogElement>(null);
   const designerContainerRef = useRef<HTMLDivElement>(null);
   const designerRef = useRef<Designer | null>(null);
@@ -467,9 +433,13 @@ export default function AdvancedTemplateEditor({
   const restoringHistoryRef = useRef(false);
   const saveFromDesignerRef = useRef<(next: Template) => void>(() => {});
 
-  const [panelQuery, setPanelQuery] = useAdminQueryState(
-    "panel", "add", ["add", "layers", "data", "pages", "none"],
-  );
+  const [panelQuery, setPanelQuery] = useAdminQueryState("panel", "add", [
+    "add",
+    "layers",
+    "data",
+    "pages",
+    "none",
+  ]);
   const activePanel: ActivePanel = panelQuery === "none" ? null : panelQuery;
   const setActivePanel = (panel: ActivePanel) => setPanelQuery(panel ?? "none");
   const [addQuery, setAddQuery] = useAdminQueryState<string>("q", "");
@@ -488,11 +458,11 @@ export default function AdvancedTemplateEditor({
   const [savingAction, setSavingAction] = useState<"draft" | "publish" | null>(null);
   const isSaving = savingAction !== null;
   const [name, setName] = useState(template.name);
-  const [pageCount, setPageCount] = useState(
-    initialTemplate.current.schemas.length,
-  );
+  const [pageCount, setPageCount] = useState(initialTemplate.current.schemas.length);
   const [pageQuery, setPageQuery] = useAdminQueryState(
-    "page", "1", Array.from({ length: pageCount }, (_, index) => String(index + 1)),
+    "page",
+    "1",
+    Array.from({ length: pageCount }, (_, index) => String(index + 1)),
   );
   const currentPage = Number(pageQuery) - 1;
   const currentPageRef = useRef(currentPage);
@@ -504,9 +474,7 @@ export default function AdvancedTemplateEditor({
     setPageQuery(String(pageIndex + 1));
   };
   const [pageFormat, setPageFormat] = useState(template.config.pageFormat);
-  const [pendingPageRemoval, setPendingPageRemoval] = useState<number | null>(
-    null,
-  );
+  const [pendingPageRemoval, setPendingPageRemoval] = useState<number | null>(null);
   const [sampleData, setSampleData] = useState(template.config.sampleData);
   const [form, setForm] = useState(template.config.form);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -517,9 +485,7 @@ export default function AdvancedTemplateEditor({
 
   const selectedSchema = selection?.schemas[0] ?? null;
   const selectedPdfmeSchema = selectedSchema
-    ? currentTemplateRef.current.schemas[selectedSchema.pageIndex]?.[
-        selectedSchema.schemaIndex
-      ]
+    ? currentTemplateRef.current.schemas[selectedSchema.pageIndex]?.[selectedSchema.schemaIndex]
     : undefined;
   const selectedBindingType = selectedPdfmeSchema
     ? schemaBindingType(selectedPdfmeSchema.type)
@@ -536,9 +502,8 @@ export default function AdvancedTemplateEditor({
   useEffect(() => {
     smarttoolsBridge.deleteElement = () => deleteSelectedElement();
     smarttoolsBridge.toggleRepeat = () => {
-      const region = (
-        selectedPdfmeSchema as { smarttoolsRegion?: string } | undefined
-      )?.smarttoolsRegion;
+      const region = (selectedPdfmeSchema as { smarttoolsRegion?: string } | undefined)
+        ?.smarttoolsRegion;
       if (region) {
         const base = blankBase(currentTemplateRef.current);
         const index = (base.staticSchema ?? []).findIndex(
@@ -575,8 +540,7 @@ export default function AdvancedTemplateEditor({
     setIsDirty(true);
 
     if (restoringHistoryRef.current) return;
-    const previous =
-      historyRef.current[historyIndexRef.current] ?? historyRef.current[0];
+    const previous = historyRef.current[historyIndexRef.current] ?? historyRef.current[0];
     if (
       previous.pageFormat === pageFormatRef.current &&
       JSON.stringify(previous.template) === JSON.stringify(next)
@@ -610,8 +574,7 @@ export default function AdvancedTemplateEditor({
         ...template.config,
         schemaVersion: 2,
         pageFormat,
-        template:
-          nextTemplate as unknown as AdvancedTemplateConfig["template"],
+        template: nextTemplate as unknown as AdvancedTemplateConfig["template"],
         sampleData,
         form,
       };
@@ -622,9 +585,7 @@ export default function AdvancedTemplateEditor({
       );
       setWarnings(validation.warnings.map(({ message }) => message));
       if (!validation.valid) {
-        setError(
-          validation.errors.map(({ message }) => message).join(" "),
-        );
+        setError(validation.errors.map(({ message }) => message).join(" "));
         return;
       }
 
@@ -735,7 +696,9 @@ export default function AdvancedTemplateEditor({
     restoringPageRef.current = designerRef.current?.getPageCursor() !== currentPage;
     const scrollToPage = () => {
       const canvas = container.querySelector<HTMLElement>(".pdfme-designer-canvas");
-      const paper = canvas?.querySelectorAll<HTMLElement>("div[style*=background-image]")[currentPage];
+      const paper = canvas?.querySelectorAll<HTMLElement>("div[style*=background-image]")[
+        currentPage
+      ];
       if (!canvas || !paper) return false;
       if (designerRef.current?.getPageCursor() === currentPage) restoringPageRef.current = false;
       // pdfme's selection API cannot navigate to an empty page; scroll its actual paper.
@@ -752,9 +715,8 @@ export default function AdvancedTemplateEditor({
 
   useEffect(() => {
     if (!designerReady || canvasMode !== "pan") return;
-    const canvas = designerContainerRef.current?.querySelector<HTMLElement>(
-      ".pdfme-designer-canvas",
-    );
+    const canvas =
+      designerContainerRef.current?.querySelector<HTMLElement>(".pdfme-designer-canvas");
     if (!canvas) return;
 
     let dragging = false;
@@ -840,8 +802,7 @@ export default function AdvancedTemplateEditor({
         ...template.config,
         schemaVersion: 2,
         pageFormat: pageFormatRef.current,
-        template:
-          currentTemplateRef.current as unknown as AdvancedTemplateConfig["template"],
+        template: currentTemplateRef.current as unknown as AdvancedTemplateConfig["template"],
         sampleData,
         form,
       },
@@ -999,10 +960,14 @@ export default function AdvancedTemplateEditor({
 
   function duplicatePage(pageIndex: number) {
     const next = cloneTemplate(currentTemplateRef.current);
-    next.schemas.splice(pageIndex + 1, 0, cloneTemplate({
-      ...next,
-      schemas: [next.schemas[pageIndex] ?? []],
-    }).schemas[0]);
+    next.schemas.splice(
+      pageIndex + 1,
+      0,
+      cloneTemplate({
+        ...next,
+        schemas: [next.schemas[pageIndex] ?? []],
+      }).schemas[0],
+    );
     applyTemplate(next);
     setSelection(null);
     setEditingRegion(null);
@@ -1037,9 +1002,7 @@ export default function AdvancedTemplateEditor({
     const selected = selection?.schemas[0];
     if (!selected) return;
     const selectedPdfmeSchema =
-      currentTemplateRef.current.schemas[selected.pageIndex]?.[
-        selected.schemaIndex
-      ];
+      currentTemplateRef.current.schemas[selected.pageIndex]?.[selected.schemaIndex];
     if (!selectedPdfmeSchema) return;
     const definitionField = fieldDefinitions.get(name);
     const formEntry = form.sections
@@ -1052,9 +1015,7 @@ export default function AdvancedTemplateEditor({
         ? bindingType === "table"
         : bindingType === "text";
     if (!isCompatible) {
-      setError(
-        `${name} cannot be bound to a ${selectedPdfmeSchema.type} element.`,
-      );
+      setError(`${name} cannot be bound to a ${selectedPdfmeSchema.type} element.`);
       return;
     }
     const next = cloneTemplate(currentTemplateRef.current);
@@ -1075,9 +1036,7 @@ export default function AdvancedTemplateEditor({
     update: (section: TemplateFormSection) => TemplateFormSection,
   ) {
     setFormSections(
-      form.sections.map((section) =>
-        section.id === sectionId ? update(section) : section,
-      ),
+      form.sections.map((section) => (section.id === sectionId ? update(section) : section)),
     );
   }
 
@@ -1088,17 +1047,13 @@ export default function AdvancedTemplateEditor({
   ) {
     updateSection(sectionId, (section) => ({
       ...section,
-      entries: section.entries.map((entry) =>
-        entry.key === key ? update(entry) : entry,
-      ),
+      entries: section.entries.map((entry) => (entry.key === key ? update(entry) : entry)),
     }));
   }
 
   function uniqueCustomKey(base: string) {
     const used = new Set(
-      form.sections.flatMap((section) =>
-        section.entries.map((entry) => entry.key),
-      ),
+      form.sections.flatMap((section) => section.entries.map((entry) => entry.key)),
     );
     let key = `custom.${base}`;
     let suffix = 2;
@@ -1120,10 +1075,7 @@ export default function AdvancedTemplateEditor({
     ]);
   }
 
-  function addCustomEntry(
-    sectionId: string,
-    kind: CustomTemplateFormEntry["kind"],
-  ) {
+  function addCustomEntry(sectionId: string, kind: CustomTemplateFormEntry["kind"]) {
     const isRepeater = kind === "repeater";
     const key = uniqueCustomKey(isRepeater ? "table" : "field");
     const entry: CustomTemplateFormEntry = isRepeater
@@ -1167,11 +1119,7 @@ export default function AdvancedTemplateEditor({
     }));
   }
 
-  function moveFormEntry(
-    sourceSectionId: string,
-    targetSectionId: string,
-    key: string,
-  ) {
+  function moveFormEntry(sourceSectionId: string, targetSectionId: string, key: string) {
     if (sourceSectionId === targetSectionId) return;
     const entry = form.sections
       .find((section) => section.id === sourceSectionId)
@@ -1182,9 +1130,7 @@ export default function AdvancedTemplateEditor({
         if (section.id === sourceSectionId) {
           return {
             ...section,
-            entries: section.entries.filter(
-              (candidate) => candidate.key !== key,
-            ),
+            entries: section.entries.filter((candidate) => candidate.key !== key),
           };
         }
         if (section.id === targetSectionId) {
@@ -1255,8 +1201,7 @@ export default function AdvancedTemplateEditor({
     const [schema] = staticSchema.splice(index, 1);
     if (!schema) return;
     const { smarttoolsRegion: region, ...editableSchema } = schema;
-    const schemaIndex =
-      next.schemas[currentPage].push(editableSchema as Schema) - 1;
+    const schemaIndex = next.schemas[currentPage].push(editableSchema as Schema) - 1;
     basePdf.staticSchema = staticSchema;
     applyTemplate(next);
     setEditingRegion(region === "header" || region === "footer" ? region : null);
@@ -1290,9 +1235,7 @@ export default function AdvancedTemplateEditor({
         pdf.byteOffset,
         pdf.byteOffset + pdf.byteLength,
       ) as ArrayBuffer;
-      const url = URL.createObjectURL(
-        new Blob([bytes], { type: "application/pdf" }),
-      );
+      const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
       if (previewWindow) {
         previewWindow.location.href = url;
       } else {
@@ -1327,12 +1270,7 @@ export default function AdvancedTemplateEditor({
         className="absolute bottom-5 left-[5.5rem] top-[4.625rem] z-30 flex min-h-0 max-h-[574px] w-[17.5rem] flex-col overflow-hidden rounded-r-xl rounded-bl-xl border border-border bg-card shadow-[0_8px_24px_rgba(17,18,20,0.06)]"
       >
         <div className="flex h-12 shrink-0 items-center justify-between px-3">
-          <H3
-
-            id={panelTitleId}
-          >
-            {panelTitle}
-          </H3>
+          <H3 id={panelTitleId}>{panelTitle}</H3>
           <Button
             aria-label={`Close ${activePanel} panel`}
             className="text-muted-foreground"
@@ -1359,60 +1297,51 @@ export default function AdvancedTemplateEditor({
               />
             </Label>
             <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto">
-              {ADD_TOOL_GROUPS.filter((group) => group !== "Codes").map(
-                (group) => {
-                  const visibleTools = ADD_TOOLS.filter((tool) => {
-                    const displayGroup =
-                      tool.group === "Codes" ? "Fields" : tool.group;
-                    const query = addQuery.trim().toLowerCase();
-                    return (
-                      displayGroup === group &&
-                      (!query ||
-                        tool.label.toLowerCase().includes(query) ||
-                        tool.description.toLowerCase().includes(query))
-                    );
-                  });
+              {ADD_TOOL_GROUPS.filter((group) => group !== "Codes").map((group) => {
+                const visibleTools = ADD_TOOLS.filter((tool) => {
+                  const displayGroup = tool.group === "Codes" ? "Fields" : tool.group;
+                  const query = addQuery.trim().toLowerCase();
                   return (
-                    <section key={group}>
-                      <Overline className="mb-1 block px-1 text-muted-foreground">
-                        {group === "Fields" ? "Fields & codes" : group}
-                      </Overline>
-                      <div className="grid gap-1">
-                        {visibleTools.map((tool) => {
-                          const Icon = tool.icon;
-                          return (
-                            <button
-                              aria-label={`Add ${tool.label}`}
-                              className="group flex h-10 w-full items-center gap-2 rounded-lg px-1.5 text-left outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-                              disabled={!designerReady}
-                              key={tool.pluginKey}
-                              onClick={() => addElement(tool)}
-                              type="button"
-                            >
-                              <span className="grid size-7 shrink-0 place-items-center rounded text-foreground">
-                                <Icon aria-hidden="true" size={15} />
-                              </span>
-                              <span className="min-w-0 flex-1">
-                                <Caption className="block text-foreground">
-                                  {tool.label}
-                                </Caption>
-                                <Caption className="block truncate text-muted-foreground">
-                                  {tool.description}
-                                </Caption>
-                              </span>
-                              <Plus
-                                aria-hidden="true"
-                                className="text-muted-foreground"
-                                size={13}
-                              />
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </section>
+                    displayGroup === group &&
+                    (!query ||
+                      tool.label.toLowerCase().includes(query) ||
+                      tool.description.toLowerCase().includes(query))
                   );
-                },
-              )}
+                });
+                return (
+                  <section key={group}>
+                    <Overline className="mb-1 block px-1 text-muted-foreground">
+                      {group === "Fields" ? "Fields & codes" : group}
+                    </Overline>
+                    <div className="grid gap-1">
+                      {visibleTools.map((tool) => {
+                        const Icon = tool.icon;
+                        return (
+                          <button
+                            aria-label={`Add ${tool.label}`}
+                            className="group flex h-10 w-full items-center gap-2 rounded-lg px-1.5 text-left outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                            disabled={!designerReady}
+                            key={tool.pluginKey}
+                            onClick={() => addElement(tool)}
+                            type="button"
+                          >
+                            <span className="grid size-7 shrink-0 place-items-center rounded text-foreground">
+                              <Icon aria-hidden="true" size={15} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <Caption className="block text-foreground">{tool.label}</Caption>
+                              <Caption className="block truncate text-muted-foreground">
+                                {tool.description}
+                              </Caption>
+                            </span>
+                            <Plus aria-hidden="true" className="text-muted-foreground" size={13} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
             </div>
           </div>
         ) : null}
@@ -1433,9 +1362,7 @@ export default function AdvancedTemplateEditor({
                 className="grid gap-1"
                 getId={(item) => item.id}
                 items={layerItems}
-                onReorder={(items) =>
-                  replacePageSchemas(items.map((item) => item.schema))
-                }
+                onReorder={(items) => replacePageSchemas(items.map((item) => item.schema))}
                 renderItem={(item, state) => (
                   <div
                     className={`flex h-8 items-center gap-1.5 rounded border px-1.5 ${
@@ -1462,9 +1389,7 @@ export default function AdvancedTemplateEditor({
                     >
                       <Caption>{item.schema.name}</Caption>
                     </button>
-                    <Overline className="mr-1 text-muted-foreground">
-                      {item.schema.type}
-                    </Overline>
+                    <Overline className="mr-1 text-muted-foreground">{item.schema.type}</Overline>
                   </div>
                 )}
               />
@@ -1486,33 +1411,24 @@ export default function AdvancedTemplateEditor({
           <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
             <div className="mb-3 flex h-10 items-center justify-between rounded-lg bg-muted px-3">
               <div>
-                <Overline className="block text-muted-foreground">
-                  Document type
-                </Overline>
+                <Overline className="block text-muted-foreground">Document type</Overline>
                 <Caption className="block ">{definition.label}</Caption>
               </div>
               <ChevronDown aria-hidden="true" className="text-muted-foreground" size={14} />
             </div>
-            <Overline className="block mb-2 text-muted-foreground">
-              Canvas bindings
-            </Overline>
+            <Overline className="block mb-2 text-muted-foreground">Canvas bindings</Overline>
             <div className="grid gap-2">
-                {Array.from(
-                  new Set(definition.fields.map((field) => field.section)),
-                ).map((fieldSection) => (
+              {Array.from(new Set(definition.fields.map((field) => field.section))).map(
+                (fieldSection) => (
                   <section className="grid gap-1.5" key={fieldSection}>
-                    <Overline className="text-muted-foreground">
-                      {fieldSection}
-                    </Overline>
+                    <Overline className="text-muted-foreground">{fieldSection}</Overline>
                     {definition.fields
                       .filter((field) => field.section === fieldSection)
                       .map((field) => {
                         const readOnly = field.source !== "user";
                         const compatible =
                           selectedBindingType !== null &&
-                          field.allowedBindingTypes.includes(
-                            selectedBindingType,
-                          );
+                          field.allowedBindingTypes.includes(selectedBindingType);
                         return (
                           <div
                             className="rounded-lg border border-border bg-card p-2"
@@ -1522,7 +1438,11 @@ export default function AdvancedTemplateEditor({
                               <button
                                 aria-expanded={expandedBindingKey === field.key}
                                 className="min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                onClick={() => setExpandedBindingKey((key) => key === field.key ? null : field.key)}
+                                onClick={() =>
+                                  setExpandedBindingKey((key) =>
+                                    key === field.key ? null : field.key,
+                                  )
+                                }
                                 type="button"
                               >
                                 <Caption className="block truncate text-foreground">
@@ -1547,12 +1467,8 @@ export default function AdvancedTemplateEditor({
                               </Button>
                             </div>
                             <div className="mt-1.5 flex items-center gap-1.5">
-                              <StatusBadge className="px-1.5 py-0">
-                                {field.source}
-                              </StatusBadge>
-                              <StatusBadge className="px-1.5 py-0">
-                                {field.valueType}
-                              </StatusBadge>
+                              <StatusBadge className="px-1.5 py-0">{field.source}</StatusBadge>
+                              <StatusBadge className="px-1.5 py-0">{field.valueType}</StatusBadge>
                               <Text className="min-w-0 truncate text-muted-foreground">
                                 {String(sampleData[field.key] ?? field.sampleValue ?? "No sample")}
                               </Text>
@@ -1563,7 +1479,10 @@ export default function AdvancedTemplateEditor({
                                 className="mt-2 min-h-10 resize-y rounded-md border border-input bg-background px-2 py-1.5 outline-none read-only:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
                                 onChange={(event) => {
                                   if (readOnly) return;
-                                  setSampleData((values) => ({ ...values, [field.key]: event.target.value }));
+                                  setSampleData((values) => ({
+                                    ...values,
+                                    [field.key]: event.target.value,
+                                  }));
                                   setIsDirty(true);
                                 }}
                                 readOnly={readOnly}
@@ -1574,299 +1493,254 @@ export default function AdvancedTemplateEditor({
                         );
                       })}
                   </section>
-                ))}
+                ),
+              )}
             </div>
 
             <details className="mt-4 border-t border-border pt-3">
-              <summary className="cursor-pointer text-muted-foreground"><Strong>
-                Published form configuration
-              </Strong></summary>
-            <div className="mt-3 flex items-center justify-between gap-2">
-              <div>
-                <H3 >Published form</H3>
-                <Caption className="block text-muted-foreground">
-                  Drag handles work with pointer and keyboard.
-                </Caption>
+              <summary className="cursor-pointer text-muted-foreground">
+                <Strong>Published form configuration</Strong>
+              </summary>
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <div>
+                  <H3>Published form</H3>
+                  <Caption className="block text-muted-foreground">
+                    Drag handles work with pointer and keyboard.
+                  </Caption>
+                </div>
+                <Button onClick={addCustomSection} size="sm" type="button" variant="secondary">
+                  <Plus aria-hidden="true" size={14} />
+                  Section
+                </Button>
               </div>
-              <Button
-                onClick={addCustomSection}
-                size="sm"
-                type="button"
-                variant="secondary"
-              >
-                <Plus aria-hidden="true" size={14} />
-                Section
-              </Button>
-            </div>
 
-            <OrderableList
-              ariaLabel="Form sections"
-              className="mt-3 grid gap-3"
-              getId={(section) => section.id}
-              getLabel={(section) => section.label}
-              items={form.sections}
-              onReorder={setFormSections}
-              renderItem={(section, sectionOrderState) => (
-                <section className="rounded-xl border border-border bg-background p-3">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      {...sectionOrderState.attributes}
-                      {...sectionOrderState.listeners}
-                      aria-label={`Reorder ${section.label} section`}
-                      className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-                      ref={sectionOrderState.setActivatorNodeRef}
-                      size="icon-sm"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <GripVertical aria-hidden="true" className="size-[15px]" />
-                    </Button>
-                    <Input
-                      aria-label="Section label"
-                      className="h-8"
-                      onChange={(event) =>
-                        updateSection(section.id, (current) => ({
-                          ...current,
-                          label: event.target.value,
-                        }))
-                      }
-                      value={section.label}
-                    />
-                    {section.entries.every(
-                      (entry) => entry.kind !== "builtin",
-                    ) ? (
+              <OrderableList
+                ariaLabel="Form sections"
+                className="mt-3 grid gap-3"
+                getId={(section) => section.id}
+                getLabel={(section) => section.label}
+                items={form.sections}
+                onReorder={setFormSections}
+                renderItem={(section, sectionOrderState) => (
+                  <section className="rounded-xl border border-border bg-background p-3">
+                    <div className="flex items-center gap-2">
                       <Button
-                        aria-label={`Remove ${section.label} section`}
-                        onClick={() =>
-                          setFormSections(
-                            form.sections.filter(
-                              (candidate) => candidate.id !== section.id,
-                            ),
-                          )
-                        }
-                        size="icon"
+                        {...sectionOrderState.attributes}
+                        {...sectionOrderState.listeners}
+                        aria-label={`Reorder ${section.label} section`}
+                        className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                        ref={sectionOrderState.setActivatorNodeRef}
+                        size="icon-sm"
                         type="button"
                         variant="ghost"
                       >
-                        <X aria-hidden="true" size={14} />
+                        <GripVertical aria-hidden="true" className="size-[15px]" />
                       </Button>
-                    ) : null}
-                  </div>
-
-                  <OrderableList
-                    ariaLabel={`Fields in ${section.label}`}
-                    className="mt-3 grid gap-2"
-                    getId={(entry) => entry.key}
-                    getLabel={(entry) => entry.label}
-                    items={section.entries}
-                    onReorder={(entries) =>
-                      updateSection(section.id, (current) => ({
-                        ...current,
-                        entries,
-                      }))
-                    }
-                    renderItem={(entry, entryOrderState) => {
-                      const definitionField =
-                        entry.kind === "builtin"
-                          ? fieldDefinitions.get(entry.key)
-                          : undefined;
-                      const coreField = Boolean(
-                        definitionField?.required ||
-                          definitionField?.computationRequired,
-                      );
-                      const compatible =
-                        selectedBindingType !== null &&
-                        (definitionField
-                          ? definitionField.allowedBindingTypes.includes(
-                              selectedBindingType,
+                      <Input
+                        aria-label="Section label"
+                        className="h-8"
+                        onChange={(event) =>
+                          updateSection(section.id, (current) => ({
+                            ...current,
+                            label: event.target.value,
+                          }))
+                        }
+                        value={section.label}
+                      />
+                      {section.entries.every((entry) => entry.kind !== "builtin") ? (
+                        <Button
+                          aria-label={`Remove ${section.label} section`}
+                          onClick={() =>
+                            setFormSections(
+                              form.sections.filter((candidate) => candidate.id !== section.id),
                             )
-                          : entry.kind === "repeater"
-                            ? selectedBindingType === "table"
-                            : selectedBindingType === "text");
-                      return (
-                        <div className="grid gap-2 rounded-lg border border-border bg-card p-2.5">
-                          <div className="flex items-center gap-2">
-                            <Button
-                              {...entryOrderState.attributes}
-                              {...entryOrderState.listeners}
-                              aria-label={`Reorder ${entry.label}`}
-                              className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-                              ref={entryOrderState.setActivatorNodeRef}
-                              size="icon-sm"
-                              type="button"
-                              variant="ghost"
-                            >
-                              <GripVertical aria-hidden="true" className="size-3.5" />
-                            </Button>
-                            <Input
-                              aria-label={`${entry.key} label`}
-                              className="h-8 min-w-0"
-                              onChange={(event) =>
-                                updateFormEntry(
-                                  section.id,
-                                  entry.key,
-                                  (current) => ({
+                          }
+                          size="icon"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <X aria-hidden="true" size={14} />
+                        </Button>
+                      ) : null}
+                    </div>
+
+                    <OrderableList
+                      ariaLabel={`Fields in ${section.label}`}
+                      className="mt-3 grid gap-2"
+                      getId={(entry) => entry.key}
+                      getLabel={(entry) => entry.label}
+                      items={section.entries}
+                      onReorder={(entries) =>
+                        updateSection(section.id, (current) => ({
+                          ...current,
+                          entries,
+                        }))
+                      }
+                      renderItem={(entry, entryOrderState) => {
+                        const definitionField =
+                          entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
+                        const coreField = Boolean(
+                          definitionField?.required || definitionField?.computationRequired,
+                        );
+                        const compatible =
+                          selectedBindingType !== null &&
+                          (definitionField
+                            ? definitionField.allowedBindingTypes.includes(selectedBindingType)
+                            : entry.kind === "repeater"
+                              ? selectedBindingType === "table"
+                              : selectedBindingType === "text");
+                        return (
+                          <div className="grid gap-2 rounded-lg border border-border bg-card p-2.5">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                {...entryOrderState.attributes}
+                                {...entryOrderState.listeners}
+                                aria-label={`Reorder ${entry.label}`}
+                                className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                                ref={entryOrderState.setActivatorNodeRef}
+                                size="icon-sm"
+                                type="button"
+                                variant="ghost"
+                              >
+                                <GripVertical aria-hidden="true" className="size-3.5" />
+                              </Button>
+                              <Input
+                                aria-label={`${entry.key} label`}
+                                className="h-8 min-w-0"
+                                onChange={(event) =>
+                                  updateFormEntry(section.id, entry.key, (current) => ({
                                     ...current,
                                     label: event.target.value,
-                                  }),
-                                )
-                              }
-                              value={entry.label}
-                            />
-                            <Button
-                              className="h-auto rounded-md px-2 py-1"
-                              disabled={!selectedSchema || !compatible}
-                              onClick={() => bindSelection(entry.key)}
-                              size="xs"
-                              type="button"
-                              variant="ghost"
-                            >
-                              Bind
-                            </Button>
-                          </div>
+                                  }))
+                                }
+                                value={entry.label}
+                              />
+                              <Button
+                                className="h-auto rounded-md px-2 py-1"
+                                disabled={!selectedSchema || !compatible}
+                                onClick={() => bindSelection(entry.key)}
+                                size="xs"
+                                type="button"
+                                variant="ghost"
+                              >
+                                Bind
+                              </Button>
+                            </div>
 
-                          <div className="flex flex-wrap items-center gap-2">
-                            <StatusBadge >
-                              {entry.kind === "builtin"
-                                ? definitionField?.source
-                                : "custom"}
-                            </StatusBadge>
-                            <Text className="max-w-48 truncate text-muted-foreground">
-                              {entry.key}
-                            </Text>
-                            <span className="ml-auto flex items-center gap-1">
-                              <CheckboxControl
-                                className="size-4"
-                                id={`${section.id}-${entry.key}-enabled`}
-                                checked={entry.enabled}
-                                disabled={coreField}
-                                onCheckedChange={(checked) =>
-                                  updateFormEntry(
-                                    section.id,
-                                    entry.key,
-                                    (current) => ({
+                            <div className="flex flex-wrap items-center gap-2">
+                              <StatusBadge>
+                                {entry.kind === "builtin" ? definitionField?.source : "custom"}
+                              </StatusBadge>
+                              <Text className="max-w-48 truncate text-muted-foreground">
+                                {entry.key}
+                              </Text>
+                              <span className="ml-auto flex items-center gap-1">
+                                <CheckboxControl
+                                  className="size-4"
+                                  id={`${section.id}-${entry.key}-enabled`}
+                                  checked={entry.enabled}
+                                  disabled={coreField}
+                                  onCheckedChange={(checked) =>
+                                    updateFormEntry(section.id, entry.key, (current) => ({
                                       ...current,
                                       enabled: checked === true,
-                                    }),
-                                  )
-                                }
-                              />
-                              <Label
-                                className="text-foreground"
-                                htmlFor={`${section.id}-${entry.key}-enabled`}
-                              >
-                                Enabled
-                              </Label>
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <CheckboxControl
-                                className="size-4"
-                                id={`${section.id}-${entry.key}-required`}
-                                checked={entry.required}
-                                disabled={coreField}
-                                onCheckedChange={(checked) =>
-                                  updateFormEntry(
-                                    section.id,
-                                    entry.key,
-                                    (current) => ({
+                                    }))
+                                  }
+                                />
+                                <Label
+                                  className="text-foreground"
+                                  htmlFor={`${section.id}-${entry.key}-enabled`}
+                                >
+                                  Enabled
+                                </Label>
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <CheckboxControl
+                                  className="size-4"
+                                  id={`${section.id}-${entry.key}-required`}
+                                  checked={entry.required}
+                                  disabled={coreField}
+                                  onCheckedChange={(checked) =>
+                                    updateFormEntry(section.id, entry.key, (current) => ({
                                       ...current,
                                       required: checked === true,
-                                    }),
-                                  )
-                                }
-                              />
-                              <Label
-                                className="text-foreground"
-                                htmlFor={`${section.id}-${entry.key}-required`}
-                              >
-                                Required
-                              </Label>
-                            </span>
-                          </div>
+                                    }))
+                                  }
+                                />
+                                <Label
+                                  className="text-foreground"
+                                  htmlFor={`${section.id}-${entry.key}-required`}
+                                >
+                                  Required
+                                </Label>
+                              </span>
+                            </div>
 
-                          <Input
-                            aria-label={`${entry.label} help text`}
-                            className="h-8"
-                            onChange={(event) =>
-                              updateFormEntry(
-                                section.id,
-                                entry.key,
-                                (current) => ({
-                                  ...current,
-                                  helpText: event.target.value,
-                                }),
-                              )
-                            }
-                            placeholder="Optional help text"
-                            value={entry.helpText ?? ""}
-                          />
-
-                          <Field
-                            className="gap-1 [&_[data-slot=field-label]]:text-foreground"
-                            htmlFor={`${section.id}-${entry.key}-section`}
-                            label="Move to section"
-                          >
-                            <Select
+                            <Input
+                              aria-label={`${entry.label} help text`}
                               className="h-8"
                               onChange={(event) =>
-                                moveFormEntry(
-                                  section.id,
-                                  event.target.value,
-                                  entry.key,
-                                )
+                                updateFormEntry(section.id, entry.key, (current) => ({
+                                  ...current,
+                                  helpText: event.target.value,
+                                }))
                               }
-                              value={section.id}
-                            >
-                              {form.sections.map((candidate) => (
-                                <option
-                                  key={candidate.id}
-                                  value={candidate.id}
-                                >
-                                  {candidate.label}
-                                </option>
-                              ))}
-                            </Select>
-                          </Field>
+                              placeholder="Optional help text"
+                              value={entry.helpText ?? ""}
+                            />
 
-                          {entry.kind === "custom" ? (
-                            <>
-                              <Field
-                                className="gap-1 [&_[data-slot=field-label]]:text-foreground"
-                                htmlFor={`${section.id}-${entry.key}-control`}
-                                label="Control"
+                            <Field
+                              className="gap-1 [&_[data-slot=field-label]]:text-foreground"
+                              htmlFor={`${section.id}-${entry.key}-section`}
+                              label="Move to section"
+                            >
+                              <Select
+                                className="h-8"
+                                onChange={(event) =>
+                                  moveFormEntry(section.id, event.target.value, entry.key)
+                                }
+                                value={section.id}
                               >
-                                <Select
-                                  className="h-8"
-                                  onChange={(event) =>
-                                    updateFormEntry(
-                                      section.id,
-                                      entry.key,
-                                      (current) =>
+                                {form.sections.map((candidate) => (
+                                  <option key={candidate.id} value={candidate.id}>
+                                    {candidate.label}
+                                  </option>
+                                ))}
+                              </Select>
+                            </Field>
+
+                            {entry.kind === "custom" ? (
+                              <>
+                                <Field
+                                  className="gap-1 [&_[data-slot=field-label]]:text-foreground"
+                                  htmlFor={`${section.id}-${entry.key}-control`}
+                                  label="Control"
+                                >
+                                  <Select
+                                    className="h-8"
+                                    onChange={(event) =>
+                                      updateFormEntry(section.id, entry.key, (current) =>
                                         current.kind === "custom"
                                           ? {
                                               ...current,
-                                              control: event.target
-                                                .value as typeof current.control,
+                                              control: event.target.value as typeof current.control,
                                             }
                                           : current,
-                                    )
-                                  }
-                                  value={entry.control}
-                                >
-                                  {CUSTOM_FIELD_CONTROLS.map((control) => (
-                                    <option key={control}>{control}</option>
-                                  ))}
-                                </Select>
-                              </Field>
-                              {entry.control === "select" ? (
-                                <Input
-                                  aria-label={`${entry.label} select options`}
-                                  className="h-8"
-                                  onChange={(event) =>
-                                    updateFormEntry(
-                                      section.id,
-                                      entry.key,
-                                      (current) =>
+                                      )
+                                    }
+                                    value={entry.control}
+                                  >
+                                    {CUSTOM_FIELD_CONTROLS.map((control) => (
+                                      <option key={control}>{control}</option>
+                                    ))}
+                                  </Select>
+                                </Field>
+                                {entry.control === "select" ? (
+                                  <Input
+                                    aria-label={`${entry.label} select options`}
+                                    className="h-8"
+                                    onChange={(event) =>
+                                      updateFormEntry(section.id, entry.key, (current) =>
                                         current.kind === "custom"
                                           ? {
                                               ...current,
@@ -1876,279 +1750,229 @@ export default function AdvancedTemplateEditor({
                                                 .filter(Boolean),
                                             }
                                           : current,
-                                    )
-                                  }
-                                  placeholder="Option one, option two"
-                                  value={entry.options?.join(", ") ?? ""}
-                                />
-                              ) : null}
-                            </>
-                          ) : null}
+                                      )
+                                    }
+                                    placeholder="Option one, option two"
+                                    value={entry.options?.join(", ") ?? ""}
+                                  />
+                                ) : null}
+                              </>
+                            ) : null}
 
-                          {entry.kind === "repeater" ? (
-                            <div className="grid gap-2 rounded-lg bg-muted/40 p-2">
-                              <Field
-                                className="gap-1 [&_[data-slot=field-label]]:text-foreground"
-                                htmlFor={`${section.id}-${entry.key}-min-rows`}
-                                label="Minimum rows"
-                              >
-                                <Input
-                                  className="h-8"
-                                  max={MAX_RUNTIME_REPEATER_ROWS}
-                                  min={0}
-                                  onChange={(event) =>
-                                    updateFormEntry(
-                                      section.id,
-                                      entry.key,
-                                      (current) =>
+                            {entry.kind === "repeater" ? (
+                              <div className="grid gap-2 rounded-lg bg-muted/40 p-2">
+                                <Field
+                                  className="gap-1 [&_[data-slot=field-label]]:text-foreground"
+                                  htmlFor={`${section.id}-${entry.key}-min-rows`}
+                                  label="Minimum rows"
+                                >
+                                  <Input
+                                    className="h-8"
+                                    max={MAX_RUNTIME_REPEATER_ROWS}
+                                    min={0}
+                                    onChange={(event) =>
+                                      updateFormEntry(section.id, entry.key, (current) =>
                                         current.kind === "repeater"
                                           ? {
                                               ...current,
-                                              minRows: Number(
-                                                event.target.value || 0,
-                                              ),
+                                              minRows: Number(event.target.value || 0),
                                             }
                                           : current,
-                                    )
-                                  }
-                                  type="number"
-                                  value={entry.minRows ?? 0}
-                                />
-                              </Field>
-                              <OrderableList
-                                ariaLabel={`${entry.label} columns`}
-                                className="grid gap-1.5"
-                                getId={(column) => column.key}
-                                getLabel={(column) => column.label}
-                                items={entry.columns}
-                                onReorder={(columns) =>
-                                  updateFormEntry(
-                                    section.id,
-                                    entry.key,
-                                    (current) =>
+                                      )
+                                    }
+                                    type="number"
+                                    value={entry.minRows ?? 0}
+                                  />
+                                </Field>
+                                <OrderableList
+                                  ariaLabel={`${entry.label} columns`}
+                                  className="grid gap-1.5"
+                                  getId={(column) => column.key}
+                                  getLabel={(column) => column.label}
+                                  items={entry.columns}
+                                  onReorder={(columns) =>
+                                    updateFormEntry(section.id, entry.key, (current) =>
                                       current.kind === "repeater"
                                         ? { ...current, columns }
                                         : current,
-                                  )
-                                }
-                                renderItem={(column, columnOrderState) => (
-                                  <div className="grid grid-cols-[2rem_1fr_7rem_2rem] items-center gap-1 rounded-md border border-border bg-background p-1">
-                                    <Button
-                                      {...columnOrderState.attributes}
-                                      {...columnOrderState.listeners}
-                                      aria-label={`Reorder ${column.label} column`}
-                                      className="grid size-8 touch-none place-items-center rounded text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-                                      ref={
-                                        columnOrderState.setActivatorNodeRef
-                                      }
-                                      size="icon-sm"
-                                      type="button"
-                                      variant="ghost"
-                                    >
-                                      <GripVertical
-                                        aria-hidden="true"
-                                        className="size-[13px]"
-                                      />
-                                    </Button>
-                                    <Input
-                                      aria-label={`${column.key} column label`}
-                                      className="h-8"
-                                      onChange={(event) =>
-                                        updateFormEntry(
-                                          section.id,
-                                          entry.key,
-                                          (current) =>
-                                            current.kind === "repeater"
-                                              ? {
-                                                  ...current,
-                                                  columns:
-                                                    current.columns.map(
-                                                      (candidate) =>
-                                                        candidate.key ===
-                                                        column.key
-                                                          ? {
-                                                              ...candidate,
-                                                              label:
-                                                                event.target
-                                                                  .value,
-                                                            }
-                                                          : candidate,
-                                                    ),
-                                                }
-                                              : current,
-                                        )
-                                      }
-                                      value={column.label}
-                                    />
-                                    <Select
-                                      aria-label={`${column.label} control`}
-                                      className="h-8"
-                                      onChange={(event) =>
-                                        updateFormEntry(
-                                          section.id,
-                                          entry.key,
-                                          (current) =>
-                                            current.kind === "repeater"
-                                              ? {
-                                                  ...current,
-                                                  columns:
-                                                    current.columns.map(
-                                                      (candidate) =>
-                                                        candidate.key ===
-                                                        column.key
-                                                          ? {
-                                                              ...candidate,
-                                                              control: event
-                                                                .target
-                                                                .value as typeof candidate.control,
-                                                            }
-                                                          : candidate,
-                                                    ),
-                                                }
-                                              : current,
-                                        )
-                                      }
-                                      value={column.control}
-                                    >
-                                      {CUSTOM_FIELD_CONTROLS.map((control) => (
-                                        <option key={control}>{control}</option>
-                                      ))}
-                                    </Select>
-                                    <Button
-                                      aria-label={`Remove ${column.label} column`}
-                                      disabled={entry.columns.length === 1}
-                                      onClick={() =>
-                                        updateFormEntry(
-                                          section.id,
-                                          entry.key,
-                                          (current) =>
-                                            current.kind === "repeater"
-                                              ? {
-                                                  ...current,
-                                                  columns:
-                                                    current.columns.filter(
-                                                      (candidate) =>
-                                                        candidate.key !==
-                                                        column.key,
-                                                    ),
-                                                }
-                                              : current,
-                                        )
-                                      }
-                                      size="icon"
-                                      type="button"
-                                      variant="ghost"
-                                    >
-                                      <X aria-hidden="true" size={13} />
-                                    </Button>
-                                    {column.control === "select" ? (
+                                    )
+                                  }
+                                  renderItem={(column, columnOrderState) => (
+                                    <div className="grid grid-cols-[2rem_1fr_7rem_2rem] items-center gap-1 rounded-md border border-border bg-background p-1">
+                                      <Button
+                                        {...columnOrderState.attributes}
+                                        {...columnOrderState.listeners}
+                                        aria-label={`Reorder ${column.label} column`}
+                                        className="grid size-8 touch-none place-items-center rounded text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                                        ref={columnOrderState.setActivatorNodeRef}
+                                        size="icon-sm"
+                                        type="button"
+                                        variant="ghost"
+                                      >
+                                        <GripVertical aria-hidden="true" className="size-[13px]" />
+                                      </Button>
                                       <Input
-                                        aria-label={`${column.label} options`}
-                                        className="col-span-4 h-8"
+                                        aria-label={`${column.key} column label`}
+                                        className="h-8"
                                         onChange={(event) =>
-                                          updateFormEntry(
-                                            section.id,
-                                            entry.key,
-                                            (current) =>
+                                          updateFormEntry(section.id, entry.key, (current) =>
+                                            current.kind === "repeater"
+                                              ? {
+                                                  ...current,
+                                                  columns: current.columns.map((candidate) =>
+                                                    candidate.key === column.key
+                                                      ? {
+                                                          ...candidate,
+                                                          label: event.target.value,
+                                                        }
+                                                      : candidate,
+                                                  ),
+                                                }
+                                              : current,
+                                          )
+                                        }
+                                        value={column.label}
+                                      />
+                                      <Select
+                                        aria-label={`${column.label} control`}
+                                        className="h-8"
+                                        onChange={(event) =>
+                                          updateFormEntry(section.id, entry.key, (current) =>
+                                            current.kind === "repeater"
+                                              ? {
+                                                  ...current,
+                                                  columns: current.columns.map((candidate) =>
+                                                    candidate.key === column.key
+                                                      ? {
+                                                          ...candidate,
+                                                          control: event.target
+                                                            .value as typeof candidate.control,
+                                                        }
+                                                      : candidate,
+                                                  ),
+                                                }
+                                              : current,
+                                          )
+                                        }
+                                        value={column.control}
+                                      >
+                                        {CUSTOM_FIELD_CONTROLS.map((control) => (
+                                          <option key={control}>{control}</option>
+                                        ))}
+                                      </Select>
+                                      <Button
+                                        aria-label={`Remove ${column.label} column`}
+                                        disabled={entry.columns.length === 1}
+                                        onClick={() =>
+                                          updateFormEntry(section.id, entry.key, (current) =>
+                                            current.kind === "repeater"
+                                              ? {
+                                                  ...current,
+                                                  columns: current.columns.filter(
+                                                    (candidate) => candidate.key !== column.key,
+                                                  ),
+                                                }
+                                              : current,
+                                          )
+                                        }
+                                        size="icon"
+                                        type="button"
+                                        variant="ghost"
+                                      >
+                                        <X aria-hidden="true" size={13} />
+                                      </Button>
+                                      {column.control === "select" ? (
+                                        <Input
+                                          aria-label={`${column.label} options`}
+                                          className="col-span-4 h-8"
+                                          onChange={(event) =>
+                                            updateFormEntry(section.id, entry.key, (current) =>
                                               current.kind === "repeater"
                                                 ? {
                                                     ...current,
-                                                    columns:
-                                                      current.columns.map(
-                                                        (candidate) =>
-                                                          candidate.key ===
-                                                          column.key
-                                                            ? {
-                                                                ...candidate,
-                                                                options:
-                                                                  event.target.value
-                                                                    .split(",")
-                                                                    .map(
-                                                                      (value) =>
-                                                                        value.trim(),
-                                                                    )
-                                                                    .filter(
-                                                                      Boolean,
-                                                                    ),
-                                                              }
-                                                            : candidate,
-                                                      ),
+                                                    columns: current.columns.map((candidate) =>
+                                                      candidate.key === column.key
+                                                        ? {
+                                                            ...candidate,
+                                                            options: event.target.value
+                                                              .split(",")
+                                                              .map((value) => value.trim())
+                                                              .filter(Boolean),
+                                                          }
+                                                        : candidate,
+                                                    ),
                                                   }
                                                 : current,
-                                          )
-                                        }
-                                        placeholder="Option one, option two"
-                                        value={column.options?.join(", ") ?? ""}
-                                      />
-                                    ) : null}
-                                  </div>
-                                )}
-                              />
+                                            )
+                                          }
+                                          placeholder="Option one, option two"
+                                          value={column.options?.join(", ") ?? ""}
+                                        />
+                                      ) : null}
+                                    </div>
+                                  )}
+                                />
+                                <Button
+                                  onClick={() => addRepeaterColumn(section.id, entry.key)}
+                                  size="sm"
+                                  type="button"
+                                  variant="ghost"
+                                >
+                                  <Plus aria-hidden="true" size={13} />
+                                  Column
+                                </Button>
+                              </div>
+                            ) : null}
+
+                            <Textarea
+                              aria-label={`${entry.label} sample value`}
+                              className="min-h-12 resize-y rounded-lg border border-input bg-background px-2.5 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              onChange={(event) => {
+                                setSampleData((values) => ({
+                                  ...values,
+                                  [entry.key]: event.target.value,
+                                }));
+                                setIsDirty(true);
+                              }}
+                              value={sampleData[entry.key] ?? ""}
+                            />
+
+                            {entry.kind !== "builtin" ? (
                               <Button
-                                onClick={() =>
-                                  addRepeaterColumn(section.id, entry.key)
-                                }
+                                onClick={() => removeCustomEntry(section.id, entry.key)}
                                 size="sm"
                                 type="button"
                                 variant="ghost"
                               >
-                                <Plus aria-hidden="true" size={13} />
-                                Column
+                                Remove custom field
                               </Button>
-                            </div>
-                          ) : null}
+                            ) : null}
+                          </div>
+                        );
+                      }}
+                    />
 
-                          <Textarea
-                            aria-label={`${entry.label} sample value`}
-                            className="min-h-12 resize-y rounded-lg border border-input bg-background px-2.5 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            onChange={(event) => {
-                              setSampleData((values) => ({
-                                ...values,
-                                [entry.key]: event.target.value,
-                              }));
-                              setIsDirty(true);
-                            }}
-                            value={sampleData[entry.key] ?? ""}
-                          />
-
-                          {entry.kind !== "builtin" ? (
-                            <Button
-                              onClick={() =>
-                                removeCustomEntry(section.id, entry.key)
-                              }
-                              size="sm"
-                              type="button"
-                              variant="ghost"
-                            >
-                              Remove custom field
-                            </Button>
-                          ) : null}
-                        </div>
-                      );
-                    }}
-                  />
-
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <Button
-                      onClick={() => addCustomEntry(section.id, "custom")}
-                      size="sm"
-                      type="button"
-                      variant="secondary"
-                    >
-                      Add custom field
-                    </Button>
-                    <Button
-                      onClick={() => addCustomEntry(section.id, "repeater")}
-                      size="sm"
-                      type="button"
-                      variant="secondary"
-                    >
-                      Add repeatable table
-                    </Button>
-                  </div>
-                </section>
-              )}
-            />
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <Button
+                        onClick={() => addCustomEntry(section.id, "custom")}
+                        size="sm"
+                        type="button"
+                        variant="secondary"
+                      >
+                        Add custom field
+                      </Button>
+                      <Button
+                        onClick={() => addCustomEntry(section.id, "repeater")}
+                        size="sm"
+                        type="button"
+                        variant="secondary"
+                      >
+                        Add repeatable table
+                      </Button>
+                    </div>
+                  </section>
+                )}
+              />
             </details>
           </div>
         ) : null}
@@ -2161,9 +1985,9 @@ export default function AdvancedTemplateEditor({
                 className="text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={addPage}
                 type="button"
-              ><Caption>
-                + Add
-              </Caption></button>
+              >
+                <Caption>+ Add</Caption>
+              </button>
             </div>
             <div className="mt-2 flex h-9 items-center rounded-lg border border-border bg-muted/60 p-1">
               <Button
@@ -2175,14 +1999,22 @@ export default function AdvancedTemplateEditor({
                 type="button"
                 variant="ghost"
               >
-                <ChevronDown aria-hidden="true" className="rotate-90" size={13} strokeWidth={1.75} />
+                <ChevronDown
+                  aria-hidden="true"
+                  className="rotate-90"
+                  size={13}
+                  strokeWidth={1.75}
+                />
               </Button>
               <button
                 className="min-w-0 flex-1 truncate text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={() => goToPage(currentPage)}
                 type="button"
-              ><Caption>
-                Page </Caption><Caption>{currentPage + 1}</Caption><Caption> of </Caption><Caption>{pageCount}</Caption>
+              >
+                <Caption>Page </Caption>
+                <Caption>{currentPage + 1}</Caption>
+                <Caption> of </Caption>
+                <Caption>{pageCount}</Caption>
               </button>
               <Button
                 aria-label="Next document page"
@@ -2193,7 +2025,12 @@ export default function AdvancedTemplateEditor({
                 type="button"
                 variant="ghost"
               >
-                <ChevronDown aria-hidden="true" className="-rotate-90" size={13} strokeWidth={1.75} />
+                <ChevronDown
+                  aria-hidden="true"
+                  className="-rotate-90"
+                  size={13}
+                  strokeWidth={1.75}
+                />
               </Button>
               <span aria-hidden="true" className="mx-1 h-4 w-px bg-border" />
               <Button
@@ -2211,9 +2048,7 @@ export default function AdvancedTemplateEditor({
               {currentTemplateRef.current.schemas.map((page, index) => (
                 <div
                   className={`flex h-12 items-center gap-2 rounded-lg border px-2 ${
-                    currentPage === index
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-card"
+                    currentPage === index ? "border-primary bg-primary/10" : "border-border bg-card"
                   }`}
                   key={`page-${index}`}
                 >
@@ -2223,17 +2058,15 @@ export default function AdvancedTemplateEditor({
                     onClick={() => goToPage(index)}
                     type="button"
                   >
-                    <Text className={`grid h-8 w-7 shrink-0 place-items-center rounded border bg-card ${
-                      currentPage === index
-                        ? "text-primary"
-                        : "text-muted-foreground"
-                    }`}>
+                    <Text
+                      className={`grid h-8 w-7 shrink-0 place-items-center rounded border bg-card ${
+                        currentPage === index ? "text-primary" : "text-muted-foreground"
+                      }`}
+                    >
                       {index + 1}
                     </Text>
                     <span className="min-w-0">
-                      <Caption className="block">
-                        Page {index + 1}
-                      </Caption>
+                      <Caption className="block">Page {index + 1}</Caption>
                       <Caption className="block text-muted-foreground">
                         {page.length} elements
                       </Caption>
@@ -2264,20 +2097,27 @@ export default function AdvancedTemplateEditor({
 
             <div className="mt-4 border-t border-border pt-3">
               <div className="flex items-center justify-between">
-                <Overline className="text-muted-foreground">
-                  Repeating regions
-                </Overline>
-                <Caption className={selection?.schemas.length ? "text-primary" : "text-muted-foreground"}>
+                <Overline className="text-muted-foreground">Repeating regions</Overline>
+                <Caption
+                  className={selection?.schemas.length ? "text-primary" : "text-muted-foreground"}
+                >
                   {selection?.schemas.length ? "Elements ready" : "No selection"}
                 </Caption>
               </div>
               <div className="mt-2 grid gap-2">
                 {(["header", "footer"] as const).map((region) => {
                   const Icon = region === "header" ? PanelTop : PanelBottom;
-                  const assigned = region === "header" ? repeatingHeaderCount : repeatingFooterCount;
+                  const assigned =
+                    region === "header" ? repeatingHeaderCount : repeatingFooterCount;
                   const editing = editingRegion === region;
                   const ready = Boolean(selection?.schemas.length);
-                  const state = editing ? "Editing" : assigned ? `${assigned} assigned` : ready ? "Ready to assign" : "Not assigned";
+                  const state = editing
+                    ? "Editing"
+                    : assigned
+                      ? `${assigned} assigned`
+                      : ready
+                        ? "Ready to assign"
+                        : "Not assigned";
                   return (
                     <div
                       className={`flex h-11 items-center gap-2 rounded-lg border px-2.5 ${
@@ -2289,10 +2129,19 @@ export default function AdvancedTemplateEditor({
                       }`}
                       key={region}
                     >
-                      <Icon aria-hidden="true" className={editing || assigned ? "text-primary" : "text-muted-foreground"} size={14} strokeWidth={1.75} />
+                      <Icon
+                        aria-hidden="true"
+                        className={editing || assigned ? "text-primary" : "text-muted-foreground"}
+                        size={14}
+                        strokeWidth={1.75}
+                      />
                       <div className="min-w-0 flex-1">
                         <Caption className="block ">{region}</Caption>
-                        <Muted className={` ${editing || assigned ? "text-primary" : "text-muted-foreground"}`}>{state}</Muted>
+                        <Muted
+                          className={` ${editing || assigned ? "text-primary" : "text-muted-foreground"}`}
+                        >
+                          {state}
+                        </Muted>
                       </div>
                       <Button
                         className="h-6 px-2"
@@ -2347,17 +2196,11 @@ export default function AdvancedTemplateEditor({
     <>
       <div className="grid min-h-screen place-items-center bg-muted p-6 lg:hidden">
         <Card className="max-w-md gap-0 rounded-2xl p-6 text-center shadow-sm">
-          <Maximize2
-            aria-hidden="true"
-            className="mx-auto text-primary"
-            size={28}
-          />
-          <H1 className="mt-4">
-            Open the advanced designer on desktop
-          </H1>
+          <Maximize2 aria-hidden="true" className="mx-auto text-primary" size={28} />
+          <H1 className="mt-4">Open the advanced designer on desktop</H1>
           <Muted className="mt-2 text-muted-foreground">
-            Freeform positioning needs a larger workspace. You can still
-            preview and use published templates from smaller devices.
+            Freeform positioning needs a larger workspace. You can still preview and use published
+            templates from smaller devices.
           </Muted>
           <Link
             className={buttonVariants({ className: "mt-5", variant: "secondary" })}
@@ -2392,21 +2235,24 @@ export default function AdvancedTemplateEditor({
                 }}
                 value={name}
               />
-              <Text className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1 ${
-                template.status === "published"
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-amber-50 text-amber-700"
-              }`}>
-                <span className={`size-1.5 rounded-full ${
+              <Text
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1 ${
                   template.status === "published"
-                    ? "bg-emerald-600"
-                    : "bg-amber-600"
-                }`} />
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-amber-50 text-amber-700"
+                }`}
+              >
+                <span
+                  className={`size-1.5 rounded-full ${
+                    template.status === "published" ? "bg-emerald-600" : "bg-amber-600"
+                  }`}
+                />
                 {template.status}
               </Text>
             </div>
             <Caption className="block truncate text-muted-foreground">
-              Templates / Advanced · {definition.label} · {PAGE_FORMAT_LABELS[pageFormat]} · Version {template.version}
+              Templates / Advanced · {definition.label} · {PAGE_FORMAT_LABELS[pageFormat]} · Version{" "}
+              {template.version}
             </Caption>
           </div>
           <span className="flex h-9 w-[118px] shrink-0 items-center rounded-lg border border-border bg-muted">
@@ -2414,9 +2260,7 @@ export default function AdvancedTemplateEditor({
               aria-label="Page size"
               className="h-9 w-full border-0 bg-transparent px-2.5 shadow-none"
               disabled={!designerReady || isSaving}
-              onChange={(event) =>
-                changePageFormat(event.target.value as PageFormat)
-              }
+              onChange={(event) => changePageFormat(event.target.value as PageFormat)}
               value={pageFormat}
             >
               {definition.allowedPageFormats.map((format) => (
@@ -2461,17 +2305,19 @@ export default function AdvancedTemplateEditor({
             >
               Preview
             </Button>
-            <Caption className={`min-w-14 text-right ${
-              isPreviewing
-                ? "text-primary"
-                : isSaving
-                  ? "text-muted-foreground"
-                  : isDirty
-                    ? "text-amber-700"
-                    : savedAt
-                      ? "text-emerald-700"
-                      : "text-muted-foreground"
-            }`}>
+            <Caption
+              className={`min-w-14 text-right ${
+                isPreviewing
+                  ? "text-primary"
+                  : isSaving
+                    ? "text-muted-foreground"
+                    : isDirty
+                      ? "text-amber-700"
+                      : savedAt
+                        ? "text-emerald-700"
+                        : "text-muted-foreground"
+              }`}
+            >
               {isPreviewing
                 ? "Previewing…"
                 : isSaving
@@ -2551,12 +2397,16 @@ export default function AdvancedTemplateEditor({
         {warnings.length ? (
           <details className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-amber-900">
             <summary className="cursor-pointer">
-              <Strong>{warnings.length}</Strong><Strong> non-blocking publish</Strong><Strong>{" "}</Strong>
+              <Strong>{warnings.length}</Strong>
+              <Strong> non-blocking publish</Strong>
+              <Strong> </Strong>
               <Strong>{warnings.length === 1 ? "warning" : "warnings"}</Strong>
             </summary>
             <List className="mt-2 list-disc space-y-1 pl-5">
               {warnings.map((warning) => (
-                <li key={warning}><Text>{warning}</Text></li>
+                <li key={warning}>
+                  <Text>{warning}</Text>
+                </li>
               ))}
             </List>
           </details>
@@ -2567,9 +2417,7 @@ export default function AdvancedTemplateEditor({
             <nav
               aria-label="Designer tools"
               className={`absolute left-11 top-1/2 z-40 flex w-12 -translate-y-1/2 flex-col items-center gap-1.5 rounded-l-xl bg-card p-2 shadow-[0_8px_20px_rgba(17,18,20,0.06)] ${
-                activePanel
-                  ? "border-y border-l border-input"
-                  : "border border-input"
+                activePanel ? "border-y border-l border-input" : "border border-input"
               }`}
             >
               <Button
@@ -2642,9 +2490,7 @@ export default function AdvancedTemplateEditor({
             {!focusMode ? (
               <div className="flex h-[54px] shrink-0 items-center border-b border-border bg-card px-3.5">
                 <div className="flex h-full w-[292px] items-center gap-1 border-r border-border px-3.5">
-                  <Overline className="mr-1 text-muted-foreground">
-                    Canvas
-                  </Overline>
+                  <Overline className="mr-1 text-muted-foreground">Canvas</Overline>
                   <Button
                     aria-label="Select tool"
                     aria-pressed={canvasMode === "select"}
@@ -2698,18 +2544,10 @@ export default function AdvancedTemplateEditor({
                     type="button"
                     variant="ghost"
                   >
-                    <ChevronDown
-                      aria-hidden="true"
-                      className="rotate-90"
-                      size={14}
-                    />
+                    <ChevronDown aria-hidden="true" className="rotate-90" size={14} />
                   </Button>
                   <Caption className="flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1.5">
-                    <File
-                      aria-hidden="true"
-                      className="text-muted-foreground"
-                      size={13}
-                    />
+                    <File aria-hidden="true" className="text-muted-foreground" size={13} />
                     {currentPage + 1} / {pageCount}
                   </Caption>
                   <Button
@@ -2720,16 +2558,9 @@ export default function AdvancedTemplateEditor({
                     type="button"
                     variant="ghost"
                   >
-                    <ChevronDown
-                      aria-hidden="true"
-                      className="-rotate-90"
-                      size={14}
-                    />
+                    <ChevronDown aria-hidden="true" className="-rotate-90" size={14} />
                   </Button>
-                  <span
-                    aria-hidden="true"
-                    className="mx-1 h-5 w-px bg-border"
-                  />
+                  <span aria-hidden="true" className="mx-1 h-5 w-px bg-border" />
                   <Button
                     aria-label="Zoom out"
                     onClick={() => updateZoom(zoom - 0.1)}
@@ -2739,9 +2570,7 @@ export default function AdvancedTemplateEditor({
                   >
                     <Minus aria-hidden="true" size={14} />
                   </Button>
-                  <Caption className="min-w-12 text-center">
-                    {Math.round(zoom * 100)}%
-                  </Caption>
+                  <Caption className="min-w-12 text-center">{Math.round(zoom * 100)}%</Caption>
                   <Button
                     aria-label="Zoom in"
                     onClick={() => updateZoom(zoom + 0.1)}
@@ -2760,10 +2589,7 @@ export default function AdvancedTemplateEditor({
                   >
                     <Maximize2 aria-hidden="true" size={14} />
                   </Button>
-                  <span
-                    aria-hidden="true"
-                    className="mx-1 h-5 w-px bg-border"
-                  />
+                  <span aria-hidden="true" className="mx-1 h-5 w-px bg-border" />
                   <Button
                     aria-label="Undo canvas change"
                     disabled={historyIndex === 0}
@@ -2776,9 +2602,7 @@ export default function AdvancedTemplateEditor({
                   </Button>
                   <Button
                     aria-label="Redo canvas change"
-                    disabled={
-                      historyIndex >= historyRef.current.length - 1
-                    }
+                    disabled={historyIndex >= historyRef.current.length - 1}
                     onClick={() => restoreHistory(1)}
                     size="icon-sm"
                     type="button"
@@ -2790,21 +2614,17 @@ export default function AdvancedTemplateEditor({
 
                 <div className="flex h-full w-[336px] items-center justify-end gap-1 border-l border-border pl-3">
                   <Overline className="mr-1 max-w-16 truncate text-muted-foreground">
-                    {selectedPdfmeSchema
-                      ? selectedPdfmeSchema.type
-                      : "No selection"}
+                    {selectedPdfmeSchema ? selectedPdfmeSchema.type : "No selection"}
                   </Overline>
                   {selectedPdfmeSchema ? (
                     <>
                       <Caption className="w-[108px] truncate rounded bg-muted px-2 py-2">
-                        {selectedPdfmeSchema.name} ·{" "}
-                        {String(selectedPdfmeSchema.fontSize ?? 12)} px
+                        {selectedPdfmeSchema.name} · {String(selectedPdfmeSchema.fontSize ?? 12)} px
                       </Caption>
                       <Button
                         aria-label="Bold selected text"
                         className={
-                          (selectedPdfmeSchema as { fontWeight?: string })
-                            .fontWeight === "bold"
+                          (selectedPdfmeSchema as { fontWeight?: string }).fontWeight === "bold"
                             ? "bg-accent text-accent-foreground ring-1 ring-inset ring-primary hover:bg-accent"
                             : undefined
                         }
@@ -2814,9 +2634,7 @@ export default function AdvancedTemplateEditor({
                               fontWeight?: string;
                             };
                             textSchema.fontWeight =
-                              textSchema.fontWeight === "bold"
-                                ? "normal"
-                                : "bold";
+                              textSchema.fontWeight === "bold" ? "normal" : "bold";
                           })
                         }
                         size="icon-sm"
@@ -2870,8 +2688,13 @@ export default function AdvancedTemplateEditor({
                 </div>
               </div>
             ) : null}
-            <div className="pointer-events-none absolute left-7 top-[82px] z-10 text-muted-foreground"><Text>
-              Page </Text><Text>{currentPage + 1}</Text><Text> of </Text><Text>{pageCount}</Text><Text> · </Text><Text>{name}</Text>
+            <div className="pointer-events-none absolute left-7 top-[82px] z-10 text-muted-foreground">
+              <Text>Page </Text>
+              <Text>{currentPage + 1}</Text>
+              <Text> of </Text>
+              <Text>{pageCount}</Text>
+              <Text> · </Text>
+              <Text>{name}</Text>
             </div>
             {!designerReady ? (
               <div
@@ -2884,9 +2707,9 @@ export default function AdvancedTemplateEditor({
                     aria-hidden="true"
                     className="animate-spin text-primary"
                     size={20}
-                  /><Text>
-                  Loading designer…
-                </Text></div>
+                  />
+                  <Text>Loading designer…</Text>
+                </div>
               </div>
             ) : null}
             <div
@@ -2911,9 +2734,9 @@ export default function AdvancedTemplateEditor({
                 className="flex h-full w-28 shrink-0 items-center justify-between border-r border-border pr-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                 onClick={() => setStripQuery(documentStripOpen ? "closed" : "open")}
                 type="button"
-              ><Caption>
-                Document
-                </Caption>{documentStripOpen ? (
+              >
+                <Caption>Document</Caption>
+                {documentStripOpen ? (
                   <ChevronDown aria-hidden="true" size={15} />
                 ) : (
                   <ChevronUp aria-hidden="true" size={15} />
@@ -2921,19 +2744,14 @@ export default function AdvancedTemplateEditor({
               </button>
 
               {documentStripOpen ? (
-                <div
-                  className="contents"
-                  id="advanced-editor-document-strip"
-                >
+                <div className="contents" id="advanced-editor-document-strip">
                   <div className="flex max-w-44 shrink-0 items-center gap-2 overflow-x-auto overscroll-contain">
                     {currentTemplateRef.current.schemas.map((_page, index) => (
                       <button
                         aria-current={currentPage === index ? "page" : undefined}
                         aria-label={`Go to page ${index + 1}`}
                         className={`relative h-[66px] w-12 shrink-0 rounded-md border bg-card outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                          currentPage === index
-                            ? "border-2 border-primary"
-                            : "border-input"
+                          currentPage === index ? "border-2 border-primary" : "border-input"
                         }`}
                         key={`strip-page-${index}`}
                         onClick={() => goToPage(index)}
@@ -2944,11 +2762,11 @@ export default function AdvancedTemplateEditor({
                           <span className="h-0.5 w-full rounded-[1px] bg-input" />
                           <span className="h-0.5 w-[15px] rounded-[1px] bg-input" />
                         </span>
-                        <Text className={`absolute bottom-[3px] left-[3px] grid size-4 place-items-center rounded bg-card shadow-sm ${
-                          currentPage === index
-                            ? "text-primary"
-                            : "text-muted-foreground"
-                        }`}>
+                        <Text
+                          className={`absolute bottom-[3px] left-[3px] grid size-4 place-items-center rounded bg-card shadow-sm ${
+                            currentPage === index ? "text-primary" : "text-muted-foreground"
+                          }`}
+                        >
                           {index + 1}
                         </Text>
                       </button>
@@ -2977,8 +2795,22 @@ export default function AdvancedTemplateEditor({
                       onClick={openRegionPanel}
                       type="button"
                     >
-                      <PanelTop aria-hidden="true" className="shrink-0" size={13} strokeWidth={1.75} />
-                      <Text className="truncate">Header · {editingRegion === "header" && activePanel === "pages" ? "editing" : repeatingHeaderCount ? `${repeatingHeaderCount} assigned` : selection?.schemas.length ? "ready" : "not set"}</Text>
+                      <PanelTop
+                        aria-hidden="true"
+                        className="shrink-0"
+                        size={13}
+                        strokeWidth={1.75}
+                      />
+                      <Text className="truncate">
+                        Header ·{" "}
+                        {editingRegion === "header" && activePanel === "pages"
+                          ? "editing"
+                          : repeatingHeaderCount
+                            ? `${repeatingHeaderCount} assigned`
+                            : selection?.schemas.length
+                              ? "ready"
+                              : "not set"}
+                      </Text>
                     </button>
                     <button
                       className={`flex h-[34px] min-w-0 flex-1 items-center gap-1.5 rounded-lg border px-2.5 outline-none focus-visible:ring-2 focus-visible:ring-ring ${
@@ -2993,8 +2825,22 @@ export default function AdvancedTemplateEditor({
                       onClick={openRegionPanel}
                       type="button"
                     >
-                      <PanelBottom aria-hidden="true" className="shrink-0" size={13} strokeWidth={1.75} />
-                      <Text className="truncate">Footer · {editingRegion === "footer" && activePanel === "pages" ? "editing" : repeatingFooterCount ? `${repeatingFooterCount} assigned` : selection?.schemas.length ? "ready" : "not set"}</Text>
+                      <PanelBottom
+                        aria-hidden="true"
+                        className="shrink-0"
+                        size={13}
+                        strokeWidth={1.75}
+                      />
+                      <Text className="truncate">
+                        Footer ·{" "}
+                        {editingRegion === "footer" && activePanel === "pages"
+                          ? "editing"
+                          : repeatingFooterCount
+                            ? `${repeatingFooterCount} assigned`
+                            : selection?.schemas.length
+                              ? "ready"
+                              : "not set"}
+                      </Text>
                     </button>
                   </div>
                 </div>
@@ -3029,7 +2875,9 @@ export default function AdvancedTemplateEditor({
                         ? "No overflow errors"
                         : "Checking template"}
                 </Text>
-                <Text className="hidden 2xl:inline">{Object.keys(sampleData).length} sample fields</Text>
+                <Text className="hidden 2xl:inline">
+                  {Object.keys(sampleData).length} sample fields
+                </Text>
                 <div className="flex h-8 items-center rounded-lg border border-border bg-muted/50">
                   <button
                     aria-label="Zoom out"
@@ -3055,11 +2903,7 @@ export default function AdvancedTemplateEditor({
                   {designerReady ? (
                     <Check aria-hidden="true" className="text-emerald-600" size={13} />
                   ) : (
-                    <LoaderCircle
-                      aria-hidden="true"
-                      className="animate-spin"
-                      size={13}
-                    />
+                    <LoaderCircle aria-hidden="true" className="animate-spin" size={13} />
                   )}
                   {designerReady ? "pdfme ready" : "Loading designer"}
                 </Text>
@@ -3083,25 +2927,16 @@ export default function AdvancedTemplateEditor({
           ref={deletePageDialogRef}
         >
           {pendingPageRemoval !== null ? (
-            <section
-              className="flex h-full w-full flex-col"
-            >
+            <section className="flex h-full w-full flex-col">
               <div className="flex items-center gap-3 border-b border-border px-[22px] py-5">
                 <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-destructive/10 text-destructive">
                   <Trash2 aria-hidden="true" size={19} />
                 </span>
                 <div className="grid gap-0.5">
-                  <H3
-
-                    id="delete-page-title"
-                  >
-                    Delete page {pendingPageRemoval + 1}?
-                  </H3>
+                  <H3 id="delete-page-title">Delete page {pendingPageRemoval + 1}?</H3>
                   <Caption className="block text-muted-foreground">
                     Selected page ·{" "}
-                    {currentTemplateRef.current.schemas[pendingPageRemoval]
-                      ?.length ?? 0}{" "}
-                    elements
+                    {currentTemplateRef.current.schemas[pendingPageRemoval]?.length ?? 0} elements
                   </Caption>
                 </div>
               </div>
@@ -3110,20 +2945,16 @@ export default function AdvancedTemplateEditor({
                 id="delete-page-description"
               >
                 <P>
-                  Deleting this page will not remove document fields or data
-                  bindings. Header and footer regions stay unchanged.
+                  Deleting this page will not remove document fields or data bindings. Header and
+                  footer regions stay unchanged.
                 </P>
                 <P className="mt-4">
                   Page{" "}
                   {Math.max(
                     0,
-                    Math.min(
-                      pendingPageRemoval,
-                      currentTemplateRef.current.schemas.length - 2,
-                    ),
+                    Math.min(pendingPageRemoval, currentTemplateRef.current.schemas.length - 2),
                   ) + 1}{" "}
-                  becomes selected after deletion. You can undo until the
-                  draft is saved.
+                  becomes selected after deletion. You can undo until the draft is saved.
                 </P>
               </div>
               <div className="flex justify-end gap-2.5 border-t border-border px-[22px] py-4">
@@ -3179,10 +3010,7 @@ export default function AdvancedTemplateEditor({
           width: 100% !important;
         }
 
-        .advanced-pdfme-designer
-          .pdfme-designer-left-sidebar
-          + div
-          > :first-child,
+        .advanced-pdfme-designer .pdfme-designer-left-sidebar + div > :first-child,
         .advanced-pdfme-designer .pdfme-designer-canvas {
           width: 100% !important;
         }
@@ -3199,8 +3027,7 @@ export default function AdvancedTemplateEditor({
           pointer-events: none;
         }
 
-        .advanced-pdfme-designer[data-field-inspector-open="true"]
-          .pdfme-designer-right-sidebar {
+        .advanced-pdfme-designer[data-field-inspector-open="true"] .pdfme-designer-right-sidebar {
           top: 14px !important;
           right: 82px !important;
           z-index: 30 !important;
@@ -3225,8 +3052,7 @@ export default function AdvancedTemplateEditor({
           box-shadow: 0 8px 24px rgb(17 18 20 / 0.08);
         }
 
-        .advanced-pdfme-designer[data-field-inspector-open="true"]
-          .pdfme-designer-detail-view {
+        .advanced-pdfme-designer[data-field-inspector-open="true"] .pdfme-designer-detail-view {
           height: 100% !important;
         }
       `}</style>

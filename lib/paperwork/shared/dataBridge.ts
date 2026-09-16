@@ -138,7 +138,7 @@ export interface ContractorPaymentSummaryData {
 }
 
 export const DataBridgeKeys = {
-  INVOICE_DRAFT: "paperwork_kit_invoice_draft", 
+  INVOICE_DRAFT: "paperwork_kit_invoice_draft",
   INVOICE_SUMMARY: "paperworkkit.invoice.summary",
   RECEIPT_DRAFT: "paperworkkit.receipt.draft",
   RECEIPT_SUMMARY: "paperworkkit.receipt.summary",
@@ -227,7 +227,10 @@ export class PostgresApiProvider implements IDataStoreProvider {
     if (typeof window === "undefined") return "default_user";
     let id = localStorage.getItem("paperwork_kit_user_id");
     if (!id) {
-      id = "usr_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      id =
+        "usr_" +
+        Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15);
       localStorage.setItem("paperwork_kit_user_id", id);
     }
     return id;
@@ -238,8 +241,8 @@ export class PostgresApiProvider implements IDataStoreProvider {
     try {
       const vendorsRes = await fetch("/api/paperwork/vendors", {
         headers: {
-          "x-user-id": this.userId
-        }
+          "x-user-id": this.userId,
+        },
       });
       if (vendorsRes.ok) {
         const data = await vendorsRes.json();
@@ -266,8 +269,8 @@ export class PostgresApiProvider implements IDataStoreProvider {
       for (const key of keysToSync) {
         const storageRes = await fetch(`/api/paperwork/storage/${key}`, {
           headers: {
-            "x-user-id": this.userId
-          }
+            "x-user-id": this.userId,
+          },
         });
         if (storageRes.ok) {
           const resJson = await storageRes.json();
@@ -291,12 +294,12 @@ export class PostgresApiProvider implements IDataStoreProvider {
 
     fetch("/api/paperwork/storage", {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
-        "x-user-id": this.userId
+        "x-user-id": this.userId,
       },
       body: JSON.stringify({ key, value: data }),
-    }).catch(err => console.error(`Error saving key ${key} to backend Postgres:`, err));
+    }).catch((err) => console.error(`Error saving key ${key} to backend Postgres:`, err));
   }
 
   getInvoiceDraft(): InvoiceData | null {
@@ -325,12 +328,12 @@ export class PostgresApiProvider implements IDataStoreProvider {
 
     fetch("/api/paperwork/vendors", {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
-        "x-user-id": this.userId
+        "x-user-id": this.userId,
       },
       body: JSON.stringify({ vendors }),
-    }).catch(err => console.error("Error bulk updating vendors to backend Postgres:", err));
+    }).catch((err) => console.error("Error bulk updating vendors to backend Postgres:", err));
   }
 }
 
@@ -375,5 +378,5 @@ export const DataBridge = {
 
   saveW9Vendors(vendors: VendorProfile[]): void {
     activeProvider.saveW9Vendors(vendors);
-  }
+  },
 };

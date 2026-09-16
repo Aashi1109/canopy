@@ -33,10 +33,7 @@ export function validateInvoiceData(data: InvoiceData) {
   }
   if (!data.invoice.dueDate) {
     errors["invoice.dueDate"] = "Choose a payment due date.";
-  } else if (
-    data.invoice.invoiceDate &&
-    data.invoice.dueDate < data.invoice.invoiceDate
-  ) {
+  } else if (data.invoice.invoiceDate && data.invoice.dueDate < data.invoice.invoiceDate) {
     errors["invoice.dueDate"] = "Due date must be on or after the invoice date.";
   }
 

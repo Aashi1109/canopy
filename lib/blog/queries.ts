@@ -14,21 +14,63 @@ import { isValidToolSlug } from "@smarttools/tool-catalog";
 import { requireTransactionPermission } from "../admin/adminMutations.ts";
 import { BlogValidationError, validateBlogDocument, validateBlogImage } from "./document.ts";
 
-const id = z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/);
-const slug = z.string().min(1).max(160).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
-const search = z.string().trim().max(200).refine(value => value.isWellFormed() && !value.includes('\u0000'), 'Search contains invalid text.').optional();
+const id = z
+  .string()
+  .min(1)
+  .max(100)
+  .regex(/^[a-zA-Z0-9_-]+$/);
+const slug = z
+  .string()
+  .min(1)
+  .max(160)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+const search = z
+  .string()
+  .trim()
+  .max(200)
+  .refine(
+    (value) => value.isWellFormed() && !value.includes("\u0000"),
+    "Search contains invalid text.",
+  )
+  .optional();
 const cursorInput = z.string().max(1200).optional();
-const publicInput = z.object({ search, category: slug.optional(), tag: slug.optional(), cursor: cursorInput }).strict();
-const adminInput = z.object({ search, status: z.enum(["draft", "published", "scheduled", "trash"]).optional(), categoryId: id.optional(), cursor: cursorInput }).strict();
+const publicInput = z
+  .object({ search, category: slug.optional(), tag: slug.optional(), cursor: cursorInput })
+  .strict();
+const adminInput = z
+  .object({
+    search,
+    status: z.enum(["draft", "published", "scheduled", "trash"]).optional(),
+    categoryId: id.optional(),
+    cursor: cursorInput,
+  })
+  .strict();
 const termInput = z.object({ search, cursor: cursorInput }).strict();
 const termKind = z.enum(["category", "tag"]);
-const dateCursor = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/).refine((value) => {
-  const date = new Date(value);
-  return Number.isFinite(date.getTime()) && date.getUTCFullYear() > 0 && date.toISOString().slice(0, 23) === value.slice(0, 23);
-});
+const dateCursor = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/)
+  .refine((value) => {
+    const date = new Date(value);
+    return (
+      Number.isFinite(date.getTime()) &&
+      date.getUTCFullYear() > 0 &&
+      date.toISOString().slice(0, 23) === value.slice(0, 23)
+    );
+  });
 const cursorSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.enum(["published", "admin", "trash"]), value: dateCursor, id }).strict(),
-  z.object({ kind: z.enum(["category", "tag"]), value: z.string().min(1).max(100).refine(value => value.isWellFormed() && !value.includes('\u0000')), id }).strict(),
+  z
+    .object({
+      kind: z.enum(["category", "tag"]),
+      value: z
+        .string()
+        .min(1)
+        .max(100)
+        .refine((value) => value.isWellFormed() && !value.includes("\u0000")),
+      id,
+    })
+    .strict(),
   z.object({ kind: z.literal("history"), value: z.number().int().positive(), id }).strict(),
 ]);
 type BlogCursor = z.infer<typeof cursorSchema>;
@@ -37,9 +79,13 @@ export function encodeBlogCursor(cursor: BlogCursor): string {
   return Buffer.from(JSON.stringify(cursorSchema.parse(cursor))).toString("base64url");
 }
 
-export function decodeBlogCursor(value: string | undefined, kind: BlogCursor["kind"]): BlogCursor | null {
+export function decodeBlogCursor(
+  value: string | undefined,
+  kind: BlogCursor["kind"],
+): BlogCursor | null {
   if (value === undefined) return null;
-  if (!value || value.length > 1200 || !/^[a-zA-Z0-9_-]+$/.test(value)) throw new BlogValidationError("Invalid blog pagination cursor.");
+  if (!value || value.length > 1200 || !/^[a-zA-Z0-9_-]+$/.test(value))
+    throw new BlogValidationError("Invalid blog pagination cursor.");
   try {
     const cursor = cursorSchema.parse(JSON.parse(Buffer.from(value, "base64url").toString("utf8")));
     if (cursor.kind !== kind) throw new Error("Wrong cursor kind.");
@@ -51,15 +97,22 @@ export function decodeBlogCursor(value: string | undefined, kind: BlogCursor["ki
 
 export function paginateBlogRows<T>(rows: T[], size: number, cursor: (row: T) => BlogCursor) {
   const items = rows.slice(0, size);
-  return { items, nextCursor: rows.length > size ? encodeBlogCursor(cursor(items[items.length - 1])) : null };
+  return {
+    items,
+    nextCursor: rows.length > size ? encodeBlogCursor(cursor(items[items.length - 1])) : null,
+  };
 }
 
 const live = and(isNotNull(posts.publishedRevisionId), isNull(posts.trashedAt));
 // Preserve PostgreSQL microseconds in cursors; Date's millisecond precision skips ties.
-const cursorTime = (column: SQL | typeof posts.firstPublishedAt | typeof posts.updatedAt | typeof posts.trashedAt) => sql<string>`to_char(${column} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
-const dateAfter = (column: typeof posts.firstPublishedAt | typeof posts.updatedAt | typeof posts.trashedAt, cursor: BlogCursor | null) => cursor
-  ? sql`(${column}, ${posts.id}) < (${cursor.value}::timestamptz, ${cursor.id})`
-  : undefined;
+const cursorTime = (
+  column: SQL | typeof posts.firstPublishedAt | typeof posts.updatedAt | typeof posts.trashedAt,
+) => sql<string>`to_char(${column} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
+const dateAfter = (
+  column: typeof posts.firstPublishedAt | typeof posts.updatedAt | typeof posts.trashedAt,
+  cursor: BlogCursor | null,
+) =>
+  cursor ? sql`(${column}, ${posts.id}) < (${cursor.value}::timestamptz, ${cursor.id})` : undefined;
 const likeSearch = (value: string) => `%${value.replace(/[\\%_]/g, "\\$&")}%`;
 const cloudOptions = () => ({ cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim() });
 
@@ -82,32 +135,62 @@ const authorText = z.string().max(150);
 export async function listPublishedBlogPosts(input: unknown = {}) {
   const options = publicInput.parse(input);
   const cursor = decodeBlogCursor(options.cursor, "published");
-  const rows = await db.select({ ...summaryFields, cursorTime: cursorTime(posts.firstPublishedAt) })
+  const rows = await db
+    .select({ ...summaryFields, cursorTime: cursorTime(posts.firstPublishedAt) })
     .from(posts)
-    .innerJoin(revisions, and(eq(revisions.id, posts.publishedRevisionId), eq(revisions.postId, posts.id)))
+    .innerJoin(
+      revisions,
+      and(eq(revisions.id, posts.publishedRevisionId), eq(revisions.postId, posts.id)),
+    )
     .innerJoin(categories, eq(categories.id, posts.publishedCategoryId))
-    .where(and(live, dateAfter(posts.firstPublishedAt, cursor),
-      options.search ? sql`${posts.publishedSearch} @@ websearch_to_tsquery('english', ${options.search})` : undefined,
-      options.category ? eq(categories.slug, options.category) : undefined,
-      options.tag ? exists(db.select({ id: postTags.postId }).from(postTags)
-        .innerJoin(tags, eq(tags.id, postTags.tagId))
-        .where(and(eq(postTags.postId, posts.id), eq(tags.slug, options.tag)))) : undefined,
-    ))
-    .orderBy(desc(posts.firstPublishedAt), desc(posts.id)).limit(13);
-  const page = paginateBlogRows(rows, 12, (row) => ({ kind: "published", value: row.cursorTime, id: row.id }));
-  return { ...page, items: page.items.map(({ cursorTime: _cursor, ...row }) => ({
-    ...row,
-    title: titleText.parse(row.title), excerpt: excerptText.parse(row.excerpt), authorName: authorText.parse(row.authorName),
-    coverImage: row.coverImage === null ? null : validateBlogImage(row.coverImage, cloudOptions()),
-  })) };
+    .where(
+      and(
+        live,
+        dateAfter(posts.firstPublishedAt, cursor),
+        options.search
+          ? sql`${posts.publishedSearch} @@ websearch_to_tsquery('english', ${options.search})`
+          : undefined,
+        options.category ? eq(categories.slug, options.category) : undefined,
+        options.tag
+          ? exists(
+              db
+                .select({ id: postTags.postId })
+                .from(postTags)
+                .innerJoin(tags, eq(tags.id, postTags.tagId))
+                .where(and(eq(postTags.postId, posts.id), eq(tags.slug, options.tag))),
+            )
+          : undefined,
+      ),
+    )
+    .orderBy(desc(posts.firstPublishedAt), desc(posts.id))
+    .limit(13);
+  const page = paginateBlogRows(rows, 12, (row) => ({
+    kind: "published",
+    value: row.cursorTime,
+    id: row.id,
+  }));
+  return {
+    ...page,
+    items: page.items.map(({ cursorTime: _cursor, ...row }) => ({
+      ...row,
+      title: titleText.parse(row.title),
+      excerpt: excerptText.parse(row.excerpt),
+      authorName: authorText.parse(row.authorName),
+      coverImage:
+        row.coverImage === null ? null : validateBlogImage(row.coverImage, cloudOptions()),
+    })),
+  };
 }
 
 export async function getBlogSitemapEntries(limit: number) {
   const size = z.number().int().min(0).max(50000).parse(limit);
   if (size === 0) return [];
-  return db.select({ slug: posts.slug, publishedUpdatedAt: posts.publishedUpdatedAt })
-    .from(posts).where(live)
-    .orderBy(desc(posts.firstPublishedAt), desc(posts.id)).limit(size);
+  return db
+    .select({ slug: posts.slug, publishedUpdatedAt: posts.publishedUpdatedAt })
+    .from(posts)
+    .where(live)
+    .orderBy(desc(posts.firstPublishedAt), desc(posts.id))
+    .limit(size);
 }
 
 const currentTerms = sql<unknown>`COALESCE((
@@ -115,39 +198,69 @@ const currentTerms = sql<unknown>`COALESCE((
   FROM blog_published_post_tags bpt JOIN blog_tags bt ON bt.id = bpt.tag_id
   WHERE bpt.post_id = ${posts.id}
 ), '[]'::jsonb)`;
-const publicTerms = z.array(z.object({ id, label: z.string().min(1).max(100), slug }).strict()).max(20);
+const publicTerms = z
+  .array(z.object({ id, label: z.string().min(1).max(100), slug }).strict())
+  .max(20);
 
 export async function getPublishedBlogPost(postSlug: string) {
   const requestedSlug = slug.parse(postSlug);
-  const [row] = await db.select({
-    id: posts.id, slug: posts.slug, document: revisions.document,
-    category: { id: categories.id, label: categories.name, slug: categories.slug },
-    tags: currentTerms, firstPublishedAt: posts.firstPublishedAt, publishedUpdatedAt: posts.publishedUpdatedAt,
-  }).from(posts)
-    .innerJoin(revisions, and(eq(revisions.id, posts.publishedRevisionId), eq(revisions.postId, posts.id)))
+  const [row] = await db
+    .select({
+      id: posts.id,
+      slug: posts.slug,
+      document: revisions.document,
+      category: { id: categories.id, label: categories.name, slug: categories.slug },
+      tags: currentTerms,
+      firstPublishedAt: posts.firstPublishedAt,
+      publishedUpdatedAt: posts.publishedUpdatedAt,
+    })
+    .from(posts)
+    .innerJoin(
+      revisions,
+      and(eq(revisions.id, posts.publishedRevisionId), eq(revisions.postId, posts.id)),
+    )
     .innerJoin(categories, eq(categories.id, posts.publishedCategoryId))
-    .where(and(live, eq(posts.slug, requestedSlug))).limit(1);
+    .where(and(live, eq(posts.slug, requestedSlug)))
+    .limit(1);
   if (!row) return null;
   const document = validateBlogDocument(row.document, cloudOptions());
   const selectedTags = publicTerms.parse(row.tags);
-  const relatedTools = document.relatedToolIds.length ? await db.select({
-    id: managedToolsTable.toolId, name: managedToolsTable.name, app: managedToolsTable.app, slug: managedToolsTable.slug,
-  }).from(managedToolsTable).where(and(
-    inArray(managedToolsTable.toolId, document.relatedToolIds), eq(managedToolsTable.enabled, true),
-    eq(managedToolsTable.archived, false), isNotNull(managedToolsTable.slug),
-  )) : [];
+  const relatedTools = document.relatedToolIds.length
+    ? await db
+        .select({
+          id: managedToolsTable.toolId,
+          name: managedToolsTable.name,
+          app: managedToolsTable.app,
+          slug: managedToolsTable.slug,
+        })
+        .from(managedToolsTable)
+        .where(
+          and(
+            inArray(managedToolsTable.toolId, document.relatedToolIds),
+            eq(managedToolsTable.enabled, true),
+            eq(managedToolsTable.archived, false),
+            isNotNull(managedToolsTable.slug),
+          ),
+        )
+    : [];
   const byId = new Map(relatedTools.map((tool) => [tool.id, tool]));
   const relatedToolLinks = document.relatedToolIds.flatMap((toolId) => {
     const tool = byId.get(toolId);
     return tool && isValidToolSlug(tool.app, tool.slug)
-      ? [{ id: tool.id, name: tool.name, href: `/${tool.app}/${tool.slug}` }] : [];
+      ? [{ id: tool.id, name: tool.name, href: `/${tool.app}/${tool.slug}` }]
+      : [];
   });
-  return { ...row, tags: selectedTags, relatedToolLinks, document: {
-    ...document,
-    category: { id: row.category.id, label: row.category.label },
-    tags: selectedTags.map(({ id, label }) => ({ id, label })),
-    relatedToolIds: relatedToolLinks.map((tool) => tool.id),
-  } };
+  return {
+    ...row,
+    tags: selectedTags,
+    relatedToolLinks,
+    document: {
+      ...document,
+      category: { id: row.category.id, label: row.category.label },
+      tags: selectedTags.map(({ id, label }) => ({ id, label })),
+      relatedToolIds: relatedToolLinks.map((tool) => tool.id),
+    },
+  };
 }
 
 export async function listBlogPosts(actorUserId: string, input: unknown = {}) {
@@ -157,30 +270,49 @@ export async function listBlogPosts(actorUserId: string, input: unknown = {}) {
   const cursor = decodeBlogCursor(options.cursor, kind);
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "blog", "view");
-    const rows = await transaction.select({
-      id: posts.id, slug: posts.slug, version: posts.version,
-      title: sql<string>`${posts.draftDocument}->>'title'`,
-      updatedAt: posts.updatedAt, trashedAt: posts.trashedAt,
-      firstPublishedAt: posts.firstPublishedAt, publishedUpdatedAt: posts.publishedUpdatedAt,
-      publishedRevisionId: posts.publishedRevisionId,
-      hasUnpublishedChanges: sql<boolean>`${posts.publishedRevisionId} IS NOT NULL AND ${posts.draftHash} <> ${revisions.contentHash}`,
-      schedule: {
-        id: schedules.id, revisionId: schedules.revisionId, scheduledAt: schedules.scheduledAt,
-        lastAttemptAt: schedules.lastAttemptAt, lastErrorCode: schedules.lastErrorCode,
-      },
-      cursorTime: cursorTime(timeColumn),
-    }).from(posts)
+    const rows = await transaction
+      .select({
+        id: posts.id,
+        slug: posts.slug,
+        version: posts.version,
+        title: sql<string>`${posts.draftDocument}->>'title'`,
+        updatedAt: posts.updatedAt,
+        trashedAt: posts.trashedAt,
+        firstPublishedAt: posts.firstPublishedAt,
+        publishedUpdatedAt: posts.publishedUpdatedAt,
+        publishedRevisionId: posts.publishedRevisionId,
+        hasUnpublishedChanges: sql<boolean>`${posts.publishedRevisionId} IS NOT NULL AND ${posts.draftHash} <> ${revisions.contentHash}`,
+        schedule: {
+          id: schedules.id,
+          revisionId: schedules.revisionId,
+          scheduledAt: schedules.scheduledAt,
+          lastAttemptAt: schedules.lastAttemptAt,
+          lastErrorCode: schedules.lastErrorCode,
+        },
+        cursorTime: cursorTime(timeColumn),
+      })
+      .from(posts)
       .leftJoin(schedules, eq(schedules.postId, posts.id))
       .leftJoin(revisions, eq(revisions.id, posts.publishedRevisionId))
-      .where(and(
-        options.status === "trash" ? isNotNull(posts.trashedAt) : isNull(posts.trashedAt),
-        options.status === "published" ? isNotNull(posts.publishedRevisionId) : undefined,
-        options.status === "scheduled" ? isNotNull(schedules.id) : undefined,
-        options.status === "draft" ? and(isNull(posts.publishedRevisionId), isNull(schedules.id)) : undefined,
-        options.search ? sql`${posts.draftDocument}->>'title' ILIKE ${likeSearch(options.search)}` : undefined,
-        options.categoryId ? sql`${posts.draftDocument}->'category'->>'id' = ${options.categoryId}` : undefined,
-        dateAfter(timeColumn, cursor),
-      )).orderBy(desc(timeColumn), desc(posts.id)).limit(26);
+      .where(
+        and(
+          options.status === "trash" ? isNotNull(posts.trashedAt) : isNull(posts.trashedAt),
+          options.status === "published" ? isNotNull(posts.publishedRevisionId) : undefined,
+          options.status === "scheduled" ? isNotNull(schedules.id) : undefined,
+          options.status === "draft"
+            ? and(isNull(posts.publishedRevisionId), isNull(schedules.id))
+            : undefined,
+          options.search
+            ? sql`${posts.draftDocument}->>'title' ILIKE ${likeSearch(options.search)}`
+            : undefined,
+          options.categoryId
+            ? sql`${posts.draftDocument}->'category'->>'id' = ${options.categoryId}`
+            : undefined,
+          dateAfter(timeColumn, cursor),
+        ),
+      )
+      .orderBy(desc(timeColumn), desc(posts.id))
+      .limit(26);
     const page = paginateBlogRows(rows, 25, (row) => ({ kind, value: row.cursorTime, id: row.id }));
     return { ...page, items: page.items.map(({ cursorTime: _cursor, ...row }) => row) };
   });
@@ -188,13 +320,28 @@ export async function listBlogPosts(actorUserId: string, input: unknown = {}) {
 
 export async function getBlogPost(actorUserId: string, postId: string) {
   const requestedId = id.parse(postId);
-  return db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "blog", "view");
-    const [post] = await transaction.select().from(posts).where(eq(posts.id, requestedId)).limit(1);
-    if (!post) return null;
-    const [schedule] = await transaction.select().from(schedules).where(eq(schedules.postId, requestedId)).limit(1);
-    return { ...post, draftDocument: validateBlogDocument(post.draftDocument, cloudOptions()), schedule: schedule ?? null };
-  }, { isolationLevel: "repeatable read" });
+  return db.transaction(
+    async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "blog", "view");
+      const [post] = await transaction
+        .select()
+        .from(posts)
+        .where(eq(posts.id, requestedId))
+        .limit(1);
+      if (!post) return null;
+      const [schedule] = await transaction
+        .select()
+        .from(schedules)
+        .where(eq(schedules.postId, requestedId))
+        .limit(1);
+      return {
+        ...post,
+        draftDocument: validateBlogDocument(post.draftDocument, cloudOptions()),
+        schedule: schedule ?? null,
+      };
+    },
+    { isolationLevel: "repeatable read" },
+  );
 }
 
 export async function getBlogRevision(actorUserId: string, postId: string, revisionId: string) {
@@ -202,41 +349,79 @@ export async function getBlogRevision(actorUserId: string, postId: string, revis
   const requestedRevision = id.parse(revisionId);
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "blog", "view");
-    const [revision] = await transaction.select().from(revisions)
-      .where(and(eq(revisions.postId, requestedId), eq(revisions.id, requestedRevision))).limit(1);
-    return revision ? { ...revision, document: validateBlogDocument(revision.document, cloudOptions()) } : null;
+    const [revision] = await transaction
+      .select()
+      .from(revisions)
+      .where(and(eq(revisions.postId, requestedId), eq(revisions.id, requestedRevision)))
+      .limit(1);
+    return revision
+      ? { ...revision, document: validateBlogDocument(revision.document, cloudOptions()) }
+      : null;
   });
 }
 
 export async function listBlogRevisions(actorUserId: string, postId: string, before?: string) {
   const requestedId = id.parse(postId);
   const cursor = decodeBlogCursor(before, "history");
-  if (cursor && cursor.id !== requestedId) throw new BlogValidationError("Revision cursor belongs to another post.");
+  if (cursor && cursor.id !== requestedId)
+    throw new BlogValidationError("Revision cursor belongs to another post.");
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "blog", "view");
-    const rows = await transaction.select({
-      id: revisions.id, postId: revisions.postId, revisionNumber: revisions.revisionNumber,
-      reason: revisions.reason, sourceRevisionId: revisions.sourceRevisionId,
-      createdBy: revisions.createdBy, createdAt: revisions.createdAt,
-      title: sql<string>`${revisions.document}->>'title'`,
-    }).from(revisions).where(and(eq(revisions.postId, requestedId), cursor ? sql`${revisions.revisionNumber} < ${cursor.value}` : undefined))
-      .orderBy(desc(revisions.revisionNumber)).limit(26);
-    return paginateBlogRows(rows, 25, (row) => ({ kind: "history", value: row.revisionNumber, id: requestedId }));
+    const rows = await transaction
+      .select({
+        id: revisions.id,
+        postId: revisions.postId,
+        revisionNumber: revisions.revisionNumber,
+        reason: revisions.reason,
+        sourceRevisionId: revisions.sourceRevisionId,
+        createdBy: revisions.createdBy,
+        createdAt: revisions.createdAt,
+        title: sql<string>`${revisions.document}->>'title'`,
+      })
+      .from(revisions)
+      .where(
+        and(
+          eq(revisions.postId, requestedId),
+          cursor ? sql`${revisions.revisionNumber} < ${cursor.value}` : undefined,
+        ),
+      )
+      .orderBy(desc(revisions.revisionNumber))
+      .limit(26);
+    return paginateBlogRows(rows, 25, (row) => ({
+      kind: "history",
+      value: row.revisionNumber,
+      id: requestedId,
+    }));
   });
 }
 
-export async function listBlogTaxonomy(actorUserId: string, kind: "category" | "tag", input: unknown = {}) {
+export async function listBlogTaxonomy(
+  actorUserId: string,
+  kind: "category" | "tag",
+  input: unknown = {},
+) {
   const selectedKind = termKind.parse(kind);
   const options = termInput.parse(input);
   const cursor = decodeBlogCursor(options.cursor, selectedKind);
   const table = selectedKind === "category" ? categories : tags;
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "blog", "view");
-    const rows = await transaction.select().from(table).where(and(
-      options.search ? sql`${table.name} ILIKE ${likeSearch(options.search)}` : undefined,
-      cursor ? sql`(${table.name}, ${table.id}) > (${cursor.value}, ${cursor.id})` : undefined,
-    )).orderBy(table.name, table.id).limit(26);
-    return paginateBlogRows(rows, 25, (row) => ({ kind: selectedKind, value: row.name, id: row.id }));
+    const rows = await transaction
+      .select()
+      .from(table)
+      .where(
+        and(
+          options.search ? sql`${table.name} ILIKE ${likeSearch(options.search)}` : undefined,
+          cursor ? sql`(${table.name}, ${table.id}) > (${cursor.value}, ${cursor.id})` : undefined,
+        ),
+      )
+      .orderBy(table.name, table.id)
+      .limit(26);
+    return paginateBlogRows(rows, 25, (row) => ({
+      kind: selectedKind,
+      value: row.name,
+      id: row.id,
+    }));
   });
 }
 
@@ -245,13 +430,32 @@ export async function listPublishedBlogTaxonomy(kind: "category" | "tag", input:
   const options = termInput.parse(input);
   const cursor = decodeBlogCursor(options.cursor, selectedKind);
   const table = selectedKind === "category" ? categories : tags;
-  const used = selectedKind === "category"
-    ? exists(db.select({ id: posts.id }).from(posts).where(and(live, eq(posts.publishedCategoryId, table.id))))
-    : exists(db.select({ id: posts.id }).from(posts).innerJoin(postTags, eq(postTags.postId, posts.id))
-      .where(and(live, eq(postTags.tagId, table.id))));
-  const rows = await db.select({ id: table.id, name: table.name, slug: table.slug }).from(table).where(and(used,
-    options.search ? sql`${table.name} ILIKE ${likeSearch(options.search)}` : undefined,
-    cursor ? sql`(${table.name}, ${table.id}) > (${cursor.value}, ${cursor.id})` : undefined,
-  )).orderBy(table.name, table.id).limit(26);
+  const used =
+    selectedKind === "category"
+      ? exists(
+          db
+            .select({ id: posts.id })
+            .from(posts)
+            .where(and(live, eq(posts.publishedCategoryId, table.id))),
+        )
+      : exists(
+          db
+            .select({ id: posts.id })
+            .from(posts)
+            .innerJoin(postTags, eq(postTags.postId, posts.id))
+            .where(and(live, eq(postTags.tagId, table.id))),
+        );
+  const rows = await db
+    .select({ id: table.id, name: table.name, slug: table.slug })
+    .from(table)
+    .where(
+      and(
+        used,
+        options.search ? sql`${table.name} ILIKE ${likeSearch(options.search)}` : undefined,
+        cursor ? sql`(${table.name}, ${table.id}) > (${cursor.value}, ${cursor.id})` : undefined,
+      ),
+    )
+    .orderBy(table.name, table.id)
+    .limit(26);
   return paginateBlogRows(rows, 25, (row) => ({ kind: selectedKind, value: row.name, id: row.id }));
 }

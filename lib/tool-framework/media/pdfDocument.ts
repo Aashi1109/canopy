@@ -79,11 +79,7 @@ export async function validatePdfInput(file: ToolRunFile): Promise<void> {
   if (!result.ok) throw new ToolError(result.code, result.message);
 }
 
-export function enforcePageLimit(
-  file: ToolRunFile,
-  pageCount: number,
-  raster: boolean,
-): void {
+export function enforcePageLimit(file: ToolRunFile, pageCount: number, raster: boolean): void {
   const result = validatePdfSelection([{ size: file.size }], {
     pageCount,
     raster,
@@ -110,10 +106,7 @@ export function checkedPages(
   return indexes;
 }
 
-export function resolvePageSelection(
-  selection: PdfPageSelection,
-  pageCount: number,
-): number[] {
+export function resolvePageSelection(selection: PdfPageSelection, pageCount: number): number[] {
   if (selection === "all") {
     return Array.from({ length: pageCount }, (_, index) => index);
   }
@@ -128,10 +121,7 @@ export function resolvePageSelection(
   return checkedPages(selection, pageCount);
 }
 
-export function resolvePageNumbers(
-  selection: PdfPageSelection,
-  pageCount: number,
-): number[] {
+export function resolvePageNumbers(selection: PdfPageSelection, pageCount: number): number[] {
   return resolvePageSelection(selection, pageCount).map((index) => index + 1);
 }
 

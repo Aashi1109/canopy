@@ -38,8 +38,12 @@ export const validate: ToolValidate<Settings> = (settings, files) => {
     }
   }
   if (settings.cropMode === "freeform") {
-    try { parseCropPoints(settings.cropPoints); return null; }
-    catch { return "Add an image and choose a valid crop selection before processing."; }
+    try {
+      parseCropPoints(settings.cropPoints);
+      return null;
+    } catch {
+      return "Add an image and choose a valid crop selection before processing.";
+    }
   }
   return settings.cropWidth <= 0 || settings.cropHeight <= 0
     ? "Enter a valid crop area before processing."

@@ -31,17 +31,15 @@ import {
 import type { PdfInspectionSession } from "./media/pdfRender";
 
 type WorkerScope = {
-  addEventListener(
-    type: "message",
-    listener: (event: MessageEvent<unknown>) => void,
-  ): void;
+  addEventListener(type: "message", listener: (event: MessageEvent<unknown>) => void): void;
   postMessage(message: ToolWorkerResponse, transfer?: Transferable[]): void;
 };
 
 const scope = globalThis as unknown as WorkerScope;
 
 let running: AbortController | null = null;
-let openingInspection: { readonly jobId: string; readonly controller: AbortController } | null = null;
+let openingInspection: { readonly jobId: string; readonly controller: AbortController } | null =
+  null;
 let inspection: {
   readonly jobId: string;
   readonly controller: AbortController;
@@ -52,10 +50,7 @@ scope.addEventListener("message", (event) => {
   const message = event.data;
   if (!isToolWorkerMessage(message)) return;
   if (message.type === "cancel") {
-    if (
-      openingInspection?.jobId === message.jobId ||
-      inspection?.jobId === message.jobId
-    ) {
+    if (openingInspection?.jobId === message.jobId || inspection?.jobId === message.jobId) {
       void closeInspection(message.jobId).then(() => {
         scope.postMessage({ type: "canceled", jobId: message.jobId });
       });
@@ -161,9 +156,7 @@ async function inspectJob(message: ToolWorkerInspect): Promise<void> {
     if (!TOOL_SLUG_PATTERN.test(message.key)) {
       throw new ToolError("unknown-tool", "This tool is not available.");
     }
-    const specModule: unknown = await import(
-      `../../tools/${message.key}/definition`
-    );
+    const specModule: unknown = await import(`../../tools/${message.key}/definition`);
     const spec = readSpec(specModule);
     signal.throwIfAborted();
     if (message.source !== "output") {
@@ -172,10 +165,7 @@ async function inspectJob(message: ToolWorkerInspect): Promise<void> {
         spec.input.inspect !== true ||
         spec.input.engine !== "pdf"
       ) {
-        throw new ToolError(
-          "inspection-unsupported",
-          "This tool does not use page previews.",
-        );
+        throw new ToolError("inspection-unsupported", "This tool does not use page previews.");
       }
       // Input previews apply the same trust boundaries as the run path.
       await assertRunnableFiles(spec, message.files, signal);
@@ -184,11 +174,7 @@ async function inspectJob(message: ToolWorkerInspect): Promise<void> {
     const file = message.files[0];
     if (!file) throw new ToolError("no-files", "Choose at least one file.");
     const { openPdfInspectionSession } = await import("./media/pdfRender");
-    const session = await openPdfInspectionSession(
-      file,
-      message.thumbnailWidth,
-      signal,
-    );
+    const session = await openPdfInspectionSession(file, message.thumbnailWidth, signal);
     openedSession = session;
     signal.throwIfAborted();
     inspection = { jobId, controller, session };
@@ -211,7 +197,10 @@ async function thumbnailJob(message: ToolWorkerThumbnailRequest): Promise<void> 
   const current = inspection;
   if (!current || current.jobId !== message.jobId) return;
   try {
-    const previews = await current.session.renderThumbnails(message.pageNumbers, message.renderWidth);
+    const previews = await current.session.renderThumbnails(
+      message.pageNumbers,
+      message.renderWidth,
+    );
     if (inspection !== current || current.controller.signal.aborted) return;
     scope.postMessage(
       { type: "thumbnails", jobId: message.jobId, previews },
@@ -223,9 +212,7 @@ async function thumbnailJob(message: ToolWorkerThumbnailRequest): Promise<void> 
   }
 }
 
-async function closeInspectionJob(
-  message: ToolWorkerInspectionClose,
-): Promise<void> {
+async function closeInspectionJob(message: ToolWorkerInspectionClose): Promise<void> {
   await closeInspection(message.jobId);
   scope.postMessage({ type: "inspection-closed", jobId: message.jobId });
 }
@@ -243,10 +230,7 @@ async function closeInspection(jobId?: string): Promise<void> {
 }
 
 /** Never leaks a stack trace, a module path, or an internal message. */
-function toFailureMessage(
-  error: unknown,
-  jobId: string,
-): ToolWorkerResponse {
+function toFailureMessage(error: unknown, jobId: string): ToolWorkerResponse {
   if (error instanceof DOMException && error.name === "AbortError") {
     return { type: "canceled", jobId };
   }

@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from "react";
 import { Pencil } from "lucide-react";
 
 import { Button } from "#components/button";
@@ -21,8 +29,14 @@ export interface InlineTextEditorProps {
 }
 
 export function InlineTextEditor({
-  value, onChange, label, multiline = false, required = false,
-  maxLength, disabled = false, className,
+  value,
+  onChange,
+  label,
+  multiline = false,
+  required = false,
+  maxLength,
+  disabled = false,
+  className,
 }: InlineTextEditorProps) {
   const [editing, setEditing] = useState(false);
   const [suppressHover, setSuppressHover] = useState(false);
@@ -34,11 +48,12 @@ export function InlineTextEditor({
   const pendingBlur = useRef(false);
   const feedbackId = useId();
   const keyboardHint = `Enter to finish${multiline ? " · Shift+Enter for new line" : ""} · Esc to cancel`;
-  const error = required && !value.trim()
-    ? `${label} is required.`
-    : maxLength !== undefined && value.length > maxLength
-      ? `${label} must be ${maxLength} characters or fewer.`
-      : null;
+  const error =
+    required && !value.trim()
+      ? `${label} is required.`
+      : maxLength !== undefined && value.length > maxLength
+        ? `${label} must be ${maxLength} characters or fewer.`
+        : null;
 
   useLayoutEffect(() => {
     if (!editing) return;
@@ -49,7 +64,9 @@ export function InlineTextEditor({
   useEffect(() => {
     if (!editing) return;
     let frame = 0;
-    const press = () => { pointerDown.current = true; };
+    const press = () => {
+      pointerDown.current = true;
+    };
     const release = () => {
       pointerDown.current = false;
       // Let the outside click land before removing the helper changes layout.
@@ -110,13 +127,15 @@ export function InlineTextEditor({
     "aria-label": label,
     "aria-describedby": feedbackId,
     "aria-invalid": Boolean(error),
-    className: "block field-sizing-content h-auto min-h-0 w-auto min-w-[2ch] max-w-full resize-none overflow-hidden rounded-sm border-0 bg-transparent p-0 shadow-none ring-1 ring-primary/50 focus-visible:ring-2",
+    className:
+      "block field-sizing-content h-auto min-h-0 w-auto min-w-[2ch] max-w-full resize-none overflow-hidden rounded-sm border-0 bg-transparent p-0 shadow-none ring-1 ring-primary/50 focus-visible:ring-2",
     style: { font: "inherit", letterSpacing: "inherit", color: "inherit" },
     disabled,
     required,
     maxLength,
     value,
-    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(event.target.value),
+    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      onChange(event.target.value),
     onBlur: () => {
       if (error) return;
       if (pointerDown.current) pendingBlur.current = true;
@@ -140,14 +159,43 @@ export function InlineTextEditor({
 
   return (
     <TooltipProvider>
-      <span className={cn("group/inline-editor relative block min-w-0 outline-none", editing && "pr-9", className)} data-slot="inline-text-editor" ref={display} tabIndex={-1} onPointerMove={() => setSuppressHover(false)} onPointerLeave={() => setSuppressHover(false)}>
+      <span
+        className={cn(
+          "group/inline-editor relative block min-w-0 outline-none",
+          editing && "pr-9",
+          className,
+        )}
+        data-slot="inline-text-editor"
+        ref={display}
+        tabIndex={-1}
+        onPointerMove={() => setSuppressHover(false)}
+        onPointerLeave={() => setSuppressHover(false)}
+      >
         {editing ? (
           <>
-            {multiline
-              ? <Textarea {...editorProps} ref={(element) => { editor.current = element; }} rows={1} />
-              : <Input {...editorProps} ref={(element) => { editor.current = element; }} />}
+            {multiline ? (
+              <Textarea
+                {...editorProps}
+                ref={(element) => {
+                  editor.current = element;
+                }}
+                rows={1}
+              />
+            ) : (
+              <Input
+                {...editorProps}
+                ref={(element) => {
+                  editor.current = element;
+                }}
+              />
+            )}
             <span
-              className={cn("mt-1 block font-sans text-xs font-normal tracking-normal", error ? "text-destructive" : "w-fit max-w-full rounded border border-border bg-card px-2 py-1 text-muted-foreground shadow-sm")}
+              className={cn(
+                "mt-1 block font-sans text-xs font-normal tracking-normal",
+                error
+                  ? "text-destructive"
+                  : "w-fit max-w-full rounded border border-border bg-card px-2 py-1 text-muted-foreground shadow-sm",
+              )}
               id={feedbackId}
               role={error ? "alert" : undefined}
             >
@@ -157,9 +205,15 @@ export function InlineTextEditor({
         ) : (
           <Tooltip open={disabled ? false : undefined}>
             <TooltipTrigger asChild>
-              <span className={cn("relative inline-block max-w-full align-top", !disabled && "pr-9")}>
+              <span
+                className={cn("relative inline-block max-w-full align-top", !disabled && "pr-9")}
+              >
                 <span
-                  className={cn("block min-h-[1lh] whitespace-pre-wrap break-words rounded-sm", !disabled && "cursor-text", !disabled && !suppressHover && "hover:bg-muted/60")}
+                  className={cn(
+                    "block min-h-[1lh] whitespace-pre-wrap break-words rounded-sm",
+                    !disabled && "cursor-text",
+                    !disabled && !suppressHover && "hover:bg-muted/60",
+                  )}
                   onDoubleClick={beginEditing}
                 >
                   {value || <span className="text-muted-foreground">{label}</span>}
@@ -167,7 +221,12 @@ export function InlineTextEditor({
                 {!disabled && (
                   <Button
                     aria-label={`Edit ${label}`}
-                    className={cn("absolute right-0 top-[0.5lh] size-8 -translate-y-1/2 opacity-0 focus-visible:opacity-100 [@media(hover:none)]:opacity-100", suppressHover ? "hover:bg-transparent active:bg-transparent" : "group-hover/inline-editor:opacity-100")}
+                    className={cn(
+                      "absolute right-0 top-[0.5lh] size-8 -translate-y-1/2 opacity-0 focus-visible:opacity-100 [@media(hover:none)]:opacity-100",
+                      suppressHover
+                        ? "hover:bg-transparent active:bg-transparent"
+                        : "group-hover/inline-editor:opacity-100",
+                    )}
                     onClick={beginEditing}
                     onFocus={() => setSuppressHover(false)}
                     ref={editButton}

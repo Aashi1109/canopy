@@ -25,7 +25,8 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   }
   const rows = value.map((row) => flattenRecord(row));
   const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))];
-  if (!columns.length) throw new ToolError("empty-columns", "JSON array objects need at least one field.");
+  if (!columns.length)
+    throw new ToolError("empty-columns", "JSON array objects need at least one field.");
   return {
     render: "html",
     html: tableToHtml([

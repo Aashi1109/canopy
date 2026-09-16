@@ -12,11 +12,7 @@ import { toolMetadata } from "@/lib/tool-framework/metadata";
 // need a redeploy per admin change.
 export const generateMetadata = toolMetadata("media");
 
-export default async function MediaToolPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function MediaToolPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const tool = await resolveToolPage("media", slug);
   if (!tool) notFound();

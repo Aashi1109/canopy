@@ -104,8 +104,6 @@ export default {
         a: "Fading to plain `transparent` interpolates through transparent black. Fade to the same colour with alpha 00 instead, which is what the #RRGGBBAA form gives you.",
       },
     ],
-    examples: [
-      { label: "Blue to purple", text: "#2563eb", secondary: "#7c3aed" },
-    ],
+    examples: [{ label: "Blue to purple", text: "#2563eb", secondary: "#7c3aed" }],
   },
 } as const satisfies ToolSpec;

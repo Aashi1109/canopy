@@ -4,15 +4,7 @@ export default {
   toolId: "devtools.hex-to-text",
   app: "devtools",
   category: "encoding-decoding",
-  keywords: [
-    "hex",
-    "hexadecimal",
-    "decode",
-    "bytes",
-    "utf-8",
-    "hexdump",
-    "convert",
-  ],
+  keywords: ["hex", "hexadecimal", "decode", "bytes", "utf-8", "hexdump", "convert"],
   name: "Hex to Text",
   description: "Decode hexadecimal bytes as UTF-8.",
   layout: "stacked",
@@ -56,8 +48,6 @@ export default {
         a: "No. `4A` and `4a` are the same byte.",
       },
     ],
-    examples: [
-      { label: "Text with an emoji", text: "48656c6c6f20f09f918b" },
-    ],
+    examples: [{ label: "Text with an emoji", text: "48656c6c6f20f09f918b" }],
   },
 } as const satisfies ToolSpec;

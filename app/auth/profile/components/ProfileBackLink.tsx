@@ -1,22 +1,13 @@
 "use client";
 
-import {
-  TextLink, Button } from "@smarttools/ui";
+import { TextLink, Button } from "@smarttools/ui";
 import type { MouseEvent } from "react";
 import { shouldUseBrowserBack } from "../../_lib/security";
 
-export function ProfileBackLink({
-  fallbackHref,
-}: {
-  fallbackHref: string;
-}) {
+export function ProfileBackLink({ fallbackHref }: { fallbackHref: string }) {
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     const modified =
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey;
+      event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
     if (
       !shouldUseBrowserBack(
         fallbackHref,
@@ -35,11 +26,7 @@ export function ProfileBackLink({
 
   return (
     <Button asChild size="sm" variant="ghost">
-      <a
-        aria-label="Back to previous page"
-        href={fallbackHref}
-        onClick={handleClick}
-      >
+      <a aria-label="Back to previous page" href={fallbackHref} onClick={handleClick}>
         <span aria-hidden="true">←</span>
         Back
       </a>

@@ -4,10 +4,7 @@ import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 
 import type { ToolApp } from "@smarttools/tool-catalog";
 import type { AdminTool } from "../../../../../lib/tool-framework/manifest";
-import {
-  OrderableList,
-  type OrderableItemState,
-} from "@smarttools/ui/components/OrderableList";
+import { OrderableList, type OrderableItemState } from "@smarttools/ui/components/OrderableList";
 import {
   H3,
   Caption,
@@ -152,13 +149,7 @@ function ToolToggle({ tool }: { tool: AdminTool }) {
   );
 }
 
-function ToolConfiguration({
-  onClose,
-  tool,
-}: {
-  onClose: () => void;
-  tool: AdminTool;
-}) {
+function ToolConfiguration({ onClose, tool }: { onClose: () => void; tool: AdminTool }) {
   return (
     <div className="border-t border-border bg-muted/40 px-5 py-5 sm:px-6">
       <form action={updateToolAction} className="grid gap-4 lg:grid-cols-2">
@@ -209,7 +200,9 @@ function ToolConfiguration({
           />
         </Field>
         <div className="flex flex-wrap items-center gap-2 lg:col-span-2">
-          <SubmitButton formAction={updateToolAction} type="submit">Save configuration</SubmitButton>
+          <SubmitButton formAction={updateToolAction} type="submit">
+            Save configuration
+          </SubmitButton>
           <Button onClick={onClose} type="button" variant="secondary">
             Cancel
           </Button>
@@ -317,9 +310,7 @@ function ToolRow({
             )}
           </IconTile>
           <span className="min-w-0 flex-1">
-            <Text className="block truncate text-foreground">
-              {tool.name}
-            </Text>
+            <Text className="block truncate text-foreground">{tool.name}</Text>
             <ToolDescription description={tool.description} />
           </span>
         </div>
@@ -419,15 +410,16 @@ function ToolGroup({
     const previousItems = items;
     let categoryIndex = 0;
     const nextItems = items.map((tool) =>
-      (tool.category?.trim() || title) === category
-        ? nextCategoryItems[categoryIndex++]
-        : tool,
+      (tool.category?.trim() || title) === category ? nextCategoryItems[categoryIndex++] : tool,
     );
     setItems(nextItems);
     setMessage("Saving order…");
     startTransition(async () => {
       try {
-        await reorderToolsAction(app, nextItems.map((tool) => tool.id));
+        await reorderToolsAction(
+          app,
+          nextItems.map((tool) => tool.id),
+        );
         setMessage("Order saved.");
       } catch {
         setItems(previousItems);
@@ -446,12 +438,12 @@ function ToolGroup({
   }
 
   return (
-    <section aria-labelledby={`${app}-tools-heading`} className="border-b border-border last:border-b-0">
+    <section
+      aria-labelledby={`${app}-tools-heading`}
+      className="border-b border-border last:border-b-0"
+    >
       <div className="flex min-h-9 items-center gap-2 border-b border-border bg-muted px-4">
-        <Overline
-          className="text-muted-foreground"
-          id={`${app}-tools-heading`}
-        >
+        <Overline className="text-muted-foreground" id={`${app}-tools-heading`}>
           {title}
         </Overline>
         <Caption className="text-muted-foreground">{items.length}</Caption>
@@ -488,11 +480,7 @@ function ToolGroup({
                 items={categoryItems}
                 onReorder={(nextItems) => handleReorder(category, nextItems)}
                 renderItem={(tool, orderable) => (
-                  <ToolRow
-                    iconRow={icons[tool.id] ?? null}
-                    orderable={orderable}
-                    tool={tool}
-                  />
+                  <ToolRow iconRow={icons[tool.id] ?? null} orderable={orderable} tool={tool} />
                 )}
               />
             ) : null}
@@ -540,10 +528,18 @@ export interface ToolListProps {
 export function ToolList({ icons, tools }: ToolListProps) {
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useAdminQueryState<string>("q", "");
-  const [selectedApp] = useAdminQueryState<AppFilter>("app", "all", ["all", ...GROUPS.map((group) => group.app)]);
-  const [visibility] = useAdminQueryState<VisibilityFilter>(
-    "visibility", "all", ["all", "visible", "hidden", "draft", "setup", "archived"],
-  );
+  const [selectedApp] = useAdminQueryState<AppFilter>("app", "all", [
+    "all",
+    ...GROUPS.map((group) => group.app),
+  ]);
+  const [visibility] = useAdminQueryState<VisibilityFilter>("visibility", "all", [
+    "all",
+    "visible",
+    "hidden",
+    "draft",
+    "setup",
+    "archived",
+  ]);
   const appFilter = visibility === "all" ? selectedApp : "all";
 
   useEffect(() => {
@@ -578,17 +574,20 @@ export function ToolList({ icons, tools }: ToolListProps) {
 
   const availableCategories = useMemo(() => {
     if (appFilter === "all") return [];
-    return [...new Set(
-      tools
-        .filter((tool) => tool.app === appFilter)
-        .map((tool) => tool.category?.trim())
-        .filter((category): category is string => Boolean(category)),
-    )];
+    return [
+      ...new Set(
+        tools
+          .filter((tool) => tool.app === appFilter)
+          .map((tool) => tool.category?.trim())
+          .filter((category): category is string => Boolean(category)),
+      ),
+    ];
   }, [appFilter, tools]);
 
-  const [categoryFilter, setCategoryFilter] = useAdminQueryState(
-    "category", "all", ["all", ...availableCategories],
-  );
+  const [categoryFilter, setCategoryFilter] = useAdminQueryState("category", "all", [
+    "all",
+    ...availableCategories,
+  ]);
 
   const filteredTools = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -612,18 +611,23 @@ export function ToolList({ icons, tools }: ToolListProps) {
     query || appFilter !== "all" || categoryFilter !== "all" || visibility !== "all",
   );
   const canReorder = !query.trim() && categoryFilter === "all" && visibility === "all";
-  const resultsTitle = categoryFilter !== "all"
-    ? categoryFilter
-    : appFilter === "all"
-      ? "All tools"
-      : (GROUPS.find((group) => group.app === appFilter)?.title ?? "Tools");
+  const resultsTitle =
+    categoryFilter !== "all"
+      ? categoryFilter
+      : appFilter === "all"
+        ? "All tools"
+        : (GROUPS.find((group) => group.app === appFilter)?.title ?? "Tools");
 
   function selectApp(nextApp: AppFilter) {
     updateAdminQuery({ app: nextApp === "all" ? null : nextApp, category: null, visibility: null });
   }
 
   function setVisibility(nextVisibility: VisibilityFilter) {
-    updateAdminQuery({ visibility: nextVisibility === "all" ? null : nextVisibility, app: null, category: null });
+    updateAdminQuery({
+      visibility: nextVisibility === "all" ? null : nextVisibility,
+      app: null,
+      category: null,
+    });
   }
 
   function resetFilters() {
@@ -633,189 +637,206 @@ export function ToolList({ icons, tools }: ToolListProps) {
   return (
     <TooltipProvider>
       <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="grid shrink-0 gap-3 md:grid-cols-[minmax(16rem,1fr)_12rem_11rem_auto] md:items-end">
-        <div className="grid gap-2">
-          <Label htmlFor="tool-search">Search tools</Label>
-          <span className="relative block">
-            <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-10"
-              id="tool-search"
-              onChange={(event) => setQuery(event.target.value, true)}
-              placeholder="Search by name, route, or capability…"
-              ref={searchRef}
-              value={query}
-            />
-          </span>
-        </div>
-        <Field htmlFor="tool-category-filter" label="Suite">
-          <Select
-            id="tool-category-filter"
-            onChange={(event) => selectApp(event.target.value as AppFilter)}
-            value={appFilter}
-          >
-            <option value="all">All suites</option>
-            {GROUPS.map((group) => (
-              <option key={group.app} value={group.app}>{group.title}</option>
-            ))}
-          </Select>
-        </Field>
-        <Field htmlFor="tool-visibility-filter" label="Visibility">
-          <Select
-            id="tool-visibility-filter"
-            onChange={(event) => setVisibility(event.target.value as VisibilityFilter)}
-            value={visibility}
-          >
-            <option value="all">Any status</option>
-            <option value="visible">Visible</option>
-            <option value="hidden">Hidden</option>
-            <option value="draft">Drafts</option>
-            <option value="setup">Setup required</option>
-            <option value="archived">Archived</option>
-          </Select>
-        </Field>
-        <Button disabled={!hasFilters} onClick={resetFilters} type="button" variant="secondary">
-          <RotateCcw aria-hidden="true" className="size-4" />
-          Reset
-        </Button>
-      </div>
-
-      <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-card lg:grid-cols-[13.75rem_minmax(0,1fr)]">
-        <aside className="border-b border-border bg-muted p-4 lg:h-full lg:border-r lg:border-b-0" aria-label="Catalog views">
-          <Overline className="block mb-2 text-muted-foreground">
-            Browse catalog
-          </Overline>
-          <div className="mb-3 rounded-lg bg-surface-ink p-3 text-on-ink">
-            <Lead >{tools.length} tools</Lead>
-            <Caption className="block mt-1 text-on-ink-muted">
-              {counts.visible} visible · {counts.hidden} hidden
-            </Caption>
-          </div>
-          <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-1">
-            <RailItem
-              active={appFilter === "all" && visibility === "all"}
-              count={tools.length}
-              icon={LayoutGrid}
-              label="All tools"
-              onClick={() => selectApp("all")}
-            />
-            {GROUPS.map((group) => (
-              <RailItem
-                active={appFilter === group.app}
-                count={tools.filter((tool) => tool.app === group.app).length}
-                icon={group.icon}
-                key={group.app}
-                label={group.title}
-                onClick={() => selectApp(group.app)}
+        <div className="grid shrink-0 gap-3 md:grid-cols-[minmax(16rem,1fr)_12rem_11rem_auto] md:items-end">
+          <div className="grid gap-2">
+            <Label htmlFor="tool-search">Search tools</Label>
+            <span className="relative block">
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground"
               />
-            ))}
+              <Input
+                className="pl-10"
+                id="tool-search"
+                onChange={(event) => setQuery(event.target.value, true)}
+                placeholder="Search by name, route, or capability…"
+                ref={searchRef}
+                value={query}
+              />
+            </span>
           </div>
-          <div className="my-3 h-px bg-border" />
-          <Overline className="block mb-1 text-muted-foreground">
-            Quick views
-          </Overline>
-          <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-1">
-            <RailItem
-              active={visibility === "visible"}
-              count={counts.visible}
-              icon={Eye}
-              label="Visible now"
-              onClick={() => setVisibility(visibility === "visible" ? "all" : "visible")}
-            />
-            <RailItem
-              active={visibility === "hidden"}
-              count={counts.hidden}
-              icon={EyeOff}
-              label="Hidden"
-              onClick={() => setVisibility(visibility === "hidden" ? "all" : "hidden")}
-            />
-            <RailItem
-              active={visibility === "draft"}
-              count={counts.draft}
-              icon={Pencil}
-              label="Drafts"
-              onClick={() => setVisibility(visibility === "draft" ? "all" : "draft")}
-            />
-            <RailItem
-              active={visibility === "setup"}
-              count={counts.setup}
-              icon={TriangleAlert}
-              label="Setup required"
-              onClick={() => setVisibility(visibility === "setup" ? "all" : "setup")}
-            />
-            <RailItem
-              active={visibility === "archived"}
-              count={counts.archived}
-              icon={History}
-              label="Archived"
-              onClick={() => setVisibility(visibility === "archived" ? "all" : "archived")}
-            />
-          </div>
-        </aside>
+          <Field htmlFor="tool-category-filter" label="Suite">
+            <Select
+              id="tool-category-filter"
+              onChange={(event) => selectApp(event.target.value as AppFilter)}
+              value={appFilter}
+            >
+              <option value="all">All suites</option>
+              {GROUPS.map((group) => (
+                <option key={group.app} value={group.app}>
+                  {group.title}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field htmlFor="tool-visibility-filter" label="Visibility">
+            <Select
+              id="tool-visibility-filter"
+              onChange={(event) => setVisibility(event.target.value as VisibilityFilter)}
+              value={visibility}
+            >
+              <option value="all">Any status</option>
+              <option value="visible">Visible</option>
+              <option value="hidden">Hidden</option>
+              <option value="draft">Drafts</option>
+              <option value="setup">Setup required</option>
+              <option value="archived">Archived</option>
+            </Select>
+          </Field>
+          <Button disabled={!hasFilters} onClick={resetFilters} type="button" variant="secondary">
+            <RotateCcw aria-hidden="true" className="size-4" />
+            Reset
+          </Button>
+        </div>
 
-        <div className="flex min-h-0 min-w-0 flex-col">
-          <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-4">
-            <div className="flex min-w-0 items-baseline gap-2">
-              <H3 className="truncate">{resultsTitle}</H3>
-              <Caption className="shrink-0 text-muted-foreground">{filteredTools.length} matches</Caption>
+        <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-card lg:grid-cols-[13.75rem_minmax(0,1fr)]">
+          <aside
+            className="border-b border-border bg-muted p-4 lg:h-full lg:border-r lg:border-b-0"
+            aria-label="Catalog views"
+          >
+            <Overline className="block mb-2 text-muted-foreground">Browse catalog</Overline>
+            <div className="mb-3 rounded-lg bg-surface-ink p-3 text-on-ink">
+              <Lead>{tools.length} tools</Lead>
+              <Caption className="block mt-1 text-on-ink-muted">
+                {counts.visible} visible · {counts.hidden} hidden
+              </Caption>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              {availableCategories.length ? (
-                <Select
-                  aria-label="Tool type"
-                  className="w-52"
-                  onChange={(event) => setCategoryFilter(event.target.value)}
-                  size="sm"
-                  value={categoryFilter}
-                >
-                  <option value="all">All tool types</option>
-                  {availableCategories.map((category) => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </Select>
-              ) : null}
-              <Caption className="hidden text-muted-foreground xl:inline">
-                {canReorder ? "Drag to set catalog order" : "Clear filters to reorder"}
+            <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-1">
+              <RailItem
+                active={appFilter === "all" && visibility === "all"}
+                count={tools.length}
+                icon={LayoutGrid}
+                label="All tools"
+                onClick={() => selectApp("all")}
+              />
+              {GROUPS.map((group) => (
+                <RailItem
+                  active={appFilter === group.app}
+                  count={tools.filter((tool) => tool.app === group.app).length}
+                  icon={group.icon}
+                  key={group.app}
+                  label={group.title}
+                  onClick={() => selectApp(group.app)}
+                />
+              ))}
+            </div>
+            <div className="my-3 h-px bg-border" />
+            <Overline className="block mb-1 text-muted-foreground">Quick views</Overline>
+            <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-1">
+              <RailItem
+                active={visibility === "visible"}
+                count={counts.visible}
+                icon={Eye}
+                label="Visible now"
+                onClick={() => setVisibility(visibility === "visible" ? "all" : "visible")}
+              />
+              <RailItem
+                active={visibility === "hidden"}
+                count={counts.hidden}
+                icon={EyeOff}
+                label="Hidden"
+                onClick={() => setVisibility(visibility === "hidden" ? "all" : "hidden")}
+              />
+              <RailItem
+                active={visibility === "draft"}
+                count={counts.draft}
+                icon={Pencil}
+                label="Drafts"
+                onClick={() => setVisibility(visibility === "draft" ? "all" : "draft")}
+              />
+              <RailItem
+                active={visibility === "setup"}
+                count={counts.setup}
+                icon={TriangleAlert}
+                label="Setup required"
+                onClick={() => setVisibility(visibility === "setup" ? "all" : "setup")}
+              />
+              <RailItem
+                active={visibility === "archived"}
+                count={counts.archived}
+                icon={History}
+                label="Archived"
+                onClick={() => setVisibility(visibility === "archived" ? "all" : "archived")}
+              />
+            </div>
+          </aside>
+
+          <div className="flex min-h-0 min-w-0 flex-col">
+            <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-4">
+              <div className="flex min-w-0 items-baseline gap-2">
+                <H3 className="truncate">{resultsTitle}</H3>
+                <Caption className="shrink-0 text-muted-foreground">
+                  {filteredTools.length} matches
+                </Caption>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                {availableCategories.length ? (
+                  <Select
+                    aria-label="Tool type"
+                    className="w-52"
+                    onChange={(event) => setCategoryFilter(event.target.value)}
+                    size="sm"
+                    value={categoryFilter}
+                  >
+                    <option value="all">All tool types</option>
+                    {availableCategories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </Select>
+                ) : null}
+                <Caption className="hidden text-muted-foreground xl:inline">
+                  {canReorder ? "Drag to set catalog order" : "Clear filters to reorder"}
+                </Caption>
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              {filteredTools.length ? (
+                GROUPS.map((group) => {
+                  const groupTools = filteredTools.filter((tool) => tool.app === group.app);
+                  return groupTools.length ? (
+                    <ToolGroup
+                      app={group.app}
+                      canReorder={canReorder}
+                      icons={icons}
+                      key={group.app}
+                      title={group.title}
+                      tools={groupTools}
+                    />
+                  ) : null;
+                })
+              ) : (
+                <div className="grid min-h-full place-items-center px-6 py-12 text-center">
+                  <div>
+                    <Search aria-hidden="true" className="mx-auto size-7 text-muted-foreground" />
+                    <H3 className="mt-3">No matching tools</H3>
+                    <Muted className="mt-1 text-muted-foreground">
+                      Try a different search or clear the active filters.
+                    </Muted>
+                    <Button
+                      className="mt-4"
+                      onClick={resetFilters}
+                      type="button"
+                      variant="secondary"
+                    >
+                      Clear filters
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex min-h-10 shrink-0 items-center justify-between gap-3 border-t border-border px-4 text-muted-foreground">
+              <Caption>Press / to search</Caption>
+              <Caption>
+                {filteredTools.length} of {tools.length} tools
               </Caption>
             </div>
           </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-            {filteredTools.length ? (
-              GROUPS.map((group) => {
-                const groupTools = filteredTools.filter((tool) => tool.app === group.app);
-                return groupTools.length ? (
-                  <ToolGroup
-                    app={group.app}
-                    canReorder={canReorder}
-                    icons={icons}
-                    key={group.app}
-                    title={group.title}
-                    tools={groupTools}
-                  />
-                ) : null;
-              })
-            ) : (
-              <div className="grid min-h-full place-items-center px-6 py-12 text-center">
-                <div>
-                  <Search aria-hidden="true" className="mx-auto size-7 text-muted-foreground" />
-                  <H3 className="mt-3">No matching tools</H3>
-                  <Muted className="mt-1 text-muted-foreground">Try a different search or clear the active filters.</Muted>
-                  <Button className="mt-4" onClick={resetFilters} type="button" variant="secondary">
-                    Clear filters
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex min-h-10 shrink-0 items-center justify-between gap-3 border-t border-border px-4 text-muted-foreground">
-            <Caption>Press / to search</Caption>
-            <Caption>{filteredTools.length} of {tools.length} tools</Caption>
-          </div>
         </div>
       </div>
-    </div>
     </TooltipProvider>
   );
 }

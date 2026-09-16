@@ -4,20 +4,17 @@ export default {
   toolId: "devtools.json-minifier",
   app: "devtools",
   category: "json-tools",
-  keywords: [
-    "json",
-    "minify",
-    "compact",
-    "whitespace",
-    "compress",
-    "payload size",
-  ],
+  keywords: ["json", "minify", "compact", "whitespace", "compress", "payload size"],
   name: "JSON Minifier",
   description: "Remove insignificant whitespace from JSON.",
   input: {
     kind: "text",
     label: "JSON input",
-    acceptFiles: { accept: ".json,application/json,text/json", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
+    acceptFiles: {
+      accept: ".json,application/json,text/json",
+      maxBytes: 104_857_600,
+      maxEditableBytes: 2_000_000,
+    },
     placeholder: '{\n  "name": "Ada",\n  "active": true\n}',
   },
   settings: {

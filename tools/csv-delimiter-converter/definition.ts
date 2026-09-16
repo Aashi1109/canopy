@@ -4,22 +4,17 @@ export default {
   toolId: "devtools.csv-delimiter-converter",
   app: "devtools",
   category: "csv-data-tools",
-  keywords: [
-    "csv",
-    "tsv",
-    "delimiter",
-    "separator",
-    "semicolon",
-    "pipe",
-    "tab",
-    "convert",
-  ],
+  keywords: ["csv", "tsv", "delimiter", "separator", "semicolon", "pipe", "tab", "convert"],
   name: "CSV Delimiter Converter",
   description: "Change delimiters without corrupting quoted values.",
   input: {
     kind: "text",
     label: "Delimited input",
-    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
+    acceptFiles: {
+      accept: ".csv,.tsv,text/csv,text/tab-separated-values",
+      maxBytes: 104_857_600,
+      maxEditableBytes: 2_000_000,
+    },
     placeholder: "name,role\nAda,Admin\nLin,Editor",
   },
   settings: {
@@ -74,7 +69,7 @@ export default {
     faq: [
       {
         q: "Why not just find-and-replace the delimiter?",
-        a: "Because a comma inside a quoted field (`\"Smith, Ada\"`) is data, not a separator. A blind replace corrupts it. This tool parses the rows first and re-quotes on the way out.",
+        a: 'Because a comma inside a quoted field (`"Smith, Ada"`) is data, not a separator. A blind replace corrupts it. This tool parses the rows first and re-quotes on the way out.',
       },
       {
         q: "Which delimiter should I target for European Excel?",

@@ -16,9 +16,7 @@
  * still loads `qpdf-wasm` lazily. Neither is duplicated or bypassed here.
  */
 
-import {
-  validatePdfInput,
-} from "../../lib/tool-framework/media/pdfDocument.ts";
+import { validatePdfInput } from "../../lib/tool-framework/media/pdfDocument.ts";
 import { readToolFile } from "../../lib/tool-framework/media/fileBytes.ts";
 import {
   encodeCanvas,
@@ -29,10 +27,7 @@ import {
   inspectPdfBeforeStructuralRewrite,
   PdfPreflightError,
 } from "../../lib/tool-framework/media/pdfRules.ts";
-import {
-  preservePdfWithQpdf,
-  QpdfAdapterError,
-} from "../../lib/tool-framework/media/qpdf.ts";
+import { preservePdfWithQpdf, QpdfAdapterError } from "../../lib/tool-framework/media/qpdf.ts";
 import {
   createOutputFilename,
   validatePdfSelection,
@@ -136,10 +131,7 @@ async function strongCompress(
   progress: (progress: ToolRunProgress) => void,
 ): Promise<Uint8Array> {
   if (settings.confirmed !== true) {
-    throw new ToolError(
-      "confirmation-required",
-      "Confirm Strong Compression before processing.",
-    );
+    throw new ToolError("confirmation-required", "Confirm Strong Compression before processing.");
   }
   const { PDFDocument } = await import("pdf-lib");
   const preset = STRONG_PRESETS[strongPreset(settings.strongPreset)];

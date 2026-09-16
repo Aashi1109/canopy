@@ -8,10 +8,7 @@
  * main-thread allocation.
  */
 
-import type {
-  ArtifactWriteInput,
-  StoredToolArtifact,
-} from "./artifacts";
+import type { ArtifactWriteInput, StoredToolArtifact } from "./artifacts";
 import type { ToolResult } from "./result";
 
 export type ToolRunFile = {
@@ -47,14 +44,10 @@ export type ToolRunContext<S> = {
   readonly settings: S;
   readonly signal: AbortSignal;
   readonly progress: (p: ToolRunProgress) => void;
-  readonly writeArtifact: (
-    input: ArtifactWriteInput,
-  ) => Promise<StoredToolArtifact>;
+  readonly writeArtifact: (input: ArtifactWriteInput) => Promise<StoredToolArtifact>;
 };
 
-export type ToolRun<S = never> = (
-  ctx: ToolRunContext<S>,
-) => ToolResult | Promise<ToolResult>;
+export type ToolRun<S = never> = (ctx: ToolRunContext<S>) => ToolResult | Promise<ToolResult>;
 
 /**
  * Page geometry produced by PDF inspection, in PDF points.
@@ -76,18 +69,13 @@ export type ToolPagePreview = {
  * shown to the user. Must be pure and cheap — no DOM, no I/O, and safe to call
  * on every keystroke, because the workspace re-runs it on every settings edit.
  */
-export type ToolValidate<S = never> = (
-  settings: S,
-  files: readonly ToolRunFile[],
-) => string | null;
+export type ToolValidate<S = never> = (settings: S, files: readonly ToolRunFile[]) => string | null;
 
 /**
  * Optional seed applied after PDF page inspection completes, exported from
  * `tools/<key>/hooks.ts`. Pure: it maps page geometry to settings, nothing else.
  */
-export type ToolPagesInspected<S = never> = (
-  previews: readonly ToolPagePreview[],
-) => Partial<S>;
+export type ToolPagesInspected<S = never> = (previews: readonly ToolPagePreview[]) => Partial<S>;
 
 /**
  * Optional re-derivation applied whenever settings change while page previews

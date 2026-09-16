@@ -22,24 +22,26 @@ export async function GET() {
     const iconsByToolId = new Map(Object.entries(iconRows));
     const groups = ECOSYSTEMS.map((ecosystem) => {
       const matchingTools = tools.filter((tool) => tool.app === ecosystem.app);
-      const documentTools = ecosystem.app === "paperwork"
-        ? paperworkTools
-            .filter((tool) => tool.slug)
-            .map((tool) => ({
-              href: `/paperwork/${tool.slug}`,
-              icon: resolveIcon(tool.toolId, tool.name, iconsByToolId.get(tool.toolId) ?? null),
+      const documentTools =
+        ecosystem.app === "paperwork"
+          ? paperworkTools
+              .filter((tool) => tool.slug)
+              .map((tool) => ({
+                href: `/paperwork/${tool.slug}`,
+                icon: resolveIcon(tool.toolId, tool.name, iconsByToolId.get(tool.toolId) ?? null),
+                name: tool.name,
+                toolId: tool.toolId,
+              }))
+          : [];
+      const previews =
+        ecosystem.app === "paperwork"
+          ? documentTools
+          : matchingTools.map((tool) => ({
+              href: tool.href,
+              icon: tool.icon,
               name: tool.name,
               toolId: tool.toolId,
-            }))
-        : [];
-      const previews = ecosystem.app === "paperwork"
-        ? documentTools
-        : matchingTools.map((tool) => ({
-            href: tool.href,
-            icon: tool.icon,
-            name: tool.name,
-            toolId: tool.toolId,
-          }));
+            }));
       return {
         ...ecosystem,
         categories: Object.entries(TOOL_CATEGORIES)

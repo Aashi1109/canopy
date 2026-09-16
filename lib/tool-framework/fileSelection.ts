@@ -41,10 +41,7 @@ export function validateFileSelection(
   const accepted: File[] = [];
   const issues: string[] = [];
   const maxBytes = Math.min(inputSpec.maxBytes ?? PLATFORM_MAX_BYTES, PLATFORM_MAX_BYTES);
-  const maxTotalBytes = Math.min(
-    inputSpec.maxTotalBytes ?? PLATFORM_MAX_BYTES,
-    PLATFORM_MAX_BYTES,
-  );
+  const maxTotalBytes = Math.min(inputSpec.maxTotalBytes ?? PLATFORM_MAX_BYTES, PLATFORM_MAX_BYTES);
   for (const file of incoming) {
     if (!acceptsFile(file, inputSpec.accept)) {
       issues.push(`${file.name} is not an accepted file type.`);
@@ -63,9 +60,7 @@ export function validateFileSelection(
   let totalBytes = 0;
   for (const file of combined.slice(0, limit)) {
     if (file.size > maxTotalBytes - totalBytes) {
-      issues.push(
-        `Selected files must total ${maxTotalBytes.toLocaleString()} bytes or less.`,
-      );
+      issues.push(`Selected files must total ${maxTotalBytes.toLocaleString()} bytes or less.`);
       continue;
     }
     files.push(file);

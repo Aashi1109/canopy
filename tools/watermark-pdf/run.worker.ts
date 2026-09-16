@@ -32,11 +32,7 @@ import {
   validatePdfSelection,
 } from "../../lib/tool-framework/media/validation.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
-import {
-  ToolError,
-  type ToolRun,
-  type ToolRunFile,
-} from "../../lib/tool-framework/run.ts";
+import { ToolError, type ToolRun, type ToolRunFile } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
@@ -106,29 +102,27 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       throw new ToolError("missing-watermark", "Choose a watermark image.");
     }
     const watermarkBytes = await readToolFile(watermark, ctx.signal);
-    const signature = validateMediaSignature(
-      new Uint8Array(watermarkBytes),
-      watermark.mime,
-      ["jpeg", "png"],
-    );
-    if (!signature.ok) throw new ToolError(signature.code, signature.message);
-    const watermarkSelection = validateImageSelection([
-      { size: watermark.size },
+    const signature = validateMediaSignature(new Uint8Array(watermarkBytes), watermark.mime, [
+      "jpeg",
+      "png",
     ]);
+    if (!signature.ok) throw new ToolError(signature.code, signature.message);
+    const watermarkSelection = validateImageSelection([{ size: watermark.size }]);
     if (!watermarkSelection.ok) {
       throw new ToolError(watermarkSelection.code, watermarkSelection.message);
     }
     const decoded =
       signature.kind === "jpeg"
-        ? await (await import("@jsquash/jpeg")).decode(watermarkBytes, {
+        ? await (
+            await import("@jsquash/jpeg")
+          ).decode(watermarkBytes, {
             preserveOrientation: true,
           })
         : await (await import("@jsquash/png")).decode(watermarkBytes);
     const dimensions = validateDecodedImageDimensions(decoded.width, decoded.height);
     if (!dimensions.ok) throw new ToolError(dimensions.code, dimensions.message);
     const orientedJpeg =
-      signature.kind === "jpeg" &&
-      readExifOrientation(new Uint8Array(watermarkBytes)) !== 1;
+      signature.kind === "jpeg" && readExifOrientation(new Uint8Array(watermarkBytes)) !== 1;
     const embeddedBytes = orientedJpeg
       ? await (await import("@jsquash/jpeg")).encode(decoded, { quality: 92 })
       : watermarkBytes;
@@ -139,8 +133,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     ctx.signal.throwIfAborted();
     selected.forEach((index) => {
       const page = pdf.getPage(index);
-      const width =
-        (page.getWidth() * clamp(ctx.settings.watermarkSize, 1, 100)) / 100;
+      const width = (page.getWidth() * clamp(ctx.settings.watermarkSize, 1, 100)) / 100;
       const height = width * (image.height / image.width);
       const position = positionedBox(page, width, height, ctx.settings.position);
       page.drawImage(image, {

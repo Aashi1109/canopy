@@ -24,9 +24,7 @@ const APP_SUFFIX: Readonly<Record<ToolApp, string>> = {
 };
 
 function iconHref(icon: ResolvedIcon): string {
-  return icon.kind === "url"
-    ? icon.url
-    : `data:image/svg+xml,${encodeURIComponent(icon.svg)}`;
+  return icon.kind === "url" ? icon.url : `data:image/svg+xml,${encodeURIComponent(icon.svg)}`;
 }
 
 function toolMetadataFor(tool: CatalogTool, app: ToolApp): Metadata {
@@ -48,12 +46,8 @@ function toolMetadataFor(tool: CatalogTool, app: ToolApp): Metadata {
 export type ToolMetadataArgs = { params: Promise<{ slug: string }> };
 
 /** Builds the `generateMetadata` export for an app's `[slug]` route. */
-export function toolMetadata(
-  app: ToolApp,
-): (args: ToolMetadataArgs) => Promise<Metadata> {
-  return async function generateMetadata({
-    params,
-  }: ToolMetadataArgs): Promise<Metadata> {
+export function toolMetadata(app: ToolApp): (args: ToolMetadataArgs) => Promise<Metadata> {
+  return async function generateMetadata({ params }: ToolMetadataArgs): Promise<Metadata> {
     const { slug } = await params;
     const tool = await resolveToolPage(app, slug);
     if (!tool) return { title: "Tool not found", robots: { index: false } };

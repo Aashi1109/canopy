@@ -44,13 +44,13 @@ Paperwork is explicitly outside this plan.
 
 The platform has exactly five operation-level layouts:
 
-| Layout | Current coverage | Operation model |
-| --- | ---: | --- |
-| `SourceResultWorkbench` | 96 DevTools | Enter or load a source and inspect a result |
-| `GeneratorWorkbench` | 18 DevTools | Configure values and generate an artifact or value |
-| `FileProcessorWorkbench` | 10 Media | Upload file or files, process, and download results |
-| `CollectionWorkbench` | 10 Media | Manipulate an ordered collection of pages or files |
-| `VisualEditorWorkbench` | 10 Media | Directly manipulate a visual object and export it |
+| Layout                   | Current coverage | Operation model                                     |
+| ------------------------ | ---------------: | --------------------------------------------------- |
+| `SourceResultWorkbench`  |      96 DevTools | Enter or load a source and inspect a result         |
+| `GeneratorWorkbench`     |      18 DevTools | Configure values and generate an artifact or value  |
+| `FileProcessorWorkbench` |         10 Media | Upload file or files, process, and download results |
+| `CollectionWorkbench`    |         10 Media | Manipulate an ordered collection of pages or files  |
+| `VisualEditorWorkbench`  |         10 Media | Directly manipulate a visual object and export it   |
 
 A visual permutation, different setting list, different renderer, or different
 preview does not create a sixth layout. A new layout is justified only if a
@@ -102,11 +102,11 @@ a sixth layout.
 
 Use the smallest tier that supports the tool:
 
-| Tier | Extension | May customize | Must remain layout-owned |
-| --- | --- | --- | --- |
-| 1 | Result renderer | Output visualization only | Inputs, settings, execution, status, actions |
-| 2 | Input surface | The direct input/editor surface only | Settings, execution, status, result actions |
-| 3 | Interaction surface | The central direct-manipulation workspace | Page shell, lifecycle, settings boundary, feedback, recovery, final actions |
+| Tier | Extension           | May customize                             | Must remain layout-owned                                                    |
+| ---- | ------------------- | ----------------------------------------- | --------------------------------------------------------------------------- |
+| 1    | Result renderer     | Output visualization only                 | Inputs, settings, execution, status, actions                                |
+| 2    | Input surface       | The direct input/editor surface only      | Settings, execution, status, result actions                                 |
+| 3    | Interaction surface | The central direct-manipulation workspace | Page shell, lifecycle, settings boundary, feedback, recovery, final actions |
 
 Approved examples from the earlier plan are classified as follows:
 
@@ -236,13 +236,13 @@ truth.
 
 ### Architecture layers
 
-| Layer | Responsibility | Source of truth |
-| --- | --- | --- |
-| Control plane | Resolve enabled tool and published content | Database with code fallback |
-| Runtime registry | Load safe executable definition by stable key | `tools/<definition-key>` |
-| Layout runtime | Lifecycle, visibility, orchestration, workspace composition | Shared layout code |
-| Execution adapter | Sync, client async, worker, or server execution | Tool definition plus platform adapter |
-| Renderer registry | Render typed results | Shared registered renderers |
+| Layer             | Responsibility                                              | Source of truth                       |
+| ----------------- | ----------------------------------------------------------- | ------------------------------------- |
+| Control plane     | Resolve enabled tool and published content                  | Database with code fallback           |
+| Runtime registry  | Load safe executable definition by stable key               | `tools/<definition-key>`              |
+| Layout runtime    | Lifecycle, visibility, orchestration, workspace composition | Shared layout code                    |
+| Execution adapter | Sync, client async, worker, or server execution             | Tool definition plus platform adapter |
+| Renderer registry | Render typed results                                        | Shared registered renderers           |
 
 ### Server/client serialization boundary
 

@@ -4,21 +4,17 @@ export default {
   toolId: "devtools.csv-viewer",
   app: "devtools",
   category: "csv-data-tools",
-  keywords: [
-    "csv",
-    "viewer",
-    "table",
-    "tsv",
-    "delimited",
-    "preview",
-    "spreadsheet",
-  ],
+  keywords: ["csv", "viewer", "table", "tsv", "delimited", "preview", "spreadsheet"],
   name: "CSV Viewer",
   description: "Render delimited data as an HTML table.",
   input: {
     kind: "text",
     label: "CSV input",
-    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
+    acceptFiles: {
+      accept: ".csv,.tsv,text/csv,text/tab-separated-values",
+      maxBytes: 104_857_600,
+      maxEditableBytes: 2_000_000,
+    },
     placeholder: "name,role\nAda,Admin\nLin,Editor",
   },
   settings: {

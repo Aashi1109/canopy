@@ -69,8 +69,7 @@ export type ToolInputSpec =
     };
 
 export type ToolTrigger =
-  | { mode: "live"; debounceMs?: number }
-  | { mode: "manual"; actionLabel: string };
+  { mode: "live"; debounceMs?: number } | { mode: "manual"; actionLabel: string };
 
 export type ToolCapabilities = {
   cancel?: boolean;
@@ -147,8 +146,6 @@ export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
  * Identity function that pins the settings spec to a literal type, so
  * `SettingsOf<typeof spec.settings>` resolves to concrete value types.
  */
-export function defineTool<const S extends SettingsSpec>(
-  spec: ToolSpec<S>,
-): ToolSpec<S> {
+export function defineTool<const S extends SettingsSpec>(spec: ToolSpec<S>): ToolSpec<S> {
   return spec;
 }

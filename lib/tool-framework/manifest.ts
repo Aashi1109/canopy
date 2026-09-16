@@ -58,9 +58,7 @@ const loadRows = cache(async (): Promise<readonly ManagedToolRow[]> => {
 
   const rows = await db.select().from(managedToolsTable);
   return [...rows].sort((left, right) =>
-    left.app === right.app
-      ? left.order - right.order
-      : left.app.localeCompare(right.app),
+    left.app === right.app ? left.order - right.order : left.app.localeCompare(right.app),
   );
 });
 
@@ -91,9 +89,8 @@ async function toRecord(row: ManagedToolRow): Promise<ManifestRecord> {
   };
 }
 
-const loadRecords = cache(
-  async (): Promise<readonly ManifestRecord[]> =>
-    Promise.all((await loadRows()).map(toRecord)),
+const loadRecords = cache(async (): Promise<readonly ManifestRecord[]> =>
+  Promise.all((await loadRows()).map(toRecord)),
 );
 
 /**
@@ -102,9 +99,8 @@ const loadRecords = cache(
  * One entry per stored row, so the merge's "drop unknown toolIds" rule stays
  * intact while dropping nothing that actually exists.
  */
-export const getToolManifest = cache(
-  async (): Promise<readonly ToolManifestEntry[]> =>
-    (await loadRecords()).map((record) => record.entry),
+export const getToolManifest = cache(async (): Promise<readonly ToolManifestEntry[]> =>
+  (await loadRecords()).map((record) => record.entry),
 );
 
 /**
@@ -121,9 +117,7 @@ export const getAdminTools = cache(async (): Promise<readonly AdminTool[]> => {
     loadRecords(),
     isDatabaseConfigured() ? getToolContentRows() : Promise.resolve([]),
   ]);
-  const draftIds = new Set(
-    contentRows.filter(hasDraftToolContent).map((row) => row.toolId),
-  );
+  const draftIds = new Set(contentRows.filter(hasDraftToolContent).map((row) => row.toolId));
   const shippedById = new Map(
     records.map((record) => [record.entry.id, record.hasDefinition] as const),
   );

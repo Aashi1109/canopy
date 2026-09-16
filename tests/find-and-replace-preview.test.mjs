@@ -8,10 +8,12 @@ function replacements(preview) {
 }
 
 test("find and replace preview identifies every literal match", () => {
-  const preview = buildReplacementPreview(
-    "Deploy staging, then verify staging.",
-    { ci: false, find: "staging", regex: false, replace: "production" },
-  );
+  const preview = buildReplacementPreview("Deploy staging, then verify staging.", {
+    ci: false,
+    find: "staging",
+    regex: false,
+    replace: "production",
+  });
 
   assert.equal(preview.count, 2);
   assert.equal(preview.invalidPattern, false);
@@ -22,10 +24,12 @@ test("find and replace preview identifies every literal match", () => {
 });
 
 test("find and replace preview respects case-insensitive literal matching", () => {
-  const preview = buildReplacementPreview(
-    "Stage STAGE stage",
-    { ci: true, find: "stage", regex: false, replace: "production" },
-  );
+  const preview = buildReplacementPreview("Stage STAGE stage", {
+    ci: true,
+    find: "stage",
+    regex: false,
+    replace: "production",
+  });
 
   assert.deepEqual(
     replacements(preview).map((part) => part.found),
@@ -34,15 +38,12 @@ test("find and replace preview respects case-insensitive literal matching", () =
 });
 
 test("find and replace preview expands regular-expression capture groups", () => {
-  const preview = buildReplacementPreview(
-    "Ada Lovelace and Grace Hopper",
-    {
-      ci: false,
-      find: "(Ada|Grace) (\\w+)",
-      regex: true,
-      replace: "$2, $1",
-    },
-  );
+  const preview = buildReplacementPreview("Ada Lovelace and Grace Hopper", {
+    ci: false,
+    find: "(Ada|Grace) (\\w+)",
+    regex: true,
+    replace: "$2, $1",
+  });
 
   assert.deepEqual(
     replacements(preview).map((part) => part.replacement),
@@ -101,8 +102,5 @@ test("find and replace preview expands native replacement tokens", () => {
     replace: "$$|$&|$<name>|$<missing>|$`|$'|$2",
   });
 
-  assert.equal(
-    replacements(preview)[0].replacement,
-    "$|Ada|Ada||before | after|$2",
-  );
+  assert.equal(replacements(preview)[0].replacement, "$|Ada|Ada||before | after|$2");
 });

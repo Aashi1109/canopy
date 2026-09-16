@@ -14,7 +14,8 @@ export default {
     "code generator",
   ],
   name: "cURL to Axios",
-  description: "Convert common cURL requests to Axios and surface flags that cannot be represented.",
+  description:
+    "Convert common cURL requests to Axios and surface flags that cannot be represented.",
   input: {
     kind: "text",
     label: "cURL command",

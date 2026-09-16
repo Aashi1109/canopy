@@ -8,15 +8,7 @@ export default {
   // is frozen at first insert, so it is declared explicitly here.
   slug: "csv-duplicate-remover",
   category: "csv-data-tools",
-  keywords: [
-    "csv",
-    "duplicate",
-    "dedupe",
-    "unique",
-    "rows",
-    "distinct",
-    "clean",
-  ],
+  keywords: ["csv", "duplicate", "dedupe", "unique", "rows", "distinct", "clean"],
   name: "CSV Duplicate Row Remover",
   description: "Remove repeated CSV data rows.",
   input: {

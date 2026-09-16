@@ -48,18 +48,21 @@ import {
   Mail,
   UserCheck,
   Building,
-  Briefcase
+  Briefcase,
 } from "lucide-react";
 import { DataBridge, DataBridgeKeys, VendorProfile } from "@/lib/paperwork/shared/dataBridge";
-import {
-  createW9Request,
-  W9_REQUEST_DISCLAIMER,
-} from "@/lib/paperwork/contractorTaxRules";
+import { createW9Request, W9_REQUEST_DISCLAIMER } from "@/lib/paperwork/contractorTaxRules";
 import { w9RequestAdapter } from "@/lib/paperwork/documentAdapters";
 import AdvancedTemplateWorkspace from "../AdvancedTemplateWorkspace";
 
 const ENTITY_TYPES = ["Individual", "LLC", "Partnership", "Corporation", "Unknown"];
-const W9_STATUS_OPTIONS = ["Not Requested", "Requested", "Received", "Needs Review", "Not Applicable"];
+const W9_STATUS_OPTIONS = [
+  "Not Requested",
+  "Requested",
+  "Received",
+  "Needs Review",
+  "Not Applicable",
+];
 
 export const DEFAULT_W9_VENDORS: VendorProfile[] = [
   {
@@ -71,8 +74,8 @@ export const DEFAULT_W9_VENDORS: VendorProfile[] = [
     addressLine1: "192 Silver Maple Ave, Seattle, WA 98101",
     entityType: "LLC",
     w9Status: "Received",
-    notes: "Contract Ruby-on-Rails setup milestone developer."
-  }
+    notes: "Contract Ruby-on-Rails setup milestone developer.",
+  },
 ];
 
 export interface W9RequestDraft {
@@ -114,9 +117,7 @@ export const SAMPLE_W9_REQUEST_DRAFT: W9RequestDraft = {
   supportContact: "accounts@northstar.example",
 };
 
-export function normalizeW9RequestDraft(
-  draft: Partial<W9RequestDraft>,
-): W9RequestDraft {
+export function normalizeW9RequestDraft(draft: Partial<W9RequestDraft>): W9RequestDraft {
   const vendors = (draft.vendors || DEFAULT_W9_VENDORS).map((vendor) => ({
     id: String(vendor.id || `vendor-${Date.now()}`),
     legalName: String(vendor.legalName || ""),
@@ -136,19 +137,14 @@ export function normalizeW9RequestDraft(
     requesterEmail: String(draft.requesterEmail || ""),
     requesterAddress: String(draft.requesterAddress || ""),
     reportingYear: Number(draft.reportingYear || 2026),
-    requestDate: String(
-      draft.requestDate || DEFAULT_W9_REQUEST_DRAFT.requestDate,
-    ),
+    requestDate: String(draft.requestDate || DEFAULT_W9_REQUEST_DRAFT.requestDate),
     dueDate: String(draft.dueDate || ""),
     message: String(draft.message || DEFAULT_W9_REQUEST_DRAFT.message),
     secureSubmissionInstructions: String(
-      draft.secureSubmissionInstructions ||
-        DEFAULT_W9_REQUEST_DRAFT.secureSubmissionInstructions,
+      draft.secureSubmissionInstructions || DEFAULT_W9_REQUEST_DRAFT.secureSubmissionInstructions,
     ),
     supportContact: String(draft.supportContact || ""),
-    requestStatus: String(
-      draft.requestStatus || DEFAULT_W9_REQUEST_DRAFT.requestStatus,
-    ),
+    requestStatus: String(draft.requestStatus || DEFAULT_W9_REQUEST_DRAFT.requestStatus),
     vendors,
   };
 }
@@ -161,10 +157,7 @@ export default function W9RequestPage({
   templates?: readonly DocumentTemplate[];
 }) {
   const [draft, setDraft] = useState<W9RequestDraft>(() => {
-    const storedDraft = DataBridge.get<Partial<W9RequestDraft>>(
-      "paperworkkit.w9Request.draft",
-      {},
-    );
+    const storedDraft = DataBridge.get<Partial<W9RequestDraft>>("paperworkkit.w9Request.draft", {});
     const vendors = DataBridge.getW9Vendors();
     return normalizeW9RequestDraft({
       ...storedDraft,
@@ -175,9 +168,7 @@ export default function W9RequestPage({
   const setVendors = (nextVendors: VendorProfile[]) =>
     setDraft((current) => ({ ...current, vendors: nextVendors }));
 
-  const [selectedVendorId, setSelectedVendorId] = useState<string>(
-    () => vendors[0]?.id || "",
-  );
+  const [selectedVendorId, setSelectedVendorId] = useState<string>(() => vendors[0]?.id || "");
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -200,7 +191,7 @@ export default function W9RequestPage({
   }, [draft, vendors]);
 
   // Load details to editor upon selection
-  const activeVendor = vendors.find(v => v.id === selectedVendorId) || vendors[0];
+  const activeVendor = vendors.find((v) => v.id === selectedVendorId) || vendors[0];
 
   useEffect(() => {
     if (activeVendor) {
@@ -223,7 +214,7 @@ export default function W9RequestPage({
     }
     setErrors({});
 
-    const updated = vendors.map(v => {
+    const updated = vendors.map((v) => {
       if (v.id === selectedVendorId) {
         return {
           ...v,
@@ -234,7 +225,7 @@ export default function W9RequestPage({
           addressLine1: formAddress,
           entityType: formEntity,
           w9Status: formStatus,
-          notes: formNotes
+          notes: formNotes,
         };
       }
       return v;
@@ -255,7 +246,7 @@ export default function W9RequestPage({
       addressLine1: "",
       entityType: "Individual",
       w9Status: "Not Requested",
-      notes: ""
+      notes: "",
     };
 
     setVendors([...vendors, fresh]);
@@ -269,7 +260,7 @@ export default function W9RequestPage({
       return;
     }
     if (confirm("Are you sure you want to remove this contractor from onboarding tracks?")) {
-      const remaining = vendors.filter(v => v.id !== id);
+      const remaining = vendors.filter((v) => v.id !== id);
       setVendors(remaining);
       setSelectedVendorId(remaining[0].id);
       onTrackClick("w9_vendor_removed");
@@ -304,15 +295,17 @@ export default function W9RequestPage({
   };
 
   return (
-    <div className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="w9-onboarding-wrapper">
-
+    <div
+      className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      id="w9-onboarding-wrapper"
+    >
       <ToolPageHeader
-        actions={(
+        actions={
           <Button onClick={handleCreateNewVendor} variant="strong">
             <Plus className="size-4" />
             <span>Onboard Contractor</span>
           </Button>
-        )}
+        }
         description="Maintain compliance folders for self-employed subcontractor entities, track verification status states, and request records."
         eyebrow={<StatusBadge variant="info">IRS Form 1099 Vendor Verification</StatusBadge>}
         title="W-9 Request & Onboarding Tracker"
@@ -328,7 +321,6 @@ export default function W9RequestPage({
 
       {/* Main split panels layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
         {/* CONTRACTOR LIST SIDEBAR ROW */}
         <div className="lg:col-span-4 space-y-4">
           <Card className="space-y-3">
@@ -348,16 +340,23 @@ export default function W9RequestPage({
                     variant="ghost"
                   >
                     <span className="text-slate-950 block">{vend.legalName}</span>
-                    {vend.businessName && <Caption className="text-slate-500 block">{vend.businessName}</Caption>}
+                    {vend.businessName && (
+                      <Caption className="text-slate-500 block">{vend.businessName}</Caption>
+                    )}
                   </Button>
 
                   <div className="flex gap-2 items-center shrink-0">
-                    <StatusBadge variant={
-                      vend.w9Status === "Received" ? "success" :
-                      vend.w9Status === "Requested" ? "warning" :
-                      vend.w9Status === "Needs Review" ? "danger" :
-                      "neutral"
-                    }>
+                    <StatusBadge
+                      variant={
+                        vend.w9Status === "Received"
+                          ? "success"
+                          : vend.w9Status === "Requested"
+                            ? "warning"
+                            : vend.w9Status === "Needs Review"
+                              ? "danger"
+                              : "neutral"
+                      }
+                    >
                       {vend.w9Status}
                     </StatusBadge>
                     <Button
@@ -382,13 +381,16 @@ export default function W9RequestPage({
 
         {/* EDITOR OR COMPLIANCE EMAIL GENERATION */}
         <div className="lg:col-span-8 space-y-6">
-
           {/* Tab sub headers */}
           <Tabs
             onValueChange={(value) => setActiveTab(value as "onboarding" | "email")}
             value={activeTab}
           >
-            <TabsList className="grid w-full grid-cols-2 border border-slate-200" id="w9-tabs" variant="segmented">
+            <TabsList
+              className="grid w-full grid-cols-2 border border-slate-200"
+              id="w9-tabs"
+              variant="segmented"
+            >
               <TabsTrigger className="whitespace-normal py-1.5" value="onboarding">
                 <UserCheck className="w-4 h-4" />
                 <span>1. Formulate Profile Metadata</span>
@@ -401,14 +403,17 @@ export default function W9RequestPage({
           </Tabs>
 
           {activeTab === "onboarding" ? (
-            <form onSubmit={handleUpdateVendorDetail} className="bg-white rounded-2xl border p-6 space-y-4 shadow-sm">
-              <H3 className="text-slate-500 border-b pb-2">
-                Verification credentials formulation
-              </H3>
+            <form
+              onSubmit={handleUpdateVendorDetail}
+              className="bg-white rounded-2xl border p-6 space-y-4 shadow-sm"
+            >
+              <H3 className="text-slate-500 border-b pb-2">Verification credentials formulation</H3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="w9-legal-name">Contractor Legal Name *</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-legal-name">
+                    Contractor Legal Name *
+                  </Label>
                   <Input
                     aria-describedby={errors.formName ? undefined : "w9-legal-name-description"}
                     aria-errormessage={errors.formName ? "w9-legal-name-error" : undefined}
@@ -423,13 +428,26 @@ export default function W9RequestPage({
                     }}
                   />
                   {errors.formName ? (
-                    <FieldError className="mt-1 text-destructive" id="w9-legal-name-error" role="alert">{errors.formName}</FieldError>
+                    <FieldError
+                      className="mt-1 text-destructive"
+                      id="w9-legal-name-error"
+                      role="alert"
+                    >
+                      {errors.formName}
+                    </FieldError>
                   ) : (
-                    <FieldDescription className="text-slate-400 block mt-0.5" id="w9-legal-name-description">As registered on their IRS filing documents.</FieldDescription>
+                    <FieldDescription
+                      className="text-slate-400 block mt-0.5"
+                      id="w9-legal-name-description"
+                    >
+                      As registered on their IRS filing documents.
+                    </FieldDescription>
                   )}
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="w9-business-name">Business DBA Name (if matching)</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-business-name">
+                    Business DBA Name (if matching)
+                  </Label>
                   <Input
                     type="text"
                     id="w9-business-name"
@@ -438,7 +456,9 @@ export default function W9RequestPage({
                   />
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="w9-email">Email Coordinates</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-email">
+                    Email Coordinates
+                  </Label>
                   <Input
                     type="email"
                     id="w9-email"
@@ -447,7 +467,9 @@ export default function W9RequestPage({
                   />
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="w9-phone">Support Phone</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-phone">
+                    Support Phone
+                  </Label>
                   <Input
                     id="w9-phone"
                     type="text"
@@ -456,7 +478,9 @@ export default function W9RequestPage({
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Label className="block text-slate-400 mb-1" htmlFor="w9-address">Street address</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-address">
+                    Street address
+                  </Label>
                   <Input
                     type="text"
                     id="w9-address"
@@ -465,31 +489,41 @@ export default function W9RequestPage({
                   />
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="w9-entity">Tax Classification Entity</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-entity">
+                    Tax Classification Entity
+                  </Label>
                   <Select
                     id="w9-entity"
                     value={formEntity}
                     onChange={(e) => setFormEntity(e.target.value as any)}
                   >
-                    {ENTITY_TYPES.map(ent => (
-                      <option key={ent} value={ent}>{ent} / Sole Proprietor</option>
+                    {ENTITY_TYPES.map((ent) => (
+                      <option key={ent} value={ent}>
+                        {ent} / Sole Proprietor
+                      </option>
                     ))}
                   </Select>
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="w9-status">W-9 Request compliance status</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-status">
+                    W-9 Request compliance status
+                  </Label>
                   <Select
                     id="w9-status"
                     value={formStatus}
                     onChange={(e) => setFormStatus(e.target.value as any)}
                   >
-                    {W9_STATUS_OPTIONS.map(opt => (
-                      <option key={opt} value={opt}>{opt}</option>
+                    {W9_STATUS_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
                     ))}
                   </Select>
                 </div>
                 <div className="md:col-span-2">
-                  <Label className="block text-slate-400 mb-1" htmlFor="w9-notes">Notes / Project association description</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-notes">
+                    Notes / Project association description
+                  </Label>
                   <Input
                     id="w9-notes"
                     type="text"
@@ -500,10 +534,7 @@ export default function W9RequestPage({
               </div>
 
               <div className="pt-3 border-t text-right">
-                <Button
-                  type="submit"
-                  variant="strong"
-                >
+                <Button type="submit" variant="strong">
                   Save Profile updates
                 </Button>
               </div>
@@ -511,9 +542,7 @@ export default function W9RequestPage({
           ) : (
             <Card className="space-y-4">
               <div className="flex items-center justify-between border-b pb-2">
-                <H3 className="text-slate-500">
-                  Compliance email template generator
-                </H3>
+                <H3 className="text-slate-500">Compliance email template generator</H3>
                 <ToolActionButton
                   action="copy"
                   icon={copiedEmail ? <Check /> : undefined}
@@ -526,23 +555,31 @@ export default function W9RequestPage({
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-[10rem_1fr]">
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="w9-reporting-year">Reporting year</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-reporting-year">
+                    Reporting year
+                  </Label>
                   <Select
                     id="w9-reporting-year"
                     value={draft.reportingYear}
-                    onChange={(event) => setDraft({ ...draft, reportingYear: Number(event.target.value) })}
+                    onChange={(event) =>
+                      setDraft({ ...draft, reportingYear: Number(event.target.value) })
+                    }
                   >
                     <option value={2026}>2026 ($2,000)</option>
                     <option value={2025}>2025 ($600)</option>
                   </Select>
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="w9-secure-submission">Secure submission instructions</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-secure-submission">
+                    Secure submission instructions
+                  </Label>
                   <Textarea
                     className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2"
                     id="w9-secure-submission"
                     value={draft.secureSubmissionInstructions}
-                    onChange={(event) => setDraft({ ...draft, secureSubmissionInstructions: event.target.value })}
+                    onChange={(event) =>
+                      setDraft({ ...draft, secureSubmissionInstructions: event.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -554,25 +591,18 @@ export default function W9RequestPage({
               {/* Subject block */}
               <div className="bg-slate-50 p-3 rounded-lg border">
                 <Overline className="block text-slate-400 mb-1">Email Subject Line</Overline>
-                <P className="text-slate-900 select-all">
-                  {getEmailSubject()}
-                </P>
+                <P className="text-slate-900 select-all">{getEmailSubject()}</P>
               </div>
 
               {/* Body block */}
               <div className="bg-slate-50 p-4 rounded-lg border">
                 <Overline className="block text-slate-400 mb-1">Email Body Description</Overline>
-                <P className="whitespace-pre-line text-slate-700 select-all">
-                  {getEmailBody()}
-                </P>
+                <P className="whitespace-pre-line text-slate-700 select-all">{getEmailBody()}</P>
               </div>
             </Card>
           )}
-
         </div>
-
       </div>
-
     </div>
   );
 }

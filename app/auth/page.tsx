@@ -1,7 +1,4 @@
-import {
-  DEFAULT_AUTH_ERROR,
-  resolveConfiguredReturnTo,
-} from "./_lib/security";
+import { DEFAULT_AUTH_ERROR, resolveConfiguredReturnTo } from "./_lib/security";
 import { AuthPanel } from "./AuthPanel";
 import type { AuthMode } from "./AuthPanel";
 import { AuthScreen } from "./components/AuthChrome";
@@ -23,11 +20,7 @@ function resolveMode(value: string | undefined): AuthMode {
   return "sign-in";
 }
 
-export default async function AuthPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
+export default async function AuthPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const returnTo = resolveConfiguredReturnTo(first(params.returnTo));
   const initialError = first(params.error) ? DEFAULT_AUTH_ERROR : undefined;

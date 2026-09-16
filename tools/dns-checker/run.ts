@@ -102,12 +102,9 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     const answers = Array.isArray(data.Answer) ? data.Answer : [];
     return answers.map((answer: unknown) => {
       if (!isRecord(answer)) return `${type}\t—\tInvalid record`;
-      const ttl =
-        includeTtl && typeof answer.TTL === "number" ? String(answer.TTL) : "—";
+      const ttl = includeTtl && typeof answer.TTL === "number" ? String(answer.TTL) : "—";
       const value =
-        typeof answer.data === "string"
-          ? answer.data
-          : JSON.stringify(answer.data ?? "");
+        typeof answer.data === "string" ? answer.data : JSON.stringify(answer.data ?? "");
       return `${type}\t${ttl}\t${value}`;
     });
   });

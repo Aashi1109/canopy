@@ -211,22 +211,28 @@ function ColorField({
 
 export default function TemplateEditor({ template }: { template: InvoiceTemplate }) {
   const [, saveAction, isSaving] = useActionState(
-    (_previous: void, data: FormData) => updateTemplateAction(data), undefined,
+    (_previous: void, data: FormData) => updateTemplateAction(data),
+    undefined,
   );
   const [, publishAction, isPublishing] = useActionState(
-    (_previous: void, data: FormData) => updateAndPublishTemplateAction(data), undefined,
+    (_previous: void, data: FormData) => updateAndPublishTemplateAction(data),
+    undefined,
   );
   const [name, setName] = useState(template.name);
   const slug = template.slug;
   const [description, setDescription] = useState(template.description);
   const [category, setCategory] = useState<TemplateCategory>(template.category);
   const [layoutFamily, setLayoutFamily] = useState<LayoutFamily>(template.layoutFamily);
-  const [config, setConfig] = useState<InvoiceTemplateConfig>(() => structuredClone(template.config));
+  const [config, setConfig] = useState<InvoiceTemplateConfig>(() =>
+    structuredClone(template.config),
+  );
   const [editorMode, setEditorMode] = useAdminQueryState("editor", "fields", ["fields", "json"]);
   const [previewMode, setPreviewMode] = useAdminQueryState("preview", "screen", ["screen", "pdf"]);
   const [mobilePane, setMobilePane] = useAdminQueryState("pane", "edit", ["edit", "preview"]);
   const [activeSample, setActiveSample] = useAdminQueryState<InvoicePreviewSampleId>(
-    "sample", "service", invoicePreviewSampleOptions.map((sample) => sample.value),
+    "sample",
+    "service",
+    invoicePreviewSampleOptions.map((sample) => sample.value),
   );
   const [jsonDraft, setJsonDraft] = useState<string | null>(null);
   const [jsonMessage, setJsonMessage] = useState<{
@@ -370,16 +376,18 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
         <div className="flex min-w-0 items-center gap-2">
           <Link
             aria-label="Back to templates"
-            className={buttonVariants({ className: "size-8 rounded-lg", size: "icon", variant: "ghost" })}
+            className={buttonVariants({
+              className: "size-8 rounded-lg",
+              size: "icon",
+              variant: "ghost",
+            })}
             href="/admin/templates"
           >
             <ArrowLeft aria-hidden="true" className="size-4" />
           </Link>
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
-              <H1 className="truncate text-foreground">
-                Editing: {name || "Untitled template"}
-              </H1>
+              <H1 className="truncate text-foreground">Editing: {name || "Untitled template"}</H1>
               <StatusBadge
                 className="min-h-5 shrink-0 px-2 py-0"
                 variant={
@@ -460,7 +468,13 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
       {jsonDirty && editorMode !== "json" ? (
         <AlertBanner className="mb-4" variant="warning">
           Apply or reset your unapplied JSON changes before saving or exporting.
-          <Button className="ml-2" onClick={() => updateAdminQuery({ editor: "json", pane: null })} size="sm" type="button" variant="secondary">
+          <Button
+            className="ml-2"
+            onClick={() => updateAdminQuery({ editor: "json", pane: null })}
+            size="sm"
+            type="button"
+            variant="secondary"
+          >
             Return to JSON
           </Button>
         </AlertBanner>
@@ -474,7 +488,9 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
         <Button
           aria-pressed={mobilePane === "edit"}
           className={`h-8 ${
-            mobilePane === "edit" ? "bg-background shadow-sm hover:bg-background" : "text-muted-foreground"
+            mobilePane === "edit"
+              ? "bg-background shadow-sm hover:bg-background"
+              : "text-muted-foreground"
           }`}
           onClick={() => setMobilePane("edit")}
           variant="ghost"
@@ -514,24 +530,24 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
               className="grid w-full grid-cols-2"
               variant="segmented"
             >
-            <TabsTrigger
-              aria-controls="template-fields-panel"
-              className="h-8 w-full data-[state=active]:bg-background data-[state=active]:ring-1 data-[state=active]:ring-border"
-              id="template-fields-tab"
-              value="fields"
-            >
-              <Database aria-hidden="true" className="size-4" />
-              Property fields
-            </TabsTrigger>
-            <TabsTrigger
-              aria-controls="template-json-panel"
-              className="h-8 w-full data-[state=active]:bg-background data-[state=active]:ring-1 data-[state=active]:ring-border"
-              id="template-json-tab"
-              value="json"
-            >
-              <Code2 aria-hidden="true" className="size-4" />
-              Config JSON
-            </TabsTrigger>
+              <TabsTrigger
+                aria-controls="template-fields-panel"
+                className="h-8 w-full data-[state=active]:bg-background data-[state=active]:ring-1 data-[state=active]:ring-border"
+                id="template-fields-tab"
+                value="fields"
+              >
+                <Database aria-hidden="true" className="size-4" />
+                Property fields
+              </TabsTrigger>
+              <TabsTrigger
+                aria-controls="template-json-panel"
+                className="h-8 w-full data-[state=active]:bg-background data-[state=active]:ring-1 data-[state=active]:ring-border"
+                id="template-json-tab"
+                value="json"
+              >
+                <Code2 aria-hidden="true" className="size-4" />
+                Config JSON
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -545,10 +561,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
               role="tabpanel"
               tabIndex={0}
             >
-              <EditorSection
-                number={1}
-                title="Theme metadata"
-              >
+              <EditorSection number={1} title="Theme metadata">
                 <div className="grid gap-4">
                   <Field error={nameError} htmlFor="template-name" label="Template name" required>
                     <Input
@@ -626,7 +639,8 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                 </div>
                 {lowContrastColors.length ? (
                   <AlertBanner variant="warning">
-                    {lowContrastColors.join(" · ")}. Aim for at least 4.5:1 against the paper surface.
+                    {lowContrastColors.join(" · ")}. Aim for at least 4.5:1 against the paper
+                    surface.
                   </AlertBanner>
                 ) : null}
               </EditorSection>
@@ -640,7 +654,8 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                           ...config,
                           typography: {
                             ...config.typography,
-                            fontFamily: event.target.value as InvoiceTemplateConfig["typography"]["fontFamily"],
+                            fontFamily: event.target
+                              .value as InvoiceTemplateConfig["typography"]["fontFamily"],
                           },
                         })
                       }
@@ -660,7 +675,8 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                           ...config,
                           typography: {
                             ...config.typography,
-                            headingSize: event.target.value as InvoiceTemplateConfig["typography"]["headingSize"],
+                            headingSize: event.target
+                              .value as InvoiceTemplateConfig["typography"]["headingSize"],
                           },
                         })
                       }
@@ -679,7 +695,8 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                           ...config,
                           typography: {
                             ...config.typography,
-                            bodySize: event.target.value as InvoiceTemplateConfig["typography"]["bodySize"],
+                            bodySize: event.target
+                              .value as InvoiceTemplateConfig["typography"]["bodySize"],
                           },
                         })
                       }
@@ -697,7 +714,8 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                           ...config,
                           typography: {
                             ...config.typography,
-                            lineHeight: event.target.value as InvoiceTemplateConfig["typography"]["lineHeight"],
+                            lineHeight: event.target
+                              .value as InvoiceTemplateConfig["typography"]["lineHeight"],
                           },
                         })
                       }
@@ -724,7 +742,8 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                           },
                           pdf: {
                             ...config.pdf,
-                            pageSize: event.target.value as InvoiceTemplateConfig["pdf"]["pageSize"],
+                            pageSize: event.target
+                              .value as InvoiceTemplateConfig["pdf"]["pageSize"],
                           },
                         })
                       }
@@ -794,7 +813,8 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                           ...config,
                           header: {
                             ...config.header,
-                            logoPosition: event.target.value as InvoiceTemplateConfig["header"]["logoPosition"],
+                            logoPosition: event.target
+                              .value as InvoiceTemplateConfig["header"]["logoPosition"],
                           },
                         })
                       }
@@ -812,7 +832,8 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                           ...config,
                           header: {
                             ...config.header,
-                            logoSize: event.target.value as InvoiceTemplateConfig["header"]["logoSize"],
+                            logoSize: event.target
+                              .value as InvoiceTemplateConfig["header"]["logoSize"],
                           },
                         })
                       }
@@ -909,7 +930,8 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                             ...config,
                             watermark: {
                               ...config.watermark,
-                              position: event.target.value as InvoiceTemplateConfig["watermark"]["position"],
+                              position: event.target
+                                .value as InvoiceTemplateConfig["watermark"]["position"],
                             },
                           })
                         }
@@ -981,18 +1003,13 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                       >
                         <GripVertical aria-hidden="true" className="size-4" />
                       </Button>
-                      <Text className="text-foreground">
-                        {sectionLabels[section] ?? section}
-                      </Text>
+                      <Text className="text-foreground">{sectionLabels[section] ?? section}</Text>
                     </div>
                   )}
                 />
               </EditorSection>
 
-              <EditorSection
-                number={9}
-                title="Overriding label dictionary"
-              >
+              <EditorSection number={9} title="Overriding label dictionary">
                 <div className="grid gap-4 sm:grid-cols-2">
                   {(Object.keys(config.labels) as Array<keyof InvoiceTemplateConfig["labels"]>).map(
                     (key) => (
@@ -1025,11 +1042,12 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
               tabIndex={0}
             >
               <AlertBanner title="Advanced JSON workbench" variant="warning">
-                Apply valid configuration JSON before saving or publishing. Server validation still runs
-                on every write.
+                Apply valid configuration JSON before saving or publishing. Server validation still
+                runs on every write.
               </AlertBanner>
               <Field htmlFor="template-config-json" label="Config-only JSON">
-                <Textarea code
+                <Textarea
+                  code
                   className="min-h-[34rem] bg-slate-950 text-slate-100"
                   maxLength={200_000}
                   onChange={(event) => {
@@ -1057,10 +1075,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
         >
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-2 shadow-sm">
             <div className="flex min-w-0 flex-1 items-center gap-2">
-              <Label
-                className="shrink-0 text-muted-foreground"
-                htmlFor="preview-sample"
-              >
+              <Label className="shrink-0 text-muted-foreground" htmlFor="preview-sample">
                 Load client
               </Label>
               <Select
@@ -1142,7 +1157,6 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
           </Field>
           <Field htmlFor="duplicate-slug" label="Unique slug" required>
             <Input
-
               defaultValue={`${template.slug}-copy`}
               name="slug"
               pattern="[a-z0-9]+(?:-[a-z0-9]+)*"

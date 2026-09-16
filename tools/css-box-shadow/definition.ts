@@ -8,16 +8,7 @@ export default {
   slug: "css-box-shadow",
   app: "devtools",
   category: "color-design-tools",
-  keywords: [
-    "box-shadow",
-    "css",
-    "shadow",
-    "elevation",
-    "inset",
-    "blur",
-    "spread",
-    "generator",
-  ],
+  keywords: ["box-shadow", "css", "shadow", "elevation", "inset", "blur", "spread", "generator"],
   name: "CSS Box Shadow Generator",
   description: "Generate a CSS box-shadow declaration.",
   input: {

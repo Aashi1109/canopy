@@ -69,12 +69,8 @@ export default async function TemplatesPage({
     <div className="mx-auto w-full max-w-[84rem] pb-8">
       <header className="mb-5 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <Overline className="block text-primary">
-            Template operations
-          </Overline>
-          <H1 className="mt-2 text-foreground">
-            Templates
-          </H1>
+          <Overline className="block text-primary">Template operations</Overline>
+          <H1 className="mt-2 text-foreground">Templates</H1>
           <Muted className="mt-1 text-muted-foreground">
             Manage reusable document layouts across every document type.
           </Muted>
@@ -101,33 +97,48 @@ export default async function TemplatesPage({
         <AdminFilters
           search={{ key: "query", label: "Search templates", placeholder: "Name or slug" }}
           selects={[
-            { key: "type", label: "Document type", options: [
-              { value: "all", label: "All document types" },
-              { value: "invoice", label: "Invoice" },
-              { value: "receipt", label: "Receipt" },
-              { value: "expense-report", label: "Expense report" },
-              { value: "mileage-log", label: "Mileage log" },
-              { value: "quarterly-tax-estimator", label: "Tax estimator" },
-              { value: "w9-request", label: "W-9 request" },
-              { value: "1099-nec-tracker", label: "1099-NEC tracker" },
-            ] },
-            { key: "status", label: "Status", options: [
-              { value: "all", label: "All statuses" },
-              { value: "published", label: "Published" },
-              { value: "draft", label: "Draft" },
-              { value: "archived", label: "Archived" },
-            ] },
-            { key: "mode", label: "Editor", options: [
-              { value: "all", label: "Standard + advanced" },
-              { value: "standard", label: "Standard" },
-              { value: "advanced", label: "Advanced" },
-            ] },
+            {
+              key: "type",
+              label: "Document type",
+              options: [
+                { value: "all", label: "All document types" },
+                { value: "invoice", label: "Invoice" },
+                { value: "receipt", label: "Receipt" },
+                { value: "expense-report", label: "Expense report" },
+                { value: "mileage-log", label: "Mileage log" },
+                { value: "quarterly-tax-estimator", label: "Tax estimator" },
+                { value: "w9-request", label: "W-9 request" },
+                { value: "1099-nec-tracker", label: "1099-NEC tracker" },
+              ],
+            },
+            {
+              key: "status",
+              label: "Status",
+              options: [
+                { value: "all", label: "All statuses" },
+                { value: "published", label: "Published" },
+                { value: "draft", label: "Draft" },
+                { value: "archived", label: "Archived" },
+              ],
+            },
+            {
+              key: "mode",
+              label: "Editor",
+              options: [
+                { value: "all", label: "Standard + advanced" },
+                { value: "standard", label: "Standard" },
+                { value: "advanced", label: "Advanced" },
+              ],
+            },
           ]}
         />
       </div>
 
       {visibleTemplates.length ? (
-        <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm" aria-label="Template catalog">
+        <section
+          className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+          aria-label="Template catalog"
+        >
           <Table>
             <TableHeader>
               <TableRow className="h-11 hover:bg-transparent">
@@ -136,7 +147,9 @@ export default async function TemplatesPage({
                 <TableHead className="w-32">Editor</TableHead>
                 <TableHead className="w-32">Status</TableHead>
                 <TableHead className="w-40">Updated</TableHead>
-                <TableHead className="w-14"><span className="sr-only">Actions</span></TableHead>
+                <TableHead className="w-14">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -160,9 +173,7 @@ export default async function TemplatesPage({
                         {template.documentType.replaceAll("-", " ")}
                       </Caption>
                     </TableCell>
-                    <TableCell >
-                      {isAdvanced ? "Advanced" : "Standard"}
-                    </TableCell>
+                    <TableCell>{isAdvanced ? "Advanced" : "Standard"}</TableCell>
                     <TableCell>
                       <StatusBadge
                         className="min-h-6 px-2.5"
@@ -178,7 +189,10 @@ export default async function TemplatesPage({
                       </StatusBadge>
                     </TableCell>
                     <TableCell>
-                      <time className="text-muted-foreground" dateTime={template.updatedAt.toISOString()}>
+                      <time
+                        className="text-muted-foreground"
+                        dateTime={template.updatedAt.toISOString()}
+                      >
                         {updatedAtFormatter.format(template.updatedAt)}
                       </time>
                     </TableCell>
@@ -211,13 +225,20 @@ export default async function TemplatesPage({
               Create template
             </Link>
           }
-          description={templates.length ? "Adjust the filters to see more templates." : "Create a draft or import an existing template to get started."}
+          description={
+            templates.length
+              ? "Adjust the filters to see more templates."
+              : "Create a draft or import an existing template to get started."
+          }
           title={templates.length ? "No matching templates" : "No templates found"}
         />
       )}
 
       <div className="mt-4 flex justify-end">
-        <Link className="inline-flex items-center gap-2 text-primary hover:underline" href="/admin/templates/new/advanced">
+        <Link
+          className="inline-flex items-center gap-2 text-primary hover:underline"
+          href="/admin/templates/new/advanced"
+        >
           <FilePenLine aria-hidden="true" className="size-4" />
           Create an advanced template
         </Link>

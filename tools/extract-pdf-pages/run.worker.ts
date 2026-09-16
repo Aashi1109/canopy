@@ -26,9 +26,7 @@ import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
-  const selection = validatePdfSelection(
-    ctx.input.files.map((file) => ({ size: file.size })),
-  );
+  const selection = validatePdfSelection(ctx.input.files.map((file) => ({ size: file.size })));
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
   for (const file of ctx.input.files) await validatePdfInput(file);
 
@@ -39,13 +37,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   ctx.signal.throwIfAborted();
   const pages = resolvePageSelection(ctx.settings.pages, source.getPageCount());
   const output = await PDFDocument.create();
-  await addCopiedPagesWithProgress(
-    output,
-    source,
-    pages,
-    "Extracting PDF page",
-    ctx.progress,
-  );
+  await addCopiedPagesWithProgress(output, source, pages, "Extracting PDF page", ctx.progress);
   const extracted = await ctx.writeArtifact({
     name: createOutputFilename(input.name, "pdf", "extracted"),
     mime: "application/pdf",

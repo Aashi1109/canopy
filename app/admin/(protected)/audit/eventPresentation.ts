@@ -53,11 +53,12 @@ export function auditEventPresentation(action: string): AuditEventPresentation {
   const known = AUDIT_EVENT_PRESENTATIONS[action];
   if (known) return known;
 
-  const readable = action.trim().replace(/[._-]+/g, " ").toLowerCase();
+  const readable = action
+    .trim()
+    .replace(/[._-]+/g, " ")
+    .toLowerCase();
   return {
     icon: Activity,
-    label: readable
-      ? readable[0].toUpperCase() + readable.slice(1)
-      : "Unknown event",
+    label: readable ? readable[0].toUpperCase() + readable.slice(1) : "Unknown event",
   };
 }

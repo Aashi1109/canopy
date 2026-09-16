@@ -32,9 +32,7 @@ function highlightCode(source: string): string {
   for (const match of source.matchAll(CODE_TOKEN)) {
     const token = match[0];
     const color =
-      token.startsWith("//") ||
-      token.startsWith("/*") ||
-      token.startsWith("<!--")
+      token.startsWith("//") || token.startsWith("/*") || token.startsWith("<!--")
         ? "#6e7781"
         : /^["'`]/.test(token)
           ? "#0a8040"
@@ -51,23 +49,16 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const source = requireUtilityInput(ctx.input.text, "Markdown input");
   const { marked, Renderer } = await import("marked");
   const renderer =
-    ctx.settings.safeLinks || ctx.settings.syntaxHighlighting
-      ? new Renderer()
-      : undefined;
+    ctx.settings.safeLinks || ctx.settings.syntaxHighlighting ? new Renderer() : undefined;
   if (renderer && ctx.settings.safeLinks) {
     const renderLink = renderer.link.bind(renderer);
     renderer.link = (token) =>
-      renderLink(token).replace(
-        ">",
-        ' target="_blank" rel="noopener noreferrer">',
-      );
+      renderLink(token).replace(">", ' target="_blank" rel="noopener noreferrer">');
   }
   if (renderer && ctx.settings.syntaxHighlighting) {
     renderer.code = ({ text, lang }) => {
       const language = lang?.match(/^\S+/)?.[0];
-      const className = language
-        ? ` class="language-${escapeHtml(language)}"`
-        : "";
+      const className = language ? ` class="language-${escapeHtml(language)}"` : "";
       return `<pre><code${className}>${highlightCode(text.replace(/\n$/, ""))}\n</code></pre>\n`;
     };
   }

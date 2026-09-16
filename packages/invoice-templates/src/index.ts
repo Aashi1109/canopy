@@ -27,10 +27,7 @@ export {
   validateAdvancedTemplateForPublish,
 } from "./advancedTemplateModel.ts";
 export { seedTemplates } from "./templateSeeds.ts";
-export {
-  getFontGoogleLink,
-  resolveTemplateStyles,
-} from "./templateStyleResolver.ts";
+export { getFontGoogleLink, resolveTemplateStyles } from "./templateStyleResolver.ts";
 export {
   AdvancedDocumentTemplateSchema,
   AdvancedTemplateConfigSchema,

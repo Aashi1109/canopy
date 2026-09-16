@@ -9,27 +9,16 @@
  * bundled into the main thread.
  */
 
-import type {
-  ToolExecutionOutcome,
-  ToolRuntimeSpec,
-  ToolSettings,
-} from "@/lib/tool-runtime/types";
+import type { ToolExecutionOutcome, ToolRuntimeSpec, ToolSettings } from "@/lib/tool-runtime/types";
 
-import {
-  cleanupArtifactJobWithRetry,
-  createArtifactWriter,
-} from "./artifacts";
+import { cleanupArtifactJobWithRetry, createArtifactWriter } from "./artifacts";
 import { assertRunnableText } from "./inputGuard";
 import type { ToolResult } from "./result";
 import type { ToolRun, ToolRunInput, ToolRunProgress } from "./run";
 import { parseSettings, type SettingsOf, type SettingsSpec } from "./settings";
 import type { ToolSpec } from "./spec";
 
-export type ToolExecute = ToolRuntimeSpec<
-  ToolRunInput,
-  ToolSettings,
-  ToolResult
->["execute"];
+export type ToolExecute = ToolRuntimeSpec<ToolRunInput, ToolSettings, ToolResult>["execute"];
 
 /** ponytail: main-thread runs report no progress; the worker host carries it. */
 const NO_PROGRESS = (_progress: ToolRunProgress): void => {};

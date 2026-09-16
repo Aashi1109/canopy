@@ -55,10 +55,14 @@ void [render, result, kind];
       }),
     );
 
-    const compiled = spawnSync(process.execPath, [path.join(ROOT, "node_modules/typescript/bin/tsc"), "-p", config], {
-      cwd: ROOT,
-      encoding: "utf8",
-    });
+    const compiled = spawnSync(
+      process.execPath,
+      [path.join(ROOT, "node_modules/typescript/bin/tsc"), "-p", config],
+      {
+        cwd: ROOT,
+        encoding: "utf8",
+      },
+    );
 
     assert.equal(compiled.status, 0, compiled.stdout + compiled.stderr);
   } finally {

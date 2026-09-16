@@ -8,9 +8,7 @@ type ToolIconInput = Omit<ToolIconRow, "updatedAt">;
 
 export async function getToolIcons(): Promise<Record<string, ToolIconRow>> {
   const rows = await db.select().from(toolIconsTable);
-  return Object.fromEntries(
-    rows.map((row) => [row.toolId, { ...row }] as const),
-  );
+  return Object.fromEntries(rows.map((row) => [row.toolId, { ...row }] as const));
 }
 
 export async function getToolIcon(toolId: string): Promise<ToolIconRow | null> {

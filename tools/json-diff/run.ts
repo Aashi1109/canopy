@@ -15,14 +15,14 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 function diffJson(left: unknown, right: unknown, path = "$"): string[] {
   if (Object.is(left, right)) return [];
   if (Array.isArray(left) && Array.isArray(right)) {
-    return Array.from({ length: Math.max(left.length, right.length) }, (_, index) => index)
-      .flatMap((index) =>
+    return Array.from({ length: Math.max(left.length, right.length) }, (_, index) => index).flatMap(
+      (index) =>
         index >= left.length
           ? [`+ ${path}[${index}]: ${JSON.stringify(right[index])}`]
           : index >= right.length
             ? [`- ${path}[${index}]: ${JSON.stringify(left[index])}`]
             : diffJson(left[index], right[index], `${path}[${index}]`),
-      );
+    );
   }
   if (isRecord(left) && isRecord(right)) {
     const keys = new Set([...Object.keys(left), ...Object.keys(right)]);

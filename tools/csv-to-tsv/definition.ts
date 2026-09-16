@@ -10,7 +10,11 @@ export default {
   input: {
     kind: "text",
     label: "CSV input",
-    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
+    acceptFiles: {
+      accept: ".csv,.tsv,text/csv,text/tab-separated-values",
+      maxBytes: 104_857_600,
+      maxEditableBytes: 2_000_000,
+    },
     placeholder: "name,note\nAda,Hello",
   },
   settings: { fields: {} },
@@ -35,7 +39,7 @@ export default {
     ],
     faq: [
       {
-        q: "What happens to a value like \"Hello, world\"?",
+        q: 'What happens to a value like "Hello, world"?',
         a: "The comma was only significant to CSV, so the quotes are dropped and the value becomes a plain tab-delimited field.",
       },
       {
@@ -43,8 +47,6 @@ export default {
         a: "No. Row one is converted like every other row, which is what you want when pasting into a spreadsheet.",
       },
     ],
-    examples: [
-      { label: "Quoted field", text: 'name,note\nAda,"Hello, world"' },
-    ],
+    examples: [{ label: "Quoted field", text: 'name,note\nAda,"Hello, world"' }],
   },
 } as const satisfies ToolSpec;

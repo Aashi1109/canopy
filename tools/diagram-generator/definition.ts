@@ -59,7 +59,7 @@ export default {
       },
       {
         q: "Can I use a label containing brackets or quotes?",
-        a: "Yes, but wrap it in double quotes — `A[\"a [bracketed] label\"]` — otherwise Mermaid reads the bracket as syntax.",
+        a: 'Yes, but wrap it in double quotes — `A["a [bracketed] label"]` — otherwise Mermaid reads the bracket as syntax.',
       },
     ],
     examples: [

@@ -58,7 +58,9 @@ export function GlobalToolSearch() {
 
     const controller = new AbortController();
     setState("loading");
-    fetch(`/api/tools/search?q=${encodeURIComponent(normalizedQuery)}`, { signal: controller.signal })
+    fetch(`/api/tools/search?q=${encodeURIComponent(normalizedQuery)}`, {
+      signal: controller.signal,
+    })
       .then(async (response) => {
         if (!response.ok) throw new Error("Search request failed");
         return response.json() as Promise<{ results: SearchResult[] }>;
@@ -92,7 +94,11 @@ export function GlobalToolSearch() {
           className="flex h-[46px] w-[250px] items-center gap-2 rounded-full border border-primary bg-card px-3 text-[13px] shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_12%,transparent)]"
           role="combobox"
         >
-          {state === "loading" ? <LoaderCircle aria-hidden="true" className="size-[17px] animate-spin text-primary" /> : <Search aria-hidden="true" className="size-[17px] text-muted-foreground" />}
+          {state === "loading" ? (
+            <LoaderCircle aria-hidden="true" className="size-[17px] animate-spin text-primary" />
+          ) : (
+            <Search aria-hidden="true" className="size-[17px] text-muted-foreground" />
+          )}
           <input
             aria-autocomplete="list"
             aria-label="Search all SmartTools"
@@ -106,7 +112,20 @@ export function GlobalToolSearch() {
             ref={inputRef}
             value={query}
           />
-          {query ? <button aria-label="Clear search" className="grid size-7 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => setQuery("")} type="button"><X aria-hidden="true" className="size-[15px]" /></button> : <kbd className="grid size-6 place-items-center rounded border border-border bg-muted font-caption text-[11px] font-semibold">/</kbd>}
+          {query ? (
+            <button
+              aria-label="Clear search"
+              className="grid size-7 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+              onClick={() => setQuery("")}
+              type="button"
+            >
+              <X aria-hidden="true" className="size-[15px]" />
+            </button>
+          ) : (
+            <kbd className="grid size-6 place-items-center rounded border border-border bg-muted font-caption text-[11px] font-semibold">
+              /
+            </kbd>
+          )}
         </div>
       ) : (
         <button
@@ -118,16 +137,55 @@ export function GlobalToolSearch() {
         >
           <Search aria-hidden="true" className="size-[17px]" />
           <span>Search 150+ tools</span>
-          <kbd className="ml-auto grid size-6 place-items-center rounded border border-border bg-card font-caption text-[11px] font-semibold">/</kbd>
+          <kbd className="ml-auto grid size-6 place-items-center rounded border border-border bg-card font-caption text-[11px] font-semibold">
+            /
+          </kbd>
         </button>
       )}
 
       {isOpen && query.trim() ? (
-        <div className="absolute top-[56px] left-0 z-50 w-[360px] overflow-hidden rounded-lg border border-border bg-card shadow-[0_12px_32px_rgb(17_18_20_/_12%)]" id="global-tool-search-results" role="listbox">
-          {state === "loading" && results.length === 0 ? <div className="space-y-0"><SearchSkeleton /><SearchSkeleton /><SearchSkeleton /></div> : null}
+        <div
+          className="absolute top-[56px] left-0 z-50 w-[360px] overflow-hidden rounded-lg border border-border bg-card shadow-[0_12px_32px_rgb(17_18_20_/_12%)]"
+          id="global-tool-search-results"
+          role="listbox"
+        >
+          {state === "loading" && results.length === 0 ? (
+            <div className="space-y-0">
+              <SearchSkeleton />
+              <SearchSkeleton />
+              <SearchSkeleton />
+            </div>
+          ) : null}
           {state === "error" ? <SearchMessage title="Search is temporarily unavailable" /> : null}
-          {state === "ready" && results.length === 0 ? <SearchMessage icon={<SearchX aria-hidden="true" className="size-6" />} title={`No tools match “${debouncedQuery.trim()}”`} /> : null}
-          {results.length > 0 ? <><Muted className="border-b border-border px-3 py-2 text-muted-foreground">{results.length} {results.length === 1 ? "result" : "results"} for “{debouncedQuery.trim()}”</Muted>{results.map((result) => <a className="flex min-h-[58px] items-center gap-2.5 border-b border-border px-3 py-2 no-underline outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring" href={result.href} key={result.toolId}><ToolIcon icon={result.icon} /><span className="min-w-0"><Strong className="block truncate text-foreground">{result.name}</Strong><Small className="block truncate text-muted-foreground">{result.category}</Small></span></a>)}</> : null}
+          {state === "ready" && results.length === 0 ? (
+            <SearchMessage
+              icon={<SearchX aria-hidden="true" className="size-6" />}
+              title={`No tools match “${debouncedQuery.trim()}”`}
+            />
+          ) : null}
+          {results.length > 0 ? (
+            <>
+              <Muted className="border-b border-border px-3 py-2 text-muted-foreground">
+                {results.length} {results.length === 1 ? "result" : "results"} for “
+                {debouncedQuery.trim()}”
+              </Muted>
+              {results.map((result) => (
+                <a
+                  className="flex min-h-[58px] items-center gap-2.5 border-b border-border px-3 py-2 no-underline outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                  href={result.href}
+                  key={result.toolId}
+                >
+                  <ToolIcon icon={result.icon} />
+                  <span className="min-w-0">
+                    <Strong className="block truncate text-foreground">{result.name}</Strong>
+                    <Small className="block truncate text-muted-foreground">
+                      {result.category}
+                    </Small>
+                  </span>
+                </a>
+              ))}
+            </>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -135,13 +193,35 @@ export function GlobalToolSearch() {
 }
 
 function ToolIcon({ icon }: { icon: SearchResult["icon"] }) {
-  return <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-md bg-accent text-primary">{icon.kind === "url" ? <img alt="" className="size-full object-cover" crossOrigin="anonymous" src={icon.url} /> : <span className="size-full" dangerouslySetInnerHTML={{ __html: icon.svg }} />}</span>;
+  return (
+    <span
+      aria-hidden="true"
+      className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-md bg-accent text-primary"
+    >
+      {icon.kind === "url" ? (
+        <img alt="" className="size-full object-cover" crossOrigin="anonymous" src={icon.url} />
+      ) : (
+        <span className="size-full" dangerouslySetInnerHTML={{ __html: icon.svg }} />
+      )}
+    </span>
+  );
 }
 
 function SearchMessage({ icon, title }: { icon?: ReactNode; title: string }) {
-  return <div className="flex min-h-[178px] flex-col items-center justify-center gap-2 px-6 text-center text-[11px] text-muted-foreground">{icon ?? <SearchX aria-hidden="true" className="size-6" />}<Strong className="text-foreground">{title}</Strong><span>Check spelling or try another search.</span></div>;
+  return (
+    <div className="flex min-h-[178px] flex-col items-center justify-center gap-2 px-6 text-center text-[11px] text-muted-foreground">
+      {icon ?? <SearchX aria-hidden="true" className="size-6" />}
+      <Strong className="text-foreground">{title}</Strong>
+      <span>Check spelling or try another search.</span>
+    </div>
+  );
 }
 
 function SearchSkeleton() {
-  return <div className="grid min-h-[58px] grid-cols-[32px_1fr] items-center gap-2.5 border-b border-border px-3 py-2"><span className="size-8 animate-pulse rounded-md bg-border" /><span className="h-2 w-2/3 animate-pulse rounded bg-border" /></div>;
+  return (
+    <div className="grid min-h-[58px] grid-cols-[32px_1fr] items-center gap-2.5 border-b border-border px-3 py-2">
+      <span className="size-8 animate-pulse rounded-md bg-border" />
+      <span className="h-2 w-2/3 animate-pulse rounded bg-border" />
+    </div>
+  );
 }

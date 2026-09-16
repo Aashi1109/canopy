@@ -5,10 +5,7 @@ import type {
   DocumentFieldDefinition,
   DocumentTemplate,
 } from "@smarttools/invoice-templates";
-import {
-  containsFullTin,
-  getDocumentDefinition,
-} from "@smarttools/invoice-templates";
+import { containsFullTin, getDocumentDefinition } from "@smarttools/invoice-templates";
 import {
   Caption,
   H3,
@@ -26,13 +23,7 @@ import {
   Textarea,
 } from "@smarttools/ui";
 import { OrderableList } from "@smarttools/ui/components/OrderableList";
-import {
-  GripVertical,
-  Plus,
-  Printer,
-  RefreshCw,
-  Trash2,
-} from "lucide-react";
+import { GripVertical, Plus, Printer, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DocumentAdapter } from "@/lib/paperwork/documentAdapters";
 import {
@@ -43,8 +34,7 @@ import {
 
 export const MAX_RUNTIME_REPEATER_ROWS = 500;
 
-type FormSection =
-  AdvancedDocumentTemplate["config"]["form"]["sections"][number];
+type FormSection = AdvancedDocumentTemplate["config"]["form"]["sections"][number];
 type FormEntry = FormSection["entries"][number];
 type RepeaterEntry = Extract<FormEntry, { kind: "repeater" }>;
 type RepeaterColumn = {
@@ -85,11 +75,7 @@ const SELECT_OPTIONS: Readonly<
     "Needs Review",
     "Not Applicable",
   ],
-  "1099-nec-tracker:filingStatus": [
-    "Review required",
-    "Ready for preparer",
-    "Filed externally",
-  ],
+  "1099-nec-tracker:filingStatus": ["Review required", "Ready for preparer", "Filed externally"],
   "expense-report:expenseRows.category": [
     "Travel",
     "Lodging",
@@ -126,9 +112,7 @@ function selectedStorageKey(documentType: string) {
   return `paperworkkit.advanced-template.${documentType}.selected`;
 }
 
-function normalizeStoredCustomValues(
-  value: unknown,
-): Record<string, unknown> {
+function normalizeStoredCustomValues(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   return Object.fromEntries(
     Object.entries(value).map(([key, fieldValue]) => [
@@ -151,9 +135,7 @@ function normalizeStoredCustomValues(
 }
 
 function withoutFullTinValues(values: Record<string, unknown>) {
-  return Object.fromEntries(
-    Object.entries(values).filter(([, value]) => !containsFullTin(value)),
-  );
+  return Object.fromEntries(Object.entries(values).filter(([, value]) => !containsFullTin(value)));
 }
 
 function readStorage(key: string) {
@@ -181,13 +163,9 @@ function readStoredCustomValues(templateId: string) {
   }
 }
 
-function templateCustomSampleValues(
-  template: AdvancedDocumentTemplate,
-): Record<string, unknown> {
+function templateCustomSampleValues(template: AdvancedDocumentTemplate): Record<string, unknown> {
   const values: Record<string, unknown> = {};
-  for (const entry of template.config.form.sections.flatMap(
-    (section) => section.entries,
-  )) {
+  for (const entry of template.config.form.sections.flatMap((section) => section.entries)) {
     if (entry.kind === "builtin") continue;
     const sample = template.config.sampleData[entry.key] ?? "";
     if (entry.kind === "repeater") {
@@ -198,10 +176,7 @@ function templateCustomSampleValues(
       }
     } else if (entry.control === "checkbox") {
       values[entry.key] = sample === "true";
-    } else if (
-      sample !== "" &&
-      ["number", "currency", "percent"].includes(entry.control)
-    ) {
+    } else if (sample !== "" && ["number", "currency", "percent"].includes(entry.control)) {
       values[entry.key] = Number(sample);
     } else {
       values[entry.key] = sample;
@@ -222,28 +197,18 @@ function isEmpty(value: unknown) {
 function inputType(control: string) {
   if (control === "phone") return "tel";
   if (control === "currency" || control === "percent") return "number";
-  if (
-    control === "email" ||
-    control === "number" ||
-    control === "date" ||
-    control === "time"
-  ) {
+  if (control === "email" || control === "number" || control === "date" || control === "time") {
     return control;
   }
   return "text";
 }
 
-function fieldOptions(
-  entry: FormEntry | RepeaterColumn,
-  fallbackKey?: string,
-) {
+function fieldOptions(entry: FormEntry | RepeaterColumn, fallbackKey?: string) {
   const options =
     ("options" in entry ? entry.options : undefined) ??
     (fallbackKey ? SELECT_OPTIONS[fallbackKey] : undefined);
   return (options ?? []).map((option) =>
-    typeof option === "string"
-      ? { label: option, value: option }
-      : option,
+    typeof option === "string" ? { label: option, value: option } : option,
   );
 }
 
@@ -251,20 +216,21 @@ function fieldControl(
   entry: Exclude<FormEntry, RepeaterEntry>,
   definition?: DocumentFieldDefinition,
 ) {
-  return entry.kind === "builtin" ? definition?.control ?? "text" : entry.control;
+  return entry.kind === "builtin" ? (definition?.control ?? "text") : entry.control;
 }
 
 function rowValue(rows: unknown, minRows = 0): RepeaterRow[] {
   const list = Array.isArray(rows)
-    ? rows.filter(
-        (row): row is RepeaterRow =>
+    ? rows
+        .filter((row): row is RepeaterRow =>
           Boolean(
             row &&
-              typeof row === "object" &&
-              !Array.isArray(row) &&
-              typeof (row as { id?: unknown }).id === "string",
+            typeof row === "object" &&
+            !Array.isArray(row) &&
+            typeof (row as { id?: unknown }).id === "string",
           ),
-      ).slice(0, MAX_RUNTIME_REPEATER_ROWS)
+        )
+        .slice(0, MAX_RUNTIME_REPEATER_ROWS)
     : [];
   if (list.length >= minRows) return list;
   return [
@@ -293,30 +259,22 @@ export default function AdvancedTemplateWorkspace<TDraft>({
     [adapter.documentType, templates],
   );
   const fallbackTemplate =
-    availableTemplates.find((template) => template.isDefault) ??
-    availableTemplates[0];
+    availableTemplates.find((template) => template.isDefault) ?? availableTemplates[0];
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const selectedTemplate =
-    availableTemplates.find(
-      (template) => template.id === selectedTemplateId,
-    ) ?? fallbackTemplate;
+    availableTemplates.find((template) => template.id === selectedTemplateId) ?? fallbackTemplate;
   const [customValues, setCustomValues] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const loadedCustomTemplateRef = useRef("");
   const rejectsFullTin =
-    adapter.documentType === "w9-request" ||
-    adapter.documentType === "1099-nec-tracker";
+    adapter.documentType === "w9-request" || adapter.documentType === "1099-nec-tracker";
 
   useEffect(() => {
     if (!fallbackTemplate) return;
-    const stored = readStorage(
-      selectedStorageKey(adapter.documentType),
-    );
+    const stored = readStorage(selectedStorageKey(adapter.documentType));
     setSelectedTemplateId(
-      availableTemplates.some((template) => template.id === stored)
-        ? stored!
-        : fallbackTemplate.id,
+      availableTemplates.some((template) => template.id === stored) ? stored! : fallbackTemplate.id,
     );
   }, [adapter.documentType, availableTemplates, fallbackTemplate]);
 
@@ -324,44 +282,27 @@ export default function AdvancedTemplateWorkspace<TDraft>({
     if (!selectedTemplate) return;
     loadedCustomTemplateRef.current = selectedTemplate.id;
     const storedValues = readStoredCustomValues(selectedTemplate.id);
-    setCustomValues(
-      rejectsFullTin ? withoutFullTinValues(storedValues) : storedValues,
-    );
+    setCustomValues(rejectsFullTin ? withoutFullTinValues(storedValues) : storedValues);
     setErrors({});
-    writeStorage(
-      selectedStorageKey(adapter.documentType),
-      selectedTemplate.id,
-    );
+    writeStorage(selectedStorageKey(adapter.documentType), selectedTemplate.id);
   }, [adapter.documentType, rejectsFullTin, selectedTemplate]);
 
   useEffect(() => {
-    if (
-      !selectedTemplate ||
-      loadedCustomTemplateRef.current !== selectedTemplate.id
-    ) {
+    if (!selectedTemplate || loadedCustomTemplateRef.current !== selectedTemplate.id) {
       return;
     }
-    writeStorage(
-      customStorageKey(selectedTemplate.id),
-      JSON.stringify(customValues),
-    );
+    writeStorage(customStorageKey(selectedTemplate.id), JSON.stringify(customValues));
   }, [customValues, selectedTemplate]);
 
   const fieldDefinitions = useMemo(
     () =>
       new Map(
-        getDocumentDefinition(adapter.documentType).fields.map((field) => [
-          field.key,
-          field,
-        ]),
+        getDocumentDefinition(adapter.documentType).fields.map((field) => [field.key, field]),
       ),
     [adapter.documentType],
   );
   const pdfInputs = useMemo(
-    () =>
-      selectedTemplate
-        ? adapter.toPdfInputs(draft, selectedTemplate, customValues)
-        : null,
+    () => (selectedTemplate ? adapter.toPdfInputs(draft, selectedTemplate, customValues) : null),
     [adapter, customValues, draft, selectedTemplate],
   );
 
@@ -369,9 +310,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
   const documentData = pdfInputs;
 
   function readEntry(entry: FormEntry) {
-    return entry.kind === "builtin"
-      ? adapter.readField(draft, entry.key)
-      : customValues[entry.key];
+    return entry.kind === "builtin" ? adapter.readField(draft, entry.key) : customValues[entry.key];
   }
 
   function writeEntry(entry: FormEntry, value: unknown) {
@@ -397,51 +336,33 @@ export default function AdvancedTemplateWorkspace<TDraft>({
         if (!entry.enabled) continue;
         const value = readEntry(entry);
         if (rejectsFullTin && containsFullTin(value)) {
-          next[entry.key] =
-            "Full TIN, SSN, and EIN values are not accepted.";
+          next[entry.key] = "Full TIN, SSN, and EIN values are not accepted.";
         }
         const fieldDefinition =
           entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
         const control =
-          entry.kind === "repeater"
-            ? "repeater"
-            : fieldControl(entry, fieldDefinition);
-        if (
-          entry.required &&
-          (control === "checkbox" ? value !== true : isEmpty(value))
-        ) {
+          entry.kind === "repeater" ? "repeater" : fieldControl(entry, fieldDefinition);
+        if (entry.required && (control === "checkbox" ? value !== true : isEmpty(value))) {
           next[entry.key] = `${entry.label} is required.`;
         }
         const columns =
-          entry.kind === "repeater"
-            ? entry.columns
-            : fieldDefinition?.repeaterColumns;
+          entry.kind === "repeater" ? entry.columns : fieldDefinition?.repeaterColumns;
         const rows = columns
-          ? rowValue(
-              value,
-              entry.kind === "repeater" ? entry.minRows ?? 0 : 0,
-            )
+          ? rowValue(value, entry.kind === "repeater" ? (entry.minRows ?? 0) : 0)
           : [];
-        if (
-          entry.kind === "repeater" &&
-          rows.length < (entry.minRows ?? 0)
-        ) {
-          next[entry.key] =
-            `${entry.label} needs at least ${entry.minRows} rows.`;
+        if (entry.kind === "repeater" && rows.length < (entry.minRows ?? 0)) {
+          next[entry.key] = `${entry.label} needs at least ${entry.minRows} rows.`;
         }
         if (
           columns?.some(
             (column) =>
               column.required &&
               rows.some((row) =>
-                column.control === "checkbox"
-                  ? row[column.key] !== true
-                  : isEmpty(row[column.key]),
+                column.control === "checkbox" ? row[column.key] !== true : isEmpty(row[column.key]),
               ),
           )
         ) {
-          next[entry.key] =
-            `${entry.label} has an incomplete required column.`;
+          next[entry.key] = `${entry.label} has an incomplete required column.`;
         }
       }
     }
@@ -465,15 +386,12 @@ export default function AdvancedTemplateWorkspace<TDraft>({
           fileName: adapter.fileName(draft),
         });
       }
-      onTrackClick?.(
-        `${adapter.documentType.replaceAll("-", "_")}_pdf_${action}`,
-      );
+      onTrackClick?.(`${adapter.documentType.replaceAll("-", "_")}_pdf_${action}`);
     } catch (error) {
       setErrors((current) => ({
         ...current,
         _document:
-          error instanceof Error &&
-          error.message === "Allow pop-ups to open the PDF preview."
+          error instanceof Error && error.message === "Allow pop-ups to open the PDF preview."
             ? error.message
             : "The PDF could not be generated. Please try again.",
       }));
@@ -482,18 +400,11 @@ export default function AdvancedTemplateWorkspace<TDraft>({
     }
   }
 
-  function renderControl(
-    entry: Exclude<FormEntry, RepeaterEntry>,
-    value: unknown,
-  ) {
-    const definition =
-      entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
+  function renderControl(entry: Exclude<FormEntry, RepeaterEntry>, value: unknown) {
+    const definition = entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
     const control = fieldControl(entry, definition);
     const id = `advanced-field-${entry.key.replaceAll(".", "-")}`;
-    const options = fieldOptions(
-      entry,
-      `${adapter.documentType}:${entry.key}`,
-    );
+    const options = fieldOptions(entry, `${adapter.documentType}:${entry.key}`);
 
     if (control === "checkbox") {
       return (
@@ -540,38 +451,28 @@ export default function AdvancedTemplateWorkspace<TDraft>({
         aria-invalid={Boolean(errors[entry.key])}
         id={id}
         inputMode={
-          control === "currency" ||
-          control === "percent" ||
-          control === "number"
+          control === "currency" || control === "percent" || control === "number"
             ? "decimal"
             : undefined
         }
         onBlur={(event) => {
           if (
             event.target.value !== "" &&
-            (control === "currency" ||
-              control === "percent" ||
-              control === "number")
+            (control === "currency" || control === "percent" || control === "number")
           ) {
             writeEntry(entry, Number(event.target.value));
           }
         }}
         onChange={(event) => writeEntry(entry, event.target.value)}
         required={entry.required}
-        step={
-          control === "currency" || control === "percent" ? "0.01" : undefined
-        }
+        step={control === "currency" || control === "percent" ? "0.01" : undefined}
         type={inputType(control)}
         value={String(value ?? "")}
       />
     );
   }
 
-  function renderRepeater(
-    entry: FormEntry,
-    columns: readonly RepeaterColumn[],
-    minRows = 0,
-  ) {
+  function renderRepeater(entry: FormEntry, columns: readonly RepeaterColumn[], minRows = 0) {
     const rows = rowValue(readEntry(entry), minRows);
     const updateRows = (next: RepeaterRow[]) =>
       writeEntry(entry, next.slice(0, MAX_RUNTIME_REPEATER_ROWS));
@@ -603,9 +504,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                 <Button
                   aria-label={`Remove ${entry.label} row`}
                   disabled={rows.length <= minRows}
-                  onClick={() =>
-                    updateRows(rows.filter((item) => item.id !== row.id))
-                  }
+                  onClick={() => updateRows(rows.filter((item) => item.id !== row.id))}
                   size="icon"
                   type="button"
                   variant="ghost"
@@ -730,9 +629,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
             onClick={() => {
               onDraftChange(adapter.getSampleDraft());
               const samples = templateCustomSampleValues(selectedTemplate);
-              setCustomValues(
-                rejectsFullTin ? withoutFullTinValues(samples) : samples,
-              );
+              setCustomValues(rejectsFullTin ? withoutFullTinValues(samples) : samples);
               setErrors({});
             }}
             size="sm"
@@ -781,17 +678,10 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                 </div>
                 {entries.map((entry) => {
                   const fieldDefinition =
-                    entry.kind === "builtin"
-                      ? fieldDefinitions.get(entry.key)
-                      : undefined;
+                    entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
                   const repeaterColumns =
-                    entry.kind === "repeater"
-                      ? entry.columns
-                      : fieldDefinition?.repeaterColumns;
-                  const scalarEntry = entry as Exclude<
-                    FormEntry,
-                    RepeaterEntry
-                  >;
+                    entry.kind === "repeater" ? entry.columns : fieldDefinition?.repeaterColumns;
+                  const scalarEntry = entry as Exclude<FormEntry, RepeaterEntry>;
                   const scalarControl = repeaterColumns?.length
                     ? null
                     : fieldControl(scalarEntry, fieldDefinition);
@@ -805,9 +695,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                               {entry.required ? " *" : ""}
                             </P>
                             {entry.helpText ? (
-                              <Muted className="text-muted-foreground">
-                                {entry.helpText}
-                              </Muted>
+                              <Muted className="text-muted-foreground">{entry.helpText}</Muted>
                             ) : null}
                           </div>
                           {renderRepeater(
@@ -820,9 +708,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                         <div className="grid gap-1.5">
                           {renderControl(scalarEntry, readEntry(entry))}
                           {entry.helpText ? (
-                            <Caption className="text-muted-foreground">
-                              {entry.helpText}
-                            </Caption>
+                            <Caption className="text-muted-foreground">{entry.helpText}</Caption>
                           ) : null}
                         </div>
                       ) : (
@@ -836,17 +722,12 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                           </span>
                           {renderControl(scalarEntry, readEntry(entry))}
                           {entry.helpText ? (
-                            <Caption className="text-muted-foreground">
-                              {entry.helpText}
-                            </Caption>
+                            <Caption className="text-muted-foreground">{entry.helpText}</Caption>
                           ) : null}
                         </Label>
                       )}
                       {errors[entry.key] ? (
-                        <P
-                          className="text-destructive"
-                          role="alert"
-                        >
+                        <P className="text-destructive" role="alert">
                           {errors[entry.key]}
                         </P>
                       ) : null}

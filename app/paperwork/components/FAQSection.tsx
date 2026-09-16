@@ -3,12 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  Muted,
-  Button,
-  SectionCard,
-  SectionHeading,
-} from "@smarttools/ui";
+import { Muted, Button, SectionCard, SectionHeading } from "@smarttools/ui";
 import { ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -25,27 +20,32 @@ export default function FAQSection() {
     {
       id: "faq-1",
       question: "Is this invoice generator free?",
-      answer: "Yes. You can create, preview, print, and download professional invoice PDFs without creating an account or entering credit card details. Current free templates include a small SmartTools Paperwork attribution in the document footer.",
+      answer:
+        "Yes. You can create, preview, print, and download professional invoice PDFs without creating an account or entering credit card details. Current free templates include a small SmartTools Paperwork attribution in the document footer.",
     },
     {
       id: "faq-2",
       question: "Do I need an account to save my draft?",
-      answer: "No registration is required. Any information you fill out is saved automatically in your browser's local safety storage (localStorage). This means you can refresh the page, close your browser, or come back tomorrow without losing your progress.",
+      answer:
+        "No registration is required. Any information you fill out is saved automatically in your browser's local safety storage (localStorage). This means you can refresh the page, close your browser, or come back tomorrow without losing your progress.",
     },
     {
       id: "faq-3",
       question: "Can I customize the sales tax, currency, and discounts?",
-      answer: "Yes. The builder has custom config structures supporting flat-rate or percentage-based discounts, optional itemized sales tax applicability (applying tax only to specified taxable services/goods), and shipping/handling fees. Currency for this toolkit is set to USD by default.",
+      answer:
+        "Yes. The builder has custom config structures supporting flat-rate or percentage-based discounts, optional itemized sales tax applicability (applying tax only to specified taxable services/goods), and shipping/handling fees. Currency for this toolkit is set to USD by default.",
     },
     {
       id: "faq-4",
       question: "Is my business data secure?",
-      answer: "Invoice drafts and PDF generation stay in your browser. Some other Paperwork tools may synchronize supported records through guarded application storage APIs using a browser-generated identifier. Review the Privacy page for the current storage details.",
+      answer:
+        "Invoice drafts and PDF generation stay in your browser. Some other Paperwork tools may synchronize supported records through guarded application storage APIs using a browser-generated identifier. Review the Privacy page for the current storage details.",
     },
     {
       id: "faq-5",
       question: "Is this official tax or accounting advice?",
-      answer: "No. This tool is designed to ease business document workflows for independent contractors, freelancers, and small business owners in the US. Please consult with a Certified Public Accountant (CPA) or legal counsel for professional accounting or tax regulations.",
+      answer:
+        "No. This tool is designed to ease business document workflows for independent contractors, freelancers, and small business owners in the US. Please consult with a Certified Public Accountant (CPA) or legal counsel for professional accounting or tax regulations.",
     },
   ];
 
@@ -81,7 +81,10 @@ export default function FAQSection() {
                 {isOpen ? (
                   <ChevronUp aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
                 ) : (
-                  <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+                  <ChevronDown
+                    aria-hidden="true"
+                    className="size-4 shrink-0 text-muted-foreground"
+                  />
                 )}
               </Button>
               {isOpen && (

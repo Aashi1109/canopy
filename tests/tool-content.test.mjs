@@ -179,10 +179,7 @@ test("a content doc that is not an object falls back without throwing", () => {
   // A null doc is "unset", not invalid: it falls back and stays silent.
   const spec = makeSpec({ toolId: "devtools.fixture-nulldoc" });
   const warnings = countWarnings(() => {
-    const resolved = resolveContent(
-      spec,
-      makeRow({ toolId: spec.toolId, contentDoc: null }),
-    );
+    const resolved = resolveContent(spec, makeRow({ toolId: spec.toolId, contentDoc: null }));
     assert.deepEqual(resolved.content, SPEC_CONTENT);
   });
   assert.equal(warnings, 0);
@@ -192,40 +189,27 @@ test("an unknown category falls back to the spec category", () => {
   const spec = makeSpec();
 
   for (const category of ["not-a-real-category", "", "__proto__"]) {
-    assert.equal(
-      resolveContent(spec, makeRow({ category })).category,
-      "text-tools",
-    );
+    assert.equal(resolveContent(spec, makeRow({ category })).category, "text-tools");
   }
 
-  assert.equal(
-    resolveContent(spec, makeRow({ category: "json-tools" })).category,
-    "json-tools",
-  );
+  assert.equal(resolveContent(spec, makeRow({ category: "json-tools" })).category, "json-tools");
 });
 
 test("an empty keywords array is a fallback, not an override", () => {
   const spec = makeSpec();
 
-  assert.deepEqual(resolveContent(spec, makeRow({ keywords: [] })).keywords, [
+  assert.deepEqual(resolveContent(spec, makeRow({ keywords: [] })).keywords, ["spec-keyword"]);
+  assert.deepEqual(resolveContent(spec, makeRow({ keywords: ["  ", ""] })).keywords, [
     "spec-keyword",
   ]);
-  assert.deepEqual(
-    resolveContent(spec, makeRow({ keywords: ["  ", ""] })).keywords,
-    ["spec-keyword"],
-  );
-  assert.deepEqual(
-    resolveContent(spec, makeRow({ keywords: [" row-keyword "] })).keywords,
-    ["row-keyword"],
-  );
+  assert.deepEqual(resolveContent(spec, makeRow({ keywords: [" row-keyword "] })).keywords, [
+    "row-keyword",
+  ]);
 });
 
 test("blank stored text is not an override", () => {
   const spec = makeSpec();
-  const resolved = resolveContent(
-    spec,
-    makeRow({ seoTitle: "   ", seoDescription: "" }),
-  );
+  const resolved = resolveContent(spec, makeRow({ seoTitle: "   ", seoDescription: "" }));
 
   assert.equal(resolved.seoTitle, "Spec SEO Title");
   assert.equal(resolved.seoDescription, "Spec description.");
@@ -243,10 +227,7 @@ test("resolveContentMap keeps spec order and drops unknown toolIds", () => {
 
   const map = resolveContentMap(specs, rows);
 
-  assert.deepEqual(
-    [...map.keys()],
-    ["devtools.fixture-alpha", "devtools.fixture-beta"],
-  );
+  assert.deepEqual([...map.keys()], ["devtools.fixture-alpha", "devtools.fixture-beta"]);
   assert.equal(map.get("devtools.fixture-alpha").seoTitle, "Spec SEO Title");
   assert.equal(map.get("devtools.fixture-beta").seoTitle, "Row Beta Title");
   assert.equal(map.has("devtools.fixture-ghost"), false);

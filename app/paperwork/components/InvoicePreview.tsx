@@ -88,7 +88,9 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
                   <p className="text-xs text-slate-500 font-medium">{data.business.contactName}</p>
                 )}
                 {hasBizTaxId && (
-                  <p className="text-xs text-slate-500 font-mono">Tax ID/EIN: {data.business.taxId}</p>
+                  <p className="text-xs text-slate-500 font-mono">
+                    Tax ID/EIN: {data.business.taxId}
+                  </p>
                 )}
               </div>
             </div>
@@ -101,9 +103,24 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
                 #{data.invoice.invoiceNumber || "INV-YYYY-001"}
               </p>
               <div className="text-xs text-slate-500">
-                <p>Issue Date: <span className="font-semibold text-slate-800">{data.invoice.invoiceDate || "N/A"}</span></p>
-                <p>Due Date: <span className="font-semibold text-slate-800">{data.invoice.dueDate || "N/A"}</span></p>
-                <p>Terms: <span className="font-semibold text-slate-800">{data.invoice.paymentTerms || "N/A"}</span></p>
+                <p>
+                  Issue Date:{" "}
+                  <span className="font-semibold text-slate-800">
+                    {data.invoice.invoiceDate || "N/A"}
+                  </span>
+                </p>
+                <p>
+                  Due Date:{" "}
+                  <span className="font-semibold text-slate-800">
+                    {data.invoice.dueDate || "N/A"}
+                  </span>
+                </p>
+                <p>
+                  Terms:{" "}
+                  <span className="font-semibold text-slate-800">
+                    {data.invoice.paymentTerms || "N/A"}
+                  </span>
+                </p>
               </div>
             </div>
           </div>
@@ -127,7 +144,8 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
               )}
               {(data.business.city || data.business.state || data.business.zipCode) && (
                 <p className="text-xs text-slate-600">
-                  {data.business.city || ""}, {data.business.state || ""} {data.business.zipCode || ""}
+                  {data.business.city || ""}, {data.business.state || ""}{" "}
+                  {data.business.zipCode || ""}
                 </p>
               )}
               <p className="text-xs text-slate-600">{data.business.country || "United States"}</p>
@@ -175,14 +193,20 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
             <div className="grid grid-cols-2 gap-4 bg-slate-50 border border-slate-200/50 p-3 rounded-xl text-xs">
               {hasProjectName && (
                 <div>
-                  <span className="text-slate-400 font-bold block text-[11px] uppercase tracking-wider">Project</span>
+                  <span className="text-slate-400 font-bold block text-[11px] uppercase tracking-wider">
+                    Project
+                  </span>
                   <span className="font-bold text-slate-800">{data.invoice.projectName}</span>
                 </div>
               )}
               {hasPoNumber && (
                 <div>
-                  <span className="text-slate-400 font-bold block text-[11px] uppercase tracking-wider">P.O. Number</span>
-                  <span className="font-bold text-slate-800 font-mono">{data.invoice.poNumber}</span>
+                  <span className="text-slate-400 font-bold block text-[11px] uppercase tracking-wider">
+                    P.O. Number
+                  </span>
+                  <span className="font-bold text-slate-800 font-mono">
+                    {data.invoice.poNumber}
+                  </span>
                 </div>
               )}
             </div>
@@ -222,11 +246,14 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
                   )}
                   {(data.business.city || data.business.state || data.business.zipCode) && (
                     <p>
-                      {data.business.city || ""}, {data.business.state || ""} {data.business.zipCode || ""}
+                      {data.business.city || ""}, {data.business.state || ""}{" "}
+                      {data.business.zipCode || ""}
                     </p>
                   )}
                   <p>{data.business.country || "United States"}</p>
-                  {hasBizTaxId && <p className="font-mono text-slate-500">Tax EIN: {data.business.taxId}</p>}
+                  {hasBizTaxId && (
+                    <p className="font-mono text-slate-500">Tax EIN: {data.business.taxId}</p>
+                  )}
                   {(hasBizEmail || hasBizPhone || hasBizWeb) && (
                     <p className="text-slate-500">
                       {[data.business.email, data.business.phone, data.business.website]
@@ -243,12 +270,44 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
                 INVOICE
               </h2>
               <div className="text-xs space-y-1 text-slate-600 pt-2">
-                <p>Invoice # <span className="font-mono font-bold text-slate-900">{data.invoice.invoiceNumber || "INV-YYYY-001"}</span></p>
-                <p>Date of Issue: <span className="font-semibold text-slate-900">{data.invoice.invoiceDate || "N/A"}</span></p>
-                <p>Date Due: <span className="font-semibold text-slate-900">{data.invoice.dueDate || "N/A"}</span></p>
-                <p>Payment Terms: <span className="font-semibold text-slate-900">{data.invoice.paymentTerms || "N/A"}</span></p>
-                {hasPoNumber && <p>P.O. Number: <span className="font-mono font-semibold text-slate-900">{data.invoice.poNumber}</span></p>}
-                {hasProjectName && <p>Project Name: <span className="font-semibold text-slate-900">{data.invoice.projectName}</span></p>}
+                <p>
+                  Invoice #{" "}
+                  <span className="font-mono font-bold text-slate-900">
+                    {data.invoice.invoiceNumber || "INV-YYYY-001"}
+                  </span>
+                </p>
+                <p>
+                  Date of Issue:{" "}
+                  <span className="font-semibold text-slate-900">
+                    {data.invoice.invoiceDate || "N/A"}
+                  </span>
+                </p>
+                <p>
+                  Date Due:{" "}
+                  <span className="font-semibold text-slate-900">
+                    {data.invoice.dueDate || "N/A"}
+                  </span>
+                </p>
+                <p>
+                  Payment Terms:{" "}
+                  <span className="font-semibold text-slate-900">
+                    {data.invoice.paymentTerms || "N/A"}
+                  </span>
+                </p>
+                {hasPoNumber && (
+                  <p>
+                    P.O. Number:{" "}
+                    <span className="font-mono font-semibold text-slate-900">
+                      {data.invoice.poNumber}
+                    </span>
+                  </p>
+                )}
+                {hasProjectName && (
+                  <p>
+                    Project Name:{" "}
+                    <span className="font-semibold text-slate-900">{data.invoice.projectName}</span>
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -326,9 +385,7 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
                         </span>
                       )}
                     </td>
-                    <td className="py-3 text-center font-mono align-top text-slate-600">
-                      {qty}
-                    </td>
+                    <td className="py-3 text-center font-mono align-top text-slate-600">{qty}</td>
                     <td className="py-3 text-right font-mono align-top text-slate-600">
                       {formatCurrency(price, "USD")}
                     </td>
@@ -352,7 +409,10 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
       {/* ==============================================
           COMMON SEGMENT: FINANCIAL SUMMARY ROW
           ============================================== */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4 border-t border-slate-100" id="preview-financials-summary">
+      <div
+        className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4 border-t border-slate-100"
+        id="preview-financials-summary"
+      >
         {/* Safe text instructions on Left column */}
         <div className="md:col-span-7 space-y-4">
           {data.payment.instructions && (
@@ -369,7 +429,8 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
 
           {getMethodLabels() && (
             <div className="text-[11px] text-slate-500">
-              <span className="font-semibold text-slate-700">Supported Methods:</span> {getMethodLabels()}
+              <span className="font-semibold text-slate-700">Supported Methods:</span>{" "}
+              {getMethodLabels()}
             </div>
           )}
         </div>
@@ -378,7 +439,9 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
         <div className="md:col-span-5 space-y-2 text-xs text-slate-600 font-medium">
           <div className="flex justify-between font-medium">
             <span>Subtotal:</span>
-            <span className="font-mono text-slate-900 text-right">{formatCurrency(totals.subtotal, "USD")}</span>
+            <span className="font-mono text-slate-900 text-right">
+              {formatCurrency(totals.subtotal, "USD")}
+            </span>
           </div>
 
           {totals.discountAmount > 0 && (
@@ -390,21 +453,29 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
                   : ""}
                 :
               </span>
-              <span className="font-mono text-right">- {formatCurrency(totals.discountAmount, "USD")}</span>
+              <span className="font-mono text-right">
+                - {formatCurrency(totals.discountAmount, "USD")}
+              </span>
             </div>
           )}
 
           {totals.taxAmount > 0 && (
             <div className="flex justify-between">
-              <span className="truncate">{data.totalsConfig.taxLabel || "Sales Tax"} ({data.totalsConfig.taxRate}%):</span>
-              <span className="font-mono text-slate-900 text-right">{formatCurrency(totals.taxAmount, "USD")}</span>
+              <span className="truncate">
+                {data.totalsConfig.taxLabel || "Sales Tax"} ({data.totalsConfig.taxRate}%):
+              </span>
+              <span className="font-mono text-slate-900 text-right">
+                {formatCurrency(totals.taxAmount, "USD")}
+              </span>
             </div>
           )}
 
           {totals.shippingFee > 0 && (
             <div className="flex justify-between">
               <span>Shipping &amp; Handling:</span>
-              <span className="font-mono text-slate-900 text-right">{formatCurrency(totals.shippingFee, "USD")}</span>
+              <span className="font-mono text-slate-900 text-right">
+                {formatCurrency(totals.shippingFee, "USD")}
+              </span>
             </div>
           )}
 
@@ -416,7 +487,9 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
           {totals.amountPaid > 0 && (
             <div className="flex justify-between text-slate-500">
               <span>Amount Paid (Partial):</span>
-              <span className="font-mono text-right">- {formatCurrency(totals.amountPaid, "USD")}</span>
+              <span className="font-mono text-right">
+                - {formatCurrency(totals.amountPaid, "USD")}
+              </span>
             </div>
           )}
 
@@ -433,7 +506,10 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
       {/* ==============================================
           COMMON SEGMENT: BUSINESS FOOTNOTES (Notes, Terms, Footers)
           ============================================== */}
-      <div className="space-y-4 pt-4 border-t border-slate-100 text-[11px] leading-relaxed text-slate-500" id="preview-terms-block">
+      <div
+        className="space-y-4 pt-4 border-t border-slate-100 text-[11px] leading-relaxed text-slate-500"
+        id="preview-terms-block"
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {hasNotes && (
             <div className="space-y-1">
@@ -473,7 +549,14 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
 
         {/* Visual brand footnotes */}
         <div className="pt-6 text-center text-[10px] text-slate-400 border-t border-slate-100/60 flex justify-between items-center print:hidden">
-          <span>Printed on {new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span>
+          <span>
+            Printed on{" "}
+            {new Date().toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })}
+          </span>
           <span className="font-semibold tracking-wide uppercase text-slate-400">
             Powered by SmartTools Paperwork
           </span>

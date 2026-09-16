@@ -15,7 +15,10 @@ export function splitPageGroups(
       throw new ToolError("invalid-interval", "Pages per file must be a positive whole number.");
     }
     return Array.from({ length: Math.ceil(pageCount / interval) }, (_, index) =>
-      Array.from({ length: Math.min(interval, pageCount - index * interval) }, (_, offset) => index * interval + offset + 1),
+      Array.from(
+        { length: Math.min(interval, pageCount - index * interval) },
+        (_, offset) => index * interval + offset + 1,
+      ),
     );
   }
   return settings.ranges.split(";").map((range) => {

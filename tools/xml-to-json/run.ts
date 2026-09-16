@@ -30,7 +30,11 @@ function xmlToJson(input: string): unknown {
       const name = token.slice(2, -1).trim();
       const closed = stack.pop();
       if (!closed || closed.name !== name) {
-        throw new ToolError("xml-unbalanced", "XML closing tags do not match.", "Check that every opening tag has a matching closing tag in the same order.");
+        throw new ToolError(
+          "xml-unbalanced",
+          "XML closing tags do not match.",
+          "Check that every opening tag has a matching closing tag in the same order.",
+        );
       }
       continue;
     }
@@ -41,9 +45,10 @@ function xmlToJson(input: string): unknown {
       const name = body.match(/^[^\s/>]+/)?.[0];
       if (!name) throw new ToolError("xml-invalid-tag", "XML contains an invalid tag.");
       const attributes = Object.fromEntries(
-        [...body.matchAll(/([^\s=]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)].map(
-          (match) => [match[1], match[2] ?? match[3] ?? ""],
-        ),
+        [...body.matchAll(/([^\s=]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)].map((match) => [
+          match[1],
+          match[2] ?? match[3] ?? "",
+        ]),
       );
       const node: SimpleXmlNode = { name, attributes, children: [], text: "" };
       if (stack.length) stack.at(-1)!.children.push(node);
@@ -55,7 +60,11 @@ function xmlToJson(input: string): unknown {
     if (stack.length) stack.at(-1)!.text += token;
   }
   if (!root || stack.length) {
-    throw new ToolError("xml-incomplete", "XML is incomplete or empty.", "Paste the whole document, including its closing root tag.");
+    throw new ToolError(
+      "xml-incomplete",
+      "XML is incomplete or empty.",
+      "Paste the whole document, including its closing root tag.",
+    );
   }
 
   function convert(node: SimpleXmlNode): unknown {
@@ -67,7 +76,8 @@ function xmlToJson(input: string): unknown {
     for (const child of node.children) {
       const childValue = convert(child);
       if (!(child.name in result)) result[child.name] = childValue;
-      else if (Array.isArray(result[child.name])) (result[child.name] as unknown[]).push(childValue);
+      else if (Array.isArray(result[child.name]))
+        (result[child.name] as unknown[]).push(childValue);
       else result[child.name] = [result[child.name], childValue];
     }
     if (text) result["#text"] = text;

@@ -27,7 +27,9 @@ function browser(t, path = "/admin/tools") {
   let index = 0;
   const calls = [];
   globalThis.window = {
-    get location() { return entries[index]; },
+    get location() {
+      return entries[index];
+    },
     history: {
       pushState(state, title, path) {
         calls.push("push");
@@ -38,8 +40,12 @@ function browser(t, path = "/admin/tools") {
         calls.push("replace");
         entries[index] = new URL(path, entries[index]);
       },
-      back() { index = Math.max(0, index - 1); },
-      forward() { index = Math.min(entries.length - 1, index + 1); },
+      back() {
+        index = Math.max(0, index - 1);
+      },
+      forward() {
+        index = Math.min(entries.length - 1, index + 1);
+      },
     },
   };
   t.after(() => {
@@ -74,11 +80,17 @@ test("admin links restore allowed filters and fall back for missing or invalid v
 });
 
 test("batched query updates preserve unspecified params and hash through history navigation", (t) => {
-  const calls = browser(t, "/admin/tools?app=media&category=PDF&q=compress&visibility=hidden&ref=shared#catalog");
+  const calls = browser(
+    t,
+    "/admin/tools?app=media&category=PDF&q=compress&visibility=hidden&ref=shared#catalog",
+  );
   updateAdminQuery({ app: "devtools", category: null });
   assert.deepEqual(calls, ["push"]);
   assert.deepEqual(Object.fromEntries(window.location.searchParams), {
-    app: "devtools", q: "compress", visibility: "hidden", ref: "shared",
+    app: "devtools",
+    q: "compress",
+    visibility: "hidden",
+    ref: "shared",
   });
   assert.equal(window.location.pathname, "/admin/tools");
   assert.equal(window.location.hash, "#catalog");
@@ -110,7 +122,10 @@ test("search replaces history, filters push history, and defaults remove their k
 });
 
 test("reset clears catalog state together and unchanged state creates no history entry", (t) => {
-  const calls = browser(t, "/admin/tools?q=PDF&app=media&category=PDF&visibility=draft&ref=shared#catalog");
+  const calls = browser(
+    t,
+    "/admin/tools?q=PDF&app=media&category=PDF&visibility=draft&ref=shared#catalog",
+  );
   const reset = { q: null, app: null, category: null, visibility: null };
   updateAdminQuery(reset);
   assert.equal(window.location.href, "https://smarttools.test/admin/tools?ref=shared#catalog");

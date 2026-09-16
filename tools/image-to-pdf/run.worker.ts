@@ -59,9 +59,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "Remove images or create more than one PDF.",
     );
   }
-  const selection = validateImageSelection(
-    ctx.input.files.map((file) => ({ size: file.size })),
-  );
+  const selection = validateImageSelection(ctx.input.files.map((file) => ({ size: file.size })));
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
 
   const items: readonly Pick<ToolRunItem, "id" | "rotation">[] =
@@ -89,24 +87,20 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     const hasExifOrientation =
       decoded.kind === "jpeg" && readExifOrientation(new Uint8Array(sourceBytes)) !== 1;
     const flattenOriginalPng =
-      decoded.kind === "png" &&
-      !quality.reencode &&
-      !rotation &&
-      hasTransparentPixels(image.data);
-    const embeddedBytes =
-      flattenOriginalPng
-        ? await encodeImage(
-            flattenImage(image, ctx.settings.background),
-            "png",
-            1,
-            ctx.settings.background,
-          )
-        : quality.reencode ||
-            rotation ||
-            hasExifOrientation ||
-            !["jpeg", "png"].includes(decoded.kind)
-          ? await encodeImage(image, "jpeg", quality.quality, ctx.settings.background)
-          : sourceBytes;
+      decoded.kind === "png" && !quality.reencode && !rotation && hasTransparentPixels(image.data);
+    const embeddedBytes = flattenOriginalPng
+      ? await encodeImage(
+          flattenImage(image, ctx.settings.background),
+          "png",
+          1,
+          ctx.settings.background,
+        )
+      : quality.reencode ||
+          rotation ||
+          hasExifOrientation ||
+          !["jpeg", "png"].includes(decoded.kind)
+        ? await encodeImage(image, "jpeg", quality.quality, ctx.settings.background)
+        : sourceBytes;
     const embedded =
       !quality.reencode && !rotation && !hasExifOrientation && decoded.kind === "png"
         ? await pdf.embedPng(embeddedBytes)
@@ -170,7 +164,7 @@ function pdfPageSize(
   let height = page === "a4" ? 841.89 : page === "letter" ? 792 : imageHeight * 0.75 + margin * 2;
   const desired =
     orientation === "auto" ? (imageWidth > imageHeight ? "landscape" : "portrait") : orientation;
-  if ((desired === "landscape") !== (width > height)) [width, height] = [height, width];
+  if ((desired === "landscape") !== width > height) [width, height] = [height, width];
   return { width, height };
 }
 

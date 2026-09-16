@@ -1,19 +1,10 @@
 import { BoundedUtf8Preview } from "./bounded-text-preview.ts";
 
-export type StreamingJsonInput =
-  | string
-  | Blob
-  | ReadableStream<Uint8Array>;
+export type StreamingJsonInput = string | Blob | ReadableStream<Uint8Array>;
 
 export type StreamingJsonMode = "validate" | "format" | "minify";
 export type StreamingJsonIndentation = 2 | 4 | "tab";
-export type StreamingJsonRootType =
-  | "array"
-  | "boolean"
-  | "null"
-  | "number"
-  | "object"
-  | "string";
+export type StreamingJsonRootType = "array" | "boolean" | "null" | "number" | "object" | "string";
 
 export type StreamingJsonError = {
   kind: "empty" | "encoding" | "syntax";
@@ -259,9 +250,7 @@ class IncrementalJsonParser {
     }
     if (this.frames.length > 0) {
       const frame = this.frames.at(-1);
-      this.fail(
-        `JSON ended before the ${frame?.kind ?? "container"} was closed.`,
-      );
+      this.fail(`JSON ended before the ${frame?.kind ?? "container"} was closed.`);
     }
     if (!this.rootComplete) this.fail("JSON ended before a value was complete.");
   }
@@ -302,7 +291,9 @@ class IncrementalJsonParser {
     switch (character) {
       case "{":
         if (this.frames.length >= this.maxDepth) {
-          this.fail(`JSON nesting exceeds the ${this.maxDepth.toLocaleString("en-US")} level limit.`);
+          this.fail(
+            `JSON nesting exceeds the ${this.maxDepth.toLocaleString("en-US")} level limit.`,
+          );
         }
         this.beginValue();
         if (this.rootType === null && this.frames.length === 0) this.rootType = "object";
@@ -317,7 +308,9 @@ class IncrementalJsonParser {
         return;
       case "[":
         if (this.frames.length >= this.maxDepth) {
-          this.fail(`JSON nesting exceeds the ${this.maxDepth.toLocaleString("en-US")} level limit.`);
+          this.fail(
+            `JSON nesting exceeds the ${this.maxDepth.toLocaleString("en-US")} level limit.`,
+          );
         }
         this.beginValue();
         if (this.rootType === null && this.frames.length === 0) this.rootType = "array";
@@ -390,8 +383,7 @@ class IncrementalJsonParser {
   private beginString() {
     const frame = this.frames.at(-1);
     const isKey =
-      frame?.kind === "object" &&
-      (frame.state === "first-key-or-end" || frame.state === "key");
+      frame?.kind === "object" && (frame.state === "first-key-or-end" || frame.state === "key");
 
     if (isKey) {
       if (frame.state === "first-key-or-end") this.emitItemIndent();
@@ -686,10 +678,7 @@ class IncrementalJsonParser {
     this.previousWasCarriageReturn = false;
   }
 
-  private fail(
-    message: string,
-    kind: StreamingJsonError["kind"] = "syntax",
-  ): never {
+  private fail(message: string, kind: StreamingJsonError["kind"] = "syntax"): never {
     throw new JsonStreamParseError({
       kind,
       message,
@@ -714,10 +703,7 @@ function isHexDigit(value: string) {
 
 function isCompleteNumberState(state: NumberState) {
   return (
-    state === "zero" ||
-    state === "integer" ||
-    state === "fraction" ||
-    state === "exponent-digits"
+    state === "zero" || state === "integer" || state === "fraction" || state === "exponent-digits"
   );
 }
 
@@ -834,11 +820,7 @@ export async function processStreamingJson(
   options: StreamingJsonOptions,
 ): Promise<StreamingJsonResult> {
   throwIfAborted(options.signal);
-  if (
-    options.mode !== "validate" &&
-    options.mode !== "format" &&
-    options.mode !== "minify"
-  ) {
+  if (options.mode !== "validate" && options.mode !== "format" && options.mode !== "minify") {
     throw new TypeError(`Unsupported streaming JSON mode: ${String(options.mode)}.`);
   }
   if (options.onOutput && options.writable) {
@@ -872,13 +854,7 @@ export async function processStreamingJson(
     options.writable,
   );
   const rawPreview = mode === "validate" ? new BoundedUtf8Preview(previewLimit) : undefined;
-  const parser = new IncrementalJsonParser(
-    mode,
-    indentation,
-    output,
-    options.signal,
-    maxDepth,
-  );
+  const parser = new IncrementalJsonParser(mode, indentation, output, options.signal, maxDepth);
 
   try {
     let inputBytes: number;

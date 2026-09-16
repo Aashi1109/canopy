@@ -52,7 +52,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
   // Auto-expand optional sections if they contain validation errors on submit
   React.useEffect(() => {
     const hasBizOptionalErrors = Object.keys(errors).some(
-      (k) => k.startsWith("business.") && k !== "business.name"
+      (k) => k.startsWith("business.") && k !== "business.name",
     );
     if (hasBizOptionalErrors) {
       setShowOptionalBiz(true);
@@ -61,7 +61,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
   React.useEffect(() => {
     const hasClientOptionalErrors = Object.keys(errors).some(
-      (k) => k.startsWith("client.") && k !== "client.name"
+      (k) => k.startsWith("client.") && k !== "client.name",
     );
     if (hasClientOptionalErrors) {
       setShowOptionalClient(true);
@@ -88,8 +88,10 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
     // Automatically update due date when terms or date is changed
     if (fields.paymentTerms || fields.invoiceDate) {
-      const terms = fields.paymentTerms !== undefined ? fields.paymentTerms : data.invoice.paymentTerms;
-      const baseDateStr = fields.invoiceDate !== undefined ? fields.invoiceDate : data.invoice.invoiceDate;
+      const terms =
+        fields.paymentTerms !== undefined ? fields.paymentTerms : data.invoice.paymentTerms;
+      const baseDateStr =
+        fields.invoiceDate !== undefined ? fields.invoiceDate : data.invoice.invoiceDate;
 
       if (terms !== "Custom" && baseDateStr) {
         let daysOffset = 0;
@@ -146,7 +148,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
     if (!file) return;
 
     if (file.size > 1.5 * 1024 * 1024) {
-      alert("Please upload a logo image smaller than 1.5MB to ensure safe offline browser state storage.");
+      alert(
+        "Please upload a logo image smaller than 1.5MB to ensure safe offline browser state storage.",
+      );
       return;
     }
 
@@ -253,9 +257,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
       <SectionCard id="biz-editor-section">
         <CardHeader className="gap-0">
           <H3 className="flex items-center gap-2">
-              <Building aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-              Your Business (Seller)
-            </H3>
+            <Building aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
+            Your Business (Seller)
+          </H3>
         </CardHeader>
 
         <div className="space-y-4">
@@ -280,7 +284,10 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
               </div>
             ) : (
               <Label className="group flex h-16 w-24 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-input bg-background transition-colors hover:border-primary">
-                <Upload aria-hidden="true" className="size-5 text-muted-foreground group-hover:text-primary" />
+                <Upload
+                  aria-hidden="true"
+                  className="size-5 text-muted-foreground group-hover:text-primary"
+                />
                 <Caption className="mt-1 text-muted-foreground">Add Logo</Caption>
                 <input
                   type="file"
@@ -293,7 +300,8 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
             <div className="space-y-1 text-center sm:text-left">
               <Caption className="text-foreground">Company Logo Accent</Caption>
               <Muted className="max-w-sm text-muted-foreground">
-                Optional. Recommended: horizontal layout (.png, .jpg), max file size 1.5MB. Renders client-side for absolute security.
+                Optional. Recommended: horizontal layout (.png, .jpg), max file size 1.5MB. Renders
+                client-side for absolute security.
               </Muted>
             </div>
           </div>
@@ -397,11 +405,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   />
                 </Field>
 
-                <Field
-                  error={errors["business.email"]}
-                  htmlFor="biz-email"
-                  label="Email Address"
-                >
+                <Field error={errors["business.email"]} htmlFor="biz-email" label="Email Address">
                   <Input
                     aria-invalid={Boolean(errors["business.email"])}
                     id="biz-email"
@@ -455,9 +459,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
       <SectionCard id="client-editor-section">
         <CardHeader className="gap-0">
           <H3 className="flex items-center gap-2">
-              <User aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-              Bill To (Client)
-            </H3>
+            <User aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
+            Bill To (Client)
+          </H3>
         </CardHeader>
 
         <div className="space-y-4">
@@ -480,11 +484,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
             </Field>
 
             {/* Address fields */}
-            <Field
-              className="md:col-span-2"
-              htmlFor="client-addr-1"
-              label="Client Address Line 1"
-            >
+            <Field className="md:col-span-2" htmlFor="client-addr-1" label="Client Address Line 1">
               <Input
                 id="client-addr-1"
                 type="text"
@@ -553,11 +553,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   />
                 </Field>
 
-                <Field
-                  error={errors["client.email"]}
-                  htmlFor="client-email"
-                  label="Client Email"
-                >
+                <Field error={errors["client.email"]} htmlFor="client-email" label="Client Email">
                   <Input
                     aria-invalid={Boolean(errors["client.email"])}
                     id="client-email"
@@ -597,9 +593,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
       <SectionCard id="meta-editor-section">
         <CardHeader className="gap-0">
           <H3 className="flex items-center gap-2">
-              <Calendar aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-              Invoice Metadata
-            </H3>
+            <Calendar aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
+            Invoice Metadata
+          </H3>
         </CardHeader>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -699,36 +695,53 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
       <SectionCard id="items-editor-section">
         <CardHeader className="gap-0">
           <H3 className="flex items-center gap-2">
-              <Layers aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-              Line Items Table
-            </H3>
-          <CardAction><Button onClick={addLineItem} size="sm" type="button" variant="secondary">
+            <Layers aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
+            Line Items Table
+          </H3>
+          <CardAction>
+            <Button onClick={addLineItem} size="sm" type="button" variant="secondary">
               <Plus aria-hidden="true" className="size-4" />
               Add row
-            </Button></CardAction>
+            </Button>
+          </CardAction>
         </CardHeader>
 
-        {errors["lineItems"] && (
-          <AlertBanner variant="error">
-            {errors["lineItems"]}
-          </AlertBanner>
-        )}
+        {errors["lineItems"] && <AlertBanner variant="error">{errors["lineItems"]}</AlertBanner>}
 
         {/* Dynamic Items list */}
         <div className="space-y-4">
           {/* Header titles for large viewports */}
           <div className="hidden grid-cols-12 gap-3 border-b border-border pb-2 text-muted-foreground md:grid">
-            <div className="col-span-6"><Overline>Description <span className="text-destructive">*</span></Overline></div>
-            <div className="col-span-2 text-center"><Overline>Qty <span className="text-destructive">*</span></Overline></div>
-            <div className="col-span-2 text-center"><Overline>Unit Price ($) <span className="text-destructive">*</span></Overline></div>
-            <div className="col-span-1 text-center"><Overline>Tax</Overline></div>
-            <div className="col-span-1 text-right"><Overline>Actions</Overline></div>
+            <div className="col-span-6">
+              <Overline>
+                Description <span className="text-destructive">*</span>
+              </Overline>
+            </div>
+            <div className="col-span-2 text-center">
+              <Overline>
+                Qty <span className="text-destructive">*</span>
+              </Overline>
+            </div>
+            <div className="col-span-2 text-center">
+              <Overline>
+                Unit Price ($) <span className="text-destructive">*</span>
+              </Overline>
+            </div>
+            <div className="col-span-1 text-center">
+              <Overline>Tax</Overline>
+            </div>
+            <div className="col-span-1 text-right">
+              <Overline>Actions</Overline>
+            </div>
           </div>
 
           <div className="space-y-4 md:space-y-2">
             {data.lineItems.map((item, index) => {
               const amount = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0);
-              const hasErr = errors[`lineItems[${index}].description`] || errors[`lineItems[${index}].quantity`] || errors[`lineItems[${index}].unitPrice`];
+              const hasErr =
+                errors[`lineItems[${index}].description`] ||
+                errors[`lineItems[${index}].quantity`] ||
+                errors[`lineItems[${index}].unitPrice`];
               const descriptionId = `line-item-${item.id}-description`;
               const quantityId = `line-item-${item.id}-quantity`;
               const unitPriceId = `line-item-${item.id}-unit-price`;
@@ -743,11 +756,18 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                 >
                   {/* Item Description */}
                   <div className="col-span-1 md:col-span-6">
-                    <Label className="block pb-1 text-muted-foreground md:sr-only" htmlFor={descriptionId}>
+                    <Label
+                      className="block pb-1 text-muted-foreground md:sr-only"
+                      htmlFor={descriptionId}
+                    >
                       Description <span className="text-destructive">*</span>
                     </Label>
                     <Input
-                      aria-errormessage={errors[`lineItems[${index}].description`] ? `${descriptionId}-error` : undefined}
+                      aria-errormessage={
+                        errors[`lineItems[${index}].description`]
+                          ? `${descriptionId}-error`
+                          : undefined
+                      }
                       aria-invalid={Boolean(errors[`lineItems[${index}].description`])}
                       className="h-9"
                       id={descriptionId}
@@ -757,7 +777,11 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                       onChange={(e) => handleLineItemChange(item.id, "description", e.target.value)}
                     />
                     {errors[`lineItems[${index}].description`] && (
-                      <Caption className="mt-1 block text-destructive" id={`${descriptionId}-error`} role="alert">
+                      <Caption
+                        className="mt-1 block text-destructive"
+                        id={`${descriptionId}-error`}
+                        role="alert"
+                      >
                         {errors[`lineItems[${index}].description`]}
                       </Caption>
                     )}
@@ -765,11 +789,16 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
                   {/* Quantity */}
                   <div className="col-span-1 md:col-span-2">
-                    <Label className="block pb-1 text-muted-foreground md:sr-only" htmlFor={quantityId}>
+                    <Label
+                      className="block pb-1 text-muted-foreground md:sr-only"
+                      htmlFor={quantityId}
+                    >
                       Quantity <span className="text-destructive">*</span>
                     </Label>
                     <Input
-                      aria-errormessage={errors[`lineItems[${index}].quantity`] ? `${quantityId}-error` : undefined}
+                      aria-errormessage={
+                        errors[`lineItems[${index}].quantity`] ? `${quantityId}-error` : undefined
+                      }
                       aria-invalid={Boolean(errors[`lineItems[${index}].quantity`])}
                       className="h-9 text-center"
                       id={quantityId}
@@ -777,11 +806,17 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                       min="0"
                       step="any"
                       placeholder="1"
-                      value={item.quantity === null || item.quantity === undefined ? "" : item.quantity}
+                      value={
+                        item.quantity === null || item.quantity === undefined ? "" : item.quantity
+                      }
                       onChange={(e) => handleLineItemChange(item.id, "quantity", e.target.value)}
                     />
                     {errors[`lineItems[${index}].quantity`] && (
-                      <Caption className="mt-1 block text-destructive" id={`${quantityId}-error`} role="alert">
+                      <Caption
+                        className="mt-1 block text-destructive"
+                        id={`${quantityId}-error`}
+                        role="alert"
+                      >
                         {errors[`lineItems[${index}].quantity`]}
                       </Caption>
                     )}
@@ -789,11 +824,16 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
                   {/* Unit price */}
                   <div className="col-span-1 md:col-span-2">
-                    <Label className="block pb-1 text-muted-foreground md:sr-only" htmlFor={unitPriceId}>
+                    <Label
+                      className="block pb-1 text-muted-foreground md:sr-only"
+                      htmlFor={unitPriceId}
+                    >
                       Unit Price ($) <span className="text-destructive">*</span>
                     </Label>
                     <Input
-                      aria-errormessage={errors[`lineItems[${index}].unitPrice`] ? `${unitPriceId}-error` : undefined}
+                      aria-errormessage={
+                        errors[`lineItems[${index}].unitPrice`] ? `${unitPriceId}-error` : undefined
+                      }
                       aria-invalid={Boolean(errors[`lineItems[${index}].unitPrice`])}
                       className="h-9 text-right"
                       id={unitPriceId}
@@ -801,11 +841,19 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                       min="0"
                       step="any"
                       placeholder="0.00"
-                      value={item.unitPrice === null || item.unitPrice === undefined ? "" : item.unitPrice}
+                      value={
+                        item.unitPrice === null || item.unitPrice === undefined
+                          ? ""
+                          : item.unitPrice
+                      }
                       onChange={(e) => handleLineItemChange(item.id, "unitPrice", e.target.value)}
                     />
                     {errors[`lineItems[${index}].unitPrice`] && (
-                      <Caption className="mt-1 block text-destructive" id={`${unitPriceId}-error`} role="alert">
+                      <Caption
+                        className="mt-1 block text-destructive"
+                        id={`${unitPriceId}-error`}
+                        role="alert"
+                      >
                         {errors[`lineItems[${index}].unitPrice`]}
                       </Caption>
                     )}
@@ -817,7 +865,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                     <CheckboxControl
                       aria-label={`Taxable line item ${index + 1}`}
                       checked={item.taxable || false}
-                      onCheckedChange={(checked) => handleLineItemChange(item.id, "taxable", checked === true)}
+                      onCheckedChange={(checked) =>
+                        handleLineItemChange(item.id, "taxable", checked === true)
+                      }
                       id={`line-item-taxable-${item.id}`}
                       className="size-4 rounded border-input accent-primary outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     />
@@ -857,9 +907,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
       <SectionCard id="discounts-tax-section">
         <CardHeader className="gap-0">
           <H3 className="flex items-center gap-2">
-              <FileSpreadsheet aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-              Discounts, Taxes &amp; Fees
-            </H3>
+            <FileSpreadsheet aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
+            Discounts, Taxes &amp; Fees
+          </H3>
         </CardHeader>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -888,8 +938,17 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                 min="0"
                 step="any"
                 placeholder="0"
-                value={data.totalsConfig.discountValue === null || data.totalsConfig.discountValue === undefined ? "" : data.totalsConfig.discountValue}
-                onChange={(e) => updateTotalsConfig({ discountValue: e.target.value === "" ? 0 : Number(e.target.value) })}
+                value={
+                  data.totalsConfig.discountValue === null ||
+                  data.totalsConfig.discountValue === undefined
+                    ? ""
+                    : data.totalsConfig.discountValue
+                }
+                onChange={(e) =>
+                  updateTotalsConfig({
+                    discountValue: e.target.value === "" ? 0 : Number(e.target.value),
+                  })
+                }
               />
             </Field>
           )}
@@ -913,8 +972,14 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
               max="100"
               step="any"
               placeholder="0.00"
-              value={data.totalsConfig.taxRate === null || data.totalsConfig.taxRate === undefined ? "" : data.totalsConfig.taxRate}
-              onChange={(e) => updateTotalsConfig({ taxRate: e.target.value === "" ? 0 : Number(e.target.value) })}
+              value={
+                data.totalsConfig.taxRate === null || data.totalsConfig.taxRate === undefined
+                  ? ""
+                  : data.totalsConfig.taxRate
+              }
+              onChange={(e) =>
+                updateTotalsConfig({ taxRate: e.target.value === "" ? 0 : Number(e.target.value) })
+              }
             />
           </Field>
 
@@ -926,23 +991,37 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
               min="0"
               step="any"
               placeholder="0.00"
-              value={data.totalsConfig.shippingFee === null || data.totalsConfig.shippingFee === undefined ? "" : data.totalsConfig.shippingFee}
-              onChange={(e) => updateTotalsConfig({ shippingFee: e.target.value === "" ? 0 : Number(e.target.value) })}
+              value={
+                data.totalsConfig.shippingFee === null ||
+                data.totalsConfig.shippingFee === undefined
+                  ? ""
+                  : data.totalsConfig.shippingFee
+              }
+              onChange={(e) =>
+                updateTotalsConfig({
+                  shippingFee: e.target.value === "" ? 0 : Number(e.target.value),
+                })
+              }
             />
           </Field>
 
-          <Field
-            htmlFor="amt-paid"
-            label="Amount Paid already ($) (for Partial Payments)"
-          >
+          <Field htmlFor="amt-paid" label="Amount Paid already ($) (for Partial Payments)">
             <Input
               id="amt-paid"
               type="number"
               min="0"
               step="any"
               placeholder="0.00"
-              value={data.totalsConfig.amountPaid === null || data.totalsConfig.amountPaid === undefined ? "" : data.totalsConfig.amountPaid}
-              onChange={(e) => updateTotalsConfig({ amountPaid: e.target.value === "" ? 0 : Number(e.target.value) })}
+              value={
+                data.totalsConfig.amountPaid === null || data.totalsConfig.amountPaid === undefined
+                  ? ""
+                  : data.totalsConfig.amountPaid
+              }
+              onChange={(e) =>
+                updateTotalsConfig({
+                  amountPaid: e.target.value === "" ? 0 : Number(e.target.value),
+                })
+              }
             />
           </Field>
         </div>
@@ -952,9 +1031,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
       <SectionCard id="payments-editor-section">
         <CardHeader className="gap-0">
           <H3 className="flex items-center gap-2">
-              <CheckCircle2 aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-              Payment Methods &amp; Instructions
-            </H3>
+            <CheckCircle2 aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
+            Payment Methods &amp; Instructions
+          </H3>
         </CardHeader>
 
         <div className="space-y-4">
@@ -1009,9 +1088,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
       <SectionCard id="notes-terms-section">
         <CardHeader className="gap-0">
           <H3 className="flex items-center gap-2">
-              <PlusCircle aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-              Terms, Notes &amp; Late Fees
-            </H3>
+            <PlusCircle aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
+            Terms, Notes &amp; Late Fees
+          </H3>
         </CardHeader>
 
         <div className="space-y-4">

@@ -20,10 +20,7 @@ import {
   validatePdfSelection,
 } from "../../lib/tool-framework/media/validation.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
-import {
-  ToolError,
-  type ToolRun,
-} from "../../lib/tool-framework/run.ts";
+import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
@@ -56,10 +53,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         x + width > page.getWidth() ||
         y + height > page.getHeight()
       ) {
-        throw new ToolError(
-          "invalid-crop",
-          "The crop box must stay within every selected page.",
-        );
+        throw new ToolError("invalid-crop", "The crop box must stay within every selected page.");
       }
       page.setCropBox(x, y, width, height);
     },

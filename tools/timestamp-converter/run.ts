@@ -43,10 +43,7 @@ function inputDate(input: string, unit: Settings["inputUnit"]): Date {
   const value = Number(input);
   const date = new Date(unit === "seconds" ? value * 1000 : value);
   if (Number.isNaN(date.getTime())) {
-    throw new ToolError(
-      "invalid-date",
-      "Timestamp or date is not a valid date or timestamp.",
-    );
+    throw new ToolError("invalid-date", "Timestamp or date is not a valid date or timestamp.");
   }
   return date;
 }
@@ -54,8 +51,7 @@ function inputDate(input: string, unit: Settings["inputUnit"]): Date {
 function relativeTime(date: Date): string {
   const seconds = (date.getTime() - Date.now()) / 1000;
   const [unit, secondsPerUnit] =
-    RELATIVE_UNITS.find(([, size]) => Math.abs(seconds) >= size) ??
-    RELATIVE_UNITS.at(-1)!;
+    RELATIVE_UNITS.find(([, size]) => Math.abs(seconds) >= size) ?? RELATIVE_UNITS.at(-1)!;
   return new Intl.RelativeTimeFormat(DISPLAY_LOCALE, { numeric: "always" }).format(
     Math.round(seconds / secondsPerUnit),
     unit,
@@ -103,7 +99,9 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const issues: NonNullable<ToolResult["issues"]>[number][] = [];
   for (const input of inputs) {
     try {
-      items.push(`${input.input} → ${convertTimestamp(input.input, ctx.settings).replaceAll("\n", " · ")}`);
+      items.push(
+        `${input.input} → ${convertTimestamp(input.input, ctx.settings).replaceAll("\n", " · ")}`,
+      );
     } catch (error) {
       issues.push({
         line: input.line,

@@ -41,12 +41,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <ProductHeader
-        actions={
-          <AccountNavigation
-            returnTo="/paperwork"
-            user={session?.user ?? null}
-          />
-        }
+        actions={<AccountNavigation returnTo="/paperwork" user={session?.user ?? null} />}
         href="/paperwork"
         name="Paperwork"
       />

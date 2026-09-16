@@ -20,9 +20,7 @@ function hexToBytes(value: string): Uint8Array {
       "Use an even number of hex digits; whitespace, colons, hyphens, underscores and 0x prefixes are stripped for you.",
     );
   }
-  return Uint8Array.from(normalized.match(/.{2}/g)!, (byte) =>
-    Number.parseInt(byte, 16),
-  );
+  return Uint8Array.from(normalized.match(/.{2}/g)!, (byte) => Number.parseInt(byte, 16));
 }
 
 export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => {

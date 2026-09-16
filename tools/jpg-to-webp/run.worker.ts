@@ -28,9 +28,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 const ALLOWED: readonly DecodableImageKind[] = ["jpeg"];
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
-  const selection = validateImageSelection(
-    ctx.input.files.map((file) => ({ size: file.size })),
-  );
+  const selection = validateImageSelection(ctx.input.files.map((file) => ({ size: file.size })));
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
 
   const quality = ctx.settings.quality / 100;

@@ -32,14 +32,8 @@ import {
 } from "../../app/paperwork/components/w9/W9RequestPage";
 import { calculateInvoiceTotals } from "./utils/calculations";
 import { validateInvoiceData } from "./utils/invoiceValidation";
-import {
-  getInitialBlankInvoice,
-  getSampleInvoice,
-} from "./utils/sampleData";
-import {
-  getInvoiceTemplateInputs,
-  getReceiptTemplateInputs,
-} from "./advancedTemplateData";
+import { getInitialBlankInvoice, getSampleInvoice } from "./utils/sampleData";
+import { getInvoiceTemplateInputs, getReceiptTemplateInputs } from "./advancedTemplateData";
 import {
   calculateReceiptTotals,
   DEFAULT_RECEIPT_DATA,
@@ -73,10 +67,7 @@ export interface DocumentAdapter<TDraft> {
   getSampleDraft(): TDraft;
   readField(draft: TDraft, key: string): unknown;
   writeField(draft: TDraft, key: string, value: unknown): TDraft;
-  validate(
-    draft: TDraft,
-    form: TemplateFormConfig,
-  ): Record<string, string>;
+  validate(draft: TDraft, form: TemplateFormConfig): Record<string, string>;
   toPdfInputs(
     draft: TDraft,
     template: AdvancedDocumentTemplate,
@@ -124,10 +115,7 @@ function documentValues<TDraft>(
   readField: (draft: TDraft, key: string) => unknown,
 ) {
   return Object.fromEntries(
-    getDocumentDefinition(documentType).fields.map(({ key }) => [
-      key,
-      readField(draft, key),
-    ]),
+    getDocumentDefinition(documentType).fields.map(({ key }) => [key, readField(draft, key)]),
   );
 }
 
@@ -143,11 +131,7 @@ function readPath(value: unknown, path: string): unknown {
     );
 }
 
-function writePath<TDraft>(
-  draft: TDraft,
-  path: string,
-  value: unknown,
-): TDraft {
+function writePath<TDraft>(draft: TDraft, path: string, value: unknown): TDraft {
   const next = structuredClone(draft) as Record<string, unknown>;
   const parts = path.split(".");
   let target = next;
@@ -226,11 +210,7 @@ function readInvoiceField(draft: InvoiceData, key: string): unknown {
   return computed[key];
 }
 
-function writeInvoiceField(
-  draft: InvoiceData,
-  key: string,
-  value: unknown,
-): InvoiceData {
+function writeInvoiceField(draft: InvoiceData, key: string, value: unknown): InvoiceData {
   if (key === "businessAddress") {
     return writePath(draft, "business.addressLine1", value);
   }
@@ -244,14 +224,10 @@ function writeInvoiceField(
         const item = row as Record<string, unknown>;
         return {
           id:
-            typeof item.id === "string"
-              ? item.id
-              : `invoice-item-${index}-${crypto.randomUUID()}`,
+            typeof item.id === "string" ? item.id : `invoice-item-${index}-${crypto.randomUUID()}`,
           description: String(item.description ?? ""),
-          quantity:
-            item.quantity === "" ? ("" as unknown as number) : Number(item.quantity ?? 0),
-          unitPrice:
-            item.rate === "" ? ("" as unknown as number) : Number(item.rate ?? 0),
+          quantity: item.quantity === "" ? ("" as unknown as number) : Number(item.quantity ?? 0),
+          unitPrice: item.rate === "" ? ("" as unknown as number) : Number(item.rate ?? 0),
           taxable: Boolean(item.taxable),
         };
       }),
@@ -294,16 +270,10 @@ export const invoiceAdapter: DocumentAdapter<InvoiceData> = {
       shippingFee: draft.totalsConfig.shippingFee,
       amountPaid: draft.totalsConfig.amountPaid,
     };
-    return mergeTemplateInputs(
-      template.config.sampleData,
-      builtInValues,
-      customValues,
-    );
+    return mergeTemplateInputs(template.config.sampleData, builtInValues, customValues);
   },
   fileName(draft) {
-    const number = draft.invoice.invoiceNumber
-      .trim()
-      .replace(/[^a-z0-9_-]+/gi, "-");
+    const number = draft.invoice.invoiceNumber.trim().replace(/[^a-z0-9_-]+/gi, "-");
     return `invoice-${number || "draft"}.pdf`;
   },
 };
@@ -347,11 +317,7 @@ function readReceiptField(draft: ReceiptData, key: string): unknown {
   return computed[key];
 }
 
-function writeReceiptField(
-  draft: ReceiptData,
-  key: string,
-  value: unknown,
-): ReceiptData {
+function writeReceiptField(draft: ReceiptData, key: string, value: unknown): ReceiptData {
   if (key === "businessAddress") {
     return writePath(draft, "business.addressLine1", value);
   }
@@ -362,16 +328,11 @@ function writeReceiptField(
         const item = row as Record<string, unknown>;
         return {
           id:
-            typeof item.id === "string"
-              ? item.id
-              : `receipt-item-${index}-${crypto.randomUUID()}`,
+            typeof item.id === "string" ? item.id : `receipt-item-${index}-${crypto.randomUUID()}`,
           description: String(item.description ?? ""),
-          quantity:
-            item.quantity === "" ? ("" as unknown as number) : Number(item.quantity ?? 0),
+          quantity: item.quantity === "" ? ("" as unknown as number) : Number(item.quantity ?? 0),
           unitPrice:
-            item.unitPrice === ""
-              ? ("" as unknown as number)
-              : Number(item.unitPrice ?? 0),
+            item.unitPrice === "" ? ("" as unknown as number) : Number(item.unitPrice ?? 0),
           taxable: Boolean(item.taxable),
         };
       }),
@@ -413,16 +374,10 @@ export const receiptAdapter: DocumentAdapter<ReceiptData> = {
       grossTotal: totals.total,
       netPaid: Math.max(0, totals.total - draft.amountRefunded),
     };
-    return mergeTemplateInputs(
-      template.config.sampleData,
-      builtInValues,
-      customValues,
-    );
+    return mergeTemplateInputs(template.config.sampleData, builtInValues, customValues);
   },
   fileName(draft) {
-    const number = draft.receiptNumber
-      .trim()
-      .replace(/[^a-z0-9_-]+/gi, "-");
+    const number = draft.receiptNumber.trim().replace(/[^a-z0-9_-]+/gi, "-");
     return `receipt-${number || "draft"}.pdf`;
   },
 };
@@ -446,10 +401,7 @@ const EXPENSE_PATHS: Record<string, string> = {
   approverName: "approverName",
 };
 
-function readExpenseField(
-  draft: ExpenseReportDraft,
-  key: string,
-): unknown {
+function readExpenseField(draft: ExpenseReportDraft, key: string): unknown {
   if (key === "expenseRows") {
     return draft.expenses.map((row) => ({
       ...row,
@@ -459,11 +411,7 @@ function readExpenseField(
   if (key === "mileageRows") return draft.mileageRows;
   const path = EXPENSE_PATHS[key];
   if (path) return readPath(draft, path);
-  const totals = calculateExpenseTotals(
-    draft.expenses,
-    draft.mileageRows,
-    draft.advanceReceived,
-  );
+  const totals = calculateExpenseTotals(draft.expenses, draft.mileageRows, draft.advanceReceived);
   const computed: Record<string, unknown> = {
     categoryTotals: totals.categoryTotals,
     taxTotal: totals.taxAmount,
@@ -489,10 +437,7 @@ function writeExpenseField(
         const item = row as Record<string, unknown>;
         const previous = draft.expenses[index];
         return {
-          id:
-            typeof item.id === "string"
-              ? item.id
-              : `expense-${crypto.randomUUID()}`,
+          id: typeof item.id === "string" ? item.id : `expense-${crypto.randomUUID()}`,
           date: String(item.date ?? ""),
           merchant: String(item.merchant ?? ""),
           category: String(item.category ?? ""),
@@ -515,10 +460,7 @@ function writeExpenseField(
       mileageRows: value.map((row) => {
         const item = row as Record<string, unknown>;
         return {
-          id:
-            typeof item.id === "string"
-              ? item.id
-              : `mileage-${crypto.randomUUID()}`,
+          id: typeof item.id === "string" ? item.id : `mileage-${crypto.randomUUID()}`,
           date: String(item.date ?? ""),
           purpose: String(item.purpose ?? ""),
           startLocation: String(item.startLocation ?? ""),
@@ -538,10 +480,7 @@ export const expenseReportAdapter: DocumentAdapter<ExpenseReportDraft> = {
   documentType: "expense-report",
   getInitialDraft() {
     return normalizeExpenseReportDraft(
-      DataBridge.get(
-        DataBridgeKeys.EXPENSE_DRAFT,
-        structuredClone(DEFAULT_EXPENSE_REPORT_DRAFT),
-      ),
+      DataBridge.get(DataBridgeKeys.EXPENSE_DRAFT, structuredClone(DEFAULT_EXPENSE_REPORT_DRAFT)),
     );
   },
   getSampleDraft() {
@@ -590,9 +529,7 @@ function readMileageField(draft: MileageLogDraft, key: string): unknown {
   if (path) return readPath(draft, path);
   const summary = calculateMileageSummary(draft);
   const computed: Record<string, unknown> = {
-    effectiveRates: [
-      ...new Set(summary.trips.map(({ rate }) => `${rate * 100}¢`)),
-    ].join(", "),
+    effectiveRates: [...new Set(summary.trips.map(({ rate }) => `${rate * 100}¢`))].join(", "),
     totalMiles: summary.totalMiles,
     parkingAndTolls: summary.parkingAndTolls,
     standardMileageDeduction: summary.standardMileageDeduction,
@@ -602,11 +539,7 @@ function readMileageField(draft: MileageLogDraft, key: string): unknown {
   return computed[key];
 }
 
-function writeMileageField(
-  draft: MileageLogDraft,
-  key: string,
-  value: unknown,
-): MileageLogDraft {
+function writeMileageField(draft: MileageLogDraft, key: string, value: unknown): MileageLogDraft {
   if (key === "trips" && Array.isArray(value)) {
     return normalizeMileageLogDraft({
       ...draft,
@@ -614,10 +547,7 @@ function writeMileageField(
         const item = row as Record<string, unknown>;
         const previous = draft.trips[index];
         return {
-          id:
-            typeof item.id === "string"
-              ? item.id
-              : `trip-${crypto.randomUUID()}`,
+          id: typeof item.id === "string" ? item.id : `trip-${crypto.randomUUID()}`,
           date: String(item.date ?? ""),
           purpose: String(item.purpose ?? ""),
           startLocation: String(item.startLocation ?? ""),
@@ -639,10 +569,7 @@ function writeMileageField(
       fuelRecords: value.map((row) => {
         const item = row as Record<string, unknown>;
         return {
-          id:
-            typeof item.id === "string"
-              ? item.id
-              : `fuel-${crypto.randomUUID()}`,
+          id: typeof item.id === "string" ? item.id : `fuel-${crypto.randomUUID()}`,
           date: String(item.date ?? ""),
           gallons: numberInput(item.gallons),
           cost: numberInput(item.cost),
@@ -660,10 +587,7 @@ export const mileageLogAdapter: DocumentAdapter<MileageLogDraft> = {
   documentType: "mileage-log",
   getInitialDraft() {
     return normalizeMileageLogDraft(
-      DataBridge.get(
-        DataBridgeKeys.MILEAGE_DRAFT,
-        structuredClone(DEFAULT_MILEAGE_DRAFT),
-      ),
+      DataBridge.get(DataBridgeKeys.MILEAGE_DRAFT, structuredClone(DEFAULT_MILEAGE_DRAFT)),
     );
   },
   getSampleDraft() {
@@ -711,10 +635,7 @@ const QUARTERLY_TAX_PATHS: Record<string, string> = {
   assumptions: "assumptions",
 };
 
-function readQuarterlyTaxField(
-  draft: QuarterlyTaxDraft,
-  key: string,
-): unknown {
+function readQuarterlyTaxField(draft: QuarterlyTaxDraft, key: string): unknown {
   const path = QUARTERLY_TAX_PATHS[key];
   if (path) return readPath(draft, path);
   const result = calculateQuarterlyTax(draft);
@@ -742,10 +663,7 @@ export const quarterlyTaxAdapter: DocumentAdapter<QuarterlyTaxDraft> = {
   documentType: "quarterly-tax-estimator",
   getInitialDraft() {
     return normalizeQuarterlyTaxDraft(
-      DataBridge.get(
-        DataBridgeKeys.TAX_DRAFT,
-        structuredClone(DEFAULT_QUARTERLY_TAX_DRAFT),
-      ),
+      DataBridge.get(DataBridgeKeys.TAX_DRAFT, structuredClone(DEFAULT_QUARTERLY_TAX_DRAFT)),
     );
   },
   getSampleDraft() {
@@ -763,22 +681,11 @@ export const quarterlyTaxAdapter: DocumentAdapter<QuarterlyTaxDraft> = {
     return errors;
   },
   toPdfInputs(draft, template, customValues) {
-    const values = documentValues(
-      "quarterly-tax-estimator",
-      draft,
-      readQuarterlyTaxField,
-    );
-    values.assumptions = [
-      draft.assumptions,
-      ...QUARTERLY_TAX_RULES_2026.assumptions,
-    ]
+    const values = documentValues("quarterly-tax-estimator", draft, readQuarterlyTaxField);
+    values.assumptions = [draft.assumptions, ...QUARTERLY_TAX_RULES_2026.assumptions]
       .filter(Boolean)
       .join("\n");
-    return mergeTemplateInputs(
-      template.config.sampleData,
-      values,
-      customValues,
-    );
+    return mergeTemplateInputs(template.config.sampleData, values, customValues);
   },
   fileName(draft) {
     return `quarterly-tax-estimate-${draft.taxYear}.pdf`;
@@ -814,24 +721,15 @@ function readW9Field(draft: W9RequestDraft, key: string): unknown {
   return undefined;
 }
 
-function writeW9Field(
-  draft: W9RequestDraft,
-  key: string,
-  value: unknown,
-): W9RequestDraft {
+function writeW9Field(draft: W9RequestDraft, key: string, value: unknown): W9RequestDraft {
   const path = W9_PATHS[key];
   if (path) return writePath(draft, path, value);
   const vendorPath = W9_VENDOR_PATHS[key];
   if (!vendorPath) return draft;
-  const vendor = structuredClone(
-    draft.vendors[0] ?? DEFAULT_W9_REQUEST_DRAFT.vendors[0],
-  );
+  const vendor = structuredClone(draft.vendors[0] ?? DEFAULT_W9_REQUEST_DRAFT.vendors[0]);
   return {
     ...draft,
-    vendors: [
-      writePath(vendor, vendorPath, value),
-      ...draft.vendors.slice(1),
-    ],
+    vendors: [writePath(vendor, vendorPath, value), ...draft.vendors.slice(1)],
   };
 }
 
@@ -839,10 +737,7 @@ export const w9RequestAdapter: DocumentAdapter<W9RequestDraft> = {
   documentType: "w9-request",
   getInitialDraft() {
     return normalizeW9RequestDraft(
-      DataBridge.get(
-        "paperworkkit.w9Request.draft",
-        structuredClone(DEFAULT_W9_REQUEST_DRAFT),
-      ),
+      DataBridge.get("paperworkkit.w9Request.draft", structuredClone(DEFAULT_W9_REQUEST_DRAFT)),
     );
   },
   getSampleDraft() {
@@ -923,8 +818,7 @@ function readNecField(draft: NecTrackerDraft, key: string): unknown {
   const rule = summary.rule;
   const computed: Record<string, unknown> = {
     vendorReferences: vendors.map(
-      (vendor) =>
-        `${vendor.businessName || vendor.legalName} · ${vendor.w9Status}`,
+      (vendor) => `${vendor.businessName || vendor.legalName} · ${vendor.w9Status}`,
     ),
     maskedTinReferences: draft.recipientAdjustments
       .filter(({ maskedTinReference }) => maskedTinReference)
@@ -942,28 +836,23 @@ function readNecField(draft: NecTrackerDraft, key: string): unknown {
   return computed[key];
 }
 
-function writeNecField(
-  draft: NecTrackerDraft,
-  key: string,
-  value: unknown,
-): NecTrackerDraft {
+function writeNecField(draft: NecTrackerDraft, key: string, value: unknown): NecTrackerDraft {
   if (key === "paymentRows" && Array.isArray(value)) {
     return normalizeNecTrackerDraft({
       ...draft,
       payments: value.map((row) => {
         const item = row as Record<string, unknown>;
         return {
-          id:
-            typeof item.id === "string"
-              ? item.id
-              : `payment-${crypto.randomUUID()}`,
+          id: typeof item.id === "string" ? item.id : `payment-${crypto.randomUUID()}`,
           date: String(item.date ?? ""),
           vendorId: String(item.vendorId ?? ""),
           amount: numberInput(item.amount),
-          paymentMethod: String(item.paymentMethod || "Other") as
-            NecTrackerDraft["payments"][number]["paymentMethod"],
-          category: String(item.category || "Other") as
-            NecTrackerDraft["payments"][number]["category"],
+          paymentMethod: String(
+            item.paymentMethod || "Other",
+          ) as NecTrackerDraft["payments"][number]["paymentMethod"],
+          category: String(
+            item.category || "Other",
+          ) as NecTrackerDraft["payments"][number]["category"],
           description: String(item.description ?? ""),
           includeIn1099: Boolean(item.includeIn1099),
         };
@@ -978,17 +867,13 @@ function writeNecField(
         return {
           vendorId: String(item.vendorId ?? ""),
           cashTips: numberInput(item.cashTips),
-          occupationCodes: String(
-            item.occupationCode ?? item.occupationCodes ?? "",
-          ),
+          occupationCodes: String(item.occupationCode ?? item.occupationCodes ?? ""),
           qualifiedOvertime: numberInput(item.qualifiedOvertime),
           federalWithholding: numberInput(item.federalWithholding),
           state: String(item.state ?? ""),
           stateIncome: numberInput(item.stateIncome),
           stateWithholding: numberInput(item.stateWithholding),
-          maskedTinReference: maskTinReference(
-            String(item.maskedTinReference ?? ""),
-          ),
+          maskedTinReference: maskTinReference(String(item.maskedTinReference ?? "")),
         };
       }),
     });
@@ -1001,10 +886,7 @@ export const nec1099Adapter: DocumentAdapter<NecTrackerDraft> = {
   documentType: "1099-nec-tracker",
   getInitialDraft() {
     return normalizeNecTrackerDraft(
-      DataBridge.get(
-        DataBridgeKeys.NEC_DRAFT,
-        structuredClone(DEFAULT_NEC_TRACKER_DRAFT),
-      ),
+      DataBridge.get(DataBridgeKeys.NEC_DRAFT, structuredClone(DEFAULT_NEC_TRACKER_DRAFT)),
     );
   },
   getSampleDraft() {

@@ -27,9 +27,7 @@ test("Image to PDF enforces its 50 MiB pdf-lib ceiling inside the worker", async
         throw new Error("Image to PDF must not write an artifact.");
       },
     }),
-    (error) =>
-      error?.code === "total-too-large" &&
-      /must total 50 MiB or less/.test(error.message),
+    (error) => error?.code === "total-too-large" && /must total 50 MiB or less/.test(error.message),
   );
 });
 

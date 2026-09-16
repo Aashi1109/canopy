@@ -155,18 +155,22 @@ async function buildTool(
 const loadCatalog = cache(async (): Promise<readonly CatalogTool[]> => {
   if (!isDatabaseConfigured()) return [];
 
-  const { rows, contentRows, icons } = await catalogCache.remember("all", async () => {
-    const [rows, contentRows, icons] = await Promise.all([
-      db.select().from(managedToolsTable),
-      getToolContentRows(),
-      getToolIcons(),
-    ]);
-    return {
-      rows: rows.filter(isToolAvailable),
-      contentRows: contentRows.filter((row) => row.publishedAt !== null),
-      icons,
-    };
-  }, 24 * 60 * 60);
+  const { rows, contentRows, icons } = await catalogCache.remember(
+    "all",
+    async () => {
+      const [rows, contentRows, icons] = await Promise.all([
+        db.select().from(managedToolsTable),
+        getToolContentRows(),
+        getToolIcons(),
+      ]);
+      return {
+        rows: rows.filter(isToolAvailable),
+        contentRows: contentRows.filter((row) => row.publishedAt !== null),
+        icons,
+      };
+    },
+    24 * 60 * 60,
+  );
 
   const contentByToolId = new Map(
     contentRows.map((contentRow) => [contentRow.toolId, contentRow] as const),
@@ -176,30 +180,22 @@ const loadCatalog = cache(async (): Promise<readonly CatalogTool[]> => {
     rows
       .filter(isToolAvailable)
       .map((row) =>
-        buildTool(
-          row,
-          contentByToolId.get(row.toolId) ?? null,
-          icons[row.toolId] ?? null,
-        ),
+        buildTool(row, contentByToolId.get(row.toolId) ?? null, icons[row.toolId] ?? null),
       ),
   );
 
   return built
     .filter((tool): tool is CatalogTool => tool !== null)
     .sort((left, right) =>
-      left.app === right.app
-        ? left.order - right.order
-        : left.app.localeCompare(right.app),
+      left.app === right.app ? left.order - right.order : left.app.localeCompare(right.app),
     );
 });
 
 /** Every enabled, non-archived, slugged tool. Optionally narrowed to one app. */
-export const getTools = cache(
-  async (app?: ToolApp): Promise<readonly CatalogTool[]> => {
-    const tools = await loadCatalog();
-    return app ? tools.filter((tool) => tool.app === app) : tools;
-  },
-);
+export const getTools = cache(async (app?: ToolApp): Promise<readonly CatalogTool[]> => {
+  const tools = await loadCatalog();
+  return app ? tools.filter((tool) => tool.app === app) : tools;
+});
 
 /**
  * Resolves a public URL to a tool.
@@ -209,9 +205,7 @@ export const getTools = cache(
  */
 export const resolveToolPage = cache(
   async (app: ToolApp, slug: string): Promise<CatalogTool | null> => {
-    const matches = (await loadCatalog()).filter(
-      (tool) => tool.app === app && tool.slug === slug,
-    );
+    const matches = (await loadCatalog()).filter((tool) => tool.app === app && tool.slug === slug);
     return matches.length === 1 ? matches[0] : null;
   },
 );
@@ -219,24 +213,22 @@ export const resolveToolPage = cache(
 /**
  * Curated related tools, falling back to the rest of the same category.
  */
-export const relatedTools = cache(
-  async (toolId: string): Promise<readonly CatalogTool[]> => {
-    const tools = await loadCatalog();
-    const tool = tools.find((candidate) => candidate.toolId === toolId);
-    if (!tool) return [];
+export const relatedTools = cache(async (toolId: string): Promise<readonly CatalogTool[]> => {
+  const tools = await loadCatalog();
+  const tool = tools.find((candidate) => candidate.toolId === toolId);
+  if (!tool) return [];
 
-    const curated = (tool.content.relatedToolIds ?? [])
-      .filter((id) => id !== toolId)
-      .flatMap((id) => tools.filter((candidate) => candidate.toolId === id));
+  const curated = (tool.content.relatedToolIds ?? [])
+    .filter((id) => id !== toolId)
+    .flatMap((id) => tools.filter((candidate) => candidate.toolId === id));
 
-    const seen = new Set(curated.map((candidate) => candidate.toolId));
-    const sameCategory = tools.filter(
-      (candidate) =>
-        candidate.toolId !== toolId &&
-        candidate.category === tool.category &&
-        !seen.has(candidate.toolId),
-    );
+  const seen = new Set(curated.map((candidate) => candidate.toolId));
+  const sameCategory = tools.filter(
+    (candidate) =>
+      candidate.toolId !== toolId &&
+      candidate.category === tool.category &&
+      !seen.has(candidate.toolId),
+  );
 
-    return [...curated, ...sameCategory].slice(0, RELATED_LIMIT);
-  },
-);
+  return [...curated, ...sameCategory].slice(0, RELATED_LIMIT);
+});

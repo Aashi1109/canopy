@@ -42,9 +42,5 @@ export function isFeatureEnabled(
   app: FeatureApp,
   key: string,
 ): boolean {
-  return features.some(
-    (feature) =>
-      feature.app === app && feature.key === key && feature.enabled,
-  );
+  return features.some((feature) => feature.app === app && feature.key === key && feature.enabled);
 }
-

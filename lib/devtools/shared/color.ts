@@ -8,9 +8,13 @@ export type RgbColor = { red: number; green: number; blue: number; alpha: number
 export function parseHexColor(input: string): RgbColor {
   const value = input.trim().replace(/^#/, "");
   if (![3, 4, 6, 8].includes(value.length) || !/^[\da-f]+$/i.test(value)) {
-    throw new ToolError("invalid-hex-color", "HEX color must use #RGB, #RGBA, #RRGGBB, or #RRGGBBAA.");
+    throw new ToolError(
+      "invalid-hex-color",
+      "HEX color must use #RGB, #RGBA, #RRGGBB, or #RRGGBBAA.",
+    );
   }
-  const expanded = value.length <= 4 ? [...value].map((character) => character.repeat(2)).join("") : value;
+  const expanded =
+    value.length <= 4 ? [...value].map((character) => character.repeat(2)).join("") : value;
   return {
     red: Number.parseInt(expanded.slice(0, 2), 16),
     green: Number.parseInt(expanded.slice(2, 4), 16),

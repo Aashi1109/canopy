@@ -22,10 +22,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@smarttools/ui";
-import {
-  OrderableList,
-  type OrderableItemState,
-} from "@smarttools/ui/components/OrderableList";
+import { OrderableList, type OrderableItemState } from "@smarttools/ui/components/OrderableList";
 import { cn } from "@smarttools/ui/lib/utils";
 import {
   CircleAlert,
@@ -48,29 +45,13 @@ import {
   useState,
 } from "react";
 
-import {
-  OverlayStack,
-  ScrollRegion,
-  Stack,
-} from "./Stacks";
+import { OverlayStack, ScrollRegion, Stack } from "./Stacks";
 
-export type WorkspaceSurfacePurpose =
-  | "source"
-  | "editor"
-  | "result"
-  | "preview"
-  | "inspector";
+export type WorkspaceSurfacePurpose = "source" | "editor" | "result" | "preview" | "inspector";
 
-export type WorkspaceSurfaceState =
-  | "ready"
-  | "empty"
-  | "loading"
-  | "error";
+export type WorkspaceSurfaceState = "ready" | "empty" | "loading" | "error";
 
-export type WorkspaceSurfaceProps = Omit<
-  HTMLAttributes<HTMLElement>,
-  "title"
-> & {
+export type WorkspaceSurfaceProps = Omit<HTMLAttributes<HTMLElement>, "title"> & {
   actions?: ReactNode;
   children?: ReactNode;
   contentClassName?: string;
@@ -89,19 +70,13 @@ export type WorkspaceSurfaceProps = Omit<
   variant?: "card" | "panel";
 };
 
-const DEFAULT_STATE_TITLES: Record<
-  Exclude<WorkspaceSurfaceState, "ready">,
-  string
-> = {
+const DEFAULT_STATE_TITLES: Record<Exclude<WorkspaceSurfaceState, "ready">, string> = {
   empty: "Nothing here yet",
   error: "This surface needs attention",
   loading: "Loading",
 };
 
-const DEFAULT_STATE_ICONS: Record<
-  Exclude<WorkspaceSurfaceState, "ready">,
-  ReactNode
-> = {
+const DEFAULT_STATE_ICONS: Record<Exclude<WorkspaceSurfaceState, "ready">, ReactNode> = {
   empty: <Inbox aria-hidden="true" />,
   error: <CircleAlert aria-hidden="true" />,
   loading: <LoaderCircle aria-hidden="true" className="animate-spin" />,
@@ -132,10 +107,7 @@ function WorkspaceSurface({
     state === "ready" ? (
       children
     ) : state === "empty" && purpose === "result" ? (
-      <div
-        className="min-h-0 flex-1 px-4 py-3"
-        data-surface-state={state}
-      >
+      <div className="min-h-0 flex-1 px-4 py-3" data-surface-state={state}>
         <Muted className="text-muted-foreground">
           <Strong className="text-foreground/70">
             {stateTitle ?? DEFAULT_STATE_TITLES[state]}
@@ -158,19 +130,13 @@ function WorkspaceSurface({
       >
         <EmptyHeader>
           <EmptyMedia
-            className={cn(
-              state === "error" ? "text-destructive" : undefined,
-            )}
+            className={cn(state === "error" ? "text-destructive" : undefined)}
             variant="icon"
           >
             {stateIcon ?? DEFAULT_STATE_ICONS[state]}
           </EmptyMedia>
-          <EmptyTitle>
-            {stateTitle ?? DEFAULT_STATE_TITLES[state]}
-          </EmptyTitle>
-          {stateDescription ? (
-            <EmptyDescription>{stateDescription}</EmptyDescription>
-          ) : null}
+          <EmptyTitle>{stateTitle ?? DEFAULT_STATE_TITLES[state]}</EmptyTitle>
+          {stateDescription ? <EmptyDescription>{stateDescription}</EmptyDescription> : null}
         </EmptyHeader>
         {stateAction ? <EmptyContent>{stateAction}</EmptyContent> : null}
       </Empty>
@@ -183,41 +149,51 @@ function WorkspaceSurface({
       {title}
     </Overline>
   );
-  const workspaceHeader = header === "visible" ? (
-    <header
-      className={cn(
-        "flex shrink-0 items-center justify-between gap-3",
-        variant === "card" ? "min-h-10 px-4 pt-2" : "min-h-[46px] border-b border-border px-4",
-      )}
-      data-slot="workspace-header"
-    >
-      <div className="min-w-0">
-        {status !== undefined && status !== null ? (
-          <div className="flex min-w-0 items-center gap-2">
-            {heading}
-            {variant === "card" ? status : (
-              <StatusBadge className="shrink-0" variant={state === "ready" ? "success" : "neutral"}>
-                {status}
-              </StatusBadge>
-            )}
-          </div>
-        ) : heading}
-        {description ? (
-          <Muted className="mt-0.5 truncate text-muted-foreground">{description}</Muted>
-        ) : null}
-      </div>
-      {meta !== undefined && meta !== null ? (
-        <div className="ml-auto flex min-w-0 items-center gap-3">
-          <Caption className="min-w-0 truncate text-right text-muted-foreground">{meta}</Caption>
-          {actions ? <div className="flex shrink-0 items-center gap-1">{actions}</div> : null}
+  const workspaceHeader =
+    header === "visible" ? (
+      <header
+        className={cn(
+          "flex shrink-0 items-center justify-between gap-3",
+          variant === "card" ? "min-h-10 px-4 pt-2" : "min-h-[46px] border-b border-border px-4",
+        )}
+        data-slot="workspace-header"
+      >
+        <div className="min-w-0">
+          {status !== undefined && status !== null ? (
+            <div className="flex min-w-0 items-center gap-2">
+              {heading}
+              {variant === "card" ? (
+                status
+              ) : (
+                <StatusBadge
+                  className="shrink-0"
+                  variant={state === "ready" ? "success" : "neutral"}
+                >
+                  {status}
+                </StatusBadge>
+              )}
+            </div>
+          ) : (
+            heading
+          )}
+          {description ? (
+            <Muted className="mt-0.5 truncate text-muted-foreground">{description}</Muted>
+          ) : null}
         </div>
-      ) : actions ? (
-        <div className="flex shrink-0 items-center gap-1">{actions}</div>
-      ) : null}
-    </header>
-  ) : (
-    <H2 className="sr-only" id={headingId}>{title}</H2>
-  );
+        {meta !== undefined && meta !== null ? (
+          <div className="ml-auto flex min-w-0 items-center gap-3">
+            <Caption className="min-w-0 truncate text-right text-muted-foreground">{meta}</Caption>
+            {actions ? <div className="flex shrink-0 items-center gap-1">{actions}</div> : null}
+          </div>
+        ) : actions ? (
+          <div className="flex shrink-0 items-center gap-1">{actions}</div>
+        ) : null}
+      </header>
+    ) : (
+      <H2 className="sr-only" id={headingId}>
+        {title}
+      </H2>
+    );
 
   return (
     <section
@@ -236,37 +212,31 @@ function WorkspaceSurface({
       <div
         className={cn(
           "flex min-h-0 min-w-0 flex-1 flex-col",
-          variant === "card" ? "overflow-hidden rounded-lg border border-border bg-muted/45" : undefined,
+          variant === "card"
+            ? "overflow-hidden rounded-lg border border-border bg-muted/45"
+            : undefined,
         )}
         data-slot="workspace-card"
       >
-      {variant === "card" ? workspaceHeader : null}
-      {scroll === "content" && state === "ready" ? (
-        <ScrollRegion
-          accessibleName={`${typeof title === "string" ? title : "Workspace"} content`}
-          className="flex-1"
-          data-slot="workspace-content"
-        >
+        {variant === "card" ? workspaceHeader : null}
+        {scroll === "content" && state === "ready" ? (
+          <ScrollRegion
+            accessibleName={`${typeof title === "string" ? title : "Workspace"} content`}
+            className="flex-1"
+            data-slot="workspace-content"
+          >
+            <div className={cn("flex min-h-full min-w-0 flex-col", contentClassName)}>
+              {content}
+            </div>
+          </ScrollRegion>
+        ) : (
           <div
-            className={cn(
-              "flex min-h-full min-w-0 flex-col",
-              contentClassName,
-            )}
+            className={cn("flex min-h-0 min-w-0 flex-1 flex-col", contentClassName)}
+            data-slot="workspace-content"
           >
             {content}
           </div>
-        </ScrollRegion>
-      ) : (
-        <div
-          className={cn(
-            "flex min-h-0 min-w-0 flex-1 flex-col",
-            contentClassName,
-          )}
-          data-slot="workspace-content"
-        >
-          {content}
-        </div>
-      )}
+        )}
       </div>
     </section>
   );
@@ -302,10 +272,7 @@ function FileIntakeSurface({
   const inputRef = useRef<HTMLInputElement>(null);
 
   function deliverFiles(files: FileList | readonly File[]) {
-    const nextFiles = Array.from(files).slice(
-      0,
-      maxFiles ?? (multiple ? undefined : 1),
-    );
+    const nextFiles = Array.from(files).slice(0, maxFiles ?? (multiple ? undefined : 1));
     if (nextFiles.length > 0) onFiles(nextFiles);
   }
 
@@ -334,7 +301,12 @@ function FileIntakeSurface({
         <FileUploadZone
           className="max-w-[500px]"
           description={intakeDescription}
-          hint={intakeHint ?? (multiple ? "Click to browse, or drop files here" : "Click to browse, or drop a file here")}
+          hint={
+            intakeHint ??
+            (multiple
+              ? "Click to browse, or drop files here"
+              : "Click to browse, or drop a file here")
+          }
           disabled={disabled}
           icon={intakeIcon}
           onClick={() => inputRef.current?.click()}
@@ -408,10 +380,7 @@ function FileQueueSurface<Item>({
       stateTitle="No files added"
       {...surfaceProps}
     >
-      <ScrollRegion
-        accessibleName="File queue"
-        className="flex-1 px-4"
-      >
+      <ScrollRegion accessibleName="File queue" className="flex-1 px-4">
         {onReorder ? (
           <OrderableList
             ariaLabel="Selected files in processing order"
@@ -422,7 +391,9 @@ function FileQueueSurface<Item>({
             onReorder={onReorder}
             renderItem={renderFile}
           />
-        ) : <Stack>{items.map((item) => renderFile(item))}</Stack>}
+        ) : (
+          <Stack>{items.map((item) => renderFile(item))}</Stack>
+        )}
       </ScrollRegion>
     </WorkspaceSurface>
   );
@@ -518,13 +489,7 @@ function CanvasAction({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
-          aria-label={label}
-          onClick={onClick}
-          size="icon-xs"
-          type="button"
-          variant="outline"
-        >
+        <Button aria-label={label} onClick={onClick} size="icon-xs" type="button" variant="outline">
           {children}
         </Button>
       </TooltipTrigger>
@@ -555,16 +520,11 @@ function CanvasSurface({
     pan: CanvasPoint;
     pointerId: number;
   } | null>(null);
-  const [zoom, setZoom] = useState(
-    Math.min(maxZoom, Math.max(minZoom, initialZoom)),
-  );
+  const [zoom, setZoom] = useState(Math.min(maxZoom, Math.max(minZoom, initialZoom)));
   const [pan, setPan] = useState<CanvasPoint>({ x: 0, y: 0 });
 
   function updateView(nextZoom: number, nextPan: CanvasPoint) {
-    const normalizedZoom = Math.min(
-      maxZoom,
-      Math.max(minZoom, nextZoom),
-    );
+    const normalizedZoom = Math.min(maxZoom, Math.max(minZoom, nextZoom));
     setZoom(normalizedZoom);
     setPan(nextPan);
     onViewChange?.({ pan: nextPan, zoom: normalizedZoom });
@@ -655,22 +615,13 @@ function CanvasSurface({
     <TooltipProvider>
       <Stack align="center" direction="row" gap="xs">
         {actions}
-        <CanvasAction
-          label="Zoom out"
-          onClick={() => updateView(zoom - zoomStep, pan)}
-        >
+        <CanvasAction label="Zoom out" onClick={() => updateView(zoom - zoomStep, pan)}>
           <Minus aria-hidden="true" />
         </CanvasAction>
-        <Caption
-          aria-live="polite"
-          className="min-w-11 text-center text-muted-foreground"
-        >
+        <Caption aria-live="polite" className="min-w-11 text-center text-muted-foreground">
           {Math.round(zoom * 100)}%
         </Caption>
-        <CanvasAction
-          label="Zoom in"
-          onClick={() => updateView(zoom + zoomStep, pan)}
-        >
+        <CanvasAction label="Zoom in" onClick={() => updateView(zoom + zoomStep, pan)}>
           <Plus aria-hidden="true" />
         </CanvasAction>
         <CanvasAction label="Fit to view" onClick={fitToView}>
@@ -757,10 +708,7 @@ function NavigatorSurface<Item>({
     items.findIndex((item) => getId(item) === selectedId),
   );
 
-  function moveFocus(
-    event: KeyboardEvent<HTMLButtonElement>,
-    index: number,
-  ) {
+  function moveFocus(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     let nextIndex = index;
     if (event.key === "ArrowDown") nextIndex = Math.min(items.length - 1, index + 1);
     else if (event.key === "ArrowUp") nextIndex = Math.max(0, index - 1);
@@ -846,22 +794,16 @@ function GeneratedList<Item>({
             className="flex min-w-0 items-center gap-4 rounded-lg bg-muted/55 px-4 py-3"
             key={getId(item)}
           >
-            <Caption className="shrink-0 text-muted-foreground">
-              {getLabel(item)}
-            </Caption>
+            <Caption className="shrink-0 text-muted-foreground">{getLabel(item)}</Caption>
             <div className="min-w-0 flex-1">
               <InlineCode className="break-words [overflow-wrap:anywhere]">
                 {getValue(item)}
               </InlineCode>
               {getDescription ? (
-                <Muted className="mt-1 text-muted-foreground">
-                  {getDescription(item)}
-                </Muted>
+                <Muted className="mt-1 text-muted-foreground">{getDescription(item)}</Muted>
               ) : null}
             </div>
-            {renderAction ? (
-              <div className="shrink-0">{renderAction(item, index)}</div>
-            ) : null}
+            {renderAction ? <div className="shrink-0">{renderAction(item, index)}</div> : null}
           </li>
         ))}
       </ol>

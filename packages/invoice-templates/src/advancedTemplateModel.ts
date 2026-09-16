@@ -3,10 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  getDocumentDefinition,
-  resolveDocumentFieldKey,
-} from "./documentDefinitions.ts";
+import { getDocumentDefinition, resolveDocumentFieldKey } from "./documentDefinitions.ts";
 import type {
   AdvancedTemplateConfig,
   AdvancedTemplateValidationIssue,
@@ -66,9 +63,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function containsFullTin(value: unknown): boolean {
   if (typeof value === "string") {
-    return /(?:^|\D)(?:\d{3}[- ]\d{2}[- ]\d{4}|\d{2}[- ]\d{7}|\d{9})(?:\D|$)/.test(
-      value,
-    );
+    return /(?:^|\D)(?:\d{3}[- ]\d{2}[- ]\d{4}|\d{2}[- ]\d{7}|\d{9})(?:\D|$)/.test(value);
   }
   if (Array.isArray(value)) return value.some(containsFullTin);
   return isRecord(value) && Object.values(value).some(containsFullTin);
@@ -88,9 +83,7 @@ export function normalizeAdvancedTemplateConfig(
     config.schemaVersion !== undefined ||
     (documentType !== "invoice" && documentType !== "receipt")
   ) {
-    throw new TypeError(
-      `Only legacy invoice and receipt configs can omit schemaVersion 2.`,
-    );
+    throw new TypeError(`Only legacy invoice and receipt configs can omit schemaVersion 2.`);
   }
 
   return {
@@ -100,23 +93,16 @@ export function normalizeAdvancedTemplateConfig(
   };
 }
 
-export function inferLegacyDocumentType(
-  config: unknown,
-): "invoice" | "receipt" | undefined {
+export function inferLegacyDocumentType(config: unknown): "invoice" | "receipt" | undefined {
   if (!isRecord(config)) return undefined;
-  return config.pageFormat === "RECEIPT_80MM" ||
-    config.pageFormat === "RECEIPT_58MM"
+  return config.pageFormat === "RECEIPT_80MM" || config.pageFormat === "RECEIPT_58MM"
     ? "receipt"
     : config.pageFormat === "A4" || config.pageFormat === "LETTER"
       ? "invoice"
       : undefined;
 }
 
-function issue(
-  code: string,
-  message: string,
-  path: string,
-): AdvancedTemplateValidationIssue {
+function issue(code: string, message: string, path: string): AdvancedTemplateValidationIssue {
   return { code, message, path };
 }
 
@@ -127,20 +113,12 @@ function bindingType(schema: PdfmeSchema): PdfmeBindingType {
 }
 
 function allSchemas(config: AdvancedTemplateConfig): PdfmeSchema[] {
-  return [
-    ...config.template.schemas.flat(),
-    ...(config.template.basePdf.staticSchema ?? []),
-  ];
+  return [...config.template.schemas.flat(), ...(config.template.basePdf.staticSchema ?? [])];
 }
 
-function findField(
-  documentType: DocumentType,
-  key: string,
-): DocumentFieldDefinition | undefined {
+function findField(documentType: DocumentType, key: string): DocumentFieldDefinition | undefined {
   const resolvedKey = resolveDocumentFieldKey(documentType, key);
-  return getDocumentDefinition(documentType).fields.find(
-    (field) => field.key === resolvedKey,
-  );
+  return getDocumentDefinition(documentType).fields.find((field) => field.key === resolvedKey);
 }
 
 function isCustom(entry: TemplateFormEntry): boolean {
@@ -175,11 +153,7 @@ function addFormStructureIssues(
       formFieldCount += 1;
       if (fieldKeys.has(entry.key)) {
         errors.push(
-          issue(
-            "duplicate-field",
-            `Field key "${entry.key}" must be unique.`,
-            `${entryPath}.key`,
-          ),
+          issue("duplicate-field", `Field key "${entry.key}" must be unique.`, `${entryPath}.key`),
         );
       }
       fieldKeys.add(entry.key);
@@ -203,11 +177,7 @@ function addFormStructureIssues(
         customFieldCount += 1;
         if (!/^custom\.[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.key)) {
           errors.push(
-            issue(
-              "invalid-custom-key",
-              "Custom keys must use custom.<slug>.",
-              `${entryPath}.key`,
-            ),
+            issue("invalid-custom-key", "Custom keys must use custom.<slug>.", `${entryPath}.key`),
           );
         }
       }
@@ -266,34 +236,25 @@ function addComplianceIssues(
 ) {
   const keys = [
     ...Object.keys(config.sampleData),
-    ...config.form.sections.flatMap((section) =>
-      section.entries.map((entry) => entry.key),
-    ),
+    ...config.form.sections.flatMap((section) => section.entries.map((entry) => entry.key)),
     ...allSchemas(config).map((schema) => schema.name),
   ];
   const containsTaxDataKey = (key: string) =>
-    /(?:^|[ ._-])(?:tin|ssn|ein|tax id|tax identification|social security|certification|signature)(?:[ ._-]|$)/i.test(key) ||
-    /(?:Tin|TIN|Ssn|SSN|Ein|EIN|Certification|Signature)(?:[A-Z._-]|$)/.test(
+    /(?:^|[ ._-])(?:tin|ssn|ein|tax id|tax identification|social security|certification|signature)(?:[ ._-]|$)/i.test(
       key,
-    );
+    ) || /(?:Tin|TIN|Ssn|SSN|Ein|EIN|Certification|Signature)(?:[A-Z._-]|$)/.test(key);
   const labels = config.form.sections.flatMap((section) =>
     section.entries.flatMap((entry) => [
       entry.label,
       entry.helpText ?? "",
-      ...(entry.kind === "repeater"
-        ? entry.columns.map((column) => column.label)
-        : []),
+      ...(entry.kind === "repeater" ? entry.columns.map((column) => column.label) : []),
     ]),
   );
   const fullTinSample = Object.entries(config.sampleData).find(([, value]) =>
     containsFullTin(value),
   );
 
-  if (
-    (documentType === "w9-request" ||
-      documentType === "1099-nec-tracker") &&
-    fullTinSample
-  ) {
+  if ((documentType === "w9-request" || documentType === "1099-nec-tracker") && fullTinSample) {
     errors.push(
       issue(
         "forbidden-tax-data",
@@ -304,11 +265,8 @@ function addComplianceIssues(
   }
 
   if (documentType === "w9-request") {
-    const forbidden =
-      keys.find(containsTaxDataKey) ?? labels.find(containsTaxDataKey);
-    const signature = allSchemas(config).find(
-      (schema) => schema.type === "signature",
-    );
+    const forbidden = keys.find(containsTaxDataKey) ?? labels.find(containsTaxDataKey);
+    const signature = allSchemas(config).find((schema) => schema.type === "signature");
     if (forbidden || signature) {
       errors.push(
         issue(
@@ -322,8 +280,7 @@ function addComplianceIssues(
 
   if (documentType === "1099-nec-tracker") {
     const unmaskedTin = [...keys, ...labels].find(
-      (key) => containsTaxDataKey(key) &&
-        !/masked/i.test(key),
+      (key) => containsTaxDataKey(key) && !/masked/i.test(key),
     );
     if (unmaskedTin) {
       errors.push(
@@ -337,14 +294,11 @@ function addComplianceIssues(
     const copyAClaim = [
       ...Object.entries(config.sampleData),
       ...allSchemas(config).flatMap((schema) =>
-        typeof schema.content === "string"
-          ? [[schema.name, schema.content] as const]
-          : [],
+        typeof schema.content === "string" ? [[schema.name, schema.content] as const] : [],
       ),
     ].find(
       ([key, value]) =>
-        key !== "internalReportDisclaimer" &&
-        /\b(?:copy a|fileable (?:form )?1099)/i.test(value),
+        key !== "internalReportDisclaimer" && /\b(?:copy a|fileable (?:form )?1099)/i.test(value),
     );
     if (copyAClaim) {
       errors.push(
@@ -369,11 +323,7 @@ export function validateAdvancedTemplateConfig(
 
   if (config.schemaVersion !== 2) {
     errors.push(
-      issue(
-        "schema-version",
-        "Advanced templates must use schemaVersion 2.",
-        "schemaVersion",
-      ),
+      issue("schema-version", "Advanced templates must use schemaVersion 2.", "schemaVersion"),
     );
   }
   if (!definition.allowedPageFormats.includes(config.pageFormat)) {
@@ -390,22 +340,10 @@ export function validateAdvancedTemplateConfig(
   try {
     serializedBytes = new TextEncoder().encode(JSON.stringify(config)).length;
   } catch {
-    errors.push(
-      issue(
-        "serialization",
-        "Advanced template config must be serializable.",
-        "",
-      ),
-    );
+    errors.push(issue("serialization", "Advanced template config must be serializable.", ""));
   }
   if (serializedBytes > ADVANCED_TEMPLATE_LIMITS.maxBytes) {
-    errors.push(
-      issue(
-        "size-limit",
-        "Advanced template config exceeds the 5 MB limit.",
-        "",
-      ),
-    );
+    errors.push(issue("size-limit", "Advanced template config exceeds the 5 MB limit.", ""));
   }
 
   const pageCount = config.template.schemas.length;
@@ -457,9 +395,7 @@ export function validateAdvancedTemplateConfig(
     }
 
     const boundKeys = new Set(
-      schemas.map((schema) =>
-        resolveDocumentFieldKey(documentType, schema.name),
-      ),
+      schemas.map((schema) => resolveDocumentFieldKey(documentType, schema.name)),
     );
     for (const binding of definition.requiredBindings) {
       if (!boundKeys.has(binding)) {
@@ -473,19 +409,13 @@ export function validateAdvancedTemplateConfig(
       }
     }
 
-    const formEntries = config.form.sections.flatMap(
-      (section) => section.entries,
-    );
+    const formEntries = config.form.sections.flatMap((section) => section.entries);
     for (const field of definition.fields) {
-      if (
-        field.source !== "user" ||
-        (!field.required && !field.computationRequired)
-      ) {
+      if (field.source !== "user" || (!field.required && !field.computationRequired)) {
         continue;
       }
       const entry = formEntries.find(
-        (candidate) =>
-          candidate.kind === "builtin" && candidate.key === field.key,
+        (candidate) => candidate.kind === "builtin" && candidate.key === field.key,
       );
       if (!entry) {
         errors.push(
@@ -518,17 +448,14 @@ export function validateAdvancedTemplateConfig(
     }
 
     const customEntries = new Map(
-      formEntries
-        .filter(isCustom)
-        .map((entry) => [entry.key, entry] as const),
+      formEntries.filter(isCustom).map((entry) => [entry.key, entry] as const),
     );
     for (const [index, schema] of schemas.entries()) {
       const field = findField(documentType, schema.name);
       const custom = customEntries.get(schema.name);
-      const allowed = field?.allowedBindingTypes ??
-        (custom
-          ? [custom.kind === "repeater" ? "table" : "text"]
-          : undefined);
+      const allowed =
+        field?.allowedBindingTypes ??
+        (custom ? [custom.kind === "repeater" ? "table" : "text"] : undefined);
       if (allowed && !allowed.includes(bindingType(schema))) {
         errors.push(
           issue(
@@ -542,14 +469,8 @@ export function validateAdvancedTemplateConfig(
 
     for (const entry of formEntries) {
       if (!entry.enabled || boundKeys.has(entry.key)) continue;
-      const field =
-        entry.kind === "builtin"
-          ? findField(documentType, entry.key)
-          : undefined;
-      if (
-        entry.kind !== "builtin" ||
-        (!entry.required && !field?.computationRequired)
-      ) {
+      const field = entry.kind === "builtin" ? findField(documentType, entry.key) : undefined;
+      if (entry.kind !== "builtin" || (!entry.required && !field?.computationRequired)) {
         warnings.push(
           issue(
             "unused-field",

@@ -4,14 +4,14 @@ import {
   type ComponentProps,
   type HTMLAttributes,
   type ReactNode,
-} from "react"
+} from "react";
 
-import { Badge } from "#components/badge"
-import { Card, CardDescription, CardHeader, CardTitle } from "#components/card"
-import { Toaster } from "#components/sonner"
-import { Tabs, TabsList, TabsTrigger } from "#components/tabs"
-import { Caption } from "#components/typography"
-import { cn } from "#lib/utils"
+import { Badge } from "#components/badge";
+import { Card, CardDescription, CardHeader, CardTitle } from "#components/card";
+import { Toaster } from "#components/sonner";
+import { Tabs, TabsList, TabsTrigger } from "#components/tabs";
+import { Caption } from "#components/typography";
+import { cn } from "#lib/utils";
 
 const LEGACY_TOOLBAR_BUTTON_SIZE_CLASSES = new Set([
   "[&_button]:!h-11",
@@ -19,7 +19,7 @@ const LEGACY_TOOLBAR_BUTTON_SIZE_CLASSES = new Set([
   "[&_button]:!px-4",
   "[&_button]:!text-[15px]",
   "[&_button_svg]:!size-[18px]",
-])
+]);
 
 function Tag({ className, ...props }: Omit<ComponentProps<typeof Badge>, "variant">) {
   return (
@@ -29,14 +29,14 @@ function Tag({ className, ...props }: Omit<ComponentProps<typeof Badge>, "varian
       variant="secondary"
       {...props}
     />
-  )
+  );
 }
 
 type SegmentedControlItem = {
-  disabled?: boolean
-  label: ReactNode
-  value: string
-}
+  disabled?: boolean;
+  label: ReactNode;
+  value: string;
+};
 
 function SegmentedControl({
   className,
@@ -44,8 +44,8 @@ function SegmentedControl({
   size = "inline",
   ...props
 }: Omit<ComponentProps<typeof Tabs>, "children"> & {
-  items: readonly SegmentedControlItem[]
-  size?: "inline" | "navigation" | "field"
+  items: readonly SegmentedControlItem[];
+  size?: "inline" | "navigation" | "field";
 }) {
   return (
     <Tabs
@@ -54,7 +54,16 @@ function SegmentedControl({
       data-slot="segmented-control"
       {...props}
     >
-      <TabsList className={size === "inline" ? "h-8 p-0" : size === "field" ? "w-full min-w-0 items-stretch p-1" : undefined} variant="segmented">
+      <TabsList
+        className={
+          size === "inline"
+            ? "h-8 p-0"
+            : size === "field"
+              ? "w-full min-w-0 items-stretch p-1"
+              : undefined
+        }
+        variant="segmented"
+      >
         {items.map((item) => (
           <TabsTrigger
             className={
@@ -73,22 +82,22 @@ function SegmentedControl({
         ))}
       </TabsList>
     </Tabs>
-  )
+  );
 }
 
 function Toast(props: ComponentProps<typeof Toaster>) {
-  return <Toaster data-slot="toast" {...props} />
+  return <Toaster data-slot="toast" {...props} />;
 }
 
 type WorkbenchShellProps = HTMLAttributes<HTMLElement> & {
-  children: ReactNode
-  options?: ReactNode
-  status?: ReactNode
-  statusMeta?: ReactNode
-  toolbar: ReactNode
-  toolbarActions?: ReactNode
-  variant?: "json" | "conversion" | "media" | "utility"
-}
+  children: ReactNode;
+  options?: ReactNode;
+  status?: ReactNode;
+  statusMeta?: ReactNode;
+  toolbar: ReactNode;
+  toolbarActions?: ReactNode;
+  variant?: "json" | "conversion" | "media" | "utility";
+};
 
 function WorkbenchShell({
   children,
@@ -108,7 +117,7 @@ function WorkbenchShell({
           .filter((token) => !LEGACY_TOOLBAR_BUTTON_SIZE_CLASSES.has(token))
           .join(" "),
       })
-    : toolbarActions
+    : toolbarActions;
 
   return (
     <section
@@ -121,7 +130,7 @@ function WorkbenchShell({
         "[&_[data-slot=select-trigger]]:h-8 [&_[data-slot=select-trigger]]:min-h-8 [&_[data-slot=select-trigger]]:px-2.5 [&_[data-slot=select-trigger]>svg]:size-3.5",
         "[&_[data-slot=workbench-status]_[role=status]>span.text-success]:text-foreground",
         variant === "media" ? "shadow-sm" : variant === "conversion" ? "shadow-md" : "shadow-lg",
-        className
+        className,
       )}
       {...props}
     >
@@ -164,19 +173,19 @@ function WorkbenchShell({
         </div>
       ) : null}
     </section>
-  )
+  );
 }
 
 function JsonFormatterWorkbench(props: Omit<WorkbenchShellProps, "variant">) {
-  return <WorkbenchShell data-slot="json-formatter-workbench" variant="json" {...props} />
+  return <WorkbenchShell data-slot="json-formatter-workbench" variant="json" {...props} />;
 }
 
 function DataConversionWorkbench(props: Omit<WorkbenchShellProps, "variant">) {
-  return <WorkbenchShell data-slot="data-conversion-workbench" variant="conversion" {...props} />
+  return <WorkbenchShell data-slot="data-conversion-workbench" variant="conversion" {...props} />;
 }
 
 function UtilityWorkbench(props: Omit<WorkbenchShellProps, "variant">) {
-  return <WorkbenchShell data-slot="utility-workbench" variant="utility" {...props} />
+  return <WorkbenchShell data-slot="utility-workbench" variant="utility" {...props} />;
 }
 
 function ToolPageSystemControls({
@@ -188,10 +197,10 @@ function ToolPageSystemControls({
   title = "Tool session controls",
   ...props
 }: HTMLAttributes<HTMLElement> & {
-  actions?: ReactNode
-  description?: ReactNode
-  preferences?: ReactNode
-  title?: ReactNode
+  actions?: ReactNode;
+  description?: ReactNode;
+  preferences?: ReactNode;
+  title?: ReactNode;
 }) {
   return (
     <section
@@ -228,7 +237,7 @@ function ToolPageSystemControls({
         </div>
       ) : null}
     </section>
-  )
+  );
 }
 
 export {
@@ -240,5 +249,5 @@ export {
   ToolPageSystemControls,
   UtilityWorkbench,
   WorkbenchShell,
-}
-export type { SegmentedControlItem, WorkbenchShellProps }
+};
+export type { SegmentedControlItem, WorkbenchShellProps };

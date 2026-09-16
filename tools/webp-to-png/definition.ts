@@ -19,8 +19,7 @@ export default {
   input: {
     kind: "files",
     label: "Add WebP images",
-    dropzoneDescription:
-      "WebP · up to 50 files · 25 MB each · processed on this device",
+    dropzoneDescription: "WebP · up to 50 files · 25 MB each · processed on this device",
     accept: "image/webp,.webp",
     multiple: true,
     engine: "image",

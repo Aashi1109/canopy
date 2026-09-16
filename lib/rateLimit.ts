@@ -16,9 +16,7 @@ export const RATE_LIMIT_MAX_ENTRIES: number = 1_000;
 const entries = new Map<string, RateLimitEntry>();
 
 function positiveInteger(value: number | undefined, fallback: number): number {
-  return typeof value === "number" && Number.isSafeInteger(value) && value > 0
-    ? value
-    : fallback;
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0 ? value : fallback;
 }
 
 function currentTime(): number {

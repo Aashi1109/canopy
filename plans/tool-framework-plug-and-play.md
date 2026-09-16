@@ -11,17 +11,17 @@ SEO'd, worker-hosted, no import maps, no registry edits, no switch arms.
 
 Four architectures, five copies of the tool inventory, and ~11,500 lines of central machinery:
 
-| File | Lines | Role |
-| --- | --- | --- |
-| `lib/devtools/format-json.ts` | 4218 | pure lib + `utilityToolDefinitions` catalog (110 keys) + 110-arm `runUtilityTool` switch + ~90 private helpers |
-| `app/devtools/json-formatter/json-workbench.tsx` | 1842 | `UtilityToolWorkbench` + `DataConversionWorkbench` — renders all 103 legacy devtools |
-| `app/media/components/MediaWorkbench.tsx` | 1788 | media lifecycle + 55-key options bag + 30-arm `buildJobOptions` + 18 `definition.slug ===` branches |
-| `app/media/_workers/pdf.worker.ts` | 1053 | 12-arm `processPdf` switch, 13 handlers, ~15 shared helpers |
-| `app/media/_workers/image.worker.ts` | 702 | `processImages` switch, 17 handlers |
-| `packages/tool-catalog/src/index.ts` | 782 | `toolManifest` from positional tuples |
-| `components/UtilityToolPrimitives.tsx` | 611 | `createUtilityRuntimeSpec` — bridges 11 foldered tools back into the monolith |
-| `app/media/_lib/tools.ts` | 361 | 4th duplicate of the catalog; the definition that actually drives media |
-| `tools/client-registry.ts` | 116 | 44 static imports, 2 maps with different prop types |
+| File                                             | Lines | Role                                                                                                           |
+| ------------------------------------------------ | ----- | -------------------------------------------------------------------------------------------------------------- |
+| `lib/devtools/format-json.ts`                    | 4218  | pure lib + `utilityToolDefinitions` catalog (110 keys) + 110-arm `runUtilityTool` switch + ~90 private helpers |
+| `app/devtools/json-formatter/json-workbench.tsx` | 1842  | `UtilityToolWorkbench` + `DataConversionWorkbench` — renders all 103 legacy devtools                           |
+| `app/media/components/MediaWorkbench.tsx`        | 1788  | media lifecycle + 55-key options bag + 30-arm `buildJobOptions` + 18 `definition.slug ===` branches            |
+| `app/media/_workers/pdf.worker.ts`               | 1053  | 12-arm `processPdf` switch, 13 handlers, ~15 shared helpers                                                    |
+| `app/media/_workers/image.worker.ts`             | 702   | `processImages` switch, 17 handlers                                                                            |
+| `packages/tool-catalog/src/index.ts`             | 782   | `toolManifest` from positional tuples                                                                          |
+| `components/UtilityToolPrimitives.tsx`           | 611   | `createUtilityRuntimeSpec` — bridges 11 foldered tools back into the monolith                                  |
+| `app/media/_lib/tools.ts`                        | 361   | 4th duplicate of the catalog; the definition that actually drives media                                        |
+| `tools/client-registry.ts`                       | 116   | 44 static imports, 2 maps with different prop types                                                            |
 
 Two findings that shape the plan:
 
@@ -39,7 +39,7 @@ Two findings that shape the plan:
 lookup literal, not a name in a comment. Every dispatch resolves a tool by **its folder name used
 directly as a module path** — `import(\`../../tools/${key}/run.worker\`)`. Tool-specific logic lives
 in `tools/<key>/` and nowhere else. Shared logic lives in exactly one place per capability and is
-called *by* tools, never dispatches *to* them.
+called _by_ tools, never dispatches _to_ them.
 
 Enforced, not promised — in `tests/tool-registry.test.mjs`:
 
@@ -56,7 +56,7 @@ assert.doesNotMatch(source, /\b(componentKey|definitionKey|slug|operation|key)\s
 ```
 
 This is the invariant that makes every other part of the plan true. It also kills the four dispatch
-tables, the 18 slug branches, and the four `TOOL_ICONS` maps as a *consequence* rather than as
+tables, the 18 slug branches, and the four `TOOL_ICONS` maps as a _consequence_ rather than as
 separate cleanup items — none of them can survive the test.
 
 Corollary: **one worker file, not two.** `app/media/_workers/{pdf,image}.worker.ts` both die.
@@ -92,12 +92,12 @@ tools/<definitionKey>/
 
 **Everything is derived from the filesystem. Nothing is declared twice.**
 
-| Fact | How it is known |
-| --- | --- |
-| the tool's key | the folder name |
-| where `run` executes | which `run*.ts` file exists |
+| Fact                       | How it is known                |
+| -------------------------- | ------------------------------ |
+| the tool's key             | the folder name                |
+| where `run` executes       | which `run*.ts` file exists    |
 | whether it has a custom UI | whether `workspace.tsx` exists |
-| whether it has tests | whether `fixtures.json` exists |
+| whether it has tests       | whether `fixtures.json` exists |
 
 `definitionKey` is **not a field** — it is the folder name. There is **no `runtime` field** either:
 a file named `run.worker.ts` cannot disagree with reality the way `runtime: "worker"` can. Tests
@@ -119,19 +119,31 @@ export type ToolApp = "devtools" | "media";
 
 /** Selects the DEFAULT generic workspace. workspace.tsx overrides it. */
 export type ToolLayout =
-  | "source-result" | "generator" | "file-processor" | "collection" | "visual-editor";
+  "source-result" | "generator" | "file-processor" | "collection" | "visual-editor";
 
 export type ToolInputSpec =
-  | { kind: "text"; label: string; placeholder?: string; maxLength?: number;
+  | {
+      kind: "text";
+      label: string;
+      placeholder?: string;
+      maxLength?: number;
       secondary?: { label: string; placeholder?: string };
-      acceptFiles?: { accept: string; maxBytes: number } }
+      acceptFiles?: { accept: string; maxBytes: number };
+    }
   | { kind: "fields"; label: string }
-  | { kind: "files"; label: string; accept: string; multiple: boolean;
-      engine: "image" | "pdf"; maxFiles?: number; maxBytes?: number; inspect?: boolean };
+  | {
+      kind: "files";
+      label: string;
+      accept: string;
+      multiple: boolean;
+      engine: "image" | "pdf";
+      maxFiles?: number;
+      maxBytes?: number;
+      inspect?: boolean;
+    };
 
 export type ToolTrigger =
-  | { mode: "live"; debounceMs?: number }
-  | { mode: "manual"; actionLabel: string };
+  { mode: "live"; debounceMs?: number } | { mode: "manual"; actionLabel: string };
 
 /** Code-owned FALLBACK content. tool_content rows override field-by-field. */
 export type ToolContent = {
@@ -140,15 +152,15 @@ export type ToolContent = {
   limitations?: readonly string[];
   faq?: readonly { q: string; a: string }[];
   examples?: readonly { label: string; text: string; secondary?: string }[];
-  relatedToolIds?: readonly string[];   // stable toolIds, never slugs
+  relatedToolIds?: readonly string[]; // stable toolIds, never slugs
 };
 
 export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
-  readonly toolId: string;          // "media.watermark-pdf" — DB primary key, immutable
+  readonly toolId: string; // "media.watermark-pdf" — DB primary key, immutable
   readonly app: ToolApp;
   /** Public URL segment. Omit → slugFromName(name). Used at FIRST INSERT only, then frozen. */
   readonly slug?: string;
-  readonly category: CategoryKey;   // typo fails tsc
+  readonly category: CategoryKey; // typo fails tsc
   readonly keywords: readonly string[];
   readonly name: string;
   readonly description: string;
@@ -156,8 +168,13 @@ export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   readonly settings: S;
   readonly trigger: ToolTrigger;
   readonly layout: ToolLayout;
-  readonly capabilities?: { cancel?: boolean; copy?: boolean; download?: boolean;
-                            progress?: boolean; network?: boolean };
+  readonly capabilities?: {
+    cancel?: boolean;
+    copy?: boolean;
+    download?: boolean;
+    progress?: boolean;
+    network?: boolean;
+  };
   readonly labels: { empty: string; ready: string; running: string };
   readonly content: ToolContent;
 };
@@ -180,27 +197,58 @@ zod is retained for exactly one job: validating the untrusted `tool_content.cont
 
 ```ts
 // lib/tool-framework/settings.ts
-type Base = { label: string; help?: string;
-              visibleWhen?: { key: string; equals: string | number | boolean } };
+type Base = {
+  label: string;
+  help?: string;
+  visibleWhen?: { key: string; equals: string | number | boolean };
+};
 
 export type FieldSpec =
-  | Base & { kind: "text";     default: string;  placeholder?: string; maxLength?: number }
-  | Base & { kind: "textarea"; default: string;  rows?: number }
-  | Base & { kind: "password"; default: string;  placeholder?: string }
-  | Base & { kind: "number";   default: number;  min?: number; max?: number; step?: number; suffix?: string }
-  | Base & { kind: "slider";   default: number;  min: number; max: number; step?: number; suffix?: string }
-  | Base & { kind: "toggle";   default: boolean }
-  | Base & { kind: "select";   default: string;  choices: readonly { label: string; value: string }[] }
-  | Base & { kind: "preset";   default: string;  choices: readonly { label: string; value: string; detail?: string }[] }
-  | Base & { kind: "color";    default: string;  allowTransparent?: boolean }
-  | Base & { kind: "date";     default: string }
-  | Base & { kind: "position"; default: WatermarkPosition }              // 3x3 grid, 3 media tools
-  | Base & { kind: "pages";    default: "all" | readonly number[] }      // "1,3,5-9"/odd/even, 8 media tools
-  | Base & { kind: "rows";     default: readonly { key: string; value: string }[];
-             keyLabel: string; valueLabel: string };
+  | (Base & { kind: "text"; default: string; placeholder?: string; maxLength?: number })
+  | (Base & { kind: "textarea"; default: string; rows?: number })
+  | (Base & { kind: "password"; default: string; placeholder?: string })
+  | (Base & {
+      kind: "number";
+      default: number;
+      min?: number;
+      max?: number;
+      step?: number;
+      suffix?: string;
+    })
+  | (Base & {
+      kind: "slider";
+      default: number;
+      min: number;
+      max: number;
+      step?: number;
+      suffix?: string;
+    })
+  | (Base & { kind: "toggle"; default: boolean })
+  | (Base & {
+      kind: "select";
+      default: string;
+      choices: readonly { label: string; value: string }[];
+    })
+  | (Base & {
+      kind: "preset";
+      default: string;
+      choices: readonly { label: string; value: string; detail?: string }[];
+    })
+  | (Base & { kind: "color"; default: string; allowTransparent?: boolean })
+  | (Base & { kind: "date"; default: string })
+  | (Base & { kind: "position"; default: WatermarkPosition }) // 3x3 grid, 3 media tools
+  | (Base & { kind: "pages"; default: "all" | readonly number[] }) // "1,3,5-9"/odd/even, 8 media tools
+  | (Base & {
+      kind: "rows";
+      default: readonly { key: string; value: string }[];
+      keyLabel: string;
+      valueLabel: string;
+    });
 
 export type SettingsSpec = { readonly fields: Readonly<Record<string, FieldSpec>> };
-export type SettingsOf<S extends SettingsSpec> = { [K in keyof S["fields"]]: ValueOf<S["fields"][K]> };
+export type SettingsOf<S extends SettingsSpec> = {
+  [K in keyof S["fields"]]: ValueOf<S["fields"][K]>;
+};
 export function parseSettings<S extends SettingsSpec>(spec: S, raw: unknown): SettingsOf<S>;
 ```
 
@@ -220,7 +268,7 @@ export type ToolRunContext<S> = {
     readonly text: string;
     readonly secondary?: string;
     readonly files: readonly ToolRunFile[];
-    readonly items?: readonly { id: string; rotation: 0|90|180|270; selected: boolean }[];
+    readonly items?: readonly { id: string; rotation: 0 | 90 | 180 | 270; selected: boolean }[];
   };
   readonly settings: S;
   readonly signal: AbortSignal;
@@ -228,7 +276,13 @@ export type ToolRunContext<S> = {
 };
 export type ToolRun<S = never> = (ctx: ToolRunContext<S>) => ToolResult | Promise<ToolResult>;
 export class ToolError extends Error {
-  constructor(readonly code: string, message: string, readonly recovery?: string) { super(message); }
+  constructor(
+    readonly code: string,
+    message: string,
+    readonly recovery?: string,
+  ) {
+    super(message);
+  }
 }
 ```
 
@@ -252,12 +306,12 @@ Ten views cover `TOOL_FEATURE_SPECS.md` §A in full: `text`, `code`, `json-tree`
   if (!TOOL_SLUG_PATTERN.test(key)) return fail("unknown-tool");
 
   const { default: spec } = await import(`../../tools/${key}/definition`);
-  const { run }           = await import(`../../tools/${key}/run.worker`);
+  const { run } = await import(`../../tools/${key}/run.worker`);
   //                                      ^^^^^^^^^^^^^ static prefix  ^^^^^^ static suffix
 
-  assertRunnableFiles(spec, message.files);          // one trust boundary, spec-driven
+  assertRunnableFiles(spec, message.files); // one trust boundary, spec-driven
   const settings = parseSettings(spec.settings, message.settings);
-  const result   = await run({ input, settings, signal, progress });
+  const result = await run({ input, settings, signal, progress });
   ```
 
   **No map, not even for the spec** — the folder name is the path for both imports. The static prefix
@@ -270,9 +324,10 @@ Ten views cover `TOOL_FEATURE_SPECS.md` §A in full: `text`, `code`, `json-tree`
   `new Worker(new URL("./tool.worker.ts", import.meta.url))` stays literal in `useToolRun.ts`.
   **Bundle size improves**: a merge-pdf job fetches `pdf-lib` and nothing else, where today
   `pdf.worker.ts` bundles every PDF tool's `pdf-lib` + `pdfjs-dist` + `qpdf-wasm` + `fflate` together.
+
 - **(c) Server** — `app/api/tools/[key]/route.ts`, same shape:
-  `await import(\`../../../tools/${key}/run.server\`)`. The `.server` suffix is a **separate bundler
-  context**, so `process.env` / `node:net` / API keys can never be reached from the client or worker
+  `await import(\`../../../tools/${key}/run.server\`)`. The `.server`suffix is a **separate bundler
+context**, so`process.env`/`node:net` / API keys can never be reached from the client or worker
   context — enforced by the module graph, not by discipline. A route handler rather than a server
   action, because an action can't be resolved dynamically without dragging every tool's server module
   into the client graph.
@@ -287,11 +342,11 @@ consumer count into `lib/tool-framework/media/` — these are **libraries tools 
 dispatchers that know tool names. `pdfDocument.ts` exports `loadPdf`; it does not know
 `merge-pdf` exists.
 
-| Destination | Contents | Consumers |
-| --- | --- | --- |
-| `media/pdfDocument.ts` | `loadPdf`, `pdfOutput`, `positionedBox`, `resolvePageNumbers`, `enforcePageLimit`, `validatePdfInput`, `getPdfContentBox`, … | 13 PDF tools (pdf-lib only) |
-| `media/pdfRender.ts` | `forEachRenderedPdfPage`, `encodeCanvas`, `applyColorMode`, `context2d`, `inspectPdf` | ~6 raster tools. **Sole owner of `pdfjs-dist`** and of `GlobalWorkerOptions.workerSrc = new URL(...)` — must never be imported from the main thread |
-| `media/imageCodec.ts` | `decodeImage`, `encodeImage`, `resizeForOptions`, `cropImage`, `rotateImage`, `flipImage`, `flattenImage`, `resolveOutputFormat`, … | 17 image tools; every `await import("@jsquash/…")` unchanged |
+| Destination            | Contents                                                                                                                            | Consumers                                                                                                                                           |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `media/pdfDocument.ts` | `loadPdf`, `pdfOutput`, `positionedBox`, `resolvePageNumbers`, `enforcePageLimit`, `validatePdfInput`, `getPdfContentBox`, …        | 13 PDF tools (pdf-lib only)                                                                                                                         |
+| `media/pdfRender.ts`   | `forEachRenderedPdfPage`, `encodeCanvas`, `applyColorMode`, `context2d`, `inspectPdf`                                               | ~6 raster tools. **Sole owner of `pdfjs-dist`** and of `GlobalWorkerOptions.workerSrc = new URL(...)` — must never be imported from the main thread |
+| `media/imageCodec.ts`  | `decodeImage`, `encodeImage`, `resizeForOptions`, `cropImage`, `rotateImage`, `flipImage`, `flattenImage`, `resolveOutputFormat`, … | 17 image tools; every `await import("@jsquash/…")` unchanged                                                                                        |
 
 Moved unchanged: `qpdfAdapter.ts` → `media/qpdf.ts`, `workerRules.ts` → `media/pdfRules.ts`,
 `_lib/validation.ts` → `media/validation.ts`, `_lib/geometry.ts` → `media/geometry.ts`.
@@ -313,22 +368,22 @@ the registration; its name is the module path. Two mechanisms, both native to th
 the server route. Covered in §1.4:
 
 ```ts
-await import(`../../tools/${key}/run.worker`)     // bundler globs tools/*/run.worker.*
+await import(`../../tools/${key}/run.worker`); // bundler globs tools/*/run.worker.*
 ```
 
 `workspace.tsx` resolves the same way: `lazy(() => import(\`../../tools/${key}/workspace\`))`,
 wrapped so a missing file falls back to `DEFAULT_WORKSPACES[spec.layout]`.
 
 **Enumeration — the database. Never the bundle.** Catalog pages, the sitemap, and the admin list need
-the whole *list*, not a keyed lookup. That list lives in `managed_tools` + `tool_content` and is read
+the whole _list_, not a keyed lookup. That list lives in `managed_tools` + `tool_content` and is read
 with SQL. **No bundled module ever holds a set of tools** — not a generated map, not a glob result,
 not an array. The only way to learn a tool exists is to query the DB or read the filesystem.
 
-| Need | Source | Mechanism |
-| --- | --- | --- |
-| every tool (catalog, sitemap, admin, related-tools) | `managed_tools` + `tool_content` | SQL |
-| one tool's spec / run / workspace | `tools/<key>/` | dynamic import by folder name |
-| getting folders *into* the DB | `pnpm db:migrate`, and dev boot | Node `fs.readdir("tools")` |
+| Need                                                | Source                           | Mechanism                     |
+| --------------------------------------------------- | -------------------------------- | ----------------------------- |
+| every tool (catalog, sitemap, admin, related-tools) | `managed_tools` + `tool_content` | SQL                           |
+| one tool's spec / run / workspace                   | `tools/<key>/`                   | dynamic import by folder name |
+| getting folders _into_ the DB                       | `pnpm db:migrate`, and dev boot  | Node `fs.readdir("tools")`    |
 
 `packages/database/src/seedManagedTools.ts` does the walk, in plain Node where the filesystem genuinely
 exists — the one context where `fs` is the right tool. Dev seeds on boot, so locally a new folder
@@ -342,18 +397,22 @@ const folders = (await readdir("tools", { withFileTypes: true }))
 for (const definitionKey of folders) {
   const { default: spec } = await import(`../../../tools/${definitionKey}/definition.ts`);
 
-  await db.insert(managedToolsTable).values({
-    toolId: spec.toolId,                    // "<app>.<definitionKey>" — frozen
-    app: spec.app,
-    slug: spec.slug ?? slugFromName(spec.name),   // declared or derived; applied ONCE (see Part 3)
-    name: spec.name,
-    description: spec.description,
-    order: folders.indexOf(definitionKey),
-    enabled: true,
-  }).onConflictDoNothing({ target: managedToolsTable.toolId });
+  await db
+    .insert(managedToolsTable)
+    .values({
+      toolId: spec.toolId, // "<app>.<definitionKey>" — frozen
+      app: spec.app,
+      slug: spec.slug ?? slugFromName(spec.name), // declared or derived; applied ONCE (see Part 3)
+      name: spec.name,
+      description: spec.description,
+      order: folders.indexOf(definitionKey),
+      enabled: true,
+    })
+    .onConflictDoNothing({ target: managedToolsTable.toolId });
 
-  await db.insert(toolContentTable)
-    .values({ toolId: spec.toolId })        // all-null row; resolver falls back to the spec
+  await db
+    .insert(toolContentTable)
+    .values({ toolId: spec.toolId }) // all-null row; resolver falls back to the spec
     .onConflictDoNothing({ target: toolContentTable.toolId });
 }
 ```
@@ -369,7 +428,7 @@ A `unique(app, slug)` violation means two tool names slugify identically — **l
 the new tool is a five-second fix; a silently suffixed `-2` URL is permanent.
 
 This is also the natural shape given Part 3: the DB already owns category, keywords, SEO, and page
-content. Making it own *existence* too means one registry, not two.
+content. Making it own _existence_ too means one registry, not two.
 
 **Rejected: `import.meta.glob`.** Turbopack ships the Vite-compatible glob API in
 [Next.js 16.3](https://nextjs.org/blog/next-16-3-turbopack), and `{ eager: true }` over
@@ -386,7 +445,7 @@ Net: **no generated files, no registry script, no bundler-specific API, and no l
 in the shipped bundle.**
 
 **Honest cost:** a brand-new folder is **routable immediately** at `/<app>/<key>` — dispatch needs no
-registry — but does not appear in *listings* until a seed runs. Automatic in dev; in prod it is the
+registry — but does not appear in _listings_ until a seed runs. Automatic in dev; in prod it is the
 migrate step already in the deploy. Naming it because it dents "folder = working tool" at the listing
 layer, and nowhere else.
 
@@ -409,10 +468,10 @@ where the two differ most.
 The `webpack()` block at `next.config.ts:60-79` currently shims two things the `turbopack` block at
 `:54-59` does not:
 
-| Shim | Who needs it | Fate |
-| --- | --- | --- |
-| `NormalModuleReplacementPlugin(/^node:/)` | `app/devtools/[slug]/page.tsx:6` — `import { isIP } from "node:net"` for the domain-rating-checker action | **Phase 8 deletes it.** The action becomes `tools/domain-rating-checker/run.server.ts`, off the client graph entirely |
-| `fs/promises`, `url`, `zlib`, `module` → `browserEmptyModule` | Nothing first-party (zero direct imports). Transitive from `@pdfme/*`, `@react-pdf/renderer`, `fontkit` | Paperwork only — out of scope, but still must build |
+| Shim                                                          | Who needs it                                                                                              | Fate                                                                                                                  |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `NormalModuleReplacementPlugin(/^node:/)`                     | `app/devtools/[slug]/page.tsx:6` — `import { isIP } from "node:net"` for the domain-rating-checker action | **Phase 8 deletes it.** The action becomes `tools/domain-rating-checker/run.server.ts`, off the client graph entirely |
+| `fs/promises`, `url`, `zlib`, `module` → `browserEmptyModule` | Nothing first-party (zero direct imports). Transitive from `@pdfme/*`, `@react-pdf/renderer`, `fontkit`   | Paperwork only — out of scope, but still must build                                                                   |
 
 So the migration is three added aliases, in the shape the file already uses for `module`:
 
@@ -447,7 +506,7 @@ write a line.
 > ⚠️ **Verify first — ~30 minutes, task 1 of Phase 1.** Two checks, on current stable (16.2.x):
 >
 > 1. **Does Turbopack resolve `import(\`../../tools/${key}/run.worker\`)`, and emit one chunk per
->    match?** Check the `.next` output, not just that it resolves — a bundler that inlines all 144
+match?** Check the `.next` output, not just that it resolves — a bundler that inlines all 144
 >    matches into one chunk "works" while shipping a worse worker than today. Related history:
 >    [#56531](https://github.com/vercel/next.js/issues/56531) (dynamic requests) is closed;
 >    [#74664](https://github.com/vercel/next.js/issues/74664) (a directory-glob resolution bug) was
@@ -507,11 +566,11 @@ become **data the admin owns**, like name and description. `iconKey` leaves `Too
 
 Three states, in precedence order:
 
-| State | Source | Cost |
-| --- | --- | --- |
-| uploaded | Cloudinary, referenced by `tool_icons` | one row, no bytes in Postgres |
+| State            | Source                                                         | Cost                             |
+| ---------------- | -------------------------------------------------------------- | -------------------------------- |
+| uploaded         | Cloudinary, referenced by `tool_icons`                         | one row, no bytes in Postgres    |
 | nothing uploaded | **generated identicon** — initials + hue derived from `toolId` | zero storage, computed at render |
-| unknown tool | 404 | — |
+| unknown tool     | 404                                                            | —                                |
 
 `lib/tool-framework/identicon.ts` renders a deterministic inline SVG: up to two initials from the
 name, colours from `hash(toolId) % 360` as an HSL hue. Same input, same output, forever — so a
@@ -649,11 +708,11 @@ action, one URL builder, one identicon function, one admin upload field.
 
 ### 1.8 Where the code lives
 
-**`lib/tool-framework/`, not a package.** Root `AGENTS.md`: *"Packages must not import from the
-application."* The framework must import `components/Stacks.tsx`, `components/Surfaces.tsx`, and
+**`lib/tool-framework/`, not a package.** Root `AGENTS.md`: _"Packages must not import from the
+application."_ The framework must import `components/Stacks.tsx`, `components/Surfaces.tsx`, and
 `lib/devtools/shared/*`, and must be imported by app-owned `tools/*`. A package can't do that
-without the forbidden cycle. The placement table's *"Domain logic reused across routes →
-`lib/<domain>`"* is the exact fit.
+without the forbidden cycle. The placement table's _"Domain logic reused across routes →
+`lib/<domain>`"_ is the exact fit.
 
 `packages/tool-catalog` **shrinks 782 → ~130 lines**, keeping only the pure merge/validation logic
 that `packages/control-plane` and `packages/database` genuinely import: `mergeToolManifest`,
@@ -718,13 +777,13 @@ transferable helpers, `packages/control-plane` merge flow.
 
 Four measured regions:
 
-| Lines | Content | Fate |
-| --- | --- | --- |
-| 1–716 | `transformJson`, `repairJson`, `convertJsonToCsv`, `convertCsvToJson`, `summarizeJson`, `MAX_JSON_INPUT_CHARS` | **Survives** → `lib/devtools/shared/{json,csv}.ts`. Split last, as a pure rename. |
-| 717–841 | `option`/`singleTool`/`dualTool`/`generatorTool` factories + `JSON_REPAIR_OPTION`/`INDENT_OPTION`/`DELIMITER_OPTION` | Dies. **Inline** the 3 shared constants (6 lines each) into the ~28 definitions using them — one fewer file, self-contained definitions. |
-| 842–2091 | `utilityToolDefinitions` (110 keys) | Deleted key by key. |
-| 2092–3083 | `runUtilityTool` + `executeUtilityTool` (**110 arms**, matching `Object.keys(utilityToolDefinitions).length`) | Deleted arm by arm. |
-| 3084–4218 | ~90 private helpers | **The actual risk.** Split by measurement, below. |
+| Lines     | Content                                                                                                              | Fate                                                                                                                                     |
+| --------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 1–716     | `transformJson`, `repairJson`, `convertJsonToCsv`, `convertCsvToJson`, `summarizeJson`, `MAX_JSON_INPUT_CHARS`       | **Survives** → `lib/devtools/shared/{json,csv}.ts`. Split last, as a pure rename.                                                        |
+| 717–841   | `option`/`singleTool`/`dualTool`/`generatorTool` factories + `JSON_REPAIR_OPTION`/`INDENT_OPTION`/`DELIMITER_OPTION` | Dies. **Inline** the 3 shared constants (6 lines each) into the ~28 definitions using them — one fewer file, self-contained definitions. |
+| 842–2091  | `utilityToolDefinitions` (110 keys)                                                                                  | Deleted key by key.                                                                                                                      |
+| 2092–3083 | `runUtilityTool` + `executeUtilityTool` (**110 arms**, matching `Object.keys(utilityToolDefinitions).length`)        | Deleted arm by arm.                                                                                                                      |
+| 3084–4218 | ~90 private helpers                                                                                                  | **The actual risk.** Split by measurement, below.                                                                                        |
 
 **Split the helpers by measurement, not guessing.** One throwaway script (scratchpad, never
 committed) counts, for each helper in 3084–4218, how many `case` arms reference it:
@@ -800,13 +859,13 @@ fallback rather than inventing a second merge idiom.
 
 ### Slug lifecycle — generated once from the name, then frozen
 
-| Property | Rule |
-| --- | --- |
-| origin | `spec.slug` when declared, else `slugFromName(spec.name)` |
-| when applied | **first insert only.** Ignored on every later deploy |
-| mutability | **immutable forever.** Never regenerated, never updated, not even if the name changes |
-| uniqueness | `unique(app, slug)`, enforced in Postgres |
-| collision | **fail the seed loudly.** Never auto-suffix — a silent `-2` URL is worse than a failed deploy |
+| Property     | Rule                                                                                          |
+| ------------ | --------------------------------------------------------------------------------------------- |
+| origin       | `spec.slug` when declared, else `slugFromName(spec.name)`                                     |
+| when applied | **first insert only.** Ignored on every later deploy                                          |
+| mutability   | **immutable forever.** Never regenerated, never updated, not even if the name changes         |
+| uniqueness   | `unique(app, slug)`, enforced in Postgres                                                     |
+| collision    | **fail the seed loudly.** Never auto-suffix — a silent `-2` URL is worse than a failed deploy |
 
 `slug` is the one public identifier a tool may declare. Unlike `definitionKey` and the run host, it
 is **not a filesystem fact** — it is a URL that can legitimately differ from the folder name, so
@@ -829,7 +888,7 @@ the `unique(app, slug)` constraint. Generation is the only new piece: add `slugF
 `packages/control-plane` and `packages/database`.
 
 **The 10 legacy mismatches declare their slug explicitly.** Measured against the current catalog: of
-144 tools, `slugFromName` would produce a *different* slug for **10**, and collides for **0**. Those
+144 tools, `slugFromName` would produce a _different_ slug for **10**, and collides for **0**. Those
 10 get an explicit `slug:` line in their `definition.ts` during migration — their live URLs are then
 visible in the file that owns them, rather than depending on insertion order or an undocumented
 "created before the rule" exemption.
@@ -856,7 +915,7 @@ across 144 names says derivation holds at this scale, so new tools rarely need t
 before it ever reaches a database.
 
 **The footgun, and its guard.** Because the slug is applied only at first insert, editing `slug:` in a
-`definition.ts` that has already shipped does *nothing* — the DB keeps the original, and the two
+`definition.ts` that has already shipped does _nothing_ — the DB keeps the original, and the two
 silently disagree. The seed therefore compares them and **fails loudly** on mismatch:
 
 ```
@@ -899,8 +958,8 @@ Since you chose **migrate-and-improve**, fixtures are **capture-then-edit**, not
 1. `scripts/capture-tool-fixtures.mjs` runs **once at the top of the branch, while the old code still
    works**, and writes `tools/<key>/fixtures.json` per tool — inputs from each definition's own
    examples and option defaults, expected output captured from the current implementation.
-   `tests/json-formatter.test.mjs`'s final test (*"every locally runnable definition has a working
-   example"*, ~line 605) already iterates every definition and runs it; invert it and you have the
+   `tests/json-formatter.test.mjs`'s final test (_"every locally runnable definition has a working
+   example"_, ~line 605) already iterates every definition and runs it; invert it and you have the
    generator for free.
 2. Where a tool's §J feature gap intentionally changes output, **hand-edit that case** and note the
    change in the PR. Everything else stays captured, so the diff between "intended change" and
@@ -916,19 +975,19 @@ Since you chose **migrate-and-improve**, fixtures are **capture-then-edit**, not
 
 ### Phase order inside the branch
 
-| # | Phase | Scope | Notes |
-| --- | --- | --- | --- |
-| 0 | Test unblock | 6 test files deleted, `tool-catalog.test.mjs` rewritten to derived invariants + one generated inventory snapshot | **Must be first.** `tests/tool-category-devtools-a.test.mjs:64` asserts the **exact directory listing** of 6 tool folders, so adding `run.ts` to `csv-filter` breaks the build before any behaviour changes. |
-| 1 | Framework core | Part 1.1–1.8. Resolution spike, `--webpack` removal, spec, settings, result, host, generic worker, `ToolPage`, routes, sitemap, robots, icons, categories | No tools moved yet. Starts with the §1.5 spike. Ends with **3 pilot tools**, one per shape: `hmac-generator` (client/source-result), `merge-pdf` (worker/file-processor), `qr-code-generator` (client/generator). |
-| 2 | Content CMS | Part 3. `tool_content` migration, resolver, zod doc validation, admin editor, `seedManagedTools`, `sort_order` fix, `0004` backfill of the 113 missing devtools rows | Independent of tool moves; can proceed in parallel with 3–5. |
-| 3 | Media mechanical (22) | 8 image conversions + `remove-image-metadata` (6 identical arms), `compress-image`, `resize-image`, `rotate-image`, `flip-image`, `combine-images`, `social-media-image-resizer`, `image-to-pdf`, `pdf-to-jpg`, `pdf-to-png`, `merge-pdf`, `split-pdf`, `extract-pdf-pages`, `resize-pdf-pages`, `add-page-numbers` | **Highest tools-per-hour in the repo** — folders exist and already own their settings UI via `renderOptions`. Ends the 55-key options bag and 22 of 30 `buildJobOptions` arms. |
-| 4 | Media bespoke (8) | `compress-pdf` (qpdf/SAB + the `confirmed` guard at `MediaWorkbench.tsx:807`), `crop-pdf`, `crop-image` (crop-box readiness, `:971-995`), `watermark-pdf` (second file input, `watermarkInputId` transferable), `reorder-/delete-/rotate-pdf-pages` (post-inspection option seeding, `:720-731`) | The 18 `definition.slug ===` branches become two folder-level hooks: `validate?.(settings, files) → string \| null` and `onPagesInspected?.(previews) → Partial<Settings>`. Serialize these. |
-| 5 | Foldered devtools (13) | The 11 `createUtilityRuntimeSpec` tools + `json-viewer` + `json-formatter` | Lift one switch arm each into `run.ts`, options into `definition.ts`. Ends `components/UtilityToolPrimitives.tsx`. Proves a network tool (`dns-checker`) and a heavy-dep tool (`diagram-generator`, must lazy-import mermaid). |
-| 6 | Monolith mechanical (~82) | Tranched **by option shape, not category** — 4a ~25 zero-option `singleTool`; 4b ~28 sharing the 3 JSON/CSV option constants; 4c ~10 `dualTool`; 4d 18 `generatorTool`; 4e ~15 text-metrics/formatters (deepest helper webs → last) | Category tranches mix a 3-line tool with a 60-line one; option-shape tranches let one pattern be built once and repeated. |
-| 7 | Bespoke UI (~16) | `color-picker`, `css-box-shadow`, `border-radius-generator`, `json-editor`, `regex-tester`, `url-query-builder`, `csv-viewer`, `html-viewer`, `jwt-expiration-checker` (live countdown), `timestamp-converter`/`iso-date-converter` (live clock), `cron-parser`, `curl-to-fetch`/`curl-to-axios`, `json-path-tester`, `json-schema-validator`, `domain-age-checker` | Each needs a real `workspace.tsx`. One at a time. |
-| 8 | Server tool (1) | `domain-rating-checker` — the inlined `"use server"` Ahrefs action at `app/devtools/[slug]/page.tsx:75` (~110 lines) becomes `tools/domain-rating-checker/run.server.ts` | The one place the client/server boundary can break the build. Also the phase that removes the last `node:` import from the client graph, unblocking §1.5b. Verify with `pnpm build`, not just dev. |
-| 9 | Conversion pair (2) | `json-to-csv`, `csv-to-json` | Kills `DataConversionWorkbench` and the route's second `if` branch. |
-| 10 | Deletion + drain | Delete all 9 files in §1.8; complete the `format-json.ts` helper split per Part 2; shrink `packages/tool-catalog` to ~130 lines; rewrite `tools/AGENTS.md` (369 → ~90) | Deletion-only, so it's trivially revertable. |
+| #   | Phase                     | Scope                                                                                                                                                                                                                                                                                                                                                               | Notes                                                                                                                                                                                                                          |
+| --- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0   | Test unblock              | 6 test files deleted, `tool-catalog.test.mjs` rewritten to derived invariants + one generated inventory snapshot                                                                                                                                                                                                                                                    | **Must be first.** `tests/tool-category-devtools-a.test.mjs:64` asserts the **exact directory listing** of 6 tool folders, so adding `run.ts` to `csv-filter` breaks the build before any behaviour changes.                   |
+| 1   | Framework core            | Part 1.1–1.8. Resolution spike, `--webpack` removal, spec, settings, result, host, generic worker, `ToolPage`, routes, sitemap, robots, icons, categories                                                                                                                                                                                                           | No tools moved yet. Starts with the §1.5 spike. Ends with **3 pilot tools**, one per shape: `hmac-generator` (client/source-result), `merge-pdf` (worker/file-processor), `qr-code-generator` (client/generator).              |
+| 2   | Content CMS               | Part 3. `tool_content` migration, resolver, zod doc validation, admin editor, `seedManagedTools`, `sort_order` fix, `0004` backfill of the 113 missing devtools rows                                                                                                                                                                                                | Independent of tool moves; can proceed in parallel with 3–5.                                                                                                                                                                   |
+| 3   | Media mechanical (22)     | 8 image conversions + `remove-image-metadata` (6 identical arms), `compress-image`, `resize-image`, `rotate-image`, `flip-image`, `combine-images`, `social-media-image-resizer`, `image-to-pdf`, `pdf-to-jpg`, `pdf-to-png`, `merge-pdf`, `split-pdf`, `extract-pdf-pages`, `resize-pdf-pages`, `add-page-numbers`                                                 | **Highest tools-per-hour in the repo** — folders exist and already own their settings UI via `renderOptions`. Ends the 55-key options bag and 22 of 30 `buildJobOptions` arms.                                                 |
+| 4   | Media bespoke (8)         | `compress-pdf` (qpdf/SAB + the `confirmed` guard at `MediaWorkbench.tsx:807`), `crop-pdf`, `crop-image` (crop-box readiness, `:971-995`), `watermark-pdf` (second file input, `watermarkInputId` transferable), `reorder-/delete-/rotate-pdf-pages` (post-inspection option seeding, `:720-731`)                                                                    | The 18 `definition.slug ===` branches become two folder-level hooks: `validate?.(settings, files) → string \| null` and `onPagesInspected?.(previews) → Partial<Settings>`. Serialize these.                                   |
+| 5   | Foldered devtools (13)    | The 11 `createUtilityRuntimeSpec` tools + `json-viewer` + `json-formatter`                                                                                                                                                                                                                                                                                          | Lift one switch arm each into `run.ts`, options into `definition.ts`. Ends `components/UtilityToolPrimitives.tsx`. Proves a network tool (`dns-checker`) and a heavy-dep tool (`diagram-generator`, must lazy-import mermaid). |
+| 6   | Monolith mechanical (~82) | Tranched **by option shape, not category** — 4a ~25 zero-option `singleTool`; 4b ~28 sharing the 3 JSON/CSV option constants; 4c ~10 `dualTool`; 4d 18 `generatorTool`; 4e ~15 text-metrics/formatters (deepest helper webs → last)                                                                                                                                 | Category tranches mix a 3-line tool with a 60-line one; option-shape tranches let one pattern be built once and repeated.                                                                                                      |
+| 7   | Bespoke UI (~16)          | `color-picker`, `css-box-shadow`, `border-radius-generator`, `json-editor`, `regex-tester`, `url-query-builder`, `csv-viewer`, `html-viewer`, `jwt-expiration-checker` (live countdown), `timestamp-converter`/`iso-date-converter` (live clock), `cron-parser`, `curl-to-fetch`/`curl-to-axios`, `json-path-tester`, `json-schema-validator`, `domain-age-checker` | Each needs a real `workspace.tsx`. One at a time.                                                                                                                                                                              |
+| 8   | Server tool (1)           | `domain-rating-checker` — the inlined `"use server"` Ahrefs action at `app/devtools/[slug]/page.tsx:75` (~110 lines) becomes `tools/domain-rating-checker/run.server.ts`                                                                                                                                                                                            | The one place the client/server boundary can break the build. Also the phase that removes the last `node:` import from the client graph, unblocking §1.5b. Verify with `pnpm build`, not just dev.                             |
+| 9   | Conversion pair (2)       | `json-to-csv`, `csv-to-json`                                                                                                                                                                                                                                                                                                                                        | Kills `DataConversionWorkbench` and the route's second `if` branch.                                                                                                                                                            |
+| 10  | Deletion + drain          | Delete all 9 files in §1.8; complete the `format-json.ts` helper split per Part 2; shrink `packages/tool-catalog` to ~130 lines; rewrite `tools/AGENTS.md` (369 → ~90)                                                                                                                                                                                              | Deletion-only, so it's trivially revertable.                                                                                                                                                                                   |
 
 Non-tool cleanups to fold in during Phase 1: fix `app/auth/components/AuthDiscoveryNavigation.tsx`
 (it imports `toolManifest` directly, bypasses the DB, assumes `slug === componentKey`, and its
@@ -942,20 +1001,20 @@ Non-tool cleanups to fold in during Phase 1: fix `app/auth/components/AuthDiscov
 
 ### Effort
 
-| Phase | Tools | Days |
-| --- | --- | --- |
-| 0 Test unblock | 0 | 1.0 |
-| 1 Framework core + 3 pilots | 3 | 4.0 |
-| 2 Content CMS + admin editor | 0 | 3.5 |
-| 3 Media mechanical | 22 | 1.5 |
-| 4 Media bespoke | 8 | 3.5 |
-| 5 Foldered devtools | 13 | 2.0 |
-| 6 Monolith mechanical | 82 | 6.5 |
-| 7 Bespoke UI | 16 | 3.5 |
-| 8 Server tool | 1 | 0.5 |
-| 9 Conversion pair | 2 | 1.0 |
-| 10 Deletion + drain | 0 | 1.5 |
-| **Total** | **144** | **~28** |
+| Phase                        | Tools   | Days    |
+| ---------------------------- | ------- | ------- |
+| 0 Test unblock               | 0       | 1.0     |
+| 1 Framework core + 3 pilots  | 3       | 4.0     |
+| 2 Content CMS + admin editor | 0       | 3.5     |
+| 3 Media mechanical           | 22      | 1.5     |
+| 4 Media bespoke              | 8       | 3.5     |
+| 5 Foldered devtools          | 13      | 2.0     |
+| 6 Monolith mechanical        | 82      | 6.5     |
+| 7 Bespoke UI                 | 16      | 3.5     |
+| 8 Server tool                | 1       | 0.5     |
+| 9 Conversion pair            | 2       | 1.0     |
+| 10 Deletion + drain          | 0       | 1.5     |
+| **Total**                    | **144** | **~28** |
 
 Add ~15% for the §J feature work folded into phases 3–9 (migrate-and-improve). ~7 weeks solo.
 
@@ -965,41 +1024,43 @@ Add ~15% for the §J feature work folded into phases 3–9 (migrate-and-improve)
 
 Six magic counts (`114`×2, `30`×4) → **zero**. Five inventories → **one generated source**.
 
-| File | Invariant |
-| --- | --- |
-| `tests/tool-registry.test.mjs` **new** | **the no-tool-identity-in-shared-code invariant above** — the single most important assertion in the suite; plus: folder ↔ spec ↔ toolId bijection; keys and toolIds unique; **no definition declares `definitionKey` or a `runtime` field** (both are filesystem facts); every folder has **exactly one** of `run.ts`/`run.worker.ts`/`run.server.ts`; folder name matches `TOOL_SLUG_PATTERN`; every `category` ∈ `TOOL_CATEGORIES`; **no definition declares `iconKey`** (icons are uploaded data, §1.7b); every `layout` known; a declared `slug` matches `TOOL_SLUG_PATTERN` and is not reserved; **no `run.server.ts` importable from a client or worker context** (verified by asserting the server files' import graph never reaches `tool.worker.ts` or a `"use client"` module) |
-| `tests/tool-settings.test.mjs` **new** | every spec's defaults round-trip through `parseSettings`; every kind ∈ closed union; `visibleWhen.key` exists in the same spec; select/preset choices non-empty and contain the default; `pages` defaults parse |
-| `tests/tool-execution.test.mjs` **new** | walks `tools/*/fixtures.json`, runs each case through that tool's `run`. Zero-edit coverage for new tools |
-| `tests/tool-content.test.mjs` **new** | absent row → code values; unpublished row → code values; partial row → per-field coalesce; invalid `content_doc` → falls back, does not throw; unknown `category` → falls back |
-| `tests/tool-icon.test.mjs` **new** | no row → identicon, deterministic per toolId and stable across runs; missing Cloudinary env → identicon, uploads disabled, no throw; the built URL always pins `f_png` and includes the version segment; an SVG upload is rejected before it reaches Cloudinary; >1 MB is rejected; upload options always carry `resource_type: "image"` and `format: "png"` |
-| `tests/tool-catalog.test.mjs` **rewrite** | merge semantics only — DB overrides seed, invalid slug → `null` → disabled, archived disables, per-app slug uniqueness, `assertToolSlugImmutable`, reserved slugs, unknown toolId dropped. Counts as `specs.length === manifest.length`, never `114`/`30` |
-| `tests/media-processing-rules.test.mjs` **retarget** | keep every validator/limits/preset/geometry/`pdfRules`/jobId-reducer test (these are the repo's crown jewels) retargeted to `lib/tool-framework/media/*`; drop the two `30` literals and the `new Worker(` count |
-| `tests/database-migration.test.mjs` | keep SQL constraints + the immutability trigger; replace the 30 character-exact tuples with the union-of-applied-seeds invariant |
-| `tests/control-plane-admin.test.mjs` | keep reorder-completeness behaviour; derive the tool list from the manifest, drop `toolIds.length === 30` |
+| File                                                 | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tests/tool-registry.test.mjs` **new**               | **the no-tool-identity-in-shared-code invariant above** — the single most important assertion in the suite; plus: folder ↔ spec ↔ toolId bijection; keys and toolIds unique; **no definition declares `definitionKey` or a `runtime` field** (both are filesystem facts); every folder has **exactly one** of `run.ts`/`run.worker.ts`/`run.server.ts`; folder name matches `TOOL_SLUG_PATTERN`; every `category` ∈ `TOOL_CATEGORIES`; **no definition declares `iconKey`** (icons are uploaded data, §1.7b); every `layout` known; a declared `slug` matches `TOOL_SLUG_PATTERN` and is not reserved; **no `run.server.ts` importable from a client or worker context** (verified by asserting the server files' import graph never reaches `tool.worker.ts` or a `"use client"` module) |
+| `tests/tool-settings.test.mjs` **new**               | every spec's defaults round-trip through `parseSettings`; every kind ∈ closed union; `visibleWhen.key` exists in the same spec; select/preset choices non-empty and contain the default; `pages` defaults parse                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `tests/tool-execution.test.mjs` **new**              | walks `tools/*/fixtures.json`, runs each case through that tool's `run`. Zero-edit coverage for new tools                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `tests/tool-content.test.mjs` **new**                | absent row → code values; unpublished row → code values; partial row → per-field coalesce; invalid `content_doc` → falls back, does not throw; unknown `category` → falls back                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `tests/tool-icon.test.mjs` **new**                   | no row → identicon, deterministic per toolId and stable across runs; missing Cloudinary env → identicon, uploads disabled, no throw; the built URL always pins `f_png` and includes the version segment; an SVG upload is rejected before it reaches Cloudinary; >1 MB is rejected; upload options always carry `resource_type: "image"` and `format: "png"`                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `tests/tool-catalog.test.mjs` **rewrite**            | merge semantics only — DB overrides seed, invalid slug → `null` → disabled, archived disables, per-app slug uniqueness, `assertToolSlugImmutable`, reserved slugs, unknown toolId dropped. Counts as `specs.length === manifest.length`, never `114`/`30`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `tests/media-processing-rules.test.mjs` **retarget** | keep every validator/limits/preset/geometry/`pdfRules`/jobId-reducer test (these are the repo's crown jewels) retargeted to `lib/tool-framework/media/*`; drop the two `30` literals and the `new Worker(` count                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `tests/database-migration.test.mjs`                  | keep SQL constraints + the immutability trigger; replace the 30 character-exact tuples with the union-of-applied-seeds invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `tests/control-plane-admin.test.mjs`                 | keep reorder-completeness behaviour; derive the tool list from the manifest, drop `toolIds.length === 30`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 The 6 deleted test files all `readFile` source and regex for component names, JSX text, import
-statements, and Tailwind pixel values — which root `AGENTS.md` explicitly forbids: *"Do not add tests
+statements, and Tailwind pixel values — which root `AGENTS.md` explicitly forbids: _"Do not add tests
 that read source files and assert imports, component names, JSX text, utility classes… Enforce
 architecture boundaries with typechecking, linting, or dependency tooling instead of source-text
-assertions."* The generated registry plus `tsc --noEmit` enforces those boundaries properly.
+assertions."_ The generated registry plus `tsc --noEmit` enforces those boundaries properly.
 
 **Keep untouched:** `workspace-structure`, `single-app-architecture` (its COOP/COEP assertion is
 load-bearing for qpdf), `frontend-config`, `authorization`, `auth-*`, all `paperwork-*`, `invoice-*`,
 `template-*`, `document-template-model`, `published-templates`, `admin-audit`, `feature-flags`,
 `postgres-integration`, `ui-class-merging`, `design-system-alignment` (unless its
-*"tool routes share the design-system page shell"* test reads route source — delete that one test if so).
+_"tool routes share the design-system page shell"_ test reads route source — delete that one test if so).
 
 ---
 
 ## Verification
 
 **Per tool, seconds:**
+
 ```bash
 pnpm lint                       # tsc --noEmit — the real type gate (next build ignores errors)
 node --test tests/tool-execution.test.mjs tests/tool-registry.test.mjs tests/tool-settings.test.mjs
 ```
 
 **Per phase boundary:**
+
 ```bash
 pnpm test
 pnpm test:media                                  # watch the coverage denominator
@@ -1012,6 +1073,7 @@ pnpm test:e2e
 depends on both resolving dynamic paths. A green `build` proves nothing about `dev`.
 
 Manual smoke at every boundary — the three permanently-suspicious paths:
+
 1. **`compress-pdf` strong mode** — `crossOriginIsolated` / `SharedArrayBuffer` / qpdf. Check
    `crossOriginIsolated === true` in the console on `/media/compress-pdf`.
 2. **`domain-rating-checker`** — the only server-runtime tool.
@@ -1019,6 +1081,7 @@ Manual smoke at every boundary — the three permanently-suspicious paths:
    generic worker.
 
 **Definition of done — every item runnable:**
+
 ```bash
 test ! -f tools/client-registry.ts
 test ! -f lib/devtools/format-json.ts

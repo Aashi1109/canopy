@@ -14,12 +14,12 @@
 **Design source of truth:** `designs/design.pen` + `designs/SYSTEM.lib.pen` (Pencil).
 **Code source of truth:** this package. Where the two disagree, `packages/ui/src/design-system-manifest.ts` is the crosswalk that decides which design node maps to which component.
 
-| Audience | Start here |
-| --- | --- |
-| Building a feature | [Consuming the system](#1-consuming-the-system) → [Component inventory](#4-component-inventory) |
-| Styling anything | [Foundations](#3-foundations) — never write a raw hex |
-| Adding/changing a component | [Contributing](#8-contributing) → [Component contract](#5-component-contract) |
-| Reviewing a PR | [Review checklist](#7-governance) → [Verification](#9-verification) |
+| Audience                    | Start here                                                                                      |
+| --------------------------- | ----------------------------------------------------------------------------------------------- |
+| Building a feature          | [Consuming the system](#1-consuming-the-system) → [Component inventory](#4-component-inventory) |
+| Styling anything            | [Foundations](#3-foundations) — never write a raw hex                                           |
+| Adding/changing a component | [Contributing](#8-contributing) → [Component contract](#5-component-contract)                   |
+| Reviewing a PR              | [Review checklist](#7-governance) → [Verification](#9-verification)                             |
 
 ---
 
@@ -41,15 +41,15 @@ import { cn } from "@smarttools/ui/lib/utils";
 
 **Package facts**
 
-| | |
-| --- | --- |
-| Name | `@smarttools/ui` (private workspace package) |
-| Module type | ESM, **raw TSX exported — no build step** |
-| Public exports | `.` → `src/index.tsx`, `./components/*`, `./hooks/*`, `./lib/*`, `./theme.css` |
-| Internal imports | `#components/*`, `#lib/*`, `#hooks/*` (use these inside the package, never relative paths across folders) |
-| Peer dep | `react@^19.2.7` |
-| Runtime deps | `radix-ui`, `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react`, `motion`, `sonner`, `react-resizable-panels`, `@dnd-kit/*` |
-| shadcn config | `components.json` — style `new-york`, `rsc: true`, baseColor `slate`, `cssVariables: true`, icons `lucide` |
+|                  |                                                                                                                                              |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Name             | `@smarttools/ui` (private workspace package)                                                                                                 |
+| Module type      | ESM, **raw TSX exported — no build step**                                                                                                    |
+| Public exports   | `.` → `src/index.tsx`, `./components/*`, `./hooks/*`, `./lib/*`, `./theme.css`                                                               |
+| Internal imports | `#components/*`, `#lib/*`, `#hooks/*` (use these inside the package, never relative paths across folders)                                    |
+| Peer dep         | `react@^19.2.7`                                                                                                                              |
+| Runtime deps     | `radix-ui`, `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react`, `motion`, `sonner`, `react-resizable-panels`, `@dnd-kit/*` |
+| shadcn config    | `components.json` — style `new-york`, `rsc: true`, baseColor `slate`, `cssVariables: true`, icons `lucide`                                   |
 
 **Exactly one `@import "tailwindcss"` may exist repo-wide.** `theme.css` opens with `@source ".";` so Tailwind scans this package's sources for class usage.
 
@@ -89,43 +89,43 @@ Tailwind v4, CSS-first. **There is no `tailwind.config.*` file** — do not crea
 
 35 semantic tokens. Every one has a matching `--color-*` utility. No orphans in either direction.
 
-| Token | Value | Use for |
-| --- | --- | --- |
-| `--background` | `#f6f7f9` | Page ground |
-| `--foreground` | `#1a1a1a` | Body text |
-| `--card` | `#ffffff` | Raised surface |
-| `--card-foreground` | `#1a1a1a` | Text on a card |
-| `--popover` | `#ffffff` | Overlay surface |
-| `--popover-foreground` | `#1a1a1a` | Text on an overlay |
-| `--primary` | `#0066ff` | Primary action, active state |
-| `--primary-foreground` | `#ffffff` | Text on primary |
-| `--secondary` | `#ffffff` | Secondary action fill |
-| `--secondary-foreground` | `#1a1a1a` | Text on secondary |
-| `--muted` | `#f6f7f9` | Recessed fill, segmented shell |
-| `--muted-foreground` | `#666666` | Labels, helper text, metadata |
-| `--accent` | `#e8f0ff` | Soft brand fill, hover, icon tiles |
-| `--accent-foreground` | `#0066ff` | Text/icon on accent |
-| `--destructive` | `#dc2626` | Destructive action |
-| `--destructive-foreground` | `#ffffff` | Text on destructive |
-| `--destructive-soft` | `#fde7e7` | Destructive background wash |
-| `--success` | `#12a150` | Success action/icon |
-| `--success-foreground` | `#ffffff` | Text on success |
-| `--success-soft` | `#e6f6ec` | Success background wash |
-| `--warning` | `#b45309` | Warning action/icon |
-| `--warning-foreground` | `#ffffff` | Text on warning |
-| `--warning-soft` | `#fbeedd` | Warning background wash |
-| `--validation` | `#e5484d` | Inline field error |
-| `--status-warning` | `#b7791f` | Status badge — warning |
-| `--status-warning-soft` | `#fef3e2` | Status badge — warning fill |
-| `--status-danger` | `#d64545` | Status badge — danger |
-| `--status-danger-soft` | `#fdecec` | Status badge — danger fill |
-| `--surface-ink` | `#111214` | Inverse surface: footer, toast, processing panel |
-| `--on-ink` | `#ffffff` | Text on ink |
-| `--on-ink-muted` | `#a7adb5` | Secondary text/links on ink |
-| `--border` | `#eaecef` | Default hairline |
-| `--input` | `#d6d9de` | Control border (stronger than `--border`) |
-| `--ring` | `#0066ff` | Focus ring |
-| `--syntax-string` | `#0a8040` | Code-editor string token |
+| Token                      | Value     | Use for                                          |
+| -------------------------- | --------- | ------------------------------------------------ |
+| `--background`             | `#f6f7f9` | Page ground                                      |
+| `--foreground`             | `#1a1a1a` | Body text                                        |
+| `--card`                   | `#ffffff` | Raised surface                                   |
+| `--card-foreground`        | `#1a1a1a` | Text on a card                                   |
+| `--popover`                | `#ffffff` | Overlay surface                                  |
+| `--popover-foreground`     | `#1a1a1a` | Text on an overlay                               |
+| `--primary`                | `#0066ff` | Primary action, active state                     |
+| `--primary-foreground`     | `#ffffff` | Text on primary                                  |
+| `--secondary`              | `#ffffff` | Secondary action fill                            |
+| `--secondary-foreground`   | `#1a1a1a` | Text on secondary                                |
+| `--muted`                  | `#f6f7f9` | Recessed fill, segmented shell                   |
+| `--muted-foreground`       | `#666666` | Labels, helper text, metadata                    |
+| `--accent`                 | `#e8f0ff` | Soft brand fill, hover, icon tiles               |
+| `--accent-foreground`      | `#0066ff` | Text/icon on accent                              |
+| `--destructive`            | `#dc2626` | Destructive action                               |
+| `--destructive-foreground` | `#ffffff` | Text on destructive                              |
+| `--destructive-soft`       | `#fde7e7` | Destructive background wash                      |
+| `--success`                | `#12a150` | Success action/icon                              |
+| `--success-foreground`     | `#ffffff` | Text on success                                  |
+| `--success-soft`           | `#e6f6ec` | Success background wash                          |
+| `--warning`                | `#b45309` | Warning action/icon                              |
+| `--warning-foreground`     | `#ffffff` | Text on warning                                  |
+| `--warning-soft`           | `#fbeedd` | Warning background wash                          |
+| `--validation`             | `#e5484d` | Inline field error                               |
+| `--status-warning`         | `#b7791f` | Status badge — warning                           |
+| `--status-warning-soft`    | `#fef3e2` | Status badge — warning fill                      |
+| `--status-danger`          | `#d64545` | Status badge — danger                            |
+| `--status-danger-soft`     | `#fdecec` | Status badge — danger fill                       |
+| `--surface-ink`            | `#111214` | Inverse surface: footer, toast, processing panel |
+| `--on-ink`                 | `#ffffff` | Text on ink                                      |
+| `--on-ink-muted`           | `#a7adb5` | Secondary text/links on ink                      |
+| `--border`                 | `#eaecef` | Default hairline                                 |
+| `--input`                  | `#d6d9de` | Control border (stronger than `--border`)        |
+| `--ring`                   | `#0066ff` | Focus ring                                       |
+| `--syntax-string`          | `#0a8040` | Code-editor string token                         |
 
 **Semantic pairs.** `*` and `*-foreground` are a contract — use them together. `*-soft` is a background wash only; never put `*-foreground` text on a `*-soft` fill.
 
@@ -135,34 +135,34 @@ Tailwind v4, CSS-first. **There is no `tailwind.config.*` file** — do not crea
 
 Five families, all loaded via `next/font/google` in `app/layout.tsx` (`display: "swap"`, `subsets: ["latin"]`) and exposed as CSS vars.
 
-| Utility | Token | Stack | Use for |
-| --- | --- | --- | --- |
-| `font-sans` | `--font-sans` | Geist | Body, controls (default on `body`) |
-| `font-heading` | `--font-heading` | Inter | `h1`–`h6` (applied automatically) |
-| `font-caption` | `--font-caption` | Funnel Sans | Labels, badges, metadata |
-| `font-script` | `--font-script` | Caveat | Expressive endorsement only |
-| `font-mono` | `--font-mono` | Geist Mono | Code, workbench status bar |
+| Utility        | Token            | Stack       | Use for                            |
+| -------------- | ---------------- | ----------- | ---------------------------------- |
+| `font-sans`    | `--font-sans`    | Geist       | Body, controls (default on `body`) |
+| `font-heading` | `--font-heading` | Inter       | `h1`–`h6` (applied automatically)  |
+| `font-caption` | `--font-caption` | Funnel Sans | Labels, badges, metadata           |
+| `font-script`  | `--font-script`  | Caveat      | Expressive endorsement only        |
+| `font-mono`    | `--font-mono`    | Geist Mono  | Code, workbench status bar         |
 
 **Named typography:** import `H1`–`H6`, `Display`, `P`, `Text`, `Lead`, `Large`, `Small`, `Muted`, `Caption`, `Overline`, `Metric`, `Strong`, `Blockquote`, `List`, `OrderedList`, `InlineCode`, `CodeBlock`, and `TextLink` from `@smarttools/ui`. Definitions live in `src/components/typography.tsx`; every component has a fixed semantic element, native attributes/ref, and no `as` or `variant` prop.
 
-| Components | Size / line height | Font / weight |
-| --- | --- | --- |
-| Display | 48px / 1.1 | Inter / 700 |
-| H1 | 32px / 1.2 | Inter / 600 |
-| H2 | 24px / 1.25 | Inter / 600 |
-| H3 | 20px / 1.3 | Inter / 600 |
-| H4 | 18px / 1.4 | Inter / 600 |
-| H5 | 16px / 1.5 | Inter / 600 |
-| H6 | 15px / 1.5 | Inter / 600 |
-| P, Text | 15px / 1.5 | Geist / 400 |
-| Lead, Large | 18px / 1.5 | Geist / 400, 600 |
-| Small, Caption | 13px / 1.35 | Funnel Sans / 500, 400 |
-| Muted | 13px / 1.35 | Geist / 400 |
-| Overline | 11px / 16px | Funnel Sans / 600, uppercase |
-| Metric | 32px / 1.2 | Inter / 600, tabular numerals |
-| Strong | Inherited size and line height | Inherited family / 600 |
-| InlineCode, CodeBlock | 12px / 1.55 | Geist Mono |
-| TextLink | Inherited size and line height | Geist |
+| Components            | Size / line height             | Font / weight                 |
+| --------------------- | ------------------------------ | ----------------------------- |
+| Display               | 48px / 1.1                     | Inter / 700                   |
+| H1                    | 32px / 1.2                     | Inter / 600                   |
+| H2                    | 24px / 1.25                    | Inter / 600                   |
+| H3                    | 20px / 1.3                     | Inter / 600                   |
+| H4                    | 18px / 1.4                     | Inter / 600                   |
+| H5                    | 16px / 1.5                     | Inter / 600                   |
+| H6                    | 15px / 1.5                     | Inter / 600                   |
+| P, Text               | 15px / 1.5                     | Geist / 400                   |
+| Lead, Large           | 18px / 1.5                     | Geist / 400, 600              |
+| Small, Caption        | 13px / 1.35                    | Funnel Sans / 500, 400        |
+| Muted                 | 13px / 1.35                    | Geist / 400                   |
+| Overline              | 11px / 16px                    | Funnel Sans / 600, uppercase  |
+| Metric                | 32px / 1.2                     | Inter / 600, tabular numerals |
+| Strong                | Inherited size and line height | Inherited family / 600        |
+| InlineCode, CodeBlock | 12px / 1.55                    | Geist Mono                    |
+| TextLink              | Inherited size and line height | Geist                         |
 
 `Blockquote`, `List`, and `OrderedList` use the body recipe and native quote/list semantics. `CodeBlock` renders `pre > code`. No text component fixes its element height or adds page-level margins.
 
@@ -182,22 +182,22 @@ The class-merging helper recognizes all semantic size tokens so adding a text co
 
 ### 3.4 Radius
 
-| Utility | Value |
-| --- | --- |
-| `rounded-sm` | `0.25rem` (4px) |
-| `rounded-md` | `0.5rem` (8px) |
-| `rounded-lg` | `0.5rem` (8px) |
+| Utility      | Value            |
+| ------------ | ---------------- |
+| `rounded-sm` | `0.25rem` (4px)  |
+| `rounded-md` | `0.5rem` (8px)   |
+| `rounded-lg` | `0.5rem` (8px)   |
 | `rounded-xl` | `0.75rem` (12px) |
 
 Convention: **4px** selection controls, **8px** inputs/buttons/alerts, **12px** cards and panels, `rounded-full` pills. `md` and `lg` are currently the same value — see [Known gaps](#10-known-gaps).
 
 ### 3.5 Elevation
 
-| Utility | Value | Use for |
-| --- | --- | --- |
-| `shadow-sm` | `0 1px 2px #0000000d` | Segmented active pill, media workbench |
-| `shadow-md` | `0 2px 4px #00000008, 0 6px 16px #0000000f` | Popovers, conversion workbench |
-| `shadow-lg` | `0 2px 4px #00000008, 0 12px 32px #0000000f` | Cards, workbench shell |
+| Utility     | Value                                        | Use for                                |
+| ----------- | -------------------------------------------- | -------------------------------------- |
+| `shadow-sm` | `0 1px 2px #0000000d`                        | Segmented active pill, media workbench |
+| `shadow-md` | `0 2px 4px #00000008, 0 6px 16px #0000000f`  | Popovers, conversion workbench         |
+| `shadow-lg` | `0 2px 4px #00000008, 0 12px 32px #0000000f` | Cards, workbench shell                 |
 
 Three steps, no more. If a surface needs a fourth, it probably needs a border instead.
 
@@ -225,56 +225,56 @@ So headings and focus rings are correct without any class. Do not re-declare the
 
 ### Shell & navigation
 
-| Component | Source | Variants / key props |
-| --- | --- | --- |
-| `AppContainer` | `index.tsx` | — |
-| `BrandLockup` | `index.tsx` | req `href`, `name` |
-| `ProductHeader` | `index.tsx` | `compact?: boolean` (72px vs 88px); main navbar uses `ScrollAwareHeader` to hide after 20px downward travel and reveal after 10px upward travel; stays visible within one header height of the top, during focus, and while a menu is expanded; 350ms gentle exit / 300ms entrance, immediate keyboard reveal and no animation with reduced motion; passive frame-batched scrolling updates only the header attribute, never rerendering children; nested tool scrolling and Admin chrome are unaffected |
-| `AccountNavigation` | `index.tsx` | req `returnTo`, `user \| null` |
-| `UniversalProductHeader` | `patterns.tsx` | req `category`, `description`, `icon`, `title` |
-| `InlineProductHeader` | `patterns.tsx` | req `description`, `icon`, `title` |
-| `ToolPageShell` | `index.tsx` | req `category`, `description`, `productHref`, `productName`, `title`; `showIntro`, `showCategoryInBreadcrumb` |
-| `ToolNav` | `index.tsx` | req `items[]` |
-| `SidebarNavItem` | `patterns.tsx` | `active?: boolean` |
-| `ProductFooter` | `patterns.tsx` | req `brand`, `columns[]`, `copyright`, `description` |
+| Component                | Source         | Variants / key props                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AppContainer`           | `index.tsx`    | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `BrandLockup`            | `index.tsx`    | req `href`, `name`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `ProductHeader`          | `index.tsx`    | `compact?: boolean` (72px vs 88px); main navbar uses `ScrollAwareHeader` to hide after 20px downward travel and reveal after 10px upward travel; stays visible within one header height of the top, during focus, and while a menu is expanded; 350ms gentle exit / 300ms entrance, immediate keyboard reveal and no animation with reduced motion; passive frame-batched scrolling updates only the header attribute, never rerendering children; nested tool scrolling and Admin chrome are unaffected |
+| `AccountNavigation`      | `index.tsx`    | req `returnTo`, `user \| null`                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `UniversalProductHeader` | `patterns.tsx` | req `category`, `description`, `icon`, `title`                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `InlineProductHeader`    | `patterns.tsx` | req `description`, `icon`, `title`                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `ToolPageShell`          | `index.tsx`    | req `category`, `description`, `productHref`, `productName`, `title`; `showIntro`, `showCategoryInBreadcrumb`                                                                                                                                                                                                                                                                                                                                                                                            |
+| `ToolNav`                | `index.tsx`    | req `items[]`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `SidebarNavItem`         | `patterns.tsx` | `active?: boolean`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `ProductFooter`          | `patterns.tsx` | req `brand`, `columns[]`, `copyright`, `description`                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 ### Layout & headings
 
-| Component | Source | Variants |
-| --- | --- | --- |
-| `PageHero` | `index.tsx` | `align: left \| center`, `compact: boolean` |
-| `ToolPageHeader` | `index.tsx` | `inlineEyebrow: boolean` |
-| `SectionHeading` | `index.tsx` | — |
-| `ToolPageIntro` | `patterns.tsx` | — |
-| `Separator` | `separator.tsx` | `orientation` |
-| `ScrollArea` / `ScrollBar` | `scroll-area.tsx` | `viewportClassName`, `viewportProps` |
-| `ResizablePanelGroup` / `Panel` / `Handle` | `resizable.tsx` | `withHandle?: boolean` |
+| Component                                  | Source            | Variants                                    |
+| ------------------------------------------ | ----------------- | ------------------------------------------- |
+| `PageHero`                                 | `index.tsx`       | `align: left \| center`, `compact: boolean` |
+| `ToolPageHeader`                           | `index.tsx`       | `inlineEyebrow: boolean`                    |
+| `SectionHeading`                           | `index.tsx`       | —                                           |
+| `ToolPageIntro`                            | `patterns.tsx`    | —                                           |
+| `Separator`                                | `separator.tsx`   | `orientation`                               |
+| `ScrollArea` / `ScrollBar`                 | `scroll-area.tsx` | `viewportClassName`, `viewportProps`        |
+| `ResizablePanelGroup` / `Panel` / `Handle` | `resizable.tsx`   | `withHandle?: boolean`                      |
 
 ### Actions
 
-| Component | Source | Variants |
-| --- | --- | --- |
-| `Button` | `button.tsx` | `variant: default \| strong \| destructive \| outline \| secondary \| ghost \| input-icon \| danger-subtle \| link`<br>`size: default \| xs \| sm \| md \| lg \| icon \| icon-xs \| icon-sm \| icon-md \| icon-lg`<br>`asChild`; `disabled` preserves colors at 50% opacity; `loading` disables activation and shows a circular spinner with `aria-busy` |
-| `ButtonGroup` | `button-group.tsx` | `orientation: horizontal \| vertical` |
-| `CompactAction` | `patterns.tsx` | pre-bound `Button size="sm" variant="outline"` at 32px |
-| `RemoveFileAction` | `patterns.tsx` | pre-bound icon button, `aria-label="Remove file"` |
+| Component          | Source             | Variants                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------ | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`           | `button.tsx`       | `variant: default \| strong \| destructive \| outline \| secondary \| ghost \| input-icon \| danger-subtle \| link`<br>`size: default \| xs \| sm \| md \| lg \| icon \| icon-xs \| icon-sm \| icon-md \| icon-lg`<br>`asChild`; `disabled` preserves colors at 50% opacity; `loading` disables activation and shows a circular spinner with `aria-busy` |
+| `ButtonGroup`      | `button-group.tsx` | `orientation: horizontal \| vertical`                                                                                                                                                                                                                                                                                                                    |
+| `CompactAction`    | `patterns.tsx`     | pre-bound `Button size="sm" variant="outline"` at 32px                                                                                                                                                                                                                                                                                                   |
+| `RemoveFileAction` | `patterns.tsx`     | pre-bound icon button, `aria-label="Remove file"`                                                                                                                                                                                                                                                                                                        |
 
 ### Forms
 
-| Component | Source | Variants |
-| --- | --- | --- |
-| `Field` (composition) | `index.tsx` | `variant: default \| auth`; req `htmlFor`, `label`, single-element `children` |
-| `AuthField` | `index.tsx` | `Field` with `variant="auth"` pre-bound |
-| `FieldRoot` + parts | `field.tsx` | `variant: default \| auth`, `orientation: vertical \| horizontal \| responsive` |
-| `Input` | `input.tsx` | `size: xs \| sm \| default \| md \| lg` (native `size` omitted); native range controls have no text-input padding or border, including inside workbenches, so the thumb reaches both track endpoints |
-| `Textarea` | `textarea.tsx` | — (`min-h-[88px]`, `field-sizing-content`) |
-| `InlineTextEditor` | `InlineTextEditor.tsx` | controlled `value`, `onChange`, accessible `label`; `multiline`, `required`, `maxLength`, `disabled`; inherits parent typography in display and editing states |
-| `Select` + parts | `select.tsx` | `SelectTrigger size: xs \| sm \| default \| md \| lg`; auto-bridges native `<option>` children |
-| `RadioGroup` / `RadioGroupItem` | `radio-group.tsx` | `size: xs \| sm \| default \| md \| lg` |
-| `Checkbox` (composition) | `index.tsx` | req `label`; wraps `CheckboxControl` in a `<label>`; optional `tooltip` uses shared Tooltip parts under a group-level `TooltipProvider`, with a focusable wrapper when disabled |
-| `CheckboxControl` | `checkbox.tsx` | fixed `size-5`; checked / indeterminate |
-| `Switch` | `switch.tsx` | `size: xs \| sm \| default \| lg` |
-| `Label` | `label.tsx` | — |
+| Component                       | Source                 | Variants                                                                                                                                                                                             |
+| ------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Field` (composition)           | `index.tsx`            | `variant: default \| auth`; req `htmlFor`, `label`, single-element `children`                                                                                                                        |
+| `AuthField`                     | `index.tsx`            | `Field` with `variant="auth"` pre-bound                                                                                                                                                              |
+| `FieldRoot` + parts             | `field.tsx`            | `variant: default \| auth`, `orientation: vertical \| horizontal \| responsive`                                                                                                                      |
+| `Input`                         | `input.tsx`            | `size: xs \| sm \| default \| md \| lg` (native `size` omitted); native range controls have no text-input padding or border, including inside workbenches, so the thumb reaches both track endpoints |
+| `Textarea`                      | `textarea.tsx`         | — (`min-h-[88px]`, `field-sizing-content`)                                                                                                                                                           |
+| `InlineTextEditor`              | `InlineTextEditor.tsx` | controlled `value`, `onChange`, accessible `label`; `multiline`, `required`, `maxLength`, `disabled`; inherits parent typography in display and editing states                                       |
+| `Select` + parts                | `select.tsx`           | `SelectTrigger size: xs \| sm \| default \| md \| lg`; auto-bridges native `<option>` children                                                                                                       |
+| `RadioGroup` / `RadioGroupItem` | `radio-group.tsx`      | `size: xs \| sm \| default \| md \| lg`                                                                                                                                                              |
+| `Checkbox` (composition)        | `index.tsx`            | req `label`; wraps `CheckboxControl` in a `<label>`; optional `tooltip` uses shared Tooltip parts under a group-level `TooltipProvider`, with a focusable wrapper when disabled                      |
+| `CheckboxControl`               | `checkbox.tsx`         | fixed `size-5`; checked / indeterminate                                                                                                                                                              |
+| `Switch`                        | `switch.tsx`           | `size: xs \| sm \| default \| lg`                                                                                                                                                                    |
+| `Label`                         | `label.tsx`            | —                                                                                                                                                                                                    |
 
 `Field` clones its child to inject `id`, `aria-describedby`, `aria-errormessage`, `aria-invalid`. **Use `Field` rather than pairing `Label` + `Input` by hand** — that is where the a11y wiring lives.
 
@@ -282,51 +282,51 @@ Place `InlineTextEditor` inside the appropriate typography component, such as `H
 
 ### Feedback
 
-| Component | Source | Variants |
-| --- | --- | --- |
-| `Alert` / `AlertTitle` / `AlertDescription` | `alert.tsx` | `variant: default \| destructive` |
-| `AlertBanner` | `index.tsx` | `variant: info \| success \| warning \| error`; `error` → `role="alert"`, others → `role="status"` |
-| `AlertDialog` + parts | `alert-dialog.tsx` | `AlertDialogContent size: default \| sm`; `AlertDialogMedia` 64px icon slot |
-| `Toaster` / `toast` | `sonner.tsx` | ink surface; presets success/info/warning/error/loading |
-| `Tooltip` + parts | `tooltip.tsx` | `delayDuration` 300, `sideOffset` 6 |
-| `ProcessingStatus` | `patterns.tsx` | optional `progress` (clamped 0–100), `aria-live="polite"` |
-| `RightPanelProcessing` | `patterns.tsx` | `progress` **required** here |
-| `Empty` + parts | `empty.tsx` | `EmptyMedia variant: default \| icon` |
-| `EmptyState` | `index.tsx` | `headingLevel: h1 \| h2 \| h3` |
-| `InlineGuidance` | `patterns.tsx` | optional `icon` (default `Lightbulb`) |
+| Component                                   | Source             | Variants                                                                                           |
+| ------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------- |
+| `Alert` / `AlertTitle` / `AlertDescription` | `alert.tsx`        | `variant: default \| destructive`                                                                  |
+| `AlertBanner`                               | `index.tsx`        | `variant: info \| success \| warning \| error`; `error` → `role="alert"`, others → `role="status"` |
+| `AlertDialog` + parts                       | `alert-dialog.tsx` | `AlertDialogContent size: default \| sm`; `AlertDialogMedia` 64px icon slot                        |
+| `Toaster` / `toast`                         | `sonner.tsx`       | ink surface; presets success/info/warning/error/loading                                            |
+| `Tooltip` + parts                           | `tooltip.tsx`      | `delayDuration` 300, `sideOffset` 6                                                                |
+| `ProcessingStatus`                          | `patterns.tsx`     | optional `progress` (clamped 0–100), `aria-live="polite"`                                          |
+| `RightPanelProcessing`                      | `patterns.tsx`     | `progress` **required** here                                                                       |
+| `Empty` + parts                             | `empty.tsx`        | `EmptyMedia variant: default \| icon`                                                              |
+| `EmptyState`                                | `index.tsx`        | `headingLevel: h1 \| h2 \| h3`                                                                     |
+| `InlineGuidance`                            | `patterns.tsx`     | optional `icon` (default `Lightbulb`)                                                              |
 
 ### Surfaces & data
 
-| Component | Source | Variants |
-| --- | --- | --- |
-| `Card` + parts | `card.tsx` | — |
-| `Accordion` + `AccordionItem`, `AccordionTrigger`, `AccordionContent` | `accordion.tsx` | shadcn/Radix pattern; `type: single \| multiple`; use `multiple` for independent settings groups. Keep form values controlled when collapsed content unmounts. Place account actions beside their description, never inside the trigger. |
-| `SectionCard` | `index.tsx` | — |
-| `DangerZone` | `index.tsx` | — |
-| `CatalogCard` / `ToolCard` | `index.tsx` | req `action`, `description`, `title` |
-| `Badge` | `badge.tsx` | `variant: default \| secondary \| destructive \| outline \| ghost \| tag \| link`, `asChild` |
-| `StatusBadge` | `index.tsx` | `variant: neutral \| info \| success \| warning \| danger \| archived` |
-| `Tag` | `design-system-components.tsx` | `Badge` with `secondary` forced |
-| `Avatar` + `AvatarBadge` / `AvatarGroup` / `AvatarGroupCount` | `avatar.tsx` | `size: default \| sm \| lg` |
-| `Table` + parts | `table.tsx` | `showColumnDividers?: boolean`; sticky `th` |
-| `Tabs` + parts | `tabs.tsx` | `TabsList variant: default \| line \| segmented` |
-| `SegmentedControl` | `design-system-components.tsx` | `size: inline \| navigation`; req `items[]` |
-| `IconTile` | `patterns.tsx` | `size: sm \| default \| lg`, `tone: accent \| contrast \| success \| muted` |
-| `MetricCard` | `patterns.tsx` | req `label`, `value`; optional `delta` |
+| Component                                                             | Source                         | Variants                                                                                                                                                                                                                                 |
+| --------------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Card` + parts                                                        | `card.tsx`                     | —                                                                                                                                                                                                                                        |
+| `Accordion` + `AccordionItem`, `AccordionTrigger`, `AccordionContent` | `accordion.tsx`                | shadcn/Radix pattern; `type: single \| multiple`; use `multiple` for independent settings groups. Keep form values controlled when collapsed content unmounts. Place account actions beside their description, never inside the trigger. |
+| `SectionCard`                                                         | `index.tsx`                    | —                                                                                                                                                                                                                                        |
+| `DangerZone`                                                          | `index.tsx`                    | —                                                                                                                                                                                                                                        |
+| `CatalogCard` / `ToolCard`                                            | `index.tsx`                    | req `action`, `description`, `title`                                                                                                                                                                                                     |
+| `Badge`                                                               | `badge.tsx`                    | `variant: default \| secondary \| destructive \| outline \| ghost \| tag \| link`, `asChild`                                                                                                                                             |
+| `StatusBadge`                                                         | `index.tsx`                    | `variant: neutral \| info \| success \| warning \| danger \| archived`                                                                                                                                                                   |
+| `Tag`                                                                 | `design-system-components.tsx` | `Badge` with `secondary` forced                                                                                                                                                                                                          |
+| `Avatar` + `AvatarBadge` / `AvatarGroup` / `AvatarGroupCount`         | `avatar.tsx`                   | `size: default \| sm \| lg`                                                                                                                                                                                                              |
+| `Table` + parts                                                       | `table.tsx`                    | `showColumnDividers?: boolean`; sticky `th`                                                                                                                                                                                              |
+| `Tabs` + parts                                                        | `tabs.tsx`                     | `TabsList variant: default \| line \| segmented`                                                                                                                                                                                         |
+| `SegmentedControl`                                                    | `design-system-components.tsx` | `size: inline \| navigation`; req `items[]`                                                                                                                                                                                              |
+| `IconTile`                                                            | `patterns.tsx`                 | `size: sm \| default \| lg`, `tone: accent \| contrast \| success \| muted`                                                                                                                                                              |
+| `MetricCard`                                                          | `patterns.tsx`                 | req `label`, `value`; optional `delta`                                                                                                                                                                                                   |
 
 ### Tool-page patterns
 
-| Component | Source | Variants |
-| --- | --- | --- |
-| `WorkbenchShell` | `design-system-components.tsx` | `variant: json \| conversion \| media \| utility` (elevation only); req `toolbar` |
-| `JsonFormatterWorkbench` / `DataConversionWorkbench` / `UtilityWorkbench` | same | pre-bound `WorkbenchShell` variants |
-| `ToolPageSystemControls` | same | all-optional slots: `children`, `preferences`, `actions` |
-| `FileUploadZone` | `patterns.tsx` | req `title`; optional `description` for formats/limits and `hint` for browse/drop guidance; centered content, 240px minimum height (Pencil `oFvm5`); renders a `<button>` |
-| `FileQueueItem` | `patterns.tsx` | req `metadata`, `name` |
-| `DownloadResult` / `RightPanelResult` | `patterns.tsx` | req `metadata`, `title` |
-| `ToolOptionsPanel` | `patterns.tsx` | `variant: card \| plain` |
-| `HowItWorks` | `patterns.tsx` | req `steps[]` → numbered 3-col `<ol>` |
-| `ToolSupportSections` | `patterns.tsx` | req string `action`, `result`, `source` |
+| Component                                                                 | Source                         | Variants                                                                                                                                                                  |
+| ------------------------------------------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WorkbenchShell`                                                          | `design-system-components.tsx` | `variant: json \| conversion \| media \| utility` (elevation only); req `toolbar`                                                                                         |
+| `JsonFormatterWorkbench` / `DataConversionWorkbench` / `UtilityWorkbench` | same                           | pre-bound `WorkbenchShell` variants                                                                                                                                       |
+| `ToolPageSystemControls`                                                  | same                           | all-optional slots: `children`, `preferences`, `actions`                                                                                                                  |
+| `FileUploadZone`                                                          | `patterns.tsx`                 | req `title`; optional `description` for formats/limits and `hint` for browse/drop guidance; centered content, 240px minimum height (Pencil `oFvm5`); renders a `<button>` |
+| `FileQueueItem`                                                           | `patterns.tsx`                 | req `metadata`, `name`                                                                                                                                                    |
+| `DownloadResult` / `RightPanelResult`                                     | `patterns.tsx`                 | req `metadata`, `title`                                                                                                                                                   |
+| `ToolOptionsPanel`                                                        | `patterns.tsx`                 | `variant: card \| plain`                                                                                                                                                  |
+| `HowItWorks`                                                              | `patterns.tsx`                 | req `steps[]` → numbered 3-col `<ol>`                                                                                                                                     |
+| `ToolSupportSections`                                                     | `patterns.tsx`                 | req string `action`, `result`, `source`                                                                                                                                   |
 
 `WorkbenchShell` force-downsizes descendant `[data-slot=button|input|select-trigger]` to 32px. Do not fight it with per-call size props — pass content and let the shell size it.
 
@@ -334,12 +334,12 @@ Place `InlineTextEditor` inside the appropriate typography component, such as `H
 
 Stateful, own external dependency. Treat as leaf components; do not clone.
 
-| Component | Source | Notes |
-| --- | --- | --- |
-| `ChapterScrubber` | `ChapterScrubber.tsx` | `motion/react` dock-wave; `density: compact \| default`, `side: left \| right`; hover previews stay open across the gap and select the chapter on click or Enter/Space; Escape dismisses |
-| `OrderableList<Item>` | `OrderableList.tsx` | `@dnd-kit`; `layout: grid \| vertical`; `dragSurface: handle` (default) or `card` (mouse drag / 200ms touch hold preserving swipe scrolling); full drag announcements + keyboard sensor |
-| `PdfViewer` | `PdfViewer.tsx` | composes `ChapterScrubber` + `Button`; outline starts collapsed, fits content up to 35% of viewer width, and uses a Morphicons hamburger-to-X toggle with a synchronized 280ms outline/PDF width transition with stable outline content (respects reduced motion); Show outline focuses search, Escape closes and restores toggle focus; 100% zoom fills available page width by default; `fit="page"` fits each complete page inside the viewport at 100%; zoom clamped 50–200, step 10; optional `pages` enables continuous scrolling with page/outline sync; `pageClassName` styles the clipping frame when a tool owns its page selection border; optional `onExpand` opens a caller-owned full-screen preview; `fileSize` adds size to page metadata and `rightChildren` places tool actions beside zoom controls |
-| `MediaPreview` | `MediaPreview.tsx` | `Is1Pt`; controlled full-screen Radix dialog; media-agnostic `children`, optional header `actions` before Exit preview, `controls`, `status`, `hint` slots; Escape/exit, focus trap and return focus |
+| Component             | Source                | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ChapterScrubber`     | `ChapterScrubber.tsx` | `motion/react` dock-wave; `density: compact \| default`, `side: left \| right`; hover previews stay open across the gap and select the chapter on click or Enter/Space; Escape dismisses                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `OrderableList<Item>` | `OrderableList.tsx`   | `@dnd-kit`; `layout: grid \| vertical`; `dragSurface: handle` (default) or `card` (mouse drag / 200ms touch hold preserving swipe scrolling); full drag announcements + keyboard sensor                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `PdfViewer`           | `PdfViewer.tsx`       | composes `ChapterScrubber` + `Button`; outline starts collapsed, fits content up to 35% of viewer width, and uses a Morphicons hamburger-to-X toggle with a synchronized 280ms outline/PDF width transition with stable outline content (respects reduced motion); Show outline focuses search, Escape closes and restores toggle focus; 100% zoom fills available page width by default; `fit="page"` fits each complete page inside the viewport at 100%; zoom clamped 50–200, step 10; optional `pages` enables continuous scrolling with page/outline sync; `pageClassName` styles the clipping frame when a tool owns its page selection border; optional `onExpand` opens a caller-owned full-screen preview; `fileSize` adds size to page metadata and `rightChildren` places tool actions beside zoom controls |
+| `MediaPreview`        | `MediaPreview.tsx`    | `Is1Pt`; controlled full-screen Radix dialog; media-agnostic `children`, optional header `actions` before Exit preview, `controls`, `status`, `hint` slots; Escape/exit, focus trap and return focus                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 ### PDF file workspaces
 
@@ -405,7 +405,7 @@ import { MediaPreview } from "@smarttools/ui";
   status="Preview only"
 >
   {previewContent}
-</MediaPreview>
+</MediaPreview>;
 ```
 
 `MediaPreview` is a viewport-filling modal, not the browser Fullscreen API and
@@ -441,7 +441,7 @@ Every component in this package must:
 4. **Express variants one of two ways, consistently:**
    - `cva()` when the variant changes many classes and callers need `VariantProps` — used by `button`, `badge`, `button-group`, `input`, `select`, `radio-group`, `tabs`, `alert`, `empty`, `field`.
    - plain prop → `data-*` attribute + `group-data-[…]` selectors — used by `switch`, `avatar`, `alert-dialog`, `IconTile`, `StatusBadge`, `AlertBanner`.
-   Do not invent a third mechanism.
+     Do not invent a third mechanism.
 5. **Use only semantic tokens.** No hex, no `rgb()`, no arbitrary colour.
 6. **Import internally via `#components/*` / `#lib/*`**, not relative cross-folder paths.
 7. **Ship its accessibility**, per below.
@@ -562,15 +562,15 @@ pnpm lint       # tsc --noEmit  (type-check only — there is no ESLint)
 pnpm test:e2e   # playwright; needs DATABASE_URL, boots pnpm dev
 ```
 
-| Check | File | Enforces |
-| --- | --- | --- |
-| Token + geometry lock | `tests/design-system-alignment.test.mjs` | 12 exact token declarations in `theme.css`; exact hover/active hexes and size classes in `button`, `checkbox`, `input`, `select`, `radio-group`, `switch`, `tabs`; all 5 control sizes present on the showcase page; 17 named exports in `patterns.tsx`; manifest = 60 unique ids incl. a hardcoded list; `ToolPageShell` composition rules |
-| Theme wiring | `tests/frontend-config.test.mjs` | `exports["./theme.css"]`; `@source "."` + `@theme {` present; `globals.css` import order; exactly one `tailwindcss` import repo-wide |
-| Class merging | `tests/ui-class-merging.test.mjs` | `index.tsx` uses `cn`, not string joins |
-| Full-screen preview | `tests/e2e/media-preview.spec.ts` | Caller content, focus containment, Escape/exit, reopening and focus restoration on `/admin/design-system` |
-| Runtime behaviour | `tests/e2e/design-system-scrubber.spec.ts` | `ChapterScrubber` Gaussian falloff maths, active tick colour `rgb(26,26,26)`, preview geometry, on `/admin/design-system` |
+| Check                 | File                                       | Enforces                                                                                                                                                                                                                                                                                                                                    |
+| --------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Token + geometry lock | `tests/design-system-alignment.test.mjs`   | 12 exact token declarations in `theme.css`; exact hover/active hexes and size classes in `button`, `checkbox`, `input`, `select`, `radio-group`, `switch`, `tabs`; all 5 control sizes present on the showcase page; 17 named exports in `patterns.tsx`; manifest = 60 unique ids incl. a hardcoded list; `ToolPageShell` composition rules |
+| Theme wiring          | `tests/frontend-config.test.mjs`           | `exports["./theme.css"]`; `@source "."` + `@theme {` present; `globals.css` import order; exactly one `tailwindcss` import repo-wide                                                                                                                                                                                                        |
+| Class merging         | `tests/ui-class-merging.test.mjs`          | `index.tsx` uses `cn`, not string joins                                                                                                                                                                                                                                                                                                     |
+| Full-screen preview   | `tests/e2e/media-preview.spec.ts`          | Caller content, focus containment, Escape/exit, reopening and focus restoration on `/admin/design-system`                                                                                                                                                                                                                                   |
+| Runtime behaviour     | `tests/e2e/design-system-scrubber.spec.ts` | `ChapterScrubber` Gaussian falloff maths, active tick colour `rgb(26,26,26)`, preview geometry, on `/admin/design-system`                                                                                                                                                                                                                   |
 
-These are **source-text assertions**, not rendering tests. They pin token *definitions*; they cannot stop a hardcoded hex being written in an app file. That gap is covered by review, not tooling.
+These are **source-text assertions**, not rendering tests. They pin token _definitions_; they cannot stop a hardcoded hex being written in an app file. That gap is covered by review, not tooling.
 
 ---
 
@@ -578,17 +578,17 @@ These are **source-text assertions**, not rendering tests. They pin token *defin
 
 Documented so nobody rediscovers them. Fix opportunistically; none is a blocker.
 
-| Gap | Detail |
-| --- | --- |
-| No token-drift enforcement | No ESLint, no CI, no hardcoded-hex scanner. A raw hex in `app/` passes every check. |
-| `app/auth/styles.css` is outside the system | ~490 lines of hand-written `.auth-*` CSS with untokenized shadows, `88px`/`72px` navbar heights, `140ms` transitions, and the only two keyframes in the repo (`auth-spin`, `auth-pulse`). |
-| `.platform-shell` is redundant | `app/globals.css` re-declares 15 colour vars with values identical to `:root`. Deleting it should be a no-op — verify before removing. |
-| `radius-md` == `radius-lg` | Both `0.5rem`, so the "8 vs 12" convention is carried by `rounded-xl` alone. |
-| No spacing or motion tokens | Spacing rides Tailwind defaults; durations/easings are literals in component files. |
-| No tier-1 primitives | Semantic tokens hold raw hex directly, so there is no palette layer to retheme from. A 3-tier split (primitive → semantic → component) is the standard upgrade path if a second brand or dark mode is ever needed. |
-| No dark mode | `color-scheme: only light` by design. Revisit only alongside the tier-1 split above. |
-| Manifest count is hand-maintained | The 60-id list is duplicated between the manifest and the test; they drift independently. |
-| Open design gaps | `plans/tool-page-design-spec.md` lists 13 confirmed parity gaps (`UniversalWorkbench`, `ToolPage`, `SettingsPanel`, `Surfaces.tsx`, `ResultView`, `SourceResultWorkspace`, `FileProcessorWorkspace.tsx`, 21 media `definition.ts` files). |
+| Gap                                         | Detail                                                                                                                                                                                                                                    |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No token-drift enforcement                  | No ESLint, no CI, no hardcoded-hex scanner. A raw hex in `app/` passes every check.                                                                                                                                                       |
+| `app/auth/styles.css` is outside the system | ~490 lines of hand-written `.auth-*` CSS with untokenized shadows, `88px`/`72px` navbar heights, `140ms` transitions, and the only two keyframes in the repo (`auth-spin`, `auth-pulse`).                                                 |
+| `.platform-shell` is redundant              | `app/globals.css` re-declares 15 colour vars with values identical to `:root`. Deleting it should be a no-op — verify before removing.                                                                                                    |
+| `radius-md` == `radius-lg`                  | Both `0.5rem`, so the "8 vs 12" convention is carried by `rounded-xl` alone.                                                                                                                                                              |
+| No spacing or motion tokens                 | Spacing rides Tailwind defaults; durations/easings are literals in component files.                                                                                                                                                       |
+| No tier-1 primitives                        | Semantic tokens hold raw hex directly, so there is no palette layer to retheme from. A 3-tier split (primitive → semantic → component) is the standard upgrade path if a second brand or dark mode is ever needed.                        |
+| No dark mode                                | `color-scheme: only light` by design. Revisit only alongside the tier-1 split above.                                                                                                                                                      |
+| Manifest count is hand-maintained           | The 60-id list is duplicated between the manifest and the test; they drift independently.                                                                                                                                                 |
+| Open design gaps                            | `plans/tool-page-design-spec.md` lists 13 confirmed parity gaps (`UniversalWorkbench`, `ToolPage`, `SettingsPanel`, `Surfaces.tsx`, `ResultView`, `SourceResultWorkspace`, `FileProcessorWorkspace.tsx`, 21 media `definition.ts` files). |
 
 ---
 

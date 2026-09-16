@@ -3,10 +3,7 @@
 import { useEffect, useRef, type ComponentProps } from "react";
 import { cn } from "../lib/utils.ts";
 
-export function ScrollAwareHeader({
-  className,
-  ...props
-}: ComponentProps<"header">) {
+export function ScrollAwareHeader({ className, ...props }: ComponentProps<"header">) {
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -43,8 +40,8 @@ export function ScrollAwareHeader({
       if (!delta) return;
       distance = Math.sign(delta) === Math.sign(distance) ? distance + delta : delta;
 
-      const interacting = header!.contains(document.activeElement)
-        || header!.querySelector('[aria-expanded="true"]');
+      const interacting =
+        header!.contains(document.activeElement) || header!.querySelector('[aria-expanded="true"]');
       if (current <= header!.offsetHeight || interacting) {
         distance = 0;
         setHidden(false);

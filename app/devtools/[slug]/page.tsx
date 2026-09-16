@@ -12,11 +12,7 @@ import { toolMetadata } from "@/lib/tool-framework/metadata";
 // need a redeploy per admin change.
 export const generateMetadata = toolMetadata("devtools");
 
-export default async function DevtoolsToolPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function DevtoolsToolPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const tool = await resolveToolPage("devtools", slug);
   if (!tool) notFound();

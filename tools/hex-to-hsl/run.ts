@@ -18,10 +18,7 @@ function precisePercentages(red: number, green: number, blue: number): [number, 
   const lightness = (max + min) / 2;
   const delta = max - min;
   const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1));
-  return [
-    Number((saturation * 100).toFixed(3)),
-    Number((lightness * 100).toFixed(3)),
-  ];
+  return [Number((saturation * 100).toFixed(3)), Number((lightness * 100).toFixed(3))];
 }
 
 function convert(input: string, settings: Settings): string {
@@ -43,7 +40,8 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     .map((input, index) => ({ input: input.trim(), line: index + 1 }))
     .filter(({ input }) => input);
 
-  if (lines.length <= 1) return { render: "text", text: convert(lines[0]?.input ?? ctx.input.text, ctx.settings) };
+  if (lines.length <= 1)
+    return { render: "text", text: convert(lines[0]?.input ?? ctx.input.text, ctx.settings) };
 
   const items: string[] = [];
   const labels: string[] = [];

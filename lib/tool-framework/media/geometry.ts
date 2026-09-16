@@ -39,9 +39,7 @@ export function calculateResizeDimensions(
     assertDimensions(target);
     return {
       width: roundDimension(noUpscale ? Math.min(target.width, source.width) : target.width),
-      height: roundDimension(
-        noUpscale ? Math.min(target.height, source.height) : target.height,
-      ),
+      height: roundDimension(noUpscale ? Math.min(target.height, source.height) : target.height),
     };
   }
 
@@ -50,8 +48,7 @@ export function calculateResizeDimensions(
   if (height !== undefined) assertPositive(height, "Height");
 
   const widthScale = width === undefined ? Number.POSITIVE_INFINITY : width / source.width;
-  const heightScale =
-    height === undefined ? Number.POSITIVE_INFINITY : height / source.height;
+  const heightScale = height === undefined ? Number.POSITIVE_INFINITY : height / source.height;
   let scale = Math.min(widthScale, heightScale);
   if (noUpscale) scale = Math.min(scale, 1);
   return scaledDimensions(source, scale, scale);
@@ -108,11 +105,7 @@ export function normalizeCropRect(crop: Rectangle, bounds: Dimensions): Rectangl
   };
 }
 
-export function rotatedDimensions(
-  width: number,
-  height: number,
-  degrees: QuarterTurn,
-): Dimensions {
+export function rotatedDimensions(width: number, height: number, degrees: QuarterTurn): Dimensions {
   assertDimensions({ width, height });
   const normalized = ((degrees % 360) + 360) % 360;
   if (![0, 90, 180, 270].includes(normalized)) {
@@ -129,10 +122,7 @@ export function getExifOrientationTransform(
   height: number,
 ): { matrix: [number, number, number, number, number, number] } & Dimensions {
   assertDimensions({ width, height });
-  const transforms: Record<
-    ExifOrientation,
-    [number, number, number, number, number, number]
-  > = {
+  const transforms: Record<ExifOrientation, [number, number, number, number, number, number]> = {
     1: [1, 0, 0, 1, 0, 0],
     2: [-1, 0, 0, 1, width, 0],
     3: [-1, 0, 0, -1, width, height],
@@ -154,18 +144,14 @@ export function getExifOrientationTransform(
 export function readExifOrientation(bytes: Uint8Array): ExifOrientation {
   if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return 1;
 
-  for (let offset = 2; offset + 4 <= bytes.length; ) {
+  for (let offset = 2; offset + 4 <= bytes.length;) {
     if (bytes[offset] !== 0xff) break;
     const marker = bytes[offset + 1];
     if (marker === 0xd9 || marker === 0xda) break;
     const length = readUint16(bytes, offset + 2, false);
     if (length < 2 || offset + 2 + length > bytes.length) break;
 
-    if (
-      marker === 0xe1 &&
-      length >= 10 &&
-      ascii(bytes, offset + 4, 6) === "Exif\0\0"
-    ) {
+    if (marker === 0xe1 && length >= 10 && ascii(bytes, offset + 4, 6) === "Exif\0\0") {
       return readTiffOrientation(bytes, offset + 10, offset + 2 + length);
     }
     offset += 2 + length;

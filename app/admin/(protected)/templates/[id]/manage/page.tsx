@@ -25,24 +25,13 @@ import {
   updateTemplateMetadataAction,
 } from "../../../../actions";
 
-const categories = [
-  "classic",
-  "modern",
-  "simple",
-  "professional",
-  "creative",
-  "service",
-] as const;
+const categories = ["classic", "modern", "simple", "professional", "creative", "service"] as const;
 const dateFormatter = new Intl.DateTimeFormat("en", {
   dateStyle: "medium",
   timeStyle: "short",
 });
 
-export default async function ManageTemplatePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function ManageTemplatePage({ params }: { params: Promise<{ id: string }> }) {
   await requirePagePermission("templates", "edit");
   const template = await getTemplate((await params).id);
   if (!template) notFound();
@@ -51,9 +40,7 @@ export default async function ManageTemplatePage({
   const editorHref = isAdvanced
     ? `/admin/templates/${template.id}/advanced`
     : `/admin/templates/${template.id}`;
-  const previewHref = isAdvanced
-    ? editorHref
-    : `/admin/templates/${template.id}/preview`;
+  const previewHref = isAdvanced ? editorHref : `/admin/templates/${template.id}/preview`;
 
   return (
     <div className="min-h-dvh w-full bg-muted pb-8">
@@ -61,7 +48,11 @@ export default async function ManageTemplatePage({
         <div className="flex min-w-0 items-center gap-3">
           <Link
             aria-label="Back to templates"
-            className={buttonVariants({ className: "size-9 shrink-0 rounded-lg", size: "icon", variant: "ghost" })}
+            className={buttonVariants({
+              className: "size-9 shrink-0 rounded-lg",
+              size: "icon",
+              variant: "ghost",
+            })}
             href="/admin/templates"
           >
             <ArrowLeft aria-hidden="true" className="size-4" />
@@ -83,12 +74,16 @@ export default async function ManageTemplatePage({
               </StatusBadge>
             </div>
             <Caption className="block mt-1 text-muted-foreground">
-              {template.documentType.replaceAll("-", " ")} · {isAdvanced ? "Advanced" : "Standard"} editor · /{template.slug}
+              {template.documentType.replaceAll("-", " ")} · {isAdvanced ? "Advanced" : "Standard"}{" "}
+              editor · /{template.slug}
             </Caption>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link className={buttonVariants({ className: "rounded-full", variant: "secondary" })} href={previewHref}>
+          <Link
+            className={buttonVariants({ className: "rounded-full", variant: "secondary" })}
+            href={previewHref}
+          >
             <Eye aria-hidden="true" className="size-4" />
             Preview
           </Link>
@@ -107,7 +102,10 @@ export default async function ManageTemplatePage({
             <Text className="px-3.5 py-2.5 text-muted-foreground">Usage</Text>
           </nav>
 
-          <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm" aria-labelledby="template-information-title">
+          <section
+            className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+            aria-labelledby="template-information-title"
+          >
             <div className="border-b border-border p-5">
               <H3 id="template-information-title" className="text-foreground">
                 Template information
@@ -123,20 +121,35 @@ export default async function ManageTemplatePage({
                   <Input defaultValue={template.name} name="name" required />
                 </Field>
                 <Field description="Permanent" htmlFor="template-slug" label="Slug">
-                  <Input className="bg-muted text-muted-foreground" readOnly value={template.slug} />
+                  <Input
+                    className="bg-muted text-muted-foreground"
+                    readOnly
+                    value={template.slug}
+                  />
                 </Field>
               </div>
               <Field htmlFor="template-description" label="Description" required>
-                <Textarea className="min-h-24" defaultValue={template.description ?? ""} name="description" required />
+                <Textarea
+                  className="min-h-24"
+                  defaultValue={template.description ?? ""}
+                  name="description"
+                  required
+                />
               </Field>
               <div className="grid gap-5 sm:grid-cols-2">
                 <Field htmlFor="template-document-type" label="Document type">
-                  <Input className="bg-muted text-muted-foreground" readOnly value={template.documentType.replaceAll("-", " ")} />
+                  <Input
+                    className="bg-muted text-muted-foreground"
+                    readOnly
+                    value={template.documentType.replaceAll("-", " ")}
+                  />
                 </Field>
                 <Field htmlFor="template-category" label="Category">
                   <Select defaultValue={template.category} name="category">
                     {categories.map((category) => (
-                      <option key={category} value={category}>{category[0].toUpperCase() + category.slice(1)}</option>
+                      <option key={category} value={category}>
+                        {category[0].toUpperCase() + category.slice(1)}
+                      </option>
                     ))}
                   </Select>
                 </Field>
@@ -147,8 +160,13 @@ export default async function ManageTemplatePage({
             </form>
           </section>
 
-          <section className="rounded-xl border border-border bg-card p-5 shadow-sm" aria-labelledby="recent-activity-title">
-            <H3 id="recent-activity-title" className="text-foreground">Recent activity</H3>
+          <section
+            className="rounded-xl border border-border bg-card p-5 shadow-sm"
+            aria-labelledby="recent-activity-title"
+          >
+            <H3 id="recent-activity-title" className="text-foreground">
+              Recent activity
+            </H3>
             <div className="mt-4 grid gap-3">
               <div className="flex items-center justify-between gap-4">
                 <Text>Template updated</Text>
@@ -167,43 +185,69 @@ export default async function ManageTemplatePage({
         </main>
 
         <aside className="grid gap-4 lg:sticky lg:top-0">
-          <section className="rounded-xl border border-border bg-card p-5 shadow-sm" aria-labelledby="lifecycle-title">
-            <H3 id="lifecycle-title" className="text-foreground">Lifecycle</H3>
+          <section
+            className="rounded-xl border border-border bg-card p-5 shadow-sm"
+            aria-labelledby="lifecycle-title"
+          >
+            <H3 id="lifecycle-title" className="text-foreground">
+              Lifecycle
+            </H3>
             <div className="mt-5 flex items-center justify-between gap-4">
               <div>
                 <P className="text-foreground">{template.status}</P>
                 <Caption className="block mt-1 text-muted-foreground">
-                  {template.status === "published" ? "Available in the document picker" : "Not available in the document picker"}
+                  {template.status === "published"
+                    ? "Available in the document picker"
+                    : "Not available in the document picker"}
                 </Caption>
               </div>
-              <StatusBadge variant={template.status === "published" ? "success" : template.status === "archived" ? "archived" : "warning"}>
+              <StatusBadge
+                variant={
+                  template.status === "published"
+                    ? "success"
+                    : template.status === "archived"
+                      ? "archived"
+                      : "warning"
+                }
+              >
                 v{template.version}
               </StatusBadge>
             </div>
             <div className="mt-5 rounded-lg bg-primary/10 p-4">
               <P className="text-primary">v{template.version}</P>
-              <Caption className="block mt-1 text-muted-foreground">current template version</Caption>
+              <Caption className="block mt-1 text-muted-foreground">
+                current template version
+              </Caption>
             </div>
             <div className="mt-5 grid gap-2">
               {template.status === "draft" ? (
                 <form action={publishTemplateAction}>
                   <input name="templateId" type="hidden" value={template.id} />
-                  <SubmitButton className="w-full" type="submit">Publish template</SubmitButton>
+                  <SubmitButton className="w-full" type="submit">
+                    Publish template
+                  </SubmitButton>
                 </form>
               ) : null}
               {template.status === "published" && !template.isDefault ? (
                 <form action={defaultTemplateAction}>
                   <input name="templateId" type="hidden" value={template.id} />
-                  <SubmitButton className="w-full" type="submit" variant="secondary">Set as default</SubmitButton>
+                  <SubmitButton className="w-full" type="submit" variant="secondary">
+                    Set as default
+                  </SubmitButton>
                 </form>
               ) : null}
             </div>
           </section>
 
-          <section className="rounded-xl border border-border bg-card p-5 shadow-sm" aria-labelledby="duplicate-title">
+          <section
+            className="rounded-xl border border-border bg-card p-5 shadow-sm"
+            aria-labelledby="duplicate-title"
+          >
             <div className="flex items-center gap-2">
               <Copy aria-hidden="true" className="size-4 text-primary" />
-              <H3 id="duplicate-title" className="text-foreground">Duplicate template</H3>
+              <H3 id="duplicate-title" className="text-foreground">
+                Duplicate template
+              </H3>
             </div>
             <form action={duplicateTemplateAction} className="mt-4 grid gap-3">
               <input name="templateId" type="hidden" value={template.id} />
@@ -211,21 +255,35 @@ export default async function ManageTemplatePage({
                 <Input defaultValue={`${template.name} Copy`} name="name" required />
               </Field>
               <Field htmlFor="duplicate-slug" label="Unique slug" required>
-                <Input  defaultValue={`${template.slug}-copy`} name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required />
+                <Input
+                  defaultValue={`${template.slug}-copy`}
+                  name="slug"
+                  pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                  required
+                />
               </Field>
-              <SubmitButton className="w-full" type="submit" variant="secondary">Duplicate template</SubmitButton>
+              <SubmitButton className="w-full" type="submit" variant="secondary">
+                Duplicate template
+              </SubmitButton>
             </form>
           </section>
 
           {template.status !== "archived" ? (
-            <section className="rounded-xl border border-destructive bg-card p-5" aria-labelledby="archive-title">
-              <H3 id="archive-title" className="text-destructive">Archive template</H3>
+            <section
+              className="rounded-xl border border-destructive bg-card p-5"
+              aria-labelledby="archive-title"
+            >
+              <H3 id="archive-title" className="text-destructive">
+                Archive template
+              </H3>
               <Caption className="block mt-2 text-muted-foreground">
                 Existing documents are unaffected. Archived templates cannot create new documents.
               </Caption>
               <form action={archiveTemplateAction} className="mt-4">
                 <input name="templateId" type="hidden" value={template.id} />
-                <SubmitButton type="submit" variant="destructive">Archive template</SubmitButton>
+                <SubmitButton type="submit" variant="destructive">
+                  Archive template
+                </SubmitButton>
               </form>
             </section>
           ) : null}

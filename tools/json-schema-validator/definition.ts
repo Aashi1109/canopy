@@ -4,14 +4,7 @@ export default {
   toolId: "devtools.json-schema-validator",
   app: "devtools",
   category: "json-tools",
-  keywords: [
-    "json schema",
-    "validate",
-    "validator",
-    "schema",
-    "required",
-    "type check",
-  ],
+  keywords: ["json schema", "validate", "validator", "schema", "required", "type check"],
   name: "JSON Schema Validator",
   description: "Validate JSON against common JSON Schema constraints.",
   layout: "stacked",
@@ -54,7 +47,7 @@ export default {
     limitations: [
       "A useful subset of JSON Schema is supported: type (including integer), enum, required, properties, items, minLength, maxLength, and pattern.",
       "Composition keywords ($ref, allOf, anyOf, oneOf, not), numeric bounds, and format assertions are not evaluated and are silently ignored.",
-      "Because unsupported keywords are ignored, a \"Valid against schema\" result means \"nothing checked here failed\", not full draft compliance.",
+      'Because unsupported keywords are ignored, a "Valid against schema" result means "nothing checked here failed", not full draft compliance.',
     ],
     faq: [
       {

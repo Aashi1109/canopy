@@ -21,12 +21,25 @@ function formatHtml(input: string, settings: Settings): string {
   requireUtilityInput(input, "HTML input");
   const indentUnit =
     settings.indentWidth === "4" ? "    " : settings.indentWidth === "tab" ? "\t" : "  ";
-  const printWidth = settings.printWidth === "unlimited" || !settings.printWidth
-    ? Infinity
-    : Number(settings.printWidth);
+  const printWidth =
+    settings.printWidth === "unlimited" || !settings.printWidth
+      ? Infinity
+      : Number(settings.printWidth);
   const voidTags = new Set([
-    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
-    "param", "source", "track", "wbr",
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
   ]);
   const tokens =
     input.replace(/>\s*</g, "><").match(/<!--[\s\S]*?-->|<![^>]*>|<[^>]+>|[^<]+/g) ?? [];
@@ -40,8 +53,7 @@ function formatHtml(input: string, settings: Settings): string {
     const leading = indentUnit.repeat(indent);
     const startTag = token.match(/^<([A-Za-z][\w:-]*)([\s\S]*?)(\/?)>$/);
     const attributes =
-      startTag?.[2].match(/[^\s"'=<>`]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?/g) ??
-      [];
+      startTag?.[2].match(/[^\s"'=<>`]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?/g) ?? [];
     const wrapAttributes =
       attributes.length > 0 &&
       (settings.attributeWrapping === "one-per-line" ||

@@ -111,11 +111,7 @@ export function useToolRun(): ToolRunHandle {
       const previousJobId = stateRef.current.jobId;
       const previousInspection = inspectionRef.current;
       const inspectionWorker = workerRef.current;
-      if (
-        message.type === "inspect" &&
-        previousInspection &&
-        inspectionWorker
-      ) {
+      if (message.type === "inspect" && previousInspection && inspectionWorker) {
         cleanupJob(previousJobId);
         apply(beginWorkerJob(stateRef.current, message.jobId));
         inspectionRef.current = { jobId: message.jobId, inFlight: new Set() };
@@ -127,10 +123,9 @@ export function useToolRun(): ToolRunHandle {
       abortWorker(previousJobId);
       terminate();
       cleanupJob(previousJobId);
-      const worker = new Worker(
-        new URL("./tool.worker.ts", import.meta.url),
-        { name: "smarttools-tool-worker" },
-      );
+      const worker = new Worker(new URL("./tool.worker.ts", import.meta.url), {
+        name: "smarttools-tool-worker",
+      });
       workerRef.current = worker;
       worker.onmessage = (event: MessageEvent<unknown>) => {
         if (workerRef.current !== worker) return;
@@ -190,23 +185,19 @@ export function useToolRun(): ToolRunHandle {
     const session = inspectionRef.current;
     const worker = workerRef.current;
     const current = stateRef.current;
-    if (
-      !session ||
-      !worker ||
-      current.jobId !== session.jobId ||
-      current.status !== "completed"
-    ) {
+    if (!session || !worker || current.jobId !== session.jobId || current.status !== "completed") {
       return;
     }
-    const geometryPages = new Set(
-      current.previews.map((preview) => preview.pageNumber),
-    );
+    const geometryPages = new Set(current.previews.map((preview) => preview.pageNumber));
     const bufferedPages = new Set(
       current.previews
         .filter((preview) => {
           const buffer = (preview as { readonly buffer?: unknown }).buffer;
           const renderedWidth = (preview as { readonly renderWidth?: number }).renderWidth ?? 0;
-          return buffer instanceof ArrayBuffer && (renderWidth === undefined || renderedWidth >= renderWidth);
+          return (
+            buffer instanceof ArrayBuffer &&
+            (renderWidth === undefined || renderedWidth >= renderWidth)
+          );
         })
         .map((preview) => preview.pageNumber),
     );

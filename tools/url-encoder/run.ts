@@ -12,9 +12,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({
   render: "text",
-  text: ctx.settings.component
-    ? encodeURIComponent(ctx.input.text)
-    : encodeURI(ctx.input.text),
+  text: ctx.settings.component ? encodeURIComponent(ctx.input.text) : encodeURI(ctx.input.text),
 });
 
 export default run;

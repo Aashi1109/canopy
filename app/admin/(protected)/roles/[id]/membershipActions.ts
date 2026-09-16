@@ -6,10 +6,23 @@ import { getActorUserId } from "@/lib/admin/access";
 import { assignRoleToUsers } from "@/lib/admin/adminMutations";
 import { getRole, listRoleUsers } from "@/lib/admin/data";
 
-export async function searchRoleUsersAction(roleId: string, assigned: boolean, search: string, offset: number) {
-  if (typeof roleId !== "string" || !roleId.trim() || roleId.length > 200
-    || typeof assigned !== "boolean" || typeof search !== "string" || search.length > 200
-    || !Number.isSafeInteger(offset) || offset < 0 || offset > 100_000) {
+export async function searchRoleUsersAction(
+  roleId: string,
+  assigned: boolean,
+  search: string,
+  offset: number,
+) {
+  if (
+    typeof roleId !== "string" ||
+    !roleId.trim() ||
+    roleId.length > 200 ||
+    typeof assigned !== "boolean" ||
+    typeof search !== "string" ||
+    search.length > 200 ||
+    !Number.isSafeInteger(offset) ||
+    offset < 0 ||
+    offset > 100_000
+  ) {
     throw new Error("Invalid user search.");
   }
   const actor = await getActorUserId();

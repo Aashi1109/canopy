@@ -34,9 +34,7 @@ export async function loadToolSpec(toolId: string): Promise<ToolSpec | null> {
   const definitionKey = definitionKeyOf(toolId);
   if (!definitionKey) return null;
   try {
-    const loaded: unknown = await import(
-      `../../../../../tools/${definitionKey}/definition`
-    );
+    const loaded: unknown = await import(`../../../../../tools/${definitionKey}/definition`);
     const value =
       typeof loaded === "object" && loaded !== null && "default" in loaded
         ? (loaded as { default: unknown }).default

@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type TemplateCategory = "simple" | "professional" | "creative" | "service" | "modern" | "classic";
+export type TemplateCategory =
+  "simple" | "professional" | "creative" | "service" | "modern" | "classic";
 export type TemplateStatus = "draft" | "published" | "archived";
 export type LayoutFamily = "classic" | "modern" | "compact" | "bold" | "minimal" | "service";
 export type TemplateLayoutFamily = LayoutFamily | "advanced";
@@ -31,25 +32,11 @@ export type TemplateScalarControl =
   | "select"
   | "checkbox";
 export type DocumentFieldValueType =
-  | "text"
-  | "number"
-  | "boolean"
-  | "date"
-  | "time"
-  | "table"
-  | "image";
-export type DocumentFieldSource =
-  | "user"
-  | "computed"
-  | "system"
-  | "reference";
+  "text" | "number" | "boolean" | "date" | "time" | "table" | "image";
+export type DocumentFieldSource = "user" | "computed" | "system" | "reference";
 export type PdfmeBindingType = "text" | "table" | "image";
 export type SensitiveDataClassification =
-  | "none"
-  | "contact"
-  | "financial"
-  | "tax"
-  | "masked-tax-id";
+  "none" | "contact" | "financial" | "tax" | "masked-tax-id";
 
 export interface PdfmeSchema {
   name: string;
@@ -100,17 +87,14 @@ export interface CustomRepeaterColumn {
   options?: string[];
 }
 
-export interface CustomRepeaterTemplateFormEntry
-  extends TemplateFormEntryBase {
+export interface CustomRepeaterTemplateFormEntry extends TemplateFormEntryBase {
   kind: "repeater";
   columns: CustomRepeaterColumn[];
   minRows?: number;
 }
 
 export type TemplateFormEntry =
-  | BuiltInTemplateFormEntry
-  | CustomScalarTemplateFormEntry
-  | CustomRepeaterTemplateFormEntry;
+  BuiltInTemplateFormEntry | CustomScalarTemplateFormEntry | CustomRepeaterTemplateFormEntry;
 
 export interface TemplateFormSection {
   id: string;
@@ -203,7 +187,15 @@ export interface InvoiceTemplateConfig {
   };
 
   typography: {
-    fontFamily: "Inter" | "Helvetica" | "Times-Roman" | "Courier" | "Georgia" | "JetBrains Mono" | "Space Grotesk" | "Outfit";
+    fontFamily:
+      | "Inter"
+      | "Helvetica"
+      | "Times-Roman"
+      | "Courier"
+      | "Georgia"
+      | "JetBrains Mono"
+      | "Space Grotesk"
+      | "Outfit";
     headingSize: "sm" | "md" | "lg" | "xl";
     bodySize: "xs" | "sm" | "md";
     lineHeight: "tight" | "normal" | "relaxed";

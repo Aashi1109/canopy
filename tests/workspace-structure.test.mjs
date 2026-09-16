@@ -39,30 +39,15 @@ test("pnpm discovers packages and services without nested applications", async (
 });
 
 test("public tools use scoped server-resolved dynamic slugs", async () => {
-  const [
-    paperworkCatalog,
-    paperworkTool,
-    devtoolsCatalog,
-    devtoolsTool,
-    mediaCatalog,
-    mediaTool,
-  ] = await Promise.all([
-    readFile(new URL("app/paperwork/page.tsx", root), "utf8"),
-    readFile(
-      new URL("app/paperwork/[slug]/page.tsx", root),
-      "utf8",
-    ),
-    readFile(new URL("app/devtools/page.tsx", root), "utf8"),
-    readFile(
-      new URL("app/devtools/[slug]/page.tsx", root),
-      "utf8",
-    ),
-    readFile(new URL("app/media/page.tsx", root), "utf8"),
-    readFile(
-      new URL("app/media/[slug]/page.tsx", root),
-      "utf8",
-    ),
-  ]);
+  const [paperworkCatalog, paperworkTool, devtoolsCatalog, devtoolsTool, mediaCatalog, mediaTool] =
+    await Promise.all([
+      readFile(new URL("app/paperwork/page.tsx", root), "utf8"),
+      readFile(new URL("app/paperwork/[slug]/page.tsx", root), "utf8"),
+      readFile(new URL("app/devtools/page.tsx", root), "utf8"),
+      readFile(new URL("app/devtools/[slug]/page.tsx", root), "utf8"),
+      readFile(new URL("app/media/page.tsx", root), "utf8"),
+      readFile(new URL("app/media/[slug]/page.tsx", root), "utf8"),
+    ]);
 
   assert.match(paperworkCatalog, /getAvailableTools\(["']paperwork["'][,)]/);
   assert.match(paperworkCatalog, /href=\{`\/paperwork\/\$\{tool\.slug\}`\}/);
@@ -125,49 +110,32 @@ test("Paperwork navigation uses scoped paths without URL hashes", async () => {
     "app/paperwork/components/RelatedTools.tsx",
   ];
   const source = (
-    await Promise.all(
-      navigationFiles.map((path) => readFile(new URL(path, root), "utf8")),
-    )
+    await Promise.all(navigationFiles.map((path) => readFile(new URL(path, root), "utf8")))
   ).join("\n");
 
-  assert.doesNotMatch(
-    source,
-    /window\.location\.hash|hashchange|href\s*=\s*["']#|\bhash:\s*["']#/,
-  );
+  assert.doesNotMatch(source, /window\.location\.hash|hashchange|href\s*=\s*["']#|\bhash:\s*["']#/);
   assert.match(source, /["']\/paperwork/);
 });
 
 test("contact and privacy are global while Paperwork-owned information stays scoped", async () => {
-  const app = await readFile(
-    new URL("app/paperwork/components/App.tsx", root),
-    "utf8",
-  );
+  const app = await readFile(new URL("app/paperwork/components/App.tsx", root), "utf8");
 
   for (const slug of ["contact", "privacy"]) {
-    const page = await readFile(
-      new URL(`app/${slug}/page.tsx`, root),
-      "utf8",
-    );
+    const page = await readFile(new URL(`app/${slug}/page.tsx`, root), "utf8");
     assert.match(app, new RegExp(`href(?:=|:)\\s*["']/${slug}["']`));
     assert.match(page, /PublicInfoChrome/);
     assert.doesNotMatch(app, new RegExp(`/paperwork/${slug}`));
   }
 
   for (const slug of ["about", "terms"]) {
-    const page = await readFile(
-      new URL(`app/paperwork/${slug}/page.tsx`, root),
-      "utf8",
-    );
+    const page = await readFile(new URL(`app/paperwork/${slug}/page.tsx`, root), "utf8");
     assert.match(app, new RegExp(`href(?:=|:)\\s*["']/paperwork/${slug}["']`));
     assert.match(page, /InformationPage/);
   }
 });
 
 test("Paperwork routes components from managed tool props", async () => {
-  const source = await readFile(
-    new URL("app/paperwork/components/App.tsx", root),
-    "utf8",
-  );
+  const source = await readFile(new URL("app/paperwork/components/App.tsx", root), "utf8");
 
   assert.match(source, /componentKey/);
   assert.match(source, /tools/);
@@ -202,13 +170,7 @@ test("legacy Paperwork template administration is removed", async () => {
 });
 
 test("Paperwork exposes published templates through its scoped read-only API", async () => {
-  const route = await readFile(
-    new URL(
-      "app/api/paperwork/templates/route.ts",
-      root,
-    ),
-    "utf8",
-  );
+  const route = await readFile(new URL("app/api/paperwork/templates/route.ts", root), "utf8");
 
   assert.match(route, /getPublishedTemplates/);
   assert.match(route, /getAvailableTools/);
@@ -220,25 +182,10 @@ test("Paperwork exposes published templates through its scoped read-only API", a
 
 test("Paperwork scoped persistence APIs check the owning tool", async () => {
   const [accessSource, storage, storedKey, vendors] = await Promise.all([
-    readFile(
-      new URL("lib/paperwork/toolAccess.ts", root),
-      "utf8",
-    ),
-    readFile(
-      new URL("app/api/paperwork/storage/route.ts", root),
-      "utf8",
-    ),
-    readFile(
-      new URL(
-        "app/api/paperwork/storage/[key]/route.ts",
-        root,
-      ),
-      "utf8",
-    ),
-    readFile(
-      new URL("app/api/paperwork/vendors/route.ts", root),
-      "utf8",
-    ),
+    readFile(new URL("lib/paperwork/toolAccess.ts", root), "utf8"),
+    readFile(new URL("app/api/paperwork/storage/route.ts", root), "utf8"),
+    readFile(new URL("app/api/paperwork/storage/[key]/route.ts", root), "utf8"),
+    readFile(new URL("app/api/paperwork/vendors/route.ts", root), "utf8"),
   ]);
 
   assert.match(accessSource, /getAvailableToolBySlug/);
@@ -250,23 +197,11 @@ test("Paperwork scoped persistence APIs check the owning tool", async () => {
 test("Admin and Media ordering use the shared accessible drag-and-drop list", async () => {
   const [editor, toolList, orderableList] = await Promise.all([
     readFile(
-      new URL(
-        "app/admin/(protected)/templates/[id]/components/TemplateEditor.tsx",
-        root,
-      ),
+      new URL("app/admin/(protected)/templates/[id]/components/TemplateEditor.tsx", root),
       "utf8",
     ),
-    readFile(
-      new URL(
-        "app/admin/(protected)/tools/components/ToolList.tsx",
-        root,
-      ),
-      "utf8",
-    ),
-    readFile(
-      new URL("packages/ui/src/components/OrderableList.tsx", root),
-      "utf8",
-    ),
+    readFile(new URL("app/admin/(protected)/tools/components/ToolList.tsx", root), "utf8"),
+    readFile(new URL("packages/ui/src/components/OrderableList.tsx", root), "utf8"),
   ]);
 
   assert.match(editor, /<OrderableList/);

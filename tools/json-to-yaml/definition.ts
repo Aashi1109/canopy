@@ -4,14 +4,7 @@ export default {
   toolId: "devtools.json-to-yaml",
   app: "devtools",
   category: "json-tools",
-  keywords: [
-    "json",
-    "yaml",
-    "convert",
-    "config",
-    "kubernetes",
-    "serialize",
-  ],
+  keywords: ["json", "yaml", "convert", "config", "kubernetes", "serialize"],
   name: "JSON to YAML",
   description: "Convert JSON values to YAML.",
   input: {
@@ -81,7 +74,7 @@ export default {
     examples: [
       {
         label: "Flat object",
-        text: "{\"name\":\"Ada\",\"active\":true}",
+        text: '{"name":"Ada","active":true}',
       },
     ],
   },

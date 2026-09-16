@@ -11,7 +11,9 @@ let css: string;
 test.beforeAll(async () => {
   scratch = await mkdtemp(join(tmpdir(), "canopy-scroll-header-"));
   const root = resolve(import.meta.dirname, "../..");
-  await writeFile(join(scratch, "fixture.tsx"), `
+  await writeFile(
+    join(scratch, "fixture.tsx"),
+    `
     import React, { useState } from "react";
     import { createRoot } from "react-dom/client";
     import { ScrollAwareHeader } from ${JSON.stringify(join(root, "packages/ui/src/components/ScrollAwareHeader.tsx"))};
@@ -38,8 +40,11 @@ test.beforeAll(async () => {
       </>;
     }
     createRoot(document.getElementById("root")!).render(<Fixture />);
-  `);
-  await writeFile(join(scratch, "loader.cjs"), `
+  `,
+  );
+  await writeFile(
+    join(scratch, "loader.cjs"),
+    `
     const { loadBindings, transform } = require(${JSON.stringify(join(root, "node_modules/next/dist/build/swc"))});
     module.exports = function(source) {
       const done = this.async();
@@ -48,8 +53,11 @@ test.beforeAll(async () => {
         transform: { react: { runtime: "automatic" } }
       }, module: { type: "es6" } })).then(result => done(null, result.code), done);
     };
-  `);
-  await writeFile(join(scratch, "build.cjs"), `
+  `,
+  );
+  await writeFile(
+    join(scratch, "build.cjs"),
+    `
     const { createRequire } = require("node:module");
     const requireRoot = createRequire(${JSON.stringify(join(root, "package.json"))});
     const { webpack } = requireRoot("next/dist/compiled/webpack/webpack");
@@ -65,7 +73,8 @@ test.beforeAll(async () => {
     requireRoot("postcss")([requireRoot("@tailwindcss/postcss")()])
       .process(${JSON.stringify(`@import "tailwindcss" source(none); @import "${join(root, "packages/ui/src/theme.css")}";`)}, { from: ${JSON.stringify(join(root, "scroll-fixture.css"))} })
       .then(result => require("node:fs").writeFileSync(${JSON.stringify(join(scratch, "fixture.css"))}, result.css));
-  `);
+  `,
+  );
   execFileSync(process.execPath, [join(scratch, "build.cjs")], { cwd: root, timeout: 60_000 });
   [script, css] = await Promise.all([
     readFile(join(scratch, "fixture.js"), "utf8"),
@@ -92,14 +101,23 @@ async function scrollTo(page: Page, y: number) {
 
 async function expectHeader(page: Page, shown: boolean) {
   const header = page.getByRole("banner", { name: "Product navigation" });
-  await expect.poll(() => header.evaluate((node) => {
-    const bounds = node.getBoundingClientRect();
-    return bounds.bottom <= 1 ? "hidden" : bounds.top >= -1 ? "shown" : "moving";
-  })).toBe(shown ? "shown" : "hidden");
+  await expect
+    .poll(() =>
+      header.evaluate((node) => {
+        const bounds = node.getBoundingClientRect();
+        return bounds.bottom <= 1 ? "hidden" : bounds.top >= -1 ? "shown" : "moving";
+      }),
+    )
+    .toBe(shown ? "shown" : "hidden");
 }
 
-for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
-  test(`navbar follows scroll direction without jumping or jitter at ${viewport.width}px`, async ({ page }) => {
+for (const viewport of [
+  { width: 1280, height: 800 },
+  { width: 390, height: 844 },
+]) {
+  test(`navbar follows scroll direction without jumping or jitter at ${viewport.width}px`, async ({
+    page,
+  }) => {
     await page.setViewportSize(viewport);
     await expectHeader(page, true);
     const renders = await page.getByLabel("Navigation child render count").textContent();
@@ -125,12 +143,16 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     await expectHeader(page, true);
     await scrollTo(page, 0);
     await expectHeader(page, true);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
     await expect(page.getByLabel("Navigation child render count")).toHaveText(renders!);
   });
 }
 
-test("focus and an open account menu keep navigation available; nested scroll is ignored", async ({ page }) => {
+test("focus and an open account menu keep navigation available; nested scroll is ignored", async ({
+  page,
+}) => {
   const account = page.getByRole("button", { name: "Account", exact: true });
   await account.focus();
   await scrollTo(page, 500);
@@ -147,12 +169,16 @@ test("focus and an open account menu keep navigation available; nested scroll is
   await page.evaluate(() => (document.activeElement as HTMLElement).blur());
   await scrollTo(page, 1000);
   await expectHeader(page, true);
-  await page.getByRole("button", { name: "Close account externally" }).evaluate((node: HTMLButtonElement) => node.click());
+  await page
+    .getByRole("button", { name: "Close account externally" })
+    .evaluate((node: HTMLButtonElement) => node.click());
   await scrollTo(page, 1200);
   await expectHeader(page, false);
   await scrollTo(page, 0);
   const editor = page.getByRole("region", { name: "Scrollable editor" });
-  await editor.evaluate((node) => { node.scrollTop = 700; });
+  await editor.evaluate((node) => {
+    node.scrollTop = 700;
+  });
   await page.waitForTimeout(100);
   await expectHeader(page, true);
   expect(await page.evaluate(() => scrollY)).toBe(0);
@@ -162,10 +188,15 @@ test("reduced motion keeps directional navigation without animation", async ({ p
   await page.emulateMedia({ reducedMotion: "reduce" });
   await scrollTo(page, 500);
   await expectHeader(page, false);
-  expect(await page.getByRole("banner", { name: "Product navigation" }).evaluate((node) =>
-    getComputedStyle(node).transitionProperty === "none" ||
-    getComputedStyle(node).transitionDuration.split(",").every(value => parseFloat(value) === 0)
-  )).toBe(true);
+  expect(
+    await page.getByRole("banner", { name: "Product navigation" }).evaluate(
+      (node) =>
+        getComputedStyle(node).transitionProperty === "none" ||
+        getComputedStyle(node)
+          .transitionDuration.split(",")
+          .every((value) => parseFloat(value) === 0),
+    ),
+  ).toBe(true);
   await scrollTo(page, 400);
   await expectHeader(page, true);
 });

@@ -2,9 +2,7 @@ import { expect, test } from "@playwright/test";
 import { E2E_ACCOUNTS, E2E_PASSWORD } from "./fixtures/accounts";
 import { AuthPage } from "./pages/AuthPage";
 
-test("an Admin publishes a template that Paperwork can consume", async ({
-  page,
-}, testInfo) => {
+test("an Admin publishes a template that Paperwork can consume", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop", "mutation runs once");
   const suffix = Date.now().toString(36);
   const name = `E2E Published ${suffix}`;
@@ -17,9 +15,7 @@ test("an Admin publishes a template that Paperwork can consume", async ({
   const create = page.locator("section").filter({ hasText: "Create template" });
   await create.getByLabel("Name").fill(name);
   await create.getByLabel("Slug").fill(`e2e-published-${suffix}`);
-  await create.getByLabel("Description").fill(
-    "Published by the desktop browser integration test.",
-  );
+  await create.getByLabel("Description").fill("Published by the desktop browser integration test.");
   await create.getByRole("button", { name: "Create draft" }).click();
   await expect(page).toHaveURL(/\/templates\/[a-f0-9-]+$/);
 
@@ -61,9 +57,7 @@ test("an Admin publishes a dynamic expense form with bound custom fields", async
   await create
     .getByLabel("Description")
     .fill("Dynamic expense form created by the browser integration test.");
-  await create
-    .getByLabel("Document and canvas")
-    .selectOption("expense-report:LETTER");
+  await create.getByLabel("Document and canvas").selectOption("expense-report:LETTER");
   await create.getByRole("button", { name: "Open designer" }).click();
 
   await expect(page).toHaveURL(/\/templates\/[a-f0-9-]+\/advanced$/);
@@ -80,36 +74,20 @@ test("an Admin publishes a dynamic expense form with bound custom fields", async
   await sectionLabel.fill("Custom details");
   const customSection = sectionLabel.locator("xpath=ancestor::section[1]");
 
-  await customSection
-    .getByRole("button", { name: "Add custom field" })
-    .click();
-  const scalarLabel = customSection
-    .getByLabel(/^custom\.field(?:-\d+)? label$/)
-    .last();
+  await customSection.getByRole("button", { name: "Add custom field" }).click();
+  const scalarLabel = customSection.getByLabel(/^custom\.field(?:-\d+)? label$/).last();
   await scalarLabel.fill("Cost center");
-  await scalarLabel
-    .locator("..")
-    .getByRole("button", { name: "Bind" })
-    .click();
-  await customSection
-    .getByLabel("Cost center sample value")
-    .fill("CC-042");
+  await scalarLabel.locator("..").getByRole("button", { name: "Bind" }).click();
+  await customSection.getByLabel("Cost center sample value").fill("CC-042");
 
   await page.getByLabel("Close data panel").click();
   await page.getByLabel("Add elements").click();
   await page.getByRole("button", { name: "Add Table" }).click();
   await page.getByRole("button", { name: "Fields", exact: true }).click();
-  await customSection
-    .getByRole("button", { name: "Add repeatable table" })
-    .click();
-  const repeaterLabel = customSection
-    .getByLabel(/^custom\.table(?:-\d+)? label$/)
-    .last();
+  await customSection.getByRole("button", { name: "Add repeatable table" }).click();
+  const repeaterLabel = customSection.getByLabel(/^custom\.table(?:-\d+)? label$/).last();
   await repeaterLabel.fill("Attendees");
-  await repeaterLabel
-    .locator("..")
-    .getByRole("button", { name: "Bind" })
-    .click();
+  await repeaterLabel.locator("..").getByRole("button", { name: "Bind" }).click();
   await customSection
     .getByLabel("Attendees sample value")
     .fill('[{"id":"attendee-1","value":"Avery"}]');
@@ -126,21 +104,15 @@ test("an Admin publishes a dynamic expense form with bound custom fields", async
   });
 
   await page.goto("http://localhost:3000/paperwork/expense-report");
-  await expect(
-    page.getByRole("option", { name, exact: true }),
-  ).toBeAttached();
+  await expect(page.getByRole("option", { name, exact: true })).toBeAttached();
   await page.getByRole("button", { name: "Load sample", exact: true }).click();
   await expect(page.getByLabel("Cost center")).toHaveValue("CC-042");
 
-  const attendees = page
-    .getByText("Attendees", { exact: true })
-    .locator("xpath=../..");
+  const attendees = page.getByText("Attendees", { exact: true }).locator("xpath=../..");
   await expect(attendees.getByLabel("Value")).toHaveValue("Avery");
   await attendees.getByRole("button", { name: "Add row" }).click();
   await attendees.getByLabel("Value").nth(1).fill("Blake");
-  const secondHandle = attendees
-    .getByRole("button", { name: "Reorder Attendees row" })
-    .nth(1);
+  const secondHandle = attendees.getByRole("button", { name: "Reorder Attendees row" }).nth(1);
   await secondHandle.focus();
   await secondHandle.press("Space");
   await secondHandle.press("ArrowUp");
@@ -149,9 +121,7 @@ test("an Admin publishes a dynamic expense form with bound custom fields", async
 
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download PDF", exact: true }).click();
-  await expect((await downloadPromise).suggestedFilename()).toMatch(
-    /^expense-report-.*\.pdf$/,
-  );
+  await expect((await downloadPromise).suggestedFilename()).toMatch(/^expense-report-.*\.pdf$/);
   const printPromise = page.waitForEvent("popup");
   await page.getByRole("button", { name: "Print PDF", exact: true }).click();
   const printed = await printPromise;

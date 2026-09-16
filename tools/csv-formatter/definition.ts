@@ -4,21 +4,17 @@ export default {
   toolId: "devtools.csv-formatter",
   app: "devtools",
   category: "csv-data-tools",
-  keywords: [
-    "csv",
-    "format",
-    "normalize",
-    "quoting",
-    "trim",
-    "clean",
-    "tidy",
-  ],
+  keywords: ["csv", "format", "normalize", "quoting", "trim", "clean", "tidy"],
   name: "CSV Formatter",
   description: "Normalize CSV quoting and row structure.",
   input: {
     kind: "text",
     label: "CSV input",
-    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
+    acceptFiles: {
+      accept: ".csv,.tsv,text/csv,text/tab-separated-values",
+      maxBytes: 104_857_600,
+      maxEditableBytes: 2_000_000,
+    },
     placeholder: "name,role\n Ada ,Admin\nLin,Editor",
   },
   settings: {

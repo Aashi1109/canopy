@@ -42,7 +42,14 @@ export const getDefaultTemplateConfigByFamily = (family: LayoutFamily): InvoiceT
 
   return {
     theme: {
-      primaryColor: family === "bold" ? "#1e3a8a" : family === "modern" ? "#0f172a" : family === "service" ? "#0284c7" : "#4f46e5", // bg-blue-900 or slate-900 or sky-600 or indigo-600
+      primaryColor:
+        family === "bold"
+          ? "#1e3a8a"
+          : family === "modern"
+            ? "#0f172a"
+            : family === "service"
+              ? "#0284c7"
+              : "#4f46e5", // bg-blue-900 or slate-900 or sky-600 or indigo-600
       accentColor: family === "minimal" ? "#f4f4f5" : "#3b82f6", // colors mapped.
       textColor: "#0f172a", // slate-900
       mutedTextColor: "#475569", // slate-600

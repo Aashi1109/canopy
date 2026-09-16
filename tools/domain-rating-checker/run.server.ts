@@ -17,8 +17,7 @@ import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-const AHREFS_DOMAIN_RATING_URL =
-  "https://api.ahrefs.com/v3/public/domain-rating-free";
+const AHREFS_DOMAIN_RATING_URL = "https://api.ahrefs.com/v3/public/domain-rating-free";
 const MAX_DOMAIN_RATING_TARGET_LENGTH = 2_048;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -41,10 +40,7 @@ function normalizeDomainRatingTarget(value: unknown): string {
     throw new ToolError("invalid-target", "Enter a domain or HTTP(S) URL.");
   }
   if (input.length > MAX_DOMAIN_RATING_TARGET_LENGTH) {
-    throw new ToolError(
-      "invalid-target",
-      "Domain or URL must be 2,048 characters or fewer.",
-    );
+    throw new ToolError("invalid-target", "Domain or URL must be 2,048 characters or fewer.");
   }
 
   const hasScheme = /^[a-z][a-z\d+.-]*:/i.test(input);
@@ -60,11 +56,7 @@ function normalizeDomainRatingTarget(value: unknown): string {
     throw new ToolError("invalid-target", "Enter a valid domain or HTTP(S) URL.");
   }
 
-  if (
-    !["http:", "https:"].includes(parsed.protocol) ||
-    parsed.username ||
-    parsed.password
-  ) {
+  if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) {
     throw new ToolError("invalid-target", "Enter a valid domain or HTTP(S) URL.");
   }
 
@@ -74,10 +66,7 @@ function normalizeDomainRatingTarget(value: unknown): string {
     domain.length <= 253 &&
     labels.length >= 2 &&
     isIP(domain) === 0 &&
-    labels.every(
-      (label) =>
-        label.length <= 63 && /^[a-z\d](?:[a-z\d-]*[a-z\d])?$/i.test(label),
-    );
+    labels.every((label) => label.length <= 63 && /^[a-z\d](?:[a-z\d-]*[a-z\d])?$/i.test(label));
   if (!validDomain) {
     throw new ToolError("invalid-target", "Enter a valid public domain.");
   }
@@ -115,16 +104,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     );
   }
   if (response.status === 429) {
-    throw new ToolError(
-      "upstream-rate-limited",
-      "Ahrefs rate limit reached. Try again later.",
-    );
+    throw new ToolError("upstream-rate-limited", "Ahrefs rate limit reached. Try again later.");
   }
   if (!response.ok) {
-    throw new ToolError(
-      "upstream-failed",
-      `Ahrefs lookup failed (${response.status}).`,
-    );
+    throw new ToolError("upstream-failed", `Ahrefs lookup failed (${response.status}).`);
   }
 
   let payload: unknown;

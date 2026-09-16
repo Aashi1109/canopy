@@ -32,9 +32,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         delimiter,
         onRow: async (row, rowNumber) => {
           if (rowNumber === 1) {
-            column = /^\d+$/.test(requested)
-              ? Number(requested) - 1
-              : row.indexOf(requested);
+            column = /^\d+$/.test(requested) ? Number(requested) - 1 : row.indexOf(requested);
             if (column < 0 || column >= row.length) {
               throw new ToolError(
                 "column-not-found",
@@ -55,10 +53,12 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         items: preview,
         truncated: parsed.rowCount > preview.length,
         stats: [{ label: "Rows", value: String(parsed.rowCount) }],
-        sections: [{
-          title: parsed.rowCount > preview.length ? "Complete extracted column" : "Download",
-          body: { render: "files", files: [artifact], outputBytes: artifact.size },
-        }],
+        sections: [
+          {
+            title: parsed.rowCount > preview.length ? "Complete extracted column" : "Download",
+            body: { render: "files", files: [artifact], outputBytes: artifact.size },
+          },
+        ],
       };
     } catch (error) {
       await sink.abort(error);

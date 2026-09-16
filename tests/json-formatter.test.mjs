@@ -7,10 +7,7 @@ import { run as runFormatter } from "../tools/json-formatter/run.worker.ts";
 // is covered by tests/tool-execution.test.mjs against captured fixtures; these
 // helpers are consumed directly by the JSON viewer workspace and by several
 // run files, so they are asserted here at their own boundary.
-import {
-  convertCsvToJson,
-  convertJsonToCsv,
-} from "../lib/devtools/shared/csv.ts";
+import { convertCsvToJson, convertJsonToCsv } from "../lib/devtools/shared/csv.ts";
 import {
   MAX_JSON_INPUT_CHARS,
   getJsonNodeMetadata,
@@ -19,9 +16,7 @@ import {
   transformJson,
 } from "../lib/devtools/shared/json.ts";
 
-const requireFromDevtools = createRequire(
-  new URL("../package.json", import.meta.url),
-);
+const requireFromDevtools = createRequire(new URL("../package.json", import.meta.url));
 
 test("formats valid JSON with the selected indentation", () => {
   assert.deepEqual(
@@ -38,11 +33,12 @@ test("formats valid JSON with the selected indentation", () => {
 });
 
 test("formatter keeps exact numeric tokens when a parsed tree would change them", async () => {
-  const run = (text, operation = "format") => runFormatter({
-    input: { text },
-    settings: { operation, indentation: "2" },
-    signal: new AbortController().signal,
-  });
+  const run = (text, operation = "format") =>
+    runFormatter({
+      input: { text },
+      settings: { operation, indentation: "2" },
+      signal: new AbortController().signal,
+    });
   for (const number of ["9007199254740993", "1.234567890123456789", "-0", "1e400", "1e3", "1.00"]) {
     const result = await run(`{"nested":[${number}]}`);
     assert.equal(result.render, "code", number);
@@ -52,9 +48,13 @@ test("formatter keeps exact numeric tokens when a parsed tree would change them"
     assert.ok(result.verdict?.detail);
   }
   assert.equal((await run("9007199254740993")).code, "9007199254740993");
-  const ordinary = JSON.stringify({ number: -12.5, escaped: '\\"9007199254740993"', "1e400": "-0" });
+  const ordinary = JSON.stringify({
+    number: -12.5,
+    escaped: '\\"9007199254740993"',
+    "1e400": "-0",
+  });
   assert.equal((await run(ordinary)).render, "json-tree");
-  const minified = await run("{\"number\": 9007199254740993}", "minify");
+  const minified = await run('{"number": 9007199254740993}', "minify");
   assert.equal(minified.render, "json-tree");
   assert.equal(minified.text, '{"number":9007199254740993}');
   assert.equal((await run("9007199254740993", "validate")).text, "Valid JSON\nRoot type: number");
@@ -98,8 +98,7 @@ test("returns a useful location for malformed JSON", () => {
       ok: false,
       error: {
         kind: "syntax",
-        message:
-          "JSON isn't valid near line 3, column 1. Check commas, quotes, and brackets.",
+        message: "JSON isn't valid near line 3, column 1. Check commas, quotes, and brackets.",
         line: 3,
         column: 1,
       },
@@ -136,22 +135,15 @@ test("handles empty and oversized input before parsing", () => {
 });
 
 test("the editor stack understands JSON and its automatic closing pairs", () => {
-  const { EditorState, basicSetup } = requireFromDevtools(
-    "@uiw/react-codemirror",
-  );
+  const { EditorState, basicSetup } = requireFromDevtools("@uiw/react-codemirror");
   const { json, jsonLanguage } = requireFromDevtools("@codemirror/lang-json");
   const state = EditorState.create({
     doc: '{"ready":true}',
     extensions: [basicSetup({ closeBrackets: true }), json()],
   });
 
-  assert.match(
-    jsonLanguage.parser.parse(state.doc.toString()).toString(),
-    /PropertyName.*True/,
-  );
-  assert.deepEqual(state.languageDataAt("closeBrackets", 1), [
-    { brackets: ["[", "{", '"'] },
-  ]);
+  assert.match(jsonLanguage.parser.parse(state.doc.toString()).toString(), /PropertyName.*True/);
+  assert.deepEqual(state.languageDataAt("closeBrackets", 1), [{ brackets: ["[", "{", '"'] }]);
 });
 
 test("summarizes document-level JSON facts without selected node state", () => {
@@ -179,32 +171,22 @@ test("summarizes document-level JSON facts without selected node state", () => {
 });
 
 test("describes object and array nodes with key/value preview rows", () => {
-  assert.deepEqual(
-    getJsonNodeMetadata(
-      "details",
-      { tasks: [{ id: 1 }], active: true },
-      2,
-    ),
-    {
-      selectedKey: "details",
-      selectedType: "Object {2}",
-      preview: [
-        { key: "tasks", value: "[…]" },
-        { key: "active", value: "true" },
-      ],
-    },
-  );
-  assert.deepEqual(
-    getJsonNodeMetadata("tasks", [{ id: 1 }, "done", null], 2),
-    {
-      selectedKey: "tasks",
-      selectedType: "Array [3]",
-      preview: [
-        { key: "0", value: "{…}" },
-        { key: "1", value: '"done"' },
-      ],
-    },
-  );
+  assert.deepEqual(getJsonNodeMetadata("details", { tasks: [{ id: 1 }], active: true }, 2), {
+    selectedKey: "details",
+    selectedType: "Object {2}",
+    preview: [
+      { key: "tasks", value: "[…]" },
+      { key: "active", value: "true" },
+    ],
+  });
+  assert.deepEqual(getJsonNodeMetadata("tasks", [{ id: 1 }, "done", null], 2), {
+    selectedKey: "tasks",
+    selectedType: "Array [3]",
+    preview: [
+      { key: "0", value: "{…}" },
+      { key: "1", value: '"done"' },
+    ],
+  });
 });
 
 test("describes primitive and null nodes with their exact value", () => {
@@ -237,16 +219,13 @@ test("limits node metadata previews without changing the selected node", () => {
 });
 
 test("converts JSON objects to CSV with a stable union of columns", () => {
-  assert.deepEqual(
-    convertJsonToCsv('[{"id":1,"name":"Alice"},{"id":2,"active":true}]'),
-    {
-      ok: true,
-      columns: ["id", "name", "active"],
-      output: "id,name,active\n1,Alice,\n2,,true",
-      repaired: false,
-      rowCount: 2,
-    },
-  );
+  assert.deepEqual(convertJsonToCsv('[{"id":1,"name":"Alice"},{"id":2,"active":true}]'), {
+    ok: true,
+    columns: ["id", "name", "active"],
+    output: "id,name,active\n1,Alice,\n2,,true",
+    repaired: false,
+    rowCount: 2,
+  });
 });
 
 test("flattens nested objects and safely quotes arrays, delimiters, and quotes", () => {
@@ -289,12 +268,7 @@ test("repairs missing property values by removing them or setting them to null",
 });
 
 test("rejects empty, oversized, and non-object JSON inputs", () => {
-  for (const input of [
-    " ",
-    "x".repeat(MAX_JSON_INPUT_CHARS + 1),
-    "[1,2]",
-    '"value"',
-  ]) {
+  for (const input of [" ", "x".repeat(MAX_JSON_INPUT_CHARS + 1), "[1,2]", '"value"']) {
     assert.equal(convertJsonToCsv(input).ok, false);
   }
 });
@@ -310,9 +284,7 @@ test("converts CSV headers and rows to a formatted JSON array", () => {
 });
 
 test("CSV parsing handles quoted delimiters, escaped quotes, and line breaks", () => {
-  const result = convertCsvToJson(
-    'id,note\n1,"A, ""quoted"" value"\n2,"line one\nline two"',
-  );
+  const result = convertCsvToJson('id,note\n1,"A, ""quoted"" value"\n2,"line one\nline two"');
 
   assert.equal(result.ok, true);
   assert.deepEqual(JSON.parse(result.output), [
@@ -329,31 +301,22 @@ test("small CSV parsing applies the same strict closing-quote rule as streaming 
 });
 
 test("repairs common broken JSON without evaluating input", () => {
-  assert.deepEqual(
-    repairJson("{/* note */ name: 'Ada', active: true, age:,}", "remove"),
-    {
-      ok: true,
-      output: '{\n  "name": "Ada",\n  "active": true\n}',
-      value: { name: "Ada", active: true },
-      repaired: true,
-    },
-  );
-  assert.deepEqual(
-    repairJson('{"name":"Ada","age":}', "null"),
-    {
-      ok: true,
-      output: '{\n  "name": "Ada",\n  "age": null\n}',
-      value: { name: "Ada", age: null },
-      repaired: true,
-    },
-  );
+  assert.deepEqual(repairJson("{/* note */ name: 'Ada', active: true, age:,}", "remove"), {
+    ok: true,
+    output: '{\n  "name": "Ada",\n  "active": true\n}',
+    value: { name: "Ada", active: true },
+    repaired: true,
+  });
+  assert.deepEqual(repairJson('{"name":"Ada","age":}', "null"), {
+    ok: true,
+    output: '{\n  "name": "Ada",\n  "age": null\n}',
+    value: { name: "Ada", age: null },
+    repaired: true,
+  });
 });
 
 test("JSON repair rejects empty, oversized, and unrecoverable input", () => {
   assert.equal(repairJson("", "remove").ok, false);
-  assert.equal(
-    repairJson("x".repeat(MAX_JSON_INPUT_CHARS + 1), "remove").ok,
-    false,
-  );
+  assert.equal(repairJson("x".repeat(MAX_JSON_INPUT_CHARS + 1), "remove").ok, false);
   assert.equal(repairJson("{still broken", "remove").ok, false);
 });

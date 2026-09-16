@@ -64,10 +64,7 @@ import {
   cleanupArtifactJobWithRetry,
   sweepStaleArtifactJobsOnce,
 } from "@/lib/tool-framework/artifacts";
-import {
-  createToolRunFile,
-  type ToolRunRequestInput,
-} from "@/lib/tool-framework/workerProtocol";
+import { createToolRunFile, type ToolRunRequestInput } from "@/lib/tool-framework/workerProtocol";
 import { useToolRuntime } from "@/lib/tool-runtime/useToolRuntime";
 import type {
   ToolDefinition,
@@ -104,9 +101,7 @@ function isMissingModule(error: unknown): boolean {
 function readExport(module: unknown, name: string): unknown {
   if (typeof module !== "object" || module === null) return undefined;
   // Own properties only — never read a value through a poisoned prototype.
-  return Object.hasOwn(module, name)
-    ? (module as Record<string, unknown>)[name]
-    : undefined;
+  return Object.hasOwn(module, name) ? (module as Record<string, unknown>)[name] : undefined;
 }
 
 /**
@@ -176,9 +171,7 @@ function toRunInput(input: WorkspaceInputState): ToolRunInput {
   };
 }
 
-function toWorkerFiles(
-  files: readonly File[],
-): ToolRunInput["files"] {
+function toWorkerFiles(files: readonly File[]): ToolRunInput["files"] {
   return files.map((file) => createToolRunFile(workspaceFileId(file), file));
 }
 
@@ -318,29 +311,26 @@ function usePrimaryAction(): WorkspaceProps["primaryAction"] {
   const runtime = useRuntime();
   const running = runtime.lifecycle === "running";
 
-  const maxEditableBytes = chrome.spec.input.kind === "text"
-    ? chrome.spec.input.acceptFiles?.maxEditableBytes
-    : undefined;
+  const maxEditableBytes =
+    chrome.spec.input.kind === "text" ? chrome.spec.input.acceptFiles?.maxEditableBytes : undefined;
   const largeFile = isLargeTextFile(runtime.input.files[0], maxEditableBytes);
   const hasPrimaryAction = chrome.spec.trigger.mode === "manual" || largeFile;
 
   return useMemo(
-    () => hasPrimaryAction
-      ? {
-          disabled:
-            running ||
-            chrome.validationReason !== null ||
-            runtime.lifecycle === "empty" ||
-            runtime.lifecycle === "invalid",
-          label:
-            chrome.spec.trigger.mode === "manual"
-              ? chrome.spec.trigger.actionLabel
-              : "Run",
-          onCancel: runtime.cancelRun,
-          onRun: runtime.run,
-          running,
-        }
-      : null,
+    () =>
+      hasPrimaryAction
+        ? {
+            disabled:
+              running ||
+              chrome.validationReason !== null ||
+              runtime.lifecycle === "empty" ||
+              runtime.lifecycle === "invalid",
+            label: chrome.spec.trigger.mode === "manual" ? chrome.spec.trigger.actionLabel : "Run",
+            onCancel: runtime.cancelRun,
+            onRun: runtime.run,
+            running,
+          }
+        : null,
     [
       chrome.spec.trigger,
       chrome.validationReason,
@@ -447,13 +437,7 @@ function ToolToolbar(): ReactElement {
         Reset
       </Button>
       {resetSnapshot ? (
-        <Button
-          disabled={running}
-          onClick={undoReset}
-          size="xs"
-          type="button"
-          variant="ghost"
-        >
+        <Button disabled={running} onClick={undoReset} size="xs" type="button" variant="ghost">
           <Undo2 aria-hidden="true" />
           Undo reset
         </Button>
@@ -461,15 +445,23 @@ function ToolToolbar(): ReactElement {
       {primaryAction && !chrome.toolbarActions?.primaryActionInWorkspace ? (
         <Button
           aria-busy={primaryAction.running || undefined}
-          disabled={primaryAction.running && primaryAction.onCancel ? false : primaryAction.disabled}
-          onClick={primaryAction.running && primaryAction.onCancel ? primaryAction.onCancel : primaryAction.onRun}
+          disabled={
+            primaryAction.running && primaryAction.onCancel ? false : primaryAction.disabled
+          }
+          onClick={
+            primaryAction.running && primaryAction.onCancel
+              ? primaryAction.onCancel
+              : primaryAction.onRun
+          }
           size="xs"
           type="button"
         >
           {primaryAction.running && !primaryAction.onCancel ? (
             <Loader2 aria-hidden="true" className="size-4 animate-spin" />
           ) : null}
-          {primaryAction.running && primaryAction.onCancel ? "Cancel" : chrome.toolbarActions?.primaryActionLabel ?? primaryAction.label}
+          {primaryAction.running && primaryAction.onCancel
+            ? "Cancel"
+            : (chrome.toolbarActions?.primaryActionLabel ?? primaryAction.label)}
         </Button>
       ) : null}
     </>
@@ -495,10 +487,7 @@ function ToolWorkspaceSlot(): ReactElement {
     previousResult.current = runtime.result;
   }, [chrome.cleanupWorkerArtifacts, runtime.result]);
 
-  useEffect(
-    () => () => cleanupResultArtifacts(previousResult.current),
-    [],
-  );
+  useEffect(() => () => cleanupResultArtifacts(previousResult.current), []);
 
   return (
     <Suspense fallback={null}>
@@ -565,13 +554,13 @@ function toWorkbenchDefinition(spec: ToolSpec, definitionKey: string): ToolDefin
     iconKey: "",
     input: {
       // The frame reads no input field; "none" has no legacy counterpart.
-      kind: spec.input.kind === "files" ? "files" : spec.input.kind === "fields" ? "fields" : "text",
+      kind:
+        spec.input.kind === "files" ? "files" : spec.input.kind === "fields" ? "fields" : "text",
       label: spec.input.kind === "none" ? spec.name : spec.input.label,
     },
     labels: {
       empty: spec.labels.empty,
-      primaryAction:
-        spec.trigger.mode === "manual" ? spec.trigger.actionLabel : undefined,
+      primaryAction: spec.trigger.mode === "manual" ? spec.trigger.actionLabel : undefined,
       ready: spec.labels.ready,
       running: spec.labels.running,
     },
@@ -677,9 +666,7 @@ export default function ToolPage({
 
   // Memoised on purpose: `useToolRuntime` keys its effects on the whole spec, so
   // a new object every render would re-enter execution forever.
-  const runtimeSpec = useMemo<
-    ToolRuntimeSpec<WorkspaceInputState, ToolSettings, ToolResult>
-  >(
+  const runtimeSpec = useMemo<ToolRuntimeSpec<WorkspaceInputState, ToolSettings, ToolResult>>(
     () => ({
       debounceMs: spec.trigger.mode === "live" ? spec.trigger.debounceMs : undefined,
       execute,
@@ -687,9 +674,8 @@ export default function ToolPage({
       initialSettings: RUNTIME_SETTINGS,
       isEmpty: (input) => isEmptyInput(spec.input.kind, input),
       shouldAutoRun: (input) => {
-        const maxEditableBytes = spec.input.kind === "text"
-          ? spec.input.acceptFiles?.maxEditableBytes
-          : undefined;
+        const maxEditableBytes =
+          spec.input.kind === "text" ? spec.input.acceptFiles?.maxEditableBytes : undefined;
         return !isLargeTextFile(input.files[0], maxEditableBytes);
       },
       trigger: spec.trigger.mode,
@@ -698,10 +684,7 @@ export default function ToolPage({
     [execute, spec],
   );
 
-  const Workspace = useMemo(
-    () => resolveWorkspace(definitionKey),
-    [definitionKey],
-  );
+  const Workspace = useMemo(() => resolveWorkspace(definitionKey), [definitionKey]);
 
   const chrome = useMemo<ToolChrome>(
     () => ({
@@ -718,7 +701,18 @@ export default function ToolPage({
       Workspace,
       workspaceKey,
     }),
-    [cleanupWorkerArtifacts, onSettingChange, progress, resetPageState, settings, spec, toolbarActions, validationReason, Workspace, workspaceKey],
+    [
+      cleanupWorkerArtifacts,
+      onSettingChange,
+      progress,
+      resetPageState,
+      settings,
+      spec,
+      toolbarActions,
+      validationReason,
+      Workspace,
+      workspaceKey,
+    ],
   );
 
   return (

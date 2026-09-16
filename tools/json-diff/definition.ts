@@ -4,15 +4,7 @@ export default {
   toolId: "devtools.json-diff",
   app: "devtools",
   category: "json-tools",
-  keywords: [
-    "json",
-    "diff",
-    "compare",
-    "difference",
-    "changes",
-    "patch",
-    "path",
-  ],
+  keywords: ["json", "diff", "compare", "difference", "changes", "patch", "path"],
   name: "JSON Diff",
   description: "Compare two JSON values by path.",
   layout: "side-by-side",
@@ -63,7 +55,7 @@ export default {
     howToUse: [
       "Paste the baseline into JSON A and the candidate into JSON B. The direction matters: `-` means present only in A, `+` means present only in B.",
       "Leave auto-fix on when either side was copied from a log; switch to strict to make invalid JSON an error instead of a silent repair.",
-      "Compare, then read each line as a path. `~ $.user.name: \"a\" → \"b\"` says that one leaf changed and nothing else under it did.",
+      'Compare, then read each line as a path. `~ $.user.name: "a" → "b"` says that one leaf changed and nothing else under it did.',
       "An empty result is reported as `No differences.` — that is a genuine match, not a failed run.",
     ],
     limitations: [

@@ -22,11 +22,7 @@ import {
   Separator,
 } from "@smarttools/ui";
 import { authClient } from "./_lib/authClient";
-import {
-  getSafeAuthError,
-  isEmailVerificationError,
-  isValidPassword,
-} from "./_lib/security";
+import { getSafeAuthError, isEmailVerificationError, isValidPassword } from "./_lib/security";
 
 export type AuthMode = "sign-in" | "sign-up" | "forgot";
 type Feedback = { kind: "error" | "success"; text: string } | null;
@@ -232,14 +228,18 @@ export function AuthPanel({
             : "Your paperwork stays in your browser. Sign in only to save history across devices."}
       </AuthNotice>
 
-      {feedback ? (
-        <AlertBanner variant={feedback.kind}>{feedback.text}</AlertBanner>
-      ) : null}
+      {feedback ? <AlertBanner variant={feedback.kind}>{feedback.text}</AlertBanner> : null}
 
       {verificationEmail ? (
         <AlertBanner
           action={
-            <Button disabled={pending} onClick={resendVerification} size="sm" type="button" variant="ghost">
+            <Button
+              disabled={pending}
+              onClick={resendVerification}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
               Resend email
             </Button>
           }
@@ -357,9 +357,9 @@ export function AuthPanel({
                     <CheckboxControl aria-label="Remember me" defaultChecked />
                     <Text>Remember me</Text>
                   </Label>
-                  <button onClick={() => chooseMode("forgot")} type="button"><Caption>
-                    Forgot password?
-                  </Caption></button>
+                  <button onClick={() => chooseMode("forgot")} type="button">
+                    <Caption>Forgot password?</Caption>
+                  </button>
                 </div>
               )}
 
@@ -379,7 +379,9 @@ export function AuthPanel({
           onClick={() => chooseMode(isSignUp || isForgot ? "sign-in" : "sign-up")}
           type="button"
         >
-          <Caption>{isSignUp ? "Sign in" : isForgot ? "Back to sign in" : "Create an account"}</Caption>
+          <Caption>
+            {isSignUp ? "Sign in" : isForgot ? "Back to sign in" : "Create an account"}
+          </Caption>
         </button>
       </div>
     </Card>

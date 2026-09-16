@@ -24,7 +24,8 @@ export default {
     label: "Add images to compress",
     dropzoneDescription:
       "JPG, JPEG, PNG, WebP, HEIC, and HEIF · up to 50 files · 25 MB each · processed on this device",
-    accept: "image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif",
+    accept:
+      "image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif",
     multiple: true,
     engine: "image",
     maxFiles: 50,

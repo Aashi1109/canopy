@@ -14,11 +14,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const metrics = textMetrics(ctx.input.text);
-  const {
-    includeSpaces = true,
-    limit280 = false,
-    countLineBreaks = true,
-  } = ctx.settings;
+  const { includeSpaces = true, limit280 = false, countLineBreaks = true } = ctx.settings;
   const withoutExcludedLineBreaks = countLineBreaks
     ? ctx.input.text
     : ctx.input.text.replace(/\r\n|\r|\n/gu, "");

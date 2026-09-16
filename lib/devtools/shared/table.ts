@@ -28,9 +28,7 @@ export function parseUtilityTable(input: string, delimiter: CsvDelimiter): strin
 }
 
 export function serializeTable(rows: readonly string[][], delimiter: CsvDelimiter): string {
-  return rows
-    .map((row) => row.map((cell) => csvCell(cell, delimiter)).join(delimiter))
-    .join("\n");
+  return rows.map((row) => row.map((cell) => csvCell(cell, delimiter)).join(delimiter)).join("\n");
 }
 
 export function tableToHtml(rows: readonly string[][]): string {

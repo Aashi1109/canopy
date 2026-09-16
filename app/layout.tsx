@@ -2,13 +2,7 @@ import type { Metadata } from "next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@/components/analytics/Analytics";
 import { measurementId } from "@/lib/analytics/ga4";
-import {
-  Caveat,
-  Funnel_Sans,
-  Geist,
-  Geist_Mono,
-  Inter,
-} from "next/font/google";
+import { Caveat, Funnel_Sans, Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({

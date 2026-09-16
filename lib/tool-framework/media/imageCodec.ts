@@ -230,14 +230,14 @@ export function rotateImage(image: ImageData, degrees: QuarterTurn): ImageData {
   return output;
 }
 
-export function flipImage(
-  image: ImageData,
-  axis: "horizontal" | "vertical",
-): ImageData {
+export function flipImage(image: ImageData, axis: "horizontal" | "vertical"): ImageData {
   const source = canvasFromImage(image);
   const canvas = new OffscreenCanvas(image.width, image.height);
   const context = context2d(canvas);
-  context.translate(axis === "horizontal" ? image.width : 0, axis === "vertical" ? image.height : 0);
+  context.translate(
+    axis === "horizontal" ? image.width : 0,
+    axis === "vertical" ? image.height : 0,
+  );
   context.scale(axis === "horizontal" ? -1 : 1, axis === "vertical" ? -1 : 1);
   context.drawImage(source, 0, 0);
   source.width = 1;
@@ -273,11 +273,10 @@ export function imageFromCanvas(canvas: OffscreenCanvas): ImageData {
   return context2d(canvas).getImageData(0, 0, canvas.width, canvas.height);
 }
 
-export function context2d(
-  canvas: OffscreenCanvas,
-): OffscreenCanvasRenderingContext2D {
+export function context2d(canvas: OffscreenCanvas): OffscreenCanvasRenderingContext2D {
   const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context) throw new ToolError("canvas-unavailable", "This browser cannot create an image canvas.");
+  if (!context)
+    throw new ToolError("canvas-unavailable", "This browser cannot create an image canvas.");
   return context;
 }
 

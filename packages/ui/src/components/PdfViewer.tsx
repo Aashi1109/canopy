@@ -1,13 +1,7 @@
 "use client";
 import { Caption, H3, Muted, P } from "#components/typography";
 
-import {
-  ChevronDown,
-  Maximize2,
-  Minus,
-  Plus,
-  Search,
-} from "lucide-react";
+import { ChevronDown, Maximize2, Minus, Plus, Search } from "lucide-react";
 import { Menu, X } from "lucide";
 import * as React from "react";
 import { motion, useReducedMotion } from "motion/react";
@@ -85,10 +79,7 @@ export function PdfViewer({
   rightChildren,
   zoom,
 }: PdfViewerProps) {
-  const resolvedPageCount = Math.max(
-    1,
-    Number.isFinite(pageCount) ? Math.round(pageCount) : 1,
-  );
+  const resolvedPageCount = Math.max(1, Number.isFinite(pageCount) ? Math.round(pageCount) : 1);
   const resolvedCurrentPage = normalizePage(currentPage, resolvedPageCount);
   const [internalZoom, setInternalZoom] = React.useState(100);
   const [query, setQuery] = React.useState("");
@@ -98,9 +89,7 @@ export function PdfViewer({
   const outlineSearch = React.useRef<HTMLInputElement>(null);
   const outlineToggle = React.useRef<HTMLButtonElement>(null);
   const outlineAnimating = React.useRef(false);
-  const [pageDraft, setPageDraft] = React.useState(
-    String(resolvedCurrentPage),
-  );
+  const [pageDraft, setPageDraft] = React.useState(String(resolvedCurrentPage));
   const outlineButtons = React.useRef<Array<HTMLButtonElement | null>>([]);
   const pageViewport = React.useRef<HTMLDivElement | null>(null);
   const pageElements = React.useRef(new Map<number, HTMLDivElement>());
@@ -169,9 +158,7 @@ export function PdfViewer({
   const visibleOutline = React.useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
     if (!normalizedQuery) return outline;
-    return outline.filter((item) =>
-      item.title.toLocaleLowerCase().includes(normalizedQuery),
-    );
+    return outline.filter((item) => item.title.toLocaleLowerCase().includes(normalizedQuery));
   }, [outline, query]);
 
   function sectionAtPage(page: number) {
@@ -204,12 +191,8 @@ export function PdfViewer({
     onZoomChange?.(normalizedZoom);
   }
 
-  function handleOutlineKeyDown(
-    event: React.KeyboardEvent<HTMLDivElement>,
-  ) {
-    const focusedIndex = outlineButtons.current.findIndex(
-      (button) => button === event.target,
-    );
+  function handleOutlineKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    const focusedIndex = outlineButtons.current.findIndex((button) => button === event.target);
     if (focusedIndex < 0) return;
 
     let nextIndex = focusedIndex;
@@ -227,9 +210,7 @@ export function PdfViewer({
     }
 
     event.preventDefault();
-    outlineButtons.current[
-      clamp(nextIndex, 0, visibleOutline.length - 1)
-    ]?.focus();
+    outlineButtons.current[clamp(nextIndex, 0, visibleOutline.length - 1)]?.focus();
   }
 
   return (
@@ -245,7 +226,9 @@ export function PdfViewer({
         initial={false}
         animate={{ width: outlineOpen ? "auto" : 0 }}
         transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.25, 1, 0.5, 1] }}
-        onAnimationStart={() => { outlineAnimating.current = true; }}
+        onAnimationStart={() => {
+          outlineAnimating.current = true;
+        }}
         onUpdate={() => scrollToPage(resolvedCurrentPage)}
         onAnimationComplete={() => {
           scrollToPage(resolvedCurrentPage);
@@ -265,9 +248,7 @@ export function PdfViewer({
       >
         <div className="flex h-full w-max max-w-[35cqw] flex-col gap-3.5 border-r border-border p-3 sm:p-4.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <H3 className="text-foreground">
-              Outline
-            </H3>
+            <H3 className="text-foreground">Outline</H3>
             <Caption className="shrink-0 rounded-full border border-border bg-card px-2.5 py-1 text-muted-foreground">
               {resolvedPageCount} {resolvedPageCount === 1 ? "page" : "pages"}
             </Caption>
@@ -320,19 +301,13 @@ export function PdfViewer({
                       {item.expanded !== undefined ? (
                         <ChevronDown
                           aria-hidden="true"
-                          className={cn(
-                            "size-3 shrink-0",
-                            !item.expanded && "-rotate-90",
-                          )}
+                          className={cn("size-3 shrink-0", !item.expanded && "-rotate-90")}
                         />
                       ) : null}
                       <span className="truncate">{item.title}</span>
                     </span>
                     <Caption
-                      className={cn(
-                        "",
-                        selected ? "text-primary" : "text-muted-foreground",
-                      )}
+                      className={cn("", selected ? "text-primary" : "text-muted-foreground")}
                     >
                       {item.page}
                     </Caption>
@@ -340,9 +315,7 @@ export function PdfViewer({
                 );
               })
             ) : (
-              <Muted className="px-2 py-3 text-muted-foreground">
-                No matching sections.
-              </Muted>
+              <Muted className="px-2 py-3 text-muted-foreground">No matching sections.</Muted>
             )}
           </div>
         </div>
@@ -363,11 +336,11 @@ export function PdfViewer({
             <MorphIcon icon={outlineOpen ? X : Menu} reducedMotion="user" />
           </Button>
           <div className="min-w-0 basis-40 flex-1">
-            <P className="truncate text-foreground">
-              {fileName}
-            </P>
+            <P className="truncate text-foreground">{fileName}</P>
             <Muted className="truncate text-muted-foreground">
-              {currentSection && currentSection.title !== `Page ${resolvedCurrentPage}` ? `${currentSection.title} · ` : ""}
+              {currentSection && currentSection.title !== `Page ${resolvedCurrentPage}`
+                ? `${currentSection.title} · `
+                : ""}
               Page {resolvedCurrentPage} of {resolvedPageCount}
               {fileSize ? ` · ${fileSize}` : null}
             </Muted>
@@ -437,7 +410,12 @@ export function PdfViewer({
           </div>
         </div>
 
-        <div className={cn("flex min-h-[24rem] flex-1 gap-4 overflow-hidden rounded-lg border border-border bg-muted p-4", pages && "min-h-0")}>
+        <div
+          className={cn(
+            "flex min-h-[24rem] flex-1 gap-4 overflow-hidden rounded-lg border border-border bg-muted p-4",
+            pages && "min-h-0",
+          )}
+        >
           <div className="flex w-8 shrink-0 items-center justify-start overflow-visible max-sm:hidden [@media(pointer:coarse)]:hidden">
             <ChapterScrubber
               chapters={pageChapters}
@@ -472,9 +450,7 @@ export function PdfViewer({
                     <P className="truncate text-on-ink">
                       Page {page} · {sectionAtPage(page)?.title ?? "Document"}
                     </P>
-                    <P className="truncate text-on-ink-muted">
-                      {pagePreviewDetail}
-                    </P>
+                    <P className="truncate text-on-ink-muted">{pagePreviewDetail}</P>
                   </div>
                 );
               }}
@@ -493,10 +469,16 @@ export function PdfViewer({
               style={fit === "page" ? { containerType: "size" } : undefined}
               tabIndex={0}
             >
-              <div className="mx-auto flex flex-col gap-4" style={{ width: fit === "page" ? "100%" : `${resolvedZoom}%` }}>
+              <div
+                className="mx-auto flex flex-col gap-4"
+                style={{ width: fit === "page" ? "100%" : `${resolvedZoom}%` }}
+              >
                 {pages.map((page) => (
                   <div
-                    className={cn("relative w-full shrink-0 overflow-hidden border border-input bg-card shadow-sm", pageClassName)}
+                    className={cn(
+                      "relative w-full shrink-0 overflow-hidden border border-input bg-card shadow-sm",
+                      pageClassName,
+                    )}
                     key={page.pageNumber}
                     ref={(element) => {
                       if (element) pageElements.current.set(page.pageNumber, element);
@@ -504,7 +486,12 @@ export function PdfViewer({
                     }}
                     style={{
                       aspectRatio: `${page.width} / ${page.height}`,
-                      ...(fit === "page" ? { marginInline: "auto", width: `min(${resolvedZoom}cqw, ${resolvedZoom * page.width / page.height}cqh)` } : {}),
+                      ...(fit === "page"
+                        ? {
+                            marginInline: "auto",
+                            width: `min(${resolvedZoom}cqw, ${(resolvedZoom * page.width) / page.height}cqh)`,
+                          }
+                        : {}),
                     }}
                   >
                     {page.content}
@@ -512,16 +499,18 @@ export function PdfViewer({
                 ))}
               </div>
             </div>
-          ) : <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-auto">
-            <div
-              className="flex min-h-full w-full origin-center items-stretch justify-center transition-transform"
-              style={{ transform: `scale(${resolvedZoom / 100})` }}
-            >
-              <div className="flex min-h-full w-full flex-col overflow-hidden border border-input bg-card shadow-sm">
-                {children}
+          ) : (
+            <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-auto">
+              <div
+                className="flex min-h-full w-full origin-center items-stretch justify-center transition-transform"
+                style={{ transform: `scale(${resolvedZoom / 100})` }}
+              >
+                <div className="flex min-h-full w-full flex-col overflow-hidden border border-input bg-card shadow-sm">
+                  {children}
+                </div>
               </div>
             </div>
-          </div>}
+          )}
         </div>
       </section>
     </div>

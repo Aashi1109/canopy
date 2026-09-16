@@ -32,36 +32,29 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function expandReplacement(
-  replacement: string,
-  match: RegExpExecArray,
-  source: string,
-): string {
-  return replacement.replace(
-    /\$(\$|&|`|'|<[^>]+>|\d{1,2})/g,
-    (token, reference: string) => {
-      if (reference === "$") return "$";
-      if (reference === "&") return match[0];
-      if (reference === "`") return source.slice(0, match.index);
-      if (reference === "'") return source.slice(match.index + match[0].length);
-      if (reference.startsWith("<")) {
-        if (!match.groups) return token;
-        const name = reference.slice(1, -1);
-        return match.groups[name] ?? "";
+function expandReplacement(replacement: string, match: RegExpExecArray, source: string): string {
+  return replacement.replace(/\$(\$|&|`|'|<[^>]+>|\d{1,2})/g, (token, reference: string) => {
+    if (reference === "$") return "$";
+    if (reference === "&") return match[0];
+    if (reference === "`") return source.slice(0, match.index);
+    if (reference === "'") return source.slice(match.index + match[0].length);
+    if (reference.startsWith("<")) {
+      if (!match.groups) return token;
+      const name = reference.slice(1, -1);
+      return match.groups[name] ?? "";
+    }
+    const groupIndex = Number(reference);
+    if (groupIndex > 0 && groupIndex < match.length) {
+      return match[groupIndex] ?? "";
+    }
+    if (reference.length === 2) {
+      const firstGroupIndex = Number(reference[0]);
+      if (firstGroupIndex > 0 && firstGroupIndex < match.length) {
+        return `${match[firstGroupIndex] ?? ""}${reference[1]}`;
       }
-      const groupIndex = Number(reference);
-      if (groupIndex > 0 && groupIndex < match.length) {
-        return match[groupIndex] ?? "";
-      }
-      if (reference.length === 2) {
-        const firstGroupIndex = Number(reference[0]);
-        if (firstGroupIndex > 0 && firstGroupIndex < match.length) {
-          return `${match[firstGroupIndex] ?? ""}${reference[1]}`;
-        }
-      }
-      return token;
-    },
-  );
+    }
+    return token;
+  });
 }
 
 export function buildReplacementPreview(

@@ -4,20 +4,17 @@ export default {
   toolId: "devtools.tsv-to-csv",
   app: "devtools",
   category: "csv-data-tools",
-  keywords: [
-    "tsv",
-    "csv",
-    "convert",
-    "tab",
-    "spreadsheet",
-    "delimited",
-  ],
+  keywords: ["tsv", "csv", "convert", "tab", "spreadsheet", "delimited"],
   name: "TSV to CSV",
   description: "Convert tab-separated values to CSV.",
   input: {
     kind: "text",
     label: "TSV input",
-    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
+    acceptFiles: {
+      accept: ".csv,.tsv,text/csv,text/tab-separated-values",
+      maxBytes: 104_857_600,
+      maxEditableBytes: 2_000_000,
+    },
     placeholder: "name\tage\nAda\t36",
   },
   settings: {

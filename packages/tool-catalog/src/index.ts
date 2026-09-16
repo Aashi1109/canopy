@@ -97,23 +97,15 @@ export function mergeManagedTool(
     toolId: manifest.id,
     slug,
     name:
-      typeof stored.name === "string" && stored.name.trim()
-        ? stored.name.trim()
-        : fallback.name,
+      typeof stored.name === "string" && stored.name.trim() ? stored.name.trim() : fallback.name,
     description:
       typeof stored.description === "string" && stored.description.trim()
         ? stored.description.trim()
         : fallback.description,
-    order: Number.isInteger(stored.order)
-      ? (stored.order as number)
-      : fallback.order,
+    order: Number.isInteger(stored.order) ? (stored.order as number) : fallback.order,
     enabled:
-      slug !== null &&
-      (typeof stored.enabled === "boolean" ? stored.enabled : fallback.enabled),
-    archived:
-      typeof stored.archived === "boolean"
-        ? stored.archived
-        : fallback.archived,
+      slug !== null && (typeof stored.enabled === "boolean" ? stored.enabled : fallback.enabled),
+    archived: typeof stored.archived === "boolean" ? stored.archived : fallback.archived,
   };
 }
 
@@ -134,11 +126,7 @@ export function mergeToolManifest(
 
   if (Array.isArray(managedTools)) {
     for (const stored of managedTools) {
-      if (
-        isRecord(stored) &&
-        typeof stored.toolId === "string" &&
-        !storedById.has(stored.toolId)
-      ) {
+      if (isRecord(stored) && typeof stored.toolId === "string" && !storedById.has(stored.toolId)) {
         storedById.set(stored.toolId, stored);
       }
     }
@@ -172,9 +160,7 @@ export function areToolSlugsUnique(
   tools: readonly ManagedTool[],
   manifest: readonly ToolManifestEntry[],
 ): boolean {
-  const appById = new Map(
-    manifest.map((entry) => [entry.id, entry.app] as const),
-  );
+  const appById = new Map(manifest.map((entry) => [entry.id, entry.app] as const));
   const slugs = new Set<string>();
 
   for (const tool of tools) {
@@ -200,9 +186,7 @@ export function assertToolSlugImmutable(
   }
 }
 
-export function isToolAvailable<T extends ManagedTool>(
-  tool: T,
-): tool is T & { slug: string } {
+export function isToolAvailable<T extends ManagedTool>(tool: T): tool is T & { slug: string } {
   return tool.slug !== null && tool.enabled && !tool.archived;
 }
 
@@ -212,8 +196,7 @@ export function getEnabledTools<T extends ResolvedTool>(
 ): Array<T & { slug: string }> {
   return tools
     .filter(
-      (tool): tool is T & { slug: string } =>
-        isToolAvailable(tool) && (!app || tool.app === app),
+      (tool): tool is T & { slug: string } => isToolAvailable(tool) && (!app || tool.app === app),
     )
     .sort((left, right) => left.order - right.order);
 }

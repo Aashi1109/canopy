@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { RadioGroup as RadioGroupPrimitive } from "radix-ui"
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { RadioGroup as RadioGroupPrimitive } from "radix-ui";
 
-import { cn } from "#lib/utils"
+import { cn } from "#lib/utils";
 
 const radioGroupItemVariants = cva(
   "group/radio relative aspect-square shrink-0 rounded-full border-input bg-card text-primary transition-[border-color,box-shadow] outline-none before:absolute before:content-[''] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:opacity-70 aria-invalid:border-validation aria-invalid:ring-validation/20 data-[state=checked]:border-primary",
@@ -22,10 +22,10 @@ const radioGroupItemVariants = cva(
       size: "default",
     },
   },
-)
+);
 
 type RadioGroupItemProps = React.ComponentProps<typeof RadioGroupPrimitive.Item> &
-  VariantProps<typeof radioGroupItemVariants>
+  VariantProps<typeof radioGroupItemVariants>;
 
 function RadioGroup({
   className,
@@ -37,14 +37,10 @@ function RadioGroup({
       className={cn("grid gap-3", className)}
       {...props}
     />
-  )
+  );
 }
 
-function RadioGroupItem({
-  className,
-  size = "default",
-  ...props
-}: RadioGroupItemProps) {
+function RadioGroupItem({ className, size = "default", ...props }: RadioGroupItemProps) {
   return (
     <RadioGroupPrimitive.Item
       data-slot="radio-group-item"
@@ -59,8 +55,8 @@ function RadioGroupItem({
         <span className="size-[9px] rounded-full bg-primary group-data-[size=xs]/radio:size-1.5 group-data-[size=sm]/radio:size-[7px] group-data-[size=md]/radio:size-2.5 group-data-[size=lg]/radio:size-[11px]" />
       </RadioGroupPrimitive.Indicator>
     </RadioGroupPrimitive.Item>
-  )
+  );
 }
 
-export { RadioGroup, RadioGroupItem, radioGroupItemVariants }
-export type { RadioGroupItemProps }
+export { RadioGroup, RadioGroupItem, radioGroupItemVariants };
+export type { RadioGroupItemProps };

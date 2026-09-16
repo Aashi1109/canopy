@@ -17,7 +17,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 function sortDeclarations(css: string): string {
   const lines = css.split("\n");
   const output: string[] = [];
-  for (let index = 0; index < lines.length; ) {
+  for (let index = 0; index < lines.length;) {
     if (!/^\s+[-\w]+\s*:/.test(lines[index])) {
       output.push(lines[index]);
       index += 1;
@@ -73,7 +73,8 @@ function wrapLines(css: string, width: number, indent: string): string {
 }
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
-  const indent = ctx.settings.indentWidth === "4" ? "    " : ctx.settings.indentWidth === "tab" ? "\t" : "  ";
+  const indent =
+    ctx.settings.indentWidth === "4" ? "    " : ctx.settings.indentWidth === "tab" ? "\t" : "  ";
   let text = formatDelimitedCode(ctx.input.text, "css");
   if (ctx.settings.propertyOrder === "alphabetical") text = sortDeclarations(text);
   text = applyIndentation(text, indent);

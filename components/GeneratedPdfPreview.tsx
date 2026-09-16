@@ -10,7 +10,11 @@ import { readArtifact, type StoredToolArtifact } from "@/lib/tool-framework/arti
 import { useToolRun } from "@/lib/tool-framework/useToolRun";
 import { createToolRunFile } from "@/lib/tool-framework/workerProtocol";
 
-export function GeneratedPdfPreview({ file, definitionKey, fill = false }: {
+export function GeneratedPdfPreview({
+  file,
+  definitionKey,
+  fill = false,
+}: {
   file: StoredToolArtifact;
   definitionKey: string;
   fill?: boolean;
@@ -25,18 +29,22 @@ export function GeneratedPdfPreview({ file, definitionKey, fill = false }: {
   useEffect(() => {
     let current = true;
     setFailure("");
-    void readArtifact(file).then((blob) => {
-      if (!current) return;
-      inspect({
-        key: definitionKey,
-        source: "output",
-        file: createToolRunFile(file.id, new File([blob], file.name, { type: file.mime })),
-        thumbnailWidth: 1200,
+    void readArtifact(file)
+      .then((blob) => {
+        if (!current) return;
+        inspect({
+          key: definitionKey,
+          source: "output",
+          file: createToolRunFile(file.id, new File([blob], file.name, { type: file.mime })),
+          thumbnailWidth: 1200,
+        });
+      })
+      .catch(() => {
+        if (current) setFailure("The generated PDF could not be opened.");
       });
-    }).catch(() => {
-      if (current) setFailure("The generated PDF could not be opened.");
-    });
-    return () => { current = false; };
+    return () => {
+      current = false;
+    };
   }, [file, definitionKey, inspect, attempt]);
 
   useEffect(() => {
@@ -52,16 +60,33 @@ export function GeneratedPdfPreview({ file, definitionKey, fill = false }: {
       fileName={file.name}
       onExpand={onExpand}
       onPageChange={setCurrentPage}
-      outline={pages.map((entry) => ({ id: `page-${entry.pageNumber}`, title: `Page ${entry.pageNumber}`, page: entry.pageNumber }))}
+      outline={pages.map((entry) => ({
+        id: `page-${entry.pageNumber}`,
+        title: `Page ${entry.pageNumber}`,
+        page: entry.pageNumber,
+      }))}
       pageCount={pages.length}
       pages={pages.map((page) => ({
         pageNumber: page.pageNumber,
         width: page.pageWidth,
         height: page.pageHeight,
-        content: <PdfPreviewPage alt={`Generated PDF page ${page.pageNumber}`} page={page} requestThumbnails={requestThumbnails} active={!onExpand || !expanded} />,
+        content: (
+          <PdfPreviewPage
+            alt={`Generated PDF page ${page.pageNumber}`}
+            page={page}
+            requestThumbnails={requestThumbnails}
+            active={!onExpand || !expanded}
+          />
+        ),
       }))}
       pagePreviewDetail={file.name}
-      renderPagePreview={(pageNumber) => <PagePreview pageNumber={pageNumber} previews={pages} requestThumbnails={requestThumbnails} />}
+      renderPagePreview={(pageNumber) => (
+        <PagePreview
+          pageNumber={pageNumber}
+          previews={pages}
+          requestThumbnails={requestThumbnails}
+        />
+      )}
     />
   );
   return (
@@ -72,8 +97,16 @@ export function GeneratedPdfPreview({ file, definitionKey, fill = false }: {
       header="sr-only"
       purpose="preview"
       state={error ? "error" : pages.length ? "ready" : "loading"}
-      stateAction={error ? <Button onClick={() => setAttempt((value) => value + 1)} variant="outline">Retry preview</Button> : undefined}
-      stateDescription={error ? `${error} Retry the preview, or download the PDF from Processed output.` : undefined}
+      stateAction={
+        error ? (
+          <Button onClick={() => setAttempt((value) => value + 1)} variant="outline">
+            Retry preview
+          </Button>
+        ) : undefined
+      }
+      stateDescription={
+        error ? `${error} Retry the preview, or download the PDF from Processed output.` : undefined
+      }
       stateTitle={error ? "Preview unavailable" : "Opening generated PDF…"}
       title="Generated PDF"
     >
@@ -92,15 +125,22 @@ export function GeneratedPdfPreview({ file, definitionKey, fill = false }: {
   );
 }
 
-
-function PagePreview({ pageNumber, previews, requestThumbnails }: {
+function PagePreview({
+  pageNumber,
+  previews,
+  requestThumbnails,
+}: {
   pageNumber: number;
   previews: ReturnType<typeof usePdfPageImages>;
   requestThumbnails: (pages: readonly number[]) => void;
 }) {
-  useEffect(() => { requestThumbnails([pageNumber]); }, [pageNumber, requestThumbnails]);
+  useEffect(() => {
+    requestThumbnails([pageNumber]);
+  }, [pageNumber, requestThumbnails]);
   const page = previews.find((entry) => entry.pageNumber === pageNumber);
-  return page?.url
-    ? <img alt={`Page ${pageNumber}`} className="h-full w-full object-contain" src={page.url} />
-    : <Muted role="status">Rendering page {pageNumber}…</Muted>;
+  return page?.url ? (
+    <img alt={`Page ${pageNumber}`} className="h-full w-full object-contain" src={page.url} />
+  ) : (
+    <Muted role="status">Rendering page {pageNumber}…</Muted>
+  );
 }

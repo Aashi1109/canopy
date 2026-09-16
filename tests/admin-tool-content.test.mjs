@@ -14,10 +14,7 @@ import {
   setToolContentPublished,
   updateToolContent,
 } from "../lib/admin/adminMutations.ts";
-import {
-  TOOL_CONTENT_DOC_VERSION,
-  resolveContent,
-} from "../lib/tool-framework/content.ts";
+import { TOOL_CONTENT_DOC_VERSION, resolveContent } from "../lib/tool-framework/content.ts";
 import { TOOL_CATEGORIES } from "../lib/tool-framework/categories.ts";
 import { renderIdenticon } from "../lib/tool-framework/identicon.ts";
 
@@ -74,10 +71,7 @@ function createFakeTransaction(selectResults) {
       for: () => chain,
       then: (resolve, reject) =>
         result === undefined
-          ? Promise.reject(new Error("Unexpected database read")).then(
-              resolve,
-              reject,
-            )
+          ? Promise.reject(new Error("Unexpected database read")).then(resolve, reject)
           : Promise.resolve(result).then(resolve, reject),
     };
     return chain;
@@ -185,16 +179,13 @@ test("every tool content mutation checks its exact permission", async () => {
 
   for (const [permission, invoke] of cases) {
     const [resource, action] = permission.split(".");
-    await withFakeDatabase(
-      [permissionRows(accessWithout(resource, action))],
-      async (state) => {
-        await assert.rejects(
-          invoke,
-          new RegExp(`Missing permission: ${permission.replace(".", "\\.")}`),
-        );
-        assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
-      },
-    );
+    await withFakeDatabase([permissionRows(accessWithout(resource, action))], async (state) => {
+      await assert.rejects(
+        invoke,
+        new RegExp(`Missing permission: ${permission.replace(".", "\\.")}`),
+      );
+      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    });
   }
 });
 
@@ -288,10 +279,7 @@ test("a stored content document is written at the version the resolver reads", a
         ...values,
         publishedAt: new Date(),
       });
-      assert.deepEqual(resolved.content.howToUse, [
-        "Paste the input",
-        "Read the output",
-      ]);
+      assert.deepEqual(resolved.content.howToUse, ["Paste the input", "Read the output"]);
       assert.deepEqual(resolved.keywords, ["one", "two"]);
       assert.equal(resolved.seoTitle, "Stored title");
     },
@@ -374,10 +362,9 @@ test("an unpublished row leaves the code values live", () => {
     updatedAt: new Date(),
   };
   assert.deepEqual(resolveContent(spec, draftRow).keywords, ["shipped"]);
-  assert.deepEqual(
-    resolveContent(spec, { ...draftRow, publishedAt: new Date() }).keywords,
-    ["stored"],
-  );
+  assert.deepEqual(resolveContent(spec, { ...draftRow, publishedAt: new Date() }).keywords, [
+    "stored",
+  ]);
 });
 
 // -- icons ------------------------------------------------------------------

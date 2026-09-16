@@ -5,10 +5,7 @@ import type { ToolRunFile } from "../run.ts";
  * require contiguous input. Completed reads are not cached: retaining the
  * promise also retains its full ArrayBuffer for as long as the source File.
  */
-export async function readToolFile(
-  file: ToolRunFile,
-  signal?: AbortSignal,
-): Promise<ArrayBuffer> {
+export async function readToolFile(file: ToolRunFile, signal?: AbortSignal): Promise<ArrayBuffer> {
   signal?.throwIfAborted();
   const buffer = await file.source.arrayBuffer();
   signal?.throwIfAborted();

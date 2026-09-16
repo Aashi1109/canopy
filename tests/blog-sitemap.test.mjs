@@ -6,18 +6,23 @@ import { getBlogSitemapEntries } from "../lib/blog/queries.ts";
 const sourceUrl = new URL("../app/sitemap.ts", import.meta.url).href;
 const state = { tools: [], posts: [], toolsError: false, postsError: false, limits: [] };
 globalThis.__blogSitemapTest = state;
-const moduleUrl = (source) => ({ shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(source)}` });
+const moduleUrl = (source) => ({
+  shortCircuit: true,
+  url: `data:text/javascript,${encodeURIComponent(source)}`,
+});
 const hooks = registerHooks({
   resolve(specifier, context, next) {
     if (context.parentURL === sourceUrl) {
-      if (specifier === "@/lib/tool-framework/catalog") return moduleUrl(`
+      if (specifier === "@/lib/tool-framework/catalog")
+        return moduleUrl(`
         export async function getTools() {
           const state = globalThis.__blogSitemapTest;
           if (state.toolsError) throw new Error("Tool catalog unavailable");
           return state.tools;
         }
       `);
-      if (specifier === "@/lib/blog/queries") return moduleUrl(`
+      if (specifier === "@/lib/blog/queries")
+        return moduleUrl(`
         export async function getBlogSitemapEntries(limit) {
           const state = globalThis.__blogSitemapTest;
           state.limits.push(limit);
@@ -47,8 +52,17 @@ test("sitemap preserves tool entries and adds blog publication timestamps and ca
   state.tools = [{ href: "/devtools/json-formatter" }];
   state.posts = [{ slug: "using-json", publishedUpdatedAt }];
   assert.deepEqual(await sitemap(), [
-    { url: "https://smarttools.example/devtools/json-formatter", changeFrequency: "weekly", priority: 0.7 },
-    { url: "https://smarttools.example/blog/using-json", lastModified: publishedUpdatedAt, changeFrequency: "weekly", priority: 0.7 },
+    {
+      url: "https://smarttools.example/devtools/json-formatter",
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
+      url: "https://smarttools.example/blog/using-json",
+      lastModified: publishedUpdatedAt,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
   ]);
   assert.deepEqual(state.limits, [49999]);
 });
@@ -57,17 +71,26 @@ test("either catalog can fail independently without losing the other catalog's U
   state.tools = [{ href: "/media/image-converter" }];
   state.posts = [{ slug: "images", publishedUpdatedAt: new Date("2026-09-16T10:00:00Z") }];
   state.postsError = true;
-  assert.deepEqual((await sitemap()).map((entry) => entry.url), ["https://smarttools.example/media/image-converter"]);
+  assert.deepEqual(
+    (await sitemap()).map((entry) => entry.url),
+    ["https://smarttools.example/media/image-converter"],
+  );
   state.postsError = false;
   state.toolsError = true;
-  assert.deepEqual((await sitemap()).map((entry) => entry.url), ["https://smarttools.example/blog/images"]);
+  assert.deepEqual(
+    (await sitemap()).map((entry) => entry.url),
+    ["https://smarttools.example/blog/images"],
+  );
   state.postsError = true;
   assert.deepEqual(await sitemap(), []);
 });
 
 test("sitemap bounds the combined catalog to 50,000 URLs and reserves existing tool capacity", async () => {
   state.tools = Array.from({ length: 49999 }, (_, index) => ({ href: `/devtools/tool-${index}` }));
-  state.posts = [{ slug: "first", publishedUpdatedAt: new Date() }, { slug: "second", publishedUpdatedAt: new Date() }];
+  state.posts = [
+    { slug: "first", publishedUpdatedAt: new Date() },
+    { slug: "second", publishedUpdatedAt: new Date() },
+  ];
   const entries = await sitemap();
   assert.equal(entries.length, 50000);
   assert.equal(entries.at(-1).url, "https://smarttools.example/blog/first");

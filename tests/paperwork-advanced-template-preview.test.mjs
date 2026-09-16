@@ -2,8 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const previewPath =
-  "app/paperwork/components/AdvancedDocumentPreview.tsx";
+const previewPath = "app/paperwork/components/AdvancedDocumentPreview.tsx";
 
 test("Paperwork advanced template preview owns the complete pdfme lifecycle", async () => {
   const source = await readFile(previewPath, "utf8");

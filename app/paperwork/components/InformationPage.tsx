@@ -29,18 +29,17 @@ export default async function InformationPage({
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <ProductHeader
-        actions={
-          <AccountNavigation
-            returnTo="/paperwork"
-            user={session?.user ?? null}
-          />
-        }
+        actions={<AccountNavigation returnTo="/paperwork" user={session?.user ?? null} />}
         href="/paperwork"
         name="Paperwork"
       />
       <main className="grow py-12 sm:py-16">
         <AppContainer>
-          <Button asChild className="mb-8 px-0 text-muted-foreground hover:bg-transparent hover:text-foreground" variant="ghost">
+          <Button
+            asChild
+            className="mb-8 px-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
+            variant="ghost"
+          >
             <a href="/paperwork">
               <ArrowLeft aria-hidden="true" className="size-4" />
               Back to Paperwork tools
@@ -52,9 +51,7 @@ export default async function InformationPage({
             eyebrow={eyebrow}
             title={title}
           />
-          <Card className="max-w-3xl space-y-7 p-6 sm:p-8">
-            {children}
-          </Card>
+          <Card className="max-w-3xl space-y-7 p-6 sm:p-8">{children}</Card>
         </AppContainer>
       </main>
       <SmartToolsFooter />

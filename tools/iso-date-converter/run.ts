@@ -50,7 +50,10 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     return output.join("\n");
   };
 
-  const lines = ctx.input.text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const lines = ctx.input.text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
   if (lines.length <= 1) return { render: "text", text: convert(lines[0] ?? "") };
 
   return {

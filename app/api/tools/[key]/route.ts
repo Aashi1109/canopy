@@ -62,8 +62,7 @@ function toFailure(error: unknown): NextResponse {
     {
       error: {
         code: "processing-failed",
-        message:
-          "This tool could not finish. The input may be malformed or unsupported.",
+        message: "This tool could not finish. The input may be malformed or unsupported.",
       },
     },
     { status: 500 },
@@ -84,8 +83,7 @@ export async function POST(
     // This header is spoofable unless a trusted proxy overwrites it. Taking
     // only the first hop makes this a quota speed bump, not authorization.
     const clientKey =
-      request.headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim() ||
-      "unknown-client";
+      request.headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim() || "unknown-client";
     const rateLimit = checkRateLimit(`${key}:${clientKey}`);
     if (!rateLimit.allowed) {
       return NextResponse.json(
@@ -129,8 +127,7 @@ export async function POST(
     const result: ToolResult = await run({
       input: {
         text: typeof body.text === "string" ? body.text : "",
-        secondary:
-          typeof body.secondary === "string" ? body.secondary : undefined,
+        secondary: typeof body.secondary === "string" ? body.secondary : undefined,
         files: [],
       },
       settings: parseSettings(spec.settings, body.settings) as never,

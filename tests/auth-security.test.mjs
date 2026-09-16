@@ -8,10 +8,7 @@ import {
   safeReturnTo,
 } from "../packages/auth/src/security.ts";
 
-const trustedOrigins = [
-  "https://smarttools.example.com",
-  "https://admin.smarttools.example.com",
-];
+const trustedOrigins = ["https://smarttools.example.com", "https://admin.smarttools.example.com"];
 
 test("trusted origins accept only explicit HTTP origins", () => {
   assert.deepEqual(
@@ -35,10 +32,7 @@ test("trusted origins accept only explicit HTTP origins", () => {
 test("return URLs allow local paths and exact trusted origins only", () => {
   assert.equal(safeReturnTo("/profile?tab=sessions", trustedOrigins), "/profile?tab=sessions");
   assert.equal(
-    safeReturnTo(
-      "https://admin.smarttools.example.com/tools?updated=1",
-      trustedOrigins,
-    ),
+    safeReturnTo("https://admin.smarttools.example.com/tools?updated=1", trustedOrigins),
     "https://admin.smarttools.example.com/tools?updated=1",
   );
 
@@ -64,22 +58,12 @@ test("server account fields reject unsafe or oversized profile input", () => {
     normalizeProfileImage(" https://images.example/avatar.png "),
     "https://images.example/avatar.png",
   );
-  const embeddedWebp =
-    "data:image/webp;base64,UklGRnh4eHhXRUJQ";
+  const embeddedWebp = "data:image/webp;base64,UklGRnh4eHhXRUJQ";
   assert.equal(normalizeProfileImage(embeddedWebp), embeddedWebp);
+  assert.throws(() => normalizeProfileImage("data:image/svg+xml;base64,PHN2Zz4="), /image/i);
+  assert.throws(() => normalizeProfileImage("data:image/webp;base64,ZmFrZQ=="), /image/i);
   assert.throws(
-    () => normalizeProfileImage("data:image/svg+xml;base64,PHN2Zz4="),
-    /image/i,
-  );
-  assert.throws(
-    () => normalizeProfileImage("data:image/webp;base64,ZmFrZQ=="),
-    /image/i,
-  );
-  assert.throws(
-    () =>
-      normalizeProfileImage(
-        `data:image/webp;base64,${"A".repeat(200_001)}`,
-      ),
+    () => normalizeProfileImage(`data:image/webp;base64,${"A".repeat(200_001)}`),
     /image/i,
   );
   assert.throws(() => normalizeProfileImage("javascript:alert(1)"), /image/i);

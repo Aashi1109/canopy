@@ -39,15 +39,14 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
   const issues = props.result?.issues ?? [];
   const verdict = props.result?.verdict;
   const inputSpec = props.spec.input;
-  const moduleFormat = typeof props.settings.moduleFormat === "string"
-    ? props.settings.moduleFormat
-    : "none";
-  const outputLanguage = typeof props.settings.outputLanguage === "string"
-    ? props.settings.outputLanguage
-    : "javascript";
-  const requestStyle = typeof props.settings.requestStyle === "string"
-    ? props.settings.requestStyle
-    : "config";
+  const moduleFormat =
+    typeof props.settings.moduleFormat === "string" ? props.settings.moduleFormat : "none";
+  const outputLanguage =
+    typeof props.settings.outputLanguage === "string"
+      ? props.settings.outputLanguage
+      : "javascript";
+  const requestStyle =
+    typeof props.settings.requestStyle === "string" ? props.settings.requestStyle : "config";
 
   useEffect(() => {
     props.onToolbarActionsChange?.({ exampleLabel: "Load example" });
@@ -115,29 +114,51 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
               Generated output
             </Overline>
             <div className="flex items-center gap-2">
-              <FieldLabel className="sr-only" htmlFor={languageId}>Output language</FieldLabel>
+              <FieldLabel className="sr-only" htmlFor={languageId}>
+                Output language
+              </FieldLabel>
               <Select
                 className="w-36"
                 disabled={props.disabled}
                 id={languageId}
-                onChange={(event) => props.onSettingChange("outputLanguage", event.currentTarget.value)}
+                onChange={(event) =>
+                  props.onSettingChange("outputLanguage", event.currentTarget.value)
+                }
                 size="xs"
                 value={outputLanguage}
               >
                 <option value="javascript">JavaScript</option>
                 <option value="typescript">TypeScript</option>
               </Select>
-              <ToolActionButton action="copy" disabled={!output} onClick={() => void copyOutput()} type="button">
-                {copyStatus === "copied" ? "Copied" : copyStatus === "failed" ? "Copy failed" : "Copy"}
+              <ToolActionButton
+                action="copy"
+                disabled={!output}
+                onClick={() => void copyOutput()}
+                type="button"
+              >
+                {copyStatus === "copied"
+                  ? "Copied"
+                  : copyStatus === "failed"
+                    ? "Copy failed"
+                    : "Copy"}
               </ToolActionButton>
-              <ToolActionButton action="download" iconOnly disabled={!output} onClick={downloadOutput} title="Download generated output" type="button">
+              <ToolActionButton
+                action="download"
+                iconOnly
+                disabled={!output}
+                onClick={downloadOutput}
+                title="Download generated output"
+                type="button"
+              >
                 <span className="sr-only">Download generated output</span>
               </ToolActionButton>
             </div>
           </header>
           <div className="flex min-h-0 flex-1 overflow-hidden rounded-lg border border-input bg-muted/45">
             {output ? (
-              <CodeBlock className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4">{output}</CodeBlock>
+              <CodeBlock className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4">
+                {output}
+              </CodeBlock>
             ) : (
               <div className="grid flex-1 place-items-center p-6 text-center">
                 <Muted>Generated Axios code appears here as you edit the cURL command.</Muted>
@@ -147,16 +168,22 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
           {issues.length ? (
             <AlertBanner title="Some cURL flags were not converted" variant="warning">
               <List className="list-disc space-y-1 pl-4">
-                {issues.map((issue, index) => <li key={`${index}-${issue.message}`}>{issue.message}</li>)}
+                {issues.map((issue, index) => (
+                  <li key={`${index}-${issue.message}`}>{issue.message}</li>
+                ))}
               </List>
             </AlertBanner>
           ) : null}
           {props.error ? (
-            <AlertBanner title="Unable to convert" variant="error">{props.error}</AlertBanner>
+            <AlertBanner title="Unable to convert" variant="error">
+              {props.error}
+            </AlertBanner>
           ) : verdict ? (
             <AlertBanner
               title={verdict.label}
-              variant={verdict.level === "ok" ? "success" : verdict.level === "warn" ? "warning" : "error"}
+              variant={
+                verdict.level === "ok" ? "success" : verdict.level === "warn" ? "warning" : "error"
+              }
             >
               {verdict.detail}
             </AlertBanner>
@@ -193,7 +220,10 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
         />
 
         <AlertBanner title="Unsupported flags are not converted" variant="warning">
-          <P>Forms, cookie jars, proxies, redirects, certificates, uploads, and unsupported shell syntax are ignored.</P>
+          <P>
+            Forms, cookie jars, proxies, redirects, certificates, uploads, and unsupported shell
+            syntax are ignored.
+          </P>
         </AlertBanner>
       </ToolOptionsPanel>
     </SplitStack>

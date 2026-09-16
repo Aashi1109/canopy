@@ -5,7 +5,8 @@ import { ToolError } from "../../tool-framework/run.ts";
 
 export function normalizeDomain(input: string): string {
   const raw = input.trim().toLowerCase();
-  if (!raw) throw new ToolError("input-required", "Domain is required.", "Enter a value and try again.");
+  if (!raw)
+    throw new ToolError("input-required", "Domain is required.", "Enter a value and try again.");
   let hostname: string;
   try {
     hostname = new URL(raw.includes("://") ? raw : `https://${raw}`).hostname;

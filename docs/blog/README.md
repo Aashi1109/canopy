@@ -64,15 +64,15 @@ flowchart LR
 
 ### Responsibilities
 
-| Layer | Responsibility |
-|---|---|
-| Admin UI | Editing, save feedback, preview, history, publishing controls, taxonomy management. |
-| Server Actions | Validate input, derive the actor from the session, call domain operations, return actionable results. |
-| Blog domain | Revision creation, permissions, transactions, publishing, scheduling, conflict detection, auditing. |
-| Public queries | Fetch only live content; implement listing, search, filters, article lookup, sitemap and RSS data. |
-| Renderer | Render validated editor documents consistently for preview and public articles. |
-| Scheduler endpoint | Authenticate the scheduler and invoke the same domain publishing operation. |
-| Database | Enforce uniqueness, relationships, transaction isolation, and indexed retrieval. |
+| Layer              | Responsibility                                                                                        |
+| ------------------ | ----------------------------------------------------------------------------------------------------- |
+| Admin UI           | Editing, save feedback, preview, history, publishing controls, taxonomy management.                   |
+| Server Actions     | Validate input, derive the actor from the session, call domain operations, return actionable results. |
+| Blog domain        | Revision creation, permissions, transactions, publishing, scheduling, conflict detection, auditing.   |
+| Public queries     | Fetch only live content; implement listing, search, filters, article lookup, sitemap and RSS data.    |
+| Renderer           | Render validated editor documents consistently for preview and public articles.                       |
+| Scheduler endpoint | Authenticate the scheduler and invoke the same domain publishing operation.                           |
+| Database           | Enforce uniqueness, relationships, transaction isolation, and indexed retrieval.                      |
 
 Application-owned blog logic belongs in `lib/blog`. Routes remain thin. Database declarations and migrations stay in the existing database package.
 
@@ -80,15 +80,15 @@ No separate CMS service, search service, message broker, or author-management su
 
 ### Phase-one user experience
 
-| Area | Functionality |
-|---|---|
-| Admin dashboard | Search, status/category filters, pagination, create, duplicate into a draft, trash, and restore. |
-| Visual editor | Headings, formatting, links, lists, quotes, images with alt text/captions, tables, code blocks, undo/redo. Use Tiptap with existing design-system controls. |
-| Article details | Title, read-only URL, excerpt, cover image, editable public byline, one category, optional tags, and related SmartTools links. |
-| Publishing | Autosave, manual save, authenticated preview, publish now, schedule, publish changes, cancel/reschedule, and unpublish. |
-| History | Paginated revision list, snapshot preview, and restore-to-draft. |
-| Public experience | Search, category/tag filters, pagination, responsive articles, reading time, heading navigation, copy-link sharing, and related tools. |
-| SEO/distribution | Editable SEO title/description with defaults, canonical URLs, social metadata, BlogPosting structured data, sitemap inclusion, and RSS. |
+| Area              | Functionality                                                                                                                                               |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Admin dashboard   | Search, status/category filters, pagination, create, duplicate into a draft, trash, and restore.                                                            |
+| Visual editor     | Headings, formatting, links, lists, quotes, images with alt text/captions, tables, code blocks, undo/redo. Use Tiptap with existing design-system controls. |
+| Article details   | Title, read-only URL, excerpt, cover image, editable public byline, one category, optional tags, and related SmartTools links.                              |
+| Publishing        | Autosave, manual save, authenticated preview, publish now, schedule, publish changes, cancel/reschedule, and unpublish.                                     |
+| History           | Paginated revision list, snapshot preview, and restore-to-draft.                                                                                            |
+| Public experience | Search, category/tag filters, pagination, responsive articles, reading time, heading navigation, copy-link sharing, and related tools.                      |
+| SEO/distribution  | Editable SEO title/description with defaults, canonical URLs, social metadata, BlogPosting structured data, sitemap inclusion, and RSS.                     |
 
 Keep writing central, with publishing and article settings alongside it. Reuse the existing admin shell, public header/footer, controls, typography, feedback, and dialogs. No slug editing or redirects are included.
 
@@ -98,23 +98,23 @@ Keep writing central, with publishing and article settings alongside it. Reuse t
 
 Drafts, revisions, live publication, and scheduling have separate storage:
 
-| Concept | Storage | Mutable? |
-|---|---|---|
-| Current working draft | `blog_posts.draft_document` | Yes, through validated saves. |
-| Historical revision | `blog_revisions.document` | No. |
-| Live article | `blog_posts.published_revision_id` | The pointer changes; the referenced snapshot does not. |
-| Scheduled article | `blog_post_schedules.revision_id` | Replacing the schedule creates a new request; the referenced snapshot does not change. |
+| Concept               | Storage                            | Mutable?                                                                               |
+| --------------------- | ---------------------------------- | -------------------------------------------------------------------------------------- |
+| Current working draft | `blog_posts.draft_document`        | Yes, through validated saves.                                                          |
+| Historical revision   | `blog_revisions.document`          | No.                                                                                    |
+| Live article          | `blog_posts.published_revision_id` | The pointer changes; the referenced snapshot does not.                                 |
+| Scheduled article     | `blog_post_schedules.revision_id`  | Replacing the schedule creates a new request; the referenced snapshot does not change. |
 
 For example:
 
-| Moment | Working draft | Live revision | Scheduled revision |
-|---|---|---|---|
-| Create article | Initial content | None | None |
-| Publish | Initial content | Revision 1 | None |
-| Start editing | Updated content | Revision 1 | None |
-| Schedule the update | Updated content | Revision 1 | Revision 2 |
-| Continue editing | Further changes | Revision 1 | Revision 2 |
-| Scheduler publishes | Further changes | Revision 2 | None |
+| Moment              | Working draft   | Live revision | Scheduled revision |
+| ------------------- | --------------- | ------------- | ------------------ |
+| Create article      | Initial content | None          | None               |
+| Publish             | Initial content | Revision 1    | None               |
+| Start editing       | Updated content | Revision 1    | None               |
+| Schedule the update | Updated content | Revision 1    | Revision 2         |
+| Continue editing    | Further changes | Revision 1    | Revision 2         |
+| Scheduler publishes | Further changes | Revision 2    | None               |
 
 The scheduler publishes **Revision 2**, even if the working draft has subsequently changed.
 
@@ -128,19 +128,19 @@ JSONB accommodates the editor's structured document while keeping operational fi
 
 The draft and every revision use the same versioned document shape:
 
-| Field | Contents |
-|---|---|
-| `schemaVersion` | Version of the application's document format; initially `1`. |
-| `title` | Article title. |
-| `excerpt` | Short listing and metadata summary. |
-| `body` | Allowlisted Tiptap document JSON. |
-| `coverImage` | Optional Cloudinary reference, version, format, dimensions, alt text and caption. |
-| `authorName` | Explicit public byline, initially “SmartTools Team.” |
-| `category` | Selected category ID and a label snapshot for history display. |
-| `tags` | Selected tag IDs and label snapshots. |
-| `seoTitle` | Optional override; otherwise use the article title. |
-| `seoDescription` | Optional override; otherwise use the excerpt. |
-| `relatedToolIds` | Selected existing tool identifiers. |
+| Field            | Contents                                                                          |
+| ---------------- | --------------------------------------------------------------------------------- |
+| `schemaVersion`  | Version of the application's document format; initially `1`.                      |
+| `title`          | Article title.                                                                    |
+| `excerpt`        | Short listing and metadata summary.                                               |
+| `body`           | Allowlisted Tiptap document JSON.                                                 |
+| `coverImage`     | Optional Cloudinary reference, version, format, dimensions, alt text and caption. |
+| `authorName`     | Explicit public byline, initially “SmartTools Team.”                              |
+| `category`       | Selected category ID and a label snapshot for history display.                    |
+| `tags`           | Selected tag IDs and label snapshots.                                             |
+| `seoTitle`       | Optional override; otherwise use the article title.                               |
+| `seoDescription` | Optional override; otherwise use the excerpt.                                     |
+| `relatedToolIds` | Selected existing tool identifiers.                                               |
 
 Inline image nodes carry equivalent image references and accessibility text.
 
@@ -156,26 +156,26 @@ Add **six tables**. IDs use application-generated UUID strings stored as `text`,
 
 One row per article, containing its permanent identity, working draft, and live publication pointer. Scheduling is owned entirely by `blog_post_schedules`; do not duplicate schedule fields or a schedule pointer on the post.
 
-| Column | Type / nullability | Purpose |
-|---|---|---|
-| `id` | `text`, primary key | Permanent post identity. |
-| `slug` | `text`, required, unique | Generated once; immutable. |
-| `draft_document` | `jsonb`, required | Latest successfully saved draft. |
-| `draft_hash` | `text`, required | Hash of normalized draft content for change detection. |
-| `version` | `integer`, required, default `1` | Optimistic concurrency token. |
-| `revision_sequence` | `integer`, required, default `0` | Allocates increasing revision numbers while the post is locked. |
-| `draft_updated_at` | `timestamptz`, required | Last actual draft change. |
-| `draft_updated_by` | `text`, nullable | Account responsible for that change. |
-| `last_checkpoint_at` | `timestamptz`, nullable | Last historical snapshot creation time. |
-| `published_revision_id` | `text`, nullable | Revision currently visible publicly. |
-| `first_published_at` | `timestamptz`, nullable | First successful publication; preserved afterward. |
-| `published_updated_at` | `timestamptz`, nullable | Last promotion that changed public content. |
-| `published_category_id` | `text`, nullable | Indexed category projection of the live revision. |
-| `published_search` | `tsvector`, nullable | Search projection of live title, excerpt and body text. |
-| `created_by` | `text`, nullable | Creating admin. |
-| `created_at` | `timestamptz`, required | Creation time. |
-| `updated_at` | `timestamptz`, required | Last editorial or lifecycle change. |
-| `trashed_at` | `timestamptz`, nullable | Soft deletion marker. |
+| Column                  | Type / nullability               | Purpose                                                         |
+| ----------------------- | -------------------------------- | --------------------------------------------------------------- |
+| `id`                    | `text`, primary key              | Permanent post identity.                                        |
+| `slug`                  | `text`, required, unique         | Generated once; immutable.                                      |
+| `draft_document`        | `jsonb`, required                | Latest successfully saved draft.                                |
+| `draft_hash`            | `text`, required                 | Hash of normalized draft content for change detection.          |
+| `version`               | `integer`, required, default `1` | Optimistic concurrency token.                                   |
+| `revision_sequence`     | `integer`, required, default `0` | Allocates increasing revision numbers while the post is locked. |
+| `draft_updated_at`      | `timestamptz`, required          | Last actual draft change.                                       |
+| `draft_updated_by`      | `text`, nullable                 | Account responsible for that change.                            |
+| `last_checkpoint_at`    | `timestamptz`, nullable          | Last historical snapshot creation time.                         |
+| `published_revision_id` | `text`, nullable                 | Revision currently visible publicly.                            |
+| `first_published_at`    | `timestamptz`, nullable          | First successful publication; preserved afterward.              |
+| `published_updated_at`  | `timestamptz`, nullable          | Last promotion that changed public content.                     |
+| `published_category_id` | `text`, nullable                 | Indexed category projection of the live revision.               |
+| `published_search`      | `tsvector`, nullable             | Search projection of live title, excerpt and body text.         |
+| `created_by`            | `text`, nullable                 | Creating admin.                                                 |
+| `created_at`            | `timestamptz`, required          | Creation time.                                                  |
+| `updated_at`            | `timestamptz`, required          | Last editorial or lifecycle change.                             |
+| `trashed_at`            | `timestamptz`, nullable          | Soft deletion marker.                                           |
 
 The category and search fields are deliberately small projections of the live revision. Do not duplicate the full published article on this row.
 
@@ -190,14 +190,14 @@ The category and search fields are deliberately small projections of the live re
 
 **Indexes**
 
-| Index | Purpose |
-|---|---|
-| Unique `slug` | Direct article lookup and collision enforcement. |
-| `(first_published_at DESC, id DESC)`, live posts only | Stable newest-first public listing. |
-| `(published_category_id, first_published_at DESC, id DESC)`, live posts only | Category filtering. |
-| GIN on `published_search`, live posts only | Public full-text search. |
-| `(updated_at DESC, id DESC)`, non-trashed posts | Admin listing. |
-| `(trashed_at DESC, id DESC)`, trashed posts only | Trash listing. |
+| Index                                                                        | Purpose                                          |
+| ---------------------------------------------------------------------------- | ------------------------------------------------ |
+| Unique `slug`                                                                | Direct article lookup and collision enforcement. |
+| `(first_published_at DESC, id DESC)`, live posts only                        | Stable newest-first public listing.              |
+| `(published_category_id, first_published_at DESC, id DESC)`, live posts only | Category filtering.                              |
+| GIN on `published_search`, live posts only                                   | Public full-text search.                         |
+| `(updated_at DESC, id DESC)`, non-trashed posts                              | Admin listing.                                   |
+| `(trashed_at DESC, id DESC)`, trashed posts only                             | Trash listing.                                   |
 
 “Live posts only” means a non-null published pointer and no trash marker.
 
@@ -205,17 +205,17 @@ The category and search fields are deliberately small projections of the live re
 
 One immutable row for each retained snapshot.
 
-| Column | Type / nullability | Purpose |
-|---|---|---|
-| `id` | `text`, primary key | Revision identity. |
-| `post_id` | `text`, required | Owning article. |
-| `revision_number` | `integer`, required | Human-readable sequence within the article. |
-| `document` | `jsonb`, required | Complete article snapshot. |
-| `content_hash` | `text`, required | Hash of the normalized snapshot. |
-| `reason` | `text`, required | `create`, `autosave`, `manual_save`, `publish`, `schedule`, `restore_backup`, or `restore`. |
-| `source_revision_id` | `text`, nullable | Original revision used by a restore. |
-| `created_by` | `text`, nullable | Admin responsible for creating the snapshot. |
-| `created_at` | `timestamptz`, required | Snapshot creation time. |
+| Column               | Type / nullability      | Purpose                                                                                     |
+| -------------------- | ----------------------- | ------------------------------------------------------------------------------------------- |
+| `id`                 | `text`, primary key     | Revision identity.                                                                          |
+| `post_id`            | `text`, required        | Owning article.                                                                             |
+| `revision_number`    | `integer`, required     | Human-readable sequence within the article.                                                 |
+| `document`           | `jsonb`, required       | Complete article snapshot.                                                                  |
+| `content_hash`       | `text`, required        | Hash of the normalized snapshot.                                                            |
+| `reason`             | `text`, required        | `create`, `autosave`, `manual_save`, `publish`, `schedule`, `restore_backup`, or `restore`. |
+| `source_revision_id` | `text`, nullable        | Original revision used by a restore.                                                        |
+| `created_by`         | `text`, nullable        | Admin responsible for creating the snapshot.                                                |
+| `created_at`         | `timestamptz`, required | Snapshot creation time.                                                                     |
 
 **Constraints and indexes**
 
@@ -233,15 +233,15 @@ Do not make `(post_id, content_hash)` unique. Returning to earlier content is a 
 
 Categories are global catalog entries shared by all blog posts. This table has no `post_id`. An admin creates a category once, and any number of posts can select its ID. Creator/editor attribution records who managed the term without restricting it to that admin's posts.
 
-| Column | Type | Purpose |
-|---|---|---|
-| `id` | `text`, primary key | Stable identity. |
-| `name` | `text`, required | Public display name. |
-| `slug` | `text`, required, unique | Stable filter identifier. |
-| `created_by` | `text`, nullable | Creating admin account; assigned on creation and preserved on subsequent edits. |
-| `updated_by` | `text`, nullable | Admin account responsible for the latest change. |
-| `created_at` | `timestamptz`, required | Creation time. |
-| `updated_at` | `timestamptz`, required | Last rename. |
+| Column       | Type                     | Purpose                                                                         |
+| ------------ | ------------------------ | ------------------------------------------------------------------------------- |
+| `id`         | `text`, primary key      | Stable identity.                                                                |
+| `name`       | `text`, required         | Public display name.                                                            |
+| `slug`       | `text`, required, unique | Stable filter identifier.                                                       |
+| `created_by` | `text`, nullable         | Creating admin account; assigned on creation and preserved on subsequent edits. |
+| `updated_by` | `text`, nullable         | Admin account responsible for the latest change.                                |
+| `created_at` | `timestamptz`, required  | Creation time.                                                                  |
+| `updated_at` | `timestamptz`, required  | Last rename.                                                                    |
 
 Use case-insensitive name uniqueness.
 
@@ -276,10 +276,10 @@ For phase one, taxonomy management supports creation and renaming. It does not h
 
 This table records which global tags are selected for each published article. It does not define or duplicate tags. Draft/revision documents likewise store selected global IDs plus label snapshots for historical display; their selections do not make the taxonomy entries post-owned.
 
-| Column | Type | Purpose |
-|---|---|---|
-| `post_id` | `text`, required | Published article. |
-| `tag_id` | `text`, required | Selected public tag. |
+| Column    | Type             | Purpose              |
+| --------- | ---------------- | -------------------- |
+| `post_id` | `text`, required | Published article.   |
+| `tag_id`  | `text`, required | Selected public tag. |
 
 - Composite primary key `(post_id, tag_id)`.
 - Foreign keys to posts and tags.
@@ -292,16 +292,16 @@ This table records which global tags are selected for each published article. It
 
 One row represents one active request to publish a specific revision. A post has zero or one active schedule.
 
-| Column | Type / nullability | Purpose |
-|---|---|---|
-| `id` | `text`, primary key | Scheduling request identity; replaced on reschedule or scheduled-content replacement. |
-| `post_id` | `text`, required, unique | Article being published. |
-| `revision_id` | `text`, required | Frozen revision to publish. |
-| `scheduled_at` | `timestamptz`, required | Earliest permitted publication time. |
-| `scheduled_by` | `text`, nullable | Admin who authorized publication. Required when creating the schedule; nullable after account deletion. |
-| `created_at` | `timestamptz`, required | When this request was created. |
-| `last_attempt_at` | `timestamptz`, nullable | Last execution attempt. |
-| `last_error_code` | `text`, nullable | Safe, structured reason for the latest failure. |
+| Column            | Type / nullability       | Purpose                                                                                                 |
+| ----------------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `id`              | `text`, primary key      | Scheduling request identity; replaced on reschedule or scheduled-content replacement.                   |
+| `post_id`         | `text`, required, unique | Article being published.                                                                                |
+| `revision_id`     | `text`, required         | Frozen revision to publish.                                                                             |
+| `scheduled_at`    | `timestamptz`, required  | Earliest permitted publication time.                                                                    |
+| `scheduled_by`    | `text`, nullable         | Admin who authorized publication. Required when creating the schedule; nullable after account deletion. |
+| `created_at`      | `timestamptz`, required  | When this request was created.                                                                          |
+| `last_attempt_at` | `timestamptz`, nullable  | Last execution attempt.                                                                                 |
+| `last_error_code` | `text`, nullable         | Safe, structured reason for the latest failure.                                                         |
 
 **Constraints and indexes**
 
@@ -346,11 +346,11 @@ Slug generation occurs during post creation, which requires a nonempty title.
 
 Examples:
 
-| Initial title | Generated slug |
-|---|---|
-| How to Compress PDF Files | `how-to-compress-pdf-files` |
+| Initial title             | Generated slug                       |
+| ------------------------- | ------------------------------------ |
+| How to Compress PDF Files | `how-to-compress-pdf-files`          |
 | Same title already exists | `how-to-compress-pdf-files-a7c91e42` |
-| Later title changes | Existing slug remains unchanged. |
+| Later title changes       | Existing slug remains unchanged.     |
 
 The database unique constraint decides availability. Do not fetch all existing slugs or rely on a preflight check alone.
 
@@ -411,15 +411,15 @@ The slug, live revision, schedule, publication dates, and trash state remain unc
 
 There is no single stored status enum because an article can be live while also having draft changes and a scheduled update.
 
-| Display state | Derived condition |
-|---|---|
-| Draft | No live revision, no schedule row, not trashed. |
-| Scheduled | No live revision, with a schedule row. |
-| Published | Live revision exists. |
+| Display state                   | Derived condition                                   |
+| ------------------------------- | --------------------------------------------------- |
+| Draft                           | No live revision, no schedule row, not trashed.     |
+| Scheduled                       | No live revision, with a schedule row.              |
+| Published                       | Live revision exists.                               |
 | Published · unpublished changes | Working-draft hash differs from live revision hash. |
-| Published · update scheduled | Live revision and a schedule row both exist. |
-| Trash | `trashed_at` exists. |
-| Publishing delayed/failed | Schedule is overdue or has an execution error. |
+| Published · update scheduled    | Live revision and a schedule row both exist.        |
+| Trash                           | `trashed_at` exists.                                |
+| Publishing delayed/failed       | Schedule is overdue or has an execution error.      |
 
 Admin lists join `blog_post_schedules` by `post_id` to derive scheduling state. Public reads do not join schedules.
 
@@ -519,30 +519,30 @@ PostgreSQL row locks provide coordination without an application-wide lock. [Pos
 
 ### Routes
 
-| Route | Purpose |
-|---|---|
-| `/blog` | Public listing, search and filters. |
-| `/blog/[slug]` | Published article. |
-| `/blog/feed.xml` | RSS feed. |
-| `/admin/blog` | Post list, filters and trash. |
-| `/admin/blog/new` | Create from an initial title. |
-| `/admin/blog/[id]` | Editor, publishing settings and history. |
-| `/admin/blog/[id]/preview` | Authenticated draft/revision preview. |
-| `/admin/blog/taxonomy` | Category/tag creation and renaming. |
-| `/api/internal/blog/publish-due` | Scheduler-only endpoint. |
+| Route                            | Purpose                                  |
+| -------------------------------- | ---------------------------------------- |
+| `/blog`                          | Public listing, search and filters.      |
+| `/blog/[slug]`                   | Published article.                       |
+| `/blog/feed.xml`                 | RSS feed.                                |
+| `/admin/blog`                    | Post list, filters and trash.            |
+| `/admin/blog/new`                | Create from an initial title.            |
+| `/admin/blog/[id]`               | Editor, publishing settings and history. |
+| `/admin/blog/[id]/preview`       | Authenticated draft/revision preview.    |
+| `/admin/blog/taxonomy`           | Category/tag creation and renaming.      |
+| `/api/internal/blog/publish-due` | Scheduler-only endpoint.                 |
 
 ### Server operations
 
-| Operation | Main input | Result |
-|---|---|---|
-| Create | Initial title | Post ID, fixed slug, version. |
-| Save | Post ID, expected version, document | Current version and save/checkpoint information. |
-| Publish | Post ID, expected version | Live revision and publication state. |
-| Schedule/replace | Post ID, expected version, requested timestamp | Schedule ID and frozen revision. |
-| Cancel/unpublish/trash/restore trash | Post ID, expected version | Updated lifecycle state. |
-| Restore revision | Post ID, expected version, revision ID | Updated draft and new revision. |
-| Read history | Post ID, cursor | Revision summaries and next cursor. |
-| Create/rename category or tag | Term type, name, and existing term ID for rename | Managed taxonomy entry with server-assigned creator/editor attribution. |
+| Operation                            | Main input                                       | Result                                                                  |
+| ------------------------------------ | ------------------------------------------------ | ----------------------------------------------------------------------- |
+| Create                               | Initial title                                    | Post ID, fixed slug, version.                                           |
+| Save                                 | Post ID, expected version, document              | Current version and save/checkpoint information.                        |
+| Publish                              | Post ID, expected version                        | Live revision and publication state.                                    |
+| Schedule/replace                     | Post ID, expected version, requested timestamp   | Schedule ID and frozen revision.                                        |
+| Cancel/unpublish/trash/restore trash | Post ID, expected version                        | Updated lifecycle state.                                                |
+| Restore revision                     | Post ID, expected version, revision ID           | Updated draft and new revision.                                         |
+| Read history                         | Post ID, cursor                                  | Revision summaries and next cursor.                                     |
+| Create/rename category or tag        | Term type, name, and existing term ID for rename | Managed taxonomy entry with server-assigned creator/editor attribution. |
 
 Actor identity always comes from the server session, never request input.
 

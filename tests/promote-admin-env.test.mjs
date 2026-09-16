@@ -18,16 +18,26 @@ test("admin promotion loads root env files from either cwd and preserves environ
   await mkdir(path.dirname(script), { recursive: true });
   await copyFile(source, script);
   await mkdir(path.join(root, "node_modules/postgres"), { recursive: true });
-  await symlink(path.dirname(createRequire(source).resolve("dotenv/package.json")), path.join(root, "node_modules/dotenv"), "dir");
-  await writeFile(path.join(root, "node_modules/postgres/package.json"), JSON.stringify({ type: "module", exports: "./index.js" }));
-  await writeFile(path.join(root, "node_modules/postgres/index.js"), `
+  await symlink(
+    path.dirname(createRequire(source).resolve("dotenv/package.json")),
+    path.join(root, "node_modules/dotenv"),
+    "dir",
+  );
+  await writeFile(
+    path.join(root, "node_modules/postgres/package.json"),
+    JSON.stringify({ type: "module", exports: "./index.js" }),
+  );
+  await writeFile(
+    path.join(root, "node_modules/postgres/index.js"),
+    `
     import assert from "node:assert/strict";
     export default function postgres(url) {
       assert.equal(url, process.env.EXPECTED_DATABASE_URL);
       console.log("Database URL verified; stopped before database access");
       process.exit(0);
     }
-  `);
+  `,
+  );
   await writeFile(path.join(root, ".env"), "DATABASE_URL=postgres://base-fixture\n");
   await writeFile(path.join(root, ".env.local"), "DATABASE_URL=postgres://local-fixture\n");
 
@@ -36,7 +46,9 @@ test("admin promotion loads root env files from either cwd and preserves environ
       const { stdout } = await run(process.execPath, [script, "fixture@example.com"], {
         cwd,
         env: {
-          EXPECTED_DATABASE_URL: exported ? "postgres://exported-fixture" : "postgres://local-fixture",
+          EXPECTED_DATABASE_URL: exported
+            ? "postgres://exported-fixture"
+            : "postgres://local-fixture",
           ...(exported ? { DATABASE_URL: "postgres://exported-fixture" } : {}),
         },
       });
@@ -50,5 +62,8 @@ test("admin promotion loads root env files from either cwd and preserves environ
   });
   assert.match(stdout, /Database URL verified/);
   await rm(path.join(root, ".env"));
-  await assert.rejects(run(process.execPath, [script, "fixture@example.com"], { cwd: packageDir, env: {} }), /DATABASE_URL is required/);
+  await assert.rejects(
+    run(process.execPath, [script, "fixture@example.com"], { cwd: packageDir, env: {} }),
+    /DATABASE_URL is required/,
+  );
 });

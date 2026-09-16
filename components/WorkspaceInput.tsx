@@ -25,30 +25,17 @@ import {
   useState,
 } from "react";
 
-import {
-  textInputFileIssue,
-  validateFileSelection,
-  workspaceFileId,
-} from "@/components/FileInput";
+import { textInputFileIssue, validateFileSelection, workspaceFileId } from "@/components/FileInput";
 import { PasswordInput } from "@/components/PasswordInput";
 import { Stack } from "@/components/Stacks";
-import {
-  FileIntakeSurface,
-  FileQueueSurface,
-  WorkspaceSurface,
-} from "@/components/Surfaces";
-import type {
-  WorkspaceInputState,
-  WorkspaceProps,
-} from "@/components/ToolWorkspace";
+import { FileIntakeSurface, FileQueueSurface, WorkspaceSurface } from "@/components/Surfaces";
+import type { WorkspaceInputState, WorkspaceProps } from "@/components/ToolWorkspace";
 import type { ToolInputSpec } from "@/lib/tool-framework/spec";
-import {
-  isLargeTextFile,
-  readTextFileForEditor,
-} from "@/lib/tool-framework/textFileInput";
+import { isLargeTextFile, readTextFileForEditor } from "@/lib/tool-framework/textFileInput";
 
 const DEFAULT_TEXT_FILE_INPUT = {
-  accept: ".txt,.json,.csv,.tsv,.xml,.yaml,.yml,.html,.htm,.css,.js,.mjs,.cjs,.ts,.tsx,.jsx,.md,.markdown,text/*,application/json,application/xml,application/javascript",
+  accept:
+    ".txt,.json,.csv,.tsv,.xml,.yaml,.yml,.html,.htm,.css,.js,.mjs,.cjs,.ts,.tsx,.jsx,.md,.markdown,text/*,application/json,application/xml,application/javascript",
   maxBytes: 2_000_000,
   maxEditableBytes: 2_000_000,
 } as const;
@@ -89,7 +76,8 @@ function isCodeShaped(value: string): boolean {
     (trimmed.startsWith("[") && trimmed.endsWith("]")) ||
     (value.includes("{") && value.includes("}") && /[:;]/.test(value)) ||
     /=>|<\/?[A-Za-z][^>]*>|;\s*$/m.test(value)
-  ) return true;
+  )
+    return true;
   if (lines.length < 2) return false;
 
   const delimited = [",", "\t", "|"].some((delimiter) => {
@@ -133,9 +121,7 @@ export function SourceTextarea({
   const highlightRef = useRef<HTMLPreElement>(null);
   const [focused, setFocused] = useState(false);
   const resolvedWrap = wrap ?? "soft";
-  const showHighlight = Boolean(
-    highlightedValue && (highlightMode === "persistent" || !focused),
-  );
+  const showHighlight = Boolean(highlightedValue && (highlightMode === "persistent" || !focused));
   const reportCaret = (textarea: HTMLTextAreaElement) => {
     if (!onCaretChange) return;
     const valueBeforeCaret = textarea.value.slice(0, textarea.selectionStart);
@@ -164,11 +150,16 @@ export function SourceTextarea({
           </pre>
         </div>
       ) : null}
-      <div className={`relative min-h-0 min-w-0 flex-1 overflow-hidden ${showLineNumbers ? "ml-[14px]" : ""}`}>
+      <div
+        className={`relative min-h-0 min-w-0 flex-1 overflow-hidden ${showLineNumbers ? "ml-[14px]" : ""}`}
+      >
         {showHighlight ? (
           <pre
             aria-hidden="true"
-            className={cn(typographyStyles.codeBlock, "pointer-events-none absolute inset-x-0 top-0 z-0 m-0 min-h-full whitespace-pre-wrap break-all py-[18px] pr-4 text-foreground will-change-transform")}
+            className={cn(
+              typographyStyles.codeBlock,
+              "pointer-events-none absolute inset-x-0 top-0 z-0 m-0 min-h-full whitespace-pre-wrap break-all py-[18px] pr-4 text-foreground will-change-transform",
+            )}
             ref={highlightRef}
           >
             {highlightedValue}
@@ -179,7 +170,10 @@ export function SourceTextarea({
           aria-invalid={ariaInvalid}
           autoCapitalize="off"
           autoCorrect="off"
-          className={cn(typographyStyles.codeBlock, `relative z-10 h-full min-h-0 w-full min-w-0 resize-none overflow-y-auto border-0 bg-transparent py-[18px] pr-4 outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 ${showHighlight ? "whitespace-pre-wrap break-all text-transparent caret-foreground" : "text-foreground"} ${resolvedWrap === "off" ? "whitespace-pre overflow-x-auto" : "whitespace-pre-wrap overflow-x-hidden"}`)}
+          className={cn(
+            typographyStyles.codeBlock,
+            `relative z-10 h-full min-h-0 w-full min-w-0 resize-none overflow-y-auto border-0 bg-transparent py-[18px] pr-4 outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 ${showHighlight ? "whitespace-pre-wrap break-all text-transparent caret-foreground" : "text-foreground"} ${resolvedWrap === "off" ? "whitespace-pre overflow-x-auto" : "whitespace-pre-wrap overflow-x-hidden"}`,
+          )}
           disabled={disabled}
           id={id}
           maxLength={maxLength}
@@ -231,7 +225,9 @@ export function WorkspaceInputSurface({
   const inputRef = useRef(input);
   inputRef.current = input;
   useEffect(() => {
-    setPasteSupported(typeof navigator !== "undefined" && typeof navigator.clipboard?.readText === "function");
+    setPasteSupported(
+      typeof navigator !== "undefined" && typeof navigator.clipboard?.readText === "function",
+    );
   }, []);
   useEffect(() => setPasteFailed(false), [input.secondary, input.text]);
   useEffect(() => {
@@ -261,27 +257,26 @@ export function WorkspaceInputSurface({
       setPastePending(false);
     }
   };
-  const pasteAction = (label: string, maxLength?: number) => pasteSupported ? (
-    <ToolActionButton action="paste"
-      aria-busy={pastePending || undefined}
-      aria-label={pasteFailed ? `Paste into ${label} failed. Try again` : `Paste into ${label}`}
-      aria-live="polite"
-      disabled={disabled || pastePending}
-      onClick={() => void pastePrimaryInput(maxLength)}
-      title={`Paste into ${label}`}
-      type="button"
-    >
-      {pastePending ? "Pasting…" : pasteFailed ? "Paste failed" : "Paste"}
-    </ToolActionButton>
-  ) : null;
+  const pasteAction = (label: string, maxLength?: number) =>
+    pasteSupported ? (
+      <ToolActionButton
+        action="paste"
+        aria-busy={pastePending || undefined}
+        aria-label={pasteFailed ? `Paste into ${label} failed. Try again` : `Paste into ${label}`}
+        aria-live="polite"
+        disabled={disabled || pastePending}
+        onClick={() => void pastePrimaryInput(maxLength)}
+        title={`Paste into ${label}`}
+        type="button"
+      >
+        {pastePending ? "Pasting…" : pasteFailed ? "Paste failed" : "Paste"}
+      </ToolActionButton>
+    ) : null;
   switch (inputSpec.kind) {
     case "text": {
       const acceptedFile = inputSpec.acceptFiles ?? DEFAULT_TEXT_FILE_INPUT;
       const selectedFile = input.files[0];
-      const largeFile = isLargeTextFile(
-        selectedFile,
-        acceptedFile.maxEditableBytes,
-      );
+      const largeFile = isLargeTextFile(selectedFile, acceptedFile.maxEditableBytes);
       const chooseFile = async (file: File) => {
         if (!acceptedFile) return;
         const issue = textInputFileIssue(file, acceptedFile);
@@ -321,7 +316,8 @@ export function WorkspaceInputSurface({
             tabIndex={-1}
             type="file"
           />
-          <ToolActionButton action="upload"
+          <ToolActionButton
+            action="upload"
             disabled={disabled}
             onClick={() => fileInputRef.current?.click()}
             type="button"
@@ -346,22 +342,30 @@ export function WorkspaceInputSurface({
           ) : null}
         </>
       ) : null;
-      const codeShaped =
-        isCodeShaped(input.text) || isCodeShaped(inputSpec.placeholder ?? "");
+      const codeShaped = isCodeShaped(input.text) || isCodeShaped(inputSpec.placeholder ?? "");
       return (
         <WorkspaceSurface
-          actions={<>{pasteAction(inputSpec.label, inputSpec.maxLength)}{browseAction}</>}
+          actions={
+            <>
+              {pasteAction(inputSpec.label, inputSpec.maxLength)}
+              {browseAction}
+            </>
+          }
           className="h-full"
           contentClassName="gap-4 bg-background"
-          meta={selectedFile
-            ? `${selectedFile.name} · ${formatBytes(selectedFile.size)}${largeFile ? " · Large-file mode" : ""}`
-            : sourceMeta(input.text, codeShaped)}
+          meta={
+            selectedFile
+              ? `${selectedFile.name} · ${formatBytes(selectedFile.size)}${largeFile ? " · Large-file mode" : ""}`
+              : sourceMeta(input.text, codeShaped)
+          }
           purpose="source"
           title={inputSpec.label}
           variant={variant}
         >
           <div className="grid min-h-0 flex-1 gap-1.5">
-            <FieldLabel className="sr-only" htmlFor={`${idPrefix}-primary`}>{inputSpec.label}</FieldLabel>
+            <FieldLabel className="sr-only" htmlFor={`${idPrefix}-primary`}>
+              {inputSpec.label}
+            </FieldLabel>
             <SourceTextarea
               className="min-h-48 flex-1"
               disabled={disabled}
@@ -377,7 +381,8 @@ export function WorkspaceInputSurface({
           </div>
           {largeFile ? (
             <Muted className="px-4 pb-3 text-muted-foreground">
-              Showing the first 256 KiB. The complete file stays read-only and is processed locally when you run the tool.
+              Showing the first 256 KiB. The complete file stays read-only and is processed locally
+              when you run the tool.
             </Muted>
           ) : null}
           {inputSpec.secondary ? (
@@ -395,14 +400,18 @@ export function WorkspaceInputSurface({
               />
             </div>
           ) : null}
-          {inputIssue ? <Muted className="px-4 pb-3 text-destructive" role="alert">{inputIssue}</Muted> : null}
+          {inputIssue ? (
+            <Muted className="px-4 pb-3 text-destructive" role="alert">
+              {inputIssue}
+            </Muted>
+          ) : null}
         </WorkspaceSurface>
       );
     }
     case "fields": {
       const primaryField = inputSpec.fields.find((field) => field.channel === "text");
       const values = inputSpec.fields.map((field) =>
-        field.channel === "text" ? input.text : input.secondary ?? "",
+        field.channel === "text" ? input.text : (input.secondary ?? ""),
       );
       const codeShaped = inputSpec.fields.some(
         (field, index) =>
@@ -413,13 +422,23 @@ export function WorkspaceInputSurface({
       const cardFields = variant === "card" && hasMultiline;
       return (
         <WorkspaceSurface
-          actions={cardFields ? undefined : pasteAction(primaryField?.label ?? "primary input", primaryField?.maxLength)}
-          className={cardFields
-            ? "h-full [&>[data-slot=workspace-card]]:overflow-visible [&>[data-slot=workspace-card]]:border-0 [&>[data-slot=workspace-card]]:bg-transparent"
-            : "h-full [&_[data-stack=scroll-region]]:bg-background"}
-          contentClassName={cardFields
-            ? `grid h-full auto-rows-fr gap-4 bg-transparent ${inputSpec.fields.length > 1 ? "md:grid-cols-2" : ""}`
-            : hasMultiline ? "gap-4 bg-background" : "gap-4 bg-background p-4"}
+          actions={
+            cardFields
+              ? undefined
+              : pasteAction(primaryField?.label ?? "primary input", primaryField?.maxLength)
+          }
+          className={
+            cardFields
+              ? "h-full [&>[data-slot=workspace-card]]:overflow-visible [&>[data-slot=workspace-card]]:border-0 [&>[data-slot=workspace-card]]:bg-transparent"
+              : "h-full [&_[data-stack=scroll-region]]:bg-background"
+          }
+          contentClassName={
+            cardFields
+              ? `grid h-full auto-rows-fr gap-4 bg-transparent ${inputSpec.fields.length > 1 ? "md:grid-cols-2" : ""}`
+              : hasMultiline
+                ? "gap-4 bg-background"
+                : "gap-4 bg-background p-4"
+          }
           header={cardFields ? "sr-only" : "visible"}
           meta={cardFields ? undefined : sourceMeta(values.join(""), codeShaped)}
           purpose="source"
@@ -429,30 +448,47 @@ export function WorkspaceInputSurface({
         >
           {inputSpec.fields.map((field, index) => {
             const fieldId = `${idPrefix}-${field.channel}`;
-            const value = field.channel === "text" ? input.text : input.secondary ?? "";
+            const value = field.channel === "text" ? input.text : (input.secondary ?? "");
             const fieldCodeShaped = Boolean(field.multiline);
             const revealed = Boolean(revealedSecrets[field.channel]);
-            const updateValue = (nextValue: string) => onInputChange({ ...input, [field.channel]: nextValue });
+            const updateValue = (nextValue: string) =>
+              onInputChange({ ...input, [field.channel]: nextValue });
             return (
               <div
-                className={cardFields
-                  ? "grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-lg border border-border bg-muted/45"
-                  : `grid gap-1.5 ${hasMultiline ? "first:pt-4 last:pb-4" : ""} ${hasMultiline && !fieldCodeShaped ? "px-4" : ""}`}
+                className={
+                  cardFields
+                    ? "grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-lg border border-border bg-muted/45"
+                    : `grid gap-1.5 ${hasMultiline ? "first:pt-4 last:pb-4" : ""} ${hasMultiline && !fieldCodeShaped ? "px-4" : ""}`
+                }
                 key={field.channel}
               >
-                <div className={cardFields ? "flex min-h-10 items-center justify-between gap-3 px-4 pt-2" : undefined}>
+                <div
+                  className={
+                    cardFields
+                      ? "flex min-h-10 items-center justify-between gap-3 px-4 pt-2"
+                      : undefined
+                  }
+                >
                   <FieldLabel
-                    className={cardFields
-                      ? "text-muted-foreground"
-                      : variant === "card" ? "sr-only"
-                      : fieldCodeShaped ? "px-4" : undefined}
+                    className={
+                      cardFields
+                        ? "text-muted-foreground"
+                        : variant === "card"
+                          ? "sr-only"
+                          : fieldCodeShaped
+                            ? "px-4"
+                            : undefined
+                    }
                     htmlFor={fieldId}
                   >
-                    {field.label}{field.required && !cardFields ? " (required)" : ""}
+                    {field.label}
+                    {field.required && !cardFields ? " (required)" : ""}
                   </FieldLabel>
                   {cardFields && index === 0 ? pasteAction(field.label, field.maxLength) : null}
                 </div>
-                <div className={`flex min-h-0 gap-2 ${cardFields ? "h-full items-stretch" : "items-start"} ${cardFields && !field.multiline ? "px-4 pb-4" : ""}`}>
+                <div
+                  className={`flex min-h-0 gap-2 ${cardFields ? "h-full items-stretch" : "items-start"} ${cardFields && !field.multiline ? "px-4 pb-4" : ""}`}
+                >
                   {field.multiline ? (
                     <div className="relative min-h-28 flex-1">
                       <SourceTextarea
@@ -472,12 +508,21 @@ export function WorkspaceInputSurface({
                           aria-label={revealed ? "Hide password" : "Show password"}
                           className="absolute right-0 top-0 z-20"
                           disabled={disabled}
-                          onClick={() => setRevealedSecrets((current) => ({ ...current, [field.channel]: !revealed }))}
+                          onClick={() =>
+                            setRevealedSecrets((current) => ({
+                              ...current,
+                              [field.channel]: !revealed,
+                            }))
+                          }
                           size="icon"
                           type="button"
                           variant="input-icon"
                         >
-                          <MorphIcon icon={revealed ? EyeOff : Eye} reducedMotion="user" size={18} />
+                          <MorphIcon
+                            icon={revealed ? EyeOff : Eye}
+                            reducedMotion="user"
+                            size={18}
+                          />
                         </Button>
                       ) : null}
                     </div>
@@ -541,14 +586,18 @@ export function WorkspaceInputSurface({
             className="min-h-48 flex-1"
             getIcon={() => <FileText aria-hidden="true" />}
             getId={workspaceFileId}
-            getMetadata={(file) => `${file.type || "Unknown type"} · ${file.size.toLocaleString()} bytes`}
+            getMetadata={(file) =>
+              `${file.type || "Unknown type"} · ${file.size.toLocaleString()} bytes`
+            }
             getName={(file) => file.name}
             items={input.files}
             renderAction={(file) => (
               <Button
                 aria-label={`Remove ${file.name}`}
                 disabled={disabled}
-                onClick={() => onInputChange({ ...input, files: input.files.filter((entry) => entry !== file) })}
+                onClick={() =>
+                  onInputChange({ ...input, files: input.files.filter((entry) => entry !== file) })
+                }
                 size="icon"
                 type="button"
                 variant="ghost"
@@ -574,7 +623,5 @@ export function WorkspaceInputSurface({
  * compile error here rather than silently rendering a blank input pane.
  */
 function assertNoInputSurface(inputSpec: never): never {
-  throw new Error(
-    `No input surface is registered for input kind ${JSON.stringify(inputSpec)}.`,
-  );
+  throw new Error(`No input surface is registered for input kind ${JSON.stringify(inputSpec)}.`);
 }

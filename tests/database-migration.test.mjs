@@ -16,9 +16,7 @@ const drizzleUrl = new URL("../packages/database/drizzle/", import.meta.url);
  * later `name`/`description` column cannot confuse the parse.
  */
 async function seededManagedTools() {
-  const files = (await readdir(drizzleUrl))
-    .filter((file) => file.endsWith(".sql"))
-    .sort();
+  const files = (await readdir(drizzleUrl)).filter((file) => file.endsWith(".sql")).sort();
   const rows = [];
 
   for (const file of files) {
@@ -41,10 +39,7 @@ const migrationUrl = new URL(
   "../packages/database/drizzle/0001_auth_control_plane.sql",
   import.meta.url,
 );
-const migrationRunnerUrl = new URL(
-  "../packages/database/scripts/migrate.mjs",
-  import.meta.url,
-);
+const migrationRunnerUrl = new URL("../packages/database/scripts/migrate.mjs", import.meta.url);
 const mediaMigrationUrl = new URL(
   "../packages/database/drizzle/0002_media_tools.sql",
   import.meta.url,
@@ -137,14 +132,8 @@ test("the Media migration expands only managed tool ownership", async () => {
   );
   assert.match(sql, /ON CONFLICT \(tool_id\) DO NOTHING/i);
 
-  assert.match(
-    schema,
-    /managedToolsTable[\s\S]+\$type<"paperwork" \| "devtools" \| "media">\(\)/,
-  );
-  assert.match(
-    schema,
-    /featureOverridesTable[\s\S]+\$type<"paperwork" \| "devtools">\(\)/,
-  );
+  assert.match(schema, /managedToolsTable[\s\S]+\$type<"paperwork" \| "devtools" \| "media">\(\)/);
+  assert.match(schema, /featureOverridesTable[\s\S]+\$type<"paperwork" \| "devtools">\(\)/);
 });
 
 test("document template kinds are constrained without rewriting existing rows", async () => {
@@ -166,10 +155,7 @@ test("document template kinds are constrained without rewriting existing rows", 
     assert.match(sql, new RegExp(`'${documentType}'`));
     assert.match(schema, new RegExp(`"${documentType}"`));
   }
-  assert.match(
-    sql,
-    /ADD CONSTRAINT invoice_templates_document_type_check[\s\S]+NOT VALID/i,
-  );
+  assert.match(sql, /ADD CONSTRAINT invoice_templates_document_type_check[\s\S]+NOT VALID/i);
   assert.match(
     sql,
     /ADD CONSTRAINT invoice_templates_advanced_document_type_check[\s\S]+layout_family = 'advanced'[\s\S]+document_type = 'invoice'[\s\S]+NOT VALID/i,
@@ -184,10 +170,7 @@ test("document template kinds are constrained without rewriting existing rows", 
     "invoice_templates_advanced_document_type_check",
     "invoice_templates_default_published_check",
   ]) {
-    assert.match(
-      sql,
-      new RegExp(`VALIDATE CONSTRAINT ${constraint}`, "i"),
-    );
+    assert.match(sql, new RegExp(`VALIDATE CONSTRAINT ${constraint}`, "i"));
   }
 
   const replacementIndex = sql.indexOf(

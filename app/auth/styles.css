@@ -138,7 +138,10 @@
   border-radius: 999px;
   background: var(--muted);
   color: var(--muted-foreground);
-  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease;
 }
 
 .auth-search:focus-within,
@@ -445,11 +448,15 @@
 }
 
 @keyframes auth-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes auth-pulse {
-  to { opacity: 0.5; }
+  to {
+    opacity: 0.5;
+  }
 }
 
 .auth-navbar-actions {
@@ -519,7 +526,9 @@
 .auth-card {
   padding: 24px;
   border-radius: 12px;
-  box-shadow: 0 2px 4px rgb(0 0 0 / 3%), 0 12px 32px rgb(0 0 0 / 6%);
+  box-shadow:
+    0 2px 4px rgb(0 0 0 / 3%),
+    0 12px 32px rgb(0 0 0 / 6%);
 }
 
 .auth-heading {

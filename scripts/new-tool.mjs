@@ -25,9 +25,7 @@ const runFile = rest.includes("--worker")
 
 if (!key || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(key)) throw new Error(USAGE);
 if (TOOL_CATEGORIES[category]?.app !== app) {
-  const valid = Object.keys(TOOL_CATEGORIES).filter(
-    (k) => TOOL_CATEGORIES[k].app === app,
-  );
+  const valid = Object.keys(TOOL_CATEGORIES).filter((k) => TOOL_CATEGORIES[k].app === app);
   throw new Error(`--category for --app ${app} must be one of: ${valid.join(", ")}`);
 }
 

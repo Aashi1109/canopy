@@ -1,13 +1,7 @@
 import type { ComponentType } from "react";
 import type { StoredToolArtifact } from "@/lib/tool-framework/artifacts";
 
-export type ToolLifecycle =
-  | "empty"
-  | "ready"
-  | "invalid"
-  | "running"
-  | "failed"
-  | "completed";
+export type ToolLifecycle = "empty" | "ready" | "invalid" | "running" | "failed" | "completed";
 
 export type ToolSettingValue = string | number | boolean;
 export type ToolSettings = Record<string, ToolSettingValue>;
@@ -20,12 +14,14 @@ export type ToolValidationIssue = {
   targetId?: string;
 };
 
-export type ToolArtifact = StoredToolArtifact | {
-  storage: "inline";
-  content: string;
-  mimeType: string;
-  name: string;
-};
+export type ToolArtifact =
+  | StoredToolArtifact
+  | {
+      storage: "inline";
+      content: string;
+      mimeType: string;
+      name: string;
+    };
 
 export type ToolFact = {
   label: string;
@@ -50,47 +46,30 @@ export type ToolCommandOutcome<Input> = {
   offerUndo?: boolean;
 };
 
-export type ToolRuntimeCommand<Input, Settings extends ToolSettings, Result> = (
-  context: {
-    input: Input;
-    result: Result | null;
-    settings: Settings;
-  },
-) => Promise<ToolCommandOutcome<Input>> | ToolCommandOutcome<Input>;
+export type ToolRuntimeCommand<Input, Settings extends ToolSettings, Result> = (context: {
+  input: Input;
+  result: Result | null;
+  settings: Settings;
+}) => Promise<ToolCommandOutcome<Input>> | ToolCommandOutcome<Input>;
 
-export type ToolRuntimeSpec<
-  Input,
-  Settings extends ToolSettings,
-  Result,
-> = {
-  commands?: Readonly<
-    Record<string, ToolRuntimeCommand<Input, Settings, Result>>
-  >;
+export type ToolRuntimeSpec<Input, Settings extends ToolSettings, Result> = {
+  commands?: Readonly<Record<string, ToolRuntimeCommand<Input, Settings, Result>>>;
   debounceMs?: number;
   execute: (
     input: Input,
     settings: Settings,
     signal: AbortSignal,
-  ) =>
-    | Promise<ToolExecutionOutcome<Result>>
-    | ToolExecutionOutcome<Result>;
+  ) => Promise<ToolExecutionOutcome<Result>> | ToolExecutionOutcome<Result>;
   initialInput: Input;
   initialSettings: Settings;
   isEmpty: (input: Input) => boolean;
   /** Live tools may require an explicit run for an unusually expensive input. */
   shouldAutoRun?: (input: Input) => boolean;
   trigger: "live" | "manual";
-  validate: (
-    input: Input,
-    settings: Settings,
-  ) => readonly ToolValidationIssue[];
+  validate: (input: Input, settings: Settings) => readonly ToolValidationIssue[];
 };
 
-export type ToolRuntimeController<
-  Input,
-  Settings extends ToolSettings,
-  Result,
-> = {
+export type ToolRuntimeController<Input, Settings extends ToolSettings, Result> = {
   /** Compiled definition key, never a user label or document identifier. */
   analyticsToolKey?: string;
   artifacts: readonly ToolArtifact[];

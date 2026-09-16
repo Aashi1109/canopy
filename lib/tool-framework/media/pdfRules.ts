@@ -15,12 +15,7 @@ export type PdfContentBox = {
 
 type PdfClipApi = Pick<
   typeof import("pdf-lib"),
-  | "PDFContentStream"
-  | "clip"
-  | "endPath"
-  | "popGraphicsState"
-  | "pushGraphicsState"
-  | "rectangle"
+  "PDFContentStream" | "clip" | "endPath" | "popGraphicsState" | "pushGraphicsState" | "rectangle"
 >;
 
 export class PdfPreflightError extends Error {
@@ -52,10 +47,7 @@ export function getPdfContentBox(
   };
 }
 
-export function clipStartOperators(
-  box: PdfContentBox,
-  pdfLib: PdfClipApi,
-): PDFOperator[] {
+export function clipStartOperators(box: PdfContentBox, pdfLib: PdfClipApi): PDFOperator[] {
   return [
     pdfLib.pushGraphicsState(),
     pdfLib.rectangle(box.x, box.y, box.width, box.height),
@@ -82,10 +74,7 @@ export function wrapPageContentsWithClip(
     document.context.obj({}),
     clipEndOperators(pdfLib),
   );
-  page.node.wrapContentStreams(
-    document.context.register(start),
-    document.context.register(end),
-  );
+  page.node.wrapContentStreams(document.context.register(start), document.context.register(end));
 }
 
 export function assertStructuralPdfInspection({
@@ -130,10 +119,7 @@ export async function inspectPdfBeforeStructuralRewrite(data: ArrayBuffer) {
         "Encrypted or password-protected PDFs are not supported.",
       );
     }
-    throw new PdfPreflightError(
-      "malformed-pdf",
-      "The PDF is malformed or unsupported.",
-    );
+    throw new PdfPreflightError("malformed-pdf", "The PDF is malformed or unsupported.");
   }
 }
 
@@ -141,12 +127,7 @@ export async function processStructuralPages<T>(
   pages: readonly T[],
   pageNumber: (page: T) => number,
   stage: string,
-  report: (
-    current: number,
-    completed: number,
-    total: number,
-    stage: string,
-  ) => void,
+  report: (current: number, completed: number, total: number, stage: string) => void,
   process: (page: T, index: number) => void | Promise<void>,
 ) {
   for (let index = 0; index < pages.length; index += 1) {

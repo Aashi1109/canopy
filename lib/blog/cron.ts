@@ -15,7 +15,8 @@ const validSecret = (value: string | undefined): value is string =>
   Boolean(value && value.length <= 1024 && TOKEN_PATTERN.test(value));
 
 function publishCounts(value: unknown): PublishCounts {
-  if (!value || typeof value !== "object") throw new Error("Blog publishing returned an invalid response.");
+  if (!value || typeof value !== "object")
+    throw new Error("Blog publishing returned an invalid response.");
   const result = value as Record<string, unknown>;
   for (const key of ["attempted", "published", "failed", "remaining"]) {
     if (!Number.isSafeInteger(result[key]) || (result[key] as number) < 0) {
@@ -37,20 +38,35 @@ export async function handleBlogPublishRequest(
 ): Promise<Response> {
   const headers = { "Cache-Control": "no-store" };
   if (request.method !== "POST") {
-    return Response.json({ error: "Method not allowed." }, { status: 405, headers: { ...headers, Allow: "POST" } });
+    return Response.json(
+      { error: "Method not allowed." },
+      { status: 405, headers: { ...headers, Allow: "POST" } },
+    );
   }
   if (!validSecret(secret)) {
     return Response.json({ error: "Blog publishing is not configured." }, { status: 503, headers });
   }
   const authorization = request.headers.get("authorization") ?? "";
-  const token = authorization.length <= 1031 ? /^Bearer ([A-Za-z0-9._~+/-]+=*)$/i.exec(authorization)?.[1] : undefined;
-  if (!token || !timingSafeEqual(createHash("sha256").update(token).digest(), createHash("sha256").update(secret).digest())) {
+  const token =
+    authorization.length <= 1031
+      ? /^Bearer ([A-Za-z0-9._~+/-]+=*)$/i.exec(authorization)?.[1]
+      : undefined;
+  if (
+    !token ||
+    !timingSafeEqual(
+      createHash("sha256").update(token).digest(),
+      createHash("sha256").update(secret).digest(),
+    )
+  ) {
     return Response.json({ error: "Unauthorized." }, { status: 401, headers });
   }
   try {
     return Response.json(publishCounts(await publish()), { headers });
   } catch {
-    return Response.json({ error: "Blog publishing is temporarily unavailable." }, { status: 503, headers });
+    return Response.json(
+      { error: "Blog publishing is temporarily unavailable." },
+      { status: 503, headers },
+    );
   }
 }
 
@@ -58,7 +74,8 @@ export async function runBlogPublishCron(
   env: BlogCronEnv,
   fetchRemote: (request: Request) => Promise<Response> = fetch,
 ): Promise<PublishCounts> {
-  if (!validSecret(env.BLOG_SCHEDULER_SECRET)) throw new Error("Invalid blog scheduler configuration.");
+  if (!validSecret(env.BLOG_SCHEDULER_SECRET))
+    throw new Error("Invalid blog scheduler configuration.");
   let target: URL;
   try {
     target = env.BLOG_PUBLISH_URL
@@ -67,9 +84,15 @@ export async function runBlogPublishCron(
   } catch {
     throw new Error("Invalid blog scheduler configuration.");
   }
-  if (target.pathname !== PUBLISH_PATH || target.username || target.password || target.search || target.hash
-    || (env.BLOG_PUBLISH_URL && target.protocol !== "https:")
-    || (!env.BLOG_PUBLISH_URL && !env.WORKER_SELF_REFERENCE)) {
+  if (
+    target.pathname !== PUBLISH_PATH ||
+    target.username ||
+    target.password ||
+    target.search ||
+    target.hash ||
+    (env.BLOG_PUBLISH_URL && target.protocol !== "https:") ||
+    (!env.BLOG_PUBLISH_URL && !env.WORKER_SELF_REFERENCE)
+  ) {
     throw new Error("Invalid blog scheduler configuration.");
   }
   const request = new Request(target, {

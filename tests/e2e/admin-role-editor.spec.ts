@@ -3,9 +3,15 @@ import { expect, test } from "@playwright/test";
 import { E2E_ACCOUNTS, E2E_PASSWORD } from "./fixtures/accounts";
 import { AuthPage } from "./pages/AuthPage";
 
-test("assignment search uses a dismissible dropdown and keeps selections visible", async ({ page, baseURL }) => {
-  await new AuthPage(page).signIn(E2E_ACCOUNTS.admin.email, E2E_PASSWORD,
-    new URL("/admin/roles/e2e-tool-viewer", baseURL).href);
+test("assignment search uses a dismissible dropdown and keeps selections visible", async ({
+  page,
+  baseURL,
+}) => {
+  await new AuthPage(page).signIn(
+    E2E_ACCOUNTS.admin.email,
+    E2E_PASSWORD,
+    new URL("/admin/roles/e2e-tool-viewer", baseURL).href,
+  );
   await page.getByRole("button", { name: "Assign users", exact: true }).click();
   const dialog = page.getByRole("alertdialog", { name: "Assign users", exact: true });
   const search = dialog.getByRole("textbox", { name: "Find users", exact: true });
@@ -25,12 +31,17 @@ test("assignment search uses a dismissible dropdown and keeps selections visible
   await expect(selected.getByRole("checkbox")).toBeChecked();
   await expect(dialog.getByRole("button", { name: "Assign to 1 user", exact: true })).toBeEnabled();
   await selected.getByRole("checkbox").uncheck();
-  await expect(dialog.getByRole("button", { name: "Assign to 0 users", exact: true })).toBeDisabled();
+  await expect(
+    dialog.getByRole("button", { name: "Assign to 0 users", exact: true }),
+  ).toBeDisabled();
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(dialog).toBeHidden();
 });
 
-test("role changes enable Save only until saved or reverted", async ({ page, baseURL }, testInfo) => {
+test("role changes enable Save only until saved or reverted", async ({
+  page,
+  baseURL,
+}, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop", "role lifecycle runs once");
   const name = `E2E Role ${randomUUID()}`;
   const description = "Temporary role for editor behavior checks.";
@@ -51,16 +62,20 @@ test("role changes enable Save only until saved or reverted", async ({ page, bas
   const roleName = page.getByRole("textbox", { name: "Role name", exact: true });
   const roleDescription = page.getByRole("textbox", { name: "Role description", exact: true });
   async function editName(value: string) {
-    if (!await roleName.isVisible()) await page.getByRole("button", { name: "Edit Role name", exact: true }).click();
+    if (!(await roleName.isVisible()))
+      await page.getByRole("button", { name: "Edit Role name", exact: true }).click();
     await roleName.fill(value);
   }
   async function editDescription(value: string) {
-    if (!await roleDescription.isVisible()) await page.getByRole("button", { name: "Edit Role description", exact: true }).click();
+    if (!(await roleDescription.isVisible()))
+      await page.getByRole("button", { name: "Edit Role description", exact: true }).click();
     await roleDescription.fill(value);
   }
-  const permission = page.getByRole("group", { name: "Tools", exact: true })
+  const permission = page
+    .getByRole("group", { name: "Tools", exact: true })
     .getByRole("checkbox", { name: /^Edit\b/ });
-  const viewPermission = page.getByRole("group", { name: "Tools", exact: true })
+  const viewPermission = page
+    .getByRole("group", { name: "Tools", exact: true })
     .getByRole("checkbox", { name: /^View\b/ });
 
   try {
@@ -170,7 +185,10 @@ test("role changes enable Save only until saved or reverted", async ({ page, bas
   }
 });
 
-test("role deletion requires confirmation and preserves assigned roles after failure", async ({ page, baseURL }) => {
+test("role deletion requires confirmation and preserves assigned roles after failure", async ({
+  page,
+  baseURL,
+}) => {
   const roleUrl = new URL("/admin/roles/e2e-tool-viewer", baseURL).href;
   await new AuthPage(page).signIn(E2E_ACCOUNTS.admin.email, E2E_PASSWORD, roleUrl);
   const trigger = page.getByRole("button", { name: "Delete role", exact: true });

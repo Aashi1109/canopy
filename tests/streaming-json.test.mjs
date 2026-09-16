@@ -49,16 +49,13 @@ test("reports cumulative bytes while reading streaming JSON input", async () => 
 
 test("formats nested JSON and keeps only a bounded preview", async () => {
   const chunks = [];
-  const result = await processStreamingJson(
-    '{"items":[1,{"name":"Ada"}],"active":true}',
-    {
-      mode: "format",
-      indentation: 2,
-      onOutput: async (chunk) => chunks.push(chunk),
-      outputChunkSize: 7,
-      previewLimit: 12,
-    },
-  );
+  const result = await processStreamingJson('{"items":[1,{"name":"Ada"}],"active":true}', {
+    mode: "format",
+    indentation: 2,
+    onOutput: async (chunk) => chunks.push(chunk),
+    outputChunkSize: 7,
+    previewLimit: 12,
+  });
 
   const output = [
     "{",
@@ -99,16 +96,13 @@ test("bounds previews by UTF-8 bytes without splitting a code point", async () =
 
 test("accepts Blob input and validates without producing output", async () => {
   let outputCalls = 0;
-  const result = await processStreamingJson(
-    new Blob(['\n { "value": null } \n']),
-    {
-      mode: "validate",
-      onOutput: () => {
-        outputCalls += 1;
-      },
-      previewLimit: 8,
+  const result = await processStreamingJson(new Blob(['\n { "value": null } \n']), {
+    mode: "validate",
+    onOutput: () => {
+      outputCalls += 1;
     },
-  );
+    previewLimit: 8,
+  });
 
   assert.equal(result.ok, true);
   assert.equal(result.preview, '\n { "val');
@@ -242,7 +236,7 @@ test("aborts a writable output when later input is invalid", async () => {
 });
 
 test("rejects non-JSON whitespace and multiple root values", async () => {
-  for (const input of ["{\"x\":1\u00a0}", "true false", "[01]"]) {
+  for (const input of ['{"x":1\u00a0}', "true false", "[01]"]) {
     const result = await processStreamingJson(input, { mode: "validate" });
     assert.equal(result.ok, false, input);
     assert.equal(result.error.kind, "syntax", input);
@@ -250,10 +244,10 @@ test("rejects non-JSON whitespace and multiple root values", async () => {
 });
 
 test("rejects unsupported modes at the API boundary", async () => {
-  await assert.rejects(
-    processStreamingJson("{}", { mode: "pretty" }),
-    { name: "TypeError", message: "Unsupported streaming JSON mode: pretty." },
-  );
+  await assert.rejects(processStreamingJson("{}", { mode: "pretty" }), {
+    name: "TypeError",
+    message: "Unsupported streaming JSON mode: pretty.",
+  });
 });
 
 test("rejects pathologically deep JSON with a recoverable syntax error", async () => {

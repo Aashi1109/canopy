@@ -12,8 +12,7 @@ import { randomString } from "../../lib/devtools/shared/crypto.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-const ALPHABET =
-  "_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const ALPHABET = "_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({
   render: "list",

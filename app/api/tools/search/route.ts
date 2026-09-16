@@ -11,12 +11,7 @@ export async function GET(request: Request) {
   try {
     const results = (await getTools())
       .filter((tool) =>
-        [
-          tool.name,
-          tool.description,
-          TOOL_CATEGORIES[tool.category].label,
-          ...tool.keywords,
-        ]
+        [tool.name, tool.description, TOOL_CATEGORIES[tool.category].label, ...tool.keywords]
           .join(" ")
           .toLowerCase()
           .includes(query),

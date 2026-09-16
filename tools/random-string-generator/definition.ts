@@ -4,15 +4,7 @@ export default {
   toolId: "devtools.random-string-generator",
   app: "devtools",
   category: "text-tools",
-  keywords: [
-    "random",
-    "string",
-    "generator",
-    "token",
-    "hex",
-    "alphanumeric",
-    "id",
-  ],
+  keywords: ["random", "string", "generator", "token", "hex", "alphanumeric", "id"],
   name: "Random String Generator",
   description: "Generate random strings from a selected character set.",
   input: { kind: "none" },
@@ -84,7 +76,7 @@ export default {
     limitations: [
       "These are uniformly random strings, not UUIDs or nanoids. Use the dedicated generators when you need those formats.",
       "Nothing is stored — reloading the page loses the batch.",
-      "The \"All + symbols\" set includes characters that need escaping in shells and URLs; prefer hex or alphanumeric for anything embedded in a command or link.",
+      'The "All + symbols" set includes characters that need escaping in shells and URLs; prefer hex or alphanumeric for anything embedded in a command or link.',
     ],
     faq: [
       {

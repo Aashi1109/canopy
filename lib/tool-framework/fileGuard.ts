@@ -1,8 +1,5 @@
 import { PLATFORM_MAX_BYTES } from "./limits.ts";
-import {
-  detectMediaKind,
-  validateMediaSignature,
-} from "./media/validation.ts";
+import { detectMediaKind, validateMediaSignature } from "./media/validation.ts";
 import { ToolError, type ToolRunFile } from "./run.ts";
 import type { ToolInputSpec, ToolSpec } from "./spec.ts";
 
@@ -101,22 +98,19 @@ export async function assertRunnableFiles(
       throw new ToolError("invalid-file", "The selected file metadata is invalid.");
     }
     if (!isAccepted(limits.accept, file.mime, file.name)) {
-      throw new ToolError(
-        "unsupported-type",
-        "This file type is not supported by this tool.",
-      );
+      throw new ToolError("unsupported-type", "This file type is not supported by this tool.");
     }
-    const prefix = new Uint8Array(
-      await file.source.slice(0, SIGNATURE_PREFIX_BYTES).arrayBuffer(),
-    );
+    const prefix = new Uint8Array(await file.source.slice(0, SIGNATURE_PREFIX_BYTES).arrayBuffer());
     signal?.throwIfAborted();
     if (spec.input.kind === "files") {
       const signature = validateMediaSignature(prefix, file.mime);
       if (!signature.ok) throw new ToolError(signature.code, signature.message);
-      const matchesEngine = spec.input.engine === "pdf"
-        ? signature.kind === "pdf"
-        : signature.kind !== "pdf";
-      if (!matchesEngine && (!limits.accept.trim() || !isAccepted(limits.accept, signature.mime, ""))) {
+      const matchesEngine =
+        spec.input.engine === "pdf" ? signature.kind === "pdf" : signature.kind !== "pdf";
+      if (
+        !matchesEngine &&
+        (!limits.accept.trim() || !isAccepted(limits.accept, signature.mime, ""))
+      ) {
         throw new ToolError("unsupported-type", "This file type is not supported by this tool.");
       }
     } else if (detectMediaKind(prefix)) {

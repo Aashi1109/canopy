@@ -136,14 +136,11 @@ async function openPdfDocument(file: ToolRunFile, signal: AbortSignal) {
       failRangeRead(error);
       return;
     }
-    void read.then(
-      (buffer) => {
-        if (!aborted && !signal.aborted) {
-          range.onDataRange(begin, new Uint8Array(buffer));
-        }
-      },
-      failRangeRead,
-    );
+    void read.then((buffer) => {
+      if (!aborted && !signal.aborted) {
+        range.onDataRange(begin, new Uint8Array(buffer));
+      }
+    }, failRangeRead);
   };
   range.abort = () => {
     aborted = true;
@@ -326,22 +323,20 @@ export async function openPdfInspectionSession(
   ): Promise<readonly PdfPageThumbnail[]> => {
     if (closed) throw new DOMException("The inspection is closed.", "AbortError");
     signal.throwIfAborted();
-    if (renderWidth !== undefined && (!Number.isInteger(renderWidth) || renderWidth < 1 || renderWidth > PDF_PREVIEW_MAX_WIDTH)) {
+    if (
+      renderWidth !== undefined &&
+      (!Number.isInteger(renderWidth) || renderWidth < 1 || renderWidth > PDF_PREVIEW_MAX_WIDTH)
+    ) {
       throw new ToolError("invalid-preview-size", "The requested PDF preview size is invalid.");
     }
     const unique = [...new Set(pageNumbers)];
     if (
       unique.some(
         (pageNumber) =>
-          !Number.isInteger(pageNumber) ||
-          pageNumber < 1 ||
-          pageNumber > opened.document.numPages,
+          !Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > opened.document.numPages,
       )
     ) {
-      throw new ToolError(
-        "invalid-page-selection",
-        "A requested PDF preview page does not exist.",
-      );
+      throw new ToolError("invalid-page-selection", "A requested PDF preview page does not exist.");
     }
     const thumbnails: PdfPageThumbnail[] = [];
     for (const pageNumber of unique) {
@@ -350,7 +345,9 @@ export async function openPdfInspectionSession(
       const page = await opened.read(opened.document.getPage(pageNumber));
       const point = page.getViewport({ scale: 1 });
       const scale = Math.min(
-        renderWidth === undefined ? Math.min(1, thumbnailWidth / point.width) : renderWidth / point.width,
+        renderWidth === undefined
+          ? Math.min(1, thumbnailWidth / point.width)
+          : renderWidth / point.width,
         Math.sqrt(PDF_PREVIEW_MAX_PIXELS / (point.width * point.height)),
       );
       const viewport = page.getViewport({ scale });
@@ -462,9 +459,7 @@ export function applyColorMode(
   const image = context.getImageData(0, 0, width, height);
   for (let index = 0; index < image.data.length; index += 4) {
     const luminance = Math.round(
-      image.data[index] * 0.2126 +
-        image.data[index + 1] * 0.7152 +
-        image.data[index + 2] * 0.0722,
+      image.data[index] * 0.2126 + image.data[index + 1] * 0.7152 + image.data[index + 2] * 0.0722,
     );
     const value = mode === "black-and-white" ? (luminance >= 128 ? 255 : 0) : luminance;
     image.data[index] = value;

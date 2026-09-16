@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  checkRateLimit,
-  getRateLimitStoreSize,
-  RATE_LIMIT_MAX_ENTRIES,
-} from "../lib/rateLimit.ts";
+import { checkRateLimit, getRateLimitStoreSize, RATE_LIMIT_MAX_ENTRIES } from "../lib/rateLimit.ts";
 
 test("allows requests under the limit and decrements remaining", () => {
   const first = checkRateLimit("under-limit", { limit: 3, now: 1_000 });
@@ -29,18 +25,13 @@ test("denies the request after the limit with a sane retry delay", () => {
 
 test("allows requests again after the injected clock crosses the window", () => {
   const key = "window-rollover";
-  assert.equal(
-    checkRateLimit(key, { limit: 1, now: 200_000, windowMs: 1_000 }).allowed,
-    true,
-  );
-  assert.equal(
-    checkRateLimit(key, { limit: 1, now: 200_999, windowMs: 1_000 }).allowed,
-    false,
-  );
-  assert.deepEqual(
-    checkRateLimit(key, { limit: 1, now: 201_000, windowMs: 1_000 }),
-    { allowed: true, remaining: 0, resetAt: 202_000 },
-  );
+  assert.equal(checkRateLimit(key, { limit: 1, now: 200_000, windowMs: 1_000 }).allowed, true);
+  assert.equal(checkRateLimit(key, { limit: 1, now: 200_999, windowMs: 1_000 }).allowed, false);
+  assert.deepEqual(checkRateLimit(key, { limit: 1, now: 201_000, windowMs: 1_000 }), {
+    allowed: true,
+    remaining: 0,
+    resetAt: 202_000,
+  });
 });
 
 test("keeps separate keys on independent budgets", () => {

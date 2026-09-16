@@ -9,11 +9,7 @@
  */
 
 import type { StoredToolArtifact } from "./artifacts";
-import type {
-  ToolArtifact,
-  ToolFact,
-  ToolValidationIssue,
-} from "@/lib/tool-runtime/types";
+import type { ToolArtifact, ToolFact, ToolValidationIssue } from "@/lib/tool-runtime/types";
 
 export type { ToolArtifact, ToolFact, ToolValidationIssue };
 

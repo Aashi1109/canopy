@@ -55,11 +55,7 @@ import {
 } from "@smarttools/control-plane";
 import { z } from "zod";
 import { Cache } from "@smarttools/cache";
-import {
-  isCategoryKey,
-  TOOL_CATEGORIES,
-  type CategoryKey,
-} from "../tool-framework/categories.ts";
+import { isCategoryKey, TOOL_CATEGORIES, type CategoryKey } from "../tool-framework/categories.ts";
 import { TOOL_CONTENT_DOC_VERSION } from "../tool-framework/content.ts";
 import { uploadToolIcon } from "../tool-framework/cloudinary.ts";
 
@@ -73,9 +69,7 @@ type ToolRow = typeof managedToolsTable.$inferSelect;
 type RoleRow = typeof rolesTable.$inferSelect;
 type TemplateRow = typeof invoiceTemplatesTable.$inferSelect;
 
-export type ManagedToolEdit = Partial<
-  Pick<ManagedTool, "slug" | "name" | "description">
->;
+export type ManagedToolEdit = Partial<Pick<ManagedTool, "slug" | "name" | "description">>;
 
 export type FeatureEdit = {
   name?: string;
@@ -148,9 +142,7 @@ function redactValue(value: unknown, seen: WeakSet<object>): unknown {
   );
 }
 
-export function redactAuditMetadata(
-  metadata: Record<string, unknown>,
-): Record<string, unknown> {
+export function redactAuditMetadata(metadata: Record<string, unknown>): Record<string, unknown> {
   return redactValue(metadata, new WeakSet()) as Record<string, unknown>;
 }
 
@@ -195,11 +187,7 @@ export async function requireTransactionPermission(
   }
 
   const roles: Role[] = rows.flatMap((row) =>
-    row.roleId &&
-    row.roleName &&
-    row.roleDescription &&
-    row.roleAccess &&
-    row.roleIsSystem !== null
+    row.roleId && row.roleName && row.roleDescription && row.roleAccess && row.roleIsSystem !== null
       ? [
           {
             id: row.roleId,
@@ -217,9 +205,7 @@ export async function requireTransactionPermission(
     throw new AuthorizationError("Missing permission: admin.enter");
   }
   if (!hasPermission(access, resource, action)) {
-    throw new AuthorizationError(
-      `Missing permission: ${resource}.${action}`,
-    );
+    throw new AuthorizationError(`Missing permission: ${resource}.${action}`);
   }
 }
 
@@ -246,10 +232,7 @@ export async function writeAudit(
  * with no `managed_tools` row does not exist — which is also what makes a row
  * created before its folder ships fully manageable here.
  */
-async function getToolForUpdate(
-  transaction: Transaction,
-  toolId: string,
-): Promise<ToolRow> {
+async function getToolForUpdate(transaction: Transaction, toolId: string): Promise<ToolRow> {
   const [stored] = await transaction
     .select()
     .from(managedToolsTable)
@@ -265,14 +248,7 @@ async function saveTool(
   transaction: Transaction,
   tool: Pick<
     ToolRow,
-    | "toolId"
-    | "app"
-    | "slug"
-    | "name"
-    | "description"
-    | "order"
-    | "enabled"
-    | "archived"
+    "toolId" | "app" | "slug" | "name" | "description" | "order" | "enabled" | "archived"
   >,
 ): Promise<ToolRow> {
   const now = new Date();
@@ -338,97 +314,96 @@ export async function createManagedTool(
   actorUserId: string,
   input: ManagedToolDraft,
 ): Promise<ToolRow> {
-  return db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
-    if (!isRecord(input)) throw new Error("Tool details must be an object.");
+  return db
+    .transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
+      if (!isRecord(input)) throw new Error("Tool details must be an object.");
 
-    const app = creatableApp(input.app);
-    const key = requiredText(input.key, "Folder key", 80);
-    if (!TOOL_SLUG_PATTERN.test(key)) {
-      throw new Error(
-        "Folder key must be lowercase words joined by single hyphens.",
-      );
-    }
-    const name = requiredText(input.name, "Tool name", 160);
-    const description = requiredText(input.description, "Tool description");
+      const app = creatableApp(input.app);
+      const key = requiredText(input.key, "Folder key", 80);
+      if (!TOOL_SLUG_PATTERN.test(key)) {
+        throw new Error("Folder key must be lowercase words joined by single hyphens.");
+      }
+      const name = requiredText(input.name, "Tool name", 160);
+      const description = requiredText(input.description, "Tool description");
 
-    const category = requiredText(input.category, "Tool category", 64);
-    if (!isCategoryKey(category) || TOOL_CATEGORIES[category].app !== app) {
-      throw new Error(`Tool category is not registered for ${app}.`);
-    }
+      const category = requiredText(input.category, "Tool category", 64);
+      if (!isCategoryKey(category) || TOOL_CATEGORIES[category].app !== app) {
+        throw new Error(`Tool category is not registered for ${app}.`);
+      }
 
-    // The picker shows this live, but the default is recomputed here so a
-    // hand-posted form cannot slip a slug past it.
-    const requested = typeof input.slug === "string" ? input.slug.trim() : "";
-    const slug = requested || slugFromName(name);
-    if (!isValidToolSlug(app, slug)) {
-      throw new Error("Tool slug is invalid or reserved.");
-    }
+      // The picker shows this live, but the default is recomputed here so a
+      // hand-posted form cannot slip a slug past it.
+      const requested = typeof input.slug === "string" ? input.slug.trim() : "";
+      const slug = requested || slugFromName(name);
+      if (!isValidToolSlug(app, slug)) {
+        throw new Error("Tool slug is invalid or reserved.");
+      }
 
-    // The folder is derived from the tool id, which is why the id is derived
-    // from the key rather than typed.
-    const toolId = `${app}.${key}`;
+      // The folder is derived from the tool id, which is why the id is derived
+      // from the key rather than typed.
+      const toolId = `${app}.${key}`;
 
-    // One locked read answers all three uniqueness questions. `for("update")`
-    // also serializes two admins creating at once: the second read blocks on
-    // the first transaction's locks and re-reads after it commits, so it sees
-    // the new row and orders above it. `unique(app, sort_order)` from
-    // migration 0005 stays the backstop, and it rolls the whole insert back.
-    const siblings = await transaction
-      .select({
-        toolId: managedToolsTable.toolId,
-        slug: managedToolsTable.slug,
-        order: managedToolsTable.order,
-      })
-      .from(managedToolsTable)
-      .where(eq(managedToolsTable.app, app))
-      .for("update");
+      // One locked read answers all three uniqueness questions. `for("update")`
+      // also serializes two admins creating at once: the second read blocks on
+      // the first transaction's locks and re-reads after it commits, so it sees
+      // the new row and orders above it. `unique(app, sort_order)` from
+      // migration 0005 stays the backstop, and it rolls the whole insert back.
+      const siblings = await transaction
+        .select({
+          toolId: managedToolsTable.toolId,
+          slug: managedToolsTable.slug,
+          order: managedToolsTable.order,
+        })
+        .from(managedToolsTable)
+        .where(eq(managedToolsTable.app, app))
+        .for("update");
 
-    if (siblings.some((tool) => tool.toolId === toolId)) {
-      throw new Error(`Tool ${toolId} already exists.`);
-    }
-    if (siblings.some((tool) => tool.slug === slug)) {
-      throw new Error("Tool slug is already in use.");
-    }
+      if (siblings.some((tool) => tool.toolId === toolId)) {
+        throw new Error(`Tool ${toolId} already exists.`);
+      }
+      if (siblings.some((tool) => tool.slug === slug)) {
+        throw new Error("Tool slug is already in use.");
+      }
 
-    const order =
-      siblings.reduce((highest, tool) => Math.max(highest, tool.order), -1) + 1;
+      const order = siblings.reduce((highest, tool) => Math.max(highest, tool.order), -1) + 1;
 
-    // Disabled: a tool with no code must not be publishable by accident.
-    const [created] = await transaction
-      .insert(managedToolsTable)
-      .values({
-        toolId,
+      // Disabled: a tool with no code must not be publishable by accident.
+      const [created] = await transaction
+        .insert(managedToolsTable)
+        .values({
+          toolId,
+          app,
+          slug,
+          name,
+          description,
+          order,
+          enabled: false,
+          archived: false,
+        })
+        .returning();
+
+      // The seed writes an all-null row here; this one carries the category the
+      // admin chose. Discarding it would mean asking for a value and then
+      // throwing it away — and unlike the seed, there is no `definition.ts` yet
+      // for the resolver to fall back to. Every other column stays NULL, so it
+      // still inherits from code the moment the folder ships.
+      //
+      // Left unpublished (`publishedAt` NULL): until the code exists there is
+      // nothing to publish, and `resolveContent` treats an unpublished row as
+      // "use the code values".
+      await transaction.insert(toolContentTable).values({ toolId, category });
+
+      await writeAudit(transaction, actorUserId, "tool.create", "tool", toolId, {
         app,
+        key,
         slug,
-        name,
-        description,
+        category,
         order,
-        enabled: false,
-        archived: false,
-      })
-      .returning();
-
-    // The seed writes an all-null row here; this one carries the category the
-    // admin chose. Discarding it would mean asking for a value and then
-    // throwing it away — and unlike the seed, there is no `definition.ts` yet
-    // for the resolver to fall back to. Every other column stays NULL, so it
-    // still inherits from code the moment the folder ships.
-    //
-    // Left unpublished (`publishedAt` NULL): until the code exists there is
-    // nothing to publish, and `resolveContent` treats an unpublished row as
-    // "use the code values".
-    await transaction.insert(toolContentTable).values({ toolId, category });
-
-    await writeAudit(transaction, actorUserId, "tool.create", "tool", toolId, {
-      app,
-      key,
-      slug,
-      category,
-      order,
-    });
-    return created;
-  }).then((result) => invalidateAfterCommit("catalog", result));
+      });
+      return created;
+    })
+    .then((result) => invalidateAfterCommit("catalog", result));
 }
 
 export async function updateManagedTool(
@@ -436,56 +411,58 @@ export async function updateManagedTool(
   toolId: string,
   input: ManagedToolEdit,
 ): Promise<ToolRow> {
-  return db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
-    if (!isRecord(input)) throw new Error("Tool changes must be an object.");
+  return db
+    .transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
+      if (!isRecord(input)) throw new Error("Tool changes must be an object.");
 
-    const current = await getToolForUpdate(transaction, toolId);
-    const slug = Object.hasOwn(input, "slug") ? input.slug : current.slug;
-    if (slug !== null && !isValidToolSlug(current.app, slug)) {
-      throw new Error("Tool slug is invalid or reserved.");
-    }
-    assertToolSlugImmutable(current.slug, slug ?? null);
+      const current = await getToolForUpdate(transaction, toolId);
+      const slug = Object.hasOwn(input, "slug") ? input.slug : current.slug;
+      if (slug !== null && !isValidToolSlug(current.app, slug)) {
+        throw new Error("Tool slug is invalid or reserved.");
+      }
+      assertToolSlugImmutable(current.slug, slug ?? null);
 
-    const name = Object.hasOwn(input, "name")
-      ? requiredText(input.name, "Tool name", 160)
-      : current.name;
-    const description = Object.hasOwn(input, "description")
-      ? requiredText(input.description, "Tool description")
-      : current.description;
+      const name = Object.hasOwn(input, "name")
+        ? requiredText(input.name, "Tool name", 160)
+        : current.name;
+      const description = Object.hasOwn(input, "description")
+        ? requiredText(input.description, "Tool description")
+        : current.description;
 
-    if (slug !== null) {
-      const [duplicate] = await transaction
-        .select({ toolId: managedToolsTable.toolId })
-        .from(managedToolsTable)
-        .where(
-          and(
-            eq(managedToolsTable.app, current.app),
-            eq(managedToolsTable.slug, slug),
-            ne(managedToolsTable.toolId, toolId),
-          ),
-        )
-        .limit(1);
-      if (duplicate) throw new Error("Tool slug is already in use.");
-    }
+      if (slug !== null) {
+        const [duplicate] = await transaction
+          .select({ toolId: managedToolsTable.toolId })
+          .from(managedToolsTable)
+          .where(
+            and(
+              eq(managedToolsTable.app, current.app),
+              eq(managedToolsTable.slug, slug),
+              ne(managedToolsTable.toolId, toolId),
+            ),
+          )
+          .limit(1);
+        if (duplicate) throw new Error("Tool slug is already in use.");
+      }
 
-    const next = {
-      toolId,
-      app: current.app,
-      slug: slug ?? null,
-      name,
-      description,
-      order: current.order,
-      enabled: current.enabled,
-      archived: current.archived,
-    };
-    const saved = await saveTool(transaction, next);
-    await writeAudit(transaction, actorUserId, "tool.edit", "tool", toolId, {
-      changes: Object.keys(input),
-      slug: next.slug,
-    });
-    return saved;
-  }).then((result) => invalidateAfterCommit("catalog", result));
+      const next = {
+        toolId,
+        app: current.app,
+        slug: slug ?? null,
+        name,
+        description,
+        order: current.order,
+        enabled: current.enabled,
+        archived: current.archived,
+      };
+      const saved = await saveTool(transaction, next);
+      await writeAudit(transaction, actorUserId, "tool.edit", "tool", toolId, {
+        changes: Object.keys(input),
+        slug: next.slug,
+      });
+      return saved;
+    })
+    .then((result) => invalidateAfterCommit("catalog", result));
 }
 
 export async function reorderManagedTools(
@@ -493,40 +470,42 @@ export async function reorderManagedTools(
   app: ToolApp,
   toolIds: readonly string[],
 ): Promise<void> {
-  return db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
-    // The app's stored rows are the roster; a locked read means a concurrent
-    // create cannot land between the count check and the writes.
-    const stored = await transaction
-      .select()
-      .from(managedToolsTable)
-      .where(eq(managedToolsTable.app, app))
-      .for("update");
-    const expectedIds = new Set(stored.map((tool) => tool.toolId));
+  return db
+    .transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
+      // The app's stored rows are the roster; a locked read means a concurrent
+      // create cannot land between the count check and the writes.
+      const stored = await transaction
+        .select()
+        .from(managedToolsTable)
+        .where(eq(managedToolsTable.app, app))
+        .for("update");
+      const expectedIds = new Set(stored.map((tool) => tool.toolId));
 
-    if (expectedIds.size === 0) throw new Error("Tool app is invalid.");
-    if (
-      !Array.isArray(toolIds) ||
-      toolIds.length !== expectedIds.size ||
-      new Set(toolIds).size !== toolIds.length ||
-      toolIds.some((toolId) => typeof toolId !== "string" || !expectedIds.has(toolId))
-    ) {
-      throw new Error(`Tool order must contain every registered ${app} tool exactly once.`);
-    }
+      if (expectedIds.size === 0) throw new Error("Tool app is invalid.");
+      if (
+        !Array.isArray(toolIds) ||
+        toolIds.length !== expectedIds.size ||
+        new Set(toolIds).size !== toolIds.length ||
+        toolIds.some((toolId) => typeof toolId !== "string" || !expectedIds.has(toolId))
+      ) {
+        throw new Error(`Tool order must contain every registered ${app} tool exactly once.`);
+      }
 
-    const orderById = new Map(toolIds.map((toolId, order) => [toolId, order]));
+      const orderById = new Map(toolIds.map((toolId, order) => [toolId, order]));
 
-    for (const tool of stored) {
-      await saveTool(transaction, {
-        ...tool,
-        order: orderById.get(tool.toolId)!,
+      for (const tool of stored) {
+        await saveTool(transaction, {
+          ...tool,
+          order: orderById.get(tool.toolId)!,
+        });
+      }
+
+      await writeAudit(transaction, actorUserId, "tool.reorder", "tool-list", app, {
+        toolIds,
       });
-    }
-
-    await writeAudit(transaction, actorUserId, "tool.reorder", "tool-list", app, {
-      toolIds,
-    });
-  }).then((result) => invalidateAfterCommit("catalog", result));
+    })
+    .then((result) => invalidateAfterCommit("catalog", result));
 }
 
 export async function setManagedToolEnabled(
@@ -534,23 +513,25 @@ export async function setManagedToolEnabled(
   toolId: string,
   enabled: boolean,
 ): Promise<ToolRow> {
-  return db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "tools", "toggle");
-    assertBoolean(enabled, "Tool enabled state");
-    const current = await getToolForUpdate(transaction, toolId);
-    if (enabled && current.slug === null) {
-      throw new Error("A tool needs a slug before it can be enabled.");
-    }
-    if (enabled && current.archived) {
-      throw new Error("An archived tool cannot be enabled.");
-    }
+  return db
+    .transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "tools", "toggle");
+      assertBoolean(enabled, "Tool enabled state");
+      const current = await getToolForUpdate(transaction, toolId);
+      if (enabled && current.slug === null) {
+        throw new Error("A tool needs a slug before it can be enabled.");
+      }
+      if (enabled && current.archived) {
+        throw new Error("An archived tool cannot be enabled.");
+      }
 
-    const saved = await saveTool(transaction, { ...current, enabled });
-    await writeAudit(transaction, actorUserId, "tool.toggle", "tool", toolId, {
-      enabled,
-    });
-    return saved;
-  }).then((result) => invalidateAfterCommit("catalog", result));
+      const saved = await saveTool(transaction, { ...current, enabled });
+      await writeAudit(transaction, actorUserId, "tool.toggle", "tool", toolId, {
+        enabled,
+      });
+      return saved;
+    })
+    .then((result) => invalidateAfterCommit("catalog", result));
 }
 
 export async function setManagedToolArchived(
@@ -558,20 +539,22 @@ export async function setManagedToolArchived(
   toolId: string,
   archived: boolean,
 ): Promise<ToolRow> {
-  return db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "tools", "archive");
-    assertBoolean(archived, "Tool archived state");
-    const current = await getToolForUpdate(transaction, toolId);
-    const saved = await saveTool(transaction, {
-      ...current,
-      archived,
-      enabled: archived ? false : current.enabled,
-    });
-    await writeAudit(transaction, actorUserId, "tool.archive", "tool", toolId, {
-      archived,
-    });
-    return saved;
-  }).then((result) => invalidateAfterCommit("catalog", result));
+  return db
+    .transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "tools", "archive");
+      assertBoolean(archived, "Tool archived state");
+      const current = await getToolForUpdate(transaction, toolId);
+      const saved = await saveTool(transaction, {
+        ...current,
+        archived,
+        enabled: archived ? false : current.enabled,
+      });
+      await writeAudit(transaction, actorUserId, "tool.archive", "tool", toolId, {
+        archived,
+      });
+      return saved;
+    })
+    .then((result) => invalidateAfterCommit("catalog", result));
 }
 
 // ---------------------------------------------------------------------------
@@ -598,8 +581,8 @@ export const MAX_TOOL_ICON_BYTES = 1_048_576;
 export function iconUploadsConfigured(): boolean {
   return Boolean(
     process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
-      process.env.CLOUDINARY_API_KEY?.trim() &&
-      process.env.CLOUDINARY_API_SECRET?.trim(),
+    process.env.CLOUDINARY_API_KEY?.trim() &&
+    process.env.CLOUDINARY_API_SECRET?.trim(),
   );
 }
 
@@ -638,13 +621,7 @@ const CONTENT_FIELDS = [
   "contentDoc",
 ] as const;
 
-const CONTENT_DOC_KEYS = [
-  "howToUse",
-  "limitations",
-  "faq",
-  "examples",
-  "relatedToolIds",
-] as const;
+const CONTENT_DOC_KEYS = ["howToUse", "limitations", "faq", "examples", "relatedToolIds"] as const;
 
 function boundedText(maxLength: number) {
   return z.string().trim().min(1).max(maxLength);
@@ -676,11 +653,7 @@ const contentDocEditSchema = z.object({
 });
 
 /** Blank is "inherit from code", never "override with empty". */
-function optionalText(
-  value: unknown,
-  label: string,
-  maxLength: number,
-): string | null {
+function optionalText(value: unknown, label: string, maxLength: number): string | null {
   if (value === null || value === undefined) return null;
   if (typeof value !== "string") throw new Error(`${label} must be text.`);
   const trimmed = value.trim();
@@ -731,20 +704,14 @@ function toolContentDoc(
 
   const isEmpty = CONTENT_DOC_KEYS.every((key) => {
     const entry = value[key];
-    return (
-      entry === null ||
-      entry === undefined ||
-      (Array.isArray(entry) && entry.length === 0)
-    );
+    return entry === null || entry === undefined || (Array.isArray(entry) && entry.length === 0);
   });
   if (isEmpty) return null;
 
   const parsed = contentDocEditSchema.safeParse(value);
   if (!parsed.success) {
     throw new Error(
-      `Tool content document is invalid: ${
-        parsed.error.issues[0]?.message ?? "unknown shape"
-      }.`,
+      `Tool content document is invalid: ${parsed.error.issues[0]?.message ?? "unknown shape"}.`,
     );
   }
 
@@ -769,49 +736,42 @@ export async function updateToolContent(
   toolId: string,
   input: ToolContentEdit,
 ): Promise<void> {
-  return db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
-    if (!isRecord(input)) throw new Error("Tool content must be an object.");
+  return db
+    .transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
+      if (!isRecord(input)) throw new Error("Tool content must be an object.");
 
-    const current = await getToolForUpdate(transaction, toolId);
-    // Related tools are validated against the stored roster, so a curated link
-    // can only point at a tool that exists.
-    const knownToolIds = new Set(
-      (
-        await transaction
-          .select({ toolId: managedToolsTable.toolId })
-          .from(managedToolsTable)
-      ).map((row) => row.toolId),
-    );
-    const values = {
-      category: toolContentCategory(input.category),
-      keywords: optionalTextList(input.keywords, "Tool keywords", 24, 60),
-      seoTitle: optionalText(input.seoTitle, "SEO title", 160),
-      seoDescription: optionalText(input.seoDescription, "SEO description", 320),
-      contentDoc: toolContentDoc(input.contentDoc, toolId, knownToolIds),
-      docVersion: TOOL_CONTENT_DOC_VERSION,
-      updatedAt: new Date(),
-    };
+      const current = await getToolForUpdate(transaction, toolId);
+      // Related tools are validated against the stored roster, so a curated link
+      // can only point at a tool that exists.
+      const knownToolIds = new Set(
+        (
+          await transaction.select({ toolId: managedToolsTable.toolId }).from(managedToolsTable)
+        ).map((row) => row.toolId),
+      );
+      const values = {
+        category: toolContentCategory(input.category),
+        keywords: optionalTextList(input.keywords, "Tool keywords", 24, 60),
+        seoTitle: optionalText(input.seoTitle, "SEO title", 160),
+        seoDescription: optionalText(input.seoDescription, "SEO description", 320),
+        contentDoc: toolContentDoc(input.contentDoc, toolId, knownToolIds),
+        docVersion: TOOL_CONTENT_DOC_VERSION,
+        updatedAt: new Date(),
+      };
 
-    // `tool_content.tool_id` references `managed_tools`, so the parent row has
-    // to exist before the child row can.
-    await saveTool(transaction, current);
-    await transaction
-      .insert(toolContentTable)
-      .values({ toolId, ...values })
-      .onConflictDoUpdate({ target: toolContentTable.toolId, set: values });
+      // `tool_content.tool_id` references `managed_tools`, so the parent row has
+      // to exist before the child row can.
+      await saveTool(transaction, current);
+      await transaction
+        .insert(toolContentTable)
+        .values({ toolId, ...values })
+        .onConflictDoUpdate({ target: toolContentTable.toolId, set: values });
 
-    await writeAudit(
-      transaction,
-      actorUserId,
-      "tool.content-edit",
-      "tool",
-      toolId,
-      {
+      await writeAudit(transaction, actorUserId, "tool.content-edit", "tool", toolId, {
         overrides: CONTENT_FIELDS.filter((field) => values[field] !== null),
-      },
-    );
-  }).then((result) => invalidateAfterCommit("catalog", result));
+      });
+    })
+    .then((result) => invalidateAfterCommit("catalog", result));
 }
 
 /**
@@ -823,33 +783,30 @@ export async function setToolContentPublished(
   toolId: string,
   published: boolean,
 ): Promise<void> {
-  return db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "tools", "toggle");
-    assertBoolean(published, "Tool content published state");
-    await getToolForUpdate(transaction, toolId);
+  return db
+    .transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "tools", "toggle");
+      assertBoolean(published, "Tool content published state");
+      await getToolForUpdate(transaction, toolId);
 
-    const [stored] = await transaction
-      .select({ toolId: toolContentTable.toolId })
-      .from(toolContentTable)
-      .where(eq(toolContentTable.toolId, toolId))
-      .limit(1)
-      .for("update");
-    if (!stored) throw new Error("Save tool content before publishing it.");
+      const [stored] = await transaction
+        .select({ toolId: toolContentTable.toolId })
+        .from(toolContentTable)
+        .where(eq(toolContentTable.toolId, toolId))
+        .limit(1)
+        .for("update");
+      if (!stored) throw new Error("Save tool content before publishing it.");
 
-    await transaction
-      .update(toolContentTable)
-      .set({ publishedAt: published ? new Date() : null, updatedAt: new Date() })
-      .where(eq(toolContentTable.toolId, toolId));
+      await transaction
+        .update(toolContentTable)
+        .set({ publishedAt: published ? new Date() : null, updatedAt: new Date() })
+        .where(eq(toolContentTable.toolId, toolId));
 
-    await writeAudit(
-      transaction,
-      actorUserId,
-      "tool.content-publish",
-      "tool",
-      toolId,
-      { published },
-    );
-  }).then((result) => invalidateAfterCommit("catalog", result));
+      await writeAudit(transaction, actorUserId, "tool.content-publish", "tool", toolId, {
+        published,
+      });
+    })
+    .then((result) => invalidateAfterCommit("catalog", result));
 }
 
 /**
@@ -868,12 +825,8 @@ function assertUploadableIcon(bytes: unknown, mimeType: unknown): asserts bytes 
   if (bytes.byteLength === 0) throw new Error("The icon file is empty.");
 
   const normalizedMimeType =
-    typeof mimeType === "string"
-      ? (mimeType.split(";", 1)[0]?.trim().toLowerCase() ?? "")
-      : "";
-  const leadingBytes = new TextDecoder()
-    .decode(bytes.subarray(0, 512))
-    .toLowerCase();
+    typeof mimeType === "string" ? (mimeType.split(";", 1)[0]?.trim().toLowerCase() ?? "") : "";
+  const leadingBytes = new TextDecoder().decode(bytes.subarray(0, 512)).toLowerCase();
   if (
     normalizedMimeType === "image/svg+xml" ||
     leadingBytes.includes("<svg") ||
@@ -904,47 +857,35 @@ export async function saveToolIcon(
   const { publicId, version, format, width, height, updatedAt } = uploaded.row;
   const values = { publicId, version, format, width, height, updatedAt };
 
-  return db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
-    const current = await getToolForUpdate(transaction, toolId);
-    await saveTool(transaction, current);
-    await transaction
-      .insert(toolIconsTable)
-      .values({ toolId, ...values })
-      .onConflictDoUpdate({ target: toolIconsTable.toolId, set: values });
+  return db
+    .transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
+      const current = await getToolForUpdate(transaction, toolId);
+      await saveTool(transaction, current);
+      await transaction
+        .insert(toolIconsTable)
+        .values({ toolId, ...values })
+        .onConflictDoUpdate({ target: toolIconsTable.toolId, set: values });
 
-    await writeAudit(
-      transaction,
-      actorUserId,
-      "tool.icon-upload",
-      "tool",
-      toolId,
-      { publicId, format },
-    );
-    return uploaded.row;
-  }).then((result) => invalidateAfterCommit("catalog", result));
+      await writeAudit(transaction, actorUserId, "tool.icon-upload", "tool", toolId, {
+        publicId,
+        format,
+      });
+      return uploaded.row;
+    })
+    .then((result) => invalidateAfterCommit("catalog", result));
 }
 
 /** Removing the row falls the tool back to its generated identicon. */
-export async function removeToolIcon(
-  actorUserId: string,
-  toolId: string,
-): Promise<void> {
-  return db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
-    await getToolForUpdate(transaction, toolId);
-    await transaction
-      .delete(toolIconsTable)
-      .where(eq(toolIconsTable.toolId, toolId));
-    await writeAudit(
-      transaction,
-      actorUserId,
-      "tool.icon-remove",
-      "tool",
-      toolId,
-      {},
-    );
-  }).then((result) => invalidateAfterCommit("catalog", result));
+export async function removeToolIcon(actorUserId: string, toolId: string): Promise<void> {
+  return db
+    .transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
+      await getToolForUpdate(transaction, toolId);
+      await transaction.delete(toolIconsTable).where(eq(toolIconsTable.toolId, toolId));
+      await writeAudit(transaction, actorUserId, "tool.icon-remove", "tool", toolId, {});
+    })
+    .then((result) => invalidateAfterCommit("catalog", result));
 }
 
 function getFeatureManifestEntry(
@@ -952,26 +893,16 @@ function getFeatureManifestEntry(
   app: FeatureApp,
   key: string,
 ): FeatureManifestEntry {
-  const entries = manifest.filter(
-    (entry) => entry.app === app && entry.key === key,
-  );
+  const entries = manifest.filter((entry) => entry.app === app && entry.key === key);
   if (entries.length !== 1) throw new Error(`Unknown feature: ${app}.${key}.`);
   return entries[0];
 }
 
-async function getFeatureForUpdate(
-  transaction: Transaction,
-  entry: FeatureManifestEntry,
-) {
+async function getFeatureForUpdate(transaction: Transaction, entry: FeatureManifestEntry) {
   const [stored] = await transaction
     .select()
     .from(featureOverridesTable)
-    .where(
-      and(
-        eq(featureOverridesTable.app, entry.app),
-        eq(featureOverridesTable.key, entry.key),
-      ),
-    )
+    .where(and(eq(featureOverridesTable.app, entry.app), eq(featureOverridesTable.key, entry.key)))
     .limit(1)
     .for("update");
   return (
@@ -1093,16 +1024,11 @@ async function getAdminCounts(transaction: Transaction) {
   const admins = new Map(rows.map((row) => [row.userId, row.status]));
   return {
     adminCount: admins.size,
-    activeAdminCount: [...admins.values()].filter(
-      (status) => status === "active",
-    ).length,
+    activeAdminCount: [...admins.values()].filter((status) => status === "active").length,
   };
 }
 
-function authorizationUser(
-  user: typeof authUser.$inferSelect,
-  roles: string[],
-): User {
+function authorizationUser(user: typeof authUser.$inferSelect, roles: string[]): User {
   return {
     id: user.id,
     name: user.name,
@@ -1119,28 +1045,18 @@ export async function assignUserRoles(
   requestedRoleIds: readonly string[],
 ): Promise<string[]> {
   return db.transaction(async (transaction) => {
-    await requireTransactionPermission(
-      transaction,
-      actorUserId,
-      "users",
-      "assignRoles",
-    );
+    await requireTransactionPermission(transaction, actorUserId, "users", "assignRoles");
     if (!Array.isArray(requestedRoleIds)) {
       throw new Error("Role assignments must be an array.");
     }
     const nextRoleIds = [
       ...new Set([
         "user",
-        ...requestedRoleIds.map((roleId) =>
-          requiredText(roleId, "Role id", 200),
-        ),
+        ...requestedRoleIds.map((roleId) => requiredText(roleId, "Role id", 200)),
       ]),
     ];
     const target = await getUserForUpdate(transaction, targetUserId);
-    const currentRoleIds = await getUserRoleIdsForUpdate(
-      transaction,
-      targetUserId,
-    );
+    const currentRoleIds = await getUserRoleIdsForUpdate(transaction, targetUserId);
     const existingRoles = await transaction
       .select({ id: rolesTable.id, access: rolesTable.access })
       .from(rolesTable)
@@ -1164,12 +1080,8 @@ export async function assignUserRoles(
       return nextRoleIds;
     }
 
-    const removedRoleIds = currentRoleIds.filter(
-      (roleId) => !nextRoleIds.includes(roleId),
-    );
-    const addedRoleIds = nextRoleIds.filter(
-      (roleId) => !currentRoleIds.includes(roleId),
-    );
+    const removedRoleIds = currentRoleIds.filter((roleId) => !nextRoleIds.includes(roleId));
+    const addedRoleIds = nextRoleIds.filter((roleId) => !currentRoleIds.includes(roleId));
     if (removedRoleIds.length) {
       await transaction
         .delete(userRolesTable)
@@ -1181,18 +1093,14 @@ export async function assignUserRoles(
         );
     }
     if (addedRoleIds.length) {
-      await transaction.insert(userRolesTable).values(
-        addedRoleIds.map((roleId) => ({ userId: targetUserId, roleId })),
-      );
+      await transaction
+        .insert(userRolesTable)
+        .values(addedRoleIds.map((roleId) => ({ userId: targetUserId, roleId })));
     }
-    await writeAudit(
-      transaction,
-      actorUserId,
-      "user.assign-roles",
-      "user",
-      targetUserId,
-      { previousRoleIds: currentRoleIds, roleIds: nextRoleIds },
-    );
+    await writeAudit(transaction, actorUserId, "user.assign-roles", "user", targetUserId, {
+      previousRoleIds: currentRoleIds,
+      roleIds: nextRoleIds,
+    });
     return nextRoleIds;
   });
 }
@@ -1208,14 +1116,20 @@ export async function assignRoleToUsers(
     throw new Error("Select at least one user.");
   }
   if (requestedUserIds.length > 100) throw new Error("Assign up to 100 users at a time.");
-  const userIds = [...new Set(requestedUserIds.map((id) => requiredText(id, "User id", 200)))].sort();
+  const userIds = [
+    ...new Set(requestedUserIds.map((id) => requiredText(id, "User id", 200))),
+  ].sort();
   await db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "roles", "view");
     await requireTransactionPermission(transaction, actorUserId, "users", "assignRoles");
     // Match the per-user assignment lock order and lock targets consistently across batches.
     for (const userId of userIds) await getUserForUpdate(transaction, userId);
-    const [role] = await transaction.select().from(rolesTable)
-      .where(eq(rolesTable.id, roleId)).limit(1).for("share");
+    const [role] = await transaction
+      .select()
+      .from(rolesTable)
+      .where(eq(rolesTable.id, roleId))
+      .limit(1)
+      .for("share");
     if (!role || role.isSystem) throw new Error("Choose an existing custom role.");
     assertAccessPrerequisites(role.access);
     for (const userId of userIds) {
@@ -1223,7 +1137,8 @@ export async function assignRoleToUsers(
       if (previousRoleIds.includes(roleId)) continue;
       await transaction.insert(userRolesTable).values({ userId, roleId });
       await writeAudit(transaction, actorUserId, "user.assign-roles", "user", userId, {
-        previousRoleIds, roleIds: [...previousRoleIds, roleId],
+        previousRoleIds,
+        roleIds: [...previousRoleIds, roleId],
       });
     }
   });
@@ -1242,10 +1157,7 @@ export async function setUserStatus(
     const target = await getUserForUpdate(transaction, targetUserId);
     const roleIds = await getUserRoleIdsForUpdate(transaction, targetUserId);
     if (status === "suspended" && target.status === "active" && roleIds.includes("admin")) {
-      assertCanSuspendUser(
-        authorizationUser(target, roleIds),
-        await getAdminCounts(transaction),
-      );
+      assertCanSuspendUser(authorizationUser(target, roleIds), await getAdminCounts(transaction));
     }
 
     if (target.status !== status) {
@@ -1269,10 +1181,7 @@ export async function setUserStatus(
   });
 }
 
-async function getRoleForUpdate(
-  transaction: Transaction,
-  roleId: string,
-): Promise<RoleRow> {
+async function getRoleForUpdate(transaction: Transaction, roleId: string): Promise<RoleRow> {
   const [role] = await transaction
     .select()
     .from(rolesTable)
@@ -1287,22 +1196,24 @@ export async function createCustomRole(
   actorUserId: string,
   input: { name: string; description: string },
 ): Promise<RoleRow> {
-  return db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "roles", "create");
-    if (!isRecord(input)) throw new Error("Role input must be an object.");
-    const values = {
-      id: crypto.randomUUID(),
-      name: requiredText(input.name, "Role name", 160),
-      description: requiredText(input.description, "Role description"),
-      access: { admin: { enter: true } },
-      isSystem: false,
-    };
-    const [role] = await transaction.insert(rolesTable).values(values).returning();
-    await writeAudit(transaction, actorUserId, "role.create", "role", values.id, {
-      name: values.name,
-    });
-    return role;
-  }).then((result) => invalidateAfterCommit("roles", result));
+  return db
+    .transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "roles", "create");
+      if (!isRecord(input)) throw new Error("Role input must be an object.");
+      const values = {
+        id: crypto.randomUUID(),
+        name: requiredText(input.name, "Role name", 160),
+        description: requiredText(input.description, "Role description"),
+        access: { admin: { enter: true } },
+        isSystem: false,
+      };
+      const [role] = await transaction.insert(rolesTable).values(values).returning();
+      await writeAudit(transaction, actorUserId, "role.create", "role", values.id, {
+        name: values.name,
+      });
+      return role;
+    })
+    .then((result) => invalidateAfterCommit("roles", result));
 }
 
 export async function updateCustomRole(
@@ -1310,60 +1221,63 @@ export async function updateCustomRole(
   roleId: string,
   input: CustomRoleEdit,
 ): Promise<RoleRow> {
-  return db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "roles", "edit");
-    if (!isRecord(input)) throw new Error("Role changes must be an object.");
-    const current = await getRoleForUpdate(transaction, roleId);
-    assertCanEditRole(current);
-    const requestedAccess = Object.hasOwn(input, "access") ? input.access : current.access;
-    assertValidAccess(requestedAccess);
-    const access = { ...requestedAccess, admin: { enter: true } };
-    assertAccessPrerequisites(access);
+  return db
+    .transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "roles", "edit");
+      if (!isRecord(input)) throw new Error("Role changes must be an object.");
+      const current = await getRoleForUpdate(transaction, roleId);
+      assertCanEditRole(current);
+      const requestedAccess = Object.hasOwn(input, "access") ? input.access : current.access;
+      assertValidAccess(requestedAccess);
+      const access = { ...requestedAccess, admin: { enter: true } };
+      assertAccessPrerequisites(access);
 
-    const changes = {
-      name: Object.hasOwn(input, "name")
-        ? requiredText(input.name, "Role name", 160)
-        : current.name,
-      description: Object.hasOwn(input, "description")
-        ? requiredText(input.description, "Role description")
-        : current.description,
-      access,
-      updatedAt: new Date(),
-    };
-    const [role] = await transaction
-      .update(rolesTable)
-      .set(changes)
-      .where(eq(rolesTable.id, roleId))
-      .returning();
-    await writeAudit(transaction, actorUserId, "role.edit", "role", roleId, {
-      changes: [...new Set([
-        ...Object.keys(input),
-        ...(current.access.admin?.enter === true ? [] : ["access"]),
-      ])],
-    });
-    return role;
-  }).then((result) => invalidateAfterCommit("roles", result));
+      const changes = {
+        name: Object.hasOwn(input, "name")
+          ? requiredText(input.name, "Role name", 160)
+          : current.name,
+        description: Object.hasOwn(input, "description")
+          ? requiredText(input.description, "Role description")
+          : current.description,
+        access,
+        updatedAt: new Date(),
+      };
+      const [role] = await transaction
+        .update(rolesTable)
+        .set(changes)
+        .where(eq(rolesTable.id, roleId))
+        .returning();
+      await writeAudit(transaction, actorUserId, "role.edit", "role", roleId, {
+        changes: [
+          ...new Set([
+            ...Object.keys(input),
+            ...(current.access.admin?.enter === true ? [] : ["access"]),
+          ]),
+        ],
+      });
+      return role;
+    })
+    .then((result) => invalidateAfterCommit("roles", result));
 }
 
-export async function deleteCustomRole(
-  actorUserId: string,
-  roleId: string,
-): Promise<void> {
-  return db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "roles", "delete");
-    const role = await getRoleForUpdate(transaction, roleId);
-    const assignments = await transaction
-      .select({ userId: userRolesTable.userId })
-      .from(userRolesTable)
-      .where(eq(userRolesTable.roleId, roleId))
-      .for("update");
-    assertCanDeleteRole(role, assignments.length);
+export async function deleteCustomRole(actorUserId: string, roleId: string): Promise<void> {
+  return db
+    .transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "roles", "delete");
+      const role = await getRoleForUpdate(transaction, roleId);
+      const assignments = await transaction
+        .select({ userId: userRolesTable.userId })
+        .from(userRolesTable)
+        .where(eq(userRolesTable.roleId, roleId))
+        .for("update");
+      assertCanDeleteRole(role, assignments.length);
 
-    await transaction.delete(rolesTable).where(eq(rolesTable.id, roleId));
-    await writeAudit(transaction, actorUserId, "role.delete", "role", roleId, {
-      name: role.name,
-    });
-  }).then((result) => invalidateAfterCommit("roles", result));
+      await transaction.delete(rolesTable).where(eq(rolesTable.id, roleId));
+      await writeAudit(transaction, actorUserId, "role.delete", "role", roleId, {
+        name: role.name,
+      });
+    })
+    .then((result) => invalidateAfterCommit("roles", result));
 }
 
 function templateValidationError(input: unknown): DocumentTemplate {
@@ -1372,22 +1286,12 @@ function templateValidationError(input: unknown): DocumentTemplate {
   throw new Error(result.error.issues.map(({ message }) => message).join("; "));
 }
 
-async function renderAdvancedTemplateForPublication(
-  template: AdvancedDocumentTemplate,
-) {
-  const config = normalizeAdvancedTemplateConfig(
-    template.config,
-    template.documentType,
-  );
-  const validation = validateAdvancedTemplateForPublish(
-    config,
-    template.documentType,
-  );
+async function renderAdvancedTemplateForPublication(template: AdvancedDocumentTemplate) {
+  const config = normalizeAdvancedTemplateConfig(template.config, template.documentType);
+  const validation = validateAdvancedTemplateForPublish(config, template.documentType);
   if (!validation.valid) {
     throw new Error(
-      `Publication blocked: ${validation.errors
-        .map((issue) => issue.message)
-        .join("; ")}`,
+      `Publication blocked: ${validation.errors.map((issue) => issue.message).join("; ")}`,
     );
   }
   if (validation.warnings.length) {
@@ -1488,10 +1392,7 @@ async function assertTemplateSlugAvailable(
   exceptId?: string,
 ): Promise<void> {
   const where = exceptId
-    ? and(
-        eq(invoiceTemplatesTable.slug, slug),
-        ne(invoiceTemplatesTable.id, exceptId),
-      )
+    ? and(eq(invoiceTemplatesTable.slug, slug), ne(invoiceTemplatesTable.id, exceptId))
     : eq(invoiceTemplatesTable.slug, slug);
   const [duplicate] = await transaction
     .select({ id: invoiceTemplatesTable.id })
@@ -1653,15 +1554,9 @@ async function updateDocumentTemplateInTransaction(
     ...previous,
     name: Object.hasOwn(input, "name") ? input.name : previous.name,
     slug: previous.slug,
-    description: Object.hasOwn(input, "description")
-      ? input.description
-      : previous.description,
-    category: Object.hasOwn(input, "category")
-      ? input.category
-      : previous.category,
-    layoutFamily: Object.hasOwn(input, "layoutFamily")
-      ? input.layoutFamily
-      : previous.layoutFamily,
+    description: Object.hasOwn(input, "description") ? input.description : previous.description,
+    category: Object.hasOwn(input, "category") ? input.category : previous.category,
+    layoutFamily: Object.hasOwn(input, "layoutFamily") ? input.layoutFamily : previous.layoutFamily,
     config: Object.hasOwn(input, "config") ? input.config : previous.config,
     id: templateId,
     status: current.status,
@@ -1690,12 +1585,7 @@ async function prepareDocumentTemplatePublication(
   templateId: string,
 ): Promise<DocumentTemplate> {
   return db.transaction(async (transaction) => {
-    await requireTransactionPermission(
-      transaction,
-      actorUserId,
-      "templates",
-      "publish",
-    );
+    await requireTransactionPermission(transaction, actorUserId, "templates", "publish");
     const current = await getTemplateForUpdate(transaction, templateId);
     return templateValidationError(storedTemplateInput(current));
   });
@@ -1705,20 +1595,12 @@ export async function publishDocumentTemplate(
   actorUserId: string,
   templateId: string,
 ): Promise<TemplateRow> {
-  const template = await prepareDocumentTemplatePublication(
-    actorUserId,
-    templateId,
-  );
+  const template = await prepareDocumentTemplatePublication(actorUserId, templateId);
   if (template.layoutFamily === "advanced") {
     await renderAdvancedTemplateForPublication(template);
   }
   return db.transaction((transaction) =>
-    publishDocumentTemplateInTransaction(
-      transaction,
-      actorUserId,
-      templateId,
-      template.version,
-    ),
+    publishDocumentTemplateInTransaction(transaction, actorUserId, templateId, template.version),
   );
 }
 
@@ -1748,9 +1630,7 @@ async function publishDocumentTemplateInTransaction(
     )
     .for("update");
   const isDefault =
-    current.isDefault ||
-    defaults.some(({ id }) => id === templateId) ||
-    defaults.length === 0;
+    current.isDefault || defaults.some(({ id }) => id === templateId) || defaults.length === 0;
   const [saved] = await transaction
     .update(invoiceTemplatesTable)
     .set({ status: "published", isDefault, updatedAt: new Date() })
@@ -1767,24 +1647,13 @@ export async function updateAndPublishDocumentTemplate(
   templateId: string,
   input: Partial<DocumentTemplateContent>,
 ): Promise<TemplateRow> {
-  const updated = await updateDocumentTemplate(
-    actorUserId,
-    templateId,
-    input,
-  );
-  const template = templateValidationError(
-    storedTemplateInput({ ...updated, id: templateId }),
-  );
+  const updated = await updateDocumentTemplate(actorUserId, templateId, input);
+  const template = templateValidationError(storedTemplateInput({ ...updated, id: templateId }));
   if (template.layoutFamily === "advanced") {
     await renderAdvancedTemplateForPublication(template);
   }
   return db.transaction((transaction) =>
-    publishDocumentTemplateInTransaction(
-      transaction,
-      actorUserId,
-      templateId,
-      updated.version,
-    ),
+    publishDocumentTemplateInTransaction(transaction, actorUserId, templateId, updated.version),
   );
 }
 
@@ -1852,7 +1721,6 @@ export const duplicateInvoiceTemplate = duplicateDocumentTemplate;
 export const importInvoiceTemplate = importDocumentTemplate;
 export const updateInvoiceTemplate = updateDocumentTemplate;
 export const publishInvoiceTemplate = publishDocumentTemplate;
-export const updateAndPublishInvoiceTemplate =
-  updateAndPublishDocumentTemplate;
+export const updateAndPublishInvoiceTemplate = updateAndPublishDocumentTemplate;
 export const archiveInvoiceTemplate = archiveDocumentTemplate;
 export const setDefaultInvoiceTemplate = setDefaultDocumentTemplate;

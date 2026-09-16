@@ -9,10 +9,18 @@ import { transformSync } from "next/dist/build/swc/index.js";
 const hooks = registerHooks({
   load(url, context, nextLoad) {
     if (!url.endsWith(".tsx")) return nextLoad(url, context);
-    return { format: "module", shortCircuit: true, source: transformSync(
-      readFileSync(new URL(url), "utf8"),
-      { filename: new URL(url).pathname, jsc: { parser: { syntax: "typescript", tsx: true }, transform: { react: { runtime: "automatic" } } }, module: { type: "es6" } },
-    ).code };
+    return {
+      format: "module",
+      shortCircuit: true,
+      source: transformSync(readFileSync(new URL(url), "utf8"), {
+        filename: new URL(url).pathname,
+        jsc: {
+          parser: { syntax: "typescript", tsx: true },
+          transform: { react: { runtime: "automatic" } },
+        },
+        module: { type: "es6" },
+      }).code,
+    };
   },
 });
 const { Button } = await import("../packages/ui/src/components/button.tsx");
@@ -26,7 +34,13 @@ test("loading buttons remain labelled and disable activation until ready", () =>
   assert.match(loading, /Save/);
   const ready = renderToStaticMarkup(createElement(Button, null, "Save"));
   assert.doesNotMatch(ready, /disabled=|aria-busy="true"|<svg/);
-  const link = renderToStaticMarkup(createElement(Button, { asChild: true, loading: true }, createElement("a", { href: "/admin" }, "Open")));
+  const link = renderToStaticMarkup(
+    createElement(
+      Button,
+      { asChild: true, loading: true },
+      createElement("a", { href: "/admin" }, "Open"),
+    ),
+  );
   assert.match(link, /<a[^>]*inert=""/);
   assert.match(link, /aria-disabled="true"/);
   assert.match(link, /Open<\/a>/);

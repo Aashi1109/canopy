@@ -15,8 +15,7 @@ type JsonTransformError = {
 };
 
 export type JsonTransformResult =
-  | { ok: true; output: string; value: unknown }
-  | { ok: false; error: JsonTransformError };
+  { ok: true; output: string; value: unknown } | { ok: false; error: JsonTransformError };
 
 export type JsonRepairResult =
   | { ok: true; output: string; value: unknown; repaired: boolean }
@@ -97,13 +96,8 @@ export function transformJson(
 
     return { ok: true, output, value };
   } catch (error) {
-    const location = getErrorLocation(
-      error instanceof Error ? error.message : "",
-      input,
-    );
-    const near = location
-      ? ` near line ${location.line}, column ${location.column}`
-      : "";
+    const location = getErrorLocation(error instanceof Error ? error.message : "", input);
+    const near = location ? ` near line ${location.line}, column ${location.column}` : "";
 
     return {
       ok: false,
@@ -122,17 +116,12 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-export function repairMissingPropertyValues(
-  input: string,
-): { input: string; repaired: boolean } {
+export function repairMissingPropertyValues(input: string): { input: string; repaired: boolean } {
   let repaired = false;
-  const nextInput = input.replace(
-    /("(?:\\.|[^"\\])*")\s*:\s*(?=[,}])/g,
-    (match, key: string) => {
-      repaired = true;
-      return `${key}:"${MISSING_VALUE}"`;
-    },
-  );
+  const nextInput = input.replace(/("(?:\\.|[^"\\])*")\s*:\s*(?=[,}])/g, (match, key: string) => {
+    repaired = true;
+    return `${key}:"${MISSING_VALUE}"`;
+  });
   return { input: nextInput, repaired };
 }
 
@@ -389,10 +378,12 @@ export function getJsonNodeMetadata(
         value: previewJsonNodeValue(item),
       }))
     : value !== null && typeof value === "object"
-      ? Object.entries(value).slice(0, limit).map(([key, item]) => ({
-          key,
-          value: previewJsonNodeValue(item),
-        }))
+      ? Object.entries(value)
+          .slice(0, limit)
+          .map(([key, item]) => ({
+            key,
+            value: previewJsonNodeValue(item),
+          }))
       : [{ key: "value", value: previewJsonNodeValue(value) }];
 
   return {
@@ -407,4 +398,3 @@ export function getJsonNodeMetadata(
           : typeof value,
   };
 }
-

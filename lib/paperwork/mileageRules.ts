@@ -39,10 +39,7 @@ export function getMileageRate(
   tripDate: string,
   customRate: number,
 ): number {
-  const schedule =
-    IRS_MILEAGE_RATE_SCHEDULE[
-      taxYear as keyof typeof IRS_MILEAGE_RATE_SCHEDULE
-    ];
+  const schedule = IRS_MILEAGE_RATE_SCHEDULE[taxYear as keyof typeof IRS_MILEAGE_RATE_SCHEDULE];
   if (!schedule) {
     throw new Error(`IRS mileage rules update required for ${taxYear}.`);
   }
@@ -69,12 +66,7 @@ export function calculateMileageSummary<TTrip extends MileageRuleTrip>(
   const errors: string[] = [];
   const trips = draft.trips.map((trip) => {
     try {
-      const rate = getMileageRate(
-        draft.rateMode,
-        draft.taxYear,
-        trip.date,
-        draft.customRate,
-      );
+      const rate = getMileageRate(draft.rateMode, draft.taxYear, trip.date, draft.customRate);
       const mileageAmount = money(Number(trip.miles || 0) * rate);
       const parking = Number(trip.parking || 0);
       const tolls = Number(trip.tolls || 0);

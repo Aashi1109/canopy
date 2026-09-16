@@ -4,15 +4,7 @@ export default {
   toolId: "devtools.meta-tag-generator",
   app: "devtools",
   category: "developer-generators",
-  keywords: [
-    "meta tags",
-    "seo",
-    "open graph",
-    "og",
-    "canonical",
-    "description",
-    "head",
-  ],
+  keywords: ["meta tags", "seo", "open graph", "og", "canonical", "description", "head"],
   name: "Meta Tag Generator",
   description: "Generate common search and social meta tags.",
   input: {

@@ -1,9 +1,4 @@
-import {
-  type Access,
-  type Role,
-  hasPermission,
-  mergeRoleAccess,
-} from "@smarttools/authorization";
+import { type Access, type Role, hasPermission, mergeRoleAccess } from "@smarttools/authorization";
 import { Cache } from "@smarttools/cache";
 import {
   assertDatabaseConfigured,
@@ -58,10 +53,7 @@ export async function getManagedTools(
   manifest: readonly ToolManifestEntry[],
 ): Promise<ResolvedTool[]> {
   if (!isDatabaseConfigured()) return mergeToolManifest([], manifest);
-  return mergeToolManifest(
-    await db.select().from(managedToolsTable),
-    manifest,
-  );
+  return mergeToolManifest(await db.select().from(managedToolsTable), manifest);
 }
 
 export async function getAvailableTools(
@@ -84,18 +76,13 @@ export async function getFeatures(
 ): Promise<ResolvedFeature[]> {
   try {
     assertDatabaseConfigured();
-    return mergeFeatureOverrides(
-      manifest,
-      await db.select().from(featureOverridesTable),
-    );
+    return mergeFeatureOverrides(manifest, await db.select().from(featureOverridesTable));
   } catch {
     return mergeFeatureOverrides(manifest);
   }
 }
 
-function mapTemplate(
-  row: typeof invoiceTemplatesTable.$inferSelect,
-): DocumentTemplate | undefined {
+function mapTemplate(row: typeof invoiceTemplatesTable.$inferSelect): DocumentTemplate | undefined {
   try {
     const template = {
       ...row,
@@ -111,8 +98,7 @@ function mapTemplate(
         !validateAdvancedTemplateConfig(
           parsed.config,
           parsed.documentType,
-          (parsed.documentType === "invoice" ||
-            parsed.documentType === "receipt") &&
+          (parsed.documentType === "invoice" || parsed.documentType === "receipt") &&
             row.config &&
             typeof row.config === "object" &&
             !Array.isArray(row.config) &&
@@ -150,9 +136,7 @@ export async function getPublishedTemplates(
       .where(
         and(
           eq(invoiceTemplatesTable.status, "published"),
-          documentType
-            ? eq(invoiceTemplatesTable.documentType, documentType)
-            : undefined,
+          documentType ? eq(invoiceTemplatesTable.documentType, documentType) : undefined,
         ),
       );
     return rows.flatMap((row) => mapTemplate(row) ?? []);
@@ -179,43 +163,47 @@ export async function getUserAuthorization(userId: string): Promise<{
     throw new AuthorizationError("Access denied");
   }
 
-  const roles = await userRolesCache.remember(`${userId}:${user.updatedAt.toISOString()}`, async () => {
-    const rows = await db
-      .select({
-        status: authUser.status,
-        roleId: rolesTable.id,
-        roleName: rolesTable.name,
-        roleDescription: rolesTable.description,
-        roleAccess: rolesTable.access,
-        roleIsSystem: rolesTable.isSystem,
-      })
-      .from(authUser)
-      .leftJoin(userRolesTable, eq(userRolesTable.userId, authUser.id))
-      .leftJoin(rolesTable, eq(rolesTable.id, userRolesTable.roleId))
-      .where(eq(authUser.id, userId));
+  const roles = await userRolesCache.remember(
+    `${userId}:${user.updatedAt.toISOString()}`,
+    async () => {
+      const rows = await db
+        .select({
+          status: authUser.status,
+          roleId: rolesTable.id,
+          roleName: rolesTable.name,
+          roleDescription: rolesTable.description,
+          roleAccess: rolesTable.access,
+          roleIsSystem: rolesTable.isSystem,
+        })
+        .from(authUser)
+        .leftJoin(userRolesTable, eq(userRolesTable.userId, authUser.id))
+        .leftJoin(rolesTable, eq(rolesTable.id, userRolesTable.roleId))
+        .where(eq(authUser.id, userId));
 
-    if (!rows.length || rows[0].status !== "active") {
-      throw new AuthorizationError("Access denied");
-    }
+      if (!rows.length || rows[0].status !== "active") {
+        throw new AuthorizationError("Access denied");
+      }
 
-    return rows.flatMap((row) =>
-      row.roleId &&
-      row.roleName &&
-      row.roleDescription &&
-      row.roleAccess &&
-      row.roleIsSystem !== null
-        ? [
-            {
-              id: row.roleId,
-              name: row.roleName,
-              description: row.roleDescription,
-              access: row.roleAccess,
-              isSystem: row.roleIsSystem,
-            },
-          ]
-        : [],
-    );
-  }, 24 * 60 * 60);
+      return rows.flatMap((row) =>
+        row.roleId &&
+        row.roleName &&
+        row.roleDescription &&
+        row.roleAccess &&
+        row.roleIsSystem !== null
+          ? [
+              {
+                id: row.roleId,
+                name: row.roleName,
+                description: row.roleDescription,
+                access: row.roleAccess,
+                isSystem: row.roleIsSystem,
+              },
+            ]
+          : [],
+      );
+    },
+    24 * 60 * 60,
+  );
 
   return { roles, access: mergeRoleAccess(roles) };
 }

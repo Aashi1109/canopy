@@ -89,17 +89,18 @@ function unsupportedFlags(command: string): string[] {
 function curlAsAxios(command: string, settings: Settings): string {
   const request = parseCurl(command);
   const config = requestConfig(request);
-  const call = settings.requestStyle === "alias"
-    ? aliasCall(request, config)
-    : `${settings.requestStyle === "request" ? "axios.request" : "axios"}(${JSON.stringify(config, null, 2)})`;
-  const moduleLine = settings.moduleFormat === "esm"
-    ? 'import axios from "axios";\n\n'
-    : settings.moduleFormat === "commonjs"
-      ? 'const axios = require("axios");\n\n'
-      : "";
-  const responseType = settings.outputLanguage === "typescript"
-    ? ': import("axios").AxiosResponse<unknown>'
-    : "";
+  const call =
+    settings.requestStyle === "alias"
+      ? aliasCall(request, config)
+      : `${settings.requestStyle === "request" ? "axios.request" : "axios"}(${JSON.stringify(config, null, 2)})`;
+  const moduleLine =
+    settings.moduleFormat === "esm"
+      ? 'import axios from "axios";\n\n'
+      : settings.moduleFormat === "commonjs"
+        ? 'const axios = require("axios");\n\n'
+        : "";
+  const responseType =
+    settings.outputLanguage === "typescript" ? ': import("axios").AxiosResponse<unknown>' : "";
   const statement = `const { data }${responseType} = await ${call};`;
   return settings.moduleFormat === "commonjs"
     ? `${moduleLine}(async () => {\n  ${statement.replaceAll("\n", "\n  ")}\n})();`
@@ -132,7 +133,14 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         : "The common request was converted. Review credentials and response handling before using it.",
     },
     ...(flags.length
-      ? { issues: [{ message: `Unsupported cURL flags were ignored: ${flags.join(", ")}.`, target: "input" as const }] }
+      ? {
+          issues: [
+            {
+              message: `Unsupported cURL flags were ignored: ${flags.join(", ")}.`,
+              target: "input" as const,
+            },
+          ],
+        }
       : {}),
   };
 };

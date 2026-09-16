@@ -4,15 +4,7 @@ export default {
   toolId: "devtools.markdown-previewer",
   app: "devtools",
   category: "web-markup-tools",
-  keywords: [
-    "markdown",
-    "preview",
-    "md",
-    "html",
-    "readme",
-    "render",
-    "commonmark",
-  ],
+  keywords: ["markdown", "preview", "md", "html", "readme", "render", "commonmark"],
   name: "Markdown Previewer",
   description: "Render Markdown for a sandboxed preview.",
   layout: "side-by-side",
@@ -86,8 +78,6 @@ export default {
         a: "Yes. The rendered HTML is what the copy and download actions produce.",
       },
     ],
-    examples: [
-      { label: "Headings and a list", text: "# Preview\n\n- Fast\n- Private" },
-    ],
+    examples: [{ label: "Headings and a list", text: "# Preview\n\n- Fast\n- Private" }],
   },
 } as const satisfies ToolSpec;

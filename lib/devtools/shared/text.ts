@@ -11,11 +11,13 @@ export function escapeHtml(value: unknown): string {
 }
 
 export function words(value: string): string[] {
-  return value
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/([a-z\d])([A-Z])/g, "$1 $2")
-    .match(/[\p{L}\p{N}]+/gu) ?? [];
+  return (
+    value
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/([a-z\d])([A-Z])/g, "$1 $2")
+      .match(/[\p{L}\p{N}]+/gu) ?? []
+  );
 }
 
 export function textMetrics(
@@ -40,12 +42,13 @@ export function textMetrics(
     if (options.excludeEmails && /^[^\s@]+@[^\s@]+\.[^\s@]+[.!?,;:]?$/u.test(token)) return false;
     return true;
   });
-  const wordCount = options.countHyphenated === false
-    ? filteredTokens.reduce(
-        (total, token) => total + token.split(/[-‐‑‒–—]+/u).filter(Boolean).length,
-        0,
-      )
-    : filteredTokens.length;
+  const wordCount =
+    options.countHyphenated === false
+      ? filteredTokens.reduce(
+          (total, token) => total + token.split(/[-‐‑‒–—]+/u).filter(Boolean).length,
+          0,
+        )
+      : filteredTokens.length;
   return {
     words: wordCount,
     characters: Array.from(value).length,

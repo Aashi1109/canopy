@@ -100,9 +100,7 @@ export const invoiceTemplatesTable = pgTable(
       "invoice_templates_default_published_check",
       sql`${table.isDefault} = false OR ${table.status} = 'published'`,
     ),
-    uniqueIndex(
-      "invoice_templates_published_default_by_document_type_unique",
-    )
+    uniqueIndex("invoice_templates_published_default_by_document_type_unique")
       .on(table.documentType)
       .where(sql`${table.isDefault} = true AND ${table.status} = 'published'`),
     index("invoice_templates_published_document_type_updated_idx")
@@ -166,10 +164,7 @@ export const authAccount = pgTable(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => [
-    unique("auth_accounts_provider_account_unique").on(
-      table.providerId,
-      table.accountId,
-    ),
+    unique("auth_accounts_provider_account_unique").on(table.providerId, table.accountId),
     index("auth_accounts_user_idx").on(table.userId),
   ],
 );
@@ -246,9 +241,7 @@ export const toolContentTable = pgTable("tool_content", {
   contentDoc: jsonb("content_doc").$type<unknown>(),
   docVersion: integer("doc_version").default(1).notNull(),
   publishedAt: timestamp("published_at", { withTimezone: true }),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const toolIconsTable = pgTable("tool_icons", {
@@ -260,9 +253,7 @@ export const toolIconsTable = pgTable("tool_icons", {
   format: text("format").$type<"png" | "svg">().notNull(),
   width: integer("width").notNull(),
   height: integer("height").notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const featureOverridesTable = pgTable(
@@ -309,7 +300,10 @@ export const blogCategoriesTable = pgTable(
     uniqueIndex("blog_categories_slug_unique").on(table.slug),
     uniqueIndex("blog_categories_name_unique").on(sql`lower(${table.name})`),
     check("blog_categories_name_check", sql`length(trim(${table.name})) BETWEEN 1 AND 100`),
-    check("blog_categories_slug_check", sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(${table.slug}) <= 160`),
+    check(
+      "blog_categories_slug_check",
+      sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(${table.slug}) <= 160`,
+    ),
   ],
 );
 
@@ -328,7 +322,10 @@ export const blogTagsTable = pgTable(
     uniqueIndex("blog_tags_slug_unique").on(table.slug),
     uniqueIndex("blog_tags_name_unique").on(sql`lower(${table.name})`),
     check("blog_tags_name_check", sql`length(trim(${table.name})) BETWEEN 1 AND 100`),
-    check("blog_tags_slug_check", sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(${table.slug}) <= 160`),
+    check(
+      "blog_tags_slug_check",
+      sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(${table.slug}) <= 160`,
+    ),
   ],
 );
 
@@ -344,7 +341,9 @@ export const blogPostsTable = pgTable(
     version: integer("version").default(1).notNull(),
     revisionSequence: integer("revision_sequence").default(0).notNull(),
     draftUpdatedAt: timestamp("draft_updated_at", { withTimezone: true }).defaultNow().notNull(),
-    draftUpdatedBy: text("draft_updated_by").references(() => authUser.id, { onDelete: "set null" }),
+    draftUpdatedBy: text("draft_updated_by").references(() => authUser.id, {
+      onDelete: "set null",
+    }),
     lastCheckpointAt: timestamp("last_checkpoint_at", { withTimezone: true }),
     publishedRevisionId: text("published_revision_id"),
     firstPublishedAt: timestamp("first_published_at", { withTimezone: true }),
@@ -358,11 +357,20 @@ export const blogPostsTable = pgTable(
   },
   (table): PgTableExtraConfigValue[] => [
     uniqueIndex("blog_posts_slug_unique").on(table.slug),
-    check("blog_posts_slug_check", sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(${table.slug}) <= 160`),
+    check(
+      "blog_posts_slug_check",
+      sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(${table.slug}) <= 160`,
+    ),
     check("blog_posts_document_check", sql`jsonb_typeof(${table.draftDocument}) = 'object'`),
     check("blog_posts_version_check", sql`${table.version} > 0 AND ${table.revisionSequence} >= 0`),
-    check("blog_posts_trash_check", sql`${table.trashedAt} IS NULL OR ${table.publishedRevisionId} IS NULL`),
-    check("blog_posts_publication_check", sql`${table.publishedRevisionId} IS NULL OR (${table.publishedCategoryId} IS NOT NULL AND ${table.firstPublishedAt} IS NOT NULL AND ${table.publishedUpdatedAt} IS NOT NULL)`),
+    check(
+      "blog_posts_trash_check",
+      sql`${table.trashedAt} IS NULL OR ${table.publishedRevisionId} IS NULL`,
+    ),
+    check(
+      "blog_posts_publication_check",
+      sql`${table.publishedRevisionId} IS NULL OR (${table.publishedCategoryId} IS NOT NULL AND ${table.firstPublishedAt} IS NOT NULL AND ${table.publishedUpdatedAt} IS NOT NULL)`,
+    ),
     foreignKey({
       name: "blog_posts_published_revision_fk",
       columns: [table.id, table.publishedRevisionId],
@@ -378,9 +386,11 @@ export const blogPostsTable = pgTable(
       .using("gin", table.publishedSearch)
       .where(sql`${table.publishedRevisionId} IS NOT NULL AND ${table.trashedAt} IS NULL`),
     index("blog_posts_admin_idx")
-      .on(table.updatedAt.desc(), table.id.desc()).where(sql`${table.trashedAt} IS NULL`),
+      .on(table.updatedAt.desc(), table.id.desc())
+      .where(sql`${table.trashedAt} IS NULL`),
     index("blog_posts_trash_idx")
-      .on(table.trashedAt.desc(), table.id.desc()).where(sql`${table.trashedAt} IS NOT NULL`),
+      .on(table.trashedAt.desc(), table.id.desc())
+      .where(sql`${table.trashedAt} IS NOT NULL`),
   ],
 );
 
@@ -388,12 +398,22 @@ export const blogRevisionsTable = pgTable(
   "blog_revisions",
   {
     id: text("id").primaryKey(),
-    postId: text("post_id").notNull().references((): AnyPgColumn => blogPostsTable.id),
+    postId: text("post_id")
+      .notNull()
+      .references((): AnyPgColumn => blogPostsTable.id),
     revisionNumber: integer("revision_number").notNull(),
     document: jsonb("document").$type<unknown>().notNull(),
     contentHash: text("content_hash").notNull(),
     reason: text("reason")
-      .$type<"create" | "autosave" | "manual_save" | "publish" | "schedule" | "restore_backup" | "restore">()
+      .$type<
+        | "create"
+        | "autosave"
+        | "manual_save"
+        | "publish"
+        | "schedule"
+        | "restore_backup"
+        | "restore"
+      >()
       .notNull(),
     sourceRevisionId: text("source_revision_id"),
     createdBy: text("created_by").references(() => authUser.id, { onDelete: "set null" }),
@@ -404,7 +424,10 @@ export const blogRevisionsTable = pgTable(
     unique("blog_revisions_post_id_unique").on(table.postId, table.id),
     check("blog_revisions_number_check", sql`${table.revisionNumber} > 0`),
     check("blog_revisions_document_check", sql`jsonb_typeof(${table.document}) = 'object'`),
-    check("blog_revisions_reason_check", sql`${table.reason} IN ('create', 'autosave', 'manual_save', 'publish', 'schedule', 'restore_backup', 'restore')`),
+    check(
+      "blog_revisions_reason_check",
+      sql`${table.reason} IN ('create', 'autosave', 'manual_save', 'publish', 'schedule', 'restore_backup', 'restore')`,
+    ),
     foreignKey({
       name: "blog_revisions_source_revision_fk",
       columns: [table.postId, table.sourceRevisionId],
@@ -416,8 +439,12 @@ export const blogRevisionsTable = pgTable(
 export const blogPublishedPostTagsTable = pgTable(
   "blog_published_post_tags",
   {
-    postId: text("post_id").notNull().references(() => blogPostsTable.id),
-    tagId: text("tag_id").notNull().references(() => blogTagsTable.id),
+    postId: text("post_id")
+      .notNull()
+      .references(() => blogPostsTable.id),
+    tagId: text("tag_id")
+      .notNull()
+      .references(() => blogTagsTable.id),
   },
   (table) => [
     primaryKey({ columns: [table.postId, table.tagId] }),
@@ -429,7 +456,9 @@ export const blogPostSchedulesTable = pgTable(
   "blog_post_schedules",
   {
     id: text("id").primaryKey(),
-    postId: text("post_id").notNull().references(() => blogPostsTable.id),
+    postId: text("post_id")
+      .notNull()
+      .references(() => blogPostsTable.id),
     revisionId: text("revision_id").notNull(),
     scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
     scheduledBy: text("scheduled_by").references(() => authUser.id, { onDelete: "set null" }),

@@ -7,16 +7,11 @@ import {
   TrendingUp,
   Upload,
   X,
-} from "lucide-react"
-import type {
-  ButtonHTMLAttributes,
-  ComponentProps,
-  HTMLAttributes,
-  ReactNode,
-} from "react"
+} from "lucide-react";
+import type { ButtonHTMLAttributes, ComponentProps, HTMLAttributes, ReactNode } from "react";
 
-import { Button } from "#components/button"
-import { cn } from "#lib/utils"
+import { Button } from "#components/button";
+import { cn } from "#lib/utils";
 
 function IconTile({
   children,
@@ -25,15 +20,15 @@ function IconTile({
   tone = "accent",
   ...props
 }: HTMLAttributes<HTMLSpanElement> & {
-  size?: "sm" | "default" | "lg"
-  tone?: "accent" | "contrast" | "success" | "muted"
+  size?: "sm" | "default" | "lg";
+  tone?: "accent" | "contrast" | "success" | "muted";
 }) {
   const tones = {
     accent: "bg-accent text-primary",
     contrast: "bg-foreground text-background",
     success: "bg-success-soft text-success",
     muted: "bg-muted text-muted-foreground",
-  }
+  };
 
   return (
     <span
@@ -44,13 +39,13 @@ function IconTile({
         "data-[size=sm]:size-10 data-[size=sm]:[&_svg]:size-5",
         "data-[size=lg]:size-14 data-[size=lg]:rounded-xl data-[size=lg]:[&_svg]:size-[26px]",
         tones[tone],
-        className
+        className,
       )}
       {...props}
     >
       {children}
     </span>
-  )
+  );
 }
 
 function MetricCard({
@@ -60,17 +55,14 @@ function MetricCard({
   value,
   ...props
 }: HTMLAttributes<HTMLDivElement> & {
-  delta?: ReactNode
-  label: ReactNode
-  value: ReactNode
+  delta?: ReactNode;
+  label: ReactNode;
+  value: ReactNode;
 }) {
   return (
     <div
       data-slot="metric-card"
-      className={cn(
-        "flex flex-col gap-1.5 rounded-xl border border-border bg-card p-5",
-        className
-      )}
+      className={cn("flex flex-col gap-1.5 rounded-xl border border-border bg-card p-5", className)}
       {...props}
     >
       <Caption className="text-muted-foreground">{label}</Caption>
@@ -82,7 +74,7 @@ function MetricCard({
         </Caption>
       ) : null}
     </div>
-  )
+  );
 }
 
 function SidebarNavItem({
@@ -92,8 +84,8 @@ function SidebarNavItem({
   icon,
   ...props
 }: ComponentProps<"a"> & {
-  active?: boolean
-  icon?: ReactNode
+  active?: boolean;
+  icon?: ReactNode;
 }) {
   return (
     <a
@@ -102,14 +94,14 @@ function SidebarNavItem({
       data-slot="sidebar-nav-item"
       className={cn(
         "flex min-h-10 items-center gap-3 rounded-lg px-3 py-[11px] font-sans text-sm font-medium text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[active]:bg-accent data-[active]:font-semibold data-[active]:text-primary [&_svg]:size-[18px] [&_svg]:shrink-0 [&_svg]:text-muted-foreground data-[active]:[&_svg]:text-primary",
-        className
+        className,
       )}
       {...props}
     >
       {icon}
       {children}
     </a>
-  )
+  );
 }
 
 function ToolPageIntro({
@@ -120,34 +112,28 @@ function ToolPageIntro({
   title,
   ...props
 }: HTMLAttributes<HTMLElement> & {
-  badge?: ReactNode
-  category: ReactNode
-  description: ReactNode
-  title: ReactNode
+  badge?: ReactNode;
+  category: ReactNode;
+  description: ReactNode;
+  title: ReactNode;
 }) {
   return (
     <header
       data-slot="tool-page-intro"
       className={cn(
         "flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between",
-        className
+        className,
       )}
       {...props}
     >
       <div className="flex min-w-0 max-w-[880px] flex-1 flex-col gap-1.5">
-        <Overline className="text-primary">
-          {category}
-        </Overline>
-        <H1 className="text-foreground">
-          {title}
-        </H1>
-        <Muted className="text-muted-foreground">
-          {description}
-        </Muted>
+        <Overline className="text-primary">{category}</Overline>
+        <H1 className="text-foreground">{title}</H1>
+        <Muted className="text-muted-foreground">{description}</Muted>
       </div>
       {badge}
     </header>
-  )
+  );
 }
 
 function FileUploadZone({
@@ -159,28 +145,38 @@ function FileUploadZone({
   title,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
-  description?: ReactNode
-  hint?: ReactNode
-  icon?: ReactNode
-  title: ReactNode
+  description?: ReactNode;
+  hint?: ReactNode;
+  icon?: ReactNode;
+  title: ReactNode;
 }) {
   return (
     <button
       data-slot="file-upload-zone"
       className={cn(
         "flex min-h-60 w-full min-w-0 flex-col items-center justify-center gap-3 rounded-xl border border-primary bg-accent p-6 text-center outline-none transition-[background-color,box-shadow] hover:bg-primary/15 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-70",
-        className
+        className,
       )}
       type="button"
       {...props}
     >
       <span className="text-primary [&_svg]:size-7">{icon ?? <Upload aria-hidden="true" />}</span>
-      <Strong className="w-full wrap-break-word font-heading text-heading-4 text-foreground">{title}</Strong>
-      {description ? <Caption className="w-full wrap-break-word font-semibold text-accent-text">{description}</Caption> : null}
-      {hint ? <span className="w-full wrap-break-word font-sans text-sm text-muted-foreground">{hint}</span> : null}
+      <Strong className="w-full wrap-break-word font-heading text-heading-4 text-foreground">
+        {title}
+      </Strong>
+      {description ? (
+        <Caption className="w-full wrap-break-word font-semibold text-accent-text">
+          {description}
+        </Caption>
+      ) : null}
+      {hint ? (
+        <span className="w-full wrap-break-word font-sans text-sm text-muted-foreground">
+          {hint}
+        </span>
+      ) : null}
       {children}
     </button>
-  )
+  );
 }
 
 function FileQueueItem({
@@ -191,18 +187,15 @@ function FileQueueItem({
   name,
   ...props
 }: HTMLAttributes<HTMLDivElement> & {
-  action?: ReactNode
-  icon?: ReactNode
-  metadata: ReactNode
-  name: ReactNode
+  action?: ReactNode;
+  icon?: ReactNode;
+  metadata: ReactNode;
+  name: ReactNode;
 }) {
   return (
     <div
       data-slot="file-queue-item"
-      className={cn(
-        "flex items-center gap-3 border-b border-border bg-card py-3",
-        className
-      )}
+      className={cn("flex items-center gap-3 border-b border-border bg-card py-3", className)}
       {...props}
     >
       <IconTile size="sm">{icon}</IconTile>
@@ -212,7 +205,7 @@ function FileQueueItem({
       </div>
       {action}
     </div>
-  )
+  );
 }
 
 function ProcessingStatus({
@@ -223,10 +216,10 @@ function ProcessingStatus({
   title,
   ...props
 }: HTMLAttributes<HTMLDivElement> & {
-  action?: ReactNode
-  detail: ReactNode
-  progress?: number
-  title: ReactNode
+  action?: ReactNode;
+  detail: ReactNode;
+  progress?: number;
+  title: ReactNode;
 }) {
   return (
     <div
@@ -234,7 +227,7 @@ function ProcessingStatus({
       data-slot="processing-status"
       className={cn(
         "flex items-center gap-4 rounded-xl bg-surface-ink px-[18px] py-4 text-on-ink",
-        className
+        className,
       )}
       {...props}
     >
@@ -253,7 +246,7 @@ function ProcessingStatus({
       </div>
       {action}
     </div>
-  )
+  );
 }
 
 function DownloadResult({
@@ -264,28 +257,32 @@ function DownloadResult({
   variant = "card",
   ...props
 }: HTMLAttributes<HTMLDivElement> & {
-  action?: ReactNode
-  metadata: ReactNode
-  title: ReactNode
-  variant?: "card" | "action"
+  action?: ReactNode;
+  metadata: ReactNode;
+  title: ReactNode;
+  variant?: "card" | "action";
 }) {
   return (
     <div
       data-slot="download-result"
       className={cn(
-        variant === "action" ? "grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 border-t border-border pt-4" : "flex items-center gap-3.5 rounded-xl border border-border bg-card p-[18px]",
-        className
+        variant === "action"
+          ? "grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 border-t border-border pt-4"
+          : "flex items-center gap-3.5 rounded-xl border border-border bg-card p-[18px]",
+        className,
       )}
       {...props}
     >
-      <IconTile tone="success"><CircleCheck aria-hidden="true" /></IconTile>
+      <IconTile tone="success">
+        <CircleCheck aria-hidden="true" />
+      </IconTile>
       <div className="min-w-0 flex-1">
         <P className="text-foreground">{title}</P>
         <Muted className="mt-[3px] text-muted-foreground">{metadata}</Muted>
       </div>
       {variant === "action" ? <div className="col-span-2 [&_button]:w-full">{action}</div> : action}
     </div>
-  )
+  );
 }
 
 function ToolOptionsPanel({
@@ -296,9 +293,9 @@ function ToolOptionsPanel({
   variant = "card",
   ...props
 }: HTMLAttributes<HTMLElement> & {
-  action?: ReactNode
-  title?: ReactNode
-  variant?: "card" | "plain"
+  action?: ReactNode;
+  title?: ReactNode;
+  variant?: "card" | "plain";
 }) {
   return (
     <section
@@ -307,7 +304,7 @@ function ToolOptionsPanel({
       className={cn(
         "flex w-full flex-col gap-4",
         variant === "card" && "rounded-xl border border-border bg-card p-[22px]",
-        className
+        className,
       )}
       {...props}
     >
@@ -315,7 +312,7 @@ function ToolOptionsPanel({
       {children}
       {action}
     </section>
-  )
+  );
 }
 
 function HowItWorks({
@@ -323,14 +320,14 @@ function HowItWorks({
   steps,
   ...props
 }: HTMLAttributes<HTMLOListElement> & {
-  steps: readonly { description: ReactNode; title: ReactNode }[]
+  steps: readonly { description: ReactNode; title: ReactNode }[];
 }) {
   return (
     <ol
       data-slot="how-it-works"
       className={cn(
         "grid overflow-hidden rounded-xl border border-border bg-card md:grid-cols-3",
-        className
+        className,
       )}
       {...props}
     >
@@ -349,7 +346,7 @@ function HowItWorks({
         </li>
       ))}
     </ol>
-  )
+  );
 }
 
 function ToolSupportSections({
@@ -359,17 +356,16 @@ function ToolSupportSections({
   source,
   ...props
 }: HTMLAttributes<HTMLDivElement> & {
-  action: string
-  result: string
-  source: string
+  action: string;
+  result: string;
+  source: string;
 }) {
   return (
-    <div
-      data-slot="tool-support-sections"
-      className={cn("mt-6 grid gap-6", className)}
-      {...props}
-    >
-      <div className="flex items-start gap-3 rounded-xl bg-success-soft p-4 text-foreground" role="status">
+    <div data-slot="tool-support-sections" className={cn("mt-6 grid gap-6", className)} {...props}>
+      <div
+        className="flex items-start gap-3 rounded-xl bg-success-soft p-4 text-foreground"
+        role="status"
+      >
         <CircleCheck aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-success" />
         <div>
           <Strong className="">Your data stays on this device</Strong>
@@ -380,13 +376,19 @@ function ToolSupportSections({
       </div>
       <HowItWorks
         steps={[
-          { title: `Add ${source}`, description: `Paste or load the ${source.toLowerCase()} you want to process.` },
+          {
+            title: `Add ${source}`,
+            description: `Paste or load the ${source.toLowerCase()} you want to process.`,
+          },
           { title: action, description: "Review the available options, then run the tool once." },
-          { title: `Use ${result}`, description: `Check the ${result.toLowerCase()}, then copy or download it.` },
+          {
+            title: `Use ${result}`,
+            description: `Check the ${result.toLowerCase()}, then copy or download it.`,
+          },
         ]}
       />
     </div>
-  )
+  );
 }
 
 function CompactAction({
@@ -397,7 +399,10 @@ function CompactAction({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { icon?: ReactNode }) {
   return (
     <Button
-      className={cn("h-8 gap-1.5 rounded-lg px-2.5 [&_svg]:size-3.5 [&_svg]:text-muted-foreground", className)}
+      className={cn(
+        "h-8 gap-1.5 rounded-lg px-2.5 [&_svg]:size-3.5 [&_svg]:text-muted-foreground",
+        className,
+      )}
       size="sm"
       variant="outline"
       {...props}
@@ -405,7 +410,7 @@ function CompactAction({
       {icon}
       {children}
     </Button>
-  )
+  );
 }
 
 function InlineGuidance({
@@ -419,14 +424,14 @@ function InlineGuidance({
       data-slot="inline-guidance"
       className={cn(
         "inline-flex items-center gap-[7px] text-muted-foreground [&_svg]:size-[15px] [&_svg]:text-primary",
-        className
+        className,
       )}
       {...props}
     >
       {icon ?? <Lightbulb aria-hidden="true" />}
       {children}
     </Caption>
-  )
+  );
 }
 
 function RightPanelProcessing({
@@ -437,10 +442,10 @@ function RightPanelProcessing({
   title,
   ...props
 }: HTMLAttributes<HTMLDivElement> & {
-  cancel?: ReactNode
-  detail: ReactNode
-  progress: number
-  title: ReactNode
+  cancel?: ReactNode;
+  detail: ReactNode;
+  progress: number;
+  title: ReactNode;
 }) {
   return (
     <div className={cn("flex w-full flex-col gap-2.5", className)} {...props}>
@@ -452,7 +457,7 @@ function RightPanelProcessing({
       />
       {cancel}
     </div>
-  )
+  );
 }
 
 function RightPanelResult({
@@ -462,9 +467,9 @@ function RightPanelResult({
   title,
   ...props
 }: HTMLAttributes<HTMLDivElement> & {
-  action?: ReactNode
-  metadata: ReactNode
-  title: ReactNode
+  action?: ReactNode;
+  metadata: ReactNode;
+  title: ReactNode;
 }) {
   return (
     <div className={cn("flex w-full flex-col gap-3", className)} {...props}>
@@ -479,7 +484,7 @@ function RightPanelResult({
       </div>
       {action}
     </div>
-  )
+  );
 }
 
 function UniversalProductHeader({
@@ -492,12 +497,12 @@ function UniversalProductHeader({
   title,
   ...props
 }: HTMLAttributes<HTMLElement> & {
-  actions?: ReactNode
-  category: ReactNode
-  description: ReactNode
-  icon: ReactNode
-  navigation?: ReactNode
-  title: ReactNode
+  actions?: ReactNode;
+  category: ReactNode;
+  description: ReactNode;
+  icon: ReactNode;
+  navigation?: ReactNode;
+  title: ReactNode;
 }) {
   return (
     <header
@@ -517,7 +522,10 @@ function UniversalProductHeader({
           <Muted className="mt-1 text-muted-foreground">{description}</Muted>
         </div>
       </div>
-      <div className="flex items-center gap-2">{navigation}{actions}</div>
+      <div className="flex items-center gap-2">
+        {navigation}
+        {actions}
+      </div>
       <div className="w-[270px]">
         <div className="flex items-center gap-2">
           <span className="grid size-6 place-items-center rounded-full bg-primary text-primary-foreground">
@@ -530,7 +538,7 @@ function UniversalProductHeader({
         </Muted>
       </div>
     </header>
-  )
+  );
 }
 
 function InlineProductHeader({
@@ -540,16 +548,16 @@ function InlineProductHeader({
   title,
   ...props
 }: HTMLAttributes<HTMLElement> & {
-  description: ReactNode
-  icon: ReactNode
-  title: ReactNode
+  description: ReactNode;
+  icon: ReactNode;
+  title: ReactNode;
 }) {
   return (
     <header
       data-slot="inline-product-header"
       className={cn(
         "flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-card px-[22px] py-4 shadow-sm",
-        className
+        className,
       )}
       {...props}
     >
@@ -568,14 +576,18 @@ function InlineProductHeader({
         <div className="text-right">
           <div className="flex items-center justify-end gap-[7px]">
             <Sparkles aria-hidden="true" className="size-4 text-primary" />
-            <span className="font-script -rotate-3 text-xl font-semibold text-muted-foreground">by</span>
+            <span className="font-script -rotate-3 text-xl font-semibold text-muted-foreground">
+              by
+            </span>
             <Strong className="text-foreground">SmartTools</Strong>
           </div>
-          <Muted className="mt-1.5 text-muted-foreground">Friendly tools for getting small jobs done.</Muted>
+          <Muted className="mt-1.5 text-muted-foreground">
+            Friendly tools for getting small jobs done.
+          </Muted>
         </div>
       </div>
     </header>
-  )
+  );
 }
 
 function ProductFooter({
@@ -587,14 +599,14 @@ function ProductFooter({
   description,
   ...props
 }: HTMLAttributes<HTMLElement> & {
-  brand: ReactNode
-  brandMark?: ReactNode
+  brand: ReactNode;
+  brandMark?: ReactNode;
   columns: readonly {
-    links: readonly { href: string; label: ReactNode }[]
-    title: ReactNode
-  }[]
-  copyright: ReactNode
-  description: ReactNode
+    links: readonly { href: string; label: ReactNode }[];
+    title: ReactNode;
+  }[];
+  copyright: ReactNode;
+  description: ReactNode;
 }) {
   return (
     <footer
@@ -613,10 +625,15 @@ function ProductFooter({
             </div>
             <P className="text-on-ink-muted">{description}</P>
           </div>
-          <nav aria-label="Footer" className="grid min-w-0 grid-cols-2 gap-8 @min-[640px]/footer:grid-cols-3">
+          <nav
+            aria-label="Footer"
+            className="grid min-w-0 grid-cols-2 gap-8 @min-[640px]/footer:grid-cols-3"
+          >
             {columns.map((column, index) => (
               <div className="flex min-w-0 flex-col gap-3 break-words" key={index}>
-                <Caption className="text-on-ink"><Strong>{column.title}</Strong></Caption>
+                <Caption className="text-on-ink">
+                  <Strong>{column.title}</Strong>
+                </Caption>
                 {column.links.map((link) => (
                   <a
                     className="font-sans text-sm text-on-ink-muted outline-none hover:text-on-ink focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring"
@@ -634,7 +651,7 @@ function ProductFooter({
         <Caption className="text-on-ink-muted">{copyright}</Caption>
       </div>
     </footer>
-  )
+  );
 }
 
 function RemoveFileAction(props: ButtonHTMLAttributes<HTMLButtonElement>) {
@@ -642,7 +659,7 @@ function RemoveFileAction(props: ButtonHTMLAttributes<HTMLButtonElement>) {
     <Button aria-label="Remove file" size="icon-sm" variant="outline" {...props}>
       <X aria-hidden="true" className="text-muted-foreground" />
     </Button>
-  )
+  );
 }
 
 export {
@@ -665,4 +682,4 @@ export {
   ToolPageIntro,
   ToolSupportSections,
   UniversalProductHeader,
-}
+};

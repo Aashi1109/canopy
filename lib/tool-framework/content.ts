@@ -25,9 +25,11 @@ export type { ToolContentRow };
 export function hasDraftToolContent(row: ToolContentRow | null): boolean {
   if (!row || row.publishedAt !== null) return false;
   // Seed rows contain no overrides; unpublished alone does not mean draft.
-  return [row.category, row.seoTitle, row.seoDescription].some((value) => Boolean(value?.trim()))
-    || Boolean(row.keywords?.some((keyword) => keyword.trim()))
-    || row.contentDoc != null;
+  return (
+    [row.category, row.seoTitle, row.seoDescription].some((value) => Boolean(value?.trim())) ||
+    Boolean(row.keywords?.some((keyword) => keyword.trim())) ||
+    row.contentDoc != null
+  );
 }
 
 /** The only `contentDoc` / `docVersion` shape this code understands. */
@@ -95,8 +97,7 @@ function coalesceKeywords(
 }
 
 function coalesceContent(spec: ToolSpec, row: ToolContentRow): ToolContent {
-  if (row.contentDoc === null || row.contentDoc === undefined)
-    return spec.content;
+  if (row.contentDoc === null || row.contentDoc === undefined) return spec.content;
 
   if (row.docVersion !== TOOL_CONTENT_DOC_VERSION) {
     warnOnce(spec.toolId, `unsupported docVersion ${String(row.docVersion)}`);
@@ -124,10 +125,7 @@ function fromSpec(spec: ToolSpec): ResolvedToolContent {
   };
 }
 
-export function resolveContent(
-  spec: ToolSpec,
-  row: ToolContentRow | null,
-): ResolvedToolContent {
+export function resolveContent(spec: ToolSpec, row: ToolContentRow | null): ResolvedToolContent {
   const base = fromSpec(spec);
   if (row === null || row.publishedAt === null) return base;
 
@@ -156,9 +154,6 @@ export function resolveContentMap(
   }
 
   return new Map(
-    specs.map((spec) => [
-      spec.toolId,
-      resolveContent(spec, rowById.get(spec.toolId) ?? null),
-    ]),
+    specs.map((spec) => [spec.toolId, resolveContent(spec, rowById.get(spec.toolId) ?? null)]),
   );
 }

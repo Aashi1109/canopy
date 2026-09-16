@@ -17,5 +17,12 @@ function getPlan(values: WorkspaceProps["settings"], pageCount: number) {
 }
 
 export default function AddPageNumbersWorkspace(props: WorkspaceProps) {
-  return <PdfFileWorkspace {...props} definitionKey="add-page-numbers" optionsTitle="Page number settings" getPlan={getPlan} />;
+  return (
+    <PdfFileWorkspace
+      {...props}
+      definitionKey="add-page-numbers"
+      optionsTitle="Page number settings"
+      getPlan={getPlan}
+    />
+  );
 }

@@ -6,10 +6,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import type {
-  AdvancedDocumentTemplate,
-  DocumentTemplate,
-} from "@smarttools/invoice-templates";
+import type { AdvancedDocumentTemplate, DocumentTemplate } from "@smarttools/invoice-templates";
 import {
   FieldError,
   H3,
@@ -49,12 +46,9 @@ import {
   CheckCircle,
   HelpCircle,
   Info,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
-import {
-  AdvancedDocumentPreview,
-  downloadAdvancedDocumentPdf,
-} from "../AdvancedDocumentPreview";
+import { AdvancedDocumentPreview, downloadAdvancedDocumentPdf } from "../AdvancedDocumentPreview";
 import AdvancedTemplateWorkspace from "../AdvancedTemplateWorkspace";
 import { getReceiptTemplateInputs } from "@/lib/paperwork/advancedTemplateData";
 import { receiptAdapter } from "@/lib/paperwork/documentAdapters";
@@ -65,17 +59,9 @@ import {
   type ReceiptData,
   type ReceiptItem,
 } from "@/lib/paperwork/receiptDocument";
-import {
-  DataBridge,
-  DataBridgeKeys,
-  type ReceiptSummary,
-} from "@/lib/paperwork/shared/dataBridge";
+import { DataBridge, DataBridgeKeys, type ReceiptSummary } from "@/lib/paperwork/shared/dataBridge";
 
-export {
-  calculateReceiptTotals,
-  DEFAULT_RECEIPT_DATA,
-  SAMPLE_RECEIPT_DATA,
-};
+export { calculateReceiptTotals, DEFAULT_RECEIPT_DATA, SAMPLE_RECEIPT_DATA };
 export type { ReceiptData, ReceiptItem };
 
 export default function ReceiptGeneratorPage({
@@ -87,16 +73,16 @@ export default function ReceiptGeneratorPage({
 }) {
   const advancedTemplates = templates.filter(
     (template): template is AdvancedDocumentTemplate =>
-      template.documentType === "receipt" &&
-      template.layoutFamily === "advanced",
+      template.documentType === "receipt" && template.layoutFamily === "advanced",
   );
   const [data, setData] = useState<ReceiptData>(() => {
     return DataBridge.get<ReceiptData>(DataBridgeKeys.RECEIPT_DRAFT, DEFAULT_RECEIPT_DATA);
   });
 
-  const [selectedTheme, setSelectedTheme] = useState<"classic" | "modern" | "compact" | "rent" | "contractor">("classic");
-  const [selectedAdvancedTemplateId, setSelectedAdvancedTemplateId] =
-    useState("");
+  const [selectedTheme, setSelectedTheme] = useState<
+    "classic" | "modern" | "compact" | "rent" | "contractor"
+  >("classic");
+  const [selectedAdvancedTemplateId, setSelectedAdvancedTemplateId] = useState("");
   const [pdfAction, setPdfAction] = useState(false);
   const [pdfError, setPdfError] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -112,9 +98,7 @@ export default function ReceiptGeneratorPage({
 
   useEffect(() => {
     if (!advancedTemplates.length) return;
-    const stored = localStorage.getItem(
-      "paperworkkit.advanced-template.receipt.selected",
-    );
+    const stored = localStorage.getItem("paperworkkit.advanced-template.receipt.selected");
     const selected =
       advancedTemplates.find((template) => template.id === stored) ??
       advancedTemplates.find((template) => template.isDefault) ??
@@ -164,15 +148,21 @@ export default function ReceiptGeneratorPage({
         description: item.description,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        taxable: item.taxable || false
+        taxable: item.taxable || false,
       })),
-      discountType: inv.totalsConfig.discountType === "percent" ? "percent" : inv.totalsConfig.discountType === "fixed" ? "fixed" : "none",
+      discountType:
+        inv.totalsConfig.discountType === "percent"
+          ? "percent"
+          : inv.totalsConfig.discountType === "fixed"
+            ? "fixed"
+            : "none",
       discountValue: inv.totalsConfig.discountValue,
       salesTaxRate: inv.totalsConfig.taxRate,
       salesTaxLabel: inv.totalsConfig.taxLabel || "State Sales Tax",
       additionalFee: inv.totalsConfig.shippingFee || 0,
-      paymentMethod: inv.payment.methods?.[0] ?
-        inv.payment.methods[0].substring(0,1).toUpperCase() + inv.payment.methods[0].substring(1) : "Bank Transfer",
+      paymentMethod: inv.payment.methods?.[0]
+        ? inv.payment.methods[0].substring(0, 1).toUpperCase() + inv.payment.methods[0].substring(1)
+        : "Bank Transfer",
       thankYouNote: "Thank you for your prompt payment of invoice " + inv.invoice.invoiceNumber,
     } as any;
 
@@ -203,11 +193,11 @@ export default function ReceiptGeneratorPage({
       description: "",
       quantity: 1,
       unitPrice: 0,
-      taxable: false
+      taxable: false,
     };
     setData({
       ...data,
-      lineItems: [...data.lineItems, newItem]
+      lineItems: [...data.lineItems, newItem],
     });
     onTrackClick("receipt_item_added");
   };
@@ -216,18 +206,19 @@ export default function ReceiptGeneratorPage({
   const handleRemoveItem = (id: string) => {
     setData({
       ...data,
-      lineItems: data.lineItems.filter(item => item.id !== id)
+      lineItems: data.lineItems.filter((item) => item.id !== id),
     });
     onTrackClick("receipt_item_removed");
   };
 
   // Safe item updates
   const handleItemChange = (id: string, field: keyof ReceiptItem, val: any) => {
-    const updated = data.lineItems.map(item => {
+    const updated = data.lineItems.map((item) => {
       if (item.id === id) {
         return {
           ...item,
-          [field]: field === "quantity" || field === "unitPrice" ? (val === "" ? "" : Number(val)) : val
+          [field]:
+            field === "quantity" || field === "unitPrice" ? (val === "" ? "" : Number(val)) : val,
         };
       }
       return item;
@@ -240,11 +231,7 @@ export default function ReceiptGeneratorPage({
     (template) => template.id === selectedAdvancedTemplateId,
   );
   const advancedTemplateInputs = selectedAdvancedTemplate
-    ? getReceiptTemplateInputs(
-        data,
-        totals,
-        selectedAdvancedTemplate.config.sampleData,
-      )
+    ? getReceiptTemplateInputs(data, totals, selectedAdvancedTemplate.config.sampleData)
     : null;
 
   const validateReceipt = (): boolean => {
@@ -258,11 +245,7 @@ export default function ReceiptGeneratorPage({
 
   // Validate fields prior to print or download
   const handlePrint = async () => {
-    onTrackClick?.(
-      selectedAdvancedTemplate
-        ? "receipt_pdf_downloaded"
-        : "receipt_print_clicked",
-    );
+    onTrackClick?.(selectedAdvancedTemplate ? "receipt_pdf_downloaded" : "receipt_print_clicked");
     if (validateReceipt()) {
       if (!selectedAdvancedTemplate || !advancedTemplateInputs) {
         window.print();
@@ -272,9 +255,7 @@ export default function ReceiptGeneratorPage({
       setPdfAction(true);
       setPdfError("");
       try {
-        const receiptNumber = data.receiptNumber
-          .trim()
-          .replace(/[^a-z0-9_-]+/gi, "-");
+        const receiptNumber = data.receiptNumber.trim().replace(/[^a-z0-9_-]+/gi, "-");
         await downloadAdvancedDocumentPdf({
           template: selectedAdvancedTemplate,
           data: advancedTemplateInputs,
@@ -287,14 +268,19 @@ export default function ReceiptGeneratorPage({
         setPdfAction(false);
       }
     } else {
-      const el = document.getElementById("receipt-mobile-tabs") || document.getElementById("receipt-seo-section");
+      const el =
+        document.getElementById("receipt-mobile-tabs") ||
+        document.getElementById("receipt-seo-section");
       el?.scrollIntoView({ behavior: "smooth" });
     }
   };
 
   const handleCopySummary = () => {
-    const formattedAmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(totals.total);
-    const summary = `Receipt ${data.receiptNumber} confirms payment of ${formattedAmt} from ${data.customer.name || "Customer" } to ${data.business.name || "Seller"} on ${data.receiptDate}. Payment Method: ${data.paymentMethod}.`;
+    const formattedAmt = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(totals.total);
+    const summary = `Receipt ${data.receiptNumber} confirms payment of ${formattedAmt} from ${data.customer.name || "Customer"} to ${data.business.name || "Seller"} on ${data.receiptDate}. Payment Method: ${data.paymentMethod}.`;
     navigator.clipboard.writeText(summary);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -302,8 +288,10 @@ export default function ReceiptGeneratorPage({
   };
 
   return (
-    <div className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="receipt-generator-wrapper">
-
+    <div
+      className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      id="receipt-generator-wrapper"
+    >
       {/* 1. Header Banner */}
       <ToolPageHeader
         actions={
@@ -342,10 +330,7 @@ export default function ReceiptGeneratorPage({
 
       {advancedTemplates.length ? (
         <Card className="mb-6 grid gap-2 p-4 print:hidden">
-          <Label
-            className="text-muted-foreground"
-            htmlFor="receipt-template-mode"
-          >
+          <Label className="text-muted-foreground" htmlFor="receipt-template-mode">
             Receipt template
           </Label>
           <Select
@@ -381,13 +366,18 @@ export default function ReceiptGeneratorPage({
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <Card className="w-full max-w-md space-y-4 rounded-2xl shadow-xl">
             <div className="flex items-center gap-3">
-              <IconTile className="rounded-full border border-blue-100 bg-blue-50 text-blue-600" size="sm">
+              <IconTile
+                className="rounded-full border border-blue-100 bg-blue-50 text-blue-600"
+                size="sm"
+              >
                 <RefreshCw className="w-5 h-5 animate-spin-reverse" />
               </IconTile>
               <H4 className="text-slate-900">Import Active Invoice Draft?</H4>
             </div>
             <P className="text-slate-600">
-              This action transfers your business details, client details, line items, and totals from the active invoice draft into your receipt maker. Any existing unsaved receipt data will be updated.
+              This action transfers your business details, client details, line items, and totals
+              from the active invoice draft into your receipt maker. Any existing unsaved receipt
+              data will be updated.
             </P>
             <div className="flex justify-end gap-2 pt-2">
               <Button
@@ -398,11 +388,7 @@ export default function ReceiptGeneratorPage({
               >
                 Keep Blank
               </Button>
-              <Button
-                onClick={handleImportInvoice}
-                size="sm"
-                type="button"
-              >
+              <Button onClick={handleImportInvoice} size="sm" type="button">
                 Yes, Populate From Invoice
               </Button>
             </div>
@@ -417,7 +403,10 @@ export default function ReceiptGeneratorPage({
         onValueChange={(value) => setActiveTab(value as "edit" | "preview")}
         value={activeTab}
       >
-        <TabsList className="grid w-full grid-cols-2 border border-slate-200/50" variant="segmented">
+        <TabsList
+          className="grid w-full grid-cols-2 border border-slate-200/50"
+          variant="segmented"
+        >
           <TabsTrigger className="whitespace-normal py-2" value="edit">
             1. Edit Fields
           </TabsTrigger>
@@ -428,13 +417,14 @@ export default function ReceiptGeneratorPage({
       </Tabs>
 
       {/* 4. Split Screen Editor & Live Rendered Frame */}
-      <div className={`${selectedAdvancedTemplate ? "hidden" : "grid"} grid-cols-1 lg:grid-cols-12 gap-8 items-start`}>
-
+      <div
+        className={`${selectedAdvancedTemplate ? "hidden" : "grid"} grid-cols-1 lg:grid-cols-12 gap-8 items-start`}
+      >
         {/* Editor Fields Column */}
-        <div className={`lg:col-span-7 space-y-6 ${activeTab === "edit" ? "block" : "hidden md:block"} print:hidden`}>
-
+        <div
+          className={`lg:col-span-7 space-y-6 ${activeTab === "edit" ? "block" : "hidden md:block"} print:hidden`}
+        >
           <Card className="space-y-6 rounded-2xl p-6 shadow-sm">
-
             {/* Business (Seller) Segment */}
             <div>
               <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
@@ -442,9 +432,13 @@ export default function ReceiptGeneratorPage({
               </H3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-name">Company / Seller Name *</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-name">
+                    Company / Seller Name *
+                  </Label>
                   <Input
-                    aria-errormessage={errors["business.name"] ? "receipt-seller-name-error" : undefined}
+                    aria-errormessage={
+                      errors["business.name"] ? "receipt-seller-name-error" : undefined
+                    }
                     type="text"
                     required
                     placeholder="e.g. Blue Ridge Web Studio"
@@ -454,32 +448,50 @@ export default function ReceiptGeneratorPage({
                     value={data.business.name}
                     onChange={(e) => {
                       setData({ ...data, business: { ...data.business, name: e.target.value } });
-                      if (errors["business.name"]) setErrors(prev => ({ ...prev, "business.name": "" }));
+                      if (errors["business.name"])
+                        setErrors((prev) => ({ ...prev, "business.name": "" }));
                     }}
                   />
                   {errors["business.name"] && (
-                    <FieldError className="mt-1 text-destructive" id="receipt-seller-name-error" role="alert">{errors["business.name"]}</FieldError>
+                    <FieldError
+                      className="mt-1 text-destructive"
+                      id="receipt-seller-name-error"
+                      role="alert"
+                    >
+                      {errors["business.name"]}
+                    </FieldError>
                   )}
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-tax-id">Tax ID / EIN (Optional)</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-tax-id">
+                    Tax ID / EIN (Optional)
+                  </Label>
                   <Input
                     type="text"
                     placeholder="e.g. 12-3456789"
                     id="receipt-seller-tax-id"
                     value={data.business.taxId || ""}
-                    onChange={(e) => setData({ ...data, business: { ...data.business, taxId: e.target.value } })}
+                    onChange={(e) =>
+                      setData({ ...data, business: { ...data.business, taxId: e.target.value } })
+                    }
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-address">Address Location</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-address">
+                    Address Location
+                  </Label>
                   <Input
                     type="text"
                     placeholder="e.g. 404 Ridge Point Lane"
                     className="mb-2"
                     id="receipt-seller-address"
                     value={data.business.addressLine1}
-                    onChange={(e) => setData({ ...data, business: { ...data.business, addressLine1: e.target.value } })}
+                    onChange={(e) =>
+                      setData({
+                        ...data,
+                        business: { ...data.business, addressLine1: e.target.value },
+                      })
+                    }
                   />
                   <div className="grid grid-cols-3 gap-2">
                     <Input
@@ -487,42 +499,59 @@ export default function ReceiptGeneratorPage({
                       type="text"
                       placeholder="City"
                       value={data.business.city}
-                      onChange={(e) => setData({ ...data, business: { ...data.business, city: e.target.value } })}
+                      onChange={(e) =>
+                        setData({ ...data, business: { ...data.business, city: e.target.value } })
+                      }
                     />
                     <Input
                       aria-label="Seller state"
                       type="text"
                       placeholder="State"
                       value={data.business.state}
-                      onChange={(e) => setData({ ...data, business: { ...data.business, state: e.target.value } })}
+                      onChange={(e) =>
+                        setData({ ...data, business: { ...data.business, state: e.target.value } })
+                      }
                     />
                     <Input
                       aria-label="Seller ZIP code"
                       type="text"
                       placeholder="Zip Code"
                       value={data.business.zipCode}
-                      onChange={(e) => setData({ ...data, business: { ...data.business, zipCode: e.target.value } })}
+                      onChange={(e) =>
+                        setData({
+                          ...data,
+                          business: { ...data.business, zipCode: e.target.value },
+                        })
+                      }
                     />
                   </div>
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-email">Sender Email</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-email">
+                    Sender Email
+                  </Label>
                   <Input
                     type="email"
                     placeholder="e.g. info@domain.com"
                     id="receipt-seller-email"
                     value={data.business.email}
-                    onChange={(e) => setData({ ...data, business: { ...data.business, email: e.target.value } })}
+                    onChange={(e) =>
+                      setData({ ...data, business: { ...data.business, email: e.target.value } })
+                    }
                   />
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-phone">Support Phone</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-phone">
+                    Support Phone
+                  </Label>
                   <Input
                     type="text"
                     placeholder="+1 (555) 000-0000"
                     id="receipt-seller-phone"
                     value={data.business.phone}
-                    onChange={(e) => setData({ ...data, business: { ...data.business, phone: e.target.value } })}
+                    onChange={(e) =>
+                      setData({ ...data, business: { ...data.business, phone: e.target.value } })
+                    }
                   />
                 </div>
               </div>
@@ -535,9 +564,13 @@ export default function ReceiptGeneratorPage({
               </H3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-client-name">Client Name *</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-client-name">
+                    Client Name *
+                  </Label>
                   <Input
-                    aria-errormessage={errors["customer.name"] ? "receipt-client-name-error" : undefined}
+                    aria-errormessage={
+                      errors["customer.name"] ? "receipt-client-name-error" : undefined
+                    }
                     type="text"
                     required
                     placeholder="e.g. Sarah Jenkins"
@@ -547,32 +580,50 @@ export default function ReceiptGeneratorPage({
                     value={data.customer.name}
                     onChange={(e) => {
                       setData({ ...data, customer: { ...data.customer, name: e.target.value } });
-                      if (errors["customer.name"]) setErrors(prev => ({ ...prev, "customer.name": "" }));
+                      if (errors["customer.name"])
+                        setErrors((prev) => ({ ...prev, "customer.name": "" }));
                     }}
                   />
                   {errors["customer.name"] && (
-                    <FieldError className="mt-1 text-destructive" id="receipt-client-name-error" role="alert">{errors["customer.name"]}</FieldError>
+                    <FieldError
+                      className="mt-1 text-destructive"
+                      id="receipt-client-name-error"
+                      role="alert"
+                    >
+                      {errors["customer.name"]}
+                    </FieldError>
                   )}
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-client-company">Company / Association</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-client-company">
+                    Company / Association
+                  </Label>
                   <Input
                     type="text"
                     placeholder="e.g. Acme Corp"
                     id="receipt-client-company"
                     value={data.customer.company}
-                    onChange={(e) => setData({ ...data, customer: { ...data.customer, company: e.target.value } })}
+                    onChange={(e) =>
+                      setData({ ...data, customer: { ...data.customer, company: e.target.value } })
+                    }
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-client-address">Billing Street Address</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-client-address">
+                    Billing Street Address
+                  </Label>
                   <Input
                     type="text"
                     placeholder="822 Broad Street"
                     className="mb-2"
                     id="receipt-client-address"
                     value={data.customer.addressLine1}
-                    onChange={(e) => setData({ ...data, customer: { ...data.customer, addressLine1: e.target.value } })}
+                    onChange={(e) =>
+                      setData({
+                        ...data,
+                        customer: { ...data.customer, addressLine1: e.target.value },
+                      })
+                    }
                   />
                   <div className="grid grid-cols-3 gap-2">
                     <Input
@@ -580,21 +631,30 @@ export default function ReceiptGeneratorPage({
                       type="text"
                       placeholder="City"
                       value={data.customer.city}
-                      onChange={(e) => setData({ ...data, customer: { ...data.customer, city: e.target.value } })}
+                      onChange={(e) =>
+                        setData({ ...data, customer: { ...data.customer, city: e.target.value } })
+                      }
                     />
                     <Input
                       aria-label="Client state"
                       type="text"
                       placeholder="State"
                       value={data.customer.state}
-                      onChange={(e) => setData({ ...data, customer: { ...data.customer, state: e.target.value } })}
+                      onChange={(e) =>
+                        setData({ ...data, customer: { ...data.customer, state: e.target.value } })
+                      }
                     />
                     <Input
                       aria-label="Client ZIP code"
                       type="text"
                       placeholder="Zip Code"
                       value={data.customer.zipCode}
-                      onChange={(e) => setData({ ...data, customer: { ...data.customer, zipCode: e.target.value } })}
+                      onChange={(e) =>
+                        setData({
+                          ...data,
+                          customer: { ...data.customer, zipCode: e.target.value },
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -608,7 +668,9 @@ export default function ReceiptGeneratorPage({
               </H3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-number">Receipt Number *</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-number">
+                    Receipt Number *
+                  </Label>
                   <Input
                     type="text"
                     id="receipt-number"
@@ -617,7 +679,9 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-date">Receipt Date *</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-date">
+                    Receipt Date *
+                  </Label>
                   <Input
                     type="date"
                     id="receipt-date"
@@ -626,7 +690,9 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-category">Receipt Category</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-category">
+                    Receipt Category
+                  </Label>
                   <Select
                     id="receipt-category"
                     value={data.receiptType}
@@ -641,7 +707,9 @@ export default function ReceiptGeneratorPage({
                   </Select>
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-related-invoice">Related Invoice #</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-related-invoice">
+                    Related Invoice #
+                  </Label>
                   <Input
                     type="text"
                     placeholder="e.g. INV-2026-001"
@@ -651,7 +719,9 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-transaction-id">Transaction/Ref ID</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-transaction-id">
+                    Transaction/Ref ID
+                  </Label>
                   <Input
                     type="text"
                     placeholder="e.g. TXN-99812A"
@@ -661,7 +731,9 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-payment-status">Payment Status</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-payment-status">
+                    Payment Status
+                  </Label>
                   <Select
                     id="receipt-payment-status"
                     value={data.paymentStatus}
@@ -678,14 +750,8 @@ export default function ReceiptGeneratorPage({
             {/* Line Items Grid Rows */}
             <div>
               <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4">
-                <H3 className="text-slate-500">
-                  4. Items &amp; Services Paid
-                </H3>
-                <Button
-                  onClick={handleAddItem}
-                  size="sm"
-                  type="button"
-                >
+                <H3 className="text-slate-500">4. Items &amp; Services Paid</H3>
+                <Button onClick={handleAddItem} size="sm" type="button">
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add Line</span>
                 </Button>
@@ -693,9 +759,17 @@ export default function ReceiptGeneratorPage({
 
               <div className="space-y-3">
                 {data.lineItems.map((item, idx) => (
-                  <div key={item.id} className="flex flex-col md:flex-row gap-3 p-3 bg-slate-50 border border-slate-200/60 rounded-xl relative">
+                  <div
+                    key={item.id}
+                    className="flex flex-col md:flex-row gap-3 p-3 bg-slate-50 border border-slate-200/60 rounded-xl relative"
+                  >
                     <div className="grow">
-                      <Label className="block text-slate-400 mb-0.5" htmlFor={`receipt-item-${item.id}-description`}>Description *</Label>
+                      <Label
+                        className="block text-slate-400 mb-0.5"
+                        htmlFor={`receipt-item-${item.id}-description`}
+                      >
+                        Description *
+                      </Label>
                       <Input
                         type="text"
                         placeholder="e.g. Strategic Development Consultation"
@@ -706,7 +780,12 @@ export default function ReceiptGeneratorPage({
                     </div>
                     <div className="grid grid-cols-3 gap-2 w-full md:w-auto shrink-0 md:max-w-xs">
                       <div>
-                        <Label className="block text-slate-400 mb-0.5" htmlFor={`receipt-item-${item.id}-quantity`}>Qty</Label>
+                        <Label
+                          className="block text-slate-400 mb-0.5"
+                          htmlFor={`receipt-item-${item.id}-quantity`}
+                        >
+                          Qty
+                        </Label>
                         <Input
                           type="number"
                           min="1"
@@ -717,7 +796,12 @@ export default function ReceiptGeneratorPage({
                         />
                       </div>
                       <div>
-                        <Label className="block text-slate-400 mb-0.5" htmlFor={`receipt-item-${item.id}-rate`}>Rate ($)</Label>
+                        <Label
+                          className="block text-slate-400 mb-0.5"
+                          htmlFor={`receipt-item-${item.id}-rate`}
+                        >
+                          Rate ($)
+                        </Label>
                         <Input
                           type="number"
                           placeholder="0.00"
@@ -732,7 +816,9 @@ export default function ReceiptGeneratorPage({
                           aria-label={`Taxable receipt item ${idx + 1}`}
                           className="size-4 rounded border-input accent-primary"
                           checked={item.taxable}
-                          onCheckedChange={(checked) => handleItemChange(item.id, "taxable", checked === true)}
+                          onCheckedChange={(checked) =>
+                            handleItemChange(item.id, "taxable", checked === true)
+                          }
                         />
                       </div>
                     </div>
@@ -760,11 +846,15 @@ export default function ReceiptGeneratorPage({
               </H3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-discount-type">Discount Type</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-discount-type">
+                    Discount Type
+                  </Label>
                   <Select
                     id="receipt-discount-type"
                     value={data.discountType}
-                    onChange={(e) => setData({ ...data, discountType: e.target.value as any, discountValue: 0 })}
+                    onChange={(e) =>
+                      setData({ ...data, discountType: e.target.value as any, discountValue: 0 })
+                    }
                   >
                     <option value="none">No Discount</option>
                     <option value="percent">Percentage (%)</option>
@@ -774,29 +864,39 @@ export default function ReceiptGeneratorPage({
                 {data.discountType !== "none" && (
                   <div>
                     <Label className="block text-slate-400 mb-1" htmlFor="receipt-discount-value">
-                      {data.discountType === "percent" ? "Percentage Off (%)" : "Amount Deducted ($)"}
+                      {data.discountType === "percent"
+                        ? "Percentage Off (%)"
+                        : "Amount Deducted ($)"}
                     </Label>
                     <Input
                       type="number"
                       id="receipt-discount-value"
                       value={data.discountValue}
-                      onChange={(e) => setData({ ...data, discountValue: Math.max(0, Number(e.target.value)) })}
+                      onChange={(e) =>
+                        setData({ ...data, discountValue: Math.max(0, Number(e.target.value)) })
+                      }
                     />
                   </div>
                 )}
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-tax-rate">Sales Tax rate (%)</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-tax-rate">
+                    Sales Tax rate (%)
+                  </Label>
                   <Input
                     type="number"
                     step="0.01"
                     placeholder="0.00"
                     id="receipt-tax-rate"
                     value={data.salesTaxRate}
-                    onChange={(e) => setData({ ...data, salesTaxRate: Math.max(0, Number(e.target.value)) })}
+                    onChange={(e) =>
+                      setData({ ...data, salesTaxRate: Math.max(0, Number(e.target.value)) })
+                    }
                   />
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-tax-label">sales tax Label</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-tax-label">
+                    sales tax Label
+                  </Label>
                   <Input
                     type="text"
                     id="receipt-tax-label"
@@ -808,7 +908,9 @@ export default function ReceiptGeneratorPage({
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-tip">Tip / Gratuity ($)</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-tip">
+                    Tip / Gratuity ($)
+                  </Label>
                   <Input
                     type="number"
                     placeholder="0.00"
@@ -818,17 +920,23 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-additional-fee">Additional Fee ($)</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-additional-fee">
+                    Additional Fee ($)
+                  </Label>
                   <Input
                     type="number"
                     placeholder="0.00"
                     id="receipt-additional-fee"
                     value={data.additionalFee}
-                    onChange={(e) => setData({ ...data, additionalFee: Math.max(0, Number(e.target.value)) })}
+                    onChange={(e) =>
+                      setData({ ...data, additionalFee: Math.max(0, Number(e.target.value)) })
+                    }
                   />
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-payment-method">Payment Method</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-payment-method">
+                    Payment Method
+                  </Label>
                   <Select
                     id="receipt-payment-method"
                     value={data.paymentMethod}
@@ -845,7 +953,9 @@ export default function ReceiptGeneratorPage({
                   </Select>
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-received-by">Received By</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-received-by">
+                    Received By
+                  </Label>
                   <Input
                     type="text"
                     placeholder="Staff/Agent Name"
@@ -864,7 +974,9 @@ export default function ReceiptGeneratorPage({
               </H3>
               <div className="space-y-4">
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-notes">Memo / Internal Notes</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-notes">
+                    Memo / Internal Notes
+                  </Label>
                   <Textarea
                     rows={2}
                     className="min-h-20"
@@ -875,7 +987,9 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-thank-you">Thank-You Sign-off Message</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-thank-you">
+                    Thank-You Sign-off Message
+                  </Label>
                   <Input
                     type="text"
                     id="receipt-thank-you"
@@ -885,20 +999,20 @@ export default function ReceiptGeneratorPage({
                 </div>
               </div>
             </div>
-
           </Card>
 
           {/* Core Safe usage and policy disclaimer to satisfy policy constraint */}
           <AlertBanner title="Official Legal Compliance Note" variant="success">
-            This receipt generator is explicitly designed for documented payments between registered freelancers, business entities, and clients.
-            Keep copies of bank clearance references and avoid creating visual brand replication layout sheets.
+            This receipt generator is explicitly designed for documented payments between registered
+            freelancers, business entities, and clients. Keep copies of bank clearance references
+            and avoid creating visual brand replication layout sheets.
           </AlertBanner>
-
         </div>
 
         {/* Live design theme selector + Visual render block */}
-        <div className={`lg:col-span-5 space-y-6 lg:sticky lg:top-20 ${activeTab === "preview" ? "block" : "hidden md:block"}`}>
-
+        <div
+          className={`lg:col-span-5 space-y-6 lg:sticky lg:top-20 ${activeTab === "preview" ? "block" : "hidden md:block"}`}
+        >
           <Card className="space-y-3 rounded-2xl p-4 shadow-sm print:hidden">
             <div className="flex items-center justify-between text-slate-500 border-b border-slate-100 pb-2">
               <Text>RECEIPT VISUAL LAYOUT</Text>
@@ -914,7 +1028,7 @@ export default function ReceiptGeneratorPage({
                 { key: "modern", label: "Modern" },
                 { key: "compact", label: "Compact" },
                 { key: "rent", label: "Rent" },
-                { key: "contractor", label: "contractor" }
+                { key: "contractor", label: "contractor" },
               ].map((themeOpt) => (
                 <Button
                   key={themeOpt.key}
@@ -935,10 +1049,7 @@ export default function ReceiptGeneratorPage({
 
             {advancedTemplates.length ? (
               <div>
-                <Label
-                  className="mb-1 block text-slate-500"
-                  htmlFor="receipt-published-template"
-                >
+                <Label className="mb-1 block text-slate-500" htmlFor="receipt-published-template">
                   Published custom template
                 </Label>
                 <Select
@@ -1005,255 +1116,290 @@ export default function ReceiptGeneratorPage({
               template={selectedAdvancedTemplate}
             />
           ) : (
-          <div className="relative group transition-all duration-200 shadow-2xl rounded-2xl border border-slate-200">
-            <div className={`p-8 bg-white min-h-[750px] font-sans text-slate-800 ${selectedTheme === "compact" ? "max-w-md mx-auto" : ""}`} id="receipt-print-area">
-
-              {/* Receipt Header Style layout matching selected theme */}
-              <div className="flex justify-between items-start border-b border-slate-200 pb-5 mb-6">
-                <div>
-                  <span className="text-[10px] uppercase font-black tracking-widest text-[#0066cc]">
-                    {data.receiptType} RECEIPT
-                  </span>
-                  <h1 className="text-xl font-black text-slate-950 uppercase tracking-tight leading-none mt-1">
-                    {data.business.name || "YOUR BUSINESS NAME"}
-                  </h1>
-                  {data.business.taxId && (
-                    <span className="block text-[11px] font-mono font-bold text-slate-400 mt-1">
-                      EIN/TAX ID: {data.business.taxId}
+            <div className="relative group transition-all duration-200 shadow-2xl rounded-2xl border border-slate-200">
+              <div
+                className={`p-8 bg-white min-h-[750px] font-sans text-slate-800 ${selectedTheme === "compact" ? "max-w-md mx-auto" : ""}`}
+                id="receipt-print-area"
+              >
+                {/* Receipt Header Style layout matching selected theme */}
+                <div className="flex justify-between items-start border-b border-slate-200 pb-5 mb-6">
+                  <div>
+                    <span className="text-[10px] uppercase font-black tracking-widest text-[#0066cc]">
+                      {data.receiptType} RECEIPT
                     </span>
-                  )}
-                  {data.business.addressLine1 && (
-                    <p className="text-[10px] text-slate-500 font-semibold leading-relaxed mt-2 max-w-sm">
-                      {data.business.addressLine1}, {data.business.city}, {data.business.state} {data.business.zipCode}
-                    </p>
-                  )}
-                  {data.business.email && (
-                    <span className="block text-[10px] text-slate-500 font-mono font-medium">{data.business.email}</span>
-                  )}
+                    <h1 className="text-xl font-black text-slate-950 uppercase tracking-tight leading-none mt-1">
+                      {data.business.name || "YOUR BUSINESS NAME"}
+                    </h1>
+                    {data.business.taxId && (
+                      <span className="block text-[11px] font-mono font-bold text-slate-400 mt-1">
+                        EIN/TAX ID: {data.business.taxId}
+                      </span>
+                    )}
+                    {data.business.addressLine1 && (
+                      <p className="text-[10px] text-slate-500 font-semibold leading-relaxed mt-2 max-w-sm">
+                        {data.business.addressLine1}, {data.business.city}, {data.business.state}{" "}
+                        {data.business.zipCode}
+                      </p>
+                    )}
+                    {data.business.email && (
+                      <span className="block text-[10px] text-slate-500 font-mono font-medium">
+                        {data.business.email}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-right">
+                    <div className="inline-block px-3 py-1 rounded bg-slate-100 text-[10px] font-black text-slate-900 border border-slate-200">
+                      {data.paymentStatus.toUpperCase()}
+                    </div>
+                    <div className="text-[11px] font-black text-slate-900 mt-3 font-mono">
+                      {data.receiptNumber}
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-bold font-mono mt-1">
+                      {data.receiptDate} {data.receiptTime}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="text-right">
-                  <div className="inline-block px-3 py-1 rounded bg-slate-100 text-[10px] font-black text-slate-900 border border-slate-200">
-                    {data.paymentStatus.toUpperCase()}
-                  </div>
-                  <div className="text-[11px] font-black text-slate-900 mt-3 font-mono">
-                     {data.receiptNumber}
-                  </div>
-                  <div className="text-[10px] text-slate-500 font-bold font-mono mt-1">
-                    {data.receiptDate} {data.receiptTime}
-                  </div>
-                </div>
-              </div>
-
-              {/* Sender / Payer billing mapping layout boxes */}
-              <div className="grid grid-cols-2 gap-6 mb-6">
-                <div className="bg-slate-50/60 p-3 rounded-lg border border-slate-100">
-                  <span className="text-[11px] uppercase font-black tracking-widest text-slate-400 block mb-1">
-                    Received From
-                  </span>
-                  <span className="font-extrabold text-slate-900 block text-xs">
-                    {data.customer.name || "------------------"}
-                  </span>
-                  {data.customer.company && (
-                    <span className="text-[10px] text-slate-500 block font-bold">
-                      {data.customer.company}
+                {/* Sender / Payer billing mapping layout boxes */}
+                <div className="grid grid-cols-2 gap-6 mb-6">
+                  <div className="bg-slate-50/60 p-3 rounded-lg border border-slate-100">
+                    <span className="text-[11px] uppercase font-black tracking-widest text-slate-400 block mb-1">
+                      Received From
                     </span>
-                  )}
-                  {data.customer.addressLine1 && (
-                    <p className="text-[10px] text-slate-500 mt-1.5 leading-snug">
-                      {data.customer.addressLine1}, {data.customer.city}, {data.customer.state} {data.customer.zipCode}
-                    </p>
-                  )}
-                </div>
-
-                <div className="bg-slate-50/60 p-3 rounded-lg border border-slate-100 space-y-1 text-xs">
-                  <span className="text-[11px] uppercase font-black tracking-widest text-slate-400 block pb-0.5">
-                    Payment Parameters
-                  </span>
-                  <div className="flex justify-between text-[10px] font-bold">
-                    <span className="text-slate-500">Method:</span>
-                    <span className="text-slate-950 font-black">{data.paymentMethod}</span>
+                    <span className="font-extrabold text-slate-900 block text-xs">
+                      {data.customer.name || "------------------"}
+                    </span>
+                    {data.customer.company && (
+                      <span className="text-[10px] text-slate-500 block font-bold">
+                        {data.customer.company}
+                      </span>
+                    )}
+                    {data.customer.addressLine1 && (
+                      <p className="text-[10px] text-slate-500 mt-1.5 leading-snug">
+                        {data.customer.addressLine1}, {data.customer.city}, {data.customer.state}{" "}
+                        {data.customer.zipCode}
+                      </p>
+                    )}
                   </div>
-                  {data.transactionId && (
-                    <div className="flex justify-between text-[10px] font-mono">
-                      <span className="text-slate-500">Ref ID:</span>
-                      <span className="font-extrabold text-[#0066cc]">{data.transactionId}</span>
-                    </div>
-                  )}
-                  {data.relatedInvoiceNumber && (
-                    <div className="flex justify-between text-[10px] font-mono">
-                      <span className="text-slate-500">Invoice:</span>
-                      <span className="text-slate-800 font-extrabold">{data.relatedInvoiceNumber}</span>
-                    </div>
-                  )}
-                  {data.receivedBy && (
-                    <div className="flex justify-between text-[10px] font-semibold pt-1">
-                      <span className="text-slate-400 block text-[11px] uppercase font-bold">Processed By</span>
-                      <span className="text-slate-700 block">{data.receivedBy}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Items Render Table */}
-              <div className="border border-slate-200 rounded-xl overflow-hidden mb-6">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="bg-slate-50 text-[10px] font-black uppercase text-slate-400 border-b border-slate-200">
-                      <th className="py-2.5 px-3">Description</th>
-                      <th className="py-2.5 px-3 text-center w-16">Qty</th>
-                      <th className="py-2.5 px-3 text-right w-24">Rate</th>
-                      <th className="py-2.5 px-3 text-right w-28">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.lineItems.map((item, idx) => (
-                      <tr key={item.id || idx} className="border-b border-slate-100 last:border-b-0">
-                        <td className="py-3 px-3 font-semibold text-slate-900 leading-snug">
-                          {item.description || "Uncategorized Item Description"}
-                          {item.taxable && <span className="text-[11px] bg-sky-50 text-sky-700 border border-sky-200 px-1.5 py-0.2 rounded-full font-bold ml-1">TAXABLE</span>}
-                        </td>
-                        <td className="py-3 px-3 text-center font-mono font-bold text-slate-500">
-                          {item.quantity}
-                        </td>
-                        <td className="py-3 px-3 text-right font-mono font-semibold">
-                          ${Number(item.unitPrice || 0).toFixed(2)}
-                        </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
-                          ${(Number(item.quantity || 0) * Number(item.unitPrice || 0)).toFixed(2)}
-                        </td>
+                  <div className="bg-slate-50/60 p-3 rounded-lg border border-slate-100 space-y-1 text-xs">
+                    <span className="text-[11px] uppercase font-black tracking-widest text-slate-400 block pb-0.5">
+                      Payment Parameters
+                    </span>
+                    <div className="flex justify-between text-[10px] font-bold">
+                      <span className="text-slate-500">Method:</span>
+                      <span className="text-slate-950 font-black">{data.paymentMethod}</span>
+                    </div>
+                    {data.transactionId && (
+                      <div className="flex justify-between text-[10px] font-mono">
+                        <span className="text-slate-500">Ref ID:</span>
+                        <span className="font-extrabold text-[#0066cc]">{data.transactionId}</span>
+                      </div>
+                    )}
+                    {data.relatedInvoiceNumber && (
+                      <div className="flex justify-between text-[10px] font-mono">
+                        <span className="text-slate-500">Invoice:</span>
+                        <span className="text-slate-800 font-extrabold">
+                          {data.relatedInvoiceNumber}
+                        </span>
+                      </div>
+                    )}
+                    {data.receivedBy && (
+                      <div className="flex justify-between text-[10px] font-semibold pt-1">
+                        <span className="text-slate-400 block text-[11px] uppercase font-bold">
+                          Processed By
+                        </span>
+                        <span className="text-slate-700 block">{data.receivedBy}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Items Render Table */}
+                <div className="border border-slate-200 rounded-xl overflow-hidden mb-6">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="bg-slate-50 text-[10px] font-black uppercase text-slate-400 border-b border-slate-200">
+                        <th className="py-2.5 px-3">Description</th>
+                        <th className="py-2.5 px-3 text-center w-16">Qty</th>
+                        <th className="py-2.5 px-3 text-right w-24">Rate</th>
+                        <th className="py-2.5 px-3 text-right w-28">Amount</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Receipt Totals Summary Box */}
-              <div className="grid grid-cols-12 gap-4 items-start pt-2">
-                <div className="col-span-6 space-y-3">
-                  {data.notes && (
-                    <div className="bg-slate-50/60 p-2.5 rounded-lg border border-slate-100">
-                      <span className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold block mb-0.5">Note Memo</span>
-                      <p className="text-[10px] text-slate-600 leading-normal font-medium">{data.notes}</p>
-                    </div>
-                  )}
-                  {data.paymentNote && (
-                    <span className="block text-[11px] font-mono text-slate-400 italic">
-                      Payment info: {data.paymentNote}
-                    </span>
-                  )}
+                    </thead>
+                    <tbody>
+                      {data.lineItems.map((item, idx) => (
+                        <tr
+                          key={item.id || idx}
+                          className="border-b border-slate-100 last:border-b-0"
+                        >
+                          <td className="py-3 px-3 font-semibold text-slate-900 leading-snug">
+                            {item.description || "Uncategorized Item Description"}
+                            {item.taxable && (
+                              <span className="text-[11px] bg-sky-50 text-sky-700 border border-sky-200 px-1.5 py-0.2 rounded-full font-bold ml-1">
+                                TAXABLE
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-3 text-center font-mono font-bold text-slate-500">
+                            {item.quantity}
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono font-semibold">
+                            ${Number(item.unitPrice || 0).toFixed(2)}
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                            ${(Number(item.quantity || 0) * Number(item.unitPrice || 0)).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
 
-                <div className="col-span-6 space-y-1.5 text-xs text-right font-semibold">
-                  <div className="flex justify-between font-mono">
-                    <span className="text-slate-500">Subtotal:</span>
-                    <span className="text-slate-800">${totals.subtotal.toFixed(2)}</span>
+                {/* Receipt Totals Summary Box */}
+                <div className="grid grid-cols-12 gap-4 items-start pt-2">
+                  <div className="col-span-6 space-y-3">
+                    {data.notes && (
+                      <div className="bg-slate-50/60 p-2.5 rounded-lg border border-slate-100">
+                        <span className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold block mb-0.5">
+                          Note Memo
+                        </span>
+                        <p className="text-[10px] text-slate-600 leading-normal font-medium">
+                          {data.notes}
+                        </p>
+                      </div>
+                    )}
+                    {data.paymentNote && (
+                      <span className="block text-[11px] font-mono text-slate-400 italic">
+                        Payment info: {data.paymentNote}
+                      </span>
+                    )}
                   </div>
 
-                  {data.discountType !== "none" && (
-                    <div className="flex justify-between text-rose-600 font-mono">
-                      <span>Discount ({data.discountType === "percent" ? `${data.discountValue}%` : "Fixed"}):</span>
-                      <span>-${totals.discountAmount.toFixed(2)}</span>
-                    </div>
-                  )}
-
-                  {data.salesTaxRate > 0 && (
+                  <div className="col-span-6 space-y-1.5 text-xs text-right font-semibold">
                     <div className="flex justify-between font-mono">
-                      <span className="text-slate-500">{data.salesTaxLabel} ({data.salesTaxRate}%):</span>
-                      <span className="text-slate-800">${totals.taxAmount.toFixed(2)}</span>
+                      <span className="text-slate-500">Subtotal:</span>
+                      <span className="text-slate-800">${totals.subtotal.toFixed(2)}</span>
                     </div>
-                  )}
 
-                  {data.tip > 0 && (
-                    <div className="flex justify-between font-mono">
-                      <span className="text-slate-500">Tip / Gratuity:</span>
-                      <span className="text-slate-800">${Number(data.tip).toFixed(2)}</span>
+                    {data.discountType !== "none" && (
+                      <div className="flex justify-between text-rose-600 font-mono">
+                        <span>
+                          Discount (
+                          {data.discountType === "percent" ? `${data.discountValue}%` : "Fixed"}):
+                        </span>
+                        <span>-${totals.discountAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+
+                    {data.salesTaxRate > 0 && (
+                      <div className="flex justify-between font-mono">
+                        <span className="text-slate-500">
+                          {data.salesTaxLabel} ({data.salesTaxRate}%):
+                        </span>
+                        <span className="text-slate-800">${totals.taxAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+
+                    {data.tip > 0 && (
+                      <div className="flex justify-between font-mono">
+                        <span className="text-slate-500">Tip / Gratuity:</span>
+                        <span className="text-slate-800">${Number(data.tip).toFixed(2)}</span>
+                      </div>
+                    )}
+
+                    {data.additionalFee > 0 && (
+                      <div className="flex justify-between font-mono">
+                        <span className="text-slate-500">Additional Fee:</span>
+                        <span className="text-slate-800">
+                          ${Number(data.additionalFee).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center pt-2.5 border-t border-slate-200 mt-2">
+                      <span className="text-xs uppercase font-black text-slate-900">
+                        Total Paid:
+                      </span>
+                      <span className="text-lg font-black text-slate-950 font-mono">
+                        ${totals.total.toFixed(2)}
+                      </span>
                     </div>
-                  )}
 
-                  {data.additionalFee > 0 && (
-                    <div className="flex justify-between font-mono">
-                      <span className="text-slate-500">Additional Fee:</span>
-                      <span className="text-slate-800">${Number(data.additionalFee).toFixed(2)}</span>
-                    </div>
-                  )}
+                    {data.amountRefunded > 0 && (
+                      <div className="flex justify-between text-yellow-700 font-mono text-[11px] pt-1">
+                        <span>Refunded portion:</span>
+                        <span>-${Number(data.amountRefunded).toFixed(2)}</span>
+                      </div>
+                    )}
 
-                  <div className="flex justify-between items-center pt-2.5 border-t border-slate-200 mt-2">
-                    <span className="text-xs uppercase font-black text-slate-900">Total Paid:</span>
-                    <span className="text-lg font-black text-slate-950 font-mono">
-                      ${totals.total.toFixed(2)}
-                    </span>
+                    {totals.balanceDue > 0 && (
+                      <div className="flex justify-between text-slate-700 font-mono text-[11px]">
+                        <span>Effective Settled:</span>
+                        <span>${totals.balanceDue.toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
+                </div>
 
-                  {data.amountRefunded > 0 && (
-                    <div className="flex justify-between text-yellow-700 font-mono text-[11px] pt-1">
-                      <span>Refunded portion:</span>
-                      <span>-${Number(data.amountRefunded).toFixed(2)}</span>
-                    </div>
-                  )}
-
-                  {totals.balanceDue > 0 && (
-                    <div className="flex justify-between text-slate-700 font-mono text-[11px]">
-                      <span>Effective Settled:</span>
-                      <span>${totals.balanceDue.toFixed(2)}</span>
-                    </div>
-                  )}
+                {/* Thank you sign-off footer */}
+                <div className="text-center pt-12 mt-12 border-t border-slate-100">
+                  <p className="text-xs font-black text-slate-950 tracking-tight uppercase">
+                    {data.thankYouMessage}
+                  </p>
+                  <span className="block text-[11px] text-slate-400/80 font-mono uppercase tracking-widest mt-1">
+                    Receipt generated by SmartTools Paperwork Security Engine. Shared under
+                    offline-first protocols.
+                  </span>
                 </div>
               </div>
-
-              {/* Thank you sign-off footer */}
-              <div className="text-center pt-12 mt-12 border-t border-slate-100">
-                <p className="text-xs font-black text-slate-950 tracking-tight uppercase">
-                  {data.thankYouMessage}
-                </p>
-                <span className="block text-[11px] text-slate-400/80 font-mono uppercase tracking-widest mt-1">
-                  Receipt generated by SmartTools Paperwork Security Engine. Shared under offline-first protocols.
-                </span>
-              </div>
-
             </div>
-          </div>
           )}
-
         </div>
-
       </div>
 
       {/* 5. Frequently Asked Questions (FAQ) Section - SEO Content */}
-      <div className="mt-16 border-t border-slate-200/80 pt-12 space-y-6 max-w-4xl mx-auto print:hidden" id="receipt-seo-section">
-        <H3 className="text-slate-900 text-center">
-          Frequently Answered Inquiries (FAQ)
-        </H3>
+      <div
+        className="mt-16 border-t border-slate-200/80 pt-12 space-y-6 max-w-4xl mx-auto print:hidden"
+        id="receipt-seo-section"
+      >
+        <H3 className="text-slate-900 text-center">Frequently Answered Inquiries (FAQ)</H3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-slate-600">
           <div className="space-y-1">
             <H4 className="text-slate-900">Are standard receipts created here totally free?</H4>
             <P>
-              Yes, absolutely! Unlike cloud suites, SmartTools Paperwork does not request payment details or impose draft limits.
-              You can issue PDF documents free forever.
+              Yes, absolutely! Unlike cloud suites, SmartTools Paperwork does not request payment
+              details or impose draft limits. You can issue PDF documents free forever.
             </P>
           </div>
           <div className="space-y-1">
-            <H4 className="text-slate-900">Can I convert a paid invoice directly into a receipt?</H4>
+            <H4 className="text-slate-900">
+              Can I convert a paid invoice directly into a receipt?
+            </H4>
             <P>
-              Certainly! Using our smart local data bridge, click "Import Invoice Draft" to pull previous project line items and seller setups instantly.
+              Certainly! Using our smart local data bridge, click "Import Invoice Draft" to pull
+              previous project line items and seller setups instantly.
             </P>
           </div>
           <div className="space-y-1">
             <H4 className="text-slate-900">Is my customer's privacy preserved securely?</H4>
             <P>
-              100% yes. Your inputs never float to backup cloud vaults. Everything processes offline in your sandbox browser.
+              100% yes. Your inputs never float to backup cloud vaults. Everything processes offline
+              in your sandbox browser.
             </P>
           </div>
           <div className="space-y-1">
-            <H4 className="text-slate-900">Under what conditions should I use this receipt tool?</H4>
+            <H4 className="text-slate-900">
+              Under what conditions should I use this receipt tool?
+            </H4>
             <P>
-              Only for genuine settled transactions from your own contracting business block. Keep legal compliance folders secure.
+              Only for genuine settled transactions from your own contracting business block. Keep
+              legal compliance folders secure.
             </P>
           </div>
         </div>
       </div>
-
     </div>
   );
 }

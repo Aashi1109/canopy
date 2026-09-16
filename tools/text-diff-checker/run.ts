@@ -32,18 +32,11 @@ function textDiff(left: string, right: string): string {
     () => new Uint32Array(rightLines.length + 1),
   );
   for (let leftIndex = leftLines.length - 1; leftIndex >= 0; leftIndex -= 1) {
-    for (
-      let rightIndex = rightLines.length - 1;
-      rightIndex >= 0;
-      rightIndex -= 1
-    ) {
+    for (let rightIndex = rightLines.length - 1; rightIndex >= 0; rightIndex -= 1) {
       lengths[leftIndex][rightIndex] =
         leftLines[leftIndex] === rightLines[rightIndex]
           ? lengths[leftIndex + 1][rightIndex + 1] + 1
-          : Math.max(
-              lengths[leftIndex + 1][rightIndex],
-              lengths[leftIndex][rightIndex + 1],
-            );
+          : Math.max(lengths[leftIndex + 1][rightIndex], lengths[leftIndex][rightIndex + 1]);
     }
   }
 

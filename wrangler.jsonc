@@ -7,29 +7,25 @@
   "minify": true,
   "workers_dev": true,
   "triggers": {
-    "crons": ["*/30 * * * *"]
+    "crons": ["*/30 * * * *"],
   },
-  "routes": [
-    { "pattern": "smarttools.lol", "custom_domain": true }
-  ],
-  "hyperdrive": [
-    { "binding": "HYPERDRIVE", "id": "1aebf4d16f0b489b99de75318cdd610d" }
-  ],
+  "routes": [{ "pattern": "smarttools.lol", "custom_domain": true }],
+  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "1aebf4d16f0b489b99de75318cdd610d" }],
   "vars": {
-    "APP_URL": "https://cf.smarttools.lol"
+    "APP_URL": "https://cf.smarttools.lol",
   },
   "assets": {
     "directory": ".open-next/assets",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
   },
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "smarttools"
-    }
+      "service": "smarttools",
+    },
   ],
   "keep_vars": true,
   "observability": {
-    "enabled": true
-  }
+    "enabled": true,
+  },
 }

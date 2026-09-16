@@ -32,7 +32,11 @@ export async function proxy(request: NextRequest) {
   }
   if (!reading || pathname.startsWith("/api/")) {
     return NextResponse.json(
-      { code: "ACCOUNT_SUSPENDED", error: "Your account is suspended.", redirectTo: "/account/suspended" },
+      {
+        code: "ACCOUNT_SUSPENDED",
+        error: "Your account is suspended.",
+        redirectTo: "/account/suspended",
+      },
       { status: 403, headers: { "Cache-Control": "no-store" } },
     );
   }

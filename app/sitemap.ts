@@ -33,12 +33,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
   try {
     const posts = await getBlogSitemapEntries(50000 - entries.length);
-    entries.push(...posts.map((post) => ({
-      url: new URL(`/blog/${post.slug}`, base).toString(),
-      lastModified: post.publishedUpdatedAt ?? undefined,
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    })));
+    entries.push(
+      ...posts.map((post) => ({
+        url: new URL(`/blog/${post.slug}`, base).toString(),
+        lastModified: post.publishedUpdatedAt ?? undefined,
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+      })),
+    );
   } catch {
     // A blog migration or read failure must not remove the existing tool URLs.
   }

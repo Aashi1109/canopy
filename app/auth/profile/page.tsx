@@ -18,27 +18,19 @@ import { ProfileManager } from "./ProfileManager";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<
-  Record<string, string | string[] | undefined>
->;
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function ProfilePage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
+export default async function ProfilePage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const returnTo = resolveConfiguredReturnTo(first(params.returnTo));
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
     const profileReturnTo = new URLSearchParams({ returnTo });
-    redirect(
-      `/auth?${new URLSearchParams({ returnTo: `/auth/profile?${profileReturnTo}` })}`,
-    );
+    redirect(`/auth?${new URLSearchParams({ returnTo: `/auth/profile?${profileReturnTo}` })}`);
   }
 
   const isAdmin = await isAdminUser(session.user.id);
@@ -47,10 +39,7 @@ export default async function ProfilePage({
     <div className="auth-shell min-h-screen bg-background text-foreground">
       <ProductHeader
         actions={
-          <AccountNavigation
-            returnTo={returnTo}
-            user={{ name: session.user.name, isAdmin }}
-          />
+          <AccountNavigation returnTo={returnTo} user={{ name: session.user.name, isAdmin }} />
         }
         className="auth-header sticky top-0 z-50"
         href="/"
@@ -61,19 +50,11 @@ export default async function ProfilePage({
           <div className="-ml-3">
             <ProfileBackLink fallbackHref={returnTo} />
           </div>
-          <Overline className="block mt-6 text-primary">
-            Account settings
-          </Overline>
+          <Overline className="block mt-6 text-primary">Account settings</Overline>
           <div className="mt-2 flex flex-wrap items-center gap-3">
-            <H1 className="text-foreground">
-              Your SmartTools account
-            </H1>
-            <StatusBadge
-              variant={session.user.emailVerified ? "success" : "warning"}
-            >
-              {session.user.emailVerified
-                ? "Verified account"
-                : "Verification pending"}
+            <H1 className="text-foreground">Your SmartTools account</H1>
+            <StatusBadge variant={session.user.emailVerified ? "success" : "warning"}>
+              {session.user.emailVerified ? "Verified account" : "Verification pending"}
             </StatusBadge>
           </div>
           <Muted className="mt-2 max-w-2xl text-muted-foreground">

@@ -5,9 +5,7 @@ import { createRequire } from "node:module";
 
 const PLATFORM_ORIGIN = process.env.PLATFORM_E2E_ORIGIN ?? "http://localhost:3000";
 const MEDIA_URL = process.env.MEDIA_E2E_URL ?? `${PLATFORM_ORIGIN}/media`;
-const requireFromMedia = createRequire(
-  new URL("../../package.json", import.meta.url),
-);
+const requireFromMedia = createRequire(new URL("../../package.json", import.meta.url));
 
 test("Media Tools is discoverable and unknown routes fail closed", async ({ page }) => {
   await page.goto(PLATFORM_ORIGIN);
@@ -46,19 +44,15 @@ test("Media tool pages use the shared outer chrome", async ({ page }) => {
   await expect(siteHeader).toContainText("Media Tools");
   await expect(siteHeader).toContainText("by SmartTools");
   await expect(breadcrumb.getByRole("link", { name: "All tools" })).toBeVisible();
-  await expect(
-    breadcrumb.getByRole("link", { name: "Image Conversion" }),
-  ).toBeVisible();
+  await expect(breadcrumb.getByRole("link", { name: "Image Conversion" })).toBeVisible();
   await expect(breadcrumb).toContainText("JPG to PNG");
   await expect(main.getByText("Runs locally", { exact: true })).toBeVisible();
   await expect(title).toBeVisible();
-  await expect(
-    main.getByRole("heading", { name: "Private by default" }),
-  ).toBeVisible();
+  await expect(main.getByRole("heading", { name: "Private by default" })).toBeVisible();
   await expect(main.getByText("Files never leave your device.", { exact: true })).toBeVisible();
-  await expect(
-    page.getByRole("navigation", { name: "Media Tools footer" }),
-  ).toContainText("All Media Tools");
+  await expect(page.getByRole("navigation", { name: "Media Tools footer" })).toContainText(
+    "All Media Tools",
+  );
 
   const [workbenchBounds, breadcrumbBounds, titleBounds] = await Promise.all([
     workbench.boundingBox(),
@@ -110,11 +104,7 @@ test("JPG to PNG can cancel, retry, and download without an upload request", asy
   const link = page.getByRole("link", { name: "Download", exact: true });
   await expect(link).toHaveAttribute("download", "local-fixture-converted.png");
   const downloaded = await readDownload(page, link);
-  const output = await inspectImageBytes(
-    page,
-    downloaded.bytes,
-    "image/png",
-  );
+  const output = await inspectImageBytes(page, downloaded.bytes, "image/png");
   expect(output).toEqual({
     height: 768,
     mime: "image/png",
@@ -122,20 +112,12 @@ test("JPG to PNG can cancel, retry, and download without an upload request", asy
     width: 1024,
   });
 
-  expect(downloaded.suggestedFilename).toBe(
-    "local-fixture-converted.png",
-  );
+  expect(downloaded.suggestedFilename).toBe("local-fixture-converted.png");
 
-  expect(
-    requests.some(
-      ({ url }) => new URL(url).origin !== new URL(MEDIA_URL).origin,
-    ),
-  ).toBe(false);
+  expect(requests.some(({ url }) => new URL(url).origin !== new URL(MEDIA_URL).origin)).toBe(false);
   expect(requests.filter(({ method }) => !["GET", "HEAD"].includes(method))).toEqual([]);
   expect(requests.filter(({ bodyBytes }) => bodyBytes > 0)).toEqual([]);
-  expect(requests.some(({ url }) => new URL(url).pathname.startsWith("/api/"))).toBe(
-    false,
-  );
+  expect(requests.some(({ url }) => new URL(url).pathname.startsWith("/api/"))).toBe(false);
 });
 
 test("file selection and drag ordering work without arrow controls or mobile overflow", async ({
@@ -198,10 +180,13 @@ test("structural PDF merge follows the displayed file order", async ({ page }) =
   ]);
   const second = await createMultiPagePdfFixture([{ height: 430, width: 330 }]);
 
-  await page.locator('input[type="file"]').first().setInputFiles([
-    { name: "first.pdf", mimeType: "application/pdf", buffer: first },
-    { name: "second.pdf", mimeType: "application/pdf", buffer: second },
-  ]);
+  await page
+    .locator('input[type="file"]')
+    .first()
+    .setInputFiles([
+      { name: "first.pdf", mimeType: "application/pdf", buffer: first },
+      { name: "second.pdf", mimeType: "application/pdf", buffer: second },
+    ]);
   await dragReorderHandle(page, "Drag second.pdf to reorder", "Drag first.pdf to reorder");
   await expect(
     page.getByRole("list", { name: "Selected files" }).getByRole("listitem").first(),
@@ -266,9 +251,7 @@ test("PDF to PNG renders selected pages into a zero-padded ZIP", async ({ page }
     buffer: source,
   });
   await page.getByRole("textbox", { name: "Pages", exact: true }).fill("1,3");
-  await page
-    .getByRole("combobox", { name: "Background", exact: true })
-    .selectOption("transparent");
+  await page.getByRole("combobox", { name: "Background", exact: true }).selectOption("transparent");
 
   await processButton(page, "PDF to PNG").click();
   const link = page.getByRole("link", { name: "Download", exact: true });
@@ -286,15 +269,11 @@ test("PDF to PNG renders selected pages into a zero-padded ZIP", async ({ page }
     "raster-pages-page-03.png",
   ]);
   for (const entry of Object.values(entries)) {
-    expect([...entry.subarray(0, 8)]).toEqual([
-      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-    ]);
+    expect([...entry.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
   }
 });
 
-test("Media responses enforce security headers and serve qpdf locally", async ({
-  request,
-}) => {
+test("Media responses enforce security headers and serve qpdf locally", async ({ request }) => {
   const response = await request.get(`${MEDIA_URL}/compress-pdf`);
   expect(response.status()).toBe(200);
   const headers = response.headers();
@@ -322,7 +301,7 @@ test("Media responses enforce security headers and serve qpdf locally", async ({
   expect(script.status()).toBe(200);
   expect((await script.text()).length).toBeGreaterThan(1_000);
   expect(wasm.status()).toBe(200);
-  expect([...((await wasm.body()).subarray(0, 4))]).toEqual([0x00, 0x61, 0x73, 0x6d]);
+  expect([...(await wasm.body()).subarray(0, 4)]).toEqual([0x00, 0x61, 0x73, 0x6d]);
 });
 
 test("Preserve Document runs through qpdf and returns an openable PDF", async ({
@@ -392,12 +371,7 @@ function processButton(page: Page, title: string) {
   });
 }
 
-async function createJpegFixture(
-  page: Page,
-  width: number,
-  height: number,
-  color = "#f97316",
-) {
+async function createJpegFixture(page: Page, width: number, height: number, color = "#f97316") {
   const bytes = await page.evaluate(
     async ({ color: fill, height: imageHeight, width: imageWidth }) => {
       const canvas = document.createElement("canvas");
@@ -423,11 +397,7 @@ async function createJpegFixture(
   return Buffer.from(bytes);
 }
 
-async function inspectImageBytes(
-  page: Page,
-  bytes: readonly number[],
-  mime: string,
-) {
+async function inspectImageBytes(page: Page, bytes: readonly number[], mime: string) {
   const dimensions = await page.evaluate(
     async ({ bytes: values, mime: imageMime }) => {
       const blob = new Blob([Uint8Array.from(values)], { type: imageMime });
@@ -445,10 +415,7 @@ async function inspectImageBytes(
   };
 }
 
-async function readDownload(
-  page: Page,
-  link: ReturnType<Page["getByRole"]>,
-) {
+async function readDownload(page: Page, link: ReturnType<Page["getByRole"]>) {
   const downloadPromise = page.waitForEvent("download");
   await link.click();
   const download = await downloadPromise;
@@ -460,9 +427,7 @@ async function readDownload(
   };
 }
 
-async function createMultiPagePdfFixture(
-  pages: readonly { height: number; width: number }[],
-) {
+async function createMultiPagePdfFixture(pages: readonly { height: number; width: number }[]) {
   const { PDFDocument, rgb } = requireFromMedia("pdf-lib") as typeof import("pdf-lib");
   const document = await PDFDocument.create();
   pages.forEach(({ height, width }, index) => {

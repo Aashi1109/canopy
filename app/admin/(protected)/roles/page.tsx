@@ -55,7 +55,10 @@ function RoleRow({ role }: { role: Awaited<ReturnType<typeof listRoles>>[number]
         {Number(role.assignedUsers)} {Number(role.assignedUsers) === 1 ? "user" : "users"}
       </Caption>
       {role.isSystem ? (
-        <LockKeyhole aria-label="Protected system role" className="size-[17px] shrink-0 text-muted-foreground" />
+        <LockKeyhole
+          aria-label="Protected system role"
+          className="size-[17px] shrink-0 text-muted-foreground"
+        />
       ) : (
         <ChevronRight aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
       )}
@@ -65,7 +68,10 @@ function RoleRow({ role }: { role: Awaited<ReturnType<typeof listRoles>>[number]
   return role.isSystem ? (
     <div>{content}</div>
   ) : (
-    <Link className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" href={`/admin/roles/${role.id}`}>
+    <Link
+      className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      href={`/admin/roles/${role.id}`}
+    >
       {content}
     </Link>
   );
@@ -87,17 +93,21 @@ export default async function RolesPage() {
       <div className="grid min-h-0 flex-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <section aria-labelledby="available-roles-heading" className="min-w-0">
           <div className="mb-3 flex items-center justify-between gap-4">
-            <H3  id="available-roles-heading">Available roles</H3>
-            <Caption className="block text-muted-foreground">{systemCount} system · {customCount} custom</Caption>
+            <H3 id="available-roles-heading">Available roles</H3>
+            <Caption className="block text-muted-foreground">
+              {systemCount} system · {customCount} custom
+            </Caption>
           </div>
           <div className="grid gap-3">
-            {roles.map((role) => <RoleRow key={role.id} role={role} />)}
+            {roles.map((role) => (
+              <RoleRow key={role.id} role={role} />
+            ))}
           </div>
         </section>
         <aside className="rounded-xl bg-surface-ink p-6 text-on-ink xl:sticky xl:top-0 xl:min-h-[560px] xl:self-start">
           <form action={createRoleAction} className="flex h-full flex-col gap-[18px]">
             <div>
-              <H3 >Create a custom role</H3>
+              <H3>Create a custom role</H3>
               <Caption className="block mt-2 text-on-ink-muted">
                 Define a role now, then choose granular permissions on its detail page.
               </Caption>
@@ -108,7 +118,13 @@ export default async function RolesPage() {
               label="Role name"
               required
             >
-              <Input className="border-white/15 bg-white/[0.07] text-on-ink placeholder:text-on-ink-muted focus-visible:border-primary" maxLength={80} name="name" placeholder="Operations manager" required />
+              <Input
+                className="border-white/15 bg-white/[0.07] text-on-ink placeholder:text-on-ink-muted focus-visible:border-primary"
+                maxLength={80}
+                name="name"
+                placeholder="Operations manager"
+                required
+              />
             </Field>
             <Field
               className="[&_[data-slot=field-label]]:text-on-ink-muted"
@@ -116,13 +132,23 @@ export default async function RolesPage() {
               label="Description"
               required
             >
-              <Textarea className="min-h-[88px] border-white/15 bg-white/[0.07] text-on-ink placeholder:text-on-ink-muted focus-visible:border-primary" maxLength={500} name="description" placeholder="Manages daily documents and customer operations." required />
+              <Textarea
+                className="min-h-[88px] border-white/15 bg-white/[0.07] text-on-ink placeholder:text-on-ink-muted focus-visible:border-primary"
+                maxLength={500}
+                name="description"
+                placeholder="Manages daily documents and customer operations."
+                required
+              />
             </Field>
             <div className="min-h-4 flex-1" />
-            <SubmitButton className="w-full" size="lg" type="submit">Create role</SubmitButton>
+            <SubmitButton className="w-full" size="lg" type="submit">
+              Create role
+            </SubmitButton>
             <Caption className="block flex items-start gap-2 text-on-ink-muted">
               <Inbox aria-hidden="true" className="mt-px size-[15px] shrink-0" />
-              {customCount ? `${customCount} custom ${customCount === 1 ? "role is" : "roles are"} currently configured.` : "No custom roles yet — create the first one here."}
+              {customCount
+                ? `${customCount} custom ${customCount === 1 ? "role is" : "roles are"} currently configured.`
+                : "No custom roles yet — create the first one here."}
             </Caption>
           </form>
         </aside>

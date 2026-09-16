@@ -13,10 +13,7 @@ import {
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { sendAuthEmail } from "./email.ts";
-import {
-  normalizeAccountName,
-  normalizeProfileImage,
-} from "./security.ts";
+import { normalizeAccountName, normalizeProfileImage } from "./security.ts";
 
 const baseURL = process.env.APP_URL ?? "http://localhost:3000";
 
@@ -37,12 +34,7 @@ async function assertAccountCanBeDeleted(userId: string): Promise<void> {
       .select({ count: countDistinct(userRolesTable.userId) })
       .from(userRolesTable)
       .innerJoin(authUser, eq(authUser.id, userRolesTable.userId))
-      .where(
-        and(
-          eq(userRolesTable.roleId, "admin"),
-          eq(authUser.status, "active"),
-        ),
-      ),
+      .where(and(eq(userRolesTable.roleId, "admin"), eq(authUser.status, "active"))),
   ]);
 
   assertCanDeleteUser(
@@ -165,12 +157,8 @@ export const auth = betterAuth({
         before: async (user) => ({
           data: {
             ...user,
-            ...(Object.hasOwn(user, "name")
-              ? { name: normalizeAccountName(user.name) }
-              : {}),
-            ...(Object.hasOwn(user, "image")
-              ? { image: normalizeProfileImage(user.image) }
-              : {}),
+            ...(Object.hasOwn(user, "name") ? { name: normalizeAccountName(user.name) } : {}),
+            ...(Object.hasOwn(user, "image") ? { image: normalizeProfileImage(user.image) } : {}),
           },
         }),
       },

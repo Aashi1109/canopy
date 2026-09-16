@@ -1,9 +1,6 @@
 import type { AdvancedDocumentTemplate } from "@smarttools/invoice-templates";
 import type { InvoiceData } from "./types.ts";
-import {
-  calculateInvoiceTotals,
-  formatCurrency,
-} from "./utils/calculations.ts";
+import { calculateInvoiceTotals, formatCurrency } from "./utils/calculations.ts";
 
 type Address = {
   addressLine1: string;
@@ -128,10 +125,7 @@ export function getInvoiceTemplateInputs(
     customerLabel: "BILL TO",
     customerName: data.client.name,
     customerCompany: data.client.company,
-    customerAddress: [
-      data.client.company,
-      address(data.client),
-    ].filter(Boolean).join("\n"),
+    customerAddress: [data.client.company, address(data.client)].filter(Boolean).join("\n"),
     customerEmail: data.client.email,
     customerPhone: data.client.phone,
     lineItems: JSON.stringify(
@@ -183,10 +177,7 @@ export function getReceiptTemplateInputs(
     customerLabel: "RECEIVED FROM",
     customerName: data.customer.name,
     customerCompany: data.customer.company,
-    customerAddress: [
-      data.customer.company,
-      address(data.customer),
-    ].filter(Boolean).join("\n"),
+    customerAddress: [data.customer.company, address(data.customer)].filter(Boolean).join("\n"),
     customerEmail: data.customer.email,
     customerPhone: data.customer.phone,
     lineItems: JSON.stringify(

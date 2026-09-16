@@ -84,8 +84,10 @@ test("JSON Viewer Tree metadata and find work across result views", async ({ pag
   expect(responsiveNextBox).not.toBeNull();
   expect(
     Math.round(
-      searchControlBox!.x + searchControlBox!.width
-        - responsiveNextBox!.x - responsiveNextBox!.width,
+      searchControlBox!.x +
+        searchControlBox!.width -
+        responsiveNextBox!.x -
+        responsiveNextBox!.width,
     ),
   ).toBe(10);
 

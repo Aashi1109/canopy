@@ -15,10 +15,7 @@ import {
   loadPdf,
   validatePdfInput,
 } from "../../lib/tool-framework/media/pdfDocument.ts";
-import {
-  readArtifact,
-  type StoredToolArtifact,
-} from "../../lib/tool-framework/artifacts.ts";
+import { readArtifact, type StoredToolArtifact } from "../../lib/tool-framework/artifacts.ts";
 import {
   createOutputFilename,
   validatePdfSelection,
@@ -34,9 +31,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files?.[0];
   if (!input) throw new ToolError("no-files", "Choose a PDF to split.");
-  const selection = validatePdfSelection(
-    ctx.input.files.map((file) => ({ size: file.size })),
-  );
+  const selection = validatePdfSelection(ctx.input.files.map((file) => ({ size: file.size })));
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
   for (const file of ctx.input.files) await validatePdfInput(file);
 
@@ -52,22 +47,14 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     ctx.signal.throwIfAborted();
     const pages = checkedPages(groups[index], count);
     const document = await PDFDocument.create();
-    await addCopiedPagesWithProgress(
-      document,
-      source,
-      pages,
-      "Creating split PDF",
-      ctx.progress,
+    await addCopiedPagesWithProgress(document, source, pages, "Creating split PDF", ctx.progress);
+    outputs.push(
+      await ctx.writeArtifact({
+        name: createOutputFilename(input.name, "pdf", `part-${String(index + 1).padStart(2, "0")}`),
+        mime: "application/pdf",
+        source: await document.save(),
+      }),
     );
-    outputs.push(await ctx.writeArtifact({
-      name: createOutputFilename(
-        input.name,
-        "pdf",
-        `part-${String(index + 1).padStart(2, "0")}`,
-      ),
-      mime: "application/pdf",
-      source: await document.save(),
-    }));
   }
 
   let files: readonly StoredToolArtifact[] = outputs;

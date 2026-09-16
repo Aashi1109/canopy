@@ -64,22 +64,22 @@ export default async function FeaturesPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border bg-muted/60 px-5 py-4">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <InlineCode className="break-all text-foreground">
-                        {feature.key}
-                      </InlineCode>
+                      <InlineCode className="break-all text-foreground">{feature.key}</InlineCode>
                       <StatusBadge variant={feature.enabled ? "success" : "neutral"}>
                         {feature.enabled ? "Enabled" : "Disabled"}
                       </StatusBadge>
                     </div>
-                    <Overline className="block mt-1 text-muted-foreground">
-                      {feature.app}
-                    </Overline>
+                    <Overline className="block mt-1 text-muted-foreground">{feature.app}</Overline>
                   </div>
                   <form action={toggleFeatureAction}>
                     <input name="app" type="hidden" value={feature.app} />
                     <input name="key" type="hidden" value={feature.key} />
                     <input name="enabled" type="hidden" value={String(!feature.enabled)} />
-                    <SubmitButton size="sm" type="submit" variant={feature.enabled ? "secondary" : "default"}>
+                    <SubmitButton
+                      size="sm"
+                      type="submit"
+                      variant={feature.enabled ? "secondary" : "default"}
+                    >
                       {feature.enabled ? "Disable" : "Enable"}
                     </SubmitButton>
                   </form>
@@ -87,10 +87,18 @@ export default async function FeaturesPage() {
                 <form action={updateFeatureAction} className="grid gap-4 p-5">
                   <input name="app" type="hidden" value={feature.app} />
                   <input name="key" type="hidden" value={feature.key} />
-                  <Field htmlFor={`${feature.app}-${feature.key}-name`} label="Display name" required>
+                  <Field
+                    htmlFor={`${feature.app}-${feature.key}-name`}
+                    label="Display name"
+                    required
+                  >
                     <Input defaultValue={feature.name} name="name" required />
                   </Field>
-                  <Field htmlFor={`${feature.app}-${feature.key}-description`} label="Description" required>
+                  <Field
+                    htmlFor={`${feature.app}-${feature.key}-description`}
+                    label="Description"
+                    required
+                  >
                     <Textarea defaultValue={feature.description} name="description" required />
                   </Field>
                   <SubmitButton className="justify-self-end" size="sm" type="submit">

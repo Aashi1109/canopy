@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { keyValuePairTable } from "@/db/schema";
 import { ensureDatabaseBootstrapped, ensureUserExists } from "@/db/bootstrap";
-import {
-  ApiInputError,
-  assertJsonPayloadSize,
-  assertRequestContentLength,
-} from "../_lib/input";
+import { ApiInputError, assertJsonPayloadSize, assertRequestContentLength } from "../_lib/input";
 import {
   getAnonymousUserId,
   PaperworkToolAccessError,

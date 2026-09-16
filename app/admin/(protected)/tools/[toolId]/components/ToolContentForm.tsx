@@ -17,38 +17,19 @@ import {
   Textarea,
   type OrderableItemState,
 } from "@smarttools/ui";
-import {
-  Braces,
-  GripVertical,
-  Plus,
-  RotateCcw,
-  Search,
-  Trash2,
-  X,
-} from "lucide-react";
-import {
-  useActionState,
-  useMemo,
-  useState,
-  type ReactElement,
-  type ReactNode,
-} from "react";
-import {
-  TOOL_CATEGORIES,
-  type CategoryKey,
-} from "../../../../../../lib/tool-framework/categories";
-import {
-  saveToolContentAction,
-  type ToolContentActionState,
-} from "../../actions";
+import { Braces, GripVertical, Plus, RotateCcw, Search, Trash2, X } from "lucide-react";
+import { useActionState, useMemo, useState, type ReactElement, type ReactNode } from "react";
+import { TOOL_CATEGORIES, type CategoryKey } from "../../../../../../lib/tool-framework/categories";
+import { saveToolContentAction, type ToolContentActionState } from "../../actions";
 
 const IDLE: ToolContentActionState = { status: "idle", message: "" };
 
-const CATEGORY_OPTIONS: readonly { key: CategoryKey; label: string }[] =
-  Object.entries(TOOL_CATEGORIES).map(([key, category]) => ({
-    key: key as CategoryKey,
-    label: `${category.label} · ${category.app}`,
-  }));
+const CATEGORY_OPTIONS: readonly { key: CategoryKey; label: string }[] = Object.entries(
+  TOOL_CATEGORIES,
+).map(([key, category]) => ({
+  key: key as CategoryKey,
+  label: `${category.label} · ${category.app}`,
+}));
 
 export interface InheritedContentView {
   readonly category: string;
@@ -98,12 +79,7 @@ type ExampleItem = {
   readonly secondary: string;
 };
 
-type DocumentSection =
-  | "howToUse"
-  | "limitations"
-  | "faq"
-  | "examples"
-  | "relatedToolIds";
+type DocumentSection = "howToUse" | "limitations" | "faq" | "examples" | "relatedToolIds";
 
 const DOCUMENT_SECTIONS: readonly {
   readonly key: DocumentSection;
@@ -150,13 +126,13 @@ function contentRecord(value: unknown): ContentRecord {
     ? examplesValue.flatMap((entry) => {
         const item = asRecord(entry);
         return typeof item?.label === "string" && typeof item.text === "string"
-          ? [{
-              label: item.label,
-              text: item.text,
-              ...(typeof item.secondary === "string"
-                ? { secondary: item.secondary }
-                : {}),
-            }]
+          ? [
+              {
+                label: item.label,
+                text: item.text,
+                ...(typeof item.secondary === "string" ? { secondary: item.secondary } : {}),
+              },
+            ]
           : [];
       })
     : [];
@@ -201,9 +177,7 @@ function InheritedPreview({ children }: { children: ReactNode }) {
         <Braces aria-hidden="true" className="size-3.5" />
       </span>
       <span className="min-w-0">
-        <Overline className="block">
-          Inherited from definition.ts
-        </Overline>
+        <Overline className="block">Inherited from definition.ts</Overline>
         <Text className="block truncate text-foreground">{children || "None"}</Text>
       </span>
     </div>
@@ -266,7 +240,10 @@ function KeywordTagInput({
   return (
     <div className="flex min-h-11 flex-wrap items-center gap-1.5 rounded-lg border border-input bg-background px-2 py-1.5 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/25">
       {values.map((keyword) => (
-        <Caption className="inline-flex h-7 items-center gap-1 rounded-full bg-accent px-2.5 text-primary" key={keyword}>
+        <Caption
+          className="inline-flex h-7 items-center gap-1 rounded-full bg-accent px-2.5 text-primary"
+          key={keyword}
+        >
           {keyword}
           <button
             aria-label={`Remove ${keyword}`}
@@ -319,24 +296,40 @@ function CatalogForm({
 
       <div className="flex flex-col gap-2 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <H3 >Catalog &amp; SEO</H3>
+          <H3>Catalog &amp; SEO</H3>
           <Muted className="mt-1 text-muted-foreground">
             Empty fields inherit their shipped values. Overrides remain draft until published.
           </Muted>
         </div>
-        <Button loading={pending} type="submit">{pending ? "Saving…" : "Save changes"}</Button>
+        <Button loading={pending} type="submit">
+          {pending ? "Saving…" : "Save changes"}
+        </Button>
       </div>
 
       {state.status !== "idle" ? (
-        <AlertBanner variant={state.status === "success" ? "success" : "error"}>{state.message}</AlertBanner>
+        <AlertBanner variant={state.status === "success" ? "success" : "error"}>
+          {state.message}
+        </AlertBanner>
       ) : null}
 
       <div className="grid gap-x-5 gap-y-6 md:grid-cols-2">
         <div className="grid content-start gap-2">
-          <FieldHeader label="Category" onRevert={() => setCategory("")} overridden={Boolean(category)} />
-          <Select name="category" onChange={(event) => setCategory(event.target.value)} value={category}>
+          <FieldHeader
+            label="Category"
+            onRevert={() => setCategory("")}
+            overridden={Boolean(category)}
+          />
+          <Select
+            name="category"
+            onChange={(event) => setCategory(event.target.value)}
+            value={category}
+          >
             <option value="">Inherit from code</option>
-            {CATEGORY_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+            {CATEGORY_OPTIONS.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.label}
+              </option>
+            ))}
           </Select>
           <InheritedPreview>{inherited.category}</InheritedPreview>
         </div>
@@ -410,7 +403,13 @@ function DragHandle({ label, state }: { label: string; state: OrderableItemState
 
 function RemoveButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <Button aria-label={`Delete ${label}`} onClick={onClick} size="icon-sm" type="button" variant="ghost">
+    <Button
+      aria-label={`Delete ${label}`}
+      onClick={onClick}
+      size="icon-sm"
+      type="button"
+      variant="ghost"
+    >
       <Trash2 aria-hidden="true" />
     </Button>
   );
@@ -442,7 +441,9 @@ function TextListEditor({
         renderItem={(item, dragState) => {
           const index = items.findIndex((candidate) => candidate.id === item.id);
           return (
-            <div className={`flex items-start gap-2 py-2 ${dragState.isDragging ? "bg-accent shadow-sm" : "bg-background"}`}>
+            <div
+              className={`flex items-start gap-2 py-2 ${dragState.isDragging ? "bg-accent shadow-sm" : "bg-background"}`}
+            >
               <DragHandle label={`${label} ${index + 1}`} state={dragState} />
               <Caption className="w-7 shrink-0 pt-2.5 text-muted-foreground">
                 {String(index + 1).padStart(2, "0")}
@@ -450,25 +451,51 @@ function TextListEditor({
               <Textarea
                 aria-label={`${label} ${index + 1}`}
                 className="min-h-11 flex-1 resize-y"
-                onChange={(event) => onChange(items.map((candidate) => candidate.id === item.id ? { ...candidate, value: event.target.value } : candidate))}
+                onChange={(event) =>
+                  onChange(
+                    items.map((candidate) =>
+                      candidate.id === item.id
+                        ? { ...candidate, value: event.target.value }
+                        : candidate,
+                    ),
+                  )
+                }
                 value={item.value}
               />
-              <RemoveButton label={`${label} ${index + 1}`} onClick={() => onChange(items.filter((candidate) => candidate.id !== item.id))} />
+              <RemoveButton
+                label={`${label} ${index + 1}`}
+                onClick={() => onChange(items.filter((candidate) => candidate.id !== item.id))}
+              />
             </div>
           );
         }}
       />
-      <Button className="mt-3" onClick={() => onChange([...items, { id: itemId(label), value: "" }])} size="sm" type="button" variant="ghost">
-        <Plus aria-hidden="true" />{addLabel}
+      <Button
+        className="mt-3"
+        onClick={() => onChange([...items, { id: itemId(label), value: "" }])}
+        size="sm"
+        type="button"
+        variant="ghost"
+      >
+        <Plus aria-hidden="true" />
+        {addLabel}
       </Button>
     </div>
   );
 }
 
-function FaqEditor({ items, onChange }: { items: readonly FaqItem[]; onChange: (items: FaqItem[]) => void }) {
+function FaqEditor({
+  items,
+  onChange,
+}: {
+  items: readonly FaqItem[];
+  onChange: (items: FaqItem[]) => void;
+}) {
   return (
     <div>
-      <Muted className="mb-4 text-muted-foreground">Each entry requires a question and answer. Drag entries to control public order.</Muted>
+      <Muted className="mb-4 text-muted-foreground">
+        Each entry requires a question and answer. Drag entries to control public order.
+      </Muted>
       <OrderableList
         ariaLabel="FAQ entries"
         className="divide-y divide-border border-y border-border"
@@ -479,27 +506,78 @@ function FaqEditor({ items, onChange }: { items: readonly FaqItem[]; onChange: (
         renderItem={(item, dragState) => {
           const index = items.findIndex((candidate) => candidate.id === item.id);
           return (
-            <div className={`flex items-start gap-2 py-3 ${dragState.isDragging ? "bg-accent shadow-sm" : "bg-background"}`}>
+            <div
+              className={`flex items-start gap-2 py-3 ${dragState.isDragging ? "bg-accent shadow-sm" : "bg-background"}`}
+            >
               <DragHandle label={`FAQ ${index + 1}`} state={dragState} />
-              <Caption className="w-7 shrink-0 pt-2.5 text-muted-foreground">{String(index + 1).padStart(2, "0")}</Caption>
+              <Caption className="w-7 shrink-0 pt-2.5 text-muted-foreground">
+                {String(index + 1).padStart(2, "0")}
+              </Caption>
               <div className="grid min-w-0 flex-1 gap-2 md:grid-cols-[minmax(12rem,0.8fr)_minmax(16rem,1.2fr)]">
-                <Input aria-label={`FAQ ${index + 1} question`} onChange={(event) => onChange(items.map((candidate) => candidate.id === item.id ? { ...candidate, q: event.target.value } : candidate))} placeholder="Question" value={item.q} />
-                <Textarea aria-label={`FAQ ${index + 1} answer`} className="min-h-20 resize-y" onChange={(event) => onChange(items.map((candidate) => candidate.id === item.id ? { ...candidate, a: event.target.value } : candidate))} placeholder="Answer" value={item.a} />
+                <Input
+                  aria-label={`FAQ ${index + 1} question`}
+                  onChange={(event) =>
+                    onChange(
+                      items.map((candidate) =>
+                        candidate.id === item.id
+                          ? { ...candidate, q: event.target.value }
+                          : candidate,
+                      ),
+                    )
+                  }
+                  placeholder="Question"
+                  value={item.q}
+                />
+                <Textarea
+                  aria-label={`FAQ ${index + 1} answer`}
+                  className="min-h-20 resize-y"
+                  onChange={(event) =>
+                    onChange(
+                      items.map((candidate) =>
+                        candidate.id === item.id
+                          ? { ...candidate, a: event.target.value }
+                          : candidate,
+                      ),
+                    )
+                  }
+                  placeholder="Answer"
+                  value={item.a}
+                />
               </div>
-              <RemoveButton label={`FAQ ${index + 1}`} onClick={() => onChange(items.filter((candidate) => candidate.id !== item.id))} />
+              <RemoveButton
+                label={`FAQ ${index + 1}`}
+                onClick={() => onChange(items.filter((candidate) => candidate.id !== item.id))}
+              />
             </div>
           );
         }}
       />
-      <Button className="mt-3" onClick={() => onChange([...items, { id: itemId("faq"), q: "", a: "" }])} size="sm" type="button" variant="ghost"><Plus aria-hidden="true" />Add question and answer</Button>
+      <Button
+        className="mt-3"
+        onClick={() => onChange([...items, { id: itemId("faq"), q: "", a: "" }])}
+        size="sm"
+        type="button"
+        variant="ghost"
+      >
+        <Plus aria-hidden="true" />
+        Add question and answer
+      </Button>
     </div>
   );
 }
 
-function ExamplesEditor({ items, onChange }: { items: readonly ExampleItem[]; onChange: (items: ExampleItem[]) => void }) {
+function ExamplesEditor({
+  items,
+  onChange,
+}: {
+  items: readonly ExampleItem[];
+  onChange: (items: ExampleItem[]) => void;
+}) {
   return (
     <div>
-      <Muted className="mb-4 text-muted-foreground">Provide a label and primary sample. Secondary input is optional for two-input tools.</Muted>
+      <Muted className="mb-4 text-muted-foreground">
+        Provide a label and primary sample. Secondary input is optional for two-input tools.
+      </Muted>
       <OrderableList
         ariaLabel="Example entries"
         className="divide-y divide-border border-y border-border"
@@ -509,24 +587,66 @@ function ExamplesEditor({ items, onChange }: { items: readonly ExampleItem[]; on
         onReorder={onChange}
         renderItem={(item, dragState) => {
           const index = items.findIndex((candidate) => candidate.id === item.id);
-          const update = (values: Partial<ExampleItem>) => onChange(items.map((candidate) => candidate.id === item.id ? { ...candidate, ...values } : candidate));
+          const update = (values: Partial<ExampleItem>) =>
+            onChange(
+              items.map((candidate) =>
+                candidate.id === item.id ? { ...candidate, ...values } : candidate,
+              ),
+            );
           return (
-            <div className={`flex items-start gap-2 py-3 ${dragState.isDragging ? "bg-accent shadow-sm" : "bg-background"}`}>
+            <div
+              className={`flex items-start gap-2 py-3 ${dragState.isDragging ? "bg-accent shadow-sm" : "bg-background"}`}
+            >
               <DragHandle label={`example ${index + 1}`} state={dragState} />
-              <Caption className="w-7 shrink-0 pt-2.5 text-muted-foreground">{String(index + 1).padStart(2, "0")}</Caption>
+              <Caption className="w-7 shrink-0 pt-2.5 text-muted-foreground">
+                {String(index + 1).padStart(2, "0")}
+              </Caption>
               <div className="grid min-w-0 flex-1 gap-2">
-                <Input aria-label={`Example ${index + 1} label`} onChange={(event) => update({ label: event.target.value })} placeholder="Example label" value={item.label} />
+                <Input
+                  aria-label={`Example ${index + 1} label`}
+                  onChange={(event) => update({ label: event.target.value })}
+                  placeholder="Example label"
+                  value={item.label}
+                />
                 <div className="grid gap-2 md:grid-cols-2">
-                  <Textarea code aria-label={`Example ${index + 1} primary sample`} className="min-h-24" onChange={(event) => update({ text: event.target.value })} placeholder="Primary sample" value={item.text} />
-                  <Textarea code aria-label={`Example ${index + 1} secondary sample`} className="min-h-24" onChange={(event) => update({ secondary: event.target.value })} placeholder="Secondary sample (optional)" value={item.secondary} />
+                  <Textarea
+                    code
+                    aria-label={`Example ${index + 1} primary sample`}
+                    className="min-h-24"
+                    onChange={(event) => update({ text: event.target.value })}
+                    placeholder="Primary sample"
+                    value={item.text}
+                  />
+                  <Textarea
+                    code
+                    aria-label={`Example ${index + 1} secondary sample`}
+                    className="min-h-24"
+                    onChange={(event) => update({ secondary: event.target.value })}
+                    placeholder="Secondary sample (optional)"
+                    value={item.secondary}
+                  />
                 </div>
               </div>
-              <RemoveButton label={`example ${index + 1}`} onClick={() => onChange(items.filter((candidate) => candidate.id !== item.id))} />
+              <RemoveButton
+                label={`example ${index + 1}`}
+                onClick={() => onChange(items.filter((candidate) => candidate.id !== item.id))}
+              />
             </div>
           );
         }}
       />
-      <Button className="mt-3" onClick={() => onChange([...items, { id: itemId("example"), label: "", text: "", secondary: "" }])} size="sm" type="button" variant="ghost"><Plus aria-hidden="true" />Add example</Button>
+      <Button
+        className="mt-3"
+        onClick={() =>
+          onChange([...items, { id: itemId("example"), label: "", text: "", secondary: "" }])
+        }
+        size="sm"
+        type="button"
+        variant="ghost"
+      >
+        <Plus aria-hidden="true" />
+        Add example
+      </Button>
     </div>
   );
 }
@@ -542,22 +662,53 @@ function RelatedToolsEditor({
 }) {
   const [query, setQuery] = useAdminQueryState<string>("relatedQuery", "");
   const selectedIds = new Set(items.map((item) => item.value));
-  const matches = tools.filter((tool) =>
-    !selectedIds.has(tool.id) && `${tool.name} ${tool.id}`.toLowerCase().includes(query.toLowerCase()),
-  ).slice(0, 5);
+  const matches = tools
+    .filter(
+      (tool) =>
+        !selectedIds.has(tool.id) &&
+        `${tool.name} ${tool.id}`.toLowerCase().includes(query.toLowerCase()),
+    )
+    .slice(0, 5);
 
   return (
     <div>
-      <Muted className="mb-4 text-muted-foreground">Link stable tool IDs and order the recommendations visitors see next.</Muted>
+      <Muted className="mb-4 text-muted-foreground">
+        Link stable tool IDs and order the recommendations visitors see next.
+      </Muted>
       <div className="relative mb-3">
-        <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input aria-label="Search tools" className="pl-9" onChange={(event) => setQuery(event.target.value, true)} placeholder="Search by name or stable ID" value={query} />
+        <Search
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          aria-label="Search tools"
+          className="pl-9"
+          onChange={(event) => setQuery(event.target.value, true)}
+          placeholder="Search by name or stable ID"
+          value={query}
+        />
       </div>
       {query ? (
         <div className="mb-4 flex flex-wrap gap-2">
-          {matches.length ? matches.map((tool) => (
-            <Button key={tool.id} onClick={() => { onChange([...items, { id: itemId("related"), value: tool.id }]); setQuery(""); }} size="xs" type="button" variant="secondary"><Plus aria-hidden="true" />{tool.name}</Button>
-          )) : <Caption className="text-muted-foreground">No unlinked tools match.</Caption>}
+          {matches.length ? (
+            matches.map((tool) => (
+              <Button
+                key={tool.id}
+                onClick={() => {
+                  onChange([...items, { id: itemId("related"), value: tool.id }]);
+                  setQuery("");
+                }}
+                size="xs"
+                type="button"
+                variant="secondary"
+              >
+                <Plus aria-hidden="true" />
+                {tool.name}
+              </Button>
+            ))
+          ) : (
+            <Caption className="text-muted-foreground">No unlinked tools match.</Caption>
+          )}
         </div>
       ) : null}
       <OrderableList
@@ -570,13 +721,18 @@ function RelatedToolsEditor({
         renderItem={(item, dragState) => {
           const tool = tools.find((candidate) => candidate.id === item.value);
           return (
-            <div className={`flex items-center gap-2 py-2 ${dragState.isDragging ? "bg-accent shadow-sm" : "bg-background"}`}>
+            <div
+              className={`flex items-center gap-2 py-2 ${dragState.isDragging ? "bg-accent shadow-sm" : "bg-background"}`}
+            >
               <DragHandle label={tool?.name ?? item.value} state={dragState} />
               <div className="min-w-0 flex-1">
                 <P className="truncate">{tool?.name ?? "Unknown tool"}</P>
                 <Caption className="block truncate text-muted-foreground">{item.value}</Caption>
               </div>
-              <RemoveButton label={tool?.name ?? item.value} onClick={() => onChange(items.filter((candidate) => candidate.id !== item.id))} />
+              <RemoveButton
+                label={tool?.name ?? item.value}
+                onClick={() => onChange(items.filter((candidate) => candidate.id !== item.id))}
+              />
             </div>
           );
         }}
@@ -585,41 +741,77 @@ function RelatedToolsEditor({
   );
 }
 
-function ContentDocumentForm({ inherited, relatedTools, stored, toolId }: Omit<ToolContentFormProps, "section">) {
+function ContentDocumentForm({
+  inherited,
+  relatedTools,
+  stored,
+  toolId,
+}: Omit<ToolContentFormProps, "section">) {
   const [state, action, pending] = useActionState(saveToolContentAction, IDLE);
   const inheritedDoc = contentRecord(inherited.contentDoc);
   const initialDoc = contentRecord(stored.contentDoc ?? inherited.contentDoc);
   const [overrideDoc, setOverrideDoc] = useState(asRecord(stored.contentDoc) !== null);
   const [activeSection, setActiveSection] = useAdminQueryState<DocumentSection>(
-    "documentSection", "howToUse", DOCUMENT_SECTIONS.map((section) => section.key),
+    "documentSection",
+    "howToUse",
+    DOCUMENT_SECTIONS.map((section) => section.key),
   );
-  const [howToUse, setHowToUse] = useState<TextItem[]>(initialDoc.howToUse.map((value) => ({ id: itemId("how"), value })));
-  const [limitations, setLimitations] = useState<TextItem[]>(initialDoc.limitations.map((value) => ({ id: itemId("limitation"), value })));
-  const [faq, setFaq] = useState<FaqItem[]>(initialDoc.faq.map((item) => ({ id: itemId("faq"), ...item })));
-  const [examples, setExamples] = useState<ExampleItem[]>(initialDoc.examples.map((item) => ({ id: itemId("example"), label: item.label, text: item.text, secondary: item.secondary ?? "" })));
-  const [related, setRelated] = useState<TextItem[]>(initialDoc.relatedToolIds.map((value) => ({ id: itemId("related"), value })));
+  const [howToUse, setHowToUse] = useState<TextItem[]>(
+    initialDoc.howToUse.map((value) => ({ id: itemId("how"), value })),
+  );
+  const [limitations, setLimitations] = useState<TextItem[]>(
+    initialDoc.limitations.map((value) => ({ id: itemId("limitation"), value })),
+  );
+  const [faq, setFaq] = useState<FaqItem[]>(
+    initialDoc.faq.map((item) => ({ id: itemId("faq"), ...item })),
+  );
+  const [examples, setExamples] = useState<ExampleItem[]>(
+    initialDoc.examples.map((item) => ({
+      id: itemId("example"),
+      label: item.label,
+      text: item.text,
+      secondary: item.secondary ?? "",
+    })),
+  );
+  const [related, setRelated] = useState<TextItem[]>(
+    initialDoc.relatedToolIds.map((value) => ({ id: itemId("related"), value })),
+  );
 
   const current: ContentRecord = {
     howToUse: howToUse.map((item) => item.value),
     limitations: limitations.map((item) => item.value),
     faq: faq.map(({ q, a }) => ({ q, a })),
-    examples: examples.map(({ label, text, secondary }) => ({ label, text, ...(secondary.trim() ? { secondary } : {}) })),
+    examples: examples.map(({ label, text, secondary }) => ({
+      label,
+      text,
+      ...(secondary.trim() ? { secondary } : {}),
+    })),
     relatedToolIds: related.map((item) => item.value),
   };
 
-  const sectionCounts = useMemo(() => ({
-    howToUse: howToUse.length,
-    limitations: limitations.length,
-    faq: faq.length,
-    examples: examples.length,
-    relatedToolIds: related.length,
-  }), [examples.length, faq.length, howToUse.length, limitations.length, related.length]);
+  const sectionCounts = useMemo(
+    () => ({
+      howToUse: howToUse.length,
+      limitations: limitations.length,
+      faq: faq.length,
+      examples: examples.length,
+      relatedToolIds: related.length,
+    }),
+    [examples.length, faq.length, howToUse.length, limitations.length, related.length],
+  );
 
   function restoreFromCode(): void {
     setHowToUse(inheritedDoc.howToUse.map((value) => ({ id: itemId("how"), value })));
     setLimitations(inheritedDoc.limitations.map((value) => ({ id: itemId("limitation"), value })));
     setFaq(inheritedDoc.faq.map((item) => ({ id: itemId("faq"), ...item })));
-    setExamples(inheritedDoc.examples.map((item) => ({ id: itemId("example"), label: item.label, text: item.text, secondary: item.secondary ?? "" })));
+    setExamples(
+      inheritedDoc.examples.map((item) => ({
+        id: itemId("example"),
+        label: item.label,
+        text: item.text,
+        secondary: item.secondary ?? "",
+      })),
+    );
     setRelated(inheritedDoc.relatedToolIds.map((value) => ({ id: itemId("related"), value })));
     setOverrideDoc(false);
   }
@@ -632,19 +824,33 @@ function ContentDocumentForm({ inherited, relatedTools, stored, toolId }: Omit<T
 
       <div className="flex flex-col gap-2 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <H3 >Content document</H3>
-          <Muted className="mt-1 text-muted-foreground">Edit the supporting content shown below the public tool workspace.</Muted>
+          <H3>Content document</H3>
+          <Muted className="mt-1 text-muted-foreground">
+            Edit the supporting content shown below the public tool workspace.
+          </Muted>
         </div>
         <div className="flex gap-2">
-          <Button onClick={restoreFromCode} size="sm" type="button" variant="secondary"><RotateCcw aria-hidden="true" />Use code document</Button>
-          <Button loading={pending} onClick={() => setOverrideDoc(true)} size="sm" type="submit">{pending ? "Saving…" : "Save document"}</Button>
+          <Button onClick={restoreFromCode} size="sm" type="button" variant="secondary">
+            <RotateCcw aria-hidden="true" />
+            Use code document
+          </Button>
+          <Button loading={pending} onClick={() => setOverrideDoc(true)} size="sm" type="submit">
+            {pending ? "Saving…" : "Save document"}
+          </Button>
         </div>
       </div>
 
-      {state.status !== "idle" ? <AlertBanner variant={state.status === "success" ? "success" : "error"}>{state.message}</AlertBanner> : null}
+      {state.status !== "idle" ? (
+        <AlertBanner variant={state.status === "success" ? "success" : "error"}>
+          {state.message}
+        </AlertBanner>
+      ) : null}
 
       <div className="grid min-h-[430px] gap-6 lg:grid-cols-[190px_minmax(0,1fr)]">
-        <nav aria-label="Content document sections" className="flex gap-1 overflow-x-auto border-b border-border pb-2 lg:flex-col lg:overflow-visible lg:border-r lg:border-b-0 lg:pr-5">
+        <nav
+          aria-label="Content document sections"
+          className="flex gap-1 overflow-x-auto border-b border-border pb-2 lg:flex-col lg:overflow-visible lg:border-r lg:border-b-0 lg:pr-5"
+        >
           {DOCUMENT_SECTIONS.map((section) => (
             <button
               aria-current={activeSection === section.key ? "page" : undefined}
@@ -661,14 +867,63 @@ function ContentDocumentForm({ inherited, relatedTools, stored, toolId }: Omit<T
 
         <section className="min-w-0">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <H3 >{DOCUMENT_SECTIONS.find((section) => section.key === activeSection)?.label}</H3>
-            <Caption className="text-muted-foreground">Drag to reorder · changes save as one document</Caption>
+            <H3>{DOCUMENT_SECTIONS.find((section) => section.key === activeSection)?.label}</H3>
+            <Caption className="text-muted-foreground">
+              Drag to reorder · changes save as one document
+            </Caption>
           </div>
-          {activeSection === "howToUse" ? <TextListEditor addLabel="Add step" description="Write concise ordered steps that take a first-time visitor from input to result." items={howToUse} label="Step" onChange={(items) => { setHowToUse(items); setOverrideDoc(true); }} /> : null}
-          {activeSection === "limitations" ? <TextListEditor addLabel="Add limitation" description="State boundaries plainly so visitors understand what the tool does not validate or guarantee." items={limitations} label="Limitation" onChange={(items) => { setLimitations(items); setOverrideDoc(true); }} /> : null}
-          {activeSection === "faq" ? <FaqEditor items={faq} onChange={(items) => { setFaq(items); setOverrideDoc(true); }} /> : null}
-          {activeSection === "examples" ? <ExamplesEditor items={examples} onChange={(items) => { setExamples(items); setOverrideDoc(true); }} /> : null}
-          {activeSection === "relatedToolIds" ? <RelatedToolsEditor items={related} onChange={(items) => { setRelated(items); setOverrideDoc(true); }} tools={relatedTools} /> : null}
+          {activeSection === "howToUse" ? (
+            <TextListEditor
+              addLabel="Add step"
+              description="Write concise ordered steps that take a first-time visitor from input to result."
+              items={howToUse}
+              label="Step"
+              onChange={(items) => {
+                setHowToUse(items);
+                setOverrideDoc(true);
+              }}
+            />
+          ) : null}
+          {activeSection === "limitations" ? (
+            <TextListEditor
+              addLabel="Add limitation"
+              description="State boundaries plainly so visitors understand what the tool does not validate or guarantee."
+              items={limitations}
+              label="Limitation"
+              onChange={(items) => {
+                setLimitations(items);
+                setOverrideDoc(true);
+              }}
+            />
+          ) : null}
+          {activeSection === "faq" ? (
+            <FaqEditor
+              items={faq}
+              onChange={(items) => {
+                setFaq(items);
+                setOverrideDoc(true);
+              }}
+            />
+          ) : null}
+          {activeSection === "examples" ? (
+            <ExamplesEditor
+              items={examples}
+              onChange={(items) => {
+                setExamples(items);
+                setOverrideDoc(true);
+              }}
+            />
+          ) : null}
+          {activeSection === "relatedToolIds" ? (
+            <RelatedToolsEditor
+              items={related}
+              onChange={(items) => {
+                setRelated(items);
+                setOverrideDoc(true);
+              }}
+              tools={relatedTools}
+            />
+          ) : null}
         </section>
       </div>
     </form>
@@ -679,6 +934,11 @@ export function ToolContentForm(props: ToolContentFormProps): ReactElement {
   return props.section === "catalog" ? (
     <CatalogForm inherited={props.inherited} stored={props.stored} toolId={props.toolId} />
   ) : (
-    <ContentDocumentForm inherited={props.inherited} relatedTools={props.relatedTools} stored={props.stored} toolId={props.toolId} />
+    <ContentDocumentForm
+      inherited={props.inherited}
+      relatedTools={props.relatedTools}
+      stored={props.stored}
+      toolId={props.toolId}
+    />
   );
 }

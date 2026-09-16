@@ -82,12 +82,7 @@ export function convertJsonToCsv(
       },
     };
   }
-  if (
-    delimiter !== "," &&
-    delimiter !== ";" &&
-    delimiter !== "\t" &&
-    delimiter !== "|"
-  ) {
+  if (delimiter !== "," && delimiter !== ";" && delimiter !== "\t" && delimiter !== "|") {
     return {
       ok: false,
       error: { kind: "configuration", message: "Choose a valid CSV delimiter." },
@@ -135,9 +130,7 @@ export function convertJsonToCsv(
   }
 
   const flattenedRows = rows.map((row) => flattenRecord(row));
-  const columns = [
-    ...new Set(flattenedRows.flatMap((row) => Object.keys(row))),
-  ];
+  const columns = [...new Set(flattenedRows.flatMap((row) => Object.keys(row)))];
   const output = columns.length
     ? [
         columns.map((column) => csvCell(column, delimiter)).join(delimiter),
@@ -185,12 +178,7 @@ export function parseDelimitedRows(
       continue;
     }
 
-    if (
-      afterQuote &&
-      character !== delimiter &&
-      character !== "\n" &&
-      character !== "\r"
-    ) {
+    if (afterQuote && character !== delimiter && character !== "\n" && character !== "\r") {
       return {
         ok: false,
         message: `Unexpected character ${JSON.stringify(character)} after a closing quote.`,

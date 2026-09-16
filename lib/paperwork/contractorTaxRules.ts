@@ -35,7 +35,9 @@ export interface W9RequestInput {
   secureSubmissionInstructions: string;
 }
 
-export function get1099ReportingRule(year: number):
+export function get1099ReportingRule(
+  year: number,
+):
   | { supported: true; year: number; threshold: number }
   | { supported: false; year: number; error: string } {
   if (year <= 2025) {
@@ -56,9 +58,7 @@ export function maskTinReference(value: string): string {
   return lastFour ? `•••• ${lastFour}` : "";
 }
 
-export function createEmptyRecipientAdjustment(
-  vendorId: string,
-): RecipientAnnualAdjustment {
+export function createEmptyRecipientAdjustment(vendorId: string): RecipientAnnualAdjustment {
   return {
     vendorId,
     cashTips: 0,
@@ -72,10 +72,7 @@ export function createEmptyRecipientAdjustment(
   };
 }
 
-export function calculateNecSummary(
-  draft: NecRuleDraft,
-  knownVendorIds: readonly string[],
-) {
+export function calculateNecSummary(draft: NecRuleDraft, knownVendorIds: readonly string[]) {
   const knownVendors = new Set(knownVendorIds);
   const vendorTotals: Record<string, number> = {};
   let totalPayments = 0;
@@ -86,8 +83,7 @@ export function calculateNecSummary(
     totalPayments += amount;
     if (payment.includeIn1099) {
       reportablePayments += amount;
-      vendorTotals[payment.vendorId] =
-        (vendorTotals[payment.vendorId] || 0) + amount;
+      vendorTotals[payment.vendorId] = (vendorTotals[payment.vendorId] || 0) + amount;
     }
   });
 
@@ -109,13 +105,10 @@ export function calculateNecSummary(
   const boxTotals = draft.recipientAdjustments.reduce(
     (totals, adjustment) => ({
       cashTips: totals.cashTips + Number(adjustment.cashTips || 0),
-      qualifiedOvertime:
-        totals.qualifiedOvertime + Number(adjustment.qualifiedOvertime || 0),
-      federalWithholding:
-        totals.federalWithholding + Number(adjustment.federalWithholding || 0),
+      qualifiedOvertime: totals.qualifiedOvertime + Number(adjustment.qualifiedOvertime || 0),
+      federalWithholding: totals.federalWithholding + Number(adjustment.federalWithholding || 0),
       stateIncome: totals.stateIncome + Number(adjustment.stateIncome || 0),
-      stateWithholding:
-        totals.stateWithholding + Number(adjustment.stateWithholding || 0),
+      stateWithholding: totals.stateWithholding + Number(adjustment.stateWithholding || 0),
     }),
     {
       cashTips: 0,

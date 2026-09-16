@@ -4,21 +4,17 @@ export default {
   toolId: "devtools.csv-to-table",
   app: "devtools",
   category: "csv-data-tools",
-  keywords: [
-    "csv",
-    "html",
-    "table",
-    "convert",
-    "markup",
-    "thead",
-    "accessible",
-  ],
+  keywords: ["csv", "html", "table", "convert", "markup", "thead", "accessible"],
   name: "CSV to Table",
   description: "Convert CSV to an accessible HTML table.",
   input: {
     kind: "text",
     label: "CSV input",
-    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
+    acceptFiles: {
+      accept: ".csv,.tsv,text/csv,text/tab-separated-values",
+      maxBytes: 104_857_600,
+      maxEditableBytes: 2_000_000,
+    },
     placeholder: "name,role\nAda,Admin",
   },
   settings: {

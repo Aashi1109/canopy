@@ -30,8 +30,8 @@ tools/index.ts                # explicit imports → Record<slug, ToolDefinition
 ```ts
 interface ToolPageMeta {
   seo: { title: string; description: string; keywords?: readonly string[] };
-  howToUse: readonly { title: string; description: string }[];  // feeds HowItWorks primitive
-  relatedTools: readonly string[];                              // slugs → related-tools section
+  howToUse: readonly { title: string; description: string }[]; // feeds HowItWorks primitive
+  relatedTools: readonly string[]; // slugs → related-tools section
   examples?: readonly { label: string; input: string }[];
   faq?: readonly { q: string; a: string }[];
 }
@@ -55,11 +55,24 @@ Rules: `definition.ts` never imports React except a lazy `WorkArea` reference; h
 // field.select / field.toggle / field.checkbox / field.number / field.text / field.slider / field.preset
 export interface FieldUiMeta {
   label: string;
-  kind: "select"|"checkbox"|"toggle"|"number"|"text"|"slider"|"preset"
-      | "password"|"color"|"date";   // masked secrets (HMAC/basic-auth), color pickers (QR/watermark/bg), date inputs
+  kind:
+    | "select"
+    | "checkbox"
+    | "toggle"
+    | "number"
+    | "text"
+    | "slider"
+    | "preset"
+    | "password"
+    | "color"
+    | "date"; // masked secrets (HMAC/basic-auth), color pickers (QR/watermark/bg), date inputs
   choices?: readonly { label: string; value: string }[];
-  min?: number; max?: number; step?: number; placeholder?: string;
-  helpText?: string; visibleWhen?: { key: string; equals: string|number|boolean }; // e.g. UUID v3/v5 namespace fields
+  min?: number;
+  max?: number;
+  step?: number;
+  placeholder?: string;
+  helpText?: string;
+  visibleWhen?: { key: string; equals: string | number | boolean }; // e.g. UUID v3/v5 namespace fields
 }
 
 export function defineSettings(fields: Record<string, FieldSpec>): SettingsSchema;
@@ -161,10 +174,12 @@ Both `[slug]/page.tsx` files become: resolve tool → look up `ToolDefinition` �
 ## Phases
 
 ### Phase 0 — Runtime core (no app change)
+
 Create `lib/tool-runtime/{definition.ts, settings.ts, runState.ts, useToolExecution.ts}` + `tests/tool-runtime.test.mjs` (reducer + zod settings parse/defaults/coercion tests; node --test imports .ts directly per `tests/media-processing-rules.test.mjs` pattern).
 **Verify:** `pnpm lint && pnpm test` green, zero behavior change.
 
 ### Phase 1 — DevTools layouts + dispatch (cutover on old registry)
+
 1. Build `app/devtools/components/layouts/{shared,SourceResultWorkbench,GeneratorWorkbench}.tsx` (extraction of `UtilityToolWorkbench` split by mode, driven by `ToolDefinition` + `useToolExecution`), `app/devtools/components/SettingsFields.tsx` (generic FieldUiMeta renderer, extracted from `UtilityOptionControl`/`UtilityToolbarOptionControl`), `app/devtools/components/renderers.tsx`.
 2. Temporary bridge in `tools/index.ts` — `deriveToolDefinitions()` maps all ~110 `utilityToolDefinitions` → `ToolDefinition` (`mode single/dual → source-result`, `generator → generator`, `outputKind → result.renderer`, `live → trigger`, `CONVERSION_WORKBENCH_TOOL_KEYS` (moved from json-workbench.tsx:1366) → `variant: "conversion"`; `execution.run` wired to `runUtilityTool`). `domain-rating-checker` → `runtime: "server-action"`. Bridge shrinks to nothing as Phase 2 folders land.
 3. Rewrite `app/devtools/[slug]/page.tsx` dispatch: definition → `customWorkArea ?? layoutComponents[layout]`; keep `checkDomainRatingAction` in page (server module), injected as prop.
@@ -173,7 +188,9 @@ Create `lib/tool-runtime/{definition.ts, settings.ts, runState.ts, useToolExecut
 **Verify:** `pnpm lint && pnpm test`; update `tests/devtools-layout-reuse.test.mjs` / `workspace-structure.test.mjs` if they assert file layout; manual spot-check per category + one conversion-variant tool + domain-rating-checker + all 4 custom tools.
 
 ### Phase 2 — Explode monolith into per-tool folders
+
 For each of ~110 tools create `tools/<slug>/`:
+
 - `run.ts` — switch case body from `format-json.ts` moved verbatim (heavy deps localize: bcryptjs → password tools, qrcode → qr tool, marked/js-yaml → converters).
 - `definition.ts` — hand-authored: app/category, layout, inputs, `defineSettings(...)` zod fields (converted from the tool's `option()` calls), trigger, renderer, `meta` (seo/howToUse/relatedTools). Once a folder exists, its entry leaves the derive-bridge.
 - `tools/index.ts` becomes explicit imports of all folders; asserts unique slugs.
@@ -183,10 +200,12 @@ Shared helpers used by multiple runners move to `lib/devtools/shared/` (transfor
 Do this in category-sized tranches (json, encoding, hashing, text, converters, generators, web, time…), `pnpm lint && pnpm test` per tranche.
 
 ### Phase 3 — Media hooks extraction (no visual change)
+
 Extract from `MediaWorkbench.tsx`, logic verbatim: `app/media/_hooks/useMediaWorker.ts` (worker lifecycle around `beginWorkerJob/reduceWorkerJobState/cancelWorkerJob` + transferables; Worker constructor stays literal here), `useFileQueue.ts` (magic-byte validation via `_lib/validation.ts`, lifecycle staleness guard), `useObjectUrls.ts` (URL registry + revoke). `MediaWorkbench` consumes hooks.
 **Verify:** `pnpm test:media` (coverage gate on `_lib`/`_workers` unaffected) + `playwright test -c playwright.media.config.ts`.
 
 ### Phase 4 — Media full cutover to 3 layouts
+
 1. Per-tool folders `tools/<slug>/definition.ts` (30 folders, same flat root + `tools/index.ts`): app/category/meta, layout, accept/engine/multiple, `settings` via `defineSettings` (presets like `IMAGE_COMPRESSION_PRESETS` → `kind: "preset"` choices), `collection`/`editor` config, `jobOptions.ts` — the tool's branch of today's `buildJobOptions` moved into its folder (typed against `MediaJobOptionsByOperation[slug]`, still the trust-boundary mapping). Replaces `ToolOptions` if/else chain, `createDefaultOptions`, and central `buildJobOptions`. `app/media/_lib/tools.ts` shrinks to shared types/helpers or dies.
 2. Build `app/media/components/SettingsFields.tsx` (media flavor; merge with devtools one later only if they converge), `layouts/FileProcessorWorkbench.tsx` (10 simple tools; composed from hooks + `patterns.tsx` primitives), `layouts/CollectionWorkbench.tsx` (pdf-inspection thumbnails, `OrderableList` for reorder, rotate/delete/partition per config), `layouts/VisualEditorWorkbench.tsx` (extract `CropOverlay` → own file; geometry stays in `_lib/geometry.ts`; navigator + before/after per config). Fixes audit-flagged design issues (compress/resize image previews, watermark rendered page, combine-images composed preview) as part of layout build.
 3. Rewrite `app/media/[slug]/page.tsx` dispatch by `definition.layout`; delete `MediaWorkbench.tsx`.
@@ -194,6 +213,7 @@ Extract from `MediaWorkbench.tsx`, logic verbatim: `app/media/_hooks/useMediaWor
 **Verify:** `pnpm test:media`, media e2e spec, manual check per layout; explicitly test a qpdf-backed route (`compress-pdf` preserve mode) for `crossOriginIsolated` still holding.
 
 ### Phase 5 — Parity test + cleanup
+
 New `tests/tool-definitions.test.mjs`: every non-Paperwork `toolManifest` entry has a tool folder registered in its app's `tools/index.ts` and vice versa; every definition's layout is one of 5; every settings schema parses its own defaults; folder slug === definition id. Delete dead code (`CONVERSION_WORKBENCH_TOOL_KEYS` original, `UtilityToolWorkbench`, `ToolOptions`, `createDefaultOptions`, `normalizeUtilityOptions`, derive-bridge).
 
 ---
@@ -213,6 +233,7 @@ Deep feature audit of all 144 tools against best-in-class equivalents saved at `
 - **Feature debts** (quality, not architecture — tracked in specs §J): real formatters/minifiers, JSONPath filters, ajv validation, cron next-run times, bcrypt default cost, option-depth expansion across ~40 tools. These land per-tool inside Phase 2 folder migration where cheap, else post-migration.
 
 ## Key reuse (do not rewrite)
+
 - `app/media/_lib/workerProtocol.ts` reducer + message constructors — wrap, don't touch
 - `app/devtools/components/JsonResultRenderer.tsx` — becomes `json-tree` renderer
 - `packages/ui` `ToolPageShell`, `WorkbenchShell`, `patterns.tsx`, `OrderableList` — consumed as-is
@@ -220,6 +241,7 @@ Deep feature audit of all 144 tools against best-in-class equivalents saved at `
 - `getAvailableToolBySlug` control-plane flow — untouched
 
 ## Risks
+
 - **Full-cutover regression surface**: Phase 1 flips 110 tools at once. Mitigate: layouts are extractions (not rewrites) of `UtilityToolWorkbench`; visual parity spot-check matrix per category + both variants before merge.
 - **Zod migration**: factory-internal swap keeps authoring sites; risk is subtle coercion differences vs `normalizeUtilityOptions` (e.g. number clamping vs reject). Port its exact semantics into field builders (clamp via `.transform`, enum fallback to default) + unit tests comparing old/new normalization on all 110 defaults.
 - **Worker code-splitting**: never move `new Worker(new URL(...))` out of `app/media/_hooks/useMediaWorker.ts`.
@@ -227,6 +249,7 @@ Deep feature audit of all 144 tools against best-in-class equivalents saved at `
 - **Bundle size**: runner registry bundles same code as today's monolith (no regression); per-category `next/dynamic` is a later optimization if measured.
 
 ## Verification (end-to-end)
+
 1. `pnpm lint && pnpm test && pnpm test:media` after every phase.
 2. Playwright: `playwright test -c playwright.media.config.ts` + devtools e2e if present.
 3. Manual matrix: 1 tool per DevTools category, 1 conversion-variant, 1 generator, domain-rating-checker, 4 custom work areas, 1 tool per media layout, qpdf compress-pdf.

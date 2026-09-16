@@ -9,12 +9,33 @@ test("catalog caches database data, preserves published content, and refreshes a
   const date = new Date("2026-09-16T00:00:00Z");
   const fixture = {
     reads: 0,
-    rows: [{ toolId: "devtools.markdown-previewer", app: "devtools", slug: "markdown-previewer",
-      name: "Preview Markdown", description: "Live preview", order: 0, enabled: true,
-      archived: false, createdAt: date, updatedAt: date }],
-    content: [{ toolId: "devtools.markdown-previewer", category: null, keywords: null,
-      seoTitle: "Published title", seoDescription: null, contentDoc: null,
-      docVersion: 1, publishedAt: date, updatedAt: date }],
+    rows: [
+      {
+        toolId: "devtools.markdown-previewer",
+        app: "devtools",
+        slug: "markdown-previewer",
+        name: "Preview Markdown",
+        description: "Live preview",
+        order: 0,
+        enabled: true,
+        archived: false,
+        createdAt: date,
+        updatedAt: date,
+      },
+    ],
+    content: [
+      {
+        toolId: "devtools.markdown-previewer",
+        category: null,
+        keywords: null,
+        seoTitle: "Published title",
+        seoDescription: null,
+        contentDoc: null,
+        docVersion: 1,
+        publishedAt: date,
+        updatedAt: date,
+      },
+    ],
   };
   globalThis.__catalogCacheTest = fixture;
   const variables = ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"];
@@ -22,7 +43,9 @@ test("catalog caches database data, preserves published content, and refreshes a
   const hooks = registerHooks({
     resolve(specifier, context, nextResolve) {
       if (context.parentURL === catalogUrl && specifier === "@smarttools/database") {
-        return { shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(`
+        return {
+          shortCircuit: true,
+          url: `data:text/javascript,${encodeURIComponent(`
           const fixture = globalThis.__catalogCacheTest;
           export const managedToolsTable = {};
           export const isDatabaseConfigured = () => true;
@@ -32,10 +55,14 @@ test("catalog caches database data, preserves published content, and refreshes a
           } }; } };
           export const getToolContentRows = async () => structuredClone(fixture.content);
           export const getToolIcons = async () => ({});
-        `)}` };
+        `)}`,
+        };
       }
-      if (specifier.startsWith(".") && !/\.[a-z]+$/i.test(specifier)
-        && context.parentURL?.includes("/lib/tool-framework/")) {
+      if (
+        specifier.startsWith(".") &&
+        !/\.[a-z]+$/i.test(specifier) &&
+        context.parentURL?.includes("/lib/tool-framework/")
+      ) {
         return nextResolve(new URL(`${specifier}.ts`, context.parentURL).href, context);
       }
       return nextResolve(specifier, context);
@@ -57,7 +84,10 @@ test("catalog caches database data, preserves published content, and refreshes a
     assert.equal(command[1], "catalog:all");
     if (command[0] === "GET") return { data: { result: cached } };
     if (command[0] === "DEL") cached = null;
-    else { assert.equal(command[0], "SET"); cached = command[2]; }
+    else {
+      assert.equal(command[0], "SET");
+      cached = command[2];
+    }
     return { data: { result: 1 } };
   });
   const { getTools, resolveToolPage } = await import(catalogUrl);
@@ -73,7 +103,11 @@ test("catalog caches database data, preserves published content, and refreshes a
   await catalogCache.delete("all");
   const updated = await getTools();
   assert.equal(updated[0].name, "Updated name");
-  assert.notEqual(updated[0].seoTitle, "Published title", "unpublished content cannot leak from cache");
+  assert.notEqual(
+    updated[0].seoTitle,
+    "Published title",
+    "unpublished content cannot leak from cache",
+  );
   assert.equal(fixture.reads, 2);
 
   cached = "{broken";

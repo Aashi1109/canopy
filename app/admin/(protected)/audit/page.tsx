@@ -31,7 +31,7 @@ type AuditSearchParams = Promise<{
 }>;
 
 function valueOf(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+  return Array.isArray(value) ? (value[0] ?? "") : (value ?? "");
 }
 
 export default async function AuditPage({ searchParams }: { searchParams: AuditSearchParams }) {
@@ -40,13 +40,14 @@ export default async function AuditPage({ searchParams }: { searchParams: AuditS
   const query = valueOf(params.q).trim().toLowerCase();
   const requestedAction = valueOf(params.action);
   const action = requestedAction === "all" ? "" : requestedAction;
-  const actions = [...new Set([...events.map((event) => event.action), ...(action ? [action] : [])])].sort();
+  const actions = [
+    ...new Set([...events.map((event) => event.action), ...(action ? [action] : [])]),
+  ].sort();
   const requestedDate = valueOf(params.date);
   const date = ["7", "30", "90", "all"].includes(requestedDate) ? requestedDate : "30";
   const days = date === "all" ? null : Number(date);
-  const cutoff = days && Number.isFinite(days)
-    ? new Date(Date.now() - days * 24 * 60 * 60 * 1000)
-    : null;
+  const cutoff =
+    days && Number.isFinite(days) ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
   const filteredEvents = events.filter((event) => {
     if (action && event.action !== action) return false;
     if (cutoff && event.createdAt < cutoff) return false;
@@ -75,16 +76,25 @@ export default async function AuditPage({ searchParams }: { searchParams: AuditS
         <AdminFilters
           search={{ key: "q", label: "Search events", placeholder: "Actor, target, or action…" }}
           selects={[
-            { key: "action", label: "Action", options: [
-              { value: "all", label: "All actions" },
-              ...actions.map((value) => ({ value, label: auditEventPresentation(value).label })),
-            ] },
-            { key: "date", label: "Date range", defaultValue: "30", options: [
-              { value: "7", label: "Last 7 days" },
-              { value: "30", label: "Last 30 days" },
-              { value: "90", label: "Last 90 days" },
-              { value: "all", label: "All retained events" },
-            ] },
+            {
+              key: "action",
+              label: "Action",
+              options: [
+                { value: "all", label: "All actions" },
+                ...actions.map((value) => ({ value, label: auditEventPresentation(value).label })),
+              ],
+            },
+            {
+              key: "date",
+              label: "Date range",
+              defaultValue: "30",
+              options: [
+                { value: "7", label: "Last 7 days" },
+                { value: "30", label: "Last 30 days" },
+                { value: "90", label: "Last 90 days" },
+                { value: "all", label: "All retained events" },
+              ],
+            },
           ]}
         />
       </div>
@@ -112,33 +122,51 @@ export default async function AuditPage({ searchParams }: { searchParams: AuditS
                 return (
                   <TableRow className="align-top hover:bg-muted/30" key={event.id}>
                     <TableCell className="whitespace-normal py-3.5">
-                      <Strong className="block text-foreground">{event.actorName ?? "Deleted user"}</Strong>
-                      <Caption className="mt-0.5 block break-all text-muted-foreground">{event.actorEmail ?? event.actorUserId}</Caption>
+                      <Strong className="block text-foreground">
+                        {event.actorName ?? "Deleted user"}
+                      </Strong>
+                      <Caption className="mt-0.5 block break-all text-muted-foreground">
+                        {event.actorEmail ?? event.actorUserId}
+                      </Caption>
                     </TableCell>
                     <TableCell className="whitespace-normal py-3.5 align-middle">
                       <Text className="inline-flex items-center gap-2.5 text-foreground">
-                        <EventIcon aria-hidden="true" className="size-[18px] shrink-0 text-primary" strokeWidth={1.8} />
+                        <EventIcon
+                          aria-hidden="true"
+                          className="size-[18px] shrink-0 text-primary"
+                          strokeWidth={1.8}
+                        />
                         {label}
                       </Text>
                     </TableCell>
                     <TableCell className="whitespace-normal py-3.5">
                       {event.targetType === "user" ? (
                         <>
-                          <Strong className="block text-foreground">{event.targetUserName ?? "Deleted user"}</Strong>
-                          <Caption className="mt-0.5 block break-all text-muted-foreground">{event.targetUserEmail ?? event.targetId}</Caption>
+                          <Strong className="block text-foreground">
+                            {event.targetUserName ?? "Deleted user"}
+                          </Strong>
+                          <Caption className="mt-0.5 block break-all text-muted-foreground">
+                            {event.targetUserEmail ?? event.targetId}
+                          </Caption>
                         </>
                       ) : (
                         <>
-                          <Overline className="block text-muted-foreground">{event.targetType}</Overline>
+                          <Overline className="block text-muted-foreground">
+                            {event.targetType}
+                          </Overline>
                           <InlineCode className="mt-1 block break-all">{event.targetId}</InlineCode>
                         </>
                       )}
                     </TableCell>
                     <TableCell className="whitespace-normal py-3.5">
-                      <InlineCode className="block max-w-xs break-all text-muted-foreground">{JSON.stringify(event.metadata)}</InlineCode>
+                      <InlineCode className="block max-w-xs break-all text-muted-foreground">
+                        {JSON.stringify(event.metadata)}
+                      </InlineCode>
                     </TableCell>
                     <TableCell className="whitespace-normal py-3.5 text-muted-foreground">
-                      <time dateTime={event.createdAt.toISOString()}>{dateTimeFormatter.format(event.createdAt)}</time>
+                      <time dateTime={event.createdAt.toISOString()}>
+                        {dateTimeFormatter.format(event.createdAt)}
+                      </time>
                     </TableCell>
                   </TableRow>
                 );
@@ -146,13 +174,19 @@ export default async function AuditPage({ searchParams }: { searchParams: AuditS
             </TableBody>
           </Table>
           <div className="flex items-center justify-between border-t border-border px-4 py-3 text-muted-foreground">
-            <Text>Showing {filteredEvents.length} of {events.length} retained events</Text>
+            <Text>
+              Showing {filteredEvents.length} of {events.length} retained events
+            </Text>
             <Text>Latest 200 events</Text>
           </div>
         </div>
       ) : (
         <EmptyState
-          description={events.length ? "No events match the current filters. Adjust the search, action, or date range." : "Privileged changes will appear here after an administrator makes one."}
+          description={
+            events.length
+              ? "No events match the current filters. Adjust the search, action, or date range."
+              : "Privileged changes will appear here after an administrator makes one."
+          }
           icon={<History aria-hidden="true" />}
           title={events.length ? "No matching audit events" : "No privileged mutations recorded"}
         />

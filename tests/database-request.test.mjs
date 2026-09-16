@@ -10,7 +10,10 @@ globalThis.__databaseRequestClients = clients;
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
     if (context.parentURL === bootstrapUrl && specifier === "./index") {
-      return { shortCircuit: true, url: "data:text/javascript,export const db = globalThis.__bootstrapDb" };
+      return {
+        shortCircuit: true,
+        url: "data:text/javascript,export const db = globalThis.__bootstrapDb",
+      };
     }
     if (context.parentURL === bootstrapUrl && specifier === "./schema") {
       return { shortCircuit: true, url: new URL("../db/schema.ts", import.meta.url).href };
@@ -60,33 +63,52 @@ test("database pools stay inside their request through transactions, streams and
   const originalUrl = process.env.DATABASE_URL;
   delete process.env.DATABASE_URL;
   assert.equal(clients.length, 0, "imports must not open or configure a pool");
-  await assert.rejects(withDatabaseRequest(async () => {
-    await query();
-    return new Response(null, { status: 204 });
-  }, () => {}), /DATABASE_URL is required/);
+  await assert.rejects(
+    withDatabaseRequest(
+      async () => {
+        await query();
+        return new Response(null, { status: 204 });
+      },
+      () => {},
+    ),
+    /DATABASE_URL is required/,
+  );
   process.env.DATABASE_URL = "postgres://localhost/test";
   try {
     const waits = [];
     const waitUntil = (task) => waits.push(task);
     const barrier = deferred();
     let firstId;
-    const first = withDatabaseRequest(async () => {
-      firstId = await query();
-      await barrier.promise;
-      assert.equal(db.$client.url, "postgres://hyperdrive/first");
-      assert.equal(await query(otherDb), firstId, "separate bundles share request state");
-      assert.equal((await sqlClient`select 1`)[0].clientId, firstId);
-      assert.equal(await db.transaction(query), firstId);
-      await assert.rejects(db.transaction(async () => { throw new Error("rollback"); }), /rollback/);
-      return new Response(null, { status: 204 });
-    }, waitUntil, "postgres://hyperdrive/first");
-    const second = await withDatabaseRequest(async () => {
-      const id = await query();
-      assert.notEqual(id, firstId);
-      assert.equal(db.$client.url, "postgres://hyperdrive/second");
-      barrier.resolve();
-      return new Response("second");
-    }, waitUntil, "postgres://hyperdrive/second");
+    const first = withDatabaseRequest(
+      async () => {
+        firstId = await query();
+        await barrier.promise;
+        assert.equal(db.$client.url, "postgres://hyperdrive/first");
+        assert.equal(await query(otherDb), firstId, "separate bundles share request state");
+        assert.equal((await sqlClient`select 1`)[0].clientId, firstId);
+        assert.equal(await db.transaction(query), firstId);
+        await assert.rejects(
+          db.transaction(async () => {
+            throw new Error("rollback");
+          }),
+          /rollback/,
+        );
+        return new Response(null, { status: 204 });
+      },
+      waitUntil,
+      "postgres://hyperdrive/first",
+    );
+    const second = await withDatabaseRequest(
+      async () => {
+        const id = await query();
+        assert.notEqual(id, firstId);
+        assert.equal(db.$client.url, "postgres://hyperdrive/second");
+        barrier.resolve();
+        return new Response("second");
+      },
+      waitUntil,
+      "postgres://hyperdrive/second",
+    );
     await first;
     assert.equal(await second.text(), "second");
     await Promise.all(waits.splice(0));
@@ -99,17 +121,24 @@ test("database pools stay inside their request through transactions, streams and
     let streamedClient;
     const streaming = await withDatabaseRequest(async (background) => {
       const id = await query();
-      assert.equal(db.$client.url, process.env.DATABASE_URL, "unbound requests use the environment URL");
+      assert.equal(
+        db.$client.url,
+        process.env.DATABASE_URL,
+        "unbound requests use the environment URL",
+      );
       streamedClient = clients.find((client) => client.id === id);
       background(backgroundGate.promise.then(() => query()));
-      return new Response(new ReadableStream({
-        async start(controller) {
-          await streamGate.promise;
-          assert.equal(await query(), id, "queries after fetch returns retain request state");
-          controller.enqueue(new TextEncoder().encode("streamed"));
-          controller.close();
-        },
-      }), { headers: { "x-test": "preserved" } });
+      return new Response(
+        new ReadableStream({
+          async start(controller) {
+            await streamGate.promise;
+            assert.equal(await query(), id, "queries after fetch returns retain request state");
+            controller.enqueue(new TextEncoder().encode("streamed"));
+            controller.close();
+          },
+        }),
+        { headers: { "x-test": "preserved" } },
+      );
     }, waitUntil);
     assert.equal(streamedClient.closed, false);
     assert.equal(streaming.headers.get("x-test"), "preserved");
@@ -124,11 +153,13 @@ test("database pools stay inside their request through transactions, streams and
       const run = withDatabaseRequest(async () => {
         await query();
         if (failure === "throw") throw new Error(failure);
-        return new Response(new ReadableStream({
-          start(controller) {
-            if (failure === "stream error") controller.error(new Error(failure));
-          },
-        }));
+        return new Response(
+          new ReadableStream({
+            start(controller) {
+              if (failure === "stream error") controller.error(new Error(failure));
+            },
+          }),
+        );
       }, waitUntil);
       if (failure === "throw") await assert.rejects(run, /throw/);
       else {
@@ -164,15 +195,23 @@ test("database pools stay inside their request through transactions, streams and
     await Promise.all(waits.splice(0));
 
     delete process.env.DATABASE_URL;
-    await withDatabaseRequest(async () => {
-      await query();
-      assert.equal(db.$client.url, "postgres://hyperdrive/without-env");
-      return new Response(null, { status: 204 });
-    }, waitUntil, "postgres://hyperdrive/without-env");
+    await withDatabaseRequest(
+      async () => {
+        await query();
+        assert.equal(db.$client.url, "postgres://hyperdrive/without-env");
+        return new Response(null, { status: 204 });
+      },
+      waitUntil,
+      "postgres://hyperdrive/without-env",
+    );
     await Promise.all(waits.splice(0));
     process.env.DATABASE_URL = "postgres://localhost/test";
     const nodeId = await query();
-    assert.equal(db.$client.url, process.env.DATABASE_URL, "request bindings do not leak into Node pooling");
+    assert.equal(
+      db.$client.url,
+      process.env.DATABASE_URL,
+      "request bindings do not leak into Node pooling",
+    );
     assert.equal(await query(), nodeId, "Node development retains its pooled connection");
     const execute = db.execute;
     db.execute = async () => [{ clientId: "replacement" }];

@@ -35,7 +35,7 @@ export const InvoiceTemplateConfigSchema = z.object({
       "Georgia",
       "JetBrains Mono",
       "Space Grotesk",
-      "Outfit"
+      "Outfit",
     ]),
     headingSize: z.enum(["sm", "md", "lg", "xl"]),
     bodySize: z.enum(["xs", "sm", "md"]),
@@ -141,7 +141,7 @@ export const InvoiceTemplateConfigSchema = z.object({
     position: z.enum(["center", "bottom-right"]),
   }),
 
-  sectionOrder: z.array(z.string()).refine(items => {
+  sectionOrder: z.array(z.string()).refine((items) => {
     const hasDuplicates = new Set(items).size !== items.length;
     return !hasDuplicates;
   }, "Section order list must not contain duplicate elements"),
@@ -170,43 +170,47 @@ export const InvoiceTemplateConfigSchema = z.object({
   }),
 });
 
-export const InvoiceTemplateSchema = z.object({
-  id: z.string(),
-  name: z.string().min(2, "Template name must be at least 2 characters"),
-  slug: z.string().regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
-  description: z.string(),
-  category: z.enum(["simple", "professional", "creative", "service", "modern", "classic"]),
-  status: z.enum(["draft", "published", "archived"]),
-  isDefault: z.boolean(),
-  version: z.number(),
-  documentType: z.literal("invoice"),
-  layoutFamily: z.enum(["classic", "modern", "compact", "bold", "minimal", "service"]),
-  config: InvoiceTemplateConfigSchema,
-}).superRefine((val, ctx) => {
-  // Validate required visible sections
-  const vis = val.config.visibility;
-  if (!vis.showBusinessBlock && !vis.showClientBlock) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "At least one address details section (Business or Client) must be set as visible",
-      path: ["config", "visibility", "showBusinessBlock"],
-    });
-  }
-  if (!vis.showLineItems) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "The line items table must be set to visible",
-      path: ["config", "visibility", "showLineItems"],
-    });
-  }
-  if (!vis.showTotals) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "The financial totals block must be set to visible",
-      path: ["config", "visibility", "showTotals"],
-    });
-  }
-});
+export const InvoiceTemplateSchema = z
+  .object({
+    id: z.string(),
+    name: z.string().min(2, "Template name must be at least 2 characters"),
+    slug: z
+      .string()
+      .regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
+    description: z.string(),
+    category: z.enum(["simple", "professional", "creative", "service", "modern", "classic"]),
+    status: z.enum(["draft", "published", "archived"]),
+    isDefault: z.boolean(),
+    version: z.number(),
+    documentType: z.literal("invoice"),
+    layoutFamily: z.enum(["classic", "modern", "compact", "bold", "minimal", "service"]),
+    config: InvoiceTemplateConfigSchema,
+  })
+  .superRefine((val, ctx) => {
+    // Validate required visible sections
+    const vis = val.config.visibility;
+    if (!vis.showBusinessBlock && !vis.showClientBlock) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one address details section (Business or Client) must be set as visible",
+        path: ["config", "visibility", "showBusinessBlock"],
+      });
+    }
+    if (!vis.showLineItems) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The line items table must be set to visible",
+        path: ["config", "visibility", "showLineItems"],
+      });
+    }
+    if (!vis.showTotals) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The financial totals block must be set to visible",
+        path: ["config", "visibility", "showTotals"],
+      });
+    }
+  });
 
 export const DocumentTypeSchema = z.enum([
   "invoice",
@@ -217,55 +221,54 @@ export const DocumentTypeSchema = z.enum([
   "w9-request",
   "1099-nec-tracker",
 ]);
-export const PageFormatSchema = z.enum([
-  "A4",
-  "LETTER",
-  "RECEIPT_80MM",
-  "RECEIPT_58MM",
-]);
+export const PageFormatSchema = z.enum(["A4", "LETTER", "RECEIPT_80MM", "RECEIPT_58MM"]);
 
 const nonNegativeNumberSchema = z.number().finite().nonnegative();
 
-const PdfmeSchemaElementSchema = z.object({
-  name: z.string().min(1),
-  type: z.string().min(1),
-  position: z.object({
-    x: z.number().finite().nonnegative(),
-    y: z.number().finite().nonnegative(),
-  }),
-  width: z.number().finite().positive(),
-  height: z.number().finite().positive(),
-}).passthrough();
+const PdfmeSchemaElementSchema = z
+  .object({
+    name: z.string().min(1),
+    type: z.string().min(1),
+    position: z.object({
+      x: z.number().finite().nonnegative(),
+      y: z.number().finite().nonnegative(),
+    }),
+    width: z.number().finite().positive(),
+    height: z.number().finite().positive(),
+  })
+  .passthrough();
 
-export const PdfmeBlankBaseSchema = z.object({
-  width: z.number().finite().positive(),
-  height: z.number().finite().positive(),
-  padding: z.tuple([
-    nonNegativeNumberSchema,
-    nonNegativeNumberSchema,
-    nonNegativeNumberSchema,
-    nonNegativeNumberSchema,
-  ]),
-  staticSchema: z.array(PdfmeSchemaElementSchema).optional(),
-}).superRefine((basePdf, ctx) => {
-  if (basePdf.width <= 0 || basePdf.height <= 0) return;
+export const PdfmeBlankBaseSchema = z
+  .object({
+    width: z.number().finite().positive(),
+    height: z.number().finite().positive(),
+    padding: z.tuple([
+      nonNegativeNumberSchema,
+      nonNegativeNumberSchema,
+      nonNegativeNumberSchema,
+      nonNegativeNumberSchema,
+    ]),
+    staticSchema: z.array(PdfmeSchemaElementSchema).optional(),
+  })
+  .superRefine((basePdf, ctx) => {
+    if (basePdf.width <= 0 || basePdf.height <= 0) return;
 
-  const [top, right, bottom, left] = basePdf.padding;
-  if (left + right >= basePdf.width) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Horizontal padding must leave printable page width",
-      path: ["padding"],
-    });
-  }
-  if (top + bottom >= basePdf.height) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Vertical padding must leave printable page height",
-      path: ["padding"],
-    });
-  }
-});
+    const [top, right, bottom, left] = basePdf.padding;
+    if (left + right >= basePdf.width) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Horizontal padding must leave printable page width",
+        path: ["padding"],
+      });
+    }
+    if (top + bottom >= basePdf.height) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Vertical padding must leave printable page height",
+        path: ["padding"],
+      });
+    }
+  });
 
 const TemplateScalarControlSchema = z.enum([
   "text",
@@ -308,21 +311,23 @@ const CustomScalarFormEntrySchema = FormEntryBaseSchema.extend({
   }
 });
 
-const CustomRepeaterColumnSchema = z.object({
-  key: z.string().regex(/^[a-z][a-z0-9-]*$/),
-  label: z.string().min(1),
-  control: TemplateScalarControlSchema,
-  required: z.boolean(),
-  options: z.array(z.string().min(1)).optional(),
-}).superRefine((column, ctx) => {
-  if (column.control === "select" && !column.options?.length) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Select columns need at least one option",
-      path: ["options"],
-    });
-  }
-});
+const CustomRepeaterColumnSchema = z
+  .object({
+    key: z.string().regex(/^[a-z][a-z0-9-]*$/),
+    label: z.string().min(1),
+    control: TemplateScalarControlSchema,
+    required: z.boolean(),
+    options: z.array(z.string().min(1)).optional(),
+  })
+  .superRefine((column, ctx) => {
+    if (column.control === "select" && !column.options?.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Select columns need at least one option",
+        path: ["options"],
+      });
+    }
+  });
 
 const CustomRepeaterFormEntrySchema = FormEntryBaseSchema.extend({
   kind: z.literal("repeater"),
@@ -349,100 +354,101 @@ const TemplateFormEntrySchema = z.union([
   CustomRepeaterFormEntrySchema,
 ]);
 
-const TemplateFormConfigSchema = z.object({
-  sections: z.array(z.object({
-    id: z.string().min(1),
-    label: z.string().min(1),
-    entries: z.array(TemplateFormEntrySchema),
-  })),
-}).superRefine((form, ctx) => {
-  const sectionIds = new Set<string>();
-  const fieldKeys = new Set<string>();
-  let fieldCount = 0;
-  let customFieldCount = 0;
+const TemplateFormConfigSchema = z
+  .object({
+    sections: z.array(
+      z.object({
+        id: z.string().min(1),
+        label: z.string().min(1),
+        entries: z.array(TemplateFormEntrySchema),
+      }),
+    ),
+  })
+  .superRefine((form, ctx) => {
+    const sectionIds = new Set<string>();
+    const fieldKeys = new Set<string>();
+    let fieldCount = 0;
+    let customFieldCount = 0;
 
-  for (const [sectionIndex, section] of form.sections.entries()) {
-    if (sectionIds.has(section.id)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Form section IDs must be unique",
-        path: ["sections", sectionIndex, "id"],
-      });
-    }
-    sectionIds.add(section.id);
-    for (const [entryIndex, entry] of section.entries.entries()) {
-      fieldCount += 1;
-      if (entry.kind !== "builtin") customFieldCount += 1;
-      if (fieldKeys.has(entry.key)) {
+    for (const [sectionIndex, section] of form.sections.entries()) {
+      if (sectionIds.has(section.id)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Form field keys must be unique",
-          path: ["sections", sectionIndex, "entries", entryIndex, "key"],
+          message: "Form section IDs must be unique",
+          path: ["sections", sectionIndex, "id"],
         });
       }
-      fieldKeys.add(entry.key);
+      sectionIds.add(section.id);
+      for (const [entryIndex, entry] of section.entries.entries()) {
+        fieldCount += 1;
+        if (entry.kind !== "builtin") customFieldCount += 1;
+        if (fieldKeys.has(entry.key)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Form field keys must be unique",
+            path: ["sections", sectionIndex, "entries", entryIndex, "key"],
+          });
+        }
+        fieldKeys.add(entry.key);
+      }
     }
-  }
 
-  if (fieldCount > ADVANCED_TEMPLATE_LIMITS.maxFormFields) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `Forms are limited to ${ADVANCED_TEMPLATE_LIMITS.maxFormFields} fields`,
-      path: ["sections"],
-    });
-  }
-  if (customFieldCount > ADVANCED_TEMPLATE_LIMITS.maxCustomFields) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `Forms are limited to ${ADVANCED_TEMPLATE_LIMITS.maxCustomFields} custom fields`,
-      path: ["sections"],
-    });
-  }
-});
+    if (fieldCount > ADVANCED_TEMPLATE_LIMITS.maxFormFields) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Forms are limited to ${ADVANCED_TEMPLATE_LIMITS.maxFormFields} fields`,
+        path: ["sections"],
+      });
+    }
+    if (customFieldCount > ADVANCED_TEMPLATE_LIMITS.maxCustomFields) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Forms are limited to ${ADVANCED_TEMPLATE_LIMITS.maxCustomFields} custom fields`,
+        path: ["sections"],
+      });
+    }
+  });
 
-const AdvancedTemplateConfigV2Schema = z.object({
-  editor: z.literal("pdfme"),
-  schemaVersion: z.literal(2),
-  pageFormat: PageFormatSchema,
-  template: z.object({
-    basePdf: PdfmeBlankBaseSchema,
-    schemas: z.array(z.array(PdfmeSchemaElementSchema))
-      .max(ADVANCED_TEMPLATE_LIMITS.maxPages),
-  }).passthrough(),
-  sampleData: z.record(z.string(), z.string()),
-  form: TemplateFormConfigSchema,
-}).superRefine((config, ctx) => {
-  const elementCount =
-    config.template.schemas.reduce((count, page) => count + page.length, 0) +
-    (config.template.basePdf.staticSchema?.length ?? 0);
-  if (elementCount > ADVANCED_TEMPLATE_LIMITS.maxCanvasElements) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `Templates are limited to ${ADVANCED_TEMPLATE_LIMITS.maxCanvasElements} canvas elements`,
-      path: ["template", "schemas"],
-    });
-  }
-  if (
-    new TextEncoder().encode(JSON.stringify(config)).length >
-    ADVANCED_TEMPLATE_LIMITS.maxBytes
-  ) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Advanced template config exceeds the 5 MB limit",
-      path: [],
-    });
-  }
-});
+const AdvancedTemplateConfigV2Schema = z
+  .object({
+    editor: z.literal("pdfme"),
+    schemaVersion: z.literal(2),
+    pageFormat: PageFormatSchema,
+    template: z
+      .object({
+        basePdf: PdfmeBlankBaseSchema,
+        schemas: z.array(z.array(PdfmeSchemaElementSchema)).max(ADVANCED_TEMPLATE_LIMITS.maxPages),
+      })
+      .passthrough(),
+    sampleData: z.record(z.string(), z.string()),
+    form: TemplateFormConfigSchema,
+  })
+  .superRefine((config, ctx) => {
+    const elementCount =
+      config.template.schemas.reduce((count, page) => count + page.length, 0) +
+      (config.template.basePdf.staticSchema?.length ?? 0);
+    if (elementCount > ADVANCED_TEMPLATE_LIMITS.maxCanvasElements) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Templates are limited to ${ADVANCED_TEMPLATE_LIMITS.maxCanvasElements} canvas elements`,
+        path: ["template", "schemas"],
+      });
+    }
+    if (
+      new TextEncoder().encode(JSON.stringify(config)).length > ADVANCED_TEMPLATE_LIMITS.maxBytes
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Advanced template config exceeds the 5 MB limit",
+        path: [],
+      });
+    }
+  });
 
 export const AdvancedTemplateConfigSchema = z.preprocess((value) => {
   const documentType = inferLegacyDocumentType(value);
   if (!documentType) return value;
-  if (
-    value &&
-    typeof value === "object" &&
-    "schemaVersion" in value &&
-    value.schemaVersion === 2
-  ) {
+  if (value && typeof value === "object" && "schemaVersion" in value && value.schemaVersion === 2) {
     return value;
   }
   try {
@@ -452,70 +458,52 @@ export const AdvancedTemplateConfigSchema = z.preprocess((value) => {
   }
 }, AdvancedTemplateConfigV2Schema);
 
-const AdvancedDocumentTemplateV2Schema = z.object({
-  id: z.string(),
-  name: z.string().min(2, "Template name must be at least 2 characters"),
-  slug: z.string().regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
-  description: z.string(),
-  category: z.enum(["simple", "professional", "creative", "service", "modern", "classic"]),
-  status: z.enum(["draft", "published", "archived"]),
-  isDefault: z.boolean(),
-  version: z.number(),
-  documentType: DocumentTypeSchema,
-  layoutFamily: z.literal("advanced"),
-  config: AdvancedTemplateConfigV2Schema,
-}).superRefine((template, ctx) => {
-  if (
-    !isSupportedPageFormat(
-      template.documentType,
-      template.config.pageFormat,
-    )
-  ) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `${template.config.pageFormat} is not supported for ${template.documentType} templates`,
-      path: ["config", "pageFormat"],
-    });
-  }
-  const fields = new Map(
-    getDocumentDefinition(template.documentType).fields.map((field) => [
-      field.key,
-      field,
-    ]),
-  );
-  for (const [sectionIndex, section] of
-    template.config.form.sections.entries()) {
-    for (const [entryIndex, entry] of section.entries.entries()) {
-      if (entry.kind !== "builtin") continue;
-      const field = fields.get(entry.key);
-      if (!field || field.source !== "user") {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: field
-            ? `"${entry.key}" is not an editable form field`
-            : `Unknown built-in field "${entry.key}"`,
-          path: [
-            "config",
-            "form",
-            "sections",
-            sectionIndex,
-            "entries",
-            entryIndex,
-            "key",
-          ],
-        });
+const AdvancedDocumentTemplateV2Schema = z
+  .object({
+    id: z.string(),
+    name: z.string().min(2, "Template name must be at least 2 characters"),
+    slug: z
+      .string()
+      .regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
+    description: z.string(),
+    category: z.enum(["simple", "professional", "creative", "service", "modern", "classic"]),
+    status: z.enum(["draft", "published", "archived"]),
+    isDefault: z.boolean(),
+    version: z.number(),
+    documentType: DocumentTypeSchema,
+    layoutFamily: z.literal("advanced"),
+    config: AdvancedTemplateConfigV2Schema,
+  })
+  .superRefine((template, ctx) => {
+    if (!isSupportedPageFormat(template.documentType, template.config.pageFormat)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${template.config.pageFormat} is not supported for ${template.documentType} templates`,
+        path: ["config", "pageFormat"],
+      });
+    }
+    const fields = new Map(
+      getDocumentDefinition(template.documentType).fields.map((field) => [field.key, field]),
+    );
+    for (const [sectionIndex, section] of template.config.form.sections.entries()) {
+      for (const [entryIndex, entry] of section.entries.entries()) {
+        if (entry.kind !== "builtin") continue;
+        const field = fields.get(entry.key);
+        if (!field || field.source !== "user") {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: field
+              ? `"${entry.key}" is not an editable form field`
+              : `Unknown built-in field "${entry.key}"`,
+            path: ["config", "form", "sections", sectionIndex, "entries", entryIndex, "key"],
+          });
+        }
       }
     }
-  }
-});
+  });
 
 export const AdvancedDocumentTemplateSchema = z.preprocess((value) => {
-  if (
-    !value ||
-    typeof value !== "object" ||
-    !("documentType" in value) ||
-    !("config" in value)
-  ) {
+  if (!value || typeof value !== "object" || !("documentType" in value) || !("config" in value)) {
     return value;
   }
   const documentType = DocumentTypeSchema.safeParse(value.documentType);
@@ -523,10 +511,7 @@ export const AdvancedDocumentTemplateSchema = z.preprocess((value) => {
   try {
     return {
       ...value,
-      config: normalizeAdvancedTemplateConfig(
-        value.config,
-        documentType.data,
-      ),
+      config: normalizeAdvancedTemplateConfig(value.config, documentType.data),
     };
   } catch {
     return value;

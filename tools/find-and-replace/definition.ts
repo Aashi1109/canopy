@@ -4,15 +4,7 @@ export default {
   toolId: "devtools.find-and-replace",
   app: "devtools",
   category: "text-tools",
-  keywords: [
-    "find",
-    "replace",
-    "search",
-    "substitute",
-    "regex",
-    "bulk edit",
-    "text",
-  ],
+  keywords: ["find", "replace", "search", "substitute", "regex", "bulk edit", "text"],
   name: "Find and Replace",
   description: "Replace literal text or regular-expression matches.",
   layout: "stacked",
@@ -68,9 +60,11 @@ export default {
         a: "No. It only affects matching. The replacement text is inserted verbatim.",
       },
     ],
-    examples: [{
-      label: "Replace an environment name",
-      text: "Deploy the staging API, then verify the staging URL.",
-    }],
+    examples: [
+      {
+        label: "Replace an environment name",
+        text: "Deploy the staging API, then verify the staging URL.",
+      },
+    ],
   },
 } as const satisfies ToolSpec;

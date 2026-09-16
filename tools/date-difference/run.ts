@@ -12,12 +12,7 @@ import { parseDate } from "../../lib/devtools/shared/datetime.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-function dateInput(
-  value: string,
-  time: string,
-  timezone: Settings["timezone"],
-  label: string,
-) {
+function dateInput(value: string, time: string, timezone: Settings["timezone"], label: string) {
   const trimmed = value.trim();
   const enteredTime = time.trim();
   const timeLabel = label.replace("date", "time");
@@ -31,17 +26,15 @@ function dateInput(
   let input = trimmed;
   if (enteredTime) {
     const parsed = parseDate(trimmed, label);
-    const datePart = /^\d{4}-\d{2}-\d{2}/.exec(trimmed)?.[0] ??
+    const datePart =
+      /^\d{4}-\d{2}-\d{2}/.exec(trimmed)?.[0] ??
       (timezone === "utc"
         ? parsed.toISOString().slice(0, 10)
         : `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}-${String(parsed.getDate()).padStart(2, "0")}`);
     const enteredOffset = /(?:Z|[+-]\d{2}:\d{2})$/i.exec(trimmed)?.[0] ?? "";
     const offset = timezone === "utc" ? "Z" : timezone === "local" ? "" : enteredOffset;
     input = `${datePart}T${enteredTime}${offset}`;
-  } else if (
-    timezone === "utc" &&
-    !/^-?\d+(?:\.\d+)?$/.test(trimmed)
-  ) {
+  } else if (timezone === "utc" && !/^-?\d+(?:\.\d+)?$/.test(trimmed)) {
     const withoutOffset = trimmed.replace(/(?:Z|[+-]\d{2}:\d{2})$/i, "");
     input = `${withoutOffset}${/^\d{4}-\d{2}-\d{2}$/.test(withoutOffset) ? "T00:00:00Z" : "Z"}`;
   } else if (timezone === "local") {
@@ -53,14 +46,20 @@ function dateInput(
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const timezone = ctx.settings.timezone ?? "as-entered";
   const start = dateInput(ctx.input.text, ctx.settings.startTime ?? "", timezone, "Start date");
-  const end = dateInput(ctx.input.secondary ?? "", ctx.settings.endTime ?? "", timezone, "End date");
+  const end = dateInput(
+    ctx.input.secondary ?? "",
+    ctx.settings.endTime ?? "",
+    timezone,
+    "End date",
+  );
   const milliseconds = end.getTime() - start.getTime();
   const direction = milliseconds < 0 ? "-" : "";
   const hours = Math.abs(milliseconds) / 3_600_000;
   const days = hours / 24;
-  const text = ctx.settings.exactDuration ?? true
-    ? `${direction}${Number(days.toFixed(3))} days (${direction}${Number(hours.toFixed(3))} hours)`
-    : `${direction}${Number(days.toFixed(3))} days`;
+  const text =
+    (ctx.settings.exactDuration ?? true)
+      ? `${direction}${Number(days.toFixed(3))} days (${direction}${Number(hours.toFixed(3))} hours)`
+      : `${direction}${Number(days.toFixed(3))} days`;
   return {
     render: "text",
     text,

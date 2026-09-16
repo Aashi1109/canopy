@@ -8,20 +8,35 @@ import { createArtifactWriter, readArtifact } from "../lib/tool-framework/artifa
 const hooks = registerHooks({
   load(url, context, nextLoad) {
     if (url.endsWith("/lib/tool-framework/media/imageCodec.ts")) {
-      return { format: "module", shortCircuit: true, source: `
+      return {
+        format: "module",
+        shortCircuit: true,
+        source: `
         export async function decodeImage(input) {
           return { image: new Uint8Array(await input.arrayBuffer()) };
         }
         export async function encodeImage(image, format) {
           return new TextEncoder().encode(format + ':' + image.join(',')).buffer;
         }
-      ` };
+      `,
+      };
     }
     return nextLoad(url, context);
   },
 });
-const keys = ["jpg-to-png", "png-to-jpg", "jpg-to-webp", "png-to-webp", "webp-to-jpg", "webp-to-png", "heic-to-jpg", "heic-to-png"];
-const runners = await Promise.all(keys.map(async (key) => [key, (await import(`../tools/${key}/run.worker.ts`)).run]));
+const keys = [
+  "jpg-to-png",
+  "png-to-jpg",
+  "jpg-to-webp",
+  "png-to-webp",
+  "webp-to-jpg",
+  "webp-to-png",
+  "heic-to-jpg",
+  "heic-to-png",
+];
+const runners = await Promise.all(
+  keys.map(async (key) => [key, (await import(`../tools/${key}/run.worker.ts`)).run]),
+);
 hooks.deregister();
 
 async function bytes(artifact) {
@@ -35,8 +50,17 @@ for (const [key, run] of runners) {
     test(`${key}: ${count === 1 ? "single image remains one download" : "batch retains encoded images beside the ZIP without double-counting"}`, async () => {
       const signal = new AbortController().signal;
       const writer = createArtifactWriter(`${key}-${count}`, { signal });
-      const inputs = Array.from({ length: count }, (_, index) => new File([new Uint8Array([index + 1, 42])], `photo-${index}.${source}`));
-      const result = await run({ input: { files: inputs }, settings: { quality: 80, background: "#ffffff" }, signal, progress() {}, writeArtifact: writer.write });
+      const inputs = Array.from(
+        { length: count },
+        (_, index) => new File([new Uint8Array([index + 1, 42])], `photo-${index}.${source}`),
+      );
+      const result = await run({
+        input: { files: inputs },
+        settings: { quality: 80, background: "#ffffff" },
+        signal,
+        progress() {},
+        writeArtifact: writer.write,
+      });
       assert.equal(result.render, "files");
       assert.equal(result.inputBytes, count * 2);
       assert.equal(result.files.length, count === 1 ? 1 : count + 1);
@@ -64,7 +88,18 @@ for (const [key, run] of runners) {
     const controller = new AbortController();
     controller.abort();
     let writes = 0;
-    await assert.rejects(run({ input: { files: [new File(["input"], `photo.${source}`)] }, settings: { quality: 80 }, signal: controller.signal, progress() {}, writeArtifact() { writes += 1; } }), { name: "AbortError" });
+    await assert.rejects(
+      run({
+        input: { files: [new File(["input"], `photo.${source}`)] },
+        settings: { quality: 80 },
+        signal: controller.signal,
+        progress() {},
+        writeArtifact() {
+          writes += 1;
+        },
+      }),
+      { name: "AbortError" },
+    );
     assert.equal(writes, 0);
   });
 }

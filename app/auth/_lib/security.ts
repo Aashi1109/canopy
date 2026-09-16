@@ -1,8 +1,4 @@
-import {
-  getTrustedOrigins,
-  normalizeProfileImage,
-  safeReturnTo,
-} from "@smarttools/auth/security";
+import { getTrustedOrigins, normalizeProfileImage, safeReturnTo } from "@smarttools/auth/security";
 
 export { normalizeProfileImage };
 
@@ -20,27 +16,15 @@ function errorCode(error: unknown): string | undefined {
   return typeof error.code === "string" ? error.code : undefined;
 }
 
-export function resolveReturnTo(
-  value: string | null | undefined,
-  policy: RedirectPolicy,
-): string {
+export function resolveReturnTo(value: string | null | undefined, policy: RedirectPolicy): string {
   const baseOrigin = new URL(policy.baseURL).origin;
-  const trustedOrigins = [
-    baseOrigin,
-    ...getTrustedOrigins(policy.trustedOrigins),
-  ];
-  const fallback = safeReturnTo(
-    policy.fallback,
-    trustedOrigins,
-    "/",
-  );
+  const trustedOrigins = [baseOrigin, ...getTrustedOrigins(policy.trustedOrigins)];
+  const fallback = safeReturnTo(policy.fallback, trustedOrigins, "/");
 
   return safeReturnTo(value, trustedOrigins, fallback);
 }
 
-export function resolveConfiguredReturnTo(
-  value: string | null | undefined,
-): string {
+export function resolveConfiguredReturnTo(value: string | null | undefined): string {
   return resolveReturnTo(value, {
     baseURL: process.env.APP_URL ?? "http://localhost:3000",
     fallback: "/",
@@ -57,9 +41,7 @@ export function shouldUseBrowserBack(
   if (modified || historyLength <= 1 || !referrer) return false;
 
   try {
-    return (
-      new URL(referrer).origin === new URL(fallbackHref, currentHref).origin
-    );
+    return new URL(referrer).origin === new URL(fallbackHref, currentHref).origin;
   } catch {
     return false;
   }
@@ -83,9 +65,6 @@ export function isValidPassword(password: string): boolean {
   return password.length >= 12 && password.length <= 128;
 }
 
-export function canConfirmAccountDeletion(
-  confirmation: string,
-  email: string,
-): boolean {
+export function canConfirmAccountDeletion(confirmation: string, email: string): boolean {
   return confirmation.trim().toLowerCase() === email.trim().toLowerCase();
 }

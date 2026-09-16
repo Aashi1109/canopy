@@ -4,21 +4,18 @@ export default {
   toolId: "devtools.json-validator",
   app: "devtools",
   category: "json-tools",
-  keywords: [
-    "json",
-    "validator",
-    "syntax",
-    "lint",
-    "parse",
-    "check",
-  ],
+  keywords: ["json", "validator", "syntax", "lint", "parse", "check"],
   name: "JSON Validator",
   description: "Validate JSON syntax and report its root type.",
   layout: "stacked",
   input: {
     kind: "text",
     label: "JSON input",
-    acceptFiles: { accept: ".json,application/json,text/json", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
+    acceptFiles: {
+      accept: ".json,application/json,text/json",
+      maxBytes: 104_857_600,
+      maxEditableBytes: 2_000_000,
+    },
     placeholder: '{"valid":true}',
   },
   settings: {
@@ -62,7 +59,7 @@ export default {
     examples: [
       {
         label: "Minimal object",
-        text: "{\"valid\":true}",
+        text: '{"valid":true}',
       },
     ],
   },

@@ -39,9 +39,7 @@ const ALLOWED: readonly DecodableImageKind[] = ["jpeg", "png", "webp", "heic"];
 const BACKGROUND = "#ffffff";
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
-  const selection = validateImageSelection(
-    ctx.input.files.map((file) => ({ size: file.size })),
-  );
+  const selection = validateImageSelection(ctx.input.files.map((file) => ({ size: file.size })));
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
 
   const axis = ctx.settings.axis as "horizontal" | "vertical";

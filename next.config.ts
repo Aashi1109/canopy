@@ -28,16 +28,13 @@ const mediaSecurityHeaders = [
   { key: "Referrer-Policy", value: "no-referrer" },
   {
     key: "Permissions-Policy",
-    value:
-      "camera=(), display-capture=(), geolocation=(), microphone=(), payment=(), usb=()",
+    value: "camera=(), display-capture=(), geolocation=(), microphone=(), payment=(), usb=()",
   },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
 ];
 
-const workerIsolationHeaders = [
-  { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
-];
+const workerIsolationHeaders = [{ key: "Cross-Origin-Embedder-Policy", value: "require-corp" }];
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -68,12 +65,9 @@ const nextConfig: NextConfig = {
     config.resolve.alias["@"] = appRoot;
     if (!isServer) {
       config.plugins.push(
-        new webpack.NormalModuleReplacementPlugin(
-          /^node:/,
-          (resource: { request: string }) => {
-            resource.request = resource.request.replace(/^node:/, "");
-          },
-        ),
+        new webpack.NormalModuleReplacementPlugin(/^node:/, (resource: { request: string }) => {
+          resource.request = resource.request.replace(/^node:/, "");
+        }),
       );
       Object.assign(config.resolve.alias, {
         "fs/promises": browserEmptyModule,

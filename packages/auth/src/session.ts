@@ -24,9 +24,7 @@ export class AuthServiceError extends Error {
   }
 }
 
-export async function getSession(
-  requestHeaders: Headers,
-): Promise<AuthServiceSession | null> {
+export async function getSession(requestHeaders: Headers): Promise<AuthServiceSession | null> {
   try {
     const session = await auth.api.getSession({
       headers: requestHeaders,

@@ -29,7 +29,11 @@ export type PageSelection = "all" | "odd" | "even" | readonly number[];
 
 export type SettingRow = { readonly key: string; readonly value: string };
 
-export type FieldChoice = { readonly label: string; readonly value: string; readonly aspectRatio?: number };
+export type FieldChoice = {
+  readonly label: string;
+  readonly value: string;
+  readonly aspectRatio?: number;
+};
 
 export type PresetChoice = FieldChoice & { readonly detail?: string };
 
@@ -91,12 +95,7 @@ export type FieldSpec =
 
 export type FieldKind = FieldSpec["kind"];
 
-export type SettingValue =
-  | string
-  | number
-  | boolean
-  | PageSelection
-  | readonly SettingRow[];
+export type SettingValue = string | number | boolean | PageSelection | readonly SettingRow[];
 
 export type SettingsSpec = { readonly fields: Readonly<Record<string, FieldSpec>> };
 
@@ -199,10 +198,7 @@ function coerceRows(raw: unknown): readonly SettingRow[] | null {
  * `pageCount` is optional because settings are often parsed before a document
  * is loaded. Without it, `"odd"`/`"even"` cannot be enumerated and return `[]`.
  */
-export function parsePageSelection(
-  input: string,
-  pageCount?: number,
-): number[] | "all" {
+export function parsePageSelection(input: string, pageCount?: number): number[] | "all" {
   const normalized = input.trim().toLowerCase();
   if (!normalized) return [];
   if (normalized === "all") return "all";
@@ -306,10 +302,7 @@ function parseField(field: FieldSpec, raw: unknown): SettingValue {
   }
 }
 
-export function parseSettings<S extends SettingsSpec>(
-  spec: S,
-  raw: unknown,
-): SettingsOf<S> {
+export function parseSettings<S extends SettingsSpec>(spec: S, raw: unknown): SettingsOf<S> {
   const source = isRecord(raw) ? raw : {};
   const parsed: Record<string, SettingValue> = {};
   // Only declared keys are read, so unknown keys in `raw` are ignored.

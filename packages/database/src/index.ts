@@ -2,19 +2,7 @@ import { createDatabase } from "./runtime.ts";
 import * as schema from "./schema.ts";
 export { sqlClient } from "./runtime.ts";
 
-export {
-  and,
-  asc,
-  count,
-  countDistinct,
-  desc,
-  eq,
-  ilike,
-  inArray,
-  ne,
-  or,
-  sql,
-} from "drizzle-orm";
+export { and, asc, count, countDistinct, desc, eq, ilike, inArray, ne, or, sql } from "drizzle-orm";
 export { alias } from "drizzle-orm/pg-core";
 
 export const db = createDatabase(schema);

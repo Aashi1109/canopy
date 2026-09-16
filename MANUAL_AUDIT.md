@@ -1,5 +1,5 @@
-Tool | Issues to fix | Status
----- | ------------ | ------
+| Tool | Issues to fix | Status |
+| ---- | ------------- | ------ |
 
 json-viewer | - | done
 json-formatter | - | done

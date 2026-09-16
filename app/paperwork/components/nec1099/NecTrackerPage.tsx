@@ -44,9 +44,14 @@ import {
   ChevronRight,
   AlertTriangle,
   Receipt,
-  UserCheck
+  UserCheck,
 } from "lucide-react";
-import { DataBridge, DataBridgeKeys, VendorProfile, PaymentItem } from "@/lib/paperwork/shared/dataBridge";
+import {
+  DataBridge,
+  DataBridgeKeys,
+  VendorProfile,
+  PaymentItem,
+} from "@/lib/paperwork/shared/dataBridge";
 import {
   NEC_INTERNAL_REPORT_DISCLAIMER,
   RecipientAnnualAdjustment,
@@ -74,7 +79,16 @@ export const DEFAULT_NEC_TRACKER_DRAFT: NecTrackerDraft = {
   payerEmail: "",
   filingStatus: "Review required",
   payments: [
-    { id: "pay-1", date: new Date().toISOString().substring(0, 10), vendorId: "vendor-1", amount: 1500.00, paymentMethod: "Zelle", category: "Services", description: "Design Consulting Consult", includeIn1099: true }
+    {
+      id: "pay-1",
+      date: new Date().toISOString().substring(0, 10),
+      vendorId: "vendor-1",
+      amount: 1500.0,
+      paymentMethod: "Zelle",
+      category: "Services",
+      description: "Design Consulting Consult",
+      includeIn1099: true,
+    },
   ],
   recipientAdjustments: [createEmptyRecipientAdjustment("vendor-1")],
 };
@@ -86,19 +100,48 @@ export const SAMPLE_NEC_TRACKER_DRAFT: NecTrackerDraft = {
   payerEmail: "accounts@northstar.example",
   filingStatus: "Ready for preparer",
   payments: [
-    { id: "pay-1", date: "2026-02-15", vendorId: "vendor-1", amount: 450.00, paymentMethod: "Zelle", category: "Services", description: "Design Consult Setup", includeIn1099: true },
-    { id: "pay-2", date: "2026-05-18", vendorId: "vendor-1", amount: 1200.00, paymentMethod: "ACH", category: "Services", description: "Figma Typography milestones", includeIn1099: true },
-    { id: "pay-3", date: "2026-08-20", vendorId: "vendor-new", amount: 50.00, paymentMethod: "Cash", category: "Rent", description: "Desk rent AVL Office block", includeIn1099: false }
+    {
+      id: "pay-1",
+      date: "2026-02-15",
+      vendorId: "vendor-1",
+      amount: 450.0,
+      paymentMethod: "Zelle",
+      category: "Services",
+      description: "Design Consult Setup",
+      includeIn1099: true,
+    },
+    {
+      id: "pay-2",
+      date: "2026-05-18",
+      vendorId: "vendor-1",
+      amount: 1200.0,
+      paymentMethod: "ACH",
+      category: "Services",
+      description: "Figma Typography milestones",
+      includeIn1099: true,
+    },
+    {
+      id: "pay-3",
+      date: "2026-08-20",
+      vendorId: "vendor-new",
+      amount: 50.0,
+      paymentMethod: "Cash",
+      category: "Rent",
+      description: "Desk rent AVL Office block",
+      includeIn1099: false,
+    },
   ],
-  recipientAdjustments: [{
-    ...createEmptyRecipientAdjustment("vendor-1"),
-    cashTips: 125,
-    occupationCodes: "101",
-    qualifiedOvertime: 240,
-    maskedTinReference: "•••• 4821",
-    state: "NC",
-    stateIncome: 1650,
-  }],
+  recipientAdjustments: [
+    {
+      ...createEmptyRecipientAdjustment("vendor-1"),
+      cashTips: 125,
+      occupationCodes: "101",
+      qualifiedOvertime: 240,
+      maskedTinReference: "•••• 4821",
+      state: "NC",
+      stateIncome: 1650,
+    },
+  ],
 };
 
 const FALLBACK_VENDOR: VendorProfile = {
@@ -110,37 +153,27 @@ const FALLBACK_VENDOR: VendorProfile = {
   addressLine1: "192 Silver Maple Ave, Seattle, WA 98101",
   entityType: "LLC",
   w9Status: "Received",
-  notes: "Ruby-on-Rails setup developer."
+  notes: "Ruby-on-Rails setup developer.",
 };
 
-export function normalizeNecTrackerDraft(
-  draft: Partial<NecTrackerDraft>,
-): NecTrackerDraft {
+export function normalizeNecTrackerDraft(draft: Partial<NecTrackerDraft>): NecTrackerDraft {
   return {
-    reportingYear: Number(
-      draft.reportingYear || DEFAULT_NEC_TRACKER_DRAFT.reportingYear,
-    ),
+    reportingYear: Number(draft.reportingYear || DEFAULT_NEC_TRACKER_DRAFT.reportingYear),
     payerName: String(draft.payerName || ""),
     payerAddress: String(draft.payerAddress || ""),
     payerEmail: String(draft.payerEmail || ""),
-    filingStatus: String(
-      draft.filingStatus || DEFAULT_NEC_TRACKER_DRAFT.filingStatus,
-    ),
-    payments: (draft.payments || DEFAULT_NEC_TRACKER_DRAFT.payments).map(
-      (payment) => ({
-        id: String(payment.id || `payment-${Date.now()}`),
-        date: String(payment.date || ""),
-        vendorId: String(payment.vendorId || ""),
-        amount: Number(payment.amount || 0),
-        paymentMethod: payment.paymentMethod || "Other",
-        category: payment.category || "Other",
-        description: String(payment.description || ""),
-        includeIn1099: Boolean(payment.includeIn1099),
-        invoiceReference: payment.invoiceReference
-          ? String(payment.invoiceReference)
-          : undefined,
-      }),
-    ),
+    filingStatus: String(draft.filingStatus || DEFAULT_NEC_TRACKER_DRAFT.filingStatus),
+    payments: (draft.payments || DEFAULT_NEC_TRACKER_DRAFT.payments).map((payment) => ({
+      id: String(payment.id || `payment-${Date.now()}`),
+      date: String(payment.date || ""),
+      vendorId: String(payment.vendorId || ""),
+      amount: Number(payment.amount || 0),
+      paymentMethod: payment.paymentMethod || "Other",
+      category: payment.category || "Other",
+      description: String(payment.description || ""),
+      includeIn1099: Boolean(payment.includeIn1099),
+      invoiceReference: payment.invoiceReference ? String(payment.invoiceReference) : undefined,
+    })),
     recipientAdjustments: (draft.recipientAdjustments || []).map((adjustment) => ({
       vendorId: String(adjustment.vendorId || ""),
       cashTips: Number(adjustment.cashTips || 0),
@@ -182,7 +215,10 @@ export default function NecTrackerPage({
   // Save payments draft
   useEffect(() => {
     DataBridge.set(DataBridgeKeys.NEC_DRAFT, data);
-    const summary = calculateNecSummary(data, vendors.map((vendor) => vendor.id));
+    const summary = calculateNecSummary(
+      data,
+      vendors.map((vendor) => vendor.id),
+    );
 
     DataBridge.set(DataBridgeKeys.NEC_SUMMARY, {
       year: data.reportingYear,
@@ -204,11 +240,11 @@ export default function NecTrackerPage({
       paymentMethod: "Zelle",
       category: "Services",
       description: "",
-      includeIn1099: true
+      includeIn1099: true,
     };
     setData({
       ...data,
-      payments: [...data.payments, newPay]
+      payments: [...data.payments, newPay],
     });
     onTrackClick("nec_payment_added");
   };
@@ -216,17 +252,17 @@ export default function NecTrackerPage({
   const handleRemovePayment = (id: string) => {
     setData({
       ...data,
-      payments: data.payments.filter(p => p.id !== id)
+      payments: data.payments.filter((p) => p.id !== id),
     });
     onTrackClick("nec_payment_removed");
   };
 
   const handlePaymentChange = (id: string, field: keyof PaymentItem, val: any) => {
-    const updated = data.payments.map(p => {
+    const updated = data.payments.map((p) => {
       if (p.id === id) {
         return {
           ...p,
-          [field]: field === "amount" ? (val === "" ? "" : Number(val)) : val
+          [field]: field === "amount" ? (val === "" ? "" : Number(val)) : val,
         };
       }
       return p;
@@ -246,7 +282,10 @@ export default function NecTrackerPage({
     }
   };
 
-  const stats = calculateNecSummary(data, vendors.map((vendor) => vendor.id));
+  const stats = calculateNecSummary(
+    data,
+    vendors.map((vendor) => vendor.id),
+  );
   const reportingThreshold = stats.rule.supported ? stats.rule.threshold : null;
 
   const handleAdjustmentChange = (
@@ -273,9 +312,7 @@ export default function NecTrackerPage({
     setData({
       ...data,
       recipientAdjustments: [
-        ...data.recipientAdjustments.filter(
-          (adjustment) => adjustment.vendorId !== vendorId,
-        ),
+        ...data.recipientAdjustments.filter((adjustment) => adjustment.vendorId !== vendorId),
         { ...current, [field]: nextValue },
       ],
     });
@@ -283,14 +320,16 @@ export default function NecTrackerPage({
 
   const handleExportCSV = () => {
     onTrackClick("nec_csv_exported");
-    let content = "Date,Contractor Legal Name,Amount Paid,Payment Method,Deduction Classification,Description,Included In 1099\n";
+    let content =
+      "Date,Contractor Legal Name,Amount Paid,Payment Method,Deduction Classification,Description,Included In 1099\n";
     data.payments.forEach((item) => {
-      const v = vendors.find(vend => vend.id === item.vendorId);
+      const v = vendors.find((vend) => vend.id === item.vendorId);
       const name = v ? v.legalName : "Unknown Contractor";
       content += `"${item.date}","${name.replace(/"/g, '""')}",${item.amount},"${item.paymentMethod}","${item.category}","${item.description.replace(/"/g, '""')}",${item.includeIn1099 ? "Yes" : "No"}\n`;
     });
     content += "\nANNUAL RECIPIENT ADJUSTMENTS\n";
-    content += "Contractor,Masked TIN Reference,Cash Tips,Occupation Codes,Qualified Overtime,Federal Withholding,State,State Income,State Withholding\n";
+    content +=
+      "Contractor,Masked TIN Reference,Cash Tips,Occupation Codes,Qualified Overtime,Federal Withholding,State,State Income,State Withholding\n";
     data.recipientAdjustments.forEach((adjustment) => {
       const vendor = vendors.find((item) => item.id === adjustment.vendorId);
       content += `"${vendor?.legalName || "Missing vendor"}","${adjustment.maskedTinReference}",${adjustment.cashTips},"${adjustment.occupationCodes}",${adjustment.qualifiedOvertime},${adjustment.federalWithholding},"${adjustment.state}",${adjustment.stateIncome},${adjustment.stateWithholding}\n`;
@@ -312,10 +351,12 @@ export default function NecTrackerPage({
   };
 
   return (
-    <div className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="nec-tracker-wrapper">
-
+    <div
+      className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      id="nec-tracker-wrapper"
+    >
       <ToolPageHeader
-        actions={(
+        actions={
           <>
             <Button onClick={handleLoadSample} size="sm" variant="secondary">
               <RefreshCw className="size-3.5" />
@@ -325,7 +366,7 @@ export default function NecTrackerPage({
               Clear Fields
             </Button>
           </>
-        )}
+        }
         className="print:hidden"
         description="Monitor independent subcontractor payout caps, track verification thresholds, and download compliance checklists."
         eyebrow={<StatusBadge variant="warning">IRS Form 1099-NEC Threshold Tracker</StatusBadge>}
@@ -356,12 +397,16 @@ export default function NecTrackerPage({
 
         <MetricCard
           className="rounded-2xl border-slate-200 bg-white"
-          label={reportingThreshold === null ? "Rules update required" : `At or above $${reportingThreshold.toLocaleString()} threshold`}
-          value={(
+          label={
+            reportingThreshold === null
+              ? "Rules update required"
+              : `At or above $${reportingThreshold.toLocaleString()} threshold`
+          }
+          value={
             <Text className="flex items-center justify-between gap-3">
               <Text className="flex items-baseline gap-1.5">
-              <Metric className="text-amber-600">{stats.aboveThresholdCount}</Metric>
-              <Overline className="text-slate-400">contractors</Overline>
+                <Metric className="text-amber-600">{stats.aboveThresholdCount}</Metric>
+                <Overline className="text-slate-400">contractors</Overline>
               </Text>
               {stats.aboveThresholdCount > 0 && (
                 <Text className="flex size-9 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-500">
@@ -369,7 +414,7 @@ export default function NecTrackerPage({
                 </Text>
               )}
             </Text>
-          )}
+          }
         />
 
         <MetricCard
@@ -381,37 +426,32 @@ export default function NecTrackerPage({
 
       {/* Split Columns Editor & Live Render */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
         {/* PAYMENT LEDGER INPUTS */}
         <div className="lg:col-span-7 space-y-6 print:hidden">
-
           <Card className="space-y-6">
             <div className="flex items-center justify-between border-b pb-2">
               <div className="flex gap-4">
                 <div className="space-y-1">
-                  <Overline className="text-slate-500">
-                    Contractor Payments Log ledger
-                  </Overline>
+                  <Overline className="text-slate-500">Contractor Payments Log ledger</Overline>
                 </div>
               </div>
 
-              <Button
-                type="button"
-                onClick={handleAddPayment}
-                size="sm"
-                variant="strong"
-              >
+              <Button type="button" onClick={handleAddPayment} size="sm" variant="strong">
                 <Plus className="size-3.5" />
                 <span>Log Payment</span>
               </Button>
             </div>
 
             <div className="max-w-48">
-              <Label className="block text-slate-400 mb-1" htmlFor="nec-reporting-year">Reporting year</Label>
+              <Label className="block text-slate-400 mb-1" htmlFor="nec-reporting-year">
+                Reporting year
+              </Label>
               <Select
                 id="nec-reporting-year"
                 value={data.reportingYear}
-                onChange={(event) => setData({ ...data, reportingYear: Number(event.target.value) })}
+                onChange={(event) =>
+                  setData({ ...data, reportingYear: Number(event.target.value) })
+                }
               >
                 <option value={2026}>2026 ($2,000)</option>
                 <option value={2025}>2025 ($600)</option>
@@ -434,7 +474,12 @@ export default function NecTrackerPage({
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div>
-                      <Label className="block text-slate-400 mb-1" htmlFor={`nec-payment-${pay.id}-date`}>Payment Date *</Label>
+                      <Label
+                        className="block text-slate-400 mb-1"
+                        htmlFor={`nec-payment-${pay.id}-date`}
+                      >
+                        Payment Date *
+                      </Label>
                       <Input
                         type="date"
                         id={`nec-payment-${pay.id}-date`}
@@ -443,19 +488,31 @@ export default function NecTrackerPage({
                       />
                     </div>
                     <div>
-                      <Label className="block text-slate-400 mb-1" htmlFor={`nec-payment-${pay.id}-vendor`}>Contractor Name *</Label>
+                      <Label
+                        className="block text-slate-400 mb-1"
+                        htmlFor={`nec-payment-${pay.id}-vendor`}
+                      >
+                        Contractor Name *
+                      </Label>
                       <Select
                         id={`nec-payment-${pay.id}-vendor`}
                         value={pay.vendorId}
                         onChange={(e) => handlePaymentChange(pay.id, "vendorId", e.target.value)}
                       >
-                        {vendors.map(v => (
-                          <option key={v.id} value={v.id}>{v.legalName}</option>
+                        {vendors.map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {v.legalName}
+                          </option>
                         ))}
                       </Select>
                     </div>
                     <div>
-                      <Label className="block text-slate-400 mb-1" htmlFor={`nec-payment-${pay.id}-amount`}>Amount ($) *</Label>
+                      <Label
+                        className="block text-slate-400 mb-1"
+                        htmlFor={`nec-payment-${pay.id}-amount`}
+                      >
+                        Amount ($) *
+                      </Label>
                       <Input
                         type="number"
                         placeholder="0.00"
@@ -465,11 +522,18 @@ export default function NecTrackerPage({
                       />
                     </div>
                     <div>
-                      <Label className="block text-slate-500 mb-1" htmlFor={`nec-payment-${pay.id}-method`}>Payment Route</Label>
+                      <Label
+                        className="block text-slate-500 mb-1"
+                        htmlFor={`nec-payment-${pay.id}-method`}
+                      >
+                        Payment Route
+                      </Label>
                       <Select
                         id={`nec-payment-${pay.id}-method`}
                         value={pay.paymentMethod}
-                        onChange={(e) => handlePaymentChange(pay.id, "paymentMethod", e.target.value)}
+                        onChange={(e) =>
+                          handlePaymentChange(pay.id, "paymentMethod", e.target.value)
+                        }
                       >
                         <option value="Zelle">Zelle Deposit</option>
                         <option value="ACH">Direct Wire ACH</option>
@@ -494,7 +558,9 @@ export default function NecTrackerPage({
                       <Checkbox
                         checked={pay.includeIn1099}
                         label="Include in 1099 NEC"
-                        onCheckedChange={(checked) => handlePaymentChange(pay.id, "includeIn1099", checked === true)}
+                        onCheckedChange={(checked) =>
+                          handlePaymentChange(pay.id, "includeIn1099", checked === true)
+                        }
                       />
                     </div>
                   </div>
@@ -505,9 +571,7 @@ export default function NecTrackerPage({
 
           <Card className="space-y-4">
             <div className="border-b pb-2">
-              <H3 className="text-slate-500">
-                Annual recipient adjustments
-              </H3>
+              <H3 className="text-slate-500">Annual recipient adjustments</H3>
               <P className="mt-1 text-slate-500">
                 Store only a masked last-four reference here, never a full TIN.
               </P>
@@ -520,34 +584,54 @@ export default function NecTrackerPage({
                 <div key={vendor.id} className="space-y-3 rounded-xl border bg-slate-50 p-4">
                   <P className="text-slate-900">{vendor.legalName}</P>
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                    {([
-                      ["cashTips", "Cash tips", "number"],
-                      ["occupationCodes", "Occupation codes", "text"],
-                      ["qualifiedOvertime", "Qualified overtime", "number"],
-                      ["federalWithholding", "Federal withholding", "number"],
-                      ["state", "State", "text"],
-                      ["stateIncome", "State income", "number"],
-                      ["stateWithholding", "State withholding", "number"],
-                    ] as const).map(([field, label, type]) => (
+                    {(
+                      [
+                        ["cashTips", "Cash tips", "number"],
+                        ["occupationCodes", "Occupation codes", "text"],
+                        ["qualifiedOvertime", "Qualified overtime", "number"],
+                        ["federalWithholding", "Federal withholding", "number"],
+                        ["state", "State", "text"],
+                        ["stateIncome", "State income", "number"],
+                        ["stateWithholding", "State withholding", "number"],
+                      ] as const
+                    ).map(([field, label, type]) => (
                       <div key={field}>
-                        <Label className="block text-slate-400" htmlFor={`nec-${vendor.id}-${field}`}>{label}</Label>
+                        <Label
+                          className="block text-slate-400"
+                          htmlFor={`nec-${vendor.id}-${field}`}
+                        >
+                          {label}
+                        </Label>
                         <Input
                           id={`nec-${vendor.id}-${field}`}
                           min={type === "number" ? "0" : undefined}
                           type={type}
                           value={adjustment[field]}
-                          onChange={(event) => handleAdjustmentChange(vendor.id, field, event.target.value)}
+                          onChange={(event) =>
+                            handleAdjustmentChange(vendor.id, field, event.target.value)
+                          }
                         />
                       </div>
                     ))}
                     <div>
-                      <Label className="block text-slate-400" htmlFor={`nec-${vendor.id}-masked-tin`}>Masked TIN reference</Label>
+                      <Label
+                        className="block text-slate-400"
+                        htmlFor={`nec-${vendor.id}-masked-tin`}
+                      >
+                        Masked TIN reference
+                      </Label>
                       <Input
                         id={`nec-${vendor.id}-masked-tin`}
                         inputMode="numeric"
                         placeholder="Last four only"
                         value={adjustment.maskedTinReference}
-                        onChange={(event) => handleAdjustmentChange(vendor.id, "maskedTinReference", event.target.value)}
+                        onChange={(event) =>
+                          handleAdjustmentChange(
+                            vendor.id,
+                            "maskedTinReference",
+                            event.target.value,
+                          )
+                        }
                       />
                     </div>
                   </div>
@@ -564,12 +648,10 @@ export default function NecTrackerPage({
                 : `The general Form 1099-NEC reporting threshold for ${data.reportingYear} is $${stats.rule.threshold.toLocaleString()}. Confirm recipient and payment eligibility in your filing workflow.`}
             </P>
           </AlertBanner>
-
         </div>
 
         {/* PRINT SUITE AND SUMMARY COMPLIANCE VERIFICATION REPORTS */}
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-20">
-
           <Card className="space-y-3 p-4 print:hidden">
             <div className="flex items-center justify-between text-slate-500 border-b pb-2">
               <Text>REPORT EXPORT BAR</Text>
@@ -577,20 +659,11 @@ export default function NecTrackerPage({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <Button
-                onClick={handlePrint}
-                className="w-full"
-                type="button"
-                variant="strong"
-              >
+              <Button onClick={handlePrint} className="w-full" type="button" variant="strong">
                 <Printer className="size-4" />
                 <span>Save Report PDF</span>
               </Button>
-              <ToolActionButton
-                action="download"
-                onClick={handleExportCSV}
-                type="button"
-              >
+              <ToolActionButton action="download" onClick={handleExportCSV} type="button">
                 <span>Export CSV Sheet</span>
               </ToolActionButton>
             </div>
@@ -598,10 +671,14 @@ export default function NecTrackerPage({
 
           {/* Formulated paper template sheet */}
           <div className="relative group border border-slate-200 shadow-2xl rounded-2xl overflow-hidden">
-            <div className="p-8 bg-white min-h-[750px] font-sans text-slate-800 font-semibold" id="receipt-print-area">
-
+            <div
+              className="p-8 bg-white min-h-[750px] font-sans text-slate-800 font-semibold"
+              id="receipt-print-area"
+            >
               <div className="border-b-2 border-slate-900 pb-4 mb-6">
-                <span className="text-[11px] font-black text-slate-400 block uppercase font-mono tracking-wider">ANNUAL CONTRACTOR COMPLIANCE VERIFICATIONS</span>
+                <span className="text-[11px] font-black text-slate-400 block uppercase font-mono tracking-wider">
+                  ANNUAL CONTRACTOR COMPLIANCE VERIFICATIONS
+                </span>
                 <h1 className="text-lg font-black text-slate-950 leading-tight">
                   1099-NEC INTERNAL REPORTING LEDGER
                 </h1>
@@ -613,23 +690,33 @@ export default function NecTrackerPage({
               {/* Status parameters */}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-slate-50 border rounded-lg p-3 text-xs">
-                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold block">Eligible 1099 payments</span>
-                  <p className="text-slate-900 font-black font-mono text-sm mt-0.5">${stats.reportablePayments.toLocaleString()}</p>
+                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold block">
+                    Eligible 1099 payments
+                  </span>
+                  <p className="text-slate-900 font-black font-mono text-sm mt-0.5">
+                    ${stats.reportablePayments.toLocaleString()}
+                  </p>
                 </div>
                 <div className="bg-slate-50 border rounded-lg p-3 text-xs text-right">
-                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold block">Threshold filers alert</span>
-                  <p className="text-amber-700 font-black font-mono text-sm mt-0.5">{stats.aboveThresholdCount} contractors</p>
+                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold block">
+                    Threshold filers alert
+                  </span>
+                  <p className="text-amber-700 font-black font-mono text-sm mt-0.5">
+                    {stats.aboveThresholdCount} contractors
+                  </p>
                 </div>
               </div>
 
               <div className="mb-6 grid grid-cols-2 gap-2 text-[10px] md:grid-cols-3">
-                {([
-                  ["Cash tips", stats.boxTotals.cashTips],
-                  ["Qualified overtime", stats.boxTotals.qualifiedOvertime],
-                  ["Federal withholding", stats.boxTotals.federalWithholding],
-                  ["State income", stats.boxTotals.stateIncome],
-                  ["State withholding", stats.boxTotals.stateWithholding],
-                ] as const).map(([label, value]) => (
+                {(
+                  [
+                    ["Cash tips", stats.boxTotals.cashTips],
+                    ["Qualified overtime", stats.boxTotals.qualifiedOvertime],
+                    ["Federal withholding", stats.boxTotals.federalWithholding],
+                    ["State income", stats.boxTotals.stateIncome],
+                    ["State withholding", stats.boxTotals.stateWithholding],
+                  ] as const
+                ).map(([label, value]) => (
                   <div key={label} className="rounded-lg border bg-slate-50 p-2">
                     <span className="block font-black uppercase text-slate-400">{label}</span>
                     <span className="font-mono font-black text-slate-900">${value.toFixed(2)}</span>
@@ -640,7 +727,10 @@ export default function NecTrackerPage({
               {/* Threshold alerts contractors listing table */}
               <div className="border border-slate-200 rounded-xl overflow-hidden text-xs mb-6">
                 <div className="bg-slate-100/50 px-3 py-2 border-b text-[11px] font-black text-slate-900 uppercase">
-                  Contractor annual payout sums {reportingThreshold === null ? "(rules update required)" : `(threshold $${reportingThreshold.toLocaleString()})`}
+                  Contractor annual payout sums{" "}
+                  {reportingThreshold === null
+                    ? "(rules update required)"
+                    : `(threshold $${reportingThreshold.toLocaleString()})`}
                 </div>
 
                 <table className="w-full text-left">
@@ -652,7 +742,7 @@ export default function NecTrackerPage({
                     </tr>
                   </thead>
                   <tbody>
-                    {vendors.map(vend => {
+                    {vendors.map((vend) => {
                       const sum = stats.vendorTotals[vend.id] || 0;
                       return (
                         <tr key={vend.id} className="border-b last:border-0 border-slate-100">
@@ -694,13 +784,17 @@ export default function NecTrackerPage({
                   </thead>
                   <tbody>
                     {data.payments.map((p, idx) => {
-                      const vDetail = vendors.find(vend => vend.id === p.vendorId);
+                      const vDetail = vendors.find((vend) => vend.id === p.vendorId);
                       return (
                         <tr key={p.id || idx} className="border-b last:border-0 border-slate-100">
                           <td className="py-2.5 px-3 font-mono text-slate-500">{p.date}</td>
                           <td className="py-2.5 px-3 font-bold text-slate-700">
                             {vDetail ? vDetail.legalName : "Unknown contractor"}
-                            {p.description && <span className="block text-[11px] text-slate-400 font-medium">{p.description}</span>}
+                            {p.description && (
+                              <span className="block text-[11px] text-slate-400 font-medium">
+                                {p.description}
+                              </span>
+                            )}
                           </td>
                           <td className="py-2.5 px-3 text-right font-mono font-black text-slate-900">
                             ${Number(p.amount || 0).toFixed(2)}
@@ -713,19 +807,17 @@ export default function NecTrackerPage({
               </div>
 
               <div className="border-t pt-6 mt-12 text-center text-xs text-slate-600 leading-relaxed font-semibold">
-                <p className="font-extrabold text-slate-900 uppercase">Internal report disclaimer</p>
+                <p className="font-extrabold text-slate-900 uppercase">
+                  Internal report disclaimer
+                </p>
                 <p className="text-[10px] text-slate-500 max-w-xl mx-auto pt-2">
                   {NEC_INTERNAL_REPORT_DISCLAIMER}
                 </p>
               </div>
-
             </div>
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 }

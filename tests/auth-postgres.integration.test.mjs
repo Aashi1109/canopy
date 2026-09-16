@@ -2,9 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 
-const enabled =
-  process.env.SMARTTOOLS_INTEGRATION === "1" &&
-  Boolean(process.env.DATABASE_URL);
+const enabled = process.env.SMARTTOOLS_INTEGRATION === "1" && Boolean(process.env.DATABASE_URL);
 
 function emailActionUrl(message) {
   const href = message.html?.match(/href="([^"]+)"/)?.[1];
@@ -14,10 +12,11 @@ function emailActionUrl(message) {
 
 test(
   "Better Auth signs up, verifies, recovers, starts Google OAuth, and identifies suspended accounts",
-  { skip: enabled ? false : "set SMARTTOOLS_INTEGRATION=1 with a migrated disposable DATABASE_URL" },
+  {
+    skip: enabled ? false : "set SMARTTOOLS_INTEGRATION=1 with a migrated disposable DATABASE_URL",
+  },
   async (context) => {
-    process.env.BETTER_AUTH_SECRET =
-      "integration-only-secret-that-is-at-least-32-characters";
+    process.env.BETTER_AUTH_SECRET = "integration-only-secret-that-is-at-least-32-characters";
     process.env.APP_URL = "http://localhost:3000";
     process.env.RESEND_API_KEY = "re_test_integration";
     process.env.AUTH_EMAIL_FROM = "SmartTools <auth@example.test>";
@@ -85,7 +84,10 @@ test(
     const assignments = await sqlClient`
       SELECT role_id FROM user_roles WHERE user_id = ${storedUser.id}
     `;
-    assert.deepEqual(assignments.map(({ role_id }) => role_id), ["user"]);
+    assert.deepEqual(
+      assignments.map(({ role_id }) => role_id),
+      ["user"],
+    );
 
     const signIn = await auth.api.signInEmail({
       body: {
@@ -132,8 +134,7 @@ test(
     assert.equal(delivered.length, 1);
     const resetUrl = emailActionUrl(delivered.shift());
     const resetToken =
-      resetUrl.searchParams.get("token") ??
-      resetUrl.pathname.split("/").filter(Boolean).at(-1);
+      resetUrl.searchParams.get("token") ?? resetUrl.pathname.split("/").filter(Boolean).at(-1);
     assert.ok(resetToken);
     await auth.api.resetPassword({
       body: { token: resetToken, newPassword: nextPassword },

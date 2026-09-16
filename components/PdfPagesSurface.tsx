@@ -88,18 +88,18 @@ function thumbnailBytes(preview: ToolPagePreview): ArrayBuffer | null {
  * geometry is never evicted, so every card remains navigable while at most 24
  * decoded/downloadable thumbnail blobs stay live on the main thread.
  */
-export function usePdfPageImages(
-  previews: readonly ToolPagePreview[],
-): readonly PdfPageImage[] {
-  const cacheRef = useRef(new Map<
-    number,
-    {
-      readonly buffer: ArrayBuffer;
-      readonly pageHeight: number;
-      readonly pageWidth: number;
-      readonly url: string;
-    }
-  >());
+export function usePdfPageImages(previews: readonly ToolPagePreview[]): readonly PdfPageImage[] {
+  const cacheRef = useRef(
+    new Map<
+      number,
+      {
+        readonly buffer: ArrayBuffer;
+        readonly pageHeight: number;
+        readonly pageWidth: number;
+        readonly url: string;
+      }
+    >(),
+  );
   const [, setRevision] = useState(0);
 
   const clearCache = useCallback(() => {
@@ -149,8 +149,7 @@ export function usePdfPageImages(
     }
     while (cacheRef.current.size > PDF_THUMBNAIL_CACHE_SIZE) {
       const oldest = cacheRef.current.entries().next().value as
-        | [number, { readonly url: string }]
-        | undefined;
+        [number, { readonly url: string }] | undefined;
       if (!oldest) break;
       URL.revokeObjectURL(oldest[1].url);
       cacheRef.current.delete(oldest[0]);
@@ -352,9 +351,9 @@ export function PdfPagesSurface({
                 variant="card-action"
               >
                 <PageThumbnail page={page} />
-                <Caption className="mt-2 block text-center"><Strong>
-                  Page {page.pageNumber}
-                </Strong></Caption>
+                <Caption className="mt-2 block text-center">
+                  <Strong>Page {page.pageNumber}</Strong>
+                </Caption>
               </Button>
             </div>
           )}
@@ -380,17 +379,19 @@ export function PdfPagesSurface({
                     type="button"
                   >
                     <PageThumbnail page={page} />
-                    <Caption className="mt-2 block"><Strong>
-                      Page {page.pageNumber}
-                      {isSelected ? " · Selected" : ""}
-                    </Strong></Caption>
+                    <Caption className="mt-2 block">
+                      <Strong>
+                        Page {page.pageNumber}
+                        {isSelected ? " · Selected" : ""}
+                      </Strong>
+                    </Caption>
                   </button>
                 ) : (
                   <>
                     <PageThumbnail page={page} />
-                    <Caption className="mt-2 block text-center"><Strong>
-                      Page {page.pageNumber}
-                    </Strong></Caption>
+                    <Caption className="mt-2 block text-center">
+                      <Strong>Page {page.pageNumber}</Strong>
+                    </Caption>
                   </>
                 )}
                 {onToggle && isSelected && (
@@ -409,7 +410,9 @@ export function PdfPagesSurface({
       {previewIndex >= 0 && (
         <MediaPreview
           open
-          onOpenChange={(open) => { if (!open) setPreviewPage(null); }}
+          onOpenChange={(open) => {
+            if (!open) setPreviewPage(null);
+          }}
           title={`Page ${previewPage}`}
           description={`Source PDF · Position ${previewIndex + 1} of ${pages.length}`}
           viewportClassName="bg-card p-0 text-foreground sm:p-0"
@@ -420,13 +423,23 @@ export function PdfPagesSurface({
             fileName={`Page ${previewPage}`}
             fit="page"
             onPageChange={(position) => setPreviewPage(pages[position - 1]?.pageNumber ?? null)}
-            outline={pages.map((page, index) => ({ id: `page-${page.pageNumber}`, title: `Page ${page.pageNumber}`, page: index + 1 }))}
+            outline={pages.map((page, index) => ({
+              id: `page-${page.pageNumber}`,
+              title: `Page ${page.pageNumber}`,
+              page: index + 1,
+            }))}
             pageCount={pages.length}
             pages={pages.map((page, index) => ({
               pageNumber: index + 1,
               width: page.pageWidth,
               height: page.pageHeight,
-              content: <PdfPreviewPage page={page} requestThumbnails={requestThumbnails ?? (() => {})} active />,
+              content: (
+                <PdfPreviewPage
+                  page={page}
+                  requestThumbnails={requestThumbnails ?? (() => {})}
+                  active
+                />
+              ),
             }))}
           />
         </MediaPreview>
@@ -435,7 +448,12 @@ export function PdfPagesSurface({
   );
 }
 
-export function PdfPreviewPage({ page, requestThumbnails, active, alt }: {
+export function PdfPreviewPage({
+  page,
+  requestThumbnails,
+  active,
+  alt,
+}: {
   page: ReturnType<typeof usePdfPageImages>[number];
   requestThumbnails: (pages: readonly number[], renderWidth?: number) => void;
   active: boolean;
@@ -448,15 +466,21 @@ export function PdfPreviewPage({ page, requestThumbnails, active, alt }: {
     let visible = false;
     const render = () => {
       if (!visible) return;
-      const width = Math.min(PDF_PREVIEW_MAX_WIDTH, Math.ceil(node.getBoundingClientRect().width * window.devicePixelRatio / 64) * 64);
+      const width = Math.min(
+        PDF_PREVIEW_MAX_WIDTH,
+        Math.ceil((node.getBoundingClientRect().width * window.devicePixelRatio) / 64) * 64,
+      );
       if (width > 0 && (!page.url || width > (page.renderWidth ?? 0))) {
         requestThumbnails([page.pageNumber], width);
       }
     };
-    const observer = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting;
-      render();
-    }, { rootMargin: "200px" });
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry.isIntersecting;
+        render();
+      },
+      { rootMargin: "200px" },
+    );
     const resize = new ResizeObserver(render);
     observer.observe(node);
     resize.observe(node);
@@ -469,8 +493,15 @@ export function PdfPreviewPage({ page, requestThumbnails, active, alt }: {
   }, [active, page.pageNumber, page.url, page.renderWidth, requestThumbnails]);
   return (
     <div className="absolute inset-0" ref={element}>
-      {page.url ? <img alt={alt ?? `PDF page ${page.pageNumber}`} className="h-full w-full object-contain" src={page.url} />
-        : <Muted role="status">Rendering page {page.pageNumber}…</Muted>}
+      {page.url ? (
+        <img
+          alt={alt ?? `PDF page ${page.pageNumber}`}
+          className="h-full w-full object-contain"
+          src={page.url}
+        />
+      ) : (
+        <Muted role="status">Rendering page {page.pageNumber}…</Muted>
+      )}
     </div>
   );
 }

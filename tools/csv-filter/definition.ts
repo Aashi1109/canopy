@@ -4,22 +4,18 @@ export default {
   toolId: "devtools.csv-filter",
   app: "devtools",
   category: "csv-data-tools",
-  keywords: [
-    "csv",
-    "filter",
-    "rows",
-    "search",
-    "column",
-    "delimiter",
-    "spreadsheet",
-  ],
+  keywords: ["csv", "filter", "rows", "search", "column", "delimiter", "spreadsheet"],
   name: "CSV Filter",
   description: "Keep rows containing text, optionally in one column.",
   layout: "stacked",
   input: {
     kind: "text",
     label: "CSV input",
-    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
+    acceptFiles: {
+      accept: ".csv,.tsv,text/csv,text/tab-separated-values",
+      maxBytes: 104_857_600,
+      maxEditableBytes: 2_000_000,
+    },
     placeholder: "name,role\nAda,Admin\nLin,Editor",
   },
   settings: {

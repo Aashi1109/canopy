@@ -8,10 +8,7 @@
 import type { ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
-import {
-  parseUtilityTable,
-  utilityDelimiter,
-} from "../../lib/devtools/shared/table.ts";
+import { parseUtilityTable, utilityDelimiter } from "../../lib/devtools/shared/table.ts";
 import {
   createTextArtifactSink,
   isLargeCsvRun,
@@ -53,20 +50,19 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
           { label: "Rows", value: String(Math.max(0, parsed.rowCount - 1)) },
           { label: "Columns", value: String(parsed.columnCount) },
         ],
-        sections: [{
-          title: sink.previewTruncated ? "Complete Markdown table" : "Download",
-          body: { render: "files", files: [artifact], outputBytes: artifact.size },
-        }],
+        sections: [
+          {
+            title: sink.previewTruncated ? "Complete Markdown table" : "Download",
+            body: { render: "files", files: [artifact], outputBytes: artifact.size },
+          },
+        ],
       };
     } catch (error) {
       await sink.abort(error);
       throw error;
     }
   }
-  const rows = parseUtilityTable(
-    ctx.input.text,
-    delimiter,
-  );
+  const rows = parseUtilityTable(ctx.input.text, delimiter);
   return {
     render: "text",
     text: [

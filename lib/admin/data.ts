@@ -65,10 +65,19 @@ export async function listRoleUsers(roleId: string, assigned: boolean, search = 
     assigned ? membership : sql`not ${membership}`,
     query ? or(ilike(authUser.name, `%${query}%`), ilike(authUser.email, `%${query}%`)) : undefined,
   );
-  const users = await db.select({
-    id: authUser.id, name: authUser.name, email: authUser.email,
-    image: authUser.image, status: authUser.status,
-  }).from(authUser).where(filter).orderBy(authUser.name, authUser.id).limit(25).offset(offset);
+  const users = await db
+    .select({
+      id: authUser.id,
+      name: authUser.name,
+      email: authUser.email,
+      image: authUser.image,
+      status: authUser.status,
+    })
+    .from(authUser)
+    .where(filter)
+    .orderBy(authUser.name, authUser.id)
+    .limit(25)
+    .offset(offset);
   const [total] = await db.select({ value: count() }).from(authUser).where(filter);
   return { users, total: total.value, hasMore: offset + users.length < total.value };
 }
@@ -80,18 +89,21 @@ export async function listRoles() {
   const [roles, memberships] = await Promise.all([
     rolesCache.remember(
       "all",
-      async () => db.select({
-        id: rolesTable.id,
-        name: rolesTable.name,
-        description: rolesTable.description,
-        access: rolesTable.access,
-        isSystem: rolesTable.isSystem,
-      })
-        .from(rolesTable)
-        .orderBy(rolesTable.isSystem, rolesTable.name),
+      async () =>
+        db
+          .select({
+            id: rolesTable.id,
+            name: rolesTable.name,
+            description: rolesTable.description,
+            access: rolesTable.access,
+            isSystem: rolesTable.isSystem,
+          })
+          .from(rolesTable)
+          .orderBy(rolesTable.isSystem, rolesTable.name),
       24 * 60 * 60,
     ),
-    db.select({ roleId: userRolesTable.roleId, assignedUsers: count(userRolesTable.userId) })
+    db
+      .select({ roleId: userRolesTable.roleId, assignedUsers: count(userRolesTable.userId) })
       .from(userRolesTable)
       .groupBy(userRolesTable.roleId),
   ]);
@@ -104,10 +116,7 @@ export async function getRole(roleId: string) {
 }
 
 export async function listTemplates() {
-  return db
-    .select()
-    .from(invoiceTemplatesTable)
-    .orderBy(desc(invoiceTemplatesTable.updatedAt));
+  return db.select().from(invoiceTemplatesTable).orderBy(desc(invoiceTemplatesTable.updatedAt));
 }
 
 export async function getTemplate(templateId: string) {
@@ -135,10 +144,7 @@ export async function listAuditEvents() {
       createdAt: auditEventsTable.createdAt,
     })
     .from(auditEventsTable)
-    .leftJoin(
-      auditActor,
-      eq(auditActor.id, auditEventsTable.actorUserId),
-    )
+    .leftJoin(auditActor, eq(auditActor.id, auditEventsTable.actorUserId))
     .leftJoin(
       auditTargetUser,
       and(

@@ -20,8 +20,20 @@ test("role definitions are cached while membership counts stay current", async (
   process.env.UPSTASH_REDIS_REST_URL = "https://cache.example.test";
   process.env.UPSTASH_REDIS_REST_TOKEN = "test-token";
   const roles = [
-    { id: "editor", name: "Editor", description: "Edit tools", access: { tools: { view: true, edit: true } }, isSystem: false },
-    { id: "admin", name: "Admin", description: "Admin access", access: { admin: { enter: true } }, isSystem: true },
+    {
+      id: "editor",
+      name: "Editor",
+      description: "Edit tools",
+      access: { tools: { view: true, edit: true } },
+      isSystem: false,
+    },
+    {
+      id: "admin",
+      name: "Admin",
+      description: "Admin access",
+      access: { admin: { enter: true } },
+      isSystem: true,
+    },
   ];
   let definitionsRead = 0;
   let membershipsRead = 0;
@@ -30,9 +42,16 @@ test("role definitions are cached while membership counts stay current", async (
   db.select = () => {
     let table;
     const query = {
-      from(value) { table = value; return query; },
-      groupBy() { return query; },
-      orderBy() { return query; },
+      from(value) {
+        table = value;
+        return query;
+      },
+      groupBy() {
+        return query;
+      },
+      orderBy() {
+        return query;
+      },
       then(resolve, reject) {
         if (table === rolesTable) {
           definitionsRead++;
@@ -53,9 +72,15 @@ test("role definitions are cached while membership counts stay current", async (
     return { data: { result: 1 } };
   };
 
-  assert.deepEqual(await listRoles(), roles.map((role) => ({ ...role, assignedUsers: role.id === "editor" ? 1 : 0 })));
+  assert.deepEqual(
+    await listRoles(),
+    roles.map((role) => ({ ...role, assignedUsers: role.id === "editor" ? 1 : 0 })),
+  );
   assignedUsers = 4;
-  assert.deepEqual(await listRoles(), roles.map((role) => ({ ...role, assignedUsers: role.id === "editor" ? 4 : 0 })));
+  assert.deepEqual(
+    await listRoles(),
+    roles.map((role) => ({ ...role, assignedUsers: role.id === "editor" ? 4 : 0 })),
+  );
   assert.equal(definitionsRead, 1);
   assert.equal(membershipsRead, 2);
   assignedUsers = 0;

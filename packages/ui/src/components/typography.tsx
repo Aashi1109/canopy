@@ -25,7 +25,8 @@ export const typographyStyles = {
   list: "list-disc space-y-2 pl-6 font-sans text-body",
   orderedList: "list-decimal space-y-2 pl-6 font-sans text-body",
   inlineCode: "rounded bg-muted px-1 py-0.5 font-mono text-code font-medium",
-  textLink: "font-sans text-inherit text-primary underline underline-offset-4 rounded-sm outline-none transition-colors hover:text-primary-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+  textLink:
+    "font-sans text-inherit text-primary underline underline-offset-4 rounded-sm outline-none transition-colors hover:text-primary-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
   codeBlock: "font-mono text-code whitespace-pre",
 } as const;
 
@@ -54,7 +55,13 @@ export function H6({ className, ...props }: ComponentProps<"h6">) {
 }
 
 export function Display({ className, ...props }: ComponentProps<"h1">) {
-  return <h1 data-slot="typography-display" className={cn(typographyStyles.display, className)} {...props} />;
+  return (
+    <h1
+      data-slot="typography-display"
+      className={cn(typographyStyles.display, className)}
+      {...props}
+    />
+  );
 }
 
 export function P({ className, ...props }: ComponentProps<"p">) {
@@ -62,65 +69,143 @@ export function P({ className, ...props }: ComponentProps<"p">) {
 }
 
 export function Text({ className, ...props }: ComponentProps<"span">) {
-  return <span data-slot="typography-text" className={cn(typographyStyles.text, className)} {...props} />;
+  return (
+    <span data-slot="typography-text" className={cn(typographyStyles.text, className)} {...props} />
+  );
 }
 
 export function Lead({ className, ...props }: ComponentProps<"p">) {
-  return <p data-slot="typography-lead" className={cn(typographyStyles.lead, className)} {...props} />;
+  return (
+    <p data-slot="typography-lead" className={cn(typographyStyles.lead, className)} {...props} />
+  );
 }
 
 export function Large({ className, ...props }: ComponentProps<"div">) {
-  return <div data-slot="typography-large" className={cn(typographyStyles.large, className)} {...props} />;
+  return (
+    <div
+      data-slot="typography-large"
+      className={cn(typographyStyles.large, className)}
+      {...props}
+    />
+  );
 }
 
 export function Small({ className, ...props }: ComponentProps<"small">) {
-  return <small data-slot="typography-small" className={cn(typographyStyles.small, className)} {...props} />;
+  return (
+    <small
+      data-slot="typography-small"
+      className={cn(typographyStyles.small, className)}
+      {...props}
+    />
+  );
 }
 
 export function Muted({ className, ...props }: ComponentProps<"p">) {
-  return <p data-slot="typography-muted" className={cn(typographyStyles.muted, className)} {...props} />;
+  return (
+    <p data-slot="typography-muted" className={cn(typographyStyles.muted, className)} {...props} />
+  );
 }
 
 export function Caption({ className, ...props }: ComponentProps<"span">) {
-  return <span data-slot="typography-caption" className={cn(typographyStyles.caption, className)} {...props} />;
+  return (
+    <span
+      data-slot="typography-caption"
+      className={cn(typographyStyles.caption, className)}
+      {...props}
+    />
+  );
 }
 
 export function Overline({ className, ...props }: ComponentProps<"span">) {
-  return <span data-slot="typography-overline" className={cn(typographyStyles.overline, className)} {...props} />;
+  return (
+    <span
+      data-slot="typography-overline"
+      className={cn(typographyStyles.overline, className)}
+      {...props}
+    />
+  );
 }
 
 export function Metric({ className, ...props }: ComponentProps<"span">) {
-  return <span data-slot="typography-metric" className={cn(typographyStyles.metric, className)} {...props} />;
+  return (
+    <span
+      data-slot="typography-metric"
+      className={cn(typographyStyles.metric, className)}
+      {...props}
+    />
+  );
 }
 
 export function Strong({ className, ...props }: ComponentProps<"strong">) {
-  return <strong data-slot="typography-strong" className={cn(typographyStyles.strong, className)} {...props} />;
+  return (
+    <strong
+      data-slot="typography-strong"
+      className={cn(typographyStyles.strong, className)}
+      {...props}
+    />
+  );
 }
 
 export function Blockquote({ className, ...props }: ComponentProps<"blockquote">) {
-  return <blockquote data-slot="typography-blockquote" className={cn(typographyStyles.blockquote, className)} {...props} />;
+  return (
+    <blockquote
+      data-slot="typography-blockquote"
+      className={cn(typographyStyles.blockquote, className)}
+      {...props}
+    />
+  );
 }
 
 export function List({ className, ...props }: ComponentProps<"ul">) {
-  return <ul data-slot="typography-list" className={cn(typographyStyles.list, className)} {...props} />;
+  return (
+    <ul data-slot="typography-list" className={cn(typographyStyles.list, className)} {...props} />
+  );
 }
 
 export function OrderedList({ className, ...props }: ComponentProps<"ol">) {
-  return <ol data-slot="typography-orderedList" className={cn(typographyStyles.orderedList, className)} {...props} />;
+  return (
+    <ol
+      data-slot="typography-orderedList"
+      className={cn(typographyStyles.orderedList, className)}
+      {...props}
+    />
+  );
 }
 
 export function InlineCode({ className, ...props }: ComponentProps<"code">) {
-  return <code data-slot="typography-inlineCode" className={cn(typographyStyles.inlineCode, className)} {...props} />;
+  return (
+    <code
+      data-slot="typography-inlineCode"
+      className={cn(typographyStyles.inlineCode, className)}
+      {...props}
+    />
+  );
 }
 
 export function TextLink({ className, ...props }: ComponentProps<"a">) {
-  return <a data-slot="typography-textLink" className={cn(typographyStyles.textLink, className)} {...props} />;
+  return (
+    <a
+      data-slot="typography-textLink"
+      className={cn(typographyStyles.textLink, className)}
+      {...props}
+    />
+  );
 }
 
-export function CodeBlock({ children, className, ...props }: ComponentProps<"pre"> & { "data-language"?: string }) {
+export function CodeBlock({
+  children,
+  className,
+  ...props
+}: ComponentProps<"pre"> & { "data-language"?: string }) {
   return (
-    <pre data-slot="typography-code-block" className={cn(typographyStyles.codeBlock, className)} {...props}>
-      <code className="font-[inherit]" data-language={props["data-language"]}>{children}</code>
+    <pre
+      data-slot="typography-code-block"
+      className={cn(typographyStyles.codeBlock, className)}
+      {...props}
+    >
+      <code className="font-[inherit]" data-language={props["data-language"]}>
+        {children}
+      </code>
     </pre>
   );
 }

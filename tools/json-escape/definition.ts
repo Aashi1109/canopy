@@ -4,15 +4,7 @@ export default {
   toolId: "devtools.json-escape",
   app: "devtools",
   category: "json-tools",
-  keywords: [
-    "json",
-    "escape",
-    "string",
-    "quote",
-    "backslash",
-    "stringify",
-    "encode",
-  ],
+  keywords: ["json", "escape", "string", "quote", "backslash", "stringify", "encode"],
   name: "JSON Escape",
   description: "Escape a raw string for use inside JSON.",
   layout: "stacked",
@@ -34,7 +26,7 @@ export default {
   content: {
     howToUse: [
       "Paste the raw text exactly as it is — including newlines, tabs, and quotes.",
-      "Escape. Quotes become `\\\"`, backslashes become `\\\\`, and newlines become `\\n`.",
+      'Escape. Quotes become `\\"`, backslashes become `\\\\`, and newlines become `\\n`.',
       "Copy the result and paste it between the quotes of a JSON string value. The surrounding quotes are not included, so you add them yourself.",
     ],
     limitations: [
@@ -45,7 +37,7 @@ export default {
     faq: [
       {
         q: "Why are there no quotes around the result?",
-        a: "So you can drop it straight into an existing string literal. Add `\"` on both sides if you need a complete JSON value.",
+        a: 'So you can drop it straight into an existing string literal. Add `"` on both sides if you need a complete JSON value.',
       },
       {
         q: "How do I reverse this?",

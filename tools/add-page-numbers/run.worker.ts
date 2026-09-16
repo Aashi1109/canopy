@@ -26,9 +26,7 @@ import { parseHexColor } from "../../lib/devtools/shared/color.ts";
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
-  const selection = validatePdfSelection(
-    ctx.input.files.map((file) => ({ size: file.size })),
-  );
+  const selection = validatePdfSelection(ctx.input.files.map((file) => ({ size: file.size })));
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
   for (const file of ctx.input.files) await validatePdfInput(file);
 

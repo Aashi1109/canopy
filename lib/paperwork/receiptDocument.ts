@@ -1,7 +1,4 @@
-import type {
-  BusinessProfile,
-  ClientProfile,
-} from "./shared/dataBridge";
+import type { BusinessProfile, ClientProfile } from "./shared/dataBridge";
 
 export interface ReceiptItem {
   id: string;
@@ -20,13 +17,7 @@ export interface ReceiptData {
   relatedInvoiceNumber: string;
   transactionId: string;
   paymentStatus: "Paid" | "Partially Paid" | "Refunded";
-  receiptType:
-    | "Service"
-    | "Product"
-    | "Rent"
-    | "Contractor"
-    | "Deposit"
-    | "Refund";
+  receiptType: "Service" | "Product" | "Rent" | "Contractor" | "Deposit" | "Refund";
   lineItems: ReceiptItem[];
   discountType: "none" | "percent" | "fixed";
   discountValue: number;
@@ -165,8 +156,7 @@ export const SAMPLE_RECEIPT_DATA: ReceiptData = {
 
 export function calculateReceiptTotals(data: ReceiptData) {
   const subtotal = data.lineItems.reduce(
-    (sum, item) =>
-      sum + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+    (sum, item) => sum + Number(item.quantity || 0) * Number(item.unitPrice || 0),
     0,
   );
   const discountAmount =
@@ -178,27 +168,15 @@ export function calculateReceiptTotals(data: ReceiptData) {
   const discountedSubtotal = Math.max(0, subtotal - discountAmount);
   const taxableSubtotal = data.lineItems.reduce(
     (sum, item) =>
-      item.taxable
-        ? sum + Number(item.quantity || 0) * Number(item.unitPrice || 0)
-        : sum,
+      item.taxable ? sum + Number(item.quantity || 0) * Number(item.unitPrice || 0) : sum,
     0,
   );
-  const discountRatio =
-    subtotal > 0 ? (subtotal - discountAmount) / subtotal : 1;
-  const taxAmount =
-    (taxableSubtotal *
-      discountRatio *
-      Number(data.salesTaxRate || 0)) /
-    100;
+  const discountRatio = subtotal > 0 ? (subtotal - discountAmount) / subtotal : 1;
+  const taxAmount = (taxableSubtotal * discountRatio * Number(data.salesTaxRate || 0)) / 100;
   const total =
-    discountedSubtotal +
-    taxAmount +
-    Number(data.tip || 0) +
-    Number(data.additionalFee || 0);
+    discountedSubtotal + taxAmount + Number(data.tip || 0) + Number(data.additionalFee || 0);
   const balanceDue =
-    data.paymentStatus === "Partially Paid"
-      ? Math.max(0, total - data.amountRefunded)
-      : 0;
+    data.paymentStatus === "Partially Paid" ? Math.max(0, total - data.amountRefunded) : 0;
 
   return { subtotal, discountAmount, taxAmount, total, balanceDue };
 }

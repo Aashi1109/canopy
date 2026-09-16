@@ -41,9 +41,7 @@ async function withTemplateRows(rows, operation) {
       whereConditions.push(condition);
       const [, documentType] = queryParts(condition).params;
       return Promise.resolve(
-        documentType
-          ? rows.filter((row) => row.documentType === documentType)
-          : rows,
+        documentType ? rows.filter((row) => row.documentType === documentType) : rows,
       );
     },
   };
@@ -85,8 +83,8 @@ test("published template queries validate advanced rows and filter by document t
   const legacyInvoiceConfig = createAdvancedTemplateConfig("invoice", "A4");
   delete legacyInvoiceConfig.schemaVersion;
   delete legacyInvoiceConfig.form;
-  legacyInvoiceConfig.template.schemas = legacyInvoiceConfig.template.schemas.map(
-    (page) => page.filter((schema) => schema.name !== "balanceDue"),
+  legacyInvoiceConfig.template.schemas = legacyInvoiceConfig.template.schemas.map((page) =>
+    page.filter((schema) => schema.name !== "balanceDue"),
   );
   const rows = [
     templateRow(),
@@ -138,12 +136,7 @@ test("published template queries validate advanced rows and filter by document t
       const allTemplates = await getPublishedTemplates();
       assert.deepEqual(
         allTemplates.map((template) => template.id),
-        [
-          seedTemplates[0].id,
-          "advanced-invoice",
-          "legacy-invoice",
-          "advanced-receipt",
-        ],
+        [seedTemplates[0].id, "advanced-invoice", "legacy-invoice", "advanced-receipt"],
       );
       assert.equal(allTemplates[0].createdAt, rows[0].createdAt.toISOString());
       assert.equal(allTemplates[0].requiredPlan, "free");
@@ -203,10 +196,7 @@ test("published template query keeps the seed fallback and applies its filter", 
 
 test("templates API validates its document type and defaults to invoices", async () => {
   const route = await readFile(
-    new URL(
-      "../app/api/paperwork/templates/route.ts",
-      import.meta.url,
-    ),
+    new URL("../app/api/paperwork/templates/route.ts", import.meta.url),
     "utf8",
   );
 
@@ -220,8 +210,5 @@ test("templates API validates its document type and defaults to invoices", async
     route,
     /getDocumentDefinition\((?:validated|parsed)?DocumentType(?:\.data)?\)\.toolComponentKey/,
   );
-  assert.match(
-    route,
-    /getPublishedTemplates\((?:validated|parsed)?DocumentType(?:\.data)?\)/,
-  );
+  assert.match(route, /getPublishedTemplates\((?:validated|parsed)?DocumentType(?:\.data)?\)/);
 });

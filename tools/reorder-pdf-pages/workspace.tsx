@@ -10,11 +10,7 @@
  */
 
 import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
-import {
-  PdfPagesSurface,
-  usePdfPageImages,
-  type PdfPageImage,
-} from "@/components/PdfPagesSurface";
+import { PdfPagesSurface, usePdfPageImages, type PdfPageImage } from "@/components/PdfPagesSurface";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import type { ToolPagePreview } from "@/lib/tool-framework/run";
 
@@ -25,10 +21,7 @@ const PAGES = "pages";
  * every page exactly once cannot be rendered as a reordering, so the document's
  * own order stands in until the seed lands.
  */
-function orderedPages(
-  value: unknown,
-  pages: readonly PdfPageImage[],
-): readonly PdfPageImage[] {
+function orderedPages(value: unknown, pages: readonly PdfPageImage[]): readonly PdfPageImage[] {
   if (!Array.isArray(value)) return pages;
   const byPageNumber = new Map(pages.map((page) => [page.pageNumber, page]));
   const ordered: PdfPageImage[] = [];
@@ -50,13 +43,7 @@ interface PageOrderProps {
   value: unknown;
 }
 
-function PageOrder({
-  disabled,
-  inspecting,
-  onSettingChange,
-  previews,
-  value,
-}: PageOrderProps) {
+function PageOrder({ disabled, inspecting, onSettingChange, previews, value }: PageOrderProps) {
   const images = usePdfPageImages(previews);
   return (
     <PdfPagesSurface
