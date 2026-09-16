@@ -1,0 +1,87 @@
+import { randomUUID } from "node:crypto";
+import { expect, test, type Page } from "@playwright/test";
+import { E2E_ACCOUNTS, E2E_PASSWORD } from "./fixtures/accounts";
+import { AuthPage } from "./pages/AuthPage";
+
+async function createPost(page: Page, baseURL: string | undefined, title: string) {
+  await new AuthPage(page).signIn(E2E_ACCOUNTS.admin.email, E2E_PASSWORD, new URL("/admin/blog", baseURL).href);
+  await page.getByRole("link", { name: "New post", exact: true }).click();
+  await page.getByRole("textbox", { name: "Post title", exact: true }).fill(title);
+  await page.getByRole("button", { name: "Create draft", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Article body", exact: true })).toBeVisible();
+  return page.url();
+}
+
+async function trashPost(page: Page, title: string) {
+  await page.goto(`/admin/blog?${new URLSearchParams({ search: title })}`);
+  await page.getByRole("button", { name: `Move to trash: ${title}`, exact: true }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Move to trash", exact: true }).click();
+  await expect(page.getByRole("alertdialog")).toBeHidden();
+}
+
+test("a saved article survives reload, previews privately, and guards unsaved navigation", async ({ page, baseURL }) => {
+  const title = `E2E Blog ${randomUUID()}`;
+  const url = await createPost(page, baseURL, title);
+  await page.getByRole("button", { name: "Post settings", exact: true }).click();
+  await page.getByRole("textbox", { name: "Public byline", exact: true }).fill("E2E Editorial Team");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Post settings", exact: true })).toBeFocused();
+  const body = page.getByRole("textbox", { name: "Article body", exact: true });
+  await body.fill("A persisted article body.");
+  await body.selectText();
+  const toolbar = page.getByRole("toolbar", { name: "Article formatting" });
+  if (!(await toolbar.getByRole("button", { name: "Highlight text", exact: true }).isVisible())) {
+    await toolbar.getByRole("button", { name: "More formatting", exact: true }).click();
+  }
+  await toolbar.getByRole("button", { name: "Highlight text", exact: true }).click();
+  await toolbar.getByRole("button", { name: "Align center", exact: true }).click();
+  await page.getByRole("button", { name: "Add a block", exact: true }).click();
+  await page.getByRole("button", { name: "Insert table", exact: true }).click();
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("All changes saved");
+  await page.reload();
+  await expect(page.getByRole("textbox", { name: "Article body", exact: true })).toContainText("A persisted article body.");
+  await expect(page.getByRole("table")).toBeVisible();
+  await expect(body.locator("mark")).toHaveText("A persisted article body.");
+  await expect(body.locator("p").first()).toHaveCSS("text-align", "center");
+  await page.getByRole("button", { name: "Preview", exact: true }).click();
+  await expect(page).toHaveURL(`${url}/preview`);
+  await expect(page.getByText("Private preview", { exact: false })).toBeVisible();
+  await expect(page.getByText("A persisted article body.", { exact: true })).toBeVisible();
+  await expect(page.getByText(/E2E Editorial Team/)).toBeVisible();
+  await page.getByRole("link", { name: "Back to editor", exact: false }).click();
+  await page.getByRole("textbox", { name: "TITLE", exact: true }).fill(`${title} unsaved`);
+  await page.getByRole("link", { name: "Posts", exact: true }).click();
+  await expect(page.getByRole("alertdialog")).toContainText("Leave unsaved changes?");
+  await page.getByRole("button", { name: "Keep editing", exact: true }).click();
+  await expect(page).toHaveURL(url);
+  await expect(page.getByRole("textbox", { name: "TITLE", exact: true })).toHaveValue(`${title} unsaved`);
+  await page.getByRole("link", { name: "Posts", exact: true }).click();
+  await page.getByRole("button", { name: "Discard changes", exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/blog$/);
+  await trashPost(page, title);
+});
+
+test("concurrent saves keep the second editor's work and offer a downloadable recovery copy", async ({ page, context, baseURL }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "Concurrent editing runs once.");
+  const title = `E2E Conflict ${randomUUID()}`;
+  const url = await createPost(page, baseURL, title);
+  const other = await context.newPage();
+  await other.goto(url);
+  await expect(other.getByRole("textbox", { name: "Article body", exact: true })).toBeVisible();
+  await page.getByRole("textbox", { name: "Article body", exact: true }).fill("The first editor's saved work.");
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("All changes saved");
+  await other.getByRole("textbox", { name: "Article body", exact: true }).fill("The second editor's local work.");
+  await other.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(other.getByRole("button", { name: "Download local draft", exact: true })).toBeVisible();
+  await expect(other.getByRole("textbox", { name: "Article body", exact: true })).toHaveText("The second editor's local work.");
+  await expect(other.getByRole("button", { name: "Preview", exact: true })).toBeDisabled();
+  const download = other.waitForEvent("download");
+  await other.getByRole("button", { name: "Download local draft", exact: true }).click();
+  expect((await download).suggestedFilename()).toMatch(/-draft\.json$/);
+  await other.close();
+  await page.reload();
+  await expect(page.getByRole("textbox", { name: "Article body", exact: true })).toHaveText("The first editor's saved work.");
+  await trashPost(page, title);
+});

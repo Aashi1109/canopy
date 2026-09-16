@@ -599,12 +599,12 @@ function ProductFooter({
   return (
     <footer
       data-slot="product-footer"
-      className={cn("bg-surface-ink text-on-ink", className)}
+      className={cn("@container/footer min-w-0 bg-surface-ink text-on-ink", className)}
       {...props}
     >
-      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-6 pt-14 pb-8 lg:px-[150px]">
-        <div className="grid gap-10 md:grid-cols-[300px_1fr] md:justify-between">
-          <div className="flex flex-col gap-3">
+      <div className="mx-auto flex w-full min-w-0 max-w-[1440px] flex-col gap-8 px-6 pt-14 pb-8 @min-[1024px]/footer:px-[150px]">
+        <div className="grid min-w-0 gap-10 @min-[768px]/footer:grid-cols-[300px_minmax(0,1fr)] @min-[768px]/footer:justify-between">
+          <div className="flex min-w-0 flex-col gap-3 break-words">
             <div className="flex items-center gap-2.5">
               <span className="grid size-[30px] place-items-center rounded-lg bg-on-ink text-surface-ink [&_svg]:size-[17px]">
                 {brandMark}
@@ -613,9 +613,9 @@ function ProductFooter({
             </div>
             <P className="text-on-ink-muted">{description}</P>
           </div>
-          <nav aria-label="Footer" className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+          <nav aria-label="Footer" className="grid min-w-0 grid-cols-2 gap-8 @min-[640px]/footer:grid-cols-3">
             {columns.map((column, index) => (
-              <div className="flex flex-col gap-3" key={index}>
+              <div className="flex min-w-0 flex-col gap-3 break-words" key={index}>
                 <Caption className="text-on-ink"><Strong>{column.title}</Strong></Caption>
                 {column.links.map((link) => (
                   <a

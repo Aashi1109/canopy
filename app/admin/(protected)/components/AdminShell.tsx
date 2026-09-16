@@ -28,6 +28,11 @@ export function AdminShell({
 }) {
   const pathname = usePathname();
   const isToolsCatalog = pathname === "/admin/tools";
+  const isBlogDocument = pathname.startsWith("/admin/blog/") && !pathname.startsWith("/admin/blog/taxonomy");
+
+  if (isBlogDocument) {
+    return <main className="fixed inset-0 overflow-hidden bg-card">{children}</main>;
+  }
 
   if (isFullPageTemplateLifecycle(pathname)) {
     return (
@@ -62,7 +67,7 @@ export function AdminShell({
         </div>
       </header>
       <div className="flex min-h-0 w-full flex-1 flex-col lg:flex-row">
-        <aside className="shrink-0 overflow-hidden border-b border-border bg-card px-4 py-3 lg:h-full lg:w-60 lg:border-r lg:border-b-0 lg:px-4 lg:py-6">
+        {!isBlogDocument && <aside className="shrink-0 overflow-hidden border-b border-border bg-card px-4 py-3 lg:h-full lg:w-60 lg:border-r lg:border-b-0 lg:px-4 lg:py-6">
           <Caption className="block mb-3 hidden px-3 text-muted-foreground lg:block">
             WORKSPACE
           </Caption>
@@ -73,9 +78,9 @@ export function AdminShell({
               Routes and capabilities are registered at build time.
             </Caption>
           </div>
-        </aside>
+        </aside>}
         <main
-          className={`min-h-0 min-w-0 flex-1 overscroll-contain px-4 py-6 sm:px-6 lg:px-7 lg:py-7 ${
+          className={isBlogDocument ? "min-h-0 min-w-0 flex-1 overflow-hidden" : `min-h-0 min-w-0 flex-1 overscroll-contain px-4 py-6 sm:px-6 lg:px-7 lg:py-7 ${
             isToolsCatalog ? "overflow-y-auto lg:overflow-hidden" : "overflow-y-auto"
           }`}
         >

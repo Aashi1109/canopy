@@ -3,6 +3,7 @@
 import { SidebarNavItem } from "@smarttools/ui";
 import {
   FileText,
+  Newspaper,
   Flag,
   History,
   LayoutDashboard,
@@ -21,6 +22,7 @@ const links = [
   { href: "/admin/roles", label: "Roles", icon: ShieldCheck },
   { href: "/admin/audit", label: "Audit history", icon: History },
   { href: "/admin/design-system", label: "Design system", icon: Palette },
+  { href: "/admin/blog", label: "Blog posts", icon: Newspaper },
 ] as const;
 
 export function AdminNavigation() {

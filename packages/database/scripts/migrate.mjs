@@ -28,6 +28,8 @@ const migrations = await Promise.all(
     "0003_document_template_kinds.sql",
     "0004_tool_content.sql",
     "0005_backfill_managed_tools.sql",
+    "0006_blogs.sql",
+    "0007_user_role_cache.sql",
   ].map(
     async (name) => [
       name,

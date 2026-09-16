@@ -67,7 +67,7 @@ export function AccountNavigation({ className, returnTo, restricted = false, use
           <DropdownMenu.Trigger asChild>
             <Button
               aria-label={`Open account menu for ${accountName}`}
-              className="group h-10 max-w-48 gap-2 rounded-full border border-border bg-muted py-1 pr-2.5 pl-1 text-foreground hover:border-primary/40 hover:bg-accent"
+              className="group h-10 max-w-32 gap-2 rounded-full border border-border bg-muted py-1 pr-2.5 pl-1 text-foreground hover:border-primary/40 hover:bg-accent sm:max-w-48"
               title={accountName}
               variant="ghost"
             >

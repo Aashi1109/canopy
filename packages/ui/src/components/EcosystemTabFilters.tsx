@@ -15,7 +15,7 @@ const FALLBACK_GROUPS: readonly Ecosystem[] = [
   { categories: [], count: 0, href: "/media", id: "media", label: "Media", tools: [] },
 ];
 
-export function EcosystemTabFilters() {
+export function EcosystemTabFilters({ currentHref }: { currentHref?: string }) {
   const [groups, setGroups] = useState<readonly Ecosystem[]>(FALLBACK_GROUPS);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -40,6 +40,7 @@ export function EcosystemTabFilters() {
           {activeId === group.id ? <EcosystemMenu group={group} onClose={() => setActiveId(null)} /> : null}
         </span>
       ))}
+      <a aria-current={currentHref === "/blog" ? "page" : undefined} className="rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:text-primary" href="/blog">Blog</a>
     </nav>
   );
 }

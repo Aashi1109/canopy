@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@/components/analytics/Analytics";
 import { measurementId } from "@/lib/analytics/ga4";
 import {
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased print:bg-white print:text-black">
         <Analytics measurementId={measurementId(process.env)}>{children}</Analytics>
+        <SpeedInsights />
       </body>
     </html>
   );

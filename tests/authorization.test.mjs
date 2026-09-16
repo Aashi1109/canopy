@@ -72,6 +72,7 @@ test("system roles match the protected user and admin contracts", () => {
       publish: true,
       archive: true,
     },
+    blog: { view: true, create: true, edit: true, publish: true, archive: true },
     features: { view: true, edit: true, toggle: true },
     users: { view: true, suspend: true, assignRoles: true },
     roles: { view: true, create: true, edit: true, delete: true },
@@ -81,11 +82,25 @@ test("system roles match the protected user and admin contracts", () => {
   assert.equal(Object.isFrozen(ADMIN_ACCESS.templates), true);
 });
 
+test("system Admin uses current built-in grants even when stored grants predate Blog", () => {
+  const legacyAccess = { ...ADMIN_ACCESS };
+  delete legacyAccess.blog;
+  const admin = customRole({ id: "admin", isSystem: true, access: legacyAccess });
+  const access = mergeRoleAccess([admin]);
+  assert.deepEqual(access, ADMIN_ACCESS);
+  for (const action of Object.keys(PERMISSION_CATALOG.blog.actions)) {
+    assert.equal(hasPermission(access, "blog", action), true);
+  }
+  assert.equal(hasPermission(mergeRoleAccess([customRole({ name: "Admin", access: legacyAccess })]), "blog", "view"), false);
+  assert.equal(legacyAccess.blog, undefined, "stored grants are not mutated");
+});
+
 test("every supported permission has resource and action help text", () => {
   assert.deepEqual(Object.keys(PERMISSION_CATALOG), [
     "admin",
     "tools",
     "templates",
+    "blog",
     "features",
     "users",
     "roles",

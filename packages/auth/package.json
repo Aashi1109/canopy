@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@smarttools/authorization": "workspace:*",
+    "@smarttools/control-plane": "workspace:*",
     "@smarttools/database": "workspace:*",
     "better-auth": "1.6.23",
     "resend": "6.17.2"

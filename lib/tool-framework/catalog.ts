@@ -24,6 +24,7 @@
  */
 
 import { cache } from "react";
+import { Cache } from "@smarttools/cache";
 
 import {
   db,
@@ -43,6 +44,7 @@ import type { ToolContent, ToolSpec } from "./spec";
 
 /** How many tools `relatedTools` returns, matching the tool page's shelf. */
 const RELATED_LIMIT = 3;
+const catalogCache = new Cache("catalog");
 
 /** A definition key is a directory name; anything else is not importable. */
 const DEFINITION_KEY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -147,16 +149,24 @@ async function buildTool(
 }
 
 /**
- * The single database read per request. Everything else filters this.
+ * Reuse the public catalog snapshot across requests for 24 hours.
+ * Admin mutations invalidate it after commit; Redis failures use the database.
  */
 const loadCatalog = cache(async (): Promise<readonly CatalogTool[]> => {
   if (!isDatabaseConfigured()) return [];
 
-  const [rows, contentRows, icons] = await Promise.all([
-    db.select().from(managedToolsTable),
-    getToolContentRows(),
-    getToolIcons(),
-  ]);
+  const { rows, contentRows, icons } = await catalogCache.remember("all", async () => {
+    const [rows, contentRows, icons] = await Promise.all([
+      db.select().from(managedToolsTable),
+      getToolContentRows(),
+      getToolIcons(),
+    ]);
+    return {
+      rows: rows.filter(isToolAvailable),
+      contentRows: contentRows.filter((row) => row.publishedAt !== null),
+      icons,
+    };
+  }, 24 * 60 * 60);
 
   const contentByToolId = new Map(
     contentRows.map((contentRow) => [contentRow.toolId, contentRow] as const),

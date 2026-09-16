@@ -54,6 +54,7 @@ import {
   type FeatureManifestEntry,
 } from "@smarttools/control-plane";
 import { z } from "zod";
+import { Cache } from "@smarttools/cache";
 import {
   isCategoryKey,
   TOOL_CATEGORIES,
@@ -61,6 +62,11 @@ import {
 } from "../tool-framework/categories.ts";
 import { TOOL_CONTENT_DOC_VERSION } from "../tool-framework/content.ts";
 import { uploadToolIcon } from "../tool-framework/cloudinary.ts";
+
+async function invalidateAfterCommit<T>(namespace: string, result: T): Promise<T> {
+  await new Cache(namespace).delete("all");
+  return result;
+}
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type ToolRow = typeof managedToolsTable.$inferSelect;
@@ -163,7 +169,7 @@ function assertBoolean(value: unknown, label: string): asserts value is boolean 
   if (typeof value !== "boolean") throw new Error(`${label} must be boolean.`);
 }
 
-async function requireTransactionPermission(
+export async function requireTransactionPermission(
   transaction: Transaction,
   actorUserId: string,
   resource: string,
@@ -217,7 +223,7 @@ async function requireTransactionPermission(
   }
 }
 
-async function writeAudit(
+export async function writeAudit(
   transaction: Transaction,
   actorUserId: string,
   action: string,
@@ -422,7 +428,7 @@ export async function createManagedTool(
       order,
     });
     return created;
-  });
+  }).then((result) => invalidateAfterCommit("catalog", result));
 }
 
 export async function updateManagedTool(
@@ -479,7 +485,7 @@ export async function updateManagedTool(
       slug: next.slug,
     });
     return saved;
-  });
+  }).then((result) => invalidateAfterCommit("catalog", result));
 }
 
 export async function reorderManagedTools(
@@ -520,7 +526,7 @@ export async function reorderManagedTools(
     await writeAudit(transaction, actorUserId, "tool.reorder", "tool-list", app, {
       toolIds,
     });
-  });
+  }).then((result) => invalidateAfterCommit("catalog", result));
 }
 
 export async function setManagedToolEnabled(
@@ -544,7 +550,7 @@ export async function setManagedToolEnabled(
       enabled,
     });
     return saved;
-  });
+  }).then((result) => invalidateAfterCommit("catalog", result));
 }
 
 export async function setManagedToolArchived(
@@ -565,7 +571,7 @@ export async function setManagedToolArchived(
       archived,
     });
     return saved;
-  });
+  }).then((result) => invalidateAfterCommit("catalog", result));
 }
 
 // ---------------------------------------------------------------------------
@@ -805,7 +811,7 @@ export async function updateToolContent(
         overrides: CONTENT_FIELDS.filter((field) => values[field] !== null),
       },
     );
-  });
+  }).then((result) => invalidateAfterCommit("catalog", result));
 }
 
 /**
@@ -843,7 +849,7 @@ export async function setToolContentPublished(
       toolId,
       { published },
     );
-  });
+  }).then((result) => invalidateAfterCommit("catalog", result));
 }
 
 /**
@@ -916,7 +922,7 @@ export async function saveToolIcon(
       { publicId, format },
     );
     return uploaded.row;
-  });
+  }).then((result) => invalidateAfterCommit("catalog", result));
 }
 
 /** Removing the row falls the tool back to its generated identicon. */
@@ -938,7 +944,7 @@ export async function removeToolIcon(
       toolId,
       {},
     );
-  });
+  }).then((result) => invalidateAfterCommit("catalog", result));
 }
 
 function getFeatureManifestEntry(
@@ -1296,7 +1302,7 @@ export async function createCustomRole(
       name: values.name,
     });
     return role;
-  });
+  }).then((result) => invalidateAfterCommit("roles", result));
 }
 
 export async function updateCustomRole(
@@ -1336,7 +1342,7 @@ export async function updateCustomRole(
       ])],
     });
     return role;
-  });
+  }).then((result) => invalidateAfterCommit("roles", result));
 }
 
 export async function deleteCustomRole(
@@ -1357,7 +1363,7 @@ export async function deleteCustomRole(
     await writeAudit(transaction, actorUserId, "role.delete", "role", roleId, {
       name: role.name,
     });
-  });
+  }).then((result) => invalidateAfterCommit("roles", result));
 }
 
 function templateValidationError(input: unknown): DocumentTemplate {

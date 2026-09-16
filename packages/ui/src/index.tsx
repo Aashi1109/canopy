@@ -267,12 +267,17 @@ export function ProductHeader({
   className,
   compact = false,
   minimal = false,
+  showSearch = true,
+  mobileActions,
+  href,
   name,
 }: {
   actions?: ReactNode;
   className?: string;
   compact?: boolean;
   minimal?: boolean;
+  showSearch?: boolean;
+  mobileActions?: ReactNode;
   href: string;
   name: string;
 }) {
@@ -288,26 +293,32 @@ export function ProductHeader({
           className="flex shrink-0 items-center gap-[13px] rounded-lg text-foreground no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           href="/"
         >
-          <span aria-hidden="true" className="relative block size-12 shrink-0 rounded-[10px] bg-surface-ink">
+          <span aria-hidden="true" className={cn("relative block shrink-0 rounded-[10px] bg-surface-ink", compact ? "size-10" : "size-12")}>
             <span className="absolute top-3 left-2.5 h-3.5 w-[22px] rounded-[3px] bg-on-ink" />
             <span className="absolute top-[22px] left-4 h-3.5 w-[22px] rounded-[3px] bg-primary" />
             <span className="absolute top-2.5 left-8 size-[7px] rounded-full bg-success" />
           </span>
-          <span className="hidden flex-col gap-0.5 sm:flex">
+          <span className={cn("flex-col gap-0.5 sm:flex", mobileActions ? "flex" : "hidden")}>
             <Strong className="">
               Smart<span className="text-primary">Tools</span>
             </Strong>
-            <Caption className="text-muted-foreground">
+            <Caption className={cn("text-muted-foreground", mobileActions && "hidden sm:block")}>
               small tools, thoughtfully made
             </Caption>
           </span>
         </a>
 
-        {!minimal ? <GlobalToolSearch /> : null}
+        {!minimal && showSearch ? <GlobalToolSearch /> : null}
 
-        {!minimal ? <EcosystemTabFilters /> : null}
+        {!minimal ? <EcosystemTabFilters currentHref={href} /> : null}
 
-        <div className="flex shrink-0 items-center gap-2">
+        {mobileActions ? <div className="flex shrink-0 items-center gap-2 xl:hidden">{mobileActions}</div> : null}
+        <div className={cn("shrink-0 items-center gap-2", mobileActions ? "hidden xl:flex" : "flex")}>
+          {!minimal ? <a
+            aria-current={href === "/blog" ? "page" : undefined}
+            className="inline-flex min-h-10 items-center rounded-full px-3 text-xs font-semibold text-muted-foreground no-underline outline-none hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:text-primary xl:hidden"
+            href="/blog"
+          >Blog</a> : null}
           {!minimal ? <a
             className="hidden h-10 items-center gap-1.5 rounded-full border border-input bg-card px-3 text-[11px] font-semibold text-foreground no-underline outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex"
             href="/auth?returnTo=%2Fauth%2Fprofile"

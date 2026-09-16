@@ -5,9 +5,9 @@ import test from "node:test";
 const sessionUrl = new URL("../packages/auth/src/session.ts", import.meta.url).href;
 const fixture = {
   session: null,
-  rows: [],
+  authorizations: new Map(),
   authError: null,
-  databaseError: null,
+  authorizationError: null,
   queries: 0,
   headers: null,
 };
@@ -25,30 +25,17 @@ const hooks = registerHooks({
         } } };
       `) };
     }
-    if (context.parentURL === sessionUrl && specifier === "@smarttools/database") {
+    if (context.parentURL === sessionUrl && specifier === "@smarttools/control-plane") {
       return { shortCircuit: true, url: moduleUrl(`
         const fixture = globalThis.__smarttoolsSessionTest;
-        export const authUser = { id: { key: "id" }, status: { key: "status" } };
-        export const userRolesTable = { userId: { key: "userId" }, roleId: { key: "roleId" } };
-        export const rolesTable = { id: { key: "assignedRoleId" }, access: { key: "access" } };
-        export const eq = (column, value) => row => row[column.key] === (value?.key ? row[value.key] : value);
-        export const and = (...conditions) => row => conditions.every(condition => condition(row));
-        export const db = { select() {
+        export class AuthorizationError extends Error {}
+        export async function getUserAuthorization(userId) {
           fixture.queries++;
-          let rows = fixture.rows;
-          return {
-            from() { return this; },
-            innerJoin(table, condition) { rows = rows.filter(condition); return this; },
-            where(condition) { rows = rows.filter(condition); return this; },
-            async limit(count) {
-              if (fixture.databaseError) throw fixture.databaseError;
-              return rows.slice(0, count);
-            },
-            then(resolve, reject) {
-              return (fixture.databaseError ? Promise.reject(fixture.databaseError) : Promise.resolve(rows)).then(resolve, reject);
-            },
-          };
-        } };
+          if (fixture.authorizationError) throw fixture.authorizationError;
+          const result = fixture.authorizations.get(userId);
+          if (!result) throw new AuthorizationError("Access denied");
+          return result;
+        }
       `) };
     }
     return nextResolve(specifier, context);
@@ -72,7 +59,8 @@ test("account session uses active users' effective Admin entry grants, including
     ["active", "custom", "other-user", { admin: { enter: true } }, false],
   ]) {
     fixture.session.user.status = status;
-    fixture.rows = [{ id, userId: id, status, roleId, assignedRoleId: roleId, access }];
+    fixture.authorizations.clear();
+    if (status === "active") fixture.authorizations.set(id, { roles: [{ id: roleId }], access });
     assert.deepEqual(await getSession(headers), {
       session: { id: "session-1" },
       user: { id: "user-1", name: "Ashish", status, isAdmin: expected },
@@ -80,14 +68,14 @@ test("account session uses active users' effective Admin entry grants, including
     assert.equal(await isAdminUser("user-1"), expected);
     assert.equal(fixture.headers, headers);
   }
-  fixture.rows = [
-    { id: "user-1", userId: "user-1", status: "active", roleId: "user", assignedRoleId: "user", access: {} },
-    { id: "user-1", userId: "user-1", status: "active", roleId: "custom", assignedRoleId: "custom", access: { admin: { enter: true } } },
-  ];
+  fixture.authorizations.set("user-1", {
+    roles: [{ id: "user" }, { id: "custom" }],
+    access: { admin: { enter: true } },
+  });
   assert.equal(await isAdminUser("user-1"), true, "entry permission may come from any assigned role");
-  fixture.rows[1].access = { admin: { enter: false } };
+  fixture.authorizations.get("user-1").access = { admin: { enter: false } };
   assert.equal(await isAdminUser("user-1"), false, "revocation is reflected on the next lookup");
-  fixture.rows = [];
+  fixture.authorizations.set("user-1", { roles: [], access: {} });
   assert.equal((await getSession(headers)).user.isAdmin, false);
 
   fixture.session = null;
@@ -101,8 +89,9 @@ test("account session uses active users' effective Admin entry grants, including
   assert.equal(await getOptionalSession(headers), null);
   fixture.authError = null;
   fixture.session = { session: { id: "session-1" }, user: { id: "user-1", name: "Ashish" } };
-  fixture.databaseError = new Error("database unavailable");
+  fixture.authorizationError = new Error("database unavailable");
+  await assert.rejects(isAdminUser("user-1"), error => error === fixture.authorizationError);
   await assert.rejects(getSession(headers), error =>
-    error instanceof AuthServiceError && error.cause === fixture.databaseError);
+    error instanceof AuthServiceError && error.cause === fixture.authorizationError);
   assert.equal(await getOptionalSession(headers), null);
 });

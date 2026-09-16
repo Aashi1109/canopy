@@ -1,0 +1,27 @@
+# Generated files and copied third-party assets
+pnpm-lock.yaml
+next-env.d.ts
+public/media/vendor/
+
+# Build, test, and local tooling output (also excluded by .gitignore)
+node_modules/
+.next/
+.open-next/
+.wrangler/
+build/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.pnpm-store/
+.codegraph/
+.agents/
+.claude/
+.codex/
+.cursor/
+openspec/
+tmp/
+.tmp/
+.env*
+.dev.vars*

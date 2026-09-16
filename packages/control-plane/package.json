@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@smarttools/authorization": "workspace:*",
+    "@smarttools/cache": "workspace:*",
     "@smarttools/database": "workspace:*",
     "@smarttools/invoice-templates": "workspace:*",
     "@smarttools/tool-catalog": "workspace:*"

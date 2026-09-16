@@ -1,4 +1,5 @@
 import { getTools } from "@/lib/tool-framework/catalog";
+import { getBlogSitemapEntries } from "@/lib/blog/queries";
 import type { MetadataRoute } from "next";
 
 // Deliberately no `generateStaticParams` companion anywhere: slugs and
@@ -23,9 +24,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     tools = [];
   }
 
-  return tools.map((tool) => ({
+  // ponytail: one sitemap holds 50,000 URLs; split into sitemap files before
+  // reaching this total. Keep the established tool URLs ahead of blog entries.
+  const entries: MetadataRoute.Sitemap = tools.slice(0, 50000).map((tool) => ({
     url: new URL(tool.href, base).toString(),
     changeFrequency: "weekly",
     priority: 0.7,
   }));
+  try {
+    const posts = await getBlogSitemapEntries(50000 - entries.length);
+    entries.push(...posts.map((post) => ({
+      url: new URL(`/blog/${post.slug}`, base).toString(),
+      lastModified: post.publishedUpdatedAt ?? undefined,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })));
+  } catch {
+    // A blog migration or read failure must not remove the existing tool URLs.
+  }
+  return entries;
 }

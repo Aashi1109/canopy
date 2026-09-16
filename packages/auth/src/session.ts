@@ -1,5 +1,5 @@
-import { hasPermission, mergeRoleAccess } from "@smarttools/authorization";
-import { and, authUser, db, eq, rolesTable, userRolesTable } from "@smarttools/database";
+import { hasPermission } from "@smarttools/authorization";
+import { AuthorizationError, getUserAuthorization } from "@smarttools/control-plane";
 import { auth } from "./auth.ts";
 
 export type AuthServiceSession = {
@@ -8,18 +8,13 @@ export type AuthServiceSession = {
 };
 
 export async function isAdminUser(userId: string): Promise<boolean> {
-  const roles = await db
-    .select({ access: rolesTable.access })
-    .from(authUser)
-    .innerJoin(userRolesTable, eq(userRolesTable.userId, authUser.id))
-    .innerJoin(rolesTable, eq(rolesTable.id, userRolesTable.roleId))
-    .where(
-      and(
-        eq(authUser.id, userId),
-        eq(authUser.status, "active"),
-      ),
-    );
-  return hasPermission(mergeRoleAccess(roles), "admin", "enter");
+  try {
+    const { access } = await getUserAuthorization(userId);
+    return hasPermission(access, "admin", "enter");
+  } catch (error) {
+    if (error instanceof AuthorizationError) return false;
+    throw error;
+  }
 }
 
 export class AuthServiceError extends Error {

@@ -14,10 +14,11 @@ import {
   sql,
   userRolesTable,
 } from "@smarttools/database";
+import { Cache } from "@smarttools/cache";
 
+const rolesCache = new Cache("roles");
 const auditActor = alias(authUser, "audit_actor");
 const auditTargetUser = alias(authUser, "audit_target_user");
-
 export async function listUsers(search = "") {
   const query = search.trim();
   const rows = await db
@@ -76,19 +77,26 @@ export type RoleUser = Awaited<ReturnType<typeof listRoleUsers>>["users"][number
 export type RoleUsersPage = Awaited<ReturnType<typeof listRoleUsers>>;
 
 export async function listRoles() {
-  return db
-    .select({
-      id: rolesTable.id,
-      name: rolesTable.name,
-      description: rolesTable.description,
-      access: rolesTable.access,
-      isSystem: rolesTable.isSystem,
-      assignedUsers: count(userRolesTable.userId),
-    })
-    .from(rolesTable)
-    .leftJoin(userRolesTable, eq(userRolesTable.roleId, rolesTable.id))
-    .groupBy(rolesTable.id)
-    .orderBy(rolesTable.isSystem, rolesTable.name);
+  const [roles, memberships] = await Promise.all([
+    rolesCache.remember(
+      "all",
+      async () => db.select({
+        id: rolesTable.id,
+        name: rolesTable.name,
+        description: rolesTable.description,
+        access: rolesTable.access,
+        isSystem: rolesTable.isSystem,
+      })
+        .from(rolesTable)
+        .orderBy(rolesTable.isSystem, rolesTable.name),
+      24 * 60 * 60,
+    ),
+    db.select({ roleId: userRolesTable.roleId, assignedUsers: count(userRolesTable.userId) })
+      .from(userRolesTable)
+      .groupBy(userRolesTable.roleId),
+  ]);
+  const counts = new Map(memberships.map(({ roleId, assignedUsers }) => [roleId, assignedUsers]));
+  return roles.map((role) => ({ ...role, assignedUsers: counts.get(role.id) ?? 0 }));
 }
 
 export async function getRole(roleId: string) {

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import axios from "axios";
 
 import { ADMIN_ACCESS } from "../packages/authorization/src/index.ts";
 import {
@@ -153,6 +154,49 @@ async function withFakeDatabase(selectResults, callback) {
     db.transaction = originalTransaction;
   }
 }
+
+test("catalog and role caches invalidate only after successful commits", async (t) => {
+  const variables = ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"];
+  const previous = variables.map((key) => process.env[key]);
+  t.after(() => variables.forEach((key, index) => {
+    if (previous[index] === undefined) delete process.env[key];
+    else process.env[key] = previous[index];
+  }));
+  process.env.UPSTASH_REDIS_REST_URL = "https://cache.example.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "test-token";
+  let committed = false;
+  const invalidated = [];
+  t.mock.method(axios, "post", async (_url, command) => {
+    assert.equal(committed, true, "Redis must not be called before commit");
+    assert.equal(command[0], "DEL");
+    invalidated.push(command[1]);
+    return { data: { result: 1 } };
+  });
+  const tool = toolRoster(["devtools.stored-tool"], "devtools")[0];
+  for (const [key, reads, operation] of [
+    ["catalog:all", [permissionRows(ADMIN_ACCESS), [tool]], () => setManagedToolEnabled("actor", tool.toolId, false)],
+    ["roles:all", [permissionRows(ADMIN_ACCESS)], () => createCustomRole("actor", { name: "Editor", description: "Edits tools." })],
+  ]) {
+    for (const rollback of [false, true]) {
+      committed = false;
+      const before = invalidated.length;
+      await withFakeDatabase(reads, async () => {
+        const transaction = db.transaction;
+        db.transaction = async (callback) => {
+          const result = await transaction(callback);
+          assert.equal(invalidated.length, before);
+          if (rollback) throw new Error("Commit failed");
+          committed = true;
+          return result;
+        };
+        if (rollback) await assert.rejects(operation, /Commit failed/);
+        else await operation();
+      });
+      assert.equal(invalidated.length, before + (rollback ? 0 : 1));
+      if (!rollback) assert.equal(invalidated.at(-1), key);
+    }
+  }
+});
 
 test("bulk role assignment adds only the requested role, preserves status and is idempotent", async () => {
   const role = { id: "reviewer", isSystem: false, access: { admin: { enter: true }, tools: { view: true } } };

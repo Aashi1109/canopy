@@ -56,6 +56,16 @@ export const PERMISSION_CATALOG = {
       archive: { description: "Archive invoice templates." },
     },
   },
+  blog: {
+    description: "Blog articles, publishing, and shared categories and tags.",
+    actions: {
+      view: { description: "View blog drafts, previews, and revision history." },
+      create: { description: "Create and duplicate blog articles." },
+      edit: { description: "Edit blog drafts, restore revisions, and manage categories and tags." },
+      publish: { description: "Publish, schedule, and unpublish blog articles." },
+      archive: { description: "Move blog articles to trash and restore them." },
+    },
+  },
   features: {
     description: "Application feature flags.",
     actions: {
@@ -99,6 +109,7 @@ export const ADMIN_ACCESS = freezeAccess({
     publish: true,
     archive: true,
   },
+  blog: { view: true, create: true, edit: true, publish: true, archive: true },
   features: { view: true, edit: true, toggle: true },
   users: { view: true, suspend: true, assignRoles: true },
   roles: { view: true, create: true, edit: true, delete: true },
@@ -166,13 +177,14 @@ export function assertValidAccess(access: unknown): asserts access is Access {
 }
 
 export function mergeRoleAccess(
-  roles: readonly Pick<Role, "access">[],
+  roles: readonly Pick<Role, "id" | "access">[],
 ): Access {
   const merged: Access = {};
 
   for (const role of roles) {
-    assertValidAccess(role.access);
-    for (const [resource, actions] of Object.entries(role.access)) {
+    const access = role.id === "admin" ? ADMIN_ACCESS : role.access;
+    assertValidAccess(access);
+    for (const [resource, actions] of Object.entries(access)) {
       for (const [action, granted] of Object.entries(actions)) {
         if (granted) (merged[resource] ??= {})[action] = true;
       }

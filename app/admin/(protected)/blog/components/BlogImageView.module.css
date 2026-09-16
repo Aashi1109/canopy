@@ -1,0 +1,29 @@
+.wrapper { width: 100%; margin: 24px 0; }
+.figure { max-width: 100%; margin-top: 0; margin-bottom: 0; }
+.figure[data-alignment=left] { margin-left: 0; margin-right: auto; }
+.figure[data-alignment=center] { margin-left: auto; margin-right: auto; }
+.figure[data-alignment=right] { margin-left: auto; margin-right: 0; }
+.picture { position: relative; }
+.imageButton { display: block; width: 100%; height: auto; min-height: 0; padding: 0; overflow: hidden; border-radius: 6px; background: transparent; }
+.picture img { display: block; width: 100%; height: auto; margin: 0; border-radius: 6px; }
+.picture img[draggable=true] { cursor: grab; }
+.wrapper[data-selected=true] .imageButton { outline: 2px solid var(--primary); outline-offset: 2px; }
+.resize { --handle-size: 32px; position: absolute; width: var(--handle-size); height: var(--handle-size); bottom: 0; right: min(0px, calc(100% - var(--handle-size))); touch-action: none; cursor: nwse-resize; border-radius: 50%; }
+.resize[data-alignment=right] { right: auto; left: min(0px, calc(100% - var(--handle-size))); cursor: nesw-resize; }
+.resize span { width: 10px; height: 10px; border: 2px solid var(--card); border-radius: 2px; background: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.caption { margin-top: 10px; color: var(--muted-foreground); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.controls { z-index: 70; width: 360px; max-width: var(--radix-popover-content-available-width); max-height: var(--radix-popover-content-available-height); overflow-y: auto; overscroll-behavior: contain; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--foreground); font-family: var(--font-sans); box-shadow: var(--shadow-lg); }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.alignment { display: flex; gap: 2px; }
+.alignment [aria-pressed=true] { color: var(--primary); background: var(--accent); }
+.width { display: flex; align-items: center; gap: 8px; width: 118px; }
+.width label { flex-shrink: 0; }
+.fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 12px; }
+.fields label { margin-bottom: 6px; }
+.hint, .message { margin: 10px 0 0; font-size: 12px; line-height: 1.5; color: var(--muted-foreground); }
+.message { color: var(--foreground); }
+.fileInput { display: none; }
+@media (pointer: coarse) {
+ .controls button, .controls input, .resize { min-width: 44px; min-height: 44px; }
+ .resize { --handle-size: 44px; }
+}

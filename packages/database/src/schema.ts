@@ -3,6 +3,8 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  customType,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -12,6 +14,8 @@ import {
   timestamp,
   unique,
   uniqueIndex,
+  type AnyPgColumn,
+  type PgTableExtraConfigValue,
 } from "drizzle-orm/pg-core";
 
 export const anonymousUsersTable = pgTable("users", {
@@ -289,3 +293,157 @@ export const auditEventsTable = pgTable(
 );
 
 export const usersTable = anonymousUsersTable;
+
+export const blogCategoriesTable = pgTable(
+  "blog_categories",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    createdBy: text("created_by").references(() => authUser.id, { onDelete: "set null" }),
+    updatedBy: text("updated_by").references(() => authUser.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("blog_categories_slug_unique").on(table.slug),
+    uniqueIndex("blog_categories_name_unique").on(sql`lower(${table.name})`),
+    check("blog_categories_name_check", sql`length(trim(${table.name})) BETWEEN 1 AND 100`),
+    check("blog_categories_slug_check", sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(${table.slug}) <= 160`),
+  ],
+);
+
+export const blogTagsTable = pgTable(
+  "blog_tags",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    createdBy: text("created_by").references(() => authUser.id, { onDelete: "set null" }),
+    updatedBy: text("updated_by").references(() => authUser.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("blog_tags_slug_unique").on(table.slug),
+    uniqueIndex("blog_tags_name_unique").on(sql`lower(${table.name})`),
+    check("blog_tags_name_check", sql`length(trim(${table.name})) BETWEEN 1 AND 100`),
+    check("blog_tags_slug_check", sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(${table.slug}) <= 160`),
+  ],
+);
+
+const tsvector = customType<{ data: string }>({ dataType: () => "tsvector" });
+
+export const blogPostsTable = pgTable(
+  "blog_posts",
+  {
+    id: text("id").primaryKey(),
+    slug: text("slug").notNull(),
+    draftDocument: jsonb("draft_document").$type<unknown>().notNull(),
+    draftHash: text("draft_hash").notNull(),
+    version: integer("version").default(1).notNull(),
+    revisionSequence: integer("revision_sequence").default(0).notNull(),
+    draftUpdatedAt: timestamp("draft_updated_at", { withTimezone: true }).defaultNow().notNull(),
+    draftUpdatedBy: text("draft_updated_by").references(() => authUser.id, { onDelete: "set null" }),
+    lastCheckpointAt: timestamp("last_checkpoint_at", { withTimezone: true }),
+    publishedRevisionId: text("published_revision_id"),
+    firstPublishedAt: timestamp("first_published_at", { withTimezone: true }),
+    publishedUpdatedAt: timestamp("published_updated_at", { withTimezone: true }),
+    publishedCategoryId: text("published_category_id").references(() => blogCategoriesTable.id),
+    publishedSearch: tsvector("published_search"),
+    createdBy: text("created_by").references(() => authUser.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    trashedAt: timestamp("trashed_at", { withTimezone: true }),
+  },
+  (table): PgTableExtraConfigValue[] => [
+    uniqueIndex("blog_posts_slug_unique").on(table.slug),
+    check("blog_posts_slug_check", sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(${table.slug}) <= 160`),
+    check("blog_posts_document_check", sql`jsonb_typeof(${table.draftDocument}) = 'object'`),
+    check("blog_posts_version_check", sql`${table.version} > 0 AND ${table.revisionSequence} >= 0`),
+    check("blog_posts_trash_check", sql`${table.trashedAt} IS NULL OR ${table.publishedRevisionId} IS NULL`),
+    check("blog_posts_publication_check", sql`${table.publishedRevisionId} IS NULL OR (${table.publishedCategoryId} IS NOT NULL AND ${table.firstPublishedAt} IS NOT NULL AND ${table.publishedUpdatedAt} IS NOT NULL)`),
+    foreignKey({
+      name: "blog_posts_published_revision_fk",
+      columns: [table.id, table.publishedRevisionId],
+      foreignColumns: [blogRevisionsTable.postId, blogRevisionsTable.id],
+    }),
+    index("blog_posts_published_idx")
+      .on(table.firstPublishedAt.desc(), table.id.desc())
+      .where(sql`${table.publishedRevisionId} IS NOT NULL AND ${table.trashedAt} IS NULL`),
+    index("blog_posts_category_published_idx")
+      .on(table.publishedCategoryId, table.firstPublishedAt.desc(), table.id.desc())
+      .where(sql`${table.publishedRevisionId} IS NOT NULL AND ${table.trashedAt} IS NULL`),
+    index("blog_posts_search_idx")
+      .using("gin", table.publishedSearch)
+      .where(sql`${table.publishedRevisionId} IS NOT NULL AND ${table.trashedAt} IS NULL`),
+    index("blog_posts_admin_idx")
+      .on(table.updatedAt.desc(), table.id.desc()).where(sql`${table.trashedAt} IS NULL`),
+    index("blog_posts_trash_idx")
+      .on(table.trashedAt.desc(), table.id.desc()).where(sql`${table.trashedAt} IS NOT NULL`),
+  ],
+);
+
+export const blogRevisionsTable = pgTable(
+  "blog_revisions",
+  {
+    id: text("id").primaryKey(),
+    postId: text("post_id").notNull().references((): AnyPgColumn => blogPostsTable.id),
+    revisionNumber: integer("revision_number").notNull(),
+    document: jsonb("document").$type<unknown>().notNull(),
+    contentHash: text("content_hash").notNull(),
+    reason: text("reason")
+      .$type<"create" | "autosave" | "manual_save" | "publish" | "schedule" | "restore_backup" | "restore">()
+      .notNull(),
+    sourceRevisionId: text("source_revision_id"),
+    createdBy: text("created_by").references(() => authUser.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table): PgTableExtraConfigValue[] => [
+    unique("blog_revisions_post_number_unique").on(table.postId, table.revisionNumber),
+    unique("blog_revisions_post_id_unique").on(table.postId, table.id),
+    check("blog_revisions_number_check", sql`${table.revisionNumber} > 0`),
+    check("blog_revisions_document_check", sql`jsonb_typeof(${table.document}) = 'object'`),
+    check("blog_revisions_reason_check", sql`${table.reason} IN ('create', 'autosave', 'manual_save', 'publish', 'schedule', 'restore_backup', 'restore')`),
+    foreignKey({
+      name: "blog_revisions_source_revision_fk",
+      columns: [table.postId, table.sourceRevisionId],
+      foreignColumns: [table.postId, table.id],
+    }),
+  ],
+);
+
+export const blogPublishedPostTagsTable = pgTable(
+  "blog_published_post_tags",
+  {
+    postId: text("post_id").notNull().references(() => blogPostsTable.id),
+    tagId: text("tag_id").notNull().references(() => blogTagsTable.id),
+  },
+  (table) => [
+    primaryKey({ columns: [table.postId, table.tagId] }),
+    index("blog_published_post_tags_tag_idx").on(table.tagId, table.postId),
+  ],
+);
+
+export const blogPostSchedulesTable = pgTable(
+  "blog_post_schedules",
+  {
+    id: text("id").primaryKey(),
+    postId: text("post_id").notNull().references(() => blogPostsTable.id),
+    revisionId: text("revision_id").notNull(),
+    scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
+    scheduledBy: text("scheduled_by").references(() => authUser.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+    lastErrorCode: text("last_error_code"),
+  },
+  (table) => [
+    unique("blog_post_schedules_post_unique").on(table.postId),
+    foreignKey({
+      name: "blog_post_schedules_revision_fk",
+      columns: [table.postId, table.revisionId],
+      foreignColumns: [blogRevisionsTable.postId, blogRevisionsTable.id],
+    }),
+    index("blog_post_schedules_due_idx").on(table.scheduledAt, table.id),
+  ],
+);

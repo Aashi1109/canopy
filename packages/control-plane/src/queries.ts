@@ -4,6 +4,7 @@ import {
   hasPermission,
   mergeRoleAccess,
 } from "@smarttools/authorization";
+import { Cache } from "@smarttools/cache";
 import {
   assertDatabaseConfigured,
   and,
@@ -43,6 +44,7 @@ export class AuthorizationError extends Error {
 }
 
 export const featureManifest: readonly FeatureManifestEntry[] = [];
+const userRolesCache = new Cache("user-roles");
 
 /**
  * Tools that exist in code, resolved against their stored rows.
@@ -167,41 +169,53 @@ export async function getUserAuthorization(userId: string): Promise<{
   access: Access;
 }> {
   assertDatabaseConfigured();
-  const rows = await db
-    .select({
-      status: authUser.status,
-      roleId: rolesTable.id,
-      roleName: rolesTable.name,
-      roleDescription: rolesTable.description,
-      roleAccess: rolesTable.access,
-      roleIsSystem: rolesTable.isSystem,
-    })
+  // Keep account status and cache freshness live; role joins are cached for a day.
+  const [user] = await db
+    .select({ status: authUser.status, updatedAt: authUser.updatedAt })
     .from(authUser)
-    .leftJoin(userRolesTable, eq(userRolesTable.userId, authUser.id))
-    .leftJoin(rolesTable, eq(rolesTable.id, userRolesTable.roleId))
-    .where(eq(authUser.id, userId));
-
-  if (!rows.length || rows[0].status !== "active") {
+    .where(eq(authUser.id, userId))
+    .limit(1);
+  if (!user || user.status !== "active") {
     throw new AuthorizationError("Access denied");
   }
 
-  const roles = rows.flatMap((row) =>
-    row.roleId &&
-    row.roleName &&
-    row.roleDescription &&
-    row.roleAccess &&
-    row.roleIsSystem !== null
-      ? [
-          {
-            id: row.roleId,
-            name: row.roleName,
-            description: row.roleDescription,
-            access: row.roleAccess,
-            isSystem: row.roleIsSystem,
-          },
-        ]
-      : [],
-  );
+  const roles = await userRolesCache.remember(`${userId}:${user.updatedAt.toISOString()}`, async () => {
+    const rows = await db
+      .select({
+        status: authUser.status,
+        roleId: rolesTable.id,
+        roleName: rolesTable.name,
+        roleDescription: rolesTable.description,
+        roleAccess: rolesTable.access,
+        roleIsSystem: rolesTable.isSystem,
+      })
+      .from(authUser)
+      .leftJoin(userRolesTable, eq(userRolesTable.userId, authUser.id))
+      .leftJoin(rolesTable, eq(rolesTable.id, userRolesTable.roleId))
+      .where(eq(authUser.id, userId));
+
+    if (!rows.length || rows[0].status !== "active") {
+      throw new AuthorizationError("Access denied");
+    }
+
+    return rows.flatMap((row) =>
+      row.roleId &&
+      row.roleName &&
+      row.roleDescription &&
+      row.roleAccess &&
+      row.roleIsSystem !== null
+        ? [
+            {
+              id: row.roleId,
+              name: row.roleName,
+              description: row.roleDescription,
+              access: row.roleAccess,
+              isSystem: row.roleIsSystem,
+            },
+          ]
+        : [],
+    );
+  }, 24 * 60 * 60);
 
   return { roles, access: mergeRoleAccess(roles) };
 }

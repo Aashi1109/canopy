@@ -25,6 +25,17 @@ pnpm test
 pnpm test:media
 ```
 
+## Formatting
+
+Run `pnpm format` to format the workspace or `pnpm format:check` to check it without
+changing files. To format a single file, run `pnpm exec prettier --write path/to/file`.
+
+Prettier uses a pinned local version and the root `.prettierrc.json`: two-space
+indentation, double quotes, semicolons, trailing commas, LF line endings, and a
+100-column print width. Generated files and copied vendor assets are excluded.
+Enable the Prettier extension in your editor and format on save using the workspace
+version. Formatting is separate from `pnpm lint`, which checks TypeScript.
+
 ## First deployment
 
 1. Copy `.env.example` to `.env.local`, then configure `APP_URL`, one strong `BETTER_AUTH_SECRET`, the database, and any optional integrations you use.

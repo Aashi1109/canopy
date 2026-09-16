@@ -6,6 +6,9 @@
   "compatibility_flags": ["nodejs_compat"],
   "minify": true,
   "workers_dev": true,
+  "triggers": {
+    "crons": ["*/30 * * * *"]
+  },
   "routes": [
     { "pattern": "smarttools.lol", "custom_domain": true }
   ],
