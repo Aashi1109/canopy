@@ -411,7 +411,7 @@ export function UniversalWorkbench<
   ...props
 }: UniversalWorkbenchProps<Input, Settings, Result>) {
   return (
-    <ToolRuntimeProvider spec={runtimeSpec}>
+    <ToolRuntimeProvider analyticsToolKey={props.definition.definitionKey} spec={runtimeSpec}>
       <WorkbenchFrame {...props} />
     </ToolRuntimeProvider>
   );

@@ -13,7 +13,7 @@
     { "binding": "HYPERDRIVE", "id": "1aebf4d16f0b489b99de75318cdd610d" }
   ],
   "vars": {
-    "APP_URL": "https://smarttools.lol"
+    "APP_URL": "https://cf.smarttools.lol"
   },
   "assets": {
     "directory": ".open-next/assets",

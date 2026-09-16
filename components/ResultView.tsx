@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { trackToolEvent } from "@/lib/analytics/ga4";
+import { useAnalyticsToolKey } from "@/lib/tool-runtime/useToolRuntime";
 import { DiffView } from "@/components/DiffView";
 import { JsonResultRenderer, type JsonResultView } from "@/components/JsonResultRenderer";
 import { SandboxedHtmlPreview } from "@/components/SandboxedHtmlPreview";
@@ -76,22 +78,24 @@ interface CopyButtonProps {
   label?: string;
 }
 
-function saveBlob(content: BlobPart, mime: string, name: string) {
+function saveBlob(content: BlobPart, mime: string, name: string, toolKey?: string) {
   const url = URL.createObjectURL(new Blob([content], { type: mime }));
   const link = document.createElement("a");
   link.download = name;
   link.href = url;
   document.body.append(link);
   link.click();
+  trackToolEvent("result_download", toolKey);
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-function saveUrl(href: string, name: string) {
+function saveUrl(href: string, name: string, toolKey?: string) {
   const link = document.createElement("a");
   link.download = name;
   link.href = href;
   link.click();
+  trackToolEvent("result_download", toolKey);
 }
 
 function DownloadButton({
@@ -103,10 +107,11 @@ function DownloadButton({
   mime,
   name,
 }: DownloadButtonProps) {
+  const toolKey = useAnalyticsToolKey();
   return (
     <ToolActionButton action="download" iconOnly={iconOnly}
       disabled={disabled}
-      onClick={() => href ? saveUrl(href, name) : content !== undefined ? saveBlob(content, mime, name) : undefined}
+      onClick={() => href ? saveUrl(href, name, toolKey) : content !== undefined ? saveBlob(content, mime, name, toolKey) : undefined}
       type="button"
     >
       {label}
@@ -123,6 +128,7 @@ function ArtifactDownloadButton({
   iconOnly?: boolean;
   label?: string;
 }) {
+  const toolKey = useAnalyticsToolKey();
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState("");
   const download = async () => {
@@ -132,7 +138,7 @@ function ArtifactDownloadButton({
     try {
       const file = await readArtifact(artifact);
       const url = URL.createObjectURL(file);
-      saveUrl(url, artifact.name);
+      saveUrl(url, artifact.name, toolKey);
       window.setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch (error) {
       setFailure(
@@ -164,6 +170,7 @@ function CopyButton({
   iconOnly = false,
   label = "Copy",
 }: CopyButtonProps) {
+  const toolKey = useAnalyticsToolKey();
   const [feedback, setFeedback] = useState<{
     content: string;
     status: "copied" | "failed";
@@ -187,6 +194,7 @@ function CopyButton({
       await navigator.clipboard.writeText(copiedContent);
       if (request !== copyRequest.current || copiedContent !== contentRef.current) return;
       setFeedback({ content: copiedContent, status: "copied" });
+      trackToolEvent("result_copy", toolKey);
       resetTimeout.current = window.setTimeout(() => setFeedback(null), 2_000);
     } catch {
       if (request !== copyRequest.current || copiedContent !== contentRef.current) return;

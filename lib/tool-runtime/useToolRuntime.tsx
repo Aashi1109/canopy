@@ -10,6 +10,8 @@ import {
   useState,
 } from "react";
 
+import { trackToolEvent } from "@/lib/analytics/ga4";
+
 import type {
   ToolCommandOutcome,
   ToolExecutionOutcome,
@@ -38,9 +40,11 @@ export function ToolRuntimeProvider<
   Settings extends ToolSettings,
   Result,
 >({
+  analyticsToolKey,
   children,
   spec,
 }: {
+  analyticsToolKey?: string;
   children: ReactNode;
   spec: ToolRuntimeSpec<Input, Settings, Result>;
 }) {
@@ -74,7 +78,7 @@ export function ToolRuntimeProvider<
   const revisionRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
 
-  const execute = useCallback(async () => {
+  const execute = useCallback(async (manual = false) => {
     const revision = ++revisionRef.current;
     abortRef.current?.abort();
     const abortController = new AbortController();
@@ -85,6 +89,7 @@ export function ToolRuntimeProvider<
     setArtifacts([]);
     setFacts([]);
 
+    if (manual) trackToolEvent("tool_start", analyticsToolKey);
     try {
       const outcome = await spec.execute(
         input,
@@ -98,6 +103,7 @@ export function ToolRuntimeProvider<
       setArtifacts(outcome.artifacts ?? []);
       setFacts(outcome.facts ?? []);
       setLifecycle("completed");
+      if (manual) trackToolEvent("tool_complete", analyticsToolKey);
     } catch (caught) {
       if (revision !== revisionRef.current || abortController.signal.aborted) {
         return;
@@ -109,8 +115,9 @@ export function ToolRuntimeProvider<
         caught instanceof Error ? caught.message : "Unable to run this tool.",
       );
       setLifecycle("failed");
+      if (manual) trackToolEvent("tool_error", analyticsToolKey);
     }
-  }, [input, settings, spec]);
+  }, [analyticsToolKey, input, settings, spec]);
 
   useEffect(() => {
     revisionRef.current += 1;
@@ -184,7 +191,7 @@ export function ToolRuntimeProvider<
     if (spec.isEmpty(input) || spec.validate(input, settings).length > 0) {
       return;
     }
-    void execute();
+    void execute(true);
   }, [execute, input, settings, spec]);
 
   const cancelRun = useCallback(() => {
@@ -274,6 +281,7 @@ export function ToolRuntimeProvider<
   }, [undoSnapshot]);
 
   const controller: ToolRuntimeController<Input, Settings, Result> = {
+    analyticsToolKey,
     artifacts: artifacts ?? [],
     cancelRun,
     cancelPendingCommand,
@@ -322,4 +330,9 @@ export function useToolRuntime<
     throw new Error("useToolRuntime must be used inside ToolRuntimeProvider.");
   }
   return runtime as ToolRuntimeController<Input, Settings, Result>;
+}
+
+/** Result renderers also work outside a runtime provider. */
+export function useAnalyticsToolKey() {
+  return useContext(ToolRuntimeContext)?.analyticsToolKey;
 }

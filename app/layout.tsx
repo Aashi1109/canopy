@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Analytics } from "@/components/analytics/Analytics";
+import { measurementId } from "@/lib/analytics/ga4";
 import {
   Caveat,
   Funnel_Sans,
@@ -51,7 +53,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       lang="en"
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased print:bg-white print:text-black">
-        {children}
+        <Analytics measurementId={measurementId(process.env)}>{children}</Analytics>
       </body>
     </html>
   );

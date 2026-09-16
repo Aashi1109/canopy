@@ -91,6 +91,8 @@ export type ToolRuntimeController<
   Settings extends ToolSettings,
   Result,
 > = {
+  /** Compiled definition key, never a user label or document identifier. */
+  analyticsToolKey?: string;
   artifacts: readonly ToolArtifact[];
   cancelRun: () => void;
   cancelPendingCommand: () => void;

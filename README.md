@@ -133,3 +133,37 @@ as runtime secrets. Keep `APP_URL` aligned with the domain in `wrangler.jsonc`.
 References: [OpenNext setup](https://opennext.js.org/cloudflare/get-started),
 [environment variables](https://opennext.js.org/cloudflare/howtos/env-vars), and
 [database lifecycle](https://opennext.js.org/cloudflare/howtos/db).
+
+## Optional Google Analytics 4
+
+Set `GA_MEASUREMENT_ID` to your public `G-...` web-stream ID in Vercel's
+**Production** environment, then redeploy. Tracking is disabled by default in
+development, always in Vercel previews, and without a valid ID. To test locally,
+set `GA_ENABLE_IN_DEVELOPMENT=true` in `.env.local` and restart `pnpm dev`.
+This enables the consent banner and real GA4 events after opt-in; remove the
+override when finished. No new dependency is required.
+
+Before enabling production collection, open GA4 Admin → Data streams → your web
+stream and turn **Enhanced measurement off**. Automatic history, form, search,
+and download events can bypass the application's filtered event payloads. Keep
+Google signals, user-provided data collection, and advertising personalization off.
+
+Visitors must allow analytics before the Google script loads. They can change or
+withdraw consent at `/privacy#analytics`; withdrawal stops future collection and
+removes host-only analytics cookies, but does not erase data already sent. A
+blocked preference store makes the choice temporary until reload. Ad blockers or
+failed script loads may prevent collection; reload to retry.
+
+Manual page views exclude private routes, queries, fragments, and arbitrary tool
+slugs. Tool pages use `/media/[tool]`, `/devtools/[tool]`, or `/paperwork/[tool]`.
+Shared manual tool runs emit `tool_start`, `tool_complete`, and `tool_error`;
+shared result controls emit `result_copy` after copying and `result_download`
+when a download starts. Live typing and tool-owned custom controls are not
+instrumented. Events include the compiled `tool_key` when available; create an
+event-scoped GA4 custom dimension for `tool_key` to report per-tool usage.
+Files, document content, account details, filenames, and error messages are never
+included. External referrers are reduced to their origin; internal referrers use
+the previous filtered public address.
+
+Verify the deployed site with GA4 Realtime after opting in. Confirm that decline
+loads no Google tag, navigation sends one page view, and withdrawal stops events.
