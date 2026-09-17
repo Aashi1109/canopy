@@ -20,7 +20,9 @@ function getSqlClient(): SqlClient {
   const databaseUrl = request?.databaseUrl ?? process.env.DATABASE_URL;
   if (request && !databaseUrl) throw new Error("DATABASE_URL is required");
   const client = postgres(databaseUrl ?? "postgres://127.0.0.1:1/canopy_unconfigured", {
-    max: request ? 5 : 10,
+    // Each warm Vercel instance owns its own pool; keep Node connections bounded.
+    max: request ? 5 : 1,
+    prepare: false,
     idle_timeout: 20,
     connect_timeout: 10,
   });

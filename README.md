@@ -51,6 +51,11 @@ version. Formatting is separate from `pnpm lint`, which checks TypeScript.
 4. Deploy the repository root application.
 5. Create and verify the first account, then run `pnpm admin:promote <verified-email>` once.
 
+On Vercel, set `DATABASE_URL` to the **Transaction pooler** connection string from
+Supabase's **Connect** dialog (port `6543`), then redeploy. Each Node instance uses
+one pooled connection with prepared statements disabled. Run migrations using a
+direct or session-pooler connection in your local migration environment.
+
 Google OAuth needs `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; verification, recovery, and deletion emails need `RESEND_API_KEY` and `ACCOUNTS_EMAIL`.
 
 Set `ACCOUNTS_EMAIL=accounts@smarttools.lol` for account-related emails sent through Resend and `SUPPORT_EMAIL=support@smarttools.lol` for contact links and the contact form. Apply these values to the deployed environment as well. The contact form opens the visitor's email app; support messages and replies are handled in Zoho.

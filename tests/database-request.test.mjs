@@ -203,6 +203,8 @@ test("database pools stay inside their request through transactions, streams and
     await Promise.all(waits.splice(0));
     process.env.DATABASE_URL = "postgres://localhost/test";
     const nodeId = await query();
+    assert.equal(db.$client.options.max, 1, "each Node instance limits its database pool to one connection");
+    assert.equal(db.$client.options.prepare, false, "transaction pooling must not use prepared statements");
     assert.equal(db.$client.url, process.env.DATABASE_URL, "request bindings do not leak into Node pooling");
     assert.equal(await query(), nodeId, "Node development retains its pooled connection");
     const execute = db.execute;
