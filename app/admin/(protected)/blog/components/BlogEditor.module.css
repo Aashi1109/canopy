@@ -217,12 +217,19 @@
 }
 .blockControls {
   position: fixed;
+  top: 0;
+  left: 0;
   z-index: 42;
   display: flex;
   align-items: center;
   background: var(--card);
   border-radius: var(--radius-lg);
   color: var(--muted-foreground);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .blockControls[data-animate="true"] {
+    transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
 }
 .blockControls > button,
 .blockHandle {
@@ -457,13 +464,24 @@
   padding-left: 0;
 }
 .article [data-type="taskItem"] {
+  margin-block: 8px;
+}
+.taskItemRow {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   gap: 10px;
 }
-.article [data-type="taskItem"] > div {
+.taskCheckbox {
+  display: flex;
+  flex: none;
+  margin-top: max(0px, calc((1lh - 16px) / 2));
+}
+.taskItemContent {
   flex: 1;
   min-width: 0;
+}
+.article [data-type="taskItem"] p {
+  margin-block: 0;
 }
 .article mark {
   background: #fef08a;

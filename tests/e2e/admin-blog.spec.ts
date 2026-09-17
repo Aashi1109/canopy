@@ -19,6 +19,41 @@ async function trashPost(page: Page, title: string) {
   await expect(page.getByRole("alertdialog")).toBeHidden();
 }
 
+test("raw Markdown paste becomes editable article content and survives saving", async ({ page, baseURL }) => {
+  const title = `E2E Markdown ${randomUUID()}`;
+  await createPost(page, baseURL, title);
+  const body = page.getByRole("textbox", { name: "Article body", exact: true });
+  const markdown =
+    "# Section\n\n**Bold** and *italic*\n\n- First\n- Second\n\n- [x] Done\n\n```js\nconst n = 1;\n```\n\n| Name | Value |\n| --- | --- |\n| A | B |";
+  const paste = () =>
+    body.evaluate((element, text) => {
+      const clipboardData = new DataTransfer();
+      clipboardData.setData("text/plain", text);
+      element.dispatchEvent(new ClipboardEvent("paste", { clipboardData, bubbles: true, cancelable: true }));
+    }, markdown);
+  await body.click();
+  await paste();
+  await expect(body.locator("h2")).toHaveText("Section");
+  await body.press("ControlOrMeta+z");
+  await expect(body).toHaveText("");
+  await paste();
+  const checkbox = body.getByRole("checkbox", { name: "Mark item complete" }).last();
+  await checkbox.uncheck();
+  await expect(checkbox).not.toBeChecked();
+  await checkbox.press("Space");
+  await expect(checkbox).toBeChecked();
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("All changes saved");
+  await page.reload();
+  await expect(body.locator("h2")).toHaveText("Section");
+  await expect(body.locator("strong")).toHaveText("Bold");
+  await expect(body.locator("em")).toHaveText("italic");
+  await expect(body.getByRole("checkbox", { name: "Mark item complete" }).last()).toBeChecked();
+  await expect(body.locator("pre code")).toHaveText("const n = 1;");
+  await expect(body.locator("th").first()).toHaveText("Name");
+  await trashPost(page, title);
+});
+
 test("a saved article survives reload, previews privately, and guards unsaved navigation", async ({
   page,
   baseURL,

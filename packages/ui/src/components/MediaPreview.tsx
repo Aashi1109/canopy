@@ -73,26 +73,26 @@ export function MediaPreview({
             returnFocusRef.current = null;
           }}
         >
-          <header className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-border bg-card/95 px-4 py-4 sm:min-h-20 sm:flex-nowrap sm:px-6">
+          <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border bg-card/95 px-3 py-3 sm:min-h-16 sm:flex-nowrap sm:px-5">
             <div className={cn("min-w-0 flex-1", actions != null && "basis-full sm:basis-auto")}>
               <Dialog.Title
                 title={title}
-                className="line-clamp-2 break-words text-base font-semibold [overflow-wrap:anywhere]"
+                className="line-clamp-2 break-words text-sm font-semibold [overflow-wrap:anywhere]"
               >
                 {title}
               </Dialog.Title>
               {hasDescription && (
                 <Dialog.Description id={descriptionId} asChild>
-                  <div className="mt-1 break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
+                  <div className="mt-1 break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">
                     {description}
                   </div>
                 </Dialog.Description>
               )}
             </div>
-            <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-2">
+            <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-1.5">
               {actions}
               <Dialog.Close asChild>
-                <Button variant="secondary">
+                <Button variant="secondary" size="sm">
                   Exit preview
                   <kbd aria-hidden="true" className="hidden text-xs font-normal text-muted-foreground sm:inline">
                     Esc
@@ -103,7 +103,7 @@ export function MediaPreview({
           </header>
           <div
             className={cn(
-              "flex min-h-0 min-w-0 flex-1 overflow-auto bg-transparent p-4 text-white sm:p-6",
+              "flex min-h-0 min-w-0 flex-1 overflow-auto bg-transparent p-3 text-white sm:p-5",
               viewportClassName,
             )}
             data-slot="media-preview-viewport"
@@ -111,9 +111,9 @@ export function MediaPreview({
             {children}
           </div>
           {hasFooter && (
-            <footer className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-border bg-card/95 px-4 py-4 text-sm sm:min-h-19 sm:px-6">
+            <footer className="flex shrink-0 flex-wrap items-center justify-between gap-x-5 gap-y-2 border-t border-border bg-card/95 px-3 py-3 text-xs sm:min-h-16 sm:px-5">
+              {controls != null && <div className="flex min-w-0 flex-wrap items-center gap-1.5">{controls}</div>}
               {status != null && <div className="min-w-0 break-words text-muted-foreground">{status}</div>}
-              {controls != null && <div className="flex min-w-0 flex-wrap items-center gap-2">{controls}</div>}
               {hint != null && <div className="min-w-0 break-words text-muted-foreground">{hint}</div>}
             </footer>
           )}

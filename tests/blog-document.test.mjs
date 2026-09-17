@@ -661,7 +661,8 @@ test("editor formatting survives validation and renders safely in public article
   assert.match(html, /<sup><mark>Highlighted<\/mark><\/sup>/);
   assert.match(html, /text-align:right/);
   assert.match(html, /<sub>H2O<\/sub>/);
-  assert.match(html, /type="checkbox" disabled checked/);
+  assert.match(html, /role="checkbox" aria-readonly="true" aria-checked="true"/);
+  assert.doesNotMatch(html, /disabled/);
   for (const textAlign of ["center;color:red", "diagonal"]) {
     assert.throws(() =>
       validateBlogDocument({

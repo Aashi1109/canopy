@@ -1,6 +1,6 @@
 "use client";
 
-import { Label, Select } from "@canopy/ui";
+import { Select } from "@canopy/ui";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export interface CategoryFilterOption {
@@ -14,31 +14,28 @@ export function CategoryFilter({ categories, value }: { categories: readonly Cat
   const searchParams = useSearchParams();
 
   return (
-    <Label className="inline-flex items-center gap-2 text-foreground" htmlFor="devtools-category-filter">
-      Tools
-      <Select
-        aria-label="Filter tools by category"
-        className="h-10 w-56 bg-card"
-        defaultValue={value}
-        id="devtools-category-filter"
-        onChange={(event) => {
-          const params = new URLSearchParams(searchParams.toString());
-          params.set("view", "all");
-          if (event.currentTarget.value) {
-            params.set("category", event.currentTarget.value);
-          } else {
-            params.delete("category");
-          }
-          router.push(`${pathname}?${params.toString()}`, { scroll: false });
-        }}
-      >
-        <option value="">All categories</option>
-        {categories.map((category) => (
-          <option key={category.value} value={category.value}>
-            {category.label}
-          </option>
-        ))}
-      </Select>
-    </Label>
+    <Select
+      aria-label="Filter tools by category"
+      className="h-10 w-56 bg-card"
+      defaultValue={value}
+      id="devtools-category-filter"
+      onChange={(event) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("view", "all");
+        if (event.currentTarget.value) {
+          params.set("category", event.currentTarget.value);
+        } else {
+          params.delete("category");
+        }
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+      }}
+    >
+      <option value="">All categories</option>
+      {categories.map((category) => (
+        <option key={category.value} value={category.value}>
+          {category.label}
+        </option>
+      ))}
+    </Select>
   );
 }

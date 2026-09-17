@@ -31,11 +31,20 @@ export function useFileDownload(file: StoredToolArtifact) {
   return { download, downloading, error };
 }
 
-export function ArtifactDownloadButton({ file, label = "Download" }: { file: StoredToolArtifact; label?: string }) {
+export function ArtifactDownloadButton({
+  file,
+  label = "Download",
+  size,
+}: {
+  file: StoredToolArtifact;
+  label?: string;
+  size?: React.ComponentProps<typeof Button>["size"];
+}) {
   const { download, downloading, error } = useFileDownload(file);
   return (
     <div className="flex flex-col items-end gap-1">
       <Button
+        size={size}
         aria-label={`${error ? "Retry download" : label} ${file.name}`}
         disabled={downloading}
         onClick={() => void download()}

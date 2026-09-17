@@ -165,10 +165,11 @@ function ImagePreviewDialog({
       title={file.name}
       actions={
         isArtifact(file) ? (
-          <ArtifactDownloadButton file={file} key={file.id} />
+          <ArtifactDownloadButton file={file} key={file.id} size="sm" />
         ) : (
           <Button
             variant="secondary"
+            size="sm"
             disabled={disabled}
             onClick={() => {
               onClose();
@@ -180,34 +181,33 @@ function ImagePreviewDialog({
         )
       }
       description={`${isArtifact(file) ? "Generated" : "Source"} image · ${selected + 1} of ${files.length} · ${sizeLabel(file.size)}`}
-      status={isArtifact(file) ? "Generated output · View only" : "Source image · View only"}
       hint="Zoom to inspect · Drag to pan"
       viewportClassName="relative overflow-hidden bg-transparent"
       controls={
         <>
           <Button
             variant="secondary"
-            size="icon"
+            size="icon-sm"
             aria-label="Zoom out"
             disabled={!image.url || image.error || scale <= 10}
             onClick={() => changeZoom(scale - 10)}
           >
             <Minus aria-hidden="true" />
           </Button>
-          <span className="min-w-12 text-center text-sm tabular-nums">{Math.round(scale)}%</span>
+          <span className="min-w-10 text-center text-xs tabular-nums">{Math.round(scale)}%</span>
           <Button
             variant="secondary"
-            size="icon"
+            size="icon-sm"
             aria-label="Zoom in"
             disabled={!image.url || image.error || scale >= 400}
             onClick={() => changeZoom(scale + 10)}
           >
             <Plus aria-hidden="true" />
           </Button>
-          <Button variant="secondary" onClick={() => changeZoom(null)}>
+          <Button variant="secondary" size="sm" onClick={() => changeZoom(null)}>
             Fit to screen
           </Button>
-          <Button variant="secondary" onClick={() => changeZoom(100)}>
+          <Button variant="secondary" size="sm" onClick={() => changeZoom(100)}>
             100%
           </Button>
         </>

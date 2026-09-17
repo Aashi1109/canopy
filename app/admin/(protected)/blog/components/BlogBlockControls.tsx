@@ -10,7 +10,7 @@ import { moveBlogBlock } from "../lib/blockMovement";
 import { BlogBlockMenu } from "./BlogFormattingToolbar";
 import styles from "./BlogEditor.module.css";
 
-type Layout = { position: number; left: number; top: number };
+type Layout = { position: number; left: number; top: number; animate: boolean };
 type Drop = { position: number; left: number; top: number; width: number };
 type Drag = {
   from: number;
@@ -137,14 +137,22 @@ export function BlogBlockControls({
       const coarse = matchMedia("(pointer: coarse)").matches;
       const width = coarse ? 88 : 64;
       const gap = table && !coarse ? 28 : 4;
-      setLayout({
+      const next = {
         position: target.position,
         left: Math.max(bounds.left + 4, dom.getBoundingClientRect().left - width - gap),
         top: Math.max(
           bounds.top + 2,
           Math.min(bounds.bottom - (coarse ? 44 : 32), target.box.top - (table && coarse ? 47 : 3)),
         ),
-      });
+      };
+      setLayout((previous) => ({
+        ...next,
+        // Glide between blocks, but keep scroll/resize tracking immediate.
+        animate:
+          !!previous &&
+          (previous.position !== next.position ||
+            (previous.animate && previous.left === next.left && previous.top === next.top)),
+      }));
     }
     function queue() {
       if (!frame) frame = requestAnimationFrame(measure);
@@ -302,7 +310,8 @@ export function BlogBlockControls({
         <div
           ref={root}
           className={styles.blockControls}
-          style={{ left: layout.left, top: layout.top }}
+          style={{ transform: `translate3d(${layout.left}px, ${layout.top}px, 0)` }}
+          data-animate={layout.animate && !drag.current}
           data-blog-block-controls="true"
           role="group"
           aria-label="Block controls"

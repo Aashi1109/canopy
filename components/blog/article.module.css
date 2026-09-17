@@ -10,12 +10,6 @@
   gap: 18px;
   padding: 28px 0 24px;
 }
-.navigation {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
 .category {
   color: var(--primary);
   font-family: var(--font-sans);
@@ -89,7 +83,7 @@
 }
 .contents ul {
   display: grid;
-  gap: 12px;
+  gap: 2px;
   margin-top: 12px;
 }
 .inactiveLink {
@@ -99,6 +93,15 @@
   padding: 10px 16px;
   color: var(--primary);
   font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.contentsLink {
+  display: inline-block;
+  min-height: 32px;
+  padding: 4px 0;
+  color: var(--primary);
+  font-size: 14px;
+  line-height: 20px;
   overflow-wrap: anywhere;
 }
 .main {
@@ -127,29 +130,14 @@
   margin-top: 26px;
 }
 .body {
-  font-size: 18px;
-  line-height: 1.6;
   overflow-wrap: anywhere;
 }
-.body > * {
-  margin-block: 26px 0;
-}
-.body > :first-child {
-  margin-top: 0;
-}
-.body > p:first-child {
-  font-size: 19px;
-}
-.body :is(h2, h3, h4, h5, h6) {
+.body :is(h4, h5, h6) {
   font-weight: 600;
   line-height: 1.2;
+}
+.body :is(h2, h3, h4, h5, h6) {
   scroll-margin-top: 6rem;
-}
-.body h2 {
-  font-size: 28px;
-}
-.body h3 {
-  font-size: 24px;
 }
 .body :is(h4, h5, h6) {
   font-size: 20px;
@@ -168,8 +156,16 @@
 }
 .body [data-type="taskItem"] {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   gap: 10px;
+  margin-block: 8px;
+}
+.body [data-type="taskItem"] > span {
+  flex: none;
+  margin-top: max(0px, calc((1lh - 16px) / 2));
+}
+.body [data-type="taskItem"] p {
+  margin-block: 0;
 }
 .body [data-type="taskItem"] > div {
   flex: 1;
@@ -196,17 +192,10 @@
   outline-offset: 3px;
   border-radius: 0.25rem;
 }
-.body blockquote {
-  border-left: 3px solid var(--primary);
-  background: var(--muted);
-  padding: 24px;
-}
 .body pre {
   overflow-x: auto;
   border-radius: 0.5rem;
   background: var(--muted);
-  padding: 24px;
-  font-size: 14px;
 }
 .body :not(pre) > code {
   border-radius: 0.25rem;

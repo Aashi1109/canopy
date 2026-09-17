@@ -87,42 +87,6 @@ const taskItem = Node.create({
     ["input", { type: "checkbox", checked: node.attrs.checked ? "" : undefined }],
     ["div", {}, 0],
   ],
-  addNodeView() {
-    return ({ node, editor, getPos }) => {
-      const dom = document.createElement("li");
-      dom.dataset.type = "taskItem";
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.checked = node.attrs.checked;
-      checkbox.setAttribute("aria-label", "Mark item complete");
-      checkbox.contentEditable = "false";
-      checkbox.addEventListener("change", () => {
-        const pos = getPos();
-        if (!editor.isEditable || typeof pos !== "number") {
-          checkbox.checked = node.attrs.checked;
-          return;
-        }
-        editor.view.dispatch(
-          editor.state.tr.setNodeMarkup(pos, undefined, {
-            ...editor.state.doc.nodeAt(pos)?.attrs,
-            checked: checkbox.checked,
-          }),
-        );
-      });
-      const contentDOM = document.createElement("div");
-      dom.append(checkbox, contentDOM);
-      return {
-        dom,
-        contentDOM,
-        update(updated) {
-          if (updated.type.name !== "taskItem") return false;
-          node = updated;
-          checkbox.checked = node.attrs.checked;
-          return true;
-        },
-      };
-    };
-  },
   addKeyboardShortcuts() {
     return {
       Enter: () => this.editor.commands.splitListItem("taskItem"),

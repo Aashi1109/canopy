@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   AlertBanner,
   AlertDialog,
@@ -13,6 +12,8 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   Button,
+  Toaster,
+  toast,
 } from "@canopy/ui";
 import type { listBlogPosts } from "@/lib/blog/queries";
 import { mutateBlogAction } from "../actions";
@@ -60,13 +61,13 @@ export function BlogPosts({
   const [selected, setSelected] = useState<BlogPostListItem | null>(null);
   const [mutating, setMutating] = useState(false);
   const [error, setError] = useState("");
-  const [undo, setUndo] = useState<{ postId: string; version: number } | null>(null);
-  const [notice, setNotice] = useState<{
-    title: string;
-    description: string;
-    href: string;
-    label: string;
-  } | null>(null);
+  const noticeId = useRef<string | number | undefined>(undefined);
+  useEffect(
+    () => () => {
+      if (noticeId.current !== undefined) toast.dismiss(noticeId.current);
+    },
+    [],
+  );
 
   function href(next: BlogListFilters, cursor?: string) {
     const query = new URLSearchParams();
@@ -85,7 +86,7 @@ export function BlogPosts({
     if (!source || mutating) return;
     setMutating(true);
     setError("");
-    setNotice(null);
+    if (noticeId.current !== undefined) toast.dismiss(noticeId.current);
     try {
       const result = await mutateBlogAction(operation, {
         postId: source.id,
@@ -96,25 +97,29 @@ export function BlogPosts({
         return;
       }
       setSelected(null);
-      setUndo(
-        operation === "trash" && "version" in result.data ? { postId: source.id, version: result.data.version } : null,
-      );
-      setNotice(
-        operation === "trash"
-          ? {
-              title: "Post moved to trash",
-              description: "Your content is retained. Restore it from Trash to continue editing.",
-              href: "/admin/blog?status=trash",
-              label: "Open Trash",
-            }
-          : {
-              title: "Draft restored",
-              description:
-                "The post is private. Open it to edit or publish again. Its previous schedule has not been restored.",
-              href: post.editHref,
-              label: "Open draft",
-            },
-      );
+      if (operation === "trash") {
+        const undo = "version" in result.data ? { postId: source.id, version: result.data.version } : null;
+        noticeId.current = toast.success("Post moved to trash", {
+          description: "Your content is retained in Trash.",
+          duration: 10_000,
+          closeButton: true,
+          action: undo
+            ? {
+                label: "Undo",
+                onClick: () => {
+                  void undoTrash(undo);
+                },
+              }
+            : undefined,
+          cancel: { label: "Open Trash", onClick: () => router.push("/admin/blog?status=trash") },
+        });
+      } else {
+        noticeId.current = toast.success("Draft restored", {
+          description: "The post is private. Its previous schedule has not been restored.",
+          action: { label: "Open draft", onClick: () => router.push(post.editHref) },
+          closeButton: true,
+        });
+      }
       router.refresh();
     } catch {
       setError("The request failed. Your post has not been removed from this list. Try again.");
@@ -123,8 +128,8 @@ export function BlogPosts({
     }
   }
 
-  async function undoTrash() {
-    if (!undo || mutating) return;
+  async function undoTrash(undo: { postId: string; version: number }) {
+    if (mutating) return;
     setMutating(true);
     setError("");
     try {
@@ -133,13 +138,11 @@ export function BlogPosts({
         setError(result.message);
         return;
       }
-      setNotice({
-        title: "Draft restored",
+      noticeId.current = toast.success("Draft restored", {
         description: "The post is private. Open it to edit or publish again.",
-        href: `/admin/blog/${undo.postId}`,
-        label: "Open draft",
+        action: { label: "Open draft", onClick: () => router.push(`/admin/blog/${undo.postId}`) },
+        closeButton: true,
       });
-      setUndo(null);
       router.refresh();
     } catch {
       setError("Couldn’t restore the draft. Your content is still in Trash. Try again.");
@@ -153,7 +156,7 @@ export function BlogPosts({
     if (!source || mutating) return;
     setMutating(true);
     setError("");
-    setNotice(null);
+    if (noticeId.current !== undefined) toast.dismiss(noticeId.current);
     try {
       const result = await mutateBlogAction("duplicate", { postId: source.id });
       if (!result.ok) {
@@ -198,30 +201,7 @@ export function BlogPosts({
 
   return (
     <>
-      {notice && (
-        <div className="mb-6" role="status">
-          <AlertBanner variant="success" title={notice.title}>
-            {notice.description}
-            <div className="mt-3 flex flex-wrap gap-2">
-              {undo && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  loading={mutating}
-                  onClick={() => {
-                    void undoTrash();
-                  }}
-                >
-                  Undo
-                </Button>
-              )}
-              <Button asChild size="sm" variant="outline">
-                <Link href={notice.href}>{notice.label}</Link>
-              </Button>
-            </div>
-          </AlertBanner>
-        </div>
-      )}
+      <Toaster position="top-right" />
       {error && !selected && (
         <div className="mb-4">
           <AlertBanner variant="error">{error}</AlertBanner>

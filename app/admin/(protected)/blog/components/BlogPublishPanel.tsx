@@ -185,7 +185,7 @@ export function BlogPublishPanel({
         defaultValue={ready ? undefined : "checks"}
       >
         <AccordionItem value="checks">
-          <AccordionTrigger className="py-3 text-[13px]" aria-label="Publishing checks">
+          <AccordionTrigger className="pb-3 pt-0 text-[13px]" aria-label="Publishing checks">
             <StatusBadge variant={ready ? "success" : "warning"}>
               {ready ? `${checks.length} checks passed` : "Needs attention"}
             </StatusBadge>

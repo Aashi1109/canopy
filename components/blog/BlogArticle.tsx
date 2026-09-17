@@ -1,11 +1,30 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { Avatar, AvatarFallback, Button, Caption, Card, H1, H2, Overline, P, TextLink } from "@canopy/ui";
+import "katex/dist/katex.min.css";
+import {
+  Avatar,
+  AvatarFallback,
+  Button,
+  Caption,
+  Card,
+  H1,
+  H2,
+  Overline,
+  P,
+  TextLink,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@canopy/ui";
 import { blogImageUrl, renderBlogDocument, type BlogDocument } from "@/lib/blog/document";
 import { blogCanonicalUrl } from "@/lib/blog/publication";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { CopyBlogLink } from "./CopyBlogLink";
 import { BlogPageContainer } from "./BlogPageContainer";
+import { BlogArticleBody } from "./BlogArticleBody";
 import styles from "./article.module.css";
+import highlightStyles from "./codeHighlight.module.css";
+import contentStyles from "./content.module.css";
 
 type Props = {
   document: BlogDocument;
@@ -37,15 +56,22 @@ export function BlogArticle({ document, publication }: Props) {
     <article className={styles.article}>
       <BlogPageContainer>
         <header className={styles.introduction}>
-          <div className={styles.navigation}>
+          <div className="flex items-center gap-3">
             {publication && (
-              <Button asChild variant="ghost">
-                <a href="/blog">
-                  <ArrowLeft aria-hidden="true" /> All stories
-                </a>
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button asChild variant="ghost" size="icon-sm" className="text-primary">
+                      <a href="/blog" aria-label="All stories">
+                        <ArrowLeft aria-hidden="true" />
+                      </a>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>All stories</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
-            <Overline className={styles.category}>
+            <Overline className={`${styles.category} ml-auto min-w-0 break-words text-right`}>
               {publication ? (
                 <TextLink
                   className="no-underline"
@@ -119,15 +145,14 @@ export function BlogArticle({ document, publication }: Props) {
                 {content.headings.map((heading) => (
                   <li key={heading.id} className={heading.level > 2 ? "pl-3" : ""}>
                     {publication ? (
-                      <Button
-                        asChild
-                        variant="ghost"
-                        className="h-auto min-h-11 max-w-full justify-start whitespace-normal text-left"
+                      <TextLink
+                        href={`#${heading.id}`}
+                        className={`${styles.contentsLink} no-underline hover:underline`}
                       >
-                        <a href={`#${heading.id}`}>{heading.text || "Untitled section"}</a>
-                      </Button>
+                        {heading.text || "Untitled section"}
+                      </TextLink>
                     ) : (
-                      <span className={styles.inactiveLink}>{heading.text || "Untitled section"}</span>
+                      <span className={styles.contentsLink}>{heading.text || "Untitled section"}</span>
                     )}
                   </li>
                 ))}
@@ -135,7 +160,10 @@ export function BlogArticle({ document, publication }: Props) {
             </nav>
           )}
           <div className={styles.main}>
-            <div className={styles.body} dangerouslySetInnerHTML={{ __html: html }} />
+            <BlogArticleBody
+              className={`${styles.body} ${contentStyles.content} ${highlightStyles.highlight}`}
+              html={html}
+            />
             {relatedToolLinks.length > 0 && (
               <Card className={styles.toolHandoff}>
                 <H2 className="font-sans text-[26px] leading-[1.6]">Put the guide to work.</H2>

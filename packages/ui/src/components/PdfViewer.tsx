@@ -319,7 +319,7 @@ export function PdfViewer({
             aria-label={outlineOpen ? "Hide outline" : "Show outline"}
             onClick={() => setOutlineOpen((open) => !open)}
             ref={outlineToggle}
-            size="icon"
+            size="icon-sm"
             type="button"
             variant="outline"
           >

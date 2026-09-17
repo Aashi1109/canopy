@@ -1,3 +1,4 @@
+import { CatalogHero } from "@/components/canopy/CatalogHero";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { ToolIcon } from "@/components/ToolIcon";
 import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
@@ -5,16 +6,13 @@ import { categoriesForApp, TOOL_CATEGORIES, type CategoryKey } from "@/lib/tool-
 import { getOptionalSession } from "@canopy/auth/session";
 import {
   Caption,
-  Display,
   H2,
-  Lead,
   Metric,
   Muted,
   Strong,
   TextLink,
   AccountNavigation,
   AppContainer,
-  Badge,
   Button,
   Card,
   CatalogCard,
@@ -79,18 +77,11 @@ export default async function HomePage({
       />
 
       <main>
-        <section className="bg-primary text-primary-foreground">
-          <AppContainer className="py-16 text-center sm:py-24">
-            <Badge className="border-white/25 bg-white/10 px-3 text-primary-foreground" variant="outline">
-              Private image and PDF tools
-            </Badge>
-            <Display className="mx-auto mt-5 max-w-4xl">Edit media without sending it anywhere.</Display>
-            <Lead className="mx-auto mt-5 max-w-2xl text-primary-foreground/80">
-              Convert, organize, and compress files in dedicated browser workers. Your files stay on this device.
-            </Lead>
-
+        <CatalogHero suite="media" />
+        <section aria-label="Find a media tool" className="bg-muted/50">
+          <AppContainer className="py-6">
             <form
-              className="mx-auto mt-8 flex w-full max-w-2xl gap-2 rounded-2xl bg-card p-2 shadow-lg"
+              className="mx-auto flex w-full max-w-2xl gap-2 rounded-2xl bg-card p-2 shadow-lg"
               method="get"
               role="search"
             >
@@ -108,7 +99,7 @@ export default async function HomePage({
                   type="search"
                 />
               </div>
-              <Button type="submit" variant="strong">
+              <Button type="submit" variant="default">
                 Search
               </Button>
             </form>

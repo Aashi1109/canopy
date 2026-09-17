@@ -1,5 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { slugFromName } from "@canopy/tool-catalog";
+import { highlightBlogCode } from "./codeHighlight.ts";
+import { MAX_BLOG_MATH_LENGTH, normalizeBlogMath, renderBlogMath } from "./math.ts";
 
 export interface BlogImage {
   publicId: string;
@@ -37,6 +39,8 @@ type NodeType =
   | "tableCell"
   | "tableHeader"
   | "codeBlock"
+  | "inlineMath"
+  | "blockMath"
   | "image";
 export interface BlogNode {
   type: NodeType;
@@ -249,12 +253,13 @@ const BLOCKS: NodeType[] = [
   "horizontalRule",
   "table",
   "codeBlock",
+  "blockMath",
   "image",
 ];
 const CHILDREN: Partial<Record<NodeType, readonly NodeType[]>> = {
   doc: BLOCKS,
-  paragraph: ["text", "hardBreak"],
-  heading: ["text", "hardBreak"],
+  paragraph: ["text", "hardBreak", "inlineMath"],
+  heading: ["text", "hardBreak", "inlineMath"],
   bulletList: ["listItem"],
   orderedList: ["listItem"],
   listItem: BLOCKS,
@@ -311,12 +316,29 @@ function validateBody(input: unknown, options: BlogDocumentOptions): BlogNode {
     const object = record(value, "Editor node");
     const type = object.type as NodeType;
     if (
-      !["doc", "text", "taskItem", "listItem", "hardBreak", "tableRow", "tableCell", "tableHeader", ...BLOCKS].includes(
-        type,
-      )
+      ![
+        "doc",
+        "text",
+        "inlineMath",
+        "taskItem",
+        "listItem",
+        "hardBreak",
+        "tableRow",
+        "tableCell",
+        "tableHeader",
+        ...BLOCKS,
+      ].includes(type)
     )
       fail("Editor node type is unsupported.");
-    keys(object, type === "text" ? ["type", "text", "marks"] : ["type", "attrs", "content"], "Editor node");
+    keys(
+      object,
+      type === "text"
+        ? ["type", "text", "marks"]
+        : type === "inlineMath"
+          ? ["type", "attrs", "marks", "content"]
+          : ["type", "attrs", "content"],
+      "Editor node",
+    );
     const node: BlogNode = { type };
     if (type === "text") {
       node.text = string(object.text, "Article text", 1024 * 1024, false);
@@ -350,6 +372,17 @@ function validateBody(input: unknown, options: BlogDocumentOptions): BlogNode {
       node.attrs = {
         start: attrs.start === undefined ? 1 : integer(attrs.start, "List start", 1, 1000000),
       };
+    } else if (type === "inlineMath" || type === "blockMath") {
+      keys(attrs, ["latex"], "Math attributes");
+      const latex = string(attrs.latex, "Math source", MAX_BLOG_MATH_LENGTH, false);
+      if (!latex.trim()) fail("Math source must not be empty.");
+      node.attrs = { latex };
+      if (type === "inlineMath" && object.marks !== undefined) {
+        const marks = list(object.marks, "Math marks", 9).map(mark);
+        if (marks.some((item) => item.type === "code") || new Set(marks.map((item) => item.type)).size !== marks.length)
+          fail("Math marks cannot contain code or duplicates.");
+        if (marks.length) node.marks = marks.sort((a, b) => a.type.localeCompare(b.type));
+      }
     } else if (type === "codeBlock") {
       keys(attrs, ["language"], "Code block attributes");
       const language = attrs.language == null ? null : string(attrs.language, "Code language", 40);
@@ -483,6 +516,7 @@ export function createBlogDocument(title: string): BlogDocument {
 
 function nodeText(node: BlogNode): string {
   if (node.type === "text") return node.text ?? "";
+  if (node.type === "inlineMath" || node.type === "blockMath") return String(node.attrs?.latex ?? "");
   if (node.type === "image") return [node.attrs?.alt, node.attrs?.caption].filter(Boolean).join(" ");
   if (node.type === "hardBreak" || node.type === "horizontalRule") return "\n";
   const text = (node.content ?? []).map(nodeText).join("");
@@ -555,8 +589,12 @@ export function renderBlogDocument(
     switch (node.type) {
       case "doc":
         return content();
+      case "inlineMath":
       case "text": {
-        let html = escapeHtml(node.text);
+        const formula = node.type === "inlineMath" ? renderBlogMath(String(node.attrs?.latex ?? ""), false) : null;
+        let html = formula
+          ? `<span class="blog-math-inline${formula.error ? " blog-math-error" : ""}">${formula.html}</span>`
+          : escapeHtml(node.text);
         for (const textMark of node.marks ?? []) {
           if (textMark.type === "link") {
             const attrs = textMark.attrs!;
@@ -591,7 +629,7 @@ export function renderBlogDocument(
       case "taskList":
         return `<ul data-type="taskList">${content()}</ul>`;
       case "taskItem":
-        return `<li data-type="taskItem"><input type="checkbox" disabled${node.attrs?.checked ? " checked" : ""} aria-label="${node.attrs?.checked ? "Completed" : "Not completed"}"><div>${content()}</div></li>`;
+        return `<li data-type="taskItem"><span data-task-checkbox="${node.attrs?.checked ? "true" : "false"}" role="checkbox" aria-readonly="true" aria-checked="${node.attrs?.checked ? "true" : "false"}" aria-label="${node.attrs?.checked ? "Completed" : "Not completed"}">${node.attrs?.checked ? "☑" : "☐"}</span><div>${content()}</div></li>`;
       case "bulletList":
         return `<ul>${content()}</ul>`;
       case "orderedList":
@@ -604,8 +642,15 @@ export function renderBlogDocument(
         return "<hr>";
       case "hardBreak":
         return "<br>";
-      case "codeBlock":
-        return `<pre><code${node.attrs?.language ? ` class="language-${escapeHtml(node.attrs.language)}"` : ""}>${content()}</code></pre>`;
+      case "blockMath": {
+        const { html, error } = renderBlogMath(String(node.attrs?.latex ?? ""), true);
+        return `<div class="blog-math-block${error ? " blog-math-error" : ""}">${html}</div>`;
+      }
+      case "codeBlock": {
+        const code = (node.content ?? []).map((child) => child.text ?? "").join("");
+        const language = node.attrs?.language as string | null;
+        return `<pre><code${language ? ` class="language-${escapeHtml(language)}"` : ""}>${highlightBlogCode(code, language)}</code></pre>`;
+      }
       case "table": {
         const widths = validateTable(node);
         const resized = widths.some(Boolean);
@@ -639,7 +684,7 @@ export function renderBlogDocument(
       }
     }
   }
-  const html = render(document.body);
+  const html = render(normalizeBlogMath(document.body));
   return {
     html,
     headings,

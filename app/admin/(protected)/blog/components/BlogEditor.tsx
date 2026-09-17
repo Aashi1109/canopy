@@ -5,10 +5,15 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Copy, Crop, ExternalLink, EyeOff, CalendarX, RotateCw, Replace, Trash2 } from "lucide-react";
 import { z } from "zod";
-import type { JSONContent } from "@tiptap/core";
+import { Node as TiptapNode, type JSONContent } from "@tiptap/core";
 import { EditorContent, ReactNodeViewRenderer, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { TableKit } from "@tiptap/extension-table";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { blogLowlight } from "@/lib/blog/codeHighlight";
+import { normalizeBlogMath } from "@/lib/blog/math";
+import { BlogInlineMath, BlogBlockMath } from "../lib/mathExtensions";
+import "katex/dist/katex.min.css";
 import {
   AlertBanner,
   AlertDialog,
@@ -35,16 +40,21 @@ import { BlogHistoryPanel } from "./BlogHistoryPanel";
 import { BlogTableControls } from "./BlogTableControls";
 import { BlogBlockControls } from "./BlogBlockControls";
 import { BlogImageView } from "./BlogImageView";
+import { BlogTaskItemView } from "./BlogTaskItemView";
+import { BlogCodeBlockView } from "./BlogCodeBlockView";
 import { BlogImageCropDialog } from "./BlogImageCropDialog";
 import { BlogImageNode as BaseBlogImageNode, blogEditorImageSource as imageSource } from "../lib/imageNode";
 import { blogFormattingExtensions } from "../lib/formattingExtensions";
 import { pasteBlogImages } from "../lib/imagePaste";
+import { parseBlogClipboardText } from "../lib/markdownPaste.ts";
 import { BlogTableCell, BlogTableHeader } from "../lib/tableEditing";
 import { BlogPostSettings } from "./BlogPostSettings";
 import { BlogPublishPanel, type BlogScheduleValue } from "./BlogPublishPanel";
 import { createDraftPersistence, type DraftSaveState } from "../lib/draftPersistence";
 import { useBlogTaxonomyOptions, type TaxonomyOptions } from "../lib/useBlogTaxonomyOptions";
 import styles from "./BlogEditor.module.css";
+import highlightStyles from "@/components/blog/codeHighlight.module.css";
+import contentStyles from "@/components/blog/content.module.css";
 
 function bodyImages(node: JSONContent): JSONContent[] {
   return node.type === "image" ? [node] : (node.content ?? []).flatMap(bodyImages);
@@ -53,6 +63,12 @@ function bodyImages(node: JSONContent): JSONContent[] {
 const BlogImageNode = BaseBlogImageNode.extend({
   addNodeView() {
     return ReactNodeViewRenderer(BlogImageView);
+  },
+});
+
+const BlogCodeBlock = CodeBlockLowlight.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(BlogCodeBlockView);
   },
 });
 
@@ -126,8 +142,11 @@ export function BlogEditor({
   const tagOptions = useBlogTaxonomyOptions("tag", initialTags, post.draftDocument.tags);
   const categories = categoryOptions.items;
   const tags = tagOptions.items;
-  const [document, setDocument] = useState<EditableDocument>(post.draftDocument);
-  const current = useRef<EditableDocument>(post.draftDocument);
+  const [document, setDocument] = useState<EditableDocument>(() => ({
+    ...post.draftDocument,
+    body: normalizeBlogMath(post.draftDocument.body),
+  }));
+  const current = useRef<EditableDocument>(document);
   const inFlight = useRef(false);
   const [saveState, setSaveState] = useState<DraftSaveState>("idle");
   const [backupUnavailable, setBackupUnavailable] = useState(false);
@@ -140,7 +159,7 @@ export function BlogEditor({
   );
   const [persistence] = useState(() =>
     createDraftPersistence<EditableDocument>({
-      document: post.draftDocument,
+      document,
       version: post.version,
       request: async (input) => {
         const result = await mutateBlogAction("save", {
@@ -277,29 +296,42 @@ export function BlogEditor({
 
   const editor = useEditor({
     extensions: [
-      ...blogFormattingExtensions,
+      ...blogFormattingExtensions.map((extension) =>
+        extension instanceof TiptapNode && extension.name === "taskItem"
+          ? extension.extend({
+              addNodeView() {
+                return ReactNodeViewRenderer(BlogTaskItemView, { as: "li", attrs: { "data-type": "taskItem" } });
+              },
+            })
+          : extension,
+      ),
       StarterKit.configure({
+        codeBlock: false,
         heading: { levels: [2, 3, 4, 5, 6] },
         link: { openOnClick: false },
         dropcursor: { color: "var(--success)", width: 2 },
       }),
+      BlogCodeBlock.configure({ lowlight: blogLowlight }),
+      BlogInlineMath,
+      BlogBlockMath,
       TableKit.configure({ table: { resizable: true }, tableCell: false, tableHeader: false }),
       BlogTableCell,
       BlogTableHeader,
       BlogImageNode.configure({ cloudName, onUploadImage: uploadInlineImage }),
     ],
-    content: post.draftDocument.body,
+    content: document.body,
+    enablePasteRules: false,
     immediatelyRender: false,
     editable,
     editorProps: {
+      clipboardTextParser: parseBlogClipboardText,
       handlePaste: (_view, event): boolean =>
         editor ? pasteBlogImages(editor, event, uploadInlineImage, showUploadError) : false,
       attributes: {
         role: "textbox",
         "aria-multiline": "true",
         "aria-label": "Article body",
-        class:
-          "min-h-0 outline-none text-base leading-[1.6] [&_p]:my-4 [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:mt-6 [&_h3]:text-lg [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:border-l-2 [&_blockquote]:border-primary [&_blockquote]:pl-4 [&_pre]:overflow-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-4 [&_a]:text-primary [&_a]:underline [&_table]:w-full [&_td]:border [&_td]:border-border [&_td]:p-2 [&_th]:border [&_th]:border-border [&_th]:bg-muted [&_th]:p-2 [&_img]:max-w-full [&_img]:h-auto",
+        class: `${highlightStyles.highlight} ${contentStyles.content} min-h-0 outline-none [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_pre]:overflow-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_a]:text-primary [&_a]:underline [&_table]:w-full [&_td]:border [&_td]:border-border [&_td]:p-2 [&_th]:border [&_th]:border-border [&_th]:bg-muted [&_th]:p-2 [&_img]:max-w-full [&_img]:h-auto`,
       },
     },
     onUpdate: ({ editor: changed }) => change({ ...current.current, body: changed.getJSON() }),
@@ -918,12 +950,16 @@ export function BlogEditor({
             <Button
               size="xs"
               onClick={() => {
-                editor?.commands.setContent(recovery.document.body, {
+                const restored = {
+                  ...recovery.document,
+                  body: normalizeBlogMath(recovery.document.body as BlogDocument["body"]),
+                };
+                editor?.commands.setContent(restored.body, {
                   emitUpdate: false,
                 });
-                current.current = recovery.document;
-                setDocument(recovery.document);
-                persistence.restore(recovery.document, recovery.version);
+                current.current = restored;
+                setDocument(restored);
+                persistence.restore(restored, recovery.version);
                 setRecovery(null);
               }}
             >

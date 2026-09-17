@@ -110,7 +110,7 @@ export function GeneratedPdfPreview({
         onOpenChange={setExpanded}
         title={file.name}
         description={`Generated PDF · Page ${currentPage} of ${pages.length}`}
-        actions={<ArtifactDownloadButton file={file} />}
+        actions={<ArtifactDownloadButton file={file} size="sm" />}
         viewportClassName="bg-card p-0 text-foreground sm:p-0"
       >
         {viewer()}

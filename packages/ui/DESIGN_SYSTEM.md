@@ -601,15 +601,3 @@ Rows show tool identity, then a **remove bookmark icon**, then an **open arrow**
 Guests store identifiers under `canopy.saved-tools.v1`. At sign-in, pending guest IDs are staged locally for that account and unioned into `user_preferences` (`user_id`, `key = saved_tools`, JSONB `value`, `updated_at`). Confirmed imports are cleared locally; failed imports remain account-scoped for retry. Account lists are never copied into guest storage on sign-out. The authenticated API derives ownership from the server session and locks the preference row during read/modify/write.
 
 Schema deployment: `packages/database/migration/0001-baseline/0008_user_preferences.sql`, included in `pnpm db:migrate 0001-baseline`. No dedicated bookmarks table or Saved page is used.
-
-## References
-
-Structure and conventions above follow current design-system documentation practice:
-
-- [Documenting Components — Nathan Curtis, EightShapes](https://medium.com/eightshapes-llc/documenting-components-9fe59b80c015) — introduction → examples → anatomy → properties → accessibility as peer sections
-- [Component Specifications — Nathan Curtis](https://medium.com/eightshapes-llc/component-specifications-1492ca4c94c)
-- [7 Best Practices for Design System Documentation — UXPin](https://www.uxpin.com/studio/blog/7-best-practices-for-design-system-documentation/)
-- [How to Create Design System Documentation — Netguru](https://www.netguru.com/blog/design-system-documentation)
-- [Design System Governance — Netguru](https://www.netguru.com/blog/design-system-governance)
-- [W3C DTCG Token Architecture](https://uxhero.design/blog/w3c-dtcg-token-architecture) — three-tier primitive → semantic → component model referenced in [Known gaps](#10-known-gaps)
-- [Design Token Naming Conventions](https://www.alwaystwisted.com/articles/design-token-naming-conventions)

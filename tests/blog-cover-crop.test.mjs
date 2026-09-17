@@ -47,6 +47,9 @@ const hooks = registerHooks({
         "export const BlogImageNode = {extend() {return {configure() {return {}}}}}; export function blogEditorImageSource(image) {return 'https://example.test/' + image.publicId;}",
       );
     if (specifier === "../lib/formattingExtensions") return stub("export const blogFormattingExtensions = [];");
+    if (specifier === "@/lib/blog/codeHighlight") return stub("export const blogLowlight = {};");
+    if (specifier === "@/lib/blog/math") return stub("export const normalizeBlogMath = node => node;");
+    if (specifier === "../lib/mathExtensions") return stub("export const BlogInlineMath = {}, BlogBlockMath = {};");
     if (specifier === "../lib/imagePaste") return stub("export function pasteBlogImages() {}");
     if (specifier === "../lib/tableEditing") return stub("export const BlogTableCell = {}, BlogTableHeader = {};");
     if (specifier.endsWith(".css")) return stub("export default {};");

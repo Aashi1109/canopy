@@ -1,0 +1,65 @@
+.highlight pre {
+  padding: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.codeBlock {
+  position: relative;
+}
+.copyControl {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 1;
+  opacity: 0;
+}
+.codeBlock:hover .copyControl,
+.codeBlock:focus-within .copyControl,
+.copyControl[data-feedback="copied"],
+.copyControl[data-feedback="failed"] {
+  opacity: 1;
+}
+@media (hover: none) {
+  .copyControl {
+    opacity: 1;
+  }
+}
+
+.highlight :global(.hljs-keyword),
+.highlight :global(.hljs-selector-tag),
+.highlight :global(.hljs-built_in),
+.highlight :global(.hljs-type) {
+  color: var(--primary);
+}
+.highlight :global(.hljs-string),
+.highlight :global(.hljs-regexp),
+.highlight :global(.hljs-addition) {
+  color: var(--syntax-string);
+}
+.highlight :global(.hljs-number),
+.highlight :global(.hljs-literal),
+.highlight :global(.hljs-symbol),
+.highlight :global(.hljs-bullet) {
+  color: var(--warning);
+}
+.highlight :global(.hljs-title),
+.highlight :global(.hljs-attr),
+.highlight :global(.hljs-attribute),
+.highlight :global(.hljs-variable),
+.highlight :global(.hljs-meta) {
+  color: var(--primary);
+}
+.highlight :global(.hljs-comment),
+.highlight :global(.hljs-quote) {
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+.highlight :global(.hljs-deletion) {
+  color: var(--destructive);
+}
+.highlight :global(.hljs-emphasis) {
+  font-style: italic;
+}
+.highlight :global(.hljs-strong) {
+  font-weight: 600;
+}

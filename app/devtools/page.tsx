@@ -1,3 +1,4 @@
+import { CatalogHero } from "@/components/canopy/CatalogHero";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { ToolIcon } from "@/components/ToolIcon";
 import {
@@ -10,7 +11,6 @@ import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
 import { getOptionalSession } from "@canopy/auth/session";
 import {
   Caption,
-  Display,
   H2,
   Lead,
   Muted,
@@ -25,7 +25,6 @@ import {
   EmptyState,
   IconTile,
   Input,
-  InlineGuidance,
   ProductHeader,
   SectionHeading,
   buttonVariants,
@@ -97,7 +96,7 @@ export default async function HomePage({
   const categoryLabel = category ? TOOL_CATEGORIES[category].label : "";
   const searchForm = (
     <form
-      className="flex w-full items-center gap-2 rounded-2xl border border-input bg-background p-1.5 shadow-sm transition focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10"
+      className="flex w-full items-center gap-2 rounded-2xl border border-input bg-card p-1.5 shadow-sm transition focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10"
       method="get"
       role="search"
     >
@@ -132,36 +131,17 @@ export default async function HomePage({
       />
 
       <main>
+        <CatalogHero suite="devtools" />
         {hasFilter || showAllTools ? (
-          <section className="border-b border-border bg-card">
-            <AppContainer className="grid gap-6 py-8 sm:py-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(26rem,1.2fr)] lg:items-end">
-              <div>
-                <Overline className="block text-primary">Devtools catalog</Overline>
-                <Display className="mt-2">Find the right tool.</Display>
-              </div>
-              {searchForm}
+          <section className="border-b border-border bg-muted/50">
+            <AppContainer className="py-6">
+              <div className="mx-auto max-w-2xl">{searchForm}</div>
             </AppContainer>
           </section>
         ) : (
-          <section className="overflow-hidden border-b border-border bg-card">
-            <AppContainer className="py-12 sm:py-16 lg:py-20">
-              <div className="grid gap-8 lg:grid-cols-[minmax(0,1.12fr)_minmax(26rem,0.88fr)] lg:items-end lg:gap-16">
-                <div>
-                  <Overline className="block text-primary">{tools.length} focused tools. No sign-up.</Overline>
-                  <Display className="mt-5 max-w-4xl">
-                    The useful side of <span className="text-primary">your browser.</span>
-                  </Display>
-                </div>
-                <div className="lg:pb-1">
-                  <Muted className="max-w-xl text-muted-foreground">
-                    Format, convert, inspect, and generate working data without accounts, uploads, or waiting.
-                  </Muted>
-                  <div className="mt-7">{searchForm}</div>
-                  <InlineGuidance className="mt-4" icon={<ShieldCheck aria-hidden="true" />}>
-                    Core tools process your content locally in this browser.
-                  </InlineGuidance>
-                </div>
-              </div>
+          <section className="overflow-hidden border-b border-border bg-muted/50">
+            <AppContainer className="py-6">
+              <div className="mx-auto max-w-2xl">{searchForm}</div>
 
               <nav
                 aria-label="Quick tools"
@@ -203,13 +183,15 @@ export default async function HomePage({
         {hasFilter || showAllTools ? (
           <section className="py-12 sm:py-16">
             <AppContainer>
-              <TextLink
-                className="mb-5 inline-flex min-h-11 items-center gap-2 text-muted-foreground outline-none hover:text-foreground focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                href={category && !query ? "/devtools?view=all" : "/devtools"}
-              >
-                <ArrowLeft aria-hidden="true" className="size-4" />
-                {showAllTools ? "Back to Devtools" : category && !query ? "All tools" : "Clear search"}
-              </TextLink>
+              {hasFilter ? (
+                <TextLink
+                  className="mb-5 inline-flex min-h-11 items-center gap-2 text-muted-foreground outline-none hover:text-foreground focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  href={category && !query ? "/devtools?view=all" : "/devtools"}
+                >
+                  <ArrowLeft aria-hidden="true" className="size-4" />
+                  {category && !query ? "All tools" : "Clear search"}
+                </TextLink>
+              ) : null}
               <SectionHeading
                 action={
                   showAllTools || category ? (
@@ -222,7 +204,7 @@ export default async function HomePage({
                     />
                   ) : null
                 }
-                className={`${SECTION_HEADING_CLASS} flex-col items-stretch sm:flex-row sm:items-end`}
+                className={`${SECTION_HEADING_CLASS} flex-col items-stretch sm:flex-row sm:items-center`}
                 description={
                   showAllTools && !category && !query
                     ? "Browse every available developer tool in one place."

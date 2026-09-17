@@ -1,0 +1,29 @@
+.content {
+  font-size: 16px;
+  line-height: 1.6;
+}
+.content > * {
+  margin-block: 0;
+}
+.content p {
+  margin-block: 16px;
+}
+.content blockquote {
+  border-left: 2px solid var(--primary);
+  padding-left: 16px;
+}
+.content h2 {
+  margin-top: 32px;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.content h3 {
+  margin-top: 24px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.content > :first-child {
+  margin-top: 0;
+}

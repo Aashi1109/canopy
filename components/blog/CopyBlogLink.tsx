@@ -15,7 +15,7 @@ export function CopyBlogLink({ url, label = "Copy link" }: { url: string; label?
     }
   }
   return (
-    <div className="max-w-full">
+    <div className="flex max-w-full flex-col items-start">
       <Button
         variant="ghost"
         onClick={() => {
