@@ -71,14 +71,7 @@ test("the root-owned frontend has one manifest and merged Next.js configuration"
   assert.match(nextConfig, /bodySizeLimit:\s*["']6mb["']/);
   assert.match(nextConfig, /module:\s*\{\s*browser:/);
   assert.match(nextConfig, /transpilePackages:\s*\[/);
-  for (const dependency of [
-    "@canopy/auth",
-    "@canopy/ui",
-    "@jsquash/jpeg",
-    "heic-to",
-    "pdfjs-dist",
-    "qpdf-wasm",
-  ]) {
+  for (const dependency of ["@canopy/auth", "@canopy/ui", "@jsquash/jpeg", "heic-to", "pdfjs-dist", "qpdf-wasm"]) {
     assert.match(nextConfig, new RegExp(`["']${dependency}["']`));
   }
   assert.match(nextConfig, /source:\s*["']\/media\/:path\*["']/);

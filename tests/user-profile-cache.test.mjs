@@ -13,19 +13,48 @@ function setup(t) {
     else process.env.DATABASE_URL = previous;
   });
   const createdAt = new Date("2026-09-17T00:00:00Z");
-  const users = new Map(["alice", "bob"].map((id) => [id, {
-    id, name: id, email: `${id}@example.test`, emailVerified: true, image: null,
-    status: "active", createdAt, updatedAt: createdAt,
-  }]));
-  const state = { users, entries: new Map(), pending: new Map(), versions: new Map(), reads: 0, disabled: false, failBegin: null, begins: [], ends: [] };
+  const users = new Map(
+    ["alice", "bob"].map((id) => [
+      id,
+      {
+        id,
+        name: id,
+        email: `${id}@example.test`,
+        emailVerified: true,
+        image: null,
+        status: "active",
+        createdAt,
+        updatedAt: createdAt,
+      },
+    ]),
+  );
+  const state = {
+    users,
+    entries: new Map(),
+    pending: new Map(),
+    versions: new Map(),
+    reads: 0,
+    disabled: false,
+    failBegin: null,
+    begins: [],
+    ends: [],
+  };
   const dialect = new PgDialect();
   const originalSelect = db.select;
-  t.after(() => { db.select = originalSelect; });
+  t.after(() => {
+    db.select = originalSelect;
+  });
   db.select = () => {
     let id;
     const query = {
-      from(table) { assert.equal(table, authUser); return query; },
-      where(condition) { [id] = dialect.sqlToQuery(condition).params; return query; },
+      from(table) {
+        assert.equal(table, authUser);
+        return query;
+      },
+      where(condition) {
+        [id] = dialect.sqlToQuery(condition).params;
+        return query;
+      },
       async limit(count) {
         assert.equal(count, 1);
         state.reads++;
@@ -85,7 +114,11 @@ test("profile edits, suspension, reactivation, and deletion invalidate the cache
     });
     assert.deepEqual(await getCachedUser("alice"), state.users.get("alice"));
   }
-  assert.deepEqual(state.begins, ["alice", "alice", "alice"], "duplicate invalidation in one operation is acquired once");
+  assert.deepEqual(
+    state.begins,
+    ["alice", "alice", "alice"],
+    "duplicate invalidation in one operation is acquired once",
+  );
   await withUserCacheInvalidation(async (invalidate) => {
     await invalidate(["alice"]);
     state.users.delete("alice");
@@ -100,14 +133,17 @@ test("profile edits, suspension, reactivation, and deletion invalidate the cache
 test("rollback releases the fence and reloads the original profile", async (t) => {
   const state = setup(t);
   const original = await getCachedUser("alice");
-  await assert.rejects(withUserCacheInvalidation(async (invalidate) => {
-    await invalidate(["alice"]);
-    const before = structuredClone(state.users.get("alice"));
-    state.users.get("alice").name = "Uncommitted";
-    assert.equal((await getCachedUser("alice")).name, "Uncommitted");
-    state.users.set("alice", before);
-    throw new Error("Rolled back");
-  }), /Rolled back/);
+  await assert.rejects(
+    withUserCacheInvalidation(async (invalidate) => {
+      await invalidate(["alice"]);
+      const before = structuredClone(state.users.get("alice"));
+      state.users.get("alice").name = "Uncommitted";
+      assert.equal((await getCachedUser("alice")).name, "Uncommitted");
+      state.users.set("alice", before);
+      throw new Error("Rolled back");
+    }),
+    /Rolled back/,
+  );
   assert.equal(state.pending.size, 0);
   assert.deepEqual(await getCachedUser("alice"), original);
   assert.equal(state.reads, 3);
@@ -117,10 +153,13 @@ test("partial invalidation failure releases previous fences before rejecting", a
   const state = setup(t);
   state.failBegin = "bob";
   let mutated = false;
-  await assert.rejects(withUserCacheInvalidation(async (invalidate) => {
-    await invalidate(["alice", "bob"]);
-    mutated = true;
-  }), /Invalidation unavailable/);
+  await assert.rejects(
+    withUserCacheInvalidation(async (invalidate) => {
+      await invalidate(["alice", "bob"]);
+      mutated = true;
+    }),
+    /Invalidation unavailable/,
+  );
   assert.equal(mutated, false);
   assert.deepEqual(state.ends, ["alice"]);
   assert.equal(state.pending.size, 0);
@@ -132,10 +171,17 @@ test("cache bypass and invalid cache data always reload the database", async (t)
   await getCachedUser("alice");
   await getCachedUser("alice");
   assert.equal(state.reads, 2);
-  await withUserCacheInvalidation(async (invalidate) => { await invalidate(["alice"]); });
+  await withUserCacheInvalidation(async (invalidate) => {
+    await invalidate(["alice"]);
+  });
   assert.equal(state.pending.size, 0);
   state.disabled = false;
-  for (const bad of [false, { ...state.users.get("alice"), id: "bob" }, { ...state.users.get("alice"), status: "unknown" }, { ...state.users.get("alice"), updatedAt: "bad date" }]) {
+  for (const bad of [
+    false,
+    { ...state.users.get("alice"), id: "bob" },
+    { ...state.users.get("alice"), status: "unknown" },
+    { ...state.users.get("alice"), updatedAt: "bad date" },
+  ]) {
     state.entries.set("alice", JSON.stringify(bad));
     assert.deepEqual(await getCachedUser("alice"), state.users.get("alice"));
   }

@@ -133,9 +133,15 @@ export class Cache {
       const raw = await command(["EVAL", GUARDED_READ, "1", redisKey, crypto.randomUUID(), String(ttlSeconds)]);
       if (typeof raw === "string") {
         const entry: unknown = JSON.parse(raw);
-        if (!entry || typeof entry !== "object" || !("generation" in entry) ||
-          typeof entry.generation !== "string" || !("pending" in entry) ||
-          !entry.pending || typeof entry.pending !== "object") {
+        if (
+          !entry ||
+          typeof entry !== "object" ||
+          !("generation" in entry) ||
+          typeof entry.generation !== "string" ||
+          !("pending" in entry) ||
+          !entry.pending ||
+          typeof entry.pending !== "object"
+        ) {
           throw new Error("Invalid guarded cache value");
         }
         if (Object.keys(entry.pending).length === 0) {
@@ -178,7 +184,15 @@ export class Cache {
     if (token === null) return;
     // A failed release leaves caching disabled for this key instead of serving stale access.
     try {
-      const result = await command(["EVAL", INVALIDATION_END, "1", redisKey, token, crypto.randomUUID(), String(ttlSeconds)]);
+      const result = await command([
+        "EVAL",
+        INVALIDATION_END,
+        "1",
+        redisKey,
+        token,
+        crypto.randomUUID(),
+        String(ttlSeconds),
+      ]);
       if (result !== 1) throw new Error("Cache invalidation release failed");
     } catch {
       console.warn("Cache invalidation release unavailable; caching remains disabled for this key.");

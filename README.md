@@ -30,6 +30,12 @@ pnpm test:media
 Run `pnpm format` to format the workspace or `pnpm format:check` to check it without
 changing files. To format a single file, run `pnpm exec prettier --write path/to/file`.
 
+Run `pnpm hooks:install` once to enable the pre-commit hook. It runs tests, then
+formats only staged files with `lint-staged`, preserving unstaged edits and adding
+the formatting to the commit. Test failures are reported but do not block
+formatting or the commit; formatting errors do. `pnpm format` remains available
+for formatting the whole workspace.
+
 Prettier uses a pinned local version and the root `.prettierrc.json`: two-space
 indentation, double quotes, semicolons, trailing commas, LF line endings, and a
 100-column print width. Generated files and copied vendor assets are excluded.

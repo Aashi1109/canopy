@@ -25,6 +25,9 @@
     "test:integration": "CANOPY_INTEGRATION=1 node --test tests/*integration.test.mjs",
     "test:e2e": "playwright test"
   },
+  "lint-staged": {
+    "*": "prettier --write --ignore-unknown"
+  },
   "dependencies": {
     "@codemirror/lang-json": "^6.0.2",
     "@google/genai": "^2.12.0",
@@ -90,6 +93,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
+    "lint-staged": "^17.5.1",
     "postcss": "8.5.23",
     "prettier": "3.9.7",
     "tailwindcss": "^4.3.3",

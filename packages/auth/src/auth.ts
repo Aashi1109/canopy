@@ -75,11 +75,13 @@ export const auth = betterAuth({
   appName: "SmartTools",
   baseURL,
   database: (options: BetterAuthOptions) =>
-    cachedUserAdapter(drizzleAdapter(db, {
-      provider: "pg",
-      schema: { authUser, authSession, authAccount, authVerification },
-      transaction: true,
-    })(options)),
+    cachedUserAdapter(
+      drizzleAdapter(db, {
+        provider: "pg",
+        schema: { authUser, authSession, authAccount, authVerification },
+        transaction: true,
+      })(options),
+    ),
   trustedOrigins: [new URL(baseURL).origin],
   emailAndPassword: {
     enabled: true,

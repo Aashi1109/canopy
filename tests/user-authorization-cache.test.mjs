@@ -97,13 +97,22 @@ function setup(t) {
         const user = state.users.get(userId);
         if (statusQuery) {
           state.statusReads++;
-          return Promise.resolve(user ? [{
-            id: userId, name: userId, email: `${userId}@example.test`, image: null,
-            emailVerified: true, createdAt: initialTime, status: user.status, updatedAt: user.updatedAt,
-          }] : []).then(
-            resolve,
-            reject,
-          );
+          return Promise.resolve(
+            user
+              ? [
+                  {
+                    id: userId,
+                    name: userId,
+                    email: `${userId}@example.test`,
+                    image: null,
+                    emailVerified: true,
+                    createdAt: initialTime,
+                    status: user.status,
+                    updatedAt: user.updatedAt,
+                  },
+                ]
+              : [],
+          ).then(resolve, reject);
         }
         state.roleReads++;
         const rows = (user?.roles ?? []).map((role) => ({
@@ -195,7 +204,9 @@ test("cached authorization avoids the database until explicit invalidation", asy
   await getUserAuthorization("alice");
   state.databaseError = true;
   assert.deepEqual(await getUserAuthorization("alice"), { roles: [editor], access: editor.access });
-  await withUserCacheInvalidation(async (invalidate) => { await invalidate(["alice"]); });
+  await withUserCacheInvalidation(async (invalidate) => {
+    await invalidate(["alice"]);
+  });
   await assert.rejects(getUserAuthorization("alice"), /Database unavailable/);
 });
 

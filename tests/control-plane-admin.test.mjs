@@ -174,7 +174,12 @@ test("user and role mutations invalidate affected users through commit and rollb
       ids: ["target"],
     },
     {
-      reads: [permissionRows({ users: { assignRoles: true } }), [target], [{ roleId: "user" }], [{ id: "user", access: {} }, role]],
+      reads: [
+        permissionRows({ users: { assignRoles: true } }),
+        [target],
+        [{ roleId: "user" }],
+        [{ id: "user", access: {} }, role],
+      ],
       run: () => assignUserRoles("actor", "target", ["editor"]),
       ids: ["target"],
     },
@@ -205,7 +210,9 @@ test("user and role mutations invalidate affected users through commit and rollb
       ]);
     }
   }
-  t.mock.method(Cache.prototype, "beginInvalidation", async () => { throw new Error("Cache unavailable"); });
+  t.mock.method(Cache.prototype, "beginInvalidation", async () => {
+    throw new Error("Cache unavailable");
+  });
   await withFakeDatabase(cases[0].reads, async (state) => {
     await assert.rejects(cases[0].run, /Cache unavailable/);
     assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
@@ -255,7 +262,10 @@ test("catalog and role caches invalidate only after successful commits", async (
         if (rollback) await assert.rejects(operation, /Commit failed/);
         else await operation();
       });
-      assert.deepEqual(invalidated.slice(before), rollback ? [] : key === "catalog:all" ? [key, "ecosystem:all"] : [key]);
+      assert.deepEqual(
+        invalidated.slice(before),
+        rollback ? [] : key === "catalog:all" ? [key, "ecosystem:all"] : [key],
+      );
     }
   }
 });

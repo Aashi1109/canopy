@@ -51,7 +51,7 @@ function setup() {
     },
     async findMany(args) {
       fixture.events.push(["findMany", args]);
-      return state.ids.slice(0, args.limit ?? 100).map(id => ({ id }));
+      return state.ids.slice(0, args.limit ?? 100).map((id) => ({ id }));
     },
     async transaction(callback) {
       fixture.events.push("begin");
@@ -66,7 +66,7 @@ function setup() {
     },
   };
   for (const method of ["create", "update", "updateMany", "delete", "deleteMany"]) {
-    raw[method] = async args => {
+    raw[method] = async (args) => {
       fixture.events.push([method, args]);
       return method.endsWith("Many") ? state.ids.length : { id: "alice" };
     };
@@ -80,7 +80,10 @@ const userQuery = { model: "user", where: [{ field: "id", value: "alice" }] };
 test("session lookups keep fresh sessions and attach the cached user", async () => {
   const { state, adapter } = setup();
   assert.deepEqual(await adapter.findOne(sessionQuery), { ...state.session, user: fixture.user });
-  assert.deepEqual(fixture.events, [["findOne", { ...sessionQuery, join: undefined }], ["cached-user", "alice"]]);
+  assert.deepEqual(fixture.events, [
+    ["findOne", { ...sessionQuery, join: undefined }],
+    ["cached-user", "alice"],
+  ]);
   fixture.events = [];
   state.session = null;
   assert.equal(await adapter.findOne(sessionQuery), null);
@@ -89,7 +92,11 @@ test("session lookups keep fresh sessions and attach the cached user", async () 
 
 test("partial projections and unrelated reads retain adapter behavior", async () => {
   const { adapter } = setup();
-  for (const args of [{ ...sessionQuery, select: ["id"] }, userQuery, { ...sessionQuery, join: { user: true, account: true } }]) {
+  for (const args of [
+    { ...sessionQuery, select: ["id"] },
+    userQuery,
+    { ...sessionQuery, join: { user: true, account: true } },
+  ]) {
     await adapter.findOne(args);
     assert.deepEqual(fixture.events.pop(), ["findOne", args]);
     assert.equal(fixture.events.length, 0);
@@ -111,15 +118,18 @@ test("bulk invalidation resolves every matching user beyond adapter default limi
   state.ids = Array.from({ length: 125 }, (_, index) => `user-${index}`);
   const args = { model: "user", where: [{ field: "status", value: "active" }], update: { status: "suspended" } };
   assert.equal(await adapter.updateMany(args), 125);
-  assert.deepEqual(fixture.events.find(event => event[0] === "invalidate"), ["invalidate", state.ids]);
-  assert.equal(fixture.events.find(event => event[0] === "findMany")[1].limit, 125);
+  assert.deepEqual(
+    fixture.events.find((event) => event[0] === "invalidate"),
+    ["invalidate", state.ids],
+  );
+  assert.equal(fixture.events.find((event) => event[0] === "findMany")[1].limit, 125);
 });
 
 test("transaction invalidation fences persist through commit and rollback while reads bypass cache", async () => {
   const { adapter } = setup();
   for (const fail of [false, true]) {
     fixture.events = [];
-    const operation = adapter.transaction(async transaction => {
+    const operation = adapter.transaction(async (transaction) => {
       await transaction.findOne(sessionQuery);
       await transaction.update({ ...userQuery, update: { name: "Updated" } });
       await transaction.delete(userQuery);
@@ -130,8 +140,8 @@ test("transaction invalidation fences persist through commit and rollback while 
     else assert.equal(await operation, "done");
     assert.deepEqual(fixture.events.slice(0, 3), ["scope-open", "begin", ["findOne", sessionQuery]]);
     assert.deepEqual(fixture.events.slice(-2), [fail ? "rollback" : "commit", "scope-close"]);
-    assert.equal(fixture.events.filter(event => event === "scope-open").length, 1);
-    assert.equal(fixture.events.filter(event => event[0] === "invalidate").length, 2);
+    assert.equal(fixture.events.filter((event) => event === "scope-open").length, 1);
+    assert.equal(fixture.events.filter((event) => event[0] === "invalidate").length, 2);
   }
 });
 
@@ -139,11 +149,17 @@ test("failed invalidation prevents writes; other records and user creation are u
   const { adapter } = setup();
   fixture.invalidationError = true;
   await assert.rejects(adapter.delete(userQuery), /Invalidation unavailable/);
-  assert.equal(fixture.events.some(event => event[0] === "delete"), false);
+  assert.equal(
+    fixture.events.some((event) => event[0] === "delete"),
+    false,
+  );
   fixture.events = [];
   const session = { ...userQuery, model: "session" };
   await adapter.delete(session);
   const user = { model: "user", data: { id: "alice" } };
   await adapter.create(user);
-  assert.deepEqual(fixture.events, [["delete", session], ["create", user]]);
+  assert.deepEqual(fixture.events, [
+    ["delete", session],
+    ["create", user],
+  ]);
 });

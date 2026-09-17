@@ -104,7 +104,10 @@ test("auth successes toast while verification stays actionable, and failures rem
         .props.onCheckedChange(true);
   }
   const assertRetryable = () => {
-    assert.equal(render().find((node) => node.type === "FieldSet")?.props.disabled ?? button("Resend email")?.props.disabled, false);
+    assert.equal(
+      render().find((node) => node.type === "FieldSet")?.props.disabled ?? button("Resend email")?.props.disabled,
+      false,
+    );
     assert.equal(state.toasts.length, 0);
     assert.equal(text(alerts().find((node) => node.props.variant === "error")), DEFAULT_AUTH_ERROR);
   };
@@ -117,7 +120,10 @@ test("auth successes toast while verification stays actionable, and failures rem
     false,
   );
   assert.match(text(render()[0]), /user@example\.test/);
-  assert.equal(render().some((node) => node.type === "form"), false);
+  assert.equal(
+    render().some((node) => node.type === "form"),
+    false,
+  );
   assert.equal(button("Create account"), undefined);
   assert.equal(button("Sign up with Google"), undefined);
   state.toasts = [];
@@ -170,7 +176,13 @@ test("auth successes toast while verification stays actionable, and failures rem
   await submit();
   assert.equal(state.toasts.length, 0);
   assert.equal(button("Resend email").props.disabled, false);
-  assert.equal(render().some((node) => node.type === "form"), false);
+  assert.equal(
+    render().some((node) => node.type === "form"),
+    false,
+  );
   button("Sign in").props.onClick();
-  assert.equal(render().some((node) => node.type === "form"), true);
+  assert.equal(
+    render().some((node) => node.type === "form"),
+    true,
+  );
 });

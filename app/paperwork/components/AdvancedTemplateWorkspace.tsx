@@ -1,10 +1,6 @@
 "use client";
 
-import type {
-  AdvancedDocumentTemplate,
-  DocumentFieldDefinition,
-  DocumentTemplate,
-} from "@canopy/invoice-templates";
+import type { AdvancedDocumentTemplate, DocumentFieldDefinition, DocumentTemplate } from "@canopy/invoice-templates";
 import { containsFullTin, getDocumentDefinition } from "@canopy/invoice-templates";
 import {
   Caption,

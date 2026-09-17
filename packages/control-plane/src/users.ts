@@ -18,14 +18,25 @@ export async function getCachedUser(userId: string): Promise<User | null> {
   const createdAt = new Date(user.createdAt as string | Date);
   const updatedAt = new Date(user.updatedAt as string | Date);
   if (
-    user.id !== userId || typeof user.name !== "string" || typeof user.email !== "string" ||
-    typeof user.emailVerified !== "boolean" || (user.image !== null && typeof user.image !== "string") ||
+    user.id !== userId ||
+    typeof user.name !== "string" ||
+    typeof user.email !== "string" ||
+    typeof user.emailVerified !== "boolean" ||
+    (user.image !== null && typeof user.image !== "string") ||
     (user.status !== "active" && user.status !== "suspended") ||
-    !Number.isFinite(createdAt.getTime()) || !Number.isFinite(updatedAt.getTime())
-  ) return load();
+    !Number.isFinite(createdAt.getTime()) ||
+    !Number.isFinite(updatedAt.getTime())
+  )
+    return load();
   return {
-    id: userId, name: user.name, email: user.email, emailVerified: user.emailVerified,
-    image: user.image, status: user.status, createdAt, updatedAt,
+    id: userId,
+    name: user.name,
+    email: user.email,
+    emailVerified: user.emailVerified,
+    image: user.image,
+    status: user.status,
+    createdAt,
+    updatedAt,
   };
 }
 

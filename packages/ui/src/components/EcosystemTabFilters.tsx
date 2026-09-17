@@ -47,7 +47,10 @@ export function EcosystemTabFilters({ currentHref, className }: { currentHref?: 
   return (
     <nav
       aria-label="Tool suites"
-      className={cn("relative hidden h-[46px] shrink-0 items-center gap-0.5 rounded-full border border-border bg-card p-[5px] font-caption text-xs font-semibold md:flex", className)}
+      className={cn(
+        "relative hidden h-[46px] shrink-0 items-center gap-0.5 rounded-full border border-border bg-card p-[5px] font-caption text-xs font-semibold md:flex",
+        className,
+      )}
     >
       <a
         className="rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"

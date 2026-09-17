@@ -2,10 +2,33 @@
 import { Caption, P } from "#components/typography";
 
 import {
-  ArrowLeftRight, BookOpen, Braces, CalendarClock, ChevronDown, ChevronRight,
-  CodeXml, FileCode, FileOutput, Files, FolderTree, Globe, ImagePlay, Images,
-  KeyRound, LayoutGrid, LogOut, Minimize2, Network, Palette, ScanLine, Shield,
-  Sparkles, Table2, Type, UserRound, type LucideIcon,
+  ArrowLeftRight,
+  BookOpen,
+  Braces,
+  CalendarClock,
+  ChevronDown,
+  ChevronRight,
+  CodeXml,
+  FileCode,
+  FileOutput,
+  Files,
+  FolderTree,
+  Globe,
+  ImagePlay,
+  Images,
+  KeyRound,
+  LayoutGrid,
+  LogOut,
+  Minimize2,
+  Network,
+  Palette,
+  ScanLine,
+  Shield,
+  Sparkles,
+  Table2,
+  Type,
+  UserRound,
+  type LucideIcon,
 } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { useState } from "react";

@@ -22,10 +22,7 @@ async function affectedUserIds(adapter: DBTransactionAdapter, args: UserMutation
   return users.map(({ id }) => id);
 }
 
-function withInvalidatedWrites(
-  adapter: DBTransactionAdapter,
-  invalidate?: InvalidateUsers,
-): DBTransactionAdapter {
+function withInvalidatedWrites(adapter: DBTransactionAdapter, invalidate?: InvalidateUsers): DBTransactionAdapter {
   const mutate = <T>(args: UserMutation, operation: () => Promise<T>): Promise<T> => {
     if (args.model !== "user" && args.model !== "authUser") return operation();
     const run = async (invalidateUsers: InvalidateUsers) => {
@@ -36,8 +33,7 @@ function withInvalidatedWrites(
   };
   return {
     ...adapter,
-    update: <T>(args: Parameters<DBAdapter["update"]>[0]) =>
-      mutate(args, () => adapter.update<T>(args)),
+    update: <T>(args: Parameters<DBAdapter["update"]>[0]) => mutate(args, () => adapter.update<T>(args)),
     updateMany: (args) => mutate(args, () => adapter.updateMany(args)),
     delete: (args) => mutate(args, () => adapter.delete(args)),
     deleteMany: (args) => mutate(args, () => adapter.deleteMany(args)),
@@ -48,12 +44,7 @@ export function cachedUserAdapter(adapter: DBAdapter): DBAdapter {
   return {
     ...withInvalidatedWrites(adapter),
     async findOne<T>(args: Parameters<DBAdapter["findOne"]>[0]): Promise<T | null> {
-      if (
-        args.model !== "session" ||
-        args.join?.user !== true ||
-        Object.keys(args.join).length !== 1 ||
-        args.select
-      ) {
+      if (args.model !== "session" || args.join?.user !== true || Object.keys(args.join).length !== 1 || args.select) {
         return adapter.findOne<T>(args);
       }
       const session = await adapter.findOne<typeof authSession.$inferSelect>({

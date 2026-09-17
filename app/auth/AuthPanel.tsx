@@ -210,15 +210,24 @@ export function AuthPanel({
 
   if (verificationEmail) {
     return (
-      <Card aria-labelledby={`${panelId}-verification-title`} className="auth-card w-full max-w-[440px] gap-[18px]" role="region">
+      <Card
+        aria-labelledby={`${panelId}-verification-title`}
+        className="auth-card w-full max-w-[440px] gap-[18px]"
+        role="region"
+      >
         <div className="auth-heading" role="status">
           <Caption>{mode === "sign-up" ? "Account created · Verify email" : "Email verification required"}</Caption>
-          <H1 id={`${panelId}-verification-title`} tabIndex={-1} ref={(node) => node?.focus()}>Check your inbox</H1>
+          <H1 id={`${panelId}-verification-title`} tabIndex={-1} ref={(node) => node?.focus()}>
+            Check your inbox
+          </H1>
           <P>Open the verification link sent to</P>
           <Strong className="block break-words [overflow-wrap:anywhere]">{verificationEmail}</Strong>
         </div>
 
-        <P>Follow the link to verify your email and continue. If you’ve already verified in another browser, sign in below.</P>
+        <P>
+          Follow the link to verify your email and continue. If you’ve already verified in another browser, sign in
+          below.
+        </P>
         {feedback ? <AlertBanner variant={feedback.kind}>{feedback.text}</AlertBanner> : null}
 
         <div className="grid gap-3">

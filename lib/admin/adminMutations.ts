@@ -977,53 +977,57 @@ export async function assignUserRoles(
   targetUserId: string,
   requestedRoleIds: readonly string[],
 ): Promise<string[]> {
-  return withUserCacheInvalidation((invalidate) => db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "users", "assignRoles");
-    if (!Array.isArray(requestedRoleIds)) {
-      throw new Error("Role assignments must be an array.");
-    }
-    const nextRoleIds = [
-      ...new Set(["user", ...requestedRoleIds.map((roleId) => requiredText(roleId, "Role id", 200))]),
-    ];
-    const target = await getUserForUpdate(transaction, targetUserId);
-    const currentRoleIds = await getUserRoleIdsForUpdate(transaction, targetUserId);
-    const existingRoles = await transaction
-      .select({ id: rolesTable.id, access: rolesTable.access })
-      .from(rolesTable)
-      .where(inArray(rolesTable.id, nextRoleIds))
-      .for("share");
-    if (new Set(existingRoles.map(({ id }) => id)).size !== nextRoleIds.length) {
-      throw new Error("One or more assigned roles do not exist.");
-    }
-    assertAccessPrerequisites(mergeRoleAccess(existingRoles));
+  return withUserCacheInvalidation((invalidate) =>
+    db.transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "users", "assignRoles");
+      if (!Array.isArray(requestedRoleIds)) {
+        throw new Error("Role assignments must be an array.");
+      }
+      const nextRoleIds = [
+        ...new Set(["user", ...requestedRoleIds.map((roleId) => requiredText(roleId, "Role id", 200))]),
+      ];
+      const target = await getUserForUpdate(transaction, targetUserId);
+      const currentRoleIds = await getUserRoleIdsForUpdate(transaction, targetUserId);
+      const existingRoles = await transaction
+        .select({ id: rolesTable.id, access: rolesTable.access })
+        .from(rolesTable)
+        .where(inArray(rolesTable.id, nextRoleIds))
+        .for("share");
+      if (new Set(existingRoles.map(({ id }) => id)).size !== nextRoleIds.length) {
+        throw new Error("One or more assigned roles do not exist.");
+      }
+      assertAccessPrerequisites(mergeRoleAccess(existingRoles));
 
-    if (currentRoleIds.includes("admin") && !nextRoleIds.includes("admin")) {
-      assertCanDemoteUser(authorizationUser(target, currentRoleIds), await getAdminCounts(transaction));
-    }
-    if (
-      currentRoleIds.length === nextRoleIds.length &&
-      currentRoleIds.every((roleId) => nextRoleIds.includes(roleId))
-    ) {
+      if (currentRoleIds.includes("admin") && !nextRoleIds.includes("admin")) {
+        assertCanDemoteUser(authorizationUser(target, currentRoleIds), await getAdminCounts(transaction));
+      }
+      if (
+        currentRoleIds.length === nextRoleIds.length &&
+        currentRoleIds.every((roleId) => nextRoleIds.includes(roleId))
+      ) {
+        return nextRoleIds;
+      }
+
+      await invalidate([targetUserId]);
+      const removedRoleIds = currentRoleIds.filter((roleId) => !nextRoleIds.includes(roleId));
+      const addedRoleIds = nextRoleIds.filter((roleId) => !currentRoleIds.includes(roleId));
+      if (removedRoleIds.length) {
+        await transaction
+          .delete(userRolesTable)
+          .where(and(eq(userRolesTable.userId, targetUserId), inArray(userRolesTable.roleId, removedRoleIds)));
+      }
+      if (addedRoleIds.length) {
+        await transaction
+          .insert(userRolesTable)
+          .values(addedRoleIds.map((roleId) => ({ userId: targetUserId, roleId })));
+      }
+      await writeAudit(transaction, actorUserId, "user.assign-roles", "user", targetUserId, {
+        previousRoleIds: currentRoleIds,
+        roleIds: nextRoleIds,
+      });
       return nextRoleIds;
-    }
-
-    await invalidate([targetUserId]);
-    const removedRoleIds = currentRoleIds.filter((roleId) => !nextRoleIds.includes(roleId));
-    const addedRoleIds = nextRoleIds.filter((roleId) => !currentRoleIds.includes(roleId));
-    if (removedRoleIds.length) {
-      await transaction
-        .delete(userRolesTable)
-        .where(and(eq(userRolesTable.userId, targetUserId), inArray(userRolesTable.roleId, removedRoleIds)));
-    }
-    if (addedRoleIds.length) {
-      await transaction.insert(userRolesTable).values(addedRoleIds.map((roleId) => ({ userId: targetUserId, roleId })));
-    }
-    await writeAudit(transaction, actorUserId, "user.assign-roles", "user", targetUserId, {
-      previousRoleIds: currentRoleIds,
-      roleIds: nextRoleIds,
-    });
-    return nextRoleIds;
-  }));
+    }),
+  );
 }
 
 /** Adds one custom role atomically; never replaces memberships or changes account status. */
@@ -1038,25 +1042,27 @@ export async function assignRoleToUsers(
   }
   if (requestedUserIds.length > 100) throw new Error("Assign up to 100 users at a time.");
   const userIds = [...new Set(requestedUserIds.map((id) => requiredText(id, "User id", 200)))].sort();
-  await withUserCacheInvalidation((invalidate) => db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "roles", "view");
-    await requireTransactionPermission(transaction, actorUserId, "users", "assignRoles");
-    // Match the per-user assignment lock order and lock targets consistently across batches.
-    for (const userId of userIds) await getUserForUpdate(transaction, userId);
-    const [role] = await transaction.select().from(rolesTable).where(eq(rolesTable.id, roleId)).limit(1).for("share");
-    if (!role || role.isSystem) throw new Error("Choose an existing custom role.");
-    assertAccessPrerequisites(role.access);
-    for (const userId of userIds) {
-      const previousRoleIds = await getUserRoleIdsForUpdate(transaction, userId);
-      if (previousRoleIds.includes(roleId)) continue;
-      await invalidate([userId]);
-      await transaction.insert(userRolesTable).values({ userId, roleId });
-      await writeAudit(transaction, actorUserId, "user.assign-roles", "user", userId, {
-        previousRoleIds,
-        roleIds: [...previousRoleIds, roleId],
-      });
-    }
-  }));
+  await withUserCacheInvalidation((invalidate) =>
+    db.transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "roles", "view");
+      await requireTransactionPermission(transaction, actorUserId, "users", "assignRoles");
+      // Match the per-user assignment lock order and lock targets consistently across batches.
+      for (const userId of userIds) await getUserForUpdate(transaction, userId);
+      const [role] = await transaction.select().from(rolesTable).where(eq(rolesTable.id, roleId)).limit(1).for("share");
+      if (!role || role.isSystem) throw new Error("Choose an existing custom role.");
+      assertAccessPrerequisites(role.access);
+      for (const userId of userIds) {
+        const previousRoleIds = await getUserRoleIdsForUpdate(transaction, userId);
+        if (previousRoleIds.includes(roleId)) continue;
+        await invalidate([userId]);
+        await transaction.insert(userRolesTable).values({ userId, roleId });
+        await writeAudit(transaction, actorUserId, "user.assign-roles", "user", userId, {
+          previousRoleIds,
+          roleIds: [...previousRoleIds, roleId],
+        });
+      }
+    }),
+  );
 }
 
 export async function setUserStatus(
@@ -1064,34 +1070,36 @@ export async function setUserStatus(
   targetUserId: string,
   status: "active" | "suspended",
 ): Promise<void> {
-  return withUserCacheInvalidation((invalidate) => db.transaction(async (transaction) => {
-    await requireTransactionPermission(transaction, actorUserId, "users", "suspend");
-    if (status !== "active" && status !== "suspended") {
-      throw new Error("User status must be active or suspended.");
-    }
-    const target = await getUserForUpdate(transaction, targetUserId);
-    const roleIds = await getUserRoleIdsForUpdate(transaction, targetUserId);
-    if (status === "suspended" && target.status === "active" && roleIds.includes("admin")) {
-      assertCanSuspendUser(authorizationUser(target, roleIds), await getAdminCounts(transaction));
-    }
+  return withUserCacheInvalidation((invalidate) =>
+    db.transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "users", "suspend");
+      if (status !== "active" && status !== "suspended") {
+        throw new Error("User status must be active or suspended.");
+      }
+      const target = await getUserForUpdate(transaction, targetUserId);
+      const roleIds = await getUserRoleIdsForUpdate(transaction, targetUserId);
+      if (status === "suspended" && target.status === "active" && roleIds.includes("admin")) {
+        assertCanSuspendUser(authorizationUser(target, roleIds), await getAdminCounts(transaction));
+      }
 
-    await invalidate([targetUserId]);
-    if (target.status !== status) {
-      await transaction.update(authUser).set({ status, updatedAt: new Date() }).where(eq(authUser.id, targetUserId));
-    }
-    // Keep the session identity so suspended accounts reach the access screen,
-    // rather than regaining anonymous product access when their session vanishes.
-    if (target.status !== status || status === "suspended") {
-      await writeAudit(
-        transaction,
-        actorUserId,
-        status === "suspended" ? "user.suspend" : "user.reactivate",
-        "user",
-        targetUserId,
-        { previousStatus: target.status, status },
-      );
-    }
-  }));
+      await invalidate([targetUserId]);
+      if (target.status !== status) {
+        await transaction.update(authUser).set({ status, updatedAt: new Date() }).where(eq(authUser.id, targetUserId));
+      }
+      // Keep the session identity so suspended accounts reach the access screen,
+      // rather than regaining anonymous product access when their session vanishes.
+      if (target.status !== status || status === "suspended") {
+        await writeAudit(
+          transaction,
+          actorUserId,
+          status === "suspended" ? "user.suspend" : "user.reactivate",
+          "user",
+          targetUserId,
+          { previousStatus: target.status, status },
+        );
+      }
+    }),
+  );
 }
 
 async function getRoleForUpdate(transaction: Transaction, roleId: string): Promise<RoleRow> {
@@ -1125,35 +1133,39 @@ export async function createCustomRole(
 }
 
 export async function updateCustomRole(actorUserId: string, roleId: string, input: CustomRoleEdit): Promise<RoleRow> {
-  return withUserCacheInvalidation((invalidate) => db
-    .transaction(async (transaction) => {
-      await requireTransactionPermission(transaction, actorUserId, "roles", "edit");
-      if (!isRecord(input)) throw new Error("Role changes must be an object.");
-      const current = await getRoleForUpdate(transaction, roleId);
-      assertCanEditRole(current);
-      const requestedAccess = Object.hasOwn(input, "access") ? input.access : current.access;
-      assertValidAccess(requestedAccess);
-      const access = { ...requestedAccess, admin: { enter: true } };
-      assertAccessPrerequisites(access);
+  return withUserCacheInvalidation((invalidate) =>
+    db
+      .transaction(async (transaction) => {
+        await requireTransactionPermission(transaction, actorUserId, "roles", "edit");
+        if (!isRecord(input)) throw new Error("Role changes must be an object.");
+        const current = await getRoleForUpdate(transaction, roleId);
+        assertCanEditRole(current);
+        const requestedAccess = Object.hasOwn(input, "access") ? input.access : current.access;
+        assertValidAccess(requestedAccess);
+        const access = { ...requestedAccess, admin: { enter: true } };
+        assertAccessPrerequisites(access);
 
-      const members = await transaction.select({ userId: userRolesTable.userId })
-        .from(userRolesTable).where(eq(userRolesTable.roleId, roleId));
-      await invalidate(members.map(({ userId }) => userId));
-      const changes = {
-        name: Object.hasOwn(input, "name") ? requiredText(input.name, "Role name", 160) : current.name,
-        description: Object.hasOwn(input, "description")
-          ? requiredText(input.description, "Role description")
-          : current.description,
-        access,
-        updatedAt: new Date(),
-      };
-      const [role] = await transaction.update(rolesTable).set(changes).where(eq(rolesTable.id, roleId)).returning();
-      await writeAudit(transaction, actorUserId, "role.edit", "role", roleId, {
-        changes: [...new Set([...Object.keys(input), ...(current.access.admin?.enter === true ? [] : ["access"])])],
-      });
-      return role;
-    })
-    .then((result) => invalidateAfterCommit("roles", result)));
+        const members = await transaction
+          .select({ userId: userRolesTable.userId })
+          .from(userRolesTable)
+          .where(eq(userRolesTable.roleId, roleId));
+        await invalidate(members.map(({ userId }) => userId));
+        const changes = {
+          name: Object.hasOwn(input, "name") ? requiredText(input.name, "Role name", 160) : current.name,
+          description: Object.hasOwn(input, "description")
+            ? requiredText(input.description, "Role description")
+            : current.description,
+          access,
+          updatedAt: new Date(),
+        };
+        const [role] = await transaction.update(rolesTable).set(changes).where(eq(rolesTable.id, roleId)).returning();
+        await writeAudit(transaction, actorUserId, "role.edit", "role", roleId, {
+          changes: [...new Set([...Object.keys(input), ...(current.access.admin?.enter === true ? [] : ["access"])])],
+        });
+        return role;
+      })
+      .then((result) => invalidateAfterCommit("roles", result)),
+  );
 }
 
 export async function deleteCustomRole(actorUserId: string, roleId: string): Promise<void> {

@@ -35,7 +35,9 @@ test("guarded user cache bypasses unconfigured Redis and fails closed before wri
   await t.test("Redis outages preserve reads but block starting a mutation", async (t) => {
     configure(t);
     t.mock.method(console, "warn", () => {});
-    t.mock.method(axios, "post", async () => { throw new Error("Redis unavailable"); });
+    t.mock.method(axios, "post", async () => {
+      throw new Error("Redis unavailable");
+    });
     assert.equal(await cache.rememberGuarded("one", async () => "database", 3600), "database");
     await assert.rejects(cache.beginInvalidation("one", 3600), /Redis unavailable/);
     await cache.endInvalidation("one", "already-committed", 3600);
@@ -58,13 +60,21 @@ test("guarded user cache prevents stale fills and overlapping mutation races wit
   configure(t);
   const directory = await mkdtemp(join(tmpdir(), "user-cache-guard-"));
   const socket = join(directory, "redis.sock");
-  const server = spawn("redis-server", ["--port", "0", "--unixsocket", socket, "--save", "", "--appendonly", "no"], { stdio: ["ignore", "pipe", "pipe"] });
+  const server = spawn("redis-server", ["--port", "0", "--unixsocket", socket, "--save", "", "--appendonly", "no"], {
+    stdio: ["ignore", "pipe", "pipe"],
+  });
   let serverOutput = "";
-  server.stdout.on("data", (chunk) => { serverOutput += chunk; });
-  server.stderr.on("data", (chunk) => { serverOutput += chunk; });
+  server.stdout.on("data", (chunk) => {
+    serverOutput += chunk;
+  });
+  server.stderr.on("data", (chunk) => {
+    serverOutput += chunk;
+  });
   t.after(async () => {
     server.kill();
-    await new Promise((resolve) => server.exitCode !== null || server.signalCode !== null ? resolve() : server.once("exit", resolve));
+    await new Promise((resolve) =>
+      server.exitCode !== null || server.signalCode !== null ? resolve() : server.once("exit", resolve),
+    );
     await rm(directory, { recursive: true, force: true });
   });
   const redis = async (...args) => {
@@ -72,8 +82,10 @@ test("guarded user cache prevents stale fills and overlapping mutation races wit
     return JSON.parse(stdout);
   };
   for (let attempt = 0; ; attempt++) {
-    try { await redis("PING"); break; }
-    catch (error) {
+    try {
+      await redis("PING");
+      break;
+    } catch (error) {
       if (server.exitCode !== null) {
         if (serverOutput.includes("Operation not permitted")) {
           t.skip("sandbox does not permit a temporary Redis UNIX socket");
@@ -94,14 +106,19 @@ test("guarded user cache prevents stale fills and overlapping mutation races wit
   const cache = new Cache("user");
   let row = { name: "Before", active: true };
   let reads = 0;
-  const load = async () => { reads++; return structuredClone(row); };
+  const load = async () => {
+    reads++;
+    return structuredClone(row);
+  };
   assert.deepEqual(await cache.rememberGuarded("one", load, 3600), row);
   assert.deepEqual(await cache.rememberGuarded("one", load, 3600), row);
   assert.equal(reads, 1);
   assert.deepEqual(await redis("KEYS", "*"), ["user:one"]);
   assert.ok((await redis("TTL", "user:one")) > 3590);
   await cache.rememberGuarded("array", async () => ({ roles: [] }), 3600);
-  assert.deepEqual(await cache.rememberGuarded("array", () => assert.fail("array payload is cached"), 3600), { roles: [] });
+  assert.deepEqual(await cache.rememberGuarded("array", () => assert.fail("array payload is cached"), 3600), {
+    roles: [],
+  });
 
   const first = await cache.beginInvalidation("one", 3600);
   const second = await cache.beginInvalidation("one", 3600);
@@ -118,13 +135,21 @@ test("guarded user cache prevents stale fills and overlapping mutation races wit
 
   let releaseOld;
   let startedOld;
-  const started = new Promise((resolve) => { startedOld = resolve; });
-  const old = cache.rememberGuarded("race", async () => {
-    const oldRow = structuredClone(row);
-    startedOld();
-    await new Promise((resolve) => { releaseOld = resolve; });
-    return oldRow;
-  }, 3600);
+  const started = new Promise((resolve) => {
+    startedOld = resolve;
+  });
+  const old = cache.rememberGuarded(
+    "race",
+    async () => {
+      const oldRow = structuredClone(row);
+      startedOld();
+      await new Promise((resolve) => {
+        releaseOld = resolve;
+      });
+      return oldRow;
+    },
+    3600,
+  );
   await started;
   const token = await cache.beginInvalidation("race", 3600);
   row = { name: "After race", active: true };
