@@ -13,8 +13,8 @@ import {
   rolesTable,
   sql,
   userRolesTable,
-} from "@smarttools/database";
-import { Cache } from "@smarttools/cache";
+} from "@canopy/database";
+import { Cache } from "@canopy/cache";
 
 const rolesCache = new Cache("roles");
 const auditActor = alias(authUser, "audit_actor");

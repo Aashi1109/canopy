@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import axios from "axios";
-import { Cache } from "@smarttools/cache";
+import { Cache } from "@canopy/cache";
 
 test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and validation", async (t) => {
   const variables = ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"];

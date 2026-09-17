@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import type { DocumentTemplate } from "@smarttools/invoice-templates";
+import type { DocumentTemplate } from "@canopy/invoice-templates";
 import {
   FieldError,
   FieldDescription,
@@ -26,7 +26,7 @@ import {
   TabsTrigger,
   Textarea,
   ToolPageHeader,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import {
   FileText,
   Clock,

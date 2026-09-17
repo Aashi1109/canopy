@@ -15,8 +15,8 @@ import {
   Input,
   Select,
   Textarea,
-} from "@smarttools/ui";
-import { slugFromName } from "@smarttools/tool-catalog";
+} from "@canopy/ui";
+import { slugFromName } from "@canopy/tool-catalog";
 import { Plus } from "lucide-react";
 import { useActionState, useState } from "react";
 import { categoriesForApp, TOOL_CATEGORIES, type ToolApp } from "../../../../../lib/tool-framework/categories";

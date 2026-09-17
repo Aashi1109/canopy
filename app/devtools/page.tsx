@@ -1,4 +1,4 @@
-import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
+import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { ToolIcon } from "@/components/ToolIcon";
 import {
   categoriesForApp,
@@ -7,8 +7,8 @@ import {
   type CategoryKey,
 } from "@/lib/tool-framework/categories";
 import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
-import { getOptionalSession } from "@smarttools/auth/session";
-import { getToolIcons, type ToolIconRow } from "@smarttools/database";
+import { getOptionalSession } from "@canopy/auth/session";
+import { getToolIcons, type ToolIconRow } from "@canopy/database";
 import {
   Caption,
   Display,
@@ -30,7 +30,7 @@ import {
   ProductHeader,
   SectionHeading,
   buttonVariants,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { ArrowLeft, ArrowRight, ArrowUpRight, LayoutGrid, LockKeyhole, Search, ShieldCheck } from "lucide-react";
 import { headers } from "next/headers";
 import { CategoryFilter } from "./components/CategoryFilter";
@@ -131,6 +131,7 @@ export default async function HomePage({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <ProductHeader
+        account={{ returnTo: "/devtools", user: session?.user ?? null }}
         actions={<AccountNavigation returnTo="/devtools" user={session?.user ?? null} />}
         className="sticky top-0 z-50 bg-card/90 supports-[backdrop-filter]:bg-card/85 supports-[backdrop-filter]:backdrop-blur-xl"
         href="/devtools"
@@ -358,7 +359,7 @@ export default async function HomePage({
         )}
       </main>
 
-      <SmartToolsFooter />
+      <CanopyFooter />
     </div>
   );
 }

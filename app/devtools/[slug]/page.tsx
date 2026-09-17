@@ -1,4 +1,4 @@
-import { getOptionalSession } from "@smarttools/auth/session";
+import { getOptionalSession } from "@canopy/auth/session";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 

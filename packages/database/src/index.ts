@@ -21,7 +21,7 @@ export * from "./schema.ts";
 // `./seedManagedTools.ts` is deliberately NOT re-exported. It walks the `tools/`
 // directory with `fs` and resolves `../../../tools/<key>/definition.ts` at
 // runtime — build-time-only work. Re-exporting it here pulled it into the app's
-// module graph (every `@smarttools/database` importer), and the bundler then
+// module graph (every `@canopy/database` importer), and the bundler then
 // failed to resolve that path, breaking `next build`.
 // `scripts/migrate.mjs` imports it directly by path, which is the only caller.
 export * from "./toolContent.ts";

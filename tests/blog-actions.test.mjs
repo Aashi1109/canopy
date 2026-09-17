@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
 import { BlogError } from "../lib/blog/mutations.ts";
-import { AuthorizationError } from "@smarttools/control-plane";
+import { AuthorizationError } from "@canopy/control-plane";
 import { createBlogDocument, BlogValidationError } from "../lib/blog/document.ts";
 import { BlogImageUploadError } from "../lib/blog/images.ts";
 

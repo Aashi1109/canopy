@@ -1,5 +1,5 @@
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
-import type { InvoiceTemplate } from "@smarttools/invoice-templates";
+import type { InvoiceTemplate } from "@canopy/invoice-templates";
 import type { ReactNode } from "react";
 import type { CalculatedTotals, InvoiceData } from "@/lib/paperwork/types";
 import { calculateInvoiceTotals, formatCurrency } from "@/lib/paperwork/utils/calculations";

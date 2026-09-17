@@ -1,8 +1,8 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { Avatar, AvatarFallback, Button, Caption, Card, H1, H2, Overline, P, TextLink } from "@smarttools/ui";
+import { Avatar, AvatarFallback, Button, Caption, Card, H1, H2, Overline, P, TextLink } from "@canopy/ui";
 import { blogImageUrl, renderBlogDocument, type BlogDocument } from "@/lib/blog/document";
 import { blogCanonicalUrl } from "@/lib/blog/publication";
-import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
+import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { CopyBlogLink } from "./CopyBlogLink";
 import { BlogPageContainer } from "./BlogPageContainer";
 import styles from "./article.module.css";
@@ -180,7 +180,7 @@ export function BlogArticle({ document, publication }: Props) {
       </BlogPageContainer>
       {!publication && (
         <div className={styles.previewFooter} inert>
-          <SmartToolsFooter />
+          <CanopyFooter />
         </div>
       )}
     </article>

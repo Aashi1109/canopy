@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import type { DocumentTemplate } from "@smarttools/invoice-templates";
+import type { DocumentTemplate } from "@canopy/invoice-templates";
 import {
   H3,
   Metric,
@@ -24,7 +24,7 @@ import {
   Select,
   StatusBadge,
   ToolPageHeader,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import {
   FileText,
   Clock,

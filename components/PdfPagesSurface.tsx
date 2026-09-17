@@ -14,8 +14,8 @@
  * through a declared field. Pages without bytes remain as loading placeholders.
  */
 
-import { Strong, Caption, Muted, Button, CheckboxControl, MediaPreview, PdfViewer } from "@smarttools/ui";
-import { OrderableList } from "@smarttools/ui/components/OrderableList";
+import { Strong, Caption, Muted, Button, CheckboxControl, MediaPreview, PdfViewer } from "@canopy/ui";
+import { OrderableList } from "@canopy/ui/components/OrderableList";
 import { GripVertical } from "lucide-react";
 import {
   createContext,

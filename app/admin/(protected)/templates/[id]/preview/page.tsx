@@ -1,6 +1,6 @@
-import { InvoiceTemplatePreview } from "@smarttools/invoice-templates/preview";
-import type { InvoiceTemplate } from "@smarttools/invoice-templates";
-import { ToolPageHeader } from "@smarttools/ui";
+import { InvoiceTemplatePreview } from "@canopy/invoice-templates/preview";
+import type { InvoiceTemplate } from "@canopy/invoice-templates";
+import { ToolPageHeader } from "@canopy/ui";
 import { notFound, redirect } from "next/navigation";
 import { requirePagePermission } from "../../../../../../lib/admin/access";
 import { getTemplate } from "../../../../../../lib/admin/data";

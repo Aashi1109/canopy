@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@smarttools/ui";
+import { Button } from "@canopy/ui";
 import type { ComponentProps } from "react";
 import { useFormStatus } from "react-dom";
 

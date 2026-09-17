@@ -35,12 +35,12 @@ async function toolManifest() {
   }));
 }
 
-const enabled = process.env.SMARTTOOLS_INTEGRATION === "1" && Boolean(process.env.DATABASE_URL);
+const enabled = process.env.CANOPY_INTEGRATION === "1" && Boolean(process.env.DATABASE_URL);
 
 test(
   "PostgreSQL enforces live roles, Admin safeguards, tools, templates, and audit writes",
   {
-    skip: enabled ? false : "set SMARTTOOLS_INTEGRATION=1 with a migrated disposable DATABASE_URL",
+    skip: enabled ? false : "set CANOPY_INTEGRATION=1 with a migrated disposable DATABASE_URL",
   },
   async (context) => {
     context.after(async () => sqlClient.end());

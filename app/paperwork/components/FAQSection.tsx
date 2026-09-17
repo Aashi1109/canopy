@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Muted, Button, SectionCard, SectionHeading } from "@smarttools/ui";
+import { Muted, Button, SectionCard, SectionHeading } from "@canopy/ui";
 import { ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
 import { useState } from "react";
 

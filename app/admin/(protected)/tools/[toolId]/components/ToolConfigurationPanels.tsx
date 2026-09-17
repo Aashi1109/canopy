@@ -2,7 +2,7 @@
 
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 
-import { H3, Caption, Muted, P, TextLink, AlertBanner, Button, StatusBadge } from "@smarttools/ui";
+import { H3, Caption, Muted, P, TextLink, AlertBanner, Button, StatusBadge } from "@canopy/ui";
 import { ExternalLink, Power } from "lucide-react";
 import { useActionState, type ReactElement } from "react";
 import { toggleToolAction } from "../../../../actions";

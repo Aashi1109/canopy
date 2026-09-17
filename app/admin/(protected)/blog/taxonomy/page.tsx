@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
-import { Button } from "@smarttools/ui";
+import { Button } from "@canopy/ui";
 import { requirePagePermission } from "@/lib/admin/access";
 import { listBlogTaxonomy } from "@/lib/blog/queries";
 import { BlogTaxonomy } from "../components/BlogTaxonomy";

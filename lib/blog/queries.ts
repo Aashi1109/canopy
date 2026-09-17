@@ -8,9 +8,9 @@ import {
   blogTagsTable as tags,
   managedToolsTable,
   db,
-} from "@smarttools/database";
+} from "@canopy/database";
 import { z } from "zod";
-import { isValidToolSlug } from "@smarttools/tool-catalog";
+import { isValidToolSlug } from "@canopy/tool-catalog";
 import { requireTransactionPermission } from "../admin/adminMutations.ts";
 import { BlogValidationError, validateBlogDocument, validateBlogImage } from "./document.ts";
 

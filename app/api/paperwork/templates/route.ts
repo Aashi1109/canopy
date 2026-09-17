@@ -1,5 +1,5 @@
-import { getAvailableTools, getPublishedTemplates } from "@smarttools/control-plane";
-import { DocumentTypeSchema, getDocumentDefinition } from "@smarttools/invoice-templates";
+import { getAvailableTools, getPublishedTemplates } from "@canopy/control-plane";
+import { DocumentTypeSchema, getDocumentDefinition } from "@canopy/invoice-templates";
 import { NextResponse } from "next/server";
 
 import { getToolManifest } from "@/lib/tool-framework/manifest";

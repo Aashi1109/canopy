@@ -8,8 +8,8 @@ import {
   Strong,
   Text,
   buttonVariants,
-} from "@smarttools/ui";
-import { SwitchAccountButton } from "@smarttools/ui/components/AccountNavigation";
+} from "@canopy/ui";
+import { SwitchAccountButton } from "@canopy/ui/components/AccountNavigation";
 import { Mail, ShieldX } from "lucide-react";
 
 export function AccessDeniedScreen({

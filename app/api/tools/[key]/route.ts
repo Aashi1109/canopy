@@ -9,7 +9,7 @@
  * client graph, which is exactly what `run.server.ts` exists to prevent.
  */
 
-import { TOOL_SLUG_PATTERN } from "@smarttools/tool-catalog";
+import { TOOL_SLUG_PATTERN } from "@canopy/tool-catalog";
 import { NextResponse } from "next/server";
 
 import { checkRateLimit } from "@/lib/rateLimit";

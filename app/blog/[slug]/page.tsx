@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { cache } from "react";
 import { notFound } from "next/navigation";
-import { H2 } from "@smarttools/ui";
+import { H2 } from "@canopy/ui";
 import { blogArticleMetadata, blogStructuredData } from "@/lib/blog/publication";
 import { getPublishedBlogPost, listPublishedBlogPosts } from "@/lib/blog/queries";
 import { BlogTeaser } from "../components/BlogTeaser";

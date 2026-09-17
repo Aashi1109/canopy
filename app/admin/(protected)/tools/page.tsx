@@ -1,5 +1,5 @@
-import { getToolIcons, isDatabaseConfigured, type ToolIconRow } from "@smarttools/database";
-import { TextLink, EmptyState, ToolPageHeader } from "@smarttools/ui";
+import { getToolIcons, isDatabaseConfigured, type ToolIconRow } from "@canopy/database";
+import { TextLink, EmptyState, ToolPageHeader } from "@canopy/ui";
 import { PackageSearch } from "lucide-react";
 import { requirePagePermission } from "../../../../lib/admin/access";
 import { getAdminTools } from "../../../../lib/tool-framework/manifest";

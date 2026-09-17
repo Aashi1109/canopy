@@ -1,7 +1,7 @@
-import { Display, H2, Muted, Overline } from "@smarttools/ui";
+import { Display, H2, Muted, Overline } from "@canopy/ui";
 import type { Metadata } from "next";
 import { AnalyticsPreferences } from "@/components/analytics/Analytics";
-import PublicInfoChrome from "@/components/smarttools/PublicInfoChrome";
+import PublicInfoChrome from "@/components/canopy/PublicInfoChrome";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | SmartTools",

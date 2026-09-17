@@ -7,7 +7,7 @@ import { Select as SelectPrimitive } from "radix-ui";
 
 import { cn } from "#lib/utils";
 
-const EMPTY_VALUE = "__smarttools_select_empty_value__";
+const EMPTY_VALUE = "__canopy_select_empty_value__";
 
 const selectTriggerVariants = cva(
   "group/select-trigger flex w-full min-w-0 items-center justify-between gap-2.5 overflow-hidden rounded-lg border border-input bg-card text-left font-sans whitespace-nowrap text-foreground outline-none transition-[border-color,box-shadow] disabled:pointer-events-none disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-on-ink-muted disabled:opacity-70 data-[placeholder]:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 aria-invalid:border-validation aria-invalid:ring-2 aria-invalid:ring-validation/15 [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:flex-1 [&_[data-slot=select-value]]:overflow-hidden [&_[data-slot=select-value]]:text-ellipsis [&_[data-slot=select-value]]:whitespace-nowrap",

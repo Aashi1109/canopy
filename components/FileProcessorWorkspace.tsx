@@ -15,7 +15,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { Download, FileText, Upload, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
 

@@ -21,7 +21,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { AlertTriangle, Check, Copy } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 

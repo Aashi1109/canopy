@@ -7,7 +7,7 @@ import { CropFrame, type CropBox } from "@/components/CropFrame";
 import { workspaceFileId } from "@/components/FileInput";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import { useCallback, useEffect, useId, useState } from "react";
-import { Button, FieldLabel, Input, Muted } from "@smarttools/ui";
+import { Button, FieldLabel, Input, Muted } from "@canopy/ui";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { FreeformPreview } from "./FreeformPreview";
 import {

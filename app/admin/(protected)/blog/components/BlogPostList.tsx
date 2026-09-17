@@ -31,7 +31,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 
 export interface BlogPostListItem {
   id: string;

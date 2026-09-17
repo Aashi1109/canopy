@@ -7,9 +7,9 @@
 
 import { useEffect } from "react";
 import type { InvoiceData } from "@/lib/paperwork/types";
-import type { InvoiceTemplate } from "@smarttools/invoice-templates";
+import type { InvoiceTemplate } from "@canopy/invoice-templates";
 import { calculateInvoiceTotals, formatCurrency } from "@/lib/paperwork/utils/calculations";
-import { getFontGoogleLink, resolveTemplateStyles } from "@smarttools/invoice-templates";
+import { getFontGoogleLink, resolveTemplateStyles } from "@canopy/invoice-templates";
 import { Landmark, ArrowRight, ShieldCheck } from "lucide-react";
 
 interface InvoicePreviewRendererProps {

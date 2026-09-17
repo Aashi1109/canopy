@@ -1,6 +1,6 @@
 "use client";
 
-import { Label, Select } from "@smarttools/ui";
+import { Label, Select } from "@canopy/ui";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export interface CategoryFilterOption {

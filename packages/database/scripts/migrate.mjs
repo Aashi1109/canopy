@@ -30,6 +30,7 @@ const migrations = await Promise.all(
     "0005_backfill_managed_tools.sql",
     "0006_blogs.sql",
     "0007_user_role_cache.sql",
+    "0008_user_preferences.sql",
   ].map(async (name) => [name, await readFile(new URL(`../drizzle/${name}`, import.meta.url), "utf8")]),
 );
 const sql = postgres(databaseUrl, { max: 1 });

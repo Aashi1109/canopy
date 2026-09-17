@@ -9,7 +9,7 @@ const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
     const stub = (source) => ({ shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(source)}` });
     if (decodeURI(context.parentURL ?? "") === decodeURI(routeUrl)) {
-      if (specifier === "@smarttools/auth/session")
+      if (specifier === "@canopy/auth/session")
         return stub(`
         export class AuthServiceError extends Error {}
         export async function getSession() {
@@ -18,13 +18,13 @@ const hooks = registerHooks({
           return state.session;
         }
       `);
-      if (specifier === "@smarttools/control-plane")
+      if (specifier === "@canopy/control-plane")
         return stub(`
         export async function requirePermission() {
           if (globalThis.__templateExportErrorsTest.permissionFailure) throw globalThis.__templateExportErrorsTest.permissionFailure;
         }
       `);
-      if (specifier === "@smarttools/database")
+      if (specifier === "@canopy/database")
         return stub(`
         export const eq = () => null, invoiceTemplatesTable = { id: "id" };
         export const db = { select() {

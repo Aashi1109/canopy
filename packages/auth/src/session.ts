@@ -1,5 +1,5 @@
-import { hasPermission } from "@smarttools/authorization";
-import { AuthorizationError, getUserAuthorization } from "@smarttools/control-plane";
+import { hasPermission } from "@canopy/authorization";
+import { AuthorizationError, getUserAuthorization } from "@canopy/control-plane";
 import { auth } from "./auth.ts";
 
 export type AuthServiceSession = {

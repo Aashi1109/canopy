@@ -1,6 +1,6 @@
-import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
-import { getOptionalSession } from "@smarttools/auth/session";
-import { AccountNavigation, AppContainer, Button, Card, ProductHeader, ToolPageHeader } from "@smarttools/ui";
+import { CanopyFooter } from "@/components/canopy/CanopyFooter";
+import { getOptionalSession } from "@canopy/auth/session";
+import { AccountNavigation, AppContainer, Button, Card, ProductHeader, ToolPageHeader } from "@canopy/ui";
 import { ArrowLeft } from "lucide-react";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
@@ -22,6 +22,7 @@ export default async function InformationPage({
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <ProductHeader
+        account={{ returnTo: "/paperwork", user: session?.user ?? null }}
         actions={<AccountNavigation returnTo="/paperwork" user={session?.user ?? null} />}
         href="/paperwork"
         name="Paperwork"
@@ -42,7 +43,7 @@ export default async function InformationPage({
           <Card className="max-w-3xl space-y-7 p-6 sm:p-8">{children}</Card>
         </AppContainer>
       </main>
-      <SmartToolsFooter />
+      <CanopyFooter />
     </div>
   );
 }

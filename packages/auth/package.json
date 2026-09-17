@@ -1,5 +1,5 @@
 {
-  "name": "@smarttools/auth",
+  "name": "@canopy/auth",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,9 +9,9 @@
     "./session": "./src/session.ts"
   },
   "dependencies": {
-    "@smarttools/authorization": "workspace:*",
-    "@smarttools/control-plane": "workspace:*",
-    "@smarttools/database": "workspace:*",
+    "@canopy/authorization": "workspace:*",
+    "@canopy/control-plane": "workspace:*",
+    "@canopy/database": "workspace:*",
     "better-auth": "1.6.23",
     "resend": "6.17.2"
   }

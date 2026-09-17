@@ -1,5 +1,5 @@
 {
-  "name": "@smarttools/database",
+  "name": "@canopy/database",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,10 +13,11 @@
     "promote-admin": "node scripts/promote-admin.mjs"
   },
   "dependencies": {
-    "@smarttools/authorization": "workspace:*",
-    "@smarttools/tool-catalog": "workspace:*",
+    "@canopy/authorization": "workspace:*",
+    "@canopy/cache": "workspace:*",
+    "@canopy/tool-catalog": "workspace:*",
+    "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
-    "postgres": "^3.4.9",
-    "dotenv": "^17.4.2"
+    "postgres": "^3.4.9"
   }
 }

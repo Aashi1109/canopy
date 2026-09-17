@@ -22,7 +22,7 @@ import {
   Button,
   Checkbox,
   StatusBadge,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { assignRolesAction, setUserStatusAction } from "../../../actions";
 
 type User = {

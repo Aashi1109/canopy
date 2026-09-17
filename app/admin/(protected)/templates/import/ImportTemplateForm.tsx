@@ -2,7 +2,7 @@
 
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 
-import { H3, Caption, Muted, P, Strong, Text, AlertBanner, Button, Field, Textarea } from "@smarttools/ui";
+import { H3, Caption, Muted, P, Strong, Text, AlertBanner, Button, Field, Textarea } from "@canopy/ui";
 import { CheckCircle2, FileJson2, UploadCloud, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { importTemplateAction } from "../../../actions";

@@ -4,8 +4,8 @@ import type {
   AdvancedDocumentTemplate,
   DocumentFieldDefinition,
   DocumentTemplate,
-} from "@smarttools/invoice-templates";
-import { containsFullTin, getDocumentDefinition } from "@smarttools/invoice-templates";
+} from "@canopy/invoice-templates";
+import { containsFullTin, getDocumentDefinition } from "@canopy/invoice-templates";
 import {
   Caption,
   H3,
@@ -21,8 +21,8 @@ import {
   Select,
   StatusBadge,
   Textarea,
-} from "@smarttools/ui";
-import { OrderableList } from "@smarttools/ui/components/OrderableList";
+} from "@canopy/ui";
+import { OrderableList } from "@canopy/ui/components/OrderableList";
 import { GripVertical, Plus, Printer, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DocumentAdapter } from "@/lib/paperwork/documentAdapters";

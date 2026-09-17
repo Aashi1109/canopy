@@ -21,9 +21,9 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@smarttools/ui";
-import { OrderableList, type OrderableItemState } from "@smarttools/ui/components/OrderableList";
-import { cn } from "@smarttools/ui/lib/utils";
+} from "@canopy/ui";
+import { OrderableList, type OrderableItemState } from "@canopy/ui/components/OrderableList";
+import { cn } from "@canopy/ui/lib/utils";
 import { CircleAlert, File as FileIcon, GripVertical, Inbox, LoaderCircle, Maximize2, Minus, Plus } from "lucide-react";
 import {
   type DragEvent,

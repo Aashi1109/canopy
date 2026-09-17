@@ -1,5 +1,5 @@
 {
-  "name": "@smarttools/control-plane",
+  "name": "@canopy/control-plane",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,10 +8,10 @@
     "./feature-flags": "./src/featureFlags.ts"
   },
   "dependencies": {
-    "@smarttools/authorization": "workspace:*",
-    "@smarttools/cache": "workspace:*",
-    "@smarttools/database": "workspace:*",
-    "@smarttools/invoice-templates": "workspace:*",
-    "@smarttools/tool-catalog": "workspace:*"
+    "@canopy/authorization": "workspace:*",
+    "@canopy/cache": "workspace:*",
+    "@canopy/database": "workspace:*",
+    "@canopy/invoice-templates": "workspace:*",
+    "@canopy/tool-catalog": "workspace:*"
   }
 }

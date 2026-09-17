@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { hasPermission } from "@smarttools/authorization";
-import { getUserAuthorization } from "@smarttools/control-plane";
-import { AlertBanner, Button } from "@smarttools/ui";
+import { hasPermission } from "@canopy/authorization";
+import { getUserAuthorization } from "@canopy/control-plane";
+import { AlertBanner, Button } from "@canopy/ui";
 import { requirePagePermission } from "@/lib/admin/access";
 import { getBlogPost, getBlogRevision, listBlogRevisions } from "@/lib/blog/queries";
 import { BlogRevisionList } from "../../components/BlogRevisionList";

@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
-import { getOptionalSession } from "@smarttools/auth/session";
-import { AccountNavigation, ProductHeader } from "@smarttools/ui";
-import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
-import { BlogMobileNavigation } from "./components/BlogMobileNavigation";
+import { getOptionalSession } from "@canopy/auth/session";
+import { AccountNavigation, ProductHeader } from "@canopy/ui";
+import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 
 export default async function BlogLayout({ children }: { children: ReactNode }) {
   const session = await getOptionalSession(await headers());
@@ -14,16 +13,15 @@ export default async function BlogLayout({ children }: { children: ReactNode }) 
       </a>
       <ProductHeader
         compact
-        showSearch={false}
         href="/blog"
         name="SmartTools"
-        mobileActions={<BlogMobileNavigation signedIn={!!session?.user} isAdmin={session?.user.isAdmin ?? false} />}
+        account={{ returnTo: "/blog", user: session?.user ?? null }}
         actions={<AccountNavigation returnTo="/blog" user={session?.user ?? null} />}
       />
       <main className="min-w-0 grow" id="blog-main">
         {children}
       </main>
-      <SmartToolsFooter />
+      <CanopyFooter />
     </div>
   );
 }

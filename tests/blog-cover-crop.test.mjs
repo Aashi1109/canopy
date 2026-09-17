@@ -28,7 +28,7 @@ const hooks = registerHooks({
       );
     if (specifier === "@tiptap/starter-kit") return stub("export default {configure() { return {}; }};");
     if (specifier === "@tiptap/extension-table") return stub("export const TableKit = {configure() { return {}; }};");
-    if (specifier === "@smarttools/ui")
+    if (specifier === "@canopy/ui")
       return stub(
         `export const toast = Object.assign(() => {}, {error() {}, success() {}, dismiss() {}}); ${["AlertBanner", "AlertDialog", "AlertDialogContent", "AlertDialogHeader", "AlertDialogTitle", "AlertDialogDescription", "AlertDialogFooter", "AlertDialogCancel", "Button", "FileUploadZone", "Input", "Label", "Textarea", "Toaster"].map((name) => `export function ${name}() {}`).join(" ")} export const Popover = {Root() {}, Trigger() {}, Portal() {}, Content() {}, Arrow() {}};`,
       );

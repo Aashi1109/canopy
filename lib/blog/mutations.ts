@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { getTableColumns } from "drizzle-orm";
-import { AuthorizationError } from "@smarttools/control-plane";
+import { AuthorizationError } from "@canopy/control-plane";
 import {
   and,
   asc,
@@ -17,7 +17,7 @@ import {
   blogTagsTable as tags,
   blogPublishedPostTagsTable as publishedTags,
   managedToolsTable,
-} from "@smarttools/database";
+} from "@canopy/database";
 import { requireTransactionPermission, writeAudit } from "../admin/adminMutations.ts";
 import {
   assertBlogPublishable,

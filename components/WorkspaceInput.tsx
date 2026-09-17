@@ -10,8 +10,8 @@ import {
   Button,
   ToolActionButton,
   Input,
-} from "@smarttools/ui";
-import { cn } from "@smarttools/ui/lib/utils";
+} from "@canopy/ui";
+import { cn } from "@canopy/ui/lib/utils";
 import { Eye, EyeOff } from "lucide";
 import { FileText, Trash2, Upload } from "lucide-react";
 import { MorphIcon } from "morphicons/react";

@@ -1,9 +1,9 @@
-import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
+import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { ToolIcon } from "@/components/ToolIcon";
 import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
 import { categoriesForApp, TOOL_CATEGORIES, type CategoryKey } from "@/lib/tool-framework/categories";
-import { getOptionalSession } from "@smarttools/auth/session";
-import { getToolIcons, type ToolIconRow } from "@smarttools/database";
+import { getOptionalSession } from "@canopy/auth/session";
+import { getToolIcons, type ToolIconRow } from "@canopy/database";
 import {
   Caption,
   Display,
@@ -26,7 +26,7 @@ import {
   SectionHeading,
   StatusBadge,
   buttonVariants,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { LayoutGrid, LockKeyhole, Search, ShieldCheck, Zap } from "lucide-react";
 import { headers } from "next/headers";
 
@@ -79,6 +79,7 @@ export default async function HomePage({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <ProductHeader
+        account={{ returnTo: "/media", user: session?.user ?? null }}
         actions={<AccountNavigation returnTo="/media" user={session?.user ?? null} />}
         href="/media"
         name="Media Tools"
@@ -232,7 +233,7 @@ export default async function HomePage({
         </section>
       </main>
 
-      <SmartToolsFooter />
+      <CanopyFooter />
     </div>
   );
 }

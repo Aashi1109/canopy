@@ -1,5 +1,5 @@
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
-import { H3, Caption, Strong, Card, Field, Input, StatusBadge, Textarea, ToolPageHeader } from "@smarttools/ui";
+import { H3, Caption, Strong, Card, Field, Input, StatusBadge, Textarea, ToolPageHeader } from "@canopy/ui";
 import {
   ChevronRight,
   CreditCard,

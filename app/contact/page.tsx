@@ -1,7 +1,7 @@
-import { Display, Muted, Overline, Strong, Text, TextLink } from "@smarttools/ui";
+import { Display, Muted, Overline, Strong, Text, TextLink } from "@canopy/ui";
 import type { Metadata } from "next";
 import { Clock3, LifeBuoy, Mail } from "lucide-react";
-import PublicInfoChrome from "@/components/smarttools/PublicInfoChrome";
+import PublicInfoChrome from "@/components/canopy/PublicInfoChrome";
 import ContactForm from "./ContactForm";
 
 export const metadata: Metadata = {

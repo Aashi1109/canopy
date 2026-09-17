@@ -30,7 +30,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
   type OrderableItemState,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import {
   Brackets,
   ChevronDown,

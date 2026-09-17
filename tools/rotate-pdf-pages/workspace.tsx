@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Caption, FieldLabel, Input, Select } from "@smarttools/ui";
+import { Button, Caption, FieldLabel, Input, Select } from "@canopy/ui";
 import { RotateCcw, RotateCw, FlipVertical2 } from "lucide-react";
 import { useId, useState } from "react";
 

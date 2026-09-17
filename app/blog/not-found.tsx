@@ -1,5 +1,5 @@
 import { BookOpen } from "lucide-react";
-import { Button, EmptyState } from "@smarttools/ui";
+import { Button, EmptyState } from "@canopy/ui";
 
 export default function BlogNotFound() {
   return (

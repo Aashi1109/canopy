@@ -22,7 +22,7 @@ import {
   SectionHeading,
   SidebarNavItem,
   StatusBadge,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { authClient } from "../_lib/authClient";
 import { canConfirmAccountDeletion, getSafeAuthError, isValidPassword, normalizeProfileImage } from "../_lib/security";
 

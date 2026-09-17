@@ -40,10 +40,12 @@ export {
   CodeBlock,
   typographyStyles,
 } from "./components/typography.tsx";
-import { Bookmark, CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
+import { CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
+import { SavedToolsTrigger, SaveToolButton } from "./components/SavedTools.tsx";
+export { SavedToolsProvider, SavedToolsTrigger, SaveToolButton } from "./components/SavedTools.tsx";
 import { cloneElement } from "react";
 import type { AnchorHTMLAttributes, ComponentProps, HTMLAttributes, ReactElement, ReactNode } from "react";
-import smartToolsIcon from "./assets/smarttools-icon.png";
+import canopyIcon from "./assets/canopy-icon.png";
 import { Alert, AlertDescription, AlertTitle } from "./components/alert.tsx";
 import { Badge } from "./components/badge.tsx";
 import { Checkbox as CheckboxControl } from "./components/checkbox.tsx";
@@ -57,6 +59,8 @@ import {
 } from "./components/field.tsx";
 import { EcosystemTabFilters } from "./components/EcosystemTabFilters.tsx";
 import { GlobalToolSearch } from "./components/GlobalToolSearch.tsx";
+import { MobileNavigation } from "./components/MobileNavigation.tsx";
+import type { AccountNavigationProps } from "./components/AccountNavigation.tsx";
 import { ToolPageIntro } from "./components/patterns.tsx";
 import { ScrollAwareHeader } from "./components/ScrollAwareHeader.tsx";
 import { cn } from "./lib/utils.ts";
@@ -209,7 +213,7 @@ export function BrandLockup({ className, href, name }: { className?: string; hre
       )}
       href={href}
     >
-      <img alt="" className="aspect-square h-full w-auto shrink-0" height={30} src={smartToolsIcon.src} width={30} />
+      <img alt="" className="aspect-square h-full w-auto shrink-0" height={30} src={canopyIcon.src} width={30} />
       <span className="flex h-full flex-col justify-center gap-1 leading-none">
         <Text className="block">{name}</Text>
         {name !== "SmartTools" ? <Caption className="block text-muted-foreground">by SmartTools</Caption> : null}
@@ -224,7 +228,7 @@ export function ProductHeader({
   compact = false,
   minimal = false,
   showSearch = true,
-  mobileActions,
+  account,
   href,
   name,
 }: {
@@ -233,7 +237,7 @@ export function ProductHeader({
   compact?: boolean;
   minimal?: boolean;
   showSearch?: boolean;
-  mobileActions?: ReactNode;
+  account?: AccountNavigationProps;
   href: string;
   name: string;
 }) {
@@ -245,8 +249,8 @@ export function ProductHeader({
     >
       <AppContainer
         className={cn(
-          "flex max-w-[1440px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-10",
-          compact ? "min-h-[72px]" : "min-h-[88px]",
+          "flex max-w-[1440px] flex-nowrap items-center justify-between gap-3 px-4 sm:px-6 lg:px-10",
+          compact ? "min-h-[72px]" : "min-h-[72px] xl:min-h-[88px]",
         )}
       >
         <a
@@ -256,46 +260,35 @@ export function ProductHeader({
         >
           <span
             aria-hidden="true"
-            className={cn("relative block shrink-0 rounded-[10px] bg-surface-ink", compact ? "size-10" : "size-12")}
+            className={cn(
+              "relative block shrink-0 rounded-[10px] bg-surface-ink",
+              compact ? "size-10" : "size-10 xl:size-12",
+            )}
           >
             <span className="absolute top-3 left-2.5 h-3.5 w-[22px] rounded-[3px] bg-on-ink" />
             <span className="absolute top-[22px] left-4 h-3.5 w-[22px] rounded-[3px] bg-primary" />
             <span className="absolute top-2.5 left-8 size-[7px] rounded-full bg-success" />
           </span>
-          <span className={cn("flex-col gap-0.5 sm:flex", mobileActions ? "flex" : "hidden")}>
+          <span className="flex flex-col gap-0.5">
             <Strong className="">
               Smart<span className="text-primary">Tools</span>
             </Strong>
-            <Caption className={cn("text-muted-foreground", mobileActions && "hidden sm:block")}>
-              small tools, thoughtfully made
-            </Caption>
+            <Caption className="hidden text-muted-foreground xl:block">small tools, thoughtfully made</Caption>
           </span>
         </a>
 
         {!minimal && showSearch ? <GlobalToolSearch /> : null}
 
-        {!minimal ? <EcosystemTabFilters currentHref={href} /> : null}
+        {!minimal ? (
+          <EcosystemTabFilters
+            currentHref={href}
+            className={account?.user ? "[@media(width<=1024px)]:hidden" : undefined}
+          />
+        ) : null}
 
-        {mobileActions ? <div className="flex shrink-0 items-center gap-2 xl:hidden">{mobileActions}</div> : null}
-        <div className={cn("shrink-0 items-center gap-2", mobileActions ? "hidden xl:flex" : "flex")}>
-          {!minimal ? (
-            <a
-              aria-current={href === "/blog" ? "page" : undefined}
-              className="inline-flex min-h-10 items-center rounded-full px-3 text-xs font-semibold text-muted-foreground no-underline outline-none hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:text-primary xl:hidden"
-              href="/blog"
-            >
-              Blog
-            </a>
-          ) : null}
-          {!minimal ? (
-            <a
-              className="hidden h-10 items-center gap-1.5 rounded-full border border-input bg-card px-3 text-[11px] font-semibold text-foreground no-underline outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex"
-              href="/auth?returnTo=%2Fauth%2Fprofile"
-            >
-              <Bookmark aria-hidden="true" className="size-3.5 text-muted-foreground" />
-              Saved
-            </a>
-          ) : null}
+        {!minimal ? <MobileNavigation account={account} currentHref={href} showSearch={showSearch} /> : null}
+        <div className={cn("shrink-0 items-center gap-2", minimal ? "flex" : "hidden md:flex")}>
+          {!minimal ? <SavedToolsTrigger className="h-10 rounded-full" /> : null}
           {actions}
         </div>
       </AppContainer>
@@ -312,6 +305,7 @@ export type ToolPageShellProps = {
   eyebrow?: ReactNode;
   footer?: ReactNode;
   headerActions?: ReactNode;
+  account?: AccountNavigationProps;
   productHref: string;
   productName: string;
   skipHref?: string;
@@ -333,6 +327,7 @@ export function ToolPageShell({
   eyebrow,
   footer,
   headerActions,
+  account,
   productHref,
   productName,
   skipHref = "#tool-workspace",
@@ -355,6 +350,7 @@ export function ToolPageShell({
 
       <ProductHeader
         actions={headerActions}
+        account={account}
         className="sticky top-0 z-50 border-border bg-card"
         compact
         href={productHref}
@@ -364,7 +360,7 @@ export function ToolPageShell({
       <main className="flex-1 bg-card">
         <section className="bg-card">
           <AppContainer className="max-w-[1440px] px-4 pt-4 sm:px-6 lg:px-10">
-            <nav aria-label="Breadcrumb" className="flex min-h-8 items-center">
+            <nav aria-label="Breadcrumb" className="flex min-h-8 items-center justify-between gap-3">
               <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 font-caption text-xs font-normal text-muted-foreground">
                 <li>
                   <a
@@ -407,6 +403,7 @@ export function ToolPageShell({
                   {breadcrumbCurrent ?? title}
                 </li>
               </ol>
+              <SaveToolButton href={account?.returnTo} />
             </nav>
           </AppContainer>
         </section>
@@ -718,30 +715,35 @@ export function CatalogCard({
   title: ReactNode;
 }) {
   return (
-    <a
-      className={cn(
-        "group flex flex-col gap-4 rounded-xl border border-border bg-card p-6 text-card-foreground outline-none transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-        className,
-      )}
-      {...props}
-    >
-      {icon || status ? (
-        <span className="flex items-center justify-between gap-3">
-          {icon ? (
-            <span
-              aria-hidden="true"
-              className="grid size-11 shrink-0 place-items-center rounded-lg bg-accent text-primary [&_svg]:size-[22px]"
-            >
-              {icon}
-            </span>
-          ) : null}
-          {status ? <span className="min-w-0">{status}</span> : null}
-        </span>
-      ) : null}
-      <Large>{title}</Large>
-      <Caption className="-mt-2 text-muted-foreground">{description}</Caption>
-      <Caption className="mt-auto text-primary group-hover:underline">{action}</Caption>
-    </a>
+    <div className="relative h-full">
+      <a
+        className={cn(
+          "group flex h-full flex-col gap-4 rounded-xl border border-border bg-card p-6 text-card-foreground outline-none transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          className,
+        )}
+        {...props}
+      >
+        {icon || status ? (
+          <span className="flex items-center justify-between gap-3">
+            {icon ? (
+              <span
+                aria-hidden="true"
+                className="grid size-11 shrink-0 place-items-center rounded-lg bg-accent text-primary [&_svg]:size-[22px]"
+              >
+                {icon}
+              </span>
+            ) : null}
+            {status ? <span className="min-w-0">{status}</span> : null}
+          </span>
+        ) : null}
+        <Large>{title}</Large>
+        <Caption className="-mt-2 text-muted-foreground">{description}</Caption>
+        <Caption className="mt-auto pr-12 text-primary group-hover:underline">{action}</Caption>
+      </a>
+      <div className="absolute right-3 bottom-3">
+        <SaveToolButton href={props.href} iconOnly />
+      </div>
+    </div>
   );
 }
 

@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
   StatusBadge,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 
 import styles from "./BlogEditor.module.css";
 

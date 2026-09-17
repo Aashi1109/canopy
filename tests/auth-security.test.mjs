@@ -22,7 +22,7 @@ test("trusted origins accept only explicit HTTP origins", () => {
     "*.smarttools.example.com",
     "javascript:alert(1)",
     "https://smarttools.example.com/path",
-    "https://user@smarttools.example.com",
+    "https://user@canopy.example.com",
     "https://smarttools.example.com#fragment",
   ]) {
     assert.throws(() => getTrustedOrigins(invalid), /trusted origin/i, invalid);

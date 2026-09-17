@@ -37,10 +37,10 @@ WORKDIR /app
 COPY --from=builder --chown=nextjs:nodejs /runtime /app
 
 COPY .standalone/nginx.conf /etc/nginx/nginx.conf
-COPY .standalone/supervisord.conf /etc/supervisor/smarttools.conf
+COPY .standalone/supervisord.conf /etc/supervisor/canopy.conf
 
 USER nextjs
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD ["node", "-e", "const net=require('node:net');Promise.all([3100,3101,3102,3103,3104,3105].map(port=>new Promise((resolve,reject)=>{const socket=net.connect(port,'127.0.0.1',()=>{socket.destroy();resolve()});socket.setTimeout(2000,()=>{socket.destroy();reject()});socket.once('error',reject)}))).then(()=>process.exit(0),()=>process.exit(1))"]
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/smarttools.conf"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/canopy.conf"]

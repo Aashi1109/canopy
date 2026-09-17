@@ -72,14 +72,14 @@ test("editor drafts reach React Server Actions during autosave and manual save w
   });
   t.after(() => draft.stop());
   for (const mode of ["autosave", "manual"]) {
-    draft.change(document);
+    draft.change({ ...document, title: `${document.title} ${mode}` });
     assert.equal(await draft.save(mode), true, `${mode} must cross the Server Action boundary`);
     assert.equal(draft.dirty, false);
     assert.deepEqual(payloads.at(-1), [
       "save",
       {
         postId: "post-1",
-        document: JSON.parse(JSON.stringify(document)),
+        document: JSON.parse(JSON.stringify({ ...document, title: `${document.title} ${mode}` })),
         version: payloads.length,
         mode,
       },
@@ -89,24 +89,37 @@ test("editor drafts reach React Server Actions during autosave and manual save w
   assert.equal(draft.version, 3);
 });
 
-test("autosave coalesces typing after three seconds idle and stays bounded during continuous edits", async (t) => {
+test("autosave waits ten seconds after the final edit and sends only the latest document", async (t) => {
   const { draft, calls } = setup(t);
   draft.change("one");
-  t.mock.timers.tick(2_000);
+  t.mock.timers.tick(9_000);
+  await settle();
+  assert.equal(calls.length, 0);
   draft.change("two");
-  t.mock.timers.tick(2_999);
+  t.mock.timers.tick(9_999);
+  await settle();
   assert.equal(calls.length, 0);
   t.mock.timers.tick(1);
   await settle();
   assert.deepEqual(calls, [{ document: "two", version: 1, mode: "autosave" }]);
-  for (let i = 0; i < 15; i++) {
-    draft.change(String(i));
-    t.mock.timers.tick(2_000);
-  }
+  t.mock.timers.tick(120_000);
   await settle();
-  assert.equal(calls.length, 2);
-  assert.equal(calls[1].document, "14");
-  assert.equal(calls[1].version, 2);
+  assert.equal(calls.length, 1, "the old deadline must not create another request");
+});
+
+test("continuous typing saves at sixty seconds across repeated cycles without resetting the deadline", async (t) => {
+  const { draft, calls } = setup(t);
+  for (let cycle = 0; cycle < 3; cycle++) {
+    for (let edit = 0; edit < 12; edit++) {
+      draft.change(`${cycle}:${edit}`);
+      t.mock.timers.tick(edit === 11 ? 4_999 : 5_000);
+      await settle();
+      assert.equal(calls.length, cycle, "typing must not trigger an early idle save");
+    }
+    t.mock.timers.tick(1);
+    await settle();
+    assert.deepEqual(calls[cycle], { document: `${cycle}:11`, version: cycle + 1, mode: "autosave" });
+  }
 });
 
 test("manual save waits for an autosave and flushes newer edits using the returned version", async (t) => {
@@ -119,7 +132,7 @@ test("manual save waits for an autosave and flushes newer edits using the return
       : { ok: true, data: { version: input.version + 1 } },
   );
   draft.change("first");
-  t.mock.timers.tick(3_000);
+  t.mock.timers.tick(10_000);
   draft.change("newer");
   const flushed = draft.save();
   await settle();
@@ -185,7 +198,7 @@ test("manual save during an unchanged autosave still requests a manual revision 
       : { ok: true, data: { version: input.version + 1 } },
   );
   draft.change("first");
-  t.mock.timers.tick(3_000);
+  t.mock.timers.tick(10_000);
   await settle();
   const manual = draft.save();
   finish({ ok: true, data: { version: 2 } });
@@ -234,7 +247,7 @@ test("recovery saves use the current version and remove backup only when all loc
   );
   draft.attachStorage(storage, "actor:post");
   draft.restore("recovered", 1);
-  t.mock.timers.tick(3_000);
+  t.mock.timers.tick(10_000);
   await settle();
   draft.change("newer");
   finish({ ok: true, data: { version: 2 } });
@@ -289,4 +302,351 @@ test("a storage failure reports recovery unavailability while preserving ordinar
   assert.equal(warnings, 1);
   assert.equal(await draft.save(), true);
   draft.stop();
+});
+
+test("typing then undoing removes the local backup without a request, while manual save still checkpoints", async (t) => {
+  const storage = memoryStorage();
+  const { draft, calls, states } = setup(t);
+  draft.attachStorage(storage, "actor:post");
+  draft.change("temporary edit");
+  assert.deepEqual(JSON.parse(storage.getItem("actor:post")), { version: 1, document: "temporary edit" });
+  t.mock.timers.tick(4_000);
+  draft.change("initial");
+  t.mock.timers.tick(10_000);
+  await settle();
+  assert.equal(calls.length, 0);
+  assert.equal(draft.dirty, false);
+  assert.equal(storage.getItem("actor:post"), null);
+  assert.equal(states.at(-1).state, "saved");
+  assert.equal(await draft.save(), true);
+  assert.deepEqual(calls, [{ document: "initial", version: 1, mode: "manual" }]);
+});
+
+test("structurally equal nested documents skip requests, but formatting and metadata edits persist", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const document = {
+    ...createBlogDocument("Nested document"),
+    body: {
+      type: "doc",
+      content: [
+        {
+          type: "bulletList",
+          content: [
+            {
+              type: "listItem",
+              content: [
+                {
+                  type: "paragraph",
+                  content: [
+                    {
+                      type: "text",
+                      text: "Formatting matters",
+                      marks: [{ type: "bold" }, { type: "link", attrs: { href: "https://example.com" } }],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+  const calls = [];
+  const draft = createDraftPersistence({
+    document,
+    version: 1,
+    request: async (input) => {
+      calls.push(input);
+      return { ok: true, data: { version: input.version + 1 } };
+    },
+    onState() {},
+  });
+  t.after(() => draft.stop());
+  draft.change(structuredClone(document));
+  assert.equal(await draft.save("autosave"), true);
+  assert.equal(calls.length, 0, "object identity is not content identity");
+  const formatted = structuredClone(document);
+  formatted.body.content[0].content[0].content[0].content[0].marks[0] = { type: "italic" };
+  draft.change(formatted);
+  assert.equal(await draft.save("autosave"), true);
+  assert.deepEqual(calls[0].document, formatted);
+  const metadata = { ...formatted, title: "A different title" };
+  draft.change(metadata);
+  assert.equal(await draft.save("autosave"), true);
+  assert.deepEqual(calls[1], { document: metadata, version: 2, mode: "autosave" });
+  draft.change(structuredClone(metadata));
+  assert.equal(await draft.save("autosave"), true);
+  assert.equal(calls.length, 2);
+});
+
+test("reverting to the original document during an in-flight save must overwrite the newly saved document", async (t) => {
+  let finish;
+  const storage = memoryStorage();
+  const { draft, calls } = setup(t, (input) =>
+    calls.length === 1
+      ? new Promise((resolve) => {
+          finish = resolve;
+        })
+      : { ok: true, data: { version: input.version + 1 } },
+  );
+  draft.attachStorage(storage, "actor:post");
+  draft.change("submitted edit");
+  const saving = draft.save("autosave");
+  await settle();
+  draft.change("initial");
+  t.mock.timers.tick(60_000);
+  await settle();
+  assert.equal(calls.length, 1, "autosave must not overlap the in-flight request");
+  assert.equal(draft.dirty, true);
+  assert.equal(JSON.parse(storage.getItem("actor:post")).document, "initial");
+  finish({ ok: true, data: { version: 7 } });
+  await saving;
+  await settle();
+  t.mock.timers.tick(10_000);
+  await settle();
+  assert.deepEqual(calls, [
+    { document: "submitted edit", version: 1, mode: "autosave" },
+    { document: "initial", version: 7, mode: "autosave" },
+  ]);
+  assert.equal(draft.dirty, false);
+  assert.equal(storage.getItem("actor:post"), null);
+});
+
+test("editing and undoing to the in-flight snapshot becomes clean on acknowledgement without another request", async (t) => {
+  let finish;
+  const storage = memoryStorage();
+  const { draft, calls } = setup(
+    t,
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  draft.attachStorage(storage, "actor:post");
+  draft.change("submitted edit");
+  const saving = draft.save("autosave");
+  await settle();
+  draft.change("temporary newer edit");
+  draft.change("submitted edit");
+  finish({ ok: true, data: { version: 8 } });
+  assert.equal(await saving, true);
+  assert.equal(draft.dirty, false);
+  assert.equal(storage.getItem("actor:post"), null);
+  t.mock.timers.tick(120_000);
+  await settle();
+  assert.equal(calls.length, 1);
+});
+
+test("concurrent manual flushes serialize slow saves and include edits made during the flush", async (t) => {
+  const replies = [];
+  const { draft, calls } = setup(t, () => new Promise((resolve) => replies.push(resolve)));
+  draft.change("autosaved");
+  t.mock.timers.tick(10_000);
+  await settle();
+  draft.change("edited while autosaving");
+  const first = draft.save();
+  const second = draft.save();
+  assert.equal(calls.length, 1);
+  replies.shift()({ ok: true, data: { version: 5 } });
+  await settle();
+  assert.equal(calls.length, 2, "both callers share one manual request");
+  assert.deepEqual(calls[1], { document: "edited while autosaving", version: 5, mode: "manual" });
+  draft.change("edited during manual save");
+  t.mock.timers.tick(60_000);
+  await settle();
+  assert.equal(calls.length, 2);
+  replies.shift()({ ok: true, data: { version: 11 } });
+  await settle();
+  assert.equal(calls.length, 3);
+  assert.deepEqual(calls[2], { document: "edited during manual save", version: 11, mode: "manual" });
+  replies.shift()({ ok: true, data: { version: 12 } });
+  assert.deepEqual(await Promise.all([first, second]), [true, true]);
+  assert.equal(draft.version, 12);
+  assert.equal(draft.dirty, false);
+  t.mock.timers.tick(120_000);
+  await settle();
+  assert.equal(calls.length, 3);
+});
+
+test("a committed save with a lost response cannot mark an undo clean or overwrite the remote version", async (t) => {
+  const storage = memoryStorage();
+  let remote = { document: "initial", version: 1 };
+  const { draft, calls, states } = setup(t, (input) => {
+    if (input.version !== remote.version) return { ok: false, code: "CONFLICT", message: "Reload the saved version." };
+    remote = { document: input.document, version: input.version + 1 };
+    throw Error("response lost after commit");
+  });
+  draft.attachStorage(storage, "actor:post");
+  draft.change("committed remotely");
+  assert.equal(await draft.save("autosave"), false);
+  draft.change("initial");
+  t.mock.timers.tick(10_000);
+  await settle();
+  assert.deepEqual(calls, [
+    { document: "committed remotely", version: 1, mode: "autosave" },
+    { document: "initial", version: 1, mode: "autosave" },
+  ]);
+  assert.deepEqual(remote, { document: "committed remotely", version: 2 });
+  assert.equal(states.at(-1).state, "conflict");
+  assert.equal(draft.dirty, true);
+  assert.deepEqual(JSON.parse(storage.getItem("actor:post")), { version: 1, document: "initial" });
+  draft.change("more local work");
+  t.mock.timers.tick(120_000);
+  await settle();
+  assert.equal(await draft.save(), false);
+  assert.equal(calls.length, 2);
+});
+
+test("failed requests preserve an undo backup until a confirmed retry reestablishes the saved snapshot", async (t) => {
+  const storage = memoryStorage();
+  const { draft, calls } = setup(t, (input) =>
+    calls.length === 1
+      ? { ok: false, code: "UNAVAILABLE", message: "Try again." }
+      : { ok: true, data: { version: input.version + 1 } },
+  );
+  draft.attachStorage(storage, "actor:post");
+  draft.change("possibly saved");
+  assert.equal(await draft.save("autosave"), false);
+  draft.change("initial");
+  assert.equal(storage.getItem("actor:post") !== null, true);
+  assert.equal(await draft.save("autosave"), true);
+  assert.equal(calls.length, 2, "only an acknowledged request can reestablish a safe baseline");
+  assert.equal(storage.getItem("actor:post"), null);
+  draft.change("another edit");
+  draft.change("initial");
+  assert.equal(await draft.save("autosave"), true);
+  assert.equal(calls.length, 2, "deduplication resumes after the successful retry");
+});
+
+test("same-version recovery equal to the saved document clears its backup without a request", async (t) => {
+  const storage = memoryStorage();
+  storage.setItem("actor:post", JSON.stringify({ version: 1, document: "initial" }));
+  const { draft, calls } = setup(t);
+  const snapshot = draft.attachStorage(storage, "actor:post");
+  draft.restore(snapshot.document, snapshot.version);
+  t.mock.timers.tick(10_000);
+  await settle();
+  assert.equal(calls.length, 0);
+  assert.equal(draft.dirty, false);
+  assert.equal(storage.getItem("actor:post"), null);
+});
+
+test("mismatched recovery remains conflicted even when its content equals the current server document", async (t) => {
+  const storage = memoryStorage();
+  const { draft, calls, states } = setup(t);
+  draft.attachStorage(storage, "actor:post");
+  draft.restore("initial", 3);
+  t.mock.timers.tick(120_000);
+  await settle();
+  assert.equal(await draft.save("autosave"), false);
+  assert.equal(await draft.save(), false);
+  assert.equal(calls.length, 0);
+  assert.equal(draft.dirty, true);
+  assert.equal(states.at(-1).state, "conflict");
+  assert.deepEqual(JSON.parse(storage.getItem("actor:post")), { version: 3, document: "initial" });
+});
+
+test("stopping during a slow request preserves newer local work and restart resumes autosave", async (t) => {
+  let finish;
+  const storage = memoryStorage();
+  const { draft, calls, states } = setup(t, (input) =>
+    calls.length === 1
+      ? new Promise((resolve) => {
+          finish = resolve;
+        })
+      : { ok: true, data: { version: input.version + 1 } },
+  );
+  draft.attachStorage(storage, "actor:post");
+  draft.change("submitted");
+  const saving = draft.save("autosave");
+  await settle();
+  draft.change("newer unsaved");
+  draft.stop();
+  const stateCount = states.length;
+  finish({ ok: true, data: { version: 2 } });
+  assert.equal(await saving, false);
+  t.mock.timers.tick(120_000);
+  await settle();
+  assert.equal(calls.length, 1);
+  assert.equal(states.length, stateCount, "unmounted editors must not receive state callbacks");
+  assert.equal(JSON.parse(storage.getItem("actor:post")).document, "newer unsaved");
+  draft.start();
+  t.mock.timers.tick(10_000);
+  await settle();
+  assert.deepEqual(calls[1], { document: "newer unsaved", version: 2, mode: "autosave" });
+  assert.equal(draft.dirty, false);
+  assert.equal(storage.getItem("actor:post"), null);
+});
+
+test("deduplication never deletes a replacement recovery snapshot owned by another writer", async (t) => {
+  const storage = memoryStorage();
+  const { draft, calls } = setup(t);
+  draft.attachStorage(storage, "actor:post");
+  draft.change("temporary");
+  draft.change("initial");
+  const replacement = JSON.stringify({ version: 1, document: "another writer's unsaved work" });
+  storage.setItem("actor:post", replacement);
+  assert.equal(await draft.save("autosave"), true);
+  assert.equal(calls.length, 0);
+  assert.equal(storage.getItem("actor:post"), replacement);
+});
+
+test("a failed manual checkpoint on an unchanged document is retried rather than deduplicated", async (t) => {
+  const { draft, calls, states } = setup(t, (input) => {
+    if (calls.length === 1) throw Error("offline");
+    return { ok: true, data: { version: input.version + 1 } };
+  });
+  assert.equal(await draft.save(), false);
+  assert.equal(states.at(-1).state, "error");
+  t.mock.timers.tick(120_000);
+  await settle();
+  assert.equal(calls.length, 1, "a failed checkpoint must not retry in a loop");
+  assert.equal(await draft.save(), true);
+  assert.deepEqual(calls, [
+    { document: "initial", version: 1, mode: "manual" },
+    { document: "initial", version: 1, mode: "manual" },
+  ]);
+  assert.equal(draft.dirty, false);
+});
+
+test("an unchanged autosave cancels its old deadline before a later editing session starts", async (t) => {
+  const { draft, calls } = setup(t);
+  draft.change("temporary");
+  t.mock.timers.tick(9_000);
+  draft.change("initial");
+  t.mock.timers.tick(10_000);
+  await settle();
+  assert.equal(calls.length, 0);
+  t.mock.timers.tick(31_000);
+  for (let edit = 0; edit < 12; edit++) {
+    draft.change(`later edit ${edit}`);
+    t.mock.timers.tick(edit === 11 ? 4_999 : 5_000);
+    await settle();
+    assert.equal(calls.length, 0, "the reverted session's deadline must not save the new session early");
+  }
+  t.mock.timers.tick(1);
+  await settle();
+  assert.deepEqual(calls, [{ document: "later edit 11", version: 1, mode: "autosave" }]);
+});
+
+test("edits made while an unchanged autosave completes remain dirty, recoverable, and scheduled", async (t) => {
+  const storage = memoryStorage();
+  const { draft, calls } = setup(t);
+  draft.attachStorage(storage, "actor:post");
+  draft.change("initial");
+  const saving = draft.save("autosave");
+  draft.change("newer before completion");
+  assert.equal(await saving, true);
+  assert.equal(calls.length, 0);
+  assert.equal(draft.dirty, true);
+  assert.deepEqual(JSON.parse(storage.getItem("actor:post")), { version: 1, document: "newer before completion" });
+  t.mock.timers.tick(9_999);
+  await settle();
+  assert.equal(calls.length, 0);
+  t.mock.timers.tick(1);
+  await settle();
+  assert.deepEqual(calls, [{ document: "newer before completion", version: 1, mode: "autosave" }]);
+  assert.equal(draft.dirty, false);
+  assert.equal(storage.getItem("actor:post"), null);
 });

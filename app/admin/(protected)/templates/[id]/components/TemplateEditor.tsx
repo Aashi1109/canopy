@@ -9,13 +9,13 @@ import {
   type InvoiceTemplateConfig,
   type LayoutFamily,
   type TemplateCategory,
-} from "@smarttools/invoice-templates";
+} from "@canopy/invoice-templates";
 import {
   InvoiceTemplatePreview,
   invoicePreviewSampleOptions,
   invoicePreviewSamples,
   type InvoicePreviewSampleId,
-} from "@smarttools/invoice-templates/preview";
+} from "@canopy/invoice-templates/preview";
 import {
   Overline,
   Caption,
@@ -36,8 +36,8 @@ import {
   TabsTrigger,
   Textarea,
   buttonVariants,
-} from "@smarttools/ui";
-import { OrderableList } from "@smarttools/ui/components/OrderableList";
+} from "@canopy/ui";
+import { OrderableList } from "@canopy/ui/components/OrderableList";
 import {
   Archive,
   ArrowLeft,

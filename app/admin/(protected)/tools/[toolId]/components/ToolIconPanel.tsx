@@ -1,6 +1,6 @@
 "use client";
 
-import { H3, Label, Caption, Muted, Text, AlertBanner, Button, Input } from "@smarttools/ui";
+import { H3, Label, Caption, Muted, Text, AlertBanner, Button, Input } from "@canopy/ui";
 import { ImagePlus, RotateCcw, Trash2, Upload } from "lucide-react";
 import { useActionState, useEffect, useId, useRef, useState, type ChangeEvent, type ReactElement } from "react";
 import { ToolIcon } from "../../../../../../components/ToolIcon";

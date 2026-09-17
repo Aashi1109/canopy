@@ -28,7 +28,7 @@ import {
   TooltipTrigger,
   TooltipProvider,
   toast,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import type { RoleUser, RoleUsersPage } from "@/lib/admin/data";
 import { assignRoleMembersAction, searchRoleUsersAction } from "./membershipActions";
 

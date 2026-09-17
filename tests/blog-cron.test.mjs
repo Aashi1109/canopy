@@ -198,7 +198,7 @@ test("actual Worker schedule re-enters the fetch database wrapper through its se
       if (context.parentURL === workerUrl && specifier === "./lib/blog/cron") {
         return { shortCircuit: true, url: new URL("../lib/blog/cron.ts", import.meta.url).href };
       }
-      if (context.parentURL === workerUrl && specifier === "@smarttools/database/runtime") {
+      if (context.parentURL === workerUrl && specifier === "@canopy/database/runtime") {
         return {
           shortCircuit: true,
           url: `data:text/javascript,${encodeURIComponent(`

@@ -16,7 +16,7 @@ async function exists(path) {
 test("the repository root is the only Next.js application", async () => {
   const packageJson = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
 
-  assert.equal(packageJson.name, "smarttools");
+  assert.equal(packageJson.name, "canopy");
   assert.equal(typeof packageJson.dependencies.next, "string");
   assert.equal(await exists("apps"), false);
   assert.equal(await exists("src"), false);

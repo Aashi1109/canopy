@@ -13,7 +13,7 @@ import {
   ToolOptionsPanel,
   FieldLabel,
   Select,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { Download, Plus, ShieldCheck, Upload } from "lucide-react";
 
 import { IMAGE_OUTPUT_KEY, resolveImageConversion } from "@/app/media/lib/imageConversion";

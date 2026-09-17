@@ -16,7 +16,7 @@ import {
   Select,
   Textarea,
   type OrderableItemState,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { Braces, GripVertical, Plus, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { useActionState, useMemo, useState, type ReactElement, type ReactNode } from "react";
 import { TOOL_CATEGORIES, type CategoryKey } from "../../../../../../lib/tool-framework/categories";

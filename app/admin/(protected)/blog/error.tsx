@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertBanner, Button } from "@smarttools/ui";
+import { AlertBanner, Button } from "@canopy/ui";
 
 export default function BlogError({ reset }: { reset: () => void }) {
   return (

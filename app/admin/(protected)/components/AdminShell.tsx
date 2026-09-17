@@ -1,6 +1,6 @@
 "use client";
 
-import { Caption, BrandLockup, AccountNavigation, type AccountNavigationProps } from "@smarttools/ui";
+import { Caption, BrandLockup, AccountNavigation, type AccountNavigationProps } from "@canopy/ui";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { AdminNavigation } from "./AdminNavigation";

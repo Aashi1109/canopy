@@ -12,11 +12,11 @@ import {
   Select,
   Switch,
   Textarea,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { Plus, RotateCw, Trash2 } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useId } from "react";
 import type { FieldKind, FieldSpec, SettingRow, SettingsSpec, WatermarkPosition } from "@/lib/tool-framework/settings";
-import { cn } from "@smarttools/ui/lib/utils";
+import { cn } from "@canopy/ui/lib/utils";
 
 export interface SettingsPanelProps {
   className?: string;

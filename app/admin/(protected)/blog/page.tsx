@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { hasPermission } from "@smarttools/authorization";
-import { getUserAuthorization } from "@smarttools/control-plane";
+import { hasPermission } from "@canopy/authorization";
+import { getUserAuthorization } from "@canopy/control-plane";
 import { requirePagePermission } from "@/lib/admin/access";
 import { listBlogPosts } from "@/lib/blog/queries";
 import { BlogPosts } from "./components/BlogPosts";

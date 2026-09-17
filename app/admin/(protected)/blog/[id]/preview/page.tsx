@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
-import { Button } from "@smarttools/ui";
+import { Button } from "@canopy/ui";
 import { requirePagePermission } from "@/lib/admin/access";
 import { getBlogPost, getBlogRevision } from "@/lib/blog/queries";
 import { BlogArticle } from "@/components/blog/BlogArticle";

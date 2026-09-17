@@ -16,7 +16,7 @@ const e2eEnvironment = {
   APP_URL: "http://localhost:3000",
   BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? "e2e-only-secret-that-is-at-least-32-characters",
   RESEND_API_KEY: "re_e2e_mock",
-  AUTH_EMAIL_FROM: "SmartTools <auth@example.test>",
+  ACCOUNTS_EMAIL: "accounts@example.test",
   GOOGLE_CLIENT_ID: "google-e2e-client",
   GOOGLE_CLIENT_SECRET: "google-e2e-secret",
 };

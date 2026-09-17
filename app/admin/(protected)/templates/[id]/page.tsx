@@ -1,4 +1,4 @@
-import type { InvoiceTemplate } from "@smarttools/invoice-templates";
+import type { InvoiceTemplate } from "@canopy/invoice-templates";
 import { notFound } from "next/navigation";
 import { redirect } from "next/navigation";
 import { requirePagePermission } from "../../../../../lib/admin/access";

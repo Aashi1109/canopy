@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
-import { AccountNavigation, ProductHeader } from "@smarttools/ui";
-import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
+import { AccountNavigation, ProductHeader, Toaster } from "@canopy/ui";
+import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import type { AuthProjectPaths } from "./AuthDiscoveryNavigation";
 
 export function AuthNavbar() {
   return (
     <ProductHeader
+      account={{ returnTo: "/auth", user: null }}
       actions={<AccountNavigation returnTo="/auth" user={null} />}
       className="sticky top-0 z-50"
       href="/"
@@ -15,7 +16,7 @@ export function AuthNavbar() {
 }
 
 export function AuthFooter() {
-  return <SmartToolsFooter />;
+  return <CanopyFooter />;
 }
 
 export function AuthScreen({ children }: { children: ReactNode; projects?: AuthProjectPaths }) {
@@ -24,6 +25,7 @@ export function AuthScreen({ children }: { children: ReactNode; projects?: AuthP
       <AuthNavbar />
       <main className="auth-screen-main">{children}</main>
       <AuthFooter />
+      <Toaster closeButton position="top-right" theme="dark" />
     </div>
   );
 }

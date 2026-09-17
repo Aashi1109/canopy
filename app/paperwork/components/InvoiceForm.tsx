@@ -36,7 +36,7 @@ import {
   H3,
   Select,
   Textarea,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { InvoiceData, InvoiceLineItem } from "@/lib/paperwork/types";
 
 interface InvoiceFormProps {

@@ -1,4 +1,4 @@
-import { H2, Muted } from "@smarttools/ui";
+import { H2, Muted } from "@canopy/ui";
 import type { Metadata } from "next";
 import InformationPage from "@/app/paperwork/components/InformationPage";
 

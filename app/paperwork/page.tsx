@@ -1,8 +1,8 @@
-import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
-import { getOptionalSession } from "@smarttools/auth/session";
-import { getAvailableTools } from "@smarttools/control-plane";
+import { CanopyFooter } from "@/components/canopy/CanopyFooter";
+import { getOptionalSession } from "@canopy/auth/session";
+import { getAvailableTools } from "@canopy/control-plane";
 import { getToolManifest } from "@/lib/tool-framework/manifest";
-import { AccountNavigation, CatalogCard, PageHero, ProductHeader, StatusBadge } from "@smarttools/ui";
+import { AccountNavigation, CatalogCard, PageHero, ProductHeader, StatusBadge } from "@canopy/ui";
 import {
   ClipboardCheck,
   ClipboardList,
@@ -35,6 +35,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <ProductHeader
+        account={{ returnTo: "/paperwork", user: session?.user ?? null }}
         actions={<AccountNavigation returnTo="/paperwork" user={session?.user ?? null} />}
         href="/paperwork"
         name="Paperwork"
@@ -68,7 +69,7 @@ export default async function HomePage() {
           </div>
         </section>
       </main>
-      <SmartToolsFooter />
+      <CanopyFooter />
     </div>
   );
 }

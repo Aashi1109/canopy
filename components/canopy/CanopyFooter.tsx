@@ -1,4 +1,4 @@
-import { ProductFooter } from "@smarttools/ui";
+import { ProductFooter } from "@canopy/ui";
 import { Blocks } from "lucide-react";
 
 /**
@@ -32,7 +32,7 @@ const footerColumns = [
   },
 ] as const;
 
-export function SmartToolsFooter() {
+export function CanopyFooter() {
   return (
     <ProductFooter
       brand="SmartTools"

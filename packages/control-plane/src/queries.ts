@@ -1,5 +1,5 @@
-import { type Access, type Role, hasPermission, mergeRoleAccess } from "@smarttools/authorization";
-import { Cache } from "@smarttools/cache";
+import { type Access, type Role, hasPermission, mergeRoleAccess } from "@canopy/authorization";
+import { Cache } from "@canopy/cache";
 import {
   assertDatabaseConfigured,
   and,
@@ -12,14 +12,14 @@ import {
   managedToolsTable,
   rolesTable,
   userRolesTable,
-} from "@smarttools/database";
+} from "@canopy/database";
 import {
   DocumentTemplateSchema,
   seedTemplates,
   type DocumentTemplate,
   type DocumentType,
   validateAdvancedTemplateConfig,
-} from "@smarttools/invoice-templates";
+} from "@canopy/invoice-templates";
 import {
   findAvailableToolBySlug,
   getEnabledTools,
@@ -27,8 +27,9 @@ import {
   type ResolvedTool,
   type ToolApp,
   type ToolManifestEntry,
-} from "@smarttools/tool-catalog";
+} from "@canopy/tool-catalog";
 import { mergeFeatureOverrides, type FeatureManifestEntry, type ResolvedFeature } from "./featureFlags.ts";
+import { getCachedUser } from "./users.ts";
 
 export class AuthorizationError extends Error {
   readonly status = 403;
@@ -137,12 +138,7 @@ export async function getUserAuthorization(userId: string): Promise<{
   access: Access;
 }> {
   assertDatabaseConfigured();
-  // Keep account status and cache freshness live; role joins are cached for a day.
-  const [user] = await db
-    .select({ status: authUser.status, updatedAt: authUser.updatedAt })
-    .from(authUser)
-    .where(eq(authUser.id, userId))
-    .limit(1);
+  const user = await getCachedUser(userId);
   if (!user || user.status !== "active") {
     throw new AuthorizationError("Access denied");
   }

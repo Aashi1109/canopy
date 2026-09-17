@@ -1,4 +1,4 @@
-import { assertCanDeleteUser } from "@smarttools/authorization";
+import { assertCanDeleteUser } from "@canopy/authorization";
 import {
   authAccount,
   authSession,
@@ -9,13 +9,32 @@ import {
   db,
   eq,
   userRolesTable,
-} from "@smarttools/database";
-import { betterAuth } from "better-auth";
+} from "@canopy/database";
+import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { createAuthMiddleware } from "better-auth/api";
+import { cachedUserAdapter } from "./cachedUserAdapter.ts";
 import { sendAuthEmail } from "./email.ts";
 import { normalizeAccountName, normalizeProfileImage } from "./security.ts";
 
 const baseURL = process.env.APP_URL ?? "http://localhost:3000";
+
+async function notifyPasswordChanged(email: string): Promise<void> {
+  try {
+    await sendAuthEmail({
+      to: email,
+      subject: "Your SmartTools password was changed",
+      heading: "Password changed",
+      message:
+        "Your SmartTools password was changed successfully. If you made this change, no action is needed. If this wasn't you, reset your password immediately to secure your account.",
+      actionLabel: "Reset password",
+      actionUrl: new URL("/auth?mode=forgot", baseURL).href,
+    });
+  } catch {
+    // The password is already saved; notification failure must not interrupt session revocation.
+    console.error("Unable to send password-change confirmation email");
+  }
+}
 
 async function assertAccountCanBeDeleted(userId: string): Promise<void> {
   const assignments = await db
@@ -55,11 +74,12 @@ const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 export const auth = betterAuth({
   appName: "SmartTools",
   baseURL,
-  database: drizzleAdapter(db, {
-    provider: "pg",
-    schema: { authUser, authSession, authAccount, authVerification },
-    transaction: true,
-  }),
+  database: (options: BetterAuthOptions) =>
+    cachedUserAdapter(drizzleAdapter(db, {
+      provider: "pg",
+      schema: { authUser, authSession, authAccount, authVerification },
+      transaction: true,
+    })(options)),
   trustedOrigins: [new URL(baseURL).origin],
   emailAndPassword: {
     enabled: true,
@@ -67,6 +87,7 @@ export const auth = betterAuth({
     minPasswordLength: 12,
     maxPasswordLength: 128,
     revokeSessionsOnPasswordReset: true,
+    onPasswordReset: ({ user }) => notifyPasswordChanged(user.email),
     sendResetPassword: ({ user, url }) =>
       sendAuthEmail({
         to: user.email,
@@ -135,6 +156,15 @@ export const auth = betterAuth({
   verification: {
     modelName: "authVerification",
     storeIdentifier: "hashed",
+  },
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/change-password") return;
+      const result = ctx.context.returned;
+      if (result && typeof result === "object" && "user" in result && ctx.context.session) {
+        await notifyPasswordChanged(ctx.context.session.user.email);
+      }
+    }),
   },
   databaseHooks: {
     user: {

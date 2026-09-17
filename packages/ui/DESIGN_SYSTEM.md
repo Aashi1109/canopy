@@ -2,7 +2,7 @@
 
 `SegmentedControl size="field"` is the full-width setting selector: equal-width segments, 4px track inset, and 37px minimum segment height (45px total). Labels may wrap at narrow widths. Use it for field-sized segmented choices; existing `inline` and `navigation` sizes are unchanged. Image conversion uses the shared Select labeled “Output format” as its last setting, with alphabetically ordered format options.
 
-`@smarttools/ui` — the shared visual layer for every SmartTools surface in this repo.
+`@canopy/ui` — the shared visual layer for every SmartTools surface in this repo.
 
 ### Crop PDF control and completion patterns
 
@@ -27,23 +27,23 @@
 
 ```ts
 // components
-import { Button, Field, Input, ToolPageShell } from "@smarttools/ui";
+import { Button, Field, Input, ToolPageShell } from "@canopy/ui";
 // deep import when you need one file only
-import { Button } from "@smarttools/ui/components/button";
-import { cn } from "@smarttools/ui/lib/utils";
+import { Button } from "@canopy/ui/components/button";
+import { cn } from "@canopy/ui/lib/utils";
 ```
 
 ```css
 /* app/globals.css — this order is asserted by tests/frontend-config.test.mjs */
 @import "tailwindcss";
-@import "@smarttools/ui/theme.css";
+@import "@canopy/ui/theme.css";
 ```
 
 **Package facts**
 
 |                  |                                                                                                                                              |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Name             | `@smarttools/ui` (private workspace package)                                                                                                 |
+| Name             | `@canopy/ui` (private workspace package)                                                                                                 |
 | Module type      | ESM, **raw TSX exported — no build step**                                                                                                    |
 | Public exports   | `.` → `src/index.tsx`, `./components/*`, `./hooks/*`, `./lib/*`, `./theme.css`                                                               |
 | Internal imports | `#components/*`, `#lib/*`, `#hooks/*` (use these inside the package, never relative paths across folders)                                    |
@@ -143,7 +143,7 @@ Five families, all loaded via `next/font/google` in `app/layout.tsx` (`display: 
 | `font-script`  | `--font-script`  | Caveat      | Expressive endorsement only        |
 | `font-mono`    | `--font-mono`    | Geist Mono  | Code, workbench status bar         |
 
-**Named typography:** import `H1`–`H6`, `Display`, `P`, `Text`, `Lead`, `Large`, `Small`, `Muted`, `Caption`, `Overline`, `Metric`, `Strong`, `Blockquote`, `List`, `OrderedList`, `InlineCode`, `CodeBlock`, and `TextLink` from `@smarttools/ui`. Definitions live in `src/components/typography.tsx`; every component has a fixed semantic element, native attributes/ref, and no `as` or `variant` prop.
+**Named typography:** import `H1`–`H6`, `Display`, `P`, `Text`, `Lead`, `Large`, `Small`, `Muted`, `Caption`, `Overline`, `Metric`, `Strong`, `Blockquote`, `List`, `OrderedList`, `InlineCode`, `CodeBlock`, and `TextLink` from `@canopy/ui`. Definitions live in `src/components/typography.tsx`; every component has a fixed semantic element, native attributes/ref, and no `as` or `variant` prop.
 
 | Components            | Size / line height             | Font / weight                 |
 | --------------------- | ------------------------------ | ----------------------------- |
@@ -394,7 +394,7 @@ not the extra browser storage occupied by individual preview/download artifacts.
 ### Full-screen preview usage
 
 ```tsx
-import { MediaPreview } from "@smarttools/ui";
+import { MediaPreview } from "@canopy/ui";
 
 <MediaPreview
   open={previewOpen}
@@ -478,7 +478,7 @@ Presentation rules only. Copy, routes, and status logic stay in the app.
 
 ### Ownership rule — what belongs here
 
-A component belongs in `@smarttools/ui` when **the same presentation contract appears a third time** across product areas (paperwork / devtools / media / auth / admin). Below that bar it stays in the app's own component or route scope.
+A component belongs in `@canopy/ui` when **the same presentation contract appears a third time** across product areas (paperwork / devtools / media / auth / admin). Below that bar it stays in the app's own component or route scope.
 
 Currently app-local by decision:
 
@@ -591,6 +591,16 @@ Documented so nobody rediscovers them. Fix opportunistically; none is a blocker.
 | Open design gaps                            | `plans/tool-page-design-spec.md` lists 13 confirmed parity gaps (`UniversalWorkbench`, `ToolPage`, `SettingsPanel`, `Surfaces.tsx`, `ResultView`, `SourceResultWorkspace`, `FileProcessorWorkspace.tsx`, 21 media `definition.ts` files). |
 
 ---
+
+## Saved tools
+
+`SavedToolsProvider` wraps the application once. `SavedToolsTrigger` opens a 400px anchored desktop popover or a modal mobile bottom sheet; opening Saved never changes the route. `SaveToolButton` accepts a tool `href` and supports an `iconOnly` catalog variant. Catalog cards keep the save button outside the destination link.
+
+Rows show tool identity, then a **remove bookmark icon**, then an **open arrow**. Both actions use shared buttons and hover/focus tooltips. Escape/outside dismissal restores trigger focus; mobile traps focus. Removal offers Undo, and storage/network failures expose retry without claiming success.
+
+Guests store identifiers under `canopy.saved-tools.v1`. At sign-in, pending guest IDs are staged locally for that account and unioned into `user_preferences` (`user_id`, `key = saved_tools`, JSONB `value`, `updated_at`). Confirmed imports are cleared locally; failed imports remain account-scoped for retry. Account lists are never copied into guest storage on sign-out. The authenticated API derives ownership from the server session and locks the preference row during read/modify/write.
+
+Schema deployment: `packages/database/drizzle/0008_user_preferences.sql`, included in `pnpm db:migrate`. No dedicated bookmarks table or Saved page is used.
 
 ## References
 

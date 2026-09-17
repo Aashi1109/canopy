@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
   ToolPageHeader,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { History } from "lucide-react";
 import { requirePagePermission } from "../../../../lib/admin/access";
 import { listAuditEvents } from "../../../../lib/admin/data";

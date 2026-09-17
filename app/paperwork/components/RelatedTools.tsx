@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { ResolvedTool } from "@smarttools/tool-catalog";
-import { Caption, H2, List, Muted, P, Text, Button, CatalogCard, StatusBadge } from "@smarttools/ui";
+import type { ResolvedTool } from "@canopy/tool-catalog";
+import { Caption, H2, List, Muted, P, Text, Button, CatalogCard, StatusBadge } from "@canopy/ui";
 import {
   CheckCircle2,
   ClipboardCheck,

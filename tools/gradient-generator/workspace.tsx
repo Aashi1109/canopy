@@ -11,7 +11,7 @@
  * can only show a value `run.ts` already validated both colours for.
  */
 
-import { ToolOptionsPanel } from "@smarttools/ui";
+import { ToolOptionsPanel } from "@canopy/ui";
 
 import { ResultSurface } from "@/components/ResultSurface";
 import { SettingsPanel } from "@/components/SettingsPanel";

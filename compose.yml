@@ -14,7 +14,7 @@ services:
       APP_URL: "${APP_URL:?Set APP_URL in .env.local}"
       BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env.local}"
       RESEND_API_KEY: "${RESEND_API_KEY:?Set RESEND_API_KEY in .env.local}"
-      AUTH_EMAIL_FROM: "${AUTH_EMAIL_FROM:?Set AUTH_EMAIL_FROM in .env.local}"
+      ACCOUNTS_EMAIL: "${ACCOUNTS_EMAIL:?Set ACCOUNTS_EMAIL in .env.local}"
       GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
       GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-}"
       GEMINI_API_KEY: "${GEMINI_API_KEY:-}"

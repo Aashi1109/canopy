@@ -1,10 +1,16 @@
 "use client";
 import { Caption, P } from "#components/typography";
 
-import { ChevronDown, LogOut, Shield, UserRound } from "lucide-react";
+import {
+  ArrowLeftRight, BookOpen, Braces, CalendarClock, ChevronDown, ChevronRight,
+  CodeXml, FileCode, FileOutput, Files, FolderTree, Globe, ImagePlay, Images,
+  KeyRound, LayoutGrid, LogOut, Minimize2, Network, Palette, ScanLine, Shield,
+  Sparkles, Table2, Type, UserRound, type LucideIcon,
+} from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { useState } from "react";
 import { Button } from "./button.tsx";
+import { PreviewIcon, useEcosystemGroups } from "./EcosystemTabFilters.tsx";
 import { cn } from "../lib/utils.ts";
 
 export type AccountNavigationProps = {
@@ -17,7 +23,35 @@ export type AccountNavigationProps = {
 const itemClassName =
   "flex min-h-10 cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4";
 
-function useSignOut(destination: string) {
+export const SITE_NAVIGATION_ITEMS = [
+  { href: "/", label: "All tools", icon: LayoutGrid },
+  { href: "/paperwork", label: "Documents", icon: Files },
+  { href: "/devtools", label: "Developer", icon: CodeXml },
+  { href: "/media", label: "Media", icon: ImagePlay },
+  { href: "/blog", label: "Blog", icon: BookOpen },
+];
+
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  "json-tools": Braces,
+  "csv-data-tools": Table2,
+  "text-tools": Type,
+  "encoding-decoding": ArrowLeftRight,
+  "hashing-crypto": Shield,
+  "jwt-api-tools": KeyRound,
+  "web-markup-tools": FileCode,
+  "color-design-tools": Palette,
+  "date-time-tools": CalendarClock,
+  "developer-generators": Sparkles,
+  "diagram-tools": Network,
+  "seo-domain-tools": Globe,
+  "pdf-conversion": FileOutput,
+  "pdf-organization": FolderTree,
+  "pdf-optimization": Minimize2,
+  "image-conversion": Images,
+  "image-editing": ScanLine,
+};
+
+export function useSignOut(destination: string) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -60,6 +94,8 @@ export function SwitchAccountButton({ returnTo }: { returnTo: string }) {
 }
 
 export function AccountNavigation({ className, returnTo, restricted = false, user }: AccountNavigationProps) {
+  const [open, setOpen] = useState(false);
+  const groups = useEcosystemGroups(open && !restricted);
   const { pending, error, signOut } = useSignOut(restricted ? "/auth" : "/");
   const target = `${user ? "/auth/profile" : "/auth"}?${new URLSearchParams({ returnTo })}`;
   const accountName = user?.name.trim() || "Account";
@@ -72,7 +108,7 @@ export function AccountNavigation({ className, returnTo, restricted = false, use
   return (
     <nav aria-label="Account" className={cn("flex items-center", className)}>
       {user ? (
-        <DropdownMenu.Root>
+        <DropdownMenu.Root open={open} onOpenChange={setOpen}>
           <DropdownMenu.Trigger asChild>
             <Button
               aria-label={`Open account menu for ${accountName}`}
@@ -95,8 +131,70 @@ export function AccountNavigation({ className, returnTo, restricted = false, use
               align="end"
               sideOffset={8}
               collisionPadding={12}
-              className="z-[100] w-56 max-w-[calc(100vw-24px)] rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-lg"
+              className="z-[100] max-h-[var(--radix-dropdown-menu-content-available-height)] w-56 max-w-[calc(100vw-24px)] overflow-y-auto rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-lg"
             >
+              {!restricted ? (
+                <DropdownMenu.Group className="[@media(width>1024px)]:hidden">
+                  {SITE_NAVIGATION_ITEMS.map(({ href, label, icon: Icon }) => {
+                    const group = groups.find((group) => group.href === href);
+                    if (!group)
+                      return (
+                        <DropdownMenu.Item asChild className={itemClassName} key={href}>
+                          <a href={href}>
+                            <Icon aria-hidden="true" />
+                            {label}
+                          </a>
+                        </DropdownMenu.Item>
+                      );
+                    const links =
+                      group.id !== "documents" && group.categories.length
+                        ? group.categories.map((category) => ({
+                            ...category,
+                            CategoryIcon:
+                              CATEGORY_ICONS[new URLSearchParams(category.href.split("?")[1]).get("category") ?? ""] ??
+                              LayoutGrid,
+                          }))
+                        : group.tools.map((tool) => ({ href: tool.href, label: tool.name, icon: tool.icon }));
+                    return (
+                      <DropdownMenu.Sub key={href}>
+                        <DropdownMenu.SubTrigger className={cn(itemClassName, "data-[state=open]:bg-accent")}>
+                          <Icon aria-hidden="true" />
+                          {label}
+                          <ChevronRight aria-hidden="true" className="ml-auto" />
+                        </DropdownMenu.SubTrigger>
+                        <DropdownMenu.Portal>
+                          <DropdownMenu.SubContent
+                            sideOffset={4}
+                            collisionPadding={12}
+                            className="z-[100] max-h-[var(--radix-dropdown-menu-content-available-height)] w-64 max-w-[calc(100vw-24px)] overflow-y-auto rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-lg [@media(width>1024px)]:hidden"
+                          >
+                            <DropdownMenu.Item asChild className={itemClassName}>
+                              <a href={href}>
+                                <Icon aria-hidden="true" />
+                                All {label.toLowerCase()} tools
+                              </a>
+                            </DropdownMenu.Item>
+                            {links.length ? <DropdownMenu.Separator className="my-1 h-px bg-border" /> : null}
+                            {links.map((link) => (
+                              <DropdownMenu.Item asChild className={itemClassName} key={link.href}>
+                                <a href={link.href}>
+                                  {"icon" in link ? (
+                                    <PreviewIcon icon={link.icon} />
+                                  ) : (
+                                    <link.CategoryIcon aria-hidden="true" className="shrink-0" />
+                                  )}
+                                  {link.label}
+                                </a>
+                              </DropdownMenu.Item>
+                            ))}
+                          </DropdownMenu.SubContent>
+                        </DropdownMenu.Portal>
+                      </DropdownMenu.Sub>
+                    );
+                  })}
+                  <DropdownMenu.Separator className="my-1 h-px bg-border" />
+                </DropdownMenu.Group>
+              ) : null}
               {!restricted && user.isAdmin ? (
                 <DropdownMenu.Item asChild className={itemClassName}>
                   <a href="/admin">

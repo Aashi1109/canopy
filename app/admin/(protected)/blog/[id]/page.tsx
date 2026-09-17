@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { hasPermission } from "@smarttools/authorization";
-import { getUserAuthorization } from "@smarttools/control-plane";
+import { hasPermission } from "@canopy/authorization";
+import { getUserAuthorization } from "@canopy/control-plane";
 import { requirePagePermission } from "@/lib/admin/access";
 import { getBlogPost } from "@/lib/blog/queries";
 import { getTools } from "@/lib/tool-framework/catalog";

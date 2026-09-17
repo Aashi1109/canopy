@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
 import axios from "axios";
-import { Cache } from "@smarttools/cache";
+import { Cache } from "@canopy/cache";
 
 test("catalog caches database data, preserves published content, and refreshes after invalidation", async (t) => {
   const catalogUrl = new URL("../lib/tool-framework/catalog.ts", import.meta.url).href;
@@ -42,7 +42,7 @@ test("catalog caches database data, preserves published content, and refreshes a
   const previous = variables.map((key) => process.env[key]);
   const hooks = registerHooks({
     resolve(specifier, context, nextResolve) {
-      if (context.parentURL === catalogUrl && specifier === "@smarttools/database") {
+      if (context.parentURL === catalogUrl && specifier === "@canopy/database") {
         return {
           shortCircuit: true,
           url: `data:text/javascript,${encodeURIComponent(`

@@ -19,11 +19,11 @@ async function readJson(path) {
 
 test("SmartTools is a root-owned direct-layout Next.js application", async () => {
   const packageJson = await readJson("package.json");
-  assert.equal(packageJson.name, "smarttools");
+  assert.equal(packageJson.name, "canopy");
   assert.equal(packageJson.private, true);
   assert.equal(typeof packageJson.dependencies.next, "string");
   assert.equal(await exists("apps"), false);
-  assert.equal(await exists("components/smarttools/PublicInfoChrome.tsx"), true);
+  assert.equal(await exists("components/canopy/PublicInfoChrome.tsx"), true);
   assert.equal(await exists("app/paperwork/components/App.tsx"), true);
   assert.equal(await exists("app/layout.tsx"), true);
   assert.equal(await exists("src"), false);
@@ -191,7 +191,7 @@ test("Admin and Media ordering use the shared accessible drag-and-drop list", as
   assert.match(editor, /<OrderableList/);
   assert.match(editor, /GripVertical/);
   assert.doesNotMatch(editor, /moveSection|ArrowUp|ArrowDown/);
-  assert.match(toolList, /@smarttools\/ui\/components\/OrderableList/);
+  assert.match(toolList, /@canopy\/ui\/components\/OrderableList/);
   assert.match(orderableList, /KeyboardSensor/);
   assert.match(orderableList, /PointerSensor/);
   assert.match(orderableList, /sortableKeyboardCoordinates/);

@@ -5,12 +5,12 @@ import { setTimeout } from "node:timers/promises";
 import test from "node:test";
 import postgres from "postgres";
 
-const enabled = process.env.SMARTTOOLS_INTEGRATION === "1" && Boolean(process.env.DATABASE_URL);
+const enabled = process.env.CANOPY_INTEGRATION === "1" && Boolean(process.env.DATABASE_URL);
 
 test(
   "authorization changes advance only affected user cache keys and roll back atomically",
   {
-    skip: enabled ? false : "set SMARTTOOLS_INTEGRATION=1 with a disposable DATABASE_URL",
+    skip: enabled ? false : "set CANOPY_INTEGRATION=1 with a disposable DATABASE_URL",
   },
   async (context) => {
     const sql = postgres(process.env.DATABASE_URL, { max: 1, onnotice() {} });
@@ -113,7 +113,7 @@ test(
 test(
   "concurrent role edits and assignments cannot leave a stale user cache key",
   {
-    skip: enabled ? false : "set SMARTTOOLS_INTEGRATION=1 with a disposable DATABASE_URL",
+    skip: enabled ? false : "set CANOPY_INTEGRATION=1 with a disposable DATABASE_URL",
   },
   async (context) => {
     const schema = `user_role_cache_test_${randomUUID().replaceAll("-", "")}`;

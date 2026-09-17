@@ -9,7 +9,7 @@ import {
   EmptyState,
   StatusBadge,
   ToolPageHeader,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { AdminFilters } from "../components/AdminFilters";
 import { SearchX, Users } from "lucide-react";
 import { requirePagePermission } from "../../../../lib/admin/access";

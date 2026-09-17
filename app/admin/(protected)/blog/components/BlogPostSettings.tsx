@@ -23,7 +23,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 
 export interface BlogSettingsValue {
   authorName: string;

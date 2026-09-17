@@ -1,5 +1,5 @@
-import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
-import { getOptionalSession } from "@smarttools/auth/session";
+import { CanopyFooter } from "@/components/canopy/CanopyFooter";
+import { getOptionalSession } from "@canopy/auth/session";
 import {
   Caption,
   Display,
@@ -15,7 +15,7 @@ import {
   AccountNavigation,
   Button,
   ProductHeader,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { headers } from "next/headers";
 
 const projects = [
@@ -48,6 +48,7 @@ export default async function HomePage() {
   return (
     <div className="platform-shell min-h-screen bg-background text-foreground">
       <ProductHeader
+        account={{ returnTo: "/", user: session?.user ?? null }}
         actions={<AccountNavigation returnTo="/" user={session?.user ?? null} />}
         className="platform-header sticky top-0 z-50"
         href="/"
@@ -178,7 +179,7 @@ export default async function HomePage() {
         </section>
       </main>
 
-      <SmartToolsFooter />
+      <CanopyFooter />
     </div>
   );
 }

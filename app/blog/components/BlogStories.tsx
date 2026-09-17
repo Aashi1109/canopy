@@ -2,7 +2,7 @@
 
 import { useRef, useState, type ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
-import { AlertBanner, Button, Caption, P } from "@smarttools/ui";
+import { AlertBanner, Button, Caption, P } from "@canopy/ui";
 import type { listPublishedBlogPosts } from "@/lib/blog/queries";
 import { loadMoreBlogPosts } from "../actions";
 import { blogListingHref, type BlogFilters } from "../lib/filters";

@@ -1,6 +1,6 @@
 "use server";
 
-import { requirePermission } from "@smarttools/control-plane";
+import { requirePermission } from "@canopy/control-plane";
 import { revalidatePath } from "next/cache";
 import { getActorUserId } from "@/lib/admin/access";
 import { assignRoleToUsers } from "@/lib/admin/adminMutations";

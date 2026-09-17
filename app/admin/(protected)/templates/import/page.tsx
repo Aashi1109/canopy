@@ -1,4 +1,4 @@
-import { Caption, H1, H2, Muted, Overline, buttonVariants } from "@smarttools/ui";
+import { Caption, H1, H2, Muted, Overline, buttonVariants } from "@canopy/ui";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { requirePagePermission } from "../../../../../lib/admin/access";

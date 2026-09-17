@@ -1,3 +1,4 @@
+import { withUserCacheInvalidation } from "@canopy/control-plane";
 import {
   assertCanDeleteRole,
   assertCanDemoteUser,
@@ -10,7 +11,7 @@ import {
   type Access,
   type Role,
   type User,
-} from "@smarttools/authorization";
+} from "@canopy/authorization";
 import {
   and,
   auditEventsTable,
@@ -28,7 +29,7 @@ import {
   toolIconsTable,
   userRolesTable,
   type ToolIconRow,
-} from "@smarttools/database";
+} from "@canopy/database";
 import {
   createAdvancedTemplateConfig,
   DocumentTemplateSchema,
@@ -39,7 +40,7 @@ import {
   type InvoiceTemplate,
   type TemplateDocumentType,
   type TemplatePageFormat,
-} from "@smarttools/invoice-templates";
+} from "@canopy/invoice-templates";
 import {
   assertToolSlugImmutable,
   isValidToolSlug,
@@ -47,16 +48,19 @@ import {
   TOOL_SLUG_PATTERN,
   type ManagedTool,
   type ToolApp,
-} from "@smarttools/tool-catalog";
-import { AuthorizationError, type FeatureApp, type FeatureManifestEntry } from "@smarttools/control-plane";
+} from "@canopy/tool-catalog";
+import { AuthorizationError, type FeatureApp, type FeatureManifestEntry } from "@canopy/control-plane";
 import { z } from "zod";
-import { Cache } from "@smarttools/cache";
+import { Cache } from "@canopy/cache";
 import { isCategoryKey, TOOL_CATEGORIES, type CategoryKey } from "../tool-framework/categories.ts";
 import { TOOL_CONTENT_DOC_VERSION } from "../tool-framework/content.ts";
 import { uploadToolIcon } from "../tool-framework/cloudinary.ts";
 
 async function invalidateAfterCommit<T>(namespace: string, result: T): Promise<T> {
-  await new Cache(namespace).delete("all");
+  await Promise.all([
+    new Cache(namespace).delete("all"),
+    ...(namespace === "catalog" ? [new Cache("ecosystem").delete("all")] : []),
+  ]);
   return result;
 }
 
@@ -973,7 +977,7 @@ export async function assignUserRoles(
   targetUserId: string,
   requestedRoleIds: readonly string[],
 ): Promise<string[]> {
-  return db.transaction(async (transaction) => {
+  return withUserCacheInvalidation((invalidate) => db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "users", "assignRoles");
     if (!Array.isArray(requestedRoleIds)) {
       throw new Error("Role assignments must be an array.");
@@ -1003,6 +1007,7 @@ export async function assignUserRoles(
       return nextRoleIds;
     }
 
+    await invalidate([targetUserId]);
     const removedRoleIds = currentRoleIds.filter((roleId) => !nextRoleIds.includes(roleId));
     const addedRoleIds = nextRoleIds.filter((roleId) => !currentRoleIds.includes(roleId));
     if (removedRoleIds.length) {
@@ -1018,7 +1023,7 @@ export async function assignUserRoles(
       roleIds: nextRoleIds,
     });
     return nextRoleIds;
-  });
+  }));
 }
 
 /** Adds one custom role atomically; never replaces memberships or changes account status. */
@@ -1033,7 +1038,7 @@ export async function assignRoleToUsers(
   }
   if (requestedUserIds.length > 100) throw new Error("Assign up to 100 users at a time.");
   const userIds = [...new Set(requestedUserIds.map((id) => requiredText(id, "User id", 200)))].sort();
-  await db.transaction(async (transaction) => {
+  await withUserCacheInvalidation((invalidate) => db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "roles", "view");
     await requireTransactionPermission(transaction, actorUserId, "users", "assignRoles");
     // Match the per-user assignment lock order and lock targets consistently across batches.
@@ -1044,13 +1049,14 @@ export async function assignRoleToUsers(
     for (const userId of userIds) {
       const previousRoleIds = await getUserRoleIdsForUpdate(transaction, userId);
       if (previousRoleIds.includes(roleId)) continue;
+      await invalidate([userId]);
       await transaction.insert(userRolesTable).values({ userId, roleId });
       await writeAudit(transaction, actorUserId, "user.assign-roles", "user", userId, {
         previousRoleIds,
         roleIds: [...previousRoleIds, roleId],
       });
     }
-  });
+  }));
 }
 
 export async function setUserStatus(
@@ -1058,7 +1064,7 @@ export async function setUserStatus(
   targetUserId: string,
   status: "active" | "suspended",
 ): Promise<void> {
-  return db.transaction(async (transaction) => {
+  return withUserCacheInvalidation((invalidate) => db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "users", "suspend");
     if (status !== "active" && status !== "suspended") {
       throw new Error("User status must be active or suspended.");
@@ -1069,6 +1075,7 @@ export async function setUserStatus(
       assertCanSuspendUser(authorizationUser(target, roleIds), await getAdminCounts(transaction));
     }
 
+    await invalidate([targetUserId]);
     if (target.status !== status) {
       await transaction.update(authUser).set({ status, updatedAt: new Date() }).where(eq(authUser.id, targetUserId));
     }
@@ -1084,7 +1091,7 @@ export async function setUserStatus(
         { previousStatus: target.status, status },
       );
     }
-  });
+  }));
 }
 
 async function getRoleForUpdate(transaction: Transaction, roleId: string): Promise<RoleRow> {
@@ -1118,7 +1125,7 @@ export async function createCustomRole(
 }
 
 export async function updateCustomRole(actorUserId: string, roleId: string, input: CustomRoleEdit): Promise<RoleRow> {
-  return db
+  return withUserCacheInvalidation((invalidate) => db
     .transaction(async (transaction) => {
       await requireTransactionPermission(transaction, actorUserId, "roles", "edit");
       if (!isRecord(input)) throw new Error("Role changes must be an object.");
@@ -1129,6 +1136,9 @@ export async function updateCustomRole(actorUserId: string, roleId: string, inpu
       const access = { ...requestedAccess, admin: { enter: true } };
       assertAccessPrerequisites(access);
 
+      const members = await transaction.select({ userId: userRolesTable.userId })
+        .from(userRolesTable).where(eq(userRolesTable.roleId, roleId));
+      await invalidate(members.map(({ userId }) => userId));
       const changes = {
         name: Object.hasOwn(input, "name") ? requiredText(input.name, "Role name", 160) : current.name,
         description: Object.hasOwn(input, "description")
@@ -1143,7 +1153,7 @@ export async function updateCustomRole(actorUserId: string, roleId: string, inpu
       });
       return role;
     })
-    .then((result) => invalidateAfterCommit("roles", result));
+    .then((result) => invalidateAfterCommit("roles", result)));
 }
 
 export async function deleteCustomRole(actorUserId: string, roleId: string): Promise<void> {

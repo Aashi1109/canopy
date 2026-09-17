@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import axios from "axios";
-import { db, rolesTable, userRolesTable } from "@smarttools/database";
+import { db, rolesTable, userRolesTable } from "@canopy/database";
 import { getRole, listRoles } from "../lib/admin/data.ts";
 
 test("role definitions are cached while membership counts stay current", async (t) => {

@@ -65,7 +65,7 @@ test("auth return URLs keep navigation inside the unified application", () => {
     "//evil.test",
     "/%2fevil.test",
     "https://smarttools.test.evil.test/",
-    "https://user@smarttools.test/",
+    "https://user@canopy.test/",
   ]) {
     assert.equal(resolveReturnTo(unsafe, redirectPolicy), "/");
   }

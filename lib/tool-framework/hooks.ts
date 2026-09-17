@@ -11,7 +11,7 @@
  * resolves to nothing for every one of those.
  */
 
-import { TOOL_SLUG_PATTERN } from "@smarttools/tool-catalog";
+import { TOOL_SLUG_PATTERN } from "@canopy/tool-catalog";
 
 import type { ToolHooks, ToolPagesInspected, ToolSettingsChanged, ToolValidate } from "./run";
 

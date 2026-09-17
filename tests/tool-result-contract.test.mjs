@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 test("list results are part of the closed tool render contract", async () => {
-  const directory = await mkdtemp(path.join(tmpdir(), "smarttools-result-contract-"));
+  const directory = await mkdtemp(path.join(tmpdir(), "canopy-result-contract-"));
   const fixture = path.join(directory, "fixture.ts");
   const config = path.join(directory, "tsconfig.json");
 

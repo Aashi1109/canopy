@@ -2,7 +2,7 @@
 
 import { z, ZodError } from "zod";
 import { errorMessage } from "../../../../utils/errorMessage.ts";
-import { AuthorizationError } from "@smarttools/control-plane";
+import { AuthorizationError } from "@canopy/control-plane";
 import { getActorUserId } from "../../../../lib/admin/access";
 import {
   BlogError,

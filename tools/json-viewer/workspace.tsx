@@ -15,7 +15,7 @@ import {
   SelectValue,
   Toaster,
   toast,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import {
   AlignLeft,
   CircleCheckBig,

@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import axios from "axios";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { authUser, db } from "@smarttools/database";
-import { AuthorizationError, getUserAuthorization } from "@smarttools/control-plane";
+import { authUser, db } from "@canopy/database";
+import { Cache } from "@canopy/cache";
+import { AuthorizationError, getUserAuthorization, withUserCacheInvalidation } from "@canopy/control-plane";
 
 const initialTime = new Date("2026-09-16T00:00:00.000Z");
 const changedTime = new Date("2026-09-16T00:00:01.000Z");
@@ -51,9 +52,27 @@ function setup(t) {
     databaseError: false,
     roleLoader: undefined,
   };
+  const profileEntries = new Map();
+  t.mock.method(Cache.prototype, "rememberGuarded", async function (id, load, ttl) {
+    assert.equal(ttl, 3600);
+    if (!process.env.UPSTASH_REDIS_REST_TOKEN || state.redisError) return load();
+    if (profileEntries.has(id)) return JSON.parse(profileEntries.get(id));
+    const value = await load();
+    profileEntries.set(id, JSON.stringify(value));
+    return value;
+  });
+  t.mock.method(Cache.prototype, "beginInvalidation", async function (id, ttl) {
+    assert.equal(ttl, 3600);
+    if (state.redisError) throw new Error("Redis unavailable");
+    profileEntries.delete(id);
+    return id;
+  });
+  t.mock.method(Cache.prototype, "endInvalidation", async function (id) {
+    profileEntries.delete(id);
+  });
   const dialect = new PgDialect();
   db.select = (fields) => {
-    const statusQuery = Object.hasOwn(fields, "updatedAt");
+    const statusQuery = fields === undefined;
     let userId;
     const query = {
       from(table) {
@@ -78,7 +97,10 @@ function setup(t) {
         const user = state.users.get(userId);
         if (statusQuery) {
           state.statusReads++;
-          return Promise.resolve(user ? [{ status: user.status, updatedAt: user.updatedAt }] : []).then(
+          return Promise.resolve(user ? [{
+            id: userId, name: userId, email: `${userId}@example.test`, image: null,
+            emailVerified: true, createdAt: initialTime, status: user.status, updatedAt: user.updatedAt,
+          }] : []).then(
             resolve,
             reject,
           );
@@ -110,13 +132,13 @@ function setup(t) {
   return state;
 }
 
-test("authorization caches each user's roles for one day while checking current status", async (t) => {
+test("authorization caches each user profile for one hour and roles for one day", async (t) => {
   const state = setup(t);
   assert.deepEqual(await getUserAuthorization("alice"), { roles: [editor], access: editor.access });
   assert.deepEqual(await getUserAuthorization("alice"), { roles: [editor], access: editor.access });
   assert.deepEqual(await getUserAuthorization("bob"), { roles: [reader], access: reader.access });
   assert.equal(state.roleReads, 2);
-  assert.equal(state.statusReads, 3);
+  assert.equal(state.statusReads, 2);
   assert.deepEqual(
     [...state.entries.keys()],
     [`user-roles:alice:${initialTime.toISOString()}`, `user-roles:bob:${initialTime.toISOString()}`],
@@ -127,7 +149,10 @@ test("authorization caches each user's roles for one day while checking current 
 test("updated users bypass previous role entries", async (t) => {
   const state = setup(t);
   await getUserAuthorization("alice");
-  state.users.set("alice", { status: "active", updatedAt: changedTime, roles: [reader] });
+  await withUserCacheInvalidation(async (invalidate) => {
+    await invalidate(["alice"]);
+    state.users.set("alice", { status: "active", updatedAt: changedTime, roles: [reader] });
+  });
   assert.deepEqual(await getUserAuthorization("alice"), { roles: [reader], access: reader.access });
   assert.equal(state.roleReads, 2);
   assert.equal(state.entries.size, 2);
@@ -139,9 +164,15 @@ test("suspended and deleted users cannot reuse cached authorization", async (t) 
   const state = setup(t);
   await getUserAuthorization("alice");
   const commandsBefore = state.commands.length;
-  state.users.get("alice").status = "suspended";
+  await withUserCacheInvalidation(async (invalidate) => {
+    await invalidate(["alice"]);
+    state.users.get("alice").status = "suspended";
+  });
   await assert.rejects(getUserAuthorization("alice"), AuthorizationError);
-  state.users.delete("alice");
+  await withUserCacheInvalidation(async (invalidate) => {
+    await invalidate(["alice"]);
+    state.users.delete("alice");
+  });
   await assert.rejects(getUserAuthorization("alice"), AuthorizationError);
   assert.equal(state.commands.length, commandsBefore);
   assert.equal(state.roleReads, 1);
@@ -159,10 +190,12 @@ test("authorization falls back to the database without working Redis", async (t)
   assert.equal(state.entries.size, 0);
 });
 
-test("database failure rejects even when authorization was previously cached", async (t) => {
+test("cached authorization avoids the database until explicit invalidation", async (t) => {
   const state = setup(t);
   await getUserAuthorization("alice");
   state.databaseError = true;
+  assert.deepEqual(await getUserAuthorization("alice"), { roles: [editor], access: editor.access });
+  await withUserCacheInvalidation(async (invalidate) => { await invalidate(["alice"]); });
   await assert.rejects(getUserAuthorization("alice"), /Database unavailable/);
 });
 
@@ -180,7 +213,10 @@ test("a late cache fill from before an update cannot replace current authorizati
     });
   const staleRead = getUserAuthorization("alice");
   await loading;
-  state.users.set("alice", { status: "active", updatedAt: changedTime, roles: [reader] });
+  await withUserCacheInvalidation(async (invalidate) => {
+    await invalidate(["alice"]);
+    state.users.set("alice", { status: "active", updatedAt: changedTime, roles: [reader] });
+  });
   state.roleLoader = undefined;
   assert.deepEqual(await getUserAuthorization("alice"), { roles: [reader], access: reader.access });
   release();

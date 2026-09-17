@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Button, MediaPreview, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@smarttools/ui";
+import { Button, MediaPreview, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@canopy/ui";
 import { ArtifactDownloadButton, useFileDownload } from "@/components/ArtifactDownloadButton";
-import { MediaOutputCard } from "@smarttools/ui/components/MediaOutputCard";
-import { OrderableList } from "@smarttools/ui/components/OrderableList";
+import { MediaOutputCard } from "@canopy/ui/components/MediaOutputCard";
+import { OrderableList } from "@canopy/ui/components/OrderableList";
 import { workspaceFileId } from "@/components/FileInput";
 import { GripVertical, Minus, Plus } from "lucide-react";
 import { readArtifact, type StoredToolArtifact } from "@/lib/tool-framework/artifacts";

@@ -1,4 +1,4 @@
-import { getAvailableToolBySlug } from "@smarttools/control-plane";
+import { getAvailableToolBySlug } from "@canopy/control-plane";
 
 import { getToolManifest } from "../tool-framework/manifest";
 

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
-import { AuthorizationError } from "@smarttools/control-plane";
+import { AuthorizationError } from "@canopy/control-plane";
 
 const sourceUrl = new URL("../lib/blog/images.ts", import.meta.url).href;
 const fixture = {
@@ -22,7 +22,7 @@ const moduleUrl = (source) => `data:text/javascript,${encodeURIComponent(source)
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
     if (context.parentURL === sourceUrl) {
-      if (specifier === "@smarttools/database")
+      if (specifier === "@canopy/database")
         return {
           shortCircuit: true,
           url: moduleUrl(`

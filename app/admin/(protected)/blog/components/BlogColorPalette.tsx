@@ -1,7 +1,7 @@
 "use client";
 
 import { CircleOff } from "lucide-react";
-import { Button, Tooltip, TooltipContent, TooltipTrigger } from "@smarttools/ui";
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from "@canopy/ui";
 
 export function BlogColorPalette({
   colors,

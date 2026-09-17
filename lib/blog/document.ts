@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { slugFromName } from "@smarttools/tool-catalog";
+import { slugFromName } from "@canopy/tool-catalog";
 
 export interface BlogImage {
   publicId: string;

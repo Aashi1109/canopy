@@ -1,4 +1,4 @@
-import { typographyStyles, Caption } from "@smarttools/ui";
+import { typographyStyles, Caption } from "@canopy/ui";
 import type { ToolRender } from "@/lib/tool-framework/result";
 
 export interface DiffViewProps {

@@ -26,7 +26,7 @@
  * main thread even by mistake.
  */
 
-import { Button, Select } from "@smarttools/ui";
+import { Button, Select } from "@canopy/ui";
 import { Loader2, Undo2 } from "lucide-react";
 import {
   createContext,

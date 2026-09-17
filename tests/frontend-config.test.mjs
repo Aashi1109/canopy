@@ -23,7 +23,7 @@ test("the root-owned frontend has one manifest and merged Next.js configuration"
     readJson("tsconfig.json"),
   ]);
 
-  assert.equal(packageJson.name, "smarttools");
+  assert.equal(packageJson.name, "canopy");
   assert.equal(packageJson.private, true);
   assert.equal(baseTypescript.compilerOptions.strict, true);
   assert.equal(uiPackage.exports["./theme.css"], "./src/theme.css");
@@ -31,13 +31,13 @@ test("the root-owned frontend has one manifest and merged Next.js configuration"
   assert.match(theme, /@theme\s*\{/);
 
   for (const dependency of [
-    "@smarttools/auth",
-    "@smarttools/authorization",
-    "@smarttools/control-plane",
-    "@smarttools/database",
-    "@smarttools/invoice-templates",
-    "@smarttools/tool-catalog",
-    "@smarttools/ui",
+    "@canopy/auth",
+    "@canopy/authorization",
+    "@canopy/control-plane",
+    "@canopy/database",
+    "@canopy/invoice-templates",
+    "@canopy/tool-catalog",
+    "@canopy/ui",
     "@jsquash/jpeg",
     "@pdfme/generator",
     "@react-pdf/renderer",
@@ -72,8 +72,8 @@ test("the root-owned frontend has one manifest and merged Next.js configuration"
   assert.match(nextConfig, /module:\s*\{\s*browser:/);
   assert.match(nextConfig, /transpilePackages:\s*\[/);
   for (const dependency of [
-    "@smarttools/auth",
-    "@smarttools/ui",
+    "@canopy/auth",
+    "@canopy/ui",
     "@jsquash/jpeg",
     "heic-to",
     "pdfjs-dist",
@@ -108,14 +108,14 @@ test("Tailwind and the shared theme are imported once at the root layout", async
   const theme = await readText("packages/ui/src/theme.css");
 
   assert.ok(rootStyles);
-  assert.match(rootStyles.source, /^@import "tailwindcss";\n@import "@smarttools\/ui\/theme\.css";/);
+  assert.match(rootStyles.source, /^@import "tailwindcss";\n@import "@canopy\/ui\/theme\.css";/);
   assert.equal(
     stylesheets.reduce((count, { source }) => count + (source.match(/@import ["']tailwindcss["'];/g) ?? []).length, 0),
     1,
   );
   assert.equal(
     stylesheets.reduce(
-      (count, { source }) => count + (source.match(/@import ["']@smarttools\/ui\/theme\.css["'];/g) ?? []).length,
+      (count, { source }) => count + (source.match(/@import ["']@canopy\/ui\/theme\.css["'];/g) ?? []).length,
       0,
     ),
     1,
@@ -154,7 +154,7 @@ test("frontend navigation and browser tests use one origin with scoped paths", a
   assert.match(playwright, /APP_URL:\s*["']http:\/\/localhost:3000["']/);
   assert.match(playwright, /webServer:\s*\{/);
   assert.match(playwright, /command:\s*["']pnpm dev["']/);
-  assert.doesNotMatch(playwright, /@smarttools\/platform/);
+  assert.doesNotMatch(playwright, /@canopy\/platform/);
   assert.doesNotMatch(playwright, /localhost:300[1-9]/);
 });
 

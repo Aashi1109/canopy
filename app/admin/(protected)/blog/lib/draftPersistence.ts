@@ -13,6 +13,7 @@ export function createDraftPersistence<T>(options: {
   let version = options.version;
   let generation = 0;
   let savedGeneration = 0;
+  let savedDocument: string | undefined = JSON.stringify(options.document);
   let conflict = false;
   let active = true;
   let pending: Promise<boolean> | null = null;
@@ -54,10 +55,10 @@ export function createDraftPersistence<T>(options: {
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => {
       void save("autosave");
-    }, 3_000);
+    }, 10_000);
     deadlineTimer ??= setTimeout(() => {
       void save("autosave");
-    }, 30_000);
+    }, 60_000);
   }
   async function save(mode: "manual" | "autosave" = "manual"): Promise<boolean> {
     if (conflict || !active) return false;
@@ -70,23 +71,29 @@ export function createDraftPersistence<T>(options: {
     clearTimers();
     const snapshot = document;
     const requestedGeneration = generation;
-    emit("saving", "Saving draft…");
     pendingMode = mode;
     pending = (async () => {
       try {
-        // Tiptap attributes have null prototypes; Server Actions require plain JSON objects.
-        const result = await Promise.resolve().then(() =>
-          options.request({ document: JSON.parse(JSON.stringify(snapshot)) as T, version, mode }),
-        );
-        if (!result.ok) {
-          conflict = result.code === "CONFLICT";
-          clearTimers();
-          emit(conflict ? "conflict" : "error", result.message);
-          return false;
+        // Yield before completion so even a skipped save clears the assigned pending promise.
+        await Promise.resolve();
+        const serialized = JSON.stringify(snapshot);
+        if (mode !== "autosave" || serialized !== savedDocument) {
+          emit("saving", "Saving draft…");
+          // Tiptap attributes have null prototypes; Server Actions require plain JSON objects.
+          const result = await options.request({ document: JSON.parse(serialized) as T, version, mode });
+          if (!result.ok) {
+            savedDocument = undefined;
+            savedGeneration = -1;
+            conflict = result.code === "CONFLICT";
+            clearTimers();
+            emit(conflict ? "conflict" : "error", result.message);
+            return false;
+          }
+          version = result.data.version;
         }
-        version = result.data.version;
         restoredVersion = null;
-        savedGeneration = requestedGeneration;
+        savedDocument = serialized;
+        savedGeneration = JSON.stringify(document) === serialized ? generation : requestedGeneration;
         const clean = savedGeneration === generation;
         if (clean) forget();
         else remember();
@@ -94,6 +101,9 @@ export function createDraftPersistence<T>(options: {
         if (!clean) schedule();
         return true;
       } catch {
+        // A lost response may follow a committed write; only a confirmed save restores this baseline.
+        savedDocument = undefined;
+        savedGeneration = -1;
         clearTimers();
         emit("error", "Couldn’t save. Your edits are still here. Retry save.");
         return false;

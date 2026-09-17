@@ -41,7 +41,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   ctx.signal.throwIfAborted();
   mermaid.initialize({ securityLevel: "strict", startOnLoad: false });
 
-  const id = `smarttools-diagram-${bytesToHex(getCrypto().getRandomValues(new Uint8Array(8)))}`;
+  const id = `canopy-diagram-${bytesToHex(getCrypto().getRandomValues(new Uint8Array(8)))}`;
   let svg: string;
   try {
     ({ svg } = await mermaid.render(id, source));

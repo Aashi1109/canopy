@@ -23,9 +23,9 @@ import {
   InlineCode,
   CodeBlock,
   TextLink,
-} from "@smarttools/ui/components/typography";
+} from "@canopy/ui/components/typography";
 
-import { OrderableList } from "@smarttools/ui/components/OrderableList";
+import { OrderableList } from "@canopy/ui/components/OrderableList";
 import {
   AccountNavigation,
   Alert,
@@ -131,7 +131,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
   ToolPageHeader,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import {
   AlertTriangle,
   Bell,
@@ -151,7 +151,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import type { Chapter, PdfOutlineItem } from "@smarttools/ui";
+import type { Chapter, PdfOutlineItem } from "@canopy/ui";
 
 const sections = [
   ["#foundations", "Foundations"],
@@ -275,7 +275,7 @@ export default function DesignSystemPage() {
     <>
       <ToolPageHeader
         actions={<StatusBadge variant="success">Live components</StatusBadge>}
-        description="Every component below is rendered from @smarttools/ui with the tokens and visual language defined in design.pen."
+        description="Every component below is rendered from @canopy/ui with the tokens and visual language defined in design.pen."
         eyebrow="Design system"
         title="Component showcase"
       />
@@ -1148,7 +1148,7 @@ export default function DesignSystemPage() {
 
         <section className="scroll-mt-24" id="coverage">
           <SectionHeading
-            description="Every reusable design.pen node is mapped to a public @smarttools/ui implementation."
+            description="Every reusable design.pen node is mapped to a public @canopy/ui implementation."
             eyebrow="07"
             title={`${DESIGN_SYSTEM_COMPONENTS.length} component implementations`}
           />
@@ -1270,6 +1270,7 @@ export default function DesignSystemPage() {
 
             <div className="overflow-hidden rounded-xl border border-border">
               <ProductHeader
+                account={{ returnTo: "/admin/design-system", user: { name: "Jordan Chen" } }}
                 actions={<AccountNavigation returnTo="/admin/design-system" user={{ name: "Jordan Chen" }} />}
                 href="/admin/design-system"
                 name="Paperwork"

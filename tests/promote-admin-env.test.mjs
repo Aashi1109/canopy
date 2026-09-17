@@ -18,6 +18,12 @@ test("admin promotion loads root env files from either cwd and preserves environ
   await mkdir(path.dirname(script), { recursive: true });
   await copyFile(source, script);
   await mkdir(path.join(root, "node_modules/postgres"), { recursive: true });
+  await mkdir(path.join(root, "node_modules/@canopy"), { recursive: true });
+  await symlink(
+    path.dirname(path.dirname(createRequire(source).resolve("@canopy/cache"))),
+    path.join(root, "node_modules/@canopy/cache"),
+    "dir",
+  );
   await symlink(
     path.dirname(createRequire(source).resolve("dotenv/package.json")),
     path.join(root, "node_modules/dotenv"),

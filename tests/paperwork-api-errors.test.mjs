@@ -9,7 +9,7 @@ const fixture = { error: null, available: true };
 globalThis.__paperworkApiErrors = fixture;
 const moduleUrl = (source) => `data:text/javascript,${encodeURIComponent(source)}`;
 const stubs = {
-  "@smarttools/control-plane": `
+  "@canopy/control-plane": `
     export async function getAvailableToolBySlug() {
       const fixture = globalThis.__paperworkApiErrors;
       if (fixture.error !== null) throw fixture.error;
@@ -21,7 +21,7 @@ const stubs = {
     }
     export async function getPublishedTemplates() { return []; }
   `,
-  "@smarttools/invoice-templates": `
+  "@canopy/invoice-templates": `
     export const DocumentTypeSchema = { safeParse: data => ({success: data === "invoice", data}) };
     export const getDocumentDefinition = () => ({toolComponentKey: "invoice-generator"});
   `,

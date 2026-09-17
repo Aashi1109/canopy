@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { H2, Muted, Text, AlertBanner, Button, Card, Field, Input, Textarea } from "@smarttools/ui";
+import { H2, Muted, Text, AlertBanner, Button, Card, Field, Input, Textarea } from "@canopy/ui";
 
 type FormState = "idle" | "sending" | "success";
 

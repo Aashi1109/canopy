@@ -1,4 +1,4 @@
-import { getSession } from "@smarttools/auth/session";
+import { getSession } from "@canopy/auth/session";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AccessDeniedScreen } from "@/components/account/AccessDeniedScreen";

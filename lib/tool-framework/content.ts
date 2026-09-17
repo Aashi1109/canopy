@@ -18,7 +18,7 @@ import { isCategoryKey, type CategoryKey } from "./categories.ts";
 import type { ToolContent, ToolSpec } from "./spec.ts";
 // Type-only: erased at runtime, so this module never opens a database
 // connection and stays importable from plain unit tests.
-import type { ToolContentRow } from "@smarttools/database";
+import type { ToolContentRow } from "@canopy/database";
 
 export type { ToolContentRow };
 

@@ -13,7 +13,7 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   Button,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import type { listBlogPosts } from "@/lib/blog/queries";
 import { mutateBlogAction } from "../actions";
 import { BlogPostList, type BlogListFilters, type BlogPostListItem } from "./BlogPostList";

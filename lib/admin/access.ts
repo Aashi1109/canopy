@@ -1,5 +1,5 @@
-import { getSession } from "@smarttools/auth/session";
-import { AuthorizationError, requirePermission } from "@smarttools/control-plane";
+import { getSession } from "@canopy/auth/session";
+import { AuthorizationError, requirePermission } from "@canopy/control-plane";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 

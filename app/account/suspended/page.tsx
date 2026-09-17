@@ -1,4 +1,4 @@
-import { getSession } from "@smarttools/auth/session";
+import { getSession } from "@canopy/auth/session";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";

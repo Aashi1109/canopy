@@ -3,6 +3,7 @@ import { Caption, Strong } from "#components/typography";
 
 import { ArrowUpRight, ChevronDown, ChevronRight, LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
+import { cn } from "../lib/utils.ts";
 
 type ToolIcon = { kind: "svg"; svg: string } | { kind: "url"; url: string };
 type ToolPreview = { href: string; icon: ToolIcon; name: string; toolId: string };
@@ -22,11 +23,11 @@ const FALLBACK_GROUPS: readonly Ecosystem[] = [
   { categories: [], count: 0, href: "/media", id: "media", label: "Media", tools: [] },
 ];
 
-export function EcosystemTabFilters({ currentHref }: { currentHref?: string }) {
+export function useEcosystemGroups(enabled = true) {
   const [groups, setGroups] = useState<readonly Ecosystem[]>(FALLBACK_GROUPS);
-  const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     fetch("/api/tools/ecosystem")
       .then(async (response) => {
         if (!response.ok) throw new Error("Unable to load categories");
@@ -34,12 +35,19 @@ export function EcosystemTabFilters({ currentHref }: { currentHref?: string }) {
       })
       .then(({ groups: nextGroups }) => setGroups(nextGroups))
       .catch(() => setGroups(FALLBACK_GROUPS));
-  }, []);
+  }, [enabled]);
+
+  return groups;
+}
+
+export function EcosystemTabFilters({ currentHref, className }: { currentHref?: string; className?: string }) {
+  const groups = useEcosystemGroups();
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   return (
     <nav
       aria-label="Tool suites"
-      className="hidden h-[46px] items-center gap-0.5 rounded-full border border-border bg-card p-[5px] font-caption text-xs font-semibold xl:flex"
+      className={cn("relative hidden h-[46px] shrink-0 items-center gap-0.5 rounded-full border border-border bg-card p-[5px] font-caption text-xs font-semibold md:flex", className)}
     >
       <a
         className="rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
@@ -49,7 +57,7 @@ export function EcosystemTabFilters({ currentHref }: { currentHref?: string }) {
       </a>
       {groups.map((group) => (
         <span
-          className="relative"
+          className="static xl:relative"
           key={group.id}
           onMouseEnter={() => setActiveId(group.id)}
           onMouseLeave={() => setActiveId(null)}
@@ -82,7 +90,7 @@ function EcosystemMenu({ group, onClose }: { group: Ecosystem; onClose: () => vo
 
   return (
     <div
-      className="absolute top-[36px] left-0 z-50 w-[390px] overflow-hidden rounded-xl border border-border bg-card p-3 shadow-[0_16px_40px_rgb(17_18_20_/_14%)]"
+      className="absolute top-full left-1/2 z-50 w-[390px] max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-hidden xl:top-[36px] xl:left-0 xl:translate-x-0 rounded-xl border border-border bg-card p-3 shadow-[0_16px_40px_rgb(17_18_20_/_14%)]"
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) onClose();
       }}
@@ -161,7 +169,7 @@ function CategoryList({ categories }: { categories: readonly CategoryPreview[] }
   );
 }
 
-function PreviewIcon({ icon }: { icon: ToolIcon }) {
+export function PreviewIcon({ icon }: { icon: ToolIcon }) {
   return (
     <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center overflow-hidden rounded-sm bg-accent">
       {icon.kind === "url" ? (

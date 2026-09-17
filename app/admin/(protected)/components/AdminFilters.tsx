@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Field, Input, Select } from "@smarttools/ui";
+import { Button, Field, Input, Select } from "@canopy/ui";
 import { RotateCcw } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useRef, useState, useTransition } from "react";

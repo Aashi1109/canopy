@@ -1,5 +1,52 @@
 import axios from "axios";
 
+// One key holds both the value and mutation fences, so expiry cannot resurrect an old load.
+const GUARDED_READ = `
+local value = redis.call('GET', KEYS[1])
+if value then return value end
+value = cjson.encode({generation=ARGV[1], pending={}})
+redis.call('SET', KEYS[1], value, 'EX', ARGV[2])
+return value`;
+
+const GUARDED_FILL = `
+local raw = redis.call('GET', KEYS[1])
+if not raw then return 0 end
+local entry = cjson.decode(raw)
+if entry.generation ~= ARGV[1] or next(entry.pending) then return 0 end
+entry.value = ARGV[2]
+redis.call('SET', KEYS[1], cjson.encode(entry), 'EX', ARGV[3])
+return 1`;
+
+const INVALIDATION_BEGIN = `
+local raw = redis.call('GET', KEYS[1])
+local entry = raw and cjson.decode(raw) or {pending={}}
+entry.generation = ARGV[1]
+entry.value = nil
+entry.pending[ARGV[1]] = true
+redis.call('SET', KEYS[1], cjson.encode(entry))
+return 1`;
+
+const INVALIDATION_END = `
+local raw = redis.call('GET', KEYS[1])
+if not raw then return 0 end
+local entry = cjson.decode(raw)
+if not entry.pending[ARGV[1]] then return 0 end
+entry.pending[ARGV[1]] = nil
+entry.generation = ARGV[2]
+entry.value = nil
+if next(entry.pending) then
+  redis.call('SET', KEYS[1], cjson.encode(entry))
+else
+  redis.call('SET', KEYS[1], cjson.encode(entry), 'EX', ARGV[3])
+end
+return 1`;
+
+function validateTtl(ttlSeconds: number): void {
+  if (!Number.isSafeInteger(ttlSeconds) || ttlSeconds <= 0) {
+    throw new Error("Cache TTL must be a positive integer.");
+  }
+}
+
 async function command(args: string[]): Promise<unknown> {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -76,5 +123,65 @@ export class Cache {
     // ponytail: a late load can refill after deletion; add generation checks if this becomes unacceptable.
     await this.set(key, value, ttlSeconds);
     return value;
+  }
+
+  async rememberGuarded<T>(key: string, load: () => Promise<T>, ttlSeconds = 300): Promise<T> {
+    const redisKey = this.key(key);
+    validateTtl(ttlSeconds);
+    let generation: string | undefined;
+    try {
+      const raw = await command(["EVAL", GUARDED_READ, "1", redisKey, crypto.randomUUID(), String(ttlSeconds)]);
+      if (typeof raw === "string") {
+        const entry: unknown = JSON.parse(raw);
+        if (!entry || typeof entry !== "object" || !("generation" in entry) ||
+          typeof entry.generation !== "string" || !("pending" in entry) ||
+          !entry.pending || typeof entry.pending !== "object") {
+          throw new Error("Invalid guarded cache value");
+        }
+        if (Object.keys(entry.pending).length === 0) {
+          if ("value" in entry) {
+            if (typeof entry.value !== "string") throw new Error("Invalid guarded cache payload");
+            return JSON.parse(entry.value) as T;
+          }
+          generation = entry.generation;
+        }
+      }
+    } catch {
+      console.warn("Cache read unavailable or invalid; treating as a miss.");
+    }
+    const value = await load();
+    if (generation !== undefined) {
+      try {
+        const serialized = JSON.stringify(value);
+        if (serialized === undefined) throw new Error("Cache value must be JSON serializable");
+        await command(["EVAL", GUARDED_FILL, "1", redisKey, generation, serialized, String(ttlSeconds)]);
+      } catch {
+        console.warn("Cache write unavailable; continuing without caching.");
+      }
+    }
+    return value;
+  }
+
+  async beginInvalidation(key: string, ttlSeconds = 300): Promise<string | null> {
+    const redisKey = this.key(key);
+    validateTtl(ttlSeconds);
+    if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return null;
+    const token = crypto.randomUUID();
+    const result = await command(["EVAL", INVALIDATION_BEGIN, "1", redisKey, token]);
+    if (result !== 1) throw new Error("Cache invalidation failed");
+    return token;
+  }
+
+  async endInvalidation(key: string, token: string | null, ttlSeconds = 300): Promise<void> {
+    const redisKey = this.key(key);
+    validateTtl(ttlSeconds);
+    if (token === null) return;
+    // A failed release leaves caching disabled for this key instead of serving stale access.
+    try {
+      const result = await command(["EVAL", INVALIDATION_END, "1", redisKey, token, crypto.randomUUID(), String(ttlSeconds)]);
+      if (result !== 1) throw new Error("Cache invalidation release failed");
+    } catch {
+      console.warn("Cache invalidation release unavailable; caching remains disabled for this key.");
+    }
   }
 }

@@ -23,15 +23,15 @@ import {
   updateManagedTool,
   type DocumentTemplateContent,
 } from "../../lib/admin/adminMutations";
-import { featureManifest } from "@smarttools/control-plane";
+import { featureManifest } from "@canopy/control-plane";
 import {
   getDefaultTemplateConfigByFamily,
   type LayoutFamily,
   type TemplateCategory,
   type TemplateDocumentType,
   type TemplatePageFormat,
-} from "@smarttools/invoice-templates";
-import type { ToolApp } from "@smarttools/tool-catalog";
+} from "@canopy/invoice-templates";
+import type { ToolApp } from "@canopy/tool-catalog";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getActorUserId } from "../../lib/admin/access";

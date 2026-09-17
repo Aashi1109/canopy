@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import axios from "axios";
+import { Cache } from "@canopy/cache";
 
 import { ADMIN_ACCESS } from "../packages/authorization/src/index.ts";
 import {
@@ -152,6 +153,65 @@ async function withFakeDatabase(selectResults, callback) {
   }
 }
 
+test("user and role mutations invalidate affected users through commit and rollback", async (t) => {
+  let events = [];
+  t.mock.method(Cache.prototype, "beginInvalidation", async (id, ttl) => {
+    assert.equal(ttl, 3600);
+    events.push(`begin:${id}`);
+    return id;
+  });
+  t.mock.method(Cache.prototype, "endInvalidation", async (id, token, ttl) => {
+    assert.equal(token, id);
+    assert.equal(ttl, 3600);
+    events.push(`end:${id}`);
+  });
+  const target = { id: "target", status: "active", name: "Target", email: "target@example.test" };
+  const role = { id: "editor", name: "Editor", description: "Editor", access: {}, isSystem: false };
+  const cases = [
+    {
+      reads: [permissionRows({ users: { suspend: true } }), [target], [{ roleId: "user" }]],
+      run: () => setUserStatus("actor", "target", "suspended"),
+      ids: ["target"],
+    },
+    {
+      reads: [permissionRows({ users: { assignRoles: true } }), [target], [{ roleId: "user" }], [{ id: "user", access: {} }, role]],
+      run: () => assignUserRoles("actor", "target", ["editor"]),
+      ids: ["target"],
+    },
+    {
+      reads: [permissionRows({ roles: { edit: true } }), [role], [{ userId: "a" }, { userId: "b" }]],
+      run: () => updateCustomRole("actor", "editor", { name: "Renamed" }),
+      ids: ["a", "b"],
+    },
+  ];
+  for (const example of cases) {
+    for (const rollback of [false, true]) {
+      events = [];
+      await withFakeDatabase(example.reads, async () => {
+        const transaction = db.transaction;
+        db.transaction = async (operation) => {
+          const result = await transaction(operation);
+          events.push(rollback ? "rollback" : "commit");
+          if (rollback) throw new Error("Transaction rolled back");
+          return result;
+        };
+        if (rollback) await assert.rejects(example.run, /Transaction rolled back/);
+        else await example.run();
+      });
+      assert.deepEqual(events, [
+        ...example.ids.map((id) => `begin:${id}`),
+        rollback ? "rollback" : "commit",
+        ...example.ids.map((id) => `end:${id}`),
+      ]);
+    }
+  }
+  t.mock.method(Cache.prototype, "beginInvalidation", async () => { throw new Error("Cache unavailable"); });
+  await withFakeDatabase(cases[0].reads, async (state) => {
+    await assert.rejects(cases[0].run, /Cache unavailable/);
+    assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+  });
+});
+
 test("catalog and role caches invalidate only after successful commits", async (t) => {
   const variables = ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"];
   const previous = variables.map((key) => process.env[key]);
@@ -195,8 +255,7 @@ test("catalog and role caches invalidate only after successful commits", async (
         if (rollback) await assert.rejects(operation, /Commit failed/);
         else await operation();
       });
-      assert.equal(invalidated.length, before + (rollback ? 0 : 1));
-      if (!rollback) assert.equal(invalidated.at(-1), key);
+      assert.deepEqual(invalidated.slice(before), rollback ? [] : key === "catalog:all" ? [key, "ecosystem:all"] : [key]);
     }
   }
 });
@@ -911,7 +970,7 @@ test("custom role saves retain admin entry while accepting only valid entity gra
     { name: "Renamed" },
     { access: { tools: { view: true } } },
   ]) {
-    await withFakeDatabase([permissionRows({ roles: { edit: true } }), [role]], async (state) => {
+    await withFakeDatabase([permissionRows({ roles: { edit: true } }), [role], []], async (state) => {
       const saved = await updateCustomRole("actor", role.id, input);
       assert.deepEqual(saved.access, {
         ...(input.access ?? role.access),
@@ -952,7 +1011,7 @@ test("custom role edits validate access and unassigned custom roles can be delet
     access: {},
     isSystem: false,
   };
-  await withFakeDatabase([permissionRows({ roles: { edit: true } }), [role]], async (state) => {
+  await withFakeDatabase([permissionRows({ roles: { edit: true } }), [role], []], async (state) => {
     await updateCustomRole("actor", role.id, {
       description: "Edits and publishes templates.",
       access: { admin: { enter: true }, templates: { view: true, edit: true, publish: true } },

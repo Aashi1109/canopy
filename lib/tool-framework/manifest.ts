@@ -22,8 +22,8 @@
 
 import { cache } from "react";
 
-import { db, getToolContentRows, isDatabaseConfigured, managedToolsTable } from "@smarttools/database";
-import { mergeToolManifest, type ResolvedTool, type ToolManifestEntry } from "@smarttools/tool-catalog";
+import { db, getToolContentRows, isDatabaseConfigured, managedToolsTable } from "@canopy/database";
+import { mergeToolManifest, type ResolvedTool, type ToolManifestEntry } from "@canopy/tool-catalog";
 
 import { definitionKeyOf, loadSpec } from "./catalog";
 import { TOOL_CATEGORIES } from "./categories";

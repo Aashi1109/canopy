@@ -1,4 +1,4 @@
-import type { ToolIconRow } from "@smarttools/database";
+import type { ToolIconRow } from "@canopy/database";
 import { renderIdenticon } from "./identicon";
 
 export type { ToolIconRow };

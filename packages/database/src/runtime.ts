@@ -4,7 +4,7 @@ import postgres from "postgres";
 
 type SqlClient = ReturnType<typeof postgres>;
 type DatabaseRequest = { client?: SqlClient; closed?: boolean; databaseUrl?: string };
-const requestKey = Symbol.for("smarttools.database.request");
+const requestKey = Symbol.for("canopy.database.request");
 // Next and the custom Worker bundle this module separately. Share their scope.
 const runtime = globalThis as typeof globalThis & {
   [requestKey]?: AsyncLocalStorage<DatabaseRequest>;
@@ -19,7 +19,7 @@ function getSqlClient(): SqlClient {
   if (existing) return existing;
   const databaseUrl = request?.databaseUrl ?? process.env.DATABASE_URL;
   if (request && !databaseUrl) throw new Error("DATABASE_URL is required");
-  const client = postgres(databaseUrl ?? "postgres://127.0.0.1:1/smarttools_unconfigured", {
+  const client = postgres(databaseUrl ?? "postgres://127.0.0.1:1/canopy_unconfigured", {
     max: request ? 5 : 10,
     idle_timeout: 20,
     connect_timeout: 10,

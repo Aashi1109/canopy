@@ -1,6 +1,6 @@
 "use client";
 
-import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
+import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import {
   InlineCode,
   Overline,
@@ -23,7 +23,7 @@ import {
   IconTile,
   ToolPageShell,
   WorkbenchShell,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import {
   AlertCircle,
   AlertTriangle,
@@ -178,7 +178,8 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
       category={category}
       description={description}
       eyebrow={isMedia ? "MEDIA TOOL" : "DEVELOPER TOOL"}
-      footer={<SmartToolsFooter />}
+      footer={<CanopyFooter />}
+      account={account}
       headerActions={<AccountNavigation {...account} />}
       productHref={productHref}
       productName={productName}

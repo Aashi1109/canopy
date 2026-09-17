@@ -4,8 +4,8 @@ import {
   isDatabaseConfigured,
   type ToolContentRow,
   type ToolIconRow,
-} from "@smarttools/database";
-import { Text, Caption, H1, H3, InlineCode, Muted, Overline, StatusBadge } from "@smarttools/ui";
+} from "@canopy/database";
+import { Text, Caption, H1, H3, InlineCode, Muted, Overline, StatusBadge } from "@canopy/ui";
 import { FileText, Image, LayoutDashboard, Search, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";

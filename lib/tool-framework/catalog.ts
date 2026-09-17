@@ -24,7 +24,7 @@
  */
 
 import { cache } from "react";
-import { Cache } from "@smarttools/cache";
+import { Cache } from "@canopy/cache";
 
 import {
   db,
@@ -34,8 +34,8 @@ import {
   managedToolsTable,
   type ToolContentRow,
   type ToolIconRow,
-} from "@smarttools/database";
-import { isToolAvailable } from "@smarttools/tool-catalog";
+} from "@canopy/database";
+import { isToolAvailable } from "@canopy/tool-catalog";
 
 import { isCategoryKey, type CategoryKey, type ToolApp } from "./categories";
 import { resolveContent } from "./content";

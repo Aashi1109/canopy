@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, MediaPreview, Muted, PdfViewer } from "@smarttools/ui";
+import { Button, MediaPreview, Muted, PdfViewer } from "@canopy/ui";
 import { useEffect, useState } from "react";
 
 import { PdfPreviewPage, usePdfPageImages } from "@/components/PdfPagesSurface";

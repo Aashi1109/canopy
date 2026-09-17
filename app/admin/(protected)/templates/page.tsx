@@ -1,4 +1,4 @@
-import { DOCUMENT_TYPES } from "@smarttools/invoice-templates";
+import { DOCUMENT_TYPES } from "@canopy/invoice-templates";
 import {
   Caption,
   H1,
@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
   buttonVariants,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { Ellipsis, FilePenLine, Plus, Upload } from "lucide-react";
 import Link from "next/link";
 import { AdminFilters } from "../components/AdminFilters";

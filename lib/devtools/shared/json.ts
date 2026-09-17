@@ -106,7 +106,7 @@ export function transformJson(input: string, { mode, indentation }: TransformOpt
   }
 }
 
-const MISSING_VALUE = "__SMARTTOOLS_MISSING_JSON_VALUE__";
+const MISSING_VALUE = "__CANOPY_MISSING_JSON_VALUE__";
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);

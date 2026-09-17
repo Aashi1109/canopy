@@ -36,10 +36,10 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
-} from "@smarttools/ui";
-import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
-import { seedTemplates, type DocumentTemplate } from "@smarttools/invoice-templates";
-import type { ResolvedTool } from "@smarttools/tool-catalog";
+} from "@canopy/ui";
+import { CanopyFooter } from "@/components/canopy/CanopyFooter";
+import { seedTemplates, type DocumentTemplate } from "@canopy/invoice-templates";
+import type { ResolvedTool } from "@canopy/tool-catalog";
 import AdvancedTemplateWorkspace from "./AdvancedTemplateWorkspace";
 import ExpenseReportPage from "./expense/ExpenseReportPage";
 import FAQSection from "./FAQSection";
@@ -371,6 +371,7 @@ export default function App({
       id="app-root"
     >
       <ProductHeader
+        account={account}
         actions={
           <div className="flex items-center gap-2">
             {isInvoice ? (
@@ -410,6 +411,15 @@ export default function App({
                 <>
                   <Button onClick={() => formSectionRef.current?.scrollIntoView({ behavior: "smooth" })} size="lg">
                     Start invoice
+                  </Button>
+                  <Button
+                    className="md:hidden"
+                    onClick={() => setActiveDialog("clear")}
+                    size="lg"
+                    variant="danger-subtle"
+                  >
+                    <Trash2 aria-hidden="true" className="size-4" />
+                    Clear invoice draft
                   </Button>
                   {selectedTemplate.layoutFamily !== "advanced" ? (
                     <Button onClick={() => setActiveDialog("sample")} size="lg" variant="secondary">
@@ -614,7 +624,7 @@ export default function App({
           </>
         ) : null}
         <RelatedTools currentComponentKey={componentKey} onTrackClick={handleTrackClick} tools={tools} />
-        <SmartToolsFooter />
+        <CanopyFooter />
       </div>
 
       {isInvoice && selectedTemplate.layoutFamily !== "advanced" ? (

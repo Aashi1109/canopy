@@ -11,7 +11,7 @@ const fixture = {
   queries: 0,
   headers: null,
 };
-globalThis.__smarttoolsSessionTest = fixture;
+globalThis.__canopySessionTest = fixture;
 const moduleUrl = (source) => `data:text/javascript,${encodeURIComponent(source)}`;
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
@@ -19,7 +19,7 @@ const hooks = registerHooks({
       return {
         shortCircuit: true,
         url: moduleUrl(`
-        const fixture = globalThis.__smarttoolsSessionTest;
+        const fixture = globalThis.__canopySessionTest;
         export const auth = { api: { async getSession({ headers }) {
           fixture.headers = headers;
           if (fixture.authError) throw fixture.authError;
@@ -28,11 +28,11 @@ const hooks = registerHooks({
       `),
       };
     }
-    if (context.parentURL === sessionUrl && specifier === "@smarttools/control-plane") {
+    if (context.parentURL === sessionUrl && specifier === "@canopy/control-plane") {
       return {
         shortCircuit: true,
         url: moduleUrl(`
-        const fixture = globalThis.__smarttoolsSessionTest;
+        const fixture = globalThis.__canopySessionTest;
         export class AuthorizationError extends Error {}
         export async function getUserAuthorization(userId) {
           fixture.queries++;
@@ -52,7 +52,7 @@ hooks.deregister();
 
 test("account session uses active users' effective Admin entry grants, including custom roles", async (t) => {
   t.after(() => {
-    delete globalThis.__smarttoolsSessionTest;
+    delete globalThis.__canopySessionTest;
   });
   const headers = new Headers({ cookie: "session=test" });
   fixture.session = {

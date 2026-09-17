@@ -18,26 +18,28 @@ export async function sendAuthEmail({
   to,
   subject,
   heading,
+  message = "This link expires automatically. If you did not request it, you can ignore this email.",
   actionLabel,
   actionUrl,
 }: {
   to: string;
   subject: string;
   heading: string;
+  message?: string;
   actionLabel: string;
   actionUrl: string;
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.AUTH_EMAIL_FROM;
-  if (!apiKey || !from) {
-    throw new Error("RESEND_API_KEY and AUTH_EMAIL_FROM are required");
+  const accountsEmail = process.env.ACCOUNTS_EMAIL?.trim();
+  if (!apiKey || !accountsEmail) {
+    throw new Error("RESEND_API_KEY and ACCOUNTS_EMAIL are required");
   }
 
   const { error } = await new Resend(apiKey).emails.send({
-    from,
+    from: `SmartTools Accounts <${accountsEmail}>`,
     to: [to],
     subject,
-    html: `<main style="font-family:system-ui,sans-serif;max-width:560px;margin:40px auto;color:#172033"><h1>${escapeHtml(heading)}</h1><p>This link expires automatically. If you did not request it, you can ignore this email.</p><p><a href="${escapeHtml(actionUrl)}" style="display:inline-block;padding:12px 18px;background:#155eef;color:white;text-decoration:none;border-radius:8px">${escapeHtml(actionLabel)}</a></p></main>`,
+    html: `<main style="font-family:system-ui,sans-serif;max-width:560px;margin:40px auto;color:#172033"><h1>${escapeHtml(heading)}</h1><p>${escapeHtml(message)}</p><p><a href="${escapeHtml(actionUrl)}" style="display:inline-block;padding:12px 18px;background:#155eef;color:white;text-decoration:none;border-radius:8px">${escapeHtml(actionLabel)}</a></p></main>`,
   });
 
   if (error) throw new Error("Unable to send authentication email");

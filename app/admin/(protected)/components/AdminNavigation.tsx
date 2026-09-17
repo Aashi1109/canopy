@@ -1,6 +1,6 @@
 "use client";
 
-import { SidebarNavItem } from "@smarttools/ui";
+import { SidebarNavItem } from "@canopy/ui";
 import { FileText, Newspaper, Flag, History, LayoutDashboard, Palette, ShieldCheck, Users, Wrench } from "lucide-react";
 import { useSelectedLayoutSegment } from "next/navigation";
 

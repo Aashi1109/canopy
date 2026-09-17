@@ -2,9 +2,9 @@
 
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 
-import type { ToolApp } from "@smarttools/tool-catalog";
+import type { ToolApp } from "@canopy/tool-catalog";
 import type { AdminTool } from "../../../../../lib/tool-framework/manifest";
-import { OrderableList, type OrderableItemState } from "@smarttools/ui/components/OrderableList";
+import { OrderableList, type OrderableItemState } from "@canopy/ui/components/OrderableList";
 import {
   H3,
   Caption,
@@ -25,7 +25,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import {
   Boxes,
   Braces,

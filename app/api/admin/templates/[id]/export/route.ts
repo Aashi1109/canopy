@@ -1,6 +1,6 @@
-import { AuthServiceError, getSession } from "@smarttools/auth/session";
-import { requirePermission } from "@smarttools/control-plane";
-import { db, eq, invoiceTemplatesTable } from "@smarttools/database";
+import { AuthServiceError, getSession } from "@canopy/auth/session";
+import { requirePermission } from "@canopy/control-plane";
+import { db, eq, invoiceTemplatesTable } from "@canopy/database";
 import { errorMessage } from "@/utils/errorMessage";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {

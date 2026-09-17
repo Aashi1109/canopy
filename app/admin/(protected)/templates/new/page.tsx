@@ -13,7 +13,7 @@ import {
   Switch,
   Textarea,
   buttonVariants,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { ArrowLeft, CircleCheck, LayoutTemplate } from "lucide-react";
 import Link from "next/link";
 import { requirePagePermission } from "../../../../../lib/admin/access";

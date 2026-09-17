@@ -16,7 +16,7 @@ import {
   Button,
   EmptyState,
   StatusBadge,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { mutateBlogAction } from "../actions";
 
 interface Props {

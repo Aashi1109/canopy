@@ -3,7 +3,7 @@ import {
   normalizeAdvancedTemplateConfig,
   type AdvancedDocumentTemplate,
   type DocumentType,
-} from "@smarttools/invoice-templates";
+} from "@canopy/invoice-templates";
 import { notFound } from "next/navigation";
 import { requirePagePermission } from "../../../../../../lib/admin/access";
 import { getTemplate } from "../../../../../../lib/admin/data";

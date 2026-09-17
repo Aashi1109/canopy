@@ -4,16 +4,16 @@ import test from "node:test";
 
 const manifestUrl = new URL("../lib/tool-framework/manifest.ts", import.meta.url).href;
 const fixture = { configured: true, rows: [], content: [], queries: 0 };
-globalThis.__smarttoolsDraftTest = fixture;
+globalThis.__canopyDraftTest = fixture;
 const moduleUrl = (source) => `data:text/javascript,${encodeURIComponent(source)}`;
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
     if (context.parentURL === manifestUrl) {
-      if (specifier === "@smarttools/database") {
+      if (specifier === "@canopy/database") {
         return {
           shortCircuit: true,
           url: moduleUrl(`
-          const fixture = globalThis.__smarttoolsDraftTest;
+          const fixture = globalThis.__canopyDraftTest;
           export const managedToolsTable = {};
           export const isDatabaseConfigured = () => fixture.configured;
           export const db = { select() { return { async from() {
@@ -48,7 +48,7 @@ hooks.deregister();
 
 test("admin drafts match unpublished content by tool ID and require a configured database", async (t) => {
   t.after(() => {
-    delete globalThis.__smarttoolsDraftTest;
+    delete globalThis.__canopyDraftTest;
   });
   const cases = [
     ["seed", {}, false],

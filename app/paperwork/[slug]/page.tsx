@@ -1,6 +1,6 @@
-import { getOptionalSession } from "@smarttools/auth/session";
-import { getAvailableToolBySlug, getAvailableTools, getPublishedTemplates } from "@smarttools/control-plane";
-import type { DocumentType } from "@smarttools/invoice-templates";
+import { getOptionalSession } from "@canopy/auth/session";
+import { getAvailableToolBySlug, getAvailableTools, getPublishedTemplates } from "@canopy/control-plane";
+import type { DocumentType } from "@canopy/invoice-templates";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import App from "@/app/paperwork/components/App";

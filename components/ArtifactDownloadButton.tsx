@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@smarttools/ui";
+import { Button } from "@canopy/ui";
 import { Download } from "lucide-react";
 import { readArtifact, type StoredToolArtifact } from "@/lib/tool-framework/artifacts";
 

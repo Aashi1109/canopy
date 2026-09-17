@@ -10,7 +10,7 @@ import {
   type PageFormat,
   type PdfmeBlankBase,
   type PdfmeSchema,
-} from "@smarttools/invoice-templates";
+} from "@canopy/invoice-templates";
 import {
   Strong,
   Caption,
@@ -33,8 +33,8 @@ import {
   Textarea,
   buttonVariants,
   typographyStyles,
-} from "@smarttools/ui";
-import { OrderableList } from "@smarttools/ui/components/OrderableList";
+} from "@canopy/ui";
+import { OrderableList } from "@canopy/ui/components/OrderableList";
 import {
   AlignCenter,
   ArrowLeft,
@@ -277,7 +277,7 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong.";
 }
 
-const smarttoolsBridge: {
+const canopyBridge: {
   toggleRepeat: () => void;
   deleteElement: () => void;
 } = {
@@ -285,7 +285,7 @@ const smarttoolsBridge: {
   deleteElement: () => {},
 };
 
-function renderSmarttoolsControls(props: PropPanelWidgetProps): void {
+function renderCanopyControls(props: PropPanelWidgetProps): void {
   try {
     const { rootElement, activeSchema } = props;
     rootElement.replaceChildren();
@@ -315,7 +315,7 @@ function renderSmarttoolsControls(props: PropPanelWidgetProps): void {
       (repeating ? "19px" : "3px") +
       ";";
     toggle.appendChild(knob);
-    toggle.addEventListener("click", () => smarttoolsBridge.toggleRepeat());
+    toggle.addEventListener("click", () => canopyBridge.toggleRepeat());
     row.append(text, toggle);
 
     const del = document.createElement("button");
@@ -324,7 +324,7 @@ function renderSmarttoolsControls(props: PropPanelWidgetProps): void {
     del.className = typographyStyles.caption;
     del.style.cssText =
       "height:36px;width:100%;border:1px solid #d6d9de;border-radius:8px;background:#fff;color:#dc2626;cursor:pointer;";
-    del.addEventListener("click", () => smarttoolsBridge.deleteElement());
+    del.addEventListener("click", () => canopyBridge.deleteElement());
 
     wrap.append(row, del);
     rootElement.appendChild(wrap);
@@ -335,7 +335,7 @@ function renderSmarttoolsControls(props: PropPanelWidgetProps): void {
 
 type PdfmePlugin = Plugins[string];
 
-function withSmarttoolsControls(plugin: PdfmePlugin): PdfmePlugin {
+function withCanopyControls(plugin: PdfmePlugin): PdfmePlugin {
   const propPanel = plugin.propPanel;
   const originalSchema = propPanel.schema;
   return {
@@ -344,15 +344,15 @@ function withSmarttoolsControls(plugin: PdfmePlugin): PdfmePlugin {
       ...propPanel,
       widgets: {
         ...(propPanel.widgets ?? {}),
-        smarttoolsControls: renderSmarttoolsControls,
+        canopyControls: renderCanopyControls,
       },
       schema: (schemaProps) => {
         const base = typeof originalSchema === "function" ? originalSchema(schemaProps) : originalSchema;
         return {
           ...base,
-          smarttoolsControls: {
+          canopyControls: {
             type: "void",
-            widget: "smarttoolsControls",
+            widget: "canopyControls",
             bind: false,
             span: 24,
           },
@@ -384,7 +384,7 @@ async function loadPlugins(): Promise<Plugins> {
     circleMark: schemas.circleMark,
     ...schemas.barcodes,
   };
-  return Object.fromEntries(Object.entries(raw).map(([key, plugin]) => [key, withSmarttoolsControls(plugin)]));
+  return Object.fromEntries(Object.entries(raw).map(([key, plugin]) => [key, withCanopyControls(plugin)]));
 }
 
 function blankBase(template: Template): PdfmeBlankBase {
@@ -481,8 +481,8 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
   const repeatingFooterCount = staticSchemas.filter((schema) => schema.smarttoolsRegion === "footer").length;
 
   useEffect(() => {
-    smarttoolsBridge.deleteElement = () => deleteSelectedElement();
-    smarttoolsBridge.toggleRepeat = () => {
+    canopyBridge.deleteElement = () => deleteSelectedElement();
+    canopyBridge.toggleRepeat = () => {
       const region = (selectedPdfmeSchema as { smarttoolsRegion?: string } | undefined)?.smarttoolsRegion;
       if (region) {
         const base = blankBase(currentTemplateRef.current);

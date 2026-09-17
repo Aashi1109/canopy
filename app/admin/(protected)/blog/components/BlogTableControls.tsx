@@ -47,7 +47,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import {
   appendBlogTableAxis,
   blogTableChangeFits,

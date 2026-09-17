@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 
-const enabled = process.env.SMARTTOOLS_INTEGRATION === "1" && Boolean(process.env.DATABASE_URL);
+const enabled = process.env.CANOPY_INTEGRATION === "1" && Boolean(process.env.DATABASE_URL);
 
 function emailActionUrl(message) {
   const href = message.html?.match(/href="([^"]+)"/)?.[1];
@@ -13,13 +13,13 @@ function emailActionUrl(message) {
 test(
   "Better Auth signs up, verifies, recovers, starts Google OAuth, and identifies suspended accounts",
   {
-    skip: enabled ? false : "set SMARTTOOLS_INTEGRATION=1 with a migrated disposable DATABASE_URL",
+    skip: enabled ? false : "set CANOPY_INTEGRATION=1 with a migrated disposable DATABASE_URL",
   },
   async (context) => {
     process.env.BETTER_AUTH_SECRET = "integration-only-secret-that-is-at-least-32-characters";
     process.env.APP_URL = "http://localhost:3000";
     process.env.RESEND_API_KEY = "re_test_integration";
-    process.env.AUTH_EMAIL_FROM = "SmartTools <auth@example.test>";
+    process.env.ACCOUNTS_EMAIL = "accounts@example.test";
     process.env.GOOGLE_CLIENT_ID = "google-integration-client";
     process.env.GOOGLE_CLIENT_SECRET = "google-integration-secret";
 

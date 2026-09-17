@@ -1,4 +1,4 @@
-import { getTrustedOrigins, normalizeProfileImage, safeReturnTo } from "@smarttools/auth/security";
+import { getTrustedOrigins, normalizeProfileImage, safeReturnTo } from "@canopy/auth/security";
 
 export { normalizeProfileImage };
 

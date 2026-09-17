@@ -17,7 +17,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import { CropFrame, type CropBox } from "@/components/CropFrame";
 import type { BlogImage } from "@/lib/blog/document";
 import { cropBlogImage, fitCropRatio, resizeCrop, validateCropDimensions } from "../lib/imageCrop";

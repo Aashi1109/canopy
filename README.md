@@ -11,7 +11,7 @@ SmartTools is a pnpm monorepo with one Next.js application and shared capability
 - `/admin/*` — permission-gated tools, templates, flags, users, roles, and audit control plane.
 - `/auth/*` — authentication and account management with Better Auth.
 
-All routes are served by the root Next.js application on port 3000. Public tools remain anonymous. Authentication reads sessions in-process through `@smarttools/auth`; Admin additionally requires `admin.enter` and the exact permission for each page or mutation.
+All routes are served by the root Next.js application on port 3000. Public tools remain anonymous. Authentication reads sessions in-process through `@canopy/auth`; Admin additionally requires `admin.enter` and the exact permission for each page or mutation.
 
 ## Commands
 
@@ -43,7 +43,9 @@ version. Formatting is separate from `pnpm lint`, which checks TypeScript.
 3. Deploy the repository root application.
 4. Create and verify the first account, then run `pnpm admin:promote <verified-email>` once.
 
-Google OAuth needs `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; verification, recovery, and deletion emails need `RESEND_API_KEY` and `AUTH_EMAIL_FROM`.
+Google OAuth needs `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; verification, recovery, and deletion emails need `RESEND_API_KEY` and `ACCOUNTS_EMAIL`.
+
+Set `ACCOUNTS_EMAIL=accounts@smarttools.lol` for account-related emails sent through Resend and `SUPPORT_EMAIL=support@smarttools.lol` for contact links and the contact form. Apply these values to the deployed environment as well. The contact form opens the visitor's email app; support messages and replies are handled in Zoho.
 
 ## Docker
 
@@ -93,7 +95,7 @@ and admin routes; pooling alone does not make this Next.js app reliable on Free.
    (each command prompts for the value):
    - `DATABASE_URL` — a reachable PostgreSQL URL with TLS.
    - `BETTER_AUTH_SECRET` — a persistent, random authentication secret.
-   - `RESEND_API_KEY` and `AUTH_EMAIL_FROM` — a verified email sender.
+   - `RESEND_API_KEY` and `ACCOUNTS_EMAIL` — a verified account-email sender.
    - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` if enabling Google login.
    - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`
      if enabling admin icon uploads.

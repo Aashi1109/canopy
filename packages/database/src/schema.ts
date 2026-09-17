@@ -1,4 +1,4 @@
-import type { Access } from "@smarttools/authorization";
+import type { Access } from "@canopy/authorization";
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -122,6 +122,19 @@ export const authUser = pgTable(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => [uniqueIndex("auth_users_email_unique").on(table.email)],
+);
+
+export const userPreferencesTable = pgTable(
+  "user_preferences",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    key: text("key").notNull(),
+    value: jsonb("value").notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.key] })],
 );
 
 export const authSession = pgTable(

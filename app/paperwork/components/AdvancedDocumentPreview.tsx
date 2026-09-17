@@ -1,8 +1,8 @@
 "use client";
-import { P, Text } from "@smarttools/ui";
+import { P, Text } from "@canopy/ui";
 
 import type { Template } from "@pdfme/common";
-import type { AdvancedDocumentTemplate } from "@smarttools/invoice-templates";
+import type { AdvancedDocumentTemplate } from "@canopy/invoice-templates";
 import { useEffect, useRef, useState } from "react";
 import { applyTemplateFormatting } from "@/lib/paperwork/advancedTemplateData";
 

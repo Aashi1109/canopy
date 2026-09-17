@@ -5,8 +5,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { DocumentTemplate } from "@smarttools/invoice-templates";
-import { Caption, Button, EmptyState, Input, SectionCard, SectionHeading, Select, StatusBadge } from "@smarttools/ui";
+import type { DocumentTemplate } from "@canopy/invoice-templates";
+import { Caption, Button, EmptyState, Input, SectionCard, SectionHeading, Select, StatusBadge } from "@canopy/ui";
 import { Check, Search, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 

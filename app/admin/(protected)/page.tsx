@@ -9,7 +9,7 @@ import {
   EmptyState,
   ToolPageHeader,
   buttonVariants,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import {
   Activity,
   BadgePlus,

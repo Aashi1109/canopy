@@ -20,12 +20,13 @@ import {
   FieldSet,
   Input,
   Separator,
-} from "@smarttools/ui";
+  toast,
+} from "@canopy/ui";
 import { authClient } from "./_lib/authClient";
 import { getSafeAuthError, isEmailVerificationError, isValidPassword } from "./_lib/security";
 
 export type AuthMode = "sign-in" | "sign-up" | "forgot";
-type Feedback = { kind: "error" | "success"; text: string } | null;
+type Feedback = { kind: "error"; text: string } | null;
 
 function field(form: FormData, name: string): string {
   const value = form.get(name);
@@ -74,6 +75,7 @@ export function AuthPanel({
     const form = new FormData(event.currentTarget);
     const email = field(form, "email").toLowerCase();
     const password = field(form, "password");
+    setVerificationEmail(undefined);
 
     if (!email || !password) {
       setFeedback({ kind: "error", text: "Enter your email and password." });
@@ -81,70 +83,78 @@ export function AuthPanel({
       return;
     }
 
-    if (mode === "sign-up") {
-      const name = field(form, "name");
-      if (!name || name.length > 100) {
-        setFeedback({ kind: "error", text: "Enter a name under 100 characters." });
-        setPending(false);
-        return;
-      }
-      if (!isValidPassword(password)) {
-        setFeedback({ kind: "error", text: "Use 12 to 128 characters for your password." });
-        setPending(false);
-        return;
-      }
-      if (!termsAccepted) {
-        setFeedback({
-          kind: "error",
-          text: "Agree to the Terms of Service and Privacy Policy to continue.",
+    try {
+      if (mode === "sign-up") {
+        const name = field(form, "name");
+        if (!name || name.length > 100) {
+          setFeedback({ kind: "error", text: "Enter a name under 100 characters." });
+          return;
+        }
+        if (!isValidPassword(password)) {
+          setFeedback({ kind: "error", text: "Use 12 to 128 characters for your password." });
+          return;
+        }
+        if (!termsAccepted) {
+          setFeedback({
+            kind: "error",
+            text: "Agree to the Terms of Service and Privacy Policy to continue.",
+          });
+          return;
+        }
+
+        const result = await authClient.signUp.email({
+          name,
+          email,
+          password,
+          callbackURL: returnTo,
         });
-        setPending(false);
+        if (result.error) {
+          setFeedback({ kind: "error", text: getSafeAuthError(result.error) });
+        } else {
+          setVerificationEmail(email);
+          toast.success("Account created", {
+            description: "Check your inbox to verify your email before signing in.",
+          });
+        }
         return;
       }
 
-      const result = await authClient.signUp.email({
-        name,
+      const result = await authClient.signIn.email({
         email,
         password,
         callbackURL: returnTo,
       });
       if (result.error) {
-        setFeedback({ kind: "error", text: getSafeAuthError(result.error) });
-      } else {
-        setVerificationEmail(email);
-        setFeedback({
-          kind: "success",
-          text: "Check your inbox to verify your email before signing in.",
-        });
+        if (isEmailVerificationError(result.error)) {
+          setVerificationEmail(email);
+        } else {
+          setFeedback({ kind: "error", text: getSafeAuthError(result.error) });
+        }
+        return;
       }
-      setPending(false);
-      return;
-    }
 
-    const result = await authClient.signIn.email({
-      email,
-      password,
-      callbackURL: returnTo,
-    });
-    if (result.error) {
-      if (isEmailVerificationError(result.error)) setVerificationEmail(email);
-      setFeedback({ kind: "error", text: getSafeAuthError(result.error) });
+      window.location.assign(returnTo);
+    } catch (error) {
+      setFeedback({ kind: "error", text: getSafeAuthError(error) });
+    } finally {
       setPending(false);
-      return;
     }
-
-    window.location.assign(returnTo);
   }
 
   async function signInWithGoogle() {
     setPending(true);
     setFeedback(null);
-    const result = await authClient.signIn.social({
-      provider: "google",
-      callbackURL: returnTo,
-    });
-    if (result.error) {
-      setFeedback({ kind: "error", text: getSafeAuthError(result.error) });
+    try {
+      const result = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: returnTo,
+      });
+      if (result.error) {
+        setFeedback({ kind: "error", text: getSafeAuthError(result.error) });
+        setPending(false);
+      }
+    } catch (error) {
+      setFeedback({ kind: "error", text: getSafeAuthError(error) });
       setPending(false);
     }
   }
@@ -160,29 +170,74 @@ export function AuthPanel({
       return;
     }
 
-    await authClient.requestPasswordReset({
-      email,
-      redirectTo: `/auth/reset-password?returnTo=${encodeURIComponent(returnTo)}`,
-    });
-    setFeedback({
-      kind: "success",
-      text: "If that account exists, a password-reset link is on its way.",
-    });
-    setPending(false);
+    try {
+      const result = await authClient.requestPasswordReset({
+        email,
+        redirectTo: `/auth/reset-password?returnTo=${encodeURIComponent(returnTo)}`,
+      });
+      if (result.error) {
+        setFeedback({ kind: "error", text: getSafeAuthError(result.error) });
+      } else {
+        toast.success("If that account exists, a password-reset link is on its way.");
+      }
+    } catch (error) {
+      setFeedback({ kind: "error", text: getSafeAuthError(error) });
+    } finally {
+      setPending(false);
+    }
   }
 
   async function resendVerification() {
     if (!verificationEmail) return;
     setPending(true);
-    await authClient.sendVerificationEmail({
-      email: verificationEmail,
-      callbackURL: returnTo,
-    });
-    setFeedback({
-      kind: "success",
-      text: "If the account still needs verification, a new link is on its way.",
-    });
-    setPending(false);
+    setFeedback(null);
+    try {
+      const result = await authClient.sendVerificationEmail({
+        email: verificationEmail,
+        callbackURL: returnTo,
+      });
+      if (result.error) {
+        setFeedback({ kind: "error", text: getSafeAuthError(result.error) });
+      } else {
+        toast.success("If the account still needs verification, a new link is on its way.");
+      }
+    } catch (error) {
+      setFeedback({ kind: "error", text: getSafeAuthError(error) });
+    } finally {
+      setPending(false);
+    }
+  }
+
+  if (verificationEmail) {
+    return (
+      <Card aria-labelledby={`${panelId}-verification-title`} className="auth-card w-full max-w-[440px] gap-[18px]" role="region">
+        <div className="auth-heading" role="status">
+          <Caption>{mode === "sign-up" ? "Account created · Verify email" : "Email verification required"}</Caption>
+          <H1 id={`${panelId}-verification-title`} tabIndex={-1} ref={(node) => node?.focus()}>Check your inbox</H1>
+          <P>Open the verification link sent to</P>
+          <Strong className="block break-words [overflow-wrap:anywhere]">{verificationEmail}</Strong>
+        </div>
+
+        <P>Follow the link to verify your email and continue. If you’ve already verified in another browser, sign in below.</P>
+        {feedback ? <AlertBanner variant={feedback.kind}>{feedback.text}</AlertBanner> : null}
+
+        <div className="grid gap-3">
+          <Button className="w-full" disabled={pending} onClick={() => chooseMode("sign-in")} type="button">
+            Sign in
+          </Button>
+          <Button className="w-full" disabled={pending} onClick={resendVerification} type="button" variant="outline">
+            {pending ? "Sending…" : "Resend email"}
+          </Button>
+        </div>
+        <Caption>Can’t find it? Check your spam folder, or request another email.</Caption>
+        <div className="auth-card-footer-link">
+          <Text>Wrong email address?</Text>
+          <button disabled={pending} onClick={() => chooseMode(mode)} type="button">
+            <Caption>Go back</Caption>
+          </button>
+        </div>
+      </Card>
+    );
   }
 
   const isSignUp = mode === "sign-up";
@@ -213,19 +268,6 @@ export function AuthPanel({
       </AuthNotice>
 
       {feedback ? <AlertBanner variant={feedback.kind}>{feedback.text}</AlertBanner> : null}
-
-      {verificationEmail ? (
-        <AlertBanner
-          action={
-            <Button disabled={pending} onClick={resendVerification} size="sm" type="button" variant="ghost">
-              Resend email
-            </Button>
-          }
-          title="Verification needed"
-        >
-          Check <Text className="break-all">{verificationEmail}</Text>.
-        </AlertBanner>
-      ) : null}
 
       {isForgot ? (
         <form onSubmit={requestRecovery}>
@@ -339,7 +381,11 @@ export function AuthPanel({
 
       <div className="auth-card-footer-link">
         <Text>{isSignUp ? "Already have an account?" : isForgot ? "Remembered it?" : "New here?"}</Text>
-        <button onClick={() => chooseMode(isSignUp || isForgot ? "sign-in" : "sign-up")} type="button">
+        <button
+          disabled={pending}
+          onClick={() => chooseMode(isSignUp || isForgot ? "sign-in" : "sign-up")}
+          type="button"
+        >
           <Caption>{isSignUp ? "Sign in" : isForgot ? "Back to sign in" : "Create an account"}</Caption>
         </button>
       </div>

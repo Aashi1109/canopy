@@ -26,7 +26,7 @@ import {
   Textarea,
   toast,
   Toaster,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import type { BlogDocument, BlogImage } from "@/lib/blog/document";
 import { mutateBlogAction, uploadBlogImageAction } from "../actions";
 import { BlogEditorShell } from "./BlogEditorShell";

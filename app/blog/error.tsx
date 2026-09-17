@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, EmptyState } from "@smarttools/ui";
+import { Button, EmptyState } from "@canopy/ui";
 
 export default function BlogError({ reset }: { reset: () => void }) {
   return (

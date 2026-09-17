@@ -124,7 +124,7 @@ export function useToolRun(): ToolRunHandle {
       terminate();
       cleanupJob(previousJobId);
       const worker = new Worker(new URL("./tool.worker.ts", import.meta.url), {
-        name: "smarttools-tool-worker",
+        name: "canopy-tool-worker",
       });
       workerRef.current = worker;
       worker.onmessage = (event: MessageEvent<unknown>) => {

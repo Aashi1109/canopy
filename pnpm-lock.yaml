@@ -12,6 +12,30 @@ importers:
 
   .:
     dependencies:
+      '@canopy/auth':
+        specifier: workspace:*
+        version: link:packages/auth
+      '@canopy/authorization':
+        specifier: workspace:*
+        version: link:packages/authorization
+      '@canopy/cache':
+        specifier: workspace:*
+        version: link:packages/cache
+      '@canopy/control-plane':
+        specifier: workspace:*
+        version: link:packages/control-plane
+      '@canopy/database':
+        specifier: workspace:*
+        version: link:packages/database
+      '@canopy/invoice-templates':
+        specifier: workspace:*
+        version: link:packages/invoice-templates
+      '@canopy/tool-catalog':
+        specifier: workspace:*
+        version: link:packages/tool-catalog
+      '@canopy/ui':
+        specifier: workspace:*
+        version: link:packages/ui
       '@codemirror/lang-json':
         specifier: ^6.0.2
         version: 6.0.2
@@ -51,30 +75,6 @@ importers:
       '@react-pdf/renderer':
         specifier: ^4.5.1
         version: 4.5.1(react@19.2.7)
-      '@smarttools/auth':
-        specifier: workspace:*
-        version: link:packages/auth
-      '@smarttools/authorization':
-        specifier: workspace:*
-        version: link:packages/authorization
-      '@smarttools/cache':
-        specifier: workspace:*
-        version: link:packages/cache
-      '@smarttools/control-plane':
-        specifier: workspace:*
-        version: link:packages/control-plane
-      '@smarttools/database':
-        specifier: workspace:*
-        version: link:packages/database
-      '@smarttools/invoice-templates':
-        specifier: workspace:*
-        version: link:packages/invoice-templates
-      '@smarttools/tool-catalog':
-        specifier: workspace:*
-        version: link:packages/tool-catalog
-      '@smarttools/ui':
-        specifier: workspace:*
-        version: link:packages/ui
       '@tiptap/core':
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/pm@3.31.3)
@@ -217,13 +217,13 @@ importers:
 
   packages/auth:
     dependencies:
-      '@smarttools/authorization':
+      '@canopy/authorization':
         specifier: workspace:*
         version: link:../authorization
-      '@smarttools/control-plane':
+      '@canopy/control-plane':
         specifier: workspace:*
         version: link:../control-plane
-      '@smarttools/database':
+      '@canopy/database':
         specifier: workspace:*
         version: link:../database
       better-auth:
@@ -243,28 +243,31 @@ importers:
 
   packages/control-plane:
     dependencies:
-      '@smarttools/authorization':
+      '@canopy/authorization':
         specifier: workspace:*
         version: link:../authorization
-      '@smarttools/cache':
+      '@canopy/cache':
         specifier: workspace:*
         version: link:../cache
-      '@smarttools/database':
+      '@canopy/database':
         specifier: workspace:*
         version: link:../database
-      '@smarttools/invoice-templates':
+      '@canopy/invoice-templates':
         specifier: workspace:*
         version: link:../invoice-templates
-      '@smarttools/tool-catalog':
+      '@canopy/tool-catalog':
         specifier: workspace:*
         version: link:../tool-catalog
 
   packages/database:
     dependencies:
-      '@smarttools/authorization':
+      '@canopy/authorization':
         specifier: workspace:*
         version: link:../authorization
-      '@smarttools/tool-catalog':
+      '@canopy/cache':
+        specifier: workspace:*
+        version: link:../cache
+      '@canopy/tool-catalog':
         specifier: workspace:*
         version: link:../tool-catalog
       dotenv:

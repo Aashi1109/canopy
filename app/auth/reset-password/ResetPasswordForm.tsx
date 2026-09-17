@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { H1, Muted, Overline, P, TextLink, AlertBanner, Button, Card, Field, Input } from "@smarttools/ui";
+import { H1, Muted, Overline, P, TextLink, AlertBanner, Button, Card, Field, Input } from "@canopy/ui";
 import { authClient } from "../_lib/authClient";
 import { getSafeAuthError, isValidPassword } from "../_lib/security";
 

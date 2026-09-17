@@ -1,5 +1,5 @@
 import { readFile, readdir } from "node:fs/promises";
-import { isValidToolSlug, slugFromName, type ToolApp } from "@smarttools/tool-catalog";
+import { isValidToolSlug, slugFromName, type ToolApp } from "@canopy/tool-catalog";
 import { eq, max } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "./schema.ts";

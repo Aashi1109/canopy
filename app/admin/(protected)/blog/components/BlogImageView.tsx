@@ -13,7 +13,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@smarttools/ui";
+} from "@canopy/ui";
 import type { BlogImage } from "@/lib/blog/document";
 import { blogEditorImageSource } from "../lib/imageNode.ts";
 import { BlogImageCropDialog } from "./BlogImageCropDialog.tsx";
