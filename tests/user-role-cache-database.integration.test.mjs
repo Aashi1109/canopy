@@ -17,7 +17,7 @@ test(
     context.after(() => sql.end());
     const schema = `user_role_cache_test_${randomUUID().replaceAll("-", "")}`;
     const migration = await readFile(
-      new URL("../packages/database/drizzle/0007_user_role_cache.sql", import.meta.url),
+      new URL("../packages/database/migration/baseline/0007_user_role_cache.sql", import.meta.url),
       "utf8",
     );
     const rollback = new Error("roll back isolated test schema");
@@ -145,7 +145,10 @@ test(
       INSERT INTO roles (id, name) VALUES ('editor', 'Editor');
     `);
       await sql.unsafe(
-        await readFile(new URL("../packages/database/drizzle/0007_user_role_cache.sql", import.meta.url), "utf8"),
+        await readFile(
+          new URL("../packages/database/migration/baseline/0007_user_role_cache.sql", import.meta.url),
+          "utf8",
+        ),
       );
     });
     const roleWriter = postgres(process.env.DATABASE_URL, {

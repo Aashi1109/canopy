@@ -600,7 +600,7 @@ Rows show tool identity, then a **remove bookmark icon**, then an **open arrow**
 
 Guests store identifiers under `canopy.saved-tools.v1`. At sign-in, pending guest IDs are staged locally for that account and unioned into `user_preferences` (`user_id`, `key = saved_tools`, JSONB `value`, `updated_at`). Confirmed imports are cleared locally; failed imports remain account-scoped for retry. Account lists are never copied into guest storage on sign-out. The authenticated API derives ownership from the server session and locks the preference row during read/modify/write.
 
-Schema deployment: `packages/database/drizzle/0008_user_preferences.sql`, included in `pnpm db:migrate`. No dedicated bookmarks table or Saved page is used.
+Schema deployment: `packages/database/migration/baseline/0008_user_preferences.sql`, included in `pnpm db:migrate baseline`. No dedicated bookmarks table or Saved page is used.
 
 ## References
 

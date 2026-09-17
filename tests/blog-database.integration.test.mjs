@@ -26,9 +26,15 @@ test(
       await admin.unsafe(`DROP SCHEMA ${schema} CASCADE`);
       await admin.end();
     });
-    const migration = await readFile(new URL("../packages/database/drizzle/0006_blogs.sql", import.meta.url), "utf8");
+    const migration = await readFile(
+      new URL("../packages/database/migration/baseline/0006_blogs.sql", import.meta.url),
+      "utf8",
+    );
     await sql.unsafe(
-      await readFile(new URL("../packages/database/drizzle/0001_auth_control_plane.sql", import.meta.url), "utf8"),
+      await readFile(
+        new URL("../packages/database/migration/baseline/0001_auth_control_plane.sql", import.meta.url),
+        "utf8",
+      ),
     );
     const [adminBefore] = await sql`SELECT access FROM roles WHERE id = 'admin'`;
     const customAccess = { admin: { enter: true }, blog: { view: true, edit: false } };

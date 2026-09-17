@@ -17,7 +17,8 @@ All routes are served by the root Next.js application on port 3000. Public tools
 
 ```bash
 pnpm dev
-pnpm db:migrate
+pnpm db:migrate <folder>
+pnpm db:seed
 pnpm admin:promote verified-admin@example.com
 pnpm build
 pnpm lint
@@ -45,13 +46,46 @@ version. Formatting is separate from `pnpm lint`, which checks TypeScript.
 ## First deployment
 
 1. Copy `.env.example` to `.env.local`, then configure `APP_URL`, one strong `BETTER_AUTH_SECRET`, the database, and any optional integrations you use.
-2. Run `pnpm db:migrate`. This preserves anonymous Paperwork tables, adds Auth/control-plane tables, and seeds system roles, current tool slugs, and invoice templates for an empty catalog.
-3. Deploy the repository root application.
-4. Create and verify the first account, then run `pnpm admin:promote <verified-email>` once.
+2. Run `pnpm db:migrate baseline`. This preserves anonymous Paperwork tables and adds Auth/control-plane tables and system roles.
+3. Run `NODE_ENV=production pnpm db:seed` to seed current tool slugs, tool content, invoice templates for an empty catalog, and missing tool icons.
+4. Deploy the repository root application.
+5. Create and verify the first account, then run `pnpm admin:promote <verified-email>` once.
 
 Google OAuth needs `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; verification, recovery, and deletion emails need `RESEND_API_KEY` and `ACCOUNTS_EMAIL`.
 
 Set `ACCOUNTS_EMAIL=accounts@smarttools.lol` for account-related emails sent through Resend and `SUPPORT_EMAIL=support@smarttools.lol` for contact links and the contact form. Apply these values to the deployed environment as well. The contact form opens the visitor's email app; support messages and replies are handled in Zoho.
+
+## Database migrations
+
+Run `pnpm db:migrate <folder>` with a folder name under `packages/database/migration/`.
+Only that folder's immediate `.sql` files run, in filename order. A folder is required;
+there is no default or automatic run of every folder. Prefix SQL filenames with numbers
+to control execution order.
+
+The `baseline` folder contains the existing `0001`–`0008` migrations.
+Put each new migration batch in its own folder and pass that name to the command.
+Migrations run only their SQL; run `pnpm db:seed` separately for catalog seeding.
+Applied migrations are not tracked; explicitly rerunning a folder runs its SQL again.
+
+`db:seed` seeds tools and templates, uploads SVG icons to Cloudinary, then assigns
+missing icons by tool slug. Existing database icon assignments and Cloudinary assets
+are preserved. Configure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and
+`CLOUDINARY_API_SECRET`; set `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` to the same cloud
+for public delivery. Set `NODE_ENV` to `development`, `test`, or `production`.
+
+Icons default to `scripts/seed-assets/tool-icons`, included in Git for fresh setups.
+They stay outside `public` and are excluded from Next.js output tracing, so they
+are not shipped in the production application bundle or final Docker runtime image.
+To use another SVG directory, with filenames matching tool slugs:
+
+```bash
+NODE_ENV=development pnpm db:seed --icons-dir /path/to/icons
+```
+
+A failed step stops seeding. Upload manifests are kept in the system temporary
+directory on failure; fix the reported error and rerun the command. Completed
+uploads are reused, existing assignments are preserved, and successful runs clean
+up their temporary manifest. Database migrations remain a separate command.
 
 ## Docker
 
@@ -109,7 +143,9 @@ and admin routes; pooling alone does not make this Next.js app reliable on Free.
 4. Set the Google OAuth redirect URL to
    `https://smarttools.lol/api/auth/callback/google` when using Google login.
 5. Point your local migration environment at the intended deployment database,
-   then run `pnpm db:migrate`. Migrations are a separate, explicit step and are
+   then run `pnpm db:migrate baseline` for first setup, or `pnpm db:migrate <folder>`
+   for a later migration batch. Run `pnpm db:seed` separately for first setup.
+   Migrations are a separate, explicit step and are
    never run by the Worker build or deploy command.
 
 `APP_URL` is configured in `wrangler.jsonc`. Supply

@@ -7,7 +7,6 @@ import { Cache } from "@canopy/cache";
 import { AuthorizationError, getUserAuthorization, withUserCacheInvalidation } from "@canopy/control-plane";
 
 const initialTime = new Date("2026-09-16T00:00:00.000Z");
-const changedTime = new Date("2026-09-16T00:00:01.000Z");
 const editor = {
   id: "editor",
   name: "Editor",
@@ -25,12 +24,10 @@ const reader = {
 
 function setup(t) {
   const originalSelect = db.select;
-  const originalPost = axios.post;
   const variables = ["DATABASE_URL", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"];
   const previous = variables.map((key) => process.env[key]);
   t.after(() => {
     db.select = originalSelect;
-    axios.post = originalPost;
     variables.forEach((key, index) => {
       if (previous[index] === undefined) delete process.env[key];
       else process.env[key] = previous[index];
@@ -45,30 +42,39 @@ function setup(t) {
       ["bob", { status: "active", updatedAt: initialTime, roles: [reader] }],
     ]),
     entries: new Map(),
-    commands: [],
     statusReads: 0,
     roleReads: 0,
     redisError: false,
     databaseError: false,
     roleLoader: undefined,
   };
-  const profileEntries = new Map();
+  const pending = new Map();
+  const generations = new Map();
   t.mock.method(Cache.prototype, "rememberGuarded", async function (id, load, ttl) {
-    assert.equal(ttl, 3600);
-    if (!process.env.UPSTASH_REDIS_REST_TOKEN || state.redisError) return load();
-    if (profileEntries.has(id)) return JSON.parse(profileEntries.get(id));
+    assert.equal(ttl, this.namespace === "user" ? 3600 : 86400);
+    const key = `${this.namespace}:${id}`;
+    if (!process.env.UPSTASH_REDIS_REST_TOKEN || state.redisError || pending.has(key)) return load();
+    if (state.entries.has(key)) return JSON.parse(state.entries.get(key));
+    const generation = generations.get(key);
     const value = await load();
-    profileEntries.set(id, JSON.stringify(value));
+    if (!pending.has(key) && generations.get(key) === generation) state.entries.set(key, JSON.stringify(value));
     return value;
   });
   t.mock.method(Cache.prototype, "beginInvalidation", async function (id, ttl) {
-    assert.equal(ttl, 3600);
+    assert.equal(ttl, this.namespace === "user" ? 3600 : 86400);
     if (state.redisError) throw new Error("Redis unavailable");
-    profileEntries.delete(id);
-    return id;
+    const key = `${this.namespace}:${id}`;
+    const token = crypto.randomUUID();
+    state.entries.delete(key);
+    generations.set(key, token);
+    pending.set(key, token);
+    return token;
   });
-  t.mock.method(Cache.prototype, "endInvalidation", async function (id) {
-    profileEntries.delete(id);
+  t.mock.method(Cache.prototype, "endInvalidation", async function (id, token) {
+    const key = `${this.namespace}:${id}`;
+    if (pending.get(key) === token) pending.delete(key);
+    generations.set(key, crypto.randomUUID());
+    state.entries.delete(key);
   });
   const dialect = new PgDialect();
   db.select = (fields) => {
@@ -128,16 +134,7 @@ function setup(t) {
     };
     return query;
   };
-  axios.post = async (_url, command) => {
-    state.commands.push(command);
-    if (state.redisError) throw new Error("Redis unavailable");
-    const [operation, key, value] = command;
-    if (operation === "GET") return { data: { result: state.entries.get(key) ?? null } };
-    assert.equal(operation, "SET");
-    assert.deepEqual(command.slice(3), ["EX", "86400"]);
-    state.entries.set(key, value);
-    return { data: { result: "OK" } };
-  };
+  t.mock.method(axios, "post", () => assert.fail("cache is mocked; no HTTP requests expected"));
   return state;
 }
 
@@ -149,22 +146,22 @@ test("authorization caches each user profile for one hour and roles for one day"
   assert.equal(state.roleReads, 2);
   assert.equal(state.statusReads, 2);
   assert.deepEqual(
-    [...state.entries.keys()],
-    [`user-roles:alice:${initialTime.toISOString()}`, `user-roles:bob:${initialTime.toISOString()}`],
+    [...state.entries.keys()].filter((key) => key.startsWith("user-roles:")),
+    ["user-roles:alice", "user-roles:bob"],
   );
-  assert.deepEqual(JSON.parse(state.entries.values().next().value), [editor]);
+  assert.deepEqual(JSON.parse(state.entries.get("user-roles:alice")), [editor]);
 });
 
-test("updated users bypass previous role entries", async (t) => {
+test("user invalidation refreshes the same roles key without a timestamp change", async (t) => {
   const state = setup(t);
   await getUserAuthorization("alice");
   await withUserCacheInvalidation(async (invalidate) => {
     await invalidate(["alice"]);
-    state.users.set("alice", { status: "active", updatedAt: changedTime, roles: [reader] });
+    state.users.set("alice", { status: "active", updatedAt: initialTime, roles: [reader] });
   });
   assert.deepEqual(await getUserAuthorization("alice"), { roles: [reader], access: reader.access });
   assert.equal(state.roleReads, 2);
-  assert.equal(state.entries.size, 2);
+  assert.deepEqual([...state.entries.keys()], ["user:alice", "user-roles:alice"]);
   assert.deepEqual(await getUserAuthorization("alice"), { roles: [reader], access: reader.access });
   assert.equal(state.roleReads, 2);
 });
@@ -172,7 +169,6 @@ test("updated users bypass previous role entries", async (t) => {
 test("suspended and deleted users cannot reuse cached authorization", async (t) => {
   const state = setup(t);
   await getUserAuthorization("alice");
-  const commandsBefore = state.commands.length;
   await withUserCacheInvalidation(async (invalidate) => {
     await invalidate(["alice"]);
     state.users.get("alice").status = "suspended";
@@ -183,7 +179,6 @@ test("suspended and deleted users cannot reuse cached authorization", async (t) 
     state.users.delete("alice");
   });
   await assert.rejects(getUserAuthorization("alice"), AuthorizationError);
-  assert.equal(state.commands.length, commandsBefore);
   assert.equal(state.roleReads, 1);
 });
 
@@ -191,7 +186,6 @@ test("authorization falls back to the database without working Redis", async (t)
   const state = setup(t);
   delete process.env.UPSTASH_REDIS_REST_TOKEN;
   assert.deepEqual(await getUserAuthorization("alice"), { roles: [editor], access: editor.access });
-  assert.equal(state.commands.length, 0);
   process.env.UPSTASH_REDIS_REST_TOKEN = "test-token";
   state.redisError = true;
   assert.deepEqual(await getUserAuthorization("alice"), { roles: [editor], access: editor.access });
@@ -226,7 +220,7 @@ test("a late cache fill from before an update cannot replace current authorizati
   await loading;
   await withUserCacheInvalidation(async (invalidate) => {
     await invalidate(["alice"]);
-    state.users.set("alice", { status: "active", updatedAt: changedTime, roles: [reader] });
+    state.users.set("alice", { status: "active", updatedAt: initialTime, roles: [reader] });
   });
   state.roleLoader = undefined;
   assert.deepEqual(await getUserAuthorization("alice"), { roles: [reader], access: reader.access });

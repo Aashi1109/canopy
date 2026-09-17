@@ -14,8 +14,10 @@ if (!databaseUrl) throw new Error("DATABASE_URL is required");
 
 const sql = postgres(databaseUrl, { max: 1 });
 const userCache = new Cache("user");
+const userRolesCache = new Cache("user-roles");
 let cacheUserId;
 let cacheToken = null;
+let rolesCacheToken = null;
 
 try {
   await sql.begin(async (transaction) => {
@@ -32,6 +34,7 @@ try {
 
     cacheUserId = user.id;
     cacheToken = await userCache.beginInvalidation(user.id, 3600);
+    rolesCacheToken = await userRolesCache.beginInvalidation(user.id, 86400);
 
     await transaction`
       INSERT INTO user_roles (user_id, role_id)
@@ -49,6 +52,9 @@ try {
   });
   console.log(`Promoted verified account ${email} to Admin`);
 } finally {
-  if (cacheUserId) await userCache.endInvalidation(cacheUserId, cacheToken, 3600);
+  if (cacheUserId) {
+    await userCache.endInvalidation(cacheUserId, cacheToken, 3600);
+    await userRolesCache.endInvalidation(cacheUserId, rolesCacheToken, 86400);
+  }
   await sql.end();
 }

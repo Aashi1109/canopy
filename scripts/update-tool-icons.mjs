@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-// node scripts/update-tool-icons.mjs [--dry-run] [--manifest path/to/manifest.json]
+// node scripts/update-tool-icons.mjs [--dry-run] [--missing-only] [--manifest path/to/manifest.json]
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import dotenv from "dotenv";
 import postgres from "postgres";
+import { Cache } from "@canopy/cache";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 
@@ -48,11 +49,29 @@ export function planToolIconUpdates(manifest, tools, cloudName) {
   });
 }
 
+export async function assignToolIcons(sql, rows, { missingOnly = false } = {}) {
+  if (!rows.length) return [];
+  const conflict = missingOnly
+    ? sql`DO NOTHING`
+    : sql`DO UPDATE SET
+        public_id = EXCLUDED.public_id, version = EXCLUDED.version,
+        format = EXCLUDED.format, width = EXCLUDED.width, height = EXCLUDED.height,
+        updated_at = NOW()
+      WHERE (tool_icons.public_id, tool_icons.version, tool_icons.format, tool_icons.width, tool_icons.height)
+        IS DISTINCT FROM (EXCLUDED.public_id, EXCLUDED.version, EXCLUDED.format, EXCLUDED.width, EXCLUDED.height)`;
+  return sql`
+    INSERT INTO tool_icons ${sql(rows, "tool_id", "public_id", "version", "format", "width", "height")}
+    ON CONFLICT (tool_id) ${conflict}
+    RETURNING tool_id
+  `;
+}
+
 async function main() {
   const { values } = parseArgs({
     options: {
       manifest: { type: "string", default: path.join(ROOT, "tmp/cloudinary-tool-icons.json") },
       "dry-run": { type: "boolean", default: false },
+      "missing-only": { type: "boolean", default: false },
     },
   });
   for (const file of [".env.local", ".env"]) {
@@ -78,18 +97,12 @@ async function main() {
         console.log("No successful icons to update.");
         return;
       }
-      const updated = await tx`
-        INSERT INTO tool_icons ${tx(rows, "tool_id", "public_id", "version", "format", "width", "height")}
-        ON CONFLICT (tool_id) DO UPDATE SET
-          public_id = EXCLUDED.public_id, version = EXCLUDED.version,
-          format = EXCLUDED.format, width = EXCLUDED.width, height = EXCLUDED.height,
-          updated_at = NOW()
-        WHERE (tool_icons.public_id, tool_icons.version, tool_icons.format, tool_icons.width, tool_icons.height)
-          IS DISTINCT FROM (EXCLUDED.public_id, EXCLUDED.version, EXCLUDED.format, EXCLUDED.width, EXCLUDED.height)
-        RETURNING tool_id
-      `;
-      console.log(`Updated ${updated.length} icons; ${rows.length - updated.length} already current.`);
+      const updated = await assignToolIcons(tx, rows, { missingOnly: values["missing-only"] });
+      console.log(`Updated ${updated.length} icons; ${rows.length - updated.length} unchanged.`);
     });
+    if (!values["dry-run"]) {
+      await Promise.all([new Cache("catalog").delete("all"), new Cache("ecosystem").delete("all")]);
+    }
   } finally {
     await sql.end();
   }

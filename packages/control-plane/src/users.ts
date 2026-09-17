@@ -2,6 +2,7 @@ import { Cache } from "@canopy/cache";
 import { assertDatabaseConfigured, authUser, db, eq } from "@canopy/database";
 
 const userCache = new Cache("user");
+const userRolesCache = new Cache("user-roles");
 const USER_TTL_SECONDS = 60 * 60;
 type User = typeof authUser.$inferSelect;
 
@@ -44,14 +45,22 @@ export async function getCachedUser(userId: string): Promise<User | null> {
 export async function withUserCacheInvalidation<T>(
   operation: (invalidate: (userIds: readonly string[]) => Promise<void>) => Promise<T>,
 ): Promise<T> {
-  const pending = new Map<string, string | null>();
+  const pending = new Map<string, { user: string | null; roles: string | null }>();
   try {
     return await operation(async (userIds) => {
       for (const id of userIds) {
-        if (!pending.has(id)) pending.set(id, await userCache.beginInvalidation(id, USER_TTL_SECONDS));
+        if (pending.has(id)) continue;
+        const tokens = { user: await userCache.beginInvalidation(id, USER_TTL_SECONDS), roles: null as string | null };
+        pending.set(id, tokens);
+        tokens.roles = await userRolesCache.beginInvalidation(id, 24 * 60 * 60);
       }
     });
   } finally {
-    await Promise.all([...pending].map(([id, token]) => userCache.endInvalidation(id, token, USER_TTL_SECONDS)));
+    await Promise.all(
+      [...pending].flatMap(([id, tokens]) => [
+        userCache.endInvalidation(id, tokens.user, USER_TTL_SECONDS),
+        userRolesCache.endInvalidation(id, tokens.roles, 24 * 60 * 60),
+      ]),
+    );
   }
 }

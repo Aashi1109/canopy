@@ -13,7 +13,7 @@ const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export async function uploadToolIcons({
-  dir = path.join(ROOT, "tmp/tools icon"),
+  dir = path.join(ROOT, "scripts/seed-assets/tool-icons"),
   folder = "platform/assets/default/icons",
   output = path.join(ROOT, "tmp/cloudinary-tool-icons.json"),
   dryRun = false,

@@ -12,9 +12,6 @@ COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --store-dir /pnpm/store --frozen-lockfile
 
-FROM dependencies AS migrator
-CMD ["pnpm", "db:migrate"]
-
 FROM dependencies AS builder
 RUN mkdir -p public && pnpm build
 

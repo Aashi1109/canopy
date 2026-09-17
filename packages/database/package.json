@@ -10,6 +10,7 @@
   },
   "scripts": {
     "migrate": "node scripts/migrate.mjs",
+    "seed": "node scripts/seed.mjs",
     "promote-admin": "node scripts/promote-admin.mjs"
   },
   "dependencies": {

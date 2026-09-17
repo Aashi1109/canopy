@@ -4,7 +4,7 @@ import test from "node:test";
 
 import { TOOL_SLUG_PATTERN } from "../packages/tool-catalog/src/index.ts";
 
-const drizzleUrl = new URL("../packages/database/drizzle/", import.meta.url);
+const migrationDirectoryUrl = new URL("../packages/database/migration/baseline/", import.meta.url);
 
 /**
  * Every `managed_tools` seed row across every migration, in applied order.
@@ -16,11 +16,11 @@ const drizzleUrl = new URL("../packages/database/drizzle/", import.meta.url);
  * later `name`/`description` column cannot confuse the parse.
  */
 async function seededManagedTools() {
-  const files = (await readdir(drizzleUrl)).filter((file) => file.endsWith(".sql")).sort();
+  const files = (await readdir(migrationDirectoryUrl)).filter((file) => file.endsWith(".sql")).sort();
   const rows = [];
 
   for (const file of files) {
-    const sql = await readFile(new URL(file, drizzleUrl), "utf8");
+    const sql = await readFile(new URL(file, migrationDirectoryUrl), "utf8");
     for (const statement of sql.split(";")) {
       if (!/INSERT INTO managed_tools\b/i.test(statement)) continue;
       for (const line of statement.split("\n")) {
@@ -35,11 +35,10 @@ async function seededManagedTools() {
   return rows;
 }
 
-const migrationUrl = new URL("../packages/database/drizzle/0001_auth_control_plane.sql", import.meta.url);
-const migrationRunnerUrl = new URL("../packages/database/scripts/migrate.mjs", import.meta.url);
-const mediaMigrationUrl = new URL("../packages/database/drizzle/0002_media_tools.sql", import.meta.url);
+const migrationUrl = new URL("../packages/database/migration/baseline/0001_auth_control_plane.sql", import.meta.url);
+const mediaMigrationUrl = new URL("../packages/database/migration/baseline/0002_media_tools.sql", import.meta.url);
 const documentTemplateMigrationUrl = new URL(
-  "../packages/database/drizzle/0003_document_template_kinds.sql",
+  "../packages/database/migration/baseline/0003_document_template_kinds.sql",
   import.meta.url,
 );
 const schemaUrl = new URL("../packages/database/src/schema.ts", import.meta.url);
@@ -73,15 +72,6 @@ test("the control-plane migration keeps anonymous users separate from auth accou
   );
   assert.match(sql, /prevent_final_active_admin_suspension/i);
   assert.doesNotMatch(sql, /DROP TABLE\s+users\b/i);
-});
-
-test("the migration runner seeds invoice templates only for an empty catalog", async () => {
-  const runner = await readFile(migrationRunnerUrl, "utf8");
-
-  assert.match(runner, /seedTemplates/);
-  assert.match(runner, /COUNT\(\*\)[\s\S]+invoice_templates/i);
-  assert.match(runner, /template_count[\s\S]+=== 0/);
-  assert.match(runner, /INSERT INTO invoice_templates/i);
 });
 
 test("every applied managed_tools seed forms one consistent catalogue", async () => {
@@ -181,16 +171,4 @@ test("document template kinds are constrained without rewriting existing rows", 
     schema,
     /index\("invoice_templates_published_document_type_updated_idx"\)[\s\S]+table\.documentType[\s\S]+table\.updatedAt\.desc\(\)/,
   );
-});
-
-test("the migration runner applies 0001, 0002, then 0003 in explicit order", async () => {
-  const runner = await readFile(migrationRunnerUrl, "utf8");
-  const first = runner.indexOf("0001_auth_control_plane.sql");
-  const second = runner.indexOf("0002_media_tools.sql");
-  const third = runner.indexOf("0003_document_template_kinds.sql");
-
-  assert.notEqual(first, -1);
-  assert.ok(second > first);
-  assert.ok(third > second);
-  assert.match(runner, /for \(const [^)]*migration[^)]* of migrations\)/);
 });

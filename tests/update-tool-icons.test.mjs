@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { planToolIconUpdates } from "../scripts/update-tool-icons.mjs";
+import postgres from "postgres";
+import { assignToolIcons, planToolIconUpdates } from "../scripts/update-tool-icons.mjs";
 
 const cloudName = "demo";
 const icon = {
@@ -69,3 +70,43 @@ test("requires exactly one database match for every successful slug", () => {
     planToolIconUpdates({ icons: [icon] }, [...tools, { tool_id: "other-id", slug: "json-editor" }], cloudName),
   );
 });
+
+test(
+  "icon seeding preserves assigned icons while explicit updates still replace them",
+  {
+    skip: process.env.TOOL_ICON_TEST_DATABASE_URL
+      ? false
+      : "set TOOL_ICON_TEST_DATABASE_URL to a disposable PostgreSQL database",
+  },
+  async () => {
+    const sql = postgres(process.env.TOOL_ICON_TEST_DATABASE_URL, { max: 1 });
+    try {
+      await sql.begin(async (tx) => {
+        await tx`CREATE TEMP TABLE tool_icons (
+        tool_id text PRIMARY KEY, public_id text NOT NULL, version text NOT NULL,
+        format text NOT NULL, width integer NOT NULL, height integer NOT NULL,
+        updated_at timestamptz NOT NULL DEFAULT NOW()
+      ) ON COMMIT DROP`;
+        const [row] = planToolIconUpdates({ icons: [icon] }, tools, cloudName);
+        const assigned = { ...row, public_id: "admin/custom-icon" };
+        await assignToolIcons(tx, [assigned]);
+        const before = await tx`SELECT * FROM tool_icons`;
+        const missing = { ...row, tool_id: "another-tool" };
+        assert.deepEqual(Array.from(await assignToolIcons(tx, [row, missing], { missingOnly: true })), [
+          { tool_id: missing.tool_id },
+        ]);
+        assert.deepEqual(await tx`SELECT * FROM tool_icons WHERE tool_id = ${row.tool_id}`, before);
+        assert.equal((await assignToolIcons(tx, [row, missing], { missingOnly: true })).length, 0);
+        assert.equal((await assignToolIcons(tx, [row])).length, 1);
+        assert.equal(
+          (await tx`SELECT public_id FROM tool_icons WHERE tool_id = ${row.tool_id}`)[0].public_id,
+          row.public_id,
+        );
+        assert.equal((await assignToolIcons(tx, [row])).length, 0);
+        assert.deepEqual(await assignToolIcons(tx, [], { missingOnly: true }), []);
+      });
+    } finally {
+      await sql.end();
+    }
+  },
+);

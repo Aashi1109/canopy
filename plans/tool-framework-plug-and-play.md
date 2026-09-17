@@ -383,7 +383,7 @@ not an array. The only way to learn a tool exists is to query the DB or read the
 | --------------------------------------------------- | -------------------------------- | ----------------------------- |
 | every tool (catalog, sitemap, admin, related-tools) | `managed_tools` + `tool_content` | SQL                           |
 | one tool's spec / run / workspace                   | `tools/<key>/`                   | dynamic import by folder name |
-| getting folders _into_ the DB                       | `pnpm db:migrate`, and dev boot  | Node `fs.readdir("tools")`    |
+| getting folders _into_ the DB                       | `pnpm db:seed`, and dev boot     | Node `fs.readdir("tools")`    |
 
 `packages/database/src/seedManagedTools.ts` does the walk, in plain Node where the filesystem genuinely
 exists — the one context where `fs` is the right tool. Dev seeds on boot, so locally a new folder
@@ -846,11 +846,11 @@ fallback rather than inventing a second merge idiom.
   `published_at`.
 - **Seeds: no more hand-written SQL, ever.** `packages/database/src/seedManagedTools.ts` upserts
   from the derived manifest with `ON CONFLICT (tool_id) DO NOTHING` (never `DO UPDATE` — admin edits
-  must not be clobbered by a deploy), called from the existing `pnpm db:migrate`.
+  must not be clobbered by a deploy), called separately with `pnpm db:seed`.
 - **Never edit an applied migration.** `0001_auth_control_plane.sql` and `0002_media_tools.sql` stay
   as historical record; `0002`'s `CHECK (app IN …)` is still load-bearing.
   `tests/database-migration.test.mjs:64-87`'s 30 character-exact tuples are replaced by a
-  union-of-applied-seeds invariant (parse every `INSERT INTO managed_tools` across `drizzle/*.sql`,
+  union-of-applied-seeds invariant (parse every `INSERT INTO managed_tools` across `migration/baseline/*.sql`,
   assert the union covers the derived manifest).
 - **`sort_order` collision, fix in the backfill migration.** `managed_tools` has no unique
   constraint on `(app, sort_order)`, and the existing `devtools.json-formatter` row sits at

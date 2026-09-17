@@ -4,7 +4,7 @@ This document defines the phase-one design. The backend is implemented in the mo
 
 ### Backend implementation and verification
 
-- `packages/database/drizzle/0006_blogs.sql`: additive, rerunnable schema and system-admin permissions; registered in the existing migration runner.
+- `packages/database/migration/baseline/0006_blogs.sql`: additive, rerunnable schema and system-admin permissions; included in the explicit `pnpm db:migrate baseline` batch.
 - `lib/blog/mutations.ts`: transactional draft/history, taxonomy, publication, schedule/retry, and lifecycle operations.
 - `lib/blog/queries.ts`: permission-checked admin reads, public published-only reads, search, taxonomy, and pagination.
 - `lib/blog/document.ts` and `lib/blog/images.ts`: bounded document validation, escaped rendering, and immutable Cloudinary image uploads.
@@ -328,7 +328,7 @@ This table gives scheduling clear ownership, keeps nullable scheduling fields of
 
 - Extend the permission catalog and stored system-admin permissions with blog actions.
 - Reuse `audit_events`; no separate blog audit table.
-- Register an additive blog migration in the existing migration runner.
+- Include the additive blog migration in the baseline migration folder.
 - No changes to existing tool, template, or authentication data models.
 
 No additional tables are needed for redirects, slug history, authors, HTML blocks, media libraries, or schedule history in this phase. `blog_post_schedules` is the only scheduling-work table; existing audit events hold its history.
@@ -581,7 +581,8 @@ Add Blog to public navigation and the admin menu. Extend existing consent-based 
 
 ## 11. Migration and rollout
 
-Add a rerunnable migration, registered after the existing migrations:
+The rerunnable blog migration is included in `packages/database/migration/baseline/`
+after its prerequisite migrations:
 
 1. Create the six tables, with `blog_post_schedules` after posts, revisions, and account dependencies exist.
 2. Add the published-revision pointer and same-post schedule/revision foreign keys after their referenced tables exist.
@@ -591,7 +592,9 @@ Add a rerunnable migration, registered after the existing migrations:
 6. Preserve custom-role permissions.
 7. Restore the system-role protection trigger before committing.
 
-The current migration runner reapplies its migration list, so rerunning this migration must not duplicate grants, alter article content, or reset state.
+The migration runner executes only the folder supplied to `pnpm db:migrate <folder>`;
+it does not track applied migrations. Explicitly rerunning `baseline` also reruns this
+migration, which must not duplicate grants, alter article content, or reset state.
 
 Document `BLOG_SCHEDULER_SECRET` with an empty value in `.env.example`. Configure the same secret in the app and the Cloudflare scheduler. Register `*/30 * * * *` in the Worker's cron triggers and verify the configured production target.
 

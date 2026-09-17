@@ -64,7 +64,8 @@ function setup(t) {
     return query;
   };
   t.mock.method(Cache.prototype, "rememberGuarded", async function (id, load, ttl) {
-    assert.equal(ttl, 3600);
+    assert.equal(ttl, this.namespace === "user" ? 3600 : 86400);
+    if (this.namespace === "user-roles") id = `user-roles:${id}`;
     if (state.disabled || state.pending.has(id)) return load();
     if (state.entries.has(id)) return JSON.parse(state.entries.get(id));
     const version = state.versions.get(id);
@@ -73,7 +74,8 @@ function setup(t) {
     return value;
   });
   t.mock.method(Cache.prototype, "beginInvalidation", async function (id, ttl) {
-    assert.equal(ttl, 3600);
+    assert.equal(ttl, this.namespace === "user" ? 3600 : 86400);
+    if (this.namespace === "user-roles") id = `user-roles:${id}`;
     if (id === state.failBegin) throw new Error("Invalidation unavailable");
     state.begins.push(id);
     if (state.disabled) return null;
@@ -84,7 +86,9 @@ function setup(t) {
     return token;
   });
   t.mock.method(Cache.prototype, "endInvalidation", async function (id, token, ttl) {
-    assert.equal(ttl, 3600);
+    assert.equal(ttl, this.namespace === "user" ? 3600 : 86400);
+    if (this.namespace === "user-roles") id = `user-roles:${id}`;
+    if (token === null) return;
     state.ends.push(id);
     if (state.pending.get(id) === token) state.pending.delete(id);
     state.entries.delete(id);
@@ -116,7 +120,7 @@ test("profile edits, suspension, reactivation, and deletion invalidate the cache
   }
   assert.deepEqual(
     state.begins,
-    ["alice", "alice", "alice"],
+    ["alice", "user-roles:alice", "alice", "user-roles:alice", "alice", "user-roles:alice"],
     "duplicate invalidation in one operation is acquired once",
   );
   await withUserCacheInvalidation(async (invalidate) => {
@@ -161,7 +165,7 @@ test("partial invalidation failure releases previous fences before rejecting", a
     /Invalidation unavailable/,
   );
   assert.equal(mutated, false);
-  assert.deepEqual(state.ends, ["alice"]);
+  assert.deepEqual(state.ends, ["alice", "user-roles:alice"]);
   assert.equal(state.pending.size, 0);
 });
 
@@ -186,4 +190,20 @@ test("cache bypass and invalid cache data always reload the database", async (t)
     assert.deepEqual(await getCachedUser("alice"), state.users.get("alice"));
   }
   assert.equal(state.reads, 6);
+});
+
+test("failed roles invalidation releases the user fence and prevents the mutation", async (t) => {
+  const state = setup(t);
+  state.failBegin = "user-roles:alice";
+  let mutated = false;
+  await assert.rejects(
+    withUserCacheInvalidation(async (invalidate) => {
+      await invalidate(["alice"]);
+      mutated = true;
+    }),
+    /Invalidation unavailable/,
+  );
+  assert.equal(mutated, false);
+  assert.deepEqual(state.ends, ["alice"]);
+  assert.equal(state.pending.size, 0);
 });

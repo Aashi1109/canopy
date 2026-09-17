@@ -143,8 +143,8 @@ export async function getUserAuthorization(userId: string): Promise<{
     throw new AuthorizationError("Access denied");
   }
 
-  const roles = await userRolesCache.remember(
-    `${userId}:${user.updatedAt.toISOString()}`,
+  const roles = await userRolesCache.rememberGuarded(
+    userId,
     async () => {
       const rows = await db
         .select({

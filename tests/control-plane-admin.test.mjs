@@ -155,15 +155,15 @@ async function withFakeDatabase(selectResults, callback) {
 
 test("user and role mutations invalidate affected users through commit and rollback", async (t) => {
   let events = [];
-  t.mock.method(Cache.prototype, "beginInvalidation", async (id, ttl) => {
-    assert.equal(ttl, 3600);
-    events.push(`begin:${id}`);
+  t.mock.method(Cache.prototype, "beginInvalidation", async function (id, ttl) {
+    assert.equal(ttl, this.namespace === "user" ? 3600 : 86400);
+    events.push(`begin:${this.namespace}:${id}`);
     return id;
   });
-  t.mock.method(Cache.prototype, "endInvalidation", async (id, token, ttl) => {
+  t.mock.method(Cache.prototype, "endInvalidation", async function (id, token, ttl) {
     assert.equal(token, id);
-    assert.equal(ttl, 3600);
-    events.push(`end:${id}`);
+    assert.equal(ttl, this.namespace === "user" ? 3600 : 86400);
+    events.push(`end:${this.namespace}:${id}`);
   });
   const target = { id: "target", status: "active", name: "Target", email: "target@example.test" };
   const role = { id: "editor", name: "Editor", description: "Editor", access: {}, isSystem: false };
@@ -204,9 +204,9 @@ test("user and role mutations invalidate affected users through commit and rollb
         else await example.run();
       });
       assert.deepEqual(events, [
-        ...example.ids.map((id) => `begin:${id}`),
+        ...example.ids.flatMap((id) => [`begin:user:${id}`, `begin:user-roles:${id}`]),
         rollback ? "rollback" : "commit",
-        ...example.ids.map((id) => `end:${id}`),
+        ...example.ids.flatMap((id) => [`end:user:${id}`, `end:user-roles:${id}`]),
       ]);
     }
   }

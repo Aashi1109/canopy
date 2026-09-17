@@ -37,6 +37,9 @@ const workerIsolationHeaders = [{ key: "Cross-Origin-Embedder-Policy", value: "r
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: appRoot,
+  outputFileTracingExcludes: {
+    "/*": ["./scripts/seed-assets/**/*"],
+  },
   reactStrictMode: true,
   typescript: {
     ignoreBuildErrors: true,

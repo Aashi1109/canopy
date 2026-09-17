@@ -15,7 +15,7 @@ test(
     context.after(() => sql.end());
     const schema = `preferences_test_${randomUUID().replaceAll("-", "")}`;
     const migration = await readFile(
-      new URL("../packages/database/drizzle/0008_user_preferences.sql", import.meta.url),
+      new URL("../packages/database/migration/baseline/0008_user_preferences.sql", import.meta.url),
       "utf8",
     );
     const rollback = new Error("rollback isolated schema");

@@ -23,6 +23,6 @@ export * from "./schema.ts";
 // runtime — build-time-only work. Re-exporting it here pulled it into the app's
 // module graph (every `@canopy/database` importer), and the bundler then
 // failed to resolve that path, breaking `next build`.
-// `scripts/migrate.mjs` imports it directly by path, which is the only caller.
+// `scripts/seed.mjs` imports it directly by path, which is the only caller.
 export * from "./toolContent.ts";
 export * from "./toolIcon.ts";
