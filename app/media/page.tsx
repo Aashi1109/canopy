@@ -3,7 +3,6 @@ import { ToolIcon } from "@/components/ToolIcon";
 import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
 import { categoriesForApp, TOOL_CATEGORIES, type CategoryKey } from "@/lib/tool-framework/categories";
 import { getOptionalSession } from "@canopy/auth/session";
-import { getToolIcons, type ToolIconRow } from "@canopy/database";
 import {
   Caption,
   Display,
@@ -30,8 +29,6 @@ import {
 import { LayoutGrid, LockKeyhole, Search, ShieldCheck, Zap } from "lucide-react";
 import { headers } from "next/headers";
 
-type IconRows = Readonly<Record<string, ToolIconRow>>;
-
 function first(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value) ?? "";
 }
@@ -40,13 +37,13 @@ function isCategory(value: string): value is CategoryKey {
   return Object.hasOwn(TOOL_CATEGORIES, value);
 }
 
-function ToolCard({ icons, tool }: { icons: IconRows; tool: CatalogTool }) {
+function ToolCard({ tool }: { tool: CatalogTool }) {
   return (
     <CatalogCard
       action="Open tool →"
       description={tool.description}
       href={`/media/${tool.slug}`}
-      icon={<ToolIcon name={tool.name} row={icons[tool.toolId] ?? null} toolId={tool.toolId} />}
+      icon={<ToolIcon icon={tool.icon} />}
       status={<StatusBadge variant="success">Browser only</StatusBadge>}
       title={tool.name}
     />
@@ -63,11 +60,7 @@ export default async function HomePage({
   const query = first(params.q).trim().slice(0, 80);
   const requestedCategory = first(params.category).slice(0, 80);
   const category = isCategory(requestedCategory) ? requestedCategory : "";
-  const [tools, icons, session] = await Promise.all([
-    getTools("media"),
-    getToolIcons(),
-    getOptionalSession(requestHeaders),
-  ]);
+  const [tools, session] = await Promise.all([getTools("media"), getOptionalSession(requestHeaders)]);
   const normalizedQuery = query.toLocaleLowerCase();
   const categoryLabel = category ? TOOL_CATEGORIES[category].label : "";
   const filteredTools = tools.filter(
@@ -160,7 +153,7 @@ export default async function HomePage({
             {filteredTools.length ? (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredTools.map((tool) => (
-                  <ToolCard icons={icons} key={tool.toolId} tool={tool} />
+                  <ToolCard key={tool.toolId} tool={tool} />
                 ))}
               </div>
             ) : (

@@ -47,14 +47,7 @@ import Link from "next/link";
 import { updateAdminQuery, useAdminQueryState } from "@/app/admin/hooks/useAdminQueryState";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ToolIcon } from "../../../../../components/ToolIcon";
-import type { ToolIconRow } from "../../../../../lib/tool-framework/icons";
 import { archiveToolAction, reorderToolsAction, toggleToolAction, updateToolAction } from "../../../actions";
-
-/**
- * Uploaded icons, keyed by tool id. Nothing here names a tool: a tool without
- * a row falls back to its generated identicon inside `ToolIcon`.
- */
-type ToolIcons = Readonly<Record<string, ToolIconRow>>;
 
 const GROUPS: readonly {
   app: ToolApp;
@@ -243,15 +236,7 @@ function ToolDescription({ description }: { description: string }) {
   );
 }
 
-function ToolRow({
-  iconRow,
-  orderable,
-  tool,
-}: {
-  iconRow: ToolIconRow | null;
-  orderable: OrderableItemState;
-  tool: AdminTool;
-}) {
+function ToolRow({ orderable, tool }: { orderable: OrderableItemState; tool: AdminTool }) {
   const [isConfiguring, setIsConfiguring] = useState(false);
   const isSetupRequired = !tool.slug && !tool.archived;
 
@@ -285,7 +270,7 @@ function ToolRow({
             {isSetupRequired ? (
               <TriangleAlert strokeWidth={1.8} />
             ) : (
-              <ToolIcon name={tool.name} row={iconRow} size={20} toolId={tool.id} />
+              <ToolIcon name={tool.name} iconUrl={tool.iconUrl} size={20} toolId={tool.id} />
             )}
           </IconTile>
           <span className="min-w-0 flex-1">
@@ -354,13 +339,11 @@ function ToolRow({
 function ToolGroup({
   app,
   canReorder,
-  icons,
   title,
   tools,
 }: {
   app: ToolApp;
   canReorder: boolean;
-  icons: ToolIcons;
   title: string;
   tools: readonly AdminTool[];
 }) {
@@ -452,9 +435,7 @@ function ToolGroup({
                 getId={(tool) => tool.id}
                 items={categoryItems}
                 onReorder={(nextItems) => handleReorder(category, nextItems)}
-                renderItem={(tool, orderable) => (
-                  <ToolRow iconRow={icons[tool.id] ?? null} orderable={orderable} tool={tool} />
-                )}
+                renderItem={(tool, orderable) => <ToolRow orderable={orderable} tool={tool} />}
               />
             ) : null}
           </div>
@@ -494,11 +475,10 @@ function RailItem({
 }
 
 export interface ToolListProps {
-  icons: ToolIcons;
   tools: readonly AdminTool[];
 }
 
-export function ToolList({ icons, tools }: ToolListProps) {
+export function ToolList({ tools }: ToolListProps) {
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useAdminQueryState<string>("q", "");
   const [selectedApp] = useAdminQueryState<AppFilter>("app", "all", ["all", ...GROUPS.map((group) => group.app)]);
@@ -758,7 +738,6 @@ export function ToolList({ icons, tools }: ToolListProps) {
                     <ToolGroup
                       app={group.app}
                       canReorder={canReorder}
-                      icons={icons}
                       key={group.app}
                       title={group.title}
                       tools={groupTools}

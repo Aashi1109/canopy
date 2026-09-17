@@ -24,17 +24,9 @@
  */
 
 import { cache } from "react";
-import { Cache } from "@canopy/cache";
+import { Cache, CACHE_NAMESPACES } from "@canopy/cache";
 
-import {
-  db,
-  getToolContentRows,
-  getToolIcons,
-  isDatabaseConfigured,
-  managedToolsTable,
-  type ToolContentRow,
-  type ToolIconRow,
-} from "@canopy/database";
+import { db, getToolContentRows, isDatabaseConfigured, managedToolsTable, type ToolContentRow } from "@canopy/database";
 import { isToolAvailable } from "@canopy/tool-catalog";
 
 import { isCategoryKey, type CategoryKey, type ToolApp } from "./categories";
@@ -44,7 +36,7 @@ import type { ToolContent, ToolSpec } from "./spec";
 
 /** How many tools `relatedTools` returns, matching the tool page's shelf. */
 const RELATED_LIMIT = 3;
-const catalogCache = new Cache("catalog");
+const catalogCache = new Cache(CACHE_NAMESPACES.CATALOG);
 
 /** A definition key is a directory name; anything else is not importable. */
 const DEFINITION_KEY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -114,7 +106,6 @@ export async function loadSpec(definitionKey: string): Promise<ToolSpec | null> 
 async function buildTool(
   row: ManagedToolRow & { slug: string },
   contentRow: ToolContentRow | null,
-  iconRow: ToolIconRow | null,
 ): Promise<CatalogTool | null> {
   const definitionKey = definitionKeyOf(row.toolId);
   if (!definitionKey) return null;
@@ -139,7 +130,7 @@ async function buildTool(
     seoTitle: resolved.seoTitle,
     seoDescription: resolved.seoDescription,
     content: resolved.content,
-    icon: resolveIcon(row.toolId, row.name, iconRow),
+    icon: resolveIcon(row.toolId, row.name, row.iconUrl),
     href: `/${spec.app}/${row.slug}`,
     spec: { ...spec, content: resolved.content },
   };
@@ -152,18 +143,13 @@ async function buildTool(
 const loadCatalog = cache(async (): Promise<readonly CatalogTool[]> => {
   if (!isDatabaseConfigured()) return [];
 
-  const { rows, contentRows, icons } = await catalogCache.remember(
+  const { rows, contentRows } = await catalogCache.remember(
     "all",
     async () => {
-      const [rows, contentRows, icons] = await Promise.all([
-        db.select().from(managedToolsTable),
-        getToolContentRows(),
-        getToolIcons(),
-      ]);
+      const [rows, contentRows] = await Promise.all([db.select().from(managedToolsTable), getToolContentRows()]);
       return {
         rows: rows.filter(isToolAvailable),
         contentRows: contentRows.filter((row) => row.publishedAt !== null),
-        icons,
       };
     },
     24 * 60 * 60,
@@ -172,9 +158,7 @@ const loadCatalog = cache(async (): Promise<readonly CatalogTool[]> => {
   const contentByToolId = new Map(contentRows.map((contentRow) => [contentRow.toolId, contentRow] as const));
 
   const built = await Promise.all(
-    rows
-      .filter(isToolAvailable)
-      .map((row) => buildTool(row, contentByToolId.get(row.toolId) ?? null, icons[row.toolId] ?? null)),
+    rows.filter(isToolAvailable).map((row) => buildTool(row, contentByToolId.get(row.toolId) ?? null)),
   );
 
   return built

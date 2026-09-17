@@ -20,7 +20,7 @@ const hooks = registerHooks({
     return nextResolve(specifier, context);
   },
 });
-const { resolveIcon, toolFaviconHref } = await import(iconsUrl);
+const { resolveIcon, toolFaviconHref, toolIconUrl } = await import(iconsUrl);
 const { GET } = await import("../app/tool-icons/[...path]/route.ts");
 const { config } = await import(proxyUrl);
 hooks.deregister();
@@ -60,10 +60,10 @@ test("uploaded tool favicons round-trip through a versioned same-origin PNG URL"
     requests.push({ input, options });
     return new Response(png, { headers: { "Content-Type": "image/png" } });
   });
-  const href = toolFaviconHref(resolveIcon(row.toolId, "Resize image", row));
+  const href = toolFaviconHref(resolveIcon(row.toolId, "Resize image", toolIconUrl("favicon-test", row)));
   assert.equal(href, "/tool-icons/v123/smarttools/tool-icons/media.resize-image.png");
   assert.equal(
-    toolFaviconHref(resolveIcon(row.toolId, "Resize image", { ...row, version: "124" })),
+    toolFaviconHref(resolveIcon(row.toolId, "Resize image", toolIconUrl("favicon-test", { ...row, version: "124" }))),
     "/tool-icons/v124/smarttools/tool-icons/media.resize-image.png",
     "replaced icons receive a different browser cache key",
   );
@@ -90,7 +90,11 @@ test("uploaded tool favicons round-trip through a versioned same-origin PNG URL"
   assert.equal(headers.get("Authorization"), null);
 
   const escaped = toolFaviconHref(
-    resolveIcon(row.toolId, "Resize image", { ...row, publicId: "smarttools/tool-icons/resize image + café" }),
+    resolveIcon(
+      row.toolId,
+      "Resize image",
+      toolIconUrl("favicon-test", { ...row, publicId: "smarttools/tool-icons/resize image + café" }),
+    ),
   );
   assert.equal(escaped, "/tool-icons/v123/smarttools/tool-icons/resize%20image%20%2B%20caf%C3%A9.png");
   const escapedPath = escaped.slice("/tool-icons/".length).split("/").map(decodeURIComponent);
@@ -103,10 +107,16 @@ test("uploaded tool favicons round-trip through a versioned same-origin PNG URL"
   );
 });
 
+test("stored icon URLs resolve unchanged without Cloudinary configuration", () => {
+  delete process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const iconUrl = toolIconUrl("favicon-test", row);
+  assert.deepEqual(resolveIcon(row.toolId, "Resize image", iconUrl), { kind: "url", url: iconUrl });
+});
+
 test("generated fallback SVG remains a correctly escaped data URI", () => {
   for (const configured of [true, false]) {
     if (!configured) delete process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const icon = resolveIcon("tool-fallback", "<script &test", configured ? null : row);
+    const icon = resolveIcon("tool-fallback", "<script &test", null);
     assert.equal(icon.kind, "svg");
     const href = toolFaviconHref(icon);
     assert.match(href, /^data:image\/svg\+xml,/);

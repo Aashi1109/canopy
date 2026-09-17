@@ -17,8 +17,8 @@ test("selected migrations and separate seeding", async (t) => {
   process.env.DATABASE_URL = "postgres://test:test@localhost:1/test";
   let state;
   const folders = {
-    baseline: { "002.sql": "BASELINE TWO", "001.sql": "BASELINE ONE" },
-    "icon-url": { "002.sql": "ICON TWO", "001.sql": "ICON ONE", "README.md": "ignore" },
+    "0001-baseline": { "002.sql": "BASELINE TWO", "001.sql": "BASELINE ONE" },
+    "0002-tool-icon-url": { "002.sql": "ICON TWO", "001.sql": "ICON ONE", "README.md": "ignore" },
     empty: {},
   };
   const entry = (name, directory = false) => ({ name, isDirectory: () => directory, isFile: () => !directory });
@@ -40,6 +40,15 @@ test("selected migrations and separate seeding", async (t) => {
         if (specifier === "postgres") {
           return stub("export default () => globalThis.__migrationSeedClient;");
         }
+        if (specifier === "@canopy/cache")
+          return stub(`
+          export const CACHE_NAMESPACES = { CATALOG: "catalog", ECOSYSTEM: "ecosystem" };
+          export class Cache {
+            constructor(namespace) { this.namespace = namespace; }
+            async delete(key) { globalThis.__migrationSeedState.deleted.push(this.namespace + ":" + key); }
+          }
+          export const closeRedis = () => {};
+        `);
         if (specifier === "dotenv") return stub("export const config = () => {};");
         if (specifier === "node:fs/promises") {
           return stub("export const { readFile, readdir } = globalThis.__migrationFiles;");
@@ -56,15 +65,19 @@ test("selected migrations and separate seeding", async (t) => {
     name,
     count = 0,
     failure = null,
-    args = ["baseline"],
+    args = ["0001-baseline"],
     migrationFailure = null,
     script = migrationUrl,
   ) {
     process.argv = [...previousArgv.slice(0, 2), ...args];
     const client = postgres(process.env.DATABASE_URL, { max: 1 });
-    state = { rows: [], migrations: [], seeds: 0, closed: false, transactions: 0 };
+    state = { rows: [], migrations: [], seeds: 0, closed: false, transactions: 0, deleted: [], cloudName: undefined };
     globalThis.__migrationSeedState = state;
     const sql = async (strings, ...values) => {
+      if (strings.join("").includes("set_config")) {
+        state.cloudName = values[0];
+        return [];
+      }
       if (strings.join("").includes("SELECT COUNT(*)")) return [{ template_count: count }];
       if (failure) throw failure;
       // Use the installed driver's serializers after real drizzle(sql) configures them.
@@ -130,14 +143,19 @@ test("selected migrations and separate seeding", async (t) => {
       assert.equal(state.closed, true);
     });
     await t.test("only the selected folder runs, in filename order, without seeding", async () => {
-      await run("selected", 0, null, ["icon-url"]);
+      await run("selected", 0, null, ["0002-tool-icon-url"]);
       assert.deepEqual(state.migrations, ["ICON ONE", "ICON TWO"]);
+      assert.deepEqual(state.deleted, ["catalog:all", "ecosystem:all"]);
+      assert.equal(
+        state.cloudName,
+        process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim() || process.env.CLOUDINARY_CLOUD_NAME?.trim() || "",
+      );
       assert.deepEqual(state.rows, []);
       assert.equal(state.seeds, 0);
       assert.equal(state.closed, true);
     });
     await t.test("baseline runs only its SQL without seeding", async () => {
-      await run("baseline");
+      await run("0001-baseline");
       assert.deepEqual(state.migrations, ["BASELINE ONE", "BASELINE TWO"]);
       assert.deepEqual(state.rows, []);
       assert.equal(state.seeds, 0);
@@ -147,7 +165,7 @@ test("selected migrations and separate seeding", async (t) => {
         [],
         ["../baseline"],
         ["/baseline"],
-        ["baseline", "icon-url"],
+        ["0001-baseline", "0002-tool-icon-url"],
         ["missing"],
         ["empty"],
         ["outside-link"],
@@ -160,8 +178,9 @@ test("selected migrations and separate seeding", async (t) => {
     });
     await t.test("SQL failure stops the folder and closes the connection", async () => {
       const failure = new Error("SQL failed");
-      await assert.rejects(run("sql-failure", 0, null, ["icon-url"], failure), (error) => error === failure);
+      await assert.rejects(run("sql-failure", 0, null, ["0002-tool-icon-url"], failure), (error) => error === failure);
       assert.deepEqual(state.migrations, ["ICON ONE"]);
+      assert.deepEqual(state.deleted, []);
       assert.equal(state.seeds, 0);
       assert.equal(state.closed, true);
     });

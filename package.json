@@ -97,6 +97,7 @@
     "lint-staged": "^17.5.1",
     "postcss": "8.5.23",
     "prettier": "3.9.7",
+    "redis": "^6.2.1",
     "tailwindcss": "^4.3.3",
     "typescript": "~7.0.2",
     "wrangler": "^4.131.1"

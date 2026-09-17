@@ -1,4 +1,6 @@
-import axios from "axios";
+import redis from "redis";
+
+export { CACHE_NAMESPACES } from "./constants.ts";
 
 // One key holds both the value and mutation fences, so expiry cannot resurrect an old load.
 const GUARDED_READ = `
@@ -47,20 +49,52 @@ function validateTtl(ttlSeconds: number): void {
   }
 }
 
-async function command(args: string[]): Promise<unknown> {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return null;
-  const { data } = await axios.post<unknown>(url, args, {
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    timeout: 1_000,
-    maxRedirects: 0,
-    signal: AbortSignal.timeout(1_000),
+function connectRedis() {
+  const client = redis.createClient({
+    url: process.env.REDIS_URL?.trim(),
+    socket: {
+      connectTimeout: 1_000,
+      reconnectStrategy: false,
+    },
+    disableOfflineQueue: true,
   });
-  if (!data || typeof data !== "object" || !("result" in data) || "error" in data) {
-    throw new Error("Invalid cache response");
+  client.on("error", () => console.warn("Redis connection unavailable."));
+  return { client, ready: client.connect() };
+}
+
+let connection: ReturnType<typeof connectRedis> | undefined;
+
+export function closeRedis(): void {
+  if (connection?.client.isOpen) connection.client.destroy();
+  connection = undefined;
+}
+
+async function command(args: string[]): Promise<unknown> {
+  if (!process.env.REDIS_URL?.trim()) return null;
+  // Workers cannot reuse sockets across requests. Keep their commands self-contained.
+  // ponytail: one connection per Worker command; add request-scoped reuse if latency warrants it.
+  const transient = globalThis.navigator?.userAgent === "Cloudflare-Workers";
+  let current: ReturnType<typeof connectRedis> | undefined;
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    current = transient ? connectRedis() : connection?.client.isOpen ? connection : (connection = connectRedis());
+    const { client, ready } = current;
+    return await Promise.race([
+      ready.then(() => client.sendCommand(args)),
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(() => {
+          reject(new Error("Redis command timed out"));
+          if (client.isOpen) client.destroy();
+        }, 1_000);
+      }),
+    ]);
+  } catch {
+    // Do not expose connection credentials through errors from the Redis client.
+    throw new Error("Redis cache unavailable");
+  } finally {
+    clearTimeout(timeout);
+    if (transient && current?.client.isOpen) current.client.destroy();
   }
-  return data.result;
 }
 
 export class Cache {
@@ -171,7 +205,7 @@ export class Cache {
   async beginInvalidation(key: string, ttlSeconds = 300): Promise<string | null> {
     const redisKey = this.key(key);
     validateTtl(ttlSeconds);
-    if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return null;
+    if (!process.env.REDIS_URL?.trim()) return null;
     const token = crypto.randomUUID();
     const result = await command(["EVAL", INVALIDATION_BEGIN, "1", redisKey, token]);
     if (result !== 1) throw new Error("Cache invalidation failed");

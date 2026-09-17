@@ -15,15 +15,12 @@ const icon = {
 };
 const tools = [{ tool_id: "json_editor_v2", slug: "json-editor" }];
 
-test("maps only successful uploads to database IDs while retaining Cloudinary metadata", () => {
+test("maps only successful uploads to database IDs with their complete delivery URLs", () => {
   assert.deepEqual(planToolIconUpdates({ icons: [icon], failures: [{ slug: "missing-tool" }] }, tools, cloudName), [
     {
       tool_id: "json_editor_v2",
-      public_id: icon.publicId,
-      version: "123",
-      format: "svg",
-      width: 104,
-      height: 88,
+      icon_url:
+        "https://res.cloudinary.com/demo/image/upload/f_png,c_fill,w_256,h_256,q_auto/v123/Canopy/platform/assets/default/icons/json-editor.png",
     },
   ]);
   assert.deepEqual(planToolIconUpdates({ icons: [], failures: [{ slug: "missing-tool" }] }, [], cloudName), []);
@@ -82,26 +79,26 @@ test(
     const sql = postgres(process.env.TOOL_ICON_TEST_DATABASE_URL, { max: 1 });
     try {
       await sql.begin(async (tx) => {
-        await tx`CREATE TEMP TABLE tool_icons (
-        tool_id text PRIMARY KEY, public_id text NOT NULL, version text NOT NULL,
-        format text NOT NULL, width integer NOT NULL, height integer NOT NULL,
-        updated_at timestamptz NOT NULL DEFAULT NOW()
-      ) ON COMMIT DROP`;
+        await tx`CREATE TEMP TABLE managed_tools (
+          tool_id text PRIMARY KEY, icon_url text, updated_at timestamptz NOT NULL DEFAULT NOW()
+        ) ON COMMIT DROP`;
         const [row] = planToolIconUpdates({ icons: [icon] }, tools, cloudName);
-        const assigned = { ...row, public_id: "admin/custom-icon" };
-        await assignToolIcons(tx, [assigned]);
-        const before = await tx`SELECT * FROM tool_icons`;
+        await tx`INSERT INTO managed_tools (tool_id, icon_url) VALUES
+          (${row.tool_id}, 'https://example.com/custom.png'), ('another-tool', NULL)`;
+        const before = await tx`SELECT * FROM managed_tools WHERE tool_id = ${row.tool_id}`;
         const missing = { ...row, tool_id: "another-tool" };
-        assert.deepEqual(Array.from(await assignToolIcons(tx, [row, missing], { missingOnly: true })), [
+        const unknown = { ...row, tool_id: "unknown-tool" };
+        assert.deepEqual(Array.from(await assignToolIcons(tx, [row, missing, unknown], { missingOnly: true })), [
           { tool_id: missing.tool_id },
         ]);
-        assert.deepEqual(await tx`SELECT * FROM tool_icons WHERE tool_id = ${row.tool_id}`, before);
+        assert.deepEqual(await tx`SELECT * FROM managed_tools WHERE tool_id = ${row.tool_id}`, before);
         assert.equal((await assignToolIcons(tx, [row, missing], { missingOnly: true })).length, 0);
         assert.equal((await assignToolIcons(tx, [row])).length, 1);
         assert.equal(
-          (await tx`SELECT public_id FROM tool_icons WHERE tool_id = ${row.tool_id}`)[0].public_id,
-          row.public_id,
+          (await tx`SELECT icon_url FROM managed_tools WHERE tool_id = ${row.tool_id}`)[0].icon_url,
+          row.icon_url,
         );
+        assert.equal((await tx`SELECT * FROM managed_tools`).length, 2);
         assert.equal((await assignToolIcons(tx, [row])).length, 0);
         assert.deepEqual(await assignToolIcons(tx, [], { missingOnly: true }), []);
       });

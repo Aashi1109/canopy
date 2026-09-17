@@ -28,6 +28,7 @@ export interface ToolManifestEntry {
 /** The administrator-owned half of a tool. */
 export interface ManagedTool {
   toolId: string;
+  iconUrl: string | null;
   slug: string | null;
   name: string;
   description: string;
@@ -91,6 +92,7 @@ export function mergeManagedTool(manifest: ToolManifestEntry, fallback: ManagedT
 
   return {
     toolId: manifest.id,
+    iconUrl: typeof stored.iconUrl === "string" && stored.iconUrl.trim() ? stored.iconUrl.trim() : null,
     slug,
     name: typeof stored.name === "string" && stored.name.trim() ? stored.name.trim() : fallback.name,
     description:
@@ -132,6 +134,7 @@ export function mergeToolManifest(managedTools: unknown, manifest: readonly Tool
   return manifest.map((entry) => {
     const fallback: ManagedTool = {
       toolId: entry.id,
+      iconUrl: null,
       slug: null,
       name: entry.defaultName,
       description: entry.defaultDescription,

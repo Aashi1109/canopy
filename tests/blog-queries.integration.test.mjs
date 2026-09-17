@@ -37,7 +37,7 @@ test(
     });
     for (const migration of ["0001_auth_control_plane.sql", "0006_blogs.sql"]) {
       await sql.unsafe(
-        await readFile(new URL(`../packages/database/migration/baseline/${migration}`, import.meta.url), "utf8"),
+        await readFile(new URL(`../packages/database/migration/0001-baseline/${migration}`, import.meta.url), "utf8"),
       );
     }
     await sql`INSERT INTO auth_users (id, name, email) VALUES ('viewer', 'Viewer', 'viewer@example.test'), ('denied', 'Denied', 'denied@example.test')`;

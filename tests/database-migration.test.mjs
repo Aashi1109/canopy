@@ -4,7 +4,7 @@ import test from "node:test";
 
 import { TOOL_SLUG_PATTERN } from "../packages/tool-catalog/src/index.ts";
 
-const migrationDirectoryUrl = new URL("../packages/database/migration/baseline/", import.meta.url);
+const migrationDirectoryUrl = new URL("../packages/database/migration/0001-baseline/", import.meta.url);
 
 /**
  * Every `managed_tools` seed row across every migration, in applied order.
@@ -35,10 +35,13 @@ async function seededManagedTools() {
   return rows;
 }
 
-const migrationUrl = new URL("../packages/database/migration/baseline/0001_auth_control_plane.sql", import.meta.url);
-const mediaMigrationUrl = new URL("../packages/database/migration/baseline/0002_media_tools.sql", import.meta.url);
+const migrationUrl = new URL(
+  "../packages/database/migration/0001-baseline/0001_auth_control_plane.sql",
+  import.meta.url,
+);
+const mediaMigrationUrl = new URL("../packages/database/migration/0001-baseline/0002_media_tools.sql", import.meta.url);
 const documentTemplateMigrationUrl = new URL(
-  "../packages/database/migration/baseline/0003_document_template_kinds.sql",
+  "../packages/database/migration/0001-baseline/0003_document_template_kinds.sql",
   import.meta.url,
 );
 const schemaUrl = new URL("../packages/database/src/schema.ts", import.meta.url);

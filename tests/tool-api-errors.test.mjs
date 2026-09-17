@@ -16,7 +16,6 @@ const hooks = registerHooks({
       if (specifier === "@/lib/tool-framework/icons") return stub("export const resolveIcon = () => null;");
       if (specifier === "@/lib/tool-framework/manifest") return stub("export const getToolManifest = async () => [];");
       if (specifier === "@canopy/control-plane") return stub("export const getAvailableTools = async () => [];");
-      if (specifier === "@canopy/database") return stub("export const getToolIcons = async () => ({});");
       if (specifier === "../../../../tools/test-error-tool/definition")
         return stub("export default { settings: { fields: {} } };");
       if (specifier === "../../../../tools/test-error-tool/run.server")

@@ -1,5 +1,5 @@
 import { type Access, type Role, hasPermission, mergeRoleAccess } from "@canopy/authorization";
-import { Cache } from "@canopy/cache";
+import { Cache, CACHE_NAMESPACES } from "@canopy/cache";
 import {
   assertDatabaseConfigured,
   and,
@@ -36,7 +36,7 @@ export class AuthorizationError extends Error {
 }
 
 export const featureManifest: readonly FeatureManifestEntry[] = [];
-const userRolesCache = new Cache("user-roles");
+const userRolesCache = new Cache(CACHE_NAMESPACES.USER_ROLES);
 
 /**
  * Tools that exist in code, resolved against their stored rows.

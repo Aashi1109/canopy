@@ -1,10 +1,4 @@
-import {
-  getToolContentRow,
-  getToolIcon,
-  isDatabaseConfigured,
-  type ToolContentRow,
-  type ToolIconRow,
-} from "@canopy/database";
+import { getToolContentRow, isDatabaseConfigured, type ToolContentRow } from "@canopy/database";
 import { Text, Caption, H1, H3, InlineCode, Muted, Overline, StatusBadge } from "@canopy/ui";
 import { FileText, Image, LayoutDashboard, Search, type LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -57,13 +51,8 @@ export default async function ToolContentPage({
   if (!tool) notFound();
 
   const configured = isDatabaseConfigured();
-  const [contentRow, iconRow, spec]: [
-    ToolContentRow | null,
-    ToolIconRow | null,
-    Awaited<ReturnType<typeof loadToolSpec>>,
-  ] = await Promise.all([
+  const [contentRow, spec]: [ToolContentRow | null, Awaited<ReturnType<typeof loadToolSpec>>] = await Promise.all([
     configured ? getToolContentRow(toolId) : Promise.resolve(null),
-    configured ? getToolIcon(toolId) : Promise.resolve(null),
     loadToolSpec(toolId),
   ]);
   const inherited = inheritedContent(spec, tool.name, tool.description);
@@ -221,7 +210,7 @@ export default async function ToolContentPage({
           <div className="grid gap-8 lg:grid-cols-2 lg:gap-0 lg:divide-x lg:divide-border">
             <div className="min-w-0 lg:pr-8">
               <ToolIconPanel
-                iconRow={iconRow}
+                iconUrl={tool.iconUrl}
                 name={tool.name}
                 toolId={tool.id}
                 uploadsEnabled={iconUploadsConfigured()}

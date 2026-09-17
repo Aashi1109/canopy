@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import axios from "axios";
-import { Cache } from "@canopy/cache";
+import redis from "redis";
+import { Cache, closeRedis } from "@canopy/cache";
 
 import { ADMIN_ACCESS } from "../packages/authorization/src/index.ts";
 import {
@@ -220,24 +220,38 @@ test("user and role mutations invalidate affected users through commit and rollb
 });
 
 test("catalog and role caches invalidate only after successful commits", async (t) => {
-  const variables = ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"];
+  const variables = ["REDIS_URL"];
   const previous = variables.map((key) => process.env[key]);
-  t.after(() =>
+  t.after(async () => {
+    await closeRedis();
     variables.forEach((key, index) => {
       if (previous[index] === undefined) delete process.env[key];
       else process.env[key] = previous[index];
-    }),
-  );
-  process.env.UPSTASH_REDIS_REST_URL = "https://cache.example.test";
-  process.env.UPSTASH_REDIS_REST_TOKEN = "test-token";
+    });
+  });
+  process.env.REDIS_URL = "redis://cache.example.test:6379";
   let committed = false;
   const invalidated = [];
-  t.mock.method(axios, "post", async (_url, command) => {
-    assert.equal(committed, true, "Redis must not be called before commit");
-    assert.equal(command[0], "DEL");
-    invalidated.push(command[1]);
-    return { data: { result: 1 } };
-  });
+  t.mock.method(redis, "createClient", () => ({
+    isOpen: false,
+    isReady: false,
+    on() {
+      return this;
+    },
+    async connect() {
+      this.isOpen = this.isReady = true;
+      return this;
+    },
+    async sendCommand(command) {
+      assert.equal(committed, true, "Redis must not be called before commit");
+      assert.equal(command[0], "DEL");
+      invalidated.push(command[1]);
+      return 1;
+    },
+    destroy() {
+      this.isOpen = this.isReady = false;
+    },
+  }));
   const tool = toolRoster(["devtools.stored-tool"], "devtools")[0];
   for (const [key, reads, operation] of [
     ["catalog:all", [permissionRows(ADMIN_ACCESS), [tool]], () => setManagedToolEnabled("actor", tool.toolId, false)],

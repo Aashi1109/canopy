@@ -26,9 +26,7 @@ import {
   ne,
   rolesTable,
   toolContentTable,
-  toolIconsTable,
   userRolesTable,
-  type ToolIconRow,
 } from "@canopy/database";
 import {
   createAdvancedTemplateConfig,
@@ -51,7 +49,7 @@ import {
 } from "@canopy/tool-catalog";
 import { AuthorizationError, type FeatureApp, type FeatureManifestEntry } from "@canopy/control-plane";
 import { z } from "zod";
-import { Cache } from "@canopy/cache";
+import { Cache, CACHE_NAMESPACES } from "@canopy/cache";
 import { isCategoryKey, TOOL_CATEGORIES, type CategoryKey } from "../tool-framework/categories.ts";
 import { TOOL_CONTENT_DOC_VERSION } from "../tool-framework/content.ts";
 import { uploadToolIcon } from "../tool-framework/cloudinary.ts";
@@ -59,7 +57,7 @@ import { uploadToolIcon } from "../tool-framework/cloudinary.ts";
 async function invalidateAfterCommit<T>(namespace: string, result: T): Promise<T> {
   await Promise.all([
     new Cache(namespace).delete("all"),
-    ...(namespace === "catalog" ? [new Cache("ecosystem").delete("all")] : []),
+    ...(namespace === CACHE_NAMESPACES.CATALOG ? [new Cache(CACHE_NAMESPACES.ECOSYSTEM).delete("all")] : []),
   ]);
   return result;
 }
@@ -397,7 +395,7 @@ export async function createManagedTool(actorUserId: string, input: ManagedToolD
       });
       return created;
     })
-    .then((result) => invalidateAfterCommit("catalog", result));
+    .then((result) => invalidateAfterCommit(CACHE_NAMESPACES.CATALOG, result));
 }
 
 export async function updateManagedTool(actorUserId: string, toolId: string, input: ManagedToolEdit): Promise<ToolRow> {
@@ -450,7 +448,7 @@ export async function updateManagedTool(actorUserId: string, toolId: string, inp
       });
       return saved;
     })
-    .then((result) => invalidateAfterCommit("catalog", result));
+    .then((result) => invalidateAfterCommit(CACHE_NAMESPACES.CATALOG, result));
 }
 
 export async function reorderManagedTools(
@@ -493,7 +491,7 @@ export async function reorderManagedTools(
         toolIds,
       });
     })
-    .then((result) => invalidateAfterCommit("catalog", result));
+    .then((result) => invalidateAfterCommit(CACHE_NAMESPACES.CATALOG, result));
 }
 
 export async function setManagedToolEnabled(actorUserId: string, toolId: string, enabled: boolean): Promise<ToolRow> {
@@ -515,7 +513,7 @@ export async function setManagedToolEnabled(actorUserId: string, toolId: string,
       });
       return saved;
     })
-    .then((result) => invalidateAfterCommit("catalog", result));
+    .then((result) => invalidateAfterCommit(CACHE_NAMESPACES.CATALOG, result));
 }
 
 export async function setManagedToolArchived(actorUserId: string, toolId: string, archived: boolean): Promise<ToolRow> {
@@ -534,7 +532,7 @@ export async function setManagedToolArchived(actorUserId: string, toolId: string
       });
       return saved;
     })
-    .then((result) => invalidateAfterCommit("catalog", result));
+    .then((result) => invalidateAfterCommit(CACHE_NAMESPACES.CATALOG, result));
 }
 
 // ---------------------------------------------------------------------------
@@ -732,7 +730,7 @@ export async function updateToolContent(actorUserId: string, toolId: string, inp
         overrides: CONTENT_FIELDS.filter((field) => values[field] !== null),
       });
     })
-    .then((result) => invalidateAfterCommit("catalog", result));
+    .then((result) => invalidateAfterCommit(CACHE_NAMESPACES.CATALOG, result));
 }
 
 /**
@@ -763,7 +761,7 @@ export async function setToolContentPublished(actorUserId: string, toolId: strin
         published,
       });
     })
-    .then((result) => invalidateAfterCommit("catalog", result));
+    .then((result) => invalidateAfterCommit(CACHE_NAMESPACES.CATALOG, result));
 }
 
 /**
@@ -789,7 +787,7 @@ function assertUploadableIcon(bytes: unknown, mimeType: unknown): asserts bytes 
   }
 }
 
-export async function saveToolIcon(actorUserId: string, toolId: string, upload: ToolIconUpload): Promise<ToolIconRow> {
+export async function saveToolIcon(actorUserId: string, toolId: string, upload: ToolIconUpload): Promise<string> {
   if (!isRecord(upload)) throw new Error("Icon upload must be an object.");
   assertUploadableIcon(upload.bytes, upload.mimeType);
   const mimeType = String(upload.mimeType);
@@ -803,38 +801,39 @@ export async function saveToolIcon(actorUserId: string, toolId: string, upload: 
   // purpose: a network round trip must not hold row locks open.
   const uploaded = await uploadToolIcon(toolId, upload.bytes, mimeType);
   if (!uploaded.ok) throw new Error(uploaded.reason);
-  const { publicId, version, format, width, height, updatedAt } = uploaded.row;
-  const values = { publicId, version, format, width, height, updatedAt };
+  const { iconUrl, publicId, format } = uploaded;
 
   return db
     .transaction(async (transaction) => {
       await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
-      const current = await getToolForUpdate(transaction, toolId);
-      await saveTool(transaction, current);
+      await getToolForUpdate(transaction, toolId);
       await transaction
-        .insert(toolIconsTable)
-        .values({ toolId, ...values })
-        .onConflictDoUpdate({ target: toolIconsTable.toolId, set: values });
+        .update(managedToolsTable)
+        .set({ iconUrl, updatedAt: new Date() })
+        .where(eq(managedToolsTable.toolId, toolId));
 
       await writeAudit(transaction, actorUserId, "tool.icon-upload", "tool", toolId, {
         publicId,
         format,
       });
-      return uploaded.row;
+      return iconUrl;
     })
-    .then((result) => invalidateAfterCommit("catalog", result));
+    .then((result) => invalidateAfterCommit(CACHE_NAMESPACES.CATALOG, result));
 }
 
-/** Removing the row falls the tool back to its generated identicon. */
+/** Clearing the URL falls the tool back to its generated identicon. */
 export async function removeToolIcon(actorUserId: string, toolId: string): Promise<void> {
   return db
     .transaction(async (transaction) => {
       await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
       await getToolForUpdate(transaction, toolId);
-      await transaction.delete(toolIconsTable).where(eq(toolIconsTable.toolId, toolId));
+      await transaction
+        .update(managedToolsTable)
+        .set({ iconUrl: null, updatedAt: new Date() })
+        .where(eq(managedToolsTable.toolId, toolId));
       await writeAudit(transaction, actorUserId, "tool.icon-remove", "tool", toolId, {});
     })
-    .then((result) => invalidateAfterCommit("catalog", result));
+    .then((result) => invalidateAfterCommit(CACHE_NAMESPACES.CATALOG, result));
 }
 
 function getFeatureManifestEntry(
@@ -1129,7 +1128,7 @@ export async function createCustomRole(
       });
       return role;
     })
-    .then((result) => invalidateAfterCommit("roles", result));
+    .then((result) => invalidateAfterCommit(CACHE_NAMESPACES.ROLES, result));
 }
 
 export async function updateCustomRole(actorUserId: string, roleId: string, input: CustomRoleEdit): Promise<RoleRow> {
@@ -1164,7 +1163,7 @@ export async function updateCustomRole(actorUserId: string, roleId: string, inpu
         });
         return role;
       })
-      .then((result) => invalidateAfterCommit("roles", result)),
+      .then((result) => invalidateAfterCommit(CACHE_NAMESPACES.ROLES, result)),
   );
 }
 
@@ -1185,7 +1184,7 @@ export async function deleteCustomRole(actorUserId: string, roleId: string): Pro
         name: role.name,
       });
     })
-    .then((result) => invalidateAfterCommit("roles", result));
+    .then((result) => invalidateAfterCommit(CACHE_NAMESPACES.ROLES, result));
 }
 
 function templateValidationError(input: unknown): DocumentTemplate {

@@ -27,12 +27,12 @@ test(
       await admin.end();
     });
     const migration = await readFile(
-      new URL("../packages/database/migration/baseline/0006_blogs.sql", import.meta.url),
+      new URL("../packages/database/migration/0001-baseline/0006_blogs.sql", import.meta.url),
       "utf8",
     );
     await sql.unsafe(
       await readFile(
-        new URL("../packages/database/migration/baseline/0001_auth_control_plane.sql", import.meta.url),
+        new URL("../packages/database/migration/0001-baseline/0001_auth_control_plane.sql", import.meta.url),
         "utf8",
       ),
     );

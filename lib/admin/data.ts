@@ -14,9 +14,9 @@ import {
   sql,
   userRolesTable,
 } from "@canopy/database";
-import { Cache } from "@canopy/cache";
+import { Cache, CACHE_NAMESPACES } from "@canopy/cache";
 
-const rolesCache = new Cache("roles");
+const rolesCache = new Cache(CACHE_NAMESPACES.ROLES);
 const auditActor = alias(authUser, "audit_actor");
 const auditTargetUser = alias(authUser, "audit_target_user");
 export async function listUsers(search = "") {

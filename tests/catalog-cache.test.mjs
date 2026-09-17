@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
-import axios from "axios";
-import { Cache } from "@canopy/cache";
+import redis from "redis";
+import { Cache, closeRedis } from "@canopy/cache";
 
 test("catalog caches database data, preserves published content, and refreshes after invalidation", async (t) => {
   const catalogUrl = new URL("../lib/tool-framework/catalog.ts", import.meta.url).href;
@@ -12,6 +12,7 @@ test("catalog caches database data, preserves published content, and refreshes a
     rows: [
       {
         toolId: "devtools.markdown-previewer",
+        iconUrl: "https://example.test/markdown.png",
         app: "devtools",
         slug: "markdown-previewer",
         name: "Preview Markdown",
@@ -38,7 +39,7 @@ test("catalog caches database data, preserves published content, and refreshes a
     ],
   };
   globalThis.__catalogCacheTest = fixture;
-  const variables = ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"];
+  const variables = ["REDIS_URL"];
   const previous = variables.map((key) => process.env[key]);
   const hooks = registerHooks({
     resolve(specifier, context, nextResolve) {
@@ -54,7 +55,6 @@ test("catalog caches database data, preserves published content, and refreshes a
             return structuredClone(fixture.rows);
           } }; } };
           export const getToolContentRows = async () => structuredClone(fixture.content);
-          export const getToolIcons = async () => ({});
         `)}`,
         };
       }
@@ -68,7 +68,8 @@ test("catalog caches database data, preserves published content, and refreshes a
       return nextResolve(specifier, context);
     },
   });
-  t.after(() => {
+  t.after(async () => {
+    await closeRedis();
     hooks.deregister();
     delete globalThis.__catalogCacheTest;
     variables.forEach((key, index) => {
@@ -76,33 +77,49 @@ test("catalog caches database data, preserves published content, and refreshes a
       else process.env[key] = previous[index];
     });
   });
-  process.env.UPSTASH_REDIS_REST_URL = "https://cache.example.test";
-  process.env.UPSTASH_REDIS_REST_TOKEN = "test-token";
+  process.env.REDIS_URL = "redis://cache.example.test:6379";
   let cached = null;
   const catalogCache = new Cache("catalog");
-  t.mock.method(axios, "post", async (_url, command) => {
-    assert.equal(command[1], "catalog:all");
-    if (command[0] === "GET") return { data: { result: cached } };
-    if (command[0] === "DEL") cached = null;
-    else {
-      assert.equal(command[0], "SET");
-      cached = command[2];
-    }
-    return { data: { result: 1 } };
-  });
+  t.mock.method(redis, "createClient", () => ({
+    isOpen: false,
+    isReady: false,
+    on() {
+      return this;
+    },
+    async connect() {
+      this.isOpen = this.isReady = true;
+      return this;
+    },
+    async sendCommand(command) {
+      assert.equal(command[1], "catalog:all");
+      if (command[0] === "GET") return cached;
+      if (command[0] === "DEL") cached = null;
+      else {
+        assert.equal(command[0], "SET");
+        cached = command[2];
+      }
+      return 1;
+    },
+    destroy() {
+      this.isOpen = this.isReady = false;
+    },
+  }));
   const { getTools, resolveToolPage } = await import(catalogUrl);
   const first = await getTools();
   assert.equal(first.length, 1);
   assert.equal(first[0].seoTitle, "Published title");
+  assert.deepEqual(first[0].icon, { kind: "url", url: fixture.rows[0].iconUrl });
   assert.deepEqual(await getTools(), first);
   assert.equal(fixture.reads, 1, "cache hits avoid all catalog database reads");
   assert.equal((await resolveToolPage("devtools", "markdown-previewer")).name, "Preview Markdown");
 
   fixture.rows[0].name = "Updated name";
+  fixture.rows[0].iconUrl = null;
   fixture.content[0].publishedAt = null;
   await catalogCache.delete("all");
   const updated = await getTools();
   assert.equal(updated[0].name, "Updated name");
+  assert.equal(updated[0].icon.kind, "svg", "cleared icons use the generated fallback");
   assert.notEqual(updated[0].seoTitle, "Published title", "unpublished content cannot leak from cache");
   assert.equal(fixture.reads, 2);
 

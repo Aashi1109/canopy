@@ -3,8 +3,7 @@ import { getTools } from "@/lib/tool-framework/catalog";
 import { resolveIcon } from "@/lib/tool-framework/icons";
 import { getToolManifest } from "@/lib/tool-framework/manifest";
 import { getAvailableTools } from "@canopy/control-plane";
-import { Cache } from "@canopy/cache";
-import { getToolIcons } from "@canopy/database";
+import { Cache, CACHE_NAMESPACES } from "@canopy/cache";
 import { errorMessage } from "@/utils/errorMessage";
 
 const ECOSYSTEMS = [
@@ -15,16 +14,11 @@ const ECOSYSTEMS = [
 
 export async function GET() {
   try {
-    const data = await new Cache("ecosystem").remember(
+    const data = await new Cache(CACHE_NAMESPACES.ECOSYSTEM).remember(
       "all",
       async () => {
         const manifest = await getToolManifest();
-        const [tools, paperworkTools, iconRows] = await Promise.all([
-          getTools(),
-          getAvailableTools("paperwork", manifest),
-          getToolIcons(),
-        ]);
-        const iconsByToolId = new Map(Object.entries(iconRows));
+        const [tools, paperworkTools] = await Promise.all([getTools(), getAvailableTools("paperwork", manifest)]);
         const groups = ECOSYSTEMS.map((ecosystem) => {
           const matchingTools = tools.filter((tool) => tool.app === ecosystem.app);
           const documentTools =
@@ -33,7 +27,7 @@ export async function GET() {
                   .filter((tool) => tool.slug)
                   .map((tool) => ({
                     href: `/paperwork/${tool.slug}`,
-                    icon: resolveIcon(tool.toolId, tool.name, iconsByToolId.get(tool.toolId) ?? null),
+                    icon: resolveIcon(tool.toolId, tool.name, tool.iconUrl),
                     name: tool.name,
                     toolId: tool.toolId,
                   }))

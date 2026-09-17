@@ -1,48 +1,73 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import axios from "axios";
-import { Cache } from "@canopy/cache";
+import redis from "redis";
+import { Cache, closeRedis } from "@canopy/cache";
 
 test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and validation", async (t) => {
-  const variables = ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"];
+  const variables = ["REDIS_URL"];
   const previous = Object.fromEntries(variables.map((key) => [key, process.env[key]]));
-  t.after(() => {
+  t.after(async () => {
+    await closeRedis();
     for (const key of variables) {
       if (previous[key] === undefined) delete process.env[key];
       else process.env[key] = previous[key];
     }
   });
-  Object.assign(process.env, {
-    UPSTASH_REDIS_REST_URL: "https://cache.example.test",
-    UPSTASH_REDIS_REST_TOKEN: "private-token",
-  });
+  process.env.REDIS_URL = "rediss://default:private%2Dtoken@cache.example.test:6380/5";
   const stored = new Map();
   const calls = [];
   const warnings = [];
   let now = 0;
   let failure;
   t.mock.method(console, "warn", (...args) => warnings.push(args.join(" ")));
-  t.mock.method(axios, "post", async (_url, command, options) => {
-    calls.push(command);
-    assert.equal(options.headers.Authorization, "Bearer private-token");
-    assert.equal(options.timeout, 1_000);
-    assert.ok(options.signal instanceof AbortSignal);
-    assert.equal(options.maxRedirects, 0);
-    if (failure) return failure(command);
-    const [operation, key, value, expiry, seconds] = command;
-    let result;
-    if (operation === "GET") {
-      const entry = stored.get(key);
-      result = entry && entry.expires > now ? entry.value : null;
-    } else if (operation === "SET") {
-      assert.equal(expiry, "EX");
-      stored.set(key, { value, expires: now + Number(seconds) });
-      result = "OK";
-    } else {
-      assert.equal(operation, "DEL");
-      result = Number(stored.delete(key));
-    }
-    return { data: { result } };
+  let connections = 0;
+  const client = {
+    isOpen: false,
+    isReady: false,
+    on() {
+      return this;
+    },
+    async connect() {
+      this.isOpen = this.isReady = true;
+      return this;
+    },
+    destroy() {
+      this.isOpen = this.isReady = false;
+    },
+    async sendCommand(command) {
+      calls.push(command);
+      if (failure) return failure(command);
+      const [operation, key, value, expiry, seconds] = command;
+      let result;
+      if (operation === "GET") {
+        const entry = stored.get(key);
+        result = entry && entry.expires > now ? entry.value : null;
+      } else if (operation === "SET") {
+        assert.equal(expiry, "EX");
+        stored.set(key, { value, expires: now + Number(seconds) });
+        result = "OK";
+      } else {
+        assert.equal(operation, "DEL");
+        result = Number(stored.delete(key));
+      }
+      return result;
+    },
+  };
+  const createClient = redis.createClient;
+  t.mock.method(redis, "createClient", (options) => {
+    const parsed = createClient(options).options;
+    connections++;
+    assert.equal(options.url, process.env.REDIS_URL);
+    assert.equal(parsed.socket.host, "cache.example.test");
+    assert.equal(parsed.socket.port, 6380);
+    assert.equal(parsed.socket.tls, true);
+    assert.equal(options.socket.connectTimeout, 1000);
+    assert.equal(options.socket.reconnectStrategy, false);
+    assert.equal(options.disableOfflineQueue, true);
+    assert.equal(parsed.username, "default");
+    assert.equal(parsed.password, "private-token");
+    assert.equal(parsed.database, 5);
+    return client;
   });
 
   const roles = new Cache("roles");
@@ -73,10 +98,9 @@ test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and v
     () => {
       throw new Error("private-token postgres://private-database");
     },
-    () => ({ data: { error: "private-token" } }),
-    () => ({ data: { result: { unexpected: true } } }),
+    () => ({ unexpected: true }),
     () => {
-      throw new axios.AxiosError("Request failed with status code 503", "ERR_BAD_RESPONSE");
+      throw new Error("Redis connection lost");
     },
   ]) {
     failure = response;
@@ -86,8 +110,7 @@ test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and v
     await roles.set("all", []);
     await roles.delete("all");
   }
-  failure = (command) =>
-    command[0] === "GET" ? { data: { result: null } } : Promise.reject(new Error("write failed private-token"));
+  failure = (command) => (command[0] === "GET" ? null : Promise.reject(new Error("write failed private-token")));
   const previousLoads = loads;
   assert.deepEqual(await roles.remember("all", load), [`value-${previousLoads + 1}`]);
   await assert.rejects(
@@ -108,7 +131,8 @@ test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and v
     await assert.rejects(() => roles.set("all", [], ttl), /positive integer/);
   }
 
-  for (const variable of variables) {
+  assert.equal(connections, 1, "all cache namespaces reuse one connection");
+  for (const variable of ["REDIS_URL"]) {
     const saved = process.env[variable];
     delete process.env[variable];
     const previousCalls = calls.length;
@@ -121,4 +145,86 @@ test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and v
     assert.equal(calls.length, previousCalls);
     process.env[variable] = saved;
   }
+});
+
+test("Redis connections are lazy, shared, recoverable, and bounded", async (t) => {
+  const variables = ["REDIS_URL"];
+  const previous = variables.map((key) => process.env[key]);
+  for (const key of variables) delete process.env[key];
+  t.after(() => {
+    closeRedis();
+    variables.forEach((key, index) => {
+      if (previous[index] === undefined) delete process.env[key];
+      else process.env[key] = previous[index];
+    });
+  });
+  t.mock.method(console, "warn", () => {});
+  const clients = [];
+  let failConnect = false;
+  let stall = false;
+  const createClient = redis.createClient;
+  t.mock.method(redis, "createClient", (options) => {
+    createClient(options); // Exercise the real URL validation without opening a socket.
+    const client = {
+      isOpen: false,
+      on(event) {
+        assert.equal(event, "error");
+        return this;
+      },
+      async connect() {
+        if (failConnect) throw new Error("secret password");
+        this.isOpen = true;
+        return this;
+      },
+      async sendCommand() {
+        return stall ? new Promise(() => {}) : null;
+      },
+      destroy() {
+        this.isOpen = false;
+      },
+    };
+    clients.push(client);
+    return client;
+  });
+  const cache = new Cache("roles");
+  assert.equal(await cache.get("all"), null);
+  assert.equal(clients.length, 0, "disabled caching never connects");
+  process.env.REDIS_URL = "redis://cache.example.test:6379";
+  await Promise.all([cache.get("all"), new Cache("catalog").get("all")]);
+  assert.equal(clients.length, 1, "concurrent commands share the connection");
+  clients[0].destroy();
+  await cache.get("all");
+  assert.equal(clients.length, 2, "next command reconnects after a closed socket");
+  closeRedis();
+  failConnect = true;
+  await assert.rejects(cache.beginInvalidation("all"), /^Error: Redis cache unavailable$/);
+  failConnect = false;
+  await cache.get("all");
+  assert.equal(clients.length, 4, "a failed connection does not poison later calls");
+  stall = true;
+  assert.equal(await cache.get("all"), null, "a stalled server becomes a cache miss");
+  assert.equal(clients.at(-1).isOpen, false, "timeout destroys the stalled socket");
+  stall = false;
+  await cache.get("all");
+  assert.equal(clients.length, 5);
+  closeRedis();
+  for (const url of ["https://default:secret@cache.example.test", "not-a-url", "redis://cache.example.test:99999"]) {
+    process.env.REDIS_URL = url;
+    await assert.rejects(cache.beginInvalidation("all"), /^Error: Redis cache unavailable$/);
+  }
+  process.env.REDIS_URL = "redis://cache.example.test:6379";
+  assert.equal(clients.length, 5, "invalid connection settings never open a socket");
+
+  const navigator = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  Object.defineProperty(globalThis, "navigator", { configurable: true, value: { userAgent: "Cloudflare-Workers" } });
+  t.after(() => {
+    if (navigator) Object.defineProperty(globalThis, "navigator", navigator);
+    else delete globalThis.navigator;
+  });
+  await Promise.all([cache.get("all"), cache.get("all")]);
+  assert.equal(clients.length, 7, "Workers never share sockets across requests");
+  assert.ok(
+    clients.slice(-2).every((client) => !client.isOpen),
+    "Worker sockets close after commands",
+  );
 });

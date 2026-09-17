@@ -1,24 +1,23 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import axios from "axios";
+import redis from "redis";
+import { closeRedis } from "@canopy/cache";
 import { db, rolesTable, userRolesTable } from "@canopy/database";
 import { getRole, listRoles } from "../lib/admin/data.ts";
 
 test("role definitions are cached while membership counts stay current", async (t) => {
   const originalSelect = db.select;
-  const originalPost = axios.post;
-  const variables = ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"];
+  const variables = ["REDIS_URL"];
   const previous = variables.map((key) => process.env[key]);
-  t.after(() => {
+  t.after(async () => {
+    await closeRedis();
     db.select = originalSelect;
-    axios.post = originalPost;
     variables.forEach((key, index) => {
       if (previous[index] === undefined) delete process.env[key];
       else process.env[key] = previous[index];
     });
   });
-  process.env.UPSTASH_REDIS_REST_URL = "https://cache.example.test";
-  process.env.UPSTASH_REDIS_REST_TOKEN = "test-token";
+  process.env.REDIS_URL = "redis://cache.example.test:6379";
   const roles = [
     {
       id: "editor",
@@ -64,13 +63,27 @@ test("role definitions are cached while membership counts stay current", async (
     };
     return query;
   };
-  axios.post = async (_url, command) => {
-    assert.equal(command[1], "roles:all");
-    if (command[0] === "GET") return { data: { result: cached } };
-    assert.equal(command[0], "SET");
-    cached = command[2];
-    return { data: { result: 1 } };
-  };
+  t.mock.method(redis, "createClient", () => ({
+    isOpen: false,
+    isReady: false,
+    on() {
+      return this;
+    },
+    async connect() {
+      this.isOpen = this.isReady = true;
+      return this;
+    },
+    async sendCommand(command) {
+      assert.equal(command[1], "roles:all");
+      if (command[0] === "GET") return cached;
+      assert.equal(command[0], "SET");
+      cached = command[2];
+      return 1;
+    },
+    destroy() {
+      this.isOpen = this.isReady = false;
+    },
+  }));
 
   assert.deepEqual(
     await listRoles(),

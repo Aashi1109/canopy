@@ -850,7 +850,7 @@ fallback rather than inventing a second merge idiom.
 - **Never edit an applied migration.** `0001_auth_control_plane.sql` and `0002_media_tools.sql` stay
   as historical record; `0002`'s `CHECK (app IN …)` is still load-bearing.
   `tests/database-migration.test.mjs:64-87`'s 30 character-exact tuples are replaced by a
-  union-of-applied-seeds invariant (parse every `INSERT INTO managed_tools` across `migration/baseline/*.sql`,
+  union-of-applied-seeds invariant (parse every `INSERT INTO managed_tools` across `migration/0001-baseline/*.sql`,
   assert the union covers the derived manifest).
 - **`sort_order` collision, fix in the backfill migration.** `managed_tools` has no unique
   constraint on `(app, sort_order)`, and the existing `devtools.json-formatter` row sits at

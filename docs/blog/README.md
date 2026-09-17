@@ -4,7 +4,7 @@ This document defines the phase-one design. The backend is implemented in the mo
 
 ### Backend implementation and verification
 
-- `packages/database/migration/baseline/0006_blogs.sql`: additive, rerunnable schema and system-admin permissions; included in the explicit `pnpm db:migrate baseline` batch.
+- `packages/database/migration/0001-baseline/0006_blogs.sql`: additive, rerunnable schema and system-admin permissions; included in the explicit `pnpm db:migrate 0001-baseline` batch.
 - `lib/blog/mutations.ts`: transactional draft/history, taxonomy, publication, schedule/retry, and lifecycle operations.
 - `lib/blog/queries.ts`: permission-checked admin reads, public published-only reads, search, taxonomy, and pagination.
 - `lib/blog/document.ts` and `lib/blog/images.ts`: bounded document validation, escaped rendering, and immutable Cloudinary image uploads.
@@ -581,7 +581,7 @@ Add Blog to public navigation and the admin menu. Extend existing consent-based 
 
 ## 11. Migration and rollout
 
-The rerunnable blog migration is included in `packages/database/migration/baseline/`
+The rerunnable blog migration is included in `packages/database/migration/0001-baseline/`
 after its prerequisite migrations:
 
 1. Create the six tables, with `blog_post_schedules` after posts, revisions, and account dependencies exist.

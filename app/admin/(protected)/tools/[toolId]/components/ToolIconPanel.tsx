@@ -4,19 +4,18 @@ import { H3, Label, Caption, Muted, Text, AlertBanner, Button, Input } from "@ca
 import { ImagePlus, RotateCcw, Trash2, Upload } from "lucide-react";
 import { useActionState, useEffect, useId, useRef, useState, type ChangeEvent, type ReactElement } from "react";
 import { ToolIcon } from "../../../../../../components/ToolIcon";
-import type { ToolIconRow } from "../../../../../../lib/tool-framework/icons";
 import { removeToolIconAction, uploadToolIconAction, type ToolContentActionState } from "../../actions";
 
 const IDLE: ToolContentActionState = { status: "idle", message: "" };
 
 export interface ToolIconPanelProps {
-  readonly iconRow: ToolIconRow | null;
+  readonly iconUrl: string | null;
   readonly name: string;
   readonly toolId: string;
   readonly uploadsEnabled: boolean;
 }
 
-export function ToolIconPanel({ iconRow, name, toolId, uploadsEnabled }: ToolIconPanelProps): ReactElement {
+export function ToolIconPanel({ iconUrl, name, toolId, uploadsEnabled }: ToolIconPanelProps): ReactElement {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -81,11 +80,11 @@ export function ToolIconPanel({ iconRow, name, toolId, uploadsEnabled }: ToolIco
               // eslint-disable-next-line @next/next/no-img-element
               <img alt="Selected icon preview" className="size-full object-cover" src={previewUrl} />
             ) : (
-              <ToolIcon name={name} row={iconRow} size={72} toolId={toolId} />
+              <ToolIcon name={name} iconUrl={iconUrl} size={72} toolId={toolId} />
             )}
           </span>
           <Caption className="block break-all text-center text-muted-foreground">
-            {selectedFile?.name ?? (iconRow ? "Uploaded icon" : "Generated identicon")}
+            {selectedFile?.name ?? (iconUrl ? "Uploaded icon" : "Generated identicon")}
           </Caption>
         </div>
 
@@ -150,7 +149,7 @@ export function ToolIconPanel({ iconRow, name, toolId, uploadsEnabled }: ToolIco
         )}
       </div>
 
-      {iconRow ? (
+      {iconUrl ? (
         <form action={removeAction} className="border-t border-border pt-4">
           <input name="toolId" type="hidden" value={toolId} />
           <Button disabled={busy} loading={isRemoving} size="sm" type="submit" variant="danger-subtle">

@@ -8,7 +8,6 @@ import {
 } from "@/lib/tool-framework/categories";
 import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
 import { getOptionalSession } from "@canopy/auth/session";
-import { getToolIcons, type ToolIconRow } from "@canopy/database";
 import {
   Caption,
   Display,
@@ -37,8 +36,6 @@ import { CategoryFilter } from "./components/CategoryFilter";
 
 const SECTION_HEADING_CLASS = "mb-8 items-end";
 
-type IconRows = Readonly<Record<string, ToolIconRow>>;
-
 function first(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value) ?? "";
 }
@@ -47,7 +44,7 @@ function isCategory(value: string): value is CategoryKey {
   return Object.hasOwn(TOOL_CATEGORIES, value);
 }
 
-function ToolCard({ icons, tool }: { icons: IconRows; tool: CatalogTool }) {
+function ToolCard({ tool }: { tool: CatalogTool }) {
   return (
     <CatalogCard
       action={
@@ -59,7 +56,7 @@ function ToolCard({ icons, tool }: { icons: IconRows; tool: CatalogTool }) {
       className="min-h-48 rounded-[1.25rem] p-5 shadow-none duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg [&>span:last-child]:inline-flex [&>span:last-child]:items-center [&>span:last-child]:gap-1.5"
       description={tool.description}
       href={`/devtools/${tool.slug}`}
-      icon={<ToolIcon name={tool.name} row={icons[tool.toolId] ?? null} toolId={tool.toolId} />}
+      icon={<ToolIcon icon={tool.icon} />}
       title={tool.name}
     />
   );
@@ -74,11 +71,7 @@ export default async function HomePage({
   const params = await searchParams;
   const query = first(params.q).trim().slice(0, 80);
   const requestedCategory = first(params.category).slice(0, 80);
-  const [tools, icons, session] = await Promise.all([
-    getTools("devtools"),
-    getToolIcons(),
-    getOptionalSession(requestHeaders),
-  ]);
+  const [tools, session] = await Promise.all([getTools("devtools"), getOptionalSession(requestHeaders)]);
   const category = isCategory(requestedCategory) ? requestedCategory : "";
   const normalizedQuery = query.toLocaleLowerCase();
   const filteredTools = tools.filter(
@@ -248,7 +241,7 @@ export default async function HomePage({
               {filteredTools.length ? (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {filteredTools.map((tool) => (
-                    <ToolCard icons={icons} key={tool.toolId} tool={tool} />
+                    <ToolCard key={tool.toolId} tool={tool} />
                   ))}
                 </div>
               ) : (
@@ -291,7 +284,7 @@ export default async function HomePage({
                 />
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {featuredTools.map((tool) => (
-                    <ToolCard icons={icons} key={tool.toolId} tool={tool} />
+                    <ToolCard key={tool.toolId} tool={tool} />
                   ))}
                 </div>
               </AppContainer>

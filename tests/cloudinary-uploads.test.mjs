@@ -23,7 +23,7 @@ const hooks = registerHooks({
         url: `data:text/javascript,${encodeURIComponent(`
         export const v2 = { config() {}, uploader: { async upload(source, options) {
           globalThis.__cloudinaryUploadTest.push(options);
-          return { public_id: options.public_id, version: 1, width: 1, height: 1 };
+          return { public_id: options.public_id, version: 1, format: "png", ...globalThis.__cloudinaryUploadResponse };
         } } };
       `)}`,
       };
@@ -48,8 +48,13 @@ test("every environment keeps tool icon IDs and asset folders under its Canopy b
     assert.equal(result.ok, true);
     const expectedFolder = `Canopy/${environment}/tool-icons`;
     assert.equal(uploads.at(-1).asset_folder, expectedFolder);
-    assert.equal(result.row.publicId, `${expectedFolder}/media.extract-pdf-pages`);
+    assert.equal(result.publicId, `${expectedFolder}/media.extract-pdf-pages`);
     assert.equal(uploads.at(-1).overwrite, true);
+    assert.equal(result.format, "png");
+    assert.equal(
+      result.iconUrl,
+      `https://res.cloudinary.com/test-cloud/image/upload/f_png,c_fill,w_256,h_256,q_auto/v1/${expectedFolder}/media.extract-pdf-pages.png`,
+    );
   }
   const count = uploads.length;
   delete process.env.NODE_ENV;
@@ -67,5 +72,25 @@ test("upload folders require an environment and reject paths outside the base", 
   assert.equal(cloudinaryFolder("platform/assets/default/icons"), "Canopy/production/platform/assets/default/icons");
   for (const folder of ["", "/blog", "../blog", "blog/../icons", "blog//icons", "blog\\icons"]) {
     assert.throws(() => cloudinaryFolder(folder), /folder/);
+  }
+});
+
+test("malformed Cloudinary responses never become saved icon URLs", async (t) => {
+  process.env.NODE_ENV = "test";
+  t.after(() => delete globalThis.__cloudinaryUploadResponse);
+  const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  for (const response of [
+    { public_id: "other/icon" },
+    { version: 0 },
+    { version: "1" },
+    { version: 1.5 },
+    { version: Number.MAX_SAFE_INTEGER + 1 },
+    { format: "svg" },
+  ]) {
+    globalThis.__cloudinaryUploadResponse = response;
+    assert.deepEqual(await uploadToolIcon("media.extract-pdf-pages", png, "image/png"), {
+      ok: false,
+      reason: "The icon could not be uploaded. Try again.",
+    });
   }
 });

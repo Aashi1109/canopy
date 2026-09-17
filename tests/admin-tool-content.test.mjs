@@ -1,14 +1,37 @@
 import assert from "node:assert/strict";
+import { registerHooks } from "node:module";
 import test from "node:test";
 
 import { ADMIN_ACCESS } from "../packages/authorization/src/index.ts";
-import { auditEventsTable, db, toolContentTable, toolIconsTable } from "../packages/database/src/index.ts";
-import {
-  removeToolIcon,
-  saveToolIcon,
-  setToolContentPublished,
-  updateToolContent,
-} from "../lib/admin/adminMutations.ts";
+import { auditEventsTable, db, managedToolsTable, toolContentTable } from "../packages/database/src/index.ts";
+
+const uploadCalls = [];
+globalThis.__adminIconUpload = async (...args) => {
+  uploadCalls.push(args);
+  return {
+    ok: true,
+    iconUrl: "https://res.cloudinary.com/demo/image/upload/f_png,c_fill,w_256,h_256,q_auto/v1/icons/stored-tool.png",
+    publicId: "icons/stored-tool",
+    format: "png",
+  };
+};
+const hooks = registerHooks({
+  resolve(specifier, context, next) {
+    if (context.parentURL?.endsWith("/lib/admin/adminMutations.ts") && specifier.endsWith("/cloudinary.ts")) {
+      return {
+        shortCircuit: true,
+        url: `data:text/javascript,${encodeURIComponent("export const uploadToolIcon = (...args) => globalThis.__adminIconUpload(...args);")}`,
+      };
+    }
+    return next(specifier, context);
+  },
+});
+const { removeToolIcon, saveToolIcon, setToolContentPublished, updateToolContent } =
+  await import("../lib/admin/adminMutations.ts");
+hooks.deregister();
+test.after(() => {
+  delete globalThis.__adminIconUpload;
+});
 import { TOOL_CONTENT_DOC_VERSION, resolveContent } from "../lib/tool-framework/content.ts";
 import { TOOL_CATEGORIES } from "../lib/tool-framework/categories.ts";
 import { renderIdenticon } from "../lib/tool-framework/identicon.ts";
@@ -388,14 +411,43 @@ test("SVG is rejected by MIME type and by its leading bytes", async () => {
   });
 });
 
-test("removing an icon deletes the row and falls back to the identicon", async () => {
+test("upload stores the URL on its tool and records the existing audit event", async () => {
+  const permissions = permissionRows({ tools: { view: true, edit: true } });
+  await withFakeDatabase([permissions, TOOL_ROW, permissions, TOOL_ROW], async (state) => {
+    const iconUrl = await saveToolIcon("actor", TOOL_ID, { bytes: pngBytes(), mimeType: "image/png" });
+    assert.equal(typeof iconUrl, "string");
+    assert.equal(state.updates[0].table, managedToolsTable);
+    assert.equal(state.updates[0].values.iconUrl, iconUrl);
+    assert.ok(state.updates[0].values.updatedAt instanceof Date);
+    assert.equal(state.inserts.filter(({ table }) => table !== auditEventsTable).length, 0);
+    assert.equal(auditWrite(state).values.action, "tool.icon-upload");
+    assert.equal(uploadCalls.at(-1)[0], TOOL_ID);
+  });
+});
+
+test("revoked permission after upload leaves the stored icon unchanged", async () => {
+  await withFakeDatabase(
+    [permissionRows({ tools: { view: true, edit: true } }), TOOL_ROW, permissionRows({ tools: { view: true } })],
+    async (state) => {
+      await assert.rejects(
+        saveToolIcon("actor", TOOL_ID, { bytes: pngBytes(), mimeType: "image/png" }),
+        /Missing permission/,
+      );
+      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    },
+  );
+});
+
+test("removing an icon clears the URL and falls back to the identicon", async () => {
   await withFakeDatabase([permissionRows({ tools: { view: true, edit: true } }), TOOL_ROW], async (state) => {
     await removeToolIcon("actor", TOOL_ID);
-    assert.equal(state.deletes[0].table, toolIconsTable);
+    assert.equal(state.updates[0].table, managedToolsTable);
+    assert.equal(state.updates[0].values.iconUrl, null);
+    assert.deepEqual(state.deletes, []);
     assert.equal(auditWrite(state).values.action, "tool.icon-remove");
   });
 
-  // With no row, `resolveIcon` returns `renderIdenticon(toolId, name)`, so the
+  // With no URL, `resolveIcon` returns `renderIdenticon(toolId, name)`, so the
   // fallback a removal lands on is this generated SVG.
   assert.match(renderIdenticon(TOOL_ID, "Some Tool"), /<svg/);
 });

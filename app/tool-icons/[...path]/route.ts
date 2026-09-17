@@ -17,13 +17,14 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pat
   ) {
     return new Response(null, { status: 404, headers: { "Cache-Control": "no-store" } });
   }
-  if (!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim()) {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim();
+  if (!cloudName) {
     return new Response(null, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 
   try {
     const response = await fetch(
-      toolIconUrl({ version: path[0].slice(1), publicId: path.slice(1).join("/").slice(0, -4) }),
+      toolIconUrl(cloudName, { version: path[0].slice(1), publicId: path.slice(1).join("/").slice(0, -4) }),
       {
         headers: { Accept: "image/png" },
         redirect: "error",

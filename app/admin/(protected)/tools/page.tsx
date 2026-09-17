@@ -1,4 +1,3 @@
-import { getToolIcons, isDatabaseConfigured, type ToolIconRow } from "@canopy/database";
 import { TextLink, EmptyState, ToolPageHeader } from "@canopy/ui";
 import { PackageSearch } from "lucide-react";
 import { requirePagePermission } from "../../../../lib/admin/access";
@@ -8,8 +7,7 @@ import { ToolList } from "./components/ToolList";
 
 export default async function ToolsPage() {
   await requirePagePermission("tools", "view");
-  const [tools, icons]: [Awaited<ReturnType<typeof getAdminTools>>, Readonly<Record<string, ToolIconRow>>] =
-    await Promise.all([getAdminTools(), isDatabaseConfigured() ? getToolIcons() : Promise.resolve({})]);
+  const tools = await getAdminTools();
 
   return (
     <div className="flex min-h-0 flex-col lg:h-full">
@@ -20,7 +18,7 @@ export default async function ToolsPage() {
         title="Tool catalog"
       />
       {tools.length ? (
-        <ToolList icons={icons} tools={tools} />
+        <ToolList tools={tools} />
       ) : (
         <EmptyState
           action={

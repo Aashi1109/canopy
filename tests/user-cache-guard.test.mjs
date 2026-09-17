@@ -6,28 +6,30 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
-import axios from "axios";
-import { Cache } from "@canopy/cache";
+import redisClient from "redis";
+import { createServer } from "node:net";
+import { Cache, closeRedis } from "@canopy/cache";
 
 const run = promisify(execFile);
 
 function configure(t, enabled = true) {
-  for (const name of ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]) {
+  for (const name of ["REDIS_URL"]) {
     const previous = process.env[name];
     t.after(() => {
       if (previous === undefined) delete process.env[name];
       else process.env[name] = previous;
     });
-    if (enabled) process.env[name] = name.endsWith("URL") ? "https://cache.example.test" : "test-token";
+    if (enabled) process.env[name] = "redis://127.0.0.1:6379";
     else delete process.env[name];
   }
+  t.after(() => closeRedis());
 }
 
 test("guarded user cache bypasses unconfigured Redis and fails closed before writes", async (t) => {
   const cache = new Cache("user");
   await t.test("unconfigured caching allows database reads and mutations", async (t) => {
     configure(t, false);
-    t.mock.method(axios, "post", () => assert.fail("Redis must not be called"));
+    t.mock.method(redisClient, "createClient", () => assert.fail("Redis must not be called"));
     assert.deepEqual(await cache.rememberGuarded("one", async () => ({ active: true }), 3600), { active: true });
     assert.equal(await cache.beginInvalidation("one", 3600), null);
     await cache.endInvalidation("one", null, 3600);
@@ -35,16 +37,37 @@ test("guarded user cache bypasses unconfigured Redis and fails closed before wri
   await t.test("Redis outages preserve reads but block starting a mutation", async (t) => {
     configure(t);
     t.mock.method(console, "warn", () => {});
-    t.mock.method(axios, "post", async () => {
-      throw new Error("Redis unavailable");
-    });
+    t.mock.method(redisClient, "createClient", () => ({
+      isOpen: false,
+      on() {
+        return this;
+      },
+      async connect() {
+        throw new Error("Redis unavailable");
+      },
+    }));
     assert.equal(await cache.rememberGuarded("one", async () => "database", 3600), "database");
-    await assert.rejects(cache.beginInvalidation("one", 3600), /Redis unavailable/);
+    await assert.rejects(cache.beginInvalidation("one", 3600), /Redis cache unavailable/);
     await cache.endInvalidation("one", "already-committed", 3600);
   });
   await t.test("unexpected Redis acknowledgements block mutations", async (t) => {
     configure(t);
-    t.mock.method(axios, "post", async () => ({ data: { result: null } }));
+    t.mock.method(redisClient, "createClient", () => ({
+      isOpen: false,
+      on() {
+        return this;
+      },
+      async connect() {
+        this.isOpen = true;
+        return this;
+      },
+      async sendCommand() {
+        return null;
+      },
+      destroy() {
+        this.isOpen = false;
+      },
+    }));
     await assert.rejects(cache.beginInvalidation("one", 3600), /Cache invalidation failed/);
   });
 });
@@ -58,11 +81,36 @@ test("guarded user cache prevents stale fills and overlapping mutation races wit
     return;
   }
   configure(t);
+  const reservation = createServer();
+  await new Promise((resolve, reject) => {
+    reservation.once("error", reject);
+    reservation.listen(0, "127.0.0.1", resolve);
+  });
+  const port = reservation.address().port;
+  await new Promise((resolve) => reservation.close(resolve));
+  process.env.REDIS_URL = `redis://default:test-cache-password@127.0.0.1:${port}/5`;
   const directory = await mkdtemp(join(tmpdir(), "user-cache-guard-"));
   const socket = join(directory, "redis.sock");
-  const server = spawn("redis-server", ["--port", "0", "--unixsocket", socket, "--save", "", "--appendonly", "no"], {
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  const server = spawn(
+    "redis-server",
+    [
+      "--bind",
+      "127.0.0.1",
+      "--port",
+      String(port),
+      "--requirepass",
+      "test-cache-password",
+      "--unixsocket",
+      socket,
+      "--save",
+      "",
+      "--appendonly",
+      "no",
+    ],
+    {
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
   let serverOutput = "";
   server.stdout.on("data", (chunk) => {
     serverOutput += chunk;
@@ -71,6 +119,7 @@ test("guarded user cache prevents stale fills and overlapping mutation races wit
     serverOutput += chunk;
   });
   t.after(async () => {
+    closeRedis();
     server.kill();
     await new Promise((resolve) =>
       server.exitCode !== null || server.signalCode !== null ? resolve() : server.once("exit", resolve),
@@ -78,7 +127,16 @@ test("guarded user cache prevents stale fills and overlapping mutation races wit
     await rm(directory, { recursive: true, force: true });
   });
   const redis = async (...args) => {
-    const { stdout } = await run("redis-cli", ["-s", socket, "--json", ...args]);
+    const { stdout } = await run("redis-cli", [
+      "-s",
+      socket,
+      "-a",
+      "test-cache-password",
+      "-n",
+      "5",
+      "--json",
+      ...args,
+    ]);
     return JSON.parse(stdout);
   };
   for (let attempt = 0; ; attempt++) {
@@ -99,9 +157,15 @@ test("guarded user cache prevents stale fills and overlapping mutation races wit
   }
   let failRedis = false;
   t.mock.method(console, "warn", () => {});
-  t.mock.method(axios, "post", async (_url, args) => {
-    if (failRedis) throw new Error("Redis unavailable");
-    return { data: { result: await redis(...args) } };
+  const createClient = redisClient.createClient;
+  t.mock.method(redisClient, "createClient", (...options) => {
+    const client = createClient(...options);
+    const send = client.sendCommand.bind(client);
+    client.sendCommand = async (args) => {
+      if (failRedis) throw new Error("Redis unavailable");
+      return send(args);
+    };
+    return client;
   });
   const cache = new Cache("user");
   let row = { name: "Before", active: true };

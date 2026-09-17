@@ -1,8 +1,8 @@
-import { Cache } from "@canopy/cache";
+import { Cache, CACHE_NAMESPACES } from "@canopy/cache";
 import { assertDatabaseConfigured, authUser, db, eq } from "@canopy/database";
 
-const userCache = new Cache("user");
-const userRolesCache = new Cache("user-roles");
+const userCache = new Cache(CACHE_NAMESPACES.USER);
+const userRolesCache = new Cache(CACHE_NAMESPACES.USER_ROLES);
 const USER_TTL_SECONDS = 60 * 60;
 type User = typeof authUser.$inferSelect;
 

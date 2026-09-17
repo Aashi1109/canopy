@@ -5,7 +5,7 @@
 
 import { v2 as cloudinary } from "cloudinary";
 import { cloudinaryFolder } from "../cloudinary/paths.ts";
-import type { ToolIconRow } from "./icons";
+import { toolIconUrl } from "./icons.ts";
 
 const MAX_ICON_BYTES = 1_048_576;
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -16,7 +16,8 @@ type CloudinaryCredentials = {
   api_secret: string;
 };
 
-export type ToolIconUploadResult = { ok: true; row: ToolIconRow } | { ok: false; reason: string };
+export type ToolIconUploadResult =
+  { ok: true; iconUrl: string; publicId: string; format: "png" } | { ok: false; reason: string };
 
 function readCredentials(): CloudinaryCredentials | null {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
@@ -90,17 +91,23 @@ export async function uploadToolIcon(
       },
     );
 
+    if (
+      uploaded.public_id !== `${folder}/${toolId}` ||
+      !Number.isSafeInteger(uploaded.version) ||
+      uploaded.version <= 0 ||
+      uploaded.format !== "png"
+    ) {
+      return { ok: false, reason: "The icon could not be uploaded. Try again." };
+    }
+
     return {
       ok: true,
-      row: {
-        toolId,
+      iconUrl: toolIconUrl(credentials.cloud_name, {
         publicId: uploaded.public_id,
         version: String(uploaded.version),
-        format: "png",
-        width: uploaded.width,
-        height: uploaded.height,
-        updatedAt: new Date(),
-      },
+      }),
+      publicId: uploaded.public_id,
+      format: "png",
     };
   } catch {
     return { ok: false, reason: "The icon could not be uploaded. Try again." };

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { config } from "dotenv";
 import postgres from "postgres";
-import { Cache } from "@canopy/cache";
+import { Cache, CACHE_NAMESPACES, closeRedis } from "@canopy/cache";
 
 for (const file of [".env.local", ".env"]) {
   config({ path: new URL(`../../../${file}`, import.meta.url), override: false, quiet: true });
@@ -13,8 +13,8 @@ if (!email) throw new Error("Usage: pnpm admin:promote <verified-email>");
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
 
 const sql = postgres(databaseUrl, { max: 1 });
-const userCache = new Cache("user");
-const userRolesCache = new Cache("user-roles");
+const userCache = new Cache(CACHE_NAMESPACES.USER);
+const userRolesCache = new Cache(CACHE_NAMESPACES.USER_ROLES);
 let cacheUserId;
 let cacheToken = null;
 let rolesCacheToken = null;
@@ -56,5 +56,6 @@ try {
     await userCache.endInvalidation(cacheUserId, cacheToken, 3600);
     await userRolesCache.endInvalidation(cacheUserId, rolesCacheToken, 86400);
   }
+  closeRedis();
   await sql.end();
 }

@@ -17,7 +17,7 @@ test(
     context.after(() => sql.end());
     const schema = `user_role_cache_test_${randomUUID().replaceAll("-", "")}`;
     const migration = await readFile(
-      new URL("../packages/database/migration/baseline/0007_user_role_cache.sql", import.meta.url),
+      new URL("../packages/database/migration/0001-baseline/0007_user_role_cache.sql", import.meta.url),
       "utf8",
     );
     const rollback = new Error("roll back isolated test schema");
@@ -146,7 +146,7 @@ test(
     `);
       await sql.unsafe(
         await readFile(
-          new URL("../packages/database/migration/baseline/0007_user_role_cache.sql", import.meta.url),
+          new URL("../packages/database/migration/0001-baseline/0007_user_role_cache.sql", import.meta.url),
           "utf8",
         ),
       );

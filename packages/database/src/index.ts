@@ -25,4 +25,3 @@ export * from "./schema.ts";
 // failed to resolve that path, breaking `next build`.
 // `scripts/seed.mjs` imports it directly by path, which is the only caller.
 export * from "./toolContent.ts";
-export * from "./toolIcon.ts";

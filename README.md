@@ -46,7 +46,7 @@ version. Formatting is separate from `pnpm lint`, which checks TypeScript.
 ## First deployment
 
 1. Copy `.env.example` to `.env.local`, then configure `APP_URL`, one strong `BETTER_AUTH_SECRET`, the database, and any optional integrations you use.
-2. Run `pnpm db:migrate baseline`. This preserves anonymous Paperwork tables and adds Auth/control-plane tables and system roles.
+2. Run `pnpm db:migrate 0001-baseline`, then `pnpm db:migrate 0002-tool-icon-url`. The baseline preserves anonymous Paperwork tables and adds Auth/control-plane tables and system roles.
 3. Run `NODE_ENV=production pnpm db:seed` to seed current tool slugs, tool content, invoice templates for an empty catalog, and missing tool icons.
 4. Deploy the repository root application.
 5. Create and verify the first account, then run `pnpm admin:promote <verified-email>` once.
@@ -62,16 +62,25 @@ Only that folder's immediate `.sql` files run, in filename order. A folder is re
 there is no default or automatic run of every folder. Prefix SQL filenames with numbers
 to control execution order.
 
-The `baseline` folder contains the existing `0001`–`0008` migrations.
+The `0001-baseline` folder contains the existing `0001`–`0008` migrations.
 Put each new migration batch in its own folder and pass that name to the command.
 Migrations run only their SQL; run `pnpm db:seed` separately for catalog seeding.
 Applied migrations are not tracked; explicitly rerunning a folder runs its SQL again.
 
+For existing databases, run `pnpm db:migrate 0002-tool-icon-url` before deploying the
+updated app. It adds `managed_tools.icon_url`, preserves existing URLs, backfills
+legacy Cloudinary icons, and drops `tool_icons` in one transaction. Set
+`NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` (or `CLOUDINARY_CLOUD_NAME`) to the existing
+icons' cloud; it is required only when legacy icons need backfilling. A failure
+rolls back the schema and data changes. The folder is safe to rerun. Fresh setups
+run `0001-baseline`, then `0002-tool-icon-url`, then `db:seed`.
+
 `db:seed` seeds tools and templates, uploads SVG icons to Cloudinary, then assigns
 missing icons by tool slug. Existing database icon assignments and Cloudinary assets
 are preserved. Configure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and
-`CLOUDINARY_API_SECRET`; set `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` to the same cloud
-for public delivery. Set `NODE_ENV` to `development`, `test`, or `production`.
+`CLOUDINARY_API_SECRET`. If `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` is set, use the
+same cloud. Complete delivery URLs are stored on each tool. Set `NODE_ENV` to
+`development`, `test`, or `production`.
 
 Icons default to `scripts/seed-assets/tool-icons`, included in Git for fresh setups.
 They stay outside `public` and are excluded from Next.js output tracing, so they
@@ -143,8 +152,9 @@ and admin routes; pooling alone does not make this Next.js app reliable on Free.
 4. Set the Google OAuth redirect URL to
    `https://smarttools.lol/api/auth/callback/google` when using Google login.
 5. Point your local migration environment at the intended deployment database,
-   then run `pnpm db:migrate baseline` for first setup, or `pnpm db:migrate <folder>`
-   for a later migration batch. Run `pnpm db:seed` separately for first setup.
+   then run `pnpm db:migrate 0001-baseline` followed by `pnpm db:migrate 0002-tool-icon-url`
+   for first setup, or `pnpm db:migrate <folder>` for a later migration batch.
+   Run `pnpm db:seed` separately for first setup.
    Migrations are a separate, explicit step and are
    never run by the Worker build or deploy command.
 

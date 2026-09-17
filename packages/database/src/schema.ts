@@ -229,6 +229,7 @@ export const managedToolsTable = pgTable(
     toolId: text("tool_id").primaryKey(),
     app: text("app").$type<"paperwork" | "devtools" | "media">().notNull(),
     slug: text("slug"),
+    iconUrl: text("icon_url"),
     name: text("name").notNull(),
     description: text("description").notNull(),
     order: integer("sort_order").default(0).notNull(),
@@ -254,18 +255,6 @@ export const toolContentTable = pgTable("tool_content", {
   contentDoc: jsonb("content_doc").$type<unknown>(),
   docVersion: integer("doc_version").default(1).notNull(),
   publishedAt: timestamp("published_at", { withTimezone: true }),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
-
-export const toolIconsTable = pgTable("tool_icons", {
-  toolId: text("tool_id")
-    .primaryKey()
-    .references(() => managedToolsTable.toolId, { onDelete: "cascade" }),
-  publicId: text("public_id").notNull(),
-  version: text("version").notNull(),
-  format: text("format").$type<"png" | "svg">().notNull(),
-  width: integer("width").notNull(),
-  height: integer("height").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

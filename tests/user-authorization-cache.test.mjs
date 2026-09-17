@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import axios from "axios";
+import redis from "redis";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { authUser, db } from "@canopy/database";
 import { Cache } from "@canopy/cache";
@@ -24,7 +24,7 @@ const reader = {
 
 function setup(t) {
   const originalSelect = db.select;
-  const variables = ["DATABASE_URL", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"];
+  const variables = ["DATABASE_URL", "REDIS_URL"];
   const previous = variables.map((key) => process.env[key]);
   t.after(() => {
     db.select = originalSelect;
@@ -34,8 +34,7 @@ function setup(t) {
     });
   });
   process.env.DATABASE_URL = "postgres://test:test@localhost/test";
-  process.env.UPSTASH_REDIS_REST_URL = "https://cache.example.test";
-  process.env.UPSTASH_REDIS_REST_TOKEN = "test-token";
+  process.env.REDIS_URL = "redis://cache.example.test:6379";
   const state = {
     users: new Map([
       ["alice", { status: "active", updatedAt: initialTime, roles: [editor] }],
@@ -53,7 +52,7 @@ function setup(t) {
   t.mock.method(Cache.prototype, "rememberGuarded", async function (id, load, ttl) {
     assert.equal(ttl, this.namespace === "user" ? 3600 : 86400);
     const key = `${this.namespace}:${id}`;
-    if (!process.env.UPSTASH_REDIS_REST_TOKEN || state.redisError || pending.has(key)) return load();
+    if (!process.env.REDIS_URL || state.redisError || pending.has(key)) return load();
     if (state.entries.has(key)) return JSON.parse(state.entries.get(key));
     const generation = generations.get(key);
     const value = await load();
@@ -134,7 +133,7 @@ function setup(t) {
     };
     return query;
   };
-  t.mock.method(axios, "post", () => assert.fail("cache is mocked; no HTTP requests expected"));
+  t.mock.method(redis, "createClient", () => assert.fail("cache is mocked; no Redis connections expected"));
   return state;
 }
 
@@ -184,9 +183,9 @@ test("suspended and deleted users cannot reuse cached authorization", async (t) 
 
 test("authorization falls back to the database without working Redis", async (t) => {
   const state = setup(t);
-  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  delete process.env.REDIS_URL;
   assert.deepEqual(await getUserAuthorization("alice"), { roles: [editor], access: editor.access });
-  process.env.UPSTASH_REDIS_REST_TOKEN = "test-token";
+  process.env.REDIS_URL = "redis://cache.example.test:6379";
   state.redisError = true;
   assert.deepEqual(await getUserAuthorization("alice"), { roles: [editor], access: editor.access });
   assert.equal(state.roleReads, 2);

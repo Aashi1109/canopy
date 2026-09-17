@@ -1,13 +1,13 @@
 import type { ReactElement } from "react";
-import { resolveIcon, type ResolvedIcon, type ToolIconRow } from "@/lib/tool-framework/icons";
+import { resolveIcon, type ResolvedIcon } from "@/lib/tool-framework/icons";
 
 export type ToolIconProps = {
   size?: number;
-} & ({ icon: ResolvedIcon } | { toolId: string; name: string; row: ToolIconRow | null });
+} & ({ icon: ResolvedIcon } | { toolId: string; name: string; iconUrl: string | null });
 
 export function ToolIcon(props: ToolIconProps): ReactElement {
   const { size = 24 } = props;
-  const icon = "icon" in props ? props.icon : resolveIcon(props.toolId, props.name, props.row);
+  const icon = "icon" in props ? props.icon : resolveIcon(props.toolId, props.name, props.iconUrl);
 
   if (icon.kind === "url") {
     return (
