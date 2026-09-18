@@ -14,6 +14,9 @@
 **Design source of truth:** `designs/design.pen` + `designs/SYSTEM.lib.pen` (Pencil).
 **Code source of truth:** `components/ui`. Where the two disagree, `components/ui/design-system-manifest.ts` is the crosswalk that decides which design node maps to which component.
 
+# Rules
+- Design for normal desktop and laptop browser viewports first, not televisions, ultrawide monitors, or oversized presentation canvases. Unless the user explicitly requests another target, use **1366 × 768 CSS pixels** as the default desktop viewport for both `.pen` screen designs and implemented UI; also verify usability at **1280 × 720**. These are browser content dimensions, not physical display resolutions.
+
 | Audience                    | Start here                                                                                      |
 | --------------------------- | ----------------------------------------------------------------------------------------------- |
 | Building a feature          | [Consuming the system](#1-consuming-the-system) → [Component inventory](#4-component-inventory) |

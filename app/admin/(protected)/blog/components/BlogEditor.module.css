@@ -126,10 +126,12 @@
   box-shadow: none;
 }
 .cover {
-  height: 180px;
+  height: auto;
+  max-height: 380px;
   width: 100%;
-  border-radius: 8px;
   object-fit: cover;
+  border-radius: 8px;
+  display: block;
 }
 .review {
   height: 100%;
@@ -601,9 +603,6 @@
   .excerpt {
     font-size: 16px;
     margin-top: 16px;
-  }
-  .cover {
-    height: 180px;
   }
   .reviewHeader {
     padding: 16px;

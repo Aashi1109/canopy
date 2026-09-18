@@ -6,9 +6,13 @@ import { AuthPage } from "./pages/AuthPage";
 async function createPost(page: Page, baseURL: string | undefined, title: string) {
   await new AuthPage(page).signIn(E2E_ACCOUNTS.admin.email, E2E_PASSWORD, new URL("/admin/blog", baseURL).href);
   await page.getByRole("link", { name: "New post", exact: true }).click();
-  await page.getByRole("textbox", { name: "Post title", exact: true }).fill(title);
-  await page.getByRole("button", { name: "Create draft", exact: true }).click();
+  const titleField = page.getByRole("textbox", { name: "TITLE", exact: true });
+  await titleField.fill(title);
+  const timeOrigin = await page.evaluate(() => performance.timeOrigin);
+  await titleField.press("Enter");
+  await expect(page).toHaveURL(/\/admin\/blog\/[0-9a-f-]{36}$/);
   await expect(page.getByRole("textbox", { name: "Article body", exact: true })).toBeVisible();
+  expect(await page.evaluate(() => performance.timeOrigin)).toBe(timeOrigin);
   return page.url();
 }
 
@@ -86,7 +90,6 @@ test("a saved article survives reload, previews privately, and guards unsaved na
   await expect(body.locator("p").first()).toHaveCSS("text-align", "center");
   await page.getByRole("button", { name: "Preview", exact: true }).click();
   await expect(page).toHaveURL(`${url}/preview`);
-  await expect(page.getByText("Private preview", { exact: false })).toBeVisible();
   await expect(page.getByText("A persisted article body.", { exact: true })).toBeVisible();
   await expect(page.getByText(/E2E Editorial Team/)).toBeVisible();
   await page.getByRole("link", { name: "Back to editor", exact: false }).click();

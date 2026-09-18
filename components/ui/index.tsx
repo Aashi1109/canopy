@@ -181,7 +181,7 @@ export {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "./components/alert-dialog.tsx";
-export { toast, Toaster } from "./components/sonner.tsx";
+export { toast, Toaster } from "./components/toast.tsx";
 export { Switch } from "./components/switch.tsx";
 export {
   Table,

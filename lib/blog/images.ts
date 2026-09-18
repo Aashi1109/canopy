@@ -1,7 +1,7 @@
 /** Server-only: upload credentials and authorization must never reach clients. */
 import config from "../config/config.ts";
-import { randomUUID } from "node:crypto";
-import { v2 as cloudinary, type UploadApiResponse } from "cloudinary";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { v2 as cloudinary } from "cloudinary";
 import { db } from "../../db/index.ts";
 import { AuthorizationError } from "../admin/index.ts";
 import { cloudinaryFolder } from "../cloudinary/paths.ts";
@@ -9,6 +9,21 @@ import { requireTransactionPermission, writeAudit } from "../admin/adminMutation
 import { BlogValidationError, validateBlogImage, type BlogImage } from "./document.ts";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const UPLOAD_LIFETIME_SECONDS = 600;
+
+export interface BlogImageUploadCompletion {
+  publicId: string;
+  timestamp: number;
+  name: string;
+  size: number;
+  type: string;
+  token: string;
+}
+export interface PreparedBlogImageUpload {
+  uploadUrl: string;
+  fields: Record<string, string>;
+  completion: BlogImageUploadCompletion;
+}
 
 /** Only messages authored here are safe to return to the upload UI. */
 export class BlogImageUploadError extends Error {
@@ -26,37 +41,54 @@ export class BlogImageUploadError extends Error {
   }
 }
 
-async function imageBytes(file: File): Promise<{ bytes: Uint8Array; mimeType: string }> {
-  if (!(file instanceof File)) throw new BlogValidationError("Choose a JPEG, PNG or WebP file.");
-  if (!file.size || file.size > MAX_IMAGE_BYTES)
-    throw new BlogValidationError("Images must be nonempty and no larger than 5 MiB.");
-  const mimeType = file.type.split(";", 1)[0].trim().toLowerCase();
-  if (!["image/jpeg", "image/png", "image/webp"].includes(mimeType))
-    throw new BlogValidationError("Use a JPEG, PNG or WebP image.");
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  if (bytes.byteLength !== file.size || bytes.byteLength > MAX_IMAGE_BYTES)
-    throw new BlogValidationError("Image size is invalid.");
-  let valid = false;
-  if (mimeType === "image/png") {
-    valid =
-      bytes.length >= 24 &&
-      [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a].every((byte, i) => bytes[i] === byte) &&
-      String.fromCharCode(...bytes.subarray(12, 16)) === "IHDR";
-  } else if (mimeType === "image/jpeg") {
-    valid = bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-  } else {
-    valid =
-      bytes.length >= 20 &&
-      String.fromCharCode(...bytes.subarray(0, 4)) === "RIFF" &&
-      String.fromCharCode(...bytes.subarray(8, 12)) === "WEBP" &&
-      ["VP8 ", "VP8L", "VP8X"].includes(String.fromCharCode(...bytes.subarray(12, 16))) &&
-      new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(4, true) === bytes.byteLength - 8;
-  }
-  if (!valid) throw new BlogValidationError("Image content does not match its JPEG, PNG or WebP file type.");
-  return { bytes, mimeType };
+function uploadInput(input: unknown, allowed: readonly string[]): Record<string, unknown> {
+  if (
+    !input ||
+    typeof input !== "object" ||
+    Array.isArray(input) ||
+    ![Object.prototype, null].includes(Object.getPrototypeOf(input)) ||
+    Reflect.ownKeys(input).some((key) => typeof key !== "string" || !allowed.includes(key))
+  )
+    throw new BlogValidationError("Image upload details are invalid. Choose the image again.");
+  return input as Record<string, unknown>;
 }
 
-export async function uploadBlogImage(actorUserId: string, file: File): Promise<BlogImage> {
+function imageMetadata(input: Record<string, unknown>) {
+  if (typeof input.name !== "string" || !input.name.trim() || input.name.length > 4096 || !input.name.isWellFormed())
+    throw new BlogValidationError("Image filename is invalid.");
+  if (
+    typeof input.size !== "number" ||
+    !Number.isSafeInteger(input.size) ||
+    input.size < 1 ||
+    input.size > MAX_IMAGE_BYTES
+  )
+    throw new BlogValidationError("Images must be nonempty and no larger than 5 MiB.");
+  if (typeof input.type !== "string" || !["image/jpeg", "image/png", "image/webp"].includes(input.type))
+    throw new BlogValidationError("Use a JPEG, PNG or WebP image.");
+  return { name: input.name, size: input.size, type: input.type };
+}
+
+function credentials() {
+  const cloudName = config.cloudinary.cloudName?.trim();
+  const apiKey = config.cloudinary.apiKey?.trim();
+  const apiSecret = config.cloudinary.apiSecret?.trim();
+  if (!cloudName || !/^[a-zA-Z0-9_-]+$/.test(cloudName) || !apiKey || !apiSecret)
+    throw new BlogImageUploadError(
+      "UPLOAD_NOT_CONFIGURED",
+      "Image uploads are not configured. Ask an administrator to configure the Cloudinary cloud name, API key and API secret on the server.",
+    );
+  return { cloudName, apiKey, apiSecret };
+}
+
+function completionToken(actor: string, input: Omit<BlogImageUploadCompletion, "token">, secret: string): string {
+  return createHmac("sha256", secret)
+    .update(
+      JSON.stringify(["blog-image-upload", actor, input.publicId, input.timestamp, input.name, input.size, input.type]),
+    )
+    .digest("hex");
+}
+
+async function authorizeUpload(actorUserId: string) {
   try {
     await db.transaction((transaction) => requireTransactionPermission(transaction, actorUserId, "blog", "edit"));
   } catch (error) {
@@ -66,32 +98,68 @@ export async function uploadBlogImage(actorUserId: string, file: File): Promise<
       "Image upload access could not be checked. Try uploading again.",
     );
   }
-  const { bytes, mimeType } = await imageBytes(file);
-  const cloudName = config.cloudinary.cloudName?.trim();
-  const apiKey = config.cloudinary.apiKey?.trim();
-  const apiSecret = config.cloudinary.apiSecret?.trim();
-  if (!cloudName || !/^[a-zA-Z0-9_-]+$/.test(cloudName) || !apiKey || !apiSecret)
-    throw new BlogImageUploadError(
-      "UPLOAD_NOT_CONFIGURED",
-      "Image uploads are not configured. Ask an administrator to configure the Cloudinary cloud name, API key and API secret on the server.",
-    );
+}
+
+export async function prepareBlogImageUpload(actorUserId: string, input: unknown): Promise<PreparedBlogImageUpload> {
+  await authorizeUpload(actorUserId);
+  const metadata = imageMetadata(uploadInput(input, ["name", "size", "type"]));
+  const { cloudName, apiKey, apiSecret } = credentials();
   const folder = cloudinaryFolder("blog");
   const publicId = `${folder}/${randomUUID()}`;
+  const timestamp = Math.floor(Date.now() / 1000);
+  const fields = {
+    timestamp: String(timestamp),
+    public_id: publicId,
+    asset_folder: folder,
+    type: "upload",
+    overwrite: "false",
+    allowed_formats: "jpg,jpeg,png,webp",
+  };
+  const completion = { publicId, timestamp, ...metadata };
+  return {
+    uploadUrl: `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    fields: { ...fields, api_key: apiKey, signature: cloudinary.utils.api_sign_request(fields, apiSecret) },
+    completion: { ...completion, token: completionToken(actorUserId, completion, apiSecret) },
+  };
+}
+
+export async function completeBlogImageUpload(actorUserId: string, input: unknown): Promise<BlogImage> {
+  await authorizeUpload(actorUserId);
+  const value = uploadInput(input, ["publicId", "timestamp", "name", "size", "type", "token"]);
+  const metadata = imageMetadata(value);
+  const { cloudName, apiKey, apiSecret } = credentials();
+  const folder = cloudinaryFolder("blog");
+  const now = Math.floor(Date.now() / 1000);
+  if (
+    typeof value.publicId !== "string" ||
+    !value.publicId.startsWith(`${folder}/`) ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+      value.publicId.slice(folder.length + 1),
+    ) ||
+    typeof value.timestamp !== "number" ||
+    !Number.isSafeInteger(value.timestamp) ||
+    value.timestamp > now ||
+    now - value.timestamp > UPLOAD_LIFETIME_SECONDS ||
+    typeof value.token !== "string" ||
+    !/^[0-9a-f]{64}$/.test(value.token)
+  )
+    throw new BlogValidationError("Image upload authorization is invalid or expired. Choose the image again.");
+  const completion = { publicId: value.publicId, timestamp: value.timestamp, ...metadata };
+  const expected = completionToken(actorUserId, completion, apiSecret);
+  if (!timingSafeEqual(Buffer.from(value.token, "hex"), Buffer.from(expected, "hex")))
+    throw new BlogValidationError("Image upload authorization is invalid. Choose the image again.");
+  const publicId = completion.publicId;
   let image: BlogImage;
-  let uploaded: UploadApiResponse;
-  // Avoid holding database locks over the provider request. Its decoder rejects
-  // truncated/corrupt images after our bounded MIME and signature checks.
+  let uploaded: Record<string, unknown>;
+  // Verify storage metadata server-to-server, without holding a database transaction.
   try {
-    uploaded = await cloudinary.uploader.upload(`data:${mimeType};base64,${Buffer.from(bytes).toString("base64")}`, {
+    uploaded = await cloudinary.api.resource(publicId, {
       cloud_name: cloudName,
       api_key: apiKey,
       api_secret: apiSecret,
-      public_id: publicId,
-      asset_folder: folder,
       resource_type: "image",
       type: "upload",
-      overwrite: false,
-      allowed_formats: ["jpg", "jpeg", "png", "webp"],
+      timeout: 30_000,
     });
   } catch (error) {
     // The SDK rejects HTTP errors directly but wraps transport failures in { error }.
@@ -106,10 +174,15 @@ export async function uploadBlogImage(actorUserId: string, file: File): Promise<
     const status =
       typeof failure === "object" && failure !== null && "http_code" in failure ? failure.http_code : undefined;
     const code = typeof failure === "object" && failure !== null && "code" in failure ? failure.code : undefined;
-    if (status === 401 || status === 403 || status === 404)
+    if (status === 401 || status === 403)
       throw new BlogImageUploadError(
         "UPLOAD_CONFIGURATION_ERROR",
         "Image storage denied this upload. Ask an administrator to check the Cloudinary account, credentials and upload permissions.",
+      );
+    if (status === 404)
+      throw new BlogImageUploadError(
+        "UPLOAD_REJECTED",
+        "The uploaded image was not found in storage. Choose the image and upload it again.",
       );
     if (status === 400 || status === 413 || status === 415)
       throw new BlogImageUploadError(
@@ -158,8 +231,25 @@ export async function uploadBlogImage(actorUserId: string, file: File): Promise<
     );
   }
   try {
-    if (uploaded.public_id !== publicId || uploaded.resource_type !== "image" || uploaded.type !== "upload")
+    if (
+      !uploaded ||
+      typeof uploaded !== "object" ||
+      uploaded.public_id !== publicId ||
+      uploaded.resource_type !== "image" ||
+      uploaded.type !== "upload" ||
+      typeof uploaded.secure_url !== "string"
+    )
       throw new Error("Unexpected upload response.");
+    if (
+      typeof uploaded.bytes !== "number" ||
+      !Number.isSafeInteger(uploaded.bytes) ||
+      uploaded.bytes < 1 ||
+      uploaded.bytes > MAX_IMAGE_BYTES
+    )
+      throw new BlogImageUploadError(
+        "UPLOAD_REJECTED",
+        "Images must be nonempty and no larger than 5 MiB. Choose a smaller image and upload it again.",
+      );
     image = validateBlogImage(
       {
         publicId: uploaded.public_id,
@@ -167,13 +257,19 @@ export async function uploadBlogImage(actorUserId: string, file: File): Promise<
         format: uploaded.format,
         width: uploaded.width,
         height: uploaded.height,
-        alt: "",
+        alt: completion.name
+          .replace(/\.[^.]*$/u, "")
+          .replace(/[-_\s\u0000-\u001f\u007f]+/gu, " ")
+          .trim()
+          .slice(0, 500)
+          .replace(/[\uD800-\uDBFF]$/u, ""),
         caption: "",
         src: uploaded.secure_url,
       },
       { cloudName },
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof BlogImageUploadError) throw error;
     throw new BlogImageUploadError(
       "UPLOAD_INVALID_RESPONSE",
       "Image storage returned an invalid upload result. Retry the upload; if it continues, ask an administrator to check image storage.",

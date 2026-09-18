@@ -23,7 +23,7 @@ import {
   saveBlogTerm,
 } from "../../../../lib/blog/mutations";
 import { BlogValidationError, renderBlogDocument } from "../../../../lib/blog/document";
-import { BlogImageUploadError, uploadBlogImage } from "../../../../lib/blog/images";
+import { BlogImageUploadError, prepareBlogImageUpload, completeBlogImageUpload } from "../../../../lib/blog/images";
 import {
   getBlogPost,
   getBlogRevision,
@@ -84,27 +84,36 @@ export async function mutateBlogAction(operation: keyof typeof operations, input
   });
 }
 
-export async function uploadBlogImageAction(formData: FormData) {
-  return measureServerAction("admin.blog.uploadBlogImageAction", async () => {
+function imageUploadFailure(error: unknown) {
+  if (error instanceof BlogImageUploadError) return { ok: false as const, code: error.code, message: error.message };
+  const result = failure(error);
+  return result.code === "TEMPORARY_FAILURE"
+    ? {
+        ok: false as const,
+        code: "UPLOAD_TEMPORARY_FAILURE" as const,
+        message: errorMessage(error, "The image upload failed unexpectedly. Try uploading the image again."),
+      }
+    : result;
+}
+
+export async function prepareBlogImageUploadAction(input: unknown) {
+  return measureServerAction("admin.blog.prepareBlogImageUploadAction", async () => {
     const actor = await getActorUserId();
     try {
-      if (!(formData instanceof FormData)) throw new BlogError("VALIDATION", "Choose an image file.");
-      const fields = [...formData.keys()];
-      if (fields.length !== 1 || fields[0] !== "file") throw new BlogError("VALIDATION", "Supply one image file.");
-      const file = formData.get("file");
-      if (!(file instanceof File)) throw new BlogError("VALIDATION", "Choose an image file.");
-      return { ok: true as const, data: await uploadBlogImage(actor, file) };
+      return { ok: true as const, data: await prepareBlogImageUpload(actor, input) };
     } catch (error) {
-      if (error instanceof BlogImageUploadError)
-        return { ok: false as const, code: error.code, message: error.message };
-      const result = failure(error);
-      return result.code === "TEMPORARY_FAILURE"
-        ? {
-            ok: false as const,
-            code: "UPLOAD_TEMPORARY_FAILURE" as const,
-            message: errorMessage(error, "The image upload failed unexpectedly. Try uploading the image again."),
-          }
-        : result;
+      return imageUploadFailure(error);
+    }
+  });
+}
+
+export async function completeBlogImageUploadAction(input: unknown) {
+  return measureServerAction("admin.blog.completeBlogImageUploadAction", async () => {
+    const actor = await getActorUserId();
+    try {
+      return { ok: true as const, data: await completeBlogImageUpload(actor, input) };
+    } catch (error) {
+      return imageUploadFailure(error);
     }
   });
 }

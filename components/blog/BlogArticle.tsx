@@ -145,16 +145,9 @@ export function BlogArticle({ document, publication }: Props) {
               <ul>
                 {content.headings.map((heading) => (
                   <li key={heading.id} className={heading.level > 2 ? "pl-3" : ""}>
-                    {publication ? (
-                      <TextLink
-                        href={`#${heading.id}`}
-                        className={`${styles.contentsLink} no-underline hover:underline`}
-                      >
-                        {heading.text || "Untitled section"}
-                      </TextLink>
-                    ) : (
-                      <span className={styles.contentsLink}>{heading.text || "Untitled section"}</span>
-                    )}
+                    <TextLink href={`#${heading.id}`} className={`${styles.contentsLink} no-underline hover:underline`}>
+                      {heading.text || "Untitled section"}
+                    </TextLink>
                   </li>
                 ))}
               </ul>
@@ -189,10 +182,11 @@ export function BlogArticle({ document, publication }: Props) {
                 ))}
               </nav>
             )}
-            <footer className={styles.authorFooter}>
-              <P className="text-[17px] font-semibold leading-[1.6]">Written by {document.authorName}</P>
-              {url && <CopyBlogLink url={url} label="Share this guide · Copy link" />}
-            </footer>
+            {url && (
+              <footer className={styles.authorFooter}>
+                <CopyBlogLink url={url} label="Share this guide · Copy link" />
+              </footer>
+            )}
           </div>
           <aside className={styles.utility}>
             <Overline className="font-sans text-[11px] font-normal text-muted-foreground">SmartTools</Overline>

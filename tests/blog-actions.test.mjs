@@ -60,7 +60,7 @@ const hooks = registerHooks({
       if (specifier.endsWith("/blog/queries")) return stub(functions(reads));
       if (specifier.endsWith("/blog/images"))
         return stub(
-          `export const BlogImageUploadError=globalThis.__blogActionTest.BlogImageUploadError;${functions(["uploadBlogImage"])}`,
+          `export const BlogImageUploadError=globalThis.__blogActionTest.BlogImageUploadError;${functions(["prepareBlogImageUpload", "completeBlogImageUpload"])}`,
         );
       if (specifier.endsWith("/blog/document")) return next(`${specifier}.ts`, context);
     }
@@ -112,13 +112,11 @@ test("known failures are actionable while unexpected database/provider details s
 });
 test("blog actions return original unexpected messages with their existing fallbacks", async () => {
   reset();
-  const formData = new FormData();
-  formData.set("file", new File(["image"], "image.png", { type: "image/png" }));
   for (const [invoke, fallback] of [
     [() => actions.mutateBlogAction("save", {}), "The change could not be saved. Try again."],
     [() => actions.readBlogAction({ operation: "post", postId: "post" }), "The change could not be saved. Try again."],
     [
-      () => actions.uploadBlogImageAction(formData),
+      () => actions.prepareBlogImageUploadAction({ name: "image.png", size: 100, type: "image/png" }),
       "The image upload failed unexpectedly. Try uploading the image again.",
     ],
   ]) {
@@ -158,27 +156,30 @@ test("private preview renders validated content and keeps revision reads bound t
   state.data = null;
   assert.equal((await actions.readBlogAction({ operation: "preview", postId: "missing" })).code, "NOT_FOUND");
 });
-test("read and upload envelopes reject forged actor fields and extra multipart values", async () => {
+test("read rejects forged identity and image actions bind metadata to the session actor", async () => {
   reset();
   assert.equal(
     (await actions.readBlogAction({ operation: "post", postId: "post", actor: "forged" })).code,
     "VALIDATION",
   );
-  const form = new FormData();
-  form.set("file", new File(["x"], "image.png", { type: "image/png" }));
-  form.set("actor", "forged");
-  assert.equal((await actions.uploadBlogImageAction(form)).code, "VALIDATION");
   assert.equal(state.calls.length, 0);
-  form.delete("actor");
-  assert.equal((await actions.uploadBlogImageAction(form)).ok, true);
-  assert.equal(state.calls[0].name, "uploadBlogImage");
-  assert.equal(state.calls[0].args[0], "session-admin");
+  const input = { name: "image.png", size: 100, type: "image/png" };
+  assert.equal((await actions.prepareBlogImageUploadAction(input)).ok, true);
+  const completion = { publicId: "signed-image", token: "signed-token" };
+  assert.equal((await actions.completeBlogImageUploadAction(completion)).ok, true);
+  assert.deepEqual(state.calls, [
+    { name: "prepareBlogImageUpload", args: ["session-admin", input] },
+    { name: "completeBlogImageUpload", args: ["session-admin", completion] },
+  ]);
+  reset();
+  state.sessionError = new Error("NEXT_REDIRECT");
+  await assert.rejects(actions.prepareBlogImageUploadAction(input), /NEXT_REDIRECT/);
+  await assert.rejects(actions.completeBlogImageUploadAction(completion), /NEXT_REDIRECT/);
+  assert.equal(state.calls.length, 0);
 });
 
 test("image upload actions preserve safe upload diagnostics and do not report draft-save failures", async () => {
   reset();
-  const form = new FormData();
-  form.set("file", new File(["x"], "image.png", { type: "image/png" }));
   for (const [error, code, message] of [
     [
       new BlogImageUploadError("UPLOAD_NOT_CONFIGURED", "Configure Cloudinary for image uploads."),
@@ -196,10 +197,12 @@ test("image upload actions preserve safe upload diagnostics and do not report dr
     [new Error("cloudinary://key:credential-secret@private"), "UPLOAD_TEMPORARY_FAILURE"],
   ]) {
     state.error = error;
-    const result = await actions.uploadBlogImageAction(form);
-    assert.equal(result.ok, false);
-    assert.equal(result.code, code);
-    if (message) assert.equal(result.message, message);
-    assert.doesNotMatch(JSON.stringify(result), /credential-secret|private|could not be saved/);
+    for (const action of [actions.prepareBlogImageUploadAction, actions.completeBlogImageUploadAction]) {
+      const result = await action({});
+      assert.equal(result.ok, false);
+      assert.equal(result.code, code);
+      if (message) assert.equal(result.message, message);
+      assert.doesNotMatch(JSON.stringify(result), /credential-secret|private|could not be saved/);
+    }
   }
 });

@@ -6,20 +6,20 @@
   margin-block: 0;
 }
 .content p {
-  margin-block: 16px;
+  margin-block: calc(var(--spacing) * 3);
 }
 .content blockquote {
   border-left: 2px solid var(--primary);
   padding-left: 16px;
 }
 .content h2 {
-  margin-top: 32px;
+  margin-top: calc(var(--spacing) * 7);
   font-size: 20px;
   font-weight: 600;
   line-height: 1.6;
 }
 .content h3 {
-  margin-top: 24px;
+  margin-top: calc(var(--spacing) * 5);
   font-size: 18px;
   font-weight: 600;
   line-height: 1.6;

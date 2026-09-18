@@ -32,9 +32,10 @@ const hooks = registerHooks({
       return stub(
         `export const toast = Object.assign(() => {}, {error() {}, success() {}, dismiss() {}}); ${["AlertBanner", "AlertDialog", "AlertDialogContent", "AlertDialogHeader", "AlertDialogTitle", "AlertDialogDescription", "AlertDialogFooter", "AlertDialogCancel", "Button", "FileUploadZone", "Input", "Label", "Textarea", "Toaster"].map((name) => `export function ${name}() {}`).join(" ")} export const Popover = {Root() {}, Trigger() {}, Portal() {}, Content() {}, Arrow() {}};`,
       );
-    if (specifier === "../actions")
+    if (specifier === "../actions") return stub("export async function mutateBlogAction() {}");
+    if (specifier === "../lib/imageUpload.ts")
       return stub(
-        "export async function mutateBlogAction() {} export async function uploadBlogImageAction(form) { const s = globalThis.__coverCropTest; s.uploads.push(form.get('file')); return s.upload(); }",
+        "export async function uploadBlogImageDirect(file) { const s = globalThis.__coverCropTest; s.uploads.push(file); return s.upload(); }",
       );
     if (specifier === "../lib/draftPersistence")
       return stub(
@@ -49,6 +50,8 @@ const hooks = registerHooks({
     if (specifier === "../lib/formattingExtensions") return stub("export const blogFormattingExtensions = [];");
     if (specifier === "@/lib/blog/codeHighlight") return stub("export const blogLowlight = {};");
     if (specifier === "@/lib/blog/math") return stub("export const normalizeBlogMath = node => node;");
+    if (specifier === "@/lib/blog/title")
+      return { shortCircuit: true, url: new URL("../lib/blog/title.ts", import.meta.url).href };
     if (specifier === "../lib/mathExtensions") return stub("export const BlogInlineMath = {}, BlogBlockMath = {};");
     if (specifier === "../lib/imagePaste") return stub("export function pasteBlogImages() {}");
     if (specifier === "../lib/tableEditing") return stub("export const BlogTableCell = {}, BlogTableHeader = {};");

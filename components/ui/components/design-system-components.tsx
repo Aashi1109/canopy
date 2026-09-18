@@ -2,7 +2,7 @@ import { cloneElement, isValidElement, type ComponentProps, type HTMLAttributes,
 
 import { Badge } from "./badge.tsx";
 import { Card, CardDescription, CardHeader, CardTitle } from "./card.tsx";
-import { Toaster } from "./sonner.tsx";
+import { Toaster } from "./toast.tsx";
 import { Tabs, TabsList, TabsTrigger } from "./tabs.tsx";
 import { Caption } from "./typography.tsx";
 import { cn } from "../lib/utils.ts";

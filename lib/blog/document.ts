@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { slugFromName } from "../tool-catalog/index.ts";
 import { highlightBlogCode } from "./codeHighlight.ts";
 import { MAX_BLOG_MATH_LENGTH, normalizeBlogMath, renderBlogMath } from "./math.ts";
+import { BLOG_TITLE_WORD_LIMIT, blogTitleWordCount } from "./title.ts";
 
 export interface BlogImage {
   publicId: string;
@@ -75,6 +76,10 @@ export class BlogValidationError extends Error {
 
 function fail(message: string): never {
   throw new BlogValidationError(message);
+}
+export function assertBlogTitleWordLimit(title: string): void {
+  if (blogTitleWordCount(title) > BLOG_TITLE_WORD_LIMIT)
+    fail(`Title must contain at most ${BLOG_TITLE_WORD_LIMIT} words.`);
 }
 function record(input: unknown, label: string): Record<string, unknown> {
   if (
@@ -511,6 +516,7 @@ export function createBlogDocument(title: string): BlogDocument {
     relatedToolIds: [],
   });
   if (!document.title) fail("Title is required.");
+  assertBlogTitleWordLimit(document.title);
   return document;
 }
 
@@ -530,6 +536,7 @@ export function blogDocumentText(document: BlogDocument): string {
 
 export function assertBlogPublishable(document: BlogDocument): void {
   if (!document.title.trim()) fail("Title is required for publication.");
+  assertBlogTitleWordLimit(document.title);
   if (!document.excerpt.trim()) fail("Excerpt is required for publication.");
   if (!document.authorName.trim()) fail("Author name is required for publication.");
   if (!document.category) fail("A category is required for publication.");

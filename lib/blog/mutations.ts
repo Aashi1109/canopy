@@ -22,6 +22,7 @@ import {
 import { requireTransactionPermission, writeAudit } from "../admin/adminMutations.ts";
 import {
   assertBlogPublishable,
+  assertBlogTitleWordLimit,
   blogDocumentHash,
   blogDocumentText,
   blogSlugFromTitle,
@@ -71,6 +72,7 @@ async function lockPost(tx: Transaction, input: z.infer<typeof postInput>, allow
 /** References are catalog IDs; labels supplied by clients never become authoritative. */
 async function resolveDocument(tx: Transaction, input: unknown, publishing = false): Promise<BlogDocument> {
   const document = validateBlogDocument(input, options());
+  assertBlogTitleWordLimit(document.title);
   if (document.category) {
     const [category] = await tx.select().from(categories).where(eq(categories.id, document.category.id));
     if (!category) throw new BlogError("VALIDATION", "Choose an existing category.");

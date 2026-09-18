@@ -30,6 +30,7 @@
     "*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
+    "@base-ui/react": "^1.8.0",
     "@codemirror/lang-json": "^6.0.2",
     "@dnd-kit/core": "6.3.1",
     "@dnd-kit/sortable": "10.0.0",
@@ -89,7 +90,6 @@
     "react-resizable-panels": "^4.12.2",
     "redis": "^6.2.1",
     "resend": "6.17.2",
-    "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3"
   },

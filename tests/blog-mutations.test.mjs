@@ -283,6 +283,39 @@ test("stale versions, trash, and absent articles reject saves without overwritin
   }
 });
 
+test("title limit is enforced when creating and saving drafts before content writes", async () => {
+  const title = Array(20).fill("word").join(" ");
+  await withDatabase([permission(), clock(), []], async () => {
+    const result = await createBlogPost("actor", { title });
+    assert.equal(result.draftDocument.title, title);
+  });
+  await withDatabase([permission()], async (state) => {
+    await assert.rejects(() => createBlogPost("actor", { title: `${title} extra` }), /20 words/);
+    assert.equal(state.committed.length, 0);
+  });
+  const current = post({ lastCheckpointAt: new Date(NOW.getTime() - 1000) });
+  await withDatabase([permission(), [current], [category], [tag], clock()], async () => {
+    const result = await saveBlogDraft("actor", {
+      postId: current.id,
+      version: current.version,
+      document: { ...current.draftDocument, title },
+    });
+    assert.equal(result.draftDocument.title, title);
+  });
+  await withDatabase([permission(), [current]], async (state) => {
+    await assert.rejects(
+      () =>
+        saveBlogDraft("actor", {
+          postId: current.id,
+          version: current.version,
+          document: { ...current.draftDocument, title: `${title} extra` },
+        }),
+      /20 words/,
+    );
+    assert.equal(state.committed.length, 0);
+  });
+});
+
 test("autosave canonicalizes taxonomy, checkpoints changed work, and leaves public state and slug intact", async () => {
   const current = post();
   const changed = document("Updated title");

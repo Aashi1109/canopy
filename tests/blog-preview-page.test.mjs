@@ -32,7 +32,12 @@ const hooks = registerHooks({
             .join("\n"),
         );
       if (specifier === "next/link") return stub("export default function Link({children}){return children}");
-      if (specifier === "@/components/ui/index.tsx") return stub("export function Button({children}){return children}");
+      if (specifier === "@/components/ui/index.tsx")
+        return stub(
+          ["Button", "ButtonGroup", "Tooltip", "TooltipContent", "TooltipProvider", "TooltipTrigger"]
+            .map((name) => `export function ${name}({children}){return children}`)
+            .join("\n"),
+        );
       if (specifier === "@/components/blog/BlogArticle")
         return stub("export function BlogArticle({document}){return document.title}");
     }
@@ -82,7 +87,6 @@ test("preview keeps historical revisions scoped to the requested post and authen
   const markup = renderToStaticMarkup(await PreviewPage(props("post-1", "revision-2")));
   assert.deepEqual(state.calls[1], ["getBlogRevision", "admin", "post-1", "revision-2"]);
   assert.match(markup, /Historical title/);
-  assert.match(markup, /Historical revision/);
   reset({ draftDocument: { title: "Saved draft title" } });
   assert.match(renderToStaticMarkup(await PreviewPage(props())), /Saved draft title/);
   assert.deepEqual(state.calls[1], ["getBlogPost", "admin", "post-1"]);

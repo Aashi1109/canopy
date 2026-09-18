@@ -211,6 +211,7 @@ test("article renders safe live content, heading destinations, tools, tags, meta
 
 test("private preview shares safe article presentation without public share links or publication metadata", () => {
   const html = renderToStaticMarkup(createElement(BlogArticle, { document: published().document }));
+  assert.match(html, /href="#heading-1"/);
   assert.match(html, /<h2 id="heading-1">First steps<\/h2>/);
   assert.doesNotMatch(html, /Copy link|application\/ld\+json|dateTime=|href="\/blog\//);
 });

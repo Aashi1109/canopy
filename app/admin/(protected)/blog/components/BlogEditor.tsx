@@ -33,7 +33,9 @@ import {
   Toaster,
 } from "@/components/ui/index.tsx";
 import type { BlogDocument, BlogImage } from "@/lib/blog/document";
-import { mutateBlogAction, uploadBlogImageAction } from "../actions";
+import { BLOG_TITLE_WORD_LIMIT, blogTitleWordCount } from "@/lib/blog/title";
+import { mutateBlogAction } from "../actions";
+import { uploadBlogImageDirect } from "../lib/imageUpload.ts";
 import { BlogEditorShell } from "./BlogEditorShell";
 import { BlogFormattingToolbar } from "./BlogFormattingToolbar";
 import { BlogHistoryPanel } from "./BlogHistoryPanel";
@@ -162,6 +164,13 @@ export function BlogEditor({
       document,
       version: post.version,
       request: async (input) => {
+        if (blogTitleWordCount(input.document.title) > BLOG_TITLE_WORD_LIMIT) {
+          return {
+            ok: false,
+            code: "VALIDATION",
+            message: `Use ${BLOG_TITLE_WORD_LIMIT} words or fewer for your title.`,
+          };
+        }
         const result = await mutateBlogAction("save", {
           postId: post.id,
           ...input,
@@ -287,6 +296,8 @@ export function BlogEditor({
     };
   }, [hasUnsavedChanges]);
   const editable = canEdit && !post.trashedAt;
+  const titleWordCount = blogTitleWordCount(document.title);
+  const titleTooLong = titleWordCount > BLOG_TITLE_WORD_LIMIT;
 
   function change(next: EditableDocument) {
     current.current = next;
@@ -392,16 +403,10 @@ export function BlogEditor({
       return null;
     }
     showUploadError("");
-    if (file.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      showUploadError("Choose a JPEG, PNG or WebP image no larger than 5 MiB.");
-      return null;
-    }
     inFlight.current = true;
     setUploadTarget(target);
     try {
-      const form = new FormData();
-      form.set("file", file);
-      const result = await uploadBlogImageAction(form);
+      const result = await uploadBlogImageDirect(file);
       if (!uploadActive.current) return null;
       if (!result.ok) {
         showUploadError(result.message);
@@ -420,7 +425,6 @@ export function BlogEditor({
     const image = await uploadImage(file, "cover");
     if (image && uploadActive.current) {
       change({ ...current.current, coverImage: image });
-      openCoverSettings();
     }
   }
   async function uploadInlineImage(file: File) {
@@ -978,12 +982,12 @@ export function BlogEditor({
           </div>
         </AlertBanner>
       )}
-      {(saveState === "conflict" || saveState === "error") && (
-        <AlertBanner
-          variant="error"
-          title={saveState === "conflict" ? "Another version was saved" : "Draft could not be saved"}
-        >
-          Your local edits are preserved. Download a backup before leaving or reloading.
+      {(saveState === "conflict" || (saveState === "error" && !titleTooLong)) && (
+        <div className="mb-4">
+          <p role="alert" className="text-sm text-destructive">
+            {saveState === "conflict" ? "Another version was saved." : "Draft could not be saved."} Your local edits are
+            preserved. Download a backup before leaving or reloading.
+          </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button size="xs" variant="outline" onClick={downloadDraft}>
               Download local draft
@@ -1004,7 +1008,7 @@ export function BlogEditor({
               </Button>
             )}
           </div>
-        </AlertBanner>
+        </div>
       )}
       {lifecycleError && !lifecycle && <AlertBanner variant="error">{lifecycleError}</AlertBanner>}
       {backupUnavailable && (
@@ -1027,7 +1031,7 @@ export function BlogEditor({
       {post.trashedAt && (
         <AlertBanner title="This post is in trash">Restore it from the post list before editing.</AlertBanner>
       )}
-      <Label htmlFor="blog-title" className="text-xs text-muted-foreground">
+      <Label htmlFor="blog-title" className="text-xs font-normal text-muted-foreground/90">
         TITLE
       </Label>
       <Textarea
@@ -1036,10 +1040,19 @@ export function BlogEditor({
         rows={1}
         value={document.title}
         maxLength={200}
+        aria-describedby="blog-title-count"
+        aria-invalid={titleTooLong}
         disabled={!editable || publishing || !!recovery}
         className={styles.postTitle}
         onChange={(event) => change({ ...current.current, title: event.target.value })}
       />
+      <p
+        id="blog-title-count"
+        role={titleTooLong ? "alert" : undefined}
+        className={`mt-2 text-xs ${titleTooLong ? "text-destructive" : "text-muted-foreground"}`}
+      >
+        {titleWordCount}/{BLOG_TITLE_WORD_LIMIT} words{titleTooLong ? " · Shorten your title to save." : ""}
+      </p>
       <Textarea
         aria-label="Article summary"
         rows={1}

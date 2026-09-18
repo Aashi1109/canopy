@@ -3,6 +3,7 @@ import test from "node:test";
 import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { blogFormattingExtensions } from "../app/admin/(protected)/blog/lib/formattingExtensions.ts";
+import { BLOG_TITLE_WORD_LIMIT, blogTitleWordCount } from "../lib/blog/title.ts";
 import {
   assertBlogPublishable,
   blogDocumentHash,
@@ -62,6 +63,22 @@ test("slugs use existing tool normalization, bounded lengths and Unicode fallbac
   assert.equal(blogSlugFromTitle("a".repeat(200)).length, 160);
   assert.match(blogSlugFromTitle("हिन्दी"), /^post-[a-f0-9]{8}$/);
   assert.throws(() => createBlogDocument("   "), /title/i);
+});
+
+test("titles allow 20 words but reject 21 on creation and publication while preserving legacy reads", () => {
+  assert.equal(BLOG_TITLE_WORD_LIMIT, 20);
+  assert.equal(blogTitleWordCount(""), 0);
+  assert.equal(blogTitleWordCount(" \t\n\u00a0"), 0);
+  assert.equal(blogTitleWordCount("  hello-world\tworld\nनमस्ते\u00a0again "), 4);
+  const title = Array(20).fill("word").join(" \t\n ");
+  assert.equal(createBlogDocument(title).title, title);
+  assert.doesNotThrow(() => assertBlogPublishable({ ...article(), title }));
+  const legacy = { ...article(), title: `${title} extra` };
+  assert.throws(() => createBlogDocument(legacy.title), /20 words/);
+  assert.throws(() => assertBlogPublishable(legacy), /20 words/);
+  assert.equal(validateBlogDocument(legacy).title, legacy.title);
+  assert.equal(renderBlogDocument(legacy).html, "<p>Hello world</p>");
+  assert.throws(() => createBlogDocument("a".repeat(201)), /200 characters/);
 });
 
 test("document hashes ignore property order and tag order, but preserve article edits", () => {

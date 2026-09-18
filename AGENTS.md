@@ -68,6 +68,8 @@ Do not create a standalone file for a one-use wrapper, interface, constant, or t
 
 ## UI and Design-System Rules
 
+- Use the shared shadcn Base UI Toast for floating notifications, including operation errors. Keep field validation and word-limit feedback beside the field in the design-system error color; reuse helper or count text instead of adding an alert banner or toast-style card inside the form. Associate field errors with their inputs and announce updates accessibly.
+
 - Design for normal desktop and laptop browser viewports first, not televisions, ultrawide monitors, or oversized presentation canvases. Unless the user explicitly requests another target, use **1366 × 768 CSS pixels** as the default desktop viewport for both `.pen` screen designs and implemented UI; also verify usability at **1280 × 720**. These are browser content dimensions, not physical display resolutions.
 - Do not enlarge the viewport to make a layout fit. Adapt columns, sidebars, toolbars, spacing, and content density to the available space without shrinking text or controls below accessible sizes. Core input, a useful task surface, and the primary action must be discoverable in the initial viewport; longer content may scroll vertically. Avoid page-level horizontal overflow.
 - Full-page canvas frames may extend vertically to document scrollable content, but their height must not be treated as the visible browser viewport. Review the initial viewport separately. Large component-library boards and horizontally arranged flow stages are documentation, not individual screen dimensions. Wider desktop variants are supplemental, never a substitute for validating the normal desktop baseline.

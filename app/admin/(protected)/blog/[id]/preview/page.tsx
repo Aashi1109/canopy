@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Monitor, Smartphone } from "lucide-react";
 import { notFound } from "next/navigation";
-import { Button } from "@/components/ui/index.tsx";
+import {
+  Button,
+  ButtonGroup,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/index.tsx";
 import { requirePagePermission } from "@/lib/admin/access";
 import { getBlogPost, getBlogRevision } from "@/lib/blog/queries";
 import { BlogArticle } from "@/components/blog/BlogArticle";
@@ -49,22 +56,40 @@ export default async function BlogPreviewPage({
         <p className="order-first min-w-0 basis-full break-words text-sm font-semibold md:order-none md:flex-1 md:basis-auto md:text-base">
           {document.title}
         </p>
-        <div aria-label="Preview width" className="hidden gap-3 md:flex">
-          <Button asChild size="sm" variant={viewport !== "mobile" ? "default" : "outline"}>
-            <Link
-              aria-current={viewport !== "mobile" ? "page" : undefined}
-              href={previewHref("desktop")}
-              scroll={false}
-            >
-              Desktop
-            </Link>
-          </Button>
-          <Button asChild size="sm" variant={viewport === "mobile" ? "default" : "outline"}>
-            <Link aria-current={viewport === "mobile" ? "page" : undefined} href={previewHref("mobile")} scroll={false}>
-              Mobile
-            </Link>
-          </Button>
-        </div>
+        <TooltipProvider>
+          <ButtonGroup aria-label="Preview width" className="hidden md:flex">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button asChild size="icon-sm" variant={viewport !== "mobile" ? "default" : "outline"}>
+                  <Link
+                    aria-label="Desktop preview"
+                    aria-current={viewport !== "mobile" ? "page" : undefined}
+                    href={previewHref("desktop")}
+                    scroll={false}
+                  >
+                    <Monitor aria-hidden="true" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Desktop preview</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button asChild size="icon-sm" variant={viewport === "mobile" ? "default" : "outline"}>
+                  <Link
+                    aria-label="Mobile preview"
+                    aria-current={viewport === "mobile" ? "page" : undefined}
+                    href={previewHref("mobile")}
+                    scroll={false}
+                  >
+                    <Smartphone aria-hidden="true" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Mobile preview</TooltipContent>
+            </Tooltip>
+          </ButtonGroup>
+        </TooltipProvider>
         <Button asChild size="sm" variant="outline">
           <Link href={`/admin/blog/${id}?review=1`}>Review &amp; publish</Link>
         </Button>
@@ -73,9 +98,6 @@ export default async function BlogPreviewPage({
         <div className={viewport === "mobile" ? "mx-auto w-full max-w-[390px]" : "mx-auto w-full max-w-[1440px]"}>
           <BlogArticle document={document} />
         </div>
-        <footer className="border-t border-border bg-muted px-5 py-3 text-xs text-muted-foreground md:px-7">
-          Private preview · {revision ? "Historical revision" : "Saved draft"} · Links inactive
-        </footer>
       </div>
     </div>
   );
