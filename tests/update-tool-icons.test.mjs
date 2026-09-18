@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import postgres from "postgres";
+import pg from "pg";
 import { assignToolIcons, planToolIconUpdates } from "../scripts/update-tool-icons.mjs";
 
 const cloudName = "demo";
@@ -68,6 +68,26 @@ test("requires exactly one database match for every successful slug", () => {
   );
 });
 
+test("bulk icon updates bind their values and skip an empty batch", async () => {
+  const calls = [];
+  const rows = [{ tool_id: "tool'id", icon_url: "https://example.com/icon's.png" }];
+  const updated = [{ tool_id: rows[0].tool_id }];
+  const client = {
+    async query(text, values) {
+      calls.push({ text, values });
+      return { rows: updated };
+    },
+  };
+  assert.deepEqual(await assignToolIcons(client, []), []);
+  assert.equal(calls.length, 0);
+  assert.deepEqual(await assignToolIcons(client, rows, { missingOnly: true }), updated);
+  assert.deepEqual(calls[0].values, [[rows[0].tool_id], [rows[0].icon_url], true]);
+  assert.ok(!calls[0].text.includes(rows[0].tool_id));
+  assert.ok(!calls[0].text.includes(rows[0].icon_url));
+  await assignToolIcons(client, rows);
+  assert.deepEqual(calls[1].values, [[rows[0].tool_id], [rows[0].icon_url], false]);
+});
+
 test(
   "icon seeding preserves assigned icons while explicit updates still replace them",
   {
@@ -76,34 +96,46 @@ test(
       : "set TOOL_ICON_TEST_DATABASE_URL to a disposable PostgreSQL database",
   },
   async () => {
-    const sql = postgres(process.env.TOOL_ICON_TEST_DATABASE_URL, { max: 1 });
+    const client = new pg.Client({ connectionString: process.env.TOOL_ICON_TEST_DATABASE_URL });
     try {
-      await sql.begin(async (tx) => {
-        await tx`CREATE TEMP TABLE managed_tools (
+      await client.connect();
+      await client.query("BEGIN");
+      try {
+        await client.query(`CREATE TEMP TABLE managed_tools (
           tool_id text PRIMARY KEY, icon_url text, updated_at timestamptz NOT NULL DEFAULT NOW()
-        ) ON COMMIT DROP`;
+        ) ON COMMIT DROP`);
         const [row] = planToolIconUpdates({ icons: [icon] }, tools, cloudName);
-        await tx`INSERT INTO managed_tools (tool_id, icon_url) VALUES
-          (${row.tool_id}, 'https://example.com/custom.png'), ('another-tool', NULL)`;
-        const before = await tx`SELECT * FROM managed_tools WHERE tool_id = ${row.tool_id}`;
+        await client.query(
+          `INSERT INTO managed_tools (tool_id, icon_url) VALUES
+          ($1, 'https://example.com/custom.png'), ('another-tool', NULL)`,
+          [row.tool_id],
+        );
+        const before = (await client.query("SELECT * FROM managed_tools WHERE tool_id = $1", [row.tool_id])).rows;
         const missing = { ...row, tool_id: "another-tool" };
         const unknown = { ...row, tool_id: "unknown-tool" };
-        assert.deepEqual(Array.from(await assignToolIcons(tx, [row, missing, unknown], { missingOnly: true })), [
+        assert.deepEqual(await assignToolIcons(client, [row, missing, unknown], { missingOnly: true }), [
           { tool_id: missing.tool_id },
         ]);
-        assert.deepEqual(await tx`SELECT * FROM managed_tools WHERE tool_id = ${row.tool_id}`, before);
-        assert.equal((await assignToolIcons(tx, [row, missing], { missingOnly: true })).length, 0);
-        assert.equal((await assignToolIcons(tx, [row])).length, 1);
+        assert.deepEqual(
+          (await client.query("SELECT * FROM managed_tools WHERE tool_id = $1", [row.tool_id])).rows,
+          before,
+        );
+        assert.equal((await assignToolIcons(client, [row, missing], { missingOnly: true })).length, 0);
+        assert.equal((await assignToolIcons(client, [row])).length, 1);
         assert.equal(
-          (await tx`SELECT icon_url FROM managed_tools WHERE tool_id = ${row.tool_id}`)[0].icon_url,
+          (await client.query("SELECT icon_url FROM managed_tools WHERE tool_id = $1", [row.tool_id])).rows[0].icon_url,
           row.icon_url,
         );
-        assert.equal((await tx`SELECT * FROM managed_tools`).length, 2);
-        assert.equal((await assignToolIcons(tx, [row])).length, 0);
-        assert.deepEqual(await assignToolIcons(tx, [], { missingOnly: true }), []);
-      });
+        assert.equal((await client.query("SELECT * FROM managed_tools")).rows.length, 2);
+        assert.equal((await assignToolIcons(client, [row])).length, 0);
+        assert.deepEqual(await assignToolIcons(client, [], { missingOnly: true }), []);
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      }
     } finally {
-      await sql.end();
+      await client.end();
     }
   },
 );

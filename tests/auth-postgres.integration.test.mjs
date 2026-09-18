@@ -34,7 +34,7 @@ test(
       return nativeFetch(input, init);
     };
 
-    const [{ auth }, { sqlClient }] = await Promise.all([
+    const [{ auth }, { db, sql, sqlClient }] = await Promise.all([
       import(`../packages/auth/src/auth.ts?integration=${randomUUID()}`),
       import("../packages/database/src/index.ts"),
     ]);
@@ -76,14 +76,18 @@ test(
     });
     assert.equal(verificationResponse.status, 302);
 
-    const [storedUser] = await sqlClient`
+    const [storedUser] = (
+      await db.execute(sql`
       SELECT id, email_verified, name FROM auth_users WHERE email = ${email}
-    `;
+    `)
+    ).rows;
     assert.equal(storedUser.email_verified, true);
     assert.equal(storedUser.name, "Auth Integration User");
-    const assignments = await sqlClient`
+    const assignments = (
+      await db.execute(sql`
       SELECT role_id FROM user_roles WHERE user_id = ${storedUser.id}
-    `;
+    `)
+    ).rows;
     assert.deepEqual(
       assignments.map(({ role_id }) => role_id),
       ["user"],
@@ -152,13 +156,13 @@ test(
       ).token,
     );
 
-    await sqlClient.begin(async (transaction) => {
-      await transaction`
+    await db.transaction(async (transaction) => {
+      await transaction.execute(sql`
         UPDATE auth_users SET status = 'suspended' WHERE id = ${storedUser.id}
-      `;
-      await transaction`
+      `);
+      await transaction.execute(sql`
         DELETE FROM auth_sessions WHERE user_id = ${storedUser.id}
-      `;
+      `);
     });
     const suspendedSignIn = await auth.api.signInEmail({
       body: { email, password: nextPassword },
@@ -166,9 +170,11 @@ test(
     });
     assert.ok(suspendedSignIn.token);
     assert.equal(suspendedSignIn.user.status, "suspended");
-    const [sessionCount] = await sqlClient`
+    const [sessionCount] = (
+      await db.execute(sql`
       SELECT COUNT(*)::integer AS count FROM auth_sessions WHERE user_id = ${storedUser.id}
-    `;
+    `)
+    ).rows;
     assert.equal(sessionCount.count, 1);
   },
 );

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import postgres from "postgres";
+import pg from "pg";
 
 const url = process.env.BLOG_TEST_DATABASE_URL;
 test(
@@ -12,29 +12,32 @@ test(
   },
   async (t) => {
     const schema = `blog_domain_${randomUUID().replaceAll("-", "")}`;
-    const admin = postgres(url, { max: 1, onnotice() {} });
-    await admin.unsafe(`CREATE SCHEMA ${schema}`);
+    const admin = new pg.Client({ connectionString: url });
+    await admin.connect();
+    await admin.query(`CREATE SCHEMA ${schema}`);
     const target = new URL(url);
-    target.searchParams.set("search_path", schema);
+    target.searchParams.set("options", `-c search_path=${schema}`);
     const previousUrl = process.env.DATABASE_URL;
     process.env.DATABASE_URL = target.toString();
-    const sql = postgres(target.toString(), { max: 5, onnotice() {} });
+    const sql = new pg.Pool({ connectionString: target.toString(), max: 5 });
     const { sqlClient } = await import("../packages/database/src/index.ts");
     t.after(async () => {
       await sqlClient.end();
       if (previousUrl === undefined) delete process.env.DATABASE_URL;
       else process.env.DATABASE_URL = previousUrl;
       await sql.end();
-      await admin.unsafe(`DROP SCHEMA ${schema} CASCADE`);
+      await admin.query(`DROP SCHEMA ${schema} CASCADE`);
       await admin.end();
     });
     for (const file of ["0001_auth_control_plane.sql", "0006_blogs.sql"]) {
-      await sql.unsafe(
+      await sql.query(
         await readFile(new URL(`../packages/database/migration/0001-baseline/${file}`, import.meta.url), "utf8"),
       );
     }
-    await sql`INSERT INTO auth_users (id,name,email) VALUES ('admin-a','A','a@test.invalid'),('admin-b','B','b@test.invalid'),('viewer','V','v@test.invalid')`;
-    await sql`INSERT INTO user_roles (user_id,role_id) VALUES ('admin-a','admin'),('admin-b','admin')`;
+    await sql.query(
+      "INSERT INTO auth_users (id,name,email) VALUES ('admin-a','A','a@test.invalid'),('admin-b','B','b@test.invalid'),('viewer','V','v@test.invalid')",
+    );
+    await sql.query("INSERT INTO user_roles (user_id,role_id) VALUES ('admin-a','admin'),('admin-b','admin')");
     const m = await import("../lib/blog/mutations.ts");
     const { createBlogDocument } = await import("../lib/blog/document.ts");
     const category = await m.saveBlogTerm("admin-a", { kind: "category", name: "Guides" });
@@ -127,22 +130,24 @@ test(
           version: post.version,
           scheduledAt: new Date(Date.now() + 60000).toISOString(),
         });
-        const [frozen] = await sql`SELECT * FROM blog_post_schedules WHERE post_id=${post.id}`;
+        const [frozen] = (await sql.query("SELECT * FROM blog_post_schedules WHERE post_id=$1", [post.id])).rows;
         post = await m.saveBlogDraft("admin-a", {
           postId: post.id,
           version: post.version,
           document: content("Private newer draft"),
         });
-        await sql`UPDATE blog_post_schedules SET scheduled_at=NOW()-interval '1 minute' WHERE id=${frozen.id}`;
+        await sql.query("UPDATE blog_post_schedules SET scheduled_at=NOW()-interval '1 minute' WHERE id=$1", [
+          frozen.id,
+        ]);
         const results = await Promise.all([m.publishDueBlogPosts(), m.publishDueBlogPosts()]);
         assert.equal(
           results.reduce((n, r) => n + r.published, 0),
           1,
         );
-        const [stored] = await sql`SELECT * FROM blog_posts WHERE id=${post.id}`;
+        const [stored] = (await sql.query("SELECT * FROM blog_posts WHERE id=$1", [post.id])).rows;
         assert.equal(stored.published_revision_id, frozen.revision_id);
         assert.equal(stored.draft_document.title, "Private newer draft");
-        assert.equal((await sql`SELECT * FROM blog_post_schedules WHERE post_id=${post.id}`).length, 0);
+        assert.equal((await sql.query("SELECT * FROM blog_post_schedules WHERE post_id=$1", [post.id])).rows.length, 0);
         post = {
           ...post,
           version: stored.version,
@@ -159,13 +164,17 @@ test(
       });
       assert.equal(post.draftDocument.title, "First revision");
       assert.equal(post.publishedRevisionId, live);
-      const backups =
-        await sql`SELECT document FROM blog_revisions WHERE post_id=${post.id} AND reason='restore_backup'`;
+      const backups = (
+        await sql.query("SELECT document FROM blog_revisions WHERE post_id=$1 AND reason='restore_backup'", [post.id])
+      ).rows;
       assert.ok(backups.some((r) => r.document.title === "Private newer draft"));
       post = await m.trashBlogPost("admin-a", { postId: post.id, version: post.version });
       assert.equal(post.publishedRevisionId, null);
       assert.ok(post.trashedAt);
-      assert.equal((await sql`SELECT * FROM blog_published_post_tags WHERE post_id=${post.id}`).length, 0);
+      assert.equal(
+        (await sql.query("SELECT * FROM blog_published_post_tags WHERE post_id=$1", [post.id])).rows.length,
+        0,
+      );
       post = await m.restoreTrashedBlogPost("admin-a", {
         postId: post.id,
         version: post.version,
@@ -179,17 +188,20 @@ test(
         version: post.version,
         scheduledAt: new Date(Date.now() + 60000).toISOString(),
       });
-      await sql`UPDATE blog_post_schedules SET scheduled_at=NOW()-interval '1 minute' WHERE post_id=${post.id}`;
-      await sql`UPDATE auth_users SET status='suspended' WHERE id='admin-b'`;
+      await sql.query("UPDATE blog_post_schedules SET scheduled_at=NOW()-interval '1 minute' WHERE post_id=$1", [
+        post.id,
+      ]);
+      await sql.query("UPDATE auth_users SET status='suspended' WHERE id='admin-b'");
       const result = await m.publishDueBlogPosts();
       assert.equal(result.failed, 1);
-      const [schedule] = await sql`SELECT * FROM blog_post_schedules WHERE post_id=${post.id}`;
+      const [schedule] = (await sql.query("SELECT * FROM blog_post_schedules WHERE post_id=$1", [post.id])).rows;
       assert.equal(schedule.last_error_code, "PUBLISHER_FORBIDDEN");
-      const [stored] = await sql`SELECT version, published_revision_id FROM blog_posts WHERE id=${post.id}`;
+      const [stored] = (await sql.query("SELECT version, published_revision_id FROM blog_posts WHERE id=$1", [post.id]))
+        .rows;
       assert.equal(stored.version, post.version);
       assert.equal(stored.published_revision_id, null);
       post = await m.cancelBlogSchedule("admin-a", { postId: post.id, version: post.version });
-      assert.equal((await sql`SELECT * FROM blog_post_schedules WHERE post_id=${post.id}`).length, 0);
+      assert.equal((await sql.query("SELECT * FROM blog_post_schedules WHERE post_id=$1", [post.id])).rows.length, 0);
     });
   },
 );

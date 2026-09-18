@@ -18,30 +18,49 @@ const hooks = registerHooks({
     if (context.parentURL === bootstrapUrl && specifier === "./schema") {
       return { shortCircuit: true, url: new URL("../db/schema.ts", import.meta.url).href };
     }
-    if (specifier === "postgres" && context.parentURL?.startsWith(runtimeUrl)) {
+    if (specifier === "pg") {
       return {
         shortCircuit: true,
         url: `data:text/javascript,${encodeURIComponent(`
-          export default function postgres(url, options) {
-            const clients = globalThis.__databaseRequestClients;
-            const client = Object.assign(() => client.unsafe(), {
-              id: clients.length + 1, url, options: { ...options, parsers: {}, serializers: {} },
-              closed: false, commits: 0, rollbacks: 0, queries: 0,
-              unsafe() {
-                if (client.closed) throw new Error("Query after close");
-                client.queries++;
-                const rows = [{ clientId: client.id }];
-                return Object.assign(Promise.resolve(client.gate).then(() => rows), { values: () => Promise.resolve(rows) });
-              },
-              async begin(callback) {
-                try { const value = await callback(client); client.commits++; return value; }
-                catch (error) { client.rollbacks++; throw error; }
-              },
-              async end() { client.closed = true; },
-            });
-            clients.push(client);
-            return client;
+          import { EventEmitter } from "node:events";
+          export class Pool extends EventEmitter {
+            constructor(options) {
+              super();
+              const clients = globalThis.__databaseRequestClients;
+              Object.assign(this, {
+                id: clients.length + 1, url: options.connectionString, options,
+                closed: false, commits: 0, rollbacks: 0, queries: 0, checkouts: 0, releases: 0,
+              });
+              clients.push(this);
+            }
+            async query(config) {
+              if (this.closed) throw new Error("Query after close");
+              this.queries++;
+              await this.gate;
+              const text = typeof config === "string" ? config : config.text;
+              if (text === "commit") this.commits++;
+              if (text === "rollback") this.rollbacks++;
+              return { rows: [{ clientId: this.id }], rowCount: 1 };
+            }
+            async connect() {
+              this.checkouts++;
+              let released = false;
+              return {
+                query: this.query.bind(this),
+                release: () => {
+                  if (released) throw new Error("Client released twice");
+                  released = true;
+                  this.releases++;
+                },
+              };
+            }
+            async end() {
+              if (this.checkouts !== this.releases) throw new Error("Client still checked out");
+              this.closed = true;
+            }
           }
+          export const types = { builtins: {}, getTypeParser: () => (value) => value };
+          export default { Pool, types };
         `)}`,
       };
     }
@@ -56,7 +75,7 @@ const otherDb = duplicateRuntime.createDatabase({});
 globalThis.__bootstrapDb = db;
 const { ensureDatabaseBootstrapped } = await import(bootstrapUrl);
 hooks.deregister();
-const query = async (database = db) => (await database.execute(sql`select 1`))[0].clientId;
+const query = async (database = db) => (await database.execute(sql`select 1`)).rows[0].clientId;
 const deferred = () => Promise.withResolvers();
 
 test("database pools stay inside their request through transactions, streams and cleanup", async () => {
@@ -85,7 +104,7 @@ test("database pools stay inside their request through transactions, streams and
         await barrier.promise;
         assert.equal(db.$client.url, "postgres://hyperdrive/first");
         assert.equal(await query(otherDb), firstId, "separate bundles share request state");
-        assert.equal((await sqlClient`select 1`)[0].clientId, firstId);
+        assert.equal((await sqlClient.query("select 1")).rows[0].clientId, firstId);
         assert.equal(await db.transaction(query), firstId);
         await assert.rejects(
           db.transaction(async () => {
@@ -115,6 +134,12 @@ test("database pools stay inside their request through transactions, streams and
     assert.ok(clients.every((client) => client.closed));
     assert.equal(clients[0].commits, 1);
     assert.equal(clients[0].rollbacks, 1);
+    assert.equal(clients[0].checkouts, 2);
+    assert.equal(clients[0].releases, 2, "committed and rolled-back transactions release their connections");
+    assert.ok(
+      clients.every((client) => client.options.max === 5),
+      "request pools stay bounded",
+    );
 
     const streamGate = deferred();
     const backgroundGate = deferred();
@@ -204,11 +229,13 @@ test("database pools stay inside their request through transactions, streams and
     process.env.DATABASE_URL = "postgres://localhost/test";
     const nodeId = await query();
     assert.equal(db.$client.options.max, 1, "each Node instance limits its database pool to one connection");
-    assert.equal(db.$client.options.prepare, false, "transaction pooling must not use prepared statements");
+    assert.equal(db.$client.options.idleTimeoutMillis, 20_000);
+    assert.equal(db.$client.options.connectionTimeoutMillis, 10_000);
+    assert.ok(db.$client.listenerCount("error") > 0, "idle connection errors have a handler");
     assert.equal(db.$client.url, process.env.DATABASE_URL, "request bindings do not leak into Node pooling");
     assert.equal(await query(), nodeId, "Node development retains its pooled connection");
     const execute = db.execute;
-    db.execute = async () => [{ clientId: "replacement" }];
+    db.execute = async () => ({ rows: [{ clientId: "replacement" }] });
     assert.equal(await query(), "replacement", "existing Node clients remain mutable");
     db.execute = execute;
     assert.equal(await query(), nodeId);

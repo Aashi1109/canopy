@@ -12,16 +12,18 @@ export default async function globalSetup(_config: FullConfig) {
     return nativeFetch(input, init);
   };
 
-  const [{ auth }, { sqlClient }] = await Promise.all([
+  const [{ auth }, { db, sql, sqlClient }] = await Promise.all([
     import("../../packages/auth/src/auth"),
     import("../../packages/database/src/index"),
   ]);
 
   try {
     for (const account of Object.values(E2E_ACCOUNTS)) {
-      const [existing] = await sqlClient`
+      const [existing] = (
+        await db.execute<{ id: string }>(sql`
         SELECT id FROM auth_users WHERE email = ${account.email}
-      `;
+      `)
+      ).rows;
       if (!existing) {
         await auth.api.signUpEmail({
           body: {
@@ -34,7 +36,7 @@ export default async function globalSetup(_config: FullConfig) {
       }
     }
 
-    await sqlClient`
+    await db.execute(sql`
       UPDATE auth_users
       SET email_verified = TRUE
       WHERE email IN (
@@ -42,18 +44,20 @@ export default async function globalSetup(_config: FullConfig) {
         ${E2E_ACCOUNTS.viewer.email},
         ${E2E_ACCOUNTS.admin.email}
       )
-    `;
-    const users = await sqlClient`
+    `);
+    const users = (
+      await db.execute<{ id: string; email: string }>(sql`
       SELECT id, email FROM auth_users
       WHERE email IN (
         ${E2E_ACCOUNTS.user.email},
         ${E2E_ACCOUNTS.viewer.email},
         ${E2E_ACCOUNTS.admin.email}
       )
-    `;
+    `)
+    ).rows;
     const byEmail = new Map(users.map((user) => [user.email, user.id]));
 
-    await sqlClient`
+    await db.execute(sql`
       INSERT INTO roles (id, name, description, access, is_system)
       VALUES (
         'e2e-tool-viewer',
@@ -66,14 +70,14 @@ export default async function globalSetup(_config: FullConfig) {
         description = EXCLUDED.description,
         access = EXCLUDED.access,
         updated_at = NOW()
-    `;
-    await sqlClient`
+    `);
+    await db.execute(sql`
       INSERT INTO user_roles (user_id, role_id)
       VALUES
         (${byEmail.get(E2E_ACCOUNTS.viewer.email)}, 'e2e-tool-viewer'),
         (${byEmail.get(E2E_ACCOUNTS.admin.email)}, 'admin')
       ON CONFLICT DO NOTHING
-    `;
+    `);
   } finally {
     globalThis.fetch = nativeFetch;
     await sqlClient.end();

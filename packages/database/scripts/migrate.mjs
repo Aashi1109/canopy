@@ -1,6 +1,6 @@
 import { readFile, readdir } from "node:fs/promises";
 import { config } from "dotenv";
-import postgres from "postgres";
+import pg from "pg";
 import { Cache, CACHE_NAMESPACES, closeRedis } from "@canopy/cache";
 
 const [folder, ...extra] = process.argv.slice(2);
@@ -28,14 +28,15 @@ for (const file of [".env.local", ".env"]) {
 }
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
-const sql = postgres(databaseUrl, { max: 1 });
+const client = new pg.Client({ connectionString: databaseUrl, connectionTimeoutMillis: 30_000 });
 
 try {
+  await client.connect();
   const cloudName =
     process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim() || process.env.CLOUDINARY_CLOUD_NAME?.trim() || "";
-  await sql`SELECT set_config('canopy.cloudinary_cloud_name', ${cloudName}, false)`;
+  await client.query("SELECT set_config('canopy.cloudinary_cloud_name', $1, false)", [cloudName]);
   for (const [name, migration] of migrations) {
-    await sql.unsafe(migration);
+    await client.query(migration);
     console.log(`Applied ${folder}/${name}`);
   }
   await Promise.all([
@@ -44,5 +45,5 @@ try {
   ]);
 } finally {
   closeRedis();
-  await sql.end();
+  await client.end();
 }

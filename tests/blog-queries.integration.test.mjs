@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import postgres from "postgres";
+import pg from "pg";
 import { createBlogDocument } from "../lib/blog/document.ts";
 
 const databaseUrl = process.env.BLOG_TEST_DATABASE_URL;
@@ -14,16 +14,17 @@ test(
   },
   async (context) => {
     const schema = `blog_query_test_${randomUUID().replaceAll("-", "")}`;
-    const admin = postgres(databaseUrl, { max: 1, onnotice() {} });
-    await admin.unsafe(`CREATE SCHEMA ${schema}`);
-    const sql = postgres(databaseUrl, {
-      max: 1,
-      connection: { search_path: schema },
-      onnotice() {},
+    const admin = new pg.Client({ connectionString: databaseUrl });
+    await admin.connect();
+    await admin.query(`CREATE SCHEMA ${schema}`);
+    const sql = new pg.Client({
+      connectionString: databaseUrl,
+      options: `-c search_path=${schema}`,
     });
+    await sql.connect();
     const previousUrl = process.env.DATABASE_URL;
     const url = new URL(databaseUrl);
-    url.searchParams.set("search_path", schema);
+    url.searchParams.set("options", `-c search_path=${schema}`);
     process.env.DATABASE_URL = url.toString();
     const queries = await import("../lib/blog/queries.ts");
     const { sqlClient } = await import("../packages/database/src/index.ts");
@@ -32,21 +33,29 @@ test(
       if (previousUrl === undefined) delete process.env.DATABASE_URL;
       else process.env.DATABASE_URL = previousUrl;
       await sql.end();
-      await admin.unsafe(`DROP SCHEMA ${schema} CASCADE`);
+      await admin.query(`DROP SCHEMA ${schema} CASCADE`);
       await admin.end();
     });
     for (const migration of ["0001_auth_control_plane.sql", "0006_blogs.sql"]) {
-      await sql.unsafe(
+      await sql.query(
         await readFile(new URL(`../packages/database/migration/0001-baseline/${migration}`, import.meta.url), "utf8"),
       );
     }
-    await sql`INSERT INTO auth_users (id, name, email) VALUES ('viewer', 'Viewer', 'viewer@example.test'), ('denied', 'Denied', 'denied@example.test')`;
-    await sql`INSERT INTO roles (id, name, description, access) VALUES ('blog-viewer', 'Blog viewer', 'Blog read-only access', '{"admin":{"enter":true},"blog":{"view":true}}')`;
-    await sql`INSERT INTO user_roles (user_id, role_id) VALUES ('viewer', 'blog-viewer')`;
-    await sql`INSERT INTO blog_categories (id, name, slug, created_by, updated_by) VALUES ('category', 'Current Category', 'current-category', 'viewer', 'viewer'), ('unused-category', 'Unused Category', 'unused-category', 'viewer', 'viewer')`;
-    await sql`INSERT INTO blog_tags (id, name, slug, created_by, updated_by) VALUES ('tag', 'Current Tag', 'current-tag', 'viewer', 'viewer'), ('unused-tag', 'Unused Tag', 'unused-tag', 'viewer', 'viewer')`;
-    await sql`UPDATE managed_tools SET enabled = false WHERE tool_id = 'paperwork.invoice-generator'`;
-    await sql`UPDATE managed_tools SET archived = true WHERE tool_id = 'paperwork.receipt-generator'`;
+    await sql.query(
+      "INSERT INTO auth_users (id, name, email) VALUES ('viewer', 'Viewer', 'viewer@example.test'), ('denied', 'Denied', 'denied@example.test')",
+    );
+    await sql.query(
+      "INSERT INTO roles (id, name, description, access) VALUES ('blog-viewer', 'Blog viewer', 'Blog read-only access', '{\"admin\":{\"enter\":true},\"blog\":{\"view\":true}}')",
+    );
+    await sql.query("INSERT INTO user_roles (user_id, role_id) VALUES ('viewer', 'blog-viewer')");
+    await sql.query(
+      "INSERT INTO blog_categories (id, name, slug, created_by, updated_by) VALUES ('category', 'Current Category', 'current-category', 'viewer', 'viewer'), ('unused-category', 'Unused Category', 'unused-category', 'viewer', 'viewer')",
+    );
+    await sql.query(
+      "INSERT INTO blog_tags (id, name, slug, created_by, updated_by) VALUES ('tag', 'Current Tag', 'current-tag', 'viewer', 'viewer'), ('unused-tag', 'Unused Tag', 'unused-tag', 'viewer', 'viewer')",
+    );
+    await sql.query("UPDATE managed_tools SET enabled = false WHERE tool_id = 'paperwork.invoice-generator'");
+    await sql.query("UPDATE managed_tools SET archived = true WHERE tool_id = 'paperwork.receipt-generator'");
 
     const document = {
       ...createBlogDocument("Published quokka article"),
@@ -72,17 +81,35 @@ test(
     };
     for (let index = 0; index < 14; index++) {
       const id = `live-${String(index).padStart(2, "0")}`;
-      await sql`INSERT INTO blog_posts (id, slug, draft_document, draft_hash, created_by, draft_updated_by) VALUES (${id}, ${id}, ${sql.json({ ...document, title: "Secret draft title" })}, 'draft-hash', 'viewer', 'viewer')`;
-      await sql`INSERT INTO blog_revisions (id, post_id, revision_number, document, content_hash, reason, created_by) VALUES (${`revision-${id}`}, ${id}, 1, ${sql.json(document)}, 'live-hash', 'publish', 'viewer')`;
-      await sql`UPDATE blog_posts SET published_revision_id = ${`revision-${id}`}, published_category_id = 'category', first_published_at = '2026-09-16T10:00:00.000001Z', published_updated_at = '2026-09-16T10:00:00.000001Z', published_search = to_tsvector('english', 'Published quokka article') WHERE id = ${id}`;
-      await sql`INSERT INTO blog_published_post_tags (post_id, tag_id) VALUES (${id}, 'tag')`;
+      await sql.query(
+        "INSERT INTO blog_posts (id, slug, draft_document, draft_hash, created_by, draft_updated_by) VALUES ($1, $2, $3, 'draft-hash', 'viewer', 'viewer')",
+        [id, id, JSON.stringify({ ...document, title: "Secret draft title" })],
+      );
+      await sql.query(
+        "INSERT INTO blog_revisions (id, post_id, revision_number, document, content_hash, reason, created_by) VALUES ($1, $2, 1, $3, 'live-hash', 'publish', 'viewer')",
+        [`revision-${id}`, id, JSON.stringify(document)],
+      );
+      await sql.query(
+        "UPDATE blog_posts SET published_revision_id = $1, published_category_id = 'category', first_published_at = '2026-09-16T10:00:00.000001Z', published_updated_at = '2026-09-16T10:00:00.000001Z', published_search = to_tsvector('english', 'Published quokka article') WHERE id = $2",
+        [`revision-${id}`, id],
+      );
+      await sql.query("INSERT INTO blog_published_post_tags (post_id, tag_id) VALUES ($1, 'tag')", [id]);
     }
     for (const id of ["draft-only", "trashed", "unpublished"]) {
-      await sql`INSERT INTO blog_posts (id, slug, draft_document, draft_hash) VALUES (${id}, ${id}, ${sql.json({ ...document, title: "Hidden article" })}, 'draft')`;
-      await sql`INSERT INTO blog_revisions (id, post_id, revision_number, document, content_hash, reason) VALUES (${`revision-${id}`}, ${id}, 1, ${sql.json(document)}, 'revision', 'create')`;
+      await sql.query("INSERT INTO blog_posts (id, slug, draft_document, draft_hash) VALUES ($1, $2, $3, 'draft')", [
+        id,
+        id,
+        JSON.stringify({ ...document, title: "Hidden article" }),
+      ]);
+      await sql.query(
+        "INSERT INTO blog_revisions (id, post_id, revision_number, document, content_hash, reason) VALUES ($1, $2, 1, $3, 'revision', 'create')",
+        [`revision-${id}`, id, JSON.stringify(document)],
+      );
     }
-    await sql`UPDATE blog_posts SET trashed_at = NOW() WHERE id = 'trashed'`;
-    await sql`INSERT INTO blog_post_schedules (id, post_id, revision_id, scheduled_at, scheduled_by) VALUES ('schedule', 'draft-only', 'revision-draft-only', NOW(), 'viewer')`;
+    await sql.query("UPDATE blog_posts SET trashed_at = NOW() WHERE id = 'trashed'");
+    await sql.query(
+      "INSERT INTO blog_post_schedules (id, post_id, revision_id, scheduled_at, scheduled_by) VALUES ('schedule', 'draft-only', 'revision-draft-only', NOW(), 'viewer')",
+    );
 
     await context.test(
       "public list projects published summaries and preserves sub-millisecond keyset ties",
@@ -109,7 +136,7 @@ test(
     );
 
     await context.test("search and term filters use live projections only", async () => {
-      const sitemap = await queries.getBlogSitemapEntries();
+      const sitemap = await queries.getBlogSitemapEntries(50000);
       assert.equal(sitemap.length, 14);
       assert.ok(sitemap.every((entry) => entry.slug.startsWith("live-")));
       assert.equal((await queries.getBlogSitemapEntries(2)).length, 2);

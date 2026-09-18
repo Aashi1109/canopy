@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
-import postgres from "postgres";
 import { seedTemplates } from "../packages/invoice-templates/src/index.ts";
 
 const migrationUrl = new URL("../packages/database/scripts/migrate.mjs", import.meta.url).href;
@@ -37,8 +36,10 @@ test("selected migrations and separate seeding", async (t) => {
   const hooks = registerHooks({
     resolve(specifier, context, next) {
       if (context.parentURL?.startsWith(migrationUrl) || context.parentURL?.startsWith(seedUrl)) {
-        if (specifier === "postgres") {
-          return stub("export default () => globalThis.__migrationSeedClient;");
+        if (specifier === "pg") {
+          return stub(
+            "export default { Client: class Client { constructor() { return globalThis.__migrationSeedClient; } } };",
+          );
         }
         if (specifier === "@canopy/cache")
           return stub(`
@@ -70,47 +71,47 @@ test("selected migrations and separate seeding", async (t) => {
     script = migrationUrl,
   ) {
     process.argv = [...previousArgv.slice(0, 2), ...args];
-    const client = postgres(process.env.DATABASE_URL, { max: 1 });
-    state = { rows: [], migrations: [], seeds: 0, closed: false, transactions: 0, deleted: [], cloudName: undefined };
+    state = {
+      rows: [],
+      migrations: [],
+      seeds: 0,
+      connected: false,
+      closed: false,
+      transactions: [],
+      deleted: [],
+      cloudName: undefined,
+    };
     globalThis.__migrationSeedState = state;
-    const sql = async (strings, ...values) => {
-      if (strings.join("").includes("set_config")) {
-        state.cloudName = values[0];
-        return [];
-      }
-      if (strings.join("").includes("SELECT COUNT(*)")) return [{ template_count: count }];
-      if (failure) throw failure;
-      // Use the installed driver's serializers after real drizzle(sql) configures them.
-      // These are the types described by PostgreSQL for invoice_templates columns.
-      const types = [25, 25, 25, 25, 25, 25, 16, 23, 25, 25, 3802, 16, 25, 1184, 1184];
-      const row = values.map((value, index) => {
-        if (value === null) return null;
-        const parameter = value && typeof value === "object" && "type" in value && "value" in value;
-        const type = parameter ? value.type : types[index];
-        const raw = parameter ? value.value : value;
-        const encoded = client.options.serializers[type]?.(raw) ?? String(raw);
-        Buffer.byteLength(encoded);
-        return encoded;
-      });
-      state.rows.push(row);
-      return [];
+    globalThis.__migrationSeedClient = {
+      async connect() {
+        state.connected = true;
+      },
+      async query(query, values = []) {
+        assert.equal(state.connected, true);
+        const text = typeof query === "string" ? query : query.text;
+        const command = text.trim().toLowerCase();
+        if (["begin", "commit", "rollback"].includes(command)) {
+          state.transactions.push(command);
+          return { rows: [] };
+        }
+        if (text.includes("set_config")) {
+          state.cloudName = values[0];
+          return { rows: [] };
+        }
+        if (text.includes("SELECT COUNT(*)")) return { rows: [{ template_count: count }] };
+        if (text.includes("INSERT INTO invoice_templates")) {
+          if (failure) throw failure;
+          state.rows.push(values);
+          return { rows: [] };
+        }
+        state.migrations.push(text);
+        if (migrationFailure) throw migrationFailure;
+        return { rows: [] };
+      },
+      async end() {
+        state.closed = true;
+      },
     };
-    sql.options = client.options;
-    sql.json = client.json;
-    sql.unsafe = async (migration) => {
-      state.migrations.push(migration);
-      if (migrationFailure) throw migrationFailure;
-      return [];
-    };
-    sql.begin = async (callback) => {
-      state.transactions += 1;
-      return callback(sql);
-    };
-    sql.end = async () => {
-      state.closed = true;
-      await client.end();
-    };
-    globalThis.__migrationSeedClient = sql;
     await import(`${script}?test=${name}`);
   }
 
@@ -126,7 +127,7 @@ test("selected migrations and separate seeding", async (t) => {
         assert.equal(row[13], new Date(template.createdAt).toISOString());
         assert.equal(row[14], new Date(template.updatedAt).toISOString());
       }
-      assert.equal(state.transactions, 1);
+      assert.deepEqual(state.transactions, ["begin", "commit"]);
       assert.deepEqual(state.migrations, []);
       assert.equal(state.seeds, 1);
       assert.equal(state.closed, true);
@@ -134,12 +135,16 @@ test("selected migrations and separate seeding", async (t) => {
     await t.test("existing catalog is preserved", async () => {
       await run("populated", 1, null, [], null, seedUrl);
       assert.deepEqual(state.rows, []);
-      assert.equal(state.transactions, 0);
+      assert.deepEqual(state.transactions, []);
       assert.equal(state.closed, true);
     });
     await t.test("insert failure propagates and closes the connection", async () => {
       const failure = new Error("Insert failed");
-      await assert.rejects(run("failure", 0, failure, [], null, seedUrl), (error) => error === failure);
+      await assert.rejects(
+        run("failure", 0, failure, [], null, seedUrl),
+        (error) => error === failure || error.cause === failure,
+      );
+      assert.deepEqual(state.transactions, ["begin", "rollback"]);
       assert.equal(state.closed, true);
     });
     await t.test("only the selected folder runs, in filename order, without seeding", async () => {

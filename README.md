@@ -53,7 +53,9 @@ version. Formatting is separate from `pnpm lint`, which checks TypeScript.
 
 On Vercel, set `DATABASE_URL` to the **Transaction pooler** connection string from
 Supabase's **Connect** dialog (port `6543`), then redeploy. Each Node instance uses
-one pooled connection with prepared statements disabled. Run migrations using a
+one pooled connection using `pg`, which queues queries on that connection instead
+of pipelining them through the transaction pooler. Queries use unnamed statements.
+Run migrations using a
 direct or session-pooler connection in your local migration environment.
 
 Google OAuth needs `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; verification, recovery, and deletion emails need `RESEND_API_KEY` and `ACCOUNTS_EMAIL`.

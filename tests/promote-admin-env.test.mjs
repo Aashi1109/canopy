@@ -17,7 +17,7 @@ test("admin promotion loads root env files from either cwd and preserves environ
   const script = path.join(packageDir, "scripts/promote-admin.mjs");
   await mkdir(path.dirname(script), { recursive: true });
   await copyFile(source, script);
-  await mkdir(path.join(root, "node_modules/postgres"), { recursive: true });
+  await mkdir(path.join(root, "node_modules/pg"), { recursive: true });
   await mkdir(path.join(root, "node_modules/@canopy"), { recursive: true });
   await symlink(
     path.dirname(path.dirname(createRequire(source).resolve("@canopy/cache"))),
@@ -30,18 +30,20 @@ test("admin promotion loads root env files from either cwd and preserves environ
     "dir",
   );
   await writeFile(
-    path.join(root, "node_modules/postgres/package.json"),
+    path.join(root, "node_modules/pg/package.json"),
     JSON.stringify({ type: "module", exports: "./index.js" }),
   );
   await writeFile(
-    path.join(root, "node_modules/postgres/index.js"),
+    path.join(root, "node_modules/pg/index.js"),
     `
     import assert from "node:assert/strict";
-    export default function postgres(url) {
-      assert.equal(url, process.env.EXPECTED_DATABASE_URL);
-      console.log("Database URL verified; stopped before database access");
-      process.exit(0);
-    }
+    export default { Client: class {
+      constructor({ connectionString }) {
+        assert.equal(connectionString, process.env.EXPECTED_DATABASE_URL);
+        console.log("Database URL verified; stopped before database access");
+        process.exit(0);
+      }
+    } };
   `,
   );
   await writeFile(path.join(root, ".env"), "DATABASE_URL=postgres://base-fixture\n");

@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import dotenv from "dotenv";
-import postgres from "postgres";
+import pg from "pg";
 import { Cache, CACHE_NAMESPACES, closeRedis } from "@canopy/cache";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
@@ -45,17 +45,21 @@ export function planToolIconUpdates(manifest, tools, cloudName) {
   });
 }
 
-export async function assignToolIcons(sql, rows, { missingOnly = false } = {}) {
+export async function assignToolIcons(client, rows, { missingOnly = false } = {}) {
   if (!rows.length) return [];
-  return sql`
+  const result = await client.query(
+    `
     UPDATE managed_tools AS tools
     SET icon_url = updates.icon_url, updated_at = NOW()
-    FROM (VALUES ${sql(rows.map((row) => [row.tool_id, row.icon_url]))}) AS updates(tool_id, icon_url)
+    FROM unnest($1::text[], $2::text[]) AS updates(tool_id, icon_url)
     WHERE tools.tool_id = updates.tool_id
       AND tools.icon_url IS DISTINCT FROM updates.icon_url
-      ${missingOnly ? sql`AND tools.icon_url IS NULL` : sql``}
+      AND (NOT $3::boolean OR tools.icon_url IS NULL)
     RETURNING tools.tool_id
-  `;
+  `,
+    [rows.map((row) => row.tool_id), rows.map((row) => row.icon_url), missingOnly],
+  );
+  return result.rows;
 }
 
 async function main() {
@@ -72,23 +76,27 @@ async function main() {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required.");
   const manifest = JSON.parse(await readFile(values.manifest, "utf8"));
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim() || process.env.CLOUDINARY_CLOUD_NAME?.trim();
-  const sql = postgres(process.env.DATABASE_URL, { max: 1, connect_timeout: 10 });
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 10_000 });
   try {
-    await sql.begin(async (tx) => {
-      const tools = await tx`SELECT tool_id, slug FROM managed_tools`;
+    await client.connect();
+    await client.query("BEGIN");
+    try {
+      const { rows: tools } = await client.query("SELECT tool_id, slug FROM managed_tools");
       const rows = planToolIconUpdates(manifest, tools, cloudName);
       if (values["dry-run"]) {
         for (const row of rows) console.log(`${row.tool_id} -> ${row.icon_url}`);
         console.log(`Dry run: ${rows.length} successful icons matched; no database writes.`);
-        return;
-      }
-      if (!rows.length) {
+      } else if (!rows.length) {
         console.log("No successful icons to update.");
-        return;
+      } else {
+        const updated = await assignToolIcons(client, rows, { missingOnly: values["missing-only"] });
+        console.log(`Updated ${updated.length} icons; ${rows.length - updated.length} unchanged.`);
       }
-      const updated = await assignToolIcons(tx, rows, { missingOnly: values["missing-only"] });
-      console.log(`Updated ${updated.length} icons; ${rows.length - updated.length} unchanged.`);
-    });
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    }
     if (!values["dry-run"]) {
       await Promise.all([
         new Cache(CACHE_NAMESPACES.CATALOG).delete("all"),
@@ -97,7 +105,7 @@ async function main() {
     }
   } finally {
     closeRedis();
-    await sql.end();
+    await client.end();
   }
 }
 

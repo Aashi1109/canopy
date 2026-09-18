@@ -1,7 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
 import { isValidToolSlug, slugFromName, type ToolApp } from "@canopy/tool-catalog";
 import { eq, max } from "drizzle-orm";
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema.ts";
 import { managedToolsTable, toolContentTable } from "./schema.ts";
 
@@ -131,7 +131,7 @@ export async function loadManagedToolDefinitions(): Promise<ManagedToolSeedScan>
   return result;
 }
 
-export async function seedManagedTools(database: PostgresJsDatabase<typeof schema>): Promise<ManagedToolSeedCounts> {
+export async function seedManagedTools(database: NodePgDatabase<typeof schema>): Promise<ManagedToolSeedCounts> {
   const scan = await loadManagedToolDefinitions();
 
   /**

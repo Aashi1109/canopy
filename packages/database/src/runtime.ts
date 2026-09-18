@@ -1,8 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
+import pg from "pg";
 
-type SqlClient = ReturnType<typeof postgres>;
+type SqlClient = pg.Pool;
 type DatabaseRequest = { client?: SqlClient; closed?: boolean; databaseUrl?: string };
 const requestKey = Symbol.for("canopy.database.request");
 // Next and the custom Worker bundle this module separately. Share their scope.
@@ -19,22 +19,22 @@ function getSqlClient(): SqlClient {
   if (existing) return existing;
   const databaseUrl = request?.databaseUrl ?? process.env.DATABASE_URL;
   if (request && !databaseUrl) throw new Error("DATABASE_URL is required");
-  const client = postgres(databaseUrl ?? "postgres://127.0.0.1:1/canopy_unconfigured", {
+  const client = new pg.Pool({
+    connectionString: databaseUrl ?? "postgres://127.0.0.1:1/canopy_unconfigured",
     // Each warm Vercel instance owns its own pool; keep Node connections bounded.
     max: request ? 5 : 1,
-    prepare: false,
-    idle_timeout: 20,
-    connect_timeout: 10,
+    idleTimeoutMillis: 20_000,
+    connectionTimeoutMillis: 10_000,
+  });
+  client.on("error", (error: NodeJS.ErrnoException) => {
+    console.error("Idle database connection failed", { code: error.code });
   });
   if (request) request.client = client;
   else nodeClient = client;
   return client;
 }
 
-export const sqlClient = new Proxy((() => {}) as unknown as SqlClient, {
-  apply(_target, _receiver, args) {
-    return Reflect.apply(getSqlClient(), undefined, args);
-  },
+export const sqlClient = new Proxy({} as SqlClient, {
   get(_target, key) {
     const client = getSqlClient();
     const value = Reflect.get(client, key);
@@ -43,7 +43,7 @@ export const sqlClient = new Proxy((() => {}) as unknown as SqlClient, {
 });
 
 export function createDatabase<T extends Record<string, unknown>>(schema: T) {
-  type Database = PostgresJsDatabase<T> & { $client: SqlClient };
+  type Database = NodePgDatabase<T> & { $client: SqlClient };
   const databases = new WeakMap<SqlClient, Database>();
   const getDatabase = () => {
     const client = getSqlClient();
@@ -78,7 +78,7 @@ export function withDatabaseRequest(
       // Background work may schedule more work while the response is streaming.
       while (background.length) await Promise.allSettled(background.splice(0));
       request.closed = true;
-      await request.client?.end({ timeout: 5 });
+      await request.client?.end();
     };
     try {
       const response = await handler((task) => {

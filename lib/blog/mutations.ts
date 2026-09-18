@@ -52,7 +52,9 @@ export class BlogError extends Error {
 }
 
 async function databaseNow(tx: Pick<Transaction, "execute">): Promise<Date> {
-  const [row] = await tx.execute<{ now: string | Date }>(sql`SELECT clock_timestamp() AS now`);
+  const {
+    rows: [row],
+  } = await tx.execute<{ now: string | Date }>(sql`SELECT clock_timestamp() AS now`);
   return new Date(row.now);
 }
 

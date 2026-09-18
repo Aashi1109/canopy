@@ -32,7 +32,7 @@ import { blogDocumentHash, createBlogDocument, validateBlogDocument } from "../l
 const NOW = new Date("2026-09-16T10:30:00Z");
 const category = { id: "category-1", name: "Guides", slug: "guides" };
 const tag = { id: "tag-1", name: "PDF", slug: "pdf" };
-const clock = () => [{ now: NOW }];
+const clock = () => ({ rows: [{ now: NOW }] });
 const dialect = new PgDialect();
 const query = (condition) => (condition ? dialect.sqlToQuery(condition) : { sql: "", params: [] });
 function document(title = "Original article") {
