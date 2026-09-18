@@ -1,5 +1,8 @@
 "use server";
 
+import config from "@canopy/config";
+import { measureServerAction } from "../../../../lib/observability/sentry.ts";
+import { captureException, getActiveSpan } from "@sentry/core";
 import { z, ZodError } from "zod";
 import { errorMessage } from "../../../../utils/errorMessage.ts";
 import { AuthorizationError } from "@canopy/control-plane";
@@ -59,6 +62,7 @@ function failure(error: unknown) {
       code: "FORBIDDEN" as const,
       message: "You do not have permission to perform this action.",
     };
+  captureException(error);
   return {
     ok: false as const,
     code: "TEMPORARY_FAILURE" as const,
@@ -68,35 +72,41 @@ function failure(error: unknown) {
 
 /** The session owns identity. Mutation schemas reject actor IDs, slugs and extra fields. */
 export async function mutateBlogAction(operation: keyof typeof operations, input: unknown) {
-  const actor = await getActorUserId();
-  try {
-    if (!Object.hasOwn(operations, operation)) throw new BlogError("VALIDATION", "Unknown blog operation.");
-    return { ok: true as const, data: await operations[operation](actor, input) };
-  } catch (error) {
-    return failure(error);
-  }
+  return measureServerAction("admin.blog.mutateBlogAction", async () => {
+    const actor = await getActorUserId();
+    try {
+      if (!Object.hasOwn(operations, operation)) throw new BlogError("VALIDATION", "Unknown blog operation.");
+      getActiveSpan()?.setAttribute("app.operation", operation);
+      return { ok: true as const, data: await operations[operation](actor, input) };
+    } catch (error) {
+      return failure(error);
+    }
+  });
 }
 
 export async function uploadBlogImageAction(formData: FormData) {
-  const actor = await getActorUserId();
-  try {
-    if (!(formData instanceof FormData)) throw new BlogError("VALIDATION", "Choose an image file.");
-    const fields = [...formData.keys()];
-    if (fields.length !== 1 || fields[0] !== "file") throw new BlogError("VALIDATION", "Supply one image file.");
-    const file = formData.get("file");
-    if (!(file instanceof File)) throw new BlogError("VALIDATION", "Choose an image file.");
-    return { ok: true as const, data: await uploadBlogImage(actor, file) };
-  } catch (error) {
-    if (error instanceof BlogImageUploadError) return { ok: false as const, code: error.code, message: error.message };
-    const result = failure(error);
-    return result.code === "TEMPORARY_FAILURE"
-      ? {
-          ok: false as const,
-          code: "UPLOAD_TEMPORARY_FAILURE" as const,
-          message: errorMessage(error, "The image upload failed unexpectedly. Try uploading the image again."),
-        }
-      : result;
-  }
+  return measureServerAction("admin.blog.uploadBlogImageAction", async () => {
+    const actor = await getActorUserId();
+    try {
+      if (!(formData instanceof FormData)) throw new BlogError("VALIDATION", "Choose an image file.");
+      const fields = [...formData.keys()];
+      if (fields.length !== 1 || fields[0] !== "file") throw new BlogError("VALIDATION", "Supply one image file.");
+      const file = formData.get("file");
+      if (!(file instanceof File)) throw new BlogError("VALIDATION", "Choose an image file.");
+      return { ok: true as const, data: await uploadBlogImage(actor, file) };
+    } catch (error) {
+      if (error instanceof BlogImageUploadError)
+        return { ok: false as const, code: error.code, message: error.message };
+      const result = failure(error);
+      return result.code === "TEMPORARY_FAILURE"
+        ? {
+            ok: false as const,
+            code: "UPLOAD_TEMPORARY_FAILURE" as const,
+            message: errorMessage(error, "The image upload failed unexpectedly. Try uploading the image again."),
+          }
+        : result;
+    }
+  });
 }
 
 const readInput = z.discriminatedUnion("operation", [
@@ -121,46 +131,49 @@ const readInput = z.discriminatedUnion("operation", [
 
 /** Server Actions use authenticated POST responses; no preview is placed in a public cache. */
 export async function readBlogAction(input: unknown) {
-  const actor = await getActorUserId();
-  try {
-    const value = readInput.parse(input);
-    switch (value.operation) {
-      case "list":
-        return { ok: true as const, data: await listBlogPosts(actor, value.filters) };
-      case "history":
-        return {
-          ok: true as const,
-          data: await listBlogRevisions(actor, value.postId, value.cursor),
-        };
-      case "taxonomy":
-        return {
-          ok: true as const,
-          data: await listBlogTaxonomy(actor, value.kind, value.filters),
-        };
-      case "post": {
-        const data = await getBlogPost(actor, value.postId);
-        if (!data) throw new BlogError("NOT_FOUND", "Article not found.");
-        return { ok: true as const, data };
+  return measureServerAction("admin.blog.readBlogAction", async () => {
+    const actor = await getActorUserId();
+    try {
+      const value = readInput.parse(input);
+      getActiveSpan()?.setAttribute("app.operation", value.operation);
+      switch (value.operation) {
+        case "list":
+          return { ok: true as const, data: await listBlogPosts(actor, value.filters) };
+        case "history":
+          return {
+            ok: true as const,
+            data: await listBlogRevisions(actor, value.postId, value.cursor),
+          };
+        case "taxonomy":
+          return {
+            ok: true as const,
+            data: await listBlogTaxonomy(actor, value.kind, value.filters),
+          };
+        case "post": {
+          const data = await getBlogPost(actor, value.postId);
+          if (!data) throw new BlogError("NOT_FOUND", "Article not found.");
+          return { ok: true as const, data };
+        }
+        case "preview": {
+          const source = value.revisionId
+            ? await getBlogRevision(actor, value.postId, value.revisionId)
+            : await getBlogPost(actor, value.postId);
+          if (!source) throw new BlogError("NOT_FOUND", "Article or revision not found.");
+          const document = "document" in source ? source.document : source.draftDocument;
+          return {
+            ok: true as const,
+            data: {
+              document,
+              ...renderBlogDocument(document, {
+                cloudName: config.cloudinary.cloudName?.trim(),
+              }),
+              robots: "noindex, nofollow",
+            },
+          };
+        }
       }
-      case "preview": {
-        const source = value.revisionId
-          ? await getBlogRevision(actor, value.postId, value.revisionId)
-          : await getBlogPost(actor, value.postId);
-        if (!source) throw new BlogError("NOT_FOUND", "Article or revision not found.");
-        const document = "document" in source ? source.document : source.draftDocument;
-        return {
-          ok: true as const,
-          data: {
-            document,
-            ...renderBlogDocument(document, {
-              cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
-            }),
-            robots: "noindex, nofollow",
-          },
-        };
-      }
+    } catch (error) {
+      return failure(error);
     }
-  } catch (error) {
-    return failure(error);
-  }
+  });
 }

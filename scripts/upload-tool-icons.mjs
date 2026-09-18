@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import config from "@canopy/config";
 // NODE_ENV=production node scripts/upload-tool-icons.mjs [--folder relative/subfolder]
 // --folder is relative to Canopy/${NODE_ENV}.
 import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
@@ -146,8 +147,7 @@ export async function uploadToolIcons({
     } catch (error) {
       const failure = error?.error ?? error;
       let message = typeof failure?.message === "string" ? failure.message : "Upload or asset lookup failed";
-      for (const key of ["CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET", "CLOUDINARY_URL"]) {
-        const secret = process.env[key];
+      for (const secret of [config.cloudinary.apiKey, config.cloudinary.apiSecret, config.cloudinary.url]) {
         if (secret)
           message = message.replaceAll(secret, "[redacted]").replaceAll(encodeURIComponent(secret), "[redacted]");
       }
@@ -198,13 +198,17 @@ async function main() {
   if (!values["dry-run"]) {
     dotenv.config({ path: path.join(ROOT, ".env.local"), quiet: true, override: false });
     dotenv.config({ path: path.join(ROOT, ".env"), quiet: true, override: false });
-    const required = ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"];
-    const missing = required.filter((key) => !process.env[key]);
+    const required = {
+      CLOUDINARY_CLOUD_NAME: config.cloudinary.cloudName,
+      CLOUDINARY_API_KEY: config.cloudinary.apiKey,
+      CLOUDINARY_API_SECRET: config.cloudinary.apiSecret,
+    };
+    const missing = Object.keys(required).filter((key) => !required[key]);
     if (missing.length) throw new Error(`Missing environment variables: ${missing.join(", ")}`);
     cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
+      cloud_name: config.cloudinary.cloudName,
+      api_key: config.cloudinary.apiKey,
+      api_secret: config.cloudinary.apiSecret,
       secure: true,
     });
   }

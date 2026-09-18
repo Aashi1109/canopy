@@ -5,10 +5,11 @@ import test from "node:test";
 import { transformSync } from "next/dist/build/swc/index.js";
 
 const root = new URL("../", import.meta.url);
-const fixture = { error: null, available: true };
+const fixture = { error: null, available: true, captured: [] };
 globalThis.__paperworkApiErrors = fixture;
 const moduleUrl = (source) => `data:text/javascript,${encodeURIComponent(source)}`;
 const stubs = {
+  "@sentry/core": "export const captureException = error => globalThis.__paperworkApiErrors.captured.push(error);",
   "@canopy/control-plane": `
     export async function getAvailableToolBySlug() {
       const fixture = globalThis.__paperworkApiErrors;
@@ -97,16 +98,21 @@ const operations = [
 test.after(() => {
   delete globalThis.__paperworkApiErrors;
 });
+test.beforeEach(() => {
+  fixture.captured = [];
+});
 
 test("Paperwork APIs return the original message without the stack and retain fallback/status", async (t) => {
   t.mock.method(console, "error", () => {});
   for (const [name, call, fallback] of operations) {
     fixture.error = new Error("Service connection timed out.");
     let response = await call();
+    assert.equal(fixture.captured.at(-1), fixture.error);
     assert.equal(response.status, 500, name);
     assert.deepEqual(await response.json(), { error: fixture.error.message }, name);
     fixture.error = new Error(" ");
     response = await call();
+    assert.equal(fixture.captured.at(-1), fixture.error);
     assert.equal(response.status, 500, name);
     assert.deepEqual(await response.json(), { error: fallback }, name);
   }
@@ -131,4 +137,5 @@ test("Paperwork access and input errors retain their original statuses and messa
   );
   assert.equal(oversized.status, 413);
   assert.deepEqual(await oversized.json(), { error: "API payload is too large." });
+  assert.deepEqual(fixture.captured, [], "expected access and input errors are not reported");
 });

@@ -1,3 +1,4 @@
+import config from "@canopy/config";
 import { and, desc, eq, exists, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import {
   blogCategoriesTable as categories,
@@ -104,7 +105,7 @@ const dateAfter = (
   cursor: BlogCursor | null,
 ) => (cursor ? sql`(${column}, ${posts.id}) < (${cursor.value}::timestamptz, ${cursor.id})` : undefined);
 const likeSearch = (value: string) => `%${value.replace(/[\\%_]/g, "\\$&")}%`;
-const cloudOptions = () => ({ cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim() });
+const cloudOptions = () => ({ cloudName: config.cloudinary.cloudName?.trim() });
 
 const summaryFields = {
   id: posts.id,

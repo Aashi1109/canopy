@@ -1,3 +1,4 @@
+import config from "@canopy/config";
 /**
  * Moved verbatim from the inlined `"use server"` action in
  * `app/devtools/[slug]/page.tsx`: the same Ahrefs endpoint, the same
@@ -79,7 +80,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const endpoint = new URL(AHREFS_DOMAIN_RATING_URL);
   endpoint.search = new URLSearchParams({ target, output: "json" }).toString();
   const headers: Record<string, string> = { Accept: "application/json" };
-  const apiKey = process.env.AHREFS_API_KEY?.trim();
+  const apiKey = config.integrations.ahrefsApiKey?.trim();
   if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
 
   let response: Response;

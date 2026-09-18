@@ -11,6 +11,7 @@
 
 import { TOOL_SLUG_PATTERN } from "@canopy/tool-catalog";
 import { NextResponse } from "next/server";
+import { captureException } from "@sentry/core";
 
 import { checkRateLimit } from "@/lib/rateLimit";
 import type { ToolResult } from "@/lib/tool-framework/result";
@@ -59,6 +60,7 @@ function toFailure(error: unknown): NextResponse {
       { status: error.code === "unknown-tool" ? 404 : 400 },
     );
   }
+  captureException(error);
   return NextResponse.json(
     {
       error: {

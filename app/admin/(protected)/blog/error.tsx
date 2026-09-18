@@ -2,8 +2,14 @@
 
 import Link from "next/link";
 import { AlertBanner, Button } from "@canopy/ui";
+import { captureException } from "@sentry/nextjs";
+import { useEffect } from "react";
 
-export default function BlogError({ reset }: { reset: () => void }) {
+export default function BlogError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => {
+    captureException(error);
+  }, [error]);
+
   return (
     <div className="mx-auto max-w-2xl p-6">
       <AlertBanner variant="error" title="Couldn’t load this blog view">

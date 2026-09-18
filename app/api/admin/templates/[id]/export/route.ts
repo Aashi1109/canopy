@@ -2,6 +2,7 @@ import { AuthServiceError, getSession } from "@canopy/auth/session";
 import { requirePermission } from "@canopy/control-plane";
 import { db, eq, invoiceTemplatesTable } from "@canopy/database";
 import { errorMessage } from "@/utils/errorMessage";
+import { captureException } from "@sentry/core";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -10,6 +11,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       session = await getSession(request.headers);
     } catch (error) {
       if (error instanceof AuthServiceError) {
+        captureException(error);
         return Response.json({ error: errorMessage(error, "Authentication service unavailable") }, { status: 503 });
       }
       throw error;
@@ -48,6 +50,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       },
     );
   } catch (error) {
+    captureException(error);
     return Response.json({ error: errorMessage(error, "Unable to export template") }, { status: 500 });
   }
 }

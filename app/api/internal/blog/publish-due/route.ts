@@ -1,10 +1,17 @@
+import config from "@canopy/config";
 import { handleBlogPublishRequest } from "@/lib/blog/cron";
+import { captureException } from "@sentry/core";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  return handleBlogPublishRequest(request, process.env.BLOG_SCHEDULER_SECRET, async () => {
-    const { publishDueBlogPosts } = await import("@/lib/blog/mutations");
-    return publishDueBlogPosts();
+  return handleBlogPublishRequest(request, config.blog.schedulerSecret, async () => {
+    try {
+      const { publishDueBlogPosts } = await import("@/lib/blog/mutations");
+      return await publishDueBlogPosts();
+    } catch (error) {
+      captureException(error);
+      throw error;
+    }
   });
 }

@@ -1,3 +1,4 @@
+import config from "@canopy/config";
 import { createDatabase } from "./runtime.ts";
 import * as schema from "./schema.ts";
 export { sqlClient } from "./runtime.ts";
@@ -8,7 +9,7 @@ export { alias } from "drizzle-orm/pg-core";
 export const db = createDatabase(schema);
 
 export function isDatabaseConfigured(): boolean {
-  return Boolean(process.env.DATABASE_URL);
+  return Boolean(config.databaseUrl);
 }
 
 export function assertDatabaseConfigured(): void {

@@ -25,6 +25,7 @@ const reads = ["getBlogPost", "getBlogRevision", "listBlogPosts", "listBlogRevis
 const state = {
   actor: "session-admin",
   calls: [],
+  captured: [],
   error: null,
   data: { id: "post-id" },
   sessionError: null,
@@ -46,6 +47,10 @@ const functions = (exports) =>
 const hooks = registerHooks({
   resolve(specifier, context, next) {
     if (context.parentURL === url) {
+      if (specifier === "@sentry/core")
+        return stub(
+          "export function captureException(error){globalThis.__blogActionTest.captured.push(error);} export function getActiveSpan(){return undefined;}",
+        );
       if (specifier.endsWith("/admin/access"))
         return stub(
           "export async function getActorUserId(){const s=globalThis.__blogActionTest;if(s.sessionError)throw s.sessionError;return s.actor;}",
@@ -66,6 +71,7 @@ const actions = await import(url);
 
 function reset() {
   state.calls = [];
+  state.captured = [];
   state.error = null;
   state.sessionError = null;
   state.data = { id: "post-id" };
@@ -92,8 +98,10 @@ test("known failures are actionable while unexpected database/provider details s
     [new Error("postgres://secret@example.invalid password=hidden"), "TEMPORARY_FAILURE"],
   ]) {
     state.error = error;
+    state.captured = [];
     const result = await actions.mutateBlogAction("save", {});
     assert.equal(result.code, code);
+    assert.deepEqual(state.captured, code === "TEMPORARY_FAILURE" ? [error] : []);
     assert.doesNotMatch(JSON.stringify(result), /secret|password=hidden|Private role data/);
     if (code === "TEMPORARY_FAILURE") assert.equal(result.message, "[hidden] password=[hidden]");
   }

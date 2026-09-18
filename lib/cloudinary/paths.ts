@@ -1,5 +1,7 @@
+import config from "@canopy/config";
+
 export function cloudinaryFolder(subfolder: string): string {
-  const environment = process.env.NODE_ENV;
+  const environment = config.environment;
   if (!environment || !["production", "development", "test"].includes(environment)) {
     throw new Error("NODE_ENV must be production, development, or test for Cloudinary uploads.");
   }

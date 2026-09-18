@@ -1,8 +1,14 @@
 "use client";
 
 import { Button, EmptyState } from "@canopy/ui";
+import { captureException } from "@sentry/nextjs";
+import { useEffect } from "react";
 
-export default function BlogError({ reset }: { reset: () => void }) {
+export default function BlogError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => {
+    captureException(error);
+  }, [error]);
+
   return (
     <div className="mx-auto max-w-2xl px-5 py-20">
       <EmptyState

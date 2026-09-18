@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
-const state = { session: null, ids: [], calls: [], failure: false };
+const state = { session: null, ids: [], calls: [], failure: false, captured: [] };
 globalThis.__savedToolsApiTest = state;
 const routeRoot = new URL("../app/api/user-preferences/", import.meta.url).href;
 const hooks = registerHooks({
   resolve(specifier, context, next) {
     const stub = (source) => ({ shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(source)}` });
     if (context.parentURL?.startsWith(routeRoot)) {
+      if (specifier === "@sentry/core")
+        return stub("export const captureException = error => globalThis.__savedToolsApiTest.captured.push(error);");
       if (specifier === "@canopy/control-plane")
         return stub(
           'export const getAvailableTools = async () => [{toolId:"paperwork.invoice-generator", name:"Invoice Generator", slug:"invoice-generator"}];',
@@ -50,6 +52,7 @@ test.beforeEach(() => {
   state.ids = [];
   state.calls = [];
   state.failure = false;
+  state.captured = [];
 });
 test("guest GET returns catalog without querying private preferences", async () => {
   const response = await GET(new Request("https://app.test/api/user-preferences/saved-tools"));
@@ -64,6 +67,7 @@ test("writes require auth and reject cross-origin callers", async () => {
   assert.equal((await POST(request({ operation: "merge", toolIds: [], userId: "a" }))).status, 401);
   assert.equal((await POST(request({}, "https://evil.test"))).status, 403);
   assert.deepEqual(state.calls, []);
+  assert.deepEqual(state.captured, []);
 });
 test("merge is scoped to session identity, deduplicates and filters stale tools", async () => {
   state.session = { user: { id: "a", status: "active" } };
@@ -100,4 +104,6 @@ test("storage failures are actionable without exposing database details", async 
   const response = await POST(request({ userId: "a", operation: "save", toolIds: ["devtools.json-formatter"] }));
   assert.equal(response.status, 503);
   assert.ok(!(await response.text()).includes("private database"));
+  assert.equal(state.captured.length, 1);
+  assert.equal(state.captured[0].message, "private database detail");
 });

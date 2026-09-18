@@ -7,6 +7,25 @@ import { sql } from "drizzle-orm";
 const runtimeUrl = new URL("../packages/database/src/runtime.ts", import.meta.url).href;
 const failure = new Error("private query failure");
 const result = { rows: [{ value: "private result" }] };
+const spans = [];
+let failTracing = false;
+let failSpanEnd = false;
+globalThis.__databaseTracingSentry = {
+  startInactiveSpan(options) {
+    if (failTracing) throw new Error("Tracing unavailable");
+    const span = { options, ended: 0 };
+    spans.push(span);
+    return {
+      setStatus(status) {
+        span.status = status;
+      },
+      end() {
+        span.ended++;
+        if (failSpanEnd) throw new Error("Tracing unavailable");
+      },
+    };
+  },
+};
 let connections = 0;
 class Pool extends EventEmitter {
   async connect() {
@@ -41,38 +60,41 @@ class Pool extends EventEmitter {
   async end() {}
 }
 
-globalThis.__databaseMetricsPg = { Pool, types: { builtins: {}, getTypeParser: () => (value) => value } };
+globalThis.__databaseTracingPg = { Pool, types: { builtins: {}, getTypeParser: () => (value) => value } };
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
+    if (specifier === "@sentry/core" && context.parentURL === runtimeUrl) {
+      return {
+        shortCircuit: true,
+        url: "data:text/javascript,export const {startInactiveSpan} = globalThis.__databaseTracingSentry",
+      };
+    }
     if (specifier === "pg") {
-      return { shortCircuit: true, url: "data:text/javascript,export default globalThis.__databaseMetricsPg" };
+      return { shortCircuit: true, url: "data:text/javascript,export default globalThis.__databaseTracingPg" };
     }
     return nextResolve(specifier, context);
   },
 });
 const { createDatabase, sqlClient } = await import(runtimeUrl);
 hooks.deregister();
-delete globalThis.__databaseMetricsPg;
+delete globalThis.__databaseTracingPg;
+delete globalThis.__databaseTracingSentry;
 
-test("database duration metrics cover pooled and transaction queries without altering results", async () => {
-  const ipcKey = Symbol.for("@vercel/rusty-runtime-ipc");
-  const previousIpc = globalThis[ipcKey];
-  const events = [];
-  globalThis[ipcKey] = { sendMetric: (...event) => events.push(event) };
+test("database spans cover pooled and transaction queries without altering results", async () => {
   try {
     assert.equal(await sqlClient.query("SELECT private_column", ["private parameter"]), result);
-    assert.equal(events.length, 1);
+    assert.equal(spans.length, 1);
     await assert.rejects(sqlClient.query("FAIL"), (error) => error === failure);
-    assert.equal(events.length, 2);
+    assert.equal(spans.length, 2);
 
     const db = createDatabase({});
     assert.equal(await db.transaction((tx) => tx.execute(sql`select 1`)), result);
-    assert.equal(events.length, 5, "begin, query and commit each emit once");
+    assert.equal(spans.length, 5, "begin, query and commit each emit once");
     await assert.rejects(
       db.transaction((tx) => tx.execute(sql.raw("FAIL"))),
       /Failed query/,
     );
-    assert.equal(events.length, 8, "begin, failed query and rollback each emit once");
+    assert.equal(spans.length, 8, "begin, failed query and rollback each emit once");
 
     const client = await sqlClient.connect();
     const callbackQuery = (makeArgs, error) =>
@@ -96,10 +118,10 @@ test("database duration metrics cover pooled and transaction queries without alt
       () => client.query("THROW"),
       (error) => error === failure,
     );
-    assert.equal(events.length, 12);
+    assert.equal(spans.length, 12);
     assert.equal(connections, 1, "reusing a connection does not add another observer");
     assert.deepEqual(
-      events.map((event) => event[2].status),
+      spans.map((span) => (span.status.code === 2 ? "error" : "success")),
       [
         "success",
         "error",
@@ -115,29 +137,34 @@ test("database duration metrics cover pooled and transaction queries without alt
         "error",
       ],
     );
-    for (const [name, duration, tags] of events) {
-      assert.equal(name, "db.query.duration_ms");
-      assert.ok(Number.isFinite(duration) && duration >= 0);
-      assert.deepEqual(Object.keys(tags), ["status"], "only bounded non-sensitive metadata is emitted");
+    for (const span of spans) {
+      assert.deepEqual(span.options, {
+        name: "db.query",
+        op: "db.query",
+        onlyIfParent: true,
+        attributes: { "db.system": "postgresql" },
+      });
+      assert.equal(span.ended, 1);
     }
-    assert.ok(!JSON.stringify(events).includes("private"));
+    assert.ok(!JSON.stringify(spans).includes("private"), "SQL, parameters, results and errors are never recorded");
 
     const submittable = { submit() {} };
     assert.equal(client.query(submittable), submittable);
-    assert.equal(events.length, 12, "custom query lifecycles are left untouched");
-    globalThis[ipcKey] = {
-      sendMetric() {
-        throw new Error("observer unavailable");
-      },
-    };
+    assert.equal(spans.length, 12, "custom query lifecycles are left untouched");
+    failSpanEnd = true;
     assert.equal(await client.query("select 1"), result);
     await assert.rejects(client.query("FAIL"), (error) => error === failure);
     await callbackQuery((callback) => ["select 1", callback], null);
     await callbackQuery((callback) => ["FAIL", callback], failure);
+    assert.ok(
+      spans.every((span) => span.ended === 1),
+      "span completion failures never alter query results",
+    );
+    failTracing = true;
+    assert.equal(await client.query("select 1"), result);
+    await assert.rejects(client.query("FAIL"), (error) => error === failure);
     client.release();
   } finally {
     await sqlClient.end();
-    if (previousIpc === undefined) delete globalThis[ipcKey];
-    else globalThis[ipcKey] = previousIpc;
   }
 });

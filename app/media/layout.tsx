@@ -1,7 +1,8 @@
+import config from "@canopy/config";
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(config.appUrl),
   title: {
     default: "SmartTools Media Tools",
     template: "%s | SmartTools Media Tools",

@@ -1,3 +1,4 @@
+import config from "@canopy/config";
 import { withUserCacheInvalidation } from "@canopy/control-plane";
 import {
   assertCanDeleteRole,
@@ -558,9 +559,7 @@ export const MAX_TOOL_ICON_BYTES = 1_048_576;
  */
 export function iconUploadsConfigured(): boolean {
   return Boolean(
-    process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
-    process.env.CLOUDINARY_API_KEY?.trim() &&
-    process.env.CLOUDINARY_API_SECRET?.trim(),
+    config.cloudinary.cloudName?.trim() && config.cloudinary.apiKey?.trim() && config.cloudinary.apiSecret?.trim(),
   );
 }
 

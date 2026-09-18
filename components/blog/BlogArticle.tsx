@@ -1,3 +1,4 @@
+import config from "@canopy/config";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import "katex/dist/katex.min.css";
 import {
@@ -41,7 +42,7 @@ type Props = {
 /** Live posts and saved previews deliberately share the same responsive renderer. */
 export function BlogArticle({ document, publication }: Props) {
   const content = renderBlogDocument(document, {
-    cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+    cloudName: config.cloudinary.cloudName?.trim(),
   });
   // Only transform the renderer's validated HTML, never the stored draft. Keep link
   // styling in previews without exposing navigation or keyboard-focusable links.
@@ -128,7 +129,7 @@ export function BlogArticle({ document, publication }: Props) {
             <img
               alt={document.coverImage.alt}
               src={blogImageUrl(document.coverImage, {
-                cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+                cloudName: config.cloudinary.cloudName?.trim(),
               })}
               width={document.coverImage.width}
               height={document.coverImage.height}

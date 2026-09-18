@@ -1,4 +1,4 @@
-import { resolveConfiguredReturnTo } from "../_lib/security";
+import { resolveConfiguredReturnTo } from "../_lib/returnTo";
 import { AuthScreen } from "../components/AuthChrome";
 import { ResetPasswordForm } from "./ResetPasswordForm";
 

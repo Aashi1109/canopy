@@ -1,3 +1,4 @@
+import publicConfig from "@canopy/config/public";
 import { toolIconUrl } from "@/lib/tool-framework/icons";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ path: string[] }> }) {
@@ -17,7 +18,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pat
   ) {
     return new Response(null, { status: 404, headers: { "Cache-Control": "no-store" } });
   }
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim();
+  const cloudName = publicConfig.cloudinaryCloudName?.trim();
   if (!cloudName) {
     return new Response(null, { status: 503, headers: { "Cache-Control": "no-store" } });
   }

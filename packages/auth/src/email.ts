@@ -1,3 +1,4 @@
+import config from "@canopy/config";
 import { Resend } from "resend";
 
 function escapeHtml(value: string): string {
@@ -29,8 +30,8 @@ export async function sendAuthEmail({
   actionLabel: string;
   actionUrl: string;
 }): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const accountsEmail = process.env.ACCOUNTS_EMAIL?.trim();
+  const apiKey = config.email.apiKey;
+  const accountsEmail = config.email.accountsEmail?.trim();
   if (!apiKey || !accountsEmail) {
     throw new Error("RESEND_API_KEY and ACCOUNTS_EMAIL are required");
   }

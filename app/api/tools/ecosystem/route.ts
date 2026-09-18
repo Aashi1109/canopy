@@ -5,6 +5,7 @@ import { getToolManifest } from "@/lib/tool-framework/manifest";
 import { getAvailableTools } from "@canopy/control-plane";
 import { Cache, CACHE_NAMESPACES } from "@canopy/cache";
 import { errorMessage } from "@/utils/errorMessage";
+import { captureException } from "@sentry/core";
 
 const ECOSYSTEMS = [
   { app: "paperwork", href: "/paperwork", id: "documents", label: "Documents" },
@@ -61,6 +62,7 @@ export async function GET() {
     );
     return Response.json(data);
   } catch (error) {
+    captureException(error);
     return Response.json({ error: errorMessage(error, "Unable to load tool categories") }, { status: 500 });
   }
 }

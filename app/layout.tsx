@@ -1,3 +1,4 @@
+import config from "@canopy/config";
 import type { Metadata } from "next";
 import { SavedToolsProvider } from "@canopy/ui";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -37,7 +38,7 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(config.appUrl),
   title: "SmartTools",
   description: "Focused utilities for everyday work.",
 };
@@ -50,7 +51,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased print:bg-white print:text-black">
         <SavedToolsProvider>
-          <Analytics measurementId={measurementId(process.env)}>{children}</Analytics>
+          <Analytics measurementId={measurementId(config.analytics)}>{children}</Analytics>
         </SavedToolsProvider>
         <SpeedInsights />
       </body>

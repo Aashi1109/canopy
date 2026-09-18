@@ -10,8 +10,10 @@
   },
   "dependencies": {
     "@canopy/authorization": "workspace:*",
+    "@canopy/config": "workspace:*",
     "@canopy/control-plane": "workspace:*",
     "@canopy/database": "workspace:*",
+    "@sentry/core": "^10.75.0",
     "better-auth": "1.6.23",
     "resend": "6.17.2"
   }

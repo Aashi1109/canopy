@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { captureException } from "@sentry/core";
 import { db } from "@/db";
 import { keyValuePairTable } from "@/db/schema";
 import { ensureDatabaseBootstrapped, ensureUserExists } from "@/db/bootstrap";
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (error instanceof PaperworkToolAccessError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
+    captureException(error);
     console.error("Failed to load anonymous Paperwork data", error);
     return NextResponse.json({ error: errorMessage(error, "Storage is unavailable.") }, { status: 500 });
   }

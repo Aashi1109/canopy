@@ -7,7 +7,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@vercel/functions": "^3.9.8",
+    "@canopy/config": "workspace:*",
+    "@sentry/core": "^10.75.0",
     "redis": "^6.2.1"
   }
 }

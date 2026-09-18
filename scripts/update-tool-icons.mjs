@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import config from "@canopy/config";
+import publicConfig from "@canopy/config/public";
 // node scripts/update-tool-icons.mjs [--dry-run] [--missing-only] [--manifest path/to/manifest.json]
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -73,10 +75,10 @@ async function main() {
   for (const file of [".env.local", ".env"]) {
     dotenv.config({ path: path.join(ROOT, file), quiet: true, override: false });
   }
-  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required.");
+  if (!config.databaseUrl) throw new Error("DATABASE_URL is required.");
   const manifest = JSON.parse(await readFile(values.manifest, "utf8"));
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim() || process.env.CLOUDINARY_CLOUD_NAME?.trim();
-  const client = new pg.Client({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 10_000 });
+  const cloudName = publicConfig.cloudinaryCloudName?.trim() || config.cloudinary.cloudName?.trim();
+  const client = new pg.Client({ connectionString: config.databaseUrl, connectionTimeoutMillis: 10_000 });
   try {
     await client.connect();
     await client.query("BEGIN");
@@ -112,7 +114,7 @@ async function main() {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((error) => {
     let message = error.message;
-    const databaseUrl = process.env.DATABASE_URL;
+    const databaseUrl = config.databaseUrl;
     if (databaseUrl) message = message.replaceAll(databaseUrl, "[redacted]");
     console.error(message);
     process.exitCode = 1;

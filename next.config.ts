@@ -1,16 +1,20 @@
+import config from "@canopy/config";
+import publicConfig from "@canopy/config/public";
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import { fileURLToPath } from "node:url";
 
 const appRoot = fileURLToPath(new URL(".", import.meta.url));
 const browserEmptyModule = fileURLToPath(new URL("./lib/paperwork/browserEmptyModule.ts", import.meta.url));
-const development = process.env.NODE_ENV !== "production";
+const development = config.environment !== "production";
+const sentryOrigin = publicConfig.sentryDsn ? new URL(publicConfig.sentryDsn).origin : "";
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.googletagmanager.com https://static.cloudflareinsights.com${development ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data: https://res.cloudinary.com https://*.google-analytics.com https://*.googletagmanager.com",
   "font-src 'self'",
-  `connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com${development ? " ws: http:" : ""}`,
+  `connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com${sentryOrigin ? ` ${sentryOrigin}` : ""}${development ? " ws: http:" : ""}`,
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
@@ -87,6 +91,7 @@ const nextConfig: NextConfig = {
     "@jsquash/webp",
     "@canopy/auth",
     "@canopy/authorization",
+    "@canopy/config",
     "@canopy/control-plane",
     "@canopy/database",
     "@canopy/invoice-templates",
@@ -107,4 +112,14 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: config.sentry.org,
+  project: config.sentry.project,
+  authToken: config.sentry.authToken,
+  silent: !config.ci,
+  telemetry: false,
+  sourcemaps: {
+    disable: !(config.sentry.authToken && config.sentry.org && config.sentry.project),
+    deleteSourcemapsAfterUpload: true,
+  },
+});

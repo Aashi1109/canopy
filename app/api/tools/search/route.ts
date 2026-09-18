@@ -1,6 +1,7 @@
 import { TOOL_CATEGORIES } from "@/lib/tool-framework/categories";
 import { getTools } from "@/lib/tool-framework/catalog";
 import { errorMessage } from "@/utils/errorMessage";
+import { captureException } from "@sentry/core";
 
 const RESULT_LIMIT = 6;
 
@@ -29,6 +30,7 @@ export async function GET(request: Request) {
 
     return Response.json({ results });
   } catch (error) {
+    captureException(error);
     return Response.json({ error: errorMessage(error, "Unable to search tools") }, { status: 500 });
   }
 }

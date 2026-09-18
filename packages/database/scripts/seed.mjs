@@ -1,5 +1,6 @@
+import config from "@canopy/config";
 import { seedTemplates } from "../../invoice-templates/src/index.ts";
-import { config } from "dotenv";
+import { config as loadEnv } from "dotenv";
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -8,9 +9,9 @@ import * as schema from "../src/schema.ts";
 
 // Shell variables win over local files, matching the migration command.
 for (const file of [".env.local", ".env"]) {
-  config({ path: new URL(`../../../${file}`, import.meta.url), override: false });
+  loadEnv({ path: new URL(`../../../${file}`, import.meta.url), override: false });
 }
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = config.databaseUrl;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
 const client = new pg.Client({ connectionString: databaseUrl, connectionTimeoutMillis: 30_000 });
 const db = drizzle(client, { schema });

@@ -1,3 +1,4 @@
+import config from "@canopy/config";
 import { getTools } from "@/lib/tool-framework/catalog";
 import { getBlogSitemapEntries } from "@/lib/blog/queries";
 import type { MetadataRoute } from "next";
@@ -13,7 +14,7 @@ import type { MetadataRoute } from "next";
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.APP_URL ?? "http://localhost:3000";
+  const base = config.appUrl;
 
   // A sitemap is not worth a 500. If the catalog cannot be read, serve the
   // known-good static entries rather than failing the whole route.

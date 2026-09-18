@@ -25,6 +25,11 @@ test("admin promotion loads root env files from either cwd and preserves environ
     "dir",
   );
   await symlink(
+    path.dirname(path.dirname(createRequire(source).resolve("@canopy/config"))),
+    path.join(root, "node_modules/@canopy/config"),
+    "dir",
+  );
+  await symlink(
     path.dirname(createRequire(source).resolve("dotenv/package.json")),
     path.join(root, "node_modules/dotenv"),
     "dir",

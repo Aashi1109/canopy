@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { captureException } from "@sentry/core";
 import { db } from "@/db";
 import { vendorProfilesTable } from "@/db/schema";
 import { ensureDatabaseBootstrapped, ensureUserExists } from "@/db/bootstrap";
@@ -70,6 +71,7 @@ function handleError(error: unknown) {
   if (error instanceof PaperworkToolAccessError) {
     return NextResponse.json({ error: error.message }, { status: error.status });
   }
+  captureException(error);
   console.error("Failed to access anonymous Paperwork vendors", error);
   return NextResponse.json({ error: errorMessage(error, "Vendor storage is unavailable.") }, { status: 500 });
 }

@@ -1,4 +1,5 @@
-import { DEFAULT_AUTH_ERROR, resolveConfiguredReturnTo } from "./_lib/security";
+import { DEFAULT_AUTH_ERROR } from "./_lib/security";
+import { resolveConfiguredReturnTo } from "./_lib/returnTo";
 import { AuthPanel } from "./AuthPanel";
 import type { AuthMode } from "./AuthPanel";
 import { AuthScreen } from "./components/AuthChrome";

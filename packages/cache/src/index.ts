@@ -1,5 +1,6 @@
+import config from "@canopy/config";
 import redis from "redis";
-import { metric } from "@vercel/functions";
+import { startInactiveSpan, type Span } from "@sentry/core";
 
 export { CACHE_NAMESPACES } from "./constants.ts";
 
@@ -52,7 +53,7 @@ function validateTtl(ttlSeconds: number): void {
 
 function connectRedis() {
   const client = redis.createClient({
-    url: process.env.REDIS_URL?.trim(),
+    url: config.redisUrl?.trim(),
     socket: {
       connectTimeout: 1_000,
       reconnectStrategy: false,
@@ -71,8 +72,18 @@ export function closeRedis(): void {
 }
 
 async function command(args: string[]): Promise<unknown> {
-  if (!process.env.REDIS_URL?.trim()) return null;
-  const started = performance.now();
+  if (!config.redisUrl?.trim()) return null;
+  let span: Span | undefined;
+  try {
+    span = startInactiveSpan({
+      name: `redis.${args[0]}`,
+      op: "db.redis",
+      onlyIfParent: true,
+      attributes: { "db.system": "redis" },
+    });
+  } catch {
+    // Observability must never prevent a cache command from running.
+  }
   let status = "success";
   // Workers cannot reuse sockets across requests. Keep their commands self-contained.
   // ponytail: one connection per Worker command; add request-scoped reuse if latency warrants it.
@@ -99,7 +110,8 @@ async function command(args: string[]): Promise<unknown> {
     clearTimeout(timeout);
     if (transient && current?.client.isOpen) current.client.destroy();
     try {
-      metric("redis.command.duration_ms", performance.now() - started, { command: args[0], status });
+      span?.setStatus({ code: status === "error" ? 2 : 1 });
+      span?.end();
     } catch {
       // Observability must not change cache behavior.
     }
@@ -214,7 +226,7 @@ export class Cache {
   async beginInvalidation(key: string, ttlSeconds = 300): Promise<string | null> {
     const redisKey = this.key(key);
     validateTtl(ttlSeconds);
-    if (!process.env.REDIS_URL?.trim()) return null;
+    if (!config.redisUrl?.trim()) return null;
     const token = crypto.randomUUID();
     const result = await command(["EVAL", INVALIDATION_BEGIN, "1", redisKey, token]);
     if (result !== 1) throw new Error("Cache invalidation failed");

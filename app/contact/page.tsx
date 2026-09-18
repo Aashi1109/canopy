@@ -1,3 +1,4 @@
+import config from "@canopy/config";
 import { Display, Muted, Overline, Strong, Text, TextLink } from "@canopy/ui";
 import type { Metadata } from "next";
 import { Clock3, LifeBuoy, Mail } from "lucide-react";
@@ -16,7 +17,7 @@ const methods = [
 ] as const;
 
 export default function ContactPage() {
-  const supportEmail = process.env.SUPPORT_EMAIL?.trim();
+  const supportEmail = config.email.supportEmail?.trim();
 
   return (
     <PublicInfoChrome>

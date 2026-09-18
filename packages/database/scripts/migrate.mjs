@@ -1,5 +1,7 @@
+import config from "@canopy/config";
+import publicConfig from "@canopy/config/public";
 import { readFile, readdir } from "node:fs/promises";
-import { config } from "dotenv";
+import { config as loadEnv } from "dotenv";
 import pg from "pg";
 import { Cache, CACHE_NAMESPACES, closeRedis } from "@canopy/cache";
 
@@ -24,16 +26,15 @@ const migrations = await Promise.all(
 
 // Plain Node needs dotenv; shell variables take precedence over local files.
 for (const file of [".env.local", ".env"]) {
-  config({ path: new URL(`../../../${file}`, import.meta.url), override: false });
+  loadEnv({ path: new URL(`../../../${file}`, import.meta.url), override: false });
 }
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = config.databaseUrl;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
 const client = new pg.Client({ connectionString: databaseUrl, connectionTimeoutMillis: 30_000 });
 
 try {
   await client.connect();
-  const cloudName =
-    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim() || process.env.CLOUDINARY_CLOUD_NAME?.trim() || "";
+  const cloudName = publicConfig.cloudinaryCloudName?.trim() || config.cloudinary.cloudName?.trim() || "";
   await client.query("SELECT set_config('canopy.cloudinary_cloud_name', $1, false)", [cloudName]);
   for (const [name, migration] of migrations) {
     await client.query(migration);

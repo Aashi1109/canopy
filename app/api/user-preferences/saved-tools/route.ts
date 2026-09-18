@@ -1,4 +1,5 @@
 import { getSession } from "@canopy/auth/session";
+import { captureException } from "@sentry/core";
 import { getAvailableTools } from "@canopy/control-plane";
 import { getToolManifest } from "@/lib/tool-framework/manifest";
 import { z } from "zod";
@@ -58,7 +59,8 @@ export async function GET(request: Request) {
       savedTools: session ? await getSavedTools(session.user.id) : [],
       tools,
     });
-  } catch {
+  } catch (error) {
+    captureException(error);
     return json({ error: "Couldn’t load saved tools. Please try again." }, 503);
   }
 }
@@ -90,7 +92,8 @@ export async function POST(request: Request) {
     if (operation === "save" && ids.length === 0) return json({ error: "This tool is no longer available." }, 400);
     const savedTools = await changeSavedTools(session.user.id, operation, ids);
     return json({ userId: session.user.id, savedTools });
-  } catch {
+  } catch (error) {
+    captureException(error);
     return json({ error: "Couldn’t confirm the update. Reload Saved and try again." }, 503);
   }
 }

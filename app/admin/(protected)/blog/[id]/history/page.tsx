@@ -1,3 +1,4 @@
+import config from "@canopy/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -32,7 +33,7 @@ export default async function BlogHistoryPage({
   if (revision && !compared) notFound();
   const previewHtml = (document: typeof post.draftDocument) =>
     renderBlogDocument(document, {
-      cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+      cloudName: config.cloudinary.cloudName?.trim(),
     }).html.replace(
       /<a href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g,
       '<span>$2 <span class="text-sm text-muted-foreground">($1)</span></span>',
@@ -72,7 +73,7 @@ export default async function BlogHistoryPage({
                 <img
                   className="h-auto max-w-full rounded-md"
                   src={blogImageUrl(document.coverImage, {
-                    cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+                    cloudName: config.cloudinary.cloudName?.trim(),
                   })}
                   alt={document.coverImage.alt}
                   width={document.coverImage.width}

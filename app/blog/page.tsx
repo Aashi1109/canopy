@@ -1,3 +1,4 @@
+import config from "@canopy/config";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
@@ -183,7 +184,7 @@ export default async function BlogPage({ searchParams }: Props) {
             <img
               className="aspect-[62/41] w-full rounded-lg object-cover lg:aspect-auto lg:h-65"
               src={blogImageUrl(featured.coverImage, {
-                cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+                cloudName: config.cloudinary.cloudName?.trim(),
               })}
               alt={featured.coverImage.alt}
               width={featured.coverImage.width}
@@ -221,7 +222,7 @@ export default async function BlogPage({ searchParams }: Props) {
         searchCoverUrl={
           filters.search && posts.items[0]?.coverImage
             ? blogImageUrl(posts.items[0].coverImage, {
-                cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+                cloudName: config.cloudinary.cloudName?.trim(),
               })
             : undefined
         }

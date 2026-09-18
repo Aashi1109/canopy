@@ -26,6 +26,17 @@ pnpm test
 pnpm test:media
 ```
 
+## Configuration
+
+Application, package, and CLI configuration is read through
+`packages/config/src/config.ts` (`import config from "@canopy/config"`), grouped by
+service like `config.cloudinary` and `config.auth`. Getters preserve runtime reads
+and CLI dotenv loading order; required-value validation stays with each operation.
+Browser/shared client modules use `@canopy/config/public`, which contains only
+public values. Add new environment reads there or in the server config, rather
+than directly in consumers. Next.js loads app environment files; CLI scripts keep
+their existing dotenv setup. Test harnesses still set and forward process environments.
+
 ## Formatting
 
 Run `pnpm format` to format the workspace or `pnpm format:check` to check it without
@@ -58,12 +69,27 @@ of pipelining them through the transaction pooler. Queries use unnamed statement
 Run migrations using a
 direct or session-pooler connection in your local migration environment.
 
-The shared database and Redis clients emit Vercel custom metrics through
-`@vercel/functions`: `db.query.duration_ms` and `redis.command.duration_ms`.
-Both include `status` (`success` or `error`); Redis also includes the command name.
-Database timings start after pool checkout and cover transaction queries too.
-Redis timings include connection setup and command timeouts. No SQL, parameters,
-cache keys, or credentials are sent. Metrics are a no-op outside the Vercel runtime.
+Sentry collects application errors and traces directly from the SDK, without Vercel
+Drains. Set `NEXT_PUBLIC_SENTRY_DSN` to your Sentry project's public DSN in Vercel and
+redeploy (it is also embedded in the browser build). Leave it empty to disable Sentry.
+For readable production stack traces, also set the build variables `SENTRY_ORG`,
+`SENTRY_PROJECT`, and the secret `SENTRY_AUTH_TOKEN` with source-map upload permissions.
+Uploaded source maps are removed from the build output.
+
+The configuration and server-action helper live in `lib/observability/sentry.ts`;
+Next.js loads them through `instrumentation.ts` and `instrumentation-client.ts`.
+Errors are captured independently of trace sampling. Traces sample 10% of production
+requests (100% in development); adjust `tracesSampleRate` in that module when needed.
+In Sentry, use **Issues** for failures and **Traces** for request waterfalls. Server
+actions have names such as `serverAction/admin.updateRoleAction`; blog dispatches
+include the validated `app.operation`. API routes use the SDK's automatic tracing.
+`db.query` and `redis.GET`/`SET`/`DEL`/`EVAL` appear as child spans, including failures.
+Database timings exclude pool checkout; Redis includes connection setup and timeouts.
+Caught unexpected action/API errors are reported before the existing error responses.
+Request bodies, headers, cookies, query parameters, user information, database query
+data, and console breadcrumbs are excluded. Session replay and profiling are not enabled.
+Verify after deploying by exercising a server action and API request, then checking
+their traces and child spans. Sampling means not every successful request appears.
 
 Google OAuth needs `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; verification, recovery, and deletion emails need `RESEND_API_KEY` and `ACCOUNTS_EMAIL`.
 

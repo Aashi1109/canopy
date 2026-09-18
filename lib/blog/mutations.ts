@@ -1,3 +1,4 @@
+import config from "@canopy/config";
 import { randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { getTableColumns } from "drizzle-orm";
@@ -40,7 +41,7 @@ const identity = z
   .max(100)
   .regex(/^[a-zA-Z0-9_-]+$/);
 const postInput = z.object({ postId: identity, version: z.number().int().positive().max(2147483646) }).strict();
-const options = () => ({ cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim() });
+const options = () => ({ cloudName: config.cloudinary.cloudName?.trim() });
 
 export class BlogError extends Error {
   readonly code: "NOT_FOUND" | "CONFLICT" | "VALIDATION";

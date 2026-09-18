@@ -1,22 +1,48 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { registerHooks } from "node:module";
 import redis from "redis";
-import { Cache, closeRedis } from "@canopy/cache";
 
-const metricKey = Symbol.for("@vercel/rusty-runtime-ipc");
-function captureMetrics(t) {
-  const previous = globalThis[metricKey];
-  const metrics = [];
-  globalThis[metricKey] = { sendMetric: (...args) => metrics.push(args) };
-  t.after(() => {
-    if (previous === undefined) delete globalThis[metricKey];
-    else globalThis[metricKey] = previous;
-  });
-  return metrics;
-}
+const spans = [];
+let failTracing = false;
+let failSpanEnd = false;
+globalThis.__cacheTracingSentry = {
+  startInactiveSpan(options) {
+    if (failTracing) throw new Error("Tracing unavailable");
+    const span = { options, ended: 0, started: performance.now() };
+    spans.push(span);
+    return {
+      setStatus(status) {
+        span.status = status;
+      },
+      end() {
+        span.ended++;
+        span.duration = performance.now() - span.started;
+        if (failSpanEnd) throw new Error("Tracing unavailable");
+      },
+    };
+  },
+};
+const cacheUrl = new URL("../packages/cache/src/index.ts", import.meta.url).href;
+const hooks = registerHooks({
+  resolve(specifier, context, nextResolve) {
+    if (specifier === "@sentry/core" && context.parentURL === cacheUrl) {
+      return {
+        shortCircuit: true,
+        url: "data:text/javascript,export const {startInactiveSpan} = globalThis.__cacheTracingSentry",
+      };
+    }
+    return nextResolve(specifier, context);
+  },
+});
+const { Cache, closeRedis } = await import("@canopy/cache");
+hooks.deregister();
+delete globalThis.__cacheTracingSentry;
 
 test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and validation", async (t) => {
-  const metrics = captureMetrics(t);
+  spans.length = 0;
+  failTracing = false;
+  failSpanEnd = false;
   const variables = ["REDIS_URL"];
   const previous = Object.fromEntries(variables.map((key) => [key, process.env[key]]));
   t.after(async () => {
@@ -149,7 +175,7 @@ test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and v
     const saved = process.env[variable];
     delete process.env[variable];
     const previousCalls = calls.length;
-    const previousMetrics = metrics.length;
+    const previousSpans = spans.length;
     const previousLoads = loads;
     assert.equal(await roles.get("all"), null);
     await roles.remember("all", load);
@@ -157,28 +183,39 @@ test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and v
     await roles.delete("all");
     assert.equal(loads, previousLoads + 1);
     assert.equal(calls.length, previousCalls);
-    assert.equal(metrics.length, previousMetrics, "disabled caching emits no command metrics");
+    assert.equal(spans.length, previousSpans, "disabled caching creates no spans");
     process.env[variable] = saved;
   }
-  assert.equal(metrics.length, calls.length, "each Redis command emits exactly one duration");
-  for (const [index, [name, duration, attributes]] of metrics.entries()) {
-    assert.equal(name, "redis.command.duration_ms");
-    assert.ok(Number.isFinite(duration) && duration >= 0);
-    assert.deepEqual(Object.keys(attributes).sort(), ["command", "status"]);
-    assert.equal(attributes.command, calls[index][0]);
-    assert.ok(["success", "error"].includes(attributes.status));
+  assert.equal(spans.length, calls.length, "each command creates exactly one span");
+  assert.ok(spans.some((span) => span.status.code === 2));
+  for (const [index, span] of spans.entries()) {
+    assert.deepEqual(span.options, {
+      name: `redis.${calls[index][0]}`,
+      op: "db.redis",
+      onlyIfParent: true,
+      attributes: { "db.system": "redis" },
+    });
+    assert.equal(span.ended, 1);
+    assert.ok([1, 2].includes(span.status.code));
   }
-  assert.ok(metrics.some(([, , attributes]) => attributes.status === "error"));
-  assert.ok(!JSON.stringify(metrics).includes("private-token"));
-  t.mock.method(globalThis[metricKey], "sendMetric", () => {
-    throw new Error("Metric sink unavailable");
-  });
-  await roles.set("metrics-failure", ["still cached"]);
-  assert.deepEqual(await roles.get("metrics-failure"), ["still cached"]);
+  assert.ok(!JSON.stringify(spans).includes("roles:all"), "cache keys are never recorded");
+  assert.ok(!JSON.stringify(spans).includes("private-token"), "connection errors and credentials are never recorded");
+  failSpanEnd = true;
+  await roles.set("span-end-failure", ["still cached"]);
+  assert.deepEqual(await roles.get("span-end-failure"), ["still cached"]);
+  assert.ok(
+    spans.every((span) => span.ended === 1),
+    "span completion failures never alter cache results",
+  );
+  failTracing = true;
+  await roles.set("tracing-failure", ["still cached"]);
+  assert.deepEqual(await roles.get("tracing-failure"), ["still cached"]);
 });
 
 test("Redis connections are lazy, shared, recoverable, and bounded", async (t) => {
-  const metrics = captureMetrics(t);
+  spans.length = 0;
+  failTracing = false;
+  failSpanEnd = false;
   const variables = ["REDIS_URL"];
   const previous = variables.map((key) => process.env[key]);
   for (const key of variables) delete process.env[key];
@@ -229,14 +266,18 @@ test("Redis connections are lazy, shared, recoverable, and bounded", async (t) =
   closeRedis();
   failConnect = true;
   await assert.rejects(cache.beginInvalidation("all"), /^Error: Redis cache unavailable$/);
-  assert.deepEqual(metrics.at(-1)[2], { command: "EVAL", status: "error" });
+  assert.equal(spans.at(-1).options.name, "redis.EVAL");
+  assert.deepEqual(spans.at(-1).status, { code: 2 });
+  assert.equal(spans.at(-1).ended, 1);
   failConnect = false;
   await cache.get("all");
   assert.equal(clients.length, 4, "a failed connection does not poison later calls");
   stall = true;
   assert.equal(await cache.get("all"), null, "a stalled server becomes a cache miss");
-  assert.deepEqual(metrics.at(-1)[2], { command: "GET", status: "error" });
-  assert.ok(metrics.at(-1)[1] >= 900, "duration includes the Redis timeout wait");
+  assert.equal(spans.at(-1).options.name, "redis.GET");
+  assert.deepEqual(spans.at(-1).status, { code: 2 });
+  assert.equal(spans.at(-1).ended, 1);
+  assert.ok(spans.at(-1).duration >= 900, "duration includes the Redis timeout wait");
   assert.equal(clients.at(-1).isOpen, false, "timeout destroys the stalled socket");
   stall = false;
   await cache.get("all");

@@ -1,3 +1,4 @@
+import config from "@canopy/config";
 import { assertCanDeleteUser } from "@canopy/authorization";
 import {
   authAccount,
@@ -11,13 +12,14 @@ import {
   userRolesTable,
 } from "@canopy/database";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
+import { captureException } from "@sentry/core";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { createAuthMiddleware } from "better-auth/api";
+import { createAuthMiddleware, isAPIError } from "better-auth/api";
 import { cachedUserAdapter } from "./cachedUserAdapter.ts";
 import { sendAuthEmail } from "./email.ts";
 import { normalizeAccountName, normalizeProfileImage } from "./security.ts";
 
-const baseURL = process.env.APP_URL ?? "http://localhost:3000";
+const baseURL = config.appUrl;
 
 async function notifyPasswordChanged(email: string): Promise<void> {
   try {
@@ -68,12 +70,20 @@ async function assertAccountCanBeDeleted(userId: string): Promise<void> {
   );
 }
 
-const googleClientId = process.env.GOOGLE_CLIENT_ID;
-const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+const googleClientId = config.auth.googleClientId;
+const googleClientSecret = config.auth.googleClientSecret;
 
 export const auth = betterAuth({
   appName: "SmartTools",
   baseURL,
+  secret: config.auth.secret,
+  onAPIError: {
+    onError(error) {
+      if (isAPIError(error) && error.statusCode < 500) return;
+      captureException(error);
+      console.error("Authentication request failed");
+    },
+  },
   database: (options: BetterAuthOptions) =>
     cachedUserAdapter(
       drizzleAdapter(db, {
@@ -194,13 +204,13 @@ export const auth = betterAuth({
     },
   },
   advanced: {
-    useSecureCookies: process.env.NODE_ENV === "production",
+    useSecureCookies: config.environment === "production",
     disableCSRFCheck: false,
     disableOriginCheck: false,
     cookiePrefix: "smarttools",
     defaultCookieAttributes: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: config.environment === "production",
       sameSite: "lax",
     },
   },

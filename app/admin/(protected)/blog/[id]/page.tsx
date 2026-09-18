@@ -1,3 +1,4 @@
+import config from "@canopy/config";
 import { notFound } from "next/navigation";
 import { hasPermission } from "@canopy/authorization";
 import { getUserAuthorization } from "@canopy/control-plane";
@@ -30,7 +31,7 @@ export default async function BlogEditorPage({ params }: { params: Promise<{ id:
       canEdit={hasPermission(authorization.access, "blog", "edit")}
       canPublish={hasPermission(authorization.access, "blog", "publish")}
       canCreate={hasPermission(authorization.access, "blog", "create")}
-      cloudName={process.env.CLOUDINARY_CLOUD_NAME?.trim() ?? ""}
+      cloudName={config.cloudinary.cloudName?.trim() ?? ""}
     />
   );
 }

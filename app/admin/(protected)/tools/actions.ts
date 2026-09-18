@@ -1,7 +1,11 @@
 "use server";
 
+import { measureServerAction } from "../../../../lib/observability/sentry.ts";
 import { errorMessage } from "../../../../utils/errorMessage.ts";
 
+import { captureException } from "@sentry/core";
+import { AuthorizationError } from "@canopy/control-plane";
+import { ZodError } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getActorUserId } from "../../../../lib/admin/access";
@@ -52,6 +56,7 @@ function jsonList(formData: FormData, key: string, label: string): unknown[] {
 }
 
 function failure(error: unknown): ToolContentActionState {
+  if (!(error instanceof AuthorizationError || error instanceof ZodError)) captureException(error);
   return {
     status: "error",
     message: errorMessage(error, "The change could not be saved."),
@@ -73,111 +78,121 @@ export async function createToolAction(
   _previous: ToolContentActionState,
   formData: FormData,
 ): Promise<ToolContentActionState> {
-  let toolId: string;
-  try {
-    const created = await createManagedTool(await getActorUserId(), {
-      app: text(formData, "app"),
-      key: text(formData, "key"),
-      name: text(formData, "name"),
-      description: text(formData, "description"),
-      slug: text(formData, "slug"),
-      category: text(formData, "category"),
-    });
-    toolId = created.toolId;
-  } catch (error) {
-    return failure(error);
-  }
-  revalidatePath("/admin/tools");
-  redirect(`/admin/tools/${encodeURIComponent(toolId)}`);
+  return measureServerAction<ToolContentActionState>("admin.tools.createToolAction", async () => {
+    let toolId: string;
+    try {
+      const created = await createManagedTool(await getActorUserId(), {
+        app: text(formData, "app"),
+        key: text(formData, "key"),
+        name: text(formData, "name"),
+        description: text(formData, "description"),
+        slug: text(formData, "slug"),
+        category: text(formData, "category"),
+      });
+      toolId = created.toolId;
+    } catch (error) {
+      return failure(error);
+    }
+    revalidatePath("/admin/tools");
+    redirect(`/admin/tools/${encodeURIComponent(toolId)}`);
+  });
 }
 
 export async function saveToolContentAction(
   _previous: ToolContentActionState,
   formData: FormData,
 ): Promise<ToolContentActionState> {
-  const toolId = text(formData, "toolId");
-  try {
-    // "inherit" clears the whole document, which is how the resolver reads it:
-    // a stored document replaces the shipped one wholesale or not at all.
-    const overrideDoc = text(formData, "contentDocMode") === "override";
-    await updateToolContent(await getActorUserId(), toolId, {
-      category: text(formData, "category"),
-      keywords: keywords(formData, "keywords"),
-      seoTitle: text(formData, "seoTitle"),
-      seoDescription: text(formData, "seoDescription"),
-      contentDoc: overrideDoc
-        ? {
-            howToUse: lines(formData, "howToUse"),
-            limitations: lines(formData, "limitations"),
-            faq: jsonList(formData, "faq", "FAQ"),
-            examples: jsonList(formData, "examples", "Examples"),
-            relatedToolIds: lines(formData, "relatedToolIds"),
-          }
-        : null,
-    });
-    revalidate(toolId);
-    return { status: "success", message: "Content saved." };
-  } catch (error) {
-    return failure(error);
-  }
+  return measureServerAction<ToolContentActionState>("admin.tools.saveToolContentAction", async () => {
+    const toolId = text(formData, "toolId");
+    try {
+      // "inherit" clears the whole document, which is how the resolver reads it:
+      // a stored document replaces the shipped one wholesale or not at all.
+      const overrideDoc = text(formData, "contentDocMode") === "override";
+      await updateToolContent(await getActorUserId(), toolId, {
+        category: text(formData, "category"),
+        keywords: keywords(formData, "keywords"),
+        seoTitle: text(formData, "seoTitle"),
+        seoDescription: text(formData, "seoDescription"),
+        contentDoc: overrideDoc
+          ? {
+              howToUse: lines(formData, "howToUse"),
+              limitations: lines(formData, "limitations"),
+              faq: jsonList(formData, "faq", "FAQ"),
+              examples: jsonList(formData, "examples", "Examples"),
+              relatedToolIds: lines(formData, "relatedToolIds"),
+            }
+          : null,
+      });
+      revalidate(toolId);
+      return { status: "success", message: "Content saved." };
+    } catch (error) {
+      return failure(error);
+    }
+  });
 }
 
 export async function publishToolContentAction(
   _previous: ToolContentActionState,
   formData: FormData,
 ): Promise<ToolContentActionState> {
-  const toolId = text(formData, "toolId");
-  const published = text(formData, "published") === "true";
-  try {
-    await setToolContentPublished(await getActorUserId(), toolId, published);
-    revalidate(toolId);
-    return {
-      status: "success",
-      message: published ? "Stored content is live." : "Stored content is back to draft; the code values are live.",
-    };
-  } catch (error) {
-    return failure(error);
-  }
+  return measureServerAction<ToolContentActionState>("admin.tools.publishToolContentAction", async () => {
+    const toolId = text(formData, "toolId");
+    const published = text(formData, "published") === "true";
+    try {
+      await setToolContentPublished(await getActorUserId(), toolId, published);
+      revalidate(toolId);
+      return {
+        status: "success",
+        message: published ? "Stored content is live." : "Stored content is back to draft; the code values are live.",
+      };
+    } catch (error) {
+      return failure(error);
+    }
+  });
 }
 
 export async function uploadToolIconAction(
   _previous: ToolContentActionState,
   formData: FormData,
 ): Promise<ToolContentActionState> {
-  const toolId = text(formData, "toolId");
-  try {
-    const file = formData.get("icon");
-    if (!(file instanceof File) || file.size === 0) {
-      throw new Error("Choose a PNG, JPG, or WebP image.");
+  return measureServerAction<ToolContentActionState>("admin.tools.uploadToolIconAction", async () => {
+    const toolId = text(formData, "toolId");
+    try {
+      const file = formData.get("icon");
+      if (!(file instanceof File) || file.size === 0) {
+        throw new Error("Choose a PNG, JPG, or WebP image.");
+      }
+      // Size is rejected before the file is ever read into memory.
+      if (file.size > MAX_TOOL_ICON_BYTES) {
+        throw new Error("The icon must be 1 MB or smaller.");
+      }
+      await saveToolIcon(await getActorUserId(), toolId, {
+        bytes: new Uint8Array(await file.arrayBuffer()),
+        mimeType: file.type,
+      });
+      revalidate(toolId);
+      return { status: "success", message: "Icon uploaded." };
+    } catch (error) {
+      return failure(error);
     }
-    // Size is rejected before the file is ever read into memory.
-    if (file.size > MAX_TOOL_ICON_BYTES) {
-      throw new Error("The icon must be 1 MB or smaller.");
-    }
-    await saveToolIcon(await getActorUserId(), toolId, {
-      bytes: new Uint8Array(await file.arrayBuffer()),
-      mimeType: file.type,
-    });
-    revalidate(toolId);
-    return { status: "success", message: "Icon uploaded." };
-  } catch (error) {
-    return failure(error);
-  }
+  });
 }
 
 export async function removeToolIconAction(
   _previous: ToolContentActionState,
   formData: FormData,
 ): Promise<ToolContentActionState> {
-  const toolId = text(formData, "toolId");
-  try {
-    await removeToolIcon(await getActorUserId(), toolId);
-    revalidate(toolId);
-    return {
-      status: "success",
-      message: "Icon removed; the tool falls back to its generated identicon.",
-    };
-  } catch (error) {
-    return failure(error);
-  }
+  return measureServerAction<ToolContentActionState>("admin.tools.removeToolIconAction", async () => {
+    const toolId = text(formData, "toolId");
+    try {
+      await removeToolIcon(await getActorUserId(), toolId);
+      revalidate(toolId);
+      return {
+        status: "success",
+        message: "Icon removed; the tool falls back to its generated identicon.",
+      };
+    } catch (error) {
+      return failure(error);
+    }
+  });
 }

@@ -1,12 +1,13 @@
+import config from "@canopy/config";
 import { defineConfig, devices } from "@playwright/test";
 
-if (!process.env.DATABASE_URL) {
+if (!config.databaseUrl) {
   throw new Error("DATABASE_URL must point to a migrated disposable database for E2E tests.");
 }
 
-const appUrl = process.env.PLAYWRIGHT_APP_URL ?? "http://localhost:3000";
+const appUrl = config.playwright.appUrl;
 const parsedAppUrl = new URL(appUrl);
-const appPort = process.env.PLAYWRIGHT_PORT || parsedAppUrl.port || (parsedAppUrl.protocol === "https:" ? "443" : "80");
+const appPort = config.playwright.port || parsedAppUrl.port || (parsedAppUrl.protocol === "https:" ? "443" : "80");
 
 if (!/^\d+$/.test(appPort)) {
   throw new Error("PLAYWRIGHT_PORT must be a valid port number.");
@@ -14,7 +15,7 @@ if (!/^\d+$/.test(appPort)) {
 
 const e2eEnvironment = {
   APP_URL: "http://localhost:3000",
-  BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? "e2e-only-secret-that-is-at-least-32-characters",
+  BETTER_AUTH_SECRET: config.auth.secret ?? "e2e-only-secret-that-is-at-least-32-characters",
   RESEND_API_KEY: "re_e2e_mock",
   ACCOUNTS_EMAIL: "accounts@example.test",
   GOOGLE_CLIENT_ID: "google-e2e-client",
@@ -34,7 +35,7 @@ export default defineConfig({
   globalSetup: "./tests/e2e/global-setup.ts",
   fullyParallel: false,
   workers: 1,
-  retries: process.env.CI ? 2 : 0,
+  retries: config.ci ? 2 : 0,
   reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
   use: {
     baseURL: appUrl,
@@ -68,7 +69,7 @@ export default defineConfig({
     command: "pnpm dev",
     url: "http://localhost:3000",
     env: appEnvironment,
-    reuseExistingServer: process.env.PLAYWRIGHT_REUSE_SERVER === "1",
+    reuseExistingServer: config.playwright.reuseServer,
     timeout: 180_000,
     ...(appPort === "3000"
       ? null

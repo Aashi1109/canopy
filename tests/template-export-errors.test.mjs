@@ -2,13 +2,17 @@ import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
 
-const state = { session: { user: { id: "admin" } }, rows: [], reads: 0 };
+const state = { session: { user: { id: "admin" } }, rows: [], reads: 0, captured: [] };
 globalThis.__templateExportErrorsTest = state;
 const routeUrl = new URL("../app/api/admin/templates/[id]/export/route.ts", import.meta.url).href;
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
     const stub = (source) => ({ shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(source)}` });
     if (decodeURI(context.parentURL ?? "") === decodeURI(routeUrl)) {
+      if (specifier === "@sentry/core")
+        return stub(
+          "export const captureException = error => globalThis.__templateExportErrorsTest.captured.push(error);",
+        );
       if (specifier === "@canopy/auth/session")
         return stub(`
         export class AuthServiceError extends Error {}
@@ -50,6 +54,9 @@ test.after(() => {
 });
 const call = () =>
   GET(new Request("https://app.test/api/admin/templates/id/export"), { params: Promise.resolve({ id: "id" }) });
+test.beforeEach(() => {
+  state.captured = [];
+});
 
 test("template export returns caught messages or fallback without error object properties", async () => {
   for (const failure of [
@@ -60,6 +67,7 @@ test("template export returns caught messages or fallback without error object p
   ]) {
     state.failure = failure;
     const response = await call();
+    assert.equal(state.captured.at(-1), failure);
     assert.equal(response.status, 500);
     assert.deepEqual(await response.json(), { error: failure?.message || "Unable to export template" });
   }
@@ -72,6 +80,8 @@ test("template export authorization failures retain status and never read templa
   const unavailable = await call();
   assert.equal(unavailable.status, 503);
   assert.deepEqual(await unavailable.json(), { error: state.authFailure });
+  assert.equal(state.captured.length, 1);
+  assert.equal(state.captured[0].message, state.authFailure);
   delete state.authFailure;
   const session = state.session;
   state.session = null;
@@ -88,4 +98,5 @@ test("template export authorization failures retain status and never read templa
   const missing = await call();
   assert.equal(missing.status, 404);
   assert.deepEqual(await missing.json(), { error: "Not found" });
+  assert.equal(state.captured.length, 1, "expected authorization failures are not reported");
 });

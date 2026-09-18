@@ -1,3 +1,4 @@
+import config from "@canopy/config";
 import type { Metadata } from "next";
 import { z } from "zod";
 import { blogImageUrl, validateBlogDocument, type BlogDocument } from "./document.ts";
@@ -21,7 +22,7 @@ const slugSchema = z
   .max(160)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 
-export function blogCanonicalUrl(slug: string, appUrl = process.env.APP_URL ?? "http://localhost:3000"): string {
+export function blogCanonicalUrl(slug: string, appUrl = config.appUrl): string {
   slugSchema.parse(slug);
   const base = new URL(appUrl);
   if (!["https:", "http:"].includes(base.protocol) || base.username || base.password)
@@ -36,7 +37,7 @@ function publishedDate(value: Date | null): Date {
 }
 
 export function blogArticleMetadata(post: PublishedArticle, appUrl?: string): Metadata {
-  const options = { cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim() };
+  const options = { cloudName: config.cloudinary.cloudName?.trim() };
   const document = validateBlogDocument(post.document, options);
   const url = blogCanonicalUrl(post.slug, appUrl);
   const title = document.seoTitle || document.title;
@@ -75,7 +76,7 @@ export function blogArticleMetadata(post: PublishedArticle, appUrl?: string): Me
 
 /** Return script-safe JSON, including when trusted admins wrote literal closing script tags. */
 export function blogStructuredData(post: PublishedArticle, appUrl?: string): string {
-  const options = { cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim() };
+  const options = { cloudName: config.cloudinary.cloudName?.trim() };
   const document = validateBlogDocument(post.document, options);
   return JSON.stringify({
     "@context": "https://schema.org",

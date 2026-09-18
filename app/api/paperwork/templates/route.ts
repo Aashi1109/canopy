@@ -1,6 +1,7 @@
 import { getAvailableTools, getPublishedTemplates } from "@canopy/control-plane";
 import { DocumentTypeSchema, getDocumentDefinition } from "@canopy/invoice-templates";
 import { NextResponse } from "next/server";
+import { captureException } from "@sentry/core";
 
 import { getToolManifest } from "@/lib/tool-framework/manifest";
 import { errorMessage } from "@/utils/errorMessage";
@@ -26,6 +27,7 @@ export async function GET(request: Request) {
       templates: await getPublishedTemplates(validatedDocumentType),
     });
   } catch (error) {
+    captureException(error);
     console.error("Failed to fetch published document templates", error);
     return NextResponse.json({ error: errorMessage(error, "Templates are temporarily unavailable.") }, { status: 500 });
   }

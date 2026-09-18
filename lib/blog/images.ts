@@ -1,4 +1,5 @@
 /** Server-only: upload credentials and authorization must never reach clients. */
+import config from "@canopy/config";
 import { randomUUID } from "node:crypto";
 import { v2 as cloudinary, type UploadApiResponse } from "cloudinary";
 import { db } from "@canopy/database";
@@ -66,9 +67,9 @@ export async function uploadBlogImage(actorUserId: string, file: File): Promise<
     );
   }
   const { bytes, mimeType } = await imageBytes(file);
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
-  const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
-  const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
+  const cloudName = config.cloudinary.cloudName?.trim();
+  const apiKey = config.cloudinary.apiKey?.trim();
+  const apiSecret = config.cloudinary.apiSecret?.trim();
   if (!cloudName || !/^[a-zA-Z0-9_-]+$/.test(cloudName) || !apiKey || !apiSecret)
     throw new BlogImageUploadError(
       "UPLOAD_NOT_CONFIGURED",

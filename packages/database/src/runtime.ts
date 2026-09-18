@@ -1,5 +1,6 @@
+import config from "@canopy/config";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { metric } from "@vercel/functions";
+import { startInactiveSpan, type Span } from "@sentry/core";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import pg from "pg";
 
@@ -19,13 +20,24 @@ function observeQueries(client: pg.PoolClient): void {
       // Custom submittable queries (for example cursors) have their own lifecycle.
       if (typeof args[0]?.submit === "function") return Reflect.apply(query, receiver, args);
       // Starts after pool checkout; includes any waiting in this client's query queue.
-      const started = performance.now();
+      let span: Span | undefined;
+      try {
+        span = startInactiveSpan({
+          name: "db.query",
+          op: "db.query",
+          onlyIfParent: true,
+          attributes: { "db.system": "postgresql" },
+        });
+      } catch {
+        // Observability must never prevent a query from running.
+      }
       let reported = false;
       const report = (status: "success" | "error") => {
         if (reported) return;
         reported = true;
         try {
-          metric("db.query.duration_ms", performance.now() - started, { status });
+          span?.setStatus({ code: status === "error" ? 2 : 1 });
+          span?.end();
         } catch {
           // Observability must never change a query result or error.
         }
@@ -67,7 +79,7 @@ function getSqlClient(): SqlClient {
   if (request?.closed) throw new Error("Database request has finished");
   const existing = request ? request.client : nodeClient;
   if (existing) return existing;
-  const databaseUrl = request?.databaseUrl ?? process.env.DATABASE_URL;
+  const databaseUrl = request?.databaseUrl ?? config.databaseUrl;
   if (request && !databaseUrl) throw new Error("DATABASE_URL is required");
   const client = new pg.Pool({
     connectionString: databaseUrl ?? "postgres://127.0.0.1:1/canopy_unconfigured",
@@ -75,6 +87,13 @@ function getSqlClient(): SqlClient {
     max: request ? 5 : 1,
     idleTimeoutMillis: 20_000,
     connectionTimeoutMillis: 10_000,
+  });
+  client.connect = new Proxy(client.connect, {
+    apply(connect, receiver, args) {
+      // pg-pool dispatches queued callbacks in the releasing request's context.
+      if (typeof args[0] === "function") args[0] = AsyncLocalStorage.bind(args[0]);
+      return Reflect.apply(connect, receiver, args);
+    },
   });
   client.on("connect", observeQueries);
   client.on("error", (error: NodeJS.ErrnoException) => {

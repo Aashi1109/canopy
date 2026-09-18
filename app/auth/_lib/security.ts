@@ -23,13 +23,6 @@ export function resolveReturnTo(value: string | null | undefined, policy: Redire
   return safeReturnTo(value, trustedOrigins, fallback);
 }
 
-export function resolveConfiguredReturnTo(value: string | null | undefined): string {
-  return resolveReturnTo(value, {
-    baseURL: process.env.APP_URL ?? "http://localhost:3000",
-    fallback: "/",
-  });
-}
-
 export function shouldUseBrowserBack(
   fallbackHref: string,
   currentHref: string,

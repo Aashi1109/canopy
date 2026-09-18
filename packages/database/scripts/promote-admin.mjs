@@ -1,14 +1,15 @@
+import config from "@canopy/config";
 import { randomUUID } from "node:crypto";
-import { config } from "dotenv";
+import { config as loadEnv } from "dotenv";
 import pg from "pg";
 import { Cache, CACHE_NAMESPACES, closeRedis } from "@canopy/cache";
 
 for (const file of [".env.local", ".env"]) {
-  config({ path: new URL(`../../../${file}`, import.meta.url), override: false, quiet: true });
+  loadEnv({ path: new URL(`../../../${file}`, import.meta.url), override: false, quiet: true });
 }
 
 const email = process.argv[2]?.trim().toLowerCase();
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = config.databaseUrl;
 if (!email) throw new Error("Usage: pnpm admin:promote <verified-email>");
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
 

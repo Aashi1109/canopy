@@ -9,6 +9,7 @@ test("ecosystem response reuses assembled data, refreshes after invalidation, an
   const fixture = { reads: 0, name: "Invoice Generator", failure: false };
   globalThis.__ecosystemCacheTest = fixture;
   const modules = {
+    "@sentry/core": "export const captureException = () => {};",
     "@/lib/tool-framework/categories": `export const TOOL_CATEGORIES = {};`,
     "@/lib/tool-framework/catalog": `export const getTools = async () => [];`,
     "@/lib/tool-framework/icons": `export const resolveIcon = (_id, _name, iconUrl) => ({ kind: "url", url: iconUrl });`,
