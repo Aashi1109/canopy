@@ -3,7 +3,20 @@ import test from "node:test";
 import redis from "redis";
 import { Cache, closeRedis } from "@canopy/cache";
 
+const metricKey = Symbol.for("@vercel/rusty-runtime-ipc");
+function captureMetrics(t) {
+  const previous = globalThis[metricKey];
+  const metrics = [];
+  globalThis[metricKey] = { sendMetric: (...args) => metrics.push(args) };
+  t.after(() => {
+    if (previous === undefined) delete globalThis[metricKey];
+    else globalThis[metricKey] = previous;
+  });
+  return metrics;
+}
+
 test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and validation", async (t) => {
+  const metrics = captureMetrics(t);
   const variables = ["REDIS_URL"];
   const previous = Object.fromEntries(variables.map((key) => [key, process.env[key]]));
   t.after(async () => {
@@ -136,6 +149,7 @@ test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and v
     const saved = process.env[variable];
     delete process.env[variable];
     const previousCalls = calls.length;
+    const previousMetrics = metrics.length;
     const previousLoads = loads;
     assert.equal(await roles.get("all"), null);
     await roles.remember("all", load);
@@ -143,11 +157,28 @@ test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and v
     await roles.delete("all");
     assert.equal(loads, previousLoads + 1);
     assert.equal(calls.length, previousCalls);
+    assert.equal(metrics.length, previousMetrics, "disabled caching emits no command metrics");
     process.env[variable] = saved;
   }
+  assert.equal(metrics.length, calls.length, "each Redis command emits exactly one duration");
+  for (const [index, [name, duration, attributes]] of metrics.entries()) {
+    assert.equal(name, "redis.command.duration_ms");
+    assert.ok(Number.isFinite(duration) && duration >= 0);
+    assert.deepEqual(Object.keys(attributes).sort(), ["command", "status"]);
+    assert.equal(attributes.command, calls[index][0]);
+    assert.ok(["success", "error"].includes(attributes.status));
+  }
+  assert.ok(metrics.some(([, , attributes]) => attributes.status === "error"));
+  assert.ok(!JSON.stringify(metrics).includes("private-token"));
+  t.mock.method(globalThis[metricKey], "sendMetric", () => {
+    throw new Error("Metric sink unavailable");
+  });
+  await roles.set("metrics-failure", ["still cached"]);
+  assert.deepEqual(await roles.get("metrics-failure"), ["still cached"]);
 });
 
 test("Redis connections are lazy, shared, recoverable, and bounded", async (t) => {
+  const metrics = captureMetrics(t);
   const variables = ["REDIS_URL"];
   const previous = variables.map((key) => process.env[key]);
   for (const key of variables) delete process.env[key];
@@ -198,11 +229,14 @@ test("Redis connections are lazy, shared, recoverable, and bounded", async (t) =
   closeRedis();
   failConnect = true;
   await assert.rejects(cache.beginInvalidation("all"), /^Error: Redis cache unavailable$/);
+  assert.deepEqual(metrics.at(-1)[2], { command: "EVAL", status: "error" });
   failConnect = false;
   await cache.get("all");
   assert.equal(clients.length, 4, "a failed connection does not poison later calls");
   stall = true;
   assert.equal(await cache.get("all"), null, "a stalled server becomes a cache miss");
+  assert.deepEqual(metrics.at(-1)[2], { command: "GET", status: "error" });
+  assert.ok(metrics.at(-1)[1] >= 900, "duration includes the Redis timeout wait");
   assert.equal(clients.at(-1).isOpen, false, "timeout destroys the stalled socket");
   stall = false;
   await cache.get("all");

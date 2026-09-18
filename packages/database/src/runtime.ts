@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import { metric } from "@vercel/functions";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import pg from "pg";
 
@@ -11,6 +12,55 @@ const runtime = globalThis as typeof globalThis & {
 };
 const requests = (runtime[requestKey] ??= new AsyncLocalStorage<DatabaseRequest>());
 let nodeClient: SqlClient | undefined;
+
+function observeQueries(client: pg.PoolClient): void {
+  client.query = new Proxy(client.query, {
+    apply(query, receiver, args) {
+      // Custom submittable queries (for example cursors) have their own lifecycle.
+      if (typeof args[0]?.submit === "function") return Reflect.apply(query, receiver, args);
+      // Starts after pool checkout; includes any waiting in this client's query queue.
+      const started = performance.now();
+      let reported = false;
+      const report = (status: "success" | "error") => {
+        if (reported) return;
+        reported = true;
+        try {
+          metric("db.query.duration_ms", performance.now() - started, { status });
+        } catch {
+          // Observability must never change a query result or error.
+        }
+      };
+      const wrap = (callback: (...values: unknown[]) => unknown) =>
+        function (this: unknown, ...values: unknown[]) {
+          report(values[0] ? "error" : "success");
+          return Reflect.apply(callback, this, values);
+        };
+      const callbackIndex = typeof args[2] === "function" ? 2 : typeof args[1] === "function" ? 1 : -1;
+      if (callbackIndex !== -1) args[callbackIndex] = wrap(args[callbackIndex]);
+      else if (typeof args[0]?.callback === "function") {
+        args[0] = { ...args[0], callback: wrap(args[0].callback) };
+      }
+      try {
+        const result = Reflect.apply(query, receiver, args);
+        return result?.then
+          ? result.then(
+              (value: unknown) => {
+                report("success");
+                return value;
+              },
+              (error: unknown) => {
+                report("error");
+                throw error;
+              },
+            )
+          : result;
+      } catch (error) {
+        report("error");
+        throw error;
+      }
+    },
+  });
+}
 
 function getSqlClient(): SqlClient {
   const request = requests.getStore();
@@ -26,6 +76,7 @@ function getSqlClient(): SqlClient {
     idleTimeoutMillis: 20_000,
     connectionTimeoutMillis: 10_000,
   });
+  client.on("connect", observeQueries);
   client.on("error", (error: NodeJS.ErrnoException) => {
     console.error("Idle database connection failed", { code: error.code });
   });

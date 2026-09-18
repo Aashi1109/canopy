@@ -58,6 +58,13 @@ of pipelining them through the transaction pooler. Queries use unnamed statement
 Run migrations using a
 direct or session-pooler connection in your local migration environment.
 
+The shared database and Redis clients emit Vercel custom metrics through
+`@vercel/functions`: `db.query.duration_ms` and `redis.command.duration_ms`.
+Both include `status` (`success` or `error`); Redis also includes the command name.
+Database timings start after pool checkout and cover transaction queries too.
+Redis timings include connection setup and command timeouts. No SQL, parameters,
+cache keys, or credentials are sent. Metrics are a no-op outside the Vercel runtime.
+
 Google OAuth needs `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; verification, recovery, and deletion emails need `RESEND_API_KEY` and `ACCOUNTS_EMAIL`.
 
 Set `ACCOUNTS_EMAIL=accounts@smarttools.lol` for account-related emails sent through Resend and `SUPPORT_EMAIL=support@smarttools.lol` for contact links and the contact form. Apply these values to the deployed environment as well. The contact form opens the visitor's email app; support messages and replies are handled in Zoho.

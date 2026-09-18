@@ -17,6 +17,7 @@
     "@canopy/authorization": "workspace:*",
     "@canopy/cache": "workspace:*",
     "@canopy/tool-catalog": "workspace:*",
+    "@vercel/functions": "^3.9.8",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "pg": "^8.23.0"

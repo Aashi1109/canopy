@@ -1,4 +1,5 @@
 import redis from "redis";
+import { metric } from "@vercel/functions";
 
 export { CACHE_NAMESPACES } from "./constants.ts";
 
@@ -71,6 +72,8 @@ export function closeRedis(): void {
 
 async function command(args: string[]): Promise<unknown> {
   if (!process.env.REDIS_URL?.trim()) return null;
+  const started = performance.now();
+  let status = "success";
   // Workers cannot reuse sockets across requests. Keep their commands self-contained.
   // ponytail: one connection per Worker command; add request-scoped reuse if latency warrants it.
   const transient = globalThis.navigator?.userAgent === "Cloudflare-Workers";
@@ -89,11 +92,17 @@ async function command(args: string[]): Promise<unknown> {
       }),
     ]);
   } catch {
+    status = "error";
     // Do not expose connection credentials through errors from the Redis client.
     throw new Error("Redis cache unavailable");
   } finally {
     clearTimeout(timeout);
     if (transient && current?.client.isOpen) current.client.destroy();
+    try {
+      metric("redis.command.duration_ms", performance.now() - started, { command: args[0], status });
+    } catch {
+      // Observability must not change cache behavior.
+    }
   }
 }
 
