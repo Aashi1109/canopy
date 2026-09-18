@@ -9,7 +9,7 @@ import {
   EmptyState,
   ToolPageHeader,
   buttonVariants,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import {
   Activity,
   BadgePlus,

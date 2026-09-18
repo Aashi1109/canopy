@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AlertBanner, Button, Label, Textarea } from "@canopy/ui";
+import { AlertBanner, Button, Label, Textarea } from "@/components/ui/index.tsx";
 import { mutateBlogAction } from "../actions";
 import styles from "./BlogEditor.module.css";
 

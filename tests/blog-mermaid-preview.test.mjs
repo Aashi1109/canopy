@@ -14,7 +14,7 @@ const hooks = registerHooks({
       return stub(
         "export function useState(initial) { const s = globalThis.__blogMermaidTest; const i=s.index++; if (!(i in s.values)) s.values[i]=initial; return [s.values[i], value => s.values[i] = value]; } export function useEffect() {}",
       );
-    if (specifier === "@canopy/ui")
+    if (specifier === "@/components/ui/index.tsx")
       return stub(
         "export const Button = 'button', Tooltip = 'tooltip', TooltipContent = 'tooltip-content', TooltipProvider = 'provider', TooltipTrigger = 'trigger'; export const Popover = {Root: 'popover', Trigger: 'trigger', Portal: 'portal', Content: 'content', Close: 'close'}; export const toast = {error(message) { globalThis.__blogMermaidTest.errors.push(message); }};",
       );

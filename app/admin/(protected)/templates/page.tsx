@@ -1,4 +1,4 @@
-import { DOCUMENT_TYPES } from "@canopy/invoice-templates";
+import { DOCUMENT_TYPES } from "@/lib/invoice-templates/index.ts";
 import {
   Caption,
   H1,
@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
   buttonVariants,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { Ellipsis, FilePenLine, Plus, Upload } from "lucide-react";
 import Link from "next/link";
 import { AdminFilters } from "../components/AdminFilters";

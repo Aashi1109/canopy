@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
-import { AuthorizationError } from "@canopy/control-plane";
+import { AuthorizationError } from "../lib/admin/index.ts";
 
 const sourceUrl = new URL("../lib/blog/images.ts", import.meta.url).href;
 const fixture = {
@@ -22,7 +22,7 @@ const moduleUrl = (source) => `data:text/javascript,${encodeURIComponent(source)
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
     if (context.parentURL === sourceUrl) {
-      if (specifier === "@canopy/database")
+      if (specifier === "../../db/index.ts")
         return {
           shortCircuit: true,
           url: moduleUrl(`

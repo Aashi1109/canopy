@@ -9,7 +9,7 @@ import {
   EmptyState,
   StatusBadge,
   ToolPageHeader,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { AdminFilters } from "../components/AdminFilters";
 import { SearchX, Users } from "lucide-react";
 import { requirePagePermission } from "../../../../lib/admin/access";

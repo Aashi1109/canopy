@@ -1,4 +1,4 @@
-import { auth } from "@canopy/auth";
+import { auth } from "./lib/auth/index.ts";
 import { getSessionCookie } from "better-auth/cookies";
 import { NextRequest, NextResponse } from "next/server";
 import { errorMessage } from "./utils/errorMessage.ts";

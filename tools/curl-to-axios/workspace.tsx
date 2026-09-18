@@ -12,7 +12,7 @@ import {
   SegmentedControl,
   Select,
   ToolOptionsPanel,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { SplitStack } from "@/components/Stacks";

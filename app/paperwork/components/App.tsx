@@ -36,10 +36,10 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
-import { seedTemplates, type DocumentTemplate } from "@canopy/invoice-templates";
-import type { ResolvedTool } from "@canopy/tool-catalog";
+import { seedTemplates, type DocumentTemplate } from "@/lib/invoice-templates/index.ts";
+import type { ResolvedTool } from "@/lib/tool-catalog/index.ts";
 import AdvancedTemplateWorkspace from "./AdvancedTemplateWorkspace";
 import ExpenseReportPage from "./expense/ExpenseReportPage";
 import FAQSection from "./FAQSection";

@@ -4,7 +4,7 @@ import test from "node:test";
 import pg from "pg";
 
 const migration = await readFile(
-  new URL("../packages/database/migration/0002-tool-icon-url/0001_tool_icon_url.sql", import.meta.url),
+  new URL("../db/migration/0002-tool-icon-url/0001_tool_icon_url.sql", import.meta.url),
   "utf8",
 );
 
@@ -90,7 +90,7 @@ test(
         try {
           await client.query("SELECT set_config('search_path', $1, false)", [schema]);
           await client.query("SELECT set_config('canopy.cloudinary_cloud_name', '', false)");
-          const directory = new URL("../packages/database/migration/0001-baseline/", import.meta.url);
+          const directory = new URL("../db/migration/0001-baseline/", import.meta.url);
           for (const file of (await readdir(directory)).filter((name) => name.endsWith(".sql")).sort()) {
             await client.query(await readFile(new URL(file, directory), "utf8"));
           }

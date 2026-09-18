@@ -14,8 +14,8 @@
  * through a declared field. Pages without bytes remain as loading placeholders.
  */
 
-import { Strong, Caption, Muted, Button, CheckboxControl, MediaPreview, PdfViewer } from "@canopy/ui";
-import { OrderableList } from "@canopy/ui/components/OrderableList";
+import { Strong, Caption, Muted, Button, CheckboxControl, MediaPreview, PdfViewer } from "@/components/ui/index.tsx";
+import { OrderableList } from "@/components/ui/components/OrderableList.tsx";
 import { GripVertical } from "lucide-react";
 import {
   createContext,

@@ -21,7 +21,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { AlertTriangle, Check, Copy } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 

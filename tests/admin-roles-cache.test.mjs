@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import redis from "redis";
-import { closeRedis } from "@canopy/cache";
-import { db, rolesTable, userRolesTable } from "@canopy/database";
+import { closeRedis } from "../lib/cache/index.ts";
+import { db, rolesTable, userRolesTable } from "../db/index.ts";
 import { getRole, listRoles } from "../lib/admin/data.ts";
 
 test("role definitions are cached while membership counts stay current", async (t) => {

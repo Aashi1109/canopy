@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, MediaPreview, Muted, PdfViewer } from "@canopy/ui";
+import { Button, MediaPreview, Muted, PdfViewer } from "@/components/ui/index.tsx";
 import { useEffect, useState } from "react";
 
 import { PdfPreviewPage, usePdfPageImages } from "@/components/PdfPagesSurface";

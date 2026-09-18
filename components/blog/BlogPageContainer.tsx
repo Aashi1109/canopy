@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import { AppContainer } from "@canopy/ui";
+import { AppContainer } from "@/components/ui/index.tsx";
 
 /** Shared page edges for the blog listing, articles, and private previews. */
 export function BlogPageContainer({ className = "", children, ...props }: ComponentProps<typeof AppContainer>) {

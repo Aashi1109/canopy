@@ -2,7 +2,7 @@ import { readdir } from "node:fs/promises";
 
 import { expect, test } from "@playwright/test";
 
-import { slugFromName } from "../../packages/tool-catalog/src/index";
+import { slugFromName } from "../../lib/tool-catalog/index";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 const DEVTOOLS_URL = "http://localhost:3000/devtools";

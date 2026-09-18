@@ -1,4 +1,4 @@
-import { Caption, H3, Overline, P, TextLink } from "@canopy/ui";
+import { Caption, H3, Overline, P, TextLink } from "@/components/ui/index.tsx";
 import type { listPublishedBlogPosts } from "@/lib/blog/queries";
 
 type Post = Awaited<ReturnType<typeof listPublishedBlogPosts>>["items"][number];

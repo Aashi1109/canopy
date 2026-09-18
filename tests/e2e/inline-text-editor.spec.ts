@@ -16,7 +16,7 @@ test.beforeAll(async () => {
     `
     import React, { useState } from "react";
     import { createRoot } from "react-dom/client";
-    import { InlineTextEditor } from ${JSON.stringify(join(root, "packages/ui/src/components/InlineTextEditor.tsx"))};
+    import { InlineTextEditor } from ${JSON.stringify(join(root, "components/ui/components/InlineTextEditor.tsx"))};
     function Fixture() {
       const [name, setName] = useState("Initial role");
       const [description, setDescription] = useState("Short description");
@@ -78,7 +78,7 @@ test.beforeAll(async () => {
       if (error || stats.hasErrors()) { console.error(error || stats.toString({ all: false, errors: true })); process.exitCode = 1; }
     }));
     requireRoot("postcss")([requireRoot("@tailwindcss/postcss")()])
-      .process(${JSON.stringify(`@import "tailwindcss" source(none); @import "${join(root, "packages/ui/src/theme.css")}";`)}, { from: ${JSON.stringify(join(root, "inline-fixture.css"))} })
+      .process(${JSON.stringify(`@import "tailwindcss" source(none); @import "${join(root, "components/ui/theme.css")}";`)}, { from: ${JSON.stringify(join(root, "inline-fixture.css"))} })
       .then(result => require("node:fs").writeFileSync(${JSON.stringify(join(scratch, "fixture.css"))}, result.css));
   `,
   );

@@ -1,4 +1,4 @@
-import config from "@canopy/config";
+import config from "@/lib/config/config.ts";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import "katex/dist/katex.min.css";
 import {
@@ -16,7 +16,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { blogImageUrl, renderBlogDocument, type BlogDocument } from "@/lib/blog/document";
 import { blogCanonicalUrl } from "@/lib/blog/publication";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";

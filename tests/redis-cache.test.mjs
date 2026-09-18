@@ -23,7 +23,7 @@ globalThis.__cacheTracingSentry = {
     };
   },
 };
-const cacheUrl = new URL("../packages/cache/src/index.ts", import.meta.url).href;
+const cacheUrl = new URL("../lib/cache/index.ts", import.meta.url).href;
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
     if (specifier === "@sentry/core" && context.parentURL === cacheUrl) {
@@ -35,7 +35,7 @@ const hooks = registerHooks({
     return nextResolve(specifier, context);
   },
 });
-const { Cache, closeRedis } = await import("@canopy/cache");
+const { Cache, closeRedis } = await import("../lib/cache/index.ts");
 hooks.deregister();
 delete globalThis.__cacheTracingSentry;
 

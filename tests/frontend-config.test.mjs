@@ -13,10 +13,9 @@ async function readText(path) {
 }
 
 test("the root-owned frontend has one manifest and merged Next.js configuration", async () => {
-  const [baseTypescript, uiPackage, theme, packageJson, nextConfig, postcssConfig, tsconfig] = await Promise.all([
+  const [baseTypescript, theme, packageJson, nextConfig, postcssConfig, tsconfig] = await Promise.all([
     readJson("tsconfig.base.json"),
-    readJson("packages/ui/package.json"),
-    readText("packages/ui/src/theme.css"),
+    readText("components/ui/theme.css"),
     readJson("package.json"),
     readText("next.config.ts"),
     readText("postcss.config.mjs"),
@@ -26,18 +25,10 @@ test("the root-owned frontend has one manifest and merged Next.js configuration"
   assert.equal(packageJson.name, "canopy");
   assert.equal(packageJson.private, true);
   assert.equal(baseTypescript.compilerOptions.strict, true);
-  assert.equal(uiPackage.exports["./theme.css"], "./src/theme.css");
   assert.match(theme, /@source\s+["']\.["'];/);
   assert.match(theme, /@theme\s*\{/);
 
   for (const dependency of [
-    "@canopy/auth",
-    "@canopy/authorization",
-    "@canopy/control-plane",
-    "@canopy/database",
-    "@canopy/invoice-templates",
-    "@canopy/tool-catalog",
-    "@canopy/ui",
     "@jsquash/jpeg",
     "@pdfme/generator",
     "@react-pdf/renderer",
@@ -71,7 +62,7 @@ test("the root-owned frontend has one manifest and merged Next.js configuration"
   assert.match(nextConfig, /bodySizeLimit:\s*["']6mb["']/);
   assert.match(nextConfig, /module:\s*\{\s*browser:/);
   assert.match(nextConfig, /transpilePackages:\s*\[/);
-  for (const dependency of ["@canopy/auth", "@canopy/ui", "@jsquash/jpeg", "heic-to", "pdfjs-dist", "qpdf-wasm"]) {
+  for (const dependency of ["@jsquash/jpeg", "heic-to", "pdfjs-dist", "qpdf-wasm"]) {
     assert.match(nextConfig, new RegExp(`["']${dependency}["']`));
   }
   assert.match(nextConfig, /source:\s*["']\/media\/:path\*["']/);
@@ -98,17 +89,17 @@ test("Tailwind and the shared theme are imported once at the root layout", async
   );
   const rootStyles = stylesheets.find(({ path }) => path === "globals.css");
   const layout = await readText("app/layout.tsx");
-  const theme = await readText("packages/ui/src/theme.css");
+  const theme = await readText("components/ui/theme.css");
 
   assert.ok(rootStyles);
-  assert.match(rootStyles.source, /^@import "tailwindcss";\n@import "@canopy\/ui\/theme\.css";/);
+  assert.match(rootStyles.source, /^@import "tailwindcss";\n@import "\.\.\/components\/ui\/theme\.css";/);
   assert.equal(
     stylesheets.reduce((count, { source }) => count + (source.match(/@import ["']tailwindcss["'];/g) ?? []).length, 0),
     1,
   );
   assert.equal(
     stylesheets.reduce(
-      (count, { source }) => count + (source.match(/@import ["']@canopy\/ui\/theme\.css["'];/g) ?? []).length,
+      (count, { source }) => count + (source.match(/@import ["']\.\.\/components\/ui\/theme\.css["'];/g) ?? []).length,
       0,
     ),
     1,

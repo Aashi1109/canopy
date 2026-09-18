@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, H2, Muted } from "@canopy/ui";
+import { Button, H2, Muted } from "@/components/ui/index.tsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";

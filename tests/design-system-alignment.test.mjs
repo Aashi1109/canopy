@@ -9,7 +9,7 @@ async function source(path) {
 }
 
 test("shared UI exposes the exact design-system foundation tokens", async () => {
-  const css = await source("packages/ui/src/theme.css");
+  const css = await source("components/ui/theme.css");
 
   for (const token of [
     "--background: #f6f7f9",
@@ -31,13 +31,13 @@ test("shared UI exposes the exact design-system foundation tokens", async () => 
 
 test("shared controls retain design-system dimensions and states", async () => {
   const [button, checkbox, input, radio, select, switchSource, tabs] = await Promise.all([
-    source("packages/ui/src/components/button.tsx"),
-    source("packages/ui/src/components/checkbox.tsx"),
-    source("packages/ui/src/components/input.tsx"),
-    source("packages/ui/src/components/radio-group.tsx"),
-    source("packages/ui/src/components/select.tsx"),
-    source("packages/ui/src/components/switch.tsx"),
-    source("packages/ui/src/components/tabs.tsx"),
+    source("components/ui/components/button.tsx"),
+    source("components/ui/components/checkbox.tsx"),
+    source("components/ui/components/input.tsx"),
+    source("components/ui/components/radio-group.tsx"),
+    source("components/ui/components/select.tsx"),
+    source("components/ui/components/switch.tsx"),
+    source("components/ui/components/tabs.tsx"),
   ]);
   assert.match(button, /hover:bg-\[#0052CC\].*active:bg-\[#003D99\]/);
   assert.match(checkbox, /size-5.*rounded-\[4px\]/);
@@ -89,7 +89,7 @@ test("the admin design-system page demonstrates every design-backed form-control
 });
 
 test("reusable tool patterns cover the design-system component set", async () => {
-  const patterns = await source("packages/ui/src/components/patterns.tsx");
+  const patterns = await source("components/ui/components/patterns.tsx");
 
   for (const component of [
     "IconTile",
@@ -116,9 +116,9 @@ test("reusable tool patterns cover the design-system component set", async () =>
 
 test("every reusable design.pen component has a named code implementation", async () => {
   const [manifest, compatibilityComponents, index] = await Promise.all([
-    source("packages/ui/src/design-system-manifest.ts"),
-    source("packages/ui/src/components/design-system-components.tsx"),
-    source("packages/ui/src/index.tsx"),
+    source("components/ui/design-system-manifest.ts"),
+    source("components/ui/components/design-system-components.tsx"),
+    source("components/ui/index.tsx"),
   ]);
   const designIds = [...manifest.matchAll(/designId: "([^"]+)"/g)].map((match) => match[1]);
 
@@ -210,7 +210,7 @@ test("tool routes share the design-system page shell", async () => {
   // Both `[slug]` routes now render through `components/ToolPage.tsx`, whose
   // workbench frame owns the shell — so that is where the shell is asserted.
   const [index, workbench] = await Promise.all([
-    source("packages/ui/src/index.tsx"),
+    source("components/ui/index.tsx"),
     source("components/UniversalWorkbench.tsx"),
   ]);
 

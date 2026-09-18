@@ -1,6 +1,6 @@
-import { InvoiceTemplatePreview } from "@canopy/invoice-templates/preview";
-import type { InvoiceTemplate } from "@canopy/invoice-templates";
-import { ToolPageHeader } from "@canopy/ui";
+import { InvoiceTemplatePreview } from "@/lib/invoice-templates/TemplatePreview.tsx";
+import type { InvoiceTemplate } from "@/lib/invoice-templates/index.ts";
+import { ToolPageHeader } from "@/components/ui/index.tsx";
 import { notFound, redirect } from "next/navigation";
 import { requirePagePermission } from "../../../../../../lib/admin/access";
 import { getTemplate } from "../../../../../../lib/admin/data";

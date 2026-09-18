@@ -2,7 +2,7 @@
 
 import { useId } from "react";
 import { NodeViewContent, NodeViewWrapper, useEditorState, type NodeViewProps } from "@tiptap/react";
-import { CheckboxControl } from "@canopy/ui";
+import { CheckboxControl } from "@/components/ui/index.tsx";
 import styles from "./BlogEditor.module.css";
 
 export function BlogTaskItemView({ editor, node, updateAttributes }: NodeViewProps) {

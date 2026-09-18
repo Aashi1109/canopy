@@ -89,7 +89,7 @@ const { BlogStories: InteractiveStories } = await import("../app/blog/components
 const { loadMoreBlogPosts } = await import("../app/blog/actions.ts");
 const { parseBlogFilters } = await import("../app/blog/lib/filters.ts");
 const { listPublishedBlogPosts: realPublishedQuery, encodeBlogCursor } = await import("../lib/blog/queries.ts");
-const { db } = await import("../packages/database/src/index.ts");
+const { db } = await import("../db/index.ts");
 test.after(() => {
   hooks.deregister();
   delete globalThis.__publicBlogTest;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Select } from "@canopy/ui";
+import { Select } from "@/components/ui/index.tsx";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export interface CategoryFilterOption {

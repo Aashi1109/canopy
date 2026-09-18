@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { captureException } from "@sentry/core";
-import { db } from "@/db";
-import { keyValuePairTable } from "@/db/schema";
+import { db } from "@/db/paperwork";
+import { keyValuePairTable } from "@/db/paperworkSchema";
 import { ensureDatabaseBootstrapped, ensureUserExists } from "@/db/bootstrap";
 import { errorMessage } from "@/utils/errorMessage";
 import { ApiInputError, assertJsonPayloadSize, assertRequestContentLength } from "../_lib/input";

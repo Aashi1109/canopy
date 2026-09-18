@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, type PointerEvent as ReactPointerEv
 import { createPortal } from "react-dom";
 import type { Editor, EditorEvents } from "@tiptap/core";
 import { GripVertical } from "lucide-react";
-import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@canopy/ui";
+import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/index.tsx";
 import type { BlogImage } from "@/lib/blog/document";
 import { moveBlogBlock } from "../lib/blockMovement";
 import { BlogBlockMenu } from "./BlogFormattingToolbar";

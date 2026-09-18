@@ -1,4 +1,4 @@
-import config from "@canopy/config";
+import config from "@/lib/config/config.ts";
 /**
  * Moved verbatim from the inlined `"use server"` action in
  * `app/devtools/[slug]/page.tsx`: the same Ahrefs endpoint, the same

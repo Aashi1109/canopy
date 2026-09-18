@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
-import { db } from "./index";
-import { usersTable } from "./schema";
+import { db } from "./paperwork.ts";
+import { usersTable } from "./paperworkSchema.ts";
 
 let bootstrapped = false;
 const bootstrapPromises = new WeakMap<object, Promise<void>>();

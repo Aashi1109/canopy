@@ -25,7 +25,7 @@ import {
   type DocumentTemplateContent,
 } from "../../lib/admin/adminMutations";
 import { captureException } from "@sentry/core";
-import { AuthorizationError, featureManifest } from "@canopy/control-plane";
+import { AuthorizationError, featureManifest } from "@/lib/admin/index.ts";
 import { ZodError } from "zod";
 import {
   getDefaultTemplateConfigByFamily,
@@ -33,8 +33,8 @@ import {
   type TemplateCategory,
   type TemplateDocumentType,
   type TemplatePageFormat,
-} from "@canopy/invoice-templates";
-import type { ToolApp } from "@canopy/tool-catalog";
+} from "@/lib/invoice-templates/index.ts";
+import type { ToolApp } from "@/lib/tool-catalog/index.ts";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getActorUserId } from "../../lib/admin/access";

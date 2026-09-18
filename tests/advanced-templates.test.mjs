@@ -9,7 +9,7 @@ import {
   createAdvancedTemplateConfig,
   resizeAdvancedTemplateConfig,
   seedTemplates,
-} from "../packages/invoice-templates/src/index.ts";
+} from "../lib/invoice-templates/index.ts";
 
 const supportedFormats = [
   ["invoice", "A4", 210, 297],

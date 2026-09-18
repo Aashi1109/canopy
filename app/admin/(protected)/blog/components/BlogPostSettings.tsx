@@ -23,7 +23,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 
 export interface BlogSettingsValue {
   authorName: string;

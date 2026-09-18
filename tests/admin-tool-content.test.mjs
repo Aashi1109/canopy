@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
 
-import { ADMIN_ACCESS } from "../packages/authorization/src/index.ts";
-import { auditEventsTable, db, managedToolsTable, toolContentTable } from "../packages/database/src/index.ts";
+import { ADMIN_ACCESS } from "../lib/authorization/index.ts";
+import { auditEventsTable, db, managedToolsTable, toolContentTable } from "../db/index.ts";
 
 const uploadCalls = [];
 globalThis.__adminIconUpload = async (...args) => {

@@ -1,5 +1,5 @@
-import { getToolContentRow, isDatabaseConfigured, type ToolContentRow } from "@canopy/database";
-import { Text, Caption, H1, H3, InlineCode, Muted, Overline, StatusBadge } from "@canopy/ui";
+import { getToolContentRow, isDatabaseConfigured, type ToolContentRow } from "@/db/index.ts";
+import { Text, Caption, H1, H3, InlineCode, Muted, Overline, StatusBadge } from "@/components/ui/index.tsx";
 import { FileText, Image, LayoutDashboard, Search, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";

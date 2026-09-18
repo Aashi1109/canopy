@@ -12,7 +12,7 @@ import {
   mergeToolManifest,
   reservedToolSlugs,
   slugFromName,
-} from "../packages/tool-catalog/src/index.ts";
+} from "../lib/tool-catalog/index.ts";
 
 // The package holds no inventory, so these tests supply their own manifest.
 // That is the point: the merge is pure, and its semantics must hold for any

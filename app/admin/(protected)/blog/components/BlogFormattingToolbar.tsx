@@ -42,7 +42,16 @@ import {
 } from "lucide-react";
 import type { BlogImage } from "@/lib/blog/document";
 import { captureBlogInsertion, createBlogTable } from "../lib/editorInsertion";
-import { Button, Input, Label, Popover, Separator, Tooltip, TooltipContent, TooltipTrigger } from "@canopy/ui";
+import {
+  Button,
+  Input,
+  Label,
+  Popover,
+  Separator,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/index.tsx";
 import styles from "./BlogEditor.module.css";
 import { BlogColorPalette } from "./BlogColorPalette";
 

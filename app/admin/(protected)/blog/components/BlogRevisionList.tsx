@@ -16,7 +16,7 @@ import {
   Button,
   EmptyState,
   StatusBadge,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { mutateBlogAction } from "../actions";
 
 interface Props {

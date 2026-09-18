@@ -31,6 +31,8 @@ const hooks = registerHooks({
         }
       `);
     }
+    if (specifier === "@/lib/config/config.ts")
+      return next(new URL("../lib/config/config.ts", import.meta.url).href, context);
     return next(specifier, context);
   },
 });

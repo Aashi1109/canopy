@@ -21,7 +21,7 @@ import {
   Input,
   Separator,
   toast,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { authClient } from "./_lib/authClient";
 import { getSafeAuthError, isEmailVerificationError, isValidPassword } from "./_lib/security";
 

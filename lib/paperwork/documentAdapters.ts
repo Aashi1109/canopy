@@ -4,7 +4,7 @@ import {
   type AdvancedDocumentTemplate,
   type DocumentType,
   type TemplateFormConfig,
-} from "@canopy/invoice-templates";
+} from "../invoice-templates/index.ts";
 import type { InvoiceData } from "./types";
 import {
   DEFAULT_EXPENSE_REPORT_DRAFT,

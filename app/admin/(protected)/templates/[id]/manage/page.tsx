@@ -1,5 +1,17 @@
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
-import { H3, Caption, H1, P, Text, Field, Input, Select, StatusBadge, Textarea, buttonVariants } from "@canopy/ui";
+import {
+  H3,
+  Caption,
+  H1,
+  P,
+  Text,
+  Field,
+  Input,
+  Select,
+  StatusBadge,
+  Textarea,
+  buttonVariants,
+} from "@/components/ui/index.tsx";
 import { ArrowLeft, Copy, Eye, FilePenLine } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";

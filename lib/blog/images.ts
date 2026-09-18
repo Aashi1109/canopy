@@ -1,9 +1,9 @@
 /** Server-only: upload credentials and authorization must never reach clients. */
-import config from "@canopy/config";
+import config from "../config/config.ts";
 import { randomUUID } from "node:crypto";
 import { v2 as cloudinary, type UploadApiResponse } from "cloudinary";
-import { db } from "@canopy/database";
-import { AuthorizationError } from "@canopy/control-plane";
+import { db } from "../../db/index.ts";
+import { AuthorizationError } from "../admin/index.ts";
 import { cloudinaryFolder } from "../cloudinary/paths.ts";
 import { requireTransactionPermission, writeAudit } from "../admin/adminMutations.ts";
 import { BlogValidationError, validateBlogImage, type BlogImage } from "./document.ts";

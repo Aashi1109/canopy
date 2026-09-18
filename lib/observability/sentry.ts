@@ -1,4 +1,4 @@
-import publicConfig from "@canopy/config/public";
+import publicConfig from "../config/public.ts";
 import { getActiveSpan, isEnabled, type ErrorEvent, type Options } from "@sentry/core";
 import { init, withServerActionInstrumentation } from "@sentry/nextjs";
 

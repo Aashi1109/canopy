@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { AppContainer, Caption, Display, Lead, Overline } from "@canopy/ui";
+import { AppContainer, Caption, Display, Lead, Overline } from "@/components/ui/index.tsx";
 
 export function CatalogHero({ suite }: { suite: "media" | "devtools" }) {
   const isMedia = suite === "media";

@@ -15,7 +15,7 @@ const hooks = registerHooks({
       return stub(
         "export function useState() { const s = globalThis.__blogCopyTest; return [s.value, value => s.value = value]; }",
       );
-    if (specifier === "@canopy/ui")
+    if (specifier === "@/components/ui/index.tsx")
       return stub(
         "export const ToolActionButton = 'button', Tooltip = 'tooltip', TooltipContent = 'tooltip-content', TooltipProvider = 'provider', TooltipTrigger = 'trigger'; export const toast = {error(message) {globalThis.__blogCopyTest.errors.push(message);}};",
       );

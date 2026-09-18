@@ -34,7 +34,7 @@ test("db seed uploads and assigns icons after catalog seeding, stopping on failu
     process.argv = [argv[0], "seed.mjs", "--icons-dir", "/tmp/custom icons"];
     await import(`${seedUrl}?success`);
     assert.equal(calls.length, 3);
-    assert.ok(calls[0][0].endsWith("/packages/database/scripts/seed.mjs"));
+    assert.ok(calls[0][0].endsWith("/db/scripts/seed.mjs"));
     assert.ok(calls[1][0].endsWith("/scripts/upload-tool-icons.mjs"));
     assert.ok(calls[2][0].endsWith("/scripts/update-tool-icons.mjs"));
     assert.equal(calls[1][calls[1].indexOf("--dir") + 1], "/tmp/custom icons");

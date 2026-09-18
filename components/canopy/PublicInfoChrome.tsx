@@ -1,5 +1,5 @@
-import { getOptionalSession } from "@canopy/auth/session";
-import { AccountNavigation, ProductHeader } from "@canopy/ui";
+import { getOptionalSession } from "@/lib/auth/session.ts";
+import { AccountNavigation, ProductHeader } from "@/components/ui/index.tsx";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";

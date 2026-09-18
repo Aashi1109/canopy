@@ -3,7 +3,7 @@ import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { ToolIcon } from "@/components/ToolIcon";
 import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
 import { categoriesForApp, TOOL_CATEGORIES, type CategoryKey } from "@/lib/tool-framework/categories";
-import { getOptionalSession } from "@canopy/auth/session";
+import { getOptionalSession } from "@/lib/auth/session.ts";
 import {
   Caption,
   H2,
@@ -23,7 +23,7 @@ import {
   SectionHeading,
   StatusBadge,
   buttonVariants,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { LayoutGrid, LockKeyhole, Search, ShieldCheck, Zap } from "lucide-react";
 import { headers } from "next/headers";
 

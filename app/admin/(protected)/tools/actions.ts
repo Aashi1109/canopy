@@ -4,7 +4,7 @@ import { measureServerAction } from "../../../../lib/observability/sentry.ts";
 import { errorMessage } from "../../../../utils/errorMessage.ts";
 
 import { captureException } from "@sentry/core";
-import { AuthorizationError } from "@canopy/control-plane";
+import { AuthorizationError } from "@/lib/admin/index.ts";
 import { ZodError } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";

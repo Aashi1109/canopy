@@ -23,7 +23,7 @@ import {
   IconTile,
   ToolPageShell,
   WorkbenchShell,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import {
   AlertCircle,
   AlertTriangle,

@@ -1,6 +1,6 @@
 "use client";
 
-import { getMissingPermissionPrerequisite, PERMISSION_CATALOG, type Role } from "@canopy/authorization";
+import { getMissingPermissionPrerequisite, PERMISSION_CATALOG, type Role } from "@/lib/authorization/index.ts";
 import {
   AlertBanner,
   AlertDialog,
@@ -23,7 +23,7 @@ import {
   toast,
   Toaster,
   TooltipProvider,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { startTransition, useActionState, useState } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { startCase } from "@/utils/strings";

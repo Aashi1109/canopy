@@ -1,5 +1,5 @@
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
-import { featureManifest, getFeatures } from "@canopy/control-plane";
+import { featureManifest, getFeatures } from "@/lib/admin/index.ts";
 import {
   InlineCode,
   Overline,
@@ -12,7 +12,7 @@ import {
   StatusBadge,
   Textarea,
   ToolPageHeader,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { Flag, History } from "lucide-react";
 import { requirePagePermission } from "../../../../lib/admin/access";
 import { toggleFeatureAction, updateFeatureAction } from "../../actions";

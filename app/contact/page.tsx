@@ -1,5 +1,5 @@
-import config from "@canopy/config";
-import { Display, Muted, Overline, Strong, Text, TextLink } from "@canopy/ui";
+import config from "@/lib/config/config.ts";
+import { Display, Muted, Overline, Strong, Text, TextLink } from "@/components/ui/index.tsx";
 import type { Metadata } from "next";
 import { Clock3, LifeBuoy, Mail } from "lucide-react";
 import PublicInfoChrome from "@/components/canopy/PublicInfoChrome";

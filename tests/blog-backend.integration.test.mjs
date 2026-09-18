@@ -20,7 +20,7 @@ test(
     const previousUrl = process.env.DATABASE_URL;
     process.env.DATABASE_URL = target.toString();
     const sql = new pg.Pool({ connectionString: target.toString(), max: 5 });
-    const { sqlClient } = await import("../packages/database/src/index.ts");
+    const { sqlClient } = await import("../db/index.ts");
     t.after(async () => {
       await sqlClient.end();
       if (previousUrl === undefined) delete process.env.DATABASE_URL;
@@ -30,9 +30,7 @@ test(
       await admin.end();
     });
     for (const file of ["0001_auth_control_plane.sql", "0006_blogs.sql"]) {
-      await sql.query(
-        await readFile(new URL(`../packages/database/migration/0001-baseline/${file}`, import.meta.url), "utf8"),
-      );
+      await sql.query(await readFile(new URL(`../db/migration/0001-baseline/${file}`, import.meta.url), "utf8"));
     }
     await sql.query(
       "INSERT INTO auth_users (id,name,email) VALUES ('admin-a','A','a@test.invalid'),('admin-b','B','b@test.invalid'),('viewer','V','v@test.invalid')",

@@ -41,7 +41,7 @@ test("queued pool queries and checkouts retain the caller's trace context", asyn
       return { setStatus() {}, end() {} };
     },
   };
-  const runtimeUrl = new URL("../packages/database/src/runtime.ts", import.meta.url).href;
+  const runtimeUrl = new URL("../db/runtime.ts", import.meta.url).href;
   const hooks = registerHooks({
     resolve(specifier, location, nextResolve) {
       if (location.parentURL === runtimeUrl && ["pg", "@sentry/core"].includes(specifier)) {

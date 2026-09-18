@@ -1,6 +1,6 @@
 "use client";
 
-import { Overline, H3, Muted, Caption, Strong, SegmentedControl, ToolOptionsPanel } from "@canopy/ui";
+import { Overline, H3, Muted, Caption, Strong, SegmentedControl, ToolOptionsPanel } from "@/components/ui/index.tsx";
 import { ArrowDownToLine, FileSpreadsheet } from "lucide-react";
 import { type DragEvent, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 

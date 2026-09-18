@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Caption, FieldLabel, Input, Select } from "@canopy/ui";
+import { Button, Caption, FieldLabel, Input, Select } from "@/components/ui/index.tsx";
 import { MoveHorizontal, MoveVertical, PanelBottom, PanelLeft } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 

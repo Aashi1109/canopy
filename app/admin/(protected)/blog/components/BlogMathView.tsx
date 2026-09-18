@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import { NodeViewWrapper, useEditorState, type NodeViewProps } from "@tiptap/react";
-import { Button, Label, Popover, Textarea } from "@canopy/ui";
+import { Button, Label, Popover, Textarea } from "@/components/ui/index.tsx";
 import { MAX_BLOG_MATH_LENGTH, renderBlogMath } from "@/lib/blog/math";
 
 export function BlogMathView({ editor, node, updateAttributes }: NodeViewProps) {

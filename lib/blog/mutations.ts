@@ -1,8 +1,8 @@
-import config from "@canopy/config";
+import config from "../config/config.ts";
 import { randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { getTableColumns } from "drizzle-orm";
-import { AuthorizationError } from "@canopy/control-plane";
+import { AuthorizationError } from "../admin/index.ts";
 import {
   and,
   asc,
@@ -18,7 +18,7 @@ import {
   blogTagsTable as tags,
   blogPublishedPostTagsTable as publishedTags,
   managedToolsTable,
-} from "@canopy/database";
+} from "../../db/index.ts";
 import { requireTransactionPermission, writeAudit } from "../admin/adminMutations.ts";
 import {
   assertBlogPublishable,

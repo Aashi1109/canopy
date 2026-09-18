@@ -9,13 +9,13 @@ import {
   type InvoiceTemplateConfig,
   type LayoutFamily,
   type TemplateCategory,
-} from "@canopy/invoice-templates";
+} from "@/lib/invoice-templates/index.ts";
 import {
   InvoiceTemplatePreview,
   invoicePreviewSampleOptions,
   invoicePreviewSamples,
   type InvoicePreviewSampleId,
-} from "@canopy/invoice-templates/preview";
+} from "@/lib/invoice-templates/TemplatePreview.tsx";
 import {
   Overline,
   Caption,
@@ -36,8 +36,8 @@ import {
   TabsTrigger,
   Textarea,
   buttonVariants,
-} from "@canopy/ui";
-import { OrderableList } from "@canopy/ui/components/OrderableList";
+} from "@/components/ui/index.tsx";
+import { OrderableList } from "@/components/ui/components/OrderableList.tsx";
 import {
   Archive,
   ArrowLeft,

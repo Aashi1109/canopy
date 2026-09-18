@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
 
-const sessionUrl = new URL("../packages/auth/src/session.ts", import.meta.url).href;
+const sessionUrl = new URL("../lib/auth/session.ts", import.meta.url).href;
 const fixture = {
   session: null,
   authorizations: new Map(),
@@ -28,7 +28,7 @@ const hooks = registerHooks({
       `),
       };
     }
-    if (context.parentURL === sessionUrl && specifier === "@canopy/control-plane") {
+    if (context.parentURL === sessionUrl && specifier === "../admin/index.ts") {
       return {
         shortCircuit: true,
         url: moduleUrl(`

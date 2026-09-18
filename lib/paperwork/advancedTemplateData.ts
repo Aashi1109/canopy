@@ -1,4 +1,4 @@
-import type { AdvancedDocumentTemplate } from "@canopy/invoice-templates";
+import type { AdvancedDocumentTemplate } from "../invoice-templates/index.ts";
 import type { InvoiceData } from "./types.ts";
 import { calculateInvoiceTotals, formatCurrency } from "./utils/calculations.ts";
 

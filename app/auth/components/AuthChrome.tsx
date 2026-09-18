@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AccountNavigation, ProductHeader, Toaster } from "@canopy/ui";
+import { AccountNavigation, ProductHeader, Toaster } from "@/components/ui/index.tsx";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import type { AuthProjectPaths } from "./AuthDiscoveryNavigation";
 

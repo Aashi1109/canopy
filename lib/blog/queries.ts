@@ -1,4 +1,4 @@
-import config from "@canopy/config";
+import config from "../config/config.ts";
 import { and, desc, eq, exists, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import {
   blogCategoriesTable as categories,
@@ -9,9 +9,9 @@ import {
   blogTagsTable as tags,
   managedToolsTable,
   db,
-} from "@canopy/database";
+} from "../../db/index.ts";
 import { z } from "zod";
-import { isValidToolSlug } from "@canopy/tool-catalog";
+import { isValidToolSlug } from "../tool-catalog/index.ts";
 import { requireTransactionPermission } from "../admin/adminMutations.ts";
 import { BlogValidationError, validateBlogDocument, validateBlogImage } from "./document.ts";
 

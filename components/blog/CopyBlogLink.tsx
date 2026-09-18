@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Button, Input, Label } from "@canopy/ui";
+import { Button, Input, Label } from "@/components/ui/index.tsx";
 
 export function CopyBlogLink({ url, label = "Copy link" }: { url: string; label?: string }) {
   const [status, setStatus] = useState<"idle" | "copied" | "manual">("idle");

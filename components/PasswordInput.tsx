@@ -1,7 +1,7 @@
 "use client";
 
-import { Button, Input, type InputProps } from "@canopy/ui";
-import { cn } from "@canopy/ui/lib/utils";
+import { Button, Input, type InputProps } from "@/components/ui/index.tsx";
+import { cn } from "@/components/ui/lib/utils.ts";
 import { Eye, EyeOff } from "lucide";
 import { MorphIcon } from "morphicons/react";
 import { useState } from "react";

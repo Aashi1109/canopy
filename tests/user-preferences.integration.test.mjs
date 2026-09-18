@@ -16,7 +16,7 @@ test(
     context.after(() => tx.end());
     const schema = `preferences_test_${randomUUID().replaceAll("-", "")}`;
     const migration = await readFile(
-      new URL("../packages/database/migration/0001-baseline/0008_user_preferences.sql", import.meta.url),
+      new URL("../db/migration/0001-baseline/0008_user_preferences.sql", import.meta.url),
       "utf8",
     );
     await tx.query("BEGIN");

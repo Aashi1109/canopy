@@ -1,4 +1,4 @@
-import config from "@canopy/config";
+import config from "@/lib/config/config.ts";
 import { getTools } from "@/lib/tool-framework/catalog";
 import { getBlogSitemapEntries } from "@/lib/blog/queries";
 import type { MetadataRoute } from "next";

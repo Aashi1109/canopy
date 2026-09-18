@@ -1,6 +1,6 @@
-import { AuthServiceError, getSession } from "@canopy/auth/session";
-import { requirePermission } from "@canopy/control-plane";
-import { db, eq, invoiceTemplatesTable } from "@canopy/database";
+import { AuthServiceError, getSession } from "@/lib/auth/session.ts";
+import { requirePermission } from "@/lib/admin/index.ts";
+import { db, eq, invoiceTemplatesTable } from "@/db/index.ts";
 import { errorMessage } from "@/utils/errorMessage";
 import { captureException } from "@sentry/core";
 

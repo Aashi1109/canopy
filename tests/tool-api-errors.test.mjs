@@ -17,7 +17,7 @@ const hooks = registerHooks({
       if (specifier === "@/lib/tool-framework/categories") return stub("export const TOOL_CATEGORIES = {};");
       if (specifier === "@/lib/tool-framework/icons") return stub("export const resolveIcon = () => null;");
       if (specifier === "@/lib/tool-framework/manifest") return stub("export const getToolManifest = async () => [];");
-      if (specifier === "@canopy/control-plane") return stub("export const getAvailableTools = async () => [];");
+      if (specifier === "@/lib/admin/index.ts") return stub("export const getAvailableTools = async () => [];");
       if (specifier === "../../../../tools/test-error-tool/definition")
         return stub("export default { settings: { fields: {} } };");
       if (specifier === "../../../../tools/test-error-tool/run.server")
@@ -26,7 +26,10 @@ const hooks = registerHooks({
         return stub('throw new Error("Tool module dependency unavailable");');
       if (specifier.startsWith("../../../../tools/test-module-empty/")) return stub('throw new Error("");');
       if (specifier.startsWith("@/"))
-        return nextResolve(new URL(`../${specifier.slice(2)}.ts`, import.meta.url).href, context);
+        return nextResolve(
+          new URL(`../${specifier.slice(2)}${specifier.endsWith(".ts") ? "" : ".ts"}`, import.meta.url).href,
+          context,
+        );
     }
     return nextResolve(specifier, context);
   },

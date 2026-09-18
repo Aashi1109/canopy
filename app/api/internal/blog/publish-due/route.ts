@@ -1,4 +1,4 @@
-import config from "@canopy/config";
+import config from "@/lib/config/config.ts";
 import { handleBlogPublishRequest } from "@/lib/blog/cron";
 import { captureException } from "@sentry/core";
 

@@ -14,7 +14,7 @@ import {
   Button,
   Toaster,
   toast,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import type { listBlogPosts } from "@/lib/blog/queries";
 import { mutateBlogAction } from "../actions";
 import { BlogPostList, type BlogListFilters, type BlogPostListItem } from "./BlogPostList";

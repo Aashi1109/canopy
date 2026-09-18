@@ -1,4 +1,4 @@
-import { getSession } from "@canopy/auth/session";
+import { getSession } from "@/lib/auth/session.ts";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";

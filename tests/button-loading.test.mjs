@@ -23,7 +23,7 @@ const hooks = registerHooks({
     };
   },
 });
-const { Button } = await import("../packages/ui/src/components/button.tsx");
+const { Button } = await import("../components/ui/components/button.tsx");
 hooks.deregister();
 
 test("loading buttons remain labelled and disable activation until ready", () => {

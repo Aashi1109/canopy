@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
   ToolPageHeader,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { History } from "lucide-react";
 import { requirePagePermission } from "../../../../lib/admin/access";
 import { listAuditEvents } from "../../../../lib/admin/data";

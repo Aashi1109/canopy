@@ -21,7 +21,7 @@ const hooks = registerHooks({
         return [s.values[i], value => { s.values[i] = typeof value === 'function' ? value(s.values[i]) : value; }];
       }
     `);
-    if (specifier === "@canopy/ui")
+    if (specifier === "@/components/ui/index.tsx")
       return stub(`
       export const toast = {success(message) {globalThis.__authFeedbackTest.toasts.push(message);}};
       ${["Caption", "Label", "H1", "P", "Strong", "Text", "TextLink", "AlertBanner", "Button", "Card", "CheckboxControl", "Field", "FieldLegend", "FieldSet", "Input", "Separator"].map((name) => `export const ${name} = '${name}';`).join("\n")}

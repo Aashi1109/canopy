@@ -10,7 +10,7 @@ import {
   type PageFormat,
   type PdfmeBlankBase,
   type PdfmeSchema,
-} from "@canopy/invoice-templates";
+} from "@/lib/invoice-templates/index.ts";
 import {
   Strong,
   Caption,
@@ -33,8 +33,8 @@ import {
   Textarea,
   buttonVariants,
   typographyStyles,
-} from "@canopy/ui";
-import { OrderableList } from "@canopy/ui/components/OrderableList";
+} from "@/components/ui/index.tsx";
+import { OrderableList } from "@/components/ui/components/OrderableList.tsx";
 import {
   AlignCenter,
   ArrowLeft,

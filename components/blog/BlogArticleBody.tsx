@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CheckboxControl, Toaster } from "@canopy/ui";
+import { CheckboxControl, Toaster } from "@/components/ui/index.tsx";
 import { MermaidDiagram } from "./MermaidDiagram";
 import { CopyBlogCode } from "./CopyBlogCode";
 import codeStyles from "./codeHighlight.module.css";

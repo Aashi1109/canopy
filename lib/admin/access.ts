@@ -1,5 +1,5 @@
-import { getSession } from "@canopy/auth/session";
-import { AuthorizationError, requirePermission } from "@canopy/control-plane";
+import { getSession } from "../auth/session.ts";
+import { AuthorizationError, requirePermission } from "./index.ts";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 

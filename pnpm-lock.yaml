@@ -12,36 +12,18 @@ importers:
 
   .:
     dependencies:
-      '@canopy/auth':
-        specifier: workspace:*
-        version: link:packages/auth
-      '@canopy/authorization':
-        specifier: workspace:*
-        version: link:packages/authorization
-      '@canopy/cache':
-        specifier: workspace:*
-        version: link:packages/cache
-      '@canopy/config':
-        specifier: workspace:*
-        version: link:packages/config
-      '@canopy/control-plane':
-        specifier: workspace:*
-        version: link:packages/control-plane
-      '@canopy/database':
-        specifier: workspace:*
-        version: link:packages/database
-      '@canopy/invoice-templates':
-        specifier: workspace:*
-        version: link:packages/invoice-templates
-      '@canopy/tool-catalog':
-        specifier: workspace:*
-        version: link:packages/tool-catalog
-      '@canopy/ui':
-        specifier: workspace:*
-        version: link:packages/ui
       '@codemirror/lang-json':
         specifier: ^6.0.2
         version: 6.0.2
+      '@dnd-kit/core':
+        specifier: 6.3.1
+        version: 6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@dnd-kit/sortable':
+        specifier: 10.0.0
+        version: 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
+      '@dnd-kit/utilities':
+        specifier: 3.2.2
+        version: 3.2.2(react@19.2.7)
       '@google/genai':
         specifier: ^2.12.0
         version: 2.12.0
@@ -120,9 +102,15 @@ importers:
       better-auth:
         specifier: 1.6.23
         version: 1.6.23(@opentelemetry/api@1.9.1)(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(kysely@0.29.3)(pg@8.23.0))(next@16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.61.1)(@types/node@26.1.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.23.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
       cloudinary:
         specifier: ^2.10.0
         version: 2.10.0
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -183,12 +171,30 @@ importers:
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
+      radix-ui:
+        specifier: ^1.6.4
+        version: 1.6.4(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react:
         specifier: ^19.2.7
         version: 19.2.7
       react-dom:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
+      react-resizable-panels:
+        specifier: ^4.12.2
+        version: 4.12.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      redis:
+        specifier: ^6.2.1
+        version: 6.2.1(@opentelemetry/api@1.9.1)
+      resend:
+        specifier: 6.17.2
+        version: 6.17.2
+      sonner:
+        specifier: ^2.0.7
+        version: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      tailwind-merge:
+        specifier: ^3.6.0
+        version: 3.6.0
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -211,6 +217,9 @@ importers:
       '@types/node':
         specifier: ^26.1.1
         version: 26.1.1
+      '@types/pg':
+        specifier: ^8.23.1
+        version: 8.23.1
       '@types/qrcode':
         specifier: ^1.5.6
         version: 1.5.6
@@ -232,9 +241,6 @@ importers:
       prettier:
         specifier: 3.9.7
         version: 3.9.7
-      redis:
-        specifier: ^6.2.1
-        version: 6.2.1(@opentelemetry/api@1.9.1)
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
@@ -244,159 +250,6 @@ importers:
       wrangler:
         specifier: ^4.131.1
         version: 4.131.1(@types/node@26.1.1)
-
-  packages/auth:
-    dependencies:
-      '@canopy/authorization':
-        specifier: workspace:*
-        version: link:../authorization
-      '@canopy/config':
-        specifier: workspace:*
-        version: link:../config
-      '@canopy/control-plane':
-        specifier: workspace:*
-        version: link:../control-plane
-      '@canopy/database':
-        specifier: workspace:*
-        version: link:../database
-      '@sentry/core':
-        specifier: ^10.75.0
-        version: 10.75.0
-      better-auth:
-        specifier: 1.6.23
-        version: 1.6.23(@opentelemetry/api@1.9.1)(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(kysely@0.29.3)(pg@8.23.0))(next@16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.61.1)(@types/node@26.1.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.23.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      resend:
-        specifier: 6.17.2
-        version: 6.17.2
-
-  packages/authorization: {}
-
-  packages/cache:
-    dependencies:
-      '@canopy/config':
-        specifier: workspace:*
-        version: link:../config
-      '@sentry/core':
-        specifier: ^10.75.0
-        version: 10.75.0
-      redis:
-        specifier: ^6.2.1
-        version: 6.2.1(@opentelemetry/api@1.9.1)
-
-  packages/config: {}
-
-  packages/control-plane:
-    dependencies:
-      '@canopy/authorization':
-        specifier: workspace:*
-        version: link:../authorization
-      '@canopy/cache':
-        specifier: workspace:*
-        version: link:../cache
-      '@canopy/database':
-        specifier: workspace:*
-        version: link:../database
-      '@canopy/invoice-templates':
-        specifier: workspace:*
-        version: link:../invoice-templates
-      '@canopy/tool-catalog':
-        specifier: workspace:*
-        version: link:../tool-catalog
-
-  packages/database:
-    dependencies:
-      '@canopy/authorization':
-        specifier: workspace:*
-        version: link:../authorization
-      '@canopy/cache':
-        specifier: workspace:*
-        version: link:../cache
-      '@canopy/config':
-        specifier: workspace:*
-        version: link:../config
-      '@canopy/tool-catalog':
-        specifier: workspace:*
-        version: link:../tool-catalog
-      '@sentry/core':
-        specifier: ^10.75.0
-        version: 10.75.0
-      dotenv:
-        specifier: ^17.4.2
-        version: 17.4.2
-      drizzle-orm:
-        specifier: ^0.45.2
-        version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(kysely@0.29.3)(pg@8.23.0)
-      pg:
-        specifier: ^8.23.0
-        version: 8.23.0
-    devDependencies:
-      '@types/pg':
-        specifier: ^8.23.1
-        version: 8.23.1
-
-  packages/invoice-templates:
-    dependencies:
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
-    devDependencies:
-      '@types/react':
-        specifier: ^19.2.17
-        version: 19.2.17
-      react:
-        specifier: ^19.2.7
-        version: 19.2.7
-
-  packages/tool-catalog: {}
-
-  packages/ui:
-    dependencies:
-      '@dnd-kit/core':
-        specifier: 6.3.1
-        version: 6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@dnd-kit/sortable':
-        specifier: 10.0.0
-        version: 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
-      '@dnd-kit/utilities':
-        specifier: 3.2.2
-        version: 3.2.2(react@19.2.7)
-      class-variance-authority:
-        specifier: ^0.7.1
-        version: 0.7.1
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
-      lucide:
-        specifier: ^1.30.0
-        version: 1.30.0
-      lucide-react:
-        specifier: ^1.25.0
-        version: 1.25.0(react@19.2.7)
-      morphicons:
-        specifier: ^1.5.0
-        version: 1.5.0(react@19.2.7)
-      motion:
-        specifier: ^12.43.0
-        version: 12.43.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      radix-ui:
-        specifier: ^1.6.4
-        version: 1.6.4(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      react-resizable-panels:
-        specifier: ^4.12.2
-        version: 4.12.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      sonner:
-        specifier: ^2.0.7
-        version: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      tailwind-merge:
-        specifier: ^3.6.0
-        version: 3.6.0
-    devDependencies:
-      '@types/react':
-        specifier: ^19.2.17
-        version: 19.2.17
-      react:
-        specifier: ^19.2.7
-        version: 19.2.7
 
 packages:
 

@@ -1,12 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  getTrustedOrigins,
-  normalizeAccountName,
-  normalizeProfileImage,
-  safeReturnTo,
-} from "../packages/auth/src/security.ts";
+import { getTrustedOrigins, normalizeAccountName, normalizeProfileImage, safeReturnTo } from "../lib/auth/security.ts";
 
 const trustedOrigins = ["https://smarttools.example.com", "https://admin.smarttools.example.com"];
 

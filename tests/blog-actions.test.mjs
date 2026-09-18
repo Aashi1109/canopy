@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
 import { BlogError } from "../lib/blog/mutations.ts";
-import { AuthorizationError } from "@canopy/control-plane";
+import { AuthorizationError } from "../lib/admin/index.ts";
 import { createBlogDocument, BlogValidationError } from "../lib/blog/document.ts";
 import { BlogImageUploadError } from "../lib/blog/images.ts";
 
@@ -64,6 +64,10 @@ const hooks = registerHooks({
         );
       if (specifier.endsWith("/blog/document")) return next(`${specifier}.ts`, context);
     }
+    if (specifier === "@/lib/config/config.ts")
+      return next(new URL("../lib/config/config.ts", import.meta.url).href, context);
+    if (specifier === "@/lib/admin/index.ts")
+      return next(new URL("../lib/admin/index.ts", import.meta.url).href, context);
     return next(specifier, context);
   },
 });

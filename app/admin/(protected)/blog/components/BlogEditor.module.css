@@ -99,7 +99,7 @@
   font-size: 12px;
 }
 .postTitle {
-  margin-top: 22px;
+  margin-top: 8px;
   min-height: 0;
   field-sizing: content;
   resize: none;
@@ -597,7 +597,6 @@
   }
   .postTitle {
     font-size: 28px;
-    margin-top: 16px;
   }
   .excerpt {
     font-size: 16px;

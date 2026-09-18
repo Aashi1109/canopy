@@ -1,10 +1,10 @@
-import config from "@canopy/config";
+import config from "@/lib/config/config.ts";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { hasPermission } from "@canopy/authorization";
-import { getUserAuthorization } from "@canopy/control-plane";
-import { AlertBanner, Button } from "@canopy/ui";
+import { hasPermission } from "@/lib/authorization/index.ts";
+import { getUserAuthorization } from "@/lib/admin/index.ts";
+import { AlertBanner, Button } from "@/components/ui/index.tsx";
 import { requirePagePermission } from "@/lib/admin/access";
 import { getBlogPost, getBlogRevision, listBlogRevisions } from "@/lib/blog/queries";
 import { BlogRevisionList } from "../../components/BlogRevisionList";

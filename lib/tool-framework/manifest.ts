@@ -1,7 +1,7 @@
 /**
  * The application-side tool manifest.
  *
- * `packages/tool-catalog` is pure logic and holds no inventory, so somebody has
+ * `lib/tool-catalog` is pure logic and holds no inventory, so somebody has
  * to answer "which tools exist?" for it. That is this module, and it obeys the
  * same invariant `catalog.ts` does:
  *
@@ -22,8 +22,8 @@
 
 import { cache } from "react";
 
-import { db, getToolContentRows, isDatabaseConfigured, managedToolsTable } from "@canopy/database";
-import { mergeToolManifest, type ResolvedTool, type ToolManifestEntry } from "@canopy/tool-catalog";
+import { db, getToolContentRows, isDatabaseConfigured, managedToolsTable } from "../../db/index.ts";
+import { mergeToolManifest, type ResolvedTool, type ToolManifestEntry } from "../tool-catalog/index.ts";
 
 import { definitionKeyOf, loadSpec } from "./catalog";
 import { TOOL_CATEGORIES } from "./categories";

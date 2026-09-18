@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import config from "@canopy/config";
-import publicConfig from "@canopy/config/public";
+import config from "../lib/config/config.ts";
+import publicConfig from "../lib/config/public.ts";
 
 test("configuration stays lazy across environment loading, updates and replacement", (t) => {
   const previous = process.env;

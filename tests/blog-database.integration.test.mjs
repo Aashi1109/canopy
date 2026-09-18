@@ -27,15 +27,9 @@ test(
       await admin.query(`DROP SCHEMA ${schema} CASCADE`);
       await admin.end();
     });
-    const migration = await readFile(
-      new URL("../packages/database/migration/0001-baseline/0006_blogs.sql", import.meta.url),
-      "utf8",
-    );
+    const migration = await readFile(new URL("../db/migration/0001-baseline/0006_blogs.sql", import.meta.url), "utf8");
     await sql.query(
-      await readFile(
-        new URL("../packages/database/migration/0001-baseline/0001_auth_control_plane.sql", import.meta.url),
-        "utf8",
-      ),
+      await readFile(new URL("../db/migration/0001-baseline/0001_auth_control_plane.sql", import.meta.url), "utf8"),
     );
     const [adminBefore] = (await sql.query("SELECT access FROM roles WHERE id = 'admin'")).rows;
     const customAccess = { admin: { enter: true }, blog: { view: true, edit: false } };

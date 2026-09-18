@@ -1,4 +1,4 @@
-import { getOptionalSession } from "@canopy/auth/session";
+import { getOptionalSession } from "@/lib/auth/session.ts";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 

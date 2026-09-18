@@ -19,11 +19,11 @@ const environment = {
 const originalEnv = Object.fromEntries(Object.keys(environment).map((key) => [key, process.env[key]]));
 Object.assign(process.env, environment);
 
-const authUrl = new URL("../packages/auth/src/auth.ts", import.meta.url).href;
-const emailUrl = new URL("../packages/auth/src/email.ts", import.meta.url).href;
+const authUrl = new URL("../lib/auth/auth.ts", import.meta.url).href;
+const emailUrl = new URL("../lib/auth/email.ts", import.meta.url).href;
 const mocks = {
-  "@canopy/authorization": "export const assertCanDeleteUser = () => {};",
-  "@canopy/database": `
+  "../authorization/index.ts": "export const assertCanDeleteUser = () => {};",
+  "../../db/index.ts": `
     export const authAccount = {}, authSession = {}, authUser = {}, authVerification = {}, userRolesTable = {};
     export const and = () => {}, countDistinct = () => {}, eq = () => {};
     export const db = { insert: () => ({ values: () => ({ onConflictDoNothing: async () => {} }) }) };

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { AlertBanner, Button } from "@canopy/ui";
+import { AlertBanner, Button } from "@/components/ui/index.tsx";
 import { readBlogAction } from "../actions";
 import { BlogRevisionList } from "./BlogRevisionList";
 

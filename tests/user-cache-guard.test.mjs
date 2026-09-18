@@ -8,7 +8,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 import redisClient from "redis";
 import { createServer } from "node:net";
-import { Cache, closeRedis } from "@canopy/cache";
+import { Cache, closeRedis } from "../lib/cache/index.ts";
 
 const run = promisify(execFile);
 

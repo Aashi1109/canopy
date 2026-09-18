@@ -3,7 +3,7 @@
 import { useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, ChevronDown, History, PanelRight, X } from "lucide-react";
-import { Button, Popover, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@canopy/ui";
+import { Button, Popover, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/index.tsx";
 
 import styles from "./BlogEditor.module.css";
 

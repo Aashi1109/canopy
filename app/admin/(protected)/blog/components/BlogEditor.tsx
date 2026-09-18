@@ -31,7 +31,7 @@ import {
   Textarea,
   toast,
   Toaster,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import type { BlogDocument, BlogImage } from "@/lib/blog/document";
 import { mutateBlogAction, uploadBlogImageAction } from "../actions";
 import { BlogEditorShell } from "./BlogEditorShell";

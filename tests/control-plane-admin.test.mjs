@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import redis from "redis";
-import { Cache, closeRedis } from "@canopy/cache";
+import { Cache, closeRedis } from "../lib/cache/index.ts";
 
-import { ADMIN_ACCESS } from "../packages/authorization/src/index.ts";
+import { ADMIN_ACCESS } from "../lib/authorization/index.ts";
 import {
   auditEventsTable,
   authSession,
@@ -14,8 +14,8 @@ import {
   managedToolsTable,
   rolesTable,
   userRolesTable,
-} from "../packages/database/src/index.ts";
-import { createAdvancedTemplateConfig, seedTemplates } from "../packages/invoice-templates/src/index.ts";
+} from "../db/index.ts";
+import { createAdvancedTemplateConfig, seedTemplates } from "../lib/invoice-templates/index.ts";
 import {
   archiveInvoiceTemplate,
   assignUserRoles,

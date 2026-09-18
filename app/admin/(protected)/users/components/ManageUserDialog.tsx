@@ -22,7 +22,7 @@ import {
   Button,
   Checkbox,
   StatusBadge,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { assignRolesAction, setUserStatusAction } from "../../../actions";
 
 type User = {

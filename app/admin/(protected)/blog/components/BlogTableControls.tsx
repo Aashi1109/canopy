@@ -38,7 +38,16 @@ import {
   Rows3,
   Trash2,
 } from "lucide-react";
-import { Button, Input, Label, Popover, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@canopy/ui";
+import {
+  Button,
+  Input,
+  Label,
+  Popover,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/index.tsx";
 import {
   appendBlogTableAxis,
   blogTableChangeFits,

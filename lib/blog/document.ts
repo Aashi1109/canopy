@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { slugFromName } from "@canopy/tool-catalog";
+import { slugFromName } from "../tool-catalog/index.ts";
 import { highlightBlogCode } from "./codeHighlight.ts";
 import { MAX_BLOG_MATH_LENGTH, normalizeBlogMath, renderBlogMath } from "./math.ts";
 

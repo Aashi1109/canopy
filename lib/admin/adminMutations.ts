@@ -1,5 +1,5 @@
-import config from "@canopy/config";
-import { withUserCacheInvalidation } from "@canopy/control-plane";
+import config from "../config/config.ts";
+import { withUserCacheInvalidation } from "./index.ts";
 import {
   assertCanDeleteRole,
   assertCanDemoteUser,
@@ -12,7 +12,7 @@ import {
   type Access,
   type Role,
   type User,
-} from "@canopy/authorization";
+} from "../authorization/index.ts";
 import {
   and,
   auditEventsTable,
@@ -28,7 +28,7 @@ import {
   rolesTable,
   toolContentTable,
   userRolesTable,
-} from "@canopy/database";
+} from "../../db/index.ts";
 import {
   createAdvancedTemplateConfig,
   DocumentTemplateSchema,
@@ -39,7 +39,7 @@ import {
   type InvoiceTemplate,
   type TemplateDocumentType,
   type TemplatePageFormat,
-} from "@canopy/invoice-templates";
+} from "../invoice-templates/index.ts";
 import {
   assertToolSlugImmutable,
   isValidToolSlug,
@@ -47,10 +47,10 @@ import {
   TOOL_SLUG_PATTERN,
   type ManagedTool,
   type ToolApp,
-} from "@canopy/tool-catalog";
-import { AuthorizationError, type FeatureApp, type FeatureManifestEntry } from "@canopy/control-plane";
+} from "../tool-catalog/index.ts";
+import { AuthorizationError, type FeatureApp, type FeatureManifestEntry } from "./index.ts";
 import { z } from "zod";
-import { Cache, CACHE_NAMESPACES } from "@canopy/cache";
+import { Cache, CACHE_NAMESPACES } from "../cache/index.ts";
 import { isCategoryKey, TOOL_CATEGORIES, type CategoryKey } from "../tool-framework/categories.ts";
 import { TOOL_CONTENT_DOC_VERSION } from "../tool-framework/content.ts";
 import { uploadToolIcon } from "../tool-framework/cloudinary.ts";
@@ -545,7 +545,7 @@ export async function setManagedToolArchived(actorUserId: string, toolId: string
 // override rather than storing an empty one, matching `resolveContent`, which
 // treats blank text and empty arrays as "not set" on read.
 //
-// Rows are written through the transaction (not through the `packages/database`
+// Rows are written through the transaction (not through the `db`
 // helpers, which own their own connection) so the write and its audit event
 // commit together, exactly like every other mutation in this file.
 // ---------------------------------------------------------------------------

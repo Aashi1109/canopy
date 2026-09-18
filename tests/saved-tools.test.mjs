@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { SavedToolsStore, STORAGE_KEY } from "../packages/ui/src/lib/saved-tools.ts";
+import { SavedToolsStore, STORAGE_KEY } from "../components/ui/lib/saved-tools.ts";
 
 const tools = ["devtools.json-formatter", "media.merge-pdf"].map((toolId) => ({
   toolId,

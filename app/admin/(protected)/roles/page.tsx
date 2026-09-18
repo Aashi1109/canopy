@@ -1,5 +1,15 @@
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
-import { H3, Caption, Strong, Card, Field, Input, StatusBadge, Textarea, ToolPageHeader } from "@canopy/ui";
+import {
+  H3,
+  Caption,
+  Strong,
+  Card,
+  Field,
+  Input,
+  StatusBadge,
+  Textarea,
+  ToolPageHeader,
+} from "@/components/ui/index.tsx";
 import {
   ChevronRight,
   CreditCard,

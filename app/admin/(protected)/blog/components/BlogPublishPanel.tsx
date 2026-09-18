@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
   StatusBadge,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 
 import styles from "./BlogEditor.module.css";
 

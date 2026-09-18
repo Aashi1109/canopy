@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { Check, CircleAlert } from "lucide-react";
-import { ToolActionButton, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, toast } from "@canopy/ui";
+import {
+  ToolActionButton,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  toast,
+} from "@/components/ui/index.tsx";
 import styles from "./codeHighlight.module.css";
 
 export function CopyBlogCode({ code }: { code: string }) {

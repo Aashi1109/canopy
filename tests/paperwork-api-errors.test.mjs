@@ -10,7 +10,7 @@ globalThis.__paperworkApiErrors = fixture;
 const moduleUrl = (source) => `data:text/javascript,${encodeURIComponent(source)}`;
 const stubs = {
   "@sentry/core": "export const captureException = error => globalThis.__paperworkApiErrors.captured.push(error);",
-  "@canopy/control-plane": `
+  "@/lib/admin/index.ts": `
     export async function getAvailableToolBySlug() {
       const fixture = globalThis.__paperworkApiErrors;
       if (fixture.error !== null) throw fixture.error;
@@ -22,23 +22,27 @@ const stubs = {
     }
     export async function getPublishedTemplates() { return []; }
   `,
-  "@canopy/invoice-templates": `
+  "@/lib/invoice-templates/index.ts": `
     export const DocumentTypeSchema = { safeParse: data => ({success: data === "invoice", data}) };
     export const getDocumentDefinition = () => ({toolComponentKey: "invoice-generator"});
   `,
-  "@/db": "export const db = {};",
-  "@/db/schema": "export const keyValuePairTable = {}; export const vendorProfilesTable = {};",
+  "@/db/paperwork": "export const db = {};",
+  "@/db/paperworkSchema": "export const keyValuePairTable = {}; export const vendorProfilesTable = {};",
   "@/db/bootstrap": "export async function ensureDatabaseBootstrapped() {} export async function ensureUserExists() {}",
   "@/lib/tool-framework/manifest": "export async function getToolManifest() { return {}; }",
 };
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
     if (stubs[specifier]) return { shortCircuit: true, url: moduleUrl(stubs[specifier]) };
+    if (specifier === "../admin/index.ts") {
+      return { shortCircuit: true, url: moduleUrl(stubs["@/lib/admin/index.ts"]) };
+    }
     if (specifier === "../tool-framework/manifest") {
       return { shortCircuit: true, url: moduleUrl(stubs["@/lib/tool-framework/manifest"]) };
     }
     if (specifier === "next/server") return nextResolve("next/server.js", context);
-    if (specifier.startsWith("@/")) return nextResolve(new URL(`${specifier.slice(2)}.ts`, root).href, context);
+    if (specifier.startsWith("@/"))
+      return nextResolve(new URL(`${specifier.slice(2)}${specifier.endsWith(".ts") ? "" : ".ts"}`, root).href, context);
     if (specifier === "../_lib/input") {
       return nextResolve(new URL("app/api/paperwork/_lib/input.ts", root).href, context);
     }

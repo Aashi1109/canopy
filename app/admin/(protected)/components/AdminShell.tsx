@@ -1,6 +1,6 @@
 "use client";
 
-import { Caption, BrandLockup, AccountNavigation, type AccountNavigationProps } from "@canopy/ui";
+import { Caption, BrandLockup, AccountNavigation, type AccountNavigationProps } from "@/components/ui/index.tsx";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { AdminNavigation } from "./AdminNavigation";

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { ADMIN_ACCESS } from "../packages/authorization/src/index.ts";
-import { auditEventsTable, db, managedToolsTable, toolContentTable } from "../packages/database/src/index.ts";
-import { reservedToolSlugs } from "../packages/tool-catalog/src/index.ts";
+import { ADMIN_ACCESS } from "../lib/authorization/index.ts";
+import { auditEventsTable, db, managedToolsTable, toolContentTable } from "../db/index.ts";
+import { reservedToolSlugs } from "../lib/tool-catalog/index.ts";
 import { createManagedTool } from "../lib/admin/adminMutations.ts";
 import { TOOL_CATEGORIES } from "../lib/tool-framework/categories.ts";
 

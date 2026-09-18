@@ -27,7 +27,7 @@ test(
     url.searchParams.set("options", `-c search_path=${schema}`);
     process.env.DATABASE_URL = url.toString();
     const queries = await import("../lib/blog/queries.ts");
-    const { sqlClient } = await import("../packages/database/src/index.ts");
+    const { sqlClient } = await import("../db/index.ts");
     context.after(async () => {
       await sqlClient.end();
       if (previousUrl === undefined) delete process.env.DATABASE_URL;
@@ -37,9 +37,7 @@ test(
       await admin.end();
     });
     for (const migration of ["0001_auth_control_plane.sql", "0006_blogs.sql"]) {
-      await sql.query(
-        await readFile(new URL(`../packages/database/migration/0001-baseline/${migration}`, import.meta.url), "utf8"),
-      );
+      await sql.query(await readFile(new URL(`../db/migration/0001-baseline/${migration}`, import.meta.url), "utf8"));
     }
     await sql.query(
       "INSERT INTO auth_users (id, name, email) VALUES ('viewer', 'Viewer', 'viewer@example.test'), ('denied', 'Denied', 'denied@example.test')",

@@ -1,4 +1,4 @@
-import { H2, Muted } from "@canopy/ui";
+import { H2, Muted } from "@/components/ui/index.tsx";
 import type { Metadata } from "next";
 import InformationPage from "@/app/paperwork/components/InformationPage";
 

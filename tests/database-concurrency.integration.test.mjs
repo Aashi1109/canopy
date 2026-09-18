@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { sql } from "drizzle-orm";
-import { createDatabase, sqlClient } from "../packages/database/src/runtime.ts";
+import { createDatabase, sqlClient } from "../db/runtime.ts";
 
 const enabled = process.env.CANOPY_INTEGRATION === "1" && Boolean(process.env.DATABASE_URL);
 

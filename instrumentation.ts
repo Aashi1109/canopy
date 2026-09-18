@@ -1,4 +1,4 @@
-import publicConfig from "@canopy/config/public";
+import publicConfig from "./lib/config/public.ts";
 import { captureRequestError } from "@sentry/nextjs";
 
 export async function register() {

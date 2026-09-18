@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert, AlertDescription, AlertTitle, Button, Caption, FieldLabel, Input } from "@canopy/ui";
+import { Alert, AlertDescription, AlertTitle, Button, Caption, FieldLabel, Input } from "@/components/ui/index.tsx";
 import { useEffect, useId, useState } from "react";
 import { validateFileSelection } from "@/components/FileInput";
 import { PdfFileWorkspace, PdfPageSelectionOverlay } from "@/components/PdfFileWorkspace";

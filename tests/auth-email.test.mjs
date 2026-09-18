@@ -4,7 +4,7 @@ import test from "node:test";
 
 const state = { sent: [], error: null };
 globalThis.__authEmailTest = state;
-const sourceUrl = new URL("../packages/auth/src/email.ts", import.meta.url).href;
+const sourceUrl = new URL("../lib/auth/email.ts", import.meta.url).href;
 const hooks = registerHooks({
   resolve(specifier, context, next) {
     if (context.parentURL === sourceUrl && specifier === "resend") {

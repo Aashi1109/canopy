@@ -1,6 +1,6 @@
 "use client";
 
-import { Caption, CodeBlock, Overline, Button } from "@canopy/ui";
+import { Caption, CodeBlock, Overline, Button } from "@/components/ui/index.tsx";
 import { Check, Clipboard, Code2 } from "lucide-react";
 import { useState, type ReactElement } from "react";
 

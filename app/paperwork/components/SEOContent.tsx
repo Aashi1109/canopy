@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { H3, Muted, P, Text, Card, SectionCard, SectionHeading } from "@canopy/ui";
+import { H3, Muted, P, Text, Card, SectionCard, SectionHeading } from "@/components/ui/index.tsx";
 import { FileCheck, Receipt, ShieldCheck, Sparkles } from "lucide-react";
 
 export default function SEOContent() {

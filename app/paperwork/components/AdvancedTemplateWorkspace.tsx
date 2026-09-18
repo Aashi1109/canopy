@@ -1,7 +1,11 @@
 "use client";
 
-import type { AdvancedDocumentTemplate, DocumentFieldDefinition, DocumentTemplate } from "@canopy/invoice-templates";
-import { containsFullTin, getDocumentDefinition } from "@canopy/invoice-templates";
+import type {
+  AdvancedDocumentTemplate,
+  DocumentFieldDefinition,
+  DocumentTemplate,
+} from "@/lib/invoice-templates/index.ts";
+import { containsFullTin, getDocumentDefinition } from "@/lib/invoice-templates/index.ts";
 import {
   Caption,
   H3,
@@ -17,8 +21,8 @@ import {
   Select,
   StatusBadge,
   Textarea,
-} from "@canopy/ui";
-import { OrderableList } from "@canopy/ui/components/OrderableList";
+} from "@/components/ui/index.tsx";
+import { OrderableList } from "@/components/ui/components/OrderableList.tsx";
 import { GripVertical, Plus, Printer, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DocumentAdapter } from "@/lib/paperwork/documentAdapters";

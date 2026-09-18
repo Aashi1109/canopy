@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import config from "@canopy/config";
-import publicConfig from "@canopy/config/public";
+import config from "../lib/config/config.ts";
+import publicConfig from "../lib/config/public.ts";
 // node scripts/update-tool-icons.mjs [--dry-run] [--missing-only] [--manifest path/to/manifest.json]
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import dotenv from "dotenv";
 import pg from "pg";
-import { Cache, CACHE_NAMESPACES, closeRedis } from "@canopy/cache";
+import { Cache, CACHE_NAMESPACES, closeRedis } from "../lib/cache/index.ts";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 

@@ -1,5 +1,5 @@
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
-import { getOptionalSession } from "@canopy/auth/session";
+import { getOptionalSession } from "@/lib/auth/session.ts";
 import {
   Caption,
   Display,
@@ -15,7 +15,7 @@ import {
   AccountNavigation,
   Button,
   ProductHeader,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { headers } from "next/headers";
 
 const projects = [

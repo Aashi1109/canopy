@@ -1,4 +1,4 @@
-import publicConfig from "@canopy/config/public";
+import publicConfig from "@/lib/config/public.ts";
 import { toolIconUrl } from "@/lib/tool-framework/icons";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ path: string[] }> }) {

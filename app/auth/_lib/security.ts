@@ -1,4 +1,4 @@
-import { getTrustedOrigins, normalizeProfileImage, safeReturnTo } from "@canopy/auth/security";
+import { getTrustedOrigins, normalizeProfileImage, safeReturnTo } from "../../../lib/auth/security.ts";
 
 export { normalizeProfileImage };
 

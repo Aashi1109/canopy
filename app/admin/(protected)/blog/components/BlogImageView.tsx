@@ -4,7 +4,16 @@ import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { closeHistory } from "@tiptap/pm/history";
 import { AlignCenter, AlignLeft, AlignRight, Crop, Replace, Trash2 } from "lucide-react";
-import { Button, Input, Label, Popover, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@canopy/ui";
+import {
+  Button,
+  Input,
+  Label,
+  Popover,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/index.tsx";
 import type { BlogImage } from "@/lib/blog/document";
 import { blogEditorImageSource } from "../lib/imageNode.ts";
 import { BlogImageCropDialog } from "./BlogImageCropDialog.tsx";

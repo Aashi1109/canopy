@@ -1,7 +1,7 @@
 "use server";
 
 import { measureServerAction } from "../../../../../lib/observability/sentry.ts";
-import { requirePermission } from "@canopy/control-plane";
+import { requirePermission } from "@/lib/admin/index.ts";
 import { revalidatePath } from "next/cache";
 import { getActorUserId } from "@/lib/admin/access";
 import { assignRoleToUsers } from "@/lib/admin/adminMutations";

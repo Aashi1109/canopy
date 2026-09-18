@@ -8,7 +8,7 @@ import {
   InvoiceTemplateSchema,
   getDefaultTemplateConfigByFamily,
   seedTemplates,
-} from "../packages/invoice-templates/src/index.ts";
+} from "../lib/invoice-templates/index.ts";
 
 const layoutFamilies = ["classic", "modern", "compact", "bold", "minimal", "service"];
 

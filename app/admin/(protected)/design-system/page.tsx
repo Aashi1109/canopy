@@ -23,9 +23,9 @@ import {
   InlineCode,
   CodeBlock,
   TextLink,
-} from "@canopy/ui/components/typography";
+} from "@/components/ui/components/typography.tsx";
 
-import { OrderableList } from "@canopy/ui/components/OrderableList";
+import { OrderableList } from "@/components/ui/components/OrderableList.tsx";
 import {
   AccountNavigation,
   Alert,
@@ -131,7 +131,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
   ToolPageHeader,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import {
   AlertTriangle,
   Bell,
@@ -151,7 +151,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import type { Chapter, PdfOutlineItem } from "@canopy/ui";
+import type { Chapter, PdfOutlineItem } from "@/components/ui/index.tsx";
 
 const sections = [
   ["#foundations", "Foundations"],
@@ -275,7 +275,7 @@ export default function DesignSystemPage() {
     <>
       <ToolPageHeader
         actions={<StatusBadge variant="success">Live components</StatusBadge>}
-        description="Every component below is rendered from @canopy/ui with the tokens and visual language defined in design.pen."
+        description="Every component below is rendered from @/components/ui/index.tsx with the tokens and visual language defined in design.pen."
         eyebrow="Design system"
         title="Component showcase"
       />
@@ -1148,7 +1148,7 @@ export default function DesignSystemPage() {
 
         <section className="scroll-mt-24" id="coverage">
           <SectionHeading
-            description="Every reusable design.pen node is mapped to a public @canopy/ui implementation."
+            description="Every reusable design.pen node is mapped to a public @/components/ui/index.tsx implementation."
             eyebrow="07"
             title={`${DESIGN_SYSTEM_COMPONENTS.length} component implementations`}
           />

@@ -10,12 +10,12 @@ const hooks = registerHooks({
     if (context.parentURL?.startsWith(routeRoot)) {
       if (specifier === "@sentry/core")
         return stub("export const captureException = error => globalThis.__savedToolsApiTest.captured.push(error);");
-      if (specifier === "@canopy/control-plane")
+      if (specifier === "@/lib/admin/index.ts")
         return stub(
           'export const getAvailableTools = async () => [{toolId:"paperwork.invoice-generator", name:"Invoice Generator", slug:"invoice-generator"}];',
         );
       if (specifier === "@/lib/tool-framework/manifest") return stub("export const getToolManifest = async () => [];");
-      if (specifier === "@canopy/auth/session")
+      if (specifier === "@/lib/auth/session.ts")
         return stub("export async function getSession(){ return globalThis.__savedToolsApiTest.session; }");
       if (specifier === "@/lib/tool-framework/catalog")
         return stub(

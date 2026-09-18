@@ -15,7 +15,7 @@ import {
   getMissingPermissionPrerequisite,
   hasPermission,
   mergeRoleAccess,
-} from "../packages/authorization/src/index.ts";
+} from "../lib/authorization/index.ts";
 
 const USER_DESCRIPTION = "Default role assigned to every account. Does not grant access to the Admin application.";
 const ADMIN_DESCRIPTION =

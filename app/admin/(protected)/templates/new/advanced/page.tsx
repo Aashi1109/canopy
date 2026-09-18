@@ -1,5 +1,5 @@
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
-import { DOCUMENT_DEFINITIONS } from "@canopy/invoice-templates";
+import { DOCUMENT_DEFINITIONS } from "@/lib/invoice-templates/index.ts";
 import {
   H3,
   Label,
@@ -15,7 +15,7 @@ import {
   StatusBadge,
   Textarea,
   buttonVariants,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { ArrowLeft, Braces, Copy, FilePenLine, Plus, Upload } from "lucide-react";
 import Link from "next/link";
 import { requirePagePermission } from "../../../../../../lib/admin/access";

@@ -1,11 +1,11 @@
 "use server";
 
-import config from "@canopy/config";
+import config from "@/lib/config/config.ts";
 import { measureServerAction } from "../../../../lib/observability/sentry.ts";
 import { captureException, getActiveSpan } from "@sentry/core";
 import { z, ZodError } from "zod";
 import { errorMessage } from "../../../../utils/errorMessage.ts";
-import { AuthorizationError } from "@canopy/control-plane";
+import { AuthorizationError } from "@/lib/admin/index.ts";
 import { getActorUserId } from "../../../../lib/admin/access";
 import {
   BlogError,

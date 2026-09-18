@@ -3,20 +3,20 @@ import { registerHooks } from "node:module";
 import test from "node:test";
 import { sql } from "drizzle-orm";
 
-const runtimeUrl = new URL("../packages/database/src/runtime.ts", import.meta.url).href;
+const runtimeUrl = new URL("../db/runtime.ts", import.meta.url).href;
 const bootstrapUrl = new URL("../db/bootstrap.ts", import.meta.url).href;
 const clients = [];
 globalThis.__databaseRequestClients = clients;
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
-    if (context.parentURL === bootstrapUrl && specifier === "./index") {
+    if (context.parentURL === bootstrapUrl && specifier === "./paperwork.ts") {
       return {
         shortCircuit: true,
         url: "data:text/javascript,export const db = globalThis.__bootstrapDb",
       };
     }
-    if (context.parentURL === bootstrapUrl && specifier === "./schema") {
-      return { shortCircuit: true, url: new URL("../db/schema.ts", import.meta.url).href };
+    if (context.parentURL === bootstrapUrl && specifier === "./paperworkSchema.ts") {
+      return { shortCircuit: true, url: new URL("../db/paperworkSchema.ts", import.meta.url).href };
     }
     if (specifier === "pg") {
       return {

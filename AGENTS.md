@@ -2,30 +2,29 @@
 
 ## Scope and Working Rules
 
-This file is the repository-wide baseline. Read the nearest `AGENTS.md` before editing. Add a nested `AGENTS.md` only when an app or package has genuinely different commands or constraints, and put only those differences in it.
+This file is the repository-wide baseline. Read the nearest `AGENTS.md` before editing. Add a nested `AGENTS.md` only when an route scope or module has genuinely different commands or constraints, and put only those differences in it.
 
 Before changing code:
 
 1. Inspect `git status --short` and preserve unrelated work.
-2. Search the target app and `packages/*` for an existing component, helper, type, schema, or pattern.
+2. Search the target route, `lib`, `db`, and `components` for an existing component, helper, type, schema, or pattern.
 3. Trace the callers and consumers of code being changed.
 4. Make the smallest change that solves the current task; do not add scaffolding for possible future work.
 
 Do not reorganize unrelated existing files during feature or bug work. New code must follow the structure below. When moving code, update every import, remove the old file, and avoid compatibility re-exports unless the old path is a real public API.
 
-## Monorepo Boundaries
+## Application Boundaries
 
-This is a pnpm monorepo with one Next.js application:
+This is one Next.js application managed with pnpm:
 
 - `app`, `lib`, `db`, and `public` — the root SmartTools application, including `/paperwork`, `/devtools`, `/media`, `/auth`, and `/admin` route scopes (port 3000).
 - `tools/*` — flat, application-owned tool definitions, execution adapters, and optional tool-owned workspaces keyed by stable definition key.
-- `packages/*` — code genuinely shared by multiple workspaces or a named standalone capability.
-- `services/*` — independently running backend services only, not shared helpers.
+- `components/ui` — the shared application design system.
 - `tests/*` — repository-level regression and architecture tests.
 
 Do not create a root-level `src`, a top-level `components` folder for one route scope, or a vague `shared` directory. Do not create empty directories.
 
-The application does not use Next.js's optional `src` directory. Keep runtime code in the root-owned directories above. Packages must not import from the application. Cross-workspace dependencies flow from the application or services into packages and must not form cycles.
+The application does not use Next.js's optional `src` directory. Keep runtime code in the root-owned directories above. Application modules must not form dependency cycles.
 
 ## Mandatory File Placement
 
@@ -40,7 +39,6 @@ Place code at the narrowest scope that owns it. Promote code only when a real se
 | Small pure, domain-neutral helper reused across routes | `utils/<capability>.ts` |
 | Database client, schema, or bootstrap code | `db` and server-only modules |
 | Static browser-served asset | `public` |
-| Used by the application and a service or multiple packages | Existing `packages/<capability>` package; create one only when no package fits |
 | One tool's definition, execution adapter, result contract, or complete left workspace | `tools/<definition-key>` |
 | Repository regression test | `tests/*.test.mjs` |
 
@@ -48,15 +46,14 @@ Place code at the narrowest scope that owns it. Promote code only when a real se
 
 `utils` is not a dumping ground. Business rules, storage, API clients, database access, and feature-specific transformations belong in `lib/<domain>` or the route's `_lib`. Prefer descriptive names such as `currency.ts` or `invoiceTotals.ts`; do not add vague `helpers.ts`, `common.ts`, `misc.ts`, or a second catch-all `utils.ts`.
 
-Do not create a standalone file for a one-use wrapper, interface, constant, or trivial function. Do not add app-internal barrel files merely to shorten imports. A package entry point may re-export its intentional public API.
+Do not create a standalone file for a one-use wrapper, interface, constant, or trivial function. Do not add app-internal barrel files merely to shorten imports.
 
 ## Shared Code and Dependencies
 
 - Reuse an existing helper when it has the same responsibility; do not force unrelated behavior into it merely to avoid a new file.
-- Do not create vague packages such as `packages/shared`, `packages/common`, or `packages/utils`. Name a package after a stable capability.
-- Consumers must declare workspace packages in their own `package.json` with `"workspace:*"` and import the package name. Never deep-import another workspace's source or use TypeScript `paths` to imitate a package dependency.
-- The root application and every package declare the runtime and development dependencies they import.
-- Use pnpm only. Add a dependency to its owning workspace with `pnpm --filter <workspace> add <package>`; do not hand-edit `pnpm-lock.yaml`.
+- Keep capabilities in application-owned folders. Extract a package only when a real second application or service needs it.
+- Declare runtime and development dependencies in the root `package.json`.
+- Use pnpm only. Add dependencies with `pnpm add <package>`; do not hand-edit `pnpm-lock.yaml`.
 - Before adding a production dependency, prefer the standard library, the web/Next.js platform, or an already-installed dependency. Record the reason when a new dependency is necessary.
 
 ## Next.js and TypeScript Rules
@@ -134,7 +131,7 @@ For code changes:
 2. Run `pnpm test`.
 3. Run `pnpm lint`.
 4. Never run `pnpm build` unless asked or something type error or issue come in project which may affect build.
-5. Run the affected package's own checks when shared packages changed.
+5. Run focused checks for affected shared modules.
 6. Finish with `git diff --check` and `git status --short`; inspect all changed and untracked files.
 
 For documentation-only changes, review the diff and verify that documented paths and commands exist; code builds are unnecessary. Never claim a check passed unless it was run, and report any failure or environment blocker exactly.
@@ -148,14 +145,12 @@ For documentation-only changes, review the diff and verify that documented paths
 
 ## Commit and Pull Request Guidelines
 
-Use short imperative commit subjects; `feat:`, `fix:`, and `chore:` prefixes are preferred but not required. Pull requests should name affected route scopes and packages, link relevant issues, list verification commands, include screenshots for visible UI changes, and call out environment or database changes.
+Use short imperative commit subjects; `feat:`, `fix:`, and `chore:` prefixes are preferred but not required. Pull requests should name affected route scopes and modules, link relevant issues, list verification commands, include screenshots for visible UI changes, and call out environment or database changes.
 
 ## Reference Basis
 
 - [OpenAI Codex `AGENTS.md` guidance](https://developers.openai.com/codex/guides/agents-md)
 - [Next.js project structure and colocation](https://nextjs.org/docs/app/getting-started/project-structure)
-- [pnpm workspaces and the `workspace:` protocol](https://pnpm.io/workspaces)
-- [TypeScript guidance for monorepo package imports](https://www.typescriptlang.org/docs/handbook/modules/reference#paths-should-not-point-to-monorepo-packages-or-node_modules-packages)
 - [Git rules for generated and temporary files](https://git-scm.com/docs/gitignore)
 
 <!-- BEGIN:nextjs-agent-rules -->

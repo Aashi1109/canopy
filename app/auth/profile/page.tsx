@@ -1,7 +1,15 @@
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
-import { auth } from "@canopy/auth";
-import { isAdminUser } from "@canopy/auth/session";
-import { H1, Muted, Overline, AccountNavigation, AppContainer, ProductHeader, StatusBadge } from "@canopy/ui";
+import { auth } from "@/lib/auth/index.ts";
+import { isAdminUser } from "@/lib/auth/session.ts";
+import {
+  H1,
+  Muted,
+  Overline,
+  AccountNavigation,
+  AppContainer,
+  ProductHeader,
+  StatusBadge,
+} from "@/components/ui/index.tsx";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { resolveConfiguredReturnTo } from "../_lib/returnTo";

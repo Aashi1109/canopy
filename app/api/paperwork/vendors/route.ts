@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { captureException } from "@sentry/core";
-import { db } from "@/db";
-import { vendorProfilesTable } from "@/db/schema";
+import { db } from "@/db/paperwork";
+import { vendorProfilesTable } from "@/db/paperworkSchema";
 import { ensureDatabaseBootstrapped, ensureUserExists } from "@/db/bootstrap";
 import { errorMessage } from "@/utils/errorMessage";
 import {

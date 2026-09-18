@@ -15,7 +15,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { Download, FileText, Upload, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
 

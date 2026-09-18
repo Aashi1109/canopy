@@ -16,7 +16,7 @@ test.beforeAll(async () => {
     `
     import React, { useState } from "react";
     import { createRoot } from "react-dom/client";
-    import { ScrollAwareHeader } from ${JSON.stringify(join(root, "packages/ui/src/components/ScrollAwareHeader.tsx"))};
+    import { ScrollAwareHeader } from ${JSON.stringify(join(root, "components/ui/components/ScrollAwareHeader.tsx"))};
     let childRenders = 0;
     function Child() {
       childRenders += 1;
@@ -71,7 +71,7 @@ test.beforeAll(async () => {
       if (error || stats.hasErrors()) { console.error(error || stats.toString({ all: false, errors: true })); process.exitCode = 1; }
     }));
     requireRoot("postcss")([requireRoot("@tailwindcss/postcss")()])
-      .process(${JSON.stringify(`@import "tailwindcss" source(none); @import "${join(root, "packages/ui/src/theme.css")}";`)}, { from: ${JSON.stringify(join(root, "scroll-fixture.css"))} })
+      .process(${JSON.stringify(`@import "tailwindcss" source(none); @import "${join(root, "components/ui/theme.css")}";`)}, { from: ${JSON.stringify(join(root, "scroll-fixture.css"))} })
       .then(result => require("node:fs").writeFileSync(${JSON.stringify(join(scratch, "fixture.css"))}, result.css));
   `,
   );

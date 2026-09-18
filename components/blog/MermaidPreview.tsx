@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Button, MediaPreview, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@canopy/ui";
+import {
+  Button,
+  MediaPreview,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/index.tsx";
 import { Minus, Plus } from "lucide-react";
 
 export function MermaidPreview({

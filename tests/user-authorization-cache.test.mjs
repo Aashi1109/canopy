@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import redis from "redis";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { authUser, db } from "@canopy/database";
-import { Cache } from "@canopy/cache";
-import { AuthorizationError, getUserAuthorization, withUserCacheInvalidation } from "@canopy/control-plane";
+import { authUser, db } from "../db/index.ts";
+import { Cache } from "../lib/cache/index.ts";
+import { AuthorizationError, getUserAuthorization, withUserCacheInvalidation } from "../lib/admin/index.ts";
 
 const initialTime = new Date("2026-09-16T00:00:00.000Z");
 const editor = {

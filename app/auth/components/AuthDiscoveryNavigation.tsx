@@ -1,7 +1,7 @@
 "use client";
-import { Caption, P, Small, Strong, Text, TextLink } from "@canopy/ui";
+import { Caption, P, Small, Strong, Text, TextLink } from "@/components/ui/index.tsx";
 
-import type { ToolApp } from "@canopy/tool-catalog";
+import type { ToolApp } from "@/lib/tool-catalog/index.ts";
 import type { CatalogTool } from "@/lib/tool-framework/catalog";
 import { TOOL_CATEGORIES, type CategoryKey } from "@/lib/tool-framework/categories";
 import {

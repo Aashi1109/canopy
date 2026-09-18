@@ -11,8 +11,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
   usePanelRef,
-} from "@canopy/ui";
-import { cn } from "@canopy/ui/lib/utils";
+} from "@/components/ui/index.tsx";
+import { cn } from "@/components/ui/lib/utils.ts";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, SlidersHorizontal } from "lucide";
 import { MorphIcon } from "morphicons/react";
 import { Children, type HTMLAttributes, type ReactNode, useEffect, useId, useRef, useState } from "react";

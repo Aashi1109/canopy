@@ -1,6 +1,6 @@
 # SmartTools
 
-SmartTools is a pnpm monorepo with one Next.js application and shared capability packages.
+SmartTools is a single Next.js application managed with pnpm.
 
 ## Application
 
@@ -11,7 +11,15 @@ SmartTools is a pnpm monorepo with one Next.js application and shared capability
 - `/admin/*` — permission-gated tools, templates, flags, users, roles, and audit control plane.
 - `/auth/*` — authentication and account management with Better Auth.
 
-All routes are served by the root Next.js application on port 3000. Public tools remain anonymous. Authentication reads sessions in-process through `@canopy/auth`; Admin additionally requires `admin.enter` and the exact permission for each page or mutation.
+All routes are served by the root Next.js application on port 3000. Public tools remain anonymous. Authentication reads sessions in-process through `@/lib/auth/index.ts`; Admin additionally requires `admin.enter` and the exact permission for each page or mutation.
+
+## Code layout
+
+- `app/` owns routes; `tools/` owns individual tools.
+- `lib/` owns authentication, authorization, cache, configuration, admin logic, and tool/template capabilities.
+- `db/` owns database clients, schemas, migration folders, and database scripts.
+- `components/ui/` owns the shared design system.
+- `package.json` declares all dependencies; `pnpm-workspace.yaml` retains pnpm install policies only.
 
 ## Commands
 
@@ -28,11 +36,11 @@ pnpm test:media
 
 ## Configuration
 
-Application, package, and CLI configuration is read through
-`packages/config/src/config.ts` (`import config from "@canopy/config"`), grouped by
+Application and CLI configuration is read through
+`lib/config/config.ts` (`import config from "@/lib/config/config.ts"`), grouped by
 service like `config.cloudinary` and `config.auth`. Getters preserve runtime reads
 and CLI dotenv loading order; required-value validation stays with each operation.
-Browser/shared client modules use `@canopy/config/public`, which contains only
+Browser/shared client modules use `@/lib/config/public.ts`, which contains only
 public values. Add new environment reads there or in the server config, rather
 than directly in consumers. Next.js loads app environment files; CLI scripts keep
 their existing dotenv setup. Test harnesses still set and forward process environments.
@@ -97,7 +105,7 @@ Set `ACCOUNTS_EMAIL=accounts@smarttools.lol` for account-related emails sent thr
 
 ## Database migrations
 
-Run `pnpm db:migrate <folder>` with a folder name under `packages/database/migration/`.
+Run `pnpm db:migrate <folder>` with a folder name under `db/migration/`.
 Only that folder's immediate `.sql` files run, in filename order. A folder is required;
 there is no default or automatic run of every folder. Prefix SQL filenames with numbers
 to control execution order.

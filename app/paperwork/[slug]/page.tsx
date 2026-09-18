@@ -1,6 +1,6 @@
-import { getOptionalSession } from "@canopy/auth/session";
-import { getAvailableToolBySlug, getAvailableTools, getPublishedTemplates } from "@canopy/control-plane";
-import type { DocumentType } from "@canopy/invoice-templates";
+import { getOptionalSession } from "@/lib/auth/session.ts";
+import { getAvailableToolBySlug, getAvailableTools, getPublishedTemplates } from "@/lib/admin/index.ts";
+import type { DocumentType } from "@/lib/invoice-templates/index.ts";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import App from "@/app/paperwork/components/App";

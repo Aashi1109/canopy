@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
 import redis from "redis";
-import { Cache, closeRedis } from "@canopy/cache";
+import { Cache, closeRedis } from "../lib/cache/index.ts";
 
 test("catalog caches database data, preserves published content, and refreshes after invalidation", async (t) => {
   const catalogUrl = new URL("../lib/tool-framework/catalog.ts", import.meta.url).href;
@@ -43,7 +43,7 @@ test("catalog caches database data, preserves published content, and refreshes a
   const previous = variables.map((key) => process.env[key]);
   const hooks = registerHooks({
     resolve(specifier, context, nextResolve) {
-      if (context.parentURL === catalogUrl && specifier === "@canopy/database") {
+      if (context.parentURL === catalogUrl && specifier === "../../db/index.ts") {
         return {
           shortCircuit: true,
           url: `data:text/javascript,${encodeURIComponent(`

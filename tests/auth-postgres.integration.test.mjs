@@ -35,8 +35,8 @@ test(
     };
 
     const [{ auth }, { db, sql, sqlClient }] = await Promise.all([
-      import(`../packages/auth/src/auth.ts?integration=${randomUUID()}`),
-      import("../packages/database/src/index.ts"),
+      import(`../lib/auth/auth.ts?integration=${randomUUID()}`),
+      import("../db/index.ts"),
     ]);
     context.after(async () => {
       globalThis.fetch = nativeFetch;

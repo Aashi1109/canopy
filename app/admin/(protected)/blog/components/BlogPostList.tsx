@@ -31,7 +31,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 
 export interface BlogPostListItem {
   id: string;

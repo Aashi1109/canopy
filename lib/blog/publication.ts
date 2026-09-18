@@ -1,4 +1,4 @@
-import config from "@canopy/config";
+import config from "../config/config.ts";
 import type { Metadata } from "next";
 import { z } from "zod";
 import { blogImageUrl, validateBlogDocument, type BlogDocument } from "./document.ts";

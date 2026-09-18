@@ -1,4 +1,4 @@
-import config from "@canopy/config";
+import config from "./lib/config/config.ts";
 import { defineConfig, devices } from "@playwright/test";
 
 if (!config.databaseUrl) {

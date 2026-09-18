@@ -29,15 +29,6 @@ test("SmartTools is a root-owned direct-layout Next.js application", async () =>
   assert.equal(await exists("src"), false);
 });
 
-test("pnpm discovers packages and services without nested applications", async () => {
-  const workspace = await readFile(new URL("pnpm-workspace.yaml", root), "utf8");
-
-  for (const pattern of ['"packages/*"', '"services/*"']) {
-    assert.match(workspace, new RegExp(`- ${pattern.replace("*", "\\*")}`));
-  }
-  assert.doesNotMatch(workspace, /-\s*["']apps\/\*["']/);
-});
-
 test("public tools use scoped server-resolved dynamic slugs", async () => {
   const [paperworkCatalog, paperworkTool, devtoolsCatalog, devtoolsTool, mediaCatalog, mediaTool] = await Promise.all([
     readFile(new URL("app/paperwork/page.tsx", root), "utf8"),
@@ -149,7 +140,7 @@ test("legacy Paperwork template administration is removed", async () => {
   const [environment, bootstrap, schema] = await Promise.all([
     readFile(new URL(".env.example", root), "utf8"),
     readFile(new URL("db/bootstrap.ts", root), "utf8"),
-    readFile(new URL("db/schema.ts", root), "utf8"),
+    readFile(new URL("db/paperworkSchema.ts", root), "utf8"),
   ]);
   assert.doesNotMatch(environment, /ADMIN_PASSCODE/);
   assert.doesNotMatch(bootstrap, /admin_passcode|ADMIN_PASSCODE|invoice_templates/);
@@ -185,13 +176,13 @@ test("Admin and Media ordering use the shared accessible drag-and-drop list", as
   const [editor, toolList, orderableList] = await Promise.all([
     readFile(new URL("app/admin/(protected)/templates/[id]/components/TemplateEditor.tsx", root), "utf8"),
     readFile(new URL("app/admin/(protected)/tools/components/ToolList.tsx", root), "utf8"),
-    readFile(new URL("packages/ui/src/components/OrderableList.tsx", root), "utf8"),
+    readFile(new URL("components/ui/components/OrderableList.tsx", root), "utf8"),
   ]);
 
   assert.match(editor, /<OrderableList/);
   assert.match(editor, /GripVertical/);
   assert.doesNotMatch(editor, /moveSection|ArrowUp|ArrowDown/);
-  assert.match(toolList, /@canopy\/ui\/components\/OrderableList/);
+  assert.match(toolList, /@\/components\/ui\/components\/OrderableList/);
   assert.match(orderableList, /KeyboardSensor/);
   assert.match(orderableList, /PointerSensor/);
   assert.match(orderableList, /sortableKeyboardCoordinates/);

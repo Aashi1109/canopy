@@ -1,4 +1,4 @@
-import { ProductFooter } from "@canopy/ui";
+import { ProductFooter } from "@/components/ui/index.tsx";
 import { Blocks } from "lucide-react";
 
 /**

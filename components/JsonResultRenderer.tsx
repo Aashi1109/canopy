@@ -30,7 +30,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
   type OrderableItemState,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import {
   Brackets,
   ChevronDown,

@@ -18,7 +18,7 @@ test(
     context.after(() => transaction.end());
     const schema = `user_role_cache_test_${randomUUID().replaceAll("-", "")}`;
     const migration = await readFile(
-      new URL("../packages/database/migration/0001-baseline/0007_user_role_cache.sql", import.meta.url),
+      new URL("../db/migration/0001-baseline/0007_user_role_cache.sql", import.meta.url),
       "utf8",
     );
     await transaction.query("BEGIN");
@@ -142,10 +142,7 @@ test(
       INSERT INTO roles (id, name) VALUES ('editor', 'Editor');
     `);
       await admin.query(
-        await readFile(
-          new URL("../packages/database/migration/0001-baseline/0007_user_role_cache.sql", import.meta.url),
-          "utf8",
-        ),
+        await readFile(new URL("../db/migration/0001-baseline/0007_user_role_cache.sql", import.meta.url), "utf8"),
       );
       await admin.query("COMMIT");
     } catch (error) {

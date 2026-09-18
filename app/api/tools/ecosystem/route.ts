@@ -2,8 +2,8 @@ import { TOOL_CATEGORIES } from "@/lib/tool-framework/categories";
 import { getTools } from "@/lib/tool-framework/catalog";
 import { resolveIcon } from "@/lib/tool-framework/icons";
 import { getToolManifest } from "@/lib/tool-framework/manifest";
-import { getAvailableTools } from "@canopy/control-plane";
-import { Cache, CACHE_NAMESPACES } from "@canopy/cache";
+import { getAvailableTools } from "@/lib/admin/index.ts";
+import { Cache, CACHE_NAMESPACES } from "@/lib/cache/index.ts";
 import { errorMessage } from "@/utils/errorMessage";
 import { captureException } from "@sentry/core";
 

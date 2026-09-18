@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { requirePagePermission } from "../../../../../lib/admin/access";
 import { getRole, listRoleUsers } from "../../../../../lib/admin/data";
-import { getUserAuthorization } from "@canopy/control-plane";
-import { hasPermission } from "@canopy/authorization";
+import { getUserAuthorization } from "@/lib/admin/index.ts";
+import { hasPermission } from "@/lib/authorization/index.ts";
 import RoleEditor from "./RoleEditor";
 
 export default async function RolePage({ params }: { params: Promise<{ id: string }> }) {

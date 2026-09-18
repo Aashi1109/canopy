@@ -1,6 +1,13 @@
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
-import { getOptionalSession } from "@canopy/auth/session";
-import { AccountNavigation, AppContainer, Button, Card, ProductHeader, ToolPageHeader } from "@canopy/ui";
+import { getOptionalSession } from "@/lib/auth/session.ts";
+import {
+  AccountNavigation,
+  AppContainer,
+  Button,
+  Card,
+  ProductHeader,
+  ToolPageHeader,
+} from "@/components/ui/index.tsx";
 import { ArrowLeft } from "lucide-react";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";

@@ -8,7 +8,7 @@ import {
   type CategoryKey,
 } from "@/lib/tool-framework/categories";
 import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
-import { getOptionalSession } from "@canopy/auth/session";
+import { getOptionalSession } from "@/lib/auth/session.ts";
 import {
   Caption,
   H2,
@@ -28,7 +28,7 @@ import {
   ProductHeader,
   SectionHeading,
   buttonVariants,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { ArrowLeft, ArrowRight, ArrowUpRight, LayoutGrid, LockKeyhole, Search, ShieldCheck } from "lucide-react";
 import { headers } from "next/headers";
 import { CategoryFilter } from "./components/CategoryFilter";

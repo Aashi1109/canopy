@@ -1,4 +1,4 @@
-import { typographyStyles, Caption } from "@canopy/ui";
+import { typographyStyles, Caption } from "@/components/ui/index.tsx";
 import type { ToolRender } from "@/lib/tool-framework/result";
 
 export interface DiffViewProps {

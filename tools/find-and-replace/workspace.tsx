@@ -1,6 +1,6 @@
 "use client";
 
-import { Strong, FieldLabel, CodeBlock, Muted, ToolOptionsPanel } from "@canopy/ui";
+import { Strong, FieldLabel, CodeBlock, Muted, ToolOptionsPanel } from "@/components/ui/index.tsx";
 import { ArrowRight } from "lucide-react";
 import { Fragment, useEffect, useId, useMemo } from "react";
 

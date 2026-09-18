@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { db } from "../packages/database/src/index.ts";
-import { createAdvancedTemplateConfig, seedTemplates } from "../packages/invoice-templates/src/index.ts";
-import { getPublishedTemplates } from "../packages/control-plane/src/queries.ts";
+import { db } from "../db/index.ts";
+import { createAdvancedTemplateConfig, seedTemplates } from "../lib/invoice-templates/index.ts";
+import { getPublishedTemplates } from "../lib/admin/queries.ts";
 
 function templateRow(overrides = {}) {
   const template = seedTemplates[0];

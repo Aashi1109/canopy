@@ -4,7 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import * as catalog from "../packages/tool-catalog/src/index.ts";
+import * as catalog from "../lib/tool-catalog/index.ts";
 import { TOOL_CATEGORIES } from "../lib/tool-framework/categories.ts";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");

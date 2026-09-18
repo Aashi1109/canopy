@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
-import { seedTemplates } from "../packages/invoice-templates/src/index.ts";
+import { seedTemplates } from "../lib/invoice-templates/index.ts";
 
-const migrationUrl = new URL("../packages/database/scripts/migrate.mjs", import.meta.url).href;
-const seedUrl = new URL("../packages/database/scripts/seed.mjs", import.meta.url).href;
+const migrationUrl = new URL("../db/scripts/migrate.mjs", import.meta.url).href;
+const seedUrl = new URL("../db/scripts/seed.mjs", import.meta.url).href;
 const stub = (source) => ({
   shortCircuit: true,
   url: `data:text/javascript,${encodeURIComponent(source)}`,
@@ -41,7 +41,7 @@ test("selected migrations and separate seeding", async (t) => {
             "export default { Client: class Client { constructor() { return globalThis.__migrationSeedClient; } } };",
           );
         }
-        if (specifier === "@canopy/cache")
+        if (specifier === "../../lib/cache/index.ts")
           return stub(`
           export const CACHE_NAMESPACES = { CATALOG: "catalog", ECOSYSTEM: "ecosystem" };
           export class Cache {

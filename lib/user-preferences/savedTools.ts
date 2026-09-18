@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { db, userPreferencesTable } from "@canopy/database";
+import { db, userPreferencesTable } from "../../db/index.ts";
 
 const KEY = "saved_tools";
 

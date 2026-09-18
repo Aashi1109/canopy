@@ -1,6 +1,6 @@
 "use client";
 
-import { TextLink, Button } from "@canopy/ui";
+import { TextLink, Button } from "@/components/ui/index.tsx";
 import type { MouseEvent } from "react";
 import { shouldUseBrowserBack } from "../../_lib/security";
 

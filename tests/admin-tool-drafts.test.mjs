@@ -9,7 +9,7 @@ const moduleUrl = (source) => `data:text/javascript,${encodeURIComponent(source)
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
     if (context.parentURL === manifestUrl) {
-      if (specifier === "@canopy/database") {
+      if (specifier === "../../db/index.ts") {
         return {
           shortCircuit: true,
           url: moduleUrl(`

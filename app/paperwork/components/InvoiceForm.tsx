@@ -36,7 +36,7 @@ import {
   H3,
   Select,
   Textarea,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { InvoiceData, InvoiceLineItem } from "@/lib/paperwork/types";
 
 interface InvoiceFormProps {

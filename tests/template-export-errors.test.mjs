@@ -13,7 +13,7 @@ const hooks = registerHooks({
         return stub(
           "export const captureException = error => globalThis.__templateExportErrorsTest.captured.push(error);",
         );
-      if (specifier === "@canopy/auth/session")
+      if (specifier === "@/lib/auth/session.ts")
         return stub(`
         export class AuthServiceError extends Error {}
         export async function getSession() {
@@ -22,13 +22,13 @@ const hooks = registerHooks({
           return state.session;
         }
       `);
-      if (specifier === "@canopy/control-plane")
+      if (specifier === "@/lib/admin/index.ts")
         return stub(`
         export async function requirePermission() {
           if (globalThis.__templateExportErrorsTest.permissionFailure) throw globalThis.__templateExportErrorsTest.permissionFailure;
         }
       `);
-      if (specifier === "@canopy/database")
+      if (specifier === "@/db/index.ts")
         return stub(`
         export const eq = () => null, invoiceTemplatesTable = { id: "id" };
         export const db = { select() {

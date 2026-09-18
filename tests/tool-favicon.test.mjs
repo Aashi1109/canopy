@@ -7,7 +7,7 @@ const iconsUrl = new URL("../lib/tool-framework/icons.ts", import.meta.url).href
 const proxyUrl = new URL("../proxy.ts", import.meta.url).href;
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
-    if (context.parentURL === proxyUrl && specifier === "@canopy/auth") {
+    if (context.parentURL === proxyUrl && specifier === "./lib/auth/index.ts") {
       return { shortCircuit: true, url: "data:text/javascript,export const auth = {}" };
     }
     if (specifier === "next/server") return nextResolve("next/server.js", context);
@@ -17,6 +17,8 @@ const hooks = registerHooks({
     if (context.parentURL === iconsUrl && specifier === "./identicon") {
       return nextResolve(new URL("../lib/tool-framework/identicon.ts", import.meta.url).href, context);
     }
+    if (specifier === "@/lib/config/public.ts")
+      return nextResolve(new URL("../lib/config/public.ts", import.meta.url).href, context);
     return nextResolve(specifier, context);
   },
 });

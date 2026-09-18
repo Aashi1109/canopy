@@ -14,7 +14,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { mutateBlogAction } from "../actions";
 
 interface Props {

@@ -1,9 +1,21 @@
-import config from "@canopy/config";
+import config from "@/lib/config/config.ts";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import { ArrowRight, BookOpen, Search } from "lucide-react";
-import { Button, Card, Caption, EmptyState, H1, H2, Input, Label, Overline, P, TextLink } from "@canopy/ui";
+import {
+  Button,
+  Card,
+  Caption,
+  EmptyState,
+  H1,
+  H2,
+  Input,
+  Label,
+  Overline,
+  P,
+  TextLink,
+} from "@/components/ui/index.tsx";
 import { BlogValidationError, blogImageUrl } from "@/lib/blog/document";
 import { listPublishedBlogPosts, listPublishedBlogTaxonomy } from "@/lib/blog/queries";
 import { BlogByline } from "./components/BlogTeaser";

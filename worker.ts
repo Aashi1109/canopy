@@ -1,4 +1,4 @@
-import { withDatabaseRequest } from "@canopy/database/runtime";
+import { withDatabaseRequest } from "./db/runtime.ts";
 import { runBlogPublishCron, type BlogCronEnv } from "./lib/blog/cron";
 // @ts-ignore OpenNext generates this module during the deployment build.
 import handler from "./.open-next/worker.js";

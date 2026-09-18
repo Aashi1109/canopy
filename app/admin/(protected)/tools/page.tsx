@@ -1,4 +1,4 @@
-import { TextLink, EmptyState, ToolPageHeader } from "@canopy/ui";
+import { TextLink, EmptyState, ToolPageHeader } from "@/components/ui/index.tsx";
 import { PackageSearch } from "lucide-react";
 import { requirePagePermission } from "../../../../lib/admin/access";
 import { getAdminTools } from "../../../../lib/tool-framework/manifest";

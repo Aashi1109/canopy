@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Popover, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, toast } from "@canopy/ui";
+import {
+  Button,
+  Popover,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  toast,
+} from "@/components/ui/index.tsx";
 import { ChevronDown, Download, Maximize2 } from "lucide-react";
 import { MermaidPreview } from "./MermaidPreview";
 import { diagramPng } from "@/lib/blog/diagramExport";

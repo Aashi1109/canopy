@@ -2,9 +2,9 @@
 
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 
-import type { ToolApp } from "@canopy/tool-catalog";
+import type { ToolApp } from "@/lib/tool-catalog/index.ts";
 import type { AdminTool } from "../../../../../lib/tool-framework/manifest";
-import { OrderableList, type OrderableItemState } from "@canopy/ui/components/OrderableList";
+import { OrderableList, type OrderableItemState } from "@/components/ui/components/OrderableList.tsx";
 import {
   H3,
   Caption,
@@ -25,7 +25,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import {
   Boxes,
   Braces,

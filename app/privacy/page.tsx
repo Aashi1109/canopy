@@ -1,4 +1,4 @@
-import { Display, H2, Muted, Overline } from "@canopy/ui";
+import { Display, H2, Muted, Overline } from "@/components/ui/index.tsx";
 import type { Metadata } from "next";
 import { AnalyticsPreferences } from "@/components/analytics/Analytics";
 import PublicInfoChrome from "@/components/canopy/PublicInfoChrome";

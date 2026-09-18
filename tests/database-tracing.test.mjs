@@ -4,7 +4,7 @@ import { registerHooks } from "node:module";
 import test from "node:test";
 import { sql } from "drizzle-orm";
 
-const runtimeUrl = new URL("../packages/database/src/runtime.ts", import.meta.url).href;
+const runtimeUrl = new URL("../db/runtime.ts", import.meta.url).href;
 const failure = new Error("private query failure");
 const result = { rows: [{ value: "private result" }] };
 const spans = [];

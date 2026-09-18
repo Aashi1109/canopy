@@ -5,13 +5,13 @@ import { APIError } from "better-auth/api";
 
 const state = { options: null, captured: [] };
 globalThis.__authErrorTracingTest = state;
-const authUrl = new URL("../packages/auth/src/auth.ts", import.meta.url).href;
+const authUrl = new URL("../lib/auth/auth.ts", import.meta.url).href;
 const stubs = {
   "better-auth":
     "export const betterAuth = options => { globalThis.__authErrorTracingTest.options = options; return {}; };",
   "@sentry/core": "export const captureException = error => globalThis.__authErrorTracingTest.captured.push(error);",
-  "@canopy/authorization": "export const assertCanDeleteUser = () => {};",
-  "@canopy/database": `
+  "../authorization/index.ts": "export const assertCanDeleteUser = () => {};",
+  "../../db/index.ts": `
     export const authAccount = {}, authSession = {}, authUser = {}, authVerification = {}, userRolesTable = {}, db = {};
     export const and = () => {}, countDistinct = () => {}, eq = () => {};
   `,

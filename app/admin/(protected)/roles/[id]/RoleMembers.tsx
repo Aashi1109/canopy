@@ -28,7 +28,7 @@ import {
   TooltipTrigger,
   TooltipProvider,
   toast,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import type { RoleUser, RoleUsersPage } from "@/lib/admin/data";
 import { assignRoleMembersAction, searchRoleUsersAction } from "./membershipActions";
 

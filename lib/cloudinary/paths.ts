@@ -1,4 +1,4 @@
-import config from "@canopy/config";
+import config from "../config/config.ts";
 
 export function cloudinaryFolder(subfolder: string): string {
   const environment = config.environment;

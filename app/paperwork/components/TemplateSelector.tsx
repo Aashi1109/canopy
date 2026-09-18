@@ -5,8 +5,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { DocumentTemplate } from "@canopy/invoice-templates";
-import { Caption, Button, EmptyState, Input, SectionCard, SectionHeading, Select, StatusBadge } from "@canopy/ui";
+import type { DocumentTemplate } from "@/lib/invoice-templates/index.ts";
+import {
+  Caption,
+  Button,
+  EmptyState,
+  Input,
+  SectionCard,
+  SectionHeading,
+  Select,
+  StatusBadge,
+} from "@/components/ui/index.tsx";
 import { Check, Search, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 

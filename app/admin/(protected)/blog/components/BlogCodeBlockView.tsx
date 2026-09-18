@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
-import { Button } from "@canopy/ui";
+import { Button } from "@/components/ui/index.tsx";
 import { MermaidDiagram } from "@/components/blog/MermaidDiagram";
 import { CopyBlogCode } from "@/components/blog/CopyBlogCode";
 import codeStyles from "@/components/blog/codeHighlight.module.css";

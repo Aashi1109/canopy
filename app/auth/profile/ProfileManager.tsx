@@ -22,7 +22,7 @@ import {
   SectionHeading,
   SidebarNavItem,
   StatusBadge,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import { authClient } from "../_lib/authClient";
 import { canConfirmAccountDeletion, getSafeAuthError, isValidPassword, normalizeProfileImage } from "../_lib/security";
 

@@ -13,8 +13,8 @@ export default async function globalSetup(_config: FullConfig) {
   };
 
   const [{ auth }, { db, sql, sqlClient }] = await Promise.all([
-    import("../../packages/auth/src/auth"),
-    import("../../packages/database/src/index"),
+    import("../../lib/auth/auth"),
+    import("../../db/index"),
   ]);
 
   try {

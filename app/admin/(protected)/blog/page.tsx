@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { hasPermission } from "@canopy/authorization";
-import { getUserAuthorization } from "@canopy/control-plane";
+import { hasPermission } from "@/lib/authorization/index.ts";
+import { getUserAuthorization } from "@/lib/admin/index.ts";
 import { requirePagePermission } from "@/lib/admin/access";
 import { listBlogPosts } from "@/lib/blog/queries";
 import { BlogPosts } from "./components/BlogPosts";

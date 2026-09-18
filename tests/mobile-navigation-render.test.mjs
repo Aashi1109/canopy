@@ -20,7 +20,7 @@ const hooks = registerHooks({
     };
   },
 });
-const { MobileNavigation } = await import("../packages/ui/src/components/MobileNavigation.tsx");
+const { MobileNavigation } = await import("../components/ui/components/MobileNavigation.tsx");
 hooks.deregister();
 
 test("guest navigation exposes separate search and menu controls", () => {

@@ -1,8 +1,8 @@
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
-import { getOptionalSession } from "@canopy/auth/session";
-import { getAvailableTools } from "@canopy/control-plane";
+import { getOptionalSession } from "@/lib/auth/session.ts";
+import { getAvailableTools } from "@/lib/admin/index.ts";
 import { getToolManifest } from "@/lib/tool-framework/manifest";
-import { AccountNavigation, CatalogCard, PageHero, ProductHeader, StatusBadge } from "@canopy/ui";
+import { AccountNavigation, CatalogCard, PageHero, ProductHeader, StatusBadge } from "@/components/ui/index.tsx";
 import {
   ClipboardCheck,
   ClipboardList,

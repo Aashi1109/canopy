@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Caption, FieldLabel, Input, Select } from "@canopy/ui";
+import { Button, Caption, FieldLabel, Input, Select } from "@/components/ui/index.tsx";
 import { RotateCcw, RotateCw, FlipVertical2 } from "lucide-react";
 import { useId, useState } from "react";
 

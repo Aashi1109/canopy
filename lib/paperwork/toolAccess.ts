@@ -1,4 +1,4 @@
-import { getAvailableToolBySlug } from "@canopy/control-plane";
+import { getAvailableToolBySlug } from "../admin/index.ts";
 
 import { getToolManifest } from "../tool-framework/manifest";
 

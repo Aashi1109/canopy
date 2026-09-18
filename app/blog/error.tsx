@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, EmptyState } from "@canopy/ui";
+import { Button, EmptyState } from "@/components/ui/index.tsx";
 import { captureException } from "@sentry/nextjs";
 import { useEffect } from "react";
 

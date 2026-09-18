@@ -13,9 +13,9 @@ import {
   setUserStatus,
   updateCustomRole,
 } from "../lib/admin/adminMutations.ts";
-import { getAvailableToolBySlug, getUserAuthorization } from "../packages/control-plane/src/queries.ts";
-import { db, sql, sqlClient } from "../packages/database/src/index.ts";
-import { seedTemplates } from "../packages/invoice-templates/src/index.ts";
+import { getAvailableToolBySlug, getUserAuthorization } from "../lib/admin/queries.ts";
+import { db, sql, sqlClient } from "../db/index.ts";
+import { seedTemplates } from "../lib/invoice-templates/index.ts";
 
 /**
  * The manifest, enumerated from `managed_tools` — the same source

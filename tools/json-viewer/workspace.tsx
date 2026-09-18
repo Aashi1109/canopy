@@ -15,7 +15,7 @@ import {
   SelectValue,
   Toaster,
   toast,
-} from "@canopy/ui";
+} from "@/components/ui/index.tsx";
 import {
   AlignLeft,
   CircleCheckBig,

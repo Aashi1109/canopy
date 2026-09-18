@@ -1,6 +1,6 @@
-import { getSession } from "@canopy/auth/session";
+import { getSession } from "@/lib/auth/session.ts";
 import { captureException } from "@sentry/core";
-import { getAvailableTools } from "@canopy/control-plane";
+import { getAvailableTools } from "@/lib/admin/index.ts";
 import { getToolManifest } from "@/lib/tool-framework/manifest";
 import { z } from "zod";
 import { getTools } from "@/lib/tool-framework/catalog";

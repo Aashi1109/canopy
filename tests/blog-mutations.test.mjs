@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { ADMIN_ACCESS } from "../packages/authorization/src/index.ts";
+import { ADMIN_ACCESS } from "../lib/authorization/index.ts";
 import {
   db,
   auditEventsTable,
@@ -11,7 +11,7 @@ import {
   blogCategoriesTable as categories,
   blogTagsTable as tags,
   blogPublishedPostTagsTable as publishedTags,
-} from "../packages/database/src/index.ts";
+} from "../db/index.ts";
 import {
   createBlogPost,
   duplicateBlogPost,

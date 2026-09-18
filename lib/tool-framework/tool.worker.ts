@@ -7,7 +7,7 @@
  * folder and fetch only the requested one. There is no map and no registry.
  */
 
-import { TOOL_SLUG_PATTERN } from "@canopy/tool-catalog";
+import { TOOL_SLUG_PATTERN } from "../tool-catalog/index.ts";
 
 import { ArtifactStorageError, cleanupArtifactJobWithRetry, createArtifactWriter } from "./artifacts";
 import { assertRunnableFiles } from "./fileGuard";

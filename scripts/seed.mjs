@@ -16,7 +16,7 @@ function run(script, ...args) {
   if (result.status !== 0) throw new Error(`${script} failed; fix the reported error and rerun pnpm db:seed.`);
 }
 
-run("packages/database/scripts/seed.mjs");
+run("db/scripts/seed.mjs");
 const directory = await mkdtemp(path.join(tmpdir(), "canopy-icon-seed-"));
 const manifest = path.join(directory, "icons.json");
 console.log(`Icon upload manifest (retained on failure): ${manifest}`);

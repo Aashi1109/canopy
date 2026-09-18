@@ -262,8 +262,8 @@ rendered by the shared controller.
 
 ## Design System
 
-Use `@canopy/ui`, semantic tokens, the component showcase, and
-`packages/ui/DESIGN_SYSTEM.md`.
+Use `@/components/ui/index.tsx`, semantic tokens, the component showcase, and
+`components/ui/DESIGN_SYSTEM.md`.
 
 The design system owns control typography, dimensions, padding, radius, border,
 colour, icon size, and interaction states. Tool code supplies label, icon,
@@ -277,8 +277,8 @@ Do not reconstruct a shared button, input, select, textarea, badge, card, or
 other control with local utility classes.
 
 Before writing an interactive primitive, check the installed
-`packages/ui/src/components` controls and the shadcn registry. Add the official
-shadcn component to `@canopy/ui` when it already provides the required
+`components/ui/components` controls and the shadcn registry. Add the official
+shadcn component to `@/components/ui/index.tsx` when it already provides the required
 behaviour. Current examples are Resizable for split panes, Scroll Area for
 bounded scrolling, and Alert Dialog for destructive confirmation.
 

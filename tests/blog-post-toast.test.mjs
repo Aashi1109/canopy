@@ -27,7 +27,7 @@ const hooks = registerHooks({
       return stub(`export function useRouter() {
         return { push(path) { globalThis.__blogToastTest.paths.push(path); }, refresh() {} };
       }`);
-    if (specifier === "@canopy/ui")
+    if (specifier === "@/components/ui/index.tsx")
       return stub(`
         export const AlertBanner = 'alert', AlertDialog = 'dialog', AlertDialogContent = 'content',
           AlertDialogHeader = 'header', AlertDialogTitle = 'title', AlertDialogDescription = 'description',

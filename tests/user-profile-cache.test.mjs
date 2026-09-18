@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { Cache } from "@canopy/cache";
-import { authUser, db } from "@canopy/database";
-import { getCachedUser, withUserCacheInvalidation } from "@canopy/control-plane";
+import { Cache } from "../lib/cache/index.ts";
+import { authUser, db } from "../db/index.ts";
+import { getCachedUser, withUserCacheInvalidation } from "../lib/admin/index.ts";
 
 function setup(t) {
   const previous = process.env.DATABASE_URL;

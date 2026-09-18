@@ -32,7 +32,7 @@ const hooks = registerHooks({
             .join("\n"),
         );
       if (specifier === "next/link") return stub("export default function Link({children}){return children}");
-      if (specifier === "@canopy/ui") return stub("export function Button({children}){return children}");
+      if (specifier === "@/components/ui/index.tsx") return stub("export function Button({children}){return children}");
       if (specifier === "@/components/blog/BlogArticle")
         return stub("export function BlogArticle({document}){return document.title}");
     }

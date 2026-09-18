@@ -4,7 +4,7 @@ This document defines the phase-one design. The backend is implemented in the mo
 
 ### Backend implementation and verification
 
-- `packages/database/migration/0001-baseline/0006_blogs.sql`: additive, rerunnable schema and system-admin permissions; included in the explicit `pnpm db:migrate 0001-baseline` batch.
+- `db/migration/0001-baseline/0006_blogs.sql`: additive, rerunnable schema and system-admin permissions; included in the explicit `pnpm db:migrate 0001-baseline` batch.
 - `lib/blog/mutations.ts`: transactional draft/history, taxonomy, publication, schedule/retry, and lifecycle operations.
 - `lib/blog/queries.ts`: permission-checked admin reads, public published-only reads, search, taxonomy, and pagination.
 - `lib/blog/document.ts` and `lib/blog/images.ts`: bounded document validation, escaped rendering, and immutable Cloudinary image uploads.
@@ -44,7 +44,7 @@ The fallback flag uses the available pnpm installation when the pinned package-m
 - Keep the publishing logic compatible with Cloudflare Workers and Docker; Cloudflare Cron is the selected scheduler for this phase.
 - Start with indexed database reads and server-rendered pages. Persistent page caching remains deferred.
 
-The existing tool code already provides title normalization and immutable stored slugs. Its current creation path rejects duplicate slugs; blogs will add the requested collision handling. See [slug normalization](../../packages/tool-catalog/src/index.ts) and [tool creation](../../lib/admin/adminMutations.ts).
+The existing tool code already provides title normalization and immutable stored slugs. Its current creation path rejects duplicate slugs; blogs will add the requested collision handling. See [slug normalization](../../lib/tool-catalog/index.ts) and [tool creation](../../lib/admin/adminMutations.ts).
 
 The feature references are [HubSpot's publishing workflow](https://knowledge.hubspot.com/blog/create-and-publish-blog-posts), [WordPress's revision recovery](https://wordpress.org/documentation/article/revisions/), and [Ghost's automatic SEO](https://ghost.org/help/seo/).
 
@@ -581,7 +581,7 @@ Add Blog to public navigation and the admin menu. Extend existing consent-based 
 
 ## 11. Migration and rollout
 
-The rerunnable blog migration is included in `packages/database/migration/0001-baseline/`
+The rerunnable blog migration is included in `db/migration/0001-baseline/`
 after its prerequisite migrations:
 
 1. Create the six tables, with `blog_post_schedules` after posts, revisions, and account dependencies exist.

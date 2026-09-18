@@ -48,7 +48,7 @@ const hooks = registerHooks({
         }
       `);
       if (specifier === "@tiptap/react") return stub("export function NodeViewWrapper() {};");
-      if (specifier === "@canopy/ui")
+      if (specifier === "@/components/ui/index.tsx")
         return stub(`
         ${["Button", "Input", "Label", "Tooltip", "TooltipContent", "TooltipProvider", "TooltipTrigger"].map((name) => `export function ${name}() {}`).join(" ")}
         export const Popover = { Root() {}, Anchor() {}, Portal() {}, Content() {} };

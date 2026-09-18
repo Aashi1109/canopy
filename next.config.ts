@@ -1,5 +1,5 @@
-import config from "@canopy/config";
-import publicConfig from "@canopy/config/public";
+import config from "./lib/config/config.ts";
+import publicConfig from "./lib/config/public.ts";
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs/config";
 import { fileURLToPath } from "node:url";
@@ -89,14 +89,6 @@ const nextConfig: NextConfig = {
     "@jsquash/png",
     "@jsquash/resize",
     "@jsquash/webp",
-    "@canopy/auth",
-    "@canopy/authorization",
-    "@canopy/config",
-    "@canopy/control-plane",
-    "@canopy/database",
-    "@canopy/invoice-templates",
-    "@canopy/tool-catalog",
-    "@canopy/ui",
     "heic-to",
     "pdfjs-dist",
     "qpdf-wasm",

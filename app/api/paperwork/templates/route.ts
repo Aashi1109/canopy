@@ -1,5 +1,5 @@
-import { getAvailableTools, getPublishedTemplates } from "@canopy/control-plane";
-import { DocumentTypeSchema, getDocumentDefinition } from "@canopy/invoice-templates";
+import { getAvailableTools, getPublishedTemplates } from "@/lib/admin/index.ts";
+import { DocumentTypeSchema, getDocumentDefinition } from "@/lib/invoice-templates/index.ts";
 import { NextResponse } from "next/server";
 import { captureException } from "@sentry/core";
 

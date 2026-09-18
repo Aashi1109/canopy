@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
 
-const adapterUrl = new URL("../packages/auth/src/cachedUserAdapter.ts", import.meta.url).href;
+const adapterUrl = new URL("../lib/auth/cachedUserAdapter.ts", import.meta.url).href;
 const fixture = { events: [], user: { id: "alice", name: "Alice" }, invalidationError: false };
 globalThis.__cachedUserAdapterTest = fixture;
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
-    if (context.parentURL === adapterUrl && specifier === "@canopy/control-plane") {
+    if (context.parentURL === adapterUrl && specifier === "../admin/index.ts") {
       return {
         shortCircuit: true,
         url: `data:text/javascript,${encodeURIComponent(`

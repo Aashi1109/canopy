@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import config from "@canopy/config";
+import config from "../lib/config/config.ts";
 // NODE_ENV=production node scripts/upload-tool-icons.mjs [--folder relative/subfolder]
 // --folder is relative to Canopy/${NODE_ENV}.
 import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";

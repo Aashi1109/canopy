@@ -11,7 +11,7 @@ const fixture = { session: null, error: null, queries: 0 };
 globalThis.__accountAccessTest = fixture;
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
-    if (context.parentURL === proxyUrl && specifier === "@canopy/auth") {
+    if (context.parentURL === proxyUrl && specifier === "./lib/auth/index.ts") {
       return {
         shortCircuit: true,
         url: `data:text/javascript,${encodeURIComponent(`

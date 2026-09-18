@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef, useState, type PointerEvent } from "react";
-import { Muted } from "@canopy/ui";
+import { Muted } from "@/components/ui/index.tsx";
 import { moveCropPoint, translateCrop, type CropPoint, type ImageSize } from "./geometry";
 
 interface Props {

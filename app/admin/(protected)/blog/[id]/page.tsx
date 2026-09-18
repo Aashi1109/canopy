@@ -1,7 +1,7 @@
-import config from "@canopy/config";
+import config from "@/lib/config/config.ts";
 import { notFound } from "next/navigation";
-import { hasPermission } from "@canopy/authorization";
-import { getUserAuthorization } from "@canopy/control-plane";
+import { hasPermission } from "@/lib/authorization/index.ts";
+import { getUserAuthorization } from "@/lib/admin/index.ts";
 import { requirePagePermission } from "@/lib/admin/access";
 import { getBlogPost } from "@/lib/blog/queries";
 import { getTools } from "@/lib/tool-framework/catalog";

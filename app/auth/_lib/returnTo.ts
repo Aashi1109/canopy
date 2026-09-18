@@ -1,4 +1,4 @@
-import config from "@canopy/config";
+import config from "@/lib/config/config.ts";
 import { resolveReturnTo } from "./security.ts";
 
 export function resolveConfiguredReturnTo(value: string | null | undefined): string {

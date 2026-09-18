@@ -8,27 +8,20 @@ import test from "node:test";
 import { promisify } from "node:util";
 
 const run = promisify(execFile);
-const source = new URL("../packages/database/scripts/promote-admin.mjs", import.meta.url);
+const source = new URL("../db/scripts/promote-admin.mjs", import.meta.url);
 
 test("admin promotion loads root env files from either cwd and preserves environment precedence", async (t) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "promote-admin-env-"));
   t.after(() => rm(root, { recursive: true, force: true }));
-  const packageDir = path.join(root, "packages/database");
-  const script = path.join(packageDir, "scripts/promote-admin.mjs");
+  const databaseDir = path.join(root, "db");
+  const script = path.join(databaseDir, "scripts/promote-admin.mjs");
   await mkdir(path.dirname(script), { recursive: true });
   await copyFile(source, script);
   await mkdir(path.join(root, "node_modules/pg"), { recursive: true });
-  await mkdir(path.join(root, "node_modules/@canopy"), { recursive: true });
-  await symlink(
-    path.dirname(path.dirname(createRequire(source).resolve("@canopy/cache"))),
-    path.join(root, "node_modules/@canopy/cache"),
-    "dir",
-  );
-  await symlink(
-    path.dirname(path.dirname(createRequire(source).resolve("@canopy/config"))),
-    path.join(root, "node_modules/@canopy/config"),
-    "dir",
-  );
+  await mkdir(path.join(root, "lib"), { recursive: true });
+  for (const name of ["cache", "config"]) {
+    await symlink(new URL(`../lib/${name}/`, import.meta.url), path.join(root, "lib", name), "dir");
+  }
   await symlink(
     path.dirname(createRequire(source).resolve("dotenv/package.json")),
     path.join(root, "node_modules/dotenv"),
@@ -54,7 +47,7 @@ test("admin promotion loads root env files from either cwd and preserves environ
   await writeFile(path.join(root, ".env"), "DATABASE_URL=postgres://base-fixture\n");
   await writeFile(path.join(root, ".env.local"), "DATABASE_URL=postgres://local-fixture\n");
 
-  for (const cwd of [root, packageDir]) {
+  for (const cwd of [root, databaseDir]) {
     for (const exported of [false, true]) {
       const { stdout } = await run(process.execPath, [script, "fixture@example.com"], {
         cwd,
@@ -68,13 +61,13 @@ test("admin promotion loads root env files from either cwd and preserves environ
   }
   await rm(path.join(root, ".env.local"));
   const { stdout } = await run(process.execPath, [script, "fixture@example.com"], {
-    cwd: packageDir,
+    cwd: databaseDir,
     env: { EXPECTED_DATABASE_URL: "postgres://base-fixture" },
   });
   assert.match(stdout, /Database URL verified/);
   await rm(path.join(root, ".env"));
   await assert.rejects(
-    run(process.execPath, [script, "fixture@example.com"], { cwd: packageDir, env: {} }),
+    run(process.execPath, [script, "fixture@example.com"], { cwd: databaseDir, env: {} }),
     /DATABASE_URL is required/,
   );
 });

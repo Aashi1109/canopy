@@ -13,8 +13,8 @@ import {
   rolesTable,
   sql,
   userRolesTable,
-} from "@canopy/database";
-import { Cache, CACHE_NAMESPACES } from "@canopy/cache";
+} from "../../db/index.ts";
+import { Cache, CACHE_NAMESPACES } from "../cache/index.ts";
 
 const rolesCache = new Cache(CACHE_NAMESPACES.ROLES);
 const auditActor = alias(authUser, "audit_actor");

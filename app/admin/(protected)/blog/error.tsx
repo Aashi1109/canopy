@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertBanner, Button } from "@canopy/ui";
+import { AlertBanner, Button } from "@/components/ui/index.tsx";
 import { captureException } from "@sentry/nextjs";
 import { useEffect } from "react";
 

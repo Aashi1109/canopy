@@ -24,10 +24,16 @@
  */
 
 import { cache } from "react";
-import { Cache, CACHE_NAMESPACES } from "@canopy/cache";
+import { Cache, CACHE_NAMESPACES } from "../cache/index.ts";
 
-import { db, getToolContentRows, isDatabaseConfigured, managedToolsTable, type ToolContentRow } from "@canopy/database";
-import { isToolAvailable } from "@canopy/tool-catalog";
+import {
+  db,
+  getToolContentRows,
+  isDatabaseConfigured,
+  managedToolsTable,
+  type ToolContentRow,
+} from "../../db/index.ts";
+import { isToolAvailable } from "../tool-catalog/index.ts";
 
 import { isCategoryKey, type CategoryKey, type ToolApp } from "./categories";
 import { resolveContent } from "./content";

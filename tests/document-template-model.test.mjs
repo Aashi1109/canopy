@@ -13,7 +13,7 @@ import {
   normalizeAdvancedTemplateConfig,
   resolveDocumentFieldKey,
   validateAdvancedTemplateForPublish,
-} from "../packages/invoice-templates/src/index.ts";
+} from "../lib/invoice-templates/index.ts";
 
 test("full TINs are rejected while masked references remain safe", () => {
   assert.equal(containsFullTin("123-45-6789"), true);

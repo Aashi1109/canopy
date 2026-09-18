@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
 import redis from "redis";
-import { Cache, closeRedis } from "@canopy/cache";
+import { Cache, closeRedis } from "../lib/cache/index.ts";
 
 test("ecosystem response reuses assembled data, refreshes after invalidation, and does not cache failures", async (t) => {
   const routeUrl = new URL("../app/api/tools/ecosystem/route.ts", import.meta.url).href;
@@ -19,7 +19,7 @@ test("ecosystem response reuses assembled data, refreshes after invalidation, an
       if (fixture.failure) throw new Error("Database unavailable");
       return [];
     };`,
-    "@canopy/control-plane": `export const getAvailableTools = async () => [{
+    "@/lib/admin/index.ts": `export const getAvailableTools = async () => [{
       toolId: "paperwork.invoice-generator", slug: "invoice-generator",
       name: globalThis.__ecosystemCacheTest.name,
       iconUrl: "https://example.test/invoice.png",
@@ -30,6 +30,9 @@ test("ecosystem response reuses assembled data, refreshes after invalidation, an
     resolve(specifier, context, nextResolve) {
       if (context.parentURL === routeUrl && modules[specifier]) {
         return { shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(modules[specifier])}` };
+      }
+      if (specifier === "@/lib/cache/index.ts") {
+        return nextResolve(new URL("../lib/cache/index.ts", import.meta.url).href, context);
       }
       return nextResolve(specifier, context);
     },

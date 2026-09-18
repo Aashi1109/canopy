@@ -20,11 +20,10 @@ test(
     const url = new URL(process.env.DATABASE_URL);
     url.searchParams.set("options", `-c search_path=${schema}`);
     const promote = (email) =>
-      run(
-        process.execPath,
-        [fileURLToPath(new URL("../packages/database/scripts/promote-admin.mjs", import.meta.url)), email],
-        { env: { ...process.env, DATABASE_URL: url.href, REDIS_URL: "" }, timeout: 10_000 },
-      );
+      run(process.execPath, [fileURLToPath(new URL("../db/scripts/promote-admin.mjs", import.meta.url)), email], {
+        env: { ...process.env, DATABASE_URL: url.href, REDIS_URL: "" },
+        timeout: 10_000,
+      });
     try {
       await client.connect();
       await client.query(`CREATE SCHEMA ${schema}; SET search_path TO ${schema};

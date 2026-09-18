@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import test from "node:test";
 
-import { TOOL_SLUG_PATTERN } from "../packages/tool-catalog/src/index.ts";
+import { TOOL_SLUG_PATTERN } from "../lib/tool-catalog/index.ts";
 
-const migrationDirectoryUrl = new URL("../packages/database/migration/0001-baseline/", import.meta.url);
+const migrationDirectoryUrl = new URL("../db/migration/0001-baseline/", import.meta.url);
 
 /**
  * Every `managed_tools` seed row across every migration, in applied order.
@@ -35,16 +35,13 @@ async function seededManagedTools() {
   return rows;
 }
 
-const migrationUrl = new URL(
-  "../packages/database/migration/0001-baseline/0001_auth_control_plane.sql",
-  import.meta.url,
-);
-const mediaMigrationUrl = new URL("../packages/database/migration/0001-baseline/0002_media_tools.sql", import.meta.url);
+const migrationUrl = new URL("../db/migration/0001-baseline/0001_auth_control_plane.sql", import.meta.url);
+const mediaMigrationUrl = new URL("../db/migration/0001-baseline/0002_media_tools.sql", import.meta.url);
 const documentTemplateMigrationUrl = new URL(
-  "../packages/database/migration/0001-baseline/0003_document_template_kinds.sql",
+  "../db/migration/0001-baseline/0003_document_template_kinds.sql",
   import.meta.url,
 );
-const schemaUrl = new URL("../packages/database/src/schema.ts", import.meta.url);
+const schemaUrl = new URL("../db/schema.ts", import.meta.url);
 
 test("the control-plane migration keeps anonymous users separate from auth accounts", async () => {
   const sql = await readFile(migrationUrl, "utf8");

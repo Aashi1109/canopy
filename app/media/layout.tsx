@@ -1,4 +1,4 @@
-import config from "@canopy/config";
+import config from "@/lib/config/config.ts";
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {

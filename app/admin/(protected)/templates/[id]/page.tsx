@@ -1,4 +1,4 @@
-import type { InvoiceTemplate } from "@canopy/invoice-templates";
+import type { InvoiceTemplate } from "@/lib/invoice-templates/index.ts";
 import { notFound } from "next/navigation";
 import { redirect } from "next/navigation";
 import { requirePagePermission } from "../../../../../lib/admin/access";

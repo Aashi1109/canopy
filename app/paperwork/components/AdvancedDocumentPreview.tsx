@@ -1,8 +1,8 @@
 "use client";
-import { P, Text } from "@canopy/ui";
+import { P, Text } from "@/components/ui/index.tsx";
 
 import type { Template } from "@pdfme/common";
-import type { AdvancedDocumentTemplate } from "@canopy/invoice-templates";
+import type { AdvancedDocumentTemplate } from "@/lib/invoice-templates/index.ts";
 import { useEffect, useRef, useState } from "react";
 import { applyTemplateFormatting } from "@/lib/paperwork/advancedTemplateData";
 
