@@ -112,7 +112,8 @@ export default withSentryConfig(nextConfig, {
   silent: !config.ci,
   telemetry: false,
   sourcemaps: {
-    disable: !(config.sentry.authToken && config.sentry.org && config.sentry.project),
+    // Temporarily disabled to reduce Vercel build memory usage.
+    disable: true,
     deleteSourcemapsAfterUpload: true,
   },
 });
