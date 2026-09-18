@@ -116,6 +116,7 @@ export default withSentryConfig(nextConfig, {
   org: config.sentry.org,
   project: config.sentry.project,
   authToken: config.sentry.authToken,
+  release: { name: config.environment ?? "development" },
   silent: !config.ci,
   telemetry: false,
   sourcemaps: {

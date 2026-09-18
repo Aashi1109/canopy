@@ -60,6 +60,7 @@ test("Sentry preserves actions and redirects, marks failures, and correlates chi
     const transactions = items.filter(([header]) => header.type === "transaction").map(([, event]) => event);
     const success = transactions.find((event) => event.transaction === "serverAction/test.success");
     assert.ok(success);
+    assert.equal(success.release, process.env.NODE_ENV ?? "development");
     const query = success.spans.find((span) => span.description === "db.query");
     assert.equal(query.trace_id, success.contexts.trace.trace_id);
     assert.equal(query.parent_span_id, success.contexts.trace.span_id);
@@ -73,6 +74,7 @@ test("Sentry preserves actions and redirects, marks failures, and correlates chi
     );
     const errors = items.filter(([header]) => header.type === "event").map(([, event]) => event);
     assert.equal(errors.length, 1, "redirects and returned failures do not generate duplicate error issues");
+    assert.equal(errors[0].release, process.env.NODE_ENV ?? "development");
     assert.equal(errors[0].exception.values[0].value, "Database query failed");
     assert.ok(errors[0].exception.values[0].stacktrace.frames.length > 0);
     assert.doesNotMatch(JSON.stringify(envelopes), /private action result|private failure|private-token|select secret/);

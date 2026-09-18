@@ -17,6 +17,7 @@ export function sanitizeSentryError(event: ErrorEvent): ErrorEvent {
 
 export const sentryOptions = {
   dsn: publicConfig.sentryDsn,
+  release: publicConfig.environment ?? "development",
   enabled: Boolean(publicConfig.sentryDsn),
   tracesSampleRate: publicConfig.environment === "production" ? 0.1 : 1,
   enableLogs: false,
