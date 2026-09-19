@@ -33,7 +33,7 @@ export function AccessDeniedScreen({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <ProductHeader
-        actions={<AccountNavigation restricted={suspended} returnTo={returnTo} user={user} />}
+        actions={<AccountNavigation isAdminPage={!suspended} restricted={suspended} returnTo={returnTo} user={user} />}
         href="/"
         minimal
         name="SmartTools"

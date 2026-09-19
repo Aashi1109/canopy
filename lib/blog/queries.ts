@@ -6,6 +6,7 @@ import {
   blogPostSchedulesTable as schedules,
   blogPublishedPostTagsTable as postTags,
   blogRevisionsTable as revisions,
+  blogRunsTable as runs,
   blogTagsTable as tags,
   managedToolsTable,
   db,
@@ -33,15 +34,18 @@ const search = z
   .optional();
 const cursorInput = z.string().max(1200).optional();
 const publicInput = z.object({ search, category: slug.optional(), tag: slug.optional(), cursor: cursorInput }).strict();
-const adminInput = z
+const pageInput = z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional();
+const adminPostInput = z
   .object({
     search,
     status: z.enum(["draft", "published", "scheduled", "trash"]).optional(),
     categoryId: id.optional(),
+    page: pageInput,
     cursor: cursorInput,
   })
   .strict();
 const termInput = z.object({ search, cursor: cursorInput }).strict();
+const adminTermInput = termInput.extend({ page: pageInput });
 const termKind = z.enum(["category", "tag"]);
 const dateCursor = z
   .string()
@@ -246,18 +250,38 @@ export async function getPublishedBlogPost(postSlug: string) {
 }
 
 export async function listBlogPosts(actorUserId: string, input: unknown = {}) {
-  const options = adminInput.parse(input);
+  const options = adminPostInput.parse(input);
   const timeColumn = options.status === "trash" ? posts.trashedAt : posts.updatedAt;
   const kind = options.status === "trash" ? "trash" : "admin";
   const cursor = decodeBlogCursor(options.cursor, kind);
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "blog", "view");
+    const filters = and(
+      options.status === "trash" ? isNotNull(posts.trashedAt) : isNull(posts.trashedAt),
+      options.status === "published" ? isNotNull(posts.publishedRevisionId) : undefined,
+      options.status === "scheduled" ? isNotNull(schedules.id) : undefined,
+      options.status === "draft" ? and(isNull(posts.publishedRevisionId), isNull(schedules.id)) : undefined,
+      options.search ? sql`${posts.draftDocument}->>'title' ILIKE ${likeSearch(options.search)}` : undefined,
+      options.categoryId ? sql`${posts.draftDocument}->'category'->>'id' = ${options.categoryId}` : undefined,
+    );
+    const [{ total }] = await transaction
+      .select({ total: sql<number>`count(*)::int` })
+      .from(posts)
+      .leftJoin(schedules, eq(schedules.postId, posts.id))
+      .where(filters);
+    const pageCount = Math.max(1, Math.ceil(total / 25));
+    const pageNumber = Math.min(options.page ?? 1, pageCount);
     const rows = await transaction
       .select({
         id: posts.id,
         slug: posts.slug,
         version: posts.version,
         title: sql<string>`${posts.draftDocument}->>'title'`,
+        generationStatus: config.ai.enabled
+          ? sql<string | null>`(SELECT ${runs.status} FROM ${runs}
+          WHERE ${runs.postId} = ${posts.id} AND ${runs.operation} = 'generate'
+          ORDER BY ${runs.createdAt} DESC LIMIT 1)`
+          : sql<null>`NULL`,
         updatedAt: posts.updatedAt,
         trashedAt: posts.trashedAt,
         firstPublishedAt: posts.firstPublishedAt,
@@ -276,21 +300,18 @@ export async function listBlogPosts(actorUserId: string, input: unknown = {}) {
       .from(posts)
       .leftJoin(schedules, eq(schedules.postId, posts.id))
       .leftJoin(revisions, eq(revisions.id, posts.publishedRevisionId))
-      .where(
-        and(
-          options.status === "trash" ? isNotNull(posts.trashedAt) : isNull(posts.trashedAt),
-          options.status === "published" ? isNotNull(posts.publishedRevisionId) : undefined,
-          options.status === "scheduled" ? isNotNull(schedules.id) : undefined,
-          options.status === "draft" ? and(isNull(posts.publishedRevisionId), isNull(schedules.id)) : undefined,
-          options.search ? sql`${posts.draftDocument}->>'title' ILIKE ${likeSearch(options.search)}` : undefined,
-          options.categoryId ? sql`${posts.draftDocument}->'category'->>'id' = ${options.categoryId}` : undefined,
-          dateAfter(timeColumn, cursor),
-        ),
-      )
+      .where(and(filters, options.page === undefined ? dateAfter(timeColumn, cursor) : undefined))
       .orderBy(desc(timeColumn), desc(posts.id))
-      .limit(26);
+      .limit(26)
+      .offset(options.page === undefined ? 0 : (pageNumber - 1) * 25);
     const page = paginateBlogRows(rows, 25, (row) => ({ kind, value: row.cursorTime, id: row.id }));
-    return { ...page, items: page.items.map(({ cursorTime: _cursor, ...row }) => row) };
+    return {
+      ...page,
+      total,
+      page: pageNumber,
+      pageCount,
+      items: page.items.map(({ cursorTime: _cursor, ...row }) => row),
+    };
   });
 }
 
@@ -326,12 +347,19 @@ export async function getBlogRevision(actorUserId: string, postId: string, revis
   });
 }
 
-export async function listBlogRevisions(actorUserId: string, postId: string, before?: string) {
+export async function listBlogRevisions(actorUserId: string, postId: string, before?: string, requestedPage?: number) {
+  const selectedPage = pageInput.parse(requestedPage);
   const requestedId = id.parse(postId);
   const cursor = decodeBlogCursor(before, "history");
   if (cursor && cursor.id !== requestedId) throw new BlogValidationError("Revision cursor belongs to another post.");
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "blog", "view");
+    const [{ total }] = await transaction
+      .select({ total: sql<number>`count(*)::int` })
+      .from(revisions)
+      .where(eq(revisions.postId, requestedId));
+    const pageCount = Math.max(1, Math.ceil(total / 25));
+    const pageNumber = Math.min(selectedPage ?? 1, pageCount);
     const rows = await transaction
       .select({
         id: revisions.id,
@@ -345,41 +373,57 @@ export async function listBlogRevisions(actorUserId: string, postId: string, bef
       })
       .from(revisions)
       .where(
-        and(eq(revisions.postId, requestedId), cursor ? sql`${revisions.revisionNumber} < ${cursor.value}` : undefined),
+        and(
+          eq(revisions.postId, requestedId),
+          selectedPage === undefined && cursor ? sql`${revisions.revisionNumber} < ${cursor.value}` : undefined,
+        ),
       )
       .orderBy(desc(revisions.revisionNumber))
-      .limit(26);
-    return paginateBlogRows(rows, 25, (row) => ({
+      .limit(26)
+      .offset(selectedPage === undefined ? 0 : (pageNumber - 1) * 25);
+    const result = paginateBlogRows(rows, 25, (row) => ({
       kind: "history",
       value: row.revisionNumber,
       id: requestedId,
     }));
+    return { ...result, total, page: pageNumber, pageCount };
   });
 }
 
 export async function listBlogTaxonomy(actorUserId: string, kind: "category" | "tag", input: unknown = {}) {
   const selectedKind = termKind.parse(kind);
-  const options = termInput.parse(input);
+  const options = adminTermInput.parse(input);
   const cursor = decodeBlogCursor(options.cursor, selectedKind);
   const table = selectedKind === "category" ? categories : tags;
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "blog", "view");
+    const filters = options.search ? sql`${table.name} ILIKE ${likeSearch(options.search)}` : undefined;
+    const [{ total }] = await transaction
+      .select({ total: sql<number>`count(*)::int` })
+      .from(table)
+      .where(filters);
+    const pageCount = Math.max(1, Math.ceil(total / 25));
+    const pageNumber = Math.min(options.page ?? 1, pageCount);
     const rows = await transaction
       .select()
       .from(table)
       .where(
         and(
-          options.search ? sql`${table.name} ILIKE ${likeSearch(options.search)}` : undefined,
-          cursor ? sql`(${table.name}, ${table.id}) > (${cursor.value}, ${cursor.id})` : undefined,
+          filters,
+          options.page === undefined && cursor
+            ? sql`(${table.name}, ${table.id}) > (${cursor.value}, ${cursor.id})`
+            : undefined,
         ),
       )
       .orderBy(table.name, table.id)
-      .limit(26);
-    return paginateBlogRows(rows, 25, (row) => ({
+      .limit(26)
+      .offset(options.page === undefined ? 0 : (pageNumber - 1) * 25);
+    const result = paginateBlogRows(rows, 25, (row) => ({
       kind: selectedKind,
       value: row.name,
       id: row.id,
     }));
+    return { ...result, total, page: pageNumber, pageCount };
   });
 }
 

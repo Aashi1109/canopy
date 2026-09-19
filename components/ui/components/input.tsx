@@ -8,11 +8,11 @@ const inputVariants = cva(
   {
     variants: {
       size: {
-        xs: "h-8 px-2.5 text-[11px]",
-        sm: "h-9 px-3 text-[13px]",
-        default: "h-11 px-4 text-sm",
-        md: "h-12 px-[18px] text-[15px]",
-        lg: "h-13 px-5.5 text-base",
+        xs: "h-7 px-2 text-[11px]",
+        sm: "h-8 px-2.5 text-[11px]",
+        default: "h-9 px-3 text-[13px]",
+        md: "h-11 px-4 text-sm",
+        lg: "h-12 px-[18px] text-[15px]",
       },
     },
     defaultVariants: {

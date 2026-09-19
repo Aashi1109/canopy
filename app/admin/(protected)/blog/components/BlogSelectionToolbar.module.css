@@ -1,0 +1,218 @@
+.toolbar {
+  z-index: 45;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--spacing) * 0.5);
+  width: max-content;
+  max-width: calc(100vw - calc(var(--spacing) * 6));
+  padding: calc(var(--spacing) * 1);
+  border: calc(var(--spacing) * 0.25) solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--shadow-md);
+}
+.toolbar > button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--color-accent-text);
+}
+.improve {
+  background: var(--accent);
+  color: var(--color-accent-text);
+}
+.separator {
+  width: calc(var(--spacing) * 0.25);
+  height: calc(var(--spacing) * 5.5);
+  margin: 0 calc(var(--spacing) * 0.5);
+  background: var(--border);
+}
+.menu {
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 0.5);
+  max-width: calc(100vw - calc(var(--spacing) * 6));
+  max-height: var(--radix-popover-content-available-height);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: calc(var(--spacing) * 1.5);
+  border: calc(var(--spacing) * 0.25) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-md);
+}
+.menu > button {
+  justify-content: flex-start;
+  font-weight: 400;
+}
+.link {
+  width: calc(var(--spacing) * 75);
+  gap: calc(var(--spacing) * 2);
+  padding: calc(var(--spacing) * 3);
+}
+
+.improveMenu {
+  width: calc(var(--spacing) * 66);
+  border-color: var(--input);
+  border-radius: var(--radius-xl);
+}
+.improveMenu > [role="menuitem"] {
+  min-height: calc(var(--spacing) * 9);
+  font-size: var(--text-sm);
+  padding-inline: calc(var(--spacing) * 3);
+}
+.improveMenu > [role="menuitem"] > svg {
+  width: calc(var(--spacing) * 3.75);
+  height: calc(var(--spacing) * 3.75);
+  color: var(--muted-foreground);
+}
+.menuDivider {
+  height: calc(var(--spacing) * 0.25);
+  background: var(--border);
+}
+.inlineBubble,
+.promptMenu {
+  width: calc(var(--spacing) * 120);
+  border-color: var(--input);
+  padding: calc(var(--spacing) * 3);
+}
+.prompt {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--spacing) * 2);
+}
+.prompt input {
+  min-width: 0;
+  flex: 1;
+}
+.inlineResult,
+.working {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2.5);
+}
+.suggestionLabel,
+.workingLabel {
+  color: var(--primary);
+  font-size: calc(var(--spacing) * 2.75);
+  line-height: 1.45;
+}
+.workingLabel {
+  font-size: calc(var(--spacing) * 2.5);
+}
+.suggestionText {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--text-body);
+  line-height: 1.5;
+}
+.aiSelection {
+  background: var(--accent);
+  color: var(--color-accent-text);
+}
+.appliedSelection {
+  background: var(--success-soft);
+}
+.progress {
+  height: calc(var(--spacing) * 0.75);
+  overflow: hidden;
+  background: var(--accent);
+}
+.progress > span {
+  display: block;
+  width: calc(var(--spacing) * 18);
+  height: 100%;
+  background: var(--primary);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .progress > span {
+    animation: inlineProgress 1.4s ease-in-out infinite alternate;
+  }
+}
+@keyframes inlineProgress {
+  to {
+    transform: translateX(calc(var(--spacing) * 84));
+  }
+}
+
+.inlineBubble {
+  border-radius: var(--radius-lg);
+}
+.inlineBubble > div {
+  width: 100%;
+}
+.improveMenu,
+.inlineBubble,
+.promptMenu {
+  border: 0;
+  box-shadow:
+    inset 0 0 0 calc(var(--spacing) * 0.25) var(--input),
+    var(--shadow-md);
+}
+.inlineBubble {
+  /* BubbleMenu writes max-content inline; the designed preview has a fixed preferred width. */
+  width: calc(var(--spacing) * 120) !important;
+}
+.inlineBubble:has([aria-busy="true"]) {
+  padding: calc(var(--spacing) * 3.5);
+  border-radius: var(--radius-xl);
+}
+
+.working > p {
+  font-size: var(--text-xs);
+}
+
+.inlineBubble {
+  max-height: calc(100dvh - var(--spacing) * 6);
+  overflow-y: auto;
+}
+.inlineResult > .suggestionText {
+  max-height: 40dvh;
+  overflow-y: auto;
+}
+@media (pointer: coarse), (max-width: 767px) {
+  .toolbar button,
+  .menu button {
+    min-width: calc(var(--spacing) * 11);
+    min-height: calc(var(--spacing) * 11);
+  }
+}
+.improveMenu > [role="menuitem"]:hover,
+.improveMenu > [role="menuitem"]:focus-visible,
+.improveMenu > [role="menuitem"]:hover > svg,
+.improveMenu > [role="menuitem"]:focus-visible > svg {
+  color: var(--accent-foreground);
+}
+
+.toneMenu {
+  min-width: calc(var(--spacing) * 45);
+}
+.improveMenu > [role="menuitem"][data-highlighted] > svg,
+.improveMenu > [role="menuitem"][data-state="open"] > svg {
+  color: var(--accent-foreground);
+}
+.promptBubble {
+  width: calc(var(--spacing) * 120) !important;
+  padding: calc(var(--spacing) * 3);
+}
+.promptBubble > form {
+  width: 100%;
+}
+@media (pointer: coarse), (max-width: 767px) {
+  .improveMenu > [role="menuitem"],
+  .toneMenu > [role="menuitem"] {
+    min-height: calc(var(--spacing) * 11);
+  }
+}
+
+.improveMenu,
+.toneMenu {
+  max-height: var(--radix-dropdown-menu-content-available-height);
+}
+
+.headingMenu {
+  padding: calc(var(--spacing) * 2);
+  gap: 0;
+  box-shadow: var(--shadow-lg);
+}

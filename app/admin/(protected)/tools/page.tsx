@@ -1,4 +1,5 @@
-import { TextLink, EmptyState, ToolPageHeader } from "@/components/ui/index.tsx";
+import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
+import { ContentState } from "@/components/ui/index.tsx";
 import { PackageSearch } from "lucide-react";
 import { requirePagePermission } from "../../../../lib/admin/access";
 import { getAdminTools } from "../../../../lib/tool-framework/manifest";
@@ -11,22 +12,17 @@ export default async function ToolsPage() {
 
   return (
     <div className="flex min-h-0 flex-col lg:h-full">
-      <ToolPageHeader
+      <AdminPageHeader
         actions={<NewToolDialog />}
-        className="mb-3 shrink-0 gap-2 pb-3 sm:items-center"
+        className="shrink-0 gap-2 sm:items-center"
         description="Find, group, and publish tools without losing your place."
         title="Tool catalog"
       />
       {tools.length ? (
         <ToolList tools={tools} />
       ) : (
-        <EmptyState
-          action={
-            <TextLink className="text-primary hover:underline" href="/admin/design-system">
-              View registration guide
-            </TextLink>
-          }
-          description="Register a tool in the code manifest, then reload this page to make it available here."
+        <ContentState
+          description="Tools are added by your development team. Ask them to register and deploy a tool, then reload this page."
           icon={<PackageSearch aria-hidden="true" />}
           title="No tools registered"
         />

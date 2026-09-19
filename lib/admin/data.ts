@@ -124,7 +124,7 @@ export async function getTemplate(templateId: string) {
   return template;
 }
 
-export async function listAuditEvents() {
+function auditEventsQuery() {
   return db
     .select({
       id: auditEventsTable.id,
@@ -144,7 +144,63 @@ export async function listAuditEvents() {
     .leftJoin(
       auditTargetUser,
       and(eq(auditEventsTable.targetType, "user"), eq(auditTargetUser.id, auditEventsTable.targetId)),
-    )
-    .orderBy(desc(auditEventsTable.createdAt))
-    .limit(200);
+    );
+}
+
+export async function listAuditEvents() {
+  return auditEventsQuery().orderBy(desc(auditEventsTable.createdAt)).limit(200);
+}
+
+export async function listAuditEventsPage({
+  page: requestedPage,
+  pageSize: requestedPageSize,
+  query,
+  action,
+  cutoff,
+}: {
+  page: number;
+  pageSize: number;
+  query: string;
+  action: string;
+  cutoff: Date | null;
+}) {
+  const pageSize = Number.isFinite(requestedPageSize) ? Math.min(200, Math.max(1, Math.floor(requestedPageSize))) : 25;
+  const search = query.trim().replace(/[\\%_]/g, "\\$&");
+  const filter = and(
+    action ? eq(auditEventsTable.action, action) : undefined,
+    cutoff ? sql`${auditEventsTable.createdAt} >= ${cutoff.toISOString()}` : undefined,
+    search
+      ? or(
+          ilike(auditActor.name, `%${search}%`),
+          ilike(auditActor.email, `%${search}%`),
+          ilike(auditEventsTable.action, `%${search}%`),
+          ilike(auditEventsTable.targetType, `%${search}%`),
+          ilike(auditEventsTable.targetId, `%${search}%`),
+          ilike(auditTargetUser.name, `%${search}%`),
+          ilike(auditTargetUser.email, `%${search}%`),
+          ilike(sql`${auditEventsTable.metadata}::text`, `%${search}%`),
+        )
+      : undefined,
+  );
+  const [[matched], actionRows] = await Promise.all([
+    db
+      .select({ total: count() })
+      .from(auditEventsTable)
+      .leftJoin(auditActor, eq(auditActor.id, auditEventsTable.actorUserId))
+      .leftJoin(
+        auditTargetUser,
+        and(eq(auditEventsTable.targetType, "user"), eq(auditTargetUser.id, auditEventsTable.targetId)),
+      )
+      .where(filter),
+    db.selectDistinct({ action: auditEventsTable.action }).from(auditEventsTable).orderBy(auditEventsTable.action),
+  ]);
+  const total = matched.total;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const page = Number.isFinite(requestedPage) ? Math.min(pageCount, Math.max(1, Math.floor(requestedPage))) : 1;
+  const events = await auditEventsQuery()
+    .where(filter)
+    .orderBy(desc(auditEventsTable.createdAt), desc(auditEventsTable.id))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
+  return { events, total, page, pageCount, actions: actionRows.map(({ action }) => action) };
 }

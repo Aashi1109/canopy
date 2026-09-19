@@ -34,7 +34,7 @@ const hooks = registerHooks({
       if (specifier === "next/link") return stub("export default function Link({children}){return children}");
       if (specifier === "@/components/ui/index.tsx")
         return stub(
-          ["Button", "ButtonGroup", "Tooltip", "TooltipContent", "TooltipProvider", "TooltipTrigger"]
+          ["BackButton", "Button", "ButtonGroup", "Tooltip", "TooltipContent", "TooltipProvider", "TooltipTrigger"]
             .map((name) => `export function ${name}({children}){return children}`)
             .join("\n"),
         );

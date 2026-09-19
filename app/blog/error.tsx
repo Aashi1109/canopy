@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, EmptyState } from "@/components/ui/index.tsx";
+import { Button, ContentState } from "@/components/ui/index.tsx";
 import { captureException } from "@sentry/nextjs";
 import { useEffect } from "react";
 
@@ -11,7 +11,9 @@ export default function BlogError({ error, reset }: { error: Error & { digest?: 
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-20">
-      <EmptyState
+      <ContentState
+        state="error"
+        density="page"
         headingLevel="h1"
         title="Couldn’t load the blog"
         description="The blog is temporarily unavailable. Try again in a moment."

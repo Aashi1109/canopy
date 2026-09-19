@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Monitor, Smartphone } from "lucide-react";
+import { Monitor, Smartphone } from "lucide-react";
 import { notFound } from "next/navigation";
 import {
+  BackButton,
   Button,
   ButtonGroup,
   Tooltip,
@@ -45,14 +46,8 @@ export default async function BlogPreviewPage({
   };
   return (
     <div className="flex h-full flex-col bg-background">
-      <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-border bg-muted p-5 md:flex-nowrap md:bg-background md:px-7 md:py-4">
-        <Button asChild size="sm" variant="ghost">
-          <Link href={`/admin/blog/${id}`}>
-            <ArrowLeft aria-hidden="true" />
-            <span className="md:hidden">Edit</span>
-            <span className="hidden md:inline">Back to editor</span>
-          </Link>
-        </Button>
+      <header className="flex shrink-0 flex-wrap items-center gap-3 bg-muted p-5 md:flex-nowrap md:bg-background md:px-7 md:py-4">
+        <BackButton href={`/admin/blog/${id}`} label="Back to editor" />
         <p className="order-first min-w-0 basis-full break-words text-sm font-semibold md:order-none md:flex-1 md:basis-auto md:text-base">
           {document.title}
         </p>

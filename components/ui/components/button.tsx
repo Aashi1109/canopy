@@ -15,7 +15,8 @@ const buttonVariants = cva(
         destructive: "bg-destructive text-destructive-foreground hover:bg-[#C51F1F] focus-visible:ring-destructive",
         outline: "border border-input bg-card text-foreground hover:bg-muted",
         secondary: "border border-input bg-card text-foreground hover:bg-muted",
-        ghost: "bg-transparent text-foreground hover:bg-accent active:bg-accent",
+        ghost:
+          "bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground hover:[&_svg]:text-current active:bg-accent active:text-accent-foreground active:[&_svg]:text-current",
         "card-action":
           "bg-transparent text-foreground hover:bg-muted focus-visible:ring-inset focus-visible:ring-offset-0",
         "input-icon":
@@ -24,16 +25,16 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline disabled:bg-transparent",
       },
       size: {
-        default: "h-11 gap-2 rounded-lg px-4 text-[15px] [&_svg:not([class*='size-'])]:size-[18px]",
-        xs: "h-8 gap-1.5 rounded-lg px-2.5 text-[11px] [&_svg:not([class*='size-'])]:size-3.5",
-        sm: "h-9 gap-[7px] rounded-lg px-3 text-[13px] [&_svg:not([class*='size-'])]:size-[15px]",
-        md: "h-12 gap-2 rounded-lg px-[18px] text-[15px] [&_svg:not([class*='size-'])]:size-[18px]",
-        lg: "h-13 gap-2.5 rounded-lg px-5.5 text-base [&_svg:not([class*='size-'])]:size-5",
-        icon: "size-11 rounded-lg [&_svg:not([class*='size-'])]:size-[18px]",
-        "icon-xs": "size-8 rounded-lg [&_svg:not([class*='size-'])]:size-3.5",
-        "icon-sm": "size-9 rounded-lg [&_svg:not([class*='size-'])]:size-[17px]",
-        "icon-md": "size-12 rounded-lg [&_svg:not([class*='size-'])]:size-5",
-        "icon-lg": "size-13 rounded-lg [&_svg:not([class*='size-'])]:size-[22px]",
+        default: "h-9 gap-[7px] rounded-lg px-3 text-[13px] [&_svg:not([class*='size-'])]:size-[15px]",
+        xs: "h-7 gap-1 rounded-lg px-2 text-[11px] [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-8 gap-1.5 rounded-lg px-2.5 text-[11px] [&_svg:not([class*='size-'])]:size-3.5",
+        md: "h-11 gap-2 rounded-lg px-4 text-[15px] [&_svg:not([class*='size-'])]:size-[18px]",
+        lg: "h-12 gap-2 rounded-lg px-[18px] text-[15px] [&_svg:not([class*='size-'])]:size-[18px]",
+        icon: "size-9 rounded-lg [&_svg:not([class*='size-'])]:size-[15px]",
+        "icon-xs": "size-7 rounded-lg [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm": "size-8 rounded-lg [&_svg:not([class*='size-'])]:size-3.5",
+        "icon-md": "size-11 rounded-lg [&_svg:not([class*='size-'])]:size-[18px]",
+        "icon-lg": "size-12 rounded-lg [&_svg:not([class*='size-'])]:size-[18px]",
       },
     },
     compoundVariants: [
@@ -41,7 +42,7 @@ const buttonVariants = cva(
       {
         variant: "ghost",
         size: "default",
-        className: "text-sm text-primary",
+        className: "text-primary",
       },
     ],
     defaultVariants: {

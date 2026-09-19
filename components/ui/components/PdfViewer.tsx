@@ -8,6 +8,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { MorphIcon } from "morphicons/react";
 
 import { Button } from "./button.tsx";
+import { ContentState } from "./ContentState.tsx";
 import { ChapterScrubber } from "./ChapterScrubber.tsx";
 import { cn } from "../lib/utils.ts";
 
@@ -305,7 +306,7 @@ export function PdfViewer({
                 );
               })
             ) : (
-              <Muted className="px-2 py-3 text-muted-foreground">No matching sections.</Muted>
+              <ContentState density="compact" state="no-results" headingLevel="h3" title="No matching sections." />
             )}
           </div>
         </div>

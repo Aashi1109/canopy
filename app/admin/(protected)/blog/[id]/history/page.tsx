@@ -1,10 +1,10 @@
+import { z } from "zod";
 import config from "@/lib/config/config.ts";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { hasPermission } from "@/lib/authorization/index.ts";
 import { getUserAuthorization } from "@/lib/admin/index.ts";
-import { AlertBanner, Button } from "@/components/ui/index.tsx";
+import { AdminListing } from "../../../components/AdminListing";
+import { AlertBanner, BackButton } from "@/components/ui/index.tsx";
 import { requirePagePermission } from "@/lib/admin/access";
 import { getBlogPost, getBlogRevision, listBlogRevisions } from "@/lib/blog/queries";
 import { BlogRevisionList } from "../../components/BlogRevisionList";
@@ -16,16 +16,17 @@ export default async function BlogHistoryPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ cursor?: string; revision?: string }>;
+  searchParams: Promise<{ cursor?: string; page?: string; revision?: string }>;
 }) {
   const session = await requirePagePermission("blog", "view");
   const { id } = await params;
-  const { cursor, revision } = await searchParams;
+  const { page, revision } = await searchParams;
+  const pageNumber = z.coerce.number().int().min(1).max(Number.MAX_SAFE_INTEGER).catch(1).parse(page);
   if (revision && !/^[a-zA-Z0-9_-]{1,100}$/.test(revision)) notFound();
   if (!/^[a-zA-Z0-9_-]{1,100}$/.test(id)) notFound();
   const [post, revisions, authorization] = await Promise.all([
     getBlogPost(session.user.id, id),
-    listBlogRevisions(session.user.id, id, cursor),
+    listBlogRevisions(session.user.id, id, undefined, pageNumber),
     getUserAuthorization(session.user.id),
   ]);
   if (!post) notFound();
@@ -102,27 +103,31 @@ export default async function BlogHistoryPage({
     </>
   );
   return (
-    <div className="h-full min-w-0 space-y-6 overflow-y-auto p-5 md:p-10">
-      <header className="flex flex-wrap items-center gap-4">
-        <Button asChild variant="ghost">
-          <Link href={`/admin/blog/${id}`}>
-            <ArrowLeft aria-hidden="true" />
-            Back to editor
-          </Link>
-        </Button>
+    <div className="flex h-full min-h-0 min-w-0 flex-col gap-5 p-5 md:p-10 [&>header]:shrink-0">
+      <header className="flex items-start gap-2">
+        <BackButton href={`/admin/blog/${id}`} label="Back to editor" />
         <h1 className="text-[30px] font-semibold leading-normal">Revision history</h1>
       </header>
       <p className="break-words text-lg font-medium">{post.draftDocument.title || "Untitled post"}</p>
-      <div>
+      <div className="flex min-h-0 flex-1 flex-col">
         <h2 className="mb-2 text-xl font-semibold">Saved revisions</h2>
         <p className="mb-6 text-sm text-muted-foreground">
           Preview or compare a version before restoring it. The public article stays unchanged.
         </p>
-        <div className="rounded-lg border border-border">
+        <AdminListing
+          aria-label="Saved revisions"
+          pagination={{
+            "aria-label": "Revision pages",
+            page: revisions.page,
+            pageCount: revisions.pageCount,
+            getPageHref: (page) => `/admin/blog/${id}/history?page=${page}`,
+            summary: `Showing ${revisions.total ? (revisions.page - 1) * 25 + 1 : 0}–${(revisions.page - 1) * 25 + revisions.items.length} of ${revisions.total} revisions`,
+          }}
+        >
           <BlogRevisionList
             comparedRevisionId={compared?.id}
             comparison={comparison}
-            historyCursor={cursor}
+            historyPage={revisions.page}
             revisions={
               compared && !revisions.items.some((item) => item.id === compared.id)
                 ? [{ ...compared, title: compared.document.title }, ...revisions.items]
@@ -133,21 +138,7 @@ export default async function BlogHistoryPage({
             publishedRevisionId={post.publishedRevisionId}
             canRestore={!post.trashedAt && hasPermission(authorization.access, "blog", "edit")}
           />
-        </div>
-        <nav aria-label="Revision pages" className="mt-5 flex justify-end gap-3">
-          {cursor && (
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/admin/blog/${id}/history`}>Latest revisions</Link>
-            </Button>
-          )}
-          {revisions.nextCursor && (
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/admin/blog/${id}/history?${new URLSearchParams({ cursor: revisions.nextCursor })}`}>
-                Older revisions
-              </Link>
-            </Button>
-          )}
-        </nav>
+        </AdminListing>
       </div>
     </div>
   );

@@ -7,32 +7,23 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { transformSync } from "next/dist/build/swc/index.js";
 
 const root = new URL("../", import.meta.url);
-const settingsState = { values: [], index: 0 };
-globalThis.__blogSettingsTest = settingsState;
 const stub = (source) => ({
   shortCircuit: true,
   url: `data:text/javascript,${encodeURIComponent(source)}`,
 });
 const hooks = registerHooks({
   resolve(specifier, context, next) {
-    if (specifier === "react" && context.parentURL?.endsWith("/BlogPostSettings.tsx"))
-      return stub(`
-      export function useState(initial) {
-        const state = globalThis.__blogSettingsTest;
-        const index = state.index++;
-        if (!(index in state.values)) state.values[index] = initial;
-        return [state.values[index], value => { state.values[index] = value; }];
-      }
-    `);
     if (specifier === "next/link") return next("next/link.js", context);
     if (specifier === "next/navigation")
       return stub(
-        'export function useRouter(){return {push(){},refresh(){}}} export function notFound(){throw Error("NOT_FOUND")}',
+        'export function useRouter(){return {push(){},refresh(){}}} export function usePathname(){return "/admin/blog"} export function useSearchParams(){return new URLSearchParams()} export function notFound(){throw Error("NOT_FOUND")}',
       );
     if (specifier === "@/lib/admin/access")
       return stub('export async function requirePagePermission(){return {user:{id:"admin"}}}');
     if (specifier === "@/lib/blog/queries")
-      return stub('export async function listBlogTaxonomy(){return {items:[],nextCursor:"next-page"}}');
+      return stub(
+        "export async function listBlogTaxonomy(){return {items:[],nextCursor:null,total:60,page:1,pageCount:3}}",
+      );
     if (specifier === "../actions")
       return stub(
         'export async function mutateBlogAction(){throw Error("Unexpected mutation")} export async function readBlogAction(){throw Error("Unexpected query")}',
@@ -79,81 +70,13 @@ const hooks = registerHooks({
 });
 const { BlogPosts } = await import("../app/admin/(protected)/blog/components/BlogPosts.tsx");
 const { BlogPublishPanel } = await import("../app/admin/(protected)/blog/components/BlogPublishPanel.tsx");
-const { BlogPostSettings, filterRelatedTools } =
-  await import("../app/admin/(protected)/blog/components/BlogPostSettings.tsx");
+const { filterRelatedTools } = await import("../app/admin/(protected)/blog/components/BlogPostSettings.tsx");
 const { historyPageSchema } = await import("../app/admin/(protected)/blog/components/BlogHistoryPanel.tsx");
 const { BlogRevisionList } = await import("../app/admin/(protected)/blog/components/BlogRevisionList.tsx");
 const taxonomy = await import("../app/admin/(protected)/blog/taxonomy/page.tsx");
+const { Pagination } = await import("../components/ui/components/Pagination.tsx");
 test.after(() => {
   hooks.deregister();
-  delete globalThis.__blogSettingsTest;
-});
-
-test("post URL copies the full address and recovers from clipboard failure without changing the draft", async (t) => {
-  settingsState.values = [];
-  const props = {
-    value: {
-      authorName: "",
-      categoryId: "",
-      tagIds: [],
-      excerpt: "",
-      seoTitle: "",
-      seoDescription: "",
-      relatedToolIds: [],
-    },
-    slug: "my-post",
-    categories: [],
-    tags: [],
-    tools: [],
-    disabled: true,
-    onChange() {
-      assert.fail("Copying must not edit the draft");
-    },
-  };
-  const written = [];
-  globalThis.window = { location: { origin: "https://example.test" } };
-  navigator.clipboard = {
-    async writeText(url) {
-      written.push(url);
-    },
-  };
-  t.after(() => {
-    delete globalThis.window;
-    delete navigator.clipboard;
-  });
-  function walk(node) {
-    return Array.isArray(node)
-      ? node.flatMap(walk)
-      : node && typeof node === "object" && node.props
-        ? [node, ...walk(node.props.children)]
-        : [];
-  }
-  function render() {
-    settingsState.index = 0;
-    return walk(BlogPostSettings(props));
-  }
-  const copy = (nodes) => nodes.find((node) => node.props.action === "copy");
-
-  await copy(render()).props.onClick();
-  assert.deepEqual(written, ["https://example.test/blog/my-post"]);
-  assert.ok(render().some((node) => node.props.role === "status" && node.props.children === "URL copied."));
-
-  navigator.clipboard.writeText = async () => {
-    throw new Error("Permission denied");
-  };
-  await copy(render()).props.onClick();
-  assert.ok(render().some((node) => node.props.children === "https://example.test/blog/my-post"));
-  assert.ok(render().some((node) => node.props.role === "status" && /copy it manually/.test(node.props.children)));
-
-  navigator.clipboard.writeText = async (url) => {
-    written.push(url);
-  };
-  await copy(render()).props.onClick();
-  assert.equal(written.length, 2);
-  assert.ok(render().some((node) => node.props.role === "status" && node.props.children === "URL copied."));
-
-  props.slug = null;
-  assert.equal(copy(render()), undefined);
 });
 
 test("history panel accepts paginated revision responses and rejects malformed data", () => {
@@ -164,12 +87,15 @@ test("history panel accepts paginated revision responses and rejects malformed d
     reason: "manual_save",
     createdAt: "2026-09-16T10:00:00Z",
   };
-  const page = historyPageSchema.parse({ items: [revision], nextCursor: "older" });
+  const page = historyPageSchema.parse({ items: [revision], nextCursor: "older", page: 1, pageCount: 2, total: 26 });
   assert.equal(page.items[0].createdAt.getTime(), Date.parse(revision.createdAt));
   assert.equal(page.nextCursor, "older");
-  assert.deepEqual(historyPageSchema.parse({ items: [], nextCursor: null }), {
+  assert.deepEqual(historyPageSchema.parse({ items: [], nextCursor: null, page: 1, pageCount: 1, total: 0 }), {
     items: [],
     nextCursor: null,
+    page: 1,
+    pageCount: 1,
+    total: 0,
   });
   assert.equal(
     historyPageSchema.safeParse({
@@ -306,7 +232,7 @@ test("a published article with a scheduled revision exposes both live and schedu
       ],
       categories: { items: [], nextCursor: null },
       filters: {},
-      nextCursor: null,
+      pagination: { page: 1, pageCount: 1, total: 0 },
       canCreate: false,
       canArchive: false,
       canManageTerms: false,
@@ -320,12 +246,12 @@ test("a published article with a scheduled revision exposes both live and schedu
 test("taxonomy keeps the originating editor across topic type and pagination changes", async () => {
   const html = renderToStaticMarkup(
     await taxonomy.default({
-      searchParams: Promise.resolve({ returnTo: "/admin/blog/post-1", cursor: "older" }),
+      searchParams: Promise.resolve({ returnTo: "/admin/blog/post-1", page: "1" }),
     }),
   );
   assert.match(html, /href="\/admin\/blog\/post-1"/);
   assert.match(html, /kind=tag&amp;returnTo=%2Fadmin%2Fblog%2Fpost-1/);
-  assert.match(html, /kind=category&amp;returnTo=%2Fadmin%2Fblog%2Fpost-1&amp;cursor=next-page/);
+  assert.match(html, /kind=category&amp;returnTo=%2Fadmin%2Fblog%2Fpost-1&amp;page=2/);
 });
 
 test("taxonomy rejects external, traversing, and repeated return destinations", async () => {
@@ -375,4 +301,23 @@ test("publication recovery selects the first failed requirement and blocks publi
   assert.deepEqual(fixed, ["excerpt"]);
   element.props.onSubmit({ preventDefault() {} });
   assert.match(renderToStaticMarkup(element), /type="submit"[^>]*disabled=""/);
+});
+
+test("numbered pagination keeps first and last jumps and handles both boundaries", () => {
+  for (const page of [1, 2, 50, 99, 100]) {
+    const html = renderToStaticMarkup(
+      createElement(Pagination, {
+        page,
+        pageCount: 100,
+        getPageHref: (target) => `/admin/audit?page=${target}`,
+      }),
+    );
+    assert.match(html, /aria-label="Page 1"[^>]*href="\/admin\/audit\?page=1"/);
+    assert.match(html, /aria-label="Page 100"[^>]*href="\/admin\/audit\?page=100"/);
+    assert.match(html, new RegExp(`aria-label="Page ${page}" aria-current="page"`));
+    if (page === 1) assert.match(html, /aria-label="Previous page"[^>]*disabled/);
+    if (page === 100) assert.match(html, /aria-label="Next page"[^>]*disabled/);
+  }
+  const one = renderToStaticMarkup(createElement(Pagination, { page: 1, pageCount: 1 }));
+  assert.equal([...one.matchAll(/aria-label="Page 1"/g)].length, 1);
 });

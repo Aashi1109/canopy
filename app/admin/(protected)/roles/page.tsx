@@ -1,15 +1,6 @@
+import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
-import {
-  H3,
-  Caption,
-  Strong,
-  Card,
-  Field,
-  Input,
-  StatusBadge,
-  Textarea,
-  ToolPageHeader,
-} from "@/components/ui/index.tsx";
+import { H3, Caption, Strong, Card, Field, Input, StatusBadge, Textarea } from "@/components/ui/index.tsx";
 import {
   ChevronRight,
   CreditCard,
@@ -80,8 +71,8 @@ export default async function RolesPage() {
 
   return (
     <div className="flex min-h-full flex-col gap-[22px]">
-      <ToolPageHeader
-        className="mb-0 border-b-0 pb-0"
+      <AdminPageHeader
+        className="mb-0 shrink-0"
         description="Start with a system role or create one for your team’s workflow."
         title="Roles"
       />

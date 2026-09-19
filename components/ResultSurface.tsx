@@ -1,6 +1,7 @@
 "use client";
 
 import { Upload } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { getResultCount, ResultActions, ResultView, type ResultViewProps } from "@/components/ResultView";
 import { WorkspaceSurface } from "@/components/Surfaces";
@@ -11,6 +12,7 @@ export interface ResultSurfaceProps {
   error?: string;
   initialJsonView?: ResultViewProps["initialJsonView"];
   result: ToolResult | null;
+  renderResult?: (result: ToolResult) => ReactNode;
   running?: boolean;
   spec: ToolSpec;
   title?: string;
@@ -21,6 +23,7 @@ export function ResultSurface({
   error,
   initialJsonView,
   result,
+  renderResult,
   running = false,
   spec,
   title = "Result",
@@ -72,12 +75,16 @@ export function ResultSurface({
       variant={variant}
     >
       {result ? (
-        <ResultView
-          hideJsonHeader={cardJson}
-          initialJsonView={initialJsonView}
-          jsonHeader={jsonHeader}
-          result={result}
-        />
+        renderResult ? (
+          renderResult(result)
+        ) : (
+          <ResultView
+            hideJsonHeader={cardJson}
+            initialJsonView={initialJsonView}
+            jsonHeader={jsonHeader}
+            result={result}
+          />
+        )
       ) : null}
     </WorkspaceSurface>
   );

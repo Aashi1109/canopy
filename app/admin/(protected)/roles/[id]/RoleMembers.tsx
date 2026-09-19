@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AdminListing } from "@/app/admin/(protected)/components/AdminListing";
 import { useRouter, unstable_rethrow } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import {
@@ -20,6 +21,7 @@ import {
   Checkbox,
   Input,
   Popover,
+  Pagination,
   SectionCard,
   SectionHeading,
   StatusBadge,
@@ -48,7 +50,9 @@ export default function RoleMembers({
   const router = useRouter();
   const [members, setMembers] = useState(initial);
   const [memberLoading, setMemberLoading] = useState(false);
-  const [memberError, setMemberError] = useState(false);
+  const [memberPage, setMemberPage] = useState(1);
+  const [memberErrorPage, setMemberErrorPage] = useState<number | null>(null);
+  const memberRequest = useRef(0);
   const [open, setOpen] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -64,7 +68,16 @@ export default function RoleMembers({
   const searchInput = useRef<HTMLInputElement>(null);
   const resultsPanel = useRef<HTMLDivElement>(null);
 
-  useEffect(() => setMembers(initial), [initial]);
+  useEffect(() => {
+    memberRequest.current += 1;
+    setMembers(initial);
+    setMemberPage(1);
+    setMemberErrorPage(null);
+    setMemberLoading(false);
+    return () => {
+      memberRequest.current += 1;
+    };
+  }, [initial]);
   useEffect(() => {
     if (!open) return;
     let current = true;
@@ -123,14 +136,6 @@ export default function RoleMembers({
         roleId,
         selected.map((user) => user.id),
       );
-      setMembers((current) => {
-        const additions = selected.filter((user) => !current.users.some((member) => member.id === user.id));
-        return {
-          ...current,
-          users: [...additions, ...current.users],
-          total: current.total + additions.length,
-        };
-      });
       setOpen(false);
       setSelected([]);
       toast.success(`${roleName} assigned to ${selected.length} ${selected.length === 1 ? "user" : "users"}.`);
@@ -144,23 +149,28 @@ export default function RoleMembers({
     }
   }
 
-  async function loadMembers() {
+  async function loadMembers(target: number) {
+    const request = ++memberRequest.current;
     setMemberLoading(true);
-    setMemberError(false);
+    setMemberErrorPage(null);
     try {
-      const page = await searchRoleUsersAction(roleId, true, "", members.users.length);
-      setMembers((current) => ({
-        ...page,
-        users: [
-          ...current.users,
-          ...page.users.filter((user) => !current.users.some((member) => member.id === user.id)),
-        ],
-      }));
+      let page = await searchRoleUsersAction(roleId, true, "", (target - 1) * 25);
+      const lastPage = Math.max(1, Math.ceil(page.total / 25));
+      if (target > lastPage) {
+        target = lastPage;
+        page = await searchRoleUsersAction(roleId, true, "", (target - 1) * 25);
+      }
+      if (request !== memberRequest.current) return;
+      setMembers(page);
+      setMemberPage(target);
     } catch (error) {
       unstable_rethrow(error);
-      setMemberError(true);
+      if (request === memberRequest.current) {
+        setMemberErrorPage(target);
+        toast.error("Could not load members. Your current page is kept; retry loading the requested page.");
+      }
     } finally {
-      setMemberLoading(false);
+      if (request === memberRequest.current) setMemberLoading(false);
     }
   }
 
@@ -202,54 +212,65 @@ export default function RoleMembers({
           {canAssign && disabled ? (
             <p className="mb-3 text-sm text-muted-foreground">Save or revert role changes before assigning users.</p>
           ) : null}
-          <div className="flex flex-wrap gap-2">
-            {members.users.map((user) => (
-              <Popover.Root key={user.id}>
-                <Popover.Trigger asChild>
-                  <Button variant="outline" className="h-auto max-w-full rounded-full py-1.5 pr-3 pl-1.5">
-                    <Avatar aria-hidden="true" className="size-7 shrink-0">
-                      <AvatarImage src={user.image ?? undefined} alt="" />
-                      <AvatarFallback className="text-xs">
-                        {user.name
-                          .split(/\s+/)
-                          .map((part) => part[0])
-                          .slice(0, 2)
-                          .join("") || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="truncate">{user.name || user.email}</span>
-                  </Button>
-                </Popover.Trigger>
-                <Popover.Portal>
-                  <Popover.Content
-                    sideOffset={8}
-                    className="z-50 max-w-[calc(100vw-2rem)] rounded-lg border bg-popover p-4 text-sm text-popover-foreground shadow-md"
-                  >
-                    <p className="font-medium">{user.name || user.email}</p>
-                    <p className="mt-1 break-all text-muted-foreground">{user.email}</p>
-                    <StatusBadge className="mt-2" variant={user.status === "active" ? "success" : "warning"}>
-                      {user.status === "active" ? "Active" : "Suspended"}
-                    </StatusBadge>
-                  </Popover.Content>
-                </Popover.Portal>
-              </Popover.Root>
-            ))}
-          </div>
-          {!members.total ? <p className="text-sm text-muted-foreground">No users assigned to this role yet.</p> : null}
-          {memberError ? (
-            <AlertBanner variant="error" className="mt-3">
-              Could not load members. Try again.
-            </AlertBanner>
-          ) : null}
-          {members.hasMore ? (
-            <Button className="mt-3" variant="ghost" loading={memberLoading} onClick={loadMembers}>
-              {memberLoading
-                ? "Loading…"
-                : memberError
-                  ? "Retry loading members"
-                  : `Show more · ${members.total} total`}
-            </Button>
-          ) : null}
+          <AdminListing
+            aria-label="Assigned role members"
+            className="h-64 flex-none"
+            pagination={{
+              page: memberPage,
+              pageCount: Math.max(1, Math.ceil(members.total / 25)),
+              disabled: memberLoading,
+              onPageChange: loadMembers,
+              summary: (
+                <span className="flex flex-wrap items-center gap-2">
+                  {memberLoading
+                    ? "Loading members…"
+                    : `Showing ${members.total ? (memberPage - 1) * 25 + 1 : 0}–${(memberPage - 1) * 25 + members.users.length} of ${members.total} users`}
+                  {memberErrorPage !== null ? (
+                    <Button size="sm" variant="secondary" onClick={() => loadMembers(memberErrorPage)}>
+                      Retry loading page {memberErrorPage}
+                    </Button>
+                  ) : null}
+                </span>
+              ),
+            }}
+          >
+            <div aria-busy={memberLoading} className="flex flex-wrap gap-2 p-3">
+              {members.users.map((user) => (
+                <Popover.Root key={user.id}>
+                  <Popover.Trigger asChild>
+                    <Button variant="outline" className="h-auto max-w-full rounded-full py-1.5 pr-3 pl-1.5">
+                      <Avatar aria-hidden="true" className="size-7 shrink-0">
+                        <AvatarImage src={user.image ?? undefined} alt="" />
+                        <AvatarFallback className="text-xs">
+                          {user.name
+                            .split(/\s+/)
+                            .map((part) => part[0])
+                            .slice(0, 2)
+                            .join("") || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate">{user.name || user.email}</span>
+                    </Button>
+                  </Popover.Trigger>
+                  <Popover.Portal>
+                    <Popover.Content
+                      sideOffset={8}
+                      className="z-50 max-w-[calc(100vw-2rem)] rounded-lg border bg-popover p-4 text-sm text-popover-foreground shadow-md"
+                    >
+                      <p className="font-medium">{user.name || user.email}</p>
+                      <p className="mt-1 break-all text-muted-foreground">{user.email}</p>
+                      <StatusBadge className="mt-2" variant={user.status === "active" ? "success" : "warning"}>
+                        {user.status === "active" ? "Active" : "Suspended"}
+                      </StatusBadge>
+                    </Popover.Content>
+                  </Popover.Portal>
+                </Popover.Root>
+              ))}
+            </div>
+            {!members.total ? (
+              <p className="p-3 text-sm text-muted-foreground">No users assigned to this role yet.</p>
+            ) : null}
+          </AdminListing>
           <AlertDialogContent
             className="inset-0 m-auto flex h-fit max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden p-0 data-[size=default]:sm:max-w-[640px]"
             onOpenAutoFocus={(event) => {
@@ -324,7 +345,7 @@ export default function RoleMembers({
                     align="start"
                     sideOffset={6}
                     collisionPadding={16}
-                    className="z-50 max-h-[min(320px,var(--radix-popover-content-available-height))] w-[var(--radix-popover-trigger-width)] overflow-y-auto rounded-lg border bg-popover p-3 text-popover-foreground shadow-md"
+                    className="z-50 flex max-h-[min(320px,var(--radix-popover-content-available-height))] w-[var(--radix-popover-trigger-width)] flex-col overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-md"
                     onOpenAutoFocus={(event) => event.preventDefault()}
                     onCloseAutoFocus={(event) => event.preventDefault()}
                     onInteractOutside={(event) => {
@@ -334,7 +355,7 @@ export default function RoleMembers({
                       searchInput.current?.focus();
                     }}
                   >
-                    <div aria-busy={loading}>
+                    <div aria-busy={loading} className="min-h-0 overflow-y-auto p-3">
                       {loading ? (
                         <p role="status" className="py-4 text-sm text-muted-foreground">
                           Searching users…
@@ -364,36 +385,24 @@ export default function RoleMembers({
                               All users on this page are selected.
                             </p>
                           ) : null}
-                          {offset > 0 || results.hasMore ? (
-                            <div className="flex items-center justify-between gap-2 pt-2">
-                              <Button
-                                variant="ghost"
-                                disabled={saving || offset === 0}
-                                onClick={() => {
-                                  setOffset((value) => Math.max(0, value - 25));
-                                  setLoading(true);
-                                }}
-                              >
-                                Previous
-                              </Button>
-                              <span className="text-xs text-muted-foreground">
-                                {offset + 1}–{offset + results.users.length} of {results.total}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                disabled={saving || !results.hasMore}
-                                onClick={() => {
-                                  setOffset((value) => value + 25);
-                                  setLoading(true);
-                                }}
-                              >
-                                Next
-                              </Button>
-                            </div>
-                          ) : null}
                         </>
                       )}
                     </div>
+                    {!loading && !searchError && (offset > 0 || results.hasMore) ? (
+                      <Pagination
+                        aria-label="User search pages"
+                        page={Math.floor(offset / 25) + 1}
+                        pageCount={Math.ceil(results.total / 25)}
+                        disabled={saving || loading}
+                        summary={`Showing ${offset + 1}–${offset + results.users.length} of ${results.total}`}
+                        onPageChange={(page) => {
+                          setOffset((page - 1) * 25);
+                          setLoading(true);
+                        }}
+                        sticky={false}
+                        className="shrink-0 px-3"
+                      />
+                    ) : null}
                   </Popover.Content>
                 </Popover.Portal>
               </Popover.Root>

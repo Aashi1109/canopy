@@ -33,11 +33,11 @@ import {
   Textarea,
   buttonVariants,
   typographyStyles,
+  BackButton,
 } from "@/components/ui/index.tsx";
 import { OrderableList } from "@/components/ui/components/OrderableList.tsx";
 import {
   AlignCenter,
-  ArrowLeft,
   Barcode,
   Bold,
   Braces,
@@ -1267,20 +1267,28 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                         return (
                           <button
                             aria-label={`Add ${tool.label}`}
-                            className="group flex h-10 w-full items-center gap-2 rounded-lg px-1.5 text-left outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                            className="group flex h-10 w-full items-center gap-2 rounded-lg px-1.5 text-left outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                             disabled={!designerReady}
                             key={tool.pluginKey}
                             onClick={() => addElement(tool)}
                             type="button"
                           >
-                            <span className="grid size-7 shrink-0 place-items-center rounded text-foreground">
+                            <span className="grid size-7 shrink-0 place-items-center rounded text-foreground group-hover:text-accent-foreground">
                               <Icon aria-hidden="true" size={15} />
                             </span>
                             <span className="min-w-0 flex-1">
-                              <Caption className="block text-foreground">{tool.label}</Caption>
-                              <Caption className="block truncate text-muted-foreground">{tool.description}</Caption>
+                              <Caption className="block text-foreground group-hover:text-accent-foreground">
+                                {tool.label}
+                              </Caption>
+                              <Caption className="block truncate text-muted-foreground group-hover:text-accent-foreground">
+                                {tool.description}
+                              </Caption>
                             </span>
-                            <Plus aria-hidden="true" className="text-muted-foreground" size={13} />
+                            <Plus
+                              aria-hidden="true"
+                              className="text-muted-foreground group-hover:text-accent-foreground"
+                              size={13}
+                            />
                           </button>
                         );
                       })}
@@ -1454,7 +1462,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                         {...sectionOrderState.attributes}
                         {...sectionOrderState.listeners}
                         aria-label={`Reorder ${section.label} section`}
-                        className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                        className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
                         ref={sectionOrderState.setActivatorNodeRef}
                         size="icon-sm"
                         type="button"
@@ -1517,7 +1525,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                                 {...entryOrderState.attributes}
                                 {...entryOrderState.listeners}
                                 aria-label={`Reorder ${entry.label}`}
-                                className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                                className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
                                 ref={entryOrderState.setActivatorNodeRef}
                                 size="icon-sm"
                                 type="button"
@@ -1710,7 +1718,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                                         {...columnOrderState.attributes}
                                         {...columnOrderState.listeners}
                                         aria-label={`Reorder ${column.label} column`}
-                                        className="grid size-8 touch-none place-items-center rounded text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                                        className="grid size-8 touch-none place-items-center rounded text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
                                         ref={columnOrderState.setActivatorNodeRef}
                                         size="icon-sm"
                                         type="button"
@@ -1969,7 +1977,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                   <div className="flex shrink-0 items-center gap-0.5">
                     <button
                       aria-label={`Duplicate page ${index + 1}`}
-                      className="grid size-6 place-items-center rounded text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                      className="grid size-6 place-items-center rounded text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={() => duplicatePage(index)}
                       type="button"
                     >
@@ -2098,18 +2106,8 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
       </div>
 
       <main className="relative hidden h-dvh min-w-[1024px] flex-col overflow-hidden bg-background lg:flex">
-        <header className="flex h-16 shrink-0 items-center gap-2.5 border-b border-border bg-card px-4">
-          <Link
-            aria-label="Back to template lifecycle"
-            className={buttonVariants({
-              className: "!size-9 shrink-0 text-muted-foreground",
-              size: "icon",
-              variant: "ghost",
-            })}
-            href="/admin/templates"
-          >
-            <ArrowLeft aria-hidden="true" size={17} />
-          </Link>
+        <header className="flex h-16 shrink-0 items-center gap-2.5 bg-card px-4">
+          <BackButton href="/admin/templates" label="Back to template lifecycle" className="shrink-0" />
           <div className="w-[18.75rem] min-w-0 shrink-0">
             <div className="flex h-8 items-center gap-2">
               <Input
@@ -2747,7 +2745,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                 <div className="flex h-8 items-center rounded-lg border border-border bg-muted/50">
                   <button
                     aria-label="Zoom out"
-                    className="grid size-8 place-items-center rounded-l-lg outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                    className="grid size-8 place-items-center rounded-l-lg outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => updateZoom(zoom - 0.1)}
                     type="button"
                   >
@@ -2756,7 +2754,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                   <Caption className="min-w-10 text-center text-foreground">{Math.round(zoom * 100)}%</Caption>
                   <button
                     aria-label="Zoom in"
-                    className="grid size-8 place-items-center rounded-r-lg outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                    className="grid size-8 place-items-center rounded-r-lg outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => updateZoom(zoom + 0.1)}
                     type="button"
                   >

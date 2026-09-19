@@ -15,7 +15,16 @@ import { cn } from "@/components/ui/lib/utils.ts";
 import { Eye, EyeOff } from "lucide";
 import { FileText, Trash2, Upload } from "lucide-react";
 import { MorphIcon } from "morphicons/react";
-import { type ReactNode, type TextareaHTMLAttributes, useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  type Ref,
+  type TextareaHTMLAttributes,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { textInputFileIssue, validateFileSelection, workspaceFileId } from "@/components/FileInput";
 import { PasswordInput } from "@/components/PasswordInput";
@@ -37,6 +46,8 @@ interface InputSurfaceProps {
   input: WorkspaceInputState;
   inputSpec: ToolInputSpec;
   onInputChange: WorkspaceProps["onInputChange"];
+  onSourceScroll?: TextareaHTMLAttributes<HTMLTextAreaElement>["onScroll"];
+  sourceRef?: Ref<HTMLTextAreaElement>;
   variant?: "card" | "panel";
 }
 
@@ -54,6 +65,8 @@ interface SourceTextareaProps extends Pick<
   transparent?: boolean;
   onCaretChange?: (position: { readonly column: number; readonly line: number }) => void;
   onChange: (value: string) => void;
+  onScroll?: TextareaHTMLAttributes<HTMLTextAreaElement>["onScroll"];
+  textareaRef?: Ref<HTMLTextAreaElement>;
   placeholder?: string;
   readOnly?: boolean;
   required?: boolean;
@@ -103,6 +116,8 @@ export function SourceTextarea({
   transparent = false,
   onCaretChange,
   onChange,
+  onScroll,
+  textareaRef,
   placeholder,
   readOnly,
   required,
@@ -185,9 +200,11 @@ export function SourceTextarea({
             if (highlightRef.current) {
               highlightRef.current.style.transform = `translate(${-scrollLeft}px, ${-scrollTop}px)`;
             }
+            onScroll?.(event);
           }}
           placeholder={placeholder}
           readOnly={readOnly}
+          ref={textareaRef}
           required={required}
           spellCheck={false}
           value={value}
@@ -197,7 +214,15 @@ export function SourceTextarea({
     </div>
   );
 }
-export function WorkspaceInputSurface({ disabled, input, inputSpec, onInputChange, variant }: InputSurfaceProps) {
+export function WorkspaceInputSurface({
+  disabled,
+  input,
+  inputSpec,
+  onInputChange,
+  onSourceScroll,
+  sourceRef,
+  variant,
+}: InputSurfaceProps) {
   const idPrefix = useId();
   const [inputIssue, setInputIssue] = useState("");
   const [revealedSecrets, setRevealedSecrets] = useState<Readonly<Record<string, boolean>>>({});
@@ -356,6 +381,8 @@ export function WorkspaceInputSurface({ disabled, input, inputSpec, onInputChang
               transparent={variant === "card"}
               maxLength={inputSpec.maxLength}
               onChange={(text) => onInputChange({ ...input, files: [], text })}
+              onScroll={onSourceScroll}
+              textareaRef={sourceRef}
               placeholder={inputSpec.placeholder}
               readOnly={largeFile}
               value={input.text}

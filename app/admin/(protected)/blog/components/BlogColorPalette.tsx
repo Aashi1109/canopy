@@ -3,6 +3,14 @@
 import { CircleOff } from "lucide-react";
 import { Button, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/index.tsx";
 
+export const BLOG_HIGHLIGHT_COLORS = [
+  ["Green", "#dcfce7"],
+  ["Blue", "#dbeafe"],
+  ["Pink", "#fce7f3"],
+  ["Purple", "#ede9fe"],
+  ["Yellow", "#fef08a"],
+] as const;
+
 export function BlogColorPalette({
   colors,
   label,

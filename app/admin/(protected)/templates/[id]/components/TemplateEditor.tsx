@@ -35,12 +35,11 @@ import {
   TabsList,
   TabsTrigger,
   Textarea,
-  buttonVariants,
+  BackButton,
 } from "@/components/ui/index.tsx";
 import { OrderableList } from "@/components/ui/components/OrderableList.tsx";
 import {
   Archive,
-  ArrowLeft,
   CheckCircle2,
   Code2,
   Copy,
@@ -52,7 +51,6 @@ import {
   RotateCcw,
   Save,
 } from "lucide-react";
-import Link from "next/link";
 import { updateAdminQuery, useAdminQueryState } from "@/app/admin/hooks/useAdminQueryState";
 import { useActionState, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
@@ -361,17 +359,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
     <>
       <header className="sticky top-2 z-20 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card/95 px-3 py-2 shadow-sm backdrop-blur">
         <div className="flex min-w-0 items-center gap-2">
-          <Link
-            aria-label="Back to templates"
-            className={buttonVariants({
-              className: "size-8 rounded-lg",
-              size: "icon",
-              variant: "ghost",
-            })}
-            href="/admin/templates"
-          >
-            <ArrowLeft aria-hidden="true" className="size-4" />
-          </Link>
+          <BackButton href="/admin/templates" label="Back to templates" className="shrink-0" />
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
               <H1 className="truncate text-foreground">Editing: {name || "Untitled template"}</H1>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { z } from "zod";
+import { AdminListing } from "../../components/AdminListing";
 import { AlertBanner, Button } from "@/components/ui/index.tsx";
 import { readBlogAction } from "../actions";
 import { BlogRevisionList } from "./BlogRevisionList";
@@ -17,6 +18,9 @@ export const historyPageSchema = z.object({
     }),
   ),
   nextCursor: z.string().nullable(),
+  page: z.number().int().positive(),
+  pageCount: z.number().int().positive(),
+  total: z.number().int().nonnegative(),
 });
 
 type Props = {
@@ -27,7 +31,7 @@ type Props = {
 };
 
 export function BlogHistoryPanel({ postId, version, publishedRevisionId, currentTitle }: Props) {
-  const [cursor, setCursor] = useState<string>();
+  const [requestedPage, setRequestedPage] = useState(1);
   const [attempt, setAttempt] = useState(0);
   const [page, setPage] = useState<z.infer<typeof historyPageSchema> | null>(null);
   const [error, setError] = useState("");
@@ -37,7 +41,7 @@ export function BlogHistoryPanel({ postId, version, publishedRevisionId, current
     setError("");
     async function load() {
       try {
-        const result = await readBlogAction({ operation: "history", postId, cursor });
+        const result = await readBlogAction({ operation: "history", postId, page: requestedPage });
         if (cancelled) return;
         if (!result.ok) {
           setError(result.message);
@@ -57,47 +61,52 @@ export function BlogHistoryPanel({ postId, version, publishedRevisionId, current
     return () => {
       cancelled = true;
     };
-  }, [postId, version, cursor, attempt]);
+  }, [postId, version, requestedPage, attempt]);
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs text-muted-foreground">Compare to review or restore a saved revision.</p>
-      {error ? (
-        <>
-          <AlertBanner variant="error">{error}</AlertBanner>
-          <Button size="sm" variant="outline" onClick={() => setAttempt((value) => value + 1)}>
-            Retry
-          </Button>
-        </>
-      ) : !page ? (
-        <p role="status" className="text-sm text-muted-foreground">
-          Loading history…
-        </p>
-      ) : (
-        <>
-          <BlogRevisionList
-            compact
-            currentTitle={currentTitle}
-            postId={postId}
-            version={version}
-            publishedRevisionId={publishedRevisionId}
-            revisions={page.items}
-            canRestore={false}
-          />
-          <div className="flex flex-wrap gap-2">
-            {cursor && (
-              <Button size="xs" variant="outline" onClick={() => setCursor(undefined)}>
-                Latest revisions
-              </Button>
-            )}
-            {page.nextCursor && (
-              <Button size="xs" variant="outline" onClick={() => setCursor(page.nextCursor ?? undefined)}>
-                Older revisions
-              </Button>
-            )}
-          </div>
-        </>
-      )}
-    </div>
+    <AdminListing
+      className="rounded-none border-0 bg-transparent shadow-none"
+      aria-label="Revision history"
+      pagination={{
+        "aria-label": "Revision pages",
+        page: page?.page ?? requestedPage,
+        pageCount: page?.pageCount ?? requestedPage,
+        disabled: !page,
+        onPageChange: setRequestedPage,
+        className: "bg-transparent px-0",
+        summary: page
+          ? `Showing ${page.total ? (page.page - 1) * 25 + 1 : 0}–${(page.page - 1) * 25 + page.items.length} of ${page.total} revisions`
+          : undefined,
+      }}
+    >
+      <div className="space-y-3 py-3">
+        <p className="text-xs text-muted-foreground">Compare to review or restore a saved revision.</p>
+        {error ? (
+          <>
+            <AlertBanner variant="error">{error}</AlertBanner>
+            <Button size="sm" variant="outline" onClick={() => setAttempt((value) => value + 1)}>
+              Retry
+            </Button>
+          </>
+        ) : !page ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            Loading history…
+          </p>
+        ) : (
+          <>
+            <BlogRevisionList
+              compact
+              currentTitle={currentTitle}
+              postId={postId}
+              version={version}
+              publishedRevisionId={publishedRevisionId}
+              revisions={page.items}
+              canRestore={false}
+              historyPage={page.page}
+            />
+          </>
+        )}
+      </div>
+    </AdminListing>
   );
 }

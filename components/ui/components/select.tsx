@@ -14,11 +14,11 @@ const selectTriggerVariants = cva(
   {
     variants: {
       size: {
-        xs: "h-8 px-2.5 text-[11px]",
-        sm: "h-9 px-3 text-[13px]",
-        default: "h-11 px-4 text-sm",
-        md: "h-12 px-[18px] text-[15px]",
-        lg: "h-13 px-5.5 text-base",
+        xs: "h-7 px-2 text-[11px]",
+        sm: "h-8 px-2.5 text-[11px]",
+        default: "h-9 px-3 text-[13px]",
+        md: "h-11 px-4 text-sm",
+        lg: "h-12 px-[18px] text-[15px]",
       },
     },
     defaultVariants: {
@@ -28,6 +28,20 @@ const selectTriggerVariants = cva(
 );
 
 type SelectSize = NonNullable<VariantProps<typeof selectTriggerVariants>["size"]>;
+
+const SelectSizeContext = React.createContext<{
+  size: SelectSize;
+  setTriggerSize: (size: SelectSize) => void;
+}>({ size: "default", setTriggerSize: () => {} });
+
+type SelectMenuStyle = React.CSSProperties & Record<`--select-${string}`, string>;
+const selectMenuSizes: Record<SelectSize, SelectMenuStyle> = {
+  xs: { "--select-row": "28px", "--select-pad": "8px", "--select-font": "11px", "--select-icon": "12px" },
+  sm: { "--select-row": "32px", "--select-pad": "10px", "--select-font": "11px", "--select-icon": "14px" },
+  default: { "--select-row": "36px", "--select-pad": "12px", "--select-font": "13px", "--select-icon": "15px" },
+  md: { "--select-row": "44px", "--select-pad": "16px", "--select-font": "14px", "--select-icon": "16px" },
+  lg: { "--select-row": "48px", "--select-pad": "18px", "--select-font": "15px", "--select-icon": "18px" },
+};
 
 type LegacySelectProps = Omit<React.ComponentProps<"select">, "size"> & {
   size?: SelectSize;
@@ -164,8 +178,17 @@ type SelectProps = Omit<React.ComponentProps<typeof SelectPrimitive.Root>, "chil
 };
 
 function Select(props: SelectProps) {
-  if (hasNativeOptions(props.children)) return <LegacySelect {...(props as LegacySelectProps)} />;
-  return <SelectPrimitive.Root data-slot="select" {...(props as React.ComponentProps<typeof SelectPrimitive.Root>)} />;
+  const [size, setTriggerSize] = React.useState<SelectSize>(props.size ?? "default");
+  const context = React.useMemo(() => ({ size, setTriggerSize }), [size]);
+  return (
+    <SelectSizeContext.Provider value={context}>
+      {hasNativeOptions(props.children) ? (
+        <LegacySelect {...(props as LegacySelectProps)} />
+      ) : (
+        <SelectPrimitive.Root data-slot="select" {...(props as React.ComponentProps<typeof SelectPrimitive.Root>)} />
+      )}
+    </SelectSizeContext.Provider>
+  );
 }
 
 function SelectGroup(props: React.ComponentProps<typeof SelectPrimitive.Group>) {
@@ -190,6 +213,8 @@ function SelectTrigger({
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
   size?: SelectSize;
 }) {
+  const { setTriggerSize } = React.useContext(SelectSizeContext);
+  React.useLayoutEffect(() => setTriggerSize(size), [setTriggerSize, size]);
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
@@ -199,7 +224,7 @@ function SelectTrigger({
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground transition-[transform,color] group-data-[size=xs]/select-trigger:size-3.5 group-data-[size=sm]/select-trigger:size-[15px] group-data-[size=md]/select-trigger:size-[18px] group-data-[size=lg]/select-trigger:size-5 group-data-[state=open]/select-trigger:rotate-180 group-data-[state=open]/select-trigger:text-primary" />
+        <ChevronDownIcon className="size-[15px] shrink-0 text-muted-foreground transition-[transform,color] group-data-[size=xs]/select-trigger:size-3 group-data-[size=sm]/select-trigger:size-3.5 group-data-[size=md]/select-trigger:size-4 group-data-[size=lg]/select-trigger:size-[18px] group-data-[state=open]/select-trigger:rotate-180 group-data-[state=open]/select-trigger:text-primary" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
@@ -210,12 +235,16 @@ function SelectContent({
   children,
   position = "popper",
   align = "start",
+  style,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
+  const { size } = React.useContext(SelectSizeContext);
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
         data-slot="select-content"
+        data-size={size}
+        style={{ ...selectMenuSizes[size], ...style }}
         className={cn(
           "z-50 max-h-[min(20rem,var(--radix-select-content-available-height))] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-lg border border-border bg-card text-foreground shadow-lg",
           className,
@@ -238,7 +267,7 @@ function SelectLabel({ className, ...props }: React.ComponentProps<typeof Select
     <SelectPrimitive.Label
       data-slot="select-label"
       className={cn(
-        "px-2.5 py-2 font-caption text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground",
+        "px-[var(--select-pad)] py-2 font-caption text-[length:var(--select-font)] font-semibold uppercase tracking-[0.05em] text-muted-foreground",
         className,
       )}
       {...props}
@@ -251,14 +280,14 @@ function SelectItem({ className, children, ...props }: React.ComponentProps<type
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex min-h-9 w-full cursor-default select-none items-center rounded-sm py-[9px] pr-9 pl-2.5 font-sans text-sm text-foreground outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-muted data-[state=checked]:bg-accent data-[state=checked]:font-semibold data-[state=checked]:text-primary",
+        "relative flex min-h-[var(--select-row)] w-full cursor-default select-none items-center rounded-sm py-1 pr-[calc(var(--select-pad)+var(--select-icon)+8px)] pl-[var(--select-pad)] font-sans text-[length:var(--select-font)] text-foreground outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-muted data-[state=checked]:bg-accent data-[state=checked]:font-semibold data-[state=checked]:text-accent-text",
         className,
       )}
       {...props}
     >
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-      <SelectPrimitive.ItemIndicator className="absolute right-2.5 grid size-[15px] place-items-center text-primary">
-        <CheckIcon className="size-[15px]" />
+      <SelectPrimitive.ItemIndicator className="absolute right-[var(--select-pad)] grid size-[var(--select-icon)] place-items-center text-primary">
+        <CheckIcon className="size-[var(--select-icon)]" />
       </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>
   );
@@ -278,10 +307,10 @@ function SelectScrollUpButton({ className, ...props }: React.ComponentProps<type
   return (
     <SelectPrimitive.ScrollUpButton
       data-slot="select-scroll-up-button"
-      className={cn("flex h-7 cursor-default items-center justify-center bg-card", className)}
+      className={cn("flex h-[var(--select-row)] cursor-default items-center justify-center bg-card", className)}
       {...props}
     >
-      <ChevronUpIcon className="size-4" />
+      <ChevronUpIcon className="size-[var(--select-icon)]" />
     </SelectPrimitive.ScrollUpButton>
   );
 }
@@ -293,10 +322,10 @@ function SelectScrollDownButton({
   return (
     <SelectPrimitive.ScrollDownButton
       data-slot="select-scroll-down-button"
-      className={cn("flex h-7 cursor-default items-center justify-center bg-card", className)}
+      className={cn("flex h-[var(--select-row)] cursor-default items-center justify-center bg-card", className)}
       {...props}
     >
-      <ChevronDownIcon className="size-4" />
+      <ChevronDownIcon className="size-[var(--select-icon)]" />
     </SelectPrimitive.ScrollDownButton>
   );
 }

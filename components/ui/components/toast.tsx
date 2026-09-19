@@ -184,13 +184,17 @@ function ToastIcon({ type }: { type: string | undefined }) {
   ) : null;
 }
 
-function ToastList({ top, closeButton }: { top: boolean; closeButton: boolean }) {
+function ToastList({ top, closeButton, dismissible }: { top: boolean; closeButton: boolean; dismissible: boolean }) {
   const { toasts, close } = ToastPrimitive.useToastManager<ToastData>();
 
   return toasts.map((toastItem) => (
     <Toast
       key={toastItem.id}
       toast={toastItem}
+      swipeDirection={dismissible ? undefined : []}
+      onKeyDown={(event) => {
+        if (!dismissible && event.key === "Escape") event.preventBaseUIHandler();
+      }}
       className={top ? "top-0 bottom-auto origin-top [--direction:1] after:top-auto after:bottom-full" : undefined}
     >
       <ToastContent>
@@ -212,7 +216,7 @@ function ToastList({ top, closeButton }: { top: boolean; closeButton: boolean })
             {toastItem.data.cancel.label}
           </Button>
         ) : null}
-        {(toastItem.data?.closeButton ?? closeButton) ? <ToastClose /> : null}
+        {dismissible && (toastItem.data?.closeButton ?? closeButton) ? <ToastClose /> : null}
       </ToastContent>
     </Toast>
   ));
@@ -223,11 +227,13 @@ function Toaster({
   toastManager = toast,
   position = "bottom-right",
   closeButton = true,
+  dismissible = true,
   theme = "system",
   ...props
 }: ToastPrimitive.Provider.Props & {
   position?: "top-right" | "bottom-right";
   closeButton?: boolean;
+  dismissible?: boolean;
   theme?: "light" | "dark" | "system";
 }) {
   return (
@@ -242,7 +248,7 @@ function Toaster({
             theme === "light" && "scheme-light",
           )}
         >
-          <ToastList top={position === "top-right"} closeButton={closeButton} />
+          <ToastList top={position === "top-right"} closeButton={closeButton} dismissible={dismissible} />
         </ToastViewport>
       </ToastPortal>
     </ToastProvider>

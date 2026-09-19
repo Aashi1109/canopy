@@ -1,3 +1,6 @@
+import { getInitialBlogGeneration } from "@/lib/blog/assistantRuns";
+import { BlogGenerationRecovery } from "../components/BlogGenerationRecovery";
+import { activeRun } from "../lib/assistantApi";
 import config from "@/lib/config/config.ts";
 import { notFound } from "next/navigation";
 import { hasPermission } from "@/lib/authorization/index.ts";
@@ -8,9 +11,16 @@ import { getTools } from "@/lib/tool-framework/catalog";
 import { BlogEditor } from "../components/BlogEditor";
 import { loadBlogTaxonomyOptions } from "../lib/loadBlogTaxonomyOptions";
 
-export default async function BlogEditorPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function BlogEditorPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ review?: string; thread?: string; edit?: string }>;
+}) {
   const session = await requirePagePermission("blog", "view");
   const { id } = await params;
+  const query = await searchParams;
   if (!/^[a-zA-Z0-9_-]{1,100}$/.test(id)) notFound();
   const [post, categories, tags, authorization, tools] = await Promise.all([
     getBlogPost(session.user.id, id),
@@ -20,10 +30,14 @@ export default async function BlogEditorPage({ params }: { params: Promise<{ id:
     getTools(),
   ]);
   if (!post) notFound();
+  const generation = config.ai.enabled ? await getInitialBlogGeneration(session.user.id, id) : null;
+  if (generation && (activeRun(generation.status) || (generation.status !== "completed" && query.edit !== "1")))
+    return <BlogGenerationRecovery initialRun={generation} />;
   return (
     <BlogEditor
       key={`${post.id}:${post.version}`}
       actorId={session.user.id}
+      initialAssistantReview={query.review === "1"}
       post={post}
       categories={categories}
       tags={tags}

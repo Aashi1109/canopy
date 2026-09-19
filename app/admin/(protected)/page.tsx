@@ -1,3 +1,4 @@
+import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
 import {
   H3,
   Caption,
@@ -7,7 +8,6 @@ import {
   TextLink,
   Card,
   EmptyState,
-  ToolPageHeader,
   buttonVariants,
 } from "@/components/ui/index.tsx";
 import {
@@ -87,13 +87,13 @@ export default async function HomePage() {
 
   return (
     <div className="flex min-h-full flex-col gap-6">
-      <ToolPageHeader
+      <AdminPageHeader
         actions={
           <a className={buttonVariants({ variant: "secondary" })} href="/admin/audit">
             View audit history
           </a>
         }
-        className="mb-0 border-b-0 pb-0"
+        className="mb-0"
         description="Monitor access, role coverage, and recent security activity."
         title="Admin overview"
       />

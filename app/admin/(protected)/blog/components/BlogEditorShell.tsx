@@ -1,11 +1,23 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
-import { ArrowLeft, ChevronDown, History, PanelRight, X } from "lucide-react";
-import { Button, Popover, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/index.tsx";
+import { ChevronDown, Eye, History, SlidersHorizontal, Sparkles } from "lucide-react";
+import {
+  BackButton,
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/index.tsx";
 
 import styles from "./BlogEditor.module.css";
+import { BlogSidePanelHeader } from "./BlogSidePanelHeader";
 
 interface BlogEditorShellProps {
   title: string;
@@ -13,6 +25,9 @@ interface BlogEditorShellProps {
   toolbar: ReactNode;
   settings: ReactNode;
   history?: ReactNode;
+  assistant?: (onClose: () => void) => ReactNode;
+  initialAssistantOpen?: boolean;
+  outline?: ReactNode;
   publicationActions?: ReactNode;
   status: string;
   saveState: "idle" | "dirty" | "saving" | "saved" | "error" | "conflict";
@@ -33,6 +48,9 @@ export function BlogEditorShell({
   toolbar,
   settings,
   history,
+  assistant,
+  initialAssistantOpen = false,
+  outline,
   publicationActions,
   status,
   saveState,
@@ -45,8 +63,17 @@ export function BlogEditorShell({
   initialSettingsOpen = false,
   busy = false,
 }: BlogEditorShellProps) {
-  const [panel, setPanel] = useState<"settings" | "history" | null>(initialSettingsOpen ? "settings" : null);
-  const settingsOpen = panel !== null;
+  const [panel, setPanelState] = useState<"assistant" | "settings" | "history" | null>(
+    initialSettingsOpen ? "settings" : initialAssistantOpen ? "assistant" : null,
+  );
+  const [settingsPanel, setSettingsPanel] = useState<"settings" | "history">("settings");
+  function setPanel(next: typeof panel) {
+    if (next === "settings" || next === "history") setSettingsPanel(next);
+    setPanelState(next);
+  }
+  const settingsOpen = panel === "settings" || panel === "history";
+  const assistantButton = useRef<HTMLButtonElement>(null);
+  const mobileAssistantButton = useRef<HTMLButtonElement>(null);
   const historyButton = useRef<HTMLButtonElement>(null);
   const mobileHistoryButton = useRef<HTMLButtonElement>(null);
   const settingsButton = useRef<HTMLButtonElement>(null);
@@ -56,8 +83,9 @@ export function BlogEditorShell({
 
   function closeSettings() {
     setPanel(null);
-    const desktop = panel === "history" ? historyButton : settingsButton;
-    const mobile = panel === "history" ? mobileHistoryButton : mobileSettingsButton;
+    const desktop = panel === "assistant" ? assistantButton : panel === "history" ? historyButton : settingsButton;
+    const mobile =
+      panel === "assistant" ? mobileAssistantButton : panel === "history" ? mobileHistoryButton : mobileSettingsButton;
     const button = desktop.current?.getClientRects().length ? desktop.current : mobile.current;
     button?.focus();
   }
@@ -67,9 +95,11 @@ export function BlogEditorShell({
       <section
         className={styles.shell}
         data-settings-open={settingsOpen}
+        data-panel-open={panel !== null}
+        data-assistant-open={panel === "assistant"}
         aria-label="Post editor"
         onKeyDown={(event) => {
-          if (event.key === "Escape" && settingsOpen) {
+          if (event.key === "Escape" && panel !== null && !event.defaultPrevented) {
             event.preventDefault();
             closeSettings();
           }
@@ -80,79 +110,116 @@ export function BlogEditorShell({
         }}
       >
         <header className={styles.header}>
-          <Button asChild variant="ghost" size="xs">
-            <Link href={backHref}>
-              <ArrowLeft aria-hidden="true" />
-              Posts
-            </Link>
-          </Button>
+          <BackButton href={backHref} label="Back to posts" />
           <h1 className={styles.title}>{title || "Untitled post"}</h1>
           <div className={styles.actions}>
-            {history && (
+            <div className={styles.panelActions} role="group" aria-label="Editor panels">
+              {assistant && (
+                <Button
+                  size="sm"
+                  ref={assistantButton}
+                  variant="ghost"
+                  aria-expanded={panel === "assistant"}
+                  aria-controls="blog-assistant"
+                  onClick={() => setPanel(panel === "assistant" ? null : "assistant")}
+                >
+                  <Sparkles aria-hidden="true" />
+                  Assistant
+                </Button>
+              )}
+              {history && (
+                <Button
+                  size="sm"
+                  ref={historyButton}
+                  variant="ghost"
+                  aria-expanded={panel === "history"}
+                  aria-controls="blog-post-settings"
+                  onClick={() => setPanel(panel === "history" ? null : "history")}
+                >
+                  <History aria-hidden="true" />
+                  History
+                </Button>
+              )}
               <Button
-                size="xs"
-                ref={historyButton}
-                variant={panel === "history" ? "secondary" : "ghost"}
-                aria-expanded={panel === "history"}
+                size="sm"
+                ref={settingsButton}
+                variant="ghost"
+                aria-label="Post settings"
+                aria-expanded={panel === "settings"}
                 aria-controls="blog-post-settings"
-                onClick={() => setPanel(panel === "history" ? null : "history")}
+                onClick={() => setPanel(panel === "settings" ? null : "settings")}
               >
-                <History aria-hidden="true" />
-                History
+                <SlidersHorizontal aria-hidden="true" />
+                Settings
               </Button>
-            )}
-            {publicationActions && (
-              <Popover.Root>
-                <Popover.Trigger asChild>
-                  <Button size="sm" variant="ghost">
-                    Post actions
-                    <ChevronDown aria-hidden="true" />
-                  </Button>
-                </Popover.Trigger>
-                <Popover.Portal>
-                  <Popover.Content
-                    align="end"
-                    sideOffset={8}
-                    collisionPadding={16}
-                    className="z-50 flex max-w-[calc(100vw-2rem)] flex-col rounded-lg border border-border bg-card p-2 shadow-lg [&>button]:justify-start [&>a]:justify-start"
-                  >
-                    {publicationActions}
-                  </Popover.Content>
-                </Popover.Portal>
-              </Popover.Root>
-            )}
-            <Button
-              size="sm"
-              ref={settingsButton}
-              variant="outline"
-              className={panel === "settings" ? "border-primary bg-accent" : undefined}
-              aria-label="Post settings"
-              aria-expanded={panel === "settings"}
-              aria-controls="blog-post-settings"
-              onClick={() => setPanel(panel === "settings" ? null : "settings")}
+            </div>
+            <div
+              className={styles.toolbarPublishActions}
+              data-split={canPublish}
+              role="group"
+              aria-label="Publishing actions"
             >
-              <PanelRight aria-hidden="true" />
-              <span>Post settings</span>
-            </Button>
-            <Button size="sm" variant="outline" onClick={onPreview} disabled={busy || saveState === "conflict"}>
-              Preview
-            </Button>
-            {canPublish && (
-              <Button size="sm" aria-label="Review & publish" onClick={onReview} disabled={busy || needsRecovery}>
-                <span className="sm:hidden">Review</span>
-                <span className="hidden sm:inline">Review & publish</span>
-              </Button>
-            )}
+              {canPublish && (
+                <Button size="sm" aria-label="Review & publish" onClick={onReview} disabled={busy || needsRecovery}>
+                  <span className="sm:hidden">Review</span>
+                  <span className="hidden sm:inline">Review & publish</span>
+                </Button>
+              )}
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size={canPublish ? "icon-sm" : "sm"}
+                        variant={canPublish ? "default" : "outline"}
+                        aria-label="Preview and post actions"
+                        className={styles.publishMenuTrigger}
+                      >
+                        {!canPublish && <span>Preview & actions</span>}
+                        <ChevronDown aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Preview and post actions</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent
+                  align="end"
+                  sideOffset={8}
+                  collisionPadding={16}
+                  className="w-auto min-w-0 max-w-[calc(100vw-2rem)]"
+                  onEscapeKeyDown={(event) => event.stopPropagation()}
+                >
+                  <DropdownMenuItem onSelect={onPreview} disabled={busy || saveState === "conflict"}>
+                    <Eye aria-hidden="true" />
+                    Preview draft
+                  </DropdownMenuItem>
+                  {publicationActions && <DropdownMenuSeparator />}
+                  {publicationActions}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
           <nav className={styles.mobileTabs} aria-label="Editor stages">
             <Button
               size="sm"
-              variant={!settingsOpen ? "default" : "outline"}
-              aria-pressed={!settingsOpen}
+              variant={panel === null ? "default" : "outline"}
+              aria-pressed={panel === null}
               onClick={() => setPanel(null)}
             >
               Write
             </Button>
+            {assistant && (
+              <Button
+                size="sm"
+                ref={mobileAssistantButton}
+                variant={panel === "assistant" ? "default" : "outline"}
+                aria-pressed={panel === "assistant"}
+                aria-controls="blog-assistant"
+                onClick={() => setPanel("assistant")}
+              >
+                Assistant
+              </Button>
+            )}
             <Button
               size="sm"
               ref={mobileSettingsButton}
@@ -175,9 +242,6 @@ export function BlogEditorShell({
                 History
               </Button>
             )}
-            <Button size="sm" variant="outline" onClick={onPreview} disabled={busy || saveState === "conflict"}>
-              Preview
-            </Button>
           </nav>
         </header>
         <div className={styles.workspace} data-blog-editor-workspace="true">
@@ -189,36 +253,36 @@ export function BlogEditorShell({
               <div className={styles.article}>{children}</div>
             </div>
           </div>
+          {outline && <div className={styles.outline}>{outline}</div>}
+          {assistant && (
+            <aside
+              id="blog-assistant"
+              data-open={panel === "assistant"}
+              aria-hidden={panel !== "assistant"}
+              inert={panel !== "assistant"}
+              className={`${styles.sidePanel} ${styles.assistant}`}
+              aria-label="Blog assistant"
+            >
+              {assistant(closeSettings)}
+            </aside>
+          )}
           <aside
             id="blog-post-settings"
-            hidden={!settingsOpen}
-            className={styles.settings}
-            aria-label={panel === "history" ? "Revision history" : "Post settings"}
+            data-open={settingsOpen}
+            aria-hidden={!settingsOpen}
+            inert={!settingsOpen}
+            className={styles.sidePanel}
+            aria-label={settingsPanel === "history" ? "Revision history" : "Post settings"}
           >
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 className="text-base font-semibold">{panel === "history" ? "Revision history" : "Post settings"}</h2>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    aria-label={panel === "history" ? "Close revision history" : "Close post settings"}
-                    size="icon-xs"
-                    variant="ghost"
-                    onClick={closeSettings}
-                  >
-                    <X aria-hidden="true" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Close panel (Escape)</TooltipContent>
-              </Tooltip>
-            </div>
-            {panel === "history" ? history : settings}
-            <div className={styles.mobileSettingsActions}>
-              {canPublish && (
-                <Button size="sm" onClick={onReview} disabled={busy || needsRecovery}>
-                  Review & publish
-                </Button>
-              )}
-              {publicationActions}
+            <div className={styles.sidePanelContent}>
+              <BlogSidePanelHeader
+                title={settingsPanel === "history" ? "Revision history" : "Post settings"}
+                closeLabel={settingsPanel === "history" ? "Close revision history" : "Close post settings"}
+                onClose={closeSettings}
+              />
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                {settingsPanel === "history" ? history : settings}
+              </div>
             </div>
           </aside>
         </div>

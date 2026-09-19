@@ -23,6 +23,67 @@ async function trashPost(page: Page, title: string) {
   await expect(page.getByRole("alertdialog")).toBeHidden();
 }
 
+test("recovery toast waits for a choice and preserves both draft recovery actions", async ({ page, baseURL }) => {
+  const title = `E2E Recovery ${randomUUID()}`;
+  await createPost(page, baseURL, title);
+  const body = page.getByRole("textbox", { name: "Article body", exact: true });
+  const recover = page.getByRole("button", { name: "Recover local draft", exact: true });
+  const keep = page.getByRole("button", { name: "Keep saved draft", exact: true });
+  try {
+    await body.fill("Recover this local edit.");
+    await page.reload();
+    await expect(recover).toBeVisible();
+    await expect(page.getByRole("button", { name: "Save draft", exact: true })).toBeDisabled();
+    await recover.focus();
+    await page.keyboard.press("Escape");
+    await expect(recover).toBeVisible();
+    await expect(page.getByRole("button", { name: "Close toast", exact: true })).toHaveCount(0);
+    await recover.click();
+    await expect(body).toHaveText("Recover this local edit.");
+    await expect(recover).toBeHidden();
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await expect(page.getByRole("status")).toContainText("All changes saved");
+    await body.fill("Discard only this local edit.");
+    await page.reload();
+    await expect(keep).toBeVisible();
+    await keep.click();
+    await expect(body).toHaveText("Recover this local edit.");
+    await expect(keep).toBeHidden();
+    await expect(page.getByRole("button", { name: "Save draft", exact: true })).toBeEnabled();
+  } finally {
+    await trashPost(page, title);
+  }
+});
+
+test("post actions support keyboard navigation without closing the assistant or changing the draft", async ({
+  page,
+  baseURL,
+}) => {
+  const title = `E2E Toolbar ${randomUUID()}`;
+  const url = await createPost(page, baseURL, title);
+  try {
+    const body = page.getByRole("textbox", { name: "Article body", exact: true });
+    await body.fill("Keep this draft while inspecting post actions.");
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await expect(page.getByRole("status")).toContainText("All changes saved");
+    await page.getByRole("button", { name: "Assistant", exact: true }).click();
+    const trigger = page.getByRole("button", { name: "Preview and post actions", exact: true });
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("menuitem", { name: "Preview draft", exact: true })).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(page.getByRole("menuitem", { name: "Duplicate", exact: true })).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("menu")).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await expect(page.getByRole("complementary", { name: "Blog assistant", exact: true })).toBeVisible();
+    await expect(body).toHaveText("Keep this draft while inspecting post actions.");
+    await expect(page).toHaveURL(url);
+  } finally {
+    await trashPost(page, title);
+  }
+});
+
 test("raw Markdown paste becomes editable article content and survives saving", async ({ page, baseURL }) => {
   const title = `E2E Markdown ${randomUUID()}`;
   await createPost(page, baseURL, title);
@@ -88,18 +149,19 @@ test("a saved article survives reload, previews privately, and guards unsaved na
   await expect(page.getByRole("table")).toBeVisible();
   await expect(body.locator("mark")).toHaveText("A persisted article body.");
   await expect(body.locator("p").first()).toHaveCSS("text-align", "center");
-  await page.getByRole("button", { name: "Preview", exact: true }).click();
+  await page.getByRole("button", { name: "Preview and post actions", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Preview draft", exact: true }).click();
   await expect(page).toHaveURL(`${url}/preview`);
   await expect(page.getByText("A persisted article body.", { exact: true })).toBeVisible();
   await expect(page.getByText(/E2E Editorial Team/)).toBeVisible();
   await page.getByRole("link", { name: "Back to editor", exact: false }).click();
   await page.getByRole("textbox", { name: "TITLE", exact: true }).fill(`${title} unsaved`);
-  await page.getByRole("link", { name: "Posts", exact: true }).click();
+  await page.getByRole("link", { name: "Back to posts", exact: true }).click();
   await expect(page.getByRole("alertdialog")).toContainText("Leave unsaved changes?");
   await page.getByRole("button", { name: "Keep editing", exact: true }).click();
   await expect(page).toHaveURL(url);
   await expect(page.getByRole("textbox", { name: "TITLE", exact: true })).toHaveValue(`${title} unsaved`);
-  await page.getByRole("link", { name: "Posts", exact: true }).click();
+  await page.getByRole("link", { name: "Back to posts", exact: true }).click();
   await page.getByRole("button", { name: "Discard changes", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/blog$/);
   await trashPost(page, title);
@@ -125,7 +187,9 @@ test("concurrent saves keep the second editor's work and offer a downloadable re
   await expect(other.getByRole("textbox", { name: "Article body", exact: true })).toHaveText(
     "The second editor's local work.",
   );
-  await expect(other.getByRole("button", { name: "Preview", exact: true })).toBeDisabled();
+  await other.getByRole("button", { name: "Preview and post actions", exact: true }).click();
+  await expect(other.getByRole("menuitem", { name: "Preview draft", exact: true })).toBeDisabled();
+  await other.keyboard.press("Escape");
   const download = other.waitForEvent("download");
   await other.getByRole("button", { name: "Download local draft", exact: true }).click();
   expect((await download).suggestedFilename()).toMatch(/-draft\.json$/);

@@ -16,6 +16,13 @@ const filtersSchema = z.object({
     .regex(/^[a-zA-Z0-9_-]+$/)
     .optional(),
   cursor: z.string().max(1200).optional(),
+  page: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(Number.MAX_SAFE_INTEGER - 1)
+    .optional()
+    .catch(undefined),
 });
 
 export default async function BlogPage({
@@ -24,19 +31,19 @@ export default async function BlogPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await requirePagePermission("blog", "view");
-  const filters = filtersSchema.parse(await searchParams);
+  const { page: requestedPage, ...filters } = filtersSchema.parse(await searchParams);
   const [page, categories, authorization] = await Promise.all([
-    listBlogPosts(session.user.id, filters),
+    listBlogPosts(session.user.id, { ...filters, cursor: undefined, page: requestedPage ?? 1 }),
     loadBlogTaxonomyOptions(session.user.id, "category"),
     getUserAuthorization(session.user.id),
   ]);
   return (
     <BlogPosts
-      key={JSON.stringify(filters)}
+      key={JSON.stringify({ ...filters, page: page.page })}
       posts={page.items}
-      nextCursor={page.nextCursor}
+      pagination={{ page: page.page, pageCount: page.pageCount, total: page.total }}
       categories={categories}
-      filters={filters}
+      filters={{ ...filters, cursor: undefined, page: page.page }}
       canManageTerms={hasPermission(authorization.access, "blog", "edit")}
       canCreate={hasPermission(authorization.access, "blog", "create")}
       canArchive={hasPermission(authorization.access, "blog", "archive")}

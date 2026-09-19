@@ -2,6 +2,7 @@
 import { Caption, P } from "./typography.tsx";
 
 import {
+  ArrowLeft,
   ArrowLeftRight,
   BookOpen,
   Braces,
@@ -38,8 +39,10 @@ import { cn } from "../lib/utils.ts";
 
 export type AccountNavigationProps = {
   className?: string;
+  isAdminPage?: boolean;
   returnTo: string;
   restricted?: boolean;
+  showSignIn?: boolean;
   user: { name: string; isAdmin?: boolean } | null;
 };
 
@@ -116,7 +119,14 @@ export function SwitchAccountButton({ returnTo }: { returnTo: string }) {
   );
 }
 
-export function AccountNavigation({ className, returnTo, restricted = false, user }: AccountNavigationProps) {
+export function AccountNavigation({
+  className,
+  isAdminPage = false,
+  returnTo,
+  restricted = false,
+  showSignIn = true,
+  user,
+}: AccountNavigationProps) {
   const [open, setOpen] = useState(false);
   const groups = useEcosystemGroups(open && !restricted);
   const { pending, error, signOut } = useSignOut(restricted ? "/auth" : "/");
@@ -127,6 +137,8 @@ export function AccountNavigation({ className, returnTo, restricted = false, use
     .slice(0, 2)
     .map((part) => part.charAt(0).toUpperCase())
     .join("");
+
+  if (!user && !showSignIn) return null;
 
   return (
     <nav aria-label="Account" className={cn("flex items-center", className)}>
@@ -146,7 +158,10 @@ export function AccountNavigation({ className, returnTo, restricted = false, use
                 {initials}
               </Caption>
               <Caption className="truncate">{accountName}</Caption>
-              <ChevronDown aria-hidden="true" className="size-[13px] shrink-0 text-muted-foreground" />
+              <ChevronDown
+                aria-hidden="true"
+                className="size-[13px] shrink-0 text-muted-foreground group-hover:text-accent-foreground"
+              />
             </Button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
@@ -180,7 +195,12 @@ export function AccountNavigation({ className, returnTo, restricted = false, use
                         : group.tools.map((tool) => ({ href: tool.href, label: tool.name, icon: tool.icon }));
                     return (
                       <DropdownMenu.Sub key={href}>
-                        <DropdownMenu.SubTrigger className={cn(itemClassName, "data-[state=open]:bg-accent")}>
+                        <DropdownMenu.SubTrigger
+                          className={cn(
+                            itemClassName,
+                            "data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
+                          )}
+                        >
                           <Icon aria-hidden="true" />
                           {label}
                           <ChevronRight aria-hidden="true" className="ml-auto" />
@@ -220,9 +240,9 @@ export function AccountNavigation({ className, returnTo, restricted = false, use
               ) : null}
               {!restricted && user.isAdmin ? (
                 <DropdownMenu.Item asChild className={itemClassName}>
-                  <a href="/admin">
-                    <Shield aria-hidden="true" />
-                    Admin page
+                  <a href={isAdminPage ? "/" : "/admin"}>
+                    {isAdminPage ? <ArrowLeft aria-hidden="true" /> : <Shield aria-hidden="true" />}
+                    {isAdminPage ? "Back to product" : "Admin page"}
                   </a>
                 </DropdownMenu.Item>
               ) : null}

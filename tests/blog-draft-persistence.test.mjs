@@ -650,3 +650,59 @@ test("edits made while an unchanged autosave completes remain dirty, recoverable
   assert.equal(draft.dirty, false);
   assert.equal(storage.getItem("actor:post"), null);
 });
+
+for (const outcome of ["saved", "error", "conflict"]) {
+  test(`approved agent draft uses existing autosave and preserves ${outcome} feedback`, async (t) => {
+    const { agentDocumentFingerprint, agentReplacement } = await import("../lib/blog/agentArtifacts.ts");
+    t.mock.timers.enable({ apis: ["setTimeout"] });
+    const before = { ...createBlogDocument("Original"), authorName: "Editor" };
+    const proposed = {
+      ...before,
+      title: "Revised",
+      excerpt: "New excerpt",
+      seoTitle: "Search title",
+      body: {
+        type: "doc",
+        content: [{ type: "paragraph", content: [{ type: "text", text: "Complete replacement" }] }],
+      },
+    };
+    const artifact = {
+      schemaVersion: 1,
+      agentId: "optimizer",
+      agentVersion: 1,
+      summary: "Optimized",
+      content: { document: proposed },
+      inputArtifactIds: [],
+      baseDocumentFingerprint: agentDocumentFingerprint(before),
+    };
+    const calls = [],
+      states = [];
+    const persistence = createDraftPersistence({
+      document: before,
+      version: 7,
+      onState: (state) => states.push(state),
+      request: async (input) => {
+        calls.push(input);
+        if (outcome === "error") throw new Error("offline");
+        if (outcome === "conflict") return { ok: false, code: "CONFLICT", message: "Reload the saved version." };
+        return { ok: true, data: { version: 8 } };
+      },
+    });
+    t.after(() => persistence.stop());
+    t.mock.timers.tick(10_000);
+    await settle();
+    assert.equal(calls.length, 0, "receiving a proposal must not save it");
+    const approved = agentReplacement(artifact, before);
+    persistence.change(approved);
+    t.mock.timers.tick(10_000);
+    await settle();
+    assert.deepEqual(calls, [{ document: { ...proposed, authorName: "Editor" }, version: 7, mode: "autosave" }]);
+    assert.equal(states.at(-1), outcome);
+    assert.equal(persistence.dirty, outcome !== "saved");
+    if (outcome !== "saved") {
+      t.mock.timers.tick(60_000);
+      await settle();
+      assert.equal(calls.length, 1, "failed/conflicted approval must not retry or overwrite newer work silently");
+    }
+  });
+}

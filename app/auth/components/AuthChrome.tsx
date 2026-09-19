@@ -6,8 +6,8 @@ import type { AuthProjectPaths } from "./AuthDiscoveryNavigation";
 export function AuthNavbar() {
   return (
     <ProductHeader
-      account={{ returnTo: "/auth", user: null }}
-      actions={<AccountNavigation returnTo="/auth" user={null} />}
+      account={{ returnTo: "/auth", showSignIn: false, user: null }}
+      actions={<AccountNavigation returnTo="/auth" showSignIn={false} user={null} />}
       className="sticky top-0 z-50"
       href="/"
       name="SmartTools"

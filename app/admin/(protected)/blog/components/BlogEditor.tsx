@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Copy, Crop, ExternalLink, EyeOff, CalendarX, RotateCw, Replace, Trash2 } from "lucide-react";
+import { Copy, Crop, ExternalLink, EyeOff, CalendarX, RotateCw, Replace, Trash2 } from "lucide-react";
 import { z } from "zod";
 import { Node as TiptapNode, type JSONContent } from "@tiptap/core";
 import { EditorContent, ReactNodeViewRenderer, useEditor } from "@tiptap/react";
@@ -23,7 +23,9 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogCancel,
+  BackButton,
   Button,
+  DropdownMenuItem,
   FileUploadZone,
   Input,
   Label,
@@ -32,11 +34,15 @@ import {
   toast,
   Toaster,
 } from "@/components/ui/index.tsx";
+import { createToastManager } from "@/components/ui/components/toast";
 import type { BlogDocument, BlogImage } from "@/lib/blog/document";
 import { BLOG_TITLE_WORD_LIMIT, blogTitleWordCount } from "@/lib/blog/title";
 import { mutateBlogAction } from "../actions";
 import { uploadBlogImageDirect } from "../lib/imageUpload.ts";
 import { BlogEditorShell } from "./BlogEditorShell";
+import { BlogAssistantPanel } from "./BlogAssistantPanel";
+import { BlogArticleOutline } from "./BlogArticleOutline";
+import { BlogSelectionToolbar } from "./BlogSelectionToolbar";
 import { BlogFormattingToolbar } from "./BlogFormattingToolbar";
 import { BlogHistoryPanel } from "./BlogHistoryPanel";
 import { BlogTableControls } from "./BlogTableControls";
@@ -106,6 +112,7 @@ const backupDocument = z
   .strict();
 interface Props {
   actorId: string;
+  initialAssistantReview?: boolean;
   post: {
     id: string;
     slug: string;
@@ -126,6 +133,7 @@ interface Props {
 
 export function BlogEditor({
   actorId,
+  initialAssistantReview = false,
   post,
   categories: initialCategories,
   tags: initialTags,
@@ -233,37 +241,14 @@ export function BlogEditor({
   }, [uploadToastId]);
   const coverInput = useRef<HTMLInputElement>(null);
   const [coverOpen, setCoverOpen] = useState(false);
-  const coverSettings = useRef<HTMLDivElement>(null);
-  const coverHovered = useRef(false);
-  const coverOpenedByHover = useRef(false);
-  const coverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  function cancelCoverClose() {
-    if (coverCloseTimer.current) clearTimeout(coverCloseTimer.current);
-    coverCloseTimer.current = null;
-  }
-  function scheduleCoverClose() {
-    cancelCoverClose();
-    coverCloseTimer.current = setTimeout(() => {
-      coverCloseTimer.current = null;
-      if (!coverHovered.current && !coverSettings.current?.contains(globalThis.document.activeElement))
-        setCoverOpen(false);
-    }, 250);
-  }
   function openCoverSettings() {
-    cancelCoverClose();
-    coverOpenedByHover.current = false;
     setCoverOpen(true);
     if (coverOpen) globalThis.document.getElementById("blog-cover-alt")?.focus();
   }
-  useEffect(
-    () => () => {
-      if (coverCloseTimer.current) clearTimeout(coverCloseTimer.current);
-    },
-    [],
-  );
   const [coverCrop, setCoverCrop] = useState<BlogImage | null>(null);
   const [leaveHref, setLeaveHref] = useState<string | null>(null);
   const allowUnload = useRef(false);
+  const [recoveryToasts] = useState(() => createToastManager());
   const [recovery, setRecovery] = useState<{
     document: EditableDocument;
     version: number;
@@ -342,6 +327,7 @@ export function BlogEditor({
         role: "textbox",
         "aria-multiline": "true",
         "aria-label": "Article body",
+        "aria-description": "Select text to format or improve it. Press Alt+F10 to focus selection tools.",
         class: `${highlightStyles.highlight} ${contentStyles.content} min-h-0 outline-none [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_pre]:overflow-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_a]:text-primary [&_a]:underline [&_table]:w-full [&_td]:border [&_td]:border-border [&_td]:p-2 [&_th]:border [&_th]:border-border [&_th]:bg-muted [&_th]:p-2 [&_img]:max-w-full [&_img]:h-auto`,
       },
     },
@@ -395,6 +381,53 @@ export function BlogEditor({
       setBackupUnavailable(true);
     }
   }, [actorId, editable, editor, persistence, post.id, post.draftDocument]);
+
+  useEffect(() => {
+    if (!recovery || !editor) return;
+    const id = recoveryToasts.add({
+      title: "Recover unsaved edits?",
+      timeout: 0,
+      description: (
+        <>
+          This tab has a local draft from before you left.{" "}
+          {recovery.version !== post.version
+            ? "The saved article has changed; recovering keeps your local copy separate until you reload."
+            : "Restore it to continue writing."}
+          <span className="mt-3 flex flex-wrap gap-2">
+            <Button
+              size="xs"
+              onClick={() => {
+                const restored = {
+                  ...recovery.document,
+                  body: normalizeBlogMath(recovery.document.body as BlogDocument["body"]),
+                };
+                editor?.commands.setContent(restored.body, {
+                  emitUpdate: false,
+                });
+                current.current = restored;
+                setDocument(restored);
+                persistence.restore(restored, recovery.version);
+                setRecovery(null);
+              }}
+            >
+              Recover local draft
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => {
+                persistence.forgetBackup();
+                setRecovery(null);
+              }}
+            >
+              Keep saved draft
+            </Button>
+          </span>
+        </>
+      ),
+    });
+    return () => recoveryToasts.close(id);
+  }, [recovery, editor, persistence, post.version, recoveryToasts]);
 
   async function uploadImage(file: File, target: "cover" | "body"): Promise<BlogImage | null> {
     if (!editable || !uploadActive.current) return null;
@@ -631,15 +664,11 @@ export function BlogEditor({
     return (
       <div className={styles.review} data-schedule={mode === "schedule"}>
         <header className={styles.reviewHeader}>
-          <Button
-            size="sm"
-            variant="ghost"
+          <BackButton
+            label={mode === "schedule" ? "Back to review" : "Back to editor"}
             onClick={() => (mode === "schedule" ? setMode("now") : setReview(false))}
             disabled={publishing}
-          >
-            <ArrowLeft aria-hidden="true" />
-            {mode === "schedule" ? "Back to review" : "Back to editor"}
-          </Button>
+          />
           <h1 className={styles.title}>{document.title}</h1>
           <Button
             size="sm"
@@ -757,8 +786,30 @@ export function BlogEditor({
 
   return (
     <BlogEditorShell
+      initialAssistantOpen={initialAssistantReview}
       initialSettingsOpen={returnSettingsOpen}
       title={document.title}
+      assistant={
+        canEdit && !post.trashedAt
+          ? (onClose) => (
+              <BlogAssistantPanel
+                key={`${actorId}:${post.id}`}
+                initialReview={initialAssistantReview}
+                postId={post.id}
+                ownerId={actorId}
+                onClose={onClose}
+                editor={editor}
+                document={document as BlogDocument}
+                onReplaceDocument={(next) => {
+                  editor?.commands.setContent(next.body, { emitUpdate: false });
+                  change(next);
+                }}
+                onMetadata={(field, value) => change({ ...current.current, [field]: value })}
+              />
+            )
+          : undefined
+      }
+      outline={<BlogArticleOutline editor={editor} title={document.title} />}
       status={status}
       saveState={saveState}
       busy={publishing || uploading || !!recovery}
@@ -774,71 +825,68 @@ export function BlogEditor({
         void openReview();
       }}
       publicationActions={
-        <>
-          {publication.published && (
-            <Button asChild variant="ghost" size="xs">
-              <Link href={`/blog/${post.slug}`} target="_blank" rel="noopener noreferrer">
-                <ExternalLink aria-hidden="true" />
-                View live
-              </Link>
-            </Button>
-          )}
-          {canCreate && !post.trashedAt && (
-            <Button
-              variant="ghost"
-              size="xs"
-              disabled={publishing || uploading || !!recovery || saveState === "conflict"}
-              onClick={() => {
-                void duplicate();
-              }}
-            >
-              <Copy aria-hidden="true" />
-              Duplicate
-            </Button>
-          )}
-          {canPublish && publication.published && (
-            <Button
-              variant="ghost"
-              size="xs"
-              disabled={publishing || uploading || !!recovery}
-              onClick={() => {
-                setLifecycleError("");
-                setLifecycle("unpublish");
-              }}
-            >
-              <EyeOff aria-hidden="true" />
-              Unpublish
-            </Button>
-          )}
-          {canPublish && publication.scheduled && (
-            <Button
-              variant="ghost"
-              size="xs"
-              disabled={publishing || uploading || !!recovery}
-              onClick={() => {
-                setLifecycleError("");
-                setLifecycle("cancelSchedule");
-              }}
-            >
-              <CalendarX aria-hidden="true" />
-              Cancel schedule
-            </Button>
-          )}
-          {canPublish && publication.error && (
-            <Button
-              variant="ghost"
-              size="xs"
-              disabled={publishing || uploading || !!recovery}
-              onClick={() => {
-                setLifecycleError("");
-                setLifecycle("retrySchedule");
-              }}
-            >
-              <RotateCw aria-hidden="true" />
-              Retry scheduled publication
-            </Button>
-          )}
-        </>
+        publication.published ||
+        (canCreate && !post.trashedAt) ||
+        (canPublish && (publication.scheduled || publication.error)) ? (
+          <>
+            {publication.published && (
+              <DropdownMenuItem asChild>
+                <Link href={`/blog/${post.slug}`} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink aria-hidden="true" />
+                  View live
+                </Link>
+              </DropdownMenuItem>
+            )}
+            {canCreate && !post.trashedAt && (
+              <DropdownMenuItem
+                disabled={publishing || uploading || !!recovery || saveState === "conflict"}
+                onSelect={() => {
+                  void duplicate();
+                }}
+              >
+                <Copy aria-hidden="true" />
+                Duplicate
+              </DropdownMenuItem>
+            )}
+            {canPublish && publication.published && (
+              <DropdownMenuItem
+                className="text-destructive data-[highlighted]:text-destructive"
+                disabled={publishing || uploading || !!recovery}
+                onSelect={() => {
+                  setLifecycleError("");
+                  setLifecycle("unpublish");
+                }}
+              >
+                <EyeOff aria-hidden="true" />
+                Unpublish
+              </DropdownMenuItem>
+            )}
+            {canPublish && publication.scheduled && (
+              <DropdownMenuItem
+                disabled={publishing || uploading || !!recovery}
+                onSelect={() => {
+                  setLifecycleError("");
+                  setLifecycle("cancelSchedule");
+                }}
+              >
+                <CalendarX aria-hidden="true" />
+                Cancel schedule
+              </DropdownMenuItem>
+            )}
+            {canPublish && publication.error && (
+              <DropdownMenuItem
+                disabled={publishing || uploading || !!recovery}
+                onSelect={() => {
+                  setLifecycleError("");
+                  setLifecycle("retrySchedule");
+                }}
+              >
+                <RotateCw aria-hidden="true" />
+                Retry scheduled publication
+              </DropdownMenuItem>
+            )}
+          </>
+        ) : null
       }
       history={
         <BlogHistoryPanel
@@ -863,7 +911,6 @@ export function BlogEditor({
           categories={categories}
           tags={tags}
           tools={tools}
-          slug={post.slug}
           disabled={!editable || publishing || !!recovery}
           taxonomyHref={`/admin/blog/taxonomy?${new URLSearchParams({ returnTo: `/admin/blog/${post.id}` })}`}
           categoryPagination={
@@ -944,44 +991,6 @@ export function BlogEditor({
         />
       }
     >
-      {recovery && (
-        <AlertBanner title="Recover unsaved edits?">
-          This tab has a local draft from before you left.{" "}
-          {recovery.version !== post.version
-            ? "The saved article has changed; recovering keeps your local copy separate until you reload."
-            : "Restore it to continue writing."}
-          <div className="mt-3 flex gap-2">
-            <Button
-              size="xs"
-              onClick={() => {
-                const restored = {
-                  ...recovery.document,
-                  body: normalizeBlogMath(recovery.document.body as BlogDocument["body"]),
-                };
-                editor?.commands.setContent(restored.body, {
-                  emitUpdate: false,
-                });
-                current.current = restored;
-                setDocument(restored);
-                persistence.restore(restored, recovery.version);
-                setRecovery(null);
-              }}
-            >
-              Recover local draft
-            </Button>
-            <Button
-              size="xs"
-              variant="outline"
-              onClick={() => {
-                persistence.forgetBackup();
-                setRecovery(null);
-              }}
-            >
-              Keep saved draft
-            </Button>
-          </div>
-        </AlertBanner>
-      )}
       {(saveState === "conflict" || (saveState === "error" && !titleTooLong)) && (
         <div className="mb-4">
           <p role="alert" className="text-sm text-destructive">
@@ -1065,13 +1074,7 @@ export function BlogEditor({
       />
       <div className="my-[22px] space-y-3">
         {document.coverImage && (
-          <Popover.Root
-            open={editable && !publishing && !recovery && coverOpen}
-            onOpenChange={(open) => {
-              cancelCoverClose();
-              setCoverOpen(open);
-            }}
-          >
+          <Popover.Root open={editable && !publishing && !recovery && coverOpen} onOpenChange={setCoverOpen}>
             <div>
               {editable ? (
                 <Popover.Trigger asChild>
@@ -1081,19 +1084,6 @@ export function BlogEditor({
                     className="block h-auto w-full rounded-lg p-0 disabled:opacity-100"
                     aria-label="Edit cover image"
                     disabled={uploading || publishing || !!recovery}
-                    onPointerEnter={(event) => {
-                      if (event.pointerType === "touch" || uploading || publishing || recovery) return;
-                      coverHovered.current = true;
-                      cancelCoverClose();
-                      if (!coverOpen) {
-                        coverOpenedByHover.current = true;
-                        setCoverOpen(true);
-                      }
-                    }}
-                    onPointerLeave={() => {
-                      coverHovered.current = false;
-                      scheduleCoverClose();
-                    }}
                     onClick={(event) => {
                       event.preventDefault();
                       openCoverSettings();
@@ -1119,34 +1109,17 @@ export function BlogEditor({
             </div>
             <Popover.Portal>
               <Popover.Content
-                ref={coverSettings}
                 className="z-[70] w-80 max-w-[var(--radix-popover-content-available-width)] rounded-xl border border-border bg-card text-foreground shadow-lg [@media(pointer:coarse)]:[&_button]:min-h-11 [@media(pointer:coarse)]:[&_input]:min-h-11"
                 side="bottom"
                 align="center"
                 sideOffset={4}
                 collisionPadding={12}
                 aria-label="Cover image settings"
-                onPointerEnter={() => {
-                  coverHovered.current = true;
-                  cancelCoverClose();
-                }}
-                onPointerLeave={() => {
-                  coverHovered.current = false;
-                  scheduleCoverClose();
-                }}
-                onFocusCapture={() => {
-                  coverOpenedByHover.current = false;
-                  cancelCoverClose();
-                }}
-                onBlurCapture={scheduleCoverClose}
-                onOpenAutoFocus={(event) => {
-                  if (coverOpenedByHover.current) event.preventDefault();
-                }}
                 onCloseAutoFocus={(event) => {
                   if (!current.current.coverImage) {
                     event.preventDefault();
                     globalThis.document.getElementById("blog-add-cover")?.focus();
-                  } else if (coverOpenedByHover.current) event.preventDefault();
+                  }
                 }}
               >
                 <div className="max-h-[calc(var(--radix-popover-content-available-height)-2px)] space-y-3 overflow-y-auto overscroll-contain p-4">
@@ -1260,12 +1233,18 @@ export function BlogEditor({
         />
       )}
       <Toaster position="top-right" />
+      <Toaster toastManager={recoveryToasts} position="bottom-right" dismissible={false} />
       {uploadTarget === "body" && (
         <p role="status" className="mb-2 text-[13px] text-muted-foreground">
           Uploading article image…
         </p>
       )}
       <EditorContent className={styles.editorBody} editor={editor} />
+      <BlogSelectionToolbar
+        editor={editor}
+        disabled={!editable || publishing || uploading || !!recovery}
+        postId={post.id}
+      />
       <BlogBlockControls
         editor={editor}
         disabled={!editable || publishing || !!recovery}

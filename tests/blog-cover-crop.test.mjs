@@ -30,8 +30,10 @@ const hooks = registerHooks({
     if (specifier === "@tiptap/extension-table") return stub("export const TableKit = {configure() { return {}; }};");
     if (specifier === "@/components/ui/index.tsx")
       return stub(
-        `export const toast = Object.assign(() => {}, {error() {}, success() {}, dismiss() {}}); ${["AlertBanner", "AlertDialog", "AlertDialogContent", "AlertDialogHeader", "AlertDialogTitle", "AlertDialogDescription", "AlertDialogFooter", "AlertDialogCancel", "Button", "FileUploadZone", "Input", "Label", "Textarea", "Toaster"].map((name) => `export function ${name}() {}`).join(" ")} export const Popover = {Root() {}, Trigger() {}, Portal() {}, Content() {}, Arrow() {}};`,
+        `export const toast = Object.assign(() => {}, {error() {}, success() {}, dismiss() {}}); ${["BackButton", "DropdownMenuItem", "AlertBanner", "AlertDialog", "AlertDialogContent", "AlertDialogHeader", "AlertDialogTitle", "AlertDialogDescription", "AlertDialogFooter", "AlertDialogCancel", "Button", "FileUploadZone", "Input", "Label", "Textarea", "Toaster"].map((name) => `export function ${name}() {}`).join(" ")} export const Popover = {Root() {}, Trigger() {}, Portal() {}, Content() {}, Arrow() {}};`,
       );
+    if (specifier === "@/components/ui/components/toast")
+      return stub("export function createToastManager() { return {add() {}, close() {}}; }");
     if (specifier === "../actions") return stub("export async function mutateBlogAction() {}");
     if (specifier === "../lib/imageUpload.ts")
       return stub(
@@ -186,7 +188,7 @@ test("cover crop preserves metadata and current draft, rejects failures and stal
   assert.equal(state.changes.length, 0);
 });
 
-test("cover hover preserves focus and stays open across the panel, while explicit activation focuses settings", (t) => {
+test("cover settings open only on activation and remain open until dismissed", (t) => {
   state.values = [];
   state.changes = [];
   state.editable = true;
@@ -233,68 +235,34 @@ test("cover hover preserves focus and stays open across the panel, while explici
     };
   }
   const previousDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
-  let focused = 0;
-  const inside = {};
-  const document = {
-    activeElement: null,
-    getElementById: () => ({
-      focus() {
-        focused++;
-      },
-    }),
-  };
-  Object.defineProperty(globalThis, "document", { configurable: true, value: document });
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: { getElementById: () => ({ focus() {} }) },
+  });
   t.after(() => {
     if (previousDocument) Object.defineProperty(globalThis, "document", previousDocument);
     else delete globalThis.document;
   });
   t.mock.timers.enable({ apis: ["setTimeout"] });
 
-  render().trigger.onPointerEnter({ pointerType: "mouse" });
-  assert.equal(render().root.open, true);
-  let prevented = false;
-  render().panel.onOpenAutoFocus({
-    preventDefault() {
-      prevented = true;
-    },
-  });
-  assert.equal(prevented, true);
-  assert.equal(focused, 0);
-  render().trigger.onPointerLeave();
-  t.mock.timers.tick(100);
-  render().panel.onPointerEnter();
-  t.mock.timers.tick(250);
-  assert.equal(render().root.open, true);
-  render().panel.onPointerLeave();
-  t.mock.timers.tick(250);
   assert.equal(render().root.open, false);
-
-  render().trigger.onPointerEnter({ pointerType: "touch" });
-  assert.equal(render().root.open, false);
+  for (const pointerType of ["mouse", "pen", "touch"]) {
+    render().trigger.onPointerEnter?.({ pointerType });
+    render().trigger.onFocus?.({});
+    t.mock.timers.tick(1000);
+    assert.equal(render().root.open, false);
+  }
   render().trigger.onClick({ preventDefault() {} });
   assert.equal(render().root.open, true);
-  prevented = false;
-  render().panel.onOpenAutoFocus({
-    preventDefault() {
-      prevented = true;
-    },
-  });
-  assert.equal(prevented, false);
+  render().trigger.onPointerLeave?.();
+  render().panel.onPointerLeave?.();
+  render().panel.onBlurCapture?.();
+  t.mock.timers.tick(1000);
+  assert.equal(render().root.open, true);
   render().root.onOpenChange(false);
-  render().trigger.onPointerEnter({ pointerType: "mouse" });
-  render().trigger.onClick({ preventDefault() {} });
-  assert.equal(render().root.open, true);
-  assert.equal(focused, 1);
-
-  render().panel.ref.current = { contains: (element) => element === inside };
-  document.activeElement = inside;
-  render().panel.onFocusCapture();
-  render().panel.onPointerLeave();
-  t.mock.timers.tick(250);
-  assert.equal(render().root.open, true);
-  document.activeElement = null;
-  render().panel.onBlurCapture();
-  t.mock.timers.tick(250);
+  assert.equal(render().root.open, false);
+  render().trigger.onPointerEnter?.({ pointerType: "mouse" });
+  t.mock.timers.tick(1000);
   assert.equal(render().root.open, false);
   assert.equal(state.changes.length, 0);
 });

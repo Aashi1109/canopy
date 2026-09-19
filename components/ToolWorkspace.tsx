@@ -2,7 +2,16 @@
 
 import { Overline, H3, Muted, Caption, Strong, SegmentedControl, ToolOptionsPanel } from "@/components/ui/index.tsx";
 import { ArrowDownToLine, FileSpreadsheet } from "lucide-react";
-import { type DragEvent, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  type DragEvent,
+  type ReactNode,
+  type Ref,
+  type UIEventHandler,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { ImageConversionWorkspace } from "@/app/media/components/ImageConversionWorkspace";
 import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
@@ -277,7 +286,13 @@ function TextFileDropTarget({ children, props }: { children: ReactNode; props: W
   );
 }
 
-export function ToolWorkspace(props: WorkspaceProps & Pick<ResultSurfaceProps, "initialJsonView">) {
+export function ToolWorkspace(
+  props: WorkspaceProps &
+    Pick<ResultSurfaceProps, "initialJsonView" | "renderResult"> & {
+      onSourceScroll?: UIEventHandler<HTMLTextAreaElement>;
+      sourceRef?: Ref<HTMLTextAreaElement>;
+    },
+) {
   if (props.spec.input.kind === "files") {
     if (props.spec.input.engine === "image" && props.spec.category === "image-conversion") {
       return <ImageConversionWorkspace {...props} />;
@@ -296,9 +311,10 @@ export function ToolWorkspace(props: WorkspaceProps & Pick<ResultSurfaceProps, "
       error={props.error}
       initialJsonView={props.initialJsonView}
       result={props.result}
+      renderResult={props.renderResult}
       running={props.running}
       spec={props.spec}
-      title={surfaceVariant === "card" ? stackedResultTitle(props.spec) : undefined}
+      title={surfaceVariant === "card" ? stackedResultTitle(props.spec) : props.spec.labels.result}
       variant={surfaceVariant}
     />
   );
@@ -314,6 +330,8 @@ export function ToolWorkspace(props: WorkspaceProps & Pick<ResultSurfaceProps, "
             input={props.input}
             inputSpec={props.spec.input}
             onInputChange={props.onInputChange}
+            onSourceScroll={props.onSourceScroll}
+            sourceRef={props.sourceRef}
             variant={surfaceVariant}
           />
         }

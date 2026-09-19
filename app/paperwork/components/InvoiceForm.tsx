@@ -983,7 +983,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                     className={`flex min-h-10 cursor-pointer select-none items-center gap-2 rounded-lg border px-3 py-2 outline-none transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
                       checked
                         ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border bg-background text-foreground hover:bg-accent"
+                        : "border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
                     }`}
                   >
                     <input

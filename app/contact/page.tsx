@@ -36,12 +36,14 @@ export default function ContactPage() {
               const detail = title === "Email us" ? (supportEmail ?? "Support email not configured") : description;
               const content = (
                 <>
-                  <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-accent text-primary">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-accent text-primary group-hover:text-accent-foreground">
                     <Icon aria-hidden="true" className="size-[22px]" />
                   </span>
                   <span>
                     <Strong className="block">{title}</Strong>
-                    <Text className="mt-0.5 block text-muted-foreground">{detail}</Text>
+                    <Text className="mt-0.5 block text-muted-foreground group-hover:text-accent-foreground">
+                      {detail}
+                    </Text>
                   </span>
                 </>
               );
@@ -49,7 +51,7 @@ export default function ContactPage() {
               const destination = title === "Email us" && supportEmail ? `mailto:${supportEmail}` : href;
               return destination ? (
                 <TextLink
-                  className="no-underline text-foreground flex items-center gap-3.5 rounded-lg bg-muted p-4 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                  className="group no-underline text-foreground flex items-center gap-3.5 rounded-lg bg-muted p-4 outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
                   href={destination}
                   key={title}
                 >

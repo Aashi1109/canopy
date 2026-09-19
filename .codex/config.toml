@@ -2,9 +2,9 @@
 multi_agent = true
 
 [agents.ui_validator]
-description = "Read-only operation-fit, visual consistency, space economy, responsive, and accessibility validation for every SmartTools tool type."
+description = "Pencil .pen UI designs only: read-only operation-fit, visual consistency, space economy, responsive, and accessibility validation. Never use for application code changes or browser validation."
 config_file = "agents/ui-validator.toml"
 
 [agents.end_user_validator]
-description = "Read-only end-user flow validation for every SmartTools tool type, covering operation fit, novice feasibility, feedback, recovery, and complete handoff."
+description = "Pencil .pen UI designs only: read-only end-user flow validation covering operation fit, novice feasibility, feedback, recovery, and complete handoff. Never use for application code changes or browser validation."
 config_file = "agents/end-user-validator.toml"

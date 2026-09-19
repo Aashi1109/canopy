@@ -53,7 +53,7 @@ export function EcosystemTabFilters({ currentHref, className }: { currentHref?: 
       )}
     >
       <a
-        className="rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
+        className="rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
         href="/"
       >
         All tools
@@ -68,7 +68,7 @@ export function EcosystemTabFilters({ currentHref, className }: { currentHref?: 
           <a
             aria-expanded={activeId === group.id}
             aria-haspopup="menu"
-            className="inline-flex items-center gap-1.5 rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex items-center gap-1.5 rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
             href={group.href}
             onFocus={() => setActiveId(group.id)}
           >
@@ -79,7 +79,7 @@ export function EcosystemTabFilters({ currentHref, className }: { currentHref?: 
       ))}
       <a
         aria-current={currentHref === "/blog" ? "page" : undefined}
-        className="rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:text-primary"
+        className="rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:text-primary"
         href="/blog"
       >
         Blog
@@ -135,13 +135,15 @@ function ToolPreviewList({ tools }: { tools: readonly ToolPreview[] }) {
     <div className="grid grid-cols-2 gap-x-3 gap-y-1">
       {tools.map((tool) => (
         <a
-          className="flex min-h-9 min-w-0 items-center gap-2 rounded-md px-1.5 py-1 no-underline outline-none hover:bg-accent focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+          className="group/preview flex min-h-9 min-w-0 items-center gap-2 rounded-md px-1.5 py-1 no-underline outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
           href={tool.href}
           key={tool.toolId}
           role="menuitem"
         >
           <PreviewIcon icon={tool.icon} />
-          <Caption className="min-w-0 break-words text-foreground">{tool.name}</Caption>
+          <Caption className="min-w-0 break-words text-foreground group-hover/preview:text-accent-foreground group-focus-visible/preview:text-accent-foreground">
+            {tool.name}
+          </Caption>
         </a>
       ))}
     </div>
@@ -156,14 +158,21 @@ function CategoryList({ categories }: { categories: readonly CategoryPreview[] }
         <div className="space-y-0.5" key={index}>
           {column.map((category) => (
             <a
-              className="flex min-h-7 items-center gap-1.5 rounded-md px-1 py-0.5 no-underline outline-none hover:bg-accent focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+              className="group/category flex min-h-7 items-center gap-1.5 rounded-md px-1 py-0.5 no-underline outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
               href={category.href}
               key={category.label}
               role="menuitem"
             >
-              <Caption className="truncate text-muted-foreground">{category.label}</Caption>
-              <span className="ml-auto text-overline text-muted-foreground">{category.count}</span>
-              <ChevronRight aria-hidden="true" className="size-3 shrink-0 text-muted-foreground" />
+              <Caption className="truncate text-muted-foreground group-hover/category:text-accent-foreground group-focus-visible/category:text-accent-foreground">
+                {category.label}
+              </Caption>
+              <span className="ml-auto text-overline text-muted-foreground group-hover/category:text-accent-foreground group-focus-visible/category:text-accent-foreground">
+                {category.count}
+              </span>
+              <ChevronRight
+                aria-hidden="true"
+                className="size-3 shrink-0 text-muted-foreground group-hover/category:text-accent-foreground group-focus-visible/category:text-accent-foreground"
+              />
             </a>
           ))}
         </div>

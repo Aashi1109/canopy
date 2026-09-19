@@ -177,6 +177,12 @@ async function insertPost(
   throw new BlogError("CONFLICT", "Could not allocate an article URL. Try again.");
 }
 
+/** Shared by durable generation so the draft and its run commit atomically. */
+export async function createBlogPostInTransaction(tx: Transaction, actor: string, input: unknown): Promise<Post> {
+  await requireTransactionPermission(tx, actor, "blog", "create");
+  return insertPost(tx, actor, await resolveDocument(tx, input));
+}
+
 export async function createBlogPost(actor: string, input: unknown): Promise<Post> {
   const { title } = z
     .object({ title: z.string().trim().min(1).max(200) })

@@ -120,7 +120,7 @@ export default function TemplateSelector({
                 className={`group h-auto min-h-40 w-full select-none flex-col items-stretch justify-between gap-3 whitespace-normal rounded-lg p-4 text-left ${
                   isSelected
                     ? "border-primary bg-accent ring-1 ring-primary"
-                    : "border-border bg-card hover:border-primary/50 hover:bg-accent/40"
+                    : "border-border bg-card hover:border-primary/50 hover:bg-accent/40 hover:text-accent-foreground"
                 }`}
                 key={template.id}
                 onClick={() => onSelect(template)}
@@ -137,11 +137,13 @@ export default function TemplateSelector({
                       </StatusBadge>
                     )}
                   </span>
-                  <span className="block text-foreground group-hover:text-primary">{template.name}</span>
-                  <Caption className="line-clamp-2 block text-muted-foreground">{template.description}</Caption>
+                  <span className="block text-foreground group-hover:text-accent-foreground">{template.name}</span>
+                  <Caption className="line-clamp-2 block text-muted-foreground group-hover:text-accent-foreground">
+                    {template.description}
+                  </Caption>
                 </span>
 
-                <Caption className="flex items-center justify-between gap-2 border-t border-border pt-3 text-muted-foreground">
+                <Caption className="flex items-center justify-between gap-2 border-t border-border pt-3 text-muted-foreground group-hover:text-accent-foreground">
                   <span>Layout: {template.layoutFamily}</span>
                   {isSelected ? (
                     <span className="inline-flex items-center gap-1 text-primary">
@@ -149,7 +151,7 @@ export default function TemplateSelector({
                       Active
                     </span>
                   ) : (
-                    <span className="text-foreground opacity-0 transition-opacity group-hover:opacity-100">
+                    <span className="text-foreground group-hover:text-accent-foreground opacity-0 transition-opacity group-hover:opacity-100">
                       Use style
                     </span>
                   )}

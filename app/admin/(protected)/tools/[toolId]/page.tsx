@@ -1,5 +1,5 @@
 import { getToolContentRow, isDatabaseConfigured, type ToolContentRow } from "@/db/index.ts";
-import { Text, Caption, H1, H3, InlineCode, Muted, Overline, StatusBadge } from "@/components/ui/index.tsx";
+import { BackButton, Text, Caption, H1, H3, InlineCode, Muted, Overline, StatusBadge } from "@/components/ui/index.tsx";
 import { FileText, Image, LayoutDashboard, Search, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -81,10 +81,8 @@ export default async function ToolContentPage({
     <div className="mx-auto grid w-full max-w-[1240px] gap-5 pb-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <Link className="text-primary hover:underline" href="/admin/tools">
-            ← Back to tool catalog
-          </Link>
-          <div className="mt-2 flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <BackButton href="/admin/tools" label="Back to tool catalog" />
             <H1>{tool.name}</H1>
             <StatusBadge variant={tool.enabled ? "success" : tool.hasDefinition ? "neutral" : "warning"}>
               {tool.enabled ? "Visible" : tool.hasDefinition ? "Hidden" : "Waiting for code"}

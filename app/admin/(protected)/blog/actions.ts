@@ -121,7 +121,14 @@ export async function completeBlogImageUploadAction(input: unknown) {
 const readInput = z.discriminatedUnion("operation", [
   z.object({ operation: z.literal("list"), filters: z.unknown().optional() }).strict(),
   z.object({ operation: z.literal("post"), postId: z.string() }).strict(),
-  z.object({ operation: z.literal("history"), postId: z.string(), cursor: z.string().optional() }).strict(),
+  z
+    .object({
+      operation: z.literal("history"),
+      postId: z.string(),
+      cursor: z.string().optional(),
+      page: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
+    })
+    .strict(),
   z
     .object({
       operation: z.literal("preview"),
@@ -151,7 +158,7 @@ export async function readBlogAction(input: unknown) {
         case "history":
           return {
             ok: true as const,
-            data: await listBlogRevisions(actor, value.postId, value.cursor),
+            data: await listBlogRevisions(actor, value.postId, value.cursor, value.page),
           };
         case "taxonomy":
           return {

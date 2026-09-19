@@ -1,16 +1,14 @@
+import { AdminListing } from "@/app/admin/(protected)/components/AdminListing";
+import { adminPageHref, paginateAdminItems } from "../lib/pagination";
 import { DOCUMENT_TYPES } from "@/lib/invoice-templates/index.ts";
 import {
   Caption,
-  H1,
-  Muted,
-  Overline,
   Text,
   EmptyState,
   StatusBadge,
   Table,
   TableBody,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -19,6 +17,7 @@ import {
 import { Ellipsis, FilePenLine, Plus, Upload } from "lucide-react";
 import Link from "next/link";
 import { AdminFilters } from "../components/AdminFilters";
+import { AdminPageHeader } from "../components/AdminPageHeader";
 import { requirePagePermission } from "../../../../lib/admin/access";
 import { listTemplates } from "../../../../lib/admin/data";
 const updatedAtFormatter = new Intl.DateTimeFormat("en", {
@@ -36,6 +35,7 @@ export default async function TemplatesPage({
   searchParams,
 }: {
   searchParams: Promise<{
+    page?: string | string[];
     mode?: string | string[];
     query?: string | string[];
     status?: string | string[];
@@ -61,32 +61,32 @@ export default async function TemplatesPage({
     );
   });
 
-  return (
-    <div className="mx-auto w-full max-w-[84rem] pb-8">
-      <header className="mb-5 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <Overline className="block text-primary">Template operations</Overline>
-          <H1 className="mt-2 text-foreground">Templates</H1>
-          <Muted className="mt-1 text-muted-foreground">
-            Manage reusable document layouts across every document type.
-          </Muted>
-        </div>
-        <div className="flex flex-wrap gap-2.5">
-          <Link
-            className={buttonVariants({ className: "rounded-full", variant: "secondary" })}
-            href="/admin/templates/import"
-          >
-            <Upload aria-hidden="true" className="size-4" />
-            Import JSON
-          </Link>
-          <Link className={buttonVariants({ className: "rounded-full px-5" })} href="/admin/templates/new">
-            <Plus aria-hidden="true" className="size-4" />
-            Create template
-          </Link>
-        </div>
-      </header>
+  const result = paginateAdminItems(visibleTemplates, params.page);
 
-      <div className="mb-5">
+  return (
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-[84rem] flex-col">
+      <AdminPageHeader
+        className="shrink-0"
+        title="Templates"
+        description="Manage reusable document layouts across every document type."
+        actions={
+          <div className="flex flex-wrap gap-2.5">
+            <Link
+              className={buttonVariants({ className: "rounded-full", variant: "secondary" })}
+              href="/admin/templates/import"
+            >
+              <Upload aria-hidden="true" className="size-4" />
+              Import JSON
+            </Link>
+            <Link className={buttonVariants({ className: "rounded-full px-5" })} href="/admin/templates/new">
+              <Plus aria-hidden="true" className="size-4" />
+              Create template
+            </Link>
+          </div>
+        }
+      />
+
+      <div className="mb-5 shrink-0">
         <AdminFilters
           search={{ key: "query", label: "Search templates", placeholder: "Name or slug" }}
           selects={[
@@ -127,11 +127,17 @@ export default async function TemplatesPage({
         />
       </div>
 
-      {visibleTemplates.length ? (
-        <section
-          className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
-          aria-label="Template catalog"
-        >
+      <AdminListing
+        aria-label="Template catalog"
+        className="min-h-0 flex-1 shadow-sm"
+        pagination={{
+          page: result.page,
+          pageCount: result.pageCount,
+          getPageHref: (page) => adminPageHref("/admin/templates", page, filters),
+          summary: `Showing ${result.start}–${result.end} of ${result.total} templates`,
+        }}
+      >
+        {visibleTemplates.length ? (
           <Table>
             <TableHeader>
               <TableRow className="h-11 hover:bg-transparent">
@@ -146,7 +152,7 @@ export default async function TemplatesPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visibleTemplates.map((template) => {
+              {result.items.map((template) => {
                 const isAdvanced = template.layoutFamily === "advanced";
 
                 return (
@@ -195,32 +201,25 @@ export default async function TemplatesPage({
                 );
               })}
             </TableBody>
-            <TableFooter>
-              <TableRow className="h-12 hover:bg-transparent">
-                <TableCell className="px-[18px] text-muted-foreground" colSpan={6}>
-                  {visibleTemplates.length} of {templates.length} templates
-                </TableCell>
-              </TableRow>
-            </TableFooter>
           </Table>
-        </section>
-      ) : (
-        <EmptyState
-          action={
-            <Link className={buttonVariants()} href="/admin/templates/new">
-              Create template
-            </Link>
-          }
-          description={
-            templates.length
-              ? "Adjust the filters to see more templates."
-              : "Create a draft or import an existing template to get started."
-          }
-          title={templates.length ? "No matching templates" : "No templates found"}
-        />
-      )}
+        ) : (
+          <EmptyState
+            action={
+              <Link className={buttonVariants()} href="/admin/templates/new">
+                Create template
+              </Link>
+            }
+            description={
+              templates.length
+                ? "Adjust the filters to see more templates."
+                : "Create a draft or import an existing template to get started."
+            }
+            title={templates.length ? "No matching templates" : "No templates found"}
+          />
+        )}
+      </AdminListing>
 
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex shrink-0 justify-end">
         <Link
           className="inline-flex items-center gap-2 text-primary hover:underline"
           href="/admin/templates/new/advanced"

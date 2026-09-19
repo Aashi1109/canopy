@@ -1,4 +1,5 @@
 "use client";
+import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
 import {
   H1,
   H2,
@@ -42,6 +43,8 @@ import {
   Badge,
   BrandLockup,
   Button,
+  BackButton,
+  Pagination,
   ToolActionButton,
   Card,
   CardAction,
@@ -65,7 +68,7 @@ import {
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
-  EmptyState,
+  ContentState,
   EmptyTitle,
   Field,
   FieldContent,
@@ -130,7 +133,6 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-  ToolPageHeader,
 } from "@/components/ui/index.tsx";
 import {
   AlertTriangle,
@@ -140,6 +142,7 @@ import {
   FilePlus2,
   FileText,
   GripVertical,
+  History,
   Info,
   MoreHorizontal,
   Plus,
@@ -181,11 +184,11 @@ const initialDocuments = [
 ];
 
 const controlSizes = [
-  ["xs", "Extra small"],
-  ["sm", "Small"],
-  ["default", "Default"],
-  ["md", "Medium"],
-  ["lg", "Large"],
+  ["xs", "Extra small · 28px"],
+  ["sm", "Small · 32px"],
+  ["default", "Default · 36px"],
+  ["md", "Medium · 44px"],
+  ["lg", "Large · 48px"],
 ] as const;
 
 const workflowChapters: Chapter[] = [
@@ -265,6 +268,7 @@ function Specimen({ children, className, label }: { children: ReactNode; classNa
 export default function DesignSystemPage() {
   const [documents, setDocuments] = useState(initialDocuments);
   const [handbookPage, setHandbookPage] = useState(9);
+  const [paginationPage, setPaginationPage] = useState(2);
   const [mediaPreviewOpen, setMediaPreviewOpen] = useState(false);
   const [selectedChapterIndex, setSelectedChapterIndex] = useState(4);
   const [inlineTitle, setInlineTitle] = useState("Viewer");
@@ -273,10 +277,9 @@ export default function DesignSystemPage() {
 
   return (
     <>
-      <ToolPageHeader
+      <AdminPageHeader
         actions={<StatusBadge variant="success">Live components</StatusBadge>}
         description="Every component below is rendered from @/components/ui/index.tsx with the tokens and visual language defined in design.pen."
-        eyebrow="Design system"
         title="Component showcase"
       />
 
@@ -424,6 +427,15 @@ export default function DesignSystemPage() {
                 <ToolActionButton action="copy" iconOnly aria-label="Copy result" />
                 <ToolActionButton action="download" iconOnly aria-label="Download result" />
                 <ToolActionButton action="download">Download PDF</ToolActionButton>
+              </div>
+            </Specimen>
+            <Separator />
+            <Specimen label="Back navigation">
+              <div className="flex items-center gap-2">
+                <BackButton href="/admin" label="Back to overview" />
+                <span className="text-sm text-muted-foreground">
+                  Compact arrow with a longer shaft and subtle hover movement.
+                </span>
               </div>
             </Specimen>
             <Separator />
@@ -708,7 +720,14 @@ export default function DesignSystemPage() {
                 </RadioGroup>
               </div>
               <Separator />
-              <Specimen label="Radio sizes">
+              <Specimen label="Checkbox sizes · marks 12 / 14 / 16 / 20 / 22px">
+                <div className="flex flex-wrap items-center gap-6">
+                  {controlSizes.map(([size, label]) => (
+                    <Checkbox defaultChecked key={size} label={label} size={size} />
+                  ))}
+                </div>
+              </Specimen>
+              <Specimen label="Radio sizes · marks 12 / 14 / 16 / 20 / 22px">
                 <RadioGroup className="flex flex-wrap items-center gap-6" defaultValue="default">
                   {controlSizes.map(([size, label]) => (
                     <div className="flex items-center gap-2.5" key={size}>
@@ -751,6 +770,10 @@ export default function DesignSystemPage() {
             title="Navigation"
           />
           <SectionCard>
+            <Specimen label="Pagination · default">
+              <Pagination page={paginationPage} pageCount={5} onPageChange={setPaginationPage} sticky={false} />
+            </Specimen>
+            <Separator />
             <Specimen label="Tabs">
               <Tabs defaultValue="edit">
                 <TabsList>
@@ -1001,12 +1024,72 @@ export default function DesignSystemPage() {
               </EmptyContent>
             </Empty>
 
-            <EmptyState
-              action={<Button size="sm">Upload file</Button>}
-              description="Drop a supported file here or browse your device."
-              icon={<Upload />}
-              title="Nothing in the queue"
+            <ContentState
+              title="No access changes yet"
+              description="Access changes will appear here after an administrator makes one."
+              icon={<History />}
             />
+            <SectionCard className="xl:col-span-2">
+              <SectionHeading
+                title="Content states"
+                description="Optional icon and zero to two caller-owned actions. Keep field validation, upload surfaces and access restrictions in their dedicated patterns."
+              />
+              <div className="grid items-start gap-6 md:grid-cols-2 xl:grid-cols-3">
+                <ContentState
+                  state="error"
+                  title="Couldn’t load this content"
+                  description="Something went wrong while loading. Try again in a moment."
+                  action={
+                    <Button onClick={() => toast.info("The owning feature supplies this retry action.")}>
+                      Try again
+                    </Button>
+                  }
+                  secondaryAction={
+                    <Button asChild variant="outline">
+                      <a href="/blog">All posts</a>
+                    </Button>
+                  }
+                />
+                <ContentState
+                  state="no-results"
+                  density="compact"
+                  title="No tools match “receipt parser”"
+                  description="Check spelling or try another search."
+                />
+                <ContentState
+                  state="error"
+                  title="Preview unavailable"
+                  description="The PDF was created, but its preview couldn’t open. Retry the preview or download it from Processed output."
+                  action={
+                    <Button
+                      variant="outline"
+                      onClick={() => toast.info("Retry the preview renderer, not file processing.")}
+                    >
+                      Retry preview
+                    </Button>
+                  }
+                />
+                <ContentState
+                  density="panel"
+                  state="cancelled"
+                  title="Processing cancelled"
+                  description="Your input files are unchanged. Run again when ready using the existing controls."
+                />
+                <ContentState
+                  density="compact"
+                  state="waiting"
+                  title="Result will appear here"
+                  description="Run the tool using the controls in the input area."
+                />
+                <ContentState
+                  density="panel"
+                  state="loading"
+                  title="Loading content"
+                  description="A pending-state example; no request is running."
+                  action={<Button loading>Trying…</Button>}
+                />
+              </div>
+            </SectionCard>
           </div>
         </section>
 

@@ -15,8 +15,9 @@ import {
   StatusBadge,
   Textarea,
   buttonVariants,
+  BackButton,
 } from "@/components/ui/index.tsx";
-import { ArrowLeft, Braces, Copy, FilePenLine, Plus, Upload } from "lucide-react";
+import { Braces, Copy, FilePenLine, Plus, Upload } from "lucide-react";
 import Link from "next/link";
 import { requirePagePermission } from "../../../../../../lib/admin/access";
 import { createAdvancedTemplateAction } from "../../../../actions";
@@ -34,18 +35,8 @@ export default async function NewAdvancedTemplatePage() {
 
   return (
     <div className="min-h-dvh w-full bg-muted pb-8">
-      <header className="flex min-h-16 flex-wrap items-center gap-3 border-b border-border bg-card px-4 sm:px-6">
-        <Link
-          aria-label="Back to templates"
-          className={buttonVariants({
-            className: "size-9 shrink-0 rounded-lg",
-            size: "icon",
-            variant: "ghost",
-          })}
-          href="/admin/templates"
-        >
-          <ArrowLeft aria-hidden="true" className="size-4" />
-        </Link>
+      <header className="flex min-h-16 flex-wrap items-center gap-3 bg-card px-4 sm:px-6">
+        <BackButton href="/admin/templates" label="Back to templates" className="shrink-0" />
         <H1 className="text-foreground">New advanced template</H1>
         <StatusBadge className="min-h-6 px-2.5" variant="info">
           Opens in advanced designer
@@ -54,8 +45,7 @@ export default async function NewAdvancedTemplatePage() {
 
       <form action={createAdvancedTemplateAction} className="mx-auto grid w-full max-w-6xl gap-6 p-5 sm:p-7">
         <div className="text-center">
-          <Overline className="block text-primary">Advanced creation</Overline>
-          <H2 className="mt-2 text-foreground">Choose a starting point</H2>
+          <H2 className="text-foreground">Choose a starting point</H2>
           <Muted className="mx-auto mt-2 max-w-2xl text-muted-foreground">
             We’ll create the template record first, then hand it off to the existing canvas designer.
           </Muted>

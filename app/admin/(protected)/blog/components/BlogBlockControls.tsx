@@ -135,15 +135,15 @@ export function BlogBlockControls({
       }
       const table = editor!.state.doc.nodeAt(target.position)?.type.name === "table";
       const coarse = matchMedia("(pointer: coarse)").matches;
-      const width = coarse ? 88 : 64;
+      const narrow = matchMedia("(max-width: 767px)").matches;
+      const controlSize = coarse ? 44 : 32;
+      const width = narrow ? controlSize : controlSize * 2;
+      const height = narrow ? controlSize * 2 : controlSize;
       const gap = table && !coarse ? 28 : 4;
       const next = {
         position: target.position,
         left: Math.max(bounds.left + 4, dom.getBoundingClientRect().left - width - gap),
-        top: Math.max(
-          bounds.top + 2,
-          Math.min(bounds.bottom - (coarse ? 44 : 32), target.box.top - (table && coarse ? 47 : 3)),
-        ),
+        top: Math.max(bounds.top + 2, Math.min(bounds.bottom - height, target.box.top - (table && coarse ? 47 : 3))),
       };
       setLayout((previous) => ({
         ...next,

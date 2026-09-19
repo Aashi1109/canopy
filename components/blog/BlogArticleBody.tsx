@@ -8,7 +8,15 @@ import { CopyBlogCode } from "./CopyBlogCode";
 import codeStyles from "./codeHighlight.module.css";
 
 /** Enhance validated article HTML while retaining readable code without JavaScript. */
-export function BlogArticleBody({ html, className }: { html: string; className: string }) {
+export function BlogArticleBody({
+  html,
+  className,
+  showToaster = true,
+}: {
+  html: string;
+  className: string;
+  showToaster?: boolean;
+}) {
   const body = useRef<HTMLDivElement>(null);
   const [diagrams, setDiagrams] = useState<{ source: string; container: HTMLElement }[]>([]);
   const [checkboxes, setCheckboxes] = useState<{ checked: boolean; container: HTMLElement }[]>([]);
@@ -35,14 +43,22 @@ export function BlogArticleBody({ html, className }: { html: string; className: 
   }, [html]);
 
   useEffect(() => {
-    const entries = Array.from(body.current?.querySelectorAll<HTMLElement>("[data-task-checkbox]") ?? []).map(
-      (fallback) => {
-        const container = document.createElement("span");
-        fallback.before(container);
-        fallback.hidden = true;
-        return { checked: fallback.dataset.taskCheckbox === "true", container, fallback };
-      },
-    );
+    const entries = Array.from(
+      body.current?.querySelectorAll<HTMLElement>(
+        '[data-task-checkbox], li > input[type="checkbox"]:first-child, li > p > input[type="checkbox"]:first-child',
+      ) ?? [],
+    ).map((fallback) => {
+      const container = fallback.ownerDocument.createElement("span");
+      const nativeCheckbox = fallback.matches('input[type="checkbox"]');
+      if (nativeCheckbox) container.dataset.markdownTaskCheckbox = "";
+      fallback.before(container);
+      fallback.hidden = true;
+      return {
+        checked: nativeCheckbox ? (fallback as HTMLInputElement).checked : fallback.dataset.taskCheckbox === "true",
+        container,
+        fallback,
+      };
+    });
     setCheckboxes(entries);
     return () => {
       entries.forEach(({ container, fallback }) => {
@@ -74,7 +90,7 @@ export function BlogArticleBody({ html, className }: { html: string; className: 
 
   return (
     <>
-      <Toaster position="top-right" />
+      {showToaster && <Toaster position="top-right" />}
       <div ref={body} className={className} dangerouslySetInnerHTML={{ __html: html }} />
       {codeBlocks.map(({ code, container }, index) =>
         createPortal(<CopyBlogCode code={code} />, container, `code-${index}`),

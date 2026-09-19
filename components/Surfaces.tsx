@@ -1,19 +1,13 @@
 "use client";
 
 import {
-  Strong,
   Overline,
   InlineCode,
   Muted,
   H2,
   Caption,
   Button,
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
+  ContentState,
   FileQueueItem,
   FileUploadZone,
   StatusBadge,
@@ -97,32 +91,18 @@ function WorkspaceSurface({
   const content =
     state === "ready" ? (
       children
-    ) : state === "empty" && purpose === "result" ? (
-      <div className="min-h-0 flex-1 px-4 py-3" data-surface-state={state}>
-        <Muted className="text-muted-foreground">
-          <Strong className="text-foreground/70">{stateTitle ?? DEFAULT_STATE_TITLES[state]}</Strong>
-          {stateDescription ? ` — ${stateDescription}` : null}
-        </Muted>
-        <div aria-hidden="true" className="mt-3 grid gap-2">
-          {Array.from({ length: 3 }, (_, index) => (
-            <div className="rounded-lg bg-muted/55 px-4 py-3 text-muted-foreground/55" key={index}>
-              <Caption>–</Caption>
-            </div>
-          ))}
-        </div>
-        {stateAction ? <div className="mt-3">{stateAction}</div> : null}
-      </div>
     ) : (
-      <Empty className="min-h-72 flex-1 rounded-none border-0 bg-transparent" data-surface-state={state}>
-        <EmptyHeader>
-          <EmptyMedia className={cn(state === "error" ? "text-destructive" : undefined)} variant="icon">
-            {stateIcon ?? DEFAULT_STATE_ICONS[state]}
-          </EmptyMedia>
-          <EmptyTitle>{stateTitle ?? DEFAULT_STATE_TITLES[state]}</EmptyTitle>
-          {stateDescription ? <EmptyDescription>{stateDescription}</EmptyDescription> : null}
-        </EmptyHeader>
-        {stateAction ? <EmptyContent>{stateAction}</EmptyContent> : null}
-      </Empty>
+      <ContentState
+        className={state === "empty" && purpose === "result" ? "min-h-0 flex-1 justify-start" : "min-h-72 flex-1"}
+        data-surface-state={state}
+        state={state === "empty" && purpose === "result" ? "waiting" : state}
+        density={state === "empty" && purpose === "result" ? "compact" : "section"}
+        icon={state === "empty" && purpose === "result" ? null : (stateIcon ?? DEFAULT_STATE_ICONS[state])}
+        title={stateTitle ?? DEFAULT_STATE_TITLES[state]}
+        description={stateDescription}
+        action={stateAction}
+        announcement="polite"
+      />
     );
   const heading = (
     <Overline className={cn("truncate", variant === "card" && "text-muted-foreground")} id={headingId}>

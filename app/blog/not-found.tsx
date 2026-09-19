@@ -1,10 +1,12 @@
 import { BookOpen } from "lucide-react";
-import { Button, EmptyState } from "@/components/ui/index.tsx";
+import { Button, ContentState } from "@/components/ui/index.tsx";
 
 export default function BlogNotFound() {
   return (
     <div className="mx-auto max-w-2xl px-5 py-20">
-      <EmptyState
+      <ContentState
+        state="unavailable"
+        density="page"
         headingLevel="h1"
         icon={<BookOpen />}
         title="This story isn’t available"

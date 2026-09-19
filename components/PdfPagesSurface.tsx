@@ -353,7 +353,7 @@ export function PdfPagesSurface({
                   <button
                     aria-label={`${isSelected ? "Deselect" : "Select"} page ${page.pageNumber}`}
                     aria-pressed={isSelected}
-                    className="w-full rounded-lg p-1 text-center outline-none transition enabled:hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full rounded-lg p-1 text-center outline-none transition enabled:hover:bg-accent enabled:hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                     data-selected={isSelected}
                     disabled={disabled || locked}
                     onClick={() => onToggle(page.pageNumber)}

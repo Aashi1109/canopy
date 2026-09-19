@@ -1,3 +1,6 @@
+import { AdminListing } from "@/app/admin/(protected)/components/AdminListing";
+import { adminPageHref, paginateAdminItems } from "../lib/pagination";
+import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 import { featureManifest, getFeatures } from "@/lib/admin/index.ts";
 import {
@@ -11,22 +14,23 @@ import {
   Input,
   StatusBadge,
   Textarea,
-  ToolPageHeader,
 } from "@/components/ui/index.tsx";
 import { Flag, History } from "lucide-react";
 import { requirePagePermission } from "../../../../lib/admin/access";
 import { toggleFeatureAction, updateFeatureAction } from "../../actions";
 
-export default async function FeaturesPage() {
+export default async function FeaturesPage({ searchParams }: { searchParams: Promise<{ page?: string | string[] }> }) {
   await requirePagePermission("features", "view");
-  const features = await getFeatures(featureManifest);
+  const [features, params] = await Promise.all([getFeatures(featureManifest), searchParams]);
+  const result = paginateAdminItems(features, params.page);
 
   const enabledCount = features.filter((feature) => feature.enabled).length;
   const appCount = new Set(features.map((feature) => feature.app)).size;
 
   return (
-    <>
-      <ToolPageHeader
+    <div className="flex h-full min-h-0 flex-col gap-5">
+      <AdminPageHeader
+        className="mb-0 shrink-0"
         actions={
           <TextLink
             className="inline-flex h-10 items-center gap-2 rounded-full border border-input bg-card px-4 hover:bg-muted"
@@ -36,30 +40,39 @@ export default async function FeaturesPage() {
             View history
           </TextLink>
         }
-        className="mb-5"
         description="Control releases per app and keep operational context current. New registrations start disabled."
-        eyebrow="Release controls"
         title="Feature flags"
       />
       {features.length ? (
-        <div className="space-y-5">
-          <div className="grid overflow-hidden rounded-lg bg-surface-ink text-on-ink sm:grid-cols-3">
-            {[
-              ["Total flags", features.length],
-              ["Enabled", enabledCount],
-              ["Active apps", appCount],
-            ].map(([label, value], index) => (
-              <div
-                className={`px-5 py-4 ${index ? "border-t border-white/10 sm:border-t-0 sm:border-l" : ""}`}
-                key={label}
-              >
-                <Overline className="block text-on-ink-muted">{label}</Overline>
-                <P className={`mt-1 ${label === "Enabled" ? "text-success" : ""}`}>{value}</P>
-              </div>
-            ))}
-          </div>
-          <div className="grid gap-4 xl:grid-cols-2">
-            {features.map((feature) => (
+        <div className="grid shrink-0 overflow-hidden rounded-lg bg-surface-ink text-on-ink sm:grid-cols-3">
+          {[
+            ["Total flags", features.length],
+            ["Enabled", enabledCount],
+            ["Active apps", appCount],
+          ].map(([label, value], index) => (
+            <div
+              className={`px-5 py-4 ${index ? "border-t border-white/10 sm:border-t-0 sm:border-l" : ""}`}
+              key={label}
+            >
+              <Overline className="block text-on-ink-muted">{label}</Overline>
+              <P className={`mt-1 ${label === "Enabled" ? "text-success" : ""}`}>{value}</P>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      <AdminListing
+        aria-label="Feature flags"
+        className="min-h-0 flex-1"
+        pagination={{
+          page: result.page,
+          pageCount: result.pageCount,
+          getPageHref: (page) => adminPageHref("/admin/features", page),
+          summary: `Showing ${result.start}–${result.end} of ${result.total} feature flags`,
+        }}
+      >
+        {features.length ? (
+          <div className="grid gap-4 p-4 xl:grid-cols-2">
+            {result.items.map((feature) => (
               <Card className="overflow-hidden p-0" key={`${feature.app}:${feature.key}`}>
                 <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border bg-muted/60 px-5 py-4">
                   <div className="min-w-0">
@@ -96,14 +109,14 @@ export default async function FeaturesPage() {
               </Card>
             ))}
           </div>
-        </div>
-      ) : (
-        <EmptyState
-          description="Register a feature key in code to manage its app-specific override and rollout state here."
-          icon={<Flag aria-hidden="true" />}
-          title="No feature flags yet"
-        />
-      )}
-    </>
+        ) : (
+          <EmptyState
+            description="Register a feature key in code to manage its app-specific override and rollout state here."
+            icon={<Flag aria-hidden="true" />}
+            title="No feature flags yet"
+          />
+        )}
+      </AdminListing>
+    </div>
   );
 }

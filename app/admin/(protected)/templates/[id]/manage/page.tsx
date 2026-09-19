@@ -11,8 +11,9 @@ import {
   StatusBadge,
   Textarea,
   buttonVariants,
+  BackButton,
 } from "@/components/ui/index.tsx";
-import { ArrowLeft, Copy, Eye, FilePenLine } from "lucide-react";
+import { Copy, Eye, FilePenLine } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePagePermission } from "../../../../../../lib/admin/access";
@@ -42,19 +43,9 @@ export default async function ManageTemplatePage({ params }: { params: Promise<{
 
   return (
     <div className="min-h-dvh w-full bg-muted pb-8">
-      <header className="flex flex-col gap-4 border-b border-border bg-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <header className="flex flex-col gap-4 bg-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <Link
-            aria-label="Back to templates"
-            className={buttonVariants({
-              className: "size-9 shrink-0 rounded-lg",
-              size: "icon",
-              variant: "ghost",
-            })}
-            href="/admin/templates"
-          >
-            <ArrowLeft aria-hidden="true" className="size-4" />
-          </Link>
+          <BackButton href="/admin/templates" label="Back to templates" className="shrink-0" />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <H1 className="truncate text-foreground">{template.name}</H1>

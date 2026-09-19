@@ -1,10 +1,12 @@
 "use client";
 import { Muted, Small, Strong } from "./typography.tsx";
-import { LoaderCircle, Search, SearchX, X } from "lucide-react";
+import { LoaderCircle, Search, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../lib/utils.ts";
+import { ContentState } from "./ContentState.tsx";
+import { Button } from "./button.tsx";
 
 type SearchResult = {
   category: string;
@@ -179,13 +181,9 @@ export function GlobalToolSearch({ mobile }: { mobile?: MobileSearch } = {}) {
         </>
       ) : state === "error" ? (
         <SearchMessage title="Search is temporarily unavailable">
-          <button
-            type="button"
-            className="mt-2 min-h-11 rounded-md px-3 font-semibold text-primary hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={() => setRetry((value) => value + 1)}
-          >
+          <Button variant="outline" onClick={() => setRetry((value) => value + 1)}>
             Retry search
-          </button>
+          </Button>
         </SearchMessage>
       ) : current && state === "ready" && !results.length ? (
         <SearchMessage title={`No tools match “${debouncedQuery.trim()}”`} />
@@ -196,15 +194,19 @@ export function GlobalToolSearch({ mobile }: { mobile?: MobileSearch } = {}) {
           </Muted>
           {results.map((result) => (
             <a
-              className="flex min-h-[58px] items-center gap-2.5 border-b border-border px-3 py-2 no-underline outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              className="group/search-result flex min-h-[58px] items-center gap-2.5 border-b border-border px-3 py-2 no-underline outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
               href={result.href}
               key={result.toolId}
               onClick={() => setOpen(false)}
             >
               <ToolIcon icon={result.icon} />
               <span className="min-w-0">
-                <Strong className="block truncate text-foreground">{result.name}</Strong>
-                <Small className="block truncate text-muted-foreground">{result.category}</Small>
+                <Strong className="block truncate text-foreground group-hover/search-result:text-accent-foreground">
+                  {result.name}
+                </Strong>
+                <Small className="block truncate text-muted-foreground group-hover/search-result:text-accent-foreground">
+                  {result.category}
+                </Small>
               </span>
             </a>
           ))}
@@ -221,7 +223,7 @@ export function GlobalToolSearch({ mobile }: { mobile?: MobileSearch } = {}) {
           aria-expanded={isOpen}
           aria-controls={isOpen && query.trim() ? resultsId : undefined}
           className={cn(
-            "grid size-11 place-items-center rounded-full border border-input bg-card text-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring",
+            "grid size-11 place-items-center rounded-full border border-input bg-card text-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring",
             isOpen && "bg-accent text-primary",
           )}
           onClick={() => setOpen(!isOpen)}
@@ -279,12 +281,14 @@ function ToolIcon({ icon }: { icon: SearchResult["icon"] }) {
 }
 function SearchMessage({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <div className="flex min-h-[178px] flex-col items-center justify-center gap-2 px-6 text-center text-[11px] text-muted-foreground">
-      <SearchX aria-hidden="true" className="size-6" />
-      <Strong className="text-foreground">{title}</Strong>
-      <span>{children ? "Your query is safe. Try again." : "Check spelling or try another search."}</span>
-      {children}
-    </div>
+    <ContentState
+      density="compact"
+      state={children ? "error" : "no-results"}
+      headingLevel="h3"
+      title={title}
+      description={children ? "Your query is safe. Try again." : "Check spelling or try another search."}
+      action={children}
+    />
   );
 }
 function SearchSkeleton() {

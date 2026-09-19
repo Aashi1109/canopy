@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertBanner,
@@ -29,8 +29,9 @@ interface Props {
     status?: "draft" | "published" | "scheduled" | "trash";
     categoryId?: string;
     cursor?: string;
+    page?: number;
   };
-  nextCursor: string | null;
+  pagination: { page: number; pageCount: number; total: number };
   canCreate: boolean;
   canArchive: boolean;
   canManageTerms: boolean;
@@ -40,7 +41,7 @@ export function BlogPosts({
   posts,
   categories: initialCategories,
   filters: initial,
-  nextCursor,
+  pagination,
   canCreate,
   canArchive,
   canManageTerms,
@@ -51,13 +52,11 @@ export function BlogPosts({
     initialCategories,
     initial.categoryId ? [{ id: initial.categoryId, label: "Selected category" }] : [],
   );
-  const [navigating, startNavigation] = useTransition();
   const appliedFilters: BlogListFilters = {
     search: initial.search ?? "",
-    status: initial.status === "trash" ? "all" : (initial.status ?? "all"),
-    category: initial.status === "trash" ? "trash" : (initial.categoryId ?? "all"),
+    status: initial.status ?? "all",
+    category: initial.categoryId ?? "all",
   };
-  const [filters, setFilters] = useState(appliedFilters);
   const [selected, setSelected] = useState<BlogPostListItem | null>(null);
   const [mutating, setMutating] = useState(false);
   const [error, setError] = useState("");
@@ -69,15 +68,14 @@ export function BlogPosts({
     [],
   );
 
-  function href(next: BlogListFilters, cursor?: string) {
+  const currentPage = pagination.page;
+
+  function href(next: BlogListFilters, page = 1) {
     const query = new URLSearchParams();
     if (next.search.trim()) query.set("search", next.search.trim());
-    if (next.category === "trash") query.set("status", "trash");
-    else {
-      if (next.status !== "all") query.set("status", next.status);
-      if (next.category !== "all") query.set("categoryId", next.category);
-    }
-    if (cursor) query.set("cursor", cursor);
+    if (next.status !== "all") query.set("status", next.status);
+    if (next.category !== "all") query.set("categoryId", next.category);
+    if (page > 1) query.set("page", String(page));
     return `/admin/blog${query.size ? `?${query}` : ""}`;
   }
 
@@ -175,6 +173,7 @@ export function BlogPosts({
   const rows: BlogPostListItem[] = posts.map((post) => ({
     id: post.id,
     title: post.title,
+    generationStatus: post.generationStatus,
     updatedLabel:
       new Intl.DateTimeFormat("en", {
         dateStyle: "medium",
@@ -210,7 +209,7 @@ export function BlogPosts({
       <BlogPostList
         posts={rows}
         categories={categoryOptions.items}
-        filters={filters}
+        filters={appliedFilters}
         canCreate={canCreate}
         canArchive={canArchive}
         categoryPagination={
@@ -234,15 +233,9 @@ export function BlogPosts({
             )}
           </>
         }
-        busy={navigating || mutating}
+        busy={mutating}
         newPostHref="/admin/blog/new"
         taxonomyHref={canManageTerms ? "/admin/blog/taxonomy" : undefined}
-        onFiltersChange={(next) => {
-          setFilters(next);
-          if (next.status !== filters.status || next.category !== filters.category || (filters.search && !next.search))
-            startNavigation(() => router.push(href(next)));
-        }}
-        onSearch={() => startNavigation(() => router.push(href(filters)))}
         onDuplicate={(post) => {
           void duplicate(post);
         }}
@@ -254,10 +247,10 @@ export function BlogPosts({
           void archive(post, "restoreTrash");
         }}
         pagination={{
-          label: `Showing ${posts.length} ${posts.length === 1 ? "post" : "posts"}${nextCursor ? " · More available" : ""}`,
-          previousHref: initial.cursor ? href(appliedFilters) : undefined,
-          previousLabel: "First page",
-          nextHref: nextCursor ? href(appliedFilters, nextCursor) : undefined,
+          label: `Showing ${pagination.total ? (currentPage - 1) * 25 + 1 : 0}–${(currentPage - 1) * 25 + posts.length} of ${pagination.total} posts`,
+          page: currentPage,
+          pageCount: pagination.pageCount,
+          getPageHref: (page) => href(appliedFilters, page),
         }}
       />
       <AlertDialog

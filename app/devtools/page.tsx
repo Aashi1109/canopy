@@ -160,16 +160,18 @@ export default async function HomePage({
                 <div className="grid gap-px sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                   {featuredTools.slice(0, 6).map((tool, index) => (
                     <TextLink
-                      className="no-underline group flex min-h-24 flex-col justify-between bg-card p-4 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                      className="no-underline group flex min-h-24 flex-col justify-between bg-card p-4 text-card-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                       href={`/devtools/${tool.slug}`}
                       key={tool.toolId}
                     >
-                      <Caption className="text-muted-foreground">{String(index + 1).padStart(2, "0")}</Caption>
+                      <Caption className="text-muted-foreground group-hover:text-accent-foreground">
+                        {String(index + 1).padStart(2, "0")}
+                      </Caption>
                       <Text className="flex items-end justify-between gap-3">
                         {tool.name}
                         <ArrowUpRight
                           aria-hidden="true"
-                          className="size-4 shrink-0 text-primary transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                          className="size-4 shrink-0 text-primary group-hover:text-accent-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                         />
                       </Text>
                     </TextLink>
@@ -283,7 +285,7 @@ export default async function HomePage({
                 <div className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
                   {availableCategories.map(({ count, description, key, label }) => (
                     <TextLink
-                      className="no-underline group flex min-h-28 items-start gap-4 bg-card p-5 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset lg:last:col-span-2"
+                      className="no-underline group flex min-h-28 items-start gap-4 bg-card p-5 text-card-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset lg:last:col-span-2"
                       href={`/devtools?category=${encodeURIComponent(key)}`}
                       key={key}
                     >
@@ -292,14 +294,16 @@ export default async function HomePage({
                       </IconTile>
                       <span className="min-w-0 flex-1">
                         <Strong className="block">{label}</Strong>
-                        <Text className="mt-1 block text-muted-foreground">{description}</Text>
-                        <Caption className="mt-2 block text-primary">
+                        <Text className="mt-1 block text-muted-foreground group-hover:text-accent-foreground">
+                          {description}
+                        </Text>
+                        <Caption className="mt-2 block text-primary group-hover:text-accent-foreground">
                           {count} {count === 1 ? "tool" : "tools"}
                         </Caption>
                       </span>
                       <ArrowUpRight
                         aria-hidden="true"
-                        className="size-4 shrink-0 text-muted-foreground transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary"
+                        className="size-4 shrink-0 text-muted-foreground transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent-foreground"
                       />
                     </TextLink>
                   ))}

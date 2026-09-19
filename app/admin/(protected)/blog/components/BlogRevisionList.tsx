@@ -27,6 +27,7 @@ interface Props {
   comparedRevisionId?: string;
   comparison?: ReactNode;
   historyCursor?: string;
+  historyPage?: number;
   compact?: boolean;
   currentTitle?: string;
   revisions: {
@@ -47,6 +48,7 @@ export function BlogRevisionList({
   comparedRevisionId,
   comparison,
   historyCursor,
+  historyPage,
   compact = false,
   currentTitle,
 }: Props) {
@@ -83,7 +85,10 @@ export function BlogRevisionList({
         {revisions.map((revision) => {
           const expanded = !compact && comparedRevisionId === revision.id && !!comparison;
           const query = new URLSearchParams();
-          if (historyCursor) query.set("cursor", historyCursor);
+          if (historyCursor) {
+            query.set("cursor", historyCursor);
+          }
+          if (historyPage) query.set("page", String(historyPage));
           if (!expanded) query.set("revision", revision.id);
           const historyUrl = `/admin/blog/${postId}/history${query.size ? `?${query}` : ""}`;
           const detailsId = `revision-details-${revision.id}`;

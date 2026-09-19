@@ -1,6 +1,6 @@
+import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
 import { InvoiceTemplatePreview } from "@/lib/invoice-templates/TemplatePreview.tsx";
 import type { InvoiceTemplate } from "@/lib/invoice-templates/index.ts";
-import { ToolPageHeader } from "@/components/ui/index.tsx";
 import { notFound, redirect } from "next/navigation";
 import { requirePagePermission } from "../../../../../../lib/admin/access";
 import { getTemplate } from "../../../../../../lib/admin/data";
@@ -21,7 +21,7 @@ export default async function TemplatePreviewPage({ params }: { params: Promise<
 
   return (
     <>
-      <ToolPageHeader
+      <AdminPageHeader
         description="Uses the shared invoice-template preview renderer."
         title={`${template.name} preview`}
       />

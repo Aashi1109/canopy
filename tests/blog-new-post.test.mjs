@@ -7,6 +7,8 @@ import { transformSync } from "next/dist/build/swc/index.js";
 
 const state = { values: [], index: 0, calls: [], paths: [], toasts: [], cleanups: [], response: null };
 globalThis.__newBlogPostTest = state;
+const originalWindow = globalThis.window;
+globalThis.window = { location: { search: "" } };
 const stub = (source) => ({ shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(source)}` });
 const hooks = registerHooks({
   resolve(specifier, context, next) {
@@ -35,10 +37,11 @@ const hooks = registerHooks({
     if (specifier === "next/link") return stub("export default 'link';");
     if (specifier === "@/components/ui/index.tsx")
       return stub(`
-        export const Button = 'button', Label = 'label', Textarea = 'textarea', Toaster = 'toaster';
+        export const BackButton = 'back-button', Button = 'button', Label = 'label', Textarea = 'textarea', Toaster = 'toaster';
         export const toast = { error(message) { globalThis.__newBlogPostTest.toasts.push(message); } };
       `);
     if (specifier === "./BlogEditor.module.css") return stub("export default {};");
+    if (specifier === "./BlogGenerationForm") return stub("export const BlogGenerationForm = 'generation-form';");
     if (specifier === "@/lib/blog/title")
       return { shortCircuit: true, url: new URL("../lib/blog/title.ts", import.meta.url).href };
     if (specifier === "../actions")
@@ -67,6 +70,8 @@ const { NewBlogPost } = await import("../app/admin/(protected)/blog/components/N
 test.after(() => {
   hooks.deregister();
   delete globalThis.__newBlogPostTest;
+  if (originalWindow === undefined) delete globalThis.window;
+  else globalThis.window = originalWindow;
 });
 test.beforeEach(() => {
   Object.assign(state, {
@@ -95,7 +100,7 @@ function visibleText(node) {
 
 function render() {
   state.index = 0;
-  const nodes = walk(NewBlogPost());
+  const nodes = walk(NewBlogPost({ userId: "test-user" }));
   return {
     nodes,
     input: nodes.find((node) => node.type === "textarea"),

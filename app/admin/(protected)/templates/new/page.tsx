@@ -13,8 +13,9 @@ import {
   Switch,
   Textarea,
   buttonVariants,
+  BackButton,
 } from "@/components/ui/index.tsx";
-import { ArrowLeft, CircleCheck, LayoutTemplate } from "lucide-react";
+import { CircleCheck, LayoutTemplate } from "lucide-react";
 import Link from "next/link";
 import { requirePagePermission } from "../../../../../lib/admin/access";
 import { createTemplateAction } from "../../../actions";
@@ -26,19 +27,9 @@ export default async function NewTemplatePage() {
 
   return (
     <div className="flex min-h-dvh w-full flex-col bg-muted">
-      <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-6">
+      <header className="flex h-16 shrink-0 items-center justify-between gap-4 bg-card px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <Link
-            aria-label="Back to templates"
-            className={buttonVariants({
-              className: "size-8 shrink-0 rounded-lg",
-              size: "icon",
-              variant: "ghost",
-            })}
-            href="/admin/templates"
-          >
-            <ArrowLeft aria-hidden="true" className="size-[18px]" />
-          </Link>
+          <BackButton href="/admin/templates" label="Back to templates" className="shrink-0" />
           <div className="min-w-0">
             <H1 className="truncate text-foreground">New standard template</H1>
             <Caption className="block mt-0.5 text-muted-foreground">Templates / Create</Caption>

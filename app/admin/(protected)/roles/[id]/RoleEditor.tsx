@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
 import { getMissingPermissionPrerequisite, PERMISSION_CATALOG, type Role } from "@/lib/authorization/index.ts";
 import {
   AlertBanner,
@@ -19,7 +20,6 @@ import {
   InlineTextEditor,
   SectionCard,
   SectionHeading,
-  ToolPageHeader,
   toast,
   Toaster,
   TooltipProvider,
@@ -109,8 +109,8 @@ export default function RoleEditor({
   return (
     <>
       <Toaster position="top-right" />
-      <ToolPageHeader
-        className="mb-6 border-b-0 pb-0 sm:items-center [&>div:first-child]:min-w-0 [&>div:first-child]:flex-1"
+      <AdminPageHeader
+        className="sm:items-center [&>div:first-child]:min-w-0 [&>div:first-child]:flex-1"
         actions={
           <>
             <Button

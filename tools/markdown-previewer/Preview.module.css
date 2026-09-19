@@ -1,0 +1,38 @@
+.preview {
+  max-width: 76ch;
+  margin-inline: auto;
+  padding: clamp(20px, 4vw, 32px);
+}
+
+/* Blog titles sit outside the body; Markdown documents may include an h1. */
+.preview h1 {
+  margin-block: 28px 12px;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.preview h1:first-child {
+  margin-top: 0;
+}
+
+/* Raw Markdown tables do not have the blog document's scrolling wrapper. */
+.preview table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Marked emits native inputs; keep its task items aligned like blog checklists. */
+.preview li:has(> input[type="checkbox"]),
+.preview li:has(> p > input[type="checkbox"]) {
+  list-style: none;
+  margin-inline-start: -1.5rem;
+  padding-inline-start: 26px;
+}
+
+.preview [data-markdown-task-checkbox] {
+  display: inline-flex;
+  margin-inline: -26px 10px;
+  vertical-align: middle;
+}

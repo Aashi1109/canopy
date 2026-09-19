@@ -8,7 +8,7 @@ import {
   Button,
   ToolActionButton,
   DownloadResult,
-  EmptyState,
+  ContentState,
   ProcessingStatus,
   ToolOptionsPanel,
   Tooltip,
@@ -672,7 +672,8 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           <ResultView result={props.result} />
         </>
       ) : (
-        <EmptyState
+        <ContentState
+          state={wasCancelled ? "cancelled" : "waiting"}
           className="rounded-none border-0 bg-transparent"
           description={wasCancelled ? "Your input files are unchanged. Run again when ready." : props.spec.labels.empty}
           icon={<FileText aria-hidden="true" />}

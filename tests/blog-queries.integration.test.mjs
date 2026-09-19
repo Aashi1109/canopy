@@ -212,5 +212,24 @@ test(
         assert.equal((await queries.listBlogTaxonomy("viewer", "category")).items[0].createdBy, "viewer");
       },
     );
+    await context.test("admin numbered pages count filtered records and jump directly to the last page", async () => {
+      await sql.query(
+        "INSERT INTO blog_posts (id, slug, draft_document, draft_hash) SELECT 'numbered-' || n, 'numbered-' || n, $1::jsonb, 'draft' FROM generate_series(1, 61) n",
+        [JSON.stringify({ ...document, title: "Numbered pagination article" })],
+      );
+      const filters = { search: "Numbered pagination", status: "draft" };
+      const first = await queries.listBlogPosts("viewer", { ...filters, page: 1 });
+      const last = await queries.listBlogPosts("viewer", { ...filters, page: 3 });
+      assert.deepEqual([first.total, first.pageCount, first.items.length], [61, 3, 25]);
+      assert.deepEqual([last.page, last.items.length, last.nextCursor], [3, 11, null]);
+      assert.ok(last.items.every((row) => !first.items.some((other) => other.id === row.id)));
+      assert.equal((await queries.listBlogPosts("viewer", { ...filters, page: 999 })).page, 3);
+      const empty = await queries.listBlogPosts("viewer", { search: "No such article", page: 99 });
+      assert.deepEqual([empty.total, empty.page, empty.pageCount, empty.items.length], [0, 1, 1, 0]);
+      const taxonomy = await queries.listBlogTaxonomy("viewer", "category", { page: 99 });
+      assert.deepEqual([taxonomy.total, taxonomy.page, taxonomy.pageCount], [2, 1, 1]);
+      const history = await queries.listBlogRevisions("viewer", "live-00", undefined, 99);
+      assert.deepEqual([history.total, history.page, history.pageCount], [1, 1, 1]);
+    });
   },
 );

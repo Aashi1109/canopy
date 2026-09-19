@@ -4,6 +4,7 @@ import { ArrowRight, Bookmark, BookmarkCheck, BookmarkMinus, Braces, Files, Load
 import { Dialog, Popover } from "radix-ui";
 import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Button } from "./button.tsx";
+import { ContentState } from "./ContentState.tsx";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip.tsx";
 import { cn } from "../lib/utils.ts";
 import { SavedToolsStore, STORAGE_KEY, type SavedTool } from "../lib/saved-tools.ts";
@@ -107,12 +108,28 @@ export function SavedToolsProvider({ children }: { children: ReactNode }) {
         </Button>
       </div>
       {state.error ? (
-        <div role="alert" className="mx-2 my-2 rounded-lg bg-destructive/10 p-3 text-sm">
-          <p>{state.error}</p>
-          <Button onClick={() => void store.refresh()} size="sm" variant="outline" className="mt-2">
-            Try again
-          </Button>
-        </div>
+        state.status === "error" ? (
+          <ContentState
+            density="compact"
+            state="error"
+            headingLevel="h3"
+            title="Couldn’t load saved tools"
+            description={state.error}
+            announcement="polite"
+            action={
+              <Button onClick={() => void store.refresh()} size="sm" variant="outline">
+                Try again
+              </Button>
+            }
+          />
+        ) : (
+          <div role="alert" className="mx-2 my-2 rounded-lg bg-destructive/10 p-3 text-sm">
+            <p>{state.error}</p>
+            <Button onClick={() => void store.refresh()} size="sm" variant="outline" className="mt-2">
+              Try again
+            </Button>
+          </div>
+        )
       ) : null}
       {state.status === "loading" ? (
         <p role="status" className="flex items-center gap-2 px-2 py-6 text-sm text-muted-foreground">
@@ -136,7 +153,7 @@ export function SavedToolsProvider({ children }: { children: ReactNode }) {
                     <a
                       href={tool.href}
                       onClick={() => setOpen(false)}
-                      className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-3 no-underline outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                      className="group/saved-tool flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-3 no-underline outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <span
                         aria-hidden="true"
@@ -146,7 +163,9 @@ export function SavedToolsProvider({ children }: { children: ReactNode }) {
                       </span>
                       <span className="min-w-0">
                         <span className="block break-words text-sm font-semibold">{tool.name}</span>
-                        <span className="block text-xs text-muted-foreground">{tool.category}</span>
+                        <span className="block text-xs text-muted-foreground group-hover/saved-tool:text-accent-foreground">
+                          {tool.category}
+                        </span>
                       </span>
                     </a>
                     <Tooltip>
@@ -185,15 +204,19 @@ export function SavedToolsProvider({ children }: { children: ReactNode }) {
               })}
             </div>
           ) : (
-            <div className="px-2 py-5">
-              <p className="text-sm font-medium">Your tools, one click away.</p>
-              <p className="mt-1 text-sm text-muted-foreground">Choose Save on a tool to keep a shortcut here.</p>
-              <Button asChild variant="outline" size="sm" className="mt-3">
-                <a href="/" onClick={() => setOpen(false)}>
-                  Browse tools
-                </a>
-              </Button>
-            </div>
+            <ContentState
+              density="compact"
+              headingLevel="h3"
+              title="Your tools, one click away."
+              description="Choose Save on a tool to keep a shortcut here."
+              action={
+                <Button asChild variant="outline" size="sm">
+                  <a href="/" onClick={() => setOpen(false)}>
+                    Browse tools
+                  </a>
+                </Button>
+              }
+            />
           )}
           {removed ? (
             <div className="mx-2 my-2 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-accent px-3 py-2 text-sm">

@@ -43,6 +43,7 @@ export function AdminShell({ children, user }: { children: ReactNode; user: Acco
             CONTROL PLANE
           </Caption>
           <AccountNavigation
+            isAdminPage
             className="max-sm:[&_button>.truncate]:hidden [&_a]:border-white/15 [&_a]:bg-white/10 [&_a]:text-on-ink [&_a:hover]:bg-white/15"
             returnTo="/admin"
             user={user}
@@ -54,12 +55,6 @@ export function AdminShell({ children, user }: { children: ReactNode; user: Acco
           <aside className="shrink-0 overflow-hidden border-b border-border bg-card px-4 py-3 lg:h-full lg:w-60 lg:border-r lg:border-b-0 lg:px-4 lg:py-6">
             <Caption className="block mb-3 hidden px-3 text-muted-foreground lg:block">WORKSPACE</Caption>
             <AdminNavigation />
-            <div className="mt-6 hidden rounded-lg bg-muted p-3 lg:block">
-              <Caption className="block">Code is the source</Caption>
-              <Caption className="block mt-1.5 text-muted-foreground">
-                Routes and capabilities are registered at build time.
-              </Caption>
-            </div>
           </aside>
         )}
         <main

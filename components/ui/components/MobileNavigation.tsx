@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Menu, Shield, UserRound, X } from "lucide-react";
+import { ArrowLeft, LogOut, Menu, Shield, UserRound, X } from "lucide-react";
 import { SavedToolsTrigger } from "./SavedTools.tsx";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -9,7 +9,7 @@ import { SITE_NAVIGATION_ITEMS, useSignOut, type AccountNavigationProps } from "
 import { cn } from "../lib/utils.ts";
 
 const linkClass =
-  "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-base font-medium text-foreground no-underline outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:text-primary";
+  "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-base font-medium text-foreground no-underline outline-none hover:bg-accent hover:text-accent-foreground hover:[&_svg]:text-current focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:text-primary";
 
 export function MobileNavigation({
   account,
@@ -112,7 +112,7 @@ export function MobileNavigation({
         aria-expanded={panel === "menu"}
         aria-controls={panel === "menu" ? menuId : undefined}
         className={cn(
-          "flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-input bg-card text-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring",
+          "flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-input bg-card text-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring",
           user ? "px-2.5" : "w-11",
         )}
         onClick={() => setPanel((previous) => (previous === "menu" ? null : "menu"))}
@@ -183,9 +183,17 @@ export function MobileNavigation({
                           </a>
                         ) : null}
                         {!account?.restricted && user.isAdmin ? (
-                          <a href="/admin" className={linkClass} onClick={() => setPanel(null)}>
-                            <Shield aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
-                            Admin page
+                          <a
+                            href={account?.isAdminPage ? "/" : "/admin"}
+                            className={linkClass}
+                            onClick={() => setPanel(null)}
+                          >
+                            {account?.isAdminPage ? (
+                              <ArrowLeft aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
+                            ) : (
+                              <Shield aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
+                            )}
+                            {account?.isAdminPage ? "Back to product" : "Admin page"}
                           </a>
                         ) : null}
                         <div className="border-t border-border pt-1">
@@ -195,7 +203,7 @@ export function MobileNavigation({
                             onClick={() => void signOut()}
                             className={cn(
                               linkClass,
-                              "w-full text-destructive hover:bg-destructive/10 disabled:opacity-60",
+                              "w-full text-destructive hover:bg-destructive/10 hover:text-destructive disabled:opacity-60",
                             )}
                           >
                             <LogOut aria-hidden="true" className="size-[18px] shrink-0" />
@@ -208,7 +216,7 @@ export function MobileNavigation({
                           </p>
                         ) : null}
                       </div>
-                    ) : (
+                    ) : account?.showSignIn !== false ? (
                       <a
                         href={target}
                         className="flex min-h-12 items-center justify-center rounded-lg bg-primary px-4 font-semibold text-primary-foreground no-underline focus-visible:ring-2 focus-visible:ring-ring"
@@ -216,7 +224,7 @@ export function MobileNavigation({
                       >
                         Sign in
                       </a>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               ) : null}

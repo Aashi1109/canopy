@@ -19,7 +19,6 @@ next-env.d.ts
 .codegraph
 .cursor
 .claude
-.codex
 openspec
 tmp/
 .tmp/

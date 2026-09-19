@@ -58,6 +58,8 @@ import { cn } from "@/components/ui/lib/utils.ts";
 
 **Live specimen page:** `/admin/design-system` (`app/admin/(protected)/design-system/page.tsx`) renders every primitive, all five control sizes, and the page-level compositions. Use it to review a change visually before shipping.
 
+**Blog assistant section proposals:** `app/admin/(protected)/blog/components/BlogProposalCard.tsx` composes shared Buttons and Tooltips for the compact suggestion list (`Y09AaP`), collapsed summary (`wrf1p`), and expanded insertion/edit/deletion diff (`UQOVe`). Multiple suggestions use compact cards; a single suggestion includes a two-line excerpt. Each expands inline and independently. Apply/discard controls belong only to fresh responses and disappear after either action; history keeps the preview without restoring action outcomes. The component stays in the blog route because proposal behavior belongs to that editor.
+
 ---
 
 ## 2. Principles
@@ -258,9 +260,26 @@ So headings and focus rings are correct without any class. Do not re-declare the
 | Component          | Source             | Variants                                                                                                                                                                                                                                                                                                                                                 |
 | ------------------ | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Button`           | `button.tsx`       | `variant: default \| strong \| destructive \| outline \| secondary \| ghost \| input-icon \| danger-subtle \| link`<br>`size: default \| xs \| sm \| md \| lg \| icon \| icon-xs \| icon-sm \| icon-md \| icon-lg`<br>`asChild`; `disabled` preserves colors at 50% opacity; `loading` disables activation and shows a circular spinner with `aria-busy` |
+| `BackButton` | `BackButton.tsx` | `href` for navigation or `onClick` with optional `disabled` for an in-page return, required accessible `label`, optional layout `className`; borderless back navigation with a compact long-shaft arrow, 32 × 48px hit target, and 2px hover/focus movement over 200ms. `showLabel` displays the label with a smaller 20 × 14px arrow and 36px-high control for compact panels. Respects reduced motion. Use `items-start pt-2` beside page headings; do not override the arrow geometry. |
 | `ButtonGroup`      | `button-group.tsx` | `orientation: horizontal \| vertical`                                                                                                                                                                                                                                                                                                                    |
 | `CompactAction`    | `patterns.tsx`     | pre-bound `Button size="sm" variant="outline"` at 32px                                                                                                                                                                                                                                                                                                   |
 | `RemoveFileAction` | `patterns.tsx`     | pre-bound icon button, `aria-label="Remove file"`                                                                                                                                                                                                                                                                                                        |
+
+### Compact control scale
+
+Synced to `DAGXr` in `designs/design.pen`. Existing size names are unchanged; each tier steps down once, with XS reduced by 4px. Applies to Button (including icon-only), Input, SelectTrigger, CheckboxControl and RadioGroupItem.
+
+| Size | Control height / icon-button square | Horizontal padding | Button type / icon | Input & select type / chevron | Checkbox / radio mark |
+| --- | --- | --- | --- | --- | --- |
+| `xs` | 28px | 8px | 11px / 12px | 11px / 12px | 12px |
+| `sm` | 32px | 10px | 11px / 14px | 11px / 14px | 14px |
+| `default` | 36px | 12px | 13px / 15px | 13px / 15px | 16px |
+| `md` | 44px | 16px | 15px / 18px | 14px / 16px | 20px |
+| `lg` | 48px | 18px | 15px / 18px | 15px / 18px | 22px |
+
+Selection marks are not their hit areas: checkbox primitives retain at least 24px targets and radio primitives retain their expanded targets. Touch surfaces must retain 44px targets via layout or explicit sizing. Context-specific overrides (including the 32px workbench controls and mobile navigation) remain unchanged. Textarea geometry, general typography, field labels, and switch sizes are unchanged.
+
+Select menus inherit the owning `SelectTrigger` size through React context, including portalled content and the native-option adapter. Option minimum row height, text, horizontal inset, selected check, group labels, and scroll controls follow the same table; changing the trigger size updates its open menu without per-item props. Menu surface inset stays 4px. Rows may grow for wrapped labels, and selected text uses `accent-text` on `accent` for contrast. Open-state Pencil examples live in `DAGXr → OjgK0`.
 
 ### Forms
 
@@ -275,13 +294,38 @@ So headings and focus rings are correct without any class. Do not re-declare the
 | `Select` + parts                | `select.tsx`           | `SelectTrigger size: xs \| sm \| default \| md \| lg`; auto-bridges native `<option>` children                                                                                                       |
 | `RadioGroup` / `RadioGroupItem` | `radio-group.tsx`      | `size: xs \| sm \| default \| md \| lg`                                                                                                                                                              |
 | `Checkbox` (composition)        | `index.tsx`            | req `label`; wraps `CheckboxControl` in a `<label>`; optional `tooltip` uses shared Tooltip parts under a group-level `TooltipProvider`, with a focusable wrapper when disabled                      |
-| `CheckboxControl`               | `checkbox.tsx`         | fixed `size-5`; checked / indeterminate                                                                                                                                                              |
+| `CheckboxControl`               | `checkbox.tsx`         | `size: xs \| sm \| default \| md \| lg`; default 16px mark; checked / indeterminate                                                                                                                                                              |
 | `Switch`                        | `switch.tsx`           | `size: xs \| sm \| default \| lg`                                                                                                                                                                    |
 | `Label`                         | `label.tsx`            | —                                                                                                                                                                                                    |
 
 `Field` clones its child to inject `id`, `aria-describedby`, `aria-errormessage`, `aria-invalid`. **Use `Field` rather than pairing `Label` + `Input` by hand** — that is where the a11y wiring lives.
 
 Place `InlineTextEditor` inside the appropriate typography component, such as `H2` or `Muted`. Double-click the text, activate its edit button, or focus it and press Enter to edit. Enter finishes both single-line and multiline editing; Shift+Enter inserts a new line in multiline fields. Blur keeps the draft and Escape restores the value from before editing. The parent owns saving and toast feedback; finishing an edit does not persist it. The form controls showcase includes editable title, description, and disabled examples.
+
+### Content states
+
+`ContentState` (`components/ui/components/ContentState.tsx`, Pencil `h8fIBJ`) is the shared presentational empty/error pattern. It composes the existing `Empty` primitives, has no client hooks or data dependencies, and is usable from server and client components. The existing public `EmptyState` export remains an alias, so all established collection/list callers use the same implementation without an API break.
+
+- Required `title`; optional `description`, `icon`, `action`, `secondaryAction`.
+- `state`: `empty`, `no-results`, `error`, `loading`, `unavailable`, `waiting`, `cancelled`, `complete`. Only error/loading supply a default icon; `icon={null}` explicitly omits it.
+- `density`: `page` (bounded content), `section` (20px heading / 48px icon), `panel` (17px / 36px), `compact` (14px / 24px, left-aligned by default). `align` can be `center` or `start`.
+- `headingLevel`: `h1`, `h2` (default), or `h3`; choose by document structure, not visual size.
+- `announcement`: `off` (default), `polite`, or `assertive`, applied only to the message. Loading defaults to `polite`; omit duplicate announcements when the host already has a live region.
+- Zero actions render no action area. Content determines height; long text wraps. Actions wrap on desktop and stack with at least 44px height on mobile. Use shared `Button` instances; caller-owned pending actions use `loading`/`disabled`.
+
+```tsx
+<ContentState
+  state="error"
+  title="Couldn’t load posts"
+  description="Try again in a moment."
+  action={<Button loading={retrying} onClick={retry}>Try again</Button>}
+  secondaryAction={<Button asChild variant="outline"><a href="/blog">All posts</a></Button>}
+/>
+```
+
+Adopted through all existing `EmptyState` consumers and directly in route errors/not-found, workspace surfaces, result/cancellation messages, global search, Saved tools, PDF outline search and assistant history. The component never invents callbacks, navigation, save claims or downloads. A renderer failure preserves the generated artifact; pending input is not a successful empty collection. Only safe caller-defined operations retry; uncertain jobs keep their status-refresh/recovery flow.
+
+Do **not** replace field errors, the upload/drop surface, cached data during background failure, account/permission screens, formula/code editors, or the provider-independent global crash fallback. The tool-registry empty state is actionless: its former registration-guide link opened a component showcase rather than a guide.
 
 ### Feedback
 
@@ -295,7 +339,7 @@ Place `InlineTextEditor` inside the appropriate typography component, such as `H
 | `ProcessingStatus`                          | `patterns.tsx`     | optional `progress` (clamped 0–100), `aria-live="polite"`                                          |
 | `RightPanelProcessing`                      | `patterns.tsx`     | `progress` **required** here                                                                       |
 | `Empty` + parts                             | `empty.tsx`        | `EmptyMedia variant: default \| icon`                                                              |
-| `EmptyState`                                | `index.tsx`        | `headingLevel: h1 \| h2 \| h3`                                                                     |
+| `ContentState` / `EmptyState` alias         | `ContentState.tsx` | Optional icon, 0–2 actions; page/section/panel/compact density; caller-owned recovery                |
 | `InlineGuidance`                            | `patterns.tsx`     | optional `icon` (default `Lightbulb`)                                                              |
 
 ### Surfaces & data
@@ -604,3 +648,18 @@ Rows show tool identity, then a **remove bookmark icon**, then an **open arrow**
 Guests store identifiers under `canopy.saved-tools.v1`. At sign-in, pending guest IDs are staged locally for that account and unioned into `user_preferences` (`user_id`, `key = saved_tools`, JSONB `value`, `updated_at`). Confirmed imports are cleared locally; failed imports remain account-scoped for retry. Account lists are never copied into guest storage on sign-out. The authenticated API derives ownership from the server session and locks the preference row during read/modify/write.
 
 Schema deployment: `db/migration/0001-baseline/0008_user_preferences.sql`, included in `pnpm db:migrate 0001-baseline`. No dedicated bookmarks table or Saved page is used.
+
+### Dropdown menu
+
+`DropdownMenu`, `DropdownMenuContent`, `DropdownMenuItem`, and `DropdownMenuSub` / `DropdownMenuSubTrigger` / `DropdownMenuSubContent` use the shadcn Radix composition for action menus and nested flyouts. Reuse these for pointer, touch, keyboard navigation, and viewport collision handling. Blog selection actions demonstrate the nested tone menu.
+
+### Pagination
+
+`Pagination` is the shared default for paged lists, matching Pencil node `quHuq`: 32px chevron controls, 36px numbered buttons, 6px gaps, and a primary current-page state. It sticks to the bottom of its scroll container by default. Keep it outside horizontally scrolling table wrappers. Use `page`/`pageCount` with `getPageHref` or `onPageChange`; cursor-backed lists supply their available links without inventing a total. Use `sticky={false}` when a containing layout already anchors the footer, and for inline specimens. Incremental load-more controls and document-viewer navigation serve different interactions.
+
+### Admin page chrome
+
+Admin pages use `app/admin/(protected)/components/AdminPageHeader.tsx`, which composes `ToolPageHeader` with compact spacing and no eyebrow or bottom divider. `AdminFilters` renders controls directly on the page without an enclosing card, border, background, or padding. Preserve each input's own border and focus treatment.
+
+
+Admin listings use `app/admin/(protected)/components/AdminListing.tsx` for the shared bordered surface, scrollable body, and separate pagination footer. The containing page supplies bounded height; pagination never overlays rows. Use shared table typography rather than page-specific uppercase headings or row padding. Numbered list queries return total/page/pageCount so both endpoints are actionable.

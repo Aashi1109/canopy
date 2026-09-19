@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminListing } from "../../components/AdminListing";
+import { paginateAdminItems } from "../../lib/pagination";
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 
 import type { ToolApp } from "@/lib/tool-catalog/index.ts";
@@ -15,6 +17,7 @@ import {
   Button,
   Field,
   IconTile,
+  ContentState,
   Input,
   Label,
   Select,
@@ -341,11 +344,13 @@ function ToolGroup({
   canReorder,
   title,
   tools,
+  visibleIds,
 }: {
   app: ToolApp;
   canReorder: boolean;
   title: string;
   tools: readonly AdminTool[];
+  visibleIds: ReadonlySet<string>;
 }) {
   const [items, setItems] = useState(() => sortByOrder(tools));
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(() => new Set());
@@ -369,7 +374,9 @@ function ToolGroup({
     const previousItems = items;
     let categoryIndex = 0;
     const nextItems = items.map((tool) =>
-      (tool.category?.trim() || title) === category ? nextCategoryItems[categoryIndex++] : tool,
+      (tool.category?.trim() || title) === category && visibleIds.has(tool.id)
+        ? nextCategoryItems[categoryIndex++]
+        : tool,
     );
     setItems(nextItems);
     setMessage("Saving order…");
@@ -407,7 +414,9 @@ function ToolGroup({
           {message}
         </Caption>
       </div>
-      {categoryGroups.map(([category, categoryItems]) => {
+      {categoryGroups.map(([category, allCategoryItems]) => {
+        const categoryItems = allCategoryItems.filter((tool) => visibleIds.has(tool.id));
+        if (!categoryItems.length) return null;
         const collapsed = collapsedCategories.has(category);
         const showCategoryHeader = categoryGroups.length > 1 || category !== title;
         return (
@@ -480,7 +489,11 @@ export interface ToolListProps {
 
 export function ToolList({ tools }: ToolListProps) {
   const searchRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useAdminQueryState<string>("q", "");
+  const [query] = useAdminQueryState<string>("q", "");
+  const [rawPage, setPage] = useAdminQueryState<string>("page", "1");
+  function setQuery(value: string, replace = false) {
+    updateAdminQuery({ q: value || null, page: null }, replace);
+  }
   const [selectedApp] = useAdminQueryState<AppFilter>("app", "all", ["all", ...GROUPS.map((group) => group.app)]);
   const [visibility] = useAdminQueryState<VisibilityFilter>("visibility", "all", [
     "all",
@@ -534,7 +547,7 @@ export function ToolList({ tools }: ToolListProps) {
     ];
   }, [appFilter, tools]);
 
-  const [categoryFilter, setCategoryFilter] = useAdminQueryState("category", "all", ["all", ...availableCategories]);
+  const [categoryFilter] = useAdminQueryState("category", "all", ["all", ...availableCategories]);
 
   const filteredTools = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -549,6 +562,11 @@ export function ToolList({ tools }: ToolListProps) {
     });
   }, [appFilter, categoryFilter, query, tools, visibility]);
 
+  const pagination = paginateAdminItems(
+    GROUPS.flatMap((group) => sortByOrder(filteredTools.filter((tool) => tool.app === group.app))),
+    rawPage,
+  );
+  const visibleIds = new Set(pagination.items.map((tool) => tool.id));
   const hasFilters = Boolean(query || appFilter !== "all" || categoryFilter !== "all" || visibility !== "all");
   const canReorder = !query.trim() && categoryFilter === "all" && visibility === "all";
   const resultsTitle =
@@ -559,7 +577,7 @@ export function ToolList({ tools }: ToolListProps) {
         : (GROUPS.find((group) => group.app === appFilter)?.title ?? "Tools");
 
   function selectApp(nextApp: AppFilter) {
-    updateAdminQuery({ app: nextApp === "all" ? null : nextApp, category: null, visibility: null });
+    updateAdminQuery({ app: nextApp === "all" ? null : nextApp, category: null, visibility: null, page: null });
   }
 
   function setVisibility(nextVisibility: VisibilityFilter) {
@@ -567,11 +585,12 @@ export function ToolList({ tools }: ToolListProps) {
       visibility: nextVisibility === "all" ? null : nextVisibility,
       app: null,
       category: null,
+      page: null,
     });
   }
 
   function resetFilters() {
-    updateAdminQuery({ q: null, app: null, category: null, visibility: null });
+    updateAdminQuery({ q: null, app: null, category: null, visibility: null, page: null });
   }
 
   return (
@@ -712,7 +731,12 @@ export function ToolList({ tools }: ToolListProps) {
                   <Select
                     aria-label="Tool type"
                     className="w-52"
-                    onChange={(event) => setCategoryFilter(event.target.value)}
+                    onChange={(event) =>
+                      updateAdminQuery({
+                        category: event.target.value === "all" ? null : event.target.value,
+                        page: null,
+                      })
+                    }
                     size="sm"
                     value={categoryFilter}
                   >
@@ -730,42 +754,46 @@ export function ToolList({ tools }: ToolListProps) {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <AdminListing
+              className="rounded-none border-0 shadow-none"
+              aria-label="Tools"
+              pagination={{
+                "aria-label": "Tool pages",
+                page: pagination.page,
+                pageCount: pagination.pageCount,
+                onPageChange: (page) => setPage(String(page)),
+                summary: `Showing ${pagination.start}–${pagination.end} of ${pagination.total} tools`,
+              }}
+            >
               {filteredTools.length ? (
                 GROUPS.map((group) => {
                   const groupTools = filteredTools.filter((tool) => tool.app === group.app);
-                  return groupTools.length ? (
+                  return groupTools.some((tool) => visibleIds.has(tool.id)) ? (
                     <ToolGroup
                       app={group.app}
                       canReorder={canReorder}
                       key={group.app}
                       title={group.title}
                       tools={groupTools}
+                      visibleIds={visibleIds}
                     />
                   ) : null;
                 })
               ) : (
-                <div className="grid min-h-full place-items-center px-6 py-12 text-center">
-                  <div>
-                    <Search aria-hidden="true" className="mx-auto size-7 text-muted-foreground" />
-                    <H3 className="mt-3">No matching tools</H3>
-                    <Muted className="mt-1 text-muted-foreground">
-                      Try a different search or clear the active filters.
-                    </Muted>
-                    <Button className="mt-4" onClick={resetFilters} type="button" variant="secondary">
+                <ContentState
+                  className="min-h-full"
+                  state="no-results"
+                  icon={<Search />}
+                  title="No matching tools"
+                  description="Try a different search or clear the active filters."
+                  action={
+                    <Button onClick={resetFilters} type="button" variant="secondary">
                       Clear filters
                     </Button>
-                  </div>
-                </div>
+                  }
+                />
               )}
-            </div>
-
-            <div className="flex min-h-10 shrink-0 items-center justify-between gap-3 border-t border-border px-4 text-muted-foreground">
-              <Caption>Press / to search</Caption>
-              <Caption>
-                {filteredTools.length} of {tools.length} tools
-              </Caption>
-            </div>
+            </AdminListing>
           </div>
         </div>
       </div>

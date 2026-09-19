@@ -11,7 +11,7 @@ import {
   AlertBanner,
   ToolActionButton,
   DownloadResult,
-  EmptyState,
+  ContentState,
   MetricCard,
   SectionHeading,
   StatusBadge,
@@ -541,7 +541,14 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
       ) : null}
     </div>
   ),
-  none: () => <EmptyState className="min-h-40" title="The action completed without a displayable result." />,
+  none: () => (
+    <ContentState
+      density="compact"
+      state="complete"
+      title="Action completed"
+      description="This action did not produce a displayable result."
+    />
+  ),
 };
 
 function renderPrimary(result: ToolRender, options?: ResultRendererOptions): ReactNode {

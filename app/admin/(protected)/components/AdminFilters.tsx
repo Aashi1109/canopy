@@ -9,7 +9,7 @@ export function AdminFilters({
   search,
   selects,
 }: {
-  search: { key: string; label: string; placeholder: string };
+  search: { key: string; label: string; placeholder: string; maxLength?: number };
   selects: readonly {
     key: string;
     label: string;
@@ -54,6 +54,8 @@ export function AdminFilters({
     if (!formRef.current) return;
     const values = new FormData(formRef.current);
     const next = new URLSearchParams(searchParams.toString());
+    next.delete("page");
+    next.delete("cursor");
     for (const key of Object.keys(defaults)) {
       const value = overrides[key] ?? String(values.get(key) ?? "");
       if (!value || value === defaults[key]) next.delete(key);
@@ -72,7 +74,7 @@ export function AdminFilters({
   return (
     <form
       aria-busy={isPending}
-      className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4"
+      className="flex flex-wrap items-end gap-3"
       method="get"
       key={searchParams.toString()}
       onSubmit={(event) => {
@@ -87,6 +89,7 @@ export function AdminFilters({
           disabled={isPending}
           id={`admin-filter-${search.key}`}
           name={search.key}
+          maxLength={search.maxLength}
           onChange={(event) => {
             setHasDraftQuery(event.currentTarget.value !== filters[search.key]);
             clearTimeout(timerRef.current);

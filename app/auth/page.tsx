@@ -1,3 +1,6 @@
+import { auth } from "@/lib/auth/index.ts";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { DEFAULT_AUTH_ERROR } from "./_lib/security";
 import { resolveConfiguredReturnTo } from "./_lib/returnTo";
 import { AuthPanel } from "./AuthPanel";
@@ -24,6 +27,14 @@ function resolveMode(value: string | undefined): AuthMode {
 export default async function AuthPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const returnTo = resolveConfiguredReturnTo(first(params.returnTo));
+  const session = await auth.api.getSession({
+    headers: await headers(),
+    query: { disableCookieCache: true },
+  });
+  if (session) {
+    if (session.user.status !== "active") redirect("/account/suspended");
+    redirect(returnTo);
+  }
   const initialError = first(params.error) ? DEFAULT_AUTH_ERROR : undefined;
 
   return (

@@ -17,8 +17,7 @@ export async function searchRoleUsersAction(roleId: string, assigned: boolean, s
       typeof search !== "string" ||
       search.length > 200 ||
       !Number.isSafeInteger(offset) ||
-      offset < 0 ||
-      offset > 100_000
+      offset < 0
     ) {
       throw new Error("Invalid user search.");
     }

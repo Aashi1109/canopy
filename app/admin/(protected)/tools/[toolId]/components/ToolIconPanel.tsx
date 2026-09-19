@@ -127,7 +127,7 @@ export function ToolIconPanel({ iconUrl, name, toolId, uploadsEnabled }: ToolIco
               </div>
             ) : (
               <Label
-                className="group grid min-h-32 cursor-pointer place-items-center rounded-xl border border-dashed border-input bg-muted/40 p-5 text-center outline-none transition-colors hover:border-primary/45 hover:bg-accent peer-focus-visible:ring-2 peer-focus-visible:ring-ring"
+                className="group grid min-h-32 cursor-pointer place-items-center rounded-xl border border-dashed border-input bg-muted/40 p-5 text-center outline-none transition-colors hover:border-primary/45 hover:bg-accent hover:text-accent-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-ring"
                 htmlFor={inputId}
               >
                 <span>
@@ -135,7 +135,7 @@ export function ToolIconPanel({ iconUrl, name, toolId, uploadsEnabled }: ToolIco
                     <ImagePlus aria-hidden="true" className="size-4" />
                   </span>
                   <Text className="mt-2 block">Choose a replacement icon</Text>
-                  <Caption className="mt-1 block text-muted-foreground">
+                  <Caption className="mt-1 block text-muted-foreground group-hover:text-accent-foreground">
                     PNG, JPG, or WebP · square recommended · 1 MB maximum
                   </Caption>
                 </span>

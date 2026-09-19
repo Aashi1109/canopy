@@ -3,6 +3,7 @@ import { slugFromName } from "../tool-catalog/index.ts";
 import { highlightBlogCode } from "./codeHighlight.ts";
 import { MAX_BLOG_MATH_LENGTH, normalizeBlogMath, renderBlogMath } from "./math.ts";
 import { BLOG_TITLE_WORD_LIMIT, blogTitleWordCount } from "./title.ts";
+import { safeLink as validateLink } from "./links.ts";
 
 export interface BlogImage {
   publicId: string;
@@ -192,19 +193,12 @@ export function validateBlogImage(input: unknown, options: BlogDocumentOptions =
     fail("Image URL must match its immutable configured-cloud asset.");
   return image;
 }
-function safeLink(input: unknown): string {
-  const href = string(input, "Link URL", 2048);
-  if (!href || /[\u0000-\u0020\u007f\\]/u.test(href)) fail("Link URL contains unsafe characters.");
-  if (/^\/(?!\/)/.test(href) || href.startsWith("#")) return href;
-  let url: URL;
+export function safeLink(input: unknown): string {
   try {
-    url = new URL(href);
-  } catch {
-    fail("Link URL is invalid.");
+    return validateLink(input);
+  } catch (cause) {
+    fail(cause instanceof Error ? cause.message : "Link URL is invalid.");
   }
-  if (!["https:", "http:", "mailto:"].includes(url.protocol) || url.username || url.password)
-    fail("Link URL uses an unsafe protocol or credentials.");
-  return url.href;
 }
 function mark(input: unknown): BlogMark {
   const object = record(input, "Text mark");

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { db } from "../db/index.ts";
 import { BlogValidationError } from "../lib/blog/document.ts";
 import {
   decodeBlogCursor,
@@ -14,6 +15,37 @@ import {
   listPublishedBlogPosts,
   listPublishedBlogTaxonomy,
 } from "../lib/blog/queries.ts";
+
+test("admin queries accept numbered pages before entering the database transaction", async (t) => {
+  const reachedDatabase = new Error("Database boundary reached");
+  const originalTransaction = db.transaction;
+  const transaction = t.mock.fn(async () => {
+    throw reachedDatabase;
+  });
+  db.transaction = transaction;
+  t.after(() => {
+    db.transaction = originalTransaction;
+  });
+  for (const page of [1, 2, 100]) {
+    await assert.rejects(
+      () => listBlogPosts("admin", { page }),
+      (error) => error === reachedDatabase,
+    );
+    await assert.rejects(
+      () => listBlogTaxonomy("admin", "category", { page }),
+      (error) => error === reachedDatabase,
+    );
+    await assert.rejects(
+      () => listBlogRevisions("admin", "post", undefined, page),
+      (error) => error === reachedDatabase,
+    );
+  }
+  assert.equal(transaction.mock.callCount(), 9);
+  for (const page of [0, -1, 1.5, "2", Number.MAX_SAFE_INTEGER + 1]) {
+    await assert.rejects(() => listBlogPosts("admin", { page }), { name: "ZodError" });
+  }
+  assert.equal(transaction.mock.callCount(), 9);
+});
 
 test("blog date cursors retain database microseconds and reject invalid or mismatched cursors", () => {
   const cursor = { kind: "published", value: "2026-09-16T10:00:00.123456Z", id: "post-1" };

@@ -45,6 +45,17 @@ const config = {
       publishUrl: process.env.BLOG_PUBLISH_URL,
     };
   },
+  get ai() {
+    return {
+      enabled: process.env.AI_ENABLED === "true",
+      provider: process.env.AI_PROVIDER ?? "openai",
+      titleModel: process.env.AI_TITLE_MODEL || process.env.OPENAI_MODEL || "gpt-5.6-terra",
+      openai: {
+        apiKey: process.env.OPENAI_API_KEY,
+        model: process.env.OPENAI_MODEL ?? "gpt-5.6-terra",
+      },
+    };
+  },
   get analytics() {
     return {
       NODE_ENV: process.env.NODE_ENV,

@@ -11,11 +11,11 @@ const radioGroupItemVariants = cva(
   {
     variants: {
       size: {
-        xs: "size-3.5 border before:inset-[-15px]",
-        sm: "size-4 border before:inset-[-14px]",
-        default: "size-5 border-2 before:inset-[-12px]",
-        md: "size-[22px] border-2 before:inset-[-11px]",
-        lg: "size-6 border-2 before:inset-[-10px]",
+        xs: "size-3 border before:inset-[-16px]",
+        sm: "size-3.5 border before:inset-[-15px]",
+        default: "size-4 border-2 before:inset-[-14px]",
+        md: "size-5 border-2 before:inset-[-12px]",
+        lg: "size-[22px] border-2 before:inset-[-11px]",
       },
     },
     defaultVariants: {
@@ -43,7 +43,7 @@ function RadioGroupItem({ className, size = "default", ...props }: RadioGroupIte
         data-slot="radio-group-indicator"
         className="relative flex items-center justify-center"
       >
-        <span className="size-[9px] rounded-full bg-primary group-data-[size=xs]/radio:size-1.5 group-data-[size=sm]/radio:size-[7px] group-data-[size=md]/radio:size-2.5 group-data-[size=lg]/radio:size-[11px]" />
+        <span className="size-[7px] rounded-full bg-primary group-data-[size=xs]/radio:size-[5px] group-data-[size=sm]/radio:size-1.5 group-data-[size=md]/radio:size-[9px] group-data-[size=lg]/radio:size-2.5" />
       </RadioGroupPrimitive.Indicator>
     </RadioGroupPrimitive.Item>
   );

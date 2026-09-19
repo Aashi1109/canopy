@@ -15,6 +15,12 @@ export default {
   },
   settings: {
     fields: {
+      syncScroll: {
+        kind: "toggle",
+        label: "Sync scroll",
+        help: "Keep the editor and preview at the same relative position when scrolling either pane.",
+        default: true,
+      },
       previewMode: {
         kind: "select",
         label: "Preview mode",
@@ -28,13 +34,13 @@ export default {
       syntaxHighlighting: {
         kind: "toggle",
         label: "Syntax highlighting",
-        help: "Adds basic token colors to code blocks.",
-        default: false,
+        help: "Colors code using its fenced language label, or detects the language when no supported label is provided.",
+        default: true,
       },
       safeLinks: {
         kind: "toggle",
         label: "Safe links",
-        help: "Opens rendered links in a new tab without opener access.",
+        help: "Adds new-tab and opener protection to exported HTML links. Website links in the preview always open in a separate tab.",
         default: false,
       },
     },
@@ -43,6 +49,7 @@ export default {
   capabilities: { copy: true, download: true },
   workbenchMark: { text: "MDV", tone: "accent" },
   labels: {
+    result: "Preview",
     empty: "Write Markdown or load an example to preview it.",
     ready: "Rendered preview is current.",
     running: "Rendering Markdown…",
@@ -52,22 +59,22 @@ export default {
       "Paste or type Markdown on the left. The preview re-renders as you stop typing — there is no button to press.",
       "Use it to check a README, a changelog entry, or a comment before you commit it, especially the parts that are easy to get wrong: nested lists, tables, and fenced code blocks.",
       "Copy the generated HTML if you need to paste the rendered form into a CMS or an email template.",
-      "Remember that the preview shows structure, not your target site's theme — headings and code blocks will be styled differently once published.",
+      "The preview uses the same body viewer as the SmartTools blog. Other sites may style the exported HTML differently.",
     ],
     limitations: [
       "GitHub-flavoured Markdown is the default; CommonMark mode disables extensions such as tables and strikethrough.",
-      "The preview is rendered in a sandbox, so scripts, forms, and remote content embedded in raw HTML do not execute.",
-      "Relative links and relative image paths cannot resolve here; they will only work once the document is published at its real location.",
-      "Syntax highlighting is basic and limited to common comments, strings, numbers, tags, and keywords.",
+      "The preview blocks scripts and form submissions. Remote images load from their hosting sites and make network requests.",
+      "Use absolute image URLs. Relative links and image paths depend on where the document is published.",
+      "Syntax highlighting supports common languages. Add a language after the opening code fence for reliable colors, or use text to keep a block unhighlighted.",
     ],
     faq: [
       {
         q: "Is my document uploaded anywhere?",
-        a: "No. Rendering happens entirely in this browser tab; the Markdown never leaves your machine.",
+        a: "The Markdown is rendered locally and is not uploaded. Images referenced in the document are requested from their hosting sites.",
       },
       {
         q: "Is raw HTML inside my Markdown rendered?",
-        a: "It is rendered as markup, but inside a sandbox that blocks scripts and remote loads, so an embedded script tag does nothing.",
+        a: "It is rendered as markup inside a sandbox that blocks scripts and form submissions. Remote images can load from their hosting sites.",
       },
       {
         q: "Why do my tables not look right?",

@@ -29,7 +29,12 @@ export function safeReturnTo(
 ): string {
   if (!value) return fallback;
 
-  if (value.startsWith("/") && !value.startsWith("//") && !value.includes("\\") && !/%2f|%5c/i.test(value)) {
+  if (
+    value.startsWith("/") &&
+    !value.startsWith("//") &&
+    !value.includes("\\") &&
+    !/%2f|%5c/i.test(value.split(/[?#]/, 1)[0])
+  ) {
     return value;
   }
 

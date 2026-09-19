@@ -26,6 +26,7 @@ test("trusted origins accept only explicit HTTP origins", () => {
 
 test("return URLs allow local paths and exact trusted origins only", () => {
   assert.equal(safeReturnTo("/profile?tab=sessions", trustedOrigins), "/profile?tab=sessions");
+  assert.equal(safeReturnTo("/auth/profile?returnTo=%2Fadmin", trustedOrigins), "/auth/profile?returnTo=%2Fadmin");
   assert.equal(
     safeReturnTo("https://admin.smarttools.example.com/tools?updated=1", trustedOrigins),
     "https://admin.smarttools.example.com/tools?updated=1",
@@ -34,6 +35,8 @@ test("return URLs allow local paths and exact trusted origins only", () => {
   for (const invalid of [
     "//evil.example.com",
     "/\\evil.example.com",
+    "/%2fevil.example.com",
+    "/%5cevil.example.com?returnTo=%2Fadmin",
     "https://evil.example.com",
     "https://admin.smarttools.example.com.evil.test",
     "javascript:alert(1)",

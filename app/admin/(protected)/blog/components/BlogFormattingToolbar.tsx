@@ -16,9 +16,6 @@ import {
   Heading,
   Heading2,
   Heading3,
-  Heading4,
-  Heading5,
-  Heading6,
   Highlighter,
   ImagePlus,
   Italic,
@@ -53,15 +50,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/index.tsx";
 import styles from "./BlogEditor.module.css";
-import { BlogColorPalette } from "./BlogColorPalette";
-
-const HIGHLIGHT_COLORS = [
-  ["Green", "#dcfce7"],
-  ["Blue", "#dbeafe"],
-  ["Pink", "#fce7f3"],
-  ["Purple", "#ede9fe"],
-  ["Yellow", "#fef08a"],
-] as const;
+import { BlogEditorLinkForm } from "./BlogLinkForm";
+import { BlogHeadingMenuItems } from "./BlogHeadingMenuItems";
+import { BlogColorPalette, BLOG_HIGHLIGHT_COLORS } from "./BlogColorPalette";
 
 type Props = {
   editor: Editor | null;
@@ -253,6 +244,7 @@ export function BlogBlockMenu({
   const [open, setOpen] = useState(false);
   const [imageMode, setImageMode] = useState(false);
   const [tableMode, setTableMode] = useState(false);
+  const [linkMode, setLinkMode] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [alt, setAlt] = useState("");
   const [caption, setCaption] = useState("");
@@ -274,6 +266,7 @@ export function BlogBlockMenu({
   function backToBlocks() {
     setImageMode(false);
     setTableMode(false);
+    setLinkMode(false);
     setError("");
     requestAnimationFrame(() => menu.current?.querySelector<HTMLButtonElement>("button")?.focus());
   }
@@ -289,6 +282,7 @@ export function BlogBlockMenu({
     setError("");
     setImageMode(true);
     setTableMode(false);
+    setLinkMode(false);
     setOpen(true);
     onImageRequestHandled?.();
   }, [imageRequest, editor, onImageRequestHandled]);
@@ -359,6 +353,7 @@ export function BlogBlockMenu({
           if (editor) pendingInsertion.current = captureBlogInsertion(editor, atEnd, blockPosition);
           setImageMode(false);
           setTableMode(false);
+          setLinkMode(false);
           setError("");
         }
       }}
@@ -390,12 +385,12 @@ export function BlogBlockMenu({
           className={
             tableMode
               ? `${menuClass} w-60 max-w-[calc(100vw-32px)] p-2.5`
-              : imageMode
+              : imageMode || linkMode
                 ? `${menuClass} w-80 max-w-[calc(100vw-32px)] space-y-3 p-3`
                 : `${menuClass} w-48 max-w-[calc(100vw-32px)]`
           }
           onFocusOutside={(event) => {
-            if (imageMode || tableMode) event.preventDefault();
+            if (imageMode || tableMode || linkMode) event.preventDefault();
           }}
           onCloseAutoFocus={(event) => {
             if (keepEditorFocus.current) {
@@ -404,7 +399,38 @@ export function BlogBlockMenu({
             }
           }}
         >
-          {tableMode ? (
+          {linkMode && editor ? (
+            <BlogEditorLinkForm
+              editor={editor}
+              onClose={() => {
+                keepEditorFocus.current = true;
+                changeOpen(false);
+              }}
+              onInsert={
+                inline || atEnd
+                  ? (href, text) => {
+                      const insertion = pendingInsertion.current;
+                      if (!insertion || disabled) return false;
+                      return insertion.insert({
+                        type: "paragraph",
+                        content: [
+                          {
+                            type: "text",
+                            text,
+                            marks: [
+                              {
+                                type: "link",
+                                attrs: { href, target: "_blank", rel: "noopener noreferrer" },
+                              },
+                            ],
+                          },
+                        ],
+                      });
+                    }
+                  : undefined
+              }
+            />
+          ) : tableMode ? (
             <BlogTablePicker
               disabled={disabled || !editor?.isEditable}
               error={error}
@@ -546,6 +572,16 @@ export function BlogBlockMenu({
               <Separator className="my-2" />
               <div role="group" aria-label="Insert" className="flex flex-col">
                 <p className="px-2 py-1.5 text-[13px] font-semibold">Insert</p>
+                <EditorMenuItem
+                  aria-label="Insert link"
+                  onClick={() => {
+                    setLinkMode(true);
+                    requestAnimationFrame(() => menu.current?.querySelector<HTMLInputElement>("input")?.focus());
+                  }}
+                >
+                  <Link2 aria-hidden="true" />
+                  Link
+                </EditorMenuItem>
                 {(
                   [
                     ["table", "Table", Table2],
@@ -595,7 +631,6 @@ export function BlogFormattingToolbar({
   const [linkOpen, setLinkOpen] = useState(false);
   const [highlightOpen, setHighlightOpen] = useState(false);
   const returnToText = useRef(false);
-  const [url, setUrl] = useState("");
   const toolbar = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const root = toolbar.current;
@@ -620,13 +655,25 @@ export function BlogFormattingToolbar({
       root.removeEventListener("focusin", updateEntry);
     };
   }, [editor, expanded, disabled]);
+  useEffect(() => {
+    if (!editor || disabled) return;
+    const element = editor.view.dom;
+    function openLink(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k" && editor?.isEditable) {
+        event.preventDefault();
+        setLinkOpen(true);
+      }
+    }
+    element.addEventListener("keydown", openLink);
+    return () => element.removeEventListener("keydown", openLink);
+  }, [editor, disabled]);
   const state = useEditorState({
     editor,
     selector: ({ editor: current }) => ({
       undo: current?.can().undo(),
       redo: current?.can().redo(),
       highlightColor: current?.isActive("highlight")
-        ? String(current.getAttributes("highlight").color ?? "#fef08a")
+        ? String(current.getAttributes("highlight").color ?? BLOG_HIGHLIGHT_COLORS[4][1])
         : null,
       canHighlight: current?.can().setMark("highlight"),
       active: Object.fromEntries(
@@ -683,7 +730,7 @@ export function BlogFormattingToolbar({
       </Tooltip>
     );
   }
-  function menu(label: string, icon: ReactNode, options: [string, () => void, ReactNode?][]) {
+  function menu(label: string, icon: ReactNode, options: [string, () => void, ReactNode?][] | ReactNode) {
     return (
       <Popover.Root>
         <Tooltip>
@@ -700,14 +747,16 @@ export function BlogFormattingToolbar({
         <Popover.Portal>
           <Popover.Content sideOffset={8} collisionPadding={16} className={menuClass}>
             <div className="flex flex-col">
-              {options.map(([name, run, itemIcon]) => (
-                <Popover.Close key={name} asChild>
-                  <EditorMenuItem onClick={run}>
-                    {itemIcon}
-                    {name}
-                  </EditorMenuItem>
-                </Popover.Close>
-              ))}
+              {Array.isArray(options)
+                ? (options as [string, () => void, ReactNode?][]).map(([name, run, itemIcon]) => (
+                    <Popover.Close key={name} asChild>
+                      <EditorMenuItem onClick={run}>
+                        {itemIcon}
+                        {name}
+                      </EditorMenuItem>
+                    </Popover.Close>
+                  ))
+                : options}
             </div>
           </Popover.Content>
         </Popover.Portal>
@@ -754,22 +803,7 @@ export function BlogFormattingToolbar({
       </div>
       <span className={styles.separator} data-extra="true" />
       <div className={styles.formatGroup}>
-        {menu("Text style", <Heading />, [
-          ["Paragraph", () => editor?.chain().focus().setParagraph().run(), <Pilcrow aria-hidden="true" />],
-          ...(
-            [
-              [2, Heading2],
-              [3, Heading3],
-              [4, Heading4],
-              [5, Heading5],
-              [6, Heading6],
-            ] as const
-          ).map(([level, Icon]): [string, () => void, ReactNode] => [
-            `Heading ${level}`,
-            () => editor?.chain().focus().setHeading({ level }).run(),
-            <Icon aria-hidden="true" />,
-          ]),
-        ])}
+        {menu("Text style", <Heading />, <BlogHeadingMenuItems editor={editor} />)}
         <div data-extra="true">
           {menu("List options", <List />, [
             ["Bullet list", () => editor?.chain().focus().toggleBulletList().run()],
@@ -860,7 +894,7 @@ export function BlogFormattingToolbar({
                 }}
               >
                 <BlogColorPalette
-                  colors={HIGHLIGHT_COLORS}
+                  colors={BLOG_HIGHLIGHT_COLORS}
                   label="Highlight"
                   separateClear
                   value={state?.highlightColor ?? null}
@@ -885,7 +919,6 @@ export function BlogFormattingToolbar({
           open={linkOpen}
           onOpenChange={(open) => {
             setLinkOpen(open);
-            if (open) setUrl(String(editor?.getAttributes("link").href ?? ""));
           }}
         >
           <Tooltip>
@@ -893,6 +926,8 @@ export function BlogFormattingToolbar({
               <Popover.Trigger asChild>
                 <Button
                   aria-label="Insert or edit link"
+                  aria-keyshortcuts="Control+k Meta+k"
+                  onMouseDown={(event) => event.preventDefault()}
                   disabled={unavailable}
                   className={styles.formatButton}
                   size="icon-xs"
@@ -902,52 +937,29 @@ export function BlogFormattingToolbar({
                 </Button>
               </Popover.Trigger>
             </TooltipTrigger>
-            <TooltipContent>Link</TooltipContent>
+            <TooltipContent>Link (Ctrl / Cmd + K)</TooltipContent>
           </Tooltip>
           <Popover.Portal>
-            <Popover.Content sideOffset={8} collisionPadding={16} className={`${menuClass} w-80 space-y-3 p-4`}>
-              <Label className="text-[13px]" htmlFor="blog-inline-link">
-                Link URL
-              </Label>
-              <Input
-                size="sm"
-                id="blog-inline-link"
-                type="url"
-                value={url}
-                onChange={(event) => setUrl(event.target.value)}
-                placeholder="https://example.com"
-              />
-              <div className="flex justify-end gap-2">
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  onClick={() => {
-                    editor?.chain().focus().extendMarkRange("link").unsetLink().run();
+            <Popover.Content
+              sideOffset={8}
+              collisionPadding={16}
+              className={`${menuClass} w-80 space-y-3 p-4`}
+              onCloseAutoFocus={(event) => {
+                if (returnToText.current) {
+                  event.preventDefault();
+                  returnToText.current = false;
+                }
+              }}
+            >
+              {editor && (
+                <BlogEditorLinkForm
+                  editor={editor}
+                  onClose={() => {
+                    returnToText.current = true;
                     setLinkOpen(false);
                   }}
-                >
-                  Remove
-                </Button>
-                <Button
-                  size="xs"
-                  disabled={!/^https?:\/\/\S+$/i.test(url)}
-                  onClick={() => {
-                    editor
-                      ?.chain()
-                      .focus()
-                      .extendMarkRange("link")
-                      .setLink({
-                        href: url,
-                        target: "_blank",
-                        rel: "noopener noreferrer",
-                      })
-                      .run();
-                    setLinkOpen(false);
-                  }}
-                >
-                  Apply
-                </Button>
-              </div>
+                />
+              )}
             </Popover.Content>
           </Popover.Portal>
         </Popover.Root>

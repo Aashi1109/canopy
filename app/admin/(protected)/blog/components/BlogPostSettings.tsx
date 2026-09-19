@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import { Check, CircleHelp, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import {
-  AlertBanner,
-  Button,
   Checkbox,
   Input,
   Label,
@@ -19,11 +17,8 @@ import {
   TabsList,
   TabsTrigger,
   Textarea,
-  ToolActionButton,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
 } from "@/components/ui/index.tsx";
+import styles from "./BlogEditor.module.css";
 
 export interface BlogSettingsValue {
   authorName: string;
@@ -38,7 +33,6 @@ export interface BlogSettingsValue {
 interface BlogPostSettingsProps {
   value: BlogSettingsValue;
   onChange: (value: BlogSettingsValue) => void;
-  slug: string | null;
   categories: readonly { id: string; name: string }[];
   tags: readonly { id: string; name: string }[];
   tools: readonly { id: string; name: string }[];
@@ -58,7 +52,6 @@ export function filterRelatedTools(tools: BlogPostSettingsProps["tools"], query:
 export function BlogPostSettings({
   value,
   onChange,
-  slug,
   categories,
   tags,
   tools,
@@ -70,93 +63,23 @@ export function BlogPostSettings({
   tagPagination,
 }: BlogPostSettingsProps) {
   const [toolSearch, setToolSearch] = useState("");
-  const [copyResult, setCopyResult] = useState<{
-    slug: string;
-    url: string;
-    failed: boolean;
-  } | null>(null);
-  const result = copyResult?.slug === slug ? copyResult : null;
   const filteredTools = filterRelatedTools(tools, toolSearch);
 
-  async function copyPostUrl() {
-    if (!slug) return;
-    const url = new URL(`/blog/${slug}`, window.location.origin).href;
-    setCopyResult(null);
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopyResult({ slug, url, failed: false });
-    } catch {
-      setCopyResult({ slug, url, failed: true });
-    }
-  }
   return (
-    <div className="space-y-5">
-      <Tabs defaultValue={defaultTab}>
-        <TabsList className="mb-5 w-full">
-          <TabsTrigger className="px-2.5 py-2 text-[13px]" value="post">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <Tabs defaultValue={defaultTab} className="min-h-0 flex-1 gap-2.5">
+        <TabsList className={styles.assistantTabs} aria-label="Post settings">
+          <TabsTrigger className="flex-none" value="post">
             Post
           </TabsTrigger>
-          <TabsTrigger className="px-2.5 py-2 text-[13px]" value="seo">
+          <TabsTrigger className="flex-none" value="seo">
             SEO
           </TabsTrigger>
-          <TabsTrigger className="px-2.5 py-2 text-[13px]" value="links">
+          <TabsTrigger className="flex-none" value="links">
             Related tools
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="post" className="space-y-5">
-          <div className="grid gap-2" role="group" aria-labelledby="blog-post-url-label">
-            <div className="flex min-w-0 items-center gap-2">
-              <div className="flex shrink-0 items-center">
-                <span id="blog-post-url-label" className="text-[13px] font-medium text-muted-foreground">
-                  Post URL
-                </span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="icon-xs"
-                      variant="ghost"
-                      className="text-muted-foreground"
-                      aria-label="About the post URL"
-                    >
-                      <CircleHelp aria-hidden="true" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    Set when created. Changing the title won’t change this URL.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-              {slug ? (
-                <>
-                  <p className="min-w-0 flex-1 select-text break-all text-[13px]">
-                    {result?.failed ? result.url : `/blog/${slug}`}
-                  </p>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <ToolActionButton
-                        action="copy"
-                        iconOnly
-                        icon={result && !result.failed ? <Check aria-hidden="true" /> : undefined}
-                        onClick={copyPostUrl}
-                      >
-                        Copy URL
-                      </ToolActionButton>
-                    </TooltipTrigger>
-                    <TooltipContent>{result && !result.failed ? "Copied" : "Copy URL"}</TooltipContent>
-                  </Tooltip>
-                </>
-              ) : (
-                <p className="text-xs text-muted-foreground">Assigned when the post is created.</p>
-              )}
-            </div>
-            <p role="status" className={result?.failed ? "text-xs text-destructive" : "sr-only"}>
-              {result
-                ? result.failed
-                  ? "Couldn’t copy. Select the full URL above and copy it manually, or try again."
-                  : "URL copied."
-                : ""}
-            </p>
-          </div>
+        <TabsContent value="post" className="min-h-0 space-y-5 overflow-y-auto overscroll-contain py-2">
           <div className="grid gap-2">
             <Label className="text-[13px]" htmlFor="blog-author">
               Author *
@@ -257,7 +180,7 @@ export function BlogPostSettings({
             {tagPagination}
           </fieldset>
         </TabsContent>
-        <TabsContent value="seo" className="space-y-5">
+        <TabsContent value="seo" className="min-h-0 space-y-5 overflow-y-auto overscroll-contain py-2">
           <div className="grid gap-2">
             <Label className="text-[13px]" htmlFor="blog-seo-title">
               Search title
@@ -288,7 +211,7 @@ export function BlogPostSettings({
             />
           </div>
         </TabsContent>
-        <TabsContent value="links" className="space-y-4">
+        <TabsContent value="links" className="min-h-0 space-y-4 overflow-y-auto overscroll-contain py-2">
           <p className="text-[13px] text-muted-foreground">
             Optional links to SmartTools. General articles don’t need a related tool.
           </p>
@@ -335,9 +258,6 @@ export function BlogPostSettings({
           </fieldset>
         </TabsContent>
       </Tabs>
-      <AlertBanner title="Only admins can see this draft">
-        Preview is private. Publishing makes this saved revision available to everyone.
-      </AlertBanner>
     </div>
   );
 }

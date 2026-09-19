@@ -254,6 +254,7 @@
 .auth-search-result:hover,
 .auth-search-result[aria-selected="true"] {
   background: var(--accent);
+  color: var(--accent-foreground);
 }
 
 .auth-search-result:focus-visible {
@@ -291,6 +292,10 @@
 
 .auth-search-result small {
   color: var(--muted-foreground);
+}
+
+.auth-search-result:is(:hover, [aria-selected="true"]) :is(small, .auth-search-result-icon) {
+  color: var(--accent-foreground);
 }
 
 .auth-search-empty,

@@ -79,7 +79,7 @@ function render() {
       posts: [{ id: "post-1", title: "A draft", version: 3, updatedAt: new Date("2026-09-18T00:00:00Z") }],
       categories: { items: [], nextCursor: null },
       filters: {},
-      nextCursor: null,
+      pagination: { page: 1, pageCount: 1, total: 1 },
       canCreate: false,
       canArchive: true,
       canManageTerms: false,

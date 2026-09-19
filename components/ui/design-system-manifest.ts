@@ -5,6 +5,12 @@ export type DesignSystemComponentDefinition = {
 };
 
 export const DESIGN_SYSTEM_COMPONENTS = [
+  {
+    designId: "h8fIBJ",
+    designName: "ContentState / Universal — optional icon & 0–2 actions",
+    implementation: "ContentState",
+  },
+  { designId: "quHuq", designName: "Pagination", implementation: "Pagination" },
   { designId: "wm1rh", designName: "Button/Primary", implementation: "Button[default]" },
   { designId: "o5XSq", designName: "Button/Secondary", implementation: "Button[secondary]" },
   { designId: "v7W41", designName: "Badge/Available", implementation: "StatusBadge[success]" },
@@ -50,6 +56,12 @@ export const DESIGN_SYSTEM_COMPONENTS = [
     designName: "Input/Select — Large",
     implementation: "SelectTrigger[size=lg]",
   },
+  { designId: "cpeqS", designName: "Select/Menu — XS", implementation: "SelectContent[inherited-size=xs]" },
+  { designId: "nhxKI", designName: "Select/Menu — Small", implementation: "SelectContent[inherited-size=sm]" },
+  { designId: "hj8E8", designName: "Select/Menu — Default", implementation: "SelectContent[inherited-size=default]" },
+  { designId: "apbvD", designName: "Select/Menu — Medium", implementation: "SelectContent[inherited-size=md]" },
+  { designId: "dNpob", designName: "Select/Menu — Large", implementation: "SelectContent[inherited-size=lg]" },
+  { designId: "ilD5D", designName: "Select/Option — sizeable", implementation: "SelectItem" },
   { designId: "wsb4b", designName: "Toggle", implementation: "Switch" },
   { designId: "zfYOu", designName: "Checkbox", implementation: "Checkbox" },
   {
