@@ -19,6 +19,7 @@ next-env.d.ts
 .codegraph
 .cursor
 .claude
+.codex/skills/
 openspec
 tmp/
 .tmp/
