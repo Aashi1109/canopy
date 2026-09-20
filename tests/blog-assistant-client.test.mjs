@@ -23,9 +23,9 @@ globalThis.sessionStorage = {
 const stub = (source) => ({ shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(source)}` });
 const hooks = registerHooks({
   resolve(specifier, context, next) {
-    if (!context.parentURL?.endsWith("/useBlogAssistant.ts")) return next(specifier, context);
-    if (specifier === "@/lib/blog/composerDocument.ts")
-      return next(new URL("../lib/blog/composerDocument.ts", import.meta.url).href, context);
+    if (!context.parentURL?.endsWith("/useAssistant.ts")) return next(specifier, context);
+    if (specifier === "@/lib/assistant/composerDocument.ts")
+      return next(new URL("../lib/assistant/composerDocument.ts", import.meta.url).href, context);
     if (specifier === "react")
       return stub(`const s=globalThis.__assistantHookTest;
     const equal=(a,b)=>a&&b&&a.length===b.length&&a.every((v,i)=>v===b[i]);
@@ -36,16 +36,18 @@ const hooks = registerHooks({
   `);
     if (specifier === "@/components/ui/index.tsx")
       return stub(`export const toast={error(message){globalThis.__assistantHookTest.toasts.push(message);}};`);
-    if (specifier === "./assistantApi")
+    if (specifier === "./client")
       return stub(`export class AssistantRequestError extends Error {constructor(message,status){super(message);this.status=status;}}
     globalThis.__assistantHookTest.RequestError=AssistantRequestError;
     export const activeRun=status=>['queued','running','unknown'].includes(status);
-    export async function streamAssistantRun(body,signal,onEvent){const s=globalThis.__assistantHookTest;if(s.stream)return s.stream(body,signal,onEvent);const result=await assistantRequest('/api/admin/blog/ai/runs',body);onEvent({type:'run',run:result.run});onEvent({type:'completed',run:result.run});return result.run;}
+    export const assistantApiBase=integration=>"/api/assistant/"+integration;
+    export const assistantCacheKey=(owner,integration,resource)=>"assistant:"+JSON.stringify([owner,integration,resource??null]);
+    export async function streamAssistantRun(integration,body,signal,onEvent){const s=globalThis.__assistantHookTest;if(s.stream)return s.stream(body,signal,onEvent);const result=await assistantRequest('/api/assistant/fixture/runs',body);onEvent({type:'run',run:result.run});onEvent({type:'completed',run:result.run});return result.run;}
     export function assistantRequest(url,body,method=body===undefined?'GET':'POST'){const s=globalThis.__assistantHookTest;s.calls.push({url,body,method});return s.request(url,body,method);}`);
     return next(specifier, context);
   },
   load(url, context, next) {
-    if (!url.endsWith("/useBlogAssistant.ts")) return next(url, context);
+    if (!url.endsWith("/useAssistant.ts")) return next(url, context);
     return {
       format: "module",
       shortCircuit: true,
@@ -57,10 +59,11 @@ const hooks = registerHooks({
     };
   },
 });
-const { useBlogAssistant } = await import("../app/admin/(protected)/blog/lib/useBlogAssistant.ts");
+const { useAssistant } = await import("../lib/assistant/useAssistant.ts");
+let currentScope = ["fixture", "post", "owner"];
 function render() {
   state.index = 0;
-  const hook = useBlogAssistant("post", "owner");
+  const hook = useAssistant(...currentScope);
   for (const effect of state.effects.splice(0)) effect();
   return hook;
 }
@@ -76,7 +79,7 @@ const config = {
 };
 const thread = (id) => ({
   id,
-  postId: "post",
+  resourceId: "post",
   title: "New thread",
   settings: {},
   composerDraft: "",
@@ -89,9 +92,9 @@ async function defaultRequest(url, body, method) {
     const result = onRequest(url, body, method);
     if (result !== undefined) return result;
   }
-  if (url === "/api/admin/blog/ai") return config;
-  if (url.endsWith("/threads") && method === "GET") return { threads: serverThreads };
-  if (url.endsWith("/threads") && method === "POST") {
+  if (url.endsWith("/config")) return config;
+  if (url.endsWith("/threads?resourceId=post") && method === "GET") return { threads: serverThreads };
+  if (url.endsWith("/threads?resourceId=post") && method === "POST") {
     const value = thread(`thread-${serverThreads.length + 1}`);
     value.title = body.title ?? value.title;
     value.settings = body.settings ?? value.settings;
@@ -124,7 +127,7 @@ async function mounted(ids = []) {
 const request = (message) => ({
   operation: "chat",
   message,
-  editorJson: { type: "doc", content: [] },
+  context: { editorJson: { type: "doc", content: [] } },
   settings: {},
   references: [],
   attachmentIds: [],
@@ -132,8 +135,9 @@ const request = (message) => ({
 const run = (input, status = "queued", overrides = {}) => ({
   id: "run",
   threadId: input.threadId,
-  postId: "post",
+  resourceId: "post",
   operation: input.operation,
+  executionMode: input.operation === "agent" ? "standalone" : "conversational",
   request: input,
   status,
   provider: "openai",
@@ -146,6 +150,7 @@ const run = (input, status = "queued", overrides = {}) => ({
   ...overrides,
 });
 test.beforeEach(() => {
+  currentScope = ["fixture", "post", "owner"];
   state.values = [];
   state.index = 0;
   state.effects = [];
@@ -184,13 +189,16 @@ test("new conversation stays local until its first send and uses that message as
   assert.equal(render().selected, null);
   hook = render();
   hook.draft("My first question");
-  onRequest = (url, body) => (url.endsWith("/ai/runs") ? Promise.resolve({ run: run(body, "failed") }) : undefined);
+  onRequest = (url, body) => (url.endsWith("/runs") ? Promise.resolve({ run: run(body, "failed") }) : undefined);
   await render().send(request("My first question"));
   hook = render();
   assert.equal(hook.threads.length, 2);
   assert.equal(hook.detail.thread.title, "My first question");
   assert.equal(hook.requestSettings.tone, "Formal");
-  assert.equal(state.calls.filter((call) => call.url.endsWith("/threads") && call.method === "POST").length, 1);
+  assert.equal(
+    state.calls.filter((call) => call.url.endsWith("/threads?resourceId=post") && call.method === "POST").length,
+    1,
+  );
   await hook.choose("thread-1");
   assert.equal(render().message, "Keep the old conversation draft");
 });
@@ -199,7 +207,7 @@ test("implicit first thread preserves composer after acknowledged generation fai
   let hook = await mounted();
   hook.draft("Keep this message");
   hook = render();
-  onRequest = (url, body) => (url.endsWith("/ai/runs") ? Promise.resolve({ run: run(body, "failed") }) : undefined);
+  onRequest = (url, body) => (url.endsWith("/runs") ? Promise.resolve({ run: run(body, "failed") }) : undefined);
   await hook.send(request("Keep this message"));
   hook = render();
   assert.equal(hook.selected, "thread-1");
@@ -278,24 +286,25 @@ test("first-thread completion clears matching rich content together with its pla
   assert.equal(render().message, "");
   assert.deepEqual(render().composerSelection, { attachmentIds: [] });
   assert.deepEqual(render().composerSelectionsByThread.new, { attachmentIds: [] });
-  assert.deepEqual(JSON.parse(saved.get("blog-assistant:owner:post:selection:thread-1")), { attachmentIds: [] });
-  assert.equal(saved.get("blog-assistant:owner:post:draft:thread-1"), "");
+  assert.deepEqual(JSON.parse(saved.get('assistant:["owner","fixture","post"]:selection:thread-1')), {
+    attachmentIds: [],
+  });
+  assert.equal(saved.get('assistant:["owner","fixture","post"]:draft:thread-1'), "");
 });
 test("an identical retry reuses its key while an explicitly edited submission gets a new key", async () => {
   await mounted(["thread-1"]);
-  onRequest = (url) =>
-    url.endsWith("/ai/runs") ? Promise.reject(new state.RequestError("Unconfirmed", 503)) : undefined;
+  onRequest = (url) => (url.endsWith("/runs") ? Promise.reject(new state.RequestError("Unconfirmed", 503)) : undefined);
   await render().send(request("Original"));
   await render().send(request("Original"));
   await render().send(request("Changed"));
-  const calls = state.calls.filter((call) => call.url.endsWith("/ai/runs"));
+  const calls = state.calls.filter((call) => call.url.endsWith("/runs"));
   assert.equal(calls.length, 3);
   assert.equal(calls[0].body.clientRequestId, calls[1].body.clientRequestId);
   assert.notEqual(calls[1].body.clientRequestId, calls[2].body.clientRequestId);
 });
 test("late history cannot regress a completed run or route it into another thread", async () => {
   let hook = await mounted(["thread-1", "thread-2"]);
-  const input = { ...request("Ask"), threadId: "thread-1", clientRequestId: "client", postId: "post" };
+  const input = { ...request("Ask"), threadId: "thread-1", clientRequestId: "client", resourceId: "post" };
   hook.updateRun(run(input, "completed", { updatedAt: "2026-09-18T00:01:00Z" }));
   hook = render();
   hook.updateRun(run(input));
@@ -355,7 +364,7 @@ test("thread refresh cannot discard a request acknowledged after its snapshot", 
         })
       : undefined;
   const choosing = hook.choose("thread-1");
-  const input = { ...request("New"), threadId: "thread-1", postId: "post", clientRequestId: "new" };
+  const input = { ...request("New"), threadId: "thread-1", resourceId: "post", clientRequestId: "new" };
   hook.updateRun(run(input));
   release(structuredClone(serverDetails["thread-1"]));
   await choosing;
@@ -389,8 +398,11 @@ test("clearing history waits for pending composer sync and ignores later stale d
 });
 
 test("an unsent new-conversation draft survives reload before the first thread exists", async () => {
-  saved.set("blog-assistant:owner:post:draft:new", "Keep my first question.");
-  saved.set("blog-assistant:owner:post:selection:new", JSON.stringify({ agentId: "planner", attachmentIds: [] }));
+  saved.set('assistant:["owner","fixture","post"]:draft:new', "Keep my first question.");
+  saved.set(
+    'assistant:["owner","fixture","post"]:selection:new',
+    JSON.stringify({ agentId: "planner", attachmentIds: [] }),
+  );
   const hook = await mounted();
   assert.equal(hook.selected, null);
   assert.equal(hook.message, "Keep my first question.");
@@ -434,10 +446,243 @@ test("Send is guarded by the local stream only and switching threads keeps the o
   );
 });
 
+function controlledStreams() {
+  const streams = new Map();
+  state.stream = (input, signal, onEvent) => {
+    const current = run(input, "running", { id: `run-${input.threadId}` });
+    serverDetails[input.threadId].runs = [current];
+    onEvent({ type: "run", run: current });
+    return new Promise((resolve, reject) => {
+      streams.set(input.threadId, {
+        signal,
+        delta: (text) => onEvent({ type: "text-delta", text }),
+        complete: () => {
+          const completed = { ...current, status: "completed", completedAt: "2026-09-18T00:01:00Z" };
+          serverDetails[input.threadId].runs = [completed];
+          onEvent({ type: "completed", run: completed });
+          resolve(completed);
+        },
+      });
+      signal.addEventListener("abort", () => {
+        serverDetails[input.threadId].runs = [{ ...current, status: "cancelled" }];
+        reject(new DOMException("Stopped", "AbortError"));
+      });
+    });
+  };
+  return streams;
+}
+
+test("new and existing conversations run in parallel with separate streams and drafts", async () => {
+  await mounted(["thread-1"]);
+  const streams = controlledStreams();
+  render().draft("First question");
+  const first = render().send(request("First question"));
+  await setImmediate();
+  render().startNewThread();
+  assert.equal(render().submitting, false);
+  render().draft("Second question");
+  render().composerState({ attachmentIds: ["second-source"] });
+  const second = render().send(request("Second question"));
+  await setImmediate();
+  assert.equal(render().selected, "thread-2");
+  assert.deepEqual(render().activeThreadIds.sort(), ["thread-1", "thread-2"]);
+  streams.get("thread-1").delta("First answer");
+  streams.get("thread-2").delta("Second answer");
+  assert.equal(render().stream.text, "Second answer");
+  await render().choose("thread-1");
+  assert.equal(render().stream.text, "First answer");
+  assert.equal(render().message, "First question");
+  assert.deepEqual(render().composerSelection, { attachmentIds: [] });
+  render().draft("First follow-up");
+  streams.get("thread-2").complete();
+  await second;
+  assert.equal(render().selected, "thread-1");
+  assert.equal(render().submitting, true);
+  assert.equal(render().message, "First follow-up");
+  assert.equal(streams.get("thread-1").signal.aborted, false);
+  streams.get("thread-1").complete();
+  await first;
+  assert.equal(render().message, "First follow-up");
+  assert.deepEqual(render().activeThreadIds, []);
+  await render().choose("thread-2");
+  assert.equal(render().message, "");
+  assert.deepEqual(render().composerSelection, { attachmentIds: [] });
+  assert.equal(render().detail.runs[0].request.message, "Second question");
+  assert.equal(render().detail.runs[0].status, "completed");
+});
+
+test("Stop only cancels the selected conversation while another stream completes", async () => {
+  await mounted(["thread-1", "thread-2"]);
+  const streams = controlledStreams();
+  const first = render().send(request("First question"));
+  await setImmediate();
+  await render().choose("thread-2");
+  const second = render().send(request("Second question"));
+  await setImmediate();
+  await render().stop();
+  await second;
+  assert.equal(streams.get("thread-2").signal.aborted, true);
+  assert.equal(streams.get("thread-1").signal.aborted, false);
+  assert.deepEqual(render().activeThreadIds, ["thread-1"]);
+  assert.equal(render().submitting, false);
+  assert.equal(render().detail.runs[0].status, "cancelled");
+  streams.get("thread-1").complete();
+  await first;
+  assert.equal(render().selected, "thread-2");
+  await render().choose("thread-1");
+  assert.equal(render().detail.runs[0].status, "completed");
+});
+
+test("switching during thread creation does not block or reopen the destination conversation", async () => {
+  await mounted(["thread-1"]);
+  const streams = controlledStreams();
+  let finishCreation;
+  onRequest = (url, body, method) => {
+    if (url.endsWith("/threads?resourceId=post") && method === "POST")
+      return new Promise((resolve) => {
+        finishCreation = () => {
+          const created = { ...thread("thread-2"), title: body.title };
+          serverThreads.push(created);
+          serverDetails[created.id] = { thread: created, runs: [], messages: [], attachments: [], ...config };
+          resolve({ thread: created });
+        };
+      });
+  };
+  render().startNewThread();
+  render().draft("New question");
+  const creating = render().send(request("New question"));
+  await setImmediate();
+  await render().choose("thread-1");
+  assert.equal(render().submitting, false);
+  render().draft("Existing question");
+  const existing = render().send(request("Existing question"));
+  await setImmediate();
+  finishCreation();
+  await setImmediate();
+  assert.equal(render().selected, "thread-1");
+  assert.equal(render().message, "Existing question");
+  assert.deepEqual(render().activeThreadIds.sort(), ["thread-1", "thread-2"]);
+  streams.get("thread-2").complete();
+  streams.get("thread-1").complete();
+  await Promise.all([creating, existing]);
+  assert.equal(render().selected, "thread-1");
+});
+
+test("two unsaved conversations can create and send concurrently without sharing locks or composer state", async () => {
+  await mounted();
+  const streams = controlledStreams();
+  const creations = [];
+  onRequest = (url, body, method) => {
+    if (url.endsWith("/threads?resourceId=post") && method === "POST")
+      return new Promise((resolve) => {
+        const id = `thread-${creations.length + 1}`;
+        creations.push(() => {
+          const created = { ...thread(id), title: body.title, settings: body.settings };
+          serverThreads.push(created);
+          serverDetails[id] = { thread: created, runs: [], messages: [], attachments: [], ...config };
+          resolve({ thread: created });
+        });
+      });
+  };
+  const firstScope = render().scopeId;
+  await render().settings({ tone: "Formal" });
+  render().draft("Same question");
+  const first = render().send(request("Same question"));
+  await setImmediate();
+  render().startNewThread();
+  const secondScope = render().scopeId;
+  assert.notEqual(firstScope, secondScope);
+  assert.equal(render().submitting, false);
+  await render().settings({ tone: "Friendly" });
+  render().draft("Same question");
+  const second = render().send(request("Same question"));
+  await setImmediate();
+  assert.equal(creations.length, 2);
+  creations[0]();
+  await setImmediate();
+  assert.equal(render().selected, null);
+  assert.equal(render().scopeId, secondScope);
+  streams.get("thread-1").complete();
+  await first;
+  assert.equal(render().submitting, true);
+  assert.equal(render().message, "Same question");
+  assert.equal(await render().send(request("Duplicate")), undefined);
+  creations[1]();
+  await setImmediate();
+  assert.equal(render().selected, "thread-2");
+  assert.equal(render().resolveScopeId(firstScope), "thread-1");
+  assert.equal(render().resolveScopeId(secondScope), "thread-2");
+  assert.deepEqual(serverDetails["thread-1"].thread.settings, { tone: "Formal" });
+  assert.deepEqual(render().requestSettings, { tone: "Friendly" });
+  assert.equal(streams.get("thread-2").signal.aborted, false);
+  streams.get("thread-2").complete();
+  await second;
+  assert.equal(render().message, "");
+  assert.deepEqual(render().activeThreadIds, []);
+});
+
+for (const conversation of ["existing", "new"])
+  test(`attachment preparation and send keep their captured ${conversation} conversation after navigation`, async () => {
+    await mounted(["thread-1", "thread-2"]);
+    if (conversation === "new") render().startNewThread();
+    const streams = controlledStreams();
+    const targetScope = render().scopeId;
+    const targetId = conversation === "new" ? "thread-3" : "thread-1";
+    let finishLink;
+    onRequest = (url, _body, method) => {
+      if (url.endsWith("/attachments") && method === "POST")
+        return new Promise((resolve) => {
+          finishLink = () => resolve({ attachment: { id: "source", threadId: targetId, label: "Source" } });
+        });
+    };
+    const link = render().addLink("https://example.com/source", targetScope);
+    await setImmediate();
+    await render().choose("thread-2");
+    render().draft("Second thread draft");
+    finishLink();
+    const attachment = await link;
+    const sending = render().send(
+      { ...request("Use this source"), attachmentIds: [attachment.id] },
+      undefined,
+      targetScope,
+    );
+    await setImmediate();
+    assert.equal(render().selected, "thread-2");
+    assert.equal(render().submitting, false);
+    assert.equal(render().detail.attachments.length, 0);
+    assert.equal(render().resolveScopeId(targetScope), targetId);
+    assert.equal(streams.has(targetId), true);
+    assert.equal(streams.has("thread-2"), false);
+    streams.get(targetId).complete();
+    await sending;
+    assert.equal(render().getDraft("thread-2"), "Second thread draft");
+    assert.equal(render().message, "Second thread draft");
+  });
+
+test("a background draft sync failure does not replace the selected conversation error state", async () => {
+  await mounted(["thread-1", "thread-2"]);
+  let failSync;
+  onRequest = (_url, body, method) => {
+    if (method === "PATCH" && body.composerDraft !== undefined)
+      return new Promise((_resolve, reject) => {
+        failSync = () => reject(new Error("Draft sync failed"));
+      });
+  };
+  render().draft("First thread draft");
+  const saving = render().saveDraft("First thread draft", "thread-1");
+  await setImmediate();
+  await render().choose("thread-2");
+  failSync();
+  await assert.rejects(saving, /Draft sync failed/);
+  assert.equal(render().selected, "thread-2");
+  assert.equal(render().error, "");
+  assert.equal(render().getDraft("thread-1"), "First thread draft");
+});
+
 test("history stays loading until a successful empty list resolves", async () => {
   let release;
   onRequest = (url, _body, method) =>
-    url.endsWith("/threads") && method === "GET"
+    url.endsWith("/threads?resourceId=post") && method === "GET"
       ? new Promise((resolve) => {
           release = resolve;
         })
@@ -452,14 +697,14 @@ test("history stays loading until a successful empty list resolves", async () =>
 
 test("failed initial history is an error and retry can return an empty history", async () => {
   onRequest = (url, _body, method) =>
-    url.endsWith("/threads") && method === "GET" ? Promise.reject(new Error("Offline")) : undefined;
+    url.endsWith("/threads?resourceId=post") && method === "GET" ? Promise.reject(new Error("Offline")) : undefined;
   let hook = await mounted();
   assert.equal(hook.historyStatus, "error");
   assert.deepEqual(hook.threads, []);
   assert.deepEqual(state.toasts, []);
   let release;
   onRequest = (url, _body, method) =>
-    url.endsWith("/threads") && method === "GET"
+    url.endsWith("/threads?resourceId=post") && method === "GET"
       ? new Promise((resolve) => {
           release = resolve;
         })
@@ -476,7 +721,7 @@ test("failed initial history is an error and retry can return an empty history",
 test("failed history refresh preserves cached threads and reports a toast", async () => {
   let hook = await mounted(["thread-1"]);
   onRequest = (url, _body, method) =>
-    url.endsWith("/threads") && method === "GET" ? Promise.reject(new Error("Offline")) : undefined;
+    url.endsWith("/threads?resourceId=post") && method === "GET" ? Promise.reject(new Error("Offline")) : undefined;
   await hook.refresh();
   hook = render();
   assert.equal(hook.historyStatus, "error");
@@ -608,8 +853,8 @@ test("agent and attachment selection restores independently for each thread and 
 
 test("inline agent positions restore from local selections for new and existing conversations", async () => {
   const selection = { agentId: "writer", agentOffset: 5, attachmentIds: ["plan"], content: richComposerContent };
-  saved.set("blog-assistant:owner:post:selection:new", JSON.stringify(selection));
-  saved.set("blog-assistant:owner:post:selection:thread-1", JSON.stringify(selection));
+  saved.set('assistant:["owner","fixture","post"]:selection:new', JSON.stringify(selection));
+  saved.set('assistant:["owner","fixture","post"]:selection:thread-1', JSON.stringify(selection));
   await mounted(["thread-1"]);
   assert.deepEqual(render().composerSelection, selection);
   assert.deepEqual(render().composerSelectionsByThread.new, selection);
@@ -617,8 +862,11 @@ test("inline agent positions restore from local selections for new and existing 
 
 test("invalid local inline positions fall back without dropping agent or attachments", async () => {
   const selection = { agentId: "writer", attachmentIds: ["plan"] };
-  saved.set("blog-assistant:owner:post:selection:new", JSON.stringify({ ...selection, agentOffset: -1 }));
-  saved.set("blog-assistant:owner:post:selection:thread-1", JSON.stringify({ ...selection, agentOffset: 8001 }));
+  saved.set('assistant:["owner","fixture","post"]:selection:new', JSON.stringify({ ...selection, agentOffset: -1 }));
+  saved.set(
+    'assistant:["owner","fixture","post"]:selection:thread-1',
+    JSON.stringify({ ...selection, agentOffset: 8001 }),
+  );
   await mounted(["thread-1"]);
   assert.deepEqual(render().composerSelection, selection);
   assert.deepEqual(render().composerSelectionsByThread.new, selection);
@@ -627,8 +875,8 @@ test("invalid local inline positions fall back without dropping agent or attachm
 test("unsafe local rich content is omitted without dropping the agent selection", async () => {
   const selection = { agentId: "writer", agentOffset: 5, attachmentIds: ["plan"] };
   const content = { type: "doc", content: [{ type: "image", attrs: { src: "https://example.com/x" } }] };
-  saved.set("blog-assistant:owner:post:selection:new", JSON.stringify({ ...selection, content }));
-  saved.set("blog-assistant:owner:post:selection:thread-1", JSON.stringify({ ...selection, content }));
+  saved.set('assistant:["owner","fixture","post"]:selection:new', JSON.stringify({ ...selection, content }));
+  saved.set('assistant:["owner","fixture","post"]:selection:thread-1', JSON.stringify({ ...selection, content }));
   await mounted(["thread-1"]);
   assert.deepEqual(render().composerSelection, selection);
   assert.deepEqual(render().composerSelectionsByThread.new, selection);
@@ -652,7 +900,7 @@ test("late running activity cannot regress a terminal agent execution", async ()
     agentId: "auditor",
     threadId: "thread-1",
     clientRequestId: "agent",
-    postId: "post",
+    resourceId: "post",
   };
   hook.updateRun(run(input, "failed", { operation: "agent", updatedAt: "2026-09-18T00:01:00Z" }));
   hook = render();
@@ -660,4 +908,102 @@ test("late running activity cannot regress a terminal agent execution", async ()
   serverDetails["thread-1"].executions = [{ ...entry, status: "running", updatedAt: "2026-09-18T00:00:00Z" }];
   await hook.refresh();
   assert.equal(render().detail.executions[0].status, "failed");
+});
+
+test("changing owner or integration isolates draft, rich selection, settings, and outstanding detail reads", async () => {
+  let hook = await mounted(["thread-1"]);
+  hook.draft("Private fixture draft");
+  hook.composerState({ agentId: "fixture-agent", attachmentIds: [] });
+  let resolveOld;
+  onRequest = (url) =>
+    url.endsWith("/threads/thread-1")
+      ? new Promise((resolve) => {
+          resolveOld = resolve;
+        })
+      : undefined;
+  const pending = hook.choose("thread-1");
+  await setImmediate();
+  const old = structuredClone(serverDetails["thread-1"]);
+  onRequest = null;
+  serverDetails["thread-1"].thread.title = "Other integration conversation";
+  currentScope = ["second", "post", "other-owner"];
+  render();
+  await setImmediate();
+  hook = render();
+  assert.equal(hook.message, "");
+  assert.equal(hook.composerSelection.agentId, undefined);
+  resolveOld(old);
+  await pending;
+  hook = render();
+  assert.equal(hook.detail.thread.title, "Other integration conversation");
+  hook.draft("Independent draft");
+  assert.equal(saved.get('assistant:["owner","fixture","post"]:draft:thread-1'), "Private fixture draft");
+  assert.equal(saved.get('assistant:["other-owner","second","post"]:draft:thread-1'), "Independent draft");
+});
+
+test("old Blog cache entries are not restored into the shared Assistant", async () => {
+  saved.set("blog-assistant:owner:post:draft:new", "Old Blog draft");
+  saved.set("blog-assistant:owner:post:selection:new", JSON.stringify({ agentId: "writer", attachmentIds: ["old"] }));
+  const hook = await mounted();
+  assert.equal(hook.message, "");
+  assert.equal(hook.composerSelection.agentId, undefined);
+  assert.deepEqual(hook.composerSelection.attachmentIds, []);
+  assert.equal(saved.has('assistant:["owner","fixture","post"]:draft:new'), false);
+});
+
+test("switching scope cancels old stream recovery without unlocking a new scope submission", async () => {
+  await mounted(["thread-1"]);
+  let rejectOld;
+  state.stream = (_input, signal) =>
+    new Promise((_resolve, reject) => {
+      rejectOld = () => reject(new DOMException("Stopped", "AbortError"));
+      assert.equal(signal.aborted, false);
+    });
+  const oldSend = render().send(request("Old private message"));
+  await setImmediate();
+  currentScope = ["second", "post", "other-owner"];
+  render();
+  await setImmediate();
+  let completeNew;
+  state.stream = (input) =>
+    new Promise((resolve) => {
+      completeNew = () => resolve(run(input, "failed"));
+    });
+  const newSend = render().send(request("Current message"));
+  await setImmediate();
+  const callsBeforeOldAbort = state.calls.length;
+  rejectOld();
+  await oldSend;
+  assert.equal(render().submitting, true);
+  assert.equal(await render().send(request("Duplicate current message")), undefined);
+  assert.equal(
+    state.calls.slice(callsBeforeOldAbort).some((call) => call.url.startsWith("/api/assistant/fixture/")),
+    false,
+  );
+  assert.equal(render().error, "");
+  completeNew();
+  await newSend;
+  assert.equal(render().submitting, false);
+});
+
+test("settings already in flight cannot overwrite another scope or dispatch its queued saves", async () => {
+  await mounted(["thread-1"]);
+  let finishSettings;
+  onRequest = (url, _body, method) =>
+    url.startsWith("/api/assistant/fixture/") && method === "PATCH"
+      ? new Promise((resolve) => {
+          finishSettings = resolve;
+        })
+      : undefined;
+  const first = render().settings({ tone: "Old setting" });
+  const queued = render().settings({ tone: "Queued old setting" });
+  await setImmediate();
+  currentScope = ["second", "post", "other-owner"];
+  serverDetails["thread-1"].thread.settings = { priority: "Current setting" };
+  render();
+  await setImmediate();
+  finishSettings({ thread: { ...thread("thread-1"), settings: { tone: "Old setting" } } });
+  await Promise.all([first, queued]);
+  assert.deepEqual(render().requestSettings, { priority: "Current setting" });
+  assert.equal(state.calls.filter((call) => call.method === "PATCH").length, 1);
 });

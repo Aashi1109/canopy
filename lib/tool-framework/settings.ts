@@ -40,7 +40,7 @@ export type PresetChoice = FieldChoice & { readonly detail?: string };
 type Base = {
   label: string;
   help?: string;
-  pane?: "main" | "side";
+  pane?: "main" | "side" | "input";
   span?: 1 | 2 | "full";
   visibleWhen?: { key: string; equals: string | number | boolean };
 };

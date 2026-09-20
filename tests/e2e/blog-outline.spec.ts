@@ -16,7 +16,7 @@ test("article outline follows live headings and scrolls only the article", async
   await page.emulateMedia({ reducedMotion: "reduce" });
   const title = `E2E Outline ${randomUUID()}`;
   await signIn(page);
-  const availability = page.waitForResponse((response) => response.url().endsWith("/api/admin/blog/ai"));
+  const availability = page.waitForResponse((response) => response.url().endsWith("/api/assistant/blog/config"));
   await page.getByRole("link", { name: "New post", exact: true }).first().click();
   await availability;
   const titleField = page.getByRole("textbox", { name: "TITLE", exact: true });
@@ -112,7 +112,7 @@ test("selection tools format text and prepare an improvement without changing th
   baseURL,
 }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
-  await page.route("**/api/admin/blog/ai", (route) =>
+  await page.route("**/api/assistant/blog/config", (route) =>
     route.fulfill({
       json: {
         enabled: false,
@@ -124,7 +124,7 @@ test("selection tools format text and prepare an improvement without changing th
   );
   const title = `E2E Selection ${randomUUID()}`;
   await signIn(page);
-  const availability = page.waitForResponse((response) => response.url().endsWith("/api/admin/blog/ai"));
+  const availability = page.waitForResponse((response) => response.url().endsWith("/api/assistant/blog/config"));
   await page.getByRole("link", { name: "New post", exact: true }).first().click();
   await availability;
   await page.getByRole("textbox", { name: "TITLE", exact: true }).fill(title);
@@ -164,14 +164,14 @@ test("selection tools format text and prepare an improvement without changing th
         (element.closest('[contenteditable="true"]') as HTMLElement).focus();
       });
     await toolbar.getByRole("button", { name: "Improve selected text", exact: true }).click();
-    await page.route("**/api/admin/blog/ai/runs", (route) =>
+    await page.route("**/api/assistant/blog/runs", (route) =>
       route.fulfill({ status: 503, json: { error: "AI assistance is not configured." } }),
     );
     await page.getByRole("menuitem", { name: "Simplify text", exact: true }).click();
     const inline = page.getByRole("dialog", { name: "Improve selected text", exact: true });
     await expect(inline.getByRole("button", { name: "Retry", exact: true })).toBeVisible();
     await expect(body).toHaveText(text);
-    const assistant = page.getByRole("complementary", { name: "Blog assistant" });
+    const assistant = page.getByRole("complementary", { name: "Assistant" });
     await expect(assistant).toBeHidden();
     await inline.getByRole("button", { name: "Cancel", exact: true }).click();
     await page.getByRole("button", { name: "Assistant", exact: true }).click();

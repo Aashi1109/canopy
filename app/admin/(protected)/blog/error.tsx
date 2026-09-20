@@ -11,8 +11,9 @@ export default function BlogError({ error, reset }: { error: Error & { digest?: 
   }, [error]);
 
   return (
-    <div className="mx-auto max-w-2xl p-6">
+    <div className="mx-auto flex h-full w-full max-w-2xl flex-col overflow-y-auto p-6">
       <ContentState
+        className="flex-1"
         state="error"
         density="page"
         headingLevel="h1"

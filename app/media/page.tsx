@@ -1,8 +1,9 @@
 import { CatalogHero } from "@/components/canopy/CatalogHero";
+import { CatalogListing } from "@/components/canopy/CatalogListing";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { ToolIcon } from "@/components/ToolIcon";
 import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
-import { categoriesForApp, TOOL_CATEGORIES, type CategoryKey } from "@/lib/tool-framework/categories";
+import { categoriesForApp, resolveCategoryKey, TOOL_CATEGORIES } from "@/lib/tool-framework/categories";
 import { getOptionalSession } from "@/lib/auth/session.ts";
 import {
   Caption,
@@ -31,10 +32,6 @@ function first(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value) ?? "";
 }
 
-function isCategory(value: string): value is CategoryKey {
-  return Object.hasOwn(TOOL_CATEGORIES, value);
-}
-
 function ToolCard({ tool }: { tool: CatalogTool }) {
   return (
     <CatalogCard
@@ -57,7 +54,7 @@ export default async function HomePage({
   const params = await searchParams;
   const query = first(params.q).trim().slice(0, 80);
   const requestedCategory = first(params.category).slice(0, 80);
-  const category = isCategory(requestedCategory) ? requestedCategory : "";
+  const category = resolveCategoryKey(requestedCategory, "media");
   const [tools, session] = await Promise.all([getTools("media"), getOptionalSession(requestHeaders)]);
   const normalizedQuery = query.toLocaleLowerCase();
   const categoryLabel = category ? TOOL_CATEGORIES[category].label : "";
@@ -122,7 +119,7 @@ export default async function HomePage({
           </AppContainer>
         </section>
 
-        <section className="py-14 sm:py-16">
+        <CatalogListing category={category} className="pt-6 pb-14 sm:pb-16" query={query}>
           <AppContainer>
             <SectionHeading
               action={
@@ -159,7 +156,7 @@ export default async function HomePage({
               />
             )}
           </AppContainer>
-        </section>
+        </CatalogListing>
 
         <section className="border-y border-border bg-muted/50 py-14 sm:py-16">
           <AppContainer>

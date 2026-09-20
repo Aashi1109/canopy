@@ -68,7 +68,7 @@ export function BlogStories({ initialPage, filters, featuredId, searchCoverUrl, 
     <div
       className={`order-3 grid min-w-0 gap-8 lg:gap-x-14 lg:gap-y-5 ${topics ? "lg:grid-cols-[minmax(0,1fr)_304px]" : ""}`}
     >
-      <section className="min-w-0" aria-labelledby="blog-stories-heading" aria-busy={busy}>
+      <section className="flex min-w-0 flex-col" aria-labelledby="blog-stories-heading" aria-busy={busy}>
         {intro}
         {filters.search && (
           <div className="mb-8 flex items-center justify-between gap-4 text-[13px] text-muted-foreground">

@@ -1,6 +1,6 @@
 import type { Editor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
-import { safeLink } from "../../../../../lib/blog/links.ts";
+import { safeLink } from "../../../../../lib/content/links.ts";
 
 export function applyBlogLink(editor: Editor, href: string, text?: string): boolean {
   if (editor.isDestroyed || !editor.isEditable || !(editor.state.selection instanceof TextSelection)) return false;

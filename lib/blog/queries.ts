@@ -6,7 +6,7 @@ import {
   blogPostSchedulesTable as schedules,
   blogPublishedPostTagsTable as postTags,
   blogRevisionsTable as revisions,
-  blogRunsTable as runs,
+  assistantRunsTable as runs,
   blogTagsTable as tags,
   managedToolsTable,
   db,
@@ -279,7 +279,7 @@ export async function listBlogPosts(actorUserId: string, input: unknown = {}) {
         title: sql<string>`${posts.draftDocument}->>'title'`,
         generationStatus: config.ai.enabled
           ? sql<string | null>`(SELECT ${runs.status} FROM ${runs}
-          WHERE ${runs.postId} = ${posts.id} AND ${runs.operation} = 'generate'
+          WHERE ${runs.integrationKey} = 'blog' AND ${runs.resourceId} = ${posts.id} AND ${runs.operation} = 'generate'
           ORDER BY ${runs.createdAt} DESC LIMIT 1)`
           : sql<null>`NULL`,
         updatedAt: posts.updatedAt,

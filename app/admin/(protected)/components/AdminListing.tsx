@@ -22,7 +22,7 @@ export function AdminListing({
         className,
       )}
     >
-      <div className="min-h-0 overflow-auto overscroll-contain [&>[data-slot=table-container]]:overflow-visible [&_th]:normal-case [&_th]:py-3 [&_td]:py-3.5">
+      <div className="min-h-0 overflow-auto overscroll-contain [&>[data-slot=content-state]]:min-h-full [&>[data-slot=table-container]]:overflow-visible [&_th]:normal-case [&_th]:py-3 [&_td]:py-3.5">
         {children}
       </div>
       <Pagination {...pagination} sticky={false} />

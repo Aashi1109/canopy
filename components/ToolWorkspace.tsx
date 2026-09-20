@@ -1,6 +1,7 @@
 "use client";
 
 import { Overline, H3, Muted, Caption, Strong, SegmentedControl, ToolOptionsPanel } from "@/components/ui/index.tsx";
+import { Settings } from "lucide";
 import { ArrowDownToLine, FileSpreadsheet } from "lucide-react";
 import {
   type DragEvent,
@@ -303,7 +304,8 @@ export function ToolWorkspace(
   const fields = Object.values(props.spec.settings.fields);
   const settingsOnly = props.spec.input.kind === "none";
   const hasMainSettings = !settingsOnly && fields.some((field) => field.pane === "main");
-  const hasSideSettings = settingsOnly ? fields.length > 0 : fields.some((field) => field.pane !== "main");
+  const hasSideSettings = settingsOnly ? fields.length > 0 : fields.some((field) => (field.pane ?? "side") === "side");
+  const hasInputSettings = fields.some((field) => field.pane === "input");
   const inputSplit = getInputSplitSizes(props.spec.input, 50, 30);
   const surfaceVariant = props.spec.input.kind !== "none" && props.spec.layout === "stacked" ? "card" : "panel";
   const result = (
@@ -327,6 +329,19 @@ export function ToolWorkspace(
         input={
           <WorkspaceInputSurface
             disabled={props.disabled}
+            footer={
+              hasInputSettings ? (
+                <SettingsPanel
+                  className="shrink-0 grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] px-4 pb-4"
+                  disabled={props.disabled}
+                  layout="grid"
+                  onChange={props.onSettingChange}
+                  pane="input"
+                  spec={props.spec.settings}
+                  values={props.settings}
+                />
+              ) : undefined
+            }
             input={props.input}
             inputSpec={props.spec.input}
             onInputChange={props.onInputChange}
@@ -364,6 +379,7 @@ export function ToolWorkspace(
   const workspace = (
     <SplitStack
       className="h-full"
+      collapsedIcon={Settings}
       collapseLabel="settings panel"
       collapseSide="secondary"
       collapsible={hasSideSettings && !settingsOnly}

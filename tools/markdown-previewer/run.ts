@@ -32,11 +32,11 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     renderer.link = (token) => renderLink(token).replace(">", ' target="_blank" rel="noopener noreferrer">');
   }
   if (renderer && ctx.settings.syntaxHighlighting) {
-    const { highlightBlogCode } = await import("../../lib/blog/codeHighlight.ts");
+    const { highlightCode } = await import("../../lib/markdown/codeHighlight.ts");
     renderer.code = ({ text, lang }) => {
       const language = lang?.match(/^\S+/)?.[0];
       const className = language ? ` class="language-${escapeHtml(language)}"` : "";
-      return `<pre><code${className}>${highlightBlogCode(text.replace(/\n$/, ""), language?.toLowerCase())}\n</code></pre>\n`;
+      return `<pre><code${className}>${highlightCode(text.replace(/\n$/, ""), language?.toLowerCase())}\n</code></pre>\n`;
     };
   }
   ctx.signal.throwIfAborted();

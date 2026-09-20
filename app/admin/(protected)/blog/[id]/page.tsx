@@ -1,6 +1,6 @@
-import { getInitialBlogGeneration } from "@/lib/blog/assistantRuns";
+import { getInitialBlogGeneration } from "@/lib/blog/generation";
 import { BlogGenerationRecovery } from "../components/BlogGenerationRecovery";
-import { activeRun } from "../lib/assistantApi";
+import { activeRun } from "@/lib/assistant/client";
 import config from "@/lib/config/config.ts";
 import { notFound } from "next/navigation";
 import { hasPermission } from "@/lib/authorization/index.ts";

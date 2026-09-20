@@ -2,12 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
-import {
-  agentSlashQuery,
-  removeAgentSlash,
-  sameComposerSelection,
-} from "../app/admin/(protected)/blog/lib/agentComposer.ts";
-import { parseComposerContent } from "../lib/blog/composerDocument.ts";
+import { agentSlashQuery, removeAgentSlash, sameComposerSelection } from "../lib/assistant/composer.ts";
+import { parseComposerContent } from "../lib/assistant/composerDocument.ts";
 
 const richContent = {
   type: "doc",

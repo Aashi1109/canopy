@@ -38,6 +38,8 @@ test("configuration stays lazy across environment loading, updates and replaceme
     ["CLOUDINARY_URL", () => config.cloudinary.url],
     ["BLOG_SCHEDULER_SECRET", () => config.blog.schedulerSecret],
     ["BLOG_PUBLISH_URL", () => config.blog.publishUrl],
+    ["ASSISTANT_SCHEDULER_SECRET", () => config.assistant.schedulerSecret],
+    ["ASSISTANT_MAINTENANCE_URL", () => config.assistant.maintenanceUrl],
     ["NODE_ENV", () => config.analytics.NODE_ENV],
     ["VERCEL_ENV", () => config.analytics.VERCEL_ENV],
     ["GA_MEASUREMENT_ID", () => config.analytics.GA_MEASUREMENT_ID],

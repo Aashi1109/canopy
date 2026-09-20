@@ -20,7 +20,10 @@ next-env.d.ts
 .cursor
 .claude
 .codex/skills/
-openspec
+/openspec/
 tmp/
 .tmp/
-designs/images
+# Version only Pencil documents; keep design assets and exports local.
+/designs/**
+!/designs/**/
+!/designs/**/*.pen

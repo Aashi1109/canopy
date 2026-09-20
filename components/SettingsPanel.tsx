@@ -23,7 +23,7 @@ export interface SettingsPanelProps {
   disabled?: boolean;
   layout?: "grid" | "stack";
   onChange: (key: string, value: unknown) => void;
-  pane?: "main" | "side";
+  pane?: "main" | "side" | "input";
   spec: SettingsSpec;
   values: Readonly<Record<string, unknown>>;
 }
@@ -550,7 +550,7 @@ export function SettingsPanel({
       )}
     >
       {Object.entries(spec.fields).map(([key, field]) => {
-        if (pane && (pane === "main" ? field.pane !== "main" : field.pane === "main")) return null;
+        if (pane && (field.pane ?? "side") !== pane) return null;
         if (field.visibleWhen && values[field.visibleWhen.key] !== field.visibleWhen.equals) return null;
         const context: FieldRenderContext = {
           disabled,

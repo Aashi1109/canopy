@@ -1,9 +1,10 @@
 import { createHash, randomBytes } from "node:crypto";
 import { slugFromName } from "../tool-catalog/index.ts";
-import { highlightBlogCode } from "./codeHighlight.ts";
-import { MAX_BLOG_MATH_LENGTH, normalizeBlogMath, renderBlogMath } from "./math.ts";
+import { highlightCode } from "../markdown/codeHighlight.ts";
+import { normalizeBlogMath } from "./math.ts";
+import { MAX_MATH_LENGTH, renderMath } from "../markdown/math.ts";
 import { BLOG_TITLE_WORD_LIMIT, blogTitleWordCount } from "./title.ts";
-import { safeLink as validateLink } from "./links.ts";
+import { safeLink as validateLink } from "../content/links.ts";
 
 export interface BlogImage {
   publicId: string;
@@ -373,7 +374,7 @@ function validateBody(input: unknown, options: BlogDocumentOptions): BlogNode {
       };
     } else if (type === "inlineMath" || type === "blockMath") {
       keys(attrs, ["latex"], "Math attributes");
-      const latex = string(attrs.latex, "Math source", MAX_BLOG_MATH_LENGTH, false);
+      const latex = string(attrs.latex, "Math source", MAX_MATH_LENGTH, false);
       if (!latex.trim()) fail("Math source must not be empty.");
       node.attrs = { latex };
       if (type === "inlineMath" && object.marks !== undefined) {
@@ -592,7 +593,7 @@ export function renderBlogDocument(
         return content();
       case "inlineMath":
       case "text": {
-        const formula = node.type === "inlineMath" ? renderBlogMath(String(node.attrs?.latex ?? ""), false) : null;
+        const formula = node.type === "inlineMath" ? renderMath(String(node.attrs?.latex ?? ""), false) : null;
         let html = formula
           ? `<span class="blog-math-inline${formula.error ? " blog-math-error" : ""}">${formula.html}</span>`
           : escapeHtml(node.text);
@@ -644,13 +645,13 @@ export function renderBlogDocument(
       case "hardBreak":
         return "<br>";
       case "blockMath": {
-        const { html, error } = renderBlogMath(String(node.attrs?.latex ?? ""), true);
+        const { html, error } = renderMath(String(node.attrs?.latex ?? ""), true);
         return `<div class="blog-math-block${error ? " blog-math-error" : ""}">${html}</div>`;
       }
       case "codeBlock": {
         const code = (node.content ?? []).map((child) => child.text ?? "").join("");
         const language = node.attrs?.language as string | null;
-        return `<pre><code${language ? ` class="language-${escapeHtml(language)}"` : ""}>${highlightBlogCode(code, language)}</code></pre>`;
+        return `<pre><code${language ? ` class="language-${escapeHtml(language)}"` : ""}>${highlightCode(code, language)}</code></pre>`;
       }
       case "table": {
         const widths = validateTable(node);

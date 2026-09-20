@@ -3,7 +3,7 @@ import { E2E_ACCOUNTS, E2E_PASSWORD } from "./fixtures/accounts";
 
 const expect = baseExpect.configure({ timeout: 15_000 });
 
-test("generated draft, private conversations, proposals, review and sources work together", async ({ page }) => {
+test("generated drafts use shared Assistant conversations and approved inline edits", async ({ page }) => {
   test.skip(process.env.BLOG_AI_E2E_FIXTURE !== "1", "Requires a disposable database and mocked provider server.");
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1366, height: 768 });
@@ -21,14 +21,10 @@ test("generated draft, private conversations, proposals, review and sources work
   await page.getByRole("button", { name: "Generate blog", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/blog\/[a-f0-9-]+\?review=1/);
   const body = page.getByRole("textbox", { name: "Article body", exact: true });
-  const assistant = page.getByRole("complementary", { name: "Blog assistant" });
-  await expect(assistant.getByRole("tab", { name: "Review", exact: true })).toHaveAttribute("data-state", "active");
+  const assistant = page.getByRole("complementary", { name: "Assistant" });
   await expect(body).toContainText("Start with a clear outcome");
-  await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
-  await expect(assistant).toContainText("freelance projects");
-  await expect(assistant.getByRole("button", { name: "Analyze with AI", exact: true })).toBeEnabled();
-  await page.screenshot({ path: "/tmp/blog-full-generated-1366.png" });
-  await assistant.getByRole("tab", { name: "Chat", exact: true }).click();
+  await expect(assistant.getByRole("button", { name: "Remove agent", exact: true })).toBeVisible();
+  await assistant.getByRole("button", { name: "Remove agent", exact: true }).click();
   const settingsButton = assistant.getByRole("button", { name: "Assistant settings", exact: true });
   const historyButton = assistant.getByRole("button", { name: "History", exact: true });
   const history = assistant.getByRole("region", { name: "Conversation history" });
@@ -53,20 +49,12 @@ test("generated draft, private conversations, proposals, review and sources work
   const initialThread = (await history.locator('button[aria-current="true"] > span').first().textContent())!;
   await assistant.getByRole("button", { name: "Back to chat", exact: true }).click();
   await assistant.getByRole("button", { name: "New thread", exact: true }).click();
-  await expect(assistant.getByRole("heading", { name: "What should we work on?", exact: true })).toBeVisible();
-  await assistant.getByRole("button", { name: "Plan & write", exact: true }).click();
-  await expect(assistant.getByRole("textbox", { name: "Message to assistant" })).toBeFocused();
-  await expect(assistant.getByRole("textbox", { name: "Message to assistant" })).toHaveValue("Help me plan and write ");
-  await assistant.getByRole("button", { name: "Remove draft context", exact: true }).click();
-  await expect(assistant.getByRole("button", { name: "Audit the whole blog", exact: true })).toBeDisabled();
+  await expect(assistant.getByRole("heading", { name: "Make your next draft better.", exact: true })).toBeVisible();
+  await assistant.getByRole("button", { name: "Remove current context", exact: true }).click();
   await openSettings();
-  await page.getByRole("switch", { name: "Include current draft", exact: true }).click();
+  await page.getByRole("switch", { name: "Include current content", exact: true }).click();
   await closeSettings();
-  await expect(assistant.getByRole("button", { name: "Remove draft context", exact: true })).toBeVisible();
-  await assistant.getByRole("textbox", { name: "Message to assistant" }).fill("");
-  await page.getByRole("heading", { name: "A practical guide to freelance projects", exact: true }).click();
-  await page.screenshot({ path: "/tmp/blog-assistant-empty-1366.png" });
-  await assistant.screenshot({ path: "/tmp/blog-assistant-empty-aside-1366.png" });
+  await expect(assistant.getByRole("button", { name: "Remove current context", exact: true })).toBeVisible();
   async function logGeometry(viewport: string) {
     console.log(
       `Assistant geometry ${viewport}`,
@@ -122,14 +110,14 @@ test("generated draft, private conversations, proposals, review and sources work
   await page.getByRole("textbox", { name: "URL", exact: true }).fill("https://www.pmi.org/learning/library");
   await page.screenshot({ path: "/tmp/blog-assistant-links-1366.png" });
   await page.getByRole("button", { name: "Add link", exact: true }).click();
-  const composer = assistant.getByRole("textbox", { name: "Message to assistant" });
+  const composer = assistant.getByRole("combobox", { name: "Message to assistant" });
   await composer.fill("What should I work on first?");
-  await assistant.getByRole("button", { name: "Remove draft context", exact: true }).click();
+  await assistant.getByRole("button", { name: "Remove current context", exact: true }).click();
   const contextlessRequest = page.waitForRequest(
-    (request) => request.method() === "POST" && request.url().endsWith("/api/admin/blog/ai/runs"),
+    (request) => request.method() === "POST" && request.url().endsWith("/api/assistant/blog/runs"),
   );
   await assistant.getByRole("button", { name: "Send message", exact: true }).click();
-  expect((await contextlessRequest).postDataJSON().editorJson).toEqual({
+  expect((await contextlessRequest).postDataJSON().context.editorJson).toEqual({
     type: "doc",
     content: [{ type: "paragraph" }],
   });
@@ -142,7 +130,7 @@ test("generated draft, private conversations, proposals, review and sources work
   await composer.fill("Keep this unsent message.");
   await chooseThread(initialThread);
   await chooseThread(namedThread);
-  await expect(composer).toHaveValue("Keep this unsent message.");
+  await expect(composer).toHaveText("Keep this unsent message.");
   await assistant.getByRole("button", { name: "Attach files or links", exact: true }).click();
   const choosingFile = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Upload image", exact: true }).click();
@@ -156,11 +144,11 @@ test("generated draft, private conversations, proposals, review and sources work
       "base64",
     ),
   });
-  await expect(assistant.getByRole("button", { name: /^reference\.png/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(assistant.getByRole("button", { name: "Remove reference.png from message", exact: true })).toBeVisible();
   await chooseThread(initialThread);
   await expect(assistant.getByRole("button", { name: /^reference\.png/ })).toHaveCount(0);
   await chooseThread(namedThread);
-  await assistant.getByRole("button", { name: "Remove attachment reference.png", exact: true }).click();
+  await assistant.getByRole("button", { name: "Remove reference.png from message", exact: true }).click();
   await expect(assistant.getByRole("button", { name: /^reference\.png/ })).toHaveCount(0);
   await composer.fill("Cancel this request before completion.");
   await assistant.getByRole("button", { name: "Send message", exact: true }).click();
@@ -185,7 +173,7 @@ test("generated draft, private conversations, proposals, review and sources work
   const toolbar = page.getByRole("toolbar", { name: "Selected text formatting" });
   await toolbar.getByRole("button", { name: "Improve selected text" }).click();
   const inlineRequest = page.waitForRequest(
-    (request) => request.method() === "POST" && request.url().endsWith("/api/admin/blog/ai/runs"),
+    (request) => request.method() === "POST" && request.url().endsWith("/api/assistant/blog/runs"),
   );
   await page.getByRole("menuitem", { name: "Simplify text", exact: true }).click();
   const inlinePayload = (await inlineRequest).postDataJSON();
@@ -193,7 +181,7 @@ test("generated draft, private conversations, proposals, review and sources work
   expect(inlinePayload).not.toHaveProperty("document");
   expect(inlinePayload).not.toHaveProperty("version");
   expect(inlinePayload).not.toHaveProperty("selection");
-  expect(inlinePayload.selectedText).toBeTruthy();
+  expect(inlinePayload.context.selectedText).toBeTruthy();
   const inline = page.getByRole("dialog", { name: "Improve selected text", exact: true });
   await expect(inline.getByRole("button", { name: "Accept", exact: true })).toBeEnabled();
   expect(await body.textContent()).toBe(original);
@@ -204,18 +192,9 @@ test("generated draft, private conversations, proposals, review and sources work
   await expect(body).toContainText("Begin with a clear goal and specific deliverables.");
   await body.press("ControlOrMeta+z");
   await expect(body).toHaveText(original ?? "");
-  await assistant.getByRole("tab", { name: "Review", exact: true }).click();
-  await assistant.getByLabel("Target keyword (optional)").fill("project");
-  await assistant.getByRole("button", { name: "Analyze with AI", exact: true }).click();
-  await assistant.getByRole("button", { name: "Show full change", exact: true }).click();
-  await expect(assistant.getByRole("button", { name: "Apply title", exact: true })).toBeEnabled();
-  await assistant.getByRole("button", { name: "Apply title", exact: true }).click();
-  await assistant.getByRole("button", { name: "Apply description", exact: true }).click();
-  await page.screenshot({ path: "/tmp/blog-full-review-1280.png" });
   await assistant.getByRole("tab", { name: "Sources", exact: true }).click();
-  await assistant.getByRole("button", { name: "Check sources", exact: true }).click();
-  await expect(assistant.getByRole("link", { name: "Project Management Institute", exact: true })).toBeVisible();
-  await page.screenshot({ path: "/tmp/blog-full-sources-1280.png" });
+  await expect(assistant.getByRole("button", { name: "Check sources", exact: true })).toHaveCount(0);
+  await assistant.getByRole("tab", { name: "Chat", exact: true }).click();
   const closeToast = page.getByRole("button", { name: "Close toast", exact: true });
   while (await closeToast.count()) await closeToast.first().click();
   await expect(page.locator('[data-slot="toast"]')).toHaveCount(0);

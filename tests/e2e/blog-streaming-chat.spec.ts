@@ -1,4 +1,6 @@
 import { test, expect } from "@playwright/test";
+import type { AssistantProposal } from "../../lib/assistant/types.ts";
+import type { BlogProposalData } from "../../lib/blog/assistantTypes.ts";
 import { createRequire } from "node:module";
 import { mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -25,7 +27,7 @@ test.beforeAll(async () => {
     import {Toaster} from '${root}/components/ui/index.tsx';
     const document={schemaVersion:1,title:'A practical invoicing guide',excerpt:'',authorName:'Editor',coverImage:null,category:null,tags:[],seoTitle:null,seoDescription:null,body:{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'A clear introduction helps readers understand the article.'}]}]}};
     document.body = (window as Window & {proposalDocument?: typeof document.body}).proposalDocument ?? document.body;
-    function App(){const editor=useEditor({extensions:[StarterKit],content:document.body,editorProps:{attributes:{role:'textbox','aria-label':'Article body'}}});return <main className="platform-shell" style={{height:'100vh'}}><BlogEditorShell title={document.title} initialAssistantOpen status="Draft" saveState="saved" canEdit toolbar={null} settings={null} onSave={()=>{}} onPreview={()=>{}} onReview={()=>{}} assistant={(onClose)=><BlogAssistantPanel postId="post" ownerId="owner" editor={editor} document={document} onMetadata={()=>{}} onClose={onClose}/>}><h2 className="text-heading-1">{document.title}</h2><EditorContent editor={editor}/></BlogEditorShell><Toaster/></main>};createRoot(window.document.getElementById('root')).render(<App/>);
+    function App(){const editor=useEditor({extensions:[StarterKit],content:document.body,editorProps:{attributes:{role:'textbox','aria-label':'Article body'}}});return <main className="platform-shell" style={{height:'100vh'}}><BlogEditorShell title={document.title} initialAssistantOpen status="Draft" saveState="saved" canEdit toolbar={null} settings={null} onSave={()=>{}} onPreview={()=>{}} onReview={()=>{}} assistant={(onClose)=><BlogAssistantPanel postId="post" ownerId="owner" editor={editor} document={document} onMetadata={()=>{}} onReplaceDocument={()=>{}} onClose={onClose}/>}><h2 className="text-heading-1">{document.title}</h2><EditorContent editor={editor}/></BlogEditorShell><Toaster/></main>};createRoot(window.document.getElementById('root')).render(<App/>);
   `,
   );
   const bundle = await build({
@@ -68,8 +70,11 @@ test.beforeAll(async () => {
   html = `<!doctype html><html><head><style>${fonts}\n${globals.css}\n${css}</style></head><body><div id="root"></div><script>${javascript.replaceAll("</script", "<\\/script")}</script></body></html>`;
 });
 
-test("chat streams through collapse, confirms new threads, and aborts when leaving the page", async ({ page }) => {
-  page.on("pageerror", (error) => console.log("CHAT HARNESS ERROR", error.message));
+test("chat streams concurrently across threads, stops only the selected run, and aborts when leaving the page", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.addInitScript(() => {
     const now = new Date().toISOString();
@@ -81,8 +86,9 @@ test("chat streams through collapse, confirms new threads, and aborts when leavi
     const threads = [
       {
         id: "thread-1",
-        postId: "post",
-        title: "New thread",
+        resourceId: "post",
+        integrationKey: "blog",
+        title: "First conversation",
         type: "chat",
         settings: {},
         composerDraft: "",
@@ -96,17 +102,21 @@ test("chat streams through collapse, confirms new threads, and aborts when leavi
     const fixture = {
       starts: 0,
       aborts: 0,
+      abortedRunIds: [] as string[],
       threads: 1,
       titles: [] as string[],
-      complete: (_withProposal?: boolean) => {},
+      streams: {} as Record<string, { delta: (text: string) => void; complete: (withProposal?: boolean) => void }>,
+      holdNextRun: false,
+      releaseResponses: {} as Record<string, () => void>,
+      activeRuns: () => runs.filter((run) => run.status === "running").map((run) => run.id),
     };
     Object.assign(window, { fixture, process: { env: { NODE_ENV: "production" } } });
     window.fetch = async (input, options) => {
       const url = String(input),
         method = options?.method ?? "GET";
       const body = typeof options?.body === "string" ? JSON.parse(options.body) : {};
-      if (url === "/api/admin/blog/ai") return Response.json(config);
-      if (url.endsWith("/threads")) {
+      if (url === "/api/assistant/blog/config") return Response.json(config);
+      if (new URL(url, location.href).pathname.endsWith("/threads")) {
         if (method === "POST") {
           const thread = { ...threads[0], id: `thread-${threads.length + 1}`, title: body.title ?? "New thread" };
           threads.push(thread);
@@ -148,12 +158,16 @@ test("chat streams through collapse, confirms new threads, and aborts when leavi
         });
       }
       if (url.includes("/proposals/") && method === "PATCH") return Response.json({ status: body.status });
-      if (url === "/api/admin/blog/ai/runs") {
+      if (url === "/api/assistant/blog/runs") {
+        const holdResponse = fixture.holdNextRun;
+        fixture.holdNextRun = false;
         fixture.starts++;
         const run = {
           id: `run-${fixture.starts}`,
           threadId: body.threadId,
-          postId: "post",
+          resourceId: "post",
+          integrationKey: "blog",
+          executionMode: "conversational",
           operation: "chat",
           status: "running",
           provider: "fixture",
@@ -193,6 +207,21 @@ test("chat streams through collapse, confirms new threads, and aborts when leavi
           createdAt: now,
           updatedAt: now,
         });
+        if (holdResponse) {
+          await new Promise<void>((resolve, reject) => {
+            const abort = () => {
+              fixture.aborts++;
+              fixture.abortedRunIds.push(run.id);
+              run.status = "cancelled";
+              reject(new DOMException("Aborted", "AbortError"));
+            };
+            fixture.releaseResponses[run.id] = () => {
+              options?.signal?.removeEventListener("abort", abort);
+              resolve();
+            };
+            options?.signal?.addEventListener("abort", abort, { once: true });
+          });
+        }
         return new Response(
           new ReadableStream({
             start(controller) {
@@ -203,35 +232,35 @@ test("chat streams through collapse, confirms new threads, and aborts when leavi
                 type: "text-delta",
                 text: "**Start with a clear outline**, then explain each step using a practical example.\n\n- First step\n- Second step\n\n[Reference](https://example.com)\n\n```js\nconst amount = 42;\n```\n\n| Item | Value |\n| --- | --- |\n| Total | 42 |",
               });
-              fixture.complete = (withProposal = false) => {
+              const complete = (withProposal = false) => {
                 run.status = "completed";
                 const response = {
                   text: "**Use the attached example** to make each invoicing step concrete.",
-                  keywords: [],
-                  findings: [],
                   citations: [],
                   proposals: withProposal
                     ? [
                         {
-                          toolCallId: "edit-1",
-                          type: "edit",
+                          id: "edit-1",
                           status: "pending",
-                          originalText: "A clear introduction helps readers understand the article.",
-                          replacement: [
-                            {
-                              type: "paragraph",
-                              content: [
-                                {
-                                  type: "text",
-                                  text: "Start with a concrete invoicing example that readers can follow.",
-                                },
-                              ],
-                            },
-                          ],
+                          data: {
+                            type: "edit",
+                            originalText: "A clear introduction helps readers understand the article.",
+                            replacement: [
+                              {
+                                type: "paragraph",
+                                content: [
+                                  {
+                                    type: "text",
+                                    text: "Start with a concrete invoicing example that readers can follow.",
+                                  },
+                                ],
+                              },
+                            ],
+                          },
                         },
                       ]
                     : [],
-                  searchStatus: "not_requested",
+                  data: { keywords: [], searchStatus: "not_requested" },
                 };
                 Object.assign(run, { response, completedAt: now });
                 const message = messages.find((entry) => entry.id === run.assistantMessageId)!;
@@ -242,10 +271,16 @@ test("chat streams through collapse, confirms new threads, and aborts when leavi
                 emit({ type: "completed", run });
                 controller.close();
               };
+              fixture.streams[run.id] = {
+                delta: (text) => emit({ type: "text-delta", text }),
+                complete,
+              };
               options?.signal?.addEventListener(
                 "abort",
                 () => {
+                  if (run.status !== "running") return;
                   fixture.aborts++;
+                  fixture.abortedRunIds.push(run.id);
                   run.status = "cancelled";
                   controller.error(new DOMException("Aborted", "AbortError"));
                 },
@@ -263,76 +298,11 @@ test("chat streams through collapse, confirms new threads, and aborts when leavi
     route.fulfill({ contentType: "text/html", body: html }),
   );
   await page.goto("https://chat-stream-harness.test/");
-  const assistant = page.getByRole("complementary", { name: "Blog assistant" });
-  const composer = assistant.getByRole("textbox", { name: "Message to assistant" });
-  async function finishTransitions() {
-    await page.evaluate(async () => {
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-      await Promise.all(
-        document
-          .getAnimations()
-          .filter((animation) => animation instanceof CSSTransition)
-          .map((animation) => animation.finished.catch(() => {})),
-      );
-    });
-  }
-  async function captureGeometry(viewport: string) {
-    const geometry = await assistant.evaluate((aside) => {
-      function bounds(element: Element | null) {
-        if (!element) return null;
-        const { x, y, width, height } = element.getBoundingClientRect();
-        const style = getComputedStyle(element);
-        return {
-          x,
-          y,
-          width,
-          height,
-          font: style.fontFamily,
-          fontSize: style.fontSize,
-          fontWeight: style.fontWeight,
-          padding: style.padding,
-          background: style.backgroundColor,
-          color: style.color,
-          accentText: style.getPropertyValue("--color-accent-text"),
-          accentForeground: style.getPropertyValue("--accent-foreground"),
-          border: style.border,
-          borderRadius: style.borderRadius,
-        };
-      }
-      const textbox = aside.querySelector("textarea");
-      return {
-        aside: bounds(aside),
-        heading: bounds(aside.querySelector("h2")),
-        header: bounds(aside.querySelector("h2")?.parentElement ?? null),
-        textarea: bounds(textbox),
-        buttons: Array.from(aside.querySelectorAll("button[aria-label]")).map((element) => ({
-          label: element.getAttribute("aria-label"),
-          ...bounds(element),
-        })),
-        tabs: Array.from(aside.querySelectorAll('[role="tab"]')).map(bounds),
-        composer: bounds(textbox?.closest('[role="tabpanel"]') ?? null),
-        rows: Array.from(aside.querySelectorAll('section[aria-label="Conversation history"] button')).map(bounds),
-        messageText: Array.from(aside.querySelectorAll("article p")).map(bounds),
-        overflow: aside.scrollWidth > aside.clientWidth,
-      };
-    });
-    await writeFile(`/tmp/blog-assistant-nv2sj-geometry-${viewport}.json`, JSON.stringify(geometry, null, 2));
-  }
+  const assistant = page.getByRole("complementary", { name: "Assistant" });
+  const composer = assistant.getByRole("combobox", { name: "Message to assistant" });
   await expect(composer).toBeEnabled();
-  await page.evaluate(() => document.fonts.ready);
-  await page.screenshot({ path: "/tmp/blog-assistant-nv2sj-idle-1366.png" });
-  await assistant.screenshot({ path: "/tmp/blog-assistant-nv2sj-idle-aside-1366.png" });
-  await captureGeometry("idle-1366");
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await page.screenshot({ path: "/tmp/blog-assistant-nv2sj-idle-1280.png" });
-  await captureGeometry("idle-1280");
-  await page.setViewportSize({ width: 1366, height: 768 });
-  await assistant.getByRole("button", { name: "Assistant settings", exact: true }).click();
-  await page.screenshot({ path: "/tmp/blog-assistant-nv2sj-settings-1366.png" });
-  await page.keyboard.press("Escape");
   await composer.fill("Help improve this introduction");
   await assistant.getByRole("button", { name: "Send message", exact: true }).click();
-  await expect(assistant.getByText("Start with a clear outline", { exact: false })).toBeVisible();
   await expect(assistant.locator("strong").getByText("Start with a clear outline", { exact: true })).toBeVisible();
   await expect(assistant.getByRole("listitem").filter({ hasText: "First step" })).toBeVisible();
   await expect(assistant.getByRole("link", { name: "Reference", exact: true })).toHaveAttribute("target", "_blank");
@@ -340,152 +310,98 @@ test("chat streams through collapse, confirms new threads, and aborts when leavi
   await expect(assistant.getByRole("columnheader", { name: "Value", exact: true })).toBeVisible();
   await composer.press("Enter");
   expect(await page.evaluate("window.fixture.starts")).toBe(1);
-  await expect(assistant.locator("article").getByText("Help improve this introduction", { exact: true })).toBeVisible();
-  await page.screenshot({ path: "/tmp/blog-chat-streaming-1366.png" });
-  await captureGeometry("streaming-1366");
-  const history = assistant.getByRole("button", { name: "History", exact: true });
-  await history.click();
-  await expect(assistant.getByRole("region", { name: "Conversation history" })).toBeVisible();
-  await expect(assistant.getByText("Responding", { exact: true })).toBeVisible();
-  await page.screenshot({ path: "/tmp/blog-assistant-nv2sj-history-1366.png" });
-  await captureGeometry("history-1366");
-  await assistant.locator('section[aria-label="Conversation history"] button[aria-current="true"]').hover();
-  await finishTransitions();
-  await captureGeometry("history-hover-1366");
-  await page.keyboard.press("Escape");
-  await expect(history).toBeFocused();
-  await expect(assistant.getByRole("region", { name: "Conversation history" })).toBeHidden();
-  expect(await page.evaluate("window.fixture.aborts")).toBe(0);
   await assistant.getByRole("button", { name: "Close assistant", exact: true }).click();
   await expect(assistant).toBeHidden();
   expect(await page.evaluate("window.fixture.aborts")).toBe(0);
   await page.getByRole("button", { name: "Assistant", exact: true }).filter({ visible: true }).click();
   await expect(assistant.getByText("Start with a clear outline", { exact: false })).toBeVisible();
   await assistant.getByRole("button", { name: "New thread", exact: true }).click();
-  await expect(page.getByRole("alertdialog")).toBeVisible();
-  await page.screenshot({ path: "/tmp/blog-chat-new-thread-confirmation-1366.png" });
-  await page.getByRole("button", { name: "Keep generating", exact: true }).click();
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
   expect(await page.evaluate("window.fixture.aborts")).toBe(0);
-  expect(await page.evaluate("window.fixture.threads")).toBe(1);
-  await assistant.getByRole("button", { name: "New thread", exact: true }).click();
-  await page.getByRole("button", { name: "Stop and create thread", exact: true }).click();
-  await expect.poll(() => page.evaluate("window.fixture.aborts")).toBe(1);
-  expect(await page.evaluate("window.fixture.threads")).toBe(1);
-  await expect(assistant.getByRole("heading", { name: "What should we work on?", exact: true })).toBeVisible();
+  await expect(assistant.getByRole("heading", { name: "Make your next draft better.", exact: true })).toBeVisible();
   await expect(composer).toBeFocused();
-  await page.screenshot({ path: "/tmp/blog-assistant-nv2sj-new-thread-1366.png" });
-  await captureGeometry("new-thread-1366");
+  await page.evaluate('window.fixture.streams["run-1"].delta("\\n\\nFirst thread kept streaming in the background.")');
   await composer.fill("My first question");
   await assistant.getByRole("button", { name: "Send message", exact: true }).click();
   await expect.poll(() => page.evaluate("window.fixture.threads")).toBe(2);
   expect(await page.evaluate("window.fixture.titles")).toEqual(["My first question"]);
-  await expect(assistant.getByRole("button", { name: "Stop", exact: true })).toBeVisible();
   await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(2);
-  await page.evaluate("window.fixture.complete()");
+  expect(await page.evaluate("window.fixture.activeRuns()")).toEqual(["run-1", "run-2"]);
+  await page.evaluate('window.fixture.streams["run-2"].delta("\\n\\nSecond thread is also streaming.")');
+  await expect(assistant.getByText("Second thread is also streaming.", { exact: true })).toBeVisible();
+
+  async function chooseThread(title: string) {
+    await assistant.getByRole("button", { name: "History", exact: true }).click();
+    await page
+      .getByRole("region", { name: "Conversation history" })
+      .getByRole("button", { name: new RegExp(title) })
+      .click();
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  }
+  await assistant.getByRole("button", { name: "History", exact: true }).click();
+  const history = page.getByRole("region", { name: "Conversation history" });
+  await expect(history.getByText("2 responding", { exact: true })).toBeVisible();
+  await expect(history.getByText("Responding", { exact: true })).toHaveCount(2);
+  await history.getByRole("button", { name: /First conversation/ }).click();
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  await expect(assistant.getByText("First thread kept streaming in the background.", { exact: true })).toBeVisible();
+  await expect(assistant.getByText("Second thread is also streaming.", { exact: true })).toHaveCount(0);
+  expect(await page.evaluate("window.fixture.aborts")).toBe(0);
+  await page.evaluate('window.fixture.streams["run-1"].delta("\\n\\nFirst thread continues after switching back.")');
+  await expect(assistant.getByText("First thread continues after switching back.", { exact: true })).toBeVisible();
+
+  await assistant.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect.poll(() => page.evaluate("window.fixture.abortedRunIds")).toEqual(["run-1"]);
+  expect(await page.evaluate("window.fixture.activeRuns()")).toEqual(["run-2"]);
+  await page.evaluate(
+    'window.fixture.streams["run-2"].delta("\\n\\nSecond thread continues after the first is stopped.")',
+  );
+  await chooseThread("My first question");
+  await expect(
+    assistant.getByText("Second thread continues after the first is stopped.", { exact: true }),
+  ).toBeVisible();
+  await expect(assistant.getByRole("button", { name: "Stop", exact: true })).toBeVisible();
+  expect(await page.evaluate("window.fixture.abortedRunIds")).toEqual(["run-1"]);
+  for (const [width, height] of [
+    [1366, 768],
+    [1280, 720],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await expect(composer).toBeInViewport();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+    await page.screenshot({ path: `/tmp/blog-concurrent-thread-streaming-${width}.png` });
+  }
+  await chooseThread("First conversation");
+  await page.evaluate('window.fixture.streams["run-2"].complete()');
+  await expect(assistant.locator("strong").getByText("Use the attached example", { exact: true })).toHaveCount(0);
+  await chooseThread("My first question");
   await expect(assistant.getByRole("button", { name: "Stop", exact: true })).toHaveCount(0);
   await expect(assistant.locator("strong").getByText("Use the attached example", { exact: true })).toBeVisible();
-  await assistant.getByRole("button", { name: "Attach files or links", exact: true }).click();
-  await page.getByRole("button", { name: "Add link", exact: true }).click();
-  await page.getByRole("textbox", { name: "URL", exact: true }).fill("http://example.com");
-  await page.getByRole("button", { name: "Add link", exact: true }).click();
-  await expect(page.getByRole("textbox", { name: "URL", exact: true })).toHaveAttribute("aria-invalid", "true");
-  await page.getByRole("textbox", { name: "URL", exact: true }).fill("https://www.irs.gov/");
-  await page.screenshot({ path: "/tmp/blog-assistant-nv2sj-add-link-1366.png" });
-  await page.getByRole("button", { name: "Add link", exact: true }).click();
-  await expect(assistant.getByText("www.irs.gov", { exact: true })).toBeVisible();
-  await assistant.getByRole("button", { name: "Remove reference https://www.irs.gov/", exact: true }).click();
-  await expect(assistant.getByText("www.irs.gov", { exact: true })).toBeHidden();
-  await assistant.getByRole("button", { name: "Attach files or links", exact: true }).click();
-  const choosingFile = page.waitForEvent("filechooser");
-  await page.getByRole("button", { name: "Upload image", exact: true }).click();
-  await (
-    await choosingFile
-  ).setFiles({
-    name: "invoice-reference.png",
-    mimeType: "image/png",
-    buffer: Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lZkAAAAASUVORK5CYII=",
-      "base64",
-    ),
-  });
-  await expect(
-    assistant.getByRole("button", { name: "invoice-reference.png Image · Ready to send", exact: true }),
-  ).toBeVisible();
-  await composer.fill("Use this reference for the example.");
-  await page.screenshot({ path: "/tmp/blog-assistant-nv2sj-attachment-ready-1366.png" });
-  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
-  await expect(assistant.getByText("Start with a clear outline", { exact: false })).toBeVisible();
-  await page.evaluate("window.fixture.complete()");
-  expect(await page.evaluate("window.fixture.threads")).toBe(2);
-  expect(await page.evaluate("window.fixture.titles")).toEqual(["My first question"]);
-  await expect(assistant.getByText("Image · Sent with your message", { exact: true })).toBeVisible();
-  await page.screenshot({ path: "/tmp/blog-assistant-nv2sj-attachment-sent-1366.png" });
-  await captureGeometry("sent-1366");
-  const article = page.getByRole("textbox", { name: "Article body", exact: true });
-  const original = await article.textContent();
-  await composer.fill("Suggest a stronger introduction");
-  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
-  await expect(assistant.getByRole("button", { name: "Stop", exact: true })).toBeVisible();
-  await page.evaluate("window.fixture.complete(true)");
-  await expect(assistant.getByRole("button", { name: "Show full change", exact: true })).toBeVisible();
-  await page.screenshot({ path: "/tmp/blog-assistant-nv2sj-proposal-card-1366.png" });
-  await assistant.getByRole("button", { name: "Show full change", exact: true }).click();
-  await expect(assistant.getByRole("button", { name: "Apply edit", exact: true })).toBeEnabled();
-  expect(await article.textContent()).toBe(original);
-  await expect(assistant.getByRole("button", { name: "Apply edit", exact: true })).toBeInViewport({ ratio: 1 });
-  await finishTransitions();
-  await page.screenshot({ path: "/tmp/blog-assistant-nv2sj-proposal-preview-1366.png" });
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await expect(assistant.getByRole("button", { name: "Apply edit", exact: true })).toBeInViewport({ ratio: 1 });
-  await page.screenshot({ path: "/tmp/blog-assistant-nv2sj-proposal-preview-1280.png" });
-  await page.setViewportSize({ width: 1366, height: 768 });
-  await assistant.getByRole("button", { name: "Apply edit", exact: true }).click();
-  await expect(article).toHaveText("Start with a concrete invoicing example that readers can follow.");
-  await page.screenshot({ path: "/tmp/blog-assistant-nv2sj-proposal-applied-1366.png" });
-  await expect(assistant.getByRole("button", { name: "Apply edit", exact: true })).toHaveCount(0);
-  await expect(assistant.getByRole("button", { name: "Discard proposal", exact: true })).toHaveCount(0);
-  await assistant.getByRole("button", { name: "Hide", exact: true }).click();
-  await expect(
-    assistant.locator("article").getByText("Suggest a stronger introduction", { exact: true }),
-  ).toBeVisible();
-  await expect(composer).toBeVisible();
-  await assistant.getByRole("tab", { name: "Review", exact: true }).click();
-  await expect(assistant.getByRole("button", { name: "Analyze with AI", exact: true })).toBeVisible();
-  await finishTransitions();
-  await page.screenshot({ path: "/tmp/blog-assistant-nv2sj-review-1366.png" });
-  await assistant.getByRole("tab", { name: "Sources", exact: true }).click();
-  await expect(assistant.getByText("References & claims", { exact: true })).toBeVisible();
-  await expect(assistant.getByRole("button", { name: "Check sources", exact: true })).toBeDisabled();
-  await expect(
-    assistant.getByText(
-      "Source checking is unavailable with the current AI configuration. You can still add and open reference links.",
-      { exact: true },
-    ),
-  ).toBeVisible();
-  await finishTransitions();
-  await page.screenshot({ path: "/tmp/blog-assistant-nv2sj-sources-1366.png" });
-  await assistant.getByRole("tab", { name: "Chat", exact: true }).click();
+
+  await page.evaluate("window.fixture.holdNextRun = true");
   await composer.fill("Another request");
   await assistant.getByRole("button", { name: "Send message", exact: true }).click();
-  await expect(assistant.getByText("Start with a clear outline", { exact: false })).toBeVisible();
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: "/tmp/blog-chat-streaming-390.png" });
-  await captureGeometry("streaming-390");
-  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(3);
+  expect(await page.evaluate('!!window.fixture.releaseResponses["run-3"]')).toBe(true);
+  await assistant.getByRole("button", { name: "New thread", exact: true }).click();
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  expect(await page.evaluate("window.fixture.abortedRunIds")).toEqual(["run-1"]);
+  await composer.fill("A parallel request");
+  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(4);
+  expect(await page.evaluate("window.fixture.activeRuns()")).toEqual(["run-3", "run-4"]);
+  await page.evaluate('window.fixture.releaseResponses["run-3"]()');
+  await expect.poll(() => page.evaluate('!!window.fixture.streams["run-3"]')).toBe(true);
+  await page.evaluate('window.fixture.streams["run-3"].delta("\\n\\nThe delayed response stayed in its own thread.")');
+  await chooseThread("My first question");
+  await expect(assistant.getByText("The delayed response stayed in its own thread.", { exact: true })).toBeVisible();
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent("pagehide")));
-  await expect.poll(() => page.evaluate("window.fixture.aborts")).toBe(2);
+  await expect.poll(() => page.evaluate("window.fixture.abortedRunIds")).toEqual(["run-1", "run-3", "run-4"]);
+  expect(await page.evaluate("window.fixture.activeRuns()")).toEqual([]);
+  expect(errors).toEqual([]);
 });
 
-type SectionProposalFixture = {
-  toolCallId: string;
-  type: "edit";
-  action?: "insert" | "replace" | "delete";
-  status: "pending";
-  title: string;
-  placement: string;
-  originalText: string;
-  replacement?: { type: string; attrs?: { level: number }; content: { type: string; text: string }[] }[];
-};
+type SectionProposalFixture = AssistantProposal & { title: string; status: "pending"; data: BlogProposalData };
 
 const introductionText = "A clear introduction helps readers understand the article.";
 const revisedIntroduction = "Start with a concrete invoicing example that readers can follow.";
@@ -493,39 +409,40 @@ const resourcesText = "Keep your payment records together.";
 const obsoleteText = "Print every invoice in triplicate.";
 const sectionProposals: SectionProposalFixture[] = [
   {
-    toolCallId: "insert-section",
-    type: "edit",
-    action: "insert",
+    id: "insert-section",
     status: "pending",
     title: "Add a practical payment checklist",
-    placement: "After Resources",
-    originalText: `Resources\n${resourcesText}`,
-    replacement: [
-      { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Payment checklist" }] },
-      { type: "paragraph", content: [{ type: "text", text: "Confirm the amount and payment date before sending." }] },
-    ],
+    data: {
+      type: "edit",
+      action: "insert",
+      placement: "After Resources",
+      originalText: `Resources\n${resourcesText}`,
+      replacement: [
+        { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Payment checklist" }] },
+        { type: "paragraph", content: [{ type: "text", text: "Confirm the amount and payment date before sending." }] },
+      ],
+    },
   },
   {
-    toolCallId: "replace-section",
-    type: "edit",
-    action: "replace",
+    id: "replace-section",
     status: "pending",
     title: "Make the introduction more concrete",
-    placement: "Introduction",
-    originalText: `Introduction\n${introductionText}`,
-    replacement: [
-      { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Introduction" }] },
-      { type: "paragraph", content: [{ type: "text", text: revisedIntroduction }] },
-    ],
+    data: {
+      type: "edit",
+      action: "replace",
+      placement: "Introduction",
+      originalText: `Introduction\n${introductionText}`,
+      replacement: [
+        { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Introduction" }] },
+        { type: "paragraph", content: [{ type: "text", text: revisedIntroduction }] },
+      ],
+    },
   },
   {
-    toolCallId: "delete-section",
-    type: "edit",
-    action: "delete",
+    id: "delete-section",
     status: "pending",
     title: "Remove the outdated printing section",
-    placement: "Paper copies",
-    originalText: `Paper copies\n${obsoleteText}`,
+    data: { type: "edit", action: "delete", placement: "Paper copies", originalText: `Paper copies\n${obsoleteText}` },
   },
 ];
 
@@ -563,7 +480,8 @@ async function sectionProposalHarness(page: import("@playwright/test").Page) {
   };
   const threads = ["Section suggestions", "Other conversation"].map((title, index) => ({
     id: `section-thread-${index + 1}`,
-    postId: "post",
+    resourceId: "post",
+    integrationKey: "blog",
     title,
     type: "chat",
     settings: {},
@@ -584,8 +502,8 @@ async function sectionProposalHarness(page: import("@playwright/test").Page) {
     const path = new URL(request.url()).pathname;
     const method = request.method();
     if (path === "/") return route.fulfill({ contentType: "text/html", body: html });
-    if (path === "/api/admin/blog/ai") return route.fulfill({ json: config });
-    if (path === "/api/admin/blog/post/threads") return route.fulfill({ json: { threads } });
+    if (path === "/api/assistant/blog/config") return route.fulfill({ json: config });
+    if (path === "/api/assistant/blog/threads") return route.fulfill({ json: { threads } });
     if (path.includes("/proposals/")) {
       state.outcomePatches.push(`${method} ${path}`);
       return route.fulfill({ status: 500, json: { error: "Chat proposal outcomes must stay local." } });
@@ -606,21 +524,21 @@ async function sectionProposalHarness(page: import("@playwright/test").Page) {
         },
       });
     }
-    if (path === "/api/admin/blog/ai/runs" && method === "POST") {
+    if (path === "/api/assistant/blog/runs" && method === "POST") {
       const body = request.postDataJSON() as Record<string, unknown>;
       const index = runs.length + 1;
       const response = {
         text: "Here are three focused section changes to make the article more useful.",
-        keywords: [],
-        findings: [],
         citations: [],
         proposals: state.proposals,
-        searchStatus: "not_requested",
+        data: { keywords: [], searchStatus: "not_requested" },
       };
       const run = {
         id: `section-run-${index}`,
         threadId: body.threadId,
-        postId: "post",
+        resourceId: "post",
+        integrationKey: "blog",
+        executionMode: "conversational",
         operation: "chat",
         status: "completed",
         provider: "fixture",
@@ -676,8 +594,8 @@ async function sectionProposalHarness(page: import("@playwright/test").Page) {
   });
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto("https://section-proposals.test/");
-  const assistant = page.getByRole("complementary", { name: "Blog assistant" });
-  const composer = assistant.getByRole("textbox", { name: "Message to assistant" });
+  const assistant = page.getByRole("complementary", { name: "Assistant" });
+  const composer = assistant.getByRole("combobox", { name: "Message to assistant" });
   await expect(composer).toBeEnabled();
   async function send(message = "Improve these sections") {
     const proposals = assistant.getByRole("region", { name: state.proposals[0].title, exact: true });
@@ -868,7 +786,11 @@ test("changed proposal targets remain untouched and a new request can recover", 
       .first(),
   ).toBeVisible();
   state.proposals = [
-    { ...sectionProposals[1], toolCallId: "recovered-edit", originalText: `Introduction\n${changedIntroduction}` },
+    {
+      ...sectionProposals[1],
+      id: "recovered-edit",
+      data: { ...sectionProposals[1].data, originalText: `Introduction\n${changedIntroduction}` },
+    },
   ];
   await send("Please update the revised introduction");
   const recovered = assistant.getByRole("region", { name: sectionProposals[1].title, exact: true }).last();
@@ -892,7 +814,8 @@ async function historyStateHarness(page: import("@playwright/test").Page, cached
   const now = new Date().toISOString();
   const thread = {
     id: "history-thread",
-    postId: "post",
+    resourceId: "post",
+    integrationKey: "blog",
     title: "Invoice ideas",
     settings: {},
     composerDraft: "",
@@ -904,8 +827,8 @@ async function historyStateHarness(page: import("@playwright/test").Page, cached
     const request = route.request();
     const path = new URL(request.url()).pathname;
     if (path === "/") return route.fulfill({ contentType: "text/html", body: html });
-    if (path === "/api/admin/blog/ai") return route.fulfill({ json: config });
-    if (path === "/api/admin/blog/post/threads") {
+    if (path === "/api/assistant/blog/config") return route.fulfill({ json: config });
+    if (path === "/api/assistant/blog/threads") {
       if (request.method() === "POST") {
         state.threads = [thread];
         state.failDetail = false;
@@ -936,7 +859,7 @@ test("history failure retries through loading to the designed empty state and st
   const history = page.getByRole("region", { name: "Conversation history" });
   await expect(history.getByText("Couldn’t load history", { exact: true })).toBeVisible();
   await expect(history.getByText("No conversations yet", { exact: true })).toHaveCount(0);
-  await expect(history.getByRole("button", { name: "Back to chat" })).toHaveCount(0);
+  await expect(history.getByRole("button", { name: "Back to chat" })).toBeVisible();
   for (const [width, height] of [
     [1366, 768],
     [1280, 720],
@@ -960,25 +883,12 @@ test("history failure retries through loading to the designed empty state and st
   ]) {
     await page.setViewportSize({ width, height });
     await page.screenshot({ path: `/tmp/blog-history-empty-${width}.png` });
-    console.log(
-      "HISTORY STATE GEOMETRY",
-      await history.locator('[data-slot="empty"]').evaluate((node) => {
-        const title = getComputedStyle(node.querySelector('[data-slot="empty-title"]')!);
-        const button = getComputedStyle(node.querySelector("button")!);
-        return {
-          width: node.getBoundingClientRect().width,
-          height: node.getBoundingClientRect().height,
-          titleFont: title.fontFamily,
-          titleWeight: title.fontWeight,
-          titleSize: title.fontSize,
-          buttonSize: button.fontSize,
-        };
-      }),
-    );
+    await expect(history.getByRole("button", { name: "New thread", exact: true })).toBeInViewport();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   }
   await history.getByRole("button", { name: "New thread", exact: true }).click();
   await expect(history).toHaveCount(0);
-  await expect(page.getByRole("textbox", { name: "Message to assistant" })).toBeFocused();
+  await expect(page.getByRole("combobox", { name: "Message to assistant" })).toBeFocused();
 });
 
 test("a failed history refresh keeps cached conversations instead of showing empty or error cards", async ({
@@ -997,145 +907,3 @@ test("a failed history refresh keeps cached conversations instead of showing emp
     page.locator('[data-slot="toast-title"]').filter({ hasText: "History temporarily unavailable" }),
   ).toBeVisible();
 });
-
-for (const scenario of [
-  { tab: "Review", operation: "review", idle: "Analyze with AI", completed: "Analyze again", otherTab: "Sources" },
-  { tab: "Sources", operation: "check_sources", idle: "Check sources", completed: "Check sources", otherTab: "Review" },
-]) {
-  test(`${scenario.tab} primary action stops its stream and resets after cancellation or completion`, async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 1366, height: 768 });
-    await page.addInitScript(() => {
-      const now = new Date().toISOString();
-      const config = {
-        enabled: true,
-        provider: "fixture",
-        capabilities: { images: true, structuredOutput: true, webSearch: true, urlRetrieval: false },
-      };
-      const thread = {
-        id: "action-thread",
-        postId: "post",
-        title: "Draft review",
-        type: "chat",
-        settings: {},
-        composerDraft: "",
-        createdAt: now,
-        updatedAt: now,
-      };
-      const runs: Record<string, unknown>[] = [];
-      const fixture = { starts: 0, aborts: 0, operation: "", complete: () => {} };
-      Object.assign(window, { actionFixture: fixture, process: { env: { NODE_ENV: "production" } } });
-      window.fetch = async (input, options) => {
-        const url = String(input);
-        const body = typeof options?.body === "string" ? JSON.parse(options.body) : {};
-        if (url === "/api/admin/blog/ai") return Response.json(config);
-        if (url.endsWith("/threads"))
-          return Response.json(options?.method === "POST" ? { thread } : { threads: [thread] });
-        if (url.endsWith("/action-thread")) {
-          if (options?.method === "PATCH") return Response.json({ thread: Object.assign(thread, body) });
-          return Response.json({ ...config, thread, runs, messages: [], attachments: [] });
-        }
-        if (url === "/api/admin/blog/ai/runs") {
-          fixture.starts++;
-          fixture.operation = body.operation;
-          const run = {
-            id: `action-${fixture.starts}`,
-            threadId: thread.id,
-            postId: "post",
-            operation: body.operation,
-            status: "running",
-            provider: "fixture",
-            model: "fixture",
-            inputMessageId: null,
-            assistantMessageId: null,
-            request: body,
-            response: null as Record<string, unknown> | null,
-            errorMessage: null,
-            createdAt: now,
-            updatedAt: now,
-            completedAt: null as string | null,
-          };
-          runs.push(run);
-          return new Response(
-            new ReadableStream({
-              start(controller) {
-                const emit = (event: unknown) =>
-                  controller.enqueue(new TextEncoder().encode(JSON.stringify(event) + "\n"));
-                emit({ type: "run", run });
-                fixture.complete = () => {
-                  run.status = "completed";
-                  run.completedAt = now;
-                  run.response = {
-                    text: "Draft checked.",
-                    keywords: [],
-                    findings: [],
-                    citations: [],
-                    proposals: [],
-                    searchStatus: "completed",
-                  };
-                  emit({ type: "completed", run });
-                  controller.close();
-                };
-                options?.signal?.addEventListener(
-                  "abort",
-                  () => {
-                    fixture.aborts++;
-                    run.status = "cancelled";
-                    controller.error(new DOMException("Aborted", "AbortError"));
-                  },
-                  { once: true },
-                );
-              },
-            }),
-            { headers: { "Content-Type": "application/x-ndjson" } },
-          );
-        }
-        throw new Error(`Unexpected fixture request: ${url}`);
-      };
-    });
-    await page.route("https://chat-actions-harness.test/", (route) =>
-      route.fulfill({ contentType: "text/html", body: html }),
-    );
-    await page.goto("https://chat-actions-harness.test/");
-    const assistant = page.getByRole("complementary", { name: "Blog assistant" });
-    await assistant.getByRole("tab", { name: scenario.tab, exact: true }).click();
-    await assistant.getByRole("button", { name: scenario.idle, exact: true }).click();
-    const stop = assistant.getByRole("button", { name: "Stop request", exact: true });
-    await expect(stop).toHaveCount(1);
-    await expect(stop).toBeEnabled();
-    await expect(stop).toHaveAttribute("aria-busy", "true");
-    await expect
-      .poll(() =>
-        page.evaluate(() => (window as unknown as { actionFixture: { operation: string } }).actionFixture.operation),
-      )
-      .toBe(scenario.operation);
-    await page.screenshot({ path: `/tmp/blog-${scenario.operation}-primary-busy.png` });
-    await assistant.getByRole("tab", { name: scenario.otherTab, exact: true }).click();
-    await expect(stop).toHaveCount(1);
-    await expect(stop).toBeEnabled();
-    await stop.click();
-    await expect
-      .poll(() =>
-        page.evaluate(() => (window as unknown as { actionFixture: { aborts: number } }).actionFixture.aborts),
-      )
-      .toBe(1);
-    await expect(stop).toHaveCount(0);
-    await assistant.getByRole("tab", { name: scenario.tab, exact: true }).click();
-    await assistant.getByRole("button", { name: scenario.idle, exact: true }).click();
-    await expect
-      .poll(() =>
-        page.evaluate(() => (window as unknown as { actionFixture: { starts: number } }).actionFixture.starts),
-      )
-      .toBe(2);
-    await page.evaluate(() => (window as unknown as { actionFixture: { complete(): void } }).actionFixture.complete());
-    const again = assistant.getByRole("button", { name: scenario.completed, exact: true });
-    await expect(again).toBeEnabled();
-    await expect(again).toHaveAttribute("aria-busy", "false");
-    await expect(stop).toHaveCount(0);
-    await again.click();
-    await expect(stop).toHaveCount(1);
-    await stop.click();
-    await expect(again).toBeEnabled();
-  });
-}

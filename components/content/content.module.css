@@ -1,0 +1,35 @@
+.content {
+  font-size: 16px;
+  line-height: 1.6;
+}
+.content > * {
+  margin-block: 0;
+}
+.content p {
+  margin-block: calc(var(--spacing) * 3);
+}
+.content blockquote {
+  border-left: 2px solid var(--primary);
+  padding-left: 16px;
+}
+.content h1 {
+  margin-top: calc(var(--spacing) * 8);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.content h2 {
+  margin-top: calc(var(--spacing) * 7);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.content h3 {
+  margin-top: calc(var(--spacing) * 5);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.content > :first-child {
+  margin-top: 0;
+}

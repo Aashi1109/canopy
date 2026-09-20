@@ -63,6 +63,8 @@ export type ToolRuntimeSpec<Input, Settings extends ToolSettings, Result> = {
   initialInput: Input;
   initialSettings: Settings;
   isEmpty: (input: Input) => boolean;
+  /** After success, changes to this settings snapshot refresh the result until input changes or the run is cancelled. */
+  refreshOnSettingsChange?: Readonly<Record<string, unknown>>;
   /** Live tools may require an explicit run for an unusually expensive input. */
   shouldAutoRun?: (input: Input) => boolean;
   trigger: "live" | "manual";

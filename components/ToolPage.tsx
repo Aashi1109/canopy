@@ -582,7 +582,7 @@ export default function ToolPage({
   }, []);
 
   const onSettingChange = useCallback((key: string, value: unknown) => {
-    setSettings((current) => ({ ...current, [key]: value }));
+    setSettings((current) => (Object.is(current[key], value) ? current : { ...current, [key]: value }));
   }, []);
 
   const resetPageState = useCallback(() => {
@@ -644,6 +644,7 @@ export default function ToolPage({
       initialInput: EMPTY_INPUT,
       initialSettings: RUNTIME_SETTINGS,
       isEmpty: (input) => isEmptyInput(spec.input.kind, input),
+      refreshOnSettingsChange: spec.category === "developer-generators" ? settings : undefined,
       shouldAutoRun: (input) => {
         const maxEditableBytes = spec.input.kind === "text" ? spec.input.acceptFiles?.maxEditableBytes : undefined;
         return !isLargeTextFile(input.files[0], maxEditableBytes);
@@ -651,7 +652,7 @@ export default function ToolPage({
       trigger: spec.trigger.mode,
       validate: () => NO_ISSUES,
     }),
-    [execute, spec],
+    [execute, settings, spec],
   );
 
   const Workspace = useMemo(() => resolveWorkspace(definitionKey), [definitionKey]);

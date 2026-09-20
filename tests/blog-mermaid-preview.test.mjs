@@ -18,7 +18,7 @@ const hooks = registerHooks({
       return stub(
         "export const Button = 'button', Tooltip = 'tooltip', TooltipContent = 'tooltip-content', TooltipProvider = 'provider', TooltipTrigger = 'trigger'; export const Popover = {Root: 'popover', Trigger: 'trigger', Portal: 'portal', Content: 'content', Close: 'close'}; export const toast = {error(message) { globalThis.__blogMermaidTest.errors.push(message); }};",
       );
-    if (specifier === "@/lib/blog/diagramExport")
+    if (specifier === "@/lib/markdown/diagramExport")
       return stub("export async function diagramPng(svg) { return globalThis.__blogMermaidTest.png(svg); }");
     if (specifier === "./MermaidPreview") return stub("export const MermaidPreview = 'full-preview';");
     if (specifier.endsWith(".css")) return stub("export default {};");
@@ -37,7 +37,7 @@ const hooks = registerHooks({
     };
   },
 });
-const { MermaidDiagram } = await import("../components/blog/MermaidDiagram.tsx");
+const { MermaidDiagram } = await import("../components/content/MermaidDiagram.tsx");
 test.after(() => {
   hooks.deregister();
   delete globalThis.__blogMermaidTest;

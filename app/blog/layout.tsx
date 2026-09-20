@@ -7,7 +7,7 @@ import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 export default async function BlogLayout({ children }: { children: ReactNode }) {
   const session = await getOptionalSession(await headers());
   return (
-    <div className="flex min-h-screen flex-col bg-card text-foreground">
+    <div className="flex min-h-dvh flex-col bg-card text-foreground">
       <a className="sr-only focus:not-sr-only focus:p-4 focus:text-primary" href="#blog-main">
         Skip to blog content
       </a>
@@ -18,7 +18,7 @@ export default async function BlogLayout({ children }: { children: ReactNode }) 
         account={{ returnTo: "/blog", user: session?.user ?? null }}
         actions={<AccountNavigation returnTo="/blog" user={session?.user ?? null} />}
       />
-      <main className="min-w-0 grow" id="blog-main">
+      <main className="flex min-w-0 grow flex-col" id="blog-main">
         {children}
       </main>
       <CanopyFooter />

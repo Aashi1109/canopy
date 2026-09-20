@@ -45,6 +45,12 @@ const config = {
       publishUrl: process.env.BLOG_PUBLISH_URL,
     };
   },
+  get assistant() {
+    return {
+      schedulerSecret: process.env.ASSISTANT_SCHEDULER_SECRET,
+      maintenanceUrl: process.env.ASSISTANT_MAINTENANCE_URL,
+    };
+  },
   get ai() {
     return {
       enabled: process.env.AI_ENABLED === "true",

@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import { NodeViewWrapper, useEditorState, type NodeViewProps } from "@tiptap/react";
 import { Button, Label, Popover, Textarea } from "@/components/ui/index.tsx";
-import { MAX_BLOG_MATH_LENGTH, renderBlogMath } from "@/lib/blog/math";
+import { MAX_MATH_LENGTH, renderMath } from "@/lib/markdown/math";
 
 export function BlogMathView({ editor, node, updateAttributes }: NodeViewProps) {
   const id = useId();
@@ -11,8 +11,8 @@ export function BlogMathView({ editor, node, updateAttributes }: NodeViewProps) 
   const [open, setOpen] = useState(false);
   const [source, setSource] = useState(String(node.attrs.latex ?? ""));
   const block = node.type.name === "blockMath";
-  const rendered = renderBlogMath(String(node.attrs.latex ?? ""), block);
-  const preview = renderBlogMath(source, block);
+  const rendered = renderMath(String(node.attrs.latex ?? ""), block);
+  const preview = renderMath(source, block);
 
   return (
     <NodeViewWrapper
@@ -51,7 +51,7 @@ export function BlogMathView({ editor, node, updateAttributes }: NodeViewProps) 
             <Textarea
               id={id}
               value={source}
-              maxLength={MAX_BLOG_MATH_LENGTH}
+              maxLength={MAX_MATH_LENGTH}
               className="mt-2 font-mono text-sm"
               rows={4}
               onChange={(event) => setSource(event.target.value)}

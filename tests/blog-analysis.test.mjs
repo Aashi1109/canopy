@@ -26,9 +26,9 @@ const request = (agentId, overrides = {}) => ({
   operation: "agent",
   agentId,
   message: "Analyze the article",
-  postId: "post",
+  resourceId: "post",
   threadId: "thread",
-  document,
+  context: { document },
   ...overrides,
 });
 const result = (output) => ({
@@ -94,22 +94,27 @@ test("all four agents share one validated operation and reject obsolete direct a
     assert.equal(validateRunRequest(request(id)).agentId, id);
     for (const field of ["postId", "threadId"])
       assert.throws(() => validateRunRequest(request(id, { [field]: undefined })));
-    assert.throws(() => validateRunRequest(request(id, { selectedText: "partial" })));
+    assert.throws(() => validateRunRequest(request(id, { context: { selectedText: "partial" } })));
     assert.throws(() => validateRunRequest(request(id, { inputMessageId: "chat-message" })));
   }
   for (const operation of ["review", "optimize", "check_sources"])
-    assert.throws(() => validateRunRequest({ ...request("auditor"), operation }), /Refresh/);
+    assert.throws(() => validateRunRequest({ ...request("auditor"), operation }));
   assert.throws(() => validateRunRequest(request("unknown")));
   for (const agent of ["writer", "auditor", "optimizer"])
-    assert.throws(() => validateRunRequest(request(agent, { document: undefined })));
-  assert.equal(validateRunRequest(request("planner", { document: undefined })).document, undefined);
-  assert.throws(() => validateRunRequest(request("planner", { document: undefined, message: "" })));
+    assert.throws(() => validateRunRequest(request(agent, { context: { document: undefined } })));
   assert.equal(
-    validateRunRequest(request("writer", { document: createBlogDocument("Empty"), message: "" })).agentId,
+    validateRunRequest(request("planner", { context: { document: undefined } })).context.document,
+    undefined,
+  );
+  assert.throws(() => validateRunRequest(request("planner", { message: "", context: { document: undefined } })));
+  assert.equal(
+    validateRunRequest(request("writer", { message: "", context: { document: createBlogDocument("Empty") } })).agentId,
     "writer",
   );
-  assert.throws(() => validateRunRequest(request("auditor", { document: createBlogDocument("Empty") })));
-  assert.throws(() => validateRunRequest(request("optimizer", { document: { ...document, unexpected: true } })));
+  assert.throws(() => validateRunRequest(request("auditor", { context: { document: createBlogDocument("Empty") } })));
+  assert.throws(() =>
+    validateRunRequest(request("optimizer", { context: { document: { ...document, unexpected: true } } })),
+  );
 });
 test("audits cover all categories and contain no draft or ordinary chat output", () => {
   const value = validateAgentOutput(result(audit()), request("auditor"), []);
@@ -228,8 +233,8 @@ test("whole-draft proposals cannot silently remove rich blocks or links", () => 
   const body = { ...rich.body, content: [paragraph("Improved intro"), ...rich.body.content.slice(1)] };
   for (const agent of ["writer", "optimizer"]) {
     assert.deepEqual(
-      validateAgentOutput(result(optimization(body)), request(agent, { document: rich }), []).artifact.content.document
-        .body,
+      validateAgentOutput(result(optimization(body)), request(agent, { context: { document: rich } }), []).artifact
+        .content.document.body,
       body,
     );
     for (let index = 1; index < rich.body.content.length; index++)
@@ -237,7 +242,7 @@ test("whole-draft proposals cannot silently remove rich blocks or links", () => 
         () =>
           validateAgentOutput(
             result(optimization({ ...body, content: body.content.filter((_, i) => i !== index) })),
-            request(agent, { document: rich }),
+            request(agent, { context: { document: rich } }),
             [],
           ),
         /preserve/,
@@ -269,13 +274,13 @@ test("agent images validate against configured cloud and preserve image identity
       ],
     },
   };
-  const input = validateRunRequest(request("optimizer", { document: rich }), cloud);
+  const input = validateRunRequest(request("optimizer", { context: { document: rich } }), cloud);
   assert.deepEqual(
-    validateAgentOutput(result(optimization(input.document.body)), input, [], cloud).artifact.content.document
+    validateAgentOutput(result(optimization(input.context.document.body)), input, [], cloud).artifact.content.document
       .coverImage,
     image,
   );
-  assert.throws(() => validateRunRequest(request("auditor", { document: rich }), "other-cloud"));
+  assert.throws(() => validateRunRequest(request("auditor", { context: { document: rich } }), "other-cloud"));
 });
 
 test("Planner validates complete planning sections and Writer accepts an empty draft base", () => {
@@ -289,7 +294,8 @@ test("Planner validates complete planning sections and Writer accepts an empty d
     })),
   };
   assert.equal(
-    validateAgentOutput(result(plan), request("planner", { document: undefined }), []).artifact.content.sections.length,
+    validateAgentOutput(result(plan), request("planner", { context: { document: undefined } }), []).artifact.content
+      .sections.length,
     5,
   );
   assert.throws(() =>
@@ -297,8 +303,8 @@ test("Planner validates complete planning sections and Writer accepts an empty d
   );
   const empty = createBlogDocument("Empty draft");
   assert.equal(
-    validateAgentOutput(result(optimization()), request("writer", { document: empty }), []).artifact.content.document
-      .title,
+    validateAgentOutput(result(optimization()), request("writer", { context: { document: empty } }), []).artifact
+      .content.document.title,
     "Improved article",
   );
 });

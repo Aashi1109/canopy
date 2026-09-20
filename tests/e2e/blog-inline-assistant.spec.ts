@@ -26,7 +26,7 @@ test.beforeAll(async () => {
     import StarterKit from '@tiptap/starter-kit';
     import { BlogSelectionToolbar } from '${root}/app/admin/(protected)/blog/components/BlogSelectionToolbar.tsx';
     import { Toaster } from '${root}/components/ui/index.tsx';
-    import content from '${root}/components/blog/content.module.css';
+    import content from '${root}/components/content/content.module.css';
     const body = {type:'doc',content:[{type:'paragraph',content:[{type:'text',text:${JSON.stringify(original)}}]},{type:'paragraph',content:[{type:'text',text:'Another paragraph stays unchanged while you review the suggestion.'}]}]};
     function App() {
       const [document,setDocument] = useState({schemaVersion:1,title:'Freelance invoice guide',excerpt:'',authorName:'Editor',coverImage:null,category:null,tags:[],seoTitle:null,seoDescription:null,body});
@@ -48,7 +48,7 @@ test.beforeAll(async () => {
     jsx: "automatic",
     nodePaths: [resolve(root, "node_modules")],
     tsconfig: resolve(root, "tsconfig.json"),
-    define: { "process.env.NODE_ENV": '"development"' },
+    define: { "process.env.NODE_ENV": '"development"', "process.env": "{}" },
     loader: { ".png": "dataurl", ".svg": "dataurl", ".woff2": "dataurl" },
   });
   javascript = bundle.outputFiles.find((file) => file.path.endsWith(".js"))!.text;
@@ -95,7 +95,7 @@ async function harness(page: Page) {
       });
     const body = request.postDataJSON() as Record<string, unknown> | null;
     requests.push({ method: request.method(), path, body });
-    if (path === "/api/admin/blog/ai/runs" && request.method() === "POST") {
+    if (path === "/api/assistant/blog/runs" && request.method() === "POST") {
       if (control.networkAbort) {
         control.networkAbort = false;
         return route.abort("aborted");
@@ -105,10 +105,12 @@ async function harness(page: Page) {
         return route.fulfill({ status: 503, json: { error: "Temporary provider failure" } });
       }
       const id = `run-${runs.size + 1}`,
-        selection = { text: body!.selectedText as string };
+        selection = { text: (body!.context as { selectedText: string }).selectedText };
       const run = {
         id,
-        postId: "fixture-post",
+        resourceId: "fixture-post",
+        integrationKey: "blog",
+        executionMode: "conversational",
         threadId: "inline-thread",
         inputMessageId: "input-message",
         assistantMessageId: `assistant-${id}`,
@@ -128,17 +130,17 @@ async function harness(page: Page) {
         status: "completed",
         response: {
           text: "Review this edit",
-          keywords: [],
-          findings: [],
           citations: [],
-          searchStatus: "not_requested",
+          data: { keywords: [], findings: [], searchStatus: "not_requested" },
           proposals: [
             {
-              toolCallId: "rewrite",
-              type: "edit",
+              id: "rewrite",
               status: "pending",
-              originalText: selection.text,
-              replacement: [{ type: "paragraph", content: [{ type: "text", text: control.candidate }] }],
+              data: {
+                type: "edit",
+                originalText: selection.text,
+                replacement: [{ type: "paragraph", content: [{ type: "text", text: control.candidate }] }],
+              },
             },
           ],
         },
@@ -163,7 +165,7 @@ async function harness(page: Page) {
             .join("\n") + "\n",
       });
     }
-    const id = path.split("/")[6],
+    const id = path.split("/")[5],
       run = runs.get(id);
     if (path.includes("/proposals/")) return route.fulfill({ json: { run } });
     if (run)
@@ -198,15 +200,15 @@ async function capture(page: Page, path: string) {
   );
 }
 function assertPrivate(requests: RequestRecord[]) {
-  expect(requests.some((request) => request.path.includes("threads") || request.path.includes("assistant"))).toBe(
-    false,
-  );
+  expect(requests.some((request) => request.path.includes("threads"))).toBe(false);
   for (const request of requests.filter((request) => request.method === "POST" && request.path.endsWith("/runs"))) {
     expect(request.body?.operation).toBe("rewrite");
     expect(request.body).not.toHaveProperty("document");
     expect(request.body).not.toHaveProperty("version");
     expect(request.body).not.toHaveProperty("selection");
-    expect(request.body?.selectedText).toBe(original);
+    expect((request.body?.context as { selectedText: string })?.selectedText).toBe(original);
+    expect(request.body?.context).not.toHaveProperty("editorJson");
+    expect(request.body?.context).not.toHaveProperty("document");
   }
 }
 
@@ -329,7 +331,7 @@ test("inline actions retain the anchored text until Accept and support Undo", as
   // The accepted-selection highlight expires after900ms; that cleanup must not hide a later toolbar.
   await page.waitForTimeout(1000);
   await expect(page.getByRole("menuitem", { name: "Adjust tone", exact: true })).toBeVisible();
-  await expect(page.getByRole("complementary", { name: "Blog assistant" })).toHaveCount(0);
+  await expect(page.getByRole("complementary", { name: "Assistant" })).toHaveCount(0);
   assertPrivate(requests);
 });
 

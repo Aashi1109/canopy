@@ -1,7 +1,7 @@
 /**
  * What a tool run returns.
  *
- * The union is discriminated on `render`, and the eleven variants are closed on
+ * The union is discriminated on `render`, and the variants are closed on
  * purpose: there is no `details?: unknown` escape hatch, because the whole
  * point is that a renderer can exhaustively switch on `render` and never guess.
  * If a tool cannot express its output here, the union is wrong — extend it
@@ -107,6 +107,41 @@ export type ToolFilesRender = {
 
 export type ToolNoneRender = { readonly render: "none" };
 
+export type ToolLinkPreviewImage = {
+  readonly url: string;
+  readonly previewUrl: string | null;
+  readonly alt: string;
+  readonly width: number | null;
+  readonly height: number | null;
+};
+
+export type ToolLinkPreviewRender = {
+  readonly render: "link-preview";
+  readonly requestedUrl: string;
+  readonly resolvedUrl: string;
+  readonly metadata: {
+    readonly url: string;
+    readonly title: string;
+    readonly description: string;
+    readonly siteName: string;
+    readonly image: ToolLinkPreviewImage | null;
+    readonly twitter: {
+      readonly card: string;
+      readonly title: string;
+      readonly description: string;
+      readonly image: ToolLinkPreviewImage | null;
+    };
+  };
+  readonly tags: string;
+  readonly checks: readonly {
+    readonly level: "ok" | "warn" | "error";
+    readonly property: string;
+    readonly label: string;
+    readonly detail: string;
+  }[];
+  readonly downloadName?: string;
+};
+
 export type ToolRender =
   | ToolTextRender
   | ToolCodeRender
@@ -118,6 +153,7 @@ export type ToolRender =
   | ToolImageRender
   | ToolDiffRender
   | ToolFilesRender
+  | ToolLinkPreviewRender
   | ToolNoneRender;
 
 export type ToolRenderKind = ToolRender["render"];

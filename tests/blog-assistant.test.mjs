@@ -2,17 +2,24 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createBlogDocument } from "../lib/blog/document.ts";
 import {
-  publicReference,
   validateRunRequest,
-  validateAssistantImage,
   validateAssistantResult,
   validatedProposal,
   separateSeoProposals,
   blocksToNodes,
-  threadPatchSchema,
 } from "../lib/blog/assistantValidation.ts";
 
-test("composer state accepts bounded inline agent positions and legacy selections", () => {
+import {
+  publicReference,
+  validateAssistantImage,
+  threadPatchSchema,
+  parseStoredRequest,
+  parseStoredResult,
+  parseMessageParts,
+  validateRunRequest as validateSharedRequest,
+} from "../lib/assistant/validation.ts";
+
+test("composer state accepts bounded inline agent positions and optional selections", () => {
   const selection = { agentId: "writer", attachmentIds: ["plan"] };
   assert.deepEqual(threadPatchSchema.parse({ composerState: selection }).composerState, selection);
   for (const agentOffset of [0, 7, 8000]) {
@@ -48,9 +55,9 @@ const request = {
   clientRequestId: "request",
   operation: "rewrite",
   message: "Improve",
-  postId: "post",
+  resourceId: "post",
   threadId: "thread",
-  selectedText: "Original text",
+  context: { selectedText: "Original text" },
 };
 const block = { type: "paragraph", level: null, text: "Improved text", items: [] };
 const result = (output, overrides = {}) => ({
@@ -68,9 +75,9 @@ const result = (output, overrides = {}) => ({
 
 test("inline requests send selected text without an article wrapper or coordinates", () => {
   const inline = { ...request, threadId: undefined };
-  assert.equal(validateRunRequest(inline).selectedText, "Original text");
-  for (const field of ["postId", "selectedText"])
-    assert.throws(() => validateRunRequest({ ...inline, [field]: undefined }));
+  assert.equal(validateRunRequest(inline).context.selectedText, "Original text");
+  assert.throws(() => validateRunRequest({ ...inline, resourceId: undefined }));
+  assert.throws(() => validateRunRequest({ ...inline, context: {} }));
   assert.throws(() => validateRunRequest({ ...inline, document, version: 1 }));
   assert.throws(() => validateRunRequest({ ...inline, message: "x".repeat(8001) }));
   assert.throws(() => validateRunRequest({ ...inline, attachmentIds: ["private-image"] }));
@@ -80,15 +87,18 @@ test("chat accepts bounded editor JSON without validating full document publishi
     clientRequestId: "chat",
     operation: "chat",
     message: "Help",
-    postId: "post",
+    resourceId: "post",
     threadId: "thread",
-    editorJson: document.body,
+    context: { editorJson: document.body },
   };
-  assert.deepEqual(validateRunRequest(chat).editorJson, document.body);
+  assert.deepEqual(validateRunRequest(chat).context.editorJson, document.body);
   assert.throws(() => validateRunRequest({ ...chat, threadId: undefined }));
-  assert.throws(() => validateRunRequest({ ...chat, editorJson: [] }));
+  assert.throws(() => validateRunRequest({ ...chat, context: { ...chat.context, editorJson: [] } }));
   assert.throws(() =>
-    validateRunRequest({ ...chat, editorJson: { type: "doc", content: [], extra: "x".repeat(1000000) } }),
+    validateRunRequest({
+      ...chat,
+      context: { ...chat.context, editorJson: { type: "doc", content: [], extra: "x".repeat(1000000) } },
+    }),
   );
 });
 test("chat returns literal prose and JSON examples without an output envelope", () => {
@@ -133,7 +143,7 @@ test("rewrite proposals are validated and do not mutate the working article", ()
   const before = structuredClone(document);
   const output = validateAssistantResult(result({ originalText: "Original text", blocks: [block] }), request).response;
   assert.equal(output.proposals[0].status, "pending");
-  assert.equal(output.proposals[0].replacement[0].content[0].text, "Improved text");
+  assert.equal(output.proposals[0].data.replacement[0].content[0].text, "Improved text");
   assert.deepEqual(document, before);
   assert.throws(
     () => validatedProposal("bad", "proposeEdit", { originalText: "Other text", blocks: [block] }, request),
@@ -142,7 +152,11 @@ test("rewrite proposals are validated and do not mutate the working article", ()
   assert.throws(() => validatedProposal("bad", "publish", {}, request), /unsupported/);
   assert.throws(() => validateAssistantResult(result(null, { text: '{"broken"' }), request), /incomplete/);
 });
-const chatRequest = { ...request, operation: "chat", selectedText: undefined, editorJson: document.body };
+const chatRequest = {
+  ...request,
+  operation: "chat",
+  context: { ...request.context, selectedText: undefined, editorJson: document.body },
+};
 const sectionEdit = {
   action: "replace",
   title: "Clarify the introduction",
@@ -159,24 +173,23 @@ test("section proposals preserve their operation and review context without chan
       { ...sectionEdit, action, blocks: action === "delete" ? [] : [block] },
       chatRequest,
     );
-    assert.equal(proposal.type, "edit");
+    assert.equal(proposal.data.type, "edit");
     assert.equal(proposal.status, "pending");
-    assert.equal(proposal.action, action);
+    assert.equal(proposal.data.action, action);
     assert.equal(proposal.title, sectionEdit.title);
-    assert.equal(proposal.placement, sectionEdit.placement);
-    assert.equal(proposal.originalText, "Original text");
-    if (action === "delete") assert.equal(proposal.replacement, undefined);
-    else assert.equal(proposal.replacement[0].content[0].text, "Improved text");
+    assert.equal(proposal.data.placement, sectionEdit.placement);
+    assert.equal(proposal.data.originalText, "Original text");
+    if (action === "delete") assert.equal(proposal.data.replacement, undefined);
+    else assert.equal(proposal.data.replacement[0].content[0].text, "Improved text");
   }
   assert.deepEqual(document, before);
 });
-test("legacy chat replacements and inline rewrite responses keep their existing shape", () => {
+test("chat rejects obsolete replacement shape while inline rewrite has an explicit replace action", () => {
   const input = { originalText: "Original text", blocks: [block] };
-  for (const context of [chatRequest, request]) {
-    const proposal = validatedProposal("legacy", "proposeEdit", input, context);
-    assert.equal(proposal.action, undefined);
-    assert.equal(proposal.replacement[0].content[0].text, "Improved text");
-  }
+  assert.throws(() => validatedProposal("old", "proposeEdit", input, chatRequest));
+  const proposal = validatedProposal("inline", "proposeEdit", input, request);
+  assert.equal(proposal.data.action, "replace");
+  assert.equal(proposal.data.replacement[0].content[0].text, "Improved text");
   assert.throws(() => validatedProposal("inline", "proposeEdit", sectionEdit, request));
 });
 test("section operations reject incomplete metadata and incompatible replacement content", () => {
@@ -209,15 +222,21 @@ test("section proposals require one exact anchor from the supplied editor body",
   for (const [context, originalText] of [
     [chatRequest, "Missing passage"],
     [chatRequest, ""],
-    [{ ...chatRequest, editorJson: undefined }, "Original text"],
+    [{ ...chatRequest, context: { ...chatRequest.context, editorJson: undefined } }, "Original text"],
     [
       {
         ...chatRequest,
-        editorJson: { type: "doc", content: [paragraph("Original text"), paragraph("Original text")] },
+        context: {
+          ...chatRequest.context,
+          editorJson: { type: "doc", content: [paragraph("Original text"), paragraph("Original text")] },
+        },
       },
       "Original text",
     ],
-    [{ ...chatRequest, editorJson: { type: "doc", content: [paragraph("aaa")] } }, "aa"],
+    [
+      { ...chatRequest, context: { ...chatRequest.context, editorJson: { type: "doc", content: [paragraph("aaa")] } } },
+      "aa",
+    ],
   ]) {
     for (const action of ["insert", "replace", "delete"]) {
       assert.throws(() =>
@@ -250,8 +269,8 @@ test("section proposals require one exact anchor from the supplied editor body",
       "formatted",
       "proposeEdit",
       { ...sectionEdit, originalText },
-      { ...chatRequest, editorJson: body },
-    ).originalText,
+      { ...chatRequest, context: { ...chatRequest.context, editorJson: body } },
+    ).data.originalText,
     originalText,
   );
 });
@@ -263,7 +282,13 @@ test("empty insertion anchors are allowed only for genuinely empty drafts", () =
     { type: "doc", content: [{ type: "paragraph" }] },
     { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: " " }] }] },
   ]) {
-    assert.equal(validatedProposal("empty", "proposeEdit", input, { ...chatRequest, editorJson }).action, "insert");
+    assert.equal(
+      validatedProposal("empty", "proposeEdit", input, {
+        ...chatRequest,
+        context: { ...chatRequest.context, editorJson },
+      }).data.action,
+      "insert",
+    );
   }
   for (const editorJson of [
     undefined,
@@ -272,11 +297,16 @@ test("empty insertion anchors are allowed only for genuinely empty drafts", () =
     { type: "doc", content: [{ type: "horizontalRule" }] },
     { type: "doc", content: [{ type: "blockMath", attrs: { latex: "x" } }] },
   ]) {
-    assert.throws(() => validatedProposal("nonempty", "proposeEdit", input, { ...chatRequest, editorJson }));
+    assert.throws(() =>
+      validatedProposal("nonempty", "proposeEdit", input, {
+        ...chatRequest,
+        context: { ...chatRequest.context, editorJson },
+      }),
+    );
   }
 });
 test("an empty draft receives one combined insertion proposal, never competing insertions", () => {
-  const context = { ...chatRequest, editorJson: { type: "doc", content: [] } };
+  const context = { ...chatRequest, context: { ...chatRequest.context, editorJson: { type: "doc", content: [] } } };
   const input = {
     ...sectionEdit,
     action: "insert",
@@ -284,7 +314,7 @@ test("an empty draft receives one combined insertion proposal, never competing i
     blocks: [block, { ...block, text: "A second section" }],
   };
   const proposal = validatedProposal("first", "proposeEdit", input, context);
-  assert.equal(proposal.replacement.length, 2);
+  assert.equal(proposal.data.replacement.length, 2);
   const prior = [proposal];
   const before = structuredClone(prior);
   assert.throws(() => validatedProposal("second", "proposeEdit", input, context, prior), {
@@ -300,10 +330,17 @@ test("an empty draft receives one combined insertion proposal, never competing i
   assert.doesNotThrow(() =>
     validatedProposal("anchored-second", "proposeEdit", anchoredInput, chatRequest, [anchoredProposal]),
   );
-  assert.throws(() => validatedProposal("missing-body", "proposeEdit", input, { ...context, editorJson: undefined }), {
-    code: "INVALID_OUTPUT",
-    message: /article context/i,
-  });
+  assert.throws(
+    () =>
+      validatedProposal("missing-body", "proposeEdit", input, {
+        ...context,
+        context: { ...context.context, editorJson: undefined },
+      }),
+    {
+      code: "INVALID_OUTPUT",
+      message: /article context/i,
+    },
+  );
 });
 test("all section operations reject a quote that differs from the explicit selection", () => {
   for (const action of ["insert", "replace", "delete"]) {
@@ -313,33 +350,27 @@ test("all section operations reject a quote that differs from the explicit selec
           "selection",
           "proposeEdit",
           { ...sectionEdit, action, blocks: action === "delete" ? [] : [block] },
-          { ...chatRequest, selectedText: "Different selection" },
+          { ...chatRequest, context: { ...chatRequest.context, selectedText: "Different selection" } },
         ),
       /selected/,
     );
   }
 });
-test("SEO fields have separate proposal identities and evidence URLs must be actual citations", () => {
-  const report = {
-    text: "Review",
-    keywords: ["topic"],
-    findings: [{ text: "A claim", status: "supported", urls: ["https://openai.com/", "https://invented.org/"] }],
-    seoTitle: "Better title",
-    seoDescription: "Better description",
-  };
-  const response = validateAssistantResult(
-    result(report, { citations: [{ url: "https://openai.com/", title: "Source" }] }),
-    { ...request, operation: "review" },
-  ).response;
+test("SEO fields have separate proposal identities in the shared proposal contract", () => {
+  const proposal = validatedProposal(
+    "seo",
+    "proposeSeo",
+    { seoTitle: "Better title", seoDescription: "Better description" },
+    chatRequest,
+  );
+  const proposals = separateSeoProposals(proposal);
   assert.deepEqual(
-    response.proposals.map((p) => p.toolCallId),
+    proposals.map((p) => p.id),
     ["seo:title", "seo:description"],
   );
-  assert.equal(response.proposals[0].seoDescription, undefined);
-  assert.equal(response.proposals[1].seoTitle, undefined);
-  assert.deepEqual(response.findings[0].urls, ["https://openai.com/"]);
-  assert.equal(response.searchStatus, "not_requested");
-  assert.equal(separateSeoProposals({ toolCallId: "edit", type: "edit", status: "pending" }).length, 1);
+  assert.equal(proposals[0].data.seoDescription, undefined);
+  assert.equal(proposals[1].data.seoTitle, undefined);
+  assert.equal(separateSeoProposals({ id: "edit", data: { type: "edit" }, status: "pending" }).length, 1);
 });
 test("generated blocks become constrained editor JSON without HTML or invented assets", () => {
   const output = {
@@ -366,25 +397,52 @@ test("generated blocks become constrained editor JSON without HTML or invented a
   assert.equal(blocksToNodes(output.blocks)[2].content[0].type, "listItem");
 });
 
-test("source checks distinguish actual web execution from missing or failed search", () => {
-  const output = {
-    text: "A report",
-    keywords: [],
-    findings: [{ text: "Claim", status: "supported", urls: ["https://openai.com/"] }],
-    seoTitle: null,
-    seoDescription: null,
-  };
-  const sourceRequest = { ...request, operation: "check_sources" };
-  const provider = { citations: [{ url: "https://openai.com/", title: "Source" }] };
-  for (const searchStatus of [undefined, "not_requested", "failed"]) {
-    const report = validateAssistantResult(result(output, { ...provider, searchStatus }), sourceRequest).response;
-    assert.equal(report.searchStatus, "failed");
-    assert.equal(report.findings[0].status, "unresolved");
+test("chat exposes actual web execution status and filters unsafe citations", () => {
+  for (const searchStatus of [undefined, "not_requested", "failed", "completed"]) {
+    const response = validateAssistantResult(
+      result(null, {
+        text: "Answer",
+        searchStatus,
+        citations: [
+          { url: "https://openai.com/", title: "Source" },
+          { url: "javascript:alert(1)", title: "Unsafe" },
+        ],
+      }),
+      { ...chatRequest, settings: { webSearch: true } },
+    ).response;
+    assert.equal(response.data.searchStatus, searchStatus === "completed" ? "completed" : "failed");
+    assert.deepEqual(response.citations, [{ url: "https://openai.com/", title: "Source" }]);
   }
-  const report = validateAssistantResult(
-    result(output, { ...provider, searchStatus: "completed" }),
-    sourceRequest,
-  ).response;
-  assert.equal(report.searchStatus, "completed");
-  assert.equal(report.findings[0].status, "supported");
+});
+
+test("old Blog request fields and old persisted payloads are rejected without translation", () => {
+  assert.throws(() => validateRunRequest({ ...request, postId: "post" }));
+  for (const operation of ["review", "optimize", "check_sources"]) {
+    assert.throws(() => validateRunRequest({ ...request, operation }));
+  }
+  assert.throws(() => parseStoredRequest({ ...request, schemaVersion: undefined }));
+  assert.throws(() => parseStoredRequest({ ...request, schemaVersion: 1, postId: "post" }));
+  const proposal = { toolCallId: "old", type: "edit", status: "pending" };
+  assert.throws(() => parseStoredResult({ text: "Old", citations: [], proposals: [proposal] }));
+  assert.throws(() => parseStoredResult({ text: "Old", citations: [], proposals: [], keywords: [] }));
+  assert.throws(() => parseMessageParts([{ type: "proposal", proposal }]));
+  assert.deepEqual(parseStoredRequest({ ...request, schemaVersion: 1 }), { ...request, schemaVersion: 1 });
+});
+
+test("combined references and attachments are bounded before resource creation", () => {
+  const input = {
+    clientRequestId: "bounded",
+    operation: "generate",
+    message: "Write",
+    attachmentIds: ["one", "two", "three"],
+    references: ["https://openai.com/a", "https://openai.com/b"],
+  };
+  assert.equal(validateSharedRequest(input).attachmentIds.length, 3);
+  assert.throws(() => validateSharedRequest({ ...input, references: [...input.references, "https://openai.com/c"] }), {
+    code: "VALIDATION",
+  });
+  assert.equal(
+    validateSharedRequest({ ...input, references: [...input.references, input.references[0]] }).references.length,
+    2,
+  );
 });

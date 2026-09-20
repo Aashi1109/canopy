@@ -31,12 +31,8 @@ export type AuthProjectPaths = {
 
 type MenuName = "documents" | "developer" | null;
 
-/**
- * The devtools index filters on the category *label*, so the query value has to
- * come from `TOOL_CATEGORIES` — a hand-written label silently 404s the filter.
- */
 function categoryHref(key: CategoryKey) {
-  return `/${TOOL_CATEGORIES[key].app}?category=${encodeURIComponent(TOOL_CATEGORIES[key].label)}`;
+  return `/${TOOL_CATEGORIES[key].app}?category=${encodeURIComponent(key)}`;
 }
 
 const categoryMenus = {

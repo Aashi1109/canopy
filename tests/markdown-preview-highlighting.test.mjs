@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { highlightBlogCode } from "../lib/blog/codeHighlight.ts";
+import { highlightCode } from "../lib/markdown/codeHighlight.ts";
 import { parseSettings } from "../lib/tool-framework/settings.ts";
 import definition from "../tools/markdown-previewer/definition.ts";
 import { run } from "../tools/markdown-previewer/run.ts";
@@ -49,7 +49,7 @@ test("language aliases produce the same highlighting as the blog viewer", async 
     await t.test(language, async () => {
       for (const label of [language, alias, alias.toUpperCase()]) {
         const html = await preview(fenced(code, label), { syntaxHighlighting: true });
-        assert.equal(codeBody(html), `${highlightBlogCode(code, language)}\n`);
+        assert.equal(codeBody(html), `${highlightCode(code, language)}\n`);
         assert.match(codeBody(html), /<span class="hljs-/);
         assert.equal(codeText(html), `${code}\n`);
       }
@@ -61,7 +61,7 @@ test("unlabelled and unknown-language fences use automatic highlighting", async 
   const code = "def double(value):\n    return value * 2";
   for (const language of ["", "not-a-language"]) {
     const html = await preview(fenced(code, language), { syntaxHighlighting: true });
-    assert.equal(codeBody(html), `${highlightBlogCode(code)}\n`);
+    assert.equal(codeBody(html), `${highlightCode(code)}\n`);
     assert.match(codeBody(html), /<span class="hljs-/);
   }
 });

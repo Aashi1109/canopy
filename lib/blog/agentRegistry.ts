@@ -9,8 +9,8 @@ import {
   type BlogArtifactContent,
 } from "./agentArtifacts.ts";
 import { blogDocumentText, validateBlogDocument, type BlogDocument, type BlogNode } from "./document.ts";
-import type { BlogRunRequest } from "./assistantTypes.ts";
-import { publicReference } from "./assistantValidation.ts";
+import type { BlogAssistantRequest } from "./assistantTypes.ts";
+import { publicReference } from "../assistant/validation.ts";
 import type { AIResult } from "../ai/types.ts";
 
 export const AUDIT_CATEGORIES = [
@@ -152,7 +152,7 @@ function parseAgentBody(bodyJson: string): unknown {
 
 export function validateAgentOutput(
   result: AIResult,
-  request: BlogRunRequest,
+  request: BlogAssistantRequest,
   inputArtifactIds: string[],
   cloudName?: string,
 ): { label: string; artifact: BlogArtifact } {
@@ -188,14 +188,15 @@ export function validateAgentOutput(
     )
       throw new Error("The plan was incomplete. Run Planner again.");
   } else {
-    if (!value.document || !request.document) throw new Error("The agent did not return a complete draft preview.");
+    if (!value.document || !request.context?.document)
+      throw new Error("The agent did not return a complete draft preview.");
     const { bodyJson, ...fields } = value.document;
     const document = validateBlogDocument(
-      { ...request.document, ...fields, body: parseAgentBody(bodyJson) },
+      { ...request.context?.document, ...fields, body: parseAgentBody(bodyJson) },
       { cloudName },
     );
     if (!blogDocumentText(document).trim()) throw new Error("The agent returned an empty draft.");
-    assertProtectedContent(request.document, document);
+    assertProtectedContent(request.context?.document, document);
     content.document = document;
     if (!value.changes.length) throw new Error("The draft preview must explain its changes.");
     if (
@@ -224,7 +225,9 @@ export function validateAgentOutput(
       summary: value.summary,
       content,
       inputArtifactIds,
-      ...(request.document ? { baseDocumentFingerprint: agentDocumentFingerprint(request.document) } : {}),
+      ...(request.context?.document
+        ? { baseDocumentFingerprint: agentDocumentFingerprint(request.context?.document) }
+        : {}),
     },
   };
 }

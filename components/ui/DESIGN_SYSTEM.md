@@ -58,7 +58,7 @@ import { cn } from "@/components/ui/lib/utils.ts";
 
 **Live specimen page:** `/admin/design-system` (`app/admin/(protected)/design-system/page.tsx`) renders every primitive, all five control sizes, and the page-level compositions. Use it to review a change visually before shipping.
 
-**Blog assistant section proposals:** `app/admin/(protected)/blog/components/BlogProposalCard.tsx` composes shared Buttons and Tooltips for the compact suggestion list (`Y09AaP`), collapsed summary (`wrf1p`), and expanded insertion/edit/deletion diff (`UQOVe`). Multiple suggestions use compact cards; a single suggestion includes a two-line excerpt. Each expands inline and independently. Apply/discard controls belong only to fresh responses and disappear after either action; history keeps the preview without restoring action outcomes. The component stays in the blog route because proposal behavior belongs to that editor.
+**Assistant results:** `components/assistant/ChangeCard.tsx` composes shared Buttons and Tooltips for compact, summary, and expanded insertion/edit/deletion previews. `ReportView` presents report sections; `ChangesetPreview` presents complete proposed content with explicit approval and guarded undo. Integrations supply display data, current eligibility, and async application handlers. The Assistant panel, composer, history, sources, and run cards share these components across features. Canonical documents and editor commands remain in the owning feature. `components/content/MarkdownPreview.tsx` renders standalone Markdown, including validated images, independently of Assistant.
 
 ---
 
@@ -238,7 +238,7 @@ So headings and focus rings are correct without any class. Do not re-declare the
 | `AccountNavigation`      | `index.tsx`    | req `returnTo`, `user \| null`                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `UniversalProductHeader` | `patterns.tsx` | req `category`, `description`, `icon`, `title`                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `InlineProductHeader`    | `patterns.tsx` | req `description`, `icon`, `title`                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `ToolPageShell`          | `index.tsx`    | req `category`, `description`, `productHref`, `productName`, `title`; `showIntro`, `showCategoryInBreadcrumb`                                                                                                                                                                                                                                                                                                                                                                                            |
+| `ToolPageShell`          | `index.tsx`    | req `category`, `categoryHref`, `description`, `productHref`, `productName`, `title`; `showIntro`, `showCategoryInBreadcrumb`                                                                                                                                                                                                                                                                                                                                                                                            |
 | `ToolNav`                | `index.tsx`    | req `items[]`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `SidebarNavItem`         | `patterns.tsx` | `active?: boolean`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `ProductFooter`          | `patterns.tsx` | req `brand`, `columns[]`, `copyright`, `description`                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -300,6 +300,8 @@ Select menus inherit the owning `SelectTrigger` size through React context, incl
 
 `Field` clones its child to inject `id`, `aria-describedby`, `aria-errormessage`, `aria-invalid`. **Use `Field` rather than pairing `Label` + `Input` by hand** — that is where the a11y wiring lives.
 
+`Field required` and `FieldLabel required` show an asterisk in the validation color and retain the required-field description for screen readers. Keep the input's native `required` attribute where applicable.
+
 Place `InlineTextEditor` inside the appropriate typography component, such as `H2` or `Muted`. Double-click the text, activate its edit button, or focus it and press Enter to edit. Enter finishes both single-line and multiline editing; Shift+Enter inserts a new line in multiline fields. Blur keeps the draft and Escape restores the value from before editing. The parent owns saving and toast feedback; finishing an edit does not persist it. The form controls showcase includes editable title, description, and disabled examples.
 
 ### Content states
@@ -308,10 +310,10 @@ Place `InlineTextEditor` inside the appropriate typography component, such as `H
 
 - Required `title`; optional `description`, `icon`, `action`, `secondaryAction`.
 - `state`: `empty`, `no-results`, `error`, `loading`, `unavailable`, `waiting`, `cancelled`, `complete`. Only error/loading supply a default icon; `icon={null}` explicitly omits it.
-- `density`: `page` (bounded content), `section` (20px heading / 48px icon), `panel` (17px / 36px), `compact` (14px / 24px, left-aligned by default). `align` can be `center` or `start`.
+- `density`: `page` (bounded content), `section` (20px heading / 48px icon), `panel` (17px / 36px), `compact` (14px / 24px). Every density centers its content and actions by default. `align` can be `center` or `start` for an explicit contextual override.
 - `headingLevel`: `h1`, `h2` (default), or `h3`; choose by document structure, not visual size.
 - `announcement`: `off` (default), `polite`, or `assertive`, applied only to the message. Loading defaults to `polite`; omit duplicate announcements when the host already has a live region.
-- Zero actions render no action area. Content determines height; long text wraps. Actions wrap on desktop and stack with at least 44px height on mobile. Use shared `Button` instances; caller-owned pending actions use `loading`/`disabled`.
+- Zero actions render no action area. States grow to center within the available page, list or panel area; their owning container supplies that area without viewport-height sizing inside nested panels. Long content keeps its natural height and remains scrollable. Actions wrap on desktop and stack with at least 44px height on mobile. Use shared `Button` instances; caller-owned pending actions use `loading`/`disabled`.
 
 ```tsx
 <ContentState
@@ -408,6 +410,15 @@ download card. The card's download action stays inline with its metadata.
 Page settings can opt into `presets` to use the shared `Select` for All pages,
 Odd pages, Even pages, or Custom ranges, with a range input only for custom
 selection. Watermark uses this pattern; preview selection updates the same value.
+
+### Generated value lists
+
+`GeneratedList` in `components/Surfaces.tsx` lays out independent, copyable
+results in content-sized rows that wrap with the result panel. Short values
+share a row; longer values and captions receive more width, up to a full row.
+Items retain their source order, numbering, and copy controls. Multiline values
+preserve line breaks, and long unbroken values wrap without horizontal overflow.
+Only the results scroll; the result header and bulk actions stay visible.
 
 ### Generated media output cards
 

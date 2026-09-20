@@ -8,6 +8,7 @@ import {
   AlertDescription,
   AlertTitle,
   Button,
+  Card,
   ToolActionButton,
   Input,
 } from "@/components/ui/index.tsx";
@@ -43,6 +44,7 @@ const DEFAULT_TEXT_FILE_INPUT = {
 
 interface InputSurfaceProps {
   disabled?: boolean;
+  footer?: ReactNode;
   input: WorkspaceInputState;
   inputSpec: ToolInputSpec;
   onInputChange: WorkspaceProps["onInputChange"];
@@ -62,6 +64,7 @@ interface SourceTextareaProps extends Pick<
   id: string;
   maxLength?: number;
   showLineNumbers?: boolean;
+  surface?: "card";
   transparent?: boolean;
   onCaretChange?: (position: { readonly column: number; readonly line: number }) => void;
   onChange: (value: string) => void;
@@ -113,6 +116,7 @@ export function SourceTextarea({
   id,
   maxLength,
   showLineNumbers = true,
+  surface,
   transparent = false,
   onCaretChange,
   onChange,
@@ -126,6 +130,7 @@ export function SourceTextarea({
 }: SourceTextareaProps) {
   const gutterRef = useRef<HTMLPreElement>(null);
   const highlightRef = useRef<HTMLPreElement>(null);
+  const Container = surface === "card" ? Card : "div";
   const [focused, setFocused] = useState(false);
   const resolvedWrap = wrap ?? "soft";
   const showHighlight = Boolean(highlightedValue && (highlightMode === "persistent" || !focused));
@@ -144,8 +149,14 @@ export function SourceTextarea({
   }, [value]);
 
   return (
-    <div
-      className={`${className} flex min-w-0 overflow-hidden ${transparent ? "bg-transparent" : "bg-background"} pl-4 has-[:focus-visible]:bg-muted/40`}
+    <Container
+      className={cn(
+        "flex min-w-0 overflow-hidden pl-4",
+        surface === "card"
+          ? "flex-row gap-0 rounded-lg border-input py-0 pr-0 shadow-none has-[:focus-visible]:border-primary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/20"
+          : `${transparent ? "bg-transparent" : "bg-background"} has-[:focus-visible]:bg-muted/40`,
+        className,
+      )}
     >
       {showLineNumbers ? (
         <div aria-hidden="true" className="w-[15px] min-w-max shrink-0 overflow-hidden text-right">
@@ -163,7 +174,8 @@ export function SourceTextarea({
             aria-hidden="true"
             className={cn(
               typographyStyles.codeBlock,
-              "pointer-events-none absolute inset-x-0 top-0 z-0 m-0 min-h-full whitespace-pre-wrap break-all py-[18px] pr-4 text-foreground will-change-transform",
+              "pointer-events-none absolute inset-x-0 top-0 z-0 m-0 min-h-full py-[18px] pr-4 text-foreground will-change-transform",
+              resolvedWrap === "off" ? "whitespace-pre" : "whitespace-pre-wrap break-all",
             )}
             ref={highlightRef}
           >
@@ -211,11 +223,12 @@ export function SourceTextarea({
           wrap={resolvedWrap}
         />
       </div>
-    </div>
+    </Container>
   );
 }
 export function WorkspaceInputSurface({
   disabled,
+  footer,
   input,
   inputSpec,
   onInputChange,
@@ -446,7 +459,9 @@ export function WorkspaceInputSurface({
           header={cardFields ? "sr-only" : "visible"}
           meta={cardFields ? undefined : sourceMeta(values.join(""), codeShaped)}
           purpose="source"
-          scroll={cardFields ? "none" : "content"}
+          scroll={
+            !footer && (cardFields || inputSpec.fields.some((field) => field.surface === "card")) ? "none" : "content"
+          }
           title={inputSpec.label}
           variant={variant}
         >
@@ -461,7 +476,9 @@ export function WorkspaceInputSurface({
                 className={
                   cardFields
                     ? "grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-lg border border-border bg-muted/45"
-                    : `grid gap-1.5 ${hasMultiline ? "first:pt-4 last:pb-4" : ""} ${hasMultiline && !fieldCodeShaped ? "px-4" : ""}`
+                    : field.surface === "card"
+                      ? `grid ${footer ? "min-h-36" : "min-h-0"} flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1.5 last:pb-4`
+                      : `grid gap-1.5 ${hasMultiline ? "first:pt-4 last:pb-4" : ""} ${hasMultiline && !fieldCodeShaped ? "px-4" : ""}`
                 }
                 key={field.channel}
               >
@@ -477,22 +494,23 @@ export function WorkspaceInputSurface({
                             : undefined
                     }
                     htmlFor={fieldId}
+                    required={field.required && !cardFields}
                   >
                     {field.label}
-                    {field.required && !cardFields ? " (required)" : ""}
                   </FieldLabel>
                   {cardFields && index === 0 ? pasteAction(field.label, field.maxLength) : null}
                 </div>
                 <div
-                  className={`flex min-h-0 gap-2 ${cardFields ? "h-full items-stretch" : "items-start"} ${cardFields && !field.multiline ? "px-4 pb-4" : ""}`}
+                  className={`flex min-h-0 gap-2 ${cardFields || field.surface === "card" ? "h-full items-stretch" : "items-start"} ${cardFields && !field.multiline ? "px-4 pb-4" : ""}`}
                 >
                   {field.multiline ? (
-                    <div className="relative min-h-28 flex-1">
+                    <div className={cn("relative min-h-28 flex-1", field.surface === "card" && "mx-4")}>
                       <SourceTextarea
                         className={`min-h-28 h-full ${field.secret ? `[&_textarea]:pr-14 ${revealed ? "" : "[&_textarea]:[-webkit-text-security:disc]"}` : ""}`}
                         disabled={disabled}
                         id={fieldId}
                         showLineNumbers={variant !== "card"}
+                        surface={field.surface}
                         transparent={variant === "card"}
                         maxLength={field.maxLength}
                         onChange={updateValue}
@@ -548,6 +566,7 @@ export function WorkspaceInputSurface({
               </div>
             );
           })}
+          {footer}
         </WorkspaceSurface>
       );
     }

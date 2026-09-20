@@ -2,11 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
-import {
-  blogMarkdownHtml,
-  parseBlogClipboardText,
-  renderBlogMarkdown,
-} from "../app/admin/(protected)/blog/lib/markdownPaste.ts";
+import { blogMarkdownHtml, parseBlogClipboardText } from "../app/admin/(protected)/blog/lib/markdownPaste.ts";
 
 test("explicit plain paste keeps Markdown literal and preserves the insertion marks", () => {
   const schema = getSchema([StarterKit]);
@@ -54,6 +50,7 @@ test("task lists retain checked state and normal text retains line breaks", () =
   assert.match(html, /data-type="taskList"/);
   assert.match(html, /data-checked="true"/);
   assert.match(html, /data-checked="false"/);
+  assert.doesNotMatch(html, /<input\b/);
   assert.match(blogMarkdownHtml("Line one\nLine two"), /Line one<br>Line two/);
   assert.match(
     blogMarkdownHtml("- Normal\n- [x] Done"),
@@ -69,48 +66,4 @@ test("raw HTML and external images remain literal and unsafe links cannot become
   assert.match(html, /&lt;script&gt;/);
   assert.match(html, /!\[Alt\]\(https:\/\/example.com\/image.png\)/);
   assert.match(html, /href="https:\/\/example.com"/);
-});
-
-test("display Markdown renders article formatting, highlighted code and tables", () => {
-  const html = renderBlogMarkdown(
-    "# Heading\n\n**Bold** and *italic* and `inline`.\n\n> Quote\n\n- First\n- Second\n\n```js\nconst value = 1;\n```\n\n| Name | Value |\n| --- | --- |\n| A | B |",
-  );
-  for (const fragment of [
-    "<h2>Heading</h2>",
-    "<strong>Bold</strong>",
-    "<em>italic</em>",
-    "<code>inline</code>",
-    "<blockquote>",
-    "<ul>",
-    "<table>",
-    "<td>B</td>",
-    'class="hljs-keyword"',
-  ]) {
-    assert.ok(html.includes(fragment), fragment);
-  }
-  assert.match(renderBlogMarkdown("```mermaid\ngraph LR\n A-->B\n```"), /class="language-mermaid">graph LR\n A--&gt;B/);
-  assert.match(renderBlogMarkdown("An **unfinished response"), /unfinished response/);
-});
-
-test("display Markdown uses the public article math and task-list markup", () => {
-  const html = renderBlogMarkdown("- [x] Done\n- [ ] Next\n\nInline $x^2$\n\n$$\nx^2 + y^2\n$$");
-  assert.match(html, /data-task-checkbox="true"[^>]*aria-checked="true"/);
-  assert.match(html, /data-task-checkbox="false"[^>]*aria-checked="false"/);
-  assert.match(html, /class="blog-math-inline"><span class="katex"/);
-  assert.match(html, /class="blog-math-block"><span class="katex-display"/);
-  assert.match(renderBlogMarkdown("$\\notACommand$"), /class="blog-math-inline blog-math-error"/);
-  assert.doesNotMatch(blogMarkdownHtml("$x^2$"), /class="katex"/);
-  assert.match(blogMarkdownHtml("$x^2$"), /data-type="inline-math" data-latex="x\^2"/);
-});
-
-test("display Markdown escapes untrusted HTML and only activates safe links in new tabs", () => {
-  const html = renderBlogMarkdown(
-    "<script>alert(1)</script>\n\n<img src=x onerror=alert(1)>\n\n![Remote](https://example.com/image.png)\n\n[Script](javascript:alert%281%29) [Data](data:text/html,test) [Encoded](javascript&#58;alert%281%29) [Relative](/blog) [Good](https://example.com)",
-  );
-  assert.doesNotMatch(html, /<script|<img|href="(?:javascript|data):/i);
-  assert.match(html, /&lt;script&gt;/);
-  assert.match(html, /!\[Remote\]\(https:\/\/example.com\/image.png\)/);
-  assert.match(html, /href="https:\/\/example.com" target="_blank" rel="noopener noreferrer"/);
-  assert.match(html, /href="\/blog" target="_blank" rel="noopener noreferrer"/);
-  assert.doesNotMatch(renderBlogMarkdown("```html\n<script>alert(1)</script>\n```"), /<script>/);
 });

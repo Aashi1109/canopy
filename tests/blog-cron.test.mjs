@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { registerHooks } from "node:module";
 import test from "node:test";
+import JSON5 from "next/dist/compiled/json5/index.js";
 import { handleBlogPublishRequest, runBlogPublishCron } from "../lib/blog/cron.ts";
 
 const secret = "test-blog-scheduler-secret-for-tests";
@@ -185,13 +186,23 @@ test("cron consumes successful responses and rejects unsafe, oversized or failed
 });
 
 test("deployment configuration schedules publishing twice per hour", async () => {
-  const config = JSON.parse(await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"));
+  const config = JSON5.parse(await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"));
   assert.deepEqual(config.triggers.crons, ["*/30 * * * *"]);
 });
 
 test("actual Worker schedule re-enters the fetch database wrapper through its self binding", async (t) => {
   const workerUrl = new URL("../worker.ts", import.meta.url).href;
-  const state = { wrapped: 0, dispatched: 0, databaseUrl: null, counts };
+  const maintenanceCounts = { files: 2, runs: 3, failed: 0 };
+  const state = {
+    wrapped: 0,
+    dispatched: 0,
+    databaseUrl: null,
+    counts,
+    maintenanceCounts,
+    paths: [],
+    publishStatus: 200,
+    maintenanceStatus: 200,
+  };
   globalThis.__blogCronWorkerTest = state;
   const hooks = registerHooks({
     resolve(specifier, context, nextResolve) {
@@ -220,7 +231,12 @@ test("actual Worker schedule re-enters the fetch database wrapper through its se
             if (!state.wrapped) throw new Error("Database wrapper was bypassed");
             state.dispatched++;
             ctx.waitUntil(Promise.resolve());
-            return Response.json(state.counts);
+            const path = new URL(request.url).pathname;
+            state.paths.push(path);
+            const maintenance = path === "/api/internal/assistant/maintenance";
+            return Response.json(maintenance ? state.maintenanceCounts : state.counts, {
+              status: maintenance ? state.maintenanceStatus : state.publishStatus
+            });
           } };
         `)}`,
         };
@@ -233,8 +249,10 @@ test("actual Worker schedule re-enters the fetch database wrapper through its se
     const waits = [];
     const logs = [];
     t.mock.method(console, "warn", (...args) => logs.push(args));
+    t.mock.method(console, "info", () => {});
     const env = {
       BLOG_SCHEDULER_SECRET: secret,
+      ASSISTANT_SCHEDULER_SECRET: "test-assistant-secret",
       HYPERDRIVE: { connectionString: "postgres://local/test-only" },
       WORKER_SELF_REFERENCE: {
         fetch: (req) => worker.fetch(req, env, { waitUntil: (task) => waits.push(task) }),
@@ -242,11 +260,31 @@ test("actual Worker schedule re-enters the fetch database wrapper through its se
     };
     await worker.scheduled({}, env);
     await Promise.all(waits);
-    assert.equal(state.wrapped, 1);
-    assert.equal(state.dispatched, 1);
+    assert.equal(state.wrapped, 2);
+    assert.equal(state.dispatched, 2);
     assert.equal(state.databaseUrl, env.HYPERDRIVE.connectionString);
-    assert.equal(waits.length, 1);
+    assert.equal(waits.length, 2);
     assert.deepEqual(logs, [["Blog scheduled publishing has failed posts", counts]]);
+    assert.deepEqual(state.paths.sort(), ["/api/internal/assistant/maintenance", path]);
+
+    state.paths.length = 0;
+    state.publishStatus = 503;
+    await assert.rejects(worker.scheduled({}, env), /Blog publishing request returned HTTP 503/);
+    assert.deepEqual(
+      state.paths.sort(),
+      ["/api/internal/assistant/maintenance", path],
+      "publication failure must not prevent maintenance",
+    );
+
+    state.paths.length = 0;
+    state.publishStatus = 200;
+    state.maintenanceStatus = 503;
+    await assert.rejects(worker.scheduled({}, env), /Assistant maintenance request returned HTTP 503/);
+    assert.deepEqual(
+      state.paths.sort(),
+      ["/api/internal/assistant/maintenance", path],
+      "maintenance failure must not prevent publication",
+    );
   } finally {
     hooks.deregister();
     delete globalThis.__blogCronWorkerTest;

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { diagramPng } from "../lib/blog/diagramExport.ts";
+import { diagramPng } from "../lib/markdown/diagramExport.ts";
 
 function browser(t) {
   const state = { bounds: "0 0 500 200", attributes: {}, removed: [], calls: [], error: null, uri: "" };

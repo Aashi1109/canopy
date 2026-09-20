@@ -93,7 +93,7 @@ function WorkspaceSurface({
       children
     ) : (
       <ContentState
-        className={state === "empty" && purpose === "result" ? "min-h-0 flex-1 justify-start" : "min-h-72 flex-1"}
+        className="min-h-0 flex-1"
         data-surface-state={state}
         state={state === "empty" && purpose === "result" ? "waiting" : state}
         density={state === "empty" && purpose === "result" ? "compact" : "section"}
@@ -698,17 +698,29 @@ function GeneratedList<Item>({
 }: GeneratedListProps<Item>) {
   return (
     <ScrollRegion accessibleName="Generated values" className="flex-1">
-      <ol className="grid min-w-0 gap-2 p-4">
-        {items.map((item, index) => (
-          <li className="flex min-w-0 items-center gap-4 rounded-lg bg-muted/55 px-4 py-3" key={getId(item)}>
-            <Caption className="shrink-0 text-muted-foreground">{getLabel(item)}</Caption>
-            <div className="min-w-0 flex-1">
-              <InlineCode className="break-words [overflow-wrap:anywhere]">{getValue(item)}</InlineCode>
-              {getDescription ? <Muted className="mt-1 text-muted-foreground">{getDescription(item)}</Muted> : null}
-            </div>
-            {renderAction ? <div className="shrink-0">{renderAction(item, index)}</div> : null}
-          </li>
-        ))}
+      <ol className="flex min-w-0 flex-wrap gap-2 p-4">
+        {items.map((item, index) => {
+          const description = getDescription?.(item);
+          return (
+            <li
+              className="flex min-w-[min(100%,8rem)] max-w-full flex-[1_1_max-content] items-center gap-3 rounded-lg bg-muted/55 px-3 py-2"
+              key={getId(item)}
+            >
+              <Caption className="shrink-0 text-muted-foreground">{getLabel(item)}</Caption>
+              <div className="min-w-0 flex-1">
+                <InlineCode className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                  {getValue(item)}
+                </InlineCode>
+                {description ? (
+                  <Muted className="mt-1 whitespace-pre-wrap text-muted-foreground [overflow-wrap:anywhere]">
+                    {description}
+                  </Muted>
+                ) : null}
+              </div>
+              {renderAction ? <div className="shrink-0">{renderAction(item, index)}</div> : null}
+            </li>
+          );
+        })}
       </ol>
     </ScrollRegion>
   );

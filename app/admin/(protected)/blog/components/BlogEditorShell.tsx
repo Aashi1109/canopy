@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/index.tsx";
 
 import styles from "./BlogEditor.module.css";
-import { BlogSidePanelHeader } from "./BlogSidePanelHeader";
+import { AssistantHeader } from "@/components/assistant/AssistantHeader";
+import assistantStyles from "@/components/assistant/Assistant.module.css";
 
 interface BlogEditorShellProps {
   title: string;
@@ -261,7 +262,7 @@ export function BlogEditorShell({
               aria-hidden={panel !== "assistant"}
               inert={panel !== "assistant"}
               className={`${styles.sidePanel} ${styles.assistant}`}
-              aria-label="Blog assistant"
+              aria-label="Assistant"
             >
               {assistant(closeSettings)}
             </aside>
@@ -274,8 +275,8 @@ export function BlogEditorShell({
             className={styles.sidePanel}
             aria-label={settingsPanel === "history" ? "Revision history" : "Post settings"}
           >
-            <div className={styles.sidePanelContent}>
-              <BlogSidePanelHeader
+            <div className={assistantStyles.sidePanelContent}>
+              <AssistantHeader
                 title={settingsPanel === "history" ? "Revision history" : "Post settings"}
                 closeLabel={settingsPanel === "history" ? "Close revision history" : "Close post settings"}
                 onClose={closeSettings}

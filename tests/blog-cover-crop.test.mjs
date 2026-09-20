@@ -50,7 +50,7 @@ const hooks = registerHooks({
         "export const BlogImageNode = {extend() {return {configure() {return {}}}}}; export function blogEditorImageSource(image) {return 'https://example.test/' + image.publicId;}",
       );
     if (specifier === "../lib/formattingExtensions") return stub("export const blogFormattingExtensions = [];");
-    if (specifier === "@/lib/blog/codeHighlight") return stub("export const blogLowlight = {};");
+    if (specifier === "@/lib/markdown/codeHighlight") return stub("export const codeLowlight = {};");
     if (specifier === "@/lib/blog/math") return stub("export const normalizeBlogMath = node => node;");
     if (specifier === "@/lib/blog/title")
       return { shortCircuit: true, url: new URL("../lib/blog/title.ts", import.meta.url).href };

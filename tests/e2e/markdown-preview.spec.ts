@@ -283,7 +283,7 @@ test("raw Markdown HTML cannot execute scripts or event handlers in the preview"
   await expect(editor(page)).toBeEditable();
 });
 
-test("Markdown uses the blog body viewer's code-copy and Mermaid preview controls", async ({ page, context }) => {
+test("Markdown uses shared rich content code-copy and Mermaid preview controls", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await loadDocument(
     page,
@@ -292,7 +292,9 @@ test("Markdown uses the blog body viewer's code-copy and Mermaid preview control
   const preview = previewDocument(page);
   await preview.locator("pre").first().hover();
   await preview.getByRole("button", { name: "Copy code", exact: true }).click();
-  await expect(preview.getByRole("status")).toContainText("Code copied to clipboard.");
+  await expect(preview.getByRole("status").filter({ hasText: "Code copied to clipboard." })).toHaveText(
+    "Code copied to clipboard.",
+  );
   expect((await page.evaluate(() => navigator.clipboard.readText())).trim()).toBe("const answer = 42;");
 
   await preview.getByRole("button", { name: "Open Mermaid diagram preview", exact: true }).click();

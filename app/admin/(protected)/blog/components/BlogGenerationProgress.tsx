@@ -2,8 +2,8 @@
 
 import { Check, Circle, LoaderCircle } from "lucide-react";
 import { Button, H1 } from "@/components/ui/index.tsx";
-import type { BlogAssistantRun } from "@/lib/blog/assistantTypes";
-import { activeRun } from "../lib/assistantApi";
+import type { AssistantRun } from "@/lib/assistant/types";
+import { activeRun } from "@/lib/assistant/client";
 
 export function BlogGenerationProgress({
   run,
@@ -16,7 +16,7 @@ export function BlogGenerationProgress({
   onEdit,
   onRefresh,
 }: {
-  run: BlogAssistantRun | null;
+  run: AssistantRun | null;
   brief: string;
   streaming: boolean;
   refreshing?: boolean;
@@ -56,7 +56,9 @@ export function BlogGenerationProgress({
         <div className="min-w-0 flex-1" role="status">
           <p className="text-sm font-medium">{label}</p>
           <p className="mt-1 text-caption opacity-75">
-            {run?.postId ? "Your idea is saved. Nothing is published." : "Preparing your draft. Nothing is published."}
+            {run?.resourceId
+              ? "Your idea is saved. Nothing is published."
+              : "Preparing your draft. Nothing is published."}
           </p>
         </div>
         {streaming && onCancel && (
@@ -67,8 +69,8 @@ export function BlogGenerationProgress({
       </div>
       <ol className="mt-6 divide-y divide-border">
         {[
-          { label: "Draft and private conversation", ready: !!run?.postId, working: streaming && !run?.postId },
-          { label: "Writing the complete article", ready: completed, working: streaming && !!run?.postId },
+          { label: "Draft and private conversation", ready: !!run?.resourceId, working: streaming && !run?.resourceId },
+          { label: "Writing the complete article", ready: completed, working: streaming && !!run?.resourceId },
           { label: "SEO title & description", ready: completed, working: false },
         ].map((stage) => (
           <li

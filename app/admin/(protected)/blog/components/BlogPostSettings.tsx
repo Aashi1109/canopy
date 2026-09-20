@@ -1,4 +1,5 @@
 "use client";
+import assistantStyles from "@/components/assistant/Assistant.module.css";
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
@@ -68,7 +69,7 @@ export function BlogPostSettings({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <Tabs defaultValue={defaultTab} className="min-h-0 flex-1 gap-2.5">
-        <TabsList className={styles.assistantTabs} aria-label="Post settings">
+        <TabsList className={assistantStyles.assistantTabs} aria-label="Post settings">
           <TabsTrigger className="flex-none" value="post">
             Post
           </TabsTrigger>

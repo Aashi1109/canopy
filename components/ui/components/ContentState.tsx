@@ -28,7 +28,7 @@ export function ContentState({
   secondaryAction,
   state = "empty",
   density = "section",
-  align = density === "compact" ? "start" : "center",
+  align = "center",
   headingLevel: Heading = "h2",
   announcement = state === "loading" ? "polite" : "off",
   className,
@@ -54,7 +54,7 @@ export function ContentState({
       data-state={state}
       data-density={density}
       className={cn(
-        "w-full flex-none rounded-none border-0 bg-transparent p-6 text-pretty",
+        "w-full flex-1 rounded-none border-0 bg-transparent p-6 text-pretty",
         compact ? "gap-3 p-4" : panel ? "gap-4 p-4" : "gap-6",
         density === "page" && "mx-auto max-w-xl",
         align === "start" && "items-start text-left",

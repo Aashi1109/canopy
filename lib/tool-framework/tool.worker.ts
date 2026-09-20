@@ -100,7 +100,19 @@ async function runJob(message: ToolWorkerRequest): Promise<void> {
     }
     const [specModule, runModule]: [unknown, unknown] = await Promise.all([
       import(`../../tools/${message.key}/definition`),
-      import(`../../tools/${message.key}/run.worker`),
+      import(`../../tools/${message.key}/run.worker`).catch((error: unknown) => {
+        // A server-only tool has no worker implementation. Only classify the
+        // missing entry itself; a missing dependency is a genuine tool failure.
+        const missingModule =
+          error instanceof Error ? /cannot find module ['"]([^'"]+)['"]/i.exec(error.message)?.[1] : undefined;
+        if (
+          missingModule?.endsWith(`/${message.key}/run.worker`) ||
+          missingModule?.endsWith(`/${message.key}/run.worker.ts`)
+        ) {
+          throw new ToolError("unknown-tool", "This tool is not available.");
+        }
+        throw error;
+      }),
     ]);
     const spec = readSpec(specModule);
     signal.throwIfAborted();

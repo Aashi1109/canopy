@@ -299,6 +299,13 @@ function resultArtifact(result: ToolResult | null): ResultArtifact | null {
           ? { content: result.html, mime: "text/html;charset=utf-8", name: result.downloadName }
           : undefined,
       };
+    case "link-preview":
+      return {
+        copy: result.tags,
+        download: result.downloadName
+          ? { content: result.tags, mime: "text/html;charset=utf-8", name: result.downloadName }
+          : undefined,
+      };
     case "image":
       return {
         download: result.downloadName ? { href: result.src, mime: result.mime, name: result.downloadName } : undefined,
@@ -387,6 +394,15 @@ export function ResultActions({
 }
 
 const RESULT_RENDERERS: ResultRendererRegistry = {
+  "link-preview": (result) => (
+    <RenderFrame>
+      <div className="space-y-3 overflow-auto p-4">
+        <Strong>{result.metadata.title || result.resolvedUrl}</Strong>
+        <Text>{result.metadata.description}</Text>
+        <CodeBlock className="whitespace-pre-wrap break-words">{result.tags}</CodeBlock>
+      </div>
+    </RenderFrame>
+  ),
   text: (result) => (
     <RenderFrame>
       <CodeBlock className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4">{result.text}</CodeBlock>

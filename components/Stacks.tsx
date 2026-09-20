@@ -98,6 +98,7 @@ type SplitCollapseSide = "primary" | "secondary";
 
 export type SplitStackProps = Omit<HTMLAttributes<HTMLDivElement>, "children" | "onChange"> & {
   children: ReactNode;
+  collapsedIcon?: typeof SlidersHorizontal;
   collapseLabel?: string;
   collapseControlPosition?: "bottom" | "center" | "top";
   collapseSide?: SplitCollapseSide;
@@ -135,6 +136,7 @@ function useNarrowWorkbench() {
 function SplitStack({
   children,
   className,
+  collapsedIcon,
   collapseLabel,
   collapseControlPosition = "center",
   collapseSide = "primary",
@@ -212,8 +214,8 @@ function SplitStack({
 
   const collapsedPanelLabel = `${collapsed ? "Restore" : "Collapse"} ${collapseLabel ?? `${collapseSide} panel`}`;
   const collapseIcon =
-    collapsed && collapseControlPosition !== "center"
-      ? SlidersHorizontal
+    collapsed && (collapsedIcon || collapseControlPosition !== "center")
+      ? (collapsedIcon ?? SlidersHorizontal)
       : orientation === "horizontal"
         ? collapseSide === "primary"
           ? collapsed
@@ -250,7 +252,10 @@ function SplitStack({
               type="button"
               variant="outline"
             >
-              <MorphIcon icon={SlidersHorizontal} reducedMotion="user" />
+              <MorphIcon
+                icon={collapsed ? (collapsedIcon ?? SlidersHorizontal) : SlidersHorizontal}
+                reducedMotion="user"
+              />
               {collapsedPanelLabel}
             </Button>
           </div>

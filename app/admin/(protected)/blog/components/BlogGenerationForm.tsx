@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Sparkles } from "lucide-react";
 import { Button, H1, Input, Label, Select, Textarea, toast } from "@/components/ui/index.tsx";
-import type { BlogAssistantAvailability, BlogAssistantRun, BlogRunRequest } from "@/lib/blog/assistantTypes";
-import { activeRun, AssistantRequestError, assistantRequest, streamAssistantRun } from "../lib/assistantApi";
+import type { AssistantAvailability, AssistantRun, AssistantRunRequest } from "@/lib/assistant/types";
+import { activeRun, AssistantRequestError, assistantRequest, streamAssistantRun } from "@/lib/assistant/client";
 
 import { BlogGenerationProgress } from "./BlogGenerationProgress";
 
@@ -35,14 +35,15 @@ function restoreBrief(value: unknown): Brief {
   ) as Brief;
 }
 
-function briefFromRequest(request: BlogRunRequest): Brief {
+function briefFromRequest(request: AssistantRunRequest): Brief {
   return restoreBrief({ ...request.settings, idea: request.message, references: request.references?.join("\n") ?? "" });
 }
 
-function restoreRequest(value: unknown): BlogRunRequest | null {
+function restoreRequest(value: unknown): AssistantRunRequest | null {
   if (!value || typeof value !== "object") return null;
   const request = value as Record<string, unknown>;
   if (
+    request.schemaVersion !== 1 ||
     request.operation !== "generate" ||
     typeof request.clientRequestId !== "string" ||
     !/^[a-zA-Z0-9_-]{1,100}$/.test(request.clientRequestId) ||
@@ -64,12 +65,13 @@ function restoreRequest(value: unknown): BlogRunRequest | null {
     Object.keys(request).some(
       (key) =>
         ![
+          "schemaVersion",
           "operation",
           "clientRequestId",
           "message",
           "settings",
           "references",
-          "postId",
+          "resourceId",
           "threadId",
           "inputMessageId",
         ].includes(key),
@@ -86,7 +88,7 @@ function restoreRequest(value: unknown): BlogRunRequest | null {
   )
     return null;
   // Keep the exact submitted snapshot: normalization changes its idempotency hash.
-  return request as BlogRunRequest;
+  return request as AssistantRunRequest;
 }
 
 export function BlogGenerationForm({
@@ -101,10 +103,10 @@ export function BlogGenerationForm({
   const router = useRouter();
   const [brief, setBrief] = useState(EMPTY);
   const [customize, setCustomize] = useState(false);
-  const [availability, setAvailability] = useState<BlogAssistantAvailability | null>(null);
+  const [availability, setAvailability] = useState<AssistantAvailability | null>(null);
   const [availabilityAttempt, setAvailabilityAttempt] = useState(0);
   const [availabilityError, setAvailabilityError] = useState("");
-  const [run, setRun] = useState<BlogAssistantRun | null>(null);
+  const [run, setRun] = useState<AssistantRun | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [recovering, setRecovering] = useState(false);
   const [restoring, setRestoring] = useState(false);
@@ -114,13 +116,13 @@ export function BlogGenerationForm({
   const [referenceError, setReferenceError] = useState("");
   const [connectionError, setConnectionError] = useState("");
   const [loaded, setLoaded] = useState(false);
-  const submission = useRef<BlogRunRequest | null>(null);
+  const submission = useRef<AssistantRunRequest | null>(null);
   const alive = useRef(true);
   const lock = useRef(false);
   const controller = useRef<AbortController | null>(null);
   const dismissed = useRef(false);
   const navigated = useRef<string | null>(null);
-  const storagePrefix = `blog-generation:${userId}:`;
+  const storagePrefix = `assistant-generation:blog:${userId}:v1:`;
   const busy = submitting || restoring || recovering || (!!run && activeRun(run.status));
   const status = restoring
     ? "Restoring your generation…"
@@ -155,7 +157,7 @@ export function BlogGenerationForm({
     }
   }
 
-  function receiveRun(next: BlogAssistantRun) {
+  function receiveRun(next: AssistantRun) {
     if (next.operation !== "generate")
       throw new Error("This request is not a blog generation. Start a new idea or return to your post.");
     clearSubmission();
@@ -169,8 +171,8 @@ export function BlogGenerationForm({
     restoringRequest.current = true;
     setRestoring(true);
     try {
-      const result = await assistantRequest<{ run: BlogAssistantRun }>(
-        `/api/admin/blog/ai/runs/${encodeURIComponent(id)}`,
+      const result = await assistantRequest<{ run: AssistantRun }>(
+        `/api/assistant/blog/runs/${encodeURIComponent(id)}`,
       );
       if (alive.current) receiveRun(result.run);
     } catch (cause) {
@@ -192,11 +194,14 @@ export function BlogGenerationForm({
   useEffect(() => {
     alive.current = true;
     try {
-      // Never recover unscoped content that could belong to another signed-in user.
+      // Retire old Blog wire-format submissions; only shared Assistant requests are recoverable.
       sessionStorage.removeItem("blog-generation-brief");
       sessionStorage.removeItem("blog-generation-request");
+      sessionStorage.removeItem(`blog-generation:${userId}:brief`);
+      sessionStorage.removeItem(`blog-generation:${userId}:request`);
       setBrief(restoreBrief(JSON.parse(sessionStorage.getItem(`${storagePrefix}brief`) ?? "null")));
       submission.current = restoreRequest(JSON.parse(sessionStorage.getItem(`${storagePrefix}request`) ?? "null"));
+      if (!submission.current) sessionStorage.removeItem(`${storagePrefix}request`);
       if (submission.current) {
         setBrief(briefFromRequest(submission.current));
         setRecovering(true);
@@ -225,7 +230,7 @@ export function BlogGenerationForm({
   useEffect(() => {
     let stopped = false;
     setAvailabilityError("");
-    void assistantRequest<BlogAssistantAvailability>("/api/admin/blog/ai")
+    void assistantRequest<AssistantAvailability>("/api/assistant/blog/config")
       .then((value) => {
         if (!stopped) setAvailability(value);
       })
@@ -245,11 +250,12 @@ export function BlogGenerationForm({
       }
   }, [brief, loaded, storagePrefix]);
   useEffect(() => {
-    if (dismissed.current || run?.status !== "completed" || !run.postId || navigated.current === run.postId) return;
-    navigated.current = run.postId;
+    if (dismissed.current || run?.status !== "completed" || !run.resourceId || navigated.current === run.resourceId)
+      return;
+    navigated.current = run.resourceId;
     clearSubmission();
     router.push(
-      `/admin/blog/${encodeURIComponent(run.postId)}?review=1${run.threadId ? `&thread=${encodeURIComponent(run.threadId)}` : ""}`,
+      `/admin/blog/${encodeURIComponent(run.resourceId)}?review=1${run.threadId ? `&thread=${encodeURIComponent(run.threadId)}` : ""}`,
     );
   }, [run, router]);
 
@@ -295,7 +301,8 @@ export function BlogGenerationForm({
     setSubmitting(true);
     setConnectionError("");
     const request = submission.current ?? {
-      operation: "generate" as const,
+      schemaVersion: 1,
+      operation: "generate",
       clientRequestId: crypto.randomUUID(),
       message: brief.idea.trim(),
       settings: {
@@ -307,8 +314,12 @@ export function BlogGenerationForm({
         webSearch: false,
       },
       references,
-      ...(run?.postId
-        ? { postId: run.postId, threadId: run.threadId ?? undefined, inputMessageId: run.inputMessageId ?? undefined }
+      ...(run?.resourceId
+        ? {
+            resourceId: run.resourceId,
+            threadId: run.threadId ?? undefined,
+            inputMessageId: run.inputMessageId ?? undefined,
+          }
         : {}),
     };
     submission.current = request;
@@ -318,7 +329,7 @@ export function BlogGenerationForm({
       /* Retry remains deduplicated in memory. */
     }
     try {
-      await streamAssistantRun(request, abort.signal, (event) => {
+      await streamAssistantRun("blog", request, abort.signal, (event) => {
         if (!alive.current || abort.signal.aborted) return;
         if (event.type === "run" || event.type === "completed" || (event.type === "error" && event.run)) {
           const next = event.run!;
@@ -376,7 +387,9 @@ export function BlogGenerationForm({
         onCancel={() => void cancel()}
         onRetry={() => void generate()}
         onRefresh={run ? () => void restoreRun(run.id) : undefined}
-        onEdit={run?.postId ? () => router.push(`/admin/blog/${encodeURIComponent(run.postId!)}?edit=1`) : undefined}
+        onEdit={
+          run?.resourceId ? () => router.push(`/admin/blog/${encodeURIComponent(run.resourceId!)}?edit=1`) : undefined
+        }
       />
     );
   return (

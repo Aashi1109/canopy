@@ -31,6 +31,7 @@ export type ToolInputField = {
   readonly secret?: boolean;
   readonly required?: boolean;
   readonly multiline?: boolean;
+  readonly surface?: "card";
   readonly maxLength?: number;
 };
 

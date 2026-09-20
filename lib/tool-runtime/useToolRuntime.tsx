@@ -48,6 +48,8 @@ export function ToolRuntimeProvider<Input, Settings extends ToolSettings, Result
   const [undoSnapshot, setUndoSnapshot] = useState<{ input: Input } | null>(null);
   const revisionRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
+  const completedInputRef = useRef<{ input: Input } | null>(null);
+  const previousRefreshSettingsRef = useRef(spec.refreshOnSettingsChange);
 
   const execute = useCallback(
     async (manual = false) => {
@@ -67,6 +69,7 @@ export function ToolRuntimeProvider<Input, Settings extends ToolSettings, Result
         if (revision !== revisionRef.current || abortController.signal.aborted) {
           return;
         }
+        completedInputRef.current = { input };
         setResult(outcome.result);
         setArtifacts(outcome.artifacts ?? []);
         setFacts(outcome.facts ?? []);
@@ -88,6 +91,15 @@ export function ToolRuntimeProvider<Input, Settings extends ToolSettings, Result
   );
 
   useEffect(() => {
+    const refreshExistingResult =
+      spec.refreshOnSettingsChange !== undefined &&
+      !Object.is(previousRefreshSettingsRef.current, spec.refreshOnSettingsChange) &&
+      completedInputRef.current !== null &&
+      Object.is(completedInputRef.current.input, input);
+    previousRefreshSettingsRef.current = spec.refreshOnSettingsChange;
+    if (completedInputRef.current && !Object.is(completedInputRef.current.input, input)) {
+      completedInputRef.current = null;
+    }
     revisionRef.current += 1;
     abortRef.current?.abort();
     setError("");
@@ -112,9 +124,12 @@ export function ToolRuntimeProvider<Input, Settings extends ToolSettings, Result
     }
 
     setLifecycle("ready");
-    if (spec.trigger !== "live" || spec.shouldAutoRun?.(input) === false) return;
+    if ((spec.trigger !== "live" && !refreshExistingResult) || spec.shouldAutoRun?.(input) === false) return;
 
-    const timeout = window.setTimeout(() => void execute(), spec.debounceMs ?? 200);
+    const revision = revisionRef.current;
+    const timeout = window.setTimeout(() => {
+      if (revision === revisionRef.current) void execute();
+    }, spec.debounceMs ?? 200);
     return () => window.clearTimeout(timeout);
   }, [execute, input, settings, spec]);
 
@@ -156,6 +171,7 @@ export function ToolRuntimeProvider<Input, Settings extends ToolSettings, Result
 
   const cancelRun = useCallback(() => {
     if (lifecycle !== "running") return;
+    completedInputRef.current = null;
     revisionRef.current += 1;
     abortRef.current?.abort();
     abortRef.current = null;

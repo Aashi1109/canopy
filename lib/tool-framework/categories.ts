@@ -116,6 +116,16 @@ export function categoriesForApp(app: ToolApp): readonly CategoryKey[] {
   return CATEGORY_KEYS.filter((key) => TOOL_CATEGORIES[key].app === app);
 }
 
+/** Accept display-name URLs emitted by older navigation while keeping stable keys internally. */
+export function resolveCategoryKey(value: string, app: ToolApp): CategoryKey | "" {
+  const normalized = value.trim().toLowerCase();
+  return (
+    categoriesForApp(app).find(
+      (key) => key === normalized || TOOL_CATEGORIES[key].label.toLowerCase() === normalized,
+    ) ?? ""
+  );
+}
+
 /**
  * Replaces the two hard-coded key lists the catalogue pages use today.
  *

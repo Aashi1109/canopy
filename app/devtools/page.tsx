@@ -1,11 +1,12 @@
 import { CatalogHero } from "@/components/canopy/CatalogHero";
+import { CatalogListing } from "@/components/canopy/CatalogListing";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { ToolIcon } from "@/components/ToolIcon";
 import {
   categoriesForApp,
   FEATURED_TOOL_IDS,
+  resolveCategoryKey,
   TOOL_CATEGORIES,
-  type CategoryKey,
 } from "@/lib/tool-framework/categories";
 import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
 import { getOptionalSession } from "@/lib/auth/session.ts";
@@ -39,10 +40,6 @@ function first(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value) ?? "";
 }
 
-function isCategory(value: string): value is CategoryKey {
-  return Object.hasOwn(TOOL_CATEGORIES, value);
-}
-
 function ToolCard({ tool }: { tool: CatalogTool }) {
   return (
     <CatalogCard
@@ -71,7 +68,7 @@ export default async function HomePage({
   const query = first(params.q).trim().slice(0, 80);
   const requestedCategory = first(params.category).slice(0, 80);
   const [tools, session] = await Promise.all([getTools("devtools"), getOptionalSession(requestHeaders)]);
-  const category = isCategory(requestedCategory) ? requestedCategory : "";
+  const category = resolveCategoryKey(requestedCategory, "devtools");
   const normalizedQuery = query.toLocaleLowerCase();
   const filteredTools = tools.filter(
     (tool) =>
@@ -183,11 +180,11 @@ export default async function HomePage({
         )}
 
         {hasFilter || showAllTools ? (
-          <section className="py-12 sm:py-16">
+          <CatalogListing category={category} className="pt-6 pb-12 sm:pb-16" query={query}>
             <AppContainer>
               {hasFilter ? (
                 <TextLink
-                  className="mb-5 inline-flex min-h-11 items-center gap-2 text-muted-foreground outline-none hover:text-foreground focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="mb-2 inline-flex min-h-11 items-center gap-2 text-muted-foreground outline-none hover:text-foreground focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   href={category && !query ? "/devtools?view=all" : "/devtools"}
                 >
                   <ArrowLeft aria-hidden="true" className="size-4" />
@@ -206,7 +203,7 @@ export default async function HomePage({
                     />
                   ) : null
                 }
-                className={`${SECTION_HEADING_CLASS} flex-col items-stretch sm:flex-row sm:items-center`}
+                className="mb-6 flex-col items-stretch sm:flex-row sm:items-center"
                 description={
                   showAllTools && !category && !query
                     ? "Browse every available developer tool in one place."
@@ -244,7 +241,7 @@ export default async function HomePage({
                 />
               )}
             </AppContainer>
-          </section>
+          </CatalogListing>
         ) : (
           <>
             <section className="py-14 sm:py-20" id="popular-tools">

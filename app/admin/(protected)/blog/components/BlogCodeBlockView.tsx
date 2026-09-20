@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { Button } from "@/components/ui/index.tsx";
-import { MermaidDiagram } from "@/components/blog/MermaidDiagram";
-import { CopyBlogCode } from "@/components/blog/CopyBlogCode";
-import codeStyles from "@/components/blog/codeHighlight.module.css";
+import { MermaidDiagram } from "@/components/content/MermaidDiagram";
+import { CopyCode } from "@/components/content/CopyCode";
+import codeStyles from "@/components/content/codeHighlight.module.css";
 
 export function BlogCodeBlockView({ node }: NodeViewProps) {
   const [showSource, setShowSource] = useState(false);
@@ -29,7 +29,7 @@ export function BlogCodeBlockView({ node }: NodeViewProps) {
         <pre>
           <NodeViewContent<"code"> as="code" className={language ? `language-${language}` : undefined} />
         </pre>
-        <CopyBlogCode code={node.textContent} />
+        <CopyCode code={node.textContent} />
       </div>
     </NodeViewWrapper>
   );

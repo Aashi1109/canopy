@@ -1,13 +1,12 @@
 import { DOMParser, Fragment, Slice } from "@tiptap/pm/model";
 import type { EditorProps } from "@tiptap/pm/view";
 import { Marked } from "marked";
-import { highlightBlogCode } from "../../../../../lib/blog/codeHighlight.ts";
-import { MAX_BLOG_MATH_LENGTH, matchBlogInlineMath, renderBlogMath } from "../../../../../lib/blog/math.ts";
+import { MAX_MATH_LENGTH, matchInlineMath } from "../../../../../lib/markdown/math.ts";
 
 const escapeHtml = (text: string) =>
   text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-function createBlogMarkdown(display: boolean) {
+function createBlogMarkdown() {
   return new Marked({
     breaks: true,
     extensions: [
@@ -17,13 +16,11 @@ function createBlogMarkdown(display: boolean) {
         start: (source) => source.indexOf("$$"),
         tokenizer(source) {
           const match = /^\$\$[ \t]*\n?([\s\S]+?)\n?\$\$(?:[ \t]*\n|$)/.exec(source);
-          if (match && match[1].trim() && match[1].length <= MAX_BLOG_MATH_LENGTH)
+          if (match && match[1].trim() && match[1].length <= MAX_MATH_LENGTH)
             return { type: "blogBlockMath", raw: match[0], latex: match[1].trim() };
         },
         renderer: (token) => {
-          if (!display) return `<div data-type="block-math" data-latex="${escapeHtml(token.latex)}"></div>`;
-          const { html, error } = renderBlogMath(token.latex, true);
-          return `<div class="blog-math-block${error ? " blog-math-error" : ""}">${html}</div>`;
+          return `<div data-type="block-math" data-latex="${escapeHtml(token.latex)}"></div>`;
         },
       },
       {
@@ -31,13 +28,11 @@ function createBlogMarkdown(display: boolean) {
         level: "inline",
         start: (source) => source.indexOf("$"),
         tokenizer(source) {
-          const match = matchBlogInlineMath(source);
-          if (match && match.latex.length <= MAX_BLOG_MATH_LENGTH) return { type: "blogInlineMath", ...match };
+          const match = matchInlineMath(source);
+          if (match && match.latex.length <= MAX_MATH_LENGTH) return { type: "blogInlineMath", ...match };
         },
         renderer: (token) => {
-          if (!display) return `<span data-type="inline-math" data-latex="${escapeHtml(token.latex)}"></span>`;
-          const { html, error } = renderBlogMath(token.latex, false);
-          return `<span class="blog-math-inline${error ? " blog-math-error" : ""}">${html}</span>`;
+          return `<span data-type="inline-math" data-latex="${escapeHtml(token.latex)}"></span>`;
         },
       },
     ],
@@ -65,12 +60,12 @@ function createBlogMarkdown(display: boolean) {
             return label;
           }
         }
-        return `<a href="${escapeHtml(href)}"${display ? ' target="_blank" rel="noopener noreferrer"' : ""}>${label}</a>`;
+        return `<a href="${escapeHtml(href)}">${label}</a>`;
       },
       code({ text, lang }) {
         const language = lang?.split(/\s/)[0] ?? "";
         const attribute = /^[a-zA-Z0-9_+-]{1,40}$/.test(language) ? ` class="language-${language}"` : "";
-        return `<pre><code${attribute}>${display ? highlightBlogCode(text, language) : escapeHtml(text)}</code></pre>`;
+        return `<pre><code${attribute}>${escapeHtml(text)}</code></pre>`;
       },
       list(token) {
         if (token.ordered && (Number(token.start) < 1 || Number(token.start) > 1000000)) token.start = 1;
@@ -86,9 +81,15 @@ function createBlogMarkdown(display: boolean) {
         }
         return `<ul data-type="taskList">${token.items
           .map((item) => {
-            const content = this.parser.parse(item.tokens);
-            if (!display) return `<li data-type="taskItem" data-checked="${!!item.checked}">${content}</li>`;
-            return `<li data-type="taskItem"><span data-task-checkbox="${!!item.checked}" role="checkbox" aria-readonly="true" aria-checked="${!!item.checked}" aria-label="${item.checked ? "Completed" : "Not completed"}">${item.checked ? "☑" : "☐"}</span><div>${content}</div></li>`;
+            const tokens = item.tokens
+              .filter((child) => child.type !== "checkbox")
+              .map((child) =>
+                child.type === "paragraph"
+                  ? { ...child, tokens: child.tokens?.filter((inline) => inline.type !== "checkbox") ?? [] }
+                  : child,
+              );
+            const content = this.parser.parse(tokens);
+            return `<li data-type="taskItem" data-checked="${!!item.checked}">${content}</li>`;
           })
           .join("")}</ul>`;
       },
@@ -96,16 +97,10 @@ function createBlogMarkdown(display: boolean) {
   });
 }
 
-const markdown = createBlogMarkdown(false);
-const displayMarkdown = createBlogMarkdown(true);
+const markdown = createBlogMarkdown();
 
 export function blogMarkdownHtml(text: string): string {
   return markdown.parse(text, { async: false });
-}
-
-/** Safe article HTML for BlogArticleBody, including its math/code/task enhancements. */
-export function renderBlogMarkdown(text: string): string {
-  return displayMarkdown.parse(text, { async: false });
 }
 
 /** Native HTML and code-block pastes bypass this plain-text clipboard parser. */

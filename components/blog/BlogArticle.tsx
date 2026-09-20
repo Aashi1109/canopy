@@ -22,10 +22,8 @@ import { blogCanonicalUrl } from "@/lib/blog/publication";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { CopyBlogLink } from "./CopyBlogLink";
 import { BlogPageContainer } from "./BlogPageContainer";
-import { BlogArticleBody } from "./BlogArticleBody";
+import { RichContent } from "@/components/content/RichContent";
 import styles from "./article.module.css";
-import highlightStyles from "./codeHighlight.module.css";
-import contentStyles from "./content.module.css";
 
 type Props = {
   document: BlogDocument;
@@ -154,10 +152,7 @@ export function BlogArticle({ document, publication }: Props) {
             </nav>
           )}
           <div className={styles.main}>
-            <BlogArticleBody
-              className={`${styles.body} ${contentStyles.content} ${highlightStyles.highlight}`}
-              html={html}
-            />
+            <RichContent showToaster html={html} />
             {relatedToolLinks.length > 0 && (
               <Card className={styles.toolHandoff}>
                 <H2 className="font-sans text-[26px] leading-[1.6]">Put the guide to work.</H2>

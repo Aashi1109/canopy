@@ -7,7 +7,7 @@ import { transformSync } from "next/dist/build/swc/index.js";
 
 const hooks = registerHooks({
   load(url, context, next) {
-    if (!url.endsWith("/assistantApi.ts")) return next(url, context);
+    if (!url.endsWith("/client.ts")) return next(url, context);
     return {
       format: "module",
       shortCircuit: true,
@@ -19,7 +19,7 @@ const hooks = registerHooks({
     };
   },
 });
-const { streamAssistantRun } = await import("../app/admin/(protected)/blog/lib/assistantApi.ts");
+const { streamAssistantRun } = await import("../lib/assistant/client.ts");
 const originalFetch = globalThis.fetch;
 const request = {
   operation: "chat",
@@ -48,7 +48,7 @@ test("delivers split UTF-8 text and structured snapshots before the completion e
     return new Response(body);
   };
   const events = [];
-  const pending = streamAssistantRun(request, new AbortController().signal, (event) => events.push(event));
+  const pending = streamAssistantRun("fixture", request, new AbortController().signal, (event) => events.push(event));
   const bytes = encode({ type: "text-delta", text: "Hi 👋" });
   const split = bytes.indexOf(0xf0) + 2;
   controller.enqueue(bytes.slice(0, split));
@@ -72,7 +72,7 @@ test("truncated streams fail without polling or silently retrying", async () => 
     return new Response(encode({ type: "text-delta", text: "Partial" }));
   };
   await assert.rejects(
-    streamAssistantRun(request, new AbortController().signal, () => {}),
+    streamAssistantRun("fixture", request, new AbortController().signal, () => {}),
     /Connection interrupted/,
   );
   assert.equal(calls, 1);
@@ -90,7 +90,7 @@ test("abort releases a waiting reader and suppresses late presentation", async (
     );
   const abort = new AbortController();
   const events = [];
-  const pending = streamAssistantRun(request, abort.signal, (event) => events.push(event));
+  const pending = streamAssistantRun("fixture", request, abort.signal, (event) => events.push(event));
   await setImmediate();
   abort.abort();
   await assert.rejects(pending, (error) => error.name === "AbortError");
@@ -101,14 +101,14 @@ test("abort releases a waiting reader and suppresses late presentation", async (
 test("HTTP rejection and streamed failure preserve the server's recovery message", async () => {
   globalThis.fetch = async () => Response.json({ error: "Thread not found" }, { status: 404 });
   await assert.rejects(
-    streamAssistantRun(request, new AbortController().signal, () => {}),
+    streamAssistantRun("fixture", request, new AbortController().signal, () => {}),
     (error) => error.status === 404 && error.message === "Thread not found",
   );
   const failure = { type: "error", message: "Provider stopped", run: { ...run, status: "failed" } };
   globalThis.fetch = async () => new Response(encode(failure));
   const events = [];
   await assert.rejects(
-    streamAssistantRun(request, new AbortController().signal, (event) => events.push(event)),
+    streamAssistantRun("fixture", request, new AbortController().signal, (event) => events.push(event)),
     /Provider stopped/,
   );
   assert.deepEqual(events, [failure]);

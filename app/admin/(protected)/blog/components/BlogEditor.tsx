@@ -10,7 +10,7 @@ import { EditorContent, ReactNodeViewRenderer, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { TableKit } from "@tiptap/extension-table";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
-import { blogLowlight } from "@/lib/blog/codeHighlight";
+import { codeLowlight } from "@/lib/markdown/codeHighlight";
 import { normalizeBlogMath } from "@/lib/blog/math";
 import { BlogInlineMath, BlogBlockMath } from "../lib/mathExtensions";
 import "katex/dist/katex.min.css";
@@ -61,8 +61,8 @@ import { BlogPublishPanel, type BlogScheduleValue } from "./BlogPublishPanel";
 import { createDraftPersistence, type DraftSaveState } from "../lib/draftPersistence";
 import { useBlogTaxonomyOptions, type TaxonomyOptions } from "../lib/useBlogTaxonomyOptions";
 import styles from "./BlogEditor.module.css";
-import highlightStyles from "@/components/blog/codeHighlight.module.css";
-import contentStyles from "@/components/blog/content.module.css";
+import highlightStyles from "@/components/content/codeHighlight.module.css";
+import contentStyles from "@/components/content/content.module.css";
 
 function bodyImages(node: JSONContent): JSONContent[] {
   return node.type === "image" ? [node] : (node.content ?? []).flatMap(bodyImages);
@@ -307,7 +307,7 @@ export function BlogEditor({
         link: { openOnClick: false },
         dropcursor: { color: "var(--success)", width: 2 },
       }),
-      BlogCodeBlock.configure({ lowlight: blogLowlight }),
+      BlogCodeBlock.configure({ lowlight: codeLowlight }),
       BlogInlineMath,
       BlogBlockMath,
       TableKit.configure({ table: { resizable: true }, tableCell: false, tableHeader: false }),

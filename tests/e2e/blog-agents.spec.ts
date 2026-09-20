@@ -92,7 +92,8 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
     };
     const thread = {
       id: "thread-1",
-      postId: "post",
+      resourceId: "post",
+      integrationKey: "blog",
       title: "Editorial work",
       type: "chat",
       settings: {},
@@ -102,10 +103,7 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
       updatedAt: now,
     };
     const restored = JSON.parse(sessionStorage.getItem("mock-agent-data") ?? "{}");
-    const executions: Record<string, unknown>[] = restored.executions ?? [
-        { id: "old-review", operation: "review", status: "completed", createdAt: now, completedAt: now },
-        { id: "old-source-check", operation: "check_sources", status: "completed", createdAt: now, completedAt: now },
-      ],
+    const executions: Record<string, unknown>[] = restored.executions ?? [],
       attachments: Record<string, unknown>[] = restored.attachments ?? [
         {
           id: "source-link",
@@ -136,8 +134,8 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
         method = init?.method ?? "GET";
       const body = typeof init?.body === "string" ? JSON.parse(init.body) : {};
       if (url.includes("/attachments/") || url.includes("/attachments?")) fixture.attachmentRequests.push(url);
-      if (url === "/api/admin/blog/ai") return Response.json(availability);
-      if (url.endsWith("/threads")) return Response.json({ threads: [thread] });
+      if (url === "/api/assistant/blog/config") return Response.json(availability);
+      if (url.endsWith("/threads?resourceId=post")) return Response.json({ threads: [thread] });
       if (url.includes("/attachments/")) {
         const attachment = attachments.find((item) => item.id === url.split("/").at(-1));
         return attachment
@@ -184,16 +182,18 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
           ...availability,
         });
       }
-      if (url.startsWith("/api/admin/blog/ai/runs/"))
+      if (url.startsWith("/api/assistant/blog/runs/"))
         return Response.json({ run: runs.find((run) => run.id === url.split("/").at(-1)) });
-      if (url === "/api/admin/blog/ai/runs") {
+      if (url === "/api/assistant/blog/runs") {
         fixture.requests.push(body);
         const id = `run-${runs.length + 1}`;
         const run = {
           id,
           threadId: thread.id,
-          postId: "post",
+          resourceId: "post",
+          integrationKey: "blog",
           operation: "agent",
+          executionMode: "standalone",
           status: "running",
           provider: "fixture",
           model: "fixture",
@@ -212,6 +212,7 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
           agentId: body.agentId,
           requestMessage: body.message,
           operation: "agent",
+          executionMode: "standalone",
           status: "running",
           label: "Agent request",
           createdAt: run.createdAt,
@@ -228,7 +229,7 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
             event({ type: "run", run });
             fixture.complete = () => {
               const article = {
-                ...body.document,
+                ...body.context?.document,
                 title: "A complete optimized guide",
                 excerpt: "A clearer guide.",
                 seoTitle: "Practical invoice guide",
@@ -286,7 +287,7 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
                 summary: `${body.agentId} completed the requested work.`,
                 content,
                 inputArtifactIds: body.attachmentIds ?? [],
-                baseDocumentFingerprint: body.document ? fingerprint(body.document) : undefined,
+                baseDocumentFingerprint: body.context?.document ? fingerprint(body.context?.document) : undefined,
               };
               const attachment = {
                 id: `artifact-${id}`,
@@ -310,8 +311,8 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
                 baseDocumentFingerprint: artifact.baseDocumentFingerprint,
               };
               run.status = "completed";
-              run.completedAt = now;
-              run.updatedAt = new Date().toISOString();
+              run.completedAt = new Date(Date.parse(run.createdAt) + 72_000).toISOString();
+              run.updatedAt = run.completedAt;
               run.response = {
                 text: "",
                 keywords: [],
@@ -323,7 +324,7 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
               };
               Object.assign(summary, {
                 status: "completed",
-                completedAt: now,
+                completedAt: run.completedAt,
                 updatedAt: run.updatedAt,
                 artifact: reference,
               });
@@ -356,7 +357,7 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
   });
   await page.route("https://agents.test/", (route) => route.fulfill({ contentType: "text/html", body: html }));
   await page.goto("https://agents.test/");
-  const panel = page.getByRole("complementary", { name: "Blog assistant" });
+  const panel = page.getByRole("complementary", { name: "Assistant" });
   const composer = panel.getByRole("combobox", { name: "Message to assistant" });
   await expect(composer).toBeVisible();
   await composer.fill("Keep this draft while the panel slides.");
@@ -453,7 +454,7 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
   await expect(panel.getByRole("button", { name: "Remove agent" })).toBeVisible();
   await expect(composer).toContainText("Planner");
   await composer.pressSequentially("Outline this guide for beginners");
-  await panel.getByRole("button", { name: "Remove draft context" }).click();
+  await panel.getByRole("button", { name: "Remove current context" }).click();
   await page.screenshot({ path: "/tmp/blog-agents-composer-1366.png" });
   await panel.getByRole("button", { name: "Send message", exact: true }).click();
   await expect(panel.getByText("Working with Planner…")).toBeVisible();
@@ -473,8 +474,12 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
   await expect(plannerActivity.getByLabel("Request to Planner")).toContainText("Outline this guide for beginners");
   await plannerActivity.getByRole("button", { name: "View activity" }).click();
   await expect(plannerActivity.getByText("Request accepted", { exact: true })).toBeVisible();
-  await expect(plannerActivity.getByText("Completed", { exact: true })).toBeVisible();
+  await expect(plannerActivity.getByText("Completed in 1m 12s", { exact: true })).toBeVisible();
   await panel.screenshot({ path: "/tmp/blog-agents-activity-panel.png" });
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await expect(plannerActivity.getByText("Completed in 1m 12s", { exact: true })).toBeVisible();
+  await panel.screenshot({ path: "/tmp/blog-agents-activity-panel-1280.png" });
+  await page.setViewportSize({ width: 1366, height: 768 });
   await plannerActivity.getByRole("button", { name: "View activity" }).click();
   await panel.screenshot({ path: "/tmp/blog-agents-ready-panel.png" });
   await panel.getByRole("button", { name: "Open planner result" }).click();
@@ -512,7 +517,7 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
   await expect(panel.getByText("Article outline", { exact: true })).toBeVisible();
   await expect(panel.getByRole("button", { name: "Download report", exact: true })).toBeEnabled();
   expect(await attachmentRequestCount()).toBe(requestsBeforeReportRevisit);
-  await panel.getByRole("button", { name: "All sources", exact: true }).click();
+  await panel.getByRole("button", { name: "Back to sources", exact: true }).click();
   await expect(panel.getByRole("button", { name: /planner result/ })).toBeVisible();
   await expect(panel.getByRole("button", { name: "Download report", exact: true })).toHaveCount(0);
   await panel.getByRole("tab", { name: "Chat", exact: true }).click();
@@ -571,12 +576,12 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
   await expect(panel.getByRole("button", { name: "Prepare new request", exact: true })).toBeEnabled();
   await panel.getByRole("button", { name: "Prepare new request", exact: true }).click();
   await expect(panel.getByRole("button", { name: "Remove agent" })).toBeVisible();
-  await expect(panel.getByText("Draft changed", { exact: true }).first()).toBeVisible();
+  await expect(panel.getByText("Content changed", { exact: true }).first()).toBeVisible();
   await panel.getByRole("button", { name: "Open optimizer result" }).click();
   await panel.getByRole("button", { name: "Show message" }).click();
   await expect(panel.locator('[data-agent-run="run-4"]')).toBeFocused();
   await panel.getByRole("tab", { name: "Sources", exact: true }).click();
-  await panel.getByRole("button", { name: "All sources", exact: true }).click();
+  await panel.getByRole("button", { name: "Back to sources", exact: true }).click();
   for (const agent of ["planner", "writer", "auditor", "optimizer"])
     await expect(panel.getByRole("button", { name: new RegExp(`${agent} result`) })).toBeVisible();
   await expect(panel.getByRole("link", { name: "Open Invoicing reference" })).toBeVisible();
@@ -635,13 +640,14 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
   await page.screenshot({ path: "/tmp/blog-agents-interrupted-1280.png" });
   await page.evaluate(() => {
     sessionStorage.setItem(
-      "blog-assistant:owner:post:selection:thread-1",
+      'assistant:["owner","blog","post"]:selection:thread-1',
       JSON.stringify({ agentId: "future-agent", attachmentIds: ["missing-input"] }),
     );
     const value = JSON.parse(sessionStorage.getItem("mock-agent-data")!);
     value.executions.push({
       id: "expired-run",
       operation: "agent",
+      executionMode: "standalone",
       status: "completed",
       label: "Expired result",
       createdAt: new Date().toISOString(),

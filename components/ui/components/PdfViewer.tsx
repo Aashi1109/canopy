@@ -265,7 +265,7 @@ export function PdfViewer({
 
           <div
             aria-label="Document outline"
-            className="min-h-0 flex-1 overflow-y-auto"
+            className={cn("min-h-0 flex-1 overflow-y-auto", !visibleOutline.length && "flex flex-col")}
             onKeyDown={handleOutlineKeyDown}
             role="listbox"
           >

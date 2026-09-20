@@ -4,7 +4,7 @@ import { runInNewContext } from "node:vm";
 import test from "node:test";
 import { transformSync } from "next/dist/build/swc/index.js";
 
-const filename = new URL("../app/admin/(protected)/blog/components/BlogAssistantPanel.tsx", import.meta.url);
+const filename = new URL("../components/assistant/AssistantPanel.tsx", import.meta.url);
 const { code } = transformSync(readFileSync(filename, "utf8"), {
   filename: filename.pathname,
   jsc: { parser: { syntax: "typescript", tsx: true }, transform: { react: { runtime: "automatic" } } },

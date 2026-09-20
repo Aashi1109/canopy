@@ -462,13 +462,12 @@ export const blogPostSchedulesTable = pgTable(
   ],
 );
 
-export const blogThreadsTable = pgTable(
-  "blog_threads",
+export const assistantThreadsTable = pgTable(
+  "assistant_threads",
   {
     id: text("id").primaryKey(),
-    postId: text("post_id")
-      .notNull()
-      .references(() => blogPostsTable.id),
+    integrationKey: text("integration_key").notNull(),
+    resourceId: text("resource_id"),
     ownerId: text("owner_id")
       .notNull()
       .references(() => authUser.id),
@@ -479,31 +478,45 @@ export const blogThreadsTable = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    check("blog_threads_type_check", sql`${table.type} IN ('chat','inline')`),
-    unique("blog_threads_scope_unique").on(table.id, table.postId, table.ownerId),
-    unique("blog_threads_owner_unique").on(table.id, table.ownerId),
-    index("blog_threads_owner_post_activity_idx").on(table.ownerId, table.postId, table.updatedAt.desc(), table.id),
+    check("assistant_threads_type_check", sql`${table.type} IN ('chat','inline')`),
+    unique("assistant_threads_scope_unique").on(table.id, table.ownerId, table.integrationKey),
+    unique("assistant_threads_resource_scope_unique").on(
+      table.id,
+      table.resourceId,
+      table.ownerId,
+      table.integrationKey,
+    ),
+    unique("assistant_threads_owner_unique").on(table.id, table.ownerId),
+    index("assistant_threads_owner_resource_activity_idx").on(
+      table.ownerId,
+      table.integrationKey,
+      table.resourceId,
+      table.updatedAt.desc(),
+      table.id,
+    ),
   ],
 );
 
-export const blogRunsTable = pgTable(
-  "blog_runs",
+export const assistantRunsTable = pgTable(
+  "assistant_runs",
   {
     id: text("id").primaryKey(),
     threadId: text("thread_id"),
-    postId: text("post_id").references(() => blogPostsTable.id),
+    integrationKey: text("integration_key").notNull(),
+    resourceId: text("resource_id"),
     ownerId: text("owner_id")
       .notNull()
       .references(() => authUser.id),
     clientRequestId: text("client_request_id").notNull(),
-    operation: text("operation").$type<import("../lib/blog/assistantTypes.ts").BlogOperation>().notNull(),
+    operation: text("operation").notNull(),
+    executionMode: text("execution_mode").$type<import("../lib/assistant/types.ts").AssistantExecutionMode>().notNull(),
     provider: text("provider").notNull(),
     model: text("model").notNull(),
     providerResponseId: text("provider_response_id"),
-    status: text("status").$type<import("../lib/blog/assistantTypes.ts").BlogRunStatus>().notNull(),
-    request: jsonb("request").$type<import("../lib/blog/assistantTypes.ts").BlogRunRequest>().notNull(),
+    status: text("status").$type<import("../lib/assistant/types.ts").AssistantRunStatus>().notNull(),
+    request: jsonb("request").$type<import("../lib/assistant/types.ts").AssistantRunRequest>().notNull(),
     inputMessageId: text("input_message_id"),
-    response: jsonb("response").$type<import("../lib/blog/assistantTypes.ts").BlogAssistantResult>(),
+    response: jsonb("response").$type<import("../lib/assistant/types.ts").AssistantResult>(),
     continuation: jsonb("continuation").$type<Record<string, unknown>>().notNull().default({}),
     usage: jsonb("usage").$type<unknown>(),
     errorMessage: text("error_message"),
@@ -513,73 +526,83 @@ export const blogRunsTable = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   },
   (table): PgTableExtraConfigValue[] => [
-    unique("blog_runs_request_unique").on(table.ownerId, table.clientRequestId),
-    uniqueIndex("blog_runs_provider_response_unique")
+    unique("assistant_runs_request_unique").on(table.ownerId, table.integrationKey, table.clientRequestId),
+    uniqueIndex("assistant_runs_provider_response_unique")
       .on(table.provider, table.providerResponseId)
       .where(sql`${table.providerResponseId} IS NOT NULL`),
-    unique("blog_runs_thread_unique").on(table.id, table.threadId),
+    unique("assistant_runs_thread_unique").on(table.id, table.threadId),
     foreignKey({
-      name: "blog_runs_input_message_scope_fk",
+      name: "assistant_runs_input_message_scope_fk",
       columns: [table.inputMessageId, table.threadId],
-      foreignColumns: [blogMessagesTable.id, blogMessagesTable.threadId],
+      foreignColumns: [assistantMessagesTable.id, assistantMessagesTable.threadId],
     }),
     foreignKey({
-      name: "blog_runs_thread_scope_fk",
-      columns: [table.threadId, table.postId, table.ownerId],
-      foreignColumns: [blogThreadsTable.id, blogThreadsTable.postId, blogThreadsTable.ownerId],
+      name: "assistant_runs_thread_scope_fk",
+      columns: [table.threadId, table.ownerId, table.integrationKey],
+      foreignColumns: [assistantThreadsTable.id, assistantThreadsTable.ownerId, assistantThreadsTable.integrationKey],
     }),
-    index("blog_runs_thread_created_idx").on(table.threadId, table.createdAt, table.id),
-    index("blog_runs_post_generation_idx")
-      .on(table.postId, table.createdAt.desc())
-      .where(sql`${table.operation} = 'generate'`),
-    index("blog_runs_expiry_idx").on(table.expiresAt),
-    check(
-      "blog_runs_operation_check",
-      sql`${table.operation} IN ('generate','chat','rewrite','review','check_sources','agent')`,
+    foreignKey({
+      name: "assistant_runs_thread_resource_scope_fk",
+      columns: [table.threadId, table.resourceId, table.ownerId, table.integrationKey],
+      foreignColumns: [
+        assistantThreadsTable.id,
+        assistantThreadsTable.resourceId,
+        assistantThreadsTable.ownerId,
+        assistantThreadsTable.integrationKey,
+      ],
+    }),
+    index("assistant_runs_thread_created_idx").on(table.threadId, table.createdAt, table.id),
+    index("assistant_runs_resource_operation_idx").on(
+      table.integrationKey,
+      table.resourceId,
+      table.operation,
+      table.createdAt.desc(),
     ),
+    index("assistant_runs_expiry_idx").on(table.expiresAt),
+    check("assistant_runs_execution_mode_check", sql`${table.executionMode} IN ('conversational','standalone')`),
     check(
-      "blog_runs_status_check",
+      "assistant_runs_status_check",
       sql`${table.status} IN ('queued','running','completed','failed','cancelled','unknown')`,
     ),
   ],
 );
 
-export const blogMessagesTable = pgTable(
-  "blog_messages",
+export const assistantMessagesTable = pgTable(
+  "assistant_messages",
   {
     id: text("id").primaryKey(),
     threadId: text("thread_id")
       .notNull()
-      .references(() => blogThreadsTable.id),
+      .references(() => assistantThreadsTable.id),
     runId: text("run_id"),
     role: text("role").$type<"user" | "assistant">().notNull(),
-    parts: jsonb("parts").$type<import("../lib/blog/assistantTypes.ts").BlogMessagePart[]>().notNull().default([]),
+    parts: jsonb("parts").$type<import("../lib/assistant/types.ts").AssistantMessagePart[]>().notNull().default([]),
     meta: jsonb("meta").$type<Record<string, unknown>>().notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table): PgTableExtraConfigValue[] => [
-    unique("blog_messages_thread_unique").on(table.id, table.threadId),
-    uniqueIndex("blog_messages_run_unique")
+    unique("assistant_messages_thread_unique").on(table.id, table.threadId),
+    uniqueIndex("assistant_messages_run_unique")
       .on(table.runId)
       .where(sql`${table.runId} IS NOT NULL`),
     foreignKey({
-      name: "blog_messages_run_scope_fk",
+      name: "assistant_messages_run_scope_fk",
       columns: [table.runId, table.threadId],
-      foreignColumns: [blogRunsTable.id, blogRunsTable.threadId],
+      foreignColumns: [assistantRunsTable.id, assistantRunsTable.threadId],
     }),
-    index("blog_messages_thread_updated_idx").on(table.threadId, table.updatedAt),
+    index("assistant_messages_thread_updated_idx").on(table.threadId, table.updatedAt),
     check(
-      "blog_messages_role_check",
+      "assistant_messages_role_check",
       sql`${table.role} IN ('user','assistant') AND (${table.runId} IS NULL OR ${table.role} = 'assistant')`,
     ),
-    check("blog_messages_parts_check", sql`jsonb_typeof(${table.parts}) = 'array'`),
-    check("blog_messages_meta_check", sql`jsonb_typeof(${table.meta}) = 'object'`),
+    check("assistant_messages_parts_check", sql`jsonb_typeof(${table.parts}) = 'array'`),
+    check("assistant_messages_meta_check", sql`jsonb_typeof(${table.meta}) = 'object'`),
   ],
 );
 
-export const blogAttachmentsTable = pgTable(
-  "blog_attachments",
+export const assistantAttachmentsTable = pgTable(
+  "assistant_attachments",
   {
     id: text("id").primaryKey(),
     threadId: text("thread_id").notNull(),
@@ -598,32 +621,32 @@ export const blogAttachmentsTable = pgTable(
   },
   (table) => [
     foreignKey({
-      name: "blog_attachments_run_scope_fk",
+      name: "assistant_attachments_run_scope_fk",
       columns: [table.runId, table.threadId],
-      foreignColumns: [blogRunsTable.id, blogRunsTable.threadId],
+      foreignColumns: [assistantRunsTable.id, assistantRunsTable.threadId],
     }),
-    uniqueIndex("blog_attachments_run_unique")
+    uniqueIndex("assistant_attachments_run_unique")
       .on(table.runId)
       .where(sql`${table.runId} IS NOT NULL`),
     foreignKey({
-      name: "blog_attachments_thread_owner_fk",
+      name: "assistant_attachments_thread_owner_fk",
       columns: [table.threadId, table.ownerId],
-      foreignColumns: [blogThreadsTable.id, blogThreadsTable.ownerId],
+      foreignColumns: [assistantThreadsTable.id, assistantThreadsTable.ownerId],
     }),
     foreignKey({
-      name: "blog_attachments_message_scope_fk",
+      name: "assistant_attachments_message_scope_fk",
       columns: [table.messageId, table.threadId],
-      foreignColumns: [blogMessagesTable.id, blogMessagesTable.threadId],
+      foreignColumns: [assistantMessagesTable.id, assistantMessagesTable.threadId],
     }),
-    index("blog_attachments_thread_idx").on(table.ownerId, table.threadId),
-    index("blog_attachments_message_idx").on(table.messageId),
-    index("blog_attachments_expiry_idx")
+    index("assistant_attachments_thread_idx").on(table.ownerId, table.threadId),
+    index("assistant_attachments_message_idx").on(table.messageId),
+    index("assistant_attachments_expiry_idx")
       .on(table.expiresAt)
       .where(sql`${table.expiresAt} IS NOT NULL`),
-    index("blog_attachments_deleting_idx")
+    index("assistant_attachments_deleting_idx")
       .on(table.updatedAt)
       .where(sql`${table.status} = 'deleting'`),
-    check("blog_attachments_data_check", sql`jsonb_typeof(${table.data}) = 'object'`),
-    check("blog_attachments_status_check", sql`${table.status} IN ('processing','ready','failed','deleting')`),
+    check("assistant_attachments_data_check", sql`jsonb_typeof(${table.data}) = 'object'`),
+    check("assistant_attachments_status_check", sql`${table.status} IN ('processing','ready','failed','deleting')`),
   ],
 );

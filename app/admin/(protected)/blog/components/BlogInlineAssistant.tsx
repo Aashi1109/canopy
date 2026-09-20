@@ -7,8 +7,9 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { Check, RotateCw, Sparkles, X } from "lucide-react";
 import { Button, Tooltip, TooltipContent, TooltipTrigger, toast } from "@/components/ui/index.tsx";
 import type { BlogNode } from "@/lib/blog/document";
-import type { BlogAssistantRun, BlogRunRequest } from "@/lib/blog/assistantTypes";
-import { activeRun, assistantRequest, streamAssistantRun } from "../lib/assistantApi";
+import type { AssistantRun, AssistantRunRequest } from "@/lib/assistant/types";
+import { activeRun, assistantRequest, streamAssistantRun } from "@/lib/assistant/client";
+import type { BlogProposalData } from "@/lib/blog/assistantTypes";
 import { captureAssistantSelection } from "../lib/assistantSelection";
 import styles from "./BlogSelectionToolbar.module.css";
 
@@ -61,26 +62,28 @@ export function highlightInlineSelection(editor: Editor, from: number, to: numbe
 
 export function BlogInlineAssistant({ editor, postId, instruction, target, dismissRequest, onClose }: Props) {
   const surface = useRef<HTMLDivElement>(null);
-  const [run, setRun] = useState<BlogAssistantRun | null>(null);
+  const [run, setRun] = useState<AssistantRun | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState("");
   const [stale, setStale] = useState(!target.valid());
   const alive = useRef(false);
-  const pending = useRef<BlogRunRequest | null>(null);
-  const currentRun = useRef<BlogAssistantRun | null>(null);
+  const pending = useRef<AssistantRunRequest | null>(null);
+  const currentRun = useRef<AssistantRun | null>(null);
   const locked = useRef(false);
   const closing = useRef(false);
   const applied = useRef(false);
   const controller = useRef<AbortController | null>(null);
   const [streamedText, setStreamedText] = useState("");
   const lastDismiss = useRef(dismissRequest);
-  const proposal = run?.response?.proposals.find((item) => item.type === "edit" && item.status === "pending");
+  const proposal = run?.response?.proposals.find((item) => item.data.type === "edit" && item.status === "pending");
 
-  async function record(result: BlogAssistantRun, status: "applied" | "discarded") {
-    const edit = result.response?.proposals.find((item) => item.type === "edit" && item.status === "pending");
+  const replacement = proposal?.data.replacement as BlogProposalData["replacement"];
+
+  async function record(result: AssistantRun, status: "applied" | "discarded") {
+    const edit = result.response?.proposals.find((item) => item.data.type === "edit" && item.status === "pending");
     if (edit)
       await assistantRequest(
-        `/api/admin/blog/ai/runs/${result.id}/proposals/${encodeURIComponent(edit.toolCallId)}`,
+        `/api/assistant/blog/runs/${result.id}/proposals/${encodeURIComponent(edit.id)}`,
         { status },
         "PATCH",
       );
@@ -110,16 +113,17 @@ export function BlogInlineAssistant({ editor, postId, instruction, target, dismi
     try {
       if (!pending.current) {
         pending.current = {
+          schemaVersion: 1,
           clientRequestId: crypto.randomUUID(),
           operation: "rewrite",
-          postId,
-          selectedText: range.text,
+          resourceId: postId,
+          context: { selectedText: range.text },
           message: instruction,
           ...(currentRun.current?.threadId ? { threadId: currentRun.current.threadId } : {}),
           ...(currentRun.current?.inputMessageId ? { inputMessageId: currentRun.current.inputMessageId } : {}),
         };
       }
-      const next = await streamAssistantRun(pending.current, abort.signal, (event) => {
+      const next = await streamAssistantRun("blog", pending.current, abort.signal, (event) => {
         if (!alive.current || closing.current || abort.signal.aborted) return;
         if (event.type === "run") {
           currentRun.current = event.run;
@@ -131,7 +135,11 @@ export function BlogInlineAssistant({ editor, postId, instruction, target, dismi
       currentRun.current = next;
       pending.current = null;
       if (next.status !== "completed") throw new Error(next.errorMessage || "The rewrite stopped. Try again.");
-      if (!next.response?.proposals.some((item) => item.type === "edit" && item.replacement?.length))
+      if (
+        !next.response?.proposals.some(
+          (item) => item.data.type === "edit" && (item.data as BlogProposalData).replacement?.length,
+        )
+      )
         throw new Error("No replacement was returned. Try again.");
       if (run && run.id !== next.id)
         void record(run, "discarded").catch(() =>
@@ -165,7 +173,7 @@ export function BlogInlineAssistant({ editor, postId, instruction, target, dismi
     const range = target.range;
     if (
       !range ||
-      !proposal?.replacement ||
+      !replacement ||
       busy ||
       pending.current ||
       (currentRun.current && activeRun(currentRun.current.status)) ||
@@ -176,7 +184,7 @@ export function BlogInlineAssistant({ editor, postId, instruction, target, dismi
       return;
     }
     const previousSize = editor.state.doc.content.size;
-    if (!target.apply({ type: "doc", content: proposal.replacement }, "replace")) {
+    if (!target.apply({ type: "doc", content: replacement }, "replace")) {
       setStale(true);
       return;
     }
@@ -273,11 +281,11 @@ export function BlogInlineAssistant({ editor, postId, instruction, target, dismi
           {streamedText}
         </p>
       )}
-      {!busy && proposal?.replacement && (
+      {!busy && replacement && (
         <>
           <p className={styles.suggestionLabel}>SUGGESTION · NOT APPLIED</p>
           <p className={styles.suggestionText} tabIndex={0} aria-label="Suggested text">
-            {plain(proposal.replacement).trim()}
+            {plain(replacement).trim()}
           </p>
         </>
       )}

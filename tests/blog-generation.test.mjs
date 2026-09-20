@@ -18,6 +18,8 @@ state.router = router;
 const stub = (source) => ({ shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(source)}` });
 const hooks = registerHooks({
   resolve(specifier, context, next) {
+    if (specifier === "@/lib/assistant/client")
+      return next(new URL("../lib/assistant/client.ts", import.meta.url).href, context);
     if (!context.parentURL?.endsWith("/BlogGenerationForm.tsx")) return next(specifier, context);
     if (specifier === "react")
       return stub(`
@@ -48,15 +50,10 @@ const hooks = registerHooks({
       export const Button='button', H1='h1', Input='input', Label='label', Select='select', Textarea='textarea';
       export const toast={error(message){globalThis.__generationTest.toasts.push(message)}};
     `);
-    if (specifier === "../lib/assistantApi")
-      return {
-        shortCircuit: true,
-        url: new URL("../app/admin/(protected)/blog/lib/assistantApi.ts", import.meta.url).href,
-      };
     return next(specifier, context);
   },
   load(url, context, next) {
-    if (!url.endsWith("/BlogGenerationForm.tsx") && !url.endsWith("/assistantApi.ts")) return next(url, context);
+    if (!url.endsWith("/BlogGenerationForm.tsx") && !url.endsWith("/client.ts")) return next(url, context);
     return {
       format: "module",
       shortCircuit: true,
@@ -83,6 +80,7 @@ const stream = (value) =>
       .join("\n") + "\n",
   );
 const request = {
+  schemaVersion: 1,
   operation: "generate",
   clientRequestId: "previous-id",
   message: "A saved idea",
@@ -90,10 +88,12 @@ const request = {
 };
 const run = (input = request, status = "cancelled") => ({
   id: "run-1",
+  integrationKey: "blog",
+  executionMode: "conversational",
   operation: "generate",
   status,
   request: input,
-  postId: "draft-1",
+  resourceId: "draft-1",
   threadId: "thread-1",
   inputMessageId: "message-1",
   errorMessage: null,
@@ -174,7 +174,7 @@ test.beforeEach(() => {
     setItem: (key, value) => storage.set(key, value),
     removeItem: (key) => storage.delete(key),
   };
-  handler = (call) => (call.url === "/api/admin/blog/ai" ? response(available) : stream(run(call.body)));
+  handler = (call) => (call.url === "/api/assistant/blog/config" ? response(available) : stream(run(call.body)));
   globalThis.fetch = async (url, options) => {
     const call = { url, method: options.method, body: options.body ? JSON.parse(options.body) : undefined };
     state.calls.push(call);
@@ -209,7 +209,7 @@ test("definite validation rejection permits an edited request with a new id", as
   handler = () => response({ error: "Describe a more specific idea" }, 400);
   let view = await submit();
   assert.equal(view.field("blog-ai-idea").props["aria-invalid"], true);
-  assert.equal(storage.has("blog-generation:user-a:request"), false);
+  assert.equal(storage.has("assistant-generation:blog:user-a:v1:request"), false);
   assert.equal(state.report.busy, false);
   typeIdea("Corrected idea");
   handler = (call) => stream(run(call.body));
@@ -225,7 +225,7 @@ test("ambiguous network failure preserves and retries exactly the same submissio
     throw new TypeError("Network interrupted");
   };
   let view = await submit();
-  const saved = JSON.parse(storage.get("blog-generation:user-a:request"));
+  const saved = JSON.parse(storage.get("assistant-generation:blog:user-a:v1:request"));
   assert.equal(state.report.busy, true);
   assert.equal(view.nodes.find((node) => node.type === "fieldset").props.disabled, true);
   handler = (call) => stream(run(call.body));
@@ -236,11 +236,11 @@ test("ambiguous network failure preserves and retries exactly the same submissio
     [saved, saved],
   );
   assert.equal(state.report.busy, false);
-  assert.equal(storage.has("blog-generation:user-a:request"), false);
+  assert.equal(storage.has("assistant-generation:blog:user-a:v1:request"), false);
 });
 
 test("reload offers an explicit status check without normalizing or replaying the pending request", async () => {
-  storage.set("blog-generation:user-a:request", JSON.stringify(request));
+  storage.set("assistant-generation:blog:user-a:v1:request", JSON.stringify(request));
   let view = await settle();
   assert.equal(posts().length, 0);
   assert.equal(view.field("blog-ai-idea").props.value, request.message);
@@ -249,9 +249,11 @@ test("reload offers an explicit status check without normalizing or replaying th
   assert.deepEqual(posts()[0].body, request);
 });
 
-test("briefs are scoped to the authenticated user and legacy unscoped storage is discarded", async () => {
+test("briefs are scoped to the authenticated user and retired Blog storage is discarded", async () => {
   storage.set("blog-generation-brief", JSON.stringify({ idea: "Someone else's legacy text" }));
   storage.set("blog-generation-request", JSON.stringify(request));
+  storage.set("blog-generation:user-a:brief", JSON.stringify({ idea: "Old Blog brief" }));
+  storage.set("blog-generation:user-a:request", JSON.stringify({ ...request, postId: "old-post" }));
   await settle();
   typeIdea("Private idea for user A");
   await settle();
@@ -261,6 +263,8 @@ test("briefs are scoped to the authenticated user and legacy unscoped storage is
   assert.equal(view.field("blog-ai-idea").props.value, "");
   assert.equal(storage.has("blog-generation-brief"), false);
   assert.equal(storage.has("blog-generation-request"), false);
+  assert.equal(storage.has("blog-generation:user-a:brief"), false);
+  assert.equal(storage.has("blog-generation:user-a:request"), false);
   cleanup();
   userId = "user-a";
   view = await settle();
@@ -271,9 +275,9 @@ test("briefs are scoped to the authenticated user and legacy unscoped storage is
 test("a completed resume URL opens the saved draft for review once without generating again", async () => {
   location("?run=completed-run");
   handler = (call) =>
-    call.url === "/api/admin/blog/ai"
+    call.url === "/api/assistant/blog/config"
       ? response(available)
-      : response({ run: { ...run(request, "completed"), postId: "draft-1", threadId: "thread-1" } });
+      : response({ run: { ...run(request, "completed"), resourceId: "draft-1", threadId: "thread-1" } });
   const view = await settle();
   assert.equal(view.progress.props.brief, request.message);
   assert.deepEqual(state.paths, ["/admin/blog/draft-1?review=1&thread=thread-1"]);
@@ -309,7 +313,7 @@ test("cancelling releases the stream and retry reuses the same draft without lat
   view.progress.props.onRetry();
   await settle();
   assert.notEqual(posts()[1].body.clientRequestId, submitted.clientRequestId);
-  assert.equal(posts()[1].body.postId, "draft-1");
+  assert.equal(posts()[1].body.resourceId, "draft-1");
   assert.equal(posts()[1].body.threadId, "thread-1");
   assert.equal(posts()[1].body.inputMessageId, "message-1");
   assert.equal(posts()[1].body.message, submitted.message);
@@ -318,7 +322,7 @@ test("cancelling releases the stream and retry reuses the same draft without lat
 test("manual status refresh disables repeated reads and never submits another generation", async () => {
   location("?run=unconfirmed-run");
   handler = (call) =>
-    call.url === "/api/admin/blog/ai" ? response(available) : response({ run: run(request, "unknown") });
+    call.url === "/api/assistant/blog/config" ? response(available) : response({ run: run(request, "unknown") });
   let view = await settle();
   let finish;
   handler = () =>
@@ -335,4 +339,14 @@ test("manual status refresh disables repeated reads and never submits another ge
   finish(response({ run: run(request, "failed") }));
   view = await settle();
   assert.equal(view.progress.props.refreshing, false);
+});
+
+test("old Blog request shapes are not recovered from Assistant storage", async () => {
+  const { schemaVersion, ...oldRequest } = request;
+  storage.set("assistant-generation:blog:user-a:v1:request", JSON.stringify({ ...oldRequest, postId: "old-post" }));
+  const view = await settle();
+  assert.equal(view.field("blog-ai-idea").props.value, "");
+  assert.equal(state.report.busy, false);
+  assert.equal(posts().length, 0);
+  assert.equal(storage.has("assistant-generation:blog:user-a:v1:request"), false);
 });

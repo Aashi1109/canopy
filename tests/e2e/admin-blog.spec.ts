@@ -76,7 +76,7 @@ test("post actions support keyboard navigation without closing the assistant or 
     await page.keyboard.press("Escape");
     await expect(page.getByRole("menu")).toBeHidden();
     await expect(trigger).toBeFocused();
-    await expect(page.getByRole("complementary", { name: "Blog assistant", exact: true })).toBeVisible();
+    await expect(page.getByRole("complementary", { name: "Assistant", exact: true })).toBeVisible();
     await expect(body).toHaveText("Keep this draft while inspecting post actions.");
     await expect(page).toHaveURL(url);
   } finally {

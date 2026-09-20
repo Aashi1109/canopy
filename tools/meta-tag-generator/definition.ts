@@ -9,7 +9,7 @@ export default {
   description: "Generate common search and social meta tags.",
   input: {
     kind: "fields",
-    label: "Page title and description",
+    label: "Page metadata",
     fields: [
       {
         channel: "text",
@@ -23,6 +23,7 @@ export default {
         placeholder: "Fast, private utilities for everyday development work.",
         required: true,
         multiline: true,
+        surface: "card",
       },
     ],
   },
@@ -31,13 +32,14 @@ export default {
       keywords: {
         kind: "text",
         label: "Keywords",
-        help: "Ignored by every major search engine. Left in for the handful of internal search tools that still read it.",
         default: "developer tools, utilities",
+        pane: "input",
       },
       author: {
         kind: "text",
         label: "Author",
         default: "SmartTools",
+        pane: "input",
       },
       canonical: {
         kind: "text",
@@ -51,6 +53,8 @@ export default {
         label: "Open Graph image URL",
         help: "Must be absolute. Social crawlers cannot resolve a relative path.",
         default: "https://example.com/og.png",
+        pane: "input",
+        span: "full",
       },
       locale: {
         kind: "select",

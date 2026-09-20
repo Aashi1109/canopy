@@ -9,10 +9,12 @@ registerHooks({
     return next(specifier, context);
   },
 });
-const { attachmentView, attachmentProvider, messageView, attachmentsForRun } =
-  await import("../lib/blog/assistantThreads.ts");
-const { startBlogRun } = await import("../lib/blog/assistantRuns.ts");
-const { db, blogThreadsTable, blogMessagesTable } = await import("../db/index.ts");
+const { createAssistantService } = await import("../lib/assistant/service.ts");
+const { blogAssistantIntegration } = await import("../lib/blog/assistantIntegration.ts");
+const { attachmentProvider } = await import("../lib/assistant/resources.ts");
+const { attachmentView, messageView, attachmentsForRun, startRun } = createAssistantService(blogAssistantIntegration);
+const { db, assistantThreadsTable, assistantMessagesTable, assistantRunsTable, authUser, blogPostsTable } =
+  await import("../db/index.ts");
 const { AIClient } = await import("../lib/ai/client.ts");
 const { ADMIN_ACCESS } = await import("../lib/authorization/index.ts");
 const date = new Date("2026-09-18T00:00:00Z");
@@ -117,10 +119,13 @@ test("first send titles a provisional thread immediately and later sends preserv
   };
   const thread = {
     id: "thread",
-    postId: "post",
+    integrationKey: "blog",
+    resourceId: "post",
     ownerId: "owner",
     title: "New thread",
+    type: "chat",
     settings: {},
+    createdAt: new Date(),
     updatedAt: new Date(),
   };
   const permission = [
@@ -134,19 +139,30 @@ test("first send titles a provisional thread immediately and later sends preserv
     },
   ];
   const userMessages = [];
-  let reads = [];
+  const savedRuns = [];
   const tx = {
     execute: async () => {},
-    select() {
+    select(fields) {
+      let source;
       const chain = {
-        from: () => chain,
+        from(table) {
+          source = table;
+          return chain;
+        },
         where: () => chain,
         innerJoin: () => chain,
         for: () => chain,
         limit: () => chain,
         then(resolve, reject) {
-          assert.ok(reads.length, "Unexpected database read");
-          return Promise.resolve(reads.shift()).then(resolve, reject);
+          // Route fixture reads by the selected table, not authorization/read order.
+          let rows;
+          if (source === authUser) rows = permission;
+          else if (source === blogPostsTable) rows = [{ id: "post", trashedAt: null }];
+          else if (source === assistantThreadsTable) rows = [thread];
+          else if (source === assistantMessagesTable) rows = userMessages.map(({ id }) => ({ id }));
+          else if (source === assistantRunsTable) rows = fields ? savedRuns.map(({ id }) => ({ id })) : [];
+          else throw new Error("Unexpected database table read");
+          return Promise.resolve(rows).then(resolve, reject);
         },
       };
       return chain;
@@ -154,8 +170,10 @@ test("first send titles a provisional thread immediately and later sends preserv
     insert(table) {
       return {
         values(value) {
-          if (table === blogMessagesTable && value.role === "user") userMessages.push(value);
-          return { returning: async () => [value] };
+          if (table === assistantMessagesTable && value.role === "user") userMessages.push(value);
+          const row = { createdAt: date, updatedAt: date, completedAt: null, ...value };
+          if (table === assistantRunsTable) savedRuns.push(row);
+          return { returning: async () => [row] };
         },
       };
     },
@@ -164,7 +182,7 @@ test("first send titles a provisional thread immediately and later sends preserv
         set(value) {
           return {
             where: async () => {
-              if (table === blogThreadsTable) Object.assign(thread, value);
+              if (table === assistantThreadsTable) Object.assign(thread, value);
             },
           };
         },
@@ -176,27 +194,20 @@ test("first send titles a provisional thread immediately and later sends preserv
   AIClient.prototype.getCapabilities = () => ({ configured: true, model: "fixture", images: true });
   try {
     for (const [index, message] of ["How can I improve\n this draft?", "Now shorten the introduction"].entries()) {
-      reads = [
-        [],
-        permission,
-        permission,
-        [{ id: "post", trashedAt: null }],
-        [thread],
-        userMessages.map(({ id }) => ({ id })),
-        [],
-      ];
-      const { run } = await startBlogRun("owner", {
+      const { run } = await startRun("owner", {
         operation: "chat",
         clientRequestId: `request-${index}`,
-        postId: "post",
+        resourceId: "post",
         threadId: "thread",
         message,
-        editorJson: { type: "doc", content: [] },
+        context: { editorJson: { type: "doc", content: [] } },
       });
       assert.equal(run.status, "queued");
       assert.equal(thread.title, "How can I improve this draft?");
       assert.equal(userMessages.length, index + 1);
-      assert.equal(reads.length, 0);
+      assert.equal(savedRuns[index].integrationKey, "blog");
+      assert.equal(savedRuns[index].resourceId, "post");
+      assert.equal(savedRuns[index].executionMode, "conversational");
     }
   } finally {
     db.transaction = previous.transaction;

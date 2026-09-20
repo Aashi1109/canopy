@@ -41,6 +41,7 @@ import type { BlogImage } from "@/lib/blog/document";
 import { captureBlogInsertion, createBlogTable } from "../lib/editorInsertion";
 import {
   Button,
+  FieldLabel,
   Input,
   Label,
   Popover,
@@ -456,9 +457,9 @@ export function BlogBlockMenu({
                   <p className="text-xs text-muted-foreground">JPEG, PNG or WebP · Up to 5 MiB</p>
                 </>
               )}
-              <Label className="text-[13px]" htmlFor={`${id}-alt`}>
-                Image description (required)
-              </Label>
+              <FieldLabel className="text-[13px]" htmlFor={`${id}-alt`} required>
+                Image description
+              </FieldLabel>
               <Input
                 size="sm"
                 id={`${id}-alt`}

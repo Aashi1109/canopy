@@ -289,6 +289,7 @@ export type ToolPageShellProps = {
   badge?: ReactNode;
   breadcrumbCurrent?: ReactNode;
   category: string;
+  categoryHref: string;
   children: ReactNode;
   description: ReactNode;
   eyebrow?: ReactNode;
@@ -311,6 +312,7 @@ export function ToolPageShell({
   badge,
   breadcrumbCurrent,
   category,
+  categoryHref,
   children,
   description,
   eyebrow,
@@ -378,7 +380,7 @@ export function ToolPageShell({
                     <li>
                       <a
                         className="rounded-sm outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        href={`${productHref}?category=${encodeURIComponent(category)}`}
+                        href={categoryHref}
                       >
                         {category}
                       </a>
@@ -606,9 +608,8 @@ export function Field({
 
   return (
     <FieldRoot className={className} data-invalid={Boolean(error)} variant={variant}>
-      <FieldPrimitiveLabel htmlFor={htmlFor}>
+      <FieldPrimitiveLabel htmlFor={htmlFor} required={required}>
         {label}
-        {required ? <span className="ml-1 font-medium text-muted-foreground">(required)</span> : null}
       </FieldPrimitiveLabel>
       {cloneElement(children, {
         "aria-describedby": describedBy,

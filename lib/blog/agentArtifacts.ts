@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { safeLink } from "./links.ts";
+import { safeLink } from "../content/links.ts";
 import type { BlogNode, BlogDocument } from "./document.ts";
 import { getBlogAgent } from "./agentCatalog.ts";
 

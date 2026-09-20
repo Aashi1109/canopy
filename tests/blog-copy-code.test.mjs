@@ -10,7 +10,7 @@ globalThis.__blogCopyTest = state;
 const stub = (source) => ({ shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(source)}` });
 const hooks = registerHooks({
   resolve(specifier, context, next) {
-    if (!context.parentURL?.endsWith("/CopyBlogCode.tsx")) return next(specifier, context);
+    if (!context.parentURL?.endsWith("/CopyCode.tsx")) return next(specifier, context);
     if (specifier === "react")
       return stub(
         "export function useState() { const s = globalThis.__blogCopyTest; return [s.value, value => s.value = value]; }",
@@ -23,7 +23,7 @@ const hooks = registerHooks({
     return next(specifier, context);
   },
   load(url, context, next) {
-    if (!url.endsWith("/CopyBlogCode.tsx")) return next(url, context);
+    if (!url.endsWith("/CopyCode.tsx")) return next(url, context);
     return {
       format: "module",
       shortCircuit: true,
@@ -35,14 +35,14 @@ const hooks = registerHooks({
     };
   },
 });
-const { CopyBlogCode } = await import("../components/blog/CopyBlogCode.tsx");
+const { CopyCode } = await import("../components/content/CopyCode.tsx");
 test.after(() => {
   hooks.deregister();
   delete globalThis.__blogCopyTest;
 });
 const walk = (node) =>
   Array.isArray(node) ? node.flatMap(walk) : node?.props ? [node, ...walk(node.props.children)] : [];
-const render = (code) => walk(CopyBlogCode({ code }));
+const render = (code) => walk(CopyCode({ code }));
 const button = (nodes) => nodes.find((node) => node.type === "button").props;
 const status = (nodes) => nodes.find((node) => node.props.role === "status").props.children;
 

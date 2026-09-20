@@ -6,7 +6,8 @@ import {
   renderBlogDocument,
   blogDocumentText,
 } from "../lib/blog/document.ts";
-import { normalizeBlogMath, renderBlogMath } from "../lib/blog/math.ts";
+import { normalizeBlogMath } from "../lib/blog/math.ts";
+import { renderMath } from "../lib/markdown/math.ts";
 import { blogMarkdownHtml } from "../app/admin/(protected)/blog/lib/markdownPaste.ts";
 
 const paragraph = (text) => ({ type: "paragraph", content: [{ type: "text", text }] });
@@ -82,7 +83,7 @@ test("math nodes validate, retain source and contribute searchable plain text", 
 
 test("invalid formulas preserve escaped source and hostile LaTeX cannot activate HTML", () => {
   const source = String.raw`\unknown{<script>alert(1)</script>}`;
-  const result = renderBlogMath(source, true);
+  const result = renderMath(source, true);
   assert.equal(result.error, true);
   assert.match(result.html, /&lt;script&gt;/);
   assert.doesNotMatch(result.html, /<script>/);
@@ -91,8 +92,8 @@ test("invalid formulas preserve escaped source and hostile LaTeX cannot activate
     String.raw`\includegraphics{https://example.com/track}`,
     String.raw`\htmlClass{evil}{x}`,
   ]) {
-    const { html } = renderBlogMath(latex, false);
+    const { html } = renderMath(latex, false);
     assert.doesNotMatch(html, /<a\b|<img\b|class="evil"/);
   }
-  assert.equal(renderBlogMath(String.raw`\def\x{\x}\x`, false).error, true);
+  assert.equal(renderMath(String.raw`\def\x{\x}\x`, false).error, true);
 });

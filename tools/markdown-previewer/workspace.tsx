@@ -2,10 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 
-import { BlogArticleBody } from "@/components/blog/BlogArticleBody";
-import articleStyles from "@/components/blog/article.module.css";
-import highlightStyles from "@/components/blog/codeHighlight.module.css";
-import contentStyles from "@/components/blog/content.module.css";
+import { RichContent } from "@/components/content/RichContent";
 import { ResultView } from "@/components/ResultView";
 import { SandboxedHtmlPreview } from "@/components/SandboxedHtmlPreview";
 import { ToolWorkspace, type WorkspaceProps } from "@/components/ToolWorkspace";
@@ -102,10 +99,7 @@ export default function MarkdownWorkspace(props: WorkspaceProps) {
             }}
           >
             <article className={styles.preview}>
-              <BlogArticleBody
-                html={result.html}
-                className={`${articleStyles.body} ${contentStyles.content} ${highlightStyles.highlight}`}
-              />
+              <RichContent html={result.html} showToaster />
             </article>
           </SandboxedHtmlPreview>
         ) : (

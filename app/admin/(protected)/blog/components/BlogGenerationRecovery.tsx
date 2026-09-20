@@ -2,12 +2,12 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { BlogAssistantRun } from "@/lib/blog/assistantTypes";
-import { assistantRequest, activeRun } from "../lib/assistantApi";
+import type { AssistantRun } from "@/lib/assistant/types";
+import { activeRun, assistantRequest } from "@/lib/assistant/client";
 import { BlogGenerationProgress } from "./BlogGenerationProgress";
 
 /** Reopened drafts read saved state only; they never recreate a stream or execution. */
-export function BlogGenerationRecovery({ initialRun }: { initialRun: BlogAssistantRun & { canManage?: boolean } }) {
+export function BlogGenerationRecovery({ initialRun }: { initialRun: AssistantRun & { canManage?: boolean } }) {
   const router = useRouter();
   const [run, setRun] = useState(initialRun);
   const [error, setError] = useState("");
@@ -23,8 +23,8 @@ export function BlogGenerationRecovery({ initialRun }: { initialRun: BlogAssista
         startTransition(() => router.refresh());
         return;
       }
-      const result = await assistantRequest<{ run: BlogAssistantRun }>(
-        `/api/admin/blog/ai/runs/${encodeURIComponent(run.id)}`,
+      const result = await assistantRequest<{ run: AssistantRun }>(
+        `/api/assistant/blog/runs/${encodeURIComponent(run.id)}`,
       );
       setRun(result.run);
       setError("");
@@ -45,8 +45,8 @@ export function BlogGenerationRecovery({ initialRun }: { initialRun: BlogAssista
       error={error || run.errorMessage || undefined}
       onRefresh={() => void refresh()}
       onEdit={
-        !activeRun(run.status) && run.postId
-          ? () => router.replace(`/admin/blog/${encodeURIComponent(run.postId!)}?edit=1`)
+        !activeRun(run.status) && run.resourceId
+          ? () => router.replace(`/admin/blog/${encodeURIComponent(run.resourceId!)}?edit=1`)
           : undefined
       }
       onRetry={

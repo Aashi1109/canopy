@@ -39,6 +39,7 @@ import {
 import { type ComponentType, type ReactNode } from "react";
 
 import { ToolRuntimeProvider, useToolRuntime } from "@/lib/tool-runtime/useToolRuntime";
+import { resolveCategoryKey } from "@/lib/tool-framework/categories";
 import type { ToolContent, ToolWorkbenchMark } from "@/lib/tool-framework/spec";
 import type {
   ToolLifecycle,
@@ -176,6 +177,7 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
       }
       breadcrumbCurrent={title}
       category={category}
+      categoryHref={`${productHref}?category=${encodeURIComponent(resolveCategoryKey(category, definition.app))}`}
       description={description}
       eyebrow={isMedia ? "MEDIA TOOL" : "DEVELOPER TOOL"}
       footer={<CanopyFooter />}

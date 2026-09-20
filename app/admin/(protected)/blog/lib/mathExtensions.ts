@@ -1,7 +1,7 @@
 import { InputRule } from "@tiptap/core";
 import { BlockMath, InlineMath } from "@tiptap/extension-mathematics";
 import { ReactNodeViewRenderer } from "@tiptap/react";
-import { matchBlogInlineMath } from "../../../../../lib/blog/math.ts";
+import { matchInlineMath } from "../../../../../lib/markdown/math.ts";
 import { BlogMathView } from "../components/BlogMathView";
 
 export const BlogInlineMath = InlineMath.extend({
@@ -13,7 +13,7 @@ export const BlogInlineMath = InlineMath.extend({
       new InputRule({
         find: /(?<![\\$])\$([^$\n]+)\$$/,
         handler: ({ state, range, match }) => {
-          const formula = matchBlogInlineMath(match[0]);
+          const formula = matchInlineMath(match[0]);
           if (!formula) return null;
           state.tr.replaceWith(range.from, range.to, this.type.create({ latex: formula.latex }));
         },
