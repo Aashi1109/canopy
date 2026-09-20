@@ -135,6 +135,76 @@ test("optimizer produces complete immutable generic artifact preserving administ
     validateAgentOutput(result(optimization({ type: "doc", content: [paragraph("")] })), request("optimizer"), []),
   );
 });
+test("draft agents normalize recoverable provider heading levels without changing heading content", () => {
+  const heading = (attrs) => ({
+    type: "heading",
+    ...(attrs === undefined ? {} : { attrs }),
+    content: [{ type: "text", text: "Useful heading", marks: [{ type: "bold" }] }],
+  });
+  const cases = [
+    [undefined, 2],
+    [{ textAlign: "center" }, 2],
+    [{ level: null, textAlign: "center" }, 2],
+    [{ level: 1, textAlign: "center" }, 2],
+    ...Array.from({ length: 6 }, (_, index) => [
+      { level: String(index + 1), textAlign: "center" },
+      Math.max(2, index + 1),
+    ]),
+    ...Array.from({ length: 5 }, (_, index) => [{ level: index + 2, textAlign: "center" }, index + 2]),
+  ];
+  for (const agent of ["writer", "optimizer"]) {
+    for (const [attrs, level] of cases) {
+      const body = {
+        type: "doc",
+        content: [heading(attrs), { type: "blockquote", content: [heading(attrs), paragraph("Supporting text.")] }],
+      };
+      const expected = heading({ level, ...(attrs?.textAlign ? { textAlign: attrs.textAlign } : {}) });
+      const value = validateAgentOutput(result(optimization(body)), request(agent), []);
+      assert.deepEqual(value.artifact.content.document.body, {
+        type: "doc",
+        content: [expected, { type: "blockquote", content: [expected, paragraph("Supporting text.")] }],
+      });
+      assert.deepEqual(body.content[0], heading(attrs), "The provider document must not be mutated");
+    }
+  }
+});
+test("draft agents still reject malformed provider heading levels", () => {
+  for (const agent of ["writer", "optimizer"]) {
+    for (const level of [0, 7, -1, 2.5, "h2", "2oops", true, false, {}]) {
+      const body = {
+        type: "doc",
+        content: [{ type: "heading", attrs: { level }, content: [{ type: "text", text: "Invalid heading" }] }],
+      };
+      assert.throws(
+        () => validateAgentOutput(result(optimization(body)), request(agent), []),
+        /Heading level/,
+        `${agent} must reject heading level ${JSON.stringify(level)}`,
+      );
+    }
+    for (const attrs of [null, []]) {
+      const body = {
+        type: "doc",
+        content: [{ type: "heading", attrs, content: [{ type: "text", text: "Invalid attributes" }] }],
+      };
+      assert.throws(() => validateAgentOutput(result(optimization(body)), request(agent), []), /Node attributes/);
+    }
+  }
+});
+test("saved blog documents retain strict heading validation outside agent output", () => {
+  for (const level of [1, "1", "2", "3", "4", "5", "6", null, undefined]) {
+    const body = {
+      type: "doc",
+      content: [
+        {
+          type: "heading",
+          attrs: level === undefined ? {} : { level },
+          content: [{ type: "text", text: "Invalid heading" }],
+        },
+      ],
+    };
+    assert.throws(() => validateBlogDocument({ ...document, body }), /Heading level/);
+  }
+});
 test("whole-draft proposals cannot silently remove rich blocks or links", () => {
   const nodes = [
     { type: "codeBlock", attrs: { language: "javascript" }, content: [{ type: "text", text: "const answer = 42;" }] },

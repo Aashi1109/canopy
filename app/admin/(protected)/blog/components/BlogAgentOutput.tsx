@@ -292,15 +292,25 @@ export function BlogAgentRunCard({
             <Button variant="outline" size="xs" onClick={onRefresh}>
               Check status
             </Button>
-          ) : (
-            <Button
-              variant="outline"
-              size="xs"
-              disabled={busy}
-              onClick={() => (unavailable ? onNewRequest() : onRetry(execution.id))}
-            >
-              {unavailable ? "Prepare new request" : "Try again"}
+          ) : unavailable ? (
+            <Button variant="outline" size="xs" disabled={busy} onClick={onNewRequest}>
+              Prepare new request
             </Button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={`Retry ${agent}`}
+                  disabled={busy}
+                  onClick={() => onRetry(execution.id)}
+                >
+                  <RotateCcw aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Retry {agent}</TooltipContent>
+            </Tooltip>
           )}
         </div>
       )}

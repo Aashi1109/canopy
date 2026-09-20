@@ -605,8 +605,9 @@ test("four agents produce saved artifacts, explicit handoffs and approved revers
   await expect(panel.getByText("Working with Planner…")).toBeVisible();
   await page.evaluate(() => (window as unknown as { agentFixture: { fail: () => void } }).agentFixture.fail());
   await expect(panel.getByText("Planner couldn’t finish")).toBeVisible();
+  await panel.screenshot({ path: "/tmp/blog-agent-failed-retry-icon.png" });
   await composer.fill("Keep this recovery instruction");
-  await panel.getByRole("button", { name: "Try again", exact: true }).click();
+  await panel.getByRole("button", { name: "Retry Planner", exact: true }).click();
   await expect(composer).toContainText("Keep this recovery instruction");
   const countBeforeRetry = await page.evaluate(
     () => (window as unknown as { agentFixture: { requests: unknown[] } }).agentFixture.requests.length,
