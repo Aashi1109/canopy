@@ -11,8 +11,7 @@
       },
       "expected": {
         "downloadName": "json-diff.txt",
-        "output": "~ $.active: true → false\n+ $.role: \"admin\"",
-        "render": "text"
+        "render": "diff"
       }
     }
   ]

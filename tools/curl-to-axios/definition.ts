@@ -9,6 +9,7 @@ export default {
   description: "Convert common cURL requests to Axios and surface flags that cannot be represented.",
   input: {
     kind: "text",
+    language: "bash",
     label: "cURL command",
     placeholder: "curl https://api.example.com/users",
   },

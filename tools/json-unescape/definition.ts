@@ -7,7 +7,7 @@ export default {
   keywords: ["json", "unescape", "decode", "escape sequence", "backslash", "stringified"],
   name: "JSON Unescape",
   description: "Decode JSON string escape sequences.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
     label: "Escaped string",

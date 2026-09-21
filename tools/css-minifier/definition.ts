@@ -7,9 +7,11 @@ export default {
   keywords: ["css", "minify", "compress", "whitespace", "comments", "stylesheet", "optimize"],
   name: "CSS Minifier",
   description: "Remove CSS comments and redundant whitespace.",
-  layout: "stacked",
+  layout: "side-by-side",
+  outputLanguage: "css",
   input: {
     kind: "text",
+    language: "css",
     label: "CSS input",
     placeholder: "/* Theme */\n.card { color: #2563eb; }",
   },

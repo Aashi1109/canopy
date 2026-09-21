@@ -27,6 +27,7 @@ const tabsListVariants = cva(
           "border-b bg-transparent group-data-[orientation=vertical]/tabs:border-r group-data-[orientation=vertical]/tabs:border-b-0",
         line: "border-b bg-transparent group-data-[orientation=vertical]/tabs:border-r group-data-[orientation=vertical]/tabs:border-b-0",
         segmented: "rounded-lg bg-muted p-1",
+        pills: "gap-0.5 rounded-full bg-muted p-0.5",
       },
     },
     defaultVariants: {
@@ -58,6 +59,7 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPr
         "relative inline-flex flex-1 items-center justify-center gap-1.5 px-3 py-2.5 font-sans text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors group-data-[orientation=vertical]/tabs:w-full group-data-[orientation=vertical]/tabs:justify-start hover:text-foreground focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/75 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:font-semibold data-[state=active]:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         "after:absolute after:bg-primary after:opacity-0 after:transition-opacity group-data-[variant=default]/tabs-list:data-[state=active]:after:opacity-100 group-data-[variant=line]/tabs-list:data-[state=active]:after:opacity-100 group-data-[orientation=horizontal]/tabs:after:inset-x-0 group-data-[orientation=horizontal]/tabs:after:-bottom-px group-data-[orientation=horizontal]/tabs:after:h-0.5 group-data-[orientation=vertical]/tabs:after:inset-y-0 group-data-[orientation=vertical]/tabs:after:-right-px group-data-[orientation=vertical]/tabs:after:w-0.5",
         "group-data-[variant=segmented]/tabs-list:rounded-sm group-data-[variant=segmented]/tabs-list:px-[22px] group-data-[variant=segmented]/tabs-list:py-[9px] group-data-[variant=segmented]/tabs-list:text-[13px] group-data-[variant=segmented]/tabs-list:data-[state=active]:bg-card group-data-[variant=segmented]/tabs-list:data-[state=active]:shadow-sm",
+        "group-data-[variant=pills]/tabs-list:h-6 group-data-[variant=pills]/tabs-list:rounded-full group-data-[variant=pills]/tabs-list:px-2.5 group-data-[variant=pills]/tabs-list:py-0 group-data-[variant=pills]/tabs-list:text-xs group-data-[variant=pills]/tabs-list:before:absolute group-data-[variant=pills]/tabs-list:before:inset-x-0 group-data-[variant=pills]/tabs-list:before:-inset-y-2.5 group-data-[variant=pills]/tabs-list:data-[state=active]:bg-primary group-data-[variant=pills]/tabs-list:data-[state=active]:text-primary-foreground",
         className,
       )}
       {...props}

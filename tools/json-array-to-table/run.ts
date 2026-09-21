@@ -26,9 +26,11 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const rows = value.map((row) => flattenRecord(row));
   const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))];
   if (!columns.length) throw new ToolError("empty-columns", "JSON array objects need at least one field.");
+  const tableRows = rows.map((row) => columns.map((column) => String(row[column] ?? "")));
   return {
     render: "html",
-    html: tableToHtml([columns, ...rows.map((row) => columns.map((column) => String(row[column] ?? "")))]),
+    html: tableToHtml([columns, ...tableRows]),
+    tablePreview: { render: "table", columns, rows: tableRows, showColumnDividers: true },
     downloadName: "table.html",
   };
 };

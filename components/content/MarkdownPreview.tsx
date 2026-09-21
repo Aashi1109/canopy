@@ -11,10 +11,11 @@ export const MarkdownPreview = memo(function MarkdownPreview({
   className,
   minimumHeadingLevel = 1,
   breaks = false,
+  allowHtmlLineBreaks = false,
 }: MarkdownOptions & { markdown: string; className?: string }) {
   const html = useMemo(
-    () => renderMarkdown(markdown, { minimumHeadingLevel, breaks }),
-    [markdown, minimumHeadingLevel, breaks],
+    () => renderMarkdown(markdown, { minimumHeadingLevel, breaks, allowHtmlLineBreaks }),
+    [markdown, minimumHeadingLevel, breaks, allowHtmlLineBreaks],
   );
   return <RichContent html={html} className={className} />;
 });

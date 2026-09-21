@@ -7,8 +7,11 @@ export default {
   keywords: ["json", "csv", "convert", "spreadsheet", "flatten", "delimiter", "tabular data"],
   name: "JSON to CSV",
   description: "Convert JSON object records to spreadsheet-ready CSV.",
+  outputLanguage: "csv",
+  resultStats: "status-only",
   input: {
     kind: "text",
+    language: "json",
     label: "JSON input",
     placeholder: '[{"name":"Maya","role":"Engineer"},{"name":"Noah","role":"Designer"}]',
     maxLength: 2_000_000,
@@ -42,7 +45,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Convert to CSV" },
   capabilities: { copy: true, download: true },
-  layout: "stacked",
+  layout: "side-by-side",
   workbenchMark: { text: "J>C" },
   labels: {
     empty: "Paste a JSON object or array of objects to convert it to CSV.",

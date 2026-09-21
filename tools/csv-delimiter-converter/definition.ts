@@ -7,9 +7,12 @@ export default {
   keywords: ["csv", "tsv", "delimiter", "separator", "semicolon", "pipe", "tab", "convert"],
   name: "CSV Delimiter Converter",
   description: "Change delimiters without corrupting quoted values.",
+  outputLanguage: "csv",
   input: {
     kind: "text",
+    language: "csv",
     label: "Delimited input",
+    surface: "card",
     acceptFiles: {
       accept: ".csv,.tsv,text/csv,text/tab-separated-values",
       maxBytes: 104_857_600,

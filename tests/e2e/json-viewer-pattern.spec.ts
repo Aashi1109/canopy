@@ -51,7 +51,7 @@ test("JSON result views can scroll to the final value", async ({ page }) => {
     if (mode !== "code") {
       await result.getByRole("button", { name: "Expand all JSON nodes" }).click();
     }
-    const viewport = result.locator('[data-slot="scroll-area-viewport"]');
+    const viewport = result.locator(mode === "code" ? ".cm-scroller" : '[data-slot="scroll-area-viewport"]');
     await viewport.hover();
     await page.mouse.wheel(0, 100_000);
     await expect
@@ -59,8 +59,9 @@ test("JSON result views can scroll to the final value", async ({ page }) => {
       .toBeLessThanOrEqual(1);
     const last =
       mode === "code"
-        ? result.getByText(/"lastEntry": "End of JSON"/)
+        ? result.locator(".cm-line").filter({ hasText: /"lastEntry": "End of JSON"/ })
         : result.getByRole("treeitem", { name: "lastEntry", exact: true });
+    await expect(last).toBeVisible();
     const viewportBox = await viewport.boundingBox();
     const lastBox = await last.boundingBox();
     expect(viewportBox).not.toBeNull();
@@ -101,7 +102,7 @@ test("JSON Viewer read-only view preserves values and editable Form view", async
   await search.fill("missing-value");
   await expect(result.getByRole("status")).toContainText("No keys or values match");
   await search.fill("");
-  await expect(input).toHaveValue(source);
+  await expect(input).toHaveText(source);
   await view.click();
   await page.getByRole("option", { name: "Form", exact: true }).click();
   await result.getByRole("button", { name: "Expand all JSON nodes" }).click();
@@ -112,7 +113,7 @@ test("JSON Viewer read-only view preserves values and editable Form view", async
   await page.getByRole("option", { name: "View", exact: true }).click();
   await expect(values).toContainText('"Updated"');
   await expect(values.locator("input, textarea, select, [contenteditable=true], [role=switch]")).toHaveCount(0);
-  await expect(input).toHaveValue(source);
+  await expect(input).toHaveText(source);
   for (const scalar of ['"root value"', "0", "false", "null", "{}", "[]"]) {
     await input.fill(scalar);
     await expect(result.getByRole("tree", { name: "Read-only JSON values" })).toBeVisible();
@@ -191,7 +192,7 @@ test("JSON Viewer matches the approved split-workbench flow", async ({ context, 
     await expect(toolbar.getByRole("button", { name: action })).toBeVisible();
   }
   await expect(toolbar.getByRole("combobox", { name: "Repair strategy" })).toBeVisible();
-  await expect(input).toHaveValue(/CodeUtilityKit/);
+  await expect(input).toHaveText(/CodeUtilityKit/);
   await expect(tree).toContainText("CodeUtilityKit");
   await expect(tree.getByRole("searchbox", { name: "Search JSON result" })).toBeVisible();
   await expect(tree.getByRole("button", { name: "Copy JSON result" })).toBeVisible();
@@ -228,9 +229,19 @@ test("JSON Viewer matches the approved split-workbench flow", async ({ context, 
     .getByTestId("json-result-placeholder")
     .getByRole("button", { name: /Go to JSON error at line/i })
     .click();
-  expect(await input.evaluate((element: HTMLTextAreaElement) => element.selectionEnd)).toBeGreaterThan(
-    await input.evaluate((element: HTMLTextAreaElement) => element.selectionStart),
-  );
+  await expect(input).toBeFocused();
+  await expect
+    .poll(() =>
+      input.evaluate((element) => {
+        const selection = window.getSelection();
+        if (!selection?.anchorNode || !element.contains(selection.anchorNode)) return null;
+        const beforeCaret = document.createRange();
+        beforeCaret.selectNodeContents(element);
+        beforeCaret.setEnd(selection.anchorNode, selection.anchorOffset);
+        return beforeCaret.toString();
+      }),
+    )
+    .toBe('{"name":');
 
   await toolbar.getByRole("button", { name: "Broken example" }).click();
   const brokenInput = '[{"id":1,"name":"Alice","age":},{"id":2,"name":"Bob","age":30}]';
@@ -238,7 +249,7 @@ test("JSON Viewer matches the approved split-workbench flow", async ({ context, 
   const confirmation = workbench.getByTestId("tool-confirmation-overlay");
   await expect(confirmation).toContainText("Confirm destructive repair");
   await expect(confirmation).toContainText("Removed: $[0].age");
-  await expect(input).toHaveValue(brokenInput);
+  await expect(input).toHaveText(brokenInput);
   await expect(confirmation).toHaveAttribute("role", "alertdialog");
   await expect(confirmation).toHaveAttribute("aria-modal", "true");
   const cancelRepair = confirmation.getByRole("button", { name: "Cancel" });
@@ -264,7 +275,7 @@ test("JSON Viewer matches the approved split-workbench flow", async ({ context, 
   await page.getByRole("option", { name: "Remove broken" }).click();
   await repair.click();
   await confirmation.getByRole("button", { name: "Apply repair" }).click();
-  await expect(input).toHaveValue(brokenInput);
+  await expect(input).toHaveText(brokenInput);
   const treeTab = tree.getByRole("tab", { name: "Tree" });
   const formattedTab = tree.getByRole("tab", { name: "Formatted" });
   await expect(formattedTab).toHaveAttribute("aria-selected", "true");
@@ -286,9 +297,9 @@ test("JSON Viewer matches the approved split-workbench flow", async ({ context, 
 
   await toolbar.getByRole("button", { name: "Minify" }).click();
   const minifiedInput = '[{"id":1,"name":"Alice"},{"id":2,"name":"Bob","age":30}]';
-  await expect(input).toHaveValue(brokenInput);
+  await expect(input).toHaveText(brokenInput);
   const formattedPanel = tree.getByRole("tabpanel");
-  await expect(formattedPanel).toHaveText(minifiedInput);
+  await expect(formattedPanel.getByRole("textbox", { name: "JSON result code" })).toHaveText(minifiedInput);
   expect(await formattedPanel.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
   await tree.getByRole("button", { name: "Copy JSON result" }).click();
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(minifiedInput);
@@ -298,9 +309,9 @@ test("JSON Viewer matches the approved split-workbench flow", async ({ context, 
   expect((await downloadPromise).suggestedFilename()).toBe("smarttools-json-viewer.json");
 
   await toolbar.getByRole("button", { name: "Clear" }).click();
-  await expect(input).toHaveValue("");
+  await expect(input).toHaveText("");
   await page.getByRole("button", { name: "Undo" }).last().click();
-  await expect(input).toHaveValue(brokenInput);
+  await expect(input).toHaveText(brokenInput);
 
   await expect(toolbar.getByRole("group", { name: "Viewer layout" })).toHaveCount(0);
   await expect(tree).toBeVisible();
@@ -316,26 +327,33 @@ test("JSON Viewer matches the approved split-workbench flow", async ({ context, 
   });
 });
 
-test("JSON Formatter uses the shared JSON result controls", async ({ page }) => {
+test("JSON Formatter switches between Code and View output modes", async ({ page }) => {
   await page.goto("http://localhost:3000/devtools/json-formatter");
   await page.getByRole("button", { name: "Example" }).click();
 
   const result = page.getByTestId("json-result-renderer");
   const view = result.getByRole("combobox", { name: "JSON result view" });
-  await expect(view).toHaveText(/code/i);
+  await expect(view).toHaveText("View");
+  await expect(result.getByRole("tree", { name: "Read-only JSON values" })).toBeVisible();
   await expect(result.getByRole("button", { name: "Copy JSON result" })).toBeVisible();
   await expect(result.getByRole("button", { name: "Download JSON result" })).toBeVisible();
+  await expect(result.getByRole("group", { name: "Tree expansion controls" })).toBeVisible();
+  await expect(result.getByRole("group", { name: "JSON edit history" })).toHaveCount(0);
+
+  await view.click();
+  await expect(page.getByRole("option")).toHaveText(["Code", "View"]);
+  await page.getByRole("option", { name: "Code", exact: true }).click();
+  await expect(view).toHaveText("Code");
+  await expect(result.getByRole("tree", { name: "Read-only JSON values" })).toHaveCount(0);
   await expect(result.getByRole("group", { name: "Tree expansion controls" })).toHaveCount(0);
   await expect(result.getByRole("group", { name: "JSON edit history" })).toHaveCount(0);
 
   await view.click();
-  await page.getByRole("option", { name: "Tree", exact: true }).click();
-  await expect(result.getByRole("group", { name: "Tree expansion controls" })).toBeVisible();
-  await expect(result.getByRole("group", { name: "JSON edit history" })).toBeVisible();
-
-  await result.getByRole("combobox", { name: "JSON result view" }).click();
-  await page.getByRole("option", { name: "Form", exact: true }).click();
-  await expect(result.getByRole("tree", { name: "JSON value editor" })).toBeVisible();
+  await page.getByRole("option", { name: "View", exact: true }).click();
+  await expect(view).toHaveText("View");
+  await expect(result.getByRole("tree", { name: "Read-only JSON values" })).toBeVisible();
+  await expect(result.getByRole("button", { name: "Copy JSON result" })).toBeVisible();
+  await expect(result.getByRole("button", { name: "Download JSON result" })).toBeVisible();
 });
 
 test("JSON search supports Enter and Shift+Enter with wraparound", async ({ page }) => {
@@ -392,27 +410,27 @@ test("JSON search highlights exact occurrences and only the active line", async 
   );
   const result = page.getByTestId("json-result-renderer");
   const search = result.getByRole("searchbox", { name: "Search JSON result" });
-  const code = result.getByRole("tabpanel");
+  const code = result.getByRole("textbox", { name: "JSON result code" });
   await expect(code).toContainText('"first": "match match"');
   const source = await code.innerText();
-  const marks = code.locator("mark");
-  const active = code.locator('mark[data-search-current="true"]');
-  const currentLine = code.locator('[data-formatted-current="true"]');
+  const marks = code.locator(".cm-searchMatch");
+  const active = code.locator(".cm-searchMatch-selected");
+  const currentLine = code.locator(".cm-searchMatchLine");
   await search.fill("match");
   await expect(marks).toHaveText(["match", "match", "MATCH"]);
   await expect(currentLine).toHaveCount(1);
   await expect(currentLine).toContainText('"first"');
   await expect(active).toHaveCount(1);
-  await expect(marks.nth(0)).toHaveAttribute("data-search-current", "true");
+  await expect(marks.nth(0)).toHaveClass(/cm-searchMatch-selected/);
   await search.press("Enter");
-  await expect(marks.nth(1)).toHaveAttribute("data-search-current", "true");
+  await expect(marks.nth(1)).toHaveClass(/cm-searchMatch-selected/);
   await expect(currentLine).toContainText('"first"');
   await search.press("Enter");
   await expect(active).toHaveText("MATCH");
   await expect(currentLine).toHaveCount(1);
   await expect(currentLine).toContainText('"second"');
   await search.press("Shift+Enter");
-  await expect(marks.nth(1)).toHaveAttribute("data-search-current", "true");
+  await expect(marks.nth(1)).toHaveClass(/cm-searchMatch-selected/);
   for (const query of ["a.b", "[x]", "<tag>", '\\"quoted\\"', '"first": "match']) {
     await search.fill(query);
     await expect.poll(async () => (await marks.allTextContents()).join("")).toBe(query);
@@ -424,4 +442,44 @@ test("JSON search highlights exact occurrences and only the active line", async 
   await search.fill("");
   await expect(marks).toHaveCount(0);
   await expect.poll(() => code.innerText()).toBe(source);
+});
+
+test("JSON code folds objects and arrays and reveals folded search matches", async ({ page }) => {
+  await page.goto("http://localhost:3000/devtools/json-viewer", { waitUntil: "networkidle" });
+  const source = JSON.stringify(
+    { nested: { items: ["folded needle", { active: true }] }, tail: "still-visible" },
+    null,
+    2,
+  );
+  const input = page.getByRole("textbox", { name: "JSON input", exact: true });
+  await input.fill(source);
+  const sourceEditor = page.locator(".cm-editor").filter({ has: input });
+  const sourceFolds = sourceEditor.locator(".cm-foldGutter .cm-gutterElement > span:visible");
+
+  for (const markerIndex of [1, 2]) {
+    await sourceFolds.nth(markerIndex).click();
+    await expect(input).not.toContainText("folded needle");
+    await expect(input).toContainText("still-visible");
+    const expand = input.getByRole("button", { name: "Expand folded code", exact: true });
+    await expect(expand).toBeVisible();
+    await expand.click();
+    await expect.poll(() => input.innerText()).toBe(source);
+  }
+
+  const result = page.getByTestId("json-result-renderer");
+  const code = result.getByRole("textbox", { name: "JSON result code", exact: true });
+  await expect(code).toHaveAttribute("aria-readonly", "true");
+  await expect(code).toContainText("folded needle");
+  const outputEditor = result.locator(".cm-editor").filter({ has: code });
+  await outputEditor.locator(".cm-foldGutter .cm-gutterElement > span:visible").nth(1).click();
+  await expect(code).not.toContainText("folded needle");
+  await expect(code.getByRole("button", { name: "Expand folded code", exact: true })).toBeVisible();
+
+  const search = result.getByRole("searchbox", { name: "Search JSON result" });
+  await search.fill("folded needle");
+  await expect(code.locator(".cm-searchMatch-selected")).toHaveText("folded needle");
+  await expect(code.locator(".cm-searchMatch-selected")).toBeVisible();
+  await expect(code.getByRole("button", { name: "Expand folded code", exact: true })).toHaveCount(0);
+  await expect(search).toBeFocused();
+  await expect.poll(() => input.innerText()).toBe(source);
 });

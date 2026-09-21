@@ -23,6 +23,8 @@ export interface SettingsPanelProps {
   disabled?: boolean;
   layout?: "grid" | "stack";
   onChange: (key: string, value: unknown) => void;
+  /** Run the surrounding operation from a single-line text field. */
+  onSubmit?: () => void;
   pane?: "main" | "side" | "input";
   spec: SettingsSpec;
   values: Readonly<Record<string, unknown>>;
@@ -32,6 +34,7 @@ interface FieldRenderContext {
   disabled: boolean;
   id: string;
   onChange: (value: unknown) => void;
+  onSubmit?: () => void;
   value: unknown;
 }
 
@@ -130,6 +133,23 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
         id={context.id}
         maxLength={field.maxLength}
         onChange={(event) => context.onChange(event.currentTarget.value)}
+        onKeyDown={(event) => {
+          if (
+            !context.onSubmit ||
+            event.key !== "Enter" ||
+            event.repeat ||
+            event.defaultPrevented ||
+            event.nativeEvent.isComposing ||
+            event.nativeEvent.keyCode === 229 ||
+            event.altKey ||
+            event.ctrlKey ||
+            event.metaKey ||
+            event.shiftKey
+          )
+            return;
+          event.preventDefault();
+          context.onSubmit();
+        }}
         placeholder={field.placeholder}
         value={stringValue(context.value, field.default)}
       />
@@ -537,6 +557,7 @@ export function SettingsPanel({
   disabled = false,
   layout = "stack",
   onChange,
+  onSubmit,
   pane,
   spec,
   values,
@@ -556,6 +577,7 @@ export function SettingsPanel({
           disabled,
           id: `${idPrefix}-${key}`,
           onChange: (value) => onChange(key, value),
+          onSubmit: disabled ? undefined : onSubmit,
           value: values[key] ?? field.default,
         };
         return (

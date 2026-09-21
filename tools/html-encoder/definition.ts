@@ -10,6 +10,7 @@ export default {
   layout: "stacked",
   input: {
     kind: "text",
+    language: "html",
     label: "HTML or text",
     placeholder: '<button title="Save & close">Save</button>',
   },

@@ -7,8 +7,10 @@ export default {
   keywords: ["json", "sort", "keys", "alphabetical", "normalize", "diff"],
   name: "JSON Sorter",
   description: "Sort object keys recursively.",
+  outputLanguage: "json",
   input: {
     kind: "text",
+    language: "json",
     label: "JSON input",
     placeholder: '{"z":1,"a":{"d":4,"b":2}}',
   },

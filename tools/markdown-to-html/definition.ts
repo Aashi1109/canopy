@@ -10,6 +10,7 @@ export default {
   layout: "stacked",
   input: {
     kind: "text",
+    language: "markdown",
     label: "Markdown input",
     placeholder: "# Hello\n\n**Smart tools** stay focused.",
   },

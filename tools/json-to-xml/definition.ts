@@ -7,8 +7,10 @@ export default {
   keywords: ["json", "xml", "convert", "soap", "markup", "transform"],
   name: "JSON to XML",
   description: "Convert JSON values to XML.",
+  outputLanguage: "xml",
   input: {
     kind: "text",
+    language: "json",
     label: "JSON input",
     placeholder: '{"user":{"name":"Ada","active":true}}',
   },

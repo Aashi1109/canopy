@@ -7,6 +7,7 @@ export default {
   keywords: ["gradient", "css", "linear-gradient", "radial-gradient", "color", "background", "design"],
   name: "Gradient Generator",
   description: "Generate linear or radial CSS gradients.",
+  outputLanguage: "css",
   input: {
     kind: "fields",
     label: "Gradient colors",

@@ -22,6 +22,10 @@ export type ToolVerdict = {
 export type ToolTextRender = {
   readonly render: "text";
   readonly text: string;
+  /** The displayed text is a bounded preview of a complete generated artifact. */
+  readonly truncated?: boolean;
+  /** Alternate structured view; copy and download retain the original text. */
+  readonly tablePreview?: ToolTableRender;
   readonly downloadName?: string;
 };
 
@@ -30,6 +34,8 @@ export type ToolCodeRender = {
   readonly code: string;
   /** Highlighter hint, e.g. a language id. */
   readonly language: string;
+  /** Alternate structured view; copy and download retain the original code. */
+  readonly tablePreview?: ToolTableRender;
   readonly downloadName?: string;
   /** The displayed code is a bounded preview of a complete generated artifact. */
   readonly truncated?: boolean;
@@ -72,6 +78,8 @@ export type ToolHtmlRender = {
   readonly render: "html";
   /** Tool-generated markup for preview. Renderers must sandbox it. */
   readonly html: string;
+  /** Structured table preview; copy and download still use the generated HTML. */
+  readonly tablePreview?: ToolTableRender;
   /** Complete plain-code markup whose syntax coloring is deferred by its workspace. */
   readonly deferCodeHighlighting?: boolean;
   readonly downloadName?: string;
@@ -98,6 +106,7 @@ export type ToolDiffRender = {
   readonly lines: readonly ToolDiffLine[];
   readonly leftLabel?: string;
   readonly rightLabel?: string;
+  readonly downloadName?: string;
 };
 
 export type ToolFilesRender = {

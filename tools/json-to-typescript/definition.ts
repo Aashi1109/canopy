@@ -7,8 +7,10 @@ export default {
   keywords: ["json", "typescript", "interface", "types", "codegen", "schema", "dto"],
   name: "JSON to TypeScript",
   description: "Generate TypeScript interfaces from sample JSON.",
+  outputLanguage: "typescript",
   input: {
     kind: "text",
+    language: "json",
     label: "JSON input",
     placeholder: '{"name":"Ada","active":true,"tags":["admin"]}',
   },

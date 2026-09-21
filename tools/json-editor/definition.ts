@@ -7,8 +7,10 @@ export default {
   keywords: ["json", "editor", "format", "repair", "pretty print", "indent"],
   name: "JSON Editor",
   description: "Repair and consistently format editable JSON.",
+  outputLanguage: "json",
   input: {
     kind: "text",
+    language: "json",
     label: "JSON input",
     placeholder: '{"name":"Ada","active":true}',
   },

@@ -178,13 +178,14 @@ function toOutcome(result: ToolResult): ToolExecutionOutcome<ToolResult> {
 function useWorkerHost() {
   const { cancel, cleanupArtifacts, reset, state, start } = useToolRun();
   const pending = useRef<{
+    jobId: string | null;
     reject: (reason: unknown) => void;
     resolve: (result: ToolResult) => void;
   } | null>(null);
 
   useEffect(() => {
     const waiter = pending.current;
-    if (!waiter || state.status === "idle" || state.status === "running") return;
+    if (!waiter || waiter.jobId !== state.jobId || state.status === "idle" || state.status === "running") return;
     pending.current = null;
     if (state.status === "completed" && state.result) {
       waiter.resolve(state.result);
@@ -210,11 +211,35 @@ function useWorkerHost() {
           reject(new DOMException("Aborted", "AbortError"));
           return;
         }
-        pending.current = { reject, resolve };
-        signal.addEventListener("abort", cancel, { once: true });
-        start(request);
+        const finish = () => {
+          signal.removeEventListener("abort", onAbort);
+          if (pending.current === waiter) pending.current = null;
+        };
+        const waiter = {
+          jobId: null as string | null,
+          reject: (reason: unknown) => {
+            finish();
+            reject(reason);
+          },
+          resolve: (result: ToolResult) => {
+            finish();
+            resolve(result);
+          },
+        };
+        const onAbort = () => {
+          if (pending.current === waiter) cancel();
+          if (waiter.jobId) cleanupArtifacts(waiter.jobId);
+          waiter.reject(new DOMException("Aborted", "AbortError"));
+        };
+        pending.current = waiter;
+        signal.addEventListener("abort", onAbort, { once: true });
+        try {
+          waiter.jobId = start(request);
+        } catch (error) {
+          waiter.reject(error);
+        }
       }),
-    [cancel, start],
+    [cancel, cleanupArtifacts, start],
   );
 
   return {
@@ -472,7 +497,7 @@ function ToolWorkspaceSlot(): ReactElement {
     <Suspense fallback={null}>
       <Workspace
         key={chrome.workspaceKey}
-        disabled={running}
+        disabled={running && runtime.result === null}
         error={runtime.error || undefined}
         input={runtime.input}
         lifecycle={runtime.lifecycle}
@@ -644,7 +669,7 @@ export default function ToolPage({
       initialInput: EMPTY_INPUT,
       initialSettings: RUNTIME_SETTINGS,
       isEmpty: (input) => isEmptyInput(spec.input.kind, input),
-      refreshOnSettingsChange: spec.category === "developer-generators" ? settings : undefined,
+      refreshOnSettingsChange: settings,
       shouldAutoRun: (input) => {
         const maxEditableBytes = spec.input.kind === "text" ? spec.input.acceptFiles?.maxEditableBytes : undefined;
         return !isLargeTextFile(input.files[0], maxEditableBytes);

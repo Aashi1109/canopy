@@ -7,6 +7,7 @@ export default {
   keywords: ["meta tags", "seo", "open graph", "og", "canonical", "description", "head"],
   name: "Meta Tag Generator",
   description: "Generate common search and social meta tags.",
+  outputLanguage: "html",
   input: {
     kind: "fields",
     label: "Page metadata",

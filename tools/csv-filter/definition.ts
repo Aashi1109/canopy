@@ -7,10 +7,13 @@ export default {
   keywords: ["csv", "filter", "rows", "search", "column", "delimiter", "spreadsheet"],
   name: "CSV Filter",
   description: "Keep rows containing text, optionally in one column.",
-  layout: "stacked",
+  layout: "side-by-side",
+  outputLanguage: "csv",
   input: {
     kind: "text",
+    language: "csv",
     label: "CSV input",
+    surface: "card",
     acceptFiles: {
       accept: ".csv,.tsv,text/csv,text/tab-separated-values",
       maxBytes: 104_857_600,
@@ -34,12 +37,14 @@ export default {
       },
       query: {
         kind: "text",
+        pane: "input",
         label: "Contains text",
         help: "Case-insensitive substring match. Required — an empty filter is rejected rather than returning every row.",
         default: "Admin",
       },
       column: {
         kind: "text",
+        pane: "input",
         label: "In column (optional)",
         help: "A header name or a 1-based column number. Leave blank to search every column.",
         default: "",

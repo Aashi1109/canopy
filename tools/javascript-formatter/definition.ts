@@ -7,9 +7,11 @@ export default {
   keywords: ["javascript", "format", "beautify", "indent", "pretty print", "minified", "js"],
   name: "JavaScript Formatter",
   description: "Apply readable indentation to JavaScript source.",
-  layout: "stacked",
+  layout: "side-by-side",
+  outputLanguage: "javascript",
   input: {
     kind: "text",
+    language: "javascript",
     label: "JavaScript input",
     placeholder: "function greet(name){return 'Hello ' + name;}",
   },

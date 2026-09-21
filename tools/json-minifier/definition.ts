@@ -7,8 +7,10 @@ export default {
   keywords: ["json", "minify", "compact", "whitespace", "compress", "payload size"],
   name: "JSON Minifier",
   description: "Remove insignificant whitespace from JSON.",
+  outputLanguage: "json",
   input: {
     kind: "text",
+    language: "json",
     label: "JSON input",
     acceptFiles: {
       accept: ".json,application/json,text/json",

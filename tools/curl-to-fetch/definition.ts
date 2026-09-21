@@ -8,8 +8,10 @@ export default {
   name: "cURL to Fetch",
   description: "Convert a common cURL request to browser fetch code.",
   layout: "stacked",
+  outputLanguage: "javascript",
   input: {
     kind: "text",
+    language: "bash",
     label: "cURL command",
     placeholder:
       "curl https://api.example.com/items -H 'Content-Type: application/json' -d '{\"name\":\"SmartTools\"}'",

@@ -12,7 +12,7 @@
       "expected": {
         "downloadName": "schema.json",
         "output": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"id\": {\n      \"type\": \"integer\"\n    },\n    \"name\": {\n      \"type\": \"string\"\n    },\n    \"tags\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  },\n  \"required\": [\n    \"id\",\n    \"name\",\n    \"tags\"\n  ],\n  \"additionalProperties\": false\n}",
-        "render": "text"
+        "render": "code"
       }
     }
   ]

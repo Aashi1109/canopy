@@ -42,7 +42,8 @@ export type ToolRunHandle = {
   /** Closes the open inspection document while retaining its page geometry. */
   readonly closeInspection: () => void;
   readonly cancel: () => void;
-  readonly cleanupArtifacts: () => void;
+  /** Releases one completed result, or every retained result when omitted. */
+  readonly cleanupArtifacts: (jobId?: string) => void;
   readonly reset: () => void;
 };
 
@@ -51,6 +52,9 @@ export function useToolRun(): ToolRunHandle {
   const stateRef = useRef(state);
   const workerRef = useRef<Worker | null>(null);
   const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The runtime owns when a displayed result is replaced. Keep every delivered
+  // result alive until it releases it, or this host resets/unmounts.
+  const completedArtifactJobs = useRef(new Set<string>());
   const inspectionRef = useRef<{
     readonly jobId: string;
     readonly inFlight: Set<number>;
@@ -73,6 +77,7 @@ export function useToolRun(): ToolRunHandle {
 
   const cleanupJob = useCallback((jobId: string | null) => {
     if (!jobId) return;
+    completedArtifactJobs.current.delete(jobId);
     void cleanupArtifactJobWithRetry(jobId).catch(() => undefined);
   }, []);
 
@@ -82,10 +87,18 @@ export function useToolRun(): ToolRunHandle {
     }
   }, []);
 
-  const cleanupCurrentArtifacts = useCallback(() => {
-    const { jobId, status } = stateRef.current;
-    if (status === "completed") cleanupJob(jobId);
-  }, [cleanupJob]);
+  const cleanupCurrentArtifacts = useCallback(
+    (completedJobId?: string) => {
+      if (completedJobId !== undefined) {
+        if (completedArtifactJobs.current.has(completedJobId)) cleanupJob(completedJobId);
+        return;
+      }
+      for (const jobId of completedArtifactJobs.current) cleanupJob(jobId);
+      const { jobId, status } = stateRef.current;
+      if (status === "completed") cleanupJob(jobId);
+    },
+    [cleanupJob],
+  );
 
   useEffect(
     () => () => {
@@ -101,6 +114,7 @@ export function useToolRun(): ToolRunHandle {
         terminate();
       }
       cleanupJob(jobId);
+      for (const completedJobId of completedArtifactJobs.current) cleanupJob(completedJobId);
     },
     [abortWorker, cleanupJob, terminate],
   );
@@ -122,14 +136,18 @@ export function useToolRun(): ToolRunHandle {
       }
       abortWorker(previousJobId);
       terminate();
-      cleanupJob(previousJobId);
+      if (!previousJobId || !completedArtifactJobs.current.has(previousJobId)) cleanupJob(previousJobId);
       const worker = new Worker(new URL("./tool.worker.ts", import.meta.url), {
         name: "canopy-tool-worker",
       });
       workerRef.current = worker;
       worker.onmessage = (event: MessageEvent<unknown>) => {
-        if (workerRef.current !== worker) return;
         if (!isToolWorkerResponse(event.data)) return;
+        if (workerRef.current !== worker || stateRef.current.jobId !== event.data.jobId) {
+          if (event.data.type === "success" && !completedArtifactJobs.current.has(event.data.jobId))
+            cleanupJob(event.data.jobId);
+          return;
+        }
         if (event.data.type === "inspection-closed") {
           terminate();
           return;
@@ -144,6 +162,12 @@ export function useToolRun(): ToolRunHandle {
           return;
         }
         const next = reduceWorkerJobState(stateRef.current, event.data);
+        if (event.data.type === "success") {
+          if (next.status === "completed") completedArtifactJobs.current.add(event.data.jobId);
+          else cleanupJob(event.data.jobId);
+        } else if (event.data.type === "failure" || event.data.type === "canceled") {
+          cleanupJob(event.data.jobId);
+        }
         if (event.data.type === "inspected" && next.status === "completed") {
           inspectionRef.current = {
             jobId: event.data.jobId,
@@ -243,6 +267,7 @@ export function useToolRun(): ToolRunHandle {
       terminate();
     }
     cleanupJob(jobId);
+    for (const completedJobId of completedArtifactJobs.current) cleanupJob(completedJobId);
     apply(createToolJobState());
   }, [abortWorker, apply, cleanupJob, closeInspection, terminate]);
 

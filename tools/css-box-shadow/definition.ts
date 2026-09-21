@@ -11,6 +11,7 @@ export default {
   keywords: ["box-shadow", "css", "shadow", "elevation", "inset", "blur", "spread", "generator"],
   name: "CSS Box Shadow Generator",
   description: "Generate a CSS box-shadow declaration.",
+  outputLanguage: "css",
   input: {
     kind: "fields",
     label: "Shadow Color",

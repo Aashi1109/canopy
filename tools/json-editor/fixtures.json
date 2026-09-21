@@ -13,7 +13,7 @@
       "expected": {
         "downloadName": "edited.json",
         "output": "{\n  \"name\": \"Ada\",\n  \"active\": true\n}",
-        "render": "text"
+        "render": "code"
       }
     }
   ]

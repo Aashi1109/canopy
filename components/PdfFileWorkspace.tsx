@@ -375,7 +375,7 @@ export function PdfFileWorkspace({
             <AlertDescription>{plan.error}</AlertDescription>
           </Alert>
         )}
-        {!props.running && !(primaryOutput && completionActions) && (
+        {!props.running && (!(primaryOutput && completionActions) || props.error || cancelled) && (
           <Button
             className="w-full"
             disabled={Boolean(reason) || props.primaryAction?.disabled}
@@ -384,7 +384,7 @@ export function PdfFileWorkspace({
             {actionLabel}
           </Button>
         )}
-        {props.running ? (
+        {props.running && (
           <ProcessingStatus
             title={props.spec.labels.running}
             detail={props.progress?.stage ?? "Preparing the document."}
@@ -400,7 +400,8 @@ export function PdfFileWorkspace({
               </Button>
             }
           />
-        ) : primaryOutput ? (
+        )}
+        {primaryOutput ? (
           <DownloadResult
             variant={resultVariant}
             className="min-w-0 [&>div:last-child]:shrink-0"
@@ -430,7 +431,7 @@ export function PdfFileWorkspace({
         ) : !reason && !props.result && plan.summary?.detail ? (
           <AlertBanner title={plan.summary.title}>{plan.summary.detail}</AlertBanner>
         ) : null}
-        {!props.running && (primaryOutput ? completionActions : secondaryActions)}
+        {primaryOutput ? completionActions : secondaryActions}
         {reason && !plan.error && <Muted role="status">{reason}</Muted>}
         {cancelled && !props.running && (
           <Muted role="status">Cancelled. Your PDF and settings are kept. Choose {actionLabel} to try again.</Muted>

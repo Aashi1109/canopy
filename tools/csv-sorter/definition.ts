@@ -7,10 +7,13 @@ export default {
   keywords: ["csv", "sort", "order", "column", "ascending", "descending"],
   name: "CSV Sorter",
   description: "Sort CSV rows by a named or numbered column.",
-  layout: "stacked",
+  layout: "side-by-side",
+  outputLanguage: "csv",
   input: {
     kind: "text",
+    language: "csv",
     label: "CSV input",
+    surface: "card",
     placeholder: "name,role\nLin,Editor\nAda,Admin",
   },
   settings: {

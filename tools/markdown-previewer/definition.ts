@@ -10,6 +10,7 @@ export default {
   layout: "side-by-side",
   input: {
     kind: "text",
+    language: "markdown",
     label: "Markdown document",
     acceptFiles: {
       accept: ".md,.markdown,.txt,text/markdown,text/plain",

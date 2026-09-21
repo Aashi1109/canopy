@@ -123,7 +123,7 @@ function RotationSettings({
 
 export default function RotatePdfPagesWorkspace(props: WorkspaceProps) {
   const [dismissed, setDismissed] = useState<WorkspaceProps["result"]>(null);
-  const completed = props.result && props.result !== dismissed && !props.running;
+  const completed = props.result && props.result !== dismissed;
   const output =
     completed && props.result?.render === "files"
       ? props.result.files.find((file) => file.mime === "application/pdf")
@@ -131,7 +131,6 @@ export default function RotatePdfPagesWorkspace(props: WorkspaceProps) {
   return (
     <PdfFileWorkspace
       {...props}
-      result={completed ? props.result : null}
       definitionKey="rotate-pdf-pages"
       optionsTitle="Rotate pages"
       getPlan={getPlan}
@@ -143,7 +142,13 @@ export default function RotatePdfPagesWorkspace(props: WorkspaceProps) {
           return 0;
         }
       }}
-      renderOptions={(pages) => <RotationSettings props={props} pages={pages} completed={Boolean(completed)} />}
+      renderOptions={(pages) => (
+        <RotationSettings
+          props={props}
+          pages={pages}
+          completed={Boolean(completed && !props.running && !props.error)}
+        />
+      )}
       secondaryActions={<Caption>Your original stays unchanged. Page order and quality are preserved.</Caption>}
       completedPreview={
         output ? <GeneratedPdfPreview fill file={output} definitionKey="rotate-pdf-pages" /> : undefined

@@ -1,14 +1,5 @@
-/**
- * Moved verbatim from the shared `csv-viewer` / `csv-to-table` case body in
- * `lib/devtools/format-json.ts` (arm at lines 2198-2202).
- *
- * See the note in `tools/csv-viewer/run.ts`: the two tools shared one
- * fall-through `case`, and each folder now owns its own copy of the two-line
- * body rather than importing across tool folders. The implementation itself
- * lives in `lib/devtools/shared/table.ts` and is imported, not copied.
- */
-
 import type { ToolRun } from "../../lib/tool-framework/run.ts";
+import { CSV_PREVIEW_BYTES, CSV_PREVIEW_ROWS } from "../../lib/tool-framework/limits.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 import { parseUtilityTable, tableToHtml, utilityDelimiter } from "../../lib/devtools/shared/table.ts";
@@ -17,6 +8,40 @@ import { createTextArtifactSink, isLargeCsvRun, parseCsvRun } from "../../lib/de
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
+const MAX_PREVIEW_CELLS = 10_000;
+
+function createTablePreview(columns: readonly string[]) {
+  const encoder = new TextEncoder();
+  const rowLimit = Math.min(CSV_PREVIEW_ROWS, Math.max(1, Math.floor(MAX_PREVIEW_CELLS / columns.length)));
+  let remainingBytes =
+    CSV_PREVIEW_BYTES - columns.reduce((size, column) => size + encoder.encode(column).byteLength, 0);
+  const rows: (readonly string[])[] = [];
+  const result =
+    remainingBytes < 0
+      ? undefined
+      : {
+          render: "table" as const,
+          columns,
+          rows,
+          showColumnDividers: true,
+          truncated: false,
+        };
+
+  return {
+    result,
+    append(row: readonly string[]) {
+      if (!result || result.truncated) return;
+      const rowBytes = row.reduce((size, cell) => size + encoder.encode(cell).byteLength, 0);
+      if (rows.length >= rowLimit || rowBytes > remainingBytes) {
+        result.truncated = true;
+        return;
+      }
+      rows.push(row);
+      remainingBytes -= rowBytes;
+    },
+  };
+}
+
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const delimiter = utilityDelimiter(ctx.settings.delimiter);
   if (isLargeCsvRun(ctx)) {
@@ -24,6 +49,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       mime: "text/html",
       name: "table.html",
     });
+    let preview: ReturnType<typeof createTablePreview> | undefined;
     try {
       await sink.write("<table><thead>");
       const parsed = await parseCsvRun(ctx, {
@@ -32,8 +58,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
           const tag = rowNumber === 1 ? "th" : "td";
           const cells = row.map((cell) => `<${tag}>${escapeHtml(cell)}</${tag}>`).join("");
           if (rowNumber === 1) {
+            preview = createTablePreview(row);
             await sink.write(`<tr>${cells}</tr></thead><tbody>`);
           } else {
+            preview?.append(row);
             await sink.write(`<tr>${cells}</tr>`);
           }
         },
@@ -47,6 +75,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         code: sink.preview,
         language: "html",
         truncated: sink.previewTruncated,
+        tablePreview: preview?.result,
         stats: [
           { label: "Rows", value: String(Math.max(0, parsed.rowCount - 1)) },
           { label: "Columns", value: String(parsed.columnCount) },
@@ -63,10 +92,14 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       throw error;
     }
   }
+  const rows = parseUtilityTable(ctx.input.text, delimiter);
+  const preview = createTablePreview(rows[0]);
+  for (let index = 1; index < rows.length; index += 1) preview.append(rows[index]);
   return {
     render: "html",
-    html: tableToHtml(parseUtilityTable(ctx.input.text, delimiter)),
+    html: tableToHtml(rows),
     downloadName: "table.html",
+    tablePreview: preview.result,
   };
 };
 

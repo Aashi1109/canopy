@@ -121,7 +121,7 @@ function CropSettings({
 
 export default function CropPdfWorkspace(props: WorkspaceProps) {
   const [dismissedResult, setDismissedResult] = useState<WorkspaceProps["result"]>(null);
-  const completed = Boolean(props.result && props.result !== dismissedResult && !props.running);
+  const completed = Boolean(props.result && props.result !== dismissedResult);
   const output =
     completed && props.result?.render === "files"
       ? props.result.files.find((file) => file.mime === "application/pdf")
@@ -134,7 +134,6 @@ export default function CropPdfWorkspace(props: WorkspaceProps) {
   return (
     <PdfFileWorkspace
       {...props}
-      result={completed ? props.result : null}
       onInputChange={inputChange}
       onSettingChange={change}
       definitionKey="crop-pdf"
@@ -146,7 +145,7 @@ export default function CropPdfWorkspace(props: WorkspaceProps) {
           key={props.input.files[0] ? workspaceFileId(props.input.files[0]) : "empty"}
           pages={pages}
           props={{ ...props, onSettingChange: change }}
-          completed={completed}
+          completed={completed && !props.running && !props.error}
         />
       )}
       renderPageOverlay={(page, pages) => {

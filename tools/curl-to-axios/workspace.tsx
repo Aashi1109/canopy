@@ -4,7 +4,6 @@ import {
   Overline,
   Muted,
   FieldLabel,
-  CodeBlock,
   List,
   P,
   AlertBanner,
@@ -18,6 +17,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { SplitStack } from "@/components/Stacks";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import { SourceTextarea } from "@/components/WorkspaceInput";
+import { CodeEditor } from "@/components/content/CodeEditor";
 
 const REQUEST_STYLES = [
   { label: "axios.request", value: "request" },
@@ -40,8 +40,7 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
   const verdict = props.result?.verdict;
   const inputSpec = props.spec.input;
   const moduleFormat = typeof props.settings.moduleFormat === "string" ? props.settings.moduleFormat : "none";
-  const outputLanguage =
-    typeof props.settings.outputLanguage === "string" ? props.settings.outputLanguage : "javascript";
+  const outputLanguage = props.settings.outputLanguage === "typescript" ? "typescript" : "javascript";
   const requestStyle = typeof props.settings.requestStyle === "string" ? props.settings.requestStyle : "config";
 
   useEffect(() => {
@@ -93,9 +92,11 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
             {inputSpec.label} <span aria-hidden="true">*</span>
           </FieldLabel>
           <SourceTextarea
+            aria-label={inputSpec.label}
             className="min-h-0 flex-1"
             disabled={props.disabled}
             id={inputId}
+            language="bash"
             maxLength={inputSpec.maxLength}
             onChange={(text) => props.onInputChange({ ...props.input, text })}
             placeholder={inputSpec.placeholder}
@@ -141,9 +142,14 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
           </header>
           <div className="flex min-h-0 flex-1 overflow-hidden rounded-lg border border-input bg-muted/45">
             {output ? (
-              <CodeBlock className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4">
-                {output}
-              </CodeBlock>
+              <CodeEditor
+                aria-label="Generated Axios code"
+                className="min-h-0 flex-1"
+                language={outputLanguage}
+                readOnly
+                showLineNumbers={false}
+                value={output}
+              />
             ) : (
               <div className="grid flex-1 place-items-center p-6 text-center">
                 <Muted>Generated Axios code appears here as you edit the cURL command.</Muted>

@@ -14,6 +14,7 @@ export default {
   name: "Domain Age & WHOIS Checker",
   description: "Query public RDAP data for domain registration details.",
   layout: "stacked",
+  outputLanguage: "json",
   input: {
     kind: "fields",
     label: "Domain",

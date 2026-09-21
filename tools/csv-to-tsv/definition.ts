@@ -7,9 +7,12 @@ export default {
   keywords: ["csv", "tsv", "convert", "tab separated", "spreadsheet", "excel"],
   name: "CSV to TSV",
   description: "Convert comma-separated values to tab-separated values.",
+  outputLanguage: "tsv",
   input: {
     kind: "text",
+    language: "csv",
     label: "CSV input",
+    surface: "card",
     acceptFiles: {
       accept: ".csv,.tsv,text/csv,text/tab-separated-values",
       maxBytes: 104_857_600,

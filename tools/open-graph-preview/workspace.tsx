@@ -3,7 +3,6 @@
 import { CircleAlert, CircleCheck, Globe, ImageIcon, Search, TriangleAlert } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
-import codeStyles from "@/components/content/codeHighlight.module.css";
 import { ResultActions } from "@/components/ResultView";
 import { Stack } from "@/components/Stacks";
 import { WorkspaceSurface } from "@/components/Surfaces";
@@ -27,7 +26,6 @@ import {
   TabsTrigger,
 } from "@/components/ui/index.tsx";
 import { cn } from "@/components/ui/lib/utils.ts";
-import { highlightCode } from "@/lib/markdown/codeHighlight";
 import type { ToolLinkPreviewImage, ToolLinkPreviewRender } from "@/lib/tool-framework/result";
 import { parseWebsiteUrl } from "./url";
 
@@ -215,7 +213,6 @@ export default function OpenGraphWorkspace(props: WorkspaceProps) {
   const state = props.error ? "error" : running ? "loading" : result ? "ready" : "empty";
   const actionLabel = result ? "Rescan" : "Scan URL";
   const tags = result?.tags ?? "";
-  const highlightedTags = useMemo(() => highlightCode(tags, "html"), [tags]);
 
   useEffect(() => {
     props.onToolbarActionsChange?.({ primaryActionInWorkspace: true, primaryActionLabel: actionLabel });
@@ -340,14 +337,10 @@ export default function OpenGraphWorkspace(props: WorkspaceProps) {
                   </div>
                 </div>
                 <SourceTextarea
+                  aria-label="Fetched HTML tags"
                   className="min-h-0 flex-1"
-                  highlightedValue={
-                    <span
-                      className={`${codeStyles.highlight} [&_.hljs-name]:text-primary`}
-                      dangerouslySetInnerHTML={{ __html: highlightedTags }}
-                    />
-                  }
                   id={tagsId}
+                  language="html"
                   onChange={() => undefined}
                   readOnly
                   value={tags}

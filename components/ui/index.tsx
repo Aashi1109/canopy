@@ -102,6 +102,7 @@ export {
 } from "./components/field.tsx";
 export { Input, inputVariants } from "./components/input.tsx";
 export type { InputProps } from "./components/input.tsx";
+export { AutocompleteInput, type AutocompleteInputProps } from "./components/autocomplete.tsx";
 export { Label } from "./components/label.tsx";
 export { Popover } from "radix-ui";
 export {

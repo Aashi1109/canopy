@@ -64,3 +64,42 @@
 .highlight :global(.hljs-strong) {
   font-weight: 600;
 }
+
+.typescript :global(.hljs-built_in),
+.typescript :global(.hljs-type) {
+  color: var(--syntax-string);
+}
+.typescript :global(.hljs-title) {
+  color: var(--warning);
+}
+.typescript :global(.hljs-attr),
+.typescript :global(.hljs-attribute),
+.typescript :global(.hljs-variable) {
+  color: var(--foreground);
+}
+
+.xml :global(.hljs-name) {
+  color: var(--primary);
+}
+
+.delimited :global(.hljs-punctuation) {
+  color: var(--muted-foreground);
+}
+
+.markdown :global(.hljs-section),
+.markdown :global(.hljs-link) {
+  color: var(--primary);
+}
+.markdown :global(.hljs-code),
+.markdown :global(.hljs-emphasis) {
+  color: var(--syntax-string);
+}
+.markdown :global(.hljs-strong) {
+  color: var(--warning);
+}
+
+.highlight.editor,
+.highlight.editor * {
+  font-style: normal;
+  font-weight: 400;
+}

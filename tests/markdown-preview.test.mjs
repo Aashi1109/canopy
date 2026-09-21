@@ -95,3 +95,55 @@ test("display Markdown escapes untrusted HTML and only activates safe links in n
   assert.match(html, /href="\/blog" target="_blank" rel="noopener noreferrer"/);
   assert.doesNotMatch(renderMarkdown("```html\n<script>alert(1)</script>\n```"), /<script>/);
 });
+
+test("generated table line breaks require an explicit HTML line-break option", () => {
+  const source = "| Name | Notes |\n| --- | --- |\n| Ada | First<br>Second |";
+
+  const standard = renderMarkdown(source);
+  assert.match(standard, /<td>First&lt;br&gt;Second<\/td>/);
+  assert.equal(renderMarkdown(source, { allowHtmlLineBreaks: false }), standard);
+  const preview = renderMarkdown(source, { allowHtmlLineBreaks: true });
+  assert.match(preview, /<td>First<br>Second<\/td>/);
+});
+
+test("HTML line-break opt-in normalizes only attribute-free br tags", () => {
+  for (const tag of ["<br>", "<BR>", "<br/>", "<Br />", "<br \t/>"]) {
+    const html = renderMarkdown(`Before${tag}After`, { allowHtmlLineBreaks: true });
+    assert.equal(html, "<p>Before<br>After</p>\n", tag);
+  }
+});
+
+test("HTML line-break opt-in still escapes attributes and every other raw HTML element", () => {
+  for (const tag of [
+    '<br onclick="alert(1)">',
+    '<br style="color:red">',
+    '<br class="example"/>',
+    "</br>",
+    "<brx>",
+    "<script>alert(1)</script>",
+    '<img src="x" onerror="alert(1)">',
+    '<iframe src="https://example.com"></iframe>',
+  ]) {
+    const html = renderMarkdown(`Before${tag}After`, { allowHtmlLineBreaks: true });
+    assert.doesNotMatch(html, /<\/?(?:br|brx|script|img|iframe)\b/i, tag);
+    assert.match(html, /&lt;/, tag);
+  }
+  const combined = renderMarkdown('<br><img src="x" onerror="alert(1)">', { allowHtmlLineBreaks: true });
+  assert.doesNotMatch(combined, /<img\b/i);
+  assert.match(combined, /&lt;img\b/);
+});
+
+test("HTML line-break opt-in leaves code spans and fenced HTML literal", () => {
+  const inline = renderMarkdown("`<br>` and `<br onclick=alert(1)>`", { allowHtmlLineBreaks: true });
+  assert.match(inline, /<code>&lt;br&gt;<\/code>/);
+  assert.match(inline, /<code>&lt;br onclick=alert\(1\)&gt;<\/code>/);
+  assert.doesNotMatch(inline, /<br\b/i);
+
+  const table = renderMarkdown("| Literal |\n| --- |\n| `<br>` |", { allowHtmlLineBreaks: true });
+  assert.match(table, /<td><code>&lt;br&gt;<\/code><\/td>/);
+  assert.doesNotMatch(table, /<br\b/i);
+
+  const fenced = renderMarkdown("```html\n<br>\n```", { allowHtmlLineBreaks: true });
+  assert.match(fenced, /<pre><code/);
+  assert.doesNotMatch(fenced, /<br\b/i);
+});

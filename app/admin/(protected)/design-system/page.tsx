@@ -1,5 +1,7 @@
 "use client";
 import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
+import { SyntaxHighlight } from "@/components/content/SyntaxHighlight";
+import { CodeEditor } from "@/components/content/CodeEditor";
 import {
   H1,
   H2,
@@ -34,6 +36,7 @@ import {
   AlertDescription,
   AlertTitle,
   AppContainer,
+  AutocompleteInput,
   Avatar,
   AvatarBadge,
   AvatarFallback,
@@ -275,6 +278,7 @@ export default function DesignSystemPage() {
   const [selectedChapterIndex, setSelectedChapterIndex] = useState(4);
   const [inlineTitle, setInlineTitle] = useState("Viewer");
   const [inlineDescription, setInlineDescription] = useState("Can view content without making changes.");
+  const [suggestedPath, setSuggestedPath] = useState("users");
   const handbookSection = handbookSectionAtPage(handbookPage);
 
   return (
@@ -387,6 +391,39 @@ export default function DesignSystemPage() {
               </Specimen>
               <Specimen label="CodeBlock · Geist Mono · 12px">
                 <CodeBlock>{'{\n  "ready": true\n}'}</CodeBlock>
+              </Specimen>
+              <Specimen label="SyntaxHighlight · language-aware code">
+                <CodeBlock>
+                  <SyntaxHighlight
+                    code={"export interface User {\n  name: string;\n  active: boolean;\n}"}
+                    language="typescript"
+                  />
+                </CodeBlock>
+              </Specimen>
+              <Specimen label="CodeEditor · rainbow brackets">
+                <div className="flex h-48 overflow-hidden rounded-lg border border-input bg-background">
+                  <CodeEditor
+                    aria-label="JSON code editor example"
+                    className="min-h-0 flex-1"
+                    language="json"
+                    readOnly
+                    value={'{\n  "user": {\n    "roles": ["admin", "editor"],\n    "active": true\n  }\n}'}
+                  />
+                </div>
+              </Specimen>
+              <Specimen label="CodeEditor · CSV output wrapping">
+                <div className="flex h-48 overflow-hidden rounded-lg border border-input bg-background">
+                  <CodeEditor
+                    aria-label="CSV output wrapping example"
+                    className="min-h-0 flex-1"
+                    language="csv"
+                    readOnly
+                    showLineNumbers={false}
+                    value={
+                      'name,role,notes\nAda,Admin,"Maintains shared tools, reviews changes, and helps the team resolve issues."\nLin,Editor,"Writes documentation and prepares release notes."'
+                    }
+                  />
+                </div>
               </Specimen>
               <Specimen label="TextLink · inherited size">
                 <TextLink href="#typography-guidelines">Typography guidelines</TextLink>
@@ -586,6 +623,19 @@ export default function DesignSystemPage() {
               </Field>
               <Field htmlFor="showcase-message" label="Message">
                 <Textarea defaultValue="Thanks for your business." id="showcase-message" />
+              </Field>
+              <Field
+                htmlFor="showcase-autocomplete"
+                label="Path suggestions"
+                description="Type freely, then use arrow keys and Enter or click to accept a suggestion."
+              >
+                <AutocompleteInput
+                  id="showcase-autocomplete"
+                  code
+                  value={suggestedPath}
+                  onValueChange={setSuggestedPath}
+                  suggestions={["users", "users[0]", "users[0].name"].filter((path) => path.startsWith(suggestedPath))}
+                />
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field htmlFor="showcase-document-type" label="Document type">
@@ -815,6 +865,16 @@ export default function DesignSystemPage() {
                     { value: "webp", label: "WebP" },
                   ]}
                 />
+              </Specimen>
+              <Specimen label="Compact pill tabs">
+                <Tabs defaultValue="raw">
+                  <TabsList aria-label="Result view" variant="pills">
+                    <TabsTrigger value="raw">Raw</TabsTrigger>
+                    <TabsTrigger value="table">Table</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="raw">Raw output</TabsContent>
+                  <TabsContent value="table">Table preview</TabsContent>
+                </Tabs>
               </Specimen>
               <Specimen label="Tooltip">
                 <TooltipProvider>

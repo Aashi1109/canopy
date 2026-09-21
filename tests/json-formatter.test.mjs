@@ -222,6 +222,10 @@ test("converts JSON objects to CSV with a stable union of columns", () => {
   assert.deepEqual(convertJsonToCsv('[{"id":1,"name":"Alice"},{"id":2,"active":true}]'), {
     ok: true,
     columns: ["id", "name", "active"],
+    rows: [
+      ["1", "Alice", ""],
+      ["2", "", "true"],
+    ],
     output: "id,name,active\n1,Alice,\n2,,true",
     repaired: false,
     rowCount: 2,
@@ -250,6 +254,7 @@ test("repairs missing property values by removing them or setting them to null",
   assert.deepEqual(convertJsonToCsv(broken, { repairMode: "remove" }), {
     ok: true,
     columns: ["id"],
+    rows: [["1"]],
     output: "id\n1",
     repaired: true,
     rowCount: 1,
@@ -257,6 +262,7 @@ test("repairs missing property values by removing them or setting them to null",
   assert.deepEqual(convertJsonToCsv(broken, { repairMode: "null" }), {
     ok: true,
     columns: ["id", "age"],
+    rows: [["1", ""]],
     output: "id,age\n1,",
     repaired: true,
     rowCount: 1,

@@ -7,9 +7,10 @@ export default {
   keywords: ["json", "keys", "paths", "extract", "schema", "flatten"],
   name: "JSON Key Extractor",
   description: "List every object key path in JSON.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
+    language: "json",
     label: "JSON input",
     placeholder: '{"user":{"name":"Ada","roles":["admin"]}}',
   },

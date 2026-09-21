@@ -20,6 +20,7 @@ export type JsonToCsvResult =
   | {
       ok: true;
       columns: string[];
+      rows: string[][];
       output: string;
       repaired: boolean;
       rowCount: number;
@@ -45,9 +46,13 @@ export function flattenRecord(
   return flattened;
 }
 
-export function csvCell(value: unknown, delimiter: CsvDelimiter): string {
+function csvValueText(value: unknown): string {
   if (value === null || value === undefined) return "";
-  const text = typeof value === "string" ? value : typeof value === "object" ? JSON.stringify(value) : String(value);
+  return typeof value === "string" ? value : typeof value === "object" ? JSON.stringify(value) : String(value);
+}
+
+export function csvCell(value: unknown, delimiter: CsvDelimiter): string {
+  const text = csvValueText(value);
 
   return text.includes(delimiter) || /["\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
@@ -107,8 +112,8 @@ export function convertJsonToCsv(
     }
   }
 
-  const rows = Array.isArray(value) ? value : [value];
-  if (!rows.every(isRecord)) {
+  const records = Array.isArray(value) ? value : [value];
+  if (!records.every(isRecord)) {
     return {
       ok: false,
       error: {
@@ -118,18 +123,20 @@ export function convertJsonToCsv(
     };
   }
 
-  const flattenedRows = rows.map((row) => flattenRecord(row));
+  const flattenedRows = records.map((row) => flattenRecord(row));
   const columns = [...new Set(flattenedRows.flatMap((row) => Object.keys(row)))];
+  const rows = flattenedRows.map((row) => columns.map((column) => csvValueText(row[column])));
   const output = columns.length
     ? [
         columns.map((column) => csvCell(column, delimiter)).join(delimiter),
-        ...flattenedRows.map((row) => columns.map((column) => csvCell(row[column], delimiter)).join(delimiter)),
+        ...rows.map((row) => row.map((cell) => csvCell(cell, delimiter)).join(delimiter)),
       ].join("\n")
     : "";
 
   return {
     ok: true,
     columns,
+    rows,
     output,
     repaired,
     rowCount: flattenedRows.length,

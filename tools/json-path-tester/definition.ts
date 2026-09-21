@@ -7,10 +7,13 @@ export default {
   keywords: ["json", "jsonpath", "query", "path", "selector", "wildcard", "extract"],
   name: "JSON Path Tester",
   description: "Resolve dot, bracket, index, and wildcard JSON paths.",
-  layout: "stacked",
+  layout: "side-by-side",
+  outputLanguage: "json",
   input: {
     kind: "text",
+    language: "json",
     label: "JSON input",
+    surface: "card",
     placeholder: '{"store":{"book":[{"title":"Codex"}]}}',
   },
   settings: {
@@ -29,9 +32,10 @@ export default {
       path: {
         kind: "text",
         label: "JSONPath",
-        help: "Must start with $. Supports .key, [0], ['key'], and the * wildcard.",
-        default: "$.store.book[0].title",
-        placeholder: "$.store.book[0].title",
+        pane: "input",
+        help: "Suggestions come from your JSON. The $ root prefix is optional.",
+        default: "store.book[0].title",
+        placeholder: "users[0].name",
       },
     },
   },
@@ -45,7 +49,7 @@ export default {
   },
   content: {
     howToUse: [
-      "Paste the document you want to query, then write the path starting from `$` — the root.",
+      "Paste the document you want to query, then type a path or choose a suggestion. The `$` root prefix is optional.",
       "Step into objects with `.key` or `['key']`, into arrays with `[0]`, and fan out across every child with `*`.",
       "Evaluate. A path that matches one value returns that value; a path that matches several returns them as an array.",
       "Build the path one segment at a time when a query returns nothing — the error tells you the path did not match, not which segment failed.",
@@ -54,9 +58,13 @@ export default {
       "This is a practical subset of JSONPath, not the full grammar: recursive descent (`..`), filter expressions (`?()`), slices (`[1:3]`), and unions (`[0,2]`) are all rejected as unsupported syntax.",
       "A path that matches nothing is an error rather than an empty result.",
       "A single match and a one-element multi-match are indistinguishable in the output — both print the bare value.",
-      "Key names inside `.key` segments are limited to word characters, `$`, and `-`. Anything else must use the `['key']` form.",
+      "Use bracket notation such as `['first name']` for keys containing spaces or punctuation; suggestions insert the correct notation.",
     ],
     faq: [
+      {
+        q: "Do I need to start my path with $?",
+        a: "No. $ means the root of the JSON document, but this tool accepts paths with or without it. For example, users[0].name and $.users[0].name return the same value. Use $ alone to select the whole document.",
+      },
       {
         q: "Why does my `$..author` path fail?",
         a: "Recursive descent is not supported. Walk the levels explicitly, or use `*` to fan out one level at a time.",

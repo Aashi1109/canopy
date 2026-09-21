@@ -1,6 +1,5 @@
 "use client";
 
-import { GripVerticalIcon } from "lucide-react";
 import * as ResizablePrimitive from "react-resizable-panels";
 
 import { cn } from "../lib/utils.ts";
@@ -31,15 +30,17 @@ function ResizableHandle({
     <ResizablePrimitive.Separator
       data-slot="resizable-handle"
       className={cn(
-        "relative flex w-px items-center justify-center bg-border after:absolute after:inset-y-0 after:left-1/2 after:w-1 after:-translate-x-1/2 focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-hidden aria-[orientation=horizontal]:h-px aria-[orientation=horizontal]:w-full aria-[orientation=horizontal]:after:left-0 aria-[orientation=horizontal]:after:h-1 aria-[orientation=horizontal]:after:w-full aria-[orientation=horizontal]:after:translate-x-0 aria-[orientation=horizontal]:after:-translate-y-1/2 [&[aria-orientation=horizontal]>div]:rotate-90",
+        "group/resize relative flex w-px items-center justify-center bg-border after:absolute after:inset-y-0 after:left-1/2 after:w-6 after:-translate-x-1/2 data-[separator=hover]:bg-primary/20 data-[separator=active]:bg-primary/30 focus-visible:bg-primary/20 focus-visible:outline-hidden aria-[orientation=horizontal]:h-px aria-[orientation=horizontal]:w-full aria-[orientation=horizontal]:after:inset-y-auto aria-[orientation=horizontal]:after:top-1/2 aria-[orientation=horizontal]:after:left-0 aria-[orientation=horizontal]:after:h-6 aria-[orientation=horizontal]:after:w-full aria-[orientation=horizontal]:after:translate-x-0 aria-[orientation=horizontal]:after:-translate-y-1/2 [&[aria-orientation=horizontal]>div]:rotate-90",
+        !withHandle && "focus-visible:bg-muted-foreground focus-visible:ring-1 focus-visible:ring-muted-foreground",
         className,
       )}
       {...props}
     >
       {withHandle && (
-        <div className="z-10 flex h-4 w-3 items-center justify-center rounded-xs border bg-border">
-          <GripVerticalIcon className="size-2.5" />
-        </div>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none z-10 h-6 w-[3px] shrink-0 rounded-full bg-muted-foreground/70 group-data-[separator=hover]/resize:bg-primary group-data-[separator=active]/resize:bg-primary group-focus-visible/resize:bg-primary group-focus-visible/resize:outline-2 group-focus-visible/resize:outline-offset-2 group-focus-visible/resize:outline-ring group-aria-disabled/resize:opacity-50"
+        />
       )}
     </ResizablePrimitive.Separator>
   );

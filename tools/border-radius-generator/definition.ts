@@ -7,6 +7,7 @@ export default {
   keywords: ["border radius", "css", "rounded corners", "generator", "shape", "design"],
   name: "Border Radius Generator",
   description: "Generate four-corner border-radius CSS.",
+  outputLanguage: "css",
   input: { kind: "none" },
   settings: {
     fields: {

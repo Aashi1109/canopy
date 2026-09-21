@@ -109,7 +109,7 @@ export default function MarkdownWorkspace(props: WorkspaceProps) {
   const visibleResult = props.result ?? (props.input.text ? retainedResult : null);
   const highlightClient = useMemo(() => createMarkdownHighlightClient(), [visibleResult]);
   useEffect(() => () => highlightClient.dispose(), [highlightClient]);
-  const sourceRef = useRef<HTMLTextAreaElement | null>(null);
+  const sourceRef = useRef<HTMLElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const previewProgressRef = useRef(0);
   const sourceProgressRef = useRef(0);
@@ -134,7 +134,7 @@ export default function MarkdownWorkspace(props: WorkspaceProps) {
 
   // Restore the reading position after pane resizing or switching mobile tabs.
   const attachSource = useCallback(
-    (element: HTMLTextAreaElement | null) => {
+    (element: HTMLElement | null) => {
       sourceRef.current = element;
       if (!element) return;
       const observer = new ResizeObserver(() => {
@@ -180,8 +180,7 @@ export default function MarkdownWorkspace(props: WorkspaceProps) {
           <ResultActions result={result} canCopy canDownload />
         )
       }
-      onSourceScroll={(event) => {
-        const source = event.currentTarget;
+      onSourceScroll={(source) => {
         if (!source.clientHeight || isSyncedScroll(source)) return;
         const progress = scrollProgress(source);
         sourceProgressRef.current = progress;

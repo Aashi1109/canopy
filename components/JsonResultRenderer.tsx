@@ -1,13 +1,13 @@
 "use client";
 
 import { type KeyboardEvent, type ReactElement, type ReactNode, useEffect, useId, useMemo, useState } from "react";
+import { CodeEditor } from "@/components/content/CodeEditor";
 import {
   Muted,
   Strong,
   FieldLabel,
   P,
   Caption,
-  CodeBlock,
   typographyStyles,
   FieldError,
   FieldDescription,
@@ -1346,6 +1346,7 @@ export function JsonResultRenderer({
   selectedPath,
   value,
   view: controlledView,
+  views = ["code", "tree", "form", "read-only"],
 }: {
   artifactValue?: string;
   className?: string;
@@ -1370,6 +1371,7 @@ export function JsonResultRenderer({
   selectedPath?: JsonTreePath;
   value: unknown;
   view?: JsonResultView;
+  views?: readonly JsonResultView[];
 }) {
   const resultId = useId().replaceAll(":", "");
   const initialCode = formattedValue ?? JSON.stringify(value, null, 2) ?? String(value);
@@ -1429,27 +1431,18 @@ export function JsonResultRenderer({
   );
   const resolvedEditor = editor ?? internalEditorController;
   const resolvedValue = editor ? value : internalEditor.value;
-  const views: readonly JsonResultView[] = ["code", "tree", "form", "read-only"];
   const isStructuredView = view !== "code";
   const formatted = editor?.code ?? internalEditor.code;
-  const highlightedFormatted = useMemo(() => highlightJson(formatted), [formatted]);
-  const formattedLines = useMemo(() => formatted.split(/\r\n|\r|\n/), [formatted]);
   const searchTerm = query.trim();
   const normalizedQuery = searchTerm.toLocaleLowerCase();
-  const formattedLineMatches = useMemo(() => {
+  const formattedMatches = useMemo(() => {
     if (!searchTerm) return [];
     const pattern = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "giu");
-    return formattedLines.map((line) =>
-      Array.from(line.matchAll(pattern), (match) => ({
-        start: match.index,
-        end: match.index + match[0].length,
-      })),
-    );
-  }, [formattedLines, searchTerm]);
-  const formattedMatches = useMemo(
-    () => formattedLineMatches.flatMap((matches, lineIndex) => matches.map((match) => ({ ...match, lineIndex }))),
-    [formattedLineMatches],
-  );
+    return Array.from(formatted.matchAll(pattern), (match) => ({
+      from: match.index,
+      to: match.index + match[0].length,
+    }));
+  }, [formatted, searchTerm]);
   const treeMatches = useMemo(
     () => matchingTreePaths(resolvedValue, normalizedQuery),
     [normalizedQuery, resolvedValue],
@@ -1457,7 +1450,6 @@ export function JsonResultRenderer({
   const activeSearchCount = view === "code" ? formattedMatches.length : treeMatches.length;
   const resolvedSearchMatchIndex = activeSearchCount ? Math.min(searchMatchIndex, activeSearchCount - 1) : 0;
   const currentFormattedMatch = formattedMatches[resolvedSearchMatchIndex];
-  const currentFormattedMatchLine = currentFormattedMatch?.lineIndex;
   const currentTreeSearchPath = treeMatches[resolvedSearchMatchIndex];
   const treeMatchPaths = useMemo(() => new Set(treeMatches.map(pathKey)), [treeMatches]);
   const artifact = artifactValue ?? formatted;
@@ -1491,21 +1483,10 @@ export function JsonResultRenderer({
   }, [onSelect, resolvedValue, selectedPath]);
 
   useEffect(() => {
-    if (!persistentSearch || !normalizedQuery) return;
-    const match =
-      view === "code"
-        ? document.getElementById(`${resultId}-${view}-line-${currentFormattedMatchLine}`)
-        : document.querySelector(`#${resultId}-${view} [data-json-search-current=true]`);
+    if (!persistentSearch || !normalizedQuery || view === "code") return;
+    const match = document.querySelector(`#${resultId}-${view} [data-json-search-current=true]`);
     match?.scrollIntoView({ block: "nearest" });
-  }, [
-    currentFormattedMatchLine,
-    currentTreeSearchPath,
-    normalizedQuery,
-    persistentSearch,
-    resultId,
-    searchMatchIndex,
-    view,
-  ]);
+  }, [currentTreeSearchPath, normalizedQuery, persistentSearch, resultId, searchMatchIndex, view]);
 
   async function copyValue(copyValue: string, copyLabel: string) {
     if (onCopy) {
@@ -1816,39 +1797,24 @@ export function JsonResultRenderer({
             </ScrollArea>
           </div>
         ) : view === "code" ? (
-          <ScrollArea
+          <div
             className="min-h-0 flex-1 bg-muted/20"
-            viewportClassName="[&>div]:!block"
-            viewportProps={{
-              "aria-label": headerStart ? "JSON result" : undefined,
-              "aria-labelledby": headerStart ? undefined : `${resultId}-view-select`,
-              id: `${resultId}-${view}`,
-              role: "tabpanel",
-              tabIndex: 0,
-            }}
+            aria-label={headerStart ? "JSON result" : undefined}
+            aria-labelledby={headerStart ? undefined : `${resultId}-view-select`}
+            id={`${resultId}-${view}`}
+            role="tabpanel"
           >
-            <CodeBlock className="whitespace-pre-wrap break-all p-4 text-foreground">
-              {persistentSearch
-                ? formattedLines.map((line, lineIndex) => {
-                    const matches = formattedLineMatches[lineIndex] ?? [];
-                    const isCurrentMatch = currentFormattedMatchLine === lineIndex;
-                    return (
-                      <span
-                        className={`block min-w-0 rounded-sm ${isCurrentMatch ? "bg-accent" : ""}`}
-                        data-formatted-match={matches.length > 0 || undefined}
-                        data-formatted-current={isCurrentMatch || undefined}
-                        id={`${resultId}-${view}-line-${lineIndex}`}
-                        key={lineIndex}
-                      >
-                        {line
-                          ? highlightJson(line, matches, isCurrentMatch ? currentFormattedMatch?.start : undefined)
-                          : "\u00a0"}
-                      </span>
-                    );
-                  })
-                : highlightedFormatted}
-            </CodeBlock>
-          </ScrollArea>
+            <CodeEditor
+              activeMatch={persistentSearch ? currentFormattedMatch : undefined}
+              aria-label="JSON result code"
+              className="h-full min-h-0"
+              language="json"
+              readOnly
+              searchQuery={persistentSearch ? searchTerm : undefined}
+              showLineNumbers={false}
+              value={formatted}
+            />
+          </div>
         ) : null}
       </section>
     </TooltipProvider>

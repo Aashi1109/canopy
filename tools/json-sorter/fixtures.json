@@ -13,7 +13,7 @@
       "expected": {
         "downloadName": "sorted.json",
         "output": "{\n  \"a\": {\n    \"b\": 2,\n    \"d\": 4\n  },\n  \"z\": 1\n}",
-        "render": "text"
+        "render": "code"
       }
     }
   ]

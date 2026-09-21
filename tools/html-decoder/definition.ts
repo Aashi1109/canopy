@@ -8,6 +8,7 @@ export default {
   name: "HTML Decoder",
   description: "Decode named and numeric HTML entities.",
   layout: "stacked",
+  outputLanguage: "html",
   input: {
     kind: "text",
     label: "Encoded entities",

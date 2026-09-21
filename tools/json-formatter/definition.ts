@@ -14,6 +14,7 @@ export default {
   description: "Beautify and format JSON with a chosen indentation.",
   input: {
     kind: "text",
+    language: "json",
     label: "JSON input",
     acceptFiles: {
       accept: ".json,application/json,text/json",

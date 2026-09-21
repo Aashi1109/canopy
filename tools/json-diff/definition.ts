@@ -6,7 +6,7 @@ export default {
   category: "json-tools",
   keywords: ["json", "diff", "compare", "difference", "changes", "patch", "path"],
   name: "JSON Diff",
-  description: "Compare two JSON values by path.",
+  description: "Compare two JSON documents side by side and see what changed.",
   layout: "side-by-side",
   input: {
     kind: "fields",
@@ -14,6 +14,7 @@ export default {
     fields: [
       {
         channel: "text",
+        language: "json",
         label: "JSON A",
         placeholder: '{"name":"Ada","active":true}',
         required: true,
@@ -21,6 +22,7 @@ export default {
       },
       {
         channel: "secondary",
+        language: "json",
         label: "JSON B",
         placeholder: '{"name":"Ada","active":false,"role":"admin"}',
         required: true,
@@ -55,23 +57,23 @@ export default {
     howToUse: [
       "Paste the baseline into JSON A and the candidate into JSON B. The direction matters: `-` means present only in A, `+` means present only in B.",
       "Leave auto-fix on when either side was copied from a log; switch to strict to make invalid JSON an error instead of a silent repair.",
-      'Compare, then read each line as a path. `~ $.user.name: "a" → "b"` says that one leaf changed and nothing else under it did.',
-      "An empty result is reported as `No differences.` — that is a genuine match, not a failed run.",
+      "Click Compare JSON to align both documents. Removed lines appear on the left with a minus; added lines appear on the right with a plus.",
+      "Matching JSON is reported as No differences, with both documents still visible. Edit either document to compare again.",
     ],
     limitations: [
-      "Object keys are compared by name, so a reordered object shows no differences. Arrays are compared by index, so inserting one element at the front reports every later element as changed.",
-      "The output is a path listing, not an RFC 6902 patch, and cannot be applied programmatically.",
-      "Values are compared with `Object.is`, so `0` and `-0` differ while `NaN` matches `NaN`.",
-      "Very large documents produce one line per differing leaf, which can be longer than the inputs.",
+      "Object keys are sorted for comparison, so formatting and key order do not create changes. Array order remains significant.",
+      "The output is a line comparison, not an RFC 6902 patch, and cannot be applied programmatically.",
+      "Numbers use JavaScript precision. Negative zero remains distinct from zero.",
+      "Very large or deeply nested documents must be compared in smaller sections to keep the browser responsive.",
     ],
     faq: [
       {
         q: "What do the symbols mean?",
-        a: "`+` is added in B, `-` is removed from B, and `~` is a changed value shown as old → new.",
+        a: "`+` marks a line added in JSON B. `-` marks a line removed from JSON A. A changed value appears as a removed line on the left and an added line on the right.",
       },
       {
-        q: "Why does reordering an array show so many changes?",
-        a: "Arrays are matched by position, not by content. Sort both sides consistently before comparing if order is not meaningful.",
+        q: "Does formatting or ordering affect the comparison?",
+        a: "Whitespace and object key order are ignored. Array order is meaningful, so moving an array item appears as a removal and addition.",
       },
       {
         q: "Is anything uploaded?",

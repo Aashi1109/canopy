@@ -25,7 +25,7 @@ function normalize(result) {
   const normalized = {
     render: result.render ?? result.outputKind,
   };
-  const output = result.text ?? result.src ?? result.html ?? result.output;
+  const output = result.text ?? result.code ?? result.src ?? result.html ?? result.output;
   if (output !== undefined) normalized.output = output;
   if (result.items) normalized.items = result.items;
   if (result.entries) {

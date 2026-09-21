@@ -7,8 +7,10 @@ export default {
   keywords: ["xml", "json", "convert", "parse", "attributes", "soap", "rss"],
   name: "XML to JSON",
   description: "Convert XML elements and attributes to JSON.",
+  outputLanguage: "json",
   input: {
     kind: "text",
+    language: "xml",
     label: "XML input",
     placeholder: '<user id="1"><name>Ada</name></user>',
   },

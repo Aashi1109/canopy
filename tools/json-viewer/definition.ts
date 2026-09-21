@@ -15,6 +15,7 @@ export default {
   layout: "side-by-side",
   input: {
     kind: "text",
+    language: "json",
     label: "JSON input",
     acceptFiles: {
       accept: ".json,application/json,text/json",

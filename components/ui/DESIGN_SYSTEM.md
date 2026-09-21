@@ -171,6 +171,8 @@ Five families, all loaded via `next/font/google` in `app/layout.tsx` (`display: 
 
 `Blockquote`, `List`, and `OrderedList` use the body recipe and native quote/list semantics. `CodeBlock` renders `pre > code`. No text component fixes its element height or adds page-level margins.
 
+**Code editors:** use `CodeEditor` from `components/content/CodeEditor` for editable code and scrollable code results. It lazy-loads CodeMirror and the selected language, reuses incremental syntax trees, and renders visible content with rainbow structural brackets. Brackets in strings and comments retain their syntax color. Subtle indentation guides show nested code blocks, with the active block emphasized while the editor has focus. Guides use bounded visible-line work and stop before wrapped continuation text; CSV and TSV retain their plain tabular layout. The folding gutter collapses supported multiline blocks in editable and read-only editors; click the arrow or the folded ellipsis to expand. Native folding shortcuts remain available, and search reveals matches inside folded blocks. The editor fills a bounded flex/grid container; use `min-h-0` and an explicit parent height so long documents remain virtualized. Set an accessible name, preserve Tab navigation, and use `readOnly` for selectable output. Single-textarea workspaces use the full input panel without an inner card or duplicate label. Boxed editors are reserved for workspaces with additional input fields. `SourceTextarea` selects this editor when given a `language`; text tool definitions declare `input.language` (or each multiline field's `language`) and `outputLanguage`. JSON, XML/HTML, YAML, JavaScript/TypeScript, CSS, shell, SQL, Markdown, CSV, and TSV have language support. Every CodeEditor language shows a top-right icon-only **Wrap lines** toggle with an accessible pressed state. CSV and TSV inputs start with wrapping on and their outputs start off; all other languages start off for both inputs and outputs. The on state uses `bg-accent` (`#e8f0ff`) with `text-accent-foreground`; the off state uses the muted input-icon color. Tooltips read **Text wrapping on · Click to disable** or **Text wrapping off · Click to enable**. The display choice lasts only for that editor instance; regenerated results reset to wrapping off. Copy/download continue to use the original result regardless of wrapping. Static inline samples can still compose `CodeBlock` with `SyntaxHighlight`; its 65,536-character plain-text fallback does not limit the CodeMirror editors.
+
 ```tsx
 <H1>Tool catalog</H1>
 <Muted>Find, group, and publish tools.</Muted>
@@ -255,6 +257,8 @@ So headings and focus rings are correct without any class. Do not re-declare the
 | `ScrollArea` / `ScrollBar`                 | `scroll-area.tsx` | `viewportClassName`, `viewportProps`        |
 | `ResizablePanelGroup` / `Panel` / `Handle` | `resizable.tsx`   | `withHandle?: boolean`                      |
 
+`ResizableHandle` uses a thin divider with a 24px pointer target and an optional 3 × 24px rounded grip mark centered on the line. The neutral mark has no surrounding box, border, shadow, or halo. The divider gains a faint primary tint on hover and keyboard focus (20% opacity), slightly stronger during dragging (30%); the small grip carries the full accent. Handles without a grip use a neutral keyboard focus indicator. `SplitStack` enables the grip on expanded resizable workspaces, except where the centered collapse control already occupies that position. Keep panel `defaultSize` values stable while mounted; resize through the panel API instead so active gestures are not interrupted.
+
 ### Actions
 
 | Component          | Source             | Variants                                                                                                                                                                                                                                                                                                                                                 |
@@ -299,6 +303,8 @@ Select menus inherit the owning `SelectTrigger` size through React context, incl
 | `Label`                         | `label.tsx`            | —                                                                                                                                                                                                    |
 
 `Field` clones its child to inject `id`, `aria-describedby`, `aria-errormessage`, `aria-invalid`. **Use `Field` rather than pairing `Label` + `Input` by hand** — that is where the a11y wiring lives.
+
+`AutocompleteInput` (`autocomplete.tsx`) adds Base UI suggestions to the shared `Input`. Pass controlled `value`, `onValueChange`, and prefiltered `suggestions`; free typing is always allowed. It forwards Input sizing, `code`, and accessibility props, so compose it inside `Field`. Arrow keys navigate, Enter or pointer selection accepts, and Escape dismisses; accepting a suggestion does not submit the form. The menu stays within the viewport and closes when no suggestions are available.
 
 `Field required` and `FieldLabel required` show an asterisk in the validation color and retain the required-field description for screen readers. Keep the input's native `required` attribute where applicable.
 
@@ -358,7 +364,7 @@ Do **not** replace field errors, the upload/drop surface, cached data during bac
 | `Tag`                                                                 | `design-system-components.tsx` | `Badge` with `secondary` forced                                                                                                                                                                                                          |
 | `Avatar` + `AvatarBadge` / `AvatarGroup` / `AvatarGroupCount`         | `avatar.tsx`                   | `size: default \| sm \| lg`                                                                                                                                                                                                              |
 | `Table` + parts                                                       | `table.tsx`                    | `showColumnDividers?: boolean`; sticky `th`                                                                                                                                                                                              |
-| `Tabs` + parts                                                        | `tabs.tsx`                     | `TabsList variant: default \| line \| segmented`                                                                                                                                                                                         |
+| `Tabs` + parts                                                        | `tabs.tsx`                     | `TabsList variant: default \| line \| segmented \| pills`                                                                                                                                                                                         |
 | `SegmentedControl`                                                    | `design-system-components.tsx` | `size: inline \| navigation`; req `items[]`                                                                                                                                                                                              |
 | `IconTile`                                                            | `patterns.tsx`                 | `size: sm \| default \| lg`, `tone: accent \| contrast \| success \| muted`                                                                                                                                                              |
 | `MetricCard`                                                          | `patterns.tsx`                 | req `label`, `value`; optional `delta`                                                                                                                                                                                                   |
@@ -379,6 +385,13 @@ Do **not** replace field errors, the upload/drop surface, cached data during bac
 | `ToolSupportSections`                                                     | `patterns.tsx`                 | req string `action`, `result`, `source`                                                                                                                                   |
 
 `WorkbenchShell` force-downsizes descendant `[data-slot=button|input|select-trigger]` to 32px. Do not fight it with per-call size props — pass content and let the shell size it.
+
+#### Input workspace layout
+
+- **One textarea:** fill the input panel directly. Do not add an inner input card, inset border, extra card padding, or a repeated visible label below the panel header. Keep an accessible label on the editor.
+- **Multiple input fields in the same workspace:** retain individually labelled, boxed editors. A textarea plus a query, path, or column field counts as multiple inputs, as do JSON data plus schema.
+- Count fields in the input workspace only. Settings in a separate panel and actions such as Paste, Upload, or the text-wrapping toggle do not turn a single textarea into a multi-input form.
+- Apply this rule consistently to plain text and code editors, including CSV/TSV, regardless of the tool's input-spec representation. Keep the text-wrapping icon floating at the top right without reserving a toolbar row or extra top space; wrapping defaults are independent of card layout.
 
 ### Feature widgets
 
@@ -677,3 +690,9 @@ Admin pages use `app/admin/(protected)/components/AdminPageHeader.tsx`, which co
 
 
 Admin listings use `app/admin/(protected)/components/AdminListing.tsx` for the shared bordered surface, scrollable body, and separate pagination footer. The containing page supplies bounded height; pagination never overlays rows. Use shared table typography rather than page-specific uppercase headings or row padding. Numbered list queries return total/page/pageCount so both endpoints are actionable.
+
+`TabsList variant="pills"` is the compact result-view switcher: a 28px muted track, rounded 24px tabs with extended pointer targets, and a solid primary fill with contrasting text for the selected view. Use it with `TabsContent` for CSV Raw/Table or generated HTML/Markdown Raw/Preview views; keyboard arrows switch the active tab. HTML table previews reuse the shared `Table`; Markdown results reuse `MarkdownPreview` and `RichContent`. Copy and download preserve the original source in either view.
+
+Markdown result previews retain document padding and normal wrapping by default. Table-only tools opt into flush edges, nonwrapping cells, and sticky headers within the table's scroll area with `previewLayout: "table"` in their own definition; do not change the shared default for one page.
+
+For CSV to Table, **Raw** renders the generated HTML in `SandboxedHtmlPreview` with the browser's native table styling and nonwrapping cells; wide tables scroll horizontally. **Preview** uses the shared `Table`. Both views preserve the original HTML for copy and download, including the complete artifact when a large result is truncated.

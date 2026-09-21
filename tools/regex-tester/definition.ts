@@ -8,6 +8,7 @@ export default {
   name: "Regex Tester",
   description: "Test a JavaScript regular expression and list matches.",
   layout: "stacked",
+  outputLanguage: "json",
   input: {
     kind: "fields",
     label: "Pattern and test string",

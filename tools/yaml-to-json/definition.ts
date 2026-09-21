@@ -7,8 +7,10 @@ export default {
   keywords: ["yaml", "json", "convert", "yml", "config", "parser"],
   name: "YAML to JSON",
   description: "Convert YAML documents to formatted JSON.",
+  outputLanguage: "json",
   input: {
     kind: "text",
+    language: "yaml",
     label: "YAML input",
     placeholder: "name: Ada\nactive: true",
   },

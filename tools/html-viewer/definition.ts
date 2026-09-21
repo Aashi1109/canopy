@@ -7,9 +7,10 @@ export default {
   keywords: ["html", "preview", "viewer", "render", "sandbox", "email template", "snippet"],
   name: "HTML Viewer",
   description: "Return HTML for display inside a sandboxed preview.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
+    language: "html",
     label: "HTML source",
     placeholder: "<article><h1>Hello</h1><p>Sandboxed preview.</p></article>",
   },

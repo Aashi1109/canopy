@@ -7,8 +7,10 @@ export default {
   keywords: ["json schema", "schema", "infer", "validation", "draft", "contract", "sample data"],
   name: "JSON Schema Generator",
   description: "Infer a JSON Schema from sample data.",
+  outputLanguage: "json",
   input: {
     kind: "text",
+    language: "json",
     label: "Sample JSON",
     placeholder: '{"id":1,"name":"Ada","tags":["admin"]}',
   },

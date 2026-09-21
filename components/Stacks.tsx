@@ -159,14 +159,21 @@ function SplitStack({
   const secondaryPaneId = `${splitId}-secondary`;
   const primaryPanelRef = usePanelRef();
   const secondaryPanelRef = usePanelRef();
-  const initialPrimarySize = useRef(secondaryHidden ? 100 : clamp(defaultSize, minSize, maxSize));
   const [size, setSize] = useState(() => clamp(defaultSize, minSize, maxSize));
   const [collapsed, setCollapsed] = useState<SplitCollapseSide | null>(
     secondaryHidden ? "secondary" : collapsible ? (defaultCollapsed ?? null) : null,
   );
+  // Changing defaultSize re-registers the panels and interrupts an active drag.
+  const initialPrimarySize = useRef(collapsed === "secondary" ? 100 : collapsed === "primary" ? 0 : size);
   const [animateCollapse, setAnimateCollapse] = useState(false);
   const narrow = useNarrowWorkbench();
   const stacked = orientation === "horizontal" && narrow;
+
+  useEffect(() => {
+    if (!stacked) return;
+    // The desktop panels unmount while stacked; restore their last state on remount.
+    initialPrimarySize.current = collapsed === "secondary" ? 100 : collapsed === "primary" ? 0 : size;
+  }, [collapsed, size, stacked]);
 
   useEffect(() => {
     if (secondaryHidden === undefined) return;
@@ -355,15 +362,7 @@ function SplitStack({
           collapsible={collapsible && collapseSide === "primary"}
           collapsedSize="0%"
           data-split-pane="primary"
-          defaultSize={
-            secondaryHidden !== undefined
-              ? `${initialPrimarySize.current}%`
-              : collapsed === "secondary"
-                ? "100%"
-                : collapsed === "primary"
-                  ? "0%"
-                  : `${size}%`
-          }
+          defaultSize={`${initialPrimarySize.current}%`}
           disabled={!resizable}
           id={primaryPaneId}
           inert={collapsed === "primary" || undefined}
@@ -377,8 +376,9 @@ function SplitStack({
         </ResizablePanel>
         <ResizableHandle
           aria-label={orientation === "horizontal" ? "Resize workspace panels" : "Resize workspace regions"}
-          className={cn("z-20 focus-visible:ring-2", secondaryHidden && "hidden")}
+          className={cn("z-20", secondaryHidden && "hidden")}
           disabled={!resizable || secondaryHidden}
+          withHandle={resizable && !collapsed && (!collapsible || collapseControlPosition !== "center")}
         />
         <ResizablePanel
           aria-hidden={collapsed === "secondary" || undefined}
@@ -386,15 +386,7 @@ function SplitStack({
           collapsible={secondaryHidden !== undefined || (collapsible && collapseSide === "secondary")}
           collapsedSize="0%"
           data-split-pane="secondary"
-          defaultSize={
-            secondaryHidden !== undefined
-              ? `${100 - initialPrimarySize.current}%`
-              : collapsed === "primary"
-                ? "100%"
-                : collapsed === "secondary"
-                  ? "0%"
-                  : `${100 - size}%`
-          }
+          defaultSize={`${100 - initialPrimarySize.current}%`}
           disabled={!resizable}
           id={secondaryPaneId}
           inert={collapsed === "secondary" || undefined}

@@ -15,6 +15,9 @@ import type { SettingsSpec } from "./settings";
 
 export type { ToolApp };
 
+export type ToolSyntaxLanguage =
+  "json" | "xml" | "html" | "yaml" | "javascript" | "typescript" | "css" | "bash" | "sql" | "markdown" | "csv" | "tsv";
+
 /**
  * One field of a multi-field input surface. `channel` names which
  * `ToolRunContext["input"]` slot it fills, so a field can never reference a
@@ -31,6 +34,7 @@ export type ToolInputField = {
   readonly secret?: boolean;
   readonly required?: boolean;
   readonly multiline?: boolean;
+  readonly language?: ToolSyntaxLanguage;
   readonly surface?: "card";
   readonly maxLength?: number;
 };
@@ -39,16 +43,24 @@ export type ToolInputSpec =
   | {
       kind: "text";
       label: string;
+      language?: ToolSyntaxLanguage;
       placeholder?: string;
+      surface?: "card";
       maxLength?: number;
-      secondary?: { label: string; placeholder?: string };
+      secondary?: { label: string; placeholder?: string; language?: ToolSyntaxLanguage };
       acceptFiles?: {
         accept: string;
         maxBytes: number;
         maxEditableBytes?: number;
       };
     }
-  | { kind: "fields"; label: string; fields: readonly ToolInputField[] }
+  | {
+      kind: "fields";
+      label: string;
+      fields: readonly ToolInputField[];
+      /** Let two multiline fields share a vertically resizable input surface. */
+      resizable?: boolean;
+    }
   /**
    * The tool reads no input channel — every value comes from its settings.
    * Generators need this: declaring `fields: []` to mean "nothing" made the
@@ -130,6 +142,12 @@ export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   readonly name: string;
   readonly description: string;
   readonly input: ToolInputSpec;
+  /** Syntax of textual output; previews, tables, and validation messages retain their own renderers. */
+  readonly outputLanguage?: ToolSyntaxLanguage;
+  /** Table-only previews opt into a bounded scroll area with sticky headers. */
+  readonly previewLayout?: "document" | "table";
+  /** Keep result facts in the status bar without duplicating them as cards. */
+  readonly resultStats?: "cards" | "status-only";
   readonly settings: S;
   readonly trigger: ToolTrigger;
   readonly capabilities?: ToolCapabilities;

@@ -23,25 +23,40 @@ import {
   TableRow,
 } from "@/components/ui/index.tsx";
 import { AlertTriangle, Check, Copy } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { trackToolEvent } from "@/lib/analytics/ga4";
 import { useAnalyticsToolKey } from "@/lib/tool-runtime/useToolRuntime";
 import { DiffView } from "@/components/DiffView";
 import { JsonResultRenderer, type JsonResultView } from "@/components/JsonResultRenderer";
+import { CodeEditor } from "@/components/content/CodeEditor";
 import { SandboxedHtmlPreview } from "@/components/SandboxedHtmlPreview";
 import { GeneratedList } from "@/components/Surfaces";
 import type { ToolRender, ToolRenderKind, ToolResult } from "@/lib/tool-framework/result";
 import { readArtifact, type StoredToolArtifact } from "@/lib/tool-framework/artifacts";
 
+const MarkdownPreview = dynamic(
+  () => import("@/components/content/MarkdownPreview").then((module) => module.MarkdownPreview),
+  { loading: () => <Muted role="status">Loading preview…</Muted> },
+);
+
 export interface ResultViewProps {
   hideJsonHeader?: boolean;
+  hideStats?: boolean;
+  htmlPreview?: boolean;
   initialJsonView?: JsonResultView;
   jsonHeader?: ReactNode;
+  language?: string;
+  markdownPreview?: boolean;
+  previewLayout?: "document" | "table";
   result: ToolResult;
 }
 
-type ResultRendererOptions = Pick<ResultViewProps, "hideJsonHeader" | "initialJsonView" | "jsonHeader">;
+type ResultRendererOptions = Pick<
+  ResultViewProps,
+  "hideJsonHeader" | "htmlPreview" | "initialJsonView" | "jsonHeader" | "language" | "markdownPreview" | "previewLayout"
+>;
 
 type ResultRendererRegistry = {
   [Kind in ToolRenderKind]: (
@@ -225,6 +240,47 @@ function RenderFrame({ children }: { children: ReactNode }) {
   return <div className="flex min-h-0 flex-1 flex-col">{children}</div>;
 }
 
+function TruncatedResultNotice() {
+  return (
+    <Muted className="shrink-0 px-4 py-2 text-muted-foreground">
+      Showing a preview. Download the complete file for all rows.
+    </Muted>
+  );
+}
+
+function htmlPreviewMarkup(html: string, layout?: ResultViewProps["previewLayout"]) {
+  // Preview-only styling; copy and download keep the generated HTML unchanged.
+  return layout === "table" ? `<style>th,td{white-space:nowrap}</style>${html}` : html;
+}
+
+function MarkdownResultPreview({
+  markdown,
+  truncated,
+  layout = "document",
+}: {
+  markdown: string;
+  truncated?: boolean;
+  layout?: ResultViewProps["previewLayout"];
+}) {
+  const tableLayout = layout === "table";
+  return (
+    <RenderFrame>
+      <div className={`min-h-0 flex-1 ${tableLayout ? "overflow-hidden" : "overflow-auto p-4"}`}>
+        <MarkdownPreview
+          markdown={markdown}
+          allowHtmlLineBreaks={tableLayout}
+          className={
+            tableLayout
+              ? "h-full [&_table]:max-h-full [&_td]:whitespace-nowrap [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:whitespace-nowrap"
+              : undefined
+          }
+        />
+      </div>
+      {truncated ? <TruncatedResultNotice /> : null}
+    </RenderFrame>
+  );
+}
+
 function csvCell(value: string): string {
   return /[",\n\r]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
 }
@@ -248,6 +304,7 @@ function resultArtifact(result: ToolResult | null): ResultArtifact | null {
     case "text":
       return {
         copy: result.text,
+        copyLabel: result.truncated ? "Copy preview" : undefined,
         download: result.downloadName
           ? { content: result.text, mime: "text/plain;charset=utf-8", name: result.downloadName }
           : undefined,
@@ -314,12 +371,17 @@ function resultArtifact(result: ToolResult | null): ResultArtifact | null {
       return {
         download: result.downloadName ? { href: result.src, mime: result.mime, name: result.downloadName } : undefined,
       };
-    case "diff":
+    case "diff": {
+      const content = result.lines
+        .map((line) => `${line.kind === "added" ? "+" : line.kind === "removed" ? "-" : " "}${line.text}`)
+        .join("\n");
       return {
-        copy: result.lines
-          .map((line) => `${line.kind === "added" ? "+" : line.kind === "removed" ? "-" : " "}${line.text}`)
-          .join("\n"),
+        copy: content,
+        download: result.downloadName
+          ? { content, mime: "text/plain;charset=utf-8", name: result.downloadName }
+          : undefined,
       };
+    }
     case "files":
     case "none":
       return null;
@@ -407,21 +469,49 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
       </div>
     </RenderFrame>
   ),
-  text: (result) => (
-    <RenderFrame>
-      <CodeBlock className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4">{result.text}</CodeBlock>
-    </RenderFrame>
-  ),
-  code: (result) => (
-    <RenderFrame>
-      <CodeBlock
-        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all bg-muted/45 p-4"
-        data-language={result.language}
-      >
-        {result.code}
-      </CodeBlock>
-    </RenderFrame>
-  ),
+  text: (result, options) =>
+    options?.markdownPreview ? (
+      <MarkdownResultPreview markdown={result.text} truncated={result.truncated} layout={options.previewLayout} />
+    ) : (
+      <RenderFrame>
+        {options?.language ? (
+          <CodeEditor
+            aria-label="Result code"
+            className="min-h-0 flex-1"
+            value={result.text}
+            language={options.language}
+            readOnly
+            showLineNumbers={false}
+          />
+        ) : (
+          <CodeBlock className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4">
+            {result.text}
+          </CodeBlock>
+        )}
+        {result.truncated ? <TruncatedResultNotice /> : null}
+      </RenderFrame>
+    ),
+  code: (result, options) =>
+    options?.htmlPreview ? (
+      <RenderFrame>
+        <SandboxedHtmlPreview className="min-h-0" html={htmlPreviewMarkup(result.code, options.previewLayout)} />
+        {result.truncated ? <TruncatedResultNotice /> : null}
+      </RenderFrame>
+    ) : options?.markdownPreview ? (
+      <MarkdownResultPreview markdown={result.code} truncated={result.truncated} layout={options.previewLayout} />
+    ) : (
+      <RenderFrame>
+        <CodeEditor
+          aria-label="Result code"
+          className="min-h-0 flex-1"
+          value={result.code}
+          language={result.language}
+          readOnly
+          showLineNumbers={false}
+        />
+        {result.truncated ? <TruncatedResultNotice /> : null}
+      </RenderFrame>
+    ),
   "json-tree": (result, options) => {
     const json = result.text ?? JSON.stringify(result.value, null, 2)!;
     return (
@@ -439,15 +529,33 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
       />
     );
   },
-  table: (result) => {
+  table: (result, options) => {
+    if (result.columns.length === 0) {
+      return (
+        <ContentState
+          density="compact"
+          state="empty"
+          title="No columns to display"
+          description="The result contains no fields to show as a table."
+        />
+      );
+    }
+    const tableLayout = options?.previewLayout === "table";
+    const truncationNotice = result.truncated ? (
+      <Muted className="shrink-0 border-t border-border p-3 text-muted-foreground">
+        Only part of the result is shown.
+      </Muted>
+    ) : null;
     return (
       <RenderFrame>
-        <div className="min-h-0 flex-1 overflow-auto">
+        <div className={`min-h-0 flex-1 ${tableLayout ? "overflow-hidden" : "overflow-auto"}`}>
           <Table showColumnDividers={result.showColumnDividers}>
             <TableHeader>
               <TableRow>
                 {result.columns.map((column, index) => (
-                  <TableHead key={`${index}-${column}`}>{column}</TableHead>
+                  <TableHead className="whitespace-pre" key={`${index}-${column}`}>
+                    {column}
+                  </TableHead>
                 ))}
               </TableRow>
             </TableHeader>
@@ -455,18 +563,17 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
               {result.rows.map((row, rowIndex) => (
                 <TableRow key={rowIndex}>
                   {result.columns.map((_, columnIndex) => (
-                    <TableCell key={columnIndex}>{row[columnIndex] ?? ""}</TableCell>
+                    <TableCell className="whitespace-pre" key={columnIndex}>
+                      {row[columnIndex] ?? ""}
+                    </TableCell>
                   ))}
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-          {result.truncated ? (
-            <Muted className="border-t border-border p-3 text-muted-foreground">
-              Only part of the result is shown.
-            </Muted>
-          ) : null}
+          {!tableLayout ? truncationNotice : null}
         </div>
+        {tableLayout ? truncationNotice : null}
       </RenderFrame>
     );
   },
@@ -514,11 +621,14 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
       </RenderFrame>
     );
   },
-  html: (result) => (
-    <RenderFrame>
-      <SandboxedHtmlPreview html={result.html} />
-    </RenderFrame>
-  ),
+  html: (result, options) =>
+    result.tablePreview && !options?.htmlPreview ? (
+      RESULT_RENDERERS.table(result.tablePreview)
+    ) : (
+      <RenderFrame>
+        <SandboxedHtmlPreview html={htmlPreviewMarkup(result.html, options?.previewLayout)} />
+      </RenderFrame>
+    ),
   image: (result) => (
     <RenderFrame>
       <div className="grid min-h-80 flex-1 place-items-center overflow-auto bg-muted/45 p-6">
@@ -575,9 +685,9 @@ function renderPrimary(result: ToolRender, options?: ResultRendererOptions): Rea
   return RESULT_RENDERERS[result.render](result as never, options);
 }
 
-function CommonResultDetails({ result }: ResultViewProps) {
+function CommonResultDetails({ hideStats, result }: ResultViewProps) {
   const hasDetails = Boolean(
-    result.stats?.length ||
+    (!hideStats && result.stats?.length) ||
     result.verdict ||
     result.issues?.length ||
     result.artifacts?.length ||
@@ -594,7 +704,7 @@ function CommonResultDetails({ result }: ResultViewProps) {
           {renderPrimary(section.body)}
         </section>
       ))}
-      {result.stats?.length ? (
+      {!hideStats && result.stats?.length ? (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
           {result.stats.map((stat) => (
             <MetricCard key={`${stat.label}-${stat.value}`} label={stat.label} value={stat.value} />
@@ -661,11 +771,29 @@ function CommonResultDetails({ result }: ResultViewProps) {
   );
 }
 
-export function ResultView({ hideJsonHeader, initialJsonView, jsonHeader, result }: ResultViewProps) {
+export function ResultView({
+  hideJsonHeader,
+  hideStats,
+  htmlPreview,
+  initialJsonView,
+  jsonHeader,
+  language,
+  markdownPreview,
+  previewLayout,
+  result,
+}: ResultViewProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      {renderPrimary(result, { hideJsonHeader, initialJsonView, jsonHeader })}
-      <CommonResultDetails result={result} />
+      {renderPrimary(result, {
+        hideJsonHeader,
+        htmlPreview,
+        initialJsonView,
+        jsonHeader,
+        language,
+        markdownPreview,
+        previewLayout,
+      })}
+      <CommonResultDetails hideStats={hideStats} result={result} />
     </div>
   );
 }

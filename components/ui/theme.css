@@ -101,6 +101,12 @@
   --success-foreground: #ffffff;
   --success-soft: #e6f6ec;
   --syntax-string: #0a8040;
+  --syntax-bracket-1: #005cc5;
+  --syntax-bracket-2: #6f42c1;
+  --syntax-bracket-3: #b45309;
+  --syntax-bracket-4: #087e8b;
+  --syntax-bracket-5: #a626a4;
+  --syntax-bracket-6: #0a8040;
   --warning: #b45309;
   --warning-foreground: #ffffff;
   --warning-soft: #fbeedd;

@@ -11,8 +11,25 @@
         "column": "name"
       },
       "expected": {
-        "render": "list",
-        "items": ["name", "Ada", "Lin"]
+        "render": "text",
+        "output": "name\nAda\nLin",
+        "downloadName": "extracted-columns.csv"
+      }
+    },
+    {
+      "input": {
+        "primary": "id,firstName,lastName\n1001,Aarav,Sharma\n1002,Priya,Mehta",
+        "secondary": ""
+      },
+      "name": "multiple named columns",
+      "settings": {
+        "delimiter": ",",
+        "column": "firstName,lastName"
+      },
+      "expected": {
+        "render": "text",
+        "output": "firstName,lastName\nAarav,Sharma\nPriya,Mehta",
+        "downloadName": "extracted-columns.csv"
       }
     }
   ]

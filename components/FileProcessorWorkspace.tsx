@@ -539,8 +539,8 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
   const pdfOutputs =
     props.result?.render === "files" ? props.result.files.filter((file) => file.mime === "application/pdf") : [];
   const outputPdf = pdfOutputs.length === 1 ? pdfOutputs[0] : undefined;
-  const hasPdfPreview = !props.running && Boolean(outputPdf);
-  const hasImageGallery = !props.running && !hasPdfPreview && outputImages.length > 0;
+  const hasPdfPreview = Boolean(outputPdf);
+  const hasImageGallery = !hasPdfPreview && outputImages.length > 0;
   const resultPreview =
     hasPdfPreview && outputPdf ? (
       <GeneratedPdfPreview
@@ -624,16 +624,20 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
       }
       purpose="result"
       id={outputId}
-      state={props.error ? "error" : "ready"}
+      state={props.error && !props.result ? "error" : "ready"}
       stateDescription={props.error}
       stateTitle="Unable to create the result"
       scroll="none"
       title="Processed output"
     >
+      {props.running ? <div className="shrink-0 p-4">{processingStatus}</div> : null}
+      {props.result && props.error ? (
+        <Muted className="shrink-0 px-4 pt-4" role="status">
+          The update failed. Your previous output is still available. Check the settings and try again.
+        </Muted>
+      ) : null}
       {hasPdfPreview && resultPreview ? <div className="min-h-0 flex-1">{resultPreview}</div> : resultPreview}
-      {props.running ? (
-        processingStatus
-      ) : props.result?.render === "files" ? (
+      {props.result?.render === "files" ? (
         <div className={`grid min-w-0 shrink-0 gap-3 ${hasPdfPreview ? "px-4 pb-4" : resultPreview ? "p-4" : ""}`}>
           {props.result.files
             .filter((file) => !hasImageGallery || !outputImages.includes(file))
@@ -646,7 +650,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           <DownloadResult metadata={props.spec.labels.ready} title="Processing complete" />
           <ResultView result={props.result} />
         </>
-      ) : (
+      ) : !props.running ? (
         <ContentState
           state={wasCancelled ? "cancelled" : "waiting"}
           className="rounded-none border-0 bg-transparent"
@@ -654,7 +658,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           icon={<FileText aria-hidden="true" />}
           title={wasCancelled ? "Processing cancelled" : "Result will appear here"}
         />
-      )}
+      ) : null}
     </WorkspaceSurface>
   );
   const resultContent = (

@@ -7,6 +7,7 @@ export default {
   keywords: ["jwt", "json web token", "decode", "claims", "header", "payload", "bearer"],
   name: "JWT Decoder",
   description: "Decode JWT header and payload without verifying the signature.",
+  outputLanguage: "json",
   input: {
     kind: "text",
     label: "JWT token",

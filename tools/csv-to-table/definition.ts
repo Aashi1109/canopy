@@ -7,9 +7,12 @@ export default {
   keywords: ["csv", "html", "table", "convert", "markup", "thead", "accessible"],
   name: "CSV to Table",
   description: "Convert CSV to an accessible HTML table.",
+  previewLayout: "table",
   input: {
     kind: "text",
+    language: "csv",
     label: "CSV input",
+    surface: "card",
     acceptFiles: {
       accept: ".csv,.tsv,text/csv,text/tab-separated-values",
       maxBytes: 104_857_600,

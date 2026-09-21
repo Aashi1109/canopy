@@ -11,9 +11,12 @@ export default {
   keywords: ["csv", "duplicate", "dedupe", "unique", "rows", "distinct", "clean"],
   name: "CSV Duplicate Row Remover",
   description: "Remove repeated CSV data rows.",
+  outputLanguage: "csv",
   input: {
     kind: "text",
+    language: "csv",
     label: "CSV input",
+    surface: "card",
     placeholder: "name,role\nAda,Admin\nAda,Admin",
   },
   settings: {

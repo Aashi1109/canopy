@@ -16,8 +16,9 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     repairMode: ctx.settings.repairMode,
   });
   return {
-    render: "text",
-    text: JSON.stringify(value, null, indentation),
+    render: "code",
+    code: JSON.stringify(value, null, indentation),
+    language: "json",
     downloadName: "edited.json",
   };
 };

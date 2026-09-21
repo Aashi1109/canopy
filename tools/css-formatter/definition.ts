@@ -7,9 +7,11 @@ export default {
   keywords: ["css", "format", "beautify", "prettify", "indent", "stylesheet", "unminify"],
   name: "CSS Formatter",
   description: "Apply readable indentation to CSS.",
-  layout: "stacked",
+  layout: "side-by-side",
+  outputLanguage: "css",
   input: {
     kind: "text",
+    language: "css",
     label: "CSS input",
     placeholder: ".card{color:#2563eb;padding:1rem;}",
   },

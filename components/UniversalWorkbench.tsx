@@ -136,7 +136,7 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
     runtime.lifecycle === "running"
       ? definition.labels.running
       : runtime.lifecycle === "completed"
-        ? [definition.labels.ready.replace(/[.!?]+$/, ""), factSummary].filter(Boolean).join(" · ")
+        ? runtime.notice || [definition.labels.ready.replace(/[.!?]+$/, ""), factSummary].filter(Boolean).join(" · ")
         : runtime.notice ||
           runtime.error ||
           runtime.issues[0]?.message ||

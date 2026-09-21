@@ -7,9 +7,11 @@ export default {
   keywords: ["javascript", "minify", "compress", "comments", "whitespace", "js"],
   name: "JavaScript Minifier",
   description: "Remove comments and safe redundant whitespace from JavaScript.",
-  layout: "stacked",
+  layout: "side-by-side",
+  outputLanguage: "javascript",
   input: {
     kind: "text",
+    language: "javascript",
     label: "JavaScript input",
     placeholder: "// greeting\nfunction greet(name) { return 'Hello ' + name; }",
   },

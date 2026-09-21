@@ -7,9 +7,12 @@ export default {
   keywords: ["csv", "format", "normalize", "quoting", "trim", "clean", "tidy"],
   name: "CSV Formatter",
   description: "Normalize CSV quoting and row structure.",
+  outputLanguage: "csv",
   input: {
     kind: "text",
+    language: "csv",
     label: "CSV input",
+    surface: "card",
     acceptFiles: {
       accept: ".csv,.tsv,text/csv,text/tab-separated-values",
       maxBytes: 104_857_600,

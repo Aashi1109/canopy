@@ -7,7 +7,7 @@ export default {
   keywords: ["json", "escape", "string", "quote", "backslash", "stringify", "encode"],
   name: "JSON Escape",
   description: "Escape a raw string for use inside JSON.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
     label: "Raw string",

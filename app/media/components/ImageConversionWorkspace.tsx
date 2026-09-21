@@ -79,7 +79,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
   const [dragging, setDragging] = useState(false);
   const inputSpec = props.spec.input;
   const running = Boolean(props.running);
-  const disabled = Boolean(props.disabled || running);
+  const disabled = Boolean(props.disabled || (running && !props.result));
   const hasFiles = props.input.files.length > 0;
   const conversion = resolveImageConversion(props.spec, props.settings);
   const activeSpec = conversion.spec;
@@ -89,7 +89,8 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
     () => (props.result?.render === "files" ? props.result.files.filter((file) => file.mime.startsWith("image/")) : []),
     [props.result],
   );
-  const completed = !running && outputImages.length > 0;
+  const completed = outputImages.length > 0;
+  const completedFormat = outputImages[0]?.mime.split("/")[1]?.replace("jpeg", "jpg").toUpperCase();
   const primaryOutput =
     props.result?.render === "files"
       ? (props.result.files.find((file) => file.mime === "application/zip") ?? outputImages[0])
@@ -152,11 +153,6 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
     setInputIssue(selection.issue);
     if (selection.files.length !== props.input.files.length)
       props.onInputChange({ ...props.input, files: selection.files });
-  };
-  const editSettings = () => {
-    setInputIssue("");
-    props.onInputChange({ ...props.input });
-    requestAnimationFrame(() => options.current?.querySelector<HTMLInputElement>("input")?.focus());
   };
   const convertMore = () => {
     setInputIssue("");
@@ -257,17 +253,16 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
           variant="plain"
           className="p-6"
         >
-          {!completed &&
-            (Object.keys(settingsSpec.fields).length > 0 ? (
-              <SettingsPanel
-                disabled={disabled}
-                spec={settingsSpec}
-                values={conversion.settings}
-                onChange={(key, value) => props.onSettingChange(conversion.settingKey(key), value)}
-              />
-            ) : (
-              <Muted>PNG is lossless. No quality settings are needed.</Muted>
-            ))}
+          {Object.keys(settingsSpec.fields).length > 0 ? (
+            <SettingsPanel
+              disabled={disabled}
+              spec={settingsSpec}
+              values={conversion.settings}
+              onChange={(key, value) => props.onSettingChange(conversion.settingKey(key), value)}
+            />
+          ) : (
+            <Muted>PNG is lossless. No quality settings are needed.</Muted>
+          )}
           <div className="grid gap-2">
             <FieldLabel htmlFor={outputFormatId}>Output format</FieldLabel>
             <Select
@@ -302,23 +297,72 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
               Switching keeps your images.
             </Caption>
           </div>
+          {settingsIssue && (
+            <Muted className="text-destructive" role="status">
+              {settingsIssue}
+            </Muted>
+          )}
+          {running && (
+            <ProcessingStatus
+              title={activeSpec.labels.running}
+              progress={progress}
+              detail={
+                props.progress
+                  ? `${props.progress.stage} · ${Math.min(props.progress.completed, props.progress.total)} of ${props.progress.total} complete`
+                  : completed
+                    ? "Updating your images. The previous output remains available."
+                    : "Preparing your images…"
+              }
+              action={
+                props.primaryAction?.onCancel ? (
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setCancelled(true);
+                      props.primaryAction?.onCancel?.();
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                ) : undefined
+              }
+            />
+          )}
+          {cancelled && !running && (
+            <Muted role="status">
+              Conversion cancelled.{" "}
+              {completed ? "Your previous output is still available." : "Your images and settings are kept."} Choose{" "}
+              {actionLabel} to try again.
+            </Muted>
+          )}
+          {props.error && (
+            <Muted className="text-destructive" role="status">
+              {props.error} {completed ? "Your previous output is still available." : "Your originals are unchanged."}{" "}
+              Check your settings and retry.
+            </Muted>
+          )}
           {completed && primaryOutput ? (
             <>
               <Muted role="status">
                 {outputImages.length} {outputImages.length === 1 ? "image converted" : "images converted"} to{" "}
-                {outputFormat}. Your originals are unchanged.
+                {completedFormat}. Your originals are unchanged.
               </Muted>
               <ConversionDownload file={primaryOutput} key={primaryOutput.id} />
-              <div className="grid grid-cols-2 gap-2 border-t border-border pt-4">
-                <Button variant="outline" onClick={editSettings}>
-                  Edit settings
+              {(props.error || cancelled) && !running && (
+                <Button
+                  disabled={disabled || Boolean(reason) || props.primaryAction?.disabled}
+                  onClick={props.primaryAction?.onRun}
+                >
+                  Retry conversion
                 </Button>
+              )}
+              <div className="grid gap-2 border-t border-border pt-4">
                 <Button variant="outline" onClick={convertMore}>
                   Convert more
                 </Button>
               </div>
               <Caption className="text-muted-foreground">
-                Edit settings to reconvert these images. Convert more starts a new batch.
+                Changing settings updates these images automatically. Convert more starts a new batch.
               </Caption>
             </>
           ) : (
@@ -326,36 +370,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
               <Caption className="text-muted-foreground">
                 Original pixel dimensions are preserved. Metadata is removed.
               </Caption>
-              {settingsIssue && (
-                <Alert variant="destructive">
-                  <AlertTitle>Check your settings</AlertTitle>
-                  <AlertDescription>{settingsIssue}</AlertDescription>
-                </Alert>
-              )}
-              {running ? (
-                <ProcessingStatus
-                  title={activeSpec.labels.running}
-                  progress={progress}
-                  detail={
-                    props.progress
-                      ? `${props.progress.stage} · ${Math.min(props.progress.completed, props.progress.total)} of ${props.progress.total} complete`
-                      : "Preparing your images…"
-                  }
-                  action={
-                    props.primaryAction?.onCancel ? (
-                      <Button
-                        variant="secondary"
-                        onClick={() => {
-                          setCancelled(true);
-                          props.primaryAction?.onCancel?.();
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    ) : undefined
-                  }
-                />
-              ) : (
+              {!running && (
                 <Button
                   className="w-full"
                   disabled={disabled || Boolean(reason) || props.primaryAction?.disabled}
@@ -399,20 +414,6 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
                     ? `One image downloads as a ${outputFormat} file.`
                     : "Multiple images download together as a ZIP, or individually."}
                 </Caption>
-              )}
-              {cancelled && !running && (
-                <Muted role="status">
-                  Conversion cancelled. Your images and settings are kept. Choose {actionLabel} to try again.
-                </Muted>
-              )}
-              {props.error && (
-                <Alert variant="destructive">
-                  <AlertTitle>Conversion failed</AlertTitle>
-                  <AlertDescription>
-                    {props.error} Remove any unsupported or damaged image, then choose {actionLabel} to retry. Your
-                    originals are unchanged.
-                  </AlertDescription>
-                </Alert>
               )}
             </>
           )}

@@ -5,6 +5,8 @@ import { MAX_MATH_LENGTH, matchInlineMath, renderMath } from "./math.ts";
 export type MarkdownOptions = {
   minimumHeadingLevel?: 1 | 2;
   breaks?: boolean;
+  /** Allow generated line breaks while keeping all other raw HTML escaped. */
+  allowHtmlLineBreaks?: boolean;
 };
 
 function escapeHtml(text: string): string {
@@ -28,10 +30,10 @@ function safeDestination(href: string, image: boolean): boolean {
   }
 }
 
-/** Safe inline HTML: Markdown images are allowed, raw HTML is always escaped. */
+/** Markdown images are allowed; raw HTML is escaped except explicitly enabled bare line breaks. */
 export function renderMarkdown(
   source: string,
-  { minimumHeadingLevel = 1, breaks = false }: MarkdownOptions = {},
+  { minimumHeadingLevel = 1, breaks = false, allowHtmlLineBreaks = false }: MarkdownOptions = {},
 ): string {
   const markdown = new Marked({
     gfm: true,
@@ -71,6 +73,7 @@ export function renderMarkdown(
         return `<h${level}>${this.parser.parseInline(tokens)}</h${level}>`;
       },
       html({ text }) {
+        if (allowHtmlLineBreaks && /^<br\s*\/?>$/i.test(text)) return "<br>";
         return escapeHtml(text);
       },
       image({ href, text, tokens, raw }) {

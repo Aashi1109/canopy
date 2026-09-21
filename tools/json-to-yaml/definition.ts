@@ -7,8 +7,10 @@ export default {
   keywords: ["json", "yaml", "convert", "config", "kubernetes", "serialize"],
   name: "JSON to YAML",
   description: "Convert JSON values to YAML.",
+  outputLanguage: "yaml",
   input: {
     kind: "text",
+    language: "json",
     label: "JSON input",
     placeholder: '{"name":"Ada","active":true}',
   },

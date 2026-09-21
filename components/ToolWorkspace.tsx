@@ -3,16 +3,7 @@
 import { Overline, H3, Muted, Caption, Strong, SegmentedControl, ToolOptionsPanel } from "@/components/ui/index.tsx";
 import { Settings } from "lucide";
 import { ArrowDownToLine, FileSpreadsheet } from "lucide-react";
-import {
-  type DragEvent,
-  type ReactNode,
-  type Ref,
-  type UIEventHandler,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { type DragEvent, type ReactNode, type Ref, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { ImageConversionWorkspace } from "@/app/media/components/ImageConversionWorkspace";
 import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
@@ -290,8 +281,10 @@ function TextFileDropTarget({ children, props }: { children: ReactNode; props: W
 export function ToolWorkspace(
   props: WorkspaceProps &
     Pick<ResultSurfaceProps, "initialJsonView" | "renderResult" | "renderResultActions" | "retainedResult"> & {
-      onSourceScroll?: UIEventHandler<HTMLTextAreaElement>;
-      sourceRef?: Ref<HTMLTextAreaElement>;
+      highlightedInput?: ReactNode;
+      onSourceScroll?: (scroller: HTMLElement) => void;
+      renderInputSettings?: () => ReactNode;
+      sourceRef?: Ref<HTMLElement>;
     },
 ) {
   if (props.spec.input.kind === "files") {
@@ -306,6 +299,23 @@ export function ToolWorkspace(
   const hasMainSettings = !settingsOnly && fields.some((field) => field.pane === "main");
   const hasSideSettings = settingsOnly ? fields.length > 0 : fields.some((field) => (field.pane ?? "side") === "side");
   const hasInputSettings = fields.some((field) => field.pane === "input");
+  const inputSettings = props.renderInputSettings ? (
+    props.renderInputSettings()
+  ) : hasInputSettings ? (
+    <SettingsPanel
+      className={`shrink-0 grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] px-4 ${props.spec.input.kind === "text" ? "pt-4" : "pb-4"}`}
+      disabled={props.disabled}
+      layout="grid"
+      onChange={props.onSettingChange}
+      onSubmit={() => {
+        if (!props.primaryAction || props.primaryAction.disabled || props.primaryAction.running) return;
+        props.primaryAction.onRun();
+      }}
+      pane="input"
+      spec={props.spec.settings}
+      values={props.settings}
+    />
+  ) : undefined;
   const inputSplit = getInputSplitSizes(props.spec.input, 50, 30);
   const surfaceVariant = props.spec.input.kind !== "none" && props.spec.layout === "stacked" ? "card" : "panel";
   const result = (
@@ -331,19 +341,9 @@ export function ToolWorkspace(
         input={
           <WorkspaceInputSurface
             disabled={props.disabled}
-            footer={
-              hasInputSettings ? (
-                <SettingsPanel
-                  className="shrink-0 grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] px-4 pb-4"
-                  disabled={props.disabled}
-                  layout="grid"
-                  onChange={props.onSettingChange}
-                  pane="input"
-                  spec={props.spec.settings}
-                  values={props.settings}
-                />
-              ) : undefined
-            }
+            footer={props.spec.input.kind === "fields" ? inputSettings : undefined}
+            header={props.spec.input.kind === "text" ? inputSettings : undefined}
+            highlightedInput={props.highlightedInput}
             input={props.input}
             inputSpec={props.spec.input}
             onInputChange={props.onInputChange}

@@ -9,6 +9,7 @@ export default {
   description: "Render an array of JSON objects as an HTML table.",
   input: {
     kind: "text",
+    language: "json",
     label: "JSON array",
     placeholder: '[{"name":"Ada","role":"Admin"},{"name":"Lin","role":"Editor"}]',
   },

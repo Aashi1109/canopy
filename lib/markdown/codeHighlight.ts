@@ -1,10 +1,42 @@
-import { common, createLowlight } from "lowlight";
+import { common, createLowlight, type LanguageFn } from "lowlight";
 
 export const codeLowlight = createLowlight(common);
 
 const AUTO_HIGHLIGHT_MAX_CHARS = 4 * 1024;
-const KNOWN_HIGHLIGHT_MAX_CHARS = 64 * 1024;
+export const CODE_HIGHLIGHT_MAX_CHARS = 64 * 1024;
 const DOCUMENT_HIGHLIGHT_MAX_CHARS = 256 * 1024;
+
+function delimitedGrammar(separator: "," | "\t"): LanguageFn {
+  const delimiters = separator === "," ? "[,;|\\t]" : "\\t";
+  const start = `(?:^|(?<=${delimiters}))`;
+  const space = " *";
+  const end = `(?=${delimiters}|$)`;
+  return () => ({
+    disableAutodetect: true,
+    contains: [
+      {
+        scope: "string",
+        begin: new RegExp(`${start}${space}"`, "m"),
+        end: /"(?!")/,
+        contains: [{ match: /""/, relevance: 0 }],
+        relevance: 0,
+      },
+      {
+        scope: "number",
+        match: new RegExp(`${start}${space}[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?${space}${end}`, "m"),
+        relevance: 0,
+      },
+      {
+        scope: "literal",
+        match: new RegExp(`${start}${space}(?:true|false|null)${space}${end}`, "m"),
+        relevance: 0,
+      },
+      { scope: "punctuation", match: new RegExp(delimiters), relevance: 0 },
+    ],
+  });
+}
+
+codeLowlight.register({ csv: delimitedGrammar(","), tsv: delimitedGrammar("\t") });
 
 export type CodeHighlightBudget = { remainingChars: number };
 
@@ -24,7 +56,7 @@ export function highlightCode(code: string, language?: string | null, budget?: C
   const normalizedLanguage = language?.toLowerCase();
   if (["mermaid", "text", "plaintext", "txt"].includes(normalizedLanguage ?? "")) return escapeHtml(code);
   const knownLanguage = normalizedLanguage && codeLowlight.registered(normalizedLanguage);
-  const maxChars = knownLanguage ? KNOWN_HIGHLIGHT_MAX_CHARS : AUTO_HIGHLIGHT_MAX_CHARS;
+  const maxChars = knownLanguage ? CODE_HIGHLIGHT_MAX_CHARS : AUTO_HIGHLIGHT_MAX_CHARS;
   if (code.length > maxChars || (budget && code.length > budget.remainingChars)) return escapeHtml(code);
   if (budget) budget.remainingChars -= code.length;
   const tree = knownLanguage ? codeLowlight.highlight(normalizedLanguage, code) : codeLowlight.highlightAuto(code);

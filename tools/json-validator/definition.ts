@@ -7,9 +7,10 @@ export default {
   keywords: ["json", "validator", "syntax", "lint", "parse", "check"],
   name: "JSON Validator",
   description: "Validate JSON syntax and report its root type.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
+    language: "json",
     label: "JSON input",
     acceptFiles: {
       accept: ".json,application/json,text/json",

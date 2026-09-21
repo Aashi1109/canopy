@@ -20,6 +20,18 @@ function initialLifecycle<Input>(input: Input, isEmpty: (input: Input) => boolea
   return isEmpty(input) ? "empty" : "ready";
 }
 
+function sameValues(left: object | undefined, right: object | undefined): boolean {
+  if (Object.is(left, right)) return true;
+  if (!left || !right) return false;
+  const entries = Object.entries(left);
+  return (
+    entries.length === Object.keys(right).length &&
+    entries.every(
+      ([key, value]) => Object.hasOwn(right, key) && Object.is(value, (right as Record<string, unknown>)[key]),
+    )
+  );
+}
+
 export function ToolRuntimeProvider<Input, Settings extends ToolSettings, Result>({
   analyticsToolKey,
   children,
@@ -49,27 +61,44 @@ export function ToolRuntimeProvider<Input, Settings extends ToolSettings, Result
   const revisionRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
   const completedInputRef = useRef<{ input: Input } | null>(null);
-  const previousRefreshSettingsRef = useRef(spec.refreshOnSettingsChange);
+  const timeoutRef = useRef<number | null>(null);
+  const specRef = useRef(spec);
+  specRef.current = spec;
+  const previousEvaluationRef = useRef<{
+    input: Input;
+    settings: Settings;
+    refreshSettings: ToolRuntimeSpec<Input, Settings, Result>["refreshOnSettingsChange"];
+    isEmpty: boolean;
+    issues: ToolRuntimeController<Input, Settings, Result>["issues"];
+    trigger: ToolRuntimeSpec<Input, Settings, Result>["trigger"];
+    autoRun: boolean;
+  } | null>(null);
 
   const execute = useCallback(
     async (manual = false) => {
+      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+      const retainOutput = completedInputRef.current !== null && Object.is(completedInputRef.current.input, input);
       const revision = ++revisionRef.current;
       abortRef.current?.abort();
       const abortController = new AbortController();
       abortRef.current = abortController;
       setLifecycle("running");
       setError("");
-      setResult(null);
-      setArtifacts([]);
-      setFacts([]);
+      if (retainOutput) setNotice("");
+      if (!retainOutput) {
+        setResult(null);
+        setArtifacts([]);
+        setFacts([]);
+      }
 
       if (manual) trackToolEvent("tool_start", analyticsToolKey);
       try {
-        const outcome = await spec.execute(input, settings, abortController.signal);
+        const outcome = await specRef.current.execute(input, settings, abortController.signal);
         if (revision !== revisionRef.current || abortController.signal.aborted) {
           return;
         }
-        completedInputRef.current = { input };
+        completedInputRef.current = outcome.result === null ? null : { input };
         setResult(outcome.result);
         setArtifacts(outcome.artifacts ?? []);
         setFacts(outcome.facts ?? []);
@@ -79,64 +108,95 @@ export function ToolRuntimeProvider<Input, Settings extends ToolSettings, Result
         if (revision !== revisionRef.current || abortController.signal.aborted) {
           return;
         }
-        setResult(null);
-        setArtifacts([]);
-        setFacts([]);
+        if (!retainOutput) {
+          setResult(null);
+          setArtifacts([]);
+          setFacts([]);
+        }
         setError(caught instanceof Error ? caught.message : "Unable to run this tool.");
         setLifecycle("failed");
         if (manual) trackToolEvent("tool_error", analyticsToolKey);
       }
     },
-    [analyticsToolKey, input, settings, spec],
+    [analyticsToolKey, input, settings],
   );
 
   useEffect(() => {
-    const refreshExistingResult =
-      spec.refreshOnSettingsChange !== undefined &&
-      !Object.is(previousRefreshSettingsRef.current, spec.refreshOnSettingsChange) &&
-      completedInputRef.current !== null &&
-      Object.is(completedInputRef.current.input, input);
-    previousRefreshSettingsRef.current = spec.refreshOnSettingsChange;
-    if (completedInputRef.current && !Object.is(completedInputRef.current.input, input)) {
-      completedInputRef.current = null;
-    }
+    const isEmpty = spec.isEmpty(input);
+    const nextIssues = isEmpty ? [] : [...spec.validate(input, settings)];
+    const autoRun = !isEmpty && nextIssues.length === 0 && spec.shouldAutoRun?.(input) !== false;
+    const previous = previousEvaluationRef.current;
+    const settingsChanged =
+      previous !== null &&
+      (!sameValues(previous.settings, settings) || !sameValues(previous.refreshSettings, spec.refreshOnSettingsChange));
+    const changed =
+      previous === null ||
+      !Object.is(previous.input, input) ||
+      settingsChanged ||
+      previous.isEmpty !== isEmpty ||
+      previous.trigger !== spec.trigger ||
+      previous.autoRun !== autoRun ||
+      previous.issues.length !== nextIssues.length ||
+      nextIssues.some((issue, index) => !sameValues(issue, previous.issues[index]));
+    previousEvaluationRef.current = {
+      input,
+      settings,
+      refreshSettings: spec.refreshOnSettingsChange,
+      isEmpty,
+      issues: nextIssues,
+      trigger: spec.trigger,
+      autoRun,
+    };
+    // A new spec or validator function with the same values must not cancel a
+    // pending refresh or erase the last successful output.
+    if (!changed) return;
+
+    const retainOutput =
+      !isEmpty && completedInputRef.current !== null && Object.is(completedInputRef.current.input, input);
+    if (!retainOutput) completedInputRef.current = null;
     revisionRef.current += 1;
     abortRef.current?.abort();
+    if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+    timeoutRef.current = null;
     setError("");
-
-    if (spec.isEmpty(input)) {
-      setIssues([]);
+    setIssues(nextIssues);
+    if (!retainOutput) {
       setResult(null);
       setArtifacts([]);
       setFacts([]);
+    }
+
+    if (isEmpty) {
       setLifecycle("empty");
       return;
     }
 
-    const nextIssues = [...spec.validate(input, settings)];
-    setIssues(nextIssues);
-    setResult(null);
-    setArtifacts([]);
-    setFacts([]);
     if (nextIssues.length > 0) {
       setLifecycle("invalid");
       return;
     }
 
-    setLifecycle("ready");
-    if ((spec.trigger !== "live" && !refreshExistingResult) || spec.shouldAutoRun?.(input) === false) return;
+    const refreshExistingResult = retainOutput && settingsChanged;
+    if (!refreshExistingResult && (spec.trigger !== "live" || !autoRun)) {
+      setLifecycle(retainOutput ? "completed" : "ready");
+      return;
+    }
+    setLifecycle(retainOutput ? "running" : "ready");
+    if (retainOutput) setNotice("");
 
     const revision = revisionRef.current;
-    const timeout = window.setTimeout(() => {
+    timeoutRef.current = window.setTimeout(() => {
+      timeoutRef.current = null;
       if (revision === revisionRef.current) void execute();
     }, spec.debounceMs ?? 200);
-    return () => window.clearTimeout(timeout);
   }, [execute, input, settings, spec]);
 
   useEffect(
     () => () => {
       revisionRef.current += 1;
       abortRef.current?.abort();
+      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+      previousEvaluationRef.current = null;
     },
     [],
   );
@@ -157,7 +217,7 @@ export function ToolRuntimeProvider<Input, Settings extends ToolSettings, Result
       setNotice(pendingCommand ? "Pending action cancelled because settings changed." : "");
       setLastChanges([]);
       setPendingCommand(null);
-      setSettings((current) => ({ ...current, [key]: value }));
+      setSettings((current) => (Object.is(current[key], value) ? current : { ...current, [key]: value }));
     },
     [pendingCommand],
   );
@@ -171,18 +231,29 @@ export function ToolRuntimeProvider<Input, Settings extends ToolSettings, Result
 
   const cancelRun = useCallback(() => {
     if (lifecycle !== "running") return;
-    completedInputRef.current = null;
+    const retainOutput = completedInputRef.current !== null && Object.is(completedInputRef.current.input, input);
+    if (!retainOutput) completedInputRef.current = null;
     revisionRef.current += 1;
     abortRef.current?.abort();
     abortRef.current = null;
+    if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+    timeoutRef.current = null;
     const nextIssues = spec.isEmpty(input) ? [] : [...spec.validate(input, settings)];
     setIssues(nextIssues);
-    setResult(null);
-    setArtifacts([]);
-    setFacts([]);
+    if (!retainOutput) {
+      setResult(null);
+      setArtifacts([]);
+      setFacts([]);
+    }
     setError("");
-    setNotice("Processing cancelled. Your input is unchanged.");
-    setLifecycle(spec.isEmpty(input) ? "empty" : nextIssues.length > 0 ? "invalid" : "ready");
+    setNotice(
+      retainOutput
+        ? "Update cancelled. Showing the previous result."
+        : "Processing cancelled. Your input is unchanged.",
+    );
+    setLifecycle(
+      spec.isEmpty(input) ? "empty" : nextIssues.length > 0 ? "invalid" : retainOutput ? "completed" : "ready",
+    );
   }, [input, lifecycle, settings, spec]);
 
   const runCommand = useCallback(

@@ -27,10 +27,9 @@ import {
   Trash2,
   WandSparkles,
 } from "lucide-react";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type RefObject } from "react";
 
 import {
-  highlightJson,
   type JsonEditorController,
   JsonResultRenderer,
   type JsonResultView,
@@ -39,6 +38,7 @@ import {
 import { SplitStack } from "@/components/Stacks";
 import { WorkspaceSurface } from "@/components/Surfaces";
 import { SourceTextarea } from "@/components/WorkspaceInput";
+import type { CodeEditorHandle } from "@/components/content/CodeEditor";
 import { textInputFileIssue } from "@/components/FileInput";
 import { ResultView } from "@/components/ResultView";
 import type { WorkspaceProps, WorkspaceToolbarActions } from "@/components/ToolWorkspace";
@@ -139,11 +139,13 @@ function risksNumericPrecisionLoss(input: string) {
 
 function JsonSourceEditor({
   editorId,
+  editorRef,
   onNotice,
   onSourceChange,
   ...props
 }: WorkspaceProps & {
   editorId: string;
+  editorRef: RefObject<CodeEditorHandle | null>;
   onNotice: (message: string, tone?: JsonNoticeTone) => void;
   onSourceChange: (text: string) => void;
 }) {
@@ -154,7 +156,6 @@ function JsonSourceEditor({
   const acceptedFile = inputSpec.kind === "text" ? inputSpec.acceptFiles : undefined;
   const largeFile = isLargeTextFile(selectedFile, acceptedFile?.maxEditableBytes);
   const inputBytes = useMemo(() => new TextEncoder().encode(props.input.text).length, [props.input.text]);
-  const highlightedInput = useMemo(() => highlightJson(props.input.text), [props.input.text]);
 
   useEffect(() => {
     fileReadRequestRef.current += 1;
@@ -238,7 +239,7 @@ function JsonSourceEditor({
             onRemove={() => {
               fileReadRequestRef.current += 1;
               props.onInputChange({ ...props.input, files: [], text: "" });
-              document.getElementById(editorId)?.focus();
+              editorRef.current?.focus();
             }}
           />
         ) : (
@@ -254,17 +255,18 @@ function JsonSourceEditor({
         {inputSpec.label}
       </FieldLabel>
       <SourceTextarea
+        aria-label={inputSpec.label}
         className="min-h-0 flex-1"
         disabled={props.disabled}
-        highlightedValue={highlightedInput}
+        editorRef={editorRef}
         id={editorId}
+        language="json"
         onChange={(text) => {
           onSourceChange(text);
         }}
         placeholder={inputSpec.placeholder}
         readOnly={largeFile}
         value={props.input.text}
-        wrap="soft"
       />
     </WorkspaceSurface>
   );
@@ -332,11 +334,11 @@ function JsonResultPane({
   tree: JsonTreeResult;
   view: JsonResultView;
 }) {
-  const ready = !running && tree !== null;
+  const ready = tree !== null;
   const output = tree?.text ?? source;
 
   return (
-    <div className="relative h-full min-h-0">
+    <div aria-busy={running || undefined} className="relative h-full min-h-0">
       <fieldset
         aria-disabled={!ready || undefined}
         className="m-0 h-full min-w-0 border-0 p-0"
@@ -384,6 +386,7 @@ function JsonResultPane({
 
 export default function JsonViewerWorkspace(props: WorkspaceProps) {
   const editorId = useId();
+  const editorRef = useRef<CodeEditorHandle | null>(null);
   const [resultView, setResultView] = useState<JsonResultView>("code");
   const [resultSearchQuery, setResultSearchQuery] = useState("");
   const [resultSearchMatchIndex, setResultSearchMatchIndex] = useState(0);
@@ -418,15 +421,9 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
 
   const goToError = useCallback(() => {
     if (!errorLocation) return;
-    const input = document.getElementById(editorId);
-    if (!(input instanceof HTMLTextAreaElement)) return;
-    const lines = props.input.text.split(/\r\n|\r|\n/);
-    const offset =
-      lines.slice(0, Math.max(0, errorLocation.line - 1)).reduce((total, line) => total + line.length + 1, 0) +
-      Math.max(0, errorLocation.column - 1);
-    input.focus();
-    input.setSelectionRange(Math.min(offset, props.input.text.length), Math.min(offset + 1, props.input.text.length));
-  }, [editorId, errorLocation, props.input.text]);
+    editorRef.current?.scrollToLine(errorLocation.line, errorLocation.column);
+    editorRef.current?.focus();
+  }, [errorLocation]);
   const errorIsInPreview = useMemo(() => {
     if (!errorLocation) return false;
     const lines = props.input.text.split(/\r\n|\r|\n/);
@@ -803,6 +800,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
           <JsonSourceEditor
             {...props}
             editorId={editorId}
+            editorRef={editorRef}
             onNotice={showJsonNotice}
             onSourceChange={(text) => {
               updateSource(text);

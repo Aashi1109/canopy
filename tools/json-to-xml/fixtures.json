@@ -11,7 +11,7 @@
       },
       "expected": {
         "downloadName": "converted.xml",
-        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<root><user><name>Ada</name><active>true</active></user></root>",
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<root>\n  <user>\n    <name>Ada</name>\n    <active>true</active>\n  </user>\n</root>",
         "render": "text"
       }
     }

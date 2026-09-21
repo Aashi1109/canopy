@@ -30,7 +30,8 @@ import {
 
 import { textInputFileIssue, validateFileSelection, workspaceFileId } from "@/components/FileInput";
 import { PasswordInput } from "@/components/PasswordInput";
-import { Stack } from "@/components/Stacks";
+import { SplitStack, Stack } from "@/components/Stacks";
+import { CodeEditor, type CodeEditorHandle } from "@/components/content/CodeEditor";
 import { FileIntakeSurface, FileQueueSurface, WorkspaceSurface } from "@/components/Surfaces";
 import type { WorkspaceInputState, WorkspaceProps } from "@/components/ToolWorkspace";
 import type { ToolInputSpec } from "@/lib/tool-framework/spec";
@@ -46,22 +47,25 @@ const DEFAULT_TEXT_FILE_INPUT = {
 interface InputSurfaceProps {
   disabled?: boolean;
   footer?: ReactNode;
+  header?: ReactNode;
+  highlightedInput?: ReactNode;
   input: WorkspaceInputState;
   inputSpec: ToolInputSpec;
   onInputChange: WorkspaceProps["onInputChange"];
-  onSourceScroll?: TextareaHTMLAttributes<HTMLTextAreaElement>["onScroll"];
-  sourceRef?: Ref<HTMLTextAreaElement>;
+  onSourceScroll?: (scroller: HTMLElement) => void;
+  sourceRef?: Ref<HTMLElement>;
   variant?: "card" | "panel";
 }
 
 interface SourceTextareaProps extends Pick<
   TextareaHTMLAttributes<HTMLTextAreaElement>,
-  "aria-describedby" | "aria-invalid" | "wrap"
+  "aria-label" | "aria-labelledby" | "aria-describedby" | "aria-invalid" | "wrap"
 > {
   className: string;
   disabled?: boolean;
   highlightedValue?: ReactNode;
   highlightMode?: "persistent" | "preview";
+  language?: string;
   id: string;
   maxLength?: number;
   showLineNumbers?: boolean;
@@ -69,8 +73,9 @@ interface SourceTextareaProps extends Pick<
   transparent?: boolean;
   onCaretChange?: (position: { readonly column: number; readonly line: number }) => void;
   onChange: (value: string) => void;
-  onScroll?: TextareaHTMLAttributes<HTMLTextAreaElement>["onScroll"];
-  textareaRef?: Ref<HTMLTextAreaElement>;
+  onScroll?: (scroller: HTMLElement) => void;
+  scrollRef?: Ref<HTMLElement>;
+  editorRef?: Ref<CodeEditorHandle>;
   placeholder?: string;
   readOnly?: boolean;
   required?: boolean;
@@ -101,7 +106,48 @@ function sourceMeta(value: string, codeShaped: boolean): string {
   return `${count} ${codeShaped ? "bytes" : count === 1 ? "character" : "characters"}`;
 }
 
-export function SourceTextarea({
+export function SourceTextarea(props: SourceTextareaProps) {
+  if (!props.language || props.highlightedValue) return <PlainSourceTextarea {...props} />;
+  const Container = props.surface === "card" ? Card : "div";
+  return (
+    <Container
+      className={cn(
+        "flex min-w-0 overflow-hidden",
+        props.surface === "card"
+          ? "gap-0 rounded-lg border-input p-0 shadow-none has-[:focus-visible]:border-primary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/20"
+          : `${props.transparent ? "bg-transparent" : "bg-background"} has-[:focus-visible]:bg-muted/40`,
+        props.className,
+      )}
+    >
+      <CodeEditor
+        aria-label={props["aria-label"]}
+        aria-labelledby={props["aria-labelledby"]}
+        aria-describedby={props["aria-describedby"]}
+        aria-invalid={props["aria-invalid"]}
+        className="min-h-0 min-w-0 flex-1"
+        disabled={props.disabled}
+        editorRef={props.editorRef}
+        id={props.id}
+        language={props.language}
+        maxLength={props.maxLength}
+        onCaretChange={props.onCaretChange}
+        onChange={props.onChange}
+        onScroll={props.onScroll}
+        placeholder={props.placeholder}
+        readOnly={props.readOnly}
+        required={props.required}
+        scrollRef={props.scrollRef}
+        showLineNumbers={props.showLineNumbers}
+        value={props.value}
+        wrap={props.wrap === "off" ? "off" : props.wrap ? "soft" : undefined}
+      />
+    </Container>
+  );
+}
+
+function PlainSourceTextarea({
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
   "aria-describedby": ariaDescribedBy,
   "aria-invalid": ariaInvalid,
   className,
@@ -116,7 +162,7 @@ export function SourceTextarea({
   onCaretChange,
   onChange,
   onScroll,
-  textareaRef,
+  scrollRef,
   placeholder,
   readOnly,
   required,
@@ -178,6 +224,8 @@ export function SourceTextarea({
           </pre>
         ) : null}
         <textarea
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledBy}
           aria-describedby={ariaDescribedBy}
           aria-invalid={ariaInvalid}
           autoCapitalize="off"
@@ -207,11 +255,11 @@ export function SourceTextarea({
             if (highlightRef.current) {
               highlightRef.current.style.transform = `translate(${-scrollLeft}px, ${-scrollTop}px)`;
             }
-            onScroll?.(event);
+            onScroll?.(event.currentTarget);
           }}
           placeholder={placeholder}
           readOnly={readOnly}
-          ref={textareaRef}
+          ref={scrollRef as Ref<HTMLTextAreaElement>}
           required={required}
           spellCheck={false}
           value={value}
@@ -224,6 +272,8 @@ export function SourceTextarea({
 export function WorkspaceInputSurface({
   disabled,
   footer,
+  header,
+  highlightedInput,
   input,
   inputSpec,
   onInputChange,
@@ -341,6 +391,7 @@ export function WorkspaceInputSurface({
         </>
       ) : null;
       const codeShaped = isCodeShaped(input.text) || isCodeShaped(inputSpec.placeholder ?? "");
+      const editorSurface = header || inputSpec.secondary ? inputSpec.surface : undefined;
       return (
         <WorkspaceSurface
           actions={
@@ -373,20 +424,34 @@ export function WorkspaceInputSurface({
           title={inputSpec.label}
           variant={variant}
         >
-          <div className="grid min-h-0 flex-1 gap-1.5">
-            <FieldLabel className="sr-only" htmlFor={`${idPrefix}-primary`}>
+          {header}
+          <div
+            className={cn(
+              "grid min-h-0 flex-1 gap-1.5",
+              editorSurface === "card" && "grid-rows-[auto_minmax(0,1fr)] px-4 pb-4",
+              editorSurface === "card" && !header && "pt-4",
+            )}
+          >
+            <FieldLabel
+              className={editorSurface === "card" ? "text-muted-foreground" : "sr-only"}
+              htmlFor={`${idPrefix}-primary`}
+            >
               {inputSpec.label}
             </FieldLabel>
             <SourceTextarea
+              aria-label={inputSpec.label}
               className="min-h-48 flex-1"
               disabled={disabled}
               id={`${idPrefix}-primary`}
+              highlightedValue={highlightedInput}
+              language={inputSpec.language}
               showLineNumbers={variant !== "card"}
+              surface={editorSurface}
               transparent={variant === "card"}
               maxLength={inputSpec.maxLength}
               onChange={(text) => onInputChange({ ...input, files: [], text })}
               onScroll={onSourceScroll}
-              textareaRef={sourceRef}
+              scrollRef={sourceRef}
               placeholder={inputSpec.placeholder}
               readOnly={largeFile}
               value={input.text}
@@ -402,9 +467,11 @@ export function WorkspaceInputSurface({
             <div className="grid gap-1.5">
               <FieldLabel htmlFor={`${idPrefix}-secondary`}>{inputSpec.secondary.label}</FieldLabel>
               <SourceTextarea
+                aria-label={inputSpec.secondary.label}
                 className="min-h-28"
                 disabled={disabled}
                 id={`${idPrefix}-secondary`}
+                language={inputSpec.secondary.language}
                 showLineNumbers={variant !== "card"}
                 transparent={variant === "card"}
                 onChange={(secondary) => onInputChange({ ...input, secondary })}
@@ -429,7 +496,127 @@ export function WorkspaceInputSurface({
           Boolean(field.multiline) && (isCodeShaped(values[index]) || isCodeShaped(field.placeholder ?? "")),
       );
       const hasMultiline = inputSpec.fields.some((field) => field.multiline);
-      const cardFields = variant === "card" && hasMultiline;
+      const singleTextarea = inputSpec.fields.length === 1 && hasMultiline && !footer;
+      const cardFields = variant === "card" && hasMultiline && !singleTextarea;
+      const resizableFields = Boolean(
+        inputSpec.resizable && inputSpec.fields.length === 2 && inputSpec.fields.every((field) => field.multiline),
+      );
+      const fields = inputSpec.fields.map((field, index) => {
+        const fieldId = `${idPrefix}-${field.channel}`;
+        const value = field.channel === "text" ? input.text : (input.secondary ?? "");
+        const fieldCodeShaped = Boolean(field.multiline);
+        const fieldSurface = singleTextarea ? undefined : field.surface;
+        const revealed = Boolean(revealedSecrets[field.channel]);
+        const updateValue = (nextValue: string) => onInputChange({ ...input, [field.channel]: nextValue });
+        return (
+          <div
+            className={
+              singleTextarea
+                ? "grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)]"
+                : resizableFields
+                  ? "grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-1.5 py-3"
+                  : cardFields
+                    ? "grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-lg border border-border bg-muted/45"
+                    : fieldSurface === "card"
+                      ? `grid ${footer ? "min-h-36" : "min-h-0"} flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1.5 first:pt-4 last:pb-4`
+                      : `grid gap-1.5 ${hasMultiline ? "first:pt-4 last:pb-4" : ""} ${hasMultiline && !fieldCodeShaped ? "px-4" : ""}`
+            }
+            key={field.channel}
+          >
+            <div className={cardFields ? "flex min-h-10 items-center justify-between gap-3 px-4 pt-2" : undefined}>
+              <FieldLabel
+                className={
+                  singleTextarea
+                    ? "sr-only"
+                    : cardFields
+                      ? "text-muted-foreground"
+                      : variant === "card"
+                        ? "sr-only"
+                        : fieldCodeShaped
+                          ? "px-4"
+                          : undefined
+                }
+                htmlFor={fieldId}
+                required={field.required && !cardFields}
+              >
+                {field.label}
+              </FieldLabel>
+              {cardFields && index === 0 ? pasteAction(field.label, field.maxLength) : null}
+            </div>
+            <div
+              className={`flex min-h-0 gap-2 ${singleTextarea || cardFields || fieldSurface === "card" ? "h-full items-stretch" : "items-start"} ${cardFields && !field.multiline ? "px-4 pb-4" : ""}`}
+            >
+              {field.multiline ? (
+                <div
+                  className={cn(
+                    "relative flex-1",
+                    resizableFields ? "min-h-0" : "min-h-28",
+                    fieldSurface === "card" && "mx-4",
+                  )}
+                >
+                  <SourceTextarea
+                    aria-label={field.label}
+                    className={`h-full ${resizableFields ? "min-h-0" : "min-h-28"} ${field.secret ? `[&_textarea]:pr-14 ${revealed ? "" : "[&_textarea]:[-webkit-text-security:disc]"}` : ""}`}
+                    disabled={disabled}
+                    id={fieldId}
+                    language={!field.secret || revealed ? field.language : undefined}
+                    showLineNumbers={variant !== "card"}
+                    surface={fieldSurface}
+                    transparent={variant === "card"}
+                    maxLength={field.maxLength}
+                    onChange={updateValue}
+                    placeholder={field.placeholder}
+                    required={field.required}
+                    value={value}
+                  />
+                  {field.secret ? (
+                    <Button
+                      aria-label={revealed ? "Hide password" : "Show password"}
+                      className="absolute right-0 top-0 z-20"
+                      disabled={disabled}
+                      onClick={() =>
+                        setRevealedSecrets((current) => ({
+                          ...current,
+                          [field.channel]: !revealed,
+                        }))
+                      }
+                      size="icon"
+                      type="button"
+                      variant="input-icon"
+                    >
+                      <MorphIcon icon={revealed ? EyeOff : Eye} reducedMotion="user" size={18} />
+                    </Button>
+                  ) : null}
+                </div>
+              ) : field.secret ? (
+                <PasswordInput
+                  code
+                  disabled={disabled}
+                  id={fieldId}
+                  maxLength={field.maxLength}
+                  onChange={(event) => updateValue(event.currentTarget.value)}
+                  placeholder={field.placeholder}
+                  required={field.required}
+                  value={value}
+                />
+              ) : (
+                <Input
+                  className="flex-1"
+                  code
+                  disabled={disabled}
+                  id={fieldId}
+                  maxLength={field.maxLength}
+                  onChange={(event) => updateValue(event.currentTarget.value)}
+                  placeholder={field.placeholder}
+                  required={field.required}
+                  type="text"
+                  value={value}
+                />
+              )}
+            </div>
+          </div>
+        );
+      });
       return (
         <WorkspaceSurface
           actions={
@@ -441,122 +628,34 @@ export function WorkspaceInputSurface({
               : "h-full [&_[data-stack=scroll-region]]:bg-background"
           }
           contentClassName={
-            cardFields
-              ? `grid h-full auto-rows-fr gap-4 bg-transparent ${inputSpec.fields.length > 1 ? "md:grid-cols-2" : ""}`
-              : hasMultiline
-                ? "gap-4 bg-background"
-                : "gap-4 bg-background p-4"
+            resizableFields
+              ? "bg-background"
+              : cardFields
+                ? `grid h-full auto-rows-fr gap-4 bg-transparent ${inputSpec.fields.length > 1 ? "md:grid-cols-2" : ""}`
+                : hasMultiline
+                  ? "gap-4 bg-background"
+                  : "gap-4 bg-background p-4"
           }
           header={cardFields ? "sr-only" : "visible"}
           meta={cardFields ? undefined : sourceMeta(values.join(""), codeShaped)}
           purpose="source"
           scroll={
-            !footer && (cardFields || inputSpec.fields.some((field) => field.surface === "card")) ? "none" : "content"
+            singleTextarea ||
+            resizableFields ||
+            (!footer && (cardFields || inputSpec.fields.some((field) => field.surface === "card")))
+              ? "none"
+              : "content"
           }
           title={inputSpec.label}
           variant={variant}
         >
-          {inputSpec.fields.map((field, index) => {
-            const fieldId = `${idPrefix}-${field.channel}`;
-            const value = field.channel === "text" ? input.text : (input.secondary ?? "");
-            const fieldCodeShaped = Boolean(field.multiline);
-            const revealed = Boolean(revealedSecrets[field.channel]);
-            const updateValue = (nextValue: string) => onInputChange({ ...input, [field.channel]: nextValue });
-            return (
-              <div
-                className={
-                  cardFields
-                    ? "grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-lg border border-border bg-muted/45"
-                    : field.surface === "card"
-                      ? `grid ${footer ? "min-h-36" : "min-h-0"} flex-1 grid-rows-[auto_minmax(0,1fr)] gap-1.5 last:pb-4`
-                      : `grid gap-1.5 ${hasMultiline ? "first:pt-4 last:pb-4" : ""} ${hasMultiline && !fieldCodeShaped ? "px-4" : ""}`
-                }
-                key={field.channel}
-              >
-                <div className={cardFields ? "flex min-h-10 items-center justify-between gap-3 px-4 pt-2" : undefined}>
-                  <FieldLabel
-                    className={
-                      cardFields
-                        ? "text-muted-foreground"
-                        : variant === "card"
-                          ? "sr-only"
-                          : fieldCodeShaped
-                            ? "px-4"
-                            : undefined
-                    }
-                    htmlFor={fieldId}
-                    required={field.required && !cardFields}
-                  >
-                    {field.label}
-                  </FieldLabel>
-                  {cardFields && index === 0 ? pasteAction(field.label, field.maxLength) : null}
-                </div>
-                <div
-                  className={`flex min-h-0 gap-2 ${cardFields || field.surface === "card" ? "h-full items-stretch" : "items-start"} ${cardFields && !field.multiline ? "px-4 pb-4" : ""}`}
-                >
-                  {field.multiline ? (
-                    <div className={cn("relative min-h-28 flex-1", field.surface === "card" && "mx-4")}>
-                      <SourceTextarea
-                        className={`min-h-28 h-full ${field.secret ? `[&_textarea]:pr-14 ${revealed ? "" : "[&_textarea]:[-webkit-text-security:disc]"}` : ""}`}
-                        disabled={disabled}
-                        id={fieldId}
-                        showLineNumbers={variant !== "card"}
-                        surface={field.surface}
-                        transparent={variant === "card"}
-                        maxLength={field.maxLength}
-                        onChange={updateValue}
-                        placeholder={field.placeholder}
-                        required={field.required}
-                        value={value}
-                      />
-                      {field.secret ? (
-                        <Button
-                          aria-label={revealed ? "Hide password" : "Show password"}
-                          className="absolute right-0 top-0 z-20"
-                          disabled={disabled}
-                          onClick={() =>
-                            setRevealedSecrets((current) => ({
-                              ...current,
-                              [field.channel]: !revealed,
-                            }))
-                          }
-                          size="icon"
-                          type="button"
-                          variant="input-icon"
-                        >
-                          <MorphIcon icon={revealed ? EyeOff : Eye} reducedMotion="user" size={18} />
-                        </Button>
-                      ) : null}
-                    </div>
-                  ) : field.secret ? (
-                    <PasswordInput
-                      code
-                      disabled={disabled}
-                      id={fieldId}
-                      maxLength={field.maxLength}
-                      onChange={(event) => updateValue(event.currentTarget.value)}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                      value={value}
-                    />
-                  ) : (
-                    <Input
-                      className="flex-1"
-                      code
-                      disabled={disabled}
-                      id={fieldId}
-                      maxLength={field.maxLength}
-                      onChange={(event) => updateValue(event.currentTarget.value)}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                      type="text"
-                      value={value}
-                    />
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {resizableFields ? (
+            <SplitStack defaultSize={50} minSize={30} maxSize={70} orientation="vertical">
+              {fields}
+            </SplitStack>
+          ) : (
+            fields
+          )}
           {footer}
         </WorkspaceSurface>
       );
