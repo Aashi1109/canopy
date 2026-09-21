@@ -10,19 +10,16 @@ const hooks = registerHooks({
     if (context.parentURL?.startsWith(routeRoot)) {
       if (specifier === "@sentry/core")
         return stub("export const captureException = error => globalThis.__savedToolsApiTest.captured.push(error);");
-      if (specifier === "@/lib/admin/index.ts")
-        return stub(
-          'export const getAvailableTools = async () => [{toolId:"paperwork.invoice-generator", name:"Invoice Generator", slug:"invoice-generator"}];',
-        );
-      if (specifier === "@/lib/tool-framework/manifest") return stub("export const getToolManifest = async () => [];");
       if (specifier === "@/lib/auth/session.ts")
         return stub("export async function getSession(){ return globalThis.__savedToolsApiTest.session; }");
       if (specifier === "@/lib/tool-framework/catalog")
         return stub(
-          'export async function getTools(){return [{toolId:"devtools.json-formatter", name:"JSON Formatter", href:"/devtools/json-formatter", category:"json-tools"}];}',
+          `export async function getPublicTools(){return [
+            {toolId:"devtools.json-formatter", name:"JSON Formatter", href:"/devtools/json-formatter", category:"JSON", keywords:["json"]},
+            {toolId:"paperwork.invoice-generator", name:"Invoice Generator", href:"/paperwork/invoice-generator", category:"Documents", keywords:["billing"]},
+            {toolId:"media.crop-image", name:"Crop Image", href:"/media/crop-image", category:"Image Editing", keywords:["crop"]},
+          ];}`,
         );
-      if (specifier === "@/lib/tool-framework/categories")
-        return stub('export const TOOL_CATEGORIES = {"json-tools":{label:"JSON"}};');
       if (specifier === "@/lib/user-preferences/savedTools")
         return stub(`
       export async function getSavedTools(userId) { globalThis.__savedToolsApiTest.calls.push(userId); return globalThis.__savedToolsApiTest.ids; }
@@ -58,10 +55,34 @@ test("guest GET returns catalog without querying private preferences", async () 
   const response = await GET(new Request("https://app.test/api/user-preferences/saved-tools"));
   const data = await response.json();
   assert.equal(data.userId, null);
-  assert.equal(data.tools.length, 2);
-  assert.ok(data.tools.some((tool) => tool.toolId === "paperwork.invoice-generator"));
+  assert.deepEqual(data.tools, [
+    { toolId: "devtools.json-formatter", name: "JSON Formatter", href: "/devtools/json-formatter", category: "JSON" },
+    {
+      toolId: "paperwork.invoice-generator",
+      name: "Invoice Generator",
+      href: "/paperwork/invoice-generator",
+      category: "Documents",
+    },
+    { toolId: "media.crop-image", name: "Crop Image", href: "/media/crop-image", category: "Image Editing" },
+  ]);
   assert.deepEqual(state.calls, []);
   assert.equal(response.headers.get("cache-control"), "private, no-store");
+});
+test("authenticated GET reads each account's current private preferences", async () => {
+  for (const [id, savedTools] of [
+    ["a", ["paperwork.invoice-generator"]],
+    ["b", ["media.crop-image"]],
+    ["a", []],
+  ]) {
+    state.session = { user: { id, status: "active" } };
+    state.ids = savedTools;
+    const response = await GET(new Request("https://app.test/api/user-preferences/saved-tools"));
+    const data = await response.json();
+    assert.equal(data.userId, id);
+    assert.deepEqual(data.savedTools, savedTools);
+    assert.equal(response.headers.get("cache-control"), "private, no-store");
+  }
+  assert.deepEqual(state.calls, ["a", "b", "a"]);
 });
 test("writes require auth and reject cross-origin callers", async () => {
   assert.equal((await POST(request({ operation: "merge", toolIds: [], userId: "a" }))).status, 401);

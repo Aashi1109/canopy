@@ -39,13 +39,9 @@ test("public tools use scoped server-resolved dynamic slugs", async () => {
     readFile(new URL("app/media/[slug]/page.tsx", root), "utf8"),
   ]);
 
-  assert.match(paperworkCatalog, /getAvailableTools\(["']paperwork["'][,)]/);
   assert.match(paperworkCatalog, /href=\{`\/paperwork\/\$\{tool\.slug\}`\}/);
-  assert.match(paperworkTool, /getAvailableToolBySlug\(["']paperwork["']/);
   assert.match(paperworkTool, /notFound\(\)/);
   assert.match(paperworkTool, /componentKey/);
-  // Devtools and Media resolve through the tool framework's catalogue; only
-  // Paperwork still reads the control plane directly.
   assert.match(devtoolsCatalog, /getTools\(["']devtools["']\)/);
   assert.match(devtoolsCatalog, /`\/devtools\/\$\{tool\.slug\}`/);
   assert.doesNotMatch(devtoolsCatalog, /redirect\(/);
@@ -151,7 +147,6 @@ test("Paperwork exposes published templates through its scoped read-only API", a
   const route = await readFile(new URL("app/api/paperwork/templates/route.ts", root), "utf8");
 
   assert.match(route, /getPublishedTemplates/);
-  assert.match(route, /getAvailableTools/);
   assert.match(route, /tool\.componentKey === componentKey/);
   assert.match(route, /export\s+async\s+function\s+GET/);
   assert.doesNotMatch(route, /export\s+async\s+function\s+POST/);

@@ -51,15 +51,14 @@ import {
 import { AuthorizationError, type FeatureApp, type FeatureManifestEntry } from "./index.ts";
 import { z } from "zod";
 import { Cache, CACHE_NAMESPACES } from "../cache/index.ts";
+import { catalogCache } from "../tool-framework/catalogCache.ts";
 import { isCategoryKey, TOOL_CATEGORIES, type CategoryKey } from "../tool-framework/categories.ts";
 import { TOOL_CONTENT_DOC_VERSION } from "../tool-framework/content.ts";
 import { uploadToolIcon } from "../tool-framework/cloudinary.ts";
 
 async function invalidateAfterCommit<T>(namespace: string, result: T): Promise<T> {
-  await Promise.all([
-    new Cache(namespace).delete("all"),
-    ...(namespace === CACHE_NAMESPACES.CATALOG ? [new Cache(CACHE_NAMESPACES.ECOSYSTEM).delete("all")] : []),
-  ]);
+  if (namespace === CACHE_NAMESPACES.CATALOG) catalogCache.clear();
+  else await new Cache(namespace).delete("all");
   return result;
 }
 

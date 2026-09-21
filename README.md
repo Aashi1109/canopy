@@ -148,6 +148,13 @@ Put each new migration batch in its own folder and pass that name to the command
 Migrations run only their SQL; run `pnpm db:seed` separately for catalog seeding.
 Applied migrations are not tracked; explicitly rerunning a folder runs its SQL again.
 
+Public tool listings, ecosystem navigation, and global search share a resolved in-memory
+catalog with a 24-hour TTL. Search filters this snapshot, including Paperwork tools, without
+Redis or database reads on cache hits. Admin tool edits clear the snapshot after commit in
+the current process. Other instances refresh on expiry or restart; restart every running
+instance after migrations, seeding, or direct database edits when changes must appear immediately.
+User and authorization caches continue to use Redis.
+
 ### Generic Assistant migration
 
 Run `pnpm db:migrate 0007-generic-assistant` before deploying the generic Assistant

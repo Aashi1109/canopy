@@ -1,100 +1,86 @@
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
-import redis from "redis";
-import { Cache, closeRedis } from "../lib/cache/index.ts";
+import { TOOL_CATEGORIES } from "../lib/tool-framework/categories.ts";
 
-test("ecosystem response reuses assembled data, refreshes after invalidation, and does not cache failures", async (t) => {
+test("ecosystem groups use the public catalog, preserve previews and counts, and recover from failures", async (t) => {
   const routeUrl = new URL("../app/api/tools/ecosystem/route.ts", import.meta.url).href;
-  const fixture = { reads: 0, name: "Invoice Generator", failure: false };
-  globalThis.__ecosystemCacheTest = fixture;
+  const tools = ["paperwork", "devtools", "media"].flatMap((app) =>
+    Array.from({ length: 5 }, (_, index) => ({
+      app,
+      categoryKey: app === "paperwork" ? null : app === "devtools" ? "text-tools" : "image-editing",
+      href: `/${app}/tool-${index}`,
+      icon: { kind: "url", url: `https://example.test/${app}-${index}.png` },
+      name: `${app} tool ${index}`,
+      toolId: `${app}.tool-${index}`,
+    })),
+  );
+  const state = { tools, failure: false };
+  globalThis.__ecosystemCacheTest = state;
   const modules = {
     "@sentry/core": "export const captureException = () => {};",
-    "@/lib/tool-framework/categories": `export const TOOL_CATEGORIES = {};`,
-    "@/lib/tool-framework/catalog": `export const getTools = async () => [];`,
-    "@/lib/tool-framework/icons": `export const resolveIcon = (_id, _name, iconUrl) => ({ kind: "url", url: iconUrl });`,
-    "@/lib/tool-framework/manifest": `export const getToolManifest = async () => {
-      const fixture = globalThis.__ecosystemCacheTest;
-      fixture.reads++;
-      if (fixture.failure) throw new Error("Database unavailable");
-      return [];
+    "@/lib/tool-framework/catalog": `export const getPublicTools = async () => {
+      const state = globalThis.__ecosystemCacheTest;
+      if (state.failure) throw new Error("Database unavailable");
+      return state.tools;
     };`,
-    "@/lib/admin/index.ts": `export const getAvailableTools = async () => [{
-      toolId: "paperwork.invoice-generator", slug: "invoice-generator",
-      name: globalThis.__ecosystemCacheTest.name,
-      iconUrl: "https://example.test/invoice.png",
-    }];`,
-    "@/utils/errorMessage": `export const errorMessage = (error) => error.message;`,
   };
   const hooks = registerHooks({
     resolve(specifier, context, nextResolve) {
-      if (context.parentURL === routeUrl && modules[specifier]) {
-        return { shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(modules[specifier])}` };
-      }
-      if (specifier === "@/lib/cache/index.ts") {
-        return nextResolve(new URL("../lib/cache/index.ts", import.meta.url).href, context);
+      if (context.parentURL === routeUrl) {
+        if (modules[specifier])
+          return { shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(modules[specifier])}` };
+        if (specifier.startsWith("@/"))
+          return nextResolve(
+            new URL(`../${specifier.slice(2)}${specifier.endsWith(".ts") ? "" : ".ts"}`, import.meta.url).href,
+            context,
+          );
       }
       return nextResolve(specifier, context);
     },
   });
-  const variables = ["REDIS_URL"];
-  const previous = variables.map((key) => process.env[key]);
-  t.after(async () => {
-    await closeRedis();
+  t.after(() => {
     hooks.deregister();
     delete globalThis.__ecosystemCacheTest;
-    variables.forEach((key, index) => {
-      if (previous[index] === undefined) delete process.env[key];
-      else process.env[key] = previous[index];
-    });
   });
-  process.env.REDIS_URL = "redis://cache.example.test:6379";
-  let cached = null;
-  t.mock.method(redis, "createClient", () => ({
-    isOpen: false,
-    isReady: false,
-    on() {
-      return this;
-    },
-    async connect() {
-      this.isOpen = this.isReady = true;
-      return this;
-    },
-    async sendCommand(command) {
-      assert.equal(command[1], "ecosystem:all");
-      if (command[0] === "GET") return cached;
-      if (command[0] === "DEL") cached = null;
-      else {
-        assert.deepEqual(command.slice(3), ["EX", "300"]);
-        cached = command[2];
-      }
-      return 1;
-    },
-    destroy() {
-      this.isOpen = this.isReady = false;
-    },
-  }));
   const { GET } = await import(routeUrl);
-  const first = await (await GET()).json();
-  assert.equal(first.groups[0].tools[0].name, "Invoice Generator");
-  assert.deepEqual(first.groups[0].tools[0].icon, { kind: "url", url: "https://example.test/invoice.png" });
-  assert.deepEqual(await (await GET()).json(), first);
-  assert.equal(fixture.reads, 1);
+  const { groups } = await (await GET()).json();
+  assert.deepEqual(
+    groups.map(({ id }) => id),
+    ["documents", "developer", "media"],
+  );
+  for (const [index, app] of ["paperwork", "devtools", "media"].entries()) {
+    const matching = tools.filter((tool) => tool.app === app);
+    assert.equal(groups[index].count, 5);
+    assert.equal(groups[index].href, `/${app}`);
+    assert.deepEqual(
+      groups[index].tools,
+      matching.slice(0, app === "paperwork" ? 5 : 4).map(({ href, icon, name, toolId }) => ({
+        href,
+        icon,
+        name,
+        toolId,
+      })),
+    );
+    assert.deepEqual(
+      groups[index].categories,
+      Object.entries(TOOL_CATEGORIES)
+        .filter(([, category]) => category.app === app)
+        .map(([key, category]) => ({
+          count: matching.filter((tool) => tool.categoryKey === key).length,
+          href: `/${app}?category=${encodeURIComponent(key)}`,
+          label: category.label,
+        })),
+    );
+  }
 
-  fixture.name = "Updated Invoice Generator";
-  await new Cache("ecosystem").delete("all");
-  assert.equal((await (await GET()).json()).groups[0].tools[0].name, fixture.name);
-  assert.equal(fixture.reads, 2);
-
-  await new Cache("ecosystem").delete("all");
-  fixture.failure = true;
-  assert.equal((await GET()).status, 500);
-  assert.equal(cached, null);
-  fixture.failure = false;
-  assert.equal((await GET()).status, 200);
-  assert.equal(fixture.reads, 4);
-
-  delete process.env.REDIS_URL;
-  assert.equal((await GET()).status, 200, "navigation still loads without Redis");
-  assert.equal(fixture.reads, 5);
+  state.tools = [];
+  assert.ok((await (await GET()).json()).groups.every((group) => group.count === 0 && group.tools.length === 0));
+  state.failure = true;
+  const failed = await GET();
+  assert.equal(failed.status, 500);
+  assert.deepEqual(await failed.json(), { error: "Database unavailable" });
+  state.failure = false;
+  state.tools = tools;
+  assert.deepEqual(await (await GET()).json(), { groups });
 });

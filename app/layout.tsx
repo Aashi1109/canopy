@@ -41,6 +41,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(config.appUrl),
   title: "SmartTools",
   description: "Focused utilities for everyday work.",
+  applicationName: "SmartTools",
+  icons: {
+    icon: [{ url: "/logo.svg", type: "image/svg+xml", sizes: "any" }],
+    shortcut: [{ url: "/logo.svg", type: "image/svg+xml", sizes: "any" }],
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -22,6 +22,13 @@ const stubs = {
     }
     export async function getPublishedTemplates() { return []; }
   `,
+  "@/lib/tool-framework/catalog": `
+    export async function getPaperworkTools() {
+      const fixture = globalThis.__paperworkApiErrors;
+      if (fixture.error !== null) throw fixture.error;
+      return fixture.available ? [{ componentKey: "invoice-generator" }] : [];
+    }
+  `,
   "@/lib/invoice-templates/index.ts": `
     export const DocumentTypeSchema = { safeParse: data => ({success: data === "invoice", data}) };
     export const getDocumentDefinition = () => ({toolComponentKey: "invoice-generator"});

@@ -24,7 +24,7 @@
  */
 
 import { cache } from "react";
-import { Cache, CACHE_NAMESPACES } from "../cache/index.ts";
+import { catalogCache } from "./catalogCache.ts";
 
 import {
   db,
@@ -33,16 +33,16 @@ import {
   managedToolsTable,
   type ToolContentRow,
 } from "../../db/index.ts";
-import { isToolAvailable } from "../tool-catalog/index.ts";
+import { getEnabledTools, isToolAvailable, isValidToolSlug, mergeToolManifest } from "../tool-catalog/index.ts";
+import type { ToolApp as PublicToolApp } from "../tool-catalog/index.ts";
 
-import { isCategoryKey, type CategoryKey, type ToolApp } from "./categories";
+import { isCategoryKey, TOOL_CATEGORIES, type CategoryKey, type ToolApp } from "./categories";
 import { resolveContent } from "./content";
 import { resolveIcon, type ResolvedIcon } from "./icons";
 import type { ToolContent, ToolSpec } from "./spec";
 
 /** How many tools `relatedTools` returns, matching the tool page's shelf. */
 const RELATED_LIMIT = 3;
-const catalogCache = new Cache(CACHE_NAMESPACES.CATALOG);
 
 /** A definition key is a directory name; anything else is not importable. */
 const DEFINITION_KEY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -68,6 +68,13 @@ export type CatalogTool = {
   readonly icon: ResolvedIcon;
   readonly href: string;
   readonly spec: ToolSpec;
+};
+
+/** Public discovery data shared by search and ecosystem navigation. */
+export type PublicTool = Pick<CatalogTool, "toolId" | "name" | "description" | "href" | "icon" | "keywords"> & {
+  readonly app: PublicToolApp;
+  readonly category: string;
+  readonly categoryKey: CategoryKey | null;
 };
 
 export function definitionKeyOf(toolId: string): string | null {
@@ -144,39 +151,83 @@ async function buildTool(
 
 /**
  * Reuse the public catalog snapshot across requests for 24 hours.
- * Admin mutations invalidate it after commit; Redis failures use the database.
+ * Cache the resolved catalog, so warm reads need neither Redis nor rebuilding.
+ * Admin mutations invalidate it after commit in the current process.
  */
-const loadCatalog = cache(async (): Promise<readonly CatalogTool[]> => {
-  if (!isDatabaseConfigured()) return [];
+const loadCatalog = cache(async () => {
+  if (!isDatabaseConfigured()) return { tools: [], paperworkTools: [], publicTools: [] };
 
-  const { rows, contentRows } = await catalogCache.remember(
+  return catalogCache.remember(
     "all",
     async () => {
       const [rows, contentRows] = await Promise.all([db.select().from(managedToolsTable), getToolContentRows()]);
-      return {
-        rows: rows.filter(isToolAvailable),
-        contentRows: contentRows.filter((row) => row.publishedAt !== null),
-      };
+      const contentByToolId = new Map(
+        contentRows.filter((row) => row.publishedAt !== null).map((row) => [row.toolId, row] as const),
+      );
+      const built = await Promise.all(
+        rows
+          .filter(isToolAvailable)
+          .filter((row) => row.app !== "paperwork" && isValidToolSlug(row.app, row.slug))
+          .map((row) => buildTool(row, contentByToolId.get(row.toolId) ?? null)),
+      );
+      const tools = built
+        .filter((tool): tool is CatalogTool => tool !== null)
+        .sort((left, right) => (left.app === right.app ? left.order - right.order : left.app.localeCompare(right.app)));
+
+      // Paperwork's route implementations predate tools/*; preserve its existing manifest merge rules.
+      const paperworkRows = rows.filter((row) => row.app === "paperwork");
+      const paperworkTools = getEnabledTools(
+        mergeToolManifest(
+          paperworkRows,
+          paperworkRows.map((row) => ({
+            id: row.toolId,
+            app: row.app,
+            componentKey: definitionKeyOf(row.toolId) ?? row.toolId,
+            defaultName: row.name,
+            defaultDescription: row.description,
+          })),
+        ),
+        "paperwork",
+      );
+      const publicTools: PublicTool[] = [
+        ...tools.map((tool) => ({
+          toolId: tool.toolId,
+          app: tool.app,
+          name: tool.name,
+          description: tool.description,
+          href: tool.href,
+          icon: tool.icon,
+          keywords: tool.keywords,
+          category: TOOL_CATEGORIES[tool.category].label,
+          categoryKey: tool.category,
+        })),
+        ...paperworkTools.map((tool) => ({
+          toolId: tool.toolId,
+          app: tool.app,
+          name: tool.name,
+          description: tool.description,
+          href: `/paperwork/${tool.slug}`,
+          icon: resolveIcon(tool.toolId, tool.name, tool.iconUrl),
+          keywords: tool.keywords ?? [],
+          category: "Documents",
+          categoryKey: null,
+        })),
+      ];
+      return { tools, paperworkTools, publicTools };
     },
     24 * 60 * 60,
   );
-
-  const contentByToolId = new Map(contentRows.map((contentRow) => [contentRow.toolId, contentRow] as const));
-
-  const built = await Promise.all(
-    rows.filter(isToolAvailable).map((row) => buildTool(row, contentByToolId.get(row.toolId) ?? null)),
-  );
-
-  return built
-    .filter((tool): tool is CatalogTool => tool !== null)
-    .sort((left, right) => (left.app === right.app ? left.order - right.order : left.app.localeCompare(right.app)));
 });
 
 /** Every enabled, non-archived, slugged tool. Optionally narrowed to one app. */
 export const getTools = cache(async (app?: ToolApp): Promise<readonly CatalogTool[]> => {
-  const tools = await loadCatalog();
+  const { tools } = await loadCatalog();
   return app ? tools.filter((tool) => tool.app === app) : tools;
 });
+
+export const getPaperworkTools = cache(async () => (await loadCatalog()).paperworkTools);
+
+export const getPublicTools = cache(async (): Promise<readonly PublicTool[]> => (await loadCatalog()).publicTools);
 
 /**
  * Resolves a public URL to a tool.
@@ -185,7 +236,7 @@ export const getTools = cache(async (app?: ToolApp): Promise<readonly CatalogToo
  * the same guard `findAvailableToolBySlug` applies, for the same reason.
  */
 export const resolveToolPage = cache(async (app: ToolApp, slug: string): Promise<CatalogTool | null> => {
-  const matches = (await loadCatalog()).filter((tool) => tool.app === app && tool.slug === slug);
+  const matches = (await loadCatalog()).tools.filter((tool) => tool.app === app && tool.slug === slug);
   return matches.length === 1 ? matches[0] : null;
 });
 
@@ -193,7 +244,7 @@ export const resolveToolPage = cache(async (app: ToolApp, slug: string): Promise
  * Curated related tools, falling back to the rest of the same category.
  */
 export const relatedTools = cache(async (toolId: string): Promise<readonly CatalogTool[]> => {
-  const tools = await loadCatalog();
+  const { tools } = await loadCatalog();
   const tool = tools.find((candidate) => candidate.toolId === toolId);
   if (!tool) return [];
 

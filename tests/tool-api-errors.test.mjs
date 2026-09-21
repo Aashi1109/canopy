@@ -13,7 +13,7 @@ const hooks = registerHooks({
         return stub("export const captureException = error => globalThis.__toolApiErrorsTest.captured.push(error);");
       if (specifier === "next/server") return nextResolve("next/server.js", context);
       if (specifier === "@/lib/tool-framework/catalog")
-        return stub("export async function getTools() { throw globalThis.__toolApiErrorsTest.failure; }");
+        return stub("export async function getPublicTools() { throw globalThis.__toolApiErrorsTest.failure; }");
       if (specifier === "@/lib/tool-framework/categories") return stub("export const TOOL_CATEGORIES = {};");
       if (specifier === "@/lib/tool-framework/icons") return stub("export const resolveIcon = () => null;");
       if (specifier === "@/lib/tool-framework/manifest") return stub("export const getToolManifest = async () => [];");

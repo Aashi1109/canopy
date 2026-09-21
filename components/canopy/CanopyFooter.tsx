@@ -1,5 +1,4 @@
-import { ProductFooter } from "@/components/ui/index.tsx";
-import { Blocks } from "lucide-react";
+import { ProductFooter, SmartToolsLogoMark } from "@/components/ui/index.tsx";
 
 /**
  * Suite and company navigation only — no tool is named here.
@@ -36,7 +35,7 @@ export function CanopyFooter() {
   return (
     <ProductFooter
       brand="SmartTools"
-      brandMark={<Blocks aria-hidden="true" />}
+      brandMark={<SmartToolsLogoMark aria-hidden="true" mode="dark" />}
       columns={footerColumns}
       copyright={`© ${new Date().getFullYear()} SmartTools. All rights reserved.`}
       description="Practical browser tools for documents, developer workflows, media, and everyday tasks."

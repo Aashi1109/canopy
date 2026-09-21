@@ -17,6 +17,14 @@ import {
   ProductHeader,
 } from "@/components/ui/index.tsx";
 import { headers } from "next/headers";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Online Developer, PDF & Image Tools | SmartTools",
+  openGraph: {
+    title: "Online Developer, PDF & Image Tools | SmartTools",
+  },
+};
 
 const projects = [
   {

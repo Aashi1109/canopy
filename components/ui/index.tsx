@@ -32,7 +32,6 @@ import { SavedToolsTrigger, SaveToolButton } from "./components/SavedTools.tsx";
 export { SavedToolsProvider, SavedToolsTrigger, SaveToolButton } from "./components/SavedTools.tsx";
 import { cloneElement } from "react";
 import type { AnchorHTMLAttributes, ComponentProps, HTMLAttributes, ReactElement, ReactNode } from "react";
-import canopyIcon from "./assets/canopy-icon.png";
 import { Alert, AlertDescription, AlertTitle } from "./components/alert.tsx";
 import { Badge } from "./components/badge.tsx";
 import { Checkbox as CheckboxControl } from "./components/checkbox.tsx";
@@ -193,16 +192,35 @@ export function AppContainer({ className, ...props }: HTMLAttributes<HTMLDivElem
 export { AccountNavigation } from "./components/AccountNavigation.tsx";
 export type { AccountNavigationProps } from "./components/AccountNavigation.tsx";
 
+type SmartToolsLogoMarkProps = Omit<ComponentProps<"img">, "alt" | "src"> & {
+  alt?: string;
+  mode?: "light" | "dark";
+  title?: string;
+};
+
+export function SmartToolsLogoMark({ alt, className, mode = "light", title, ...props }: SmartToolsLogoMarkProps) {
+  return (
+    <img
+      alt={alt ?? title ?? ""}
+      className={cn("block", className)}
+      height={160}
+      src={mode === "dark" ? "/logo-dark.svg" : "/logo.svg"}
+      width={160}
+      {...props}
+    />
+  );
+}
+
 export function BrandLockup({ className, href, name }: { className?: string; href: string; name: string }) {
   return (
     <a
       className={cn(
-        "inline-flex h-[30px] items-stretch gap-2.5 rounded-lg text-foreground no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "inline-flex h-[30px] items-stretch gap-2 rounded-lg text-foreground no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         className,
       )}
       href={href}
     >
-      <img alt="" className="aspect-square h-full w-auto shrink-0" height={30} src={canopyIcon.src} width={30} />
+      <SmartToolsLogoMark className="aspect-square h-full w-auto shrink-0" />
       <span className="flex h-full flex-col justify-center gap-1 leading-none">
         <Text className="block">{name}</Text>
         {name !== "SmartTools" ? <Caption className="block text-muted-foreground">by SmartTools</Caption> : null}
@@ -244,20 +262,10 @@ export function ProductHeader({
       >
         <a
           aria-label="SmartTools home"
-          className="flex shrink-0 items-center gap-[13px] rounded-lg text-foreground no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="flex shrink-0 items-center gap-2 rounded-lg text-foreground no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           href="/"
         >
-          <span
-            aria-hidden="true"
-            className={cn(
-              "relative block shrink-0 rounded-[10px] bg-surface-ink",
-              compact ? "size-10" : "size-10 xl:size-12",
-            )}
-          >
-            <span className="absolute top-3 left-2.5 h-3.5 w-[22px] rounded-[3px] bg-on-ink" />
-            <span className="absolute top-[22px] left-4 h-3.5 w-[22px] rounded-[3px] bg-primary" />
-            <span className="absolute top-2.5 left-8 size-[7px] rounded-full bg-success" />
-          </span>
+          <SmartToolsLogoMark className={cn("shrink-0", compact ? "size-10" : "size-10 xl:size-12")} />
           <span className="flex flex-col gap-0.5">
             <Strong className="">
               Smart<span className="text-primary">Tools</span>

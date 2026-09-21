@@ -15,7 +15,7 @@ const hooks = registerHooks({
     if (context.parentURL === sourceUrl) {
       if (specifier === "@/lib/tool-framework/catalog")
         return moduleUrl(`
-        export async function getTools() {
+        export async function getPublicTools() {
           const state = globalThis.__blogSitemapTest;
           if (state.toolsError) throw new Error("Tool catalog unavailable");
           return state.tools;
@@ -51,11 +51,16 @@ test.after(() => {
 
 test("sitemap preserves tool entries and adds blog publication timestamps and canonical URLs", async () => {
   const publishedUpdatedAt = new Date("2026-09-16T10:00:00Z");
-  state.tools = [{ href: "/devtools/json-formatter" }];
+  state.tools = [{ href: "/devtools/json-formatter" }, { href: "/paperwork/invoice-generator" }];
   state.posts = [{ slug: "using-json", publishedUpdatedAt }];
   assert.deepEqual(await sitemap(), [
     {
       url: "https://smarttools.example/devtools/json-formatter",
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
+      url: "https://smarttools.example/paperwork/invoice-generator",
       changeFrequency: "weekly",
       priority: 0.7,
     },
@@ -66,7 +71,7 @@ test("sitemap preserves tool entries and adds blog publication timestamps and ca
       priority: 0.7,
     },
   ]);
-  assert.deepEqual(state.limits, [49999]);
+  assert.deepEqual(state.limits, [49998]);
 });
 
 test("either catalog can fail independently without losing the other catalog's URLs", async () => {

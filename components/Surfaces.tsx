@@ -680,10 +680,10 @@ function NavigatorSurface<Item>({
 }
 
 type GeneratedListProps<Item> = {
-  getDescription?: (item: Item) => ReactNode;
+  getDescription?: (item: Item) => string | undefined;
   getId: (item: Item) => string;
   getLabel: (item: Item) => ReactNode;
-  getValue: (item: Item) => ReactNode;
+  getValue: (item: Item) => string;
   items: readonly Item[];
   renderAction?: (item: Item, index: number) => ReactNode;
 };
@@ -696,23 +696,30 @@ function GeneratedList<Item>({
   items,
   renderAction,
 }: GeneratedListProps<Item>) {
+  const longestLine = items.reduce((longest, item) => {
+    const content = `${getValue(item)}\n${getDescription?.(item) ?? ""}`;
+    return content.split(/\r\n?|\n/).reduce((length, line) => Math.max(length, line.length), longest);
+  }, 0);
+
   return (
     <ScrollRegion accessibleName="Generated values" className="flex-1">
-      <ol className="flex min-w-0 flex-wrap gap-2 p-4">
+      <ol
+        className="grid min-w-0 gap-2 p-4 font-mono text-code"
+        style={{
+          gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, calc(${longestLine}ch + 8rem)), 1fr))`,
+        }}
+      >
         {items.map((item, index) => {
           const description = getDescription?.(item);
           return (
-            <li
-              className="flex min-w-[min(100%,8rem)] max-w-full flex-[1_1_max-content] items-center gap-3 rounded-lg bg-muted/55 px-3 py-2"
-              key={getId(item)}
-            >
-              <Caption className="shrink-0 text-muted-foreground">{getLabel(item)}</Caption>
+            <li className="flex min-w-0 items-center gap-3 rounded-lg bg-muted/55 px-3 py-2" key={getId(item)}>
+              <Caption className="shrink-0 font-sans text-muted-foreground">{getLabel(item)}</Caption>
               <div className="min-w-0 flex-1">
                 <InlineCode className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                   {getValue(item)}
                 </InlineCode>
                 {description ? (
-                  <Muted className="mt-1 whitespace-pre-wrap text-muted-foreground [overflow-wrap:anywhere]">
+                  <Muted className="mt-1 whitespace-pre-wrap font-sans text-muted-foreground [overflow-wrap:anywhere]">
                     {description}
                   </Muted>
                 ) : null}

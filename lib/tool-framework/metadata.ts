@@ -14,16 +14,7 @@ import { resolveToolPage, type CatalogTool } from "./catalog";
 import type { ToolApp } from "./categories";
 import { toolFaviconHref } from "./icons";
 
-/**
- * Product suffix for Open Graph titles. Mirrors each app layout's
- * `title.template`, which Next does not apply to Open Graph.
- */
-const APP_SUFFIX: Readonly<Record<ToolApp, string>> = {
-  devtools: "SmartTools Devtools",
-  media: "SmartTools Media Tools",
-};
-
-function toolMetadataFor(tool: CatalogTool, app: ToolApp): Metadata {
+function toolMetadataFor(tool: CatalogTool): Metadata {
   return {
     title: tool.seoTitle,
     description: tool.seoDescription,
@@ -31,7 +22,7 @@ function toolMetadataFor(tool: CatalogTool, app: ToolApp): Metadata {
     alternates: { canonical: tool.href },
     icons: { icon: toolFaviconHref(tool.icon) },
     openGraph: {
-      title: `${tool.seoTitle} | ${APP_SUFFIX[app]}`,
+      title: `${tool.seoTitle} | SmartTools`,
       description: tool.seoDescription,
       type: "website",
       url: tool.href,
@@ -47,6 +38,6 @@ export function toolMetadata(app: ToolApp): (args: ToolMetadataArgs) => Promise<
     const { slug } = await params;
     const tool = await resolveToolPage(app, slug);
     if (!tool) return { title: "Tool not found", robots: { index: false } };
-    return toolMetadataFor(tool, app);
+    return toolMetadataFor(tool);
   };
 }

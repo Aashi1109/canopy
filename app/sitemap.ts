@@ -1,11 +1,11 @@
 import config from "@/lib/config/config.ts";
-import { getTools } from "@/lib/tool-framework/catalog";
+import { getPublicTools } from "@/lib/tool-framework/catalog";
 import { getBlogSitemapEntries } from "@/lib/blog/queries";
 import type { MetadataRoute } from "next";
 
 // Deliberately no `generateStaticParams` companion anywhere: slugs and
-// enablement live in `managed_tools`, so this must be read at request time or
-// every admin toggle would need a redeploy to show up.
+// enablement live in `managed_tools`, so use the runtime public catalog cache
+// instead of freezing the tool list until the next deployment.
 //
 // `force-dynamic` is what actually enforces that. Next prerenders `sitemap.ts`
 // at build time by default, which both froze the tool list into the bundle and
@@ -18,9 +18,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // A sitemap is not worth a 500. If the catalog cannot be read, serve the
   // known-good static entries rather than failing the whole route.
-  let tools: Awaited<ReturnType<typeof getTools>> = [];
+  let tools: Awaited<ReturnType<typeof getPublicTools>> = [];
   try {
-    tools = await getTools();
+    tools = await getPublicTools();
   } catch {
     tools = [];
   }

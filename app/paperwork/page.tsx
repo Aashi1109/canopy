@@ -1,7 +1,6 @@
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { getOptionalSession } from "@/lib/auth/session.ts";
-import { getAvailableTools } from "@/lib/admin/index.ts";
-import { getToolManifest } from "@/lib/tool-framework/manifest";
+import { getPaperworkTools } from "@/lib/tool-framework/catalog";
 import { AccountNavigation, CatalogCard, PageHero, ProductHeader, StatusBadge } from "@/components/ui/index.tsx";
 import {
   ClipboardCheck,
@@ -27,10 +26,7 @@ const TOOL_ICONS: Record<string, LucideIcon> = {
 
 export default async function HomePage() {
   const requestHeaders = await headers();
-  const [tools, session] = await Promise.all([
-    getAvailableTools("paperwork", await getToolManifest()),
-    getOptionalSession(requestHeaders),
-  ]);
+  const [tools, session] = await Promise.all([getPaperworkTools(), getOptionalSession(requestHeaders)]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">

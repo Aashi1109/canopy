@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "SmartTools Paperwork - Free Online Invoice & Receipt Generator Toolkit",
+  title: {
+    default: "Invoice & Receipt Generators | SmartTools",
+    template: "%s | SmartTools",
+  },
   description:
     "Generate professional invoices, receipts, expense reports, mileage logs, tax estimates, and W-9 contractor forms online for free.",
 };

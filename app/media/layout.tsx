@@ -4,8 +4,8 @@ import type { Metadata, Viewport } from "next";
 export const metadata: Metadata = {
   metadataBase: new URL(config.appUrl),
   title: {
-    default: "SmartTools Media Tools",
-    template: "%s | SmartTools Media Tools",
+    default: "PDF & Image Tools | SmartTools",
+    template: "%s | SmartTools",
   },
   description: "Private image and PDF tools that process files entirely in your browser.",
 };

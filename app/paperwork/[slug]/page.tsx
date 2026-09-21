@@ -1,10 +1,13 @@
 import { getOptionalSession } from "@/lib/auth/session.ts";
-import { getAvailableToolBySlug, getAvailableTools, getPublishedTemplates } from "@/lib/admin/index.ts";
+import { getPublishedTemplates } from "@/lib/admin/index.ts";
+import { findAvailableToolBySlug } from "@/lib/tool-catalog/index.ts";
 import type { DocumentType } from "@/lib/invoice-templates/index.ts";
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import App from "@/app/paperwork/components/App";
-import { getToolManifest } from "@/lib/tool-framework/manifest";
+import { getPaperworkTools } from "@/lib/tool-framework/catalog";
 
 const DOCUMENT_TYPE_BY_COMPONENT_KEY: Record<string, DocumentType> = {
   "invoice-generator": "invoice",
@@ -16,13 +19,25 @@ const DOCUMENT_TYPE_BY_COMPONENT_KEY: Record<string, DocumentType> = {
   "1099-nec-tracker": "1099-nec-tracker",
 };
 
+const getPaperworkTool = cache(async (slug: string) =>
+  findAvailableToolBySlug(await getPaperworkTools(), "paperwork", slug),
+);
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const tool = await getPaperworkTool(slug);
+
+  if (!tool || !DOCUMENT_TYPE_BY_COMPONENT_KEY[tool.componentKey]) notFound();
+
+  return { title: tool.name };
+}
+
 export default async function ToolPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const requestHeaders = await headers();
-  const manifest = await getToolManifest();
   const [tool, tools, session] = await Promise.all([
-    getAvailableToolBySlug("paperwork", slug, manifest),
-    getAvailableTools("paperwork", manifest),
+    getPaperworkTool(slug),
+    getPaperworkTools(),
     getOptionalSession(requestHeaders),
   ]);
 

@@ -1,9 +1,9 @@
-import { getAvailableTools, getPublishedTemplates } from "@/lib/admin/index.ts";
+import { getPublishedTemplates } from "@/lib/admin/index.ts";
 import { DocumentTypeSchema, getDocumentDefinition } from "@/lib/invoice-templates/index.ts";
 import { NextResponse } from "next/server";
 import { captureException } from "@sentry/core";
 
-import { getToolManifest } from "@/lib/tool-framework/manifest";
+import { getPaperworkTools } from "@/lib/tool-framework/catalog";
 import { errorMessage } from "@/utils/errorMessage";
 
 export async function GET(request: Request) {
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
     const validatedDocumentType = parsedDocumentType.data;
     const componentKey = getDocumentDefinition(validatedDocumentType).toolComponentKey;
-    const tools = await getAvailableTools("paperwork", await getToolManifest());
+    const tools = await getPaperworkTools();
     if (!tools.some((tool) => tool.componentKey === componentKey)) {
       return NextResponse.json({ error: "Tool not found." }, { status: 404 });
     }

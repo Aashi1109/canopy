@@ -1,10 +1,7 @@
 import { getSession } from "@/lib/auth/session.ts";
 import { captureException } from "@sentry/core";
-import { getAvailableTools } from "@/lib/admin/index.ts";
-import { getToolManifest } from "@/lib/tool-framework/manifest";
 import { z } from "zod";
-import { getTools } from "@/lib/tool-framework/catalog";
-import { TOOL_CATEGORIES } from "@/lib/tool-framework/categories";
+import { getPublicTools } from "@/lib/tool-framework/catalog";
 import { changeSavedTools, getSavedTools } from "@/lib/user-preferences/savedTools";
 
 const headers = { "Cache-Control": "private, no-store" };
@@ -26,26 +23,7 @@ const mutation = z
   .refine((value) => value.operation === "merge" || value.toolIds.length === 1);
 
 async function bookmarkCatalog() {
-  const [tools, documents] = await Promise.all([
-    getTools(),
-    getToolManifest().then((manifest) => getAvailableTools("paperwork", manifest)),
-  ]);
-  return [
-    ...tools.map((tool) => ({
-      toolId: tool.toolId,
-      name: tool.name,
-      href: tool.href,
-      category: TOOL_CATEGORIES[tool.category].label,
-    })),
-    ...documents
-      .filter((tool) => tool.slug)
-      .map((tool) => ({
-        toolId: tool.toolId,
-        name: tool.name,
-        href: `/paperwork/${tool.slug}`,
-        category: "Documents",
-      })),
-  ];
+  return (await getPublicTools()).map(({ toolId, name, href, category }) => ({ toolId, name, href, category }));
 }
 
 export async function GET(request: Request) {

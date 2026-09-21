@@ -3,5 +3,4 @@ export const CACHE_NAMESPACES = {
   USER_ROLES: "user-roles",
   ROLES: "roles",
   CATALOG: "catalog",
-  ECOSYSTEM: "ecosystem",
 } as const;

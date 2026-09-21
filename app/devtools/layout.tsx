@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
   title: {
-    default: "SmartTools Devtools",
-    template: "%s | SmartTools Devtools",
+    default: "Online Developer Tools | SmartTools",
+    template: "%s | SmartTools",
   },
   description: "Fast, private browser tools for formatting, inspecting, and converting data.",
 };

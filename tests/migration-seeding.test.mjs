@@ -150,7 +150,7 @@ test("selected migrations and separate seeding", async (t) => {
     await t.test("only the selected folder runs, in filename order, without seeding", async () => {
       await run("selected", 0, null, ["0002-tool-icon-url"]);
       assert.deepEqual(state.migrations, ["ICON ONE", "ICON TWO"]);
-      assert.deepEqual(state.deleted, ["catalog:all", "ecosystem:all"]);
+      assert.deepEqual(state.deleted, [], "migrations do not contact Redis for the process-local public catalog");
       assert.equal(
         state.cloudName,
         process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim() || process.env.CLOUDINARY_CLOUD_NAME?.trim() || "",

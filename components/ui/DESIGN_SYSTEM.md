@@ -414,8 +414,10 @@ selection. Watermark uses this pattern; preview selection updates the same value
 ### Generated value lists
 
 `GeneratedList` in `components/Surfaces.tsx` lays out independent, copyable
-results in content-sized rows that wrap with the result panel. Short values
-share a row; longer values and captions receive more width, up to a full row.
+results in an auto-fill grid sized from the longest value or caption line,
+with room for numbering and copy controls. Short values share a row; longer
+content receives wider columns, up to a full row. Incomplete rows retain the
+same column widths instead of stretching their last items across unused space.
 Items retain their source order, numbering, and copy controls. Multiline values
 preserve line breaks, and long unbroken values wrap without horizontal overflow.
 Only the results scroll; the result header and bulk actions stay visible.

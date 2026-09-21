@@ -3,7 +3,6 @@ import publicConfig from "../../lib/config/public.ts";
 import { readFile, readdir } from "node:fs/promises";
 import { config as loadEnv } from "dotenv";
 import pg from "pg";
-import { Cache, CACHE_NAMESPACES, closeRedis } from "../../lib/cache/index.ts";
 
 const [folder, ...extra] = process.argv.slice(2);
 if (!folder || extra.length || !/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(folder)) {
@@ -40,11 +39,7 @@ try {
     await client.query(migration);
     console.log(`Applied ${folder}/${name}`);
   }
-  await Promise.all([
-    new Cache(CACHE_NAMESPACES.CATALOG).delete("all"),
-    new Cache(CACHE_NAMESPACES.ECOSYSTEM).delete("all"),
-  ]);
+  console.log("Restart running application instances to refresh the in-memory tool catalog.");
 } finally {
-  closeRedis();
   await client.end();
 }

@@ -580,8 +580,8 @@ function ProductFooter({
       <div className="mx-auto flex w-full min-w-0 max-w-[1440px] flex-col gap-8 px-6 pt-14 pb-8 @min-[1024px]/footer:px-[150px]">
         <div className="grid min-w-0 gap-10 @min-[768px]/footer:grid-cols-[300px_minmax(0,1fr)] @min-[768px]/footer:justify-between">
           <div className="flex min-w-0 flex-col gap-3 break-words">
-            <div className="flex items-center gap-2.5">
-              <span className="grid size-[30px] place-items-center rounded-lg bg-on-ink text-surface-ink [&_svg]:size-[17px]">
+            <div className="flex items-center gap-2">
+              <span className="grid size-[30px] shrink-0 place-items-center text-on-ink [&_img]:size-[30px] [&_svg]:size-[30px]">
                 {brandMark}
               </span>
               <Strong className="">{brand}</Strong>

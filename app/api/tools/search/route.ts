@@ -1,5 +1,4 @@
-import { TOOL_CATEGORIES } from "@/lib/tool-framework/categories";
-import { getTools } from "@/lib/tool-framework/catalog";
+import { getPublicTools } from "@/lib/tool-framework/catalog";
 import { errorMessage } from "@/utils/errorMessage";
 import { captureException } from "@sentry/core";
 
@@ -11,16 +10,13 @@ export async function GET(request: Request) {
   if (!query) return Response.json({ results: [] });
 
   try {
-    const results = (await getTools())
+    const results = (await getPublicTools())
       .filter((tool) =>
-        [tool.name, tool.description, TOOL_CATEGORIES[tool.category].label, ...tool.keywords]
-          .join(" ")
-          .toLowerCase()
-          .includes(query),
+        [tool.name, tool.description, tool.category, ...tool.keywords].join(" ").toLowerCase().includes(query),
       )
       .slice(0, RESULT_LIMIT)
       .map((tool) => ({
-        category: TOOL_CATEGORIES[tool.category].label,
+        category: tool.category,
         description: tool.description,
         href: tool.href,
         icon: tool.icon,

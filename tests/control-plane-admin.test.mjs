@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import redis from "redis";
 import { Cache, closeRedis } from "../lib/cache/index.ts";
+import { catalogCache } from "../lib/tool-framework/catalogCache.ts";
 
 import { ADMIN_ACCESS } from "../lib/authorization/index.ts";
 import {
@@ -224,6 +225,7 @@ test("catalog and role caches invalidate only after successful commits", async (
   const previous = variables.map((key) => process.env[key]);
   t.after(async () => {
     await closeRedis();
+    catalogCache.clear();
     variables.forEach((key, index) => {
       if (previous[index] === undefined) delete process.env[key];
       else process.env[key] = previous[index];
@@ -264,11 +266,14 @@ test("catalog and role caches invalidate only after successful commits", async (
     for (const rollback of [false, true]) {
       committed = false;
       const before = invalidated.length;
+      const snapshot = { tools: [], paperworkTools: [], publicTools: [] };
+      catalogCache.set("all", snapshot);
       await withFakeDatabase(reads, async () => {
         const transaction = db.transaction;
         db.transaction = async (callback) => {
           const result = await transaction(callback);
           assert.equal(invalidated.length, before);
+          assert.equal(catalogCache.get("all"), snapshot, "public cache remains live until commit succeeds");
           if (rollback) throw new Error("Commit failed");
           committed = true;
           return result;
@@ -276,10 +281,8 @@ test("catalog and role caches invalidate only after successful commits", async (
         if (rollback) await assert.rejects(operation, /Commit failed/);
         else await operation();
       });
-      assert.deepEqual(
-        invalidated.slice(before),
-        rollback ? [] : key === "catalog:all" ? [key, "ecosystem:all"] : [key],
-      );
+      assert.deepEqual(invalidated.slice(before), rollback || key === "catalog:all" ? [] : [key]);
+      assert.equal(catalogCache.get("all"), !rollback && key === "catalog:all" ? undefined : snapshot);
     }
   }
 });

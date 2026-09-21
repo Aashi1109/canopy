@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import InformationPage from "@/app/paperwork/components/InformationPage";
 
 export const metadata: Metadata = {
-  title: "About SmartTools Paperwork",
+  title: "About Paperwork",
   description: "Learn how SmartTools Paperwork helps small businesses create dependable documents quickly.",
 };
 
