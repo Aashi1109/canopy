@@ -350,3 +350,66 @@ test("task lists retain checked state and remain read-only in the shared viewer"
   await expect(preview.getByRole("checkbox", { name: "Completed", exact: true })).toBeChecked();
   await expect(preview.getByText("Updated task", { exact: true })).toBeVisible();
 });
+
+test("uploaded Markdown passes the real worker file boundary and recovers through remove, paste and drop", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto("/devtools/markdown-previewer");
+  const input = editor(page);
+  const paste = page.getByRole("button", { name: "Paste into Markdown document", exact: true });
+  await expect(input).toBeEditable();
+  // This effect-backed action also confirms the file input has hydrated.
+  await expect(paste).toBeEnabled();
+  const paragraph = "All uploaded Markdown content remains available in the rendered preview. ".repeat(24);
+  let markdown = "# Uploaded Markdown file\n\n";
+  let section = 0;
+  while (markdown.length < 1_940_000) {
+    section += 1;
+    markdown += `## Uploaded section ${section}\n\n${paragraph}\n\n`;
+  }
+  markdown += "## End of uploaded Markdown\n\nThe complete file reached the worker.\n";
+  const choosingFile = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Upload", exact: true }).click();
+  await (
+    await choosingFile
+  ).setFiles({
+    name: "large-worker-upload.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from(markdown),
+  });
+  await expect.poll(async () => (await input.inputValue()).length).toBe(markdown.length);
+  await waitForPreview(page);
+  const preview = previewDocument(page);
+  await expect(preview.getByRole("heading", { name: "Uploaded Markdown file", exact: true })).toBeVisible();
+  await expect(preview.getByRole("heading", { name: "End of uploaded Markdown", exact: true })).toHaveCount(1);
+  const remove = page.getByRole("button", { name: "Remove large-worker-upload.md", exact: true });
+  await expect(remove).toBeVisible();
+  await expect(page.getByRole("button", { name: "Upload", exact: true })).toBeEnabled();
+  await expect(paste).toBeEnabled();
+  await page.screenshot({ path: "/tmp/canopy-markdown-live-upload-success.png" });
+
+  await remove.click();
+  await expect(input).toHaveValue("");
+  await expect(input).toBeFocused();
+  await expect(page.locator(PREVIEW_SELECTOR)).toHaveCount(0);
+  await page.evaluate(() => navigator.clipboard.writeText("# Pasted after removal\n\nRecovered source."));
+  await paste.click();
+  await waitForPreview(page);
+  await expect(preview.getByRole("heading", { name: "Pasted after removal", exact: true })).toBeVisible();
+  await expect(page.locator('[data-slot="file-chip"]')).toHaveCount(0);
+
+  await input.evaluate((element) => {
+    const transfer = new DataTransfer();
+    transfer.items.add(new File(["# Dropped Markdown\n\nEmpty MIME types use the file extension."], "dropped.md"));
+    element.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: transfer }));
+  });
+  await waitForPreview(page);
+  await expect(preview.getByRole("heading", { name: "Dropped Markdown", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Remove dropped.md", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Remove dropped.md", exact: true }).click();
+  await expect(input).toHaveValue("");
+  await expect(page.locator(PREVIEW_SELECTOR)).toHaveCount(0);
+});

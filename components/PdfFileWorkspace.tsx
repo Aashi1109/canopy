@@ -8,18 +8,16 @@ import {
   Button,
   Caption,
   DownloadResult,
+  FileChip,
   FileQueueItem,
   MediaPreview,
   Muted,
   PdfViewer,
   ProcessingStatus,
   ToolOptionsPanel,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+  ToolActionButton,
 } from "@/components/ui/index.tsx";
-import { Check, FileText, Upload, X } from "lucide-react";
+import { Check, FileText, Upload } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import { ArtifactDownloadButton } from "@/components/ArtifactDownloadButton";
@@ -179,42 +177,36 @@ export function PdfFileWorkspace({
     setInputIssue(selection.issue);
     if (selection.files.length) props.onInputChange({ ...props.input, files: selection.files });
   };
+  const fileChip = file ? (
+    <FileChip
+      file={file}
+      disabled={props.disabled}
+      details={pages.length ? `${pages.length} ${pages.length === 1 ? "page" : "pages"}` : undefined}
+      onRemove={() => {
+        if (props.disabled) return;
+        setExpanded(false);
+        props.onInputChange({ ...props.input, files: [] });
+      }}
+    />
+  ) : undefined;
   const fileControls = (
-    <>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              aria-label={`Remove ${file?.name}`}
-              disabled={props.disabled}
-              onClick={() => props.onInputChange({ ...props.input, files: [] })}
-              size="icon-xs"
-              variant="outline"
-            >
-              <X aria-hidden="true" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Remove PDF</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-      <Button
-        disabled={props.disabled}
-        onClick={() => {
-          setExpanded(false);
-          fileInput.current?.click();
-        }}
-        size="sm"
-        variant="outline"
-      >
-        Replace PDF
-      </Button>
-    </>
+    <ToolActionButton
+      action="upload"
+      disabled={props.disabled}
+      onClick={() => {
+        setExpanded(false);
+        fileInput.current?.click();
+      }}
+    >
+      Upload
+    </ToolActionButton>
   );
   const viewer = (fullScreen: boolean) => (
     <PdfViewer
       className="h-full min-h-0 w-full"
       currentPage={currentPage}
       fileName={file?.name ?? "Source PDF"}
+      fileNameContent={fileChip}
       fileSize={
         file
           ? `${(file.size / (file.size < 1_048_576 ? 1024 : 1_048_576)).toFixed(2)} ${file.size < 1_048_576 ? "KiB" : "MiB"}`
@@ -305,6 +297,12 @@ export function PdfFileWorkspace({
               tabIndex={-1}
               type="file"
             />
+            {(inspectionError || !pages.length) && (
+              <div className="flex min-w-0 flex-wrap items-center gap-3 border-b border-border px-4 py-2">
+                <div className="min-w-0 flex-1">{fileChip}</div>
+                {fileControls}
+              </div>
+            )}
             <WorkspaceSurface
               title="PDF preview"
               header="sr-only"
@@ -322,7 +320,6 @@ export function PdfFileWorkspace({
                     <Button onClick={() => setAttempt((value) => value + 1)} variant="outline">
                       Retry preview
                     </Button>
-                    {fileControls}
                   </div>
                 ) : undefined
               }

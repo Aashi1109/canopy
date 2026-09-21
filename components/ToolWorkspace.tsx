@@ -289,7 +289,7 @@ function TextFileDropTarget({ children, props }: { children: ReactNode; props: W
 
 export function ToolWorkspace(
   props: WorkspaceProps &
-    Pick<ResultSurfaceProps, "initialJsonView" | "renderResult"> & {
+    Pick<ResultSurfaceProps, "initialJsonView" | "renderResult" | "renderResultActions" | "retainedResult"> & {
       onSourceScroll?: UIEventHandler<HTMLTextAreaElement>;
       sourceRef?: Ref<HTMLTextAreaElement>;
     },
@@ -313,7 +313,9 @@ export function ToolWorkspace(
       error={props.error}
       initialJsonView={props.initialJsonView}
       result={props.result}
+      retainedResult={props.retainedResult}
       renderResult={props.renderResult}
+      renderResultActions={props.renderResultActions}
       running={props.running}
       spec={props.spec}
       title={surfaceVariant === "card" ? stackedResultTitle(props.spec) : props.spec.labels.result}

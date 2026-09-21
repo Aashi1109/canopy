@@ -8,6 +8,7 @@ import { cn } from "../lib/utils.ts";
 
 export interface MediaOutputCardProps {
   name: string;
+  nameContent?: ReactNode;
   metadata: string;
   children: ReactNode;
   onPreview: () => void;
@@ -22,6 +23,7 @@ export interface MediaOutputCardProps {
 /** Contained media with persistent, compact actions and stacked file metadata. */
 export function MediaOutputCard({
   name,
+  nameContent,
   metadata,
   children,
   onPreview,
@@ -96,7 +98,7 @@ export function MediaOutputCard({
           </div>
         </div>
         <div className="flex min-w-0 flex-col gap-0.5 px-1 pb-1">
-          <p className="break-all text-[15px] font-semibold leading-5">{name}</p>
+          {nameContent ?? <p className="break-all text-[15px] font-semibold leading-5">{name}</p>}
           <p className="text-xs text-muted-foreground">{metadata}</p>
         </div>
         {error && (

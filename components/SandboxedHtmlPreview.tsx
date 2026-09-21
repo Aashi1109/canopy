@@ -10,6 +10,8 @@ export interface SandboxedHtmlPreviewProps {
   iframeRef?: Ref<HTMLIFrameElement>;
   onScroll?: (progress: number) => void;
   scrollProgressRef?: RefObject<number>;
+  /** Let the browser anchor content when deferred blocks change their measured height. */
+  preserveScrollAnchor?: boolean;
   children?: ReactNode;
 }
 
@@ -24,15 +26,30 @@ export function SandboxedHtmlPreview({
   iframeRef,
   onScroll,
   scrollProgressRef,
+  preserveScrollAnchor = false,
   children,
 }: SandboxedHtmlPreviewProps) {
   const [previewBody, setPreviewBody] = useState<HTMLElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const onScrollRef = useRef(onScroll);
+  const preserveScrollAnchorRef = useRef(preserveScrollAnchor);
+  const restoreScrollRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     onScrollRef.current = onScroll;
   }, [onScroll]);
+
+  useEffect(() => {
+    preserveScrollAnchorRef.current = preserveScrollAnchor;
+  }, [preserveScrollAnchor]);
+
+  useEffect(() => {
+    if (!preserveScrollAnchor || variant !== "document") return;
+    // Restore a replaced document once. Subsequent content-visibility and image
+    // sizing changes should preserve the reading position through scroll anchoring.
+    const frame = requestAnimationFrame(() => restoreScrollRef.current?.());
+    return () => cancelAnimationFrame(frame);
+  }, [html, preserveScrollAnchor, variant]);
 
   useEffect(() => () => cleanupRef.current?.(), []);
 
@@ -80,6 +97,7 @@ export function SandboxedHtmlPreview({
           scrollElement.scrollTop = top;
         }
       };
+      restoreScrollRef.current = restoreScroll;
       const handleScroll = () => {
         if (!frame.clientHeight) return;
         const range = Math.max(0, scrollElement.scrollHeight - scrollElement.clientHeight);
@@ -106,7 +124,10 @@ export function SandboxedHtmlPreview({
             const id = decodeURIComponent(href.slice(1));
             const target = previewDocument.getElementById(id);
             if (!id) scrollElement.scrollTop = 0;
-            else if (target) scrollElement.scrollTop += target.getBoundingClientRect().top;
+            else if (target) {
+              if (preserveScrollAnchorRef.current) target.scrollIntoView({ block: "start", behavior: "instant" });
+              else scrollElement.scrollTop += target.getBoundingClientRect().top;
+            }
             return;
           }
           const url = new URL(href, frame.ownerDocument.baseURI);
@@ -122,7 +143,16 @@ export function SandboxedHtmlPreview({
       previewDocument.addEventListener("scroll", handleScroll, { passive: true });
       previewDocument.addEventListener("click", handleLink);
       previewDocument.addEventListener("auxclick", handleLink);
-      const resizeObserver = new ResizeObserver(restoreScroll);
+      let initialContent = true;
+      let frameWidth = frame.clientWidth;
+      let frameHeight = frame.clientHeight;
+      const resizeObserver = new ResizeObserver(() => {
+        const frameResized = frameWidth !== frame.clientWidth || frameHeight !== frame.clientHeight;
+        frameWidth = frame.clientWidth;
+        frameHeight = frame.clientHeight;
+        if (!preserveScrollAnchorRef.current || frameResized || initialContent) restoreScroll();
+        if (previewDocument.body.childElementCount > 0) initialContent = false;
+      });
       resizeObserver.observe(previewDocument.body);
       resizeObserver.observe(frame);
       cleanupRef.current = () => {
@@ -131,6 +161,7 @@ export function SandboxedHtmlPreview({
         previewDocument.removeEventListener("auxclick", handleLink);
         resizeObserver.disconnect();
         stylesObserver.disconnect();
+        if (restoreScrollRef.current === restoreScroll) restoreScrollRef.current = null;
       };
     },
     [scrollProgressRef],

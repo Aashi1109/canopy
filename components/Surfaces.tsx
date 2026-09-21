@@ -9,6 +9,7 @@ import {
   Button,
   ContentState,
   FileQueueItem,
+  FileChip,
   FileUploadZone,
   StatusBadge,
   Tooltip,
@@ -43,6 +44,7 @@ export type WorkspaceSurfaceProps = Omit<HTMLAttributes<HTMLElement>, "title"> &
   description?: ReactNode;
   header?: "visible" | "sr-only";
   meta?: ReactNode;
+  metaPosition?: "actions" | "start";
   purpose?: WorkspaceSurfacePurpose;
   scroll?: "none" | "content";
   state?: WorkspaceSurfaceState;
@@ -75,6 +77,7 @@ function WorkspaceSurface({
   description,
   header = "visible",
   meta,
+  metaPosition = "actions",
   purpose = "source",
   scroll = "none",
   state = "ready",
@@ -113,35 +116,46 @@ function WorkspaceSurface({
     header === "visible" ? (
       <header
         className={cn(
-          "flex shrink-0 items-center justify-between gap-3",
+          "@container flex shrink-0 items-center justify-between gap-3",
           variant === "card" ? "min-h-10 px-4 pt-2" : "min-h-[46px] border-b border-border px-4",
         )}
         data-slot="workspace-header"
       >
-        <div className="min-w-0">
-          {status !== undefined && status !== null ? (
-            <div className="flex min-w-0 items-center gap-2">
-              {heading}
-              {variant === "card" ? (
-                status
-              ) : (
-                <StatusBadge className="shrink-0" variant={state === "ready" ? "success" : "neutral"}>
-                  {status}
-                </StatusBadge>
-              )}
-            </div>
-          ) : (
-            heading
+        <div
+          className={cn(
+            "min-w-0",
+            metaPosition === "start" &&
+              "flex flex-1 flex-col items-start gap-1 py-1 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:gap-3 @min-[28rem]:py-0",
           )}
-          {description ? <Muted className="mt-0.5 truncate text-muted-foreground">{description}</Muted> : null}
+        >
+          <div className="min-w-0 max-w-full shrink-0">
+            {status !== undefined && status !== null ? (
+              <div className="flex min-w-0 items-center gap-2">
+                {heading}
+                {variant === "card" ? (
+                  status
+                ) : (
+                  <StatusBadge className="shrink-0" variant={state === "ready" ? "success" : "neutral"}>
+                    {status}
+                  </StatusBadge>
+                )}
+              </div>
+            ) : (
+              heading
+            )}
+            {description ? <Muted className="mt-0.5 truncate text-muted-foreground">{description}</Muted> : null}
+          </div>
+          {metaPosition === "start" && meta != null ? (
+            <div className="flex min-w-0 max-w-full items-center">{meta}</div>
+          ) : null}
         </div>
-        {meta !== undefined && meta !== null ? (
+        {metaPosition === "actions" && meta !== undefined && meta !== null ? (
           <div className="ml-auto flex min-w-0 items-center gap-3">
             <Caption className="min-w-0 truncate text-right text-muted-foreground">{meta}</Caption>
             {actions ? <div className="flex shrink-0 items-center gap-1">{actions}</div> : null}
           </div>
         ) : actions ? (
-          <div className="flex shrink-0 items-center gap-1">{actions}</div>
+          <div className="ml-auto flex shrink-0 items-center gap-1">{actions}</div>
         ) : null}
       </header>
     ) : (
@@ -268,8 +282,10 @@ export type FileQueueSurfaceProps<Item> = Omit<WorkspaceSurfaceProps, "children"
   getId: (item: Item) => string;
   getMetadata: (item: Item) => ReactNode;
   getName: (item: Item) => ReactNode;
+  getFile?: (item: Item) => File;
   items: readonly Item[];
   onReorder?: (items: Item[]) => void;
+  onRemove?: (item: Item) => void;
   renderAction?: (item: Item) => ReactNode;
 };
 
@@ -280,8 +296,10 @@ function FileQueueSurface<Item>({
   getId,
   getMetadata,
   getName,
+  getFile,
   items,
   onReorder,
+  onRemove,
   renderAction,
   ...surfaceProps
 }: FileQueueSurfaceProps<Item>) {
@@ -302,11 +320,17 @@ function FileQueueSurface<Item>({
         </Button>
       ) : null}
       <FileQueueItem
-        action={renderAction?.(item)}
+        action={getFile && onRemove ? undefined : renderAction?.(item)}
         className="min-w-0 flex-1 border-b-0"
         icon={getIcon?.(item) ?? <FileIcon aria-hidden="true" />}
         metadata={getMetadata(item)}
-        name={getName(item)}
+        name={
+          getFile && onRemove ? (
+            <FileChip file={getFile(item)} disabled={disabled} onRemove={() => onRemove(item)} />
+          ) : (
+            getName(item)
+          )
+        }
       />
     </div>
   );
@@ -319,7 +343,7 @@ function FileQueueSurface<Item>({
       stateTitle="No files added"
       {...surfaceProps}
     >
-      <ScrollRegion accessibleName="File queue" className="flex-1 px-4">
+      <ScrollRegion accessibleName="File queue" className="flex-1 px-4 [&_[data-slot=scroll-area-viewport]>div]:block!">
         {onReorder ? (
           <OrderableList
             ariaLabel="Selected files in processing order"

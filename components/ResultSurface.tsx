@@ -12,7 +12,10 @@ export interface ResultSurfaceProps {
   error?: string;
   initialJsonView?: ResultViewProps["initialJsonView"];
   result: ToolResult | null;
+  /** Display-only snapshot while a replacement is prepared; never used for export actions. */
+  retainedResult?: ToolResult | null;
   renderResult?: (result: ToolResult) => ReactNode;
+  renderResultActions?: (result: ToolResult) => ReactNode;
   running?: boolean;
   spec: ToolSpec;
   title?: string;
@@ -23,13 +26,17 @@ export function ResultSurface({
   error,
   initialJsonView,
   result,
+  retainedResult,
   renderResult,
+  renderResultActions,
   running = false,
   spec,
   title = "Result",
   variant,
 }: ResultSurfaceProps) {
-  const state = error ? "error" : running ? "loading" : result ? "ready" : "empty";
+  const visibleResult = result ?? retainedResult;
+  const retaining = !result && Boolean(retainedResult);
+  const state = error ? "error" : retaining ? "ready" : running ? "loading" : result ? "ready" : "empty";
   const resultCount = getResultCount(result);
   const resultStatus =
     resultCount === null
@@ -45,7 +52,9 @@ export function ResultSurface({
   return (
     <WorkspaceSurface
       actions={
-        hasResultActions ? (
+        result && renderResultActions ? (
+          renderResultActions(result)
+        ) : hasResultActions ? (
           <ResultActions
             canCopy={cardJson || Boolean(spec.capabilities?.copy)}
             canDownload={cardJson || Boolean(spec.capabilities?.download)}
@@ -54,6 +63,7 @@ export function ResultSurface({
         ) : undefined
       }
       className="h-full"
+      aria-busy={running || undefined}
       header={jsonHeader ? "sr-only" : "visible"}
       purpose="result"
       state={state}
@@ -61,7 +71,9 @@ export function ResultSurface({
       stateIcon={running ? <Upload aria-hidden="true" className="animate-pulse" /> : undefined}
       stateTitle={error ? "Unable to create the result" : running ? spec.labels.running : "Result will appear here"}
       status={
-        state === "ready" ? (
+        retaining && !error ? (
+          <span role="status">{running ? "Updating preview…" : "Preview out of date"}</span>
+        ) : state === "ready" ? (
           variant === "card" ? undefined : (
             <span className="text-foreground">{resultStatus}</span>
           )
@@ -74,15 +86,15 @@ export function ResultSurface({
       title={title}
       variant={variant}
     >
-      {result ? (
+      {visibleResult ? (
         renderResult ? (
-          renderResult(result)
+          renderResult(visibleResult)
         ) : (
           <ResultView
             hideJsonHeader={cardJson}
             initialJsonView={initialJsonView}
             jsonHeader={jsonHeader}
-            result={result}
+            result={visibleResult}
           />
         )
       ) : null}

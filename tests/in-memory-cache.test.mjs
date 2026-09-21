@@ -3,6 +3,17 @@ import test from "node:test";
 
 import { InMemoryCache } from "../lib/cache/inMemoryCache.ts";
 
+test.beforeEach((t) => {
+  const previous = { NODE_ENV: process.env.NODE_ENV, CACHE_ENABLED: process.env.CACHE_ENABLED };
+  process.env.CACHE_ENABLED = "true";
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+});
+
 test("stores values by key and isolates cache instances", () => {
   const cache = new InMemoryCache();
   const other = new InMemoryCache();
@@ -242,4 +253,91 @@ test("remember validates TTL before returning hits or sharing pending loads", as
   assert.equal(calls, 0);
   assert.equal(cache.get("hit"), "cached");
   assert.equal(await pending, "loaded");
+});
+
+test("development bypasses stored values and duplicate loads when caching is not explicitly enabled", async () => {
+  process.env.NODE_ENV = "development";
+  for (const configured of [undefined, "", "   "]) {
+    if (configured === undefined) delete process.env.CACHE_ENABLED;
+    else process.env.CACHE_ENABLED = configured;
+    const cache = new InMemoryCache();
+    assert.equal(cache.set("key", "stored"), cache);
+    assert.equal(cache.get("key"), undefined);
+    assert.equal(cache.has("key"), false);
+    assert.equal(cache.size, 0);
+    let calls = 0;
+    const load = async () => ++calls;
+    const first = cache.remember("key", load);
+    const second = cache.remember("key", load);
+    assert.notEqual(first, second);
+    assert.deepEqual(await Promise.all([first, second]), [1, 2]);
+    assert.equal(await cache.remember("key", load), 3);
+    assert.equal(cache.size, 0);
+    assert.equal(cache.delete("key"), false);
+  }
+});
+
+test("an explicit override enables caching during development", async () => {
+  process.env.NODE_ENV = "development";
+  process.env.CACHE_ENABLED = "true";
+  const cache = new InMemoryCache();
+  let calls = 0;
+  const first = cache.remember("key", async () => ++calls);
+  const second = cache.remember("key", async () => ++calls);
+  assert.equal(first, second);
+  assert.equal(await first, 1);
+  assert.equal(cache.get("key"), 1);
+  assert.equal(await cache.remember("key", async () => ++calls), 1);
+  assert.equal(calls, 1);
+});
+
+test("an explicit override disables caching in production", async () => {
+  process.env.NODE_ENV = "production";
+  process.env.CACHE_ENABLED = "false";
+  const cache = new InMemoryCache();
+  cache.set("key", "stored");
+  assert.equal(cache.get("key"), undefined);
+  assert.equal(await cache.remember("key", async () => "fresh"), "fresh");
+  assert.equal(cache.get("key"), undefined);
+  assert.equal(cache.has("key"), false);
+  assert.equal(cache.size, 0);
+});
+
+test("disabling the cache removes old entries and detaches pending loads before re-enabling", async () => {
+  const cache = new InMemoryCache();
+  const result = Promise.withResolvers();
+  cache.set("stored", "old value");
+  const oldLoad = cache.remember("pending", () => result.promise);
+  await Promise.resolve();
+
+  process.env.CACHE_ENABLED = "false";
+  assert.equal(cache.get("stored"), undefined);
+  assert.equal(await cache.remember("pending", async () => "uncached value"), "uncached value");
+  assert.equal(cache.size, 0);
+
+  process.env.CACHE_ENABLED = "true";
+  result.resolve("old pending value");
+  assert.equal(await oldLoad, "old pending value");
+  assert.equal(cache.has("stored"), false);
+  assert.equal(cache.has("pending"), false);
+  assert.equal(await cache.remember("pending", async () => "new value"), "new value");
+  assert.equal(cache.get("pending"), "new value");
+});
+
+test("disabled caching preserves TTL validation and loader errors", async () => {
+  process.env.CACHE_ENABLED = "false";
+  const cache = new InMemoryCache();
+  let calls = 0;
+  for (const ttl of [0, -1, 0.5, Infinity, NaN, null, "1"]) {
+    assert.throws(() => cache.set("key", "value", ttl), /TTL must be a positive integer/);
+    assert.throws(() => cache.remember("key", async () => ++calls, ttl), /TTL must be a positive integer/);
+  }
+  assert.equal(calls, 0);
+  await assert.rejects(
+    cache.remember("key", () => {
+      throw new Error("fresh load failed");
+    }),
+    /fresh load failed/,
+  );
+  assert.equal(cache.size, 0);
 });

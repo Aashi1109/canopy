@@ -92,7 +92,7 @@ test("Resize PDF Pages previews the source and resizes only selected pages from 
   await expect(image).toBeVisible();
   await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.naturalWidth)).toBeGreaterThan(0);
   await expect(resize).toBeEnabled();
-  await expect(source.getByRole("button", { name: "Replace PDF", exact: true })).toBeVisible();
+  await expect(source.getByRole("button", { name: "Upload", exact: true })).toBeVisible();
   await screenshot("uploaded");
   await currentPage.fill("2");
   await currentPage.press("Enter");
@@ -186,7 +186,7 @@ test("Resize PDF Pages previews the source and resizes only selected pages from 
   const replacement = await PDFDocument.create();
   replacement.addPage([250, 350]);
   const chooser = page.waitForEvent("filechooser");
-  await source.getByRole("button", { name: "Replace PDF", exact: true }).click();
+  await source.getByRole("button", { name: "Upload", exact: true }).click();
   await (
     await chooser
   ).setFiles({

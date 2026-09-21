@@ -11,12 +11,9 @@ import {
   ContentState,
   ProcessingStatus,
   ToolOptionsPanel,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+  FileChip,
 } from "@/components/ui/index.tsx";
-import { Download, FileText, Upload, X } from "lucide-react";
+import { Download, FileText, Upload } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
 
 import { validateFileSelection, workspaceFileId } from "@/components/FileInput";
@@ -398,7 +395,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
         type="file"
       />
       <ToolActionButton action="upload" disabled={props.disabled} onClick={() => fileInputRef.current?.click()}>
-        {fileInputSpec?.multiple ? "Upload" : "Replace"}
+        Upload
       </ToolActionButton>
     </>
   );
@@ -438,33 +435,18 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           className="flex min-w-0 flex-wrap items-center gap-3 border-b border-border px-4 py-2"
         >
           <FileThumbnail file={props.input.files[0]} />
-          <div className="min-w-0 flex-1 truncate">
-            {props.input.files[0].name}{" "}
-            <span className="text-muted-foreground">· {formatFileSize(props.input.files[0].size)}</span>
+          <div className="min-w-0 flex-1">
+            <FileChip
+              file={props.input.files[0]}
+              disabled={props.disabled}
+              onRemove={() => {
+                if (props.disabled) return;
+                setInputIssue("");
+                props.onInputChange({ ...props.input, files: [] });
+              }}
+            />
           </div>
           {fileActions}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span
-                  tabIndex={props.disabled ? 0 : undefined}
-                  aria-label={props.disabled ? "Remove image — wait for processing to finish" : undefined}
-                  className="rounded-lg focus-visible:outline-2 focus-visible:outline-ring"
-                >
-                  <Button
-                    aria-label={`Remove ${props.input.files[0].name}`}
-                    disabled={props.disabled}
-                    onClick={() => props.onInputChange({ ...props.input, files: [] })}
-                    size="icon"
-                    variant="outline"
-                  >
-                    <X aria-hidden="true" />
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>{props.disabled ? "Wait for processing to finish" : "Remove image"}</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         </div>
       ) : fileInputSpec.engine === "image" && !props.detail ? (
         <WorkspaceSurface
@@ -495,28 +477,21 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           className="min-h-0 flex-1"
           description={props.orderFiles ? "Drag to reorder. Files are processed from top to bottom." : undefined}
           disabled={props.disabled}
+          getFile={(file) => file}
           getIcon={(file) => <FileThumbnail file={file} />}
           getId={workspaceFileId}
           getMetadata={(file) => formatFileSize(file.size)}
           getName={(file) => file.name}
           items={props.input.files}
           onReorder={props.orderFiles ? (files) => props.onInputChange({ ...props.input, files }) : undefined}
-          renderAction={(file) => (
-            <Button
-              aria-label={`Remove ${file.name}`}
-              disabled={props.disabled}
-              onClick={() =>
-                props.onInputChange({
-                  ...props.input,
-                  files: props.input.files.filter((entry) => entry !== file),
-                })
-              }
-              size="icon"
-              variant="outline"
-            >
-              <X aria-hidden="true" />
-            </Button>
-          )}
+          onRemove={(file) => {
+            if (props.disabled) return;
+            setInputIssue("");
+            props.onInputChange({
+              ...props.input,
+              files: props.input.files.filter((entry) => entry !== file),
+            });
+          }}
           title="Selected files"
         />
       )}

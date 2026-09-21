@@ -15,6 +15,7 @@ import {
   SelectValue,
   Toaster,
   toast,
+  FileChip,
 } from "@/components/ui/index.tsx";
 import {
   AlignLeft,
@@ -152,7 +153,6 @@ function JsonSourceEditor({
   const selectedFile = props.input.files[0];
   const acceptedFile = inputSpec.kind === "text" ? inputSpec.acceptFiles : undefined;
   const largeFile = isLargeTextFile(selectedFile, acceptedFile?.maxEditableBytes);
-  const selectedFileMeta = selectedFile ? `${selectedFile.name} · ${selectedFile.size.toLocaleString()} bytes` : null;
   const inputBytes = useMemo(() => new TextEncoder().encode(props.input.text).length, [props.input.text]);
   const highlightedInput = useMemo(() => highlightJson(props.input.text), [props.input.text]);
 
@@ -205,24 +205,8 @@ function JsonSourceEditor({
                 onClick={() => fileInputRef.current?.click()}
                 type="button"
               >
-                {selectedFile ? "Replace" : "Upload"}
+                Upload
               </ToolActionButton>
-              {selectedFile ? (
-                <Button
-                  aria-label={`Remove ${selectedFile.name}`}
-                  disabled={props.disabled}
-                  onClick={() => {
-                    fileReadRequestRef.current += 1;
-                    props.onInputChange({ ...props.input, files: [], text: "" });
-                  }}
-                  size="xs"
-                  type="button"
-                  variant="ghost"
-                >
-                  <Trash2 aria-hidden="true" />
-                  Remove
-                </Button>
-              ) : null}
             </>
           ) : null}
           <ToolActionButton
@@ -247,18 +231,22 @@ function JsonSourceEditor({
       contentClassName="bg-background"
       meta={
         selectedFile ? (
-          largeFile ? (
-            <>
-              <span className="sr-only">{selectedFileMeta} · </span>Large-file mode
-            </>
-          ) : (
-            selectedFileMeta
-          )
+          <FileChip
+            file={selectedFile}
+            disabled={props.disabled}
+            details={largeFile ? "Large-file mode" : undefined}
+            onRemove={() => {
+              fileReadRequestRef.current += 1;
+              props.onInputChange({ ...props.input, files: [], text: "" });
+              document.getElementById(editorId)?.focus();
+            }}
+          />
         ) : (
           `${inputBytes} bytes`
         )
       }
-      description={largeFile ? selectedFileMeta : undefined}
+      metaPosition={selectedFile ? "start" : "actions"}
+      description={largeFile ? "Large-file mode" : undefined}
       purpose="editor"
       title="JSON input"
     >

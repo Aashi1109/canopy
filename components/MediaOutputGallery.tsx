@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Button,
+  FileChip,
   MediaPreview,
   Tooltip,
   TooltipContent,
@@ -170,23 +171,20 @@ function ImagePreviewDialog({
         if (!open) onClose();
       }}
       title={file.name}
-      actions={
-        isArtifact(file) ? (
-          <ArtifactDownloadButton file={file} key={file.id} size="sm" />
-        ) : (
-          <Button
-            variant="secondary"
-            size="sm"
+      titleContent={
+        !isArtifact(file) && onRemove ? (
+          <FileChip
+            file={file}
             disabled={disabled}
-            onClick={() => {
+            details={dimensions.width > 0 ? `${dimensions.width} × ${dimensions.height} pixels` : undefined}
+            onRemove={() => {
               onClose();
-              onRemove?.(file);
+              onRemove(file);
             }}
-          >
-            Remove image
-          </Button>
-        )
+          />
+        ) : undefined
       }
+      actions={isArtifact(file) ? <ArtifactDownloadButton file={file} key={file.id} size="sm" /> : undefined}
       description={`${isArtifact(file) ? "Generated" : "Source"} image · ${selected + 1} of ${files.length} · ${sizeLabel(file.size)}`}
       hint="Zoom to inspect · Drag to pan"
       viewportClassName="relative overflow-hidden bg-transparent"
@@ -333,9 +331,11 @@ function ImageGallery<T extends ImageFile>({
       <MediaOutputCard
         key={workspaceFileId(file)}
         name={file.name}
+        nameContent={
+          onRemove ? <FileChip file={file} disabled={disabled} onRemove={() => onRemove(file)} /> : undefined
+        }
         metadata={metadata(file)}
         onPreview={() => setSelectedFile(file)}
-        onRemove={() => onRemove?.(file)}
         disabled={disabled}
       >
         <Thumbnail file={file} />

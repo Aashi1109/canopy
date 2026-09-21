@@ -59,6 +59,7 @@ import {
   CompactAction,
   DownloadResult,
   FileQueueItem,
+  FileChip,
   FileUploadZone,
   CheckboxControl,
   DangerZone,
@@ -267,6 +268,7 @@ function Specimen({ children, className, label }: { children: ReactNode; classNa
 
 export default function DesignSystemPage() {
   const [documents, setDocuments] = useState(initialDocuments);
+  const [uploadedFileVisible, setUploadedFileVisible] = useState(true);
   const [handbookPage, setHandbookPage] = useState(9);
   const [paginationPage, setPaginationPage] = useState(2);
   const [mediaPreviewOpen, setMediaPreviewOpen] = useState(false);
@@ -1282,10 +1284,21 @@ export default function DesignSystemPage() {
                     title="Add or upload images"
                   />
                   <FileQueueItem
-                    action={<CompactAction icon={<Trash2 />}>Remove</CompactAction>}
                     icon={<FileText />}
                     metadata="2400 × 1600 px · 3.8 MB"
-                    name="source-file.png"
+                    name={
+                      uploadedFileVisible ? (
+                        <FileChip
+                          file={{ name: "source-file.png", size: 3_800_000, type: "image/png", lastModified: 0 }}
+                          details="2400 × 1600 px"
+                          onRemove={() => setUploadedFileVisible(false)}
+                        />
+                      ) : (
+                        <ToolActionButton action="upload" onClick={() => setUploadedFileVisible(true)}>
+                          Restore sample file
+                        </ToolActionButton>
+                      )
+                    }
                   />
                   <ProcessingStatus
                     action={

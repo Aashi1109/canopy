@@ -1,3 +1,5 @@
+import config from "../config/config.ts";
+
 type CacheEntry<V> = {
   value: V;
   expiresAt: number | null;
@@ -18,6 +20,7 @@ export class InMemoryCache<K, V> {
 
   /** Number of entries that have not expired. */
   get size(): number {
+    if (!this.isEnabled()) return 0;
     this.pruneExpired(Date.now());
     return this.entries.size;
   }
@@ -34,6 +37,7 @@ export class InMemoryCache<K, V> {
   /** Replaces the value and its expiration. Reads do not extend the TTL. */
   set(key: K, value: V, ttlSeconds?: number): this {
     this.validateTtl(ttlSeconds);
+    if (!this.isEnabled()) return this;
     const now = Date.now();
     this.pruneExpired(now);
     this.pending.delete(key);
@@ -50,6 +54,7 @@ export class InMemoryCache<K, V> {
    */
   remember(key: K, load: () => Promise<V>, ttlSeconds?: number): Promise<V> {
     this.validateTtl(ttlSeconds);
+    if (!this.isEnabled()) return Promise.resolve().then(load);
     const entry = this.getEntry(key);
     if (entry) return Promise.resolve(entry.value);
     const existing = this.pending.get(key);
@@ -79,6 +84,13 @@ export class InMemoryCache<K, V> {
     this.entries.clear();
   }
 
+  private isEnabled(): boolean {
+    if (config.cacheEnabled) return true;
+    // Detach old loads too, so they cannot restore stale entries after a bypass.
+    this.clear();
+    return false;
+  }
+
   private validateTtl(ttlSeconds?: number): void {
     if (ttlSeconds !== undefined && (!Number.isSafeInteger(ttlSeconds) || ttlSeconds <= 0)) {
       throw new RangeError("Cache TTL must be a positive integer.");
@@ -86,6 +98,7 @@ export class InMemoryCache<K, V> {
   }
 
   private getEntry(key: K): CacheEntry<V> | undefined {
+    if (!this.isEnabled()) return undefined;
     const entry = this.entries.get(key);
     if (entry && entry.expiresAt !== null && entry.expiresAt <= Date.now()) {
       this.entries.delete(key);

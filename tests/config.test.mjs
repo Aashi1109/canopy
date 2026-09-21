@@ -3,6 +3,29 @@ import test from "node:test";
 import config from "../lib/config/config.ts";
 import publicConfig from "../lib/config/public.ts";
 
+test("cache reads default off in development and support an explicit environment override", (t) => {
+  const previous = process.env;
+  t.after(() => {
+    process.env = previous;
+  });
+  for (const [environment, override, expected] of [
+    ["development", undefined, false],
+    ["development", "", false],
+    ["development", "true", true],
+    ["development", "false", false],
+    ["production", undefined, true],
+    ["production", "false", false],
+    ["production", "true", true],
+    ["test", undefined, true],
+    [undefined, undefined, true],
+  ]) {
+    process.env = {};
+    if (environment !== undefined) process.env.NODE_ENV = environment;
+    if (override !== undefined) process.env.CACHE_ENABLED = override;
+    assert.equal(config.cacheEnabled, expected, `${environment}, CACHE_ENABLED=${override}`);
+  }
+});
+
 test("configuration stays lazy across environment loading, updates and replacement", (t) => {
   const previous = process.env;
   t.after(() => {

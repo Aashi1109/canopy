@@ -137,6 +137,7 @@ export class Cache {
 
   async get(key: string): Promise<unknown> {
     const redisKey = this.key(key);
+    if (!config.cacheEnabled) return null;
     try {
       const value = await command(["GET", redisKey]);
       if (value === null) return null;
@@ -183,6 +184,7 @@ export class Cache {
   async rememberGuarded<T>(key: string, load: () => Promise<T>, ttlSeconds = 300): Promise<T> {
     const redisKey = this.key(key);
     validateTtl(ttlSeconds);
+    if (!config.cacheEnabled) return load();
     let generation: string | undefined;
     try {
       const raw = await command(["EVAL", GUARDED_READ, "1", redisKey, crypto.randomUUID(), String(ttlSeconds)]);

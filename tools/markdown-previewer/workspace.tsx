@@ -1,12 +1,99 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { RichContent } from "@/components/content/RichContent";
-import { ResultView } from "@/components/ResultView";
+import { downloadResultContent, ResultActions, ResultView } from "@/components/ResultView";
 import { SandboxedHtmlPreview } from "@/components/SandboxedHtmlPreview";
 import { ToolWorkspace, type WorkspaceProps } from "@/components/ToolWorkspace";
+import { ToolActionButton, toast } from "@/components/ui/index.tsx";
+import { trackToolEvent } from "@/lib/analytics/ga4";
+import { useAnalyticsToolKey } from "@/lib/tool-runtime/useToolRuntime";
+import type { ToolHtmlRender, ToolResult } from "@/lib/tool-framework/result";
+import { createMarkdownHighlightClient } from "./highlightClient";
 import styles from "./Preview.module.css";
+
+function MarkdownExportActions({
+  result,
+  source,
+  settings,
+  client,
+}: {
+  result: ToolHtmlRender;
+  source: string;
+  settings: WorkspaceProps["settings"];
+  client: ReturnType<typeof createMarkdownHighlightClient>;
+}) {
+  const [pending, setPending] = useState<"copy" | "download" | null>(null);
+  const active = useRef(true);
+  const prepared = useRef<Promise<string> | undefined>(undefined);
+  const toolKey = useAnalyticsToolKey();
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
+
+  async function exportDocument(action: "copy" | "download") {
+    if (pending) return;
+    setPending(action);
+    try {
+      const content = (prepared.current ??= client.exportHtml(source, settings));
+      const checkedContent = content.then((html) => {
+        if (!active.current) throw new DOMException("Preview was replaced.", "AbortError");
+        return html;
+      });
+      if (action === "copy") {
+        // Keep the clipboard request inside the click gesture while the worker prepares the full document.
+        if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              "text/plain": checkedContent.then((html) => new Blob([html], { type: "text/plain" })),
+            }),
+          ]);
+        } else {
+          await navigator.clipboard.writeText(await checkedContent);
+        }
+        if (active.current) {
+          trackToolEvent("result_copy", toolKey);
+          toast.success("HTML copied.");
+        }
+      } else {
+        const html = await checkedContent;
+        downloadResultContent(html, "text/html;charset=utf-8", result.downloadName ?? "preview.html", toolKey);
+      }
+    } catch (error) {
+      prepared.current = undefined;
+      if (active.current && !(error instanceof DOMException && error.name === "AbortError")) {
+        toast.error(`Could not ${action} the HTML. Try again.`);
+      }
+    } finally {
+      if (active.current) setPending(null);
+    }
+  }
+
+  return (
+    <>
+      <ToolActionButton
+        action="copy"
+        disabled={pending !== null}
+        loading={pending === "copy"}
+        onClick={() => void exportDocument("copy")}
+      >
+        {pending === "copy" ? "Preparing…" : "Copy"}
+      </ToolActionButton>
+      <ToolActionButton
+        action="download"
+        disabled={pending !== null}
+        loading={pending === "download"}
+        onClick={() => void exportDocument("download")}
+      >
+        {pending === "download" ? "Preparing…" : "Download"}
+      </ToolActionButton>
+    </>
+  );
+}
 
 function scrollProgress(element: Element) {
   const distance = element.scrollHeight - element.clientHeight;
@@ -14,6 +101,14 @@ function scrollProgress(element: Element) {
 }
 
 export default function MarkdownWorkspace(props: WorkspaceProps) {
+  const [retainedResult, setRetainedResult] = useState<ToolResult | null>(null);
+  useEffect(() => {
+    if (props.result) setRetainedResult(props.result);
+    else if (!props.input.text) setRetainedResult(null);
+  }, [props.result, props.input.text]);
+  const visibleResult = props.result ?? (props.input.text ? retainedResult : null);
+  const highlightClient = useMemo(() => createMarkdownHighlightClient(), [visibleResult]);
+  useEffect(() => () => highlightClient.dispose(), [highlightClient]);
   const sourceRef = useRef<HTMLTextAreaElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const previewProgressRef = useRef(0);
@@ -71,7 +166,20 @@ export default function MarkdownWorkspace(props: WorkspaceProps) {
   return (
     <ToolWorkspace
       {...props}
+      retainedResult={props.input.text ? retainedResult : null}
       sourceRef={attachSource}
+      renderResultActions={(result) =>
+        result.render === "html" && result.deferCodeHighlighting ? (
+          <MarkdownExportActions
+            result={result}
+            source={props.input.text}
+            settings={props.settings}
+            client={highlightClient}
+          />
+        ) : (
+          <ResultActions result={result} canCopy canDownload />
+        )
+      }
       onSourceScroll={(event) => {
         const source = event.currentTarget;
         if (!source.clientHeight || isSyncedScroll(source)) return;
@@ -87,6 +195,7 @@ export default function MarkdownWorkspace(props: WorkspaceProps) {
             className="min-h-0"
             variant="document"
             html={result.html}
+            preserveScrollAnchor={result.html.length > 100_000}
             iframeRef={iframeRef}
             scrollProgressRef={previewProgressRef}
             onScroll={(progress) => {
@@ -99,7 +208,12 @@ export default function MarkdownWorkspace(props: WorkspaceProps) {
             }}
           >
             <article className={styles.preview}>
-              <RichContent html={result.html} showToaster />
+              <RichContent
+                html={result.html}
+                showToaster
+                deferSections={result.html.length > 100_000}
+                highlightCode={result.deferCodeHighlighting ? highlightClient.highlight : undefined}
+              />
             </article>
           </SandboxedHtmlPreview>
         ) : (

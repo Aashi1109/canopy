@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert, AlertDescription, AlertTitle, Button, Caption, FieldLabel, Input } from "@/components/ui/index.tsx";
+import { Alert, AlertDescription, AlertTitle, Caption, FieldLabel, FileChip, Input } from "@/components/ui/index.tsx";
 import { useEffect, useId, useState } from "react";
 import { validateFileSelection } from "@/components/FileInput";
 import { PdfFileWorkspace, PdfPageSelectionOverlay } from "@/components/PdfFileWorkspace";
@@ -152,9 +152,7 @@ export default function WatermarkPdfWorkspace(props: WorkspaceProps) {
           />
           {props.settings.watermarkKind === "image" && (
             <div className="grid gap-2">
-              <FieldLabel htmlFor={imageInputId}>
-                {watermark ? "Replace watermark image" : "Watermark image"}
-              </FieldLabel>
+              <FieldLabel htmlFor={imageInputId}>Watermark image</FieldLabel>
               <Input
                 accept="image/jpeg,image/png"
                 disabled={props.disabled}
@@ -182,17 +180,11 @@ export default function WatermarkPdfWorkspace(props: WorkspaceProps) {
                 JPG or PNG · 25 MiB max · PDF and image combined: 50 MiB max
               </Caption>
               {watermark && (
-                <div className="flex min-w-0 items-center gap-2">
-                  <Caption className="min-w-0 flex-1 break-all">{watermark.name}</Caption>
-                  <Button
-                    disabled={props.disabled}
-                    onClick={() => updateFiles(document ? [document] : [])}
-                    size="sm"
-                    variant="outline"
-                  >
-                    Remove image
-                  </Button>
-                </div>
+                <FileChip
+                  file={watermark}
+                  disabled={props.disabled}
+                  onRemove={() => updateFiles(document ? [document] : [])}
+                />
               )}
             </div>
           )}

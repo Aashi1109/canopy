@@ -11,6 +11,11 @@ export default {
   input: {
     kind: "text",
     label: "Markdown document",
+    acceptFiles: {
+      accept: ".md,.markdown,.txt,text/markdown,text/plain",
+      maxBytes: 2_000_000,
+      maxEditableBytes: 2_000_000,
+    },
     placeholder: "# Preview\n\n- Fast\n- Private",
   },
   settings: {
@@ -34,7 +39,7 @@ export default {
       syntaxHighlighting: {
         kind: "toggle",
         label: "Syntax highlighting",
-        help: "Colors code using its fenced language label, or detects the language when no supported label is provided.",
+        help: "Colors nearby code using its language label or automatic detection. Very large blocks remain plain text to keep the preview responsive.",
         default: true,
       },
       safeLinks: {
@@ -66,6 +71,7 @@ export default {
       "The preview blocks scripts and form submissions. Remote images load from their hosting sites and make network requests.",
       "Use absolute image URLs. Relative links and image paths depend on where the document is published.",
       "Syntax highlighting supports common languages. Add a language after the opening code fence for reliable colors, or use text to keep a block unhighlighted.",
+      "Large documents render sections and code colors as you scroll. Copy and download always include the complete document; very large code blocks keep their text without syntax colors.",
     ],
     faq: [
       {

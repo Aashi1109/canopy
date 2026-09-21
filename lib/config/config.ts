@@ -14,6 +14,12 @@ const config = {
   get redisUrl() {
     return process.env.REDIS_URL;
   },
+  get cacheEnabled() {
+    const override = process.env.CACHE_ENABLED?.trim().toLowerCase();
+    if (override === "true") return true;
+    if (override === "false") return false;
+    return process.env.NODE_ENV !== "development";
+  },
   get ci() {
     return process.env.CI;
   },

@@ -72,6 +72,8 @@ export type ToolHtmlRender = {
   readonly render: "html";
   /** Tool-generated markup for preview. Renderers must sandbox it. */
   readonly html: string;
+  /** Complete plain-code markup whose syntax coloring is deferred by its workspace. */
+  readonly deferCodeHighlighting?: boolean;
   readonly downloadName?: string;
 };
 

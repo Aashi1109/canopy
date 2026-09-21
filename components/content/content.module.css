@@ -33,3 +33,10 @@
 .content > :first-child {
   margin-top: 0;
 }
+
+/* Keep every block in the DOM for find, selection and links. Browsers remember
+   measured heights through `auto`, so revisiting content reuses its real size. */
+.deferred > :is(p, pre, blockquote, ul, ol, table, div, section) {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto var(--content-intrinsic-block-size, 5lh);
+}

@@ -21,9 +21,30 @@ test.beforeAll(async () => {
   await writeFile(
     entry,
     `
-    import React, {useState} from 'react';
+    import React, {useCallback,useState} from 'react';
     import {createRoot} from 'react-dom/client';
     import {MarkdownPreview} from '${root}/components/content/MarkdownPreview.tsx';
+    import {RichContent} from '${root}/components/content/RichContent.tsx';
+    import {SandboxedHtmlPreview} from '${root}/components/SandboxedHtmlPreview.tsx';
+    import {highlightCode} from '${root}/lib/markdown/codeHighlight.ts';
+    const sectionText='A full document stays searchable and selectable while distant sections wait to render. '.repeat(12);
+    const largeHtml='<h1>Deferred document</h1><p><a href="#last-section">Jump to final section</a></p>'+Array.from({length:400},(_,index)=>'<h2 id="section-'+index+'">Section '+index+'</h2><p>'+sectionText+'</p><pre><code class="language-js">const section = '+index+';\\n  const exact = &quot;&lt;keep &amp; copy&gt;&quot;;  \\n</code></pre>').join('')+'<h2 id="last-section">Final section</h2><p id="search-target">UNIQUE_SEARCHABLE_LAST_SECTION</p><pre><code class="language-js">const finalSection = &quot;complete&quot;;\\n</code></pre>';
+    function IframeApp() {
+      const [html,setHtml]=useState(largeHtml);
+      const [highlighting,setHighlighting]=useState(true);
+      const highlight=useCallback(async (code,language)=>{
+        window.highlightRequests??=[];
+        window.highlightRequests.push(code);
+        await new Promise(resolve=>setTimeout(resolve,75));
+        return highlightCode(code,language);
+      },[]);
+      return <main style={{maxWidth:900,margin:'auto',padding:16}}>
+        <label><input type="checkbox" checked={highlighting} onChange={event=>setHighlighting(event.target.checked)}/>Enable syntax highlighting</label>
+        <button onClick={()=>setHtml('<h1>Replacement document</h1><p>Fresh source</p>')}>Replace preview</button>
+        <button onClick={()=>setHtml('')}>Remove preview</button>
+        <div style={{display:'flex',height:560}}><SandboxedHtmlPreview html={html} variant="document" preserveScrollAnchor><RichContent html={html} deferSections highlightCode={highlighting?highlight:undefined}/></SandboxedHtmlPreview></div>
+      </main>;
+    }
     function App() {
       const [markdown,setMarkdown]=useState(${JSON.stringify(source)});
       return <main style={{maxWidth:900,margin:'auto',padding:24}}>
@@ -32,7 +53,7 @@ test.beforeAll(async () => {
         <section aria-label="Configured preview"><MarkdownPreview markdown={'# Host heading\\n\\nFirst line\\nSecond line'} minimumHeadingLevel={2} breaks/></section>
       </main>;
     }
-    createRoot(document.getElementById('root')).render(<React.StrictMode><App/></React.StrictMode>);
+    createRoot(document.getElementById('root')).render(<React.StrictMode>{location.search==='?sandbox'?<IframeApp/>:<App/>}</React.StrictMode>);
   `,
   );
   const bundle = await build({
@@ -132,5 +153,126 @@ test("standalone Markdown supports images, safe rendering, multiple instances an
   }
   await expect(configured.getByRole("heading", { level: 2 })).toHaveText("Host heading");
   expect(unexpectedRequests).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("large Markdown keeps the full document and enhances controls as their content is reached", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: "https://markdown.test" });
+  await page.route("**/*", (route) =>
+    route.request().url() === "https://markdown.test/"
+      ? route.fulfill({ contentType: "text/html", body: html })
+      : route.abort(),
+  );
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto("https://markdown.test");
+  const paragraph = "A complete document retains its **formatted content** and remains searchable. ".repeat(24);
+  const markdown = Array.from(
+    { length: 1000 },
+    (_, index) =>
+      `## Section ${index + 1}\n\n${paragraph}\n\n- [x] Reviewed ${index + 1}\n\n\`\`\`js\nconst section = ${index + 1};\n\`\`\`\n`,
+  ).join("\n");
+  const preview = page.getByRole("region", { name: "Standalone preview" });
+  const input = page.getByRole("textbox", { name: "Preview source" });
+  await input.evaluate((element, value) => {
+    const textarea = element as HTMLTextAreaElement;
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!.call(textarea, value);
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  }, markdown);
+  await expect(preview.getByRole("heading", { level: 2 })).toHaveCount(1000);
+  await expect(preview.getByRole("heading", { name: "Section 1000", exact: true })).toHaveText("Section 1000");
+
+  await preview.locator("pre").last().scrollIntoViewIfNeeded();
+  const copy = preview.getByRole("button", { name: "Copy code", exact: true }).last();
+  await expect(copy).toBeInViewport();
+  await copy.click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("const section = 1000;");
+  await expect(preview.getByRole("checkbox", { name: "Completed", exact: true }).last()).toBeChecked();
+
+  await input.fill("# Replacement\n\nThe large document was replaced.");
+  await expect(preview.getByRole("heading", { level: 1 })).toHaveText("Replacement");
+  await expect(preview.getByRole("button")).toHaveCount(0);
+  await expect(preview.getByRole("checkbox")).toHaveCount(0);
+  await expect(preview.locator("pre")).toHaveCount(0);
+});
+
+test("deferred iframe keeps search, anchors, selection and code actions stable through scrolling and replacement", async ({
+  page,
+  context,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: "https://markdown.test" });
+  await page.route("**/*", (route) => route.fulfill({ contentType: "text/html", body: html }));
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto("https://markdown.test/?sandbox");
+  const preview = page.frameLocator('iframe[title="Generated HTML preview"]');
+  await expect(preview.getByRole("heading", { name: "Deferred document", exact: true })).toBeVisible();
+  await expect(preview.getByRole("heading", { level: 2 })).toHaveCount(401);
+  const finalCode = preview.locator("pre > code").last();
+  await expect(finalCode).toHaveText('const finalSection = "complete";\n');
+  expect(await finalCode.locator("span").count()).toBe(0);
+  expect(
+    await page.evaluate(() =>
+      ((window as Window & { highlightRequests?: string[] }).highlightRequests ?? []).some((code) =>
+        code.includes("finalSection"),
+      ),
+    ),
+  ).toBe(false);
+
+  const frame = page.frames().find((entry) => entry.parentFrame())!;
+  expect(
+    await frame.evaluate(() =>
+      (window as unknown as Window & { find: (text: string) => boolean }).find("UNIQUE_SEARCHABLE_LAST_SECTION"),
+    ),
+  ).toBe(true);
+  await expect(preview.getByText("UNIQUE_SEARCHABLE_LAST_SECTION", { exact: true })).toBeInViewport();
+  expect(await frame.evaluate(() => window.getSelection()?.toString())).toBe("UNIQUE_SEARCHABLE_LAST_SECTION");
+  await finalCode.scrollIntoViewIfNeeded();
+  await expect.poll(() => finalCode.locator("span").count()).toBeGreaterThan(0);
+  const copy = preview.getByRole("button", { name: "Copy code", exact: true }).last();
+  await copy.click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('const finalSection = "complete";\n');
+
+  for (const section of [200, 20, 300, 40]) {
+    const heading = preview.getByRole("heading", { name: `Section ${section}`, exact: true });
+    await heading.evaluate((element) => element.scrollIntoView({ block: "start", behavior: "instant" }));
+    await expect(heading).toBeInViewport();
+    await expect
+      .poll(() =>
+        heading.evaluate((element) =>
+          Math.abs(element.getBoundingClientRect().top - parseFloat(getComputedStyle(element).scrollMarginTop)),
+        ),
+      )
+      .toBeLessThan(4);
+    const before = await heading.evaluate((element) => element.getBoundingClientRect().top);
+    await page.evaluate(
+      () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+    );
+    expect(Math.abs((await heading.evaluate((element) => element.getBoundingClientRect().top)) - before)).toBeLessThan(
+      4,
+    );
+  }
+
+  await frame.evaluate(() => {
+    document.scrollingElement!.scrollTop = 0;
+  });
+  await preview.getByRole("link", { name: "Jump to final section" }).click();
+  await expect(preview.getByRole("heading", { name: "Final section", exact: true })).toBeInViewport();
+  await page.setViewportSize({ width: 1280, height: 720 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole("checkbox", { name: "Enable syntax highlighting" }).uncheck();
+  await expect(finalCode.locator("span")).toHaveCount(0);
+  await expect(finalCode).toHaveText('const finalSection = "complete";\n');
+
+  await page.getByRole("checkbox", { name: "Enable syntax highlighting" }).check();
+  await page.getByRole("button", { name: "Replace preview", exact: true }).click();
+  await expect(preview.getByRole("heading", { name: "Replacement document", exact: true })).toBeVisible();
+  await expect(preview.locator("pre")).toHaveCount(0);
+  await expect(preview.getByRole("button")).toHaveCount(0);
+  await page.getByRole("button", { name: "Remove preview", exact: true }).click();
+  await expect(preview.locator("body")).toHaveText("");
   expect(errors).toEqual([]);
 });

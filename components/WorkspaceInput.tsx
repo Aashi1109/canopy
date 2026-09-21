@@ -11,10 +11,11 @@ import {
   Card,
   ToolActionButton,
   Input,
+  FileChip,
 } from "@/components/ui/index.tsx";
 import { cn } from "@/components/ui/lib/utils.ts";
 import { Eye, EyeOff } from "lucide";
-import { FileText, Trash2, Upload } from "lucide-react";
+import { FileText, Upload } from "lucide-react";
 import { MorphIcon } from "morphicons/react";
 import {
   type ReactNode,
@@ -98,12 +99,6 @@ function isCodeShaped(value: string): boolean {
 function sourceMeta(value: string, codeShaped: boolean): string {
   const count = codeShaped ? new TextEncoder().encode(value).byteLength : value.length;
   return `${count} ${codeShaped ? "bytes" : count === 1 ? "character" : "characters"}`;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  const mib = bytes / (1024 * 1024);
-  return mib >= 1 ? `${mib.toFixed(mib >= 10 ? 0 : 1)} MiB` : `${Math.ceil(bytes / 1024)} KiB`;
 }
 
 export function SourceTextarea({
@@ -286,7 +281,6 @@ export function WorkspaceInputSurface({
         aria-live="polite"
         disabled={disabled || pastePending}
         onClick={() => void pastePrimaryInput(maxLength)}
-        title={`Paste into ${label}`}
         type="button"
       >
         {pastePending ? "Pasting…" : pasteFailed ? "Paste failed" : "Paste"}
@@ -342,24 +336,8 @@ export function WorkspaceInputSurface({
             onClick={() => fileInputRef.current?.click()}
             type="button"
           >
-            {selectedFile ? "Replace" : "Upload"}
+            Upload
           </ToolActionButton>
-          {selectedFile ? (
-            <Button
-              aria-label={`Remove ${selectedFile.name}`}
-              disabled={disabled}
-              onClick={() => {
-                fileReadRequestRef.current += 1;
-                onInputChange({ ...inputRef.current, files: [], text: "" });
-              }}
-              size={variant === "card" ? undefined : "xs"}
-              type="button"
-              variant="ghost"
-            >
-              <Trash2 aria-hidden="true" />
-              Remove
-            </Button>
-          ) : null}
         </>
       ) : null;
       const codeShaped = isCodeShaped(input.text) || isCodeShaped(inputSpec.placeholder ?? "");
@@ -374,10 +352,23 @@ export function WorkspaceInputSurface({
           className="h-full"
           contentClassName="gap-4 bg-background"
           meta={
-            selectedFile
-              ? `${selectedFile.name} · ${formatBytes(selectedFile.size)}${largeFile ? " · Large-file mode" : ""}`
-              : sourceMeta(input.text, codeShaped)
+            selectedFile ? (
+              <FileChip
+                file={selectedFile}
+                disabled={disabled}
+                details={largeFile ? "Large-file mode" : undefined}
+                onRemove={() => {
+                  fileReadRequestRef.current += 1;
+                  setInputIssue("");
+                  onInputChange({ ...inputRef.current, files: [], text: "" });
+                  document.getElementById(`${idPrefix}-primary`)?.focus();
+                }}
+              />
+            ) : (
+              sourceMeta(input.text, codeShaped)
+            )
           }
+          metaPosition={selectedFile ? "start" : "actions"}
           purpose="source"
           title={inputSpec.label}
           variant={variant}
@@ -600,19 +591,10 @@ export function WorkspaceInputSurface({
             getId={workspaceFileId}
             getMetadata={(file) => `${file.type || "Unknown type"} · ${file.size.toLocaleString()} bytes`}
             getName={(file) => file.name}
+            getFile={(file) => file}
             items={input.files}
-            renderAction={(file) => (
-              <Button
-                aria-label={`Remove ${file.name}`}
-                disabled={disabled}
-                onClick={() => onInputChange({ ...input, files: input.files.filter((entry) => entry !== file) })}
-                size="icon"
-                type="button"
-                variant="ghost"
-              >
-                <Trash2 aria-hidden="true" />
-              </Button>
-            )}
+            disabled={disabled}
+            onRemove={(file) => onInputChange({ ...input, files: input.files.filter((entry) => entry !== file) })}
             title="Selected files"
           />
         </Stack>

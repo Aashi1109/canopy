@@ -63,6 +63,7 @@ export {
   AvatarImage,
 } from "./components/avatar.tsx";
 export { Badge, badgeVariants } from "./components/badge.tsx";
+export { FileChip } from "./components/file-chip.tsx";
 export { Button, buttonVariants, ToolActionButton } from "./components/button.tsx";
 export { Pagination, type PaginationProps } from "./components/Pagination.tsx";
 export { ButtonGroup, ButtonGroupSeparator, ButtonGroupText, buttonGroupVariants } from "./components/button-group.tsx";

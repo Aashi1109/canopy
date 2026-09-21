@@ -43,7 +43,7 @@ test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and v
   spans.length = 0;
   failTracing = false;
   failSpanEnd = false;
-  const variables = ["REDIS_URL"];
+  const variables = ["REDIS_URL", "CACHE_ENABLED"];
   const previous = Object.fromEntries(variables.map((key) => [key, process.env[key]]));
   t.after(async () => {
     await closeRedis();
@@ -53,6 +53,7 @@ test("caller-owned cache namespaces support get/set/delete, TTLs, fallback and v
     }
   });
   process.env.REDIS_URL = "rediss://default:private%2Dtoken@cache.example.test:6380/5";
+  process.env.CACHE_ENABLED = "true";
   const stored = new Map();
   const calls = [];
   const warnings = [];
@@ -216,9 +217,10 @@ test("Redis connections are lazy, shared, recoverable, and bounded", async (t) =
   spans.length = 0;
   failTracing = false;
   failSpanEnd = false;
-  const variables = ["REDIS_URL"];
+  const variables = ["REDIS_URL", "CACHE_ENABLED"];
   const previous = variables.map((key) => process.env[key]);
   for (const key of variables) delete process.env[key];
+  process.env.CACHE_ENABLED = "true";
   t.after(() => {
     closeRedis();
     variables.forEach((key, index) => {
@@ -302,4 +304,108 @@ test("Redis connections are lazy, shared, recoverable, and bounded", async (t) =
     clients.slice(-2).every((client) => !client.isOpen),
     "Worker sockets close after commands",
   );
+});
+
+test("disabled cache reads load fresh while writes and authorization invalidation remain active", async (t) => {
+  closeRedis();
+  spans.length = 0;
+  failTracing = false;
+  failSpanEnd = false;
+  const variables = ["NODE_ENV", "CACHE_ENABLED", "REDIS_URL"];
+  const previous = variables.map((key) => process.env[key]);
+  t.after(() => {
+    closeRedis();
+    variables.forEach((key, index) => {
+      if (previous[index] === undefined) delete process.env[key];
+      else process.env[key] = previous[index];
+    });
+  });
+  process.env.REDIS_URL = "redis://cache.example.test:6379";
+  const stored = new Map([["users:alice", JSON.stringify({ role: "cached" })]]);
+  const calls = [];
+  let connections = 0;
+  let evalResult = JSON.stringify({ generation: "existing", pending: {}, value: JSON.stringify({ role: "cached" }) });
+  t.mock.method(redis, "createClient", () => {
+    connections++;
+    return {
+      isOpen: false,
+      on() {
+        return this;
+      },
+      async connect() {
+        this.isOpen = true;
+        return this;
+      },
+      destroy() {
+        this.isOpen = false;
+      },
+      async sendCommand(command) {
+        calls.push(command);
+        const [operation, key, value] = command;
+        if (operation === "GET") return stored.get(key) ?? null;
+        if (operation === "SET") {
+          stored.set(key, value);
+          return "OK";
+        }
+        if (operation === "DEL") return Number(stored.delete(key));
+        assert.equal(operation, "EVAL");
+        return evalResult;
+      },
+    };
+  });
+  const cache = new Cache("users");
+  let guardedLoads = 0;
+  const loadGuarded = async () => ({ role: `fresh-${++guardedLoads}` });
+  for (const [environment, override] of [
+    ["development", undefined],
+    ["production", "false"],
+  ]) {
+    process.env.NODE_ENV = environment;
+    if (override === undefined) delete process.env.CACHE_ENABLED;
+    else process.env.CACHE_ENABLED = override;
+    const previousLoads = guardedLoads;
+    assert.equal(await cache.get("alice"), null, "stored values are ignored when cache reads are disabled");
+    assert.deepEqual(await cache.rememberGuarded("alice", loadGuarded), { role: `fresh-${previousLoads + 1}` });
+    assert.deepEqual(await cache.rememberGuarded("alice", loadGuarded), { role: `fresh-${previousLoads + 2}` });
+  }
+  assert.equal(connections, 0, "disabled reads do not open Redis connections");
+  assert.equal(calls.length, 0);
+  assert.equal(spans.length, 0, "disabled reads do not create Redis spans");
+  await assert.rejects(cache.get(""), /key/);
+  await assert.rejects(cache.rememberGuarded("alice", loadGuarded, 0), /positive integer/);
+  await assert.rejects(
+    cache.rememberGuarded("alice", async () => {
+      throw new Error("Database unavailable");
+    }),
+    /Database unavailable/,
+  );
+
+  let loads = 0;
+  const load = async () => ({ role: `updated-${++loads}` });
+  assert.deepEqual(await cache.remember("alice", load), { role: "updated-1" });
+  assert.deepEqual(await cache.remember("alice", load), { role: "updated-2" });
+  assert.equal(loads, 2, "remember loads fresh on every disabled read");
+  assert.deepEqual(JSON.parse(stored.get("users:alice")), { role: "updated-2" });
+  assert.ok(
+    calls.every(([operation]) => operation === "SET"),
+    "remember still refreshes storage for enabled readers",
+  );
+  await cache.delete("alice");
+  assert.equal(stored.has("users:alice"), false, "deletion remains active for other enabled readers");
+  await cache.set("alice", { role: "restored" });
+  evalResult = 1;
+  const beforeInvalidation = calls.length;
+  const token = await cache.beginInvalidation("alice");
+  assert.equal(typeof token, "string", "disabled reads still acquire the authorization mutation fence");
+  await cache.endInvalidation("alice", token);
+  assert.equal(calls.length, beforeInvalidation + 2, "both mutation fence operations reach Redis");
+
+  process.env.NODE_ENV = "development";
+  process.env.CACHE_ENABLED = "true";
+  assert.deepEqual(await cache.get("alice"), { role: "restored" });
+  assert.deepEqual(await cache.remember("alice", load), { role: "restored" });
+  assert.equal(loads, 2, "explicitly enabling reads restores cache hits in development");
+  evalResult = JSON.stringify({ generation: "existing", pending: {}, value: JSON.stringify({ role: "guarded" }) });
+  assert.deepEqual(await cache.rememberGuarded("alice", loadGuarded), { role: "guarded" });
+  assert.equal(guardedLoads, 4, "explicitly enabling guarded reads restores cache hits");
 });

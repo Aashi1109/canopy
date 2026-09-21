@@ -2,6 +2,17 @@ import { common, createLowlight } from "lowlight";
 
 export const codeLowlight = createLowlight(common);
 
+const AUTO_HIGHLIGHT_MAX_CHARS = 4 * 1024;
+const KNOWN_HIGHLIGHT_MAX_CHARS = 64 * 1024;
+const DOCUMENT_HIGHLIGHT_MAX_CHARS = 256 * 1024;
+
+export type CodeHighlightBudget = { remainingChars: number };
+
+/** Share one budget across a document, not across unrelated render requests. */
+export function createCodeHighlightBudget(): CodeHighlightBudget {
+  return { remainingChars: DOCUMENT_HIGHLIGHT_MAX_CHARS };
+}
+
 function escapeHtml(value: string): string {
   return value.replace(
     /[&<>"']/g,
@@ -9,12 +20,14 @@ function escapeHtml(value: string): string {
   );
 }
 
-export function highlightCode(code: string, language?: string | null): string {
-  if (language === "mermaid") return escapeHtml(code);
-  const tree =
-    language && codeLowlight.registered(language)
-      ? codeLowlight.highlight(language, code)
-      : codeLowlight.highlightAuto(code);
+export function highlightCode(code: string, language?: string | null, budget?: CodeHighlightBudget): string {
+  const normalizedLanguage = language?.toLowerCase();
+  if (["mermaid", "text", "plaintext", "txt"].includes(normalizedLanguage ?? "")) return escapeHtml(code);
+  const knownLanguage = normalizedLanguage && codeLowlight.registered(normalizedLanguage);
+  const maxChars = knownLanguage ? KNOWN_HIGHLIGHT_MAX_CHARS : AUTO_HIGHLIGHT_MAX_CHARS;
+  if (code.length > maxChars || (budget && code.length > budget.remainingChars)) return escapeHtml(code);
+  if (budget) budget.remainingChars -= code.length;
+  const tree = knownLanguage ? codeLowlight.highlight(normalizedLanguage, code) : codeLowlight.highlightAuto(code);
 
   function render(node: (typeof tree.children)[number]): string {
     if (node.type === "text") return escapeHtml(node.value);

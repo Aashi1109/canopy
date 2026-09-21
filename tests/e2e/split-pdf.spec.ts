@@ -156,7 +156,7 @@ test("Split PDF keeps one source workspace through validation, all split modes a
   const replacement = await PDFDocument.create();
   replacement.addPage([200, 300]);
   const chooserEvent = page.waitForEvent("filechooser");
-  await source.getByRole("button", { name: "Replace PDF", exact: true }).click();
+  await source.getByRole("button", { name: "Upload", exact: true }).click();
   await (
     await chooserEvent
   ).setFiles({
@@ -188,7 +188,7 @@ test("Split PDF rejects invalid input and preserves a valid source after rejecte
   const source = page.getByRole("region", { name: "Source PDF", exact: true });
   const split = page.getByRole("button", { name: "Split PDF", exact: true });
   const retry = source.getByRole("button", { name: "Retry preview", exact: true });
-  const replace = source.getByRole("button", { name: "Replace PDF", exact: true });
+  const replace = source.getByRole("button", { name: "Upload", exact: true });
   async function replaceFile(file: { name: string; mimeType: string; buffer: Buffer }) {
     const chooser = page.waitForEvent("filechooser");
     await replace.click();

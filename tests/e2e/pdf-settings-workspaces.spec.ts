@@ -278,19 +278,19 @@ test("Watermark PDF supports text and replaceable images while preserving the im
   const imageResult = await runAndDownload(page, settings, "Apply watermark", "source-watermarked.pdf");
   expect((await contents(imageResult)).every((page) => page.hasImage)).toBe(true);
   await settings
-    .getByLabel("Replace watermark image", { exact: true })
+    .getByLabel("Watermark image", { exact: true })
     .setInputFiles({ ...logo, name: "replacement-logo.png" });
   await expect(settings.getByText("replacement-logo.png", { exact: true })).toBeVisible();
   await expect(settings.getByRole("button", { name: "Download source-watermarked.pdf", exact: true })).toHaveCount(0);
   const chooser = page.waitForEvent("filechooser");
-  await source.getByRole("button", { name: "Replace PDF", exact: true }).click();
+  await source.getByRole("button", { name: "Upload", exact: true }).click();
   await (await chooser).setFiles(await sourcePdf("replacement.pdf"));
   await expect(source.getByRole("button", { name: "Remove replacement.pdf", exact: true })).toBeVisible();
   await expect(settings.getByText("replacement-logo.png", { exact: true })).toBeVisible();
   const replacementResult = await runAndDownload(page, settings, "Apply watermark", "replacement-watermarked.pdf");
   expect((await contents(replacementResult)).every((page) => page.hasImage)).toBe(true);
   await screenshot(page, "watermark-pdf", "completed", testInfo.project.name);
-  await settings.getByRole("button", { name: "Remove image", exact: true }).click();
+  await settings.getByRole("button", { name: "Remove replacement-logo.png", exact: true }).click();
   await expect(settings.getByRole("button", { name: "Apply watermark", exact: true })).toBeDisabled();
   await expect(settings.getByRole("button", { name: /^Download / })).toHaveCount(0);
   await expect(source.getByRole("button", { name: "Remove replacement.pdf", exact: true })).toBeVisible();

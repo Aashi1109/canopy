@@ -217,7 +217,7 @@ test("Extract PDF Pages selects and reorders real pages in one source workspace 
   const replacement = await PDFDocument.create();
   replacement.addPage([250, 300]);
   const chooser = page.waitForEvent("filechooser");
-  await source.getByRole("button", { name: "Replace PDF", exact: true }).click();
+  await source.getByRole("button", { name: "Upload", exact: true }).click();
   await (
     await chooser
   ).setFiles({

@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { highlightCode } from "../lib/markdown/codeHighlight.ts";
+import { highlightCode, createCodeHighlightBudget } from "../lib/markdown/codeHighlight.ts";
 import { parseSettings } from "../lib/tool-framework/settings.ts";
 import definition from "../tools/markdown-previewer/definition.ts";
-import { run } from "../tools/markdown-previewer/run.ts";
+import { run, renderMarkdownPreview } from "../tools/markdown-previewer/run.worker.ts";
 
 async function preview(markdown, settings = {}) {
   const result = await run({
@@ -107,4 +107,89 @@ test("safe links remain independent of syntax highlighting", async () => {
     const standard = await preview(markdown, { syntaxHighlighting, safeLinks: false });
     assert.match(standard, /<a href="https:\/\/example\.com">Docs<\/a>/);
   }
+});
+
+test("large code blocks fall back to complete escaped text before expensive highlighting", () => {
+  for (const [language, repetitions] of [
+    [undefined, 150],
+    ["unknown-language", 150],
+    ["js", 2400],
+  ]) {
+    const code = 'const message = "<keep every line>";\n'.repeat(repetitions);
+    const html = highlightCode(code, language);
+    assert.doesNotMatch(html, /<span\b/);
+    assert.equal(
+      html,
+      code.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;"),
+    );
+  }
+});
+
+test("a shared document budget leaves later code complete when its highlighting allowance is exhausted", () => {
+  const code = "const result = 42;";
+  const budget = { remainingChars: code.length };
+  assert.match(highlightCode(code, "js", budget), /hljs-keyword/);
+  assert.equal(highlightCode(code, "js", budget), code);
+  assert.match(highlightCode(code, "js", createCodeHighlightBudget()), /hljs-keyword/);
+});
+
+test("an oversized block does not spend the allowance for subsequent small code", () => {
+  const budget = { remainingChars: 100 };
+  const oversized = "x".repeat(70_000);
+  assert.equal(highlightCode(oversized, "js", budget), oversized);
+  assert.match(highlightCode("const answer = 42;", "js", budget), /hljs-keyword/);
+});
+
+test("large previews defer colors while retaining the complete document and full highlighted export", async () => {
+  const source = `${"A complete paragraph.\n\n".repeat(5000)}${fenced('const last = "<preserved>";', "js")}\n\n# Final section`;
+  const settings = parseSettings(definition.settings, {});
+  const result = await renderMarkdownPreview(source, settings);
+  assert.equal(result.deferCodeHighlighting, true);
+  assert.match(result.html, /<h1>Final section<\/h1>/);
+  assert.equal((result.html.match(/A complete paragraph\./g) ?? []).length, 5000);
+  assert.equal(codeText(result.html), 'const last = "<preserved>";\n');
+  assert.doesNotMatch(codeBody(result.html), /<span\b/);
+
+  const exported = await renderMarkdownPreview(source, settings, { deferHighlighting: false });
+  assert.equal(exported.deferCodeHighlighting, undefined);
+  assert.match(codeBody(exported.html), /hljs-keyword/);
+  assert.equal(codeText(exported.html), codeText(result.html));
+  assert.match(exported.html, /<h1>Final section<\/h1>/);
+  assert.equal((exported.html.match(/A complete paragraph\./g) ?? []).length, 5000);
+});
+
+test("disabled highlighting remains plain for large preview and explicit export requests", async () => {
+  const source = `${"Paragraph.\n\n".repeat(9000)}${fenced("const value = 1;", "js")}`;
+  for (const deferHighlighting of [undefined, false, true]) {
+    const result = await renderMarkdownPreview(
+      source,
+      parseSettings(definition.settings, { syntaxHighlighting: false }),
+      { deferHighlighting },
+    );
+    assert.equal(result.deferCodeHighlighting, undefined);
+    assert.doesNotMatch(codeBody(result.html), /<span\b/);
+    assert.equal(codeText(result.html), "const value = 1;\n");
+  }
+});
+
+test("full exports honor the document highlighting budget without losing later code", async () => {
+  const code = "const answer = 42;\n".repeat(3000);
+  const source = Array.from({ length: 6 }, () => fenced(code, "js")).join("\n\n");
+  const result = await renderMarkdownPreview(source, parseSettings(definition.settings, {}), {
+    deferHighlighting: false,
+  });
+  const blocks = [...result.html.matchAll(/<pre><code(?: [^>]*)?>([\s\S]*?)<\/code><\/pre>/g)].map((match) => match[1]);
+  assert.equal(blocks.length, 6);
+  assert.match(blocks[0], /hljs-keyword/);
+  assert.equal(blocks.at(-1), code);
+  assert.equal((result.html.replace(/<[^>]*>/g, "").match(/const answer = 42;/g) ?? []).length, 18_000);
+});
+
+test("Markdown rendering rejects a canceled run before processing", async () => {
+  const controller = new AbortController();
+  controller.abort();
+  await assert.rejects(
+    renderMarkdownPreview("# Canceled", parseSettings(definition.settings, {}), undefined, controller.signal),
+    { name: "AbortError" },
+  );
 });

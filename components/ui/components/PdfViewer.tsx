@@ -26,6 +26,7 @@ export interface PdfViewerProps {
   pageClassName?: string;
   currentPage: number;
   fileName: string;
+  fileNameContent?: React.ReactNode;
   fileSize?: string;
   fit?: "width" | "page";
   onExpand?: () => void;
@@ -65,6 +66,7 @@ export function PdfViewer({
   pageClassName,
   currentPage,
   fileName,
+  fileNameContent,
   fileSize,
   fit = "width",
   onExpand,
@@ -327,7 +329,7 @@ export function PdfViewer({
             <MorphIcon icon={outlineOpen ? X : Menu} reducedMotion="user" />
           </Button>
           <div className="min-w-0 basis-40 flex-1">
-            <P className="truncate text-foreground">{fileName}</P>
+            {fileNameContent ?? <P className="truncate text-foreground">{fileName}</P>}
             <Muted className="truncate text-muted-foreground">
               {currentSection && currentSection.title !== `Page ${resolvedCurrentPage}`
                 ? `${currentSection.title} · `

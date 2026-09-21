@@ -67,7 +67,7 @@ interface CopyButtonProps {
   label?: string;
 }
 
-function saveBlob(content: BlobPart, mime: string, name: string, toolKey?: string) {
+export function downloadResultContent(content: BlobPart, mime: string, name: string, toolKey?: string) {
   const url = URL.createObjectURL(new Blob([content], { type: mime }));
   const link = document.createElement("a");
   link.download = name;
@@ -103,7 +103,11 @@ function DownloadButton({
       iconOnly={iconOnly}
       disabled={disabled}
       onClick={() =>
-        href ? saveUrl(href, name, toolKey) : content !== undefined ? saveBlob(content, mime, name, toolKey) : undefined
+        href
+          ? saveUrl(href, name, toolKey)
+          : content !== undefined
+            ? downloadResultContent(content, mime, name, toolKey)
+            : undefined
       }
       type="button"
     >

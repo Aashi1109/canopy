@@ -11,6 +11,8 @@ export interface MediaPreviewProps {
   onOpenChange: (open: boolean) => void;
   /** Accessible dialog title, usually the file name. */
   title: string;
+  /** Optional visible title content; the plain title remains the accessible dialog name. */
+  titleContent?: React.ReactNode;
   description?: React.ReactNode;
   /** Caller-owned actions placed immediately before Exit preview. */
   actions?: React.ReactNode;
@@ -30,6 +32,7 @@ export function MediaPreview({
   open,
   onOpenChange,
   title,
+  titleContent,
   description,
   actions,
   children,
@@ -76,11 +79,14 @@ export function MediaPreview({
           <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border bg-card/95 px-3 py-3 sm:min-h-16 sm:flex-nowrap sm:px-5">
             <div className={cn("min-w-0 flex-1", actions != null && "basis-full sm:basis-auto")}>
               <Dialog.Title
-                title={title}
-                className="line-clamp-2 break-words text-sm font-semibold [overflow-wrap:anywhere]"
+                className={cn(
+                  "line-clamp-2 break-words text-sm font-semibold [overflow-wrap:anywhere]",
+                  titleContent != null && "sr-only",
+                )}
               >
                 {title}
               </Dialog.Title>
+              {titleContent}
               {hasDescription && (
                 <Dialog.Description id={descriptionId} asChild>
                   <div className="mt-1 break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">
