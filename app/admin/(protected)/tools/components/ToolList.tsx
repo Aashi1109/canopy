@@ -1,5 +1,6 @@
 "use client";
 
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { AdminListing } from "../../components/AdminListing";
 import { paginateAdminItems } from "../../lib/pagination";
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
@@ -239,7 +240,15 @@ function ToolDescription({ description }: { description: string }) {
   );
 }
 
-function ToolRow({ orderable, tool }: { orderable: OrderableItemState; tool: AdminTool }) {
+function ToolRow({
+  orderable,
+  tool,
+  publicSiteUrl,
+}: {
+  orderable: OrderableItemState;
+  tool: AdminTool;
+  publicSiteUrl: string;
+}) {
   const [isConfiguring, setIsConfiguring] = useState(false);
   const isSetupRequired = !tool.slug && !tool.archived;
 
@@ -308,7 +317,7 @@ function ToolRow({ orderable, tool }: { orderable: OrderableItemState; tool: Adm
                   <Button asChild size="icon-sm" variant="ghost">
                     <Link
                       aria-label={`Open ${tool.name} in a new tab`}
-                      href={`/${tool.app}/${tool.slug}`}
+                      href={new URL(`/${tool.app}/${tool.slug}`, publicSiteUrl).href}
                       rel="noopener noreferrer"
                       target="_blank"
                     >
@@ -321,7 +330,10 @@ function ToolRow({ orderable, tool }: { orderable: OrderableItemState; tool: Adm
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button asChild size="icon-sm" variant="ghost">
-                    <Link aria-label={`Edit ${tool.name}`} href={`/admin/tools/${encodeURIComponent(tool.id)}`}>
+                    <Link
+                      aria-label={`Edit ${tool.name}`}
+                      href={appHref(`/admin/tools/${encodeURIComponent(tool.id)}`)}
+                    >
                       <Pencil aria-hidden="true" className="size-4" />
                     </Link>
                   </Button>
@@ -344,12 +356,14 @@ function ToolGroup({
   canReorder,
   title,
   tools,
+  publicSiteUrl,
   visibleIds,
 }: {
   app: ToolApp;
   canReorder: boolean;
   title: string;
   tools: readonly AdminTool[];
+  publicSiteUrl: string;
   visibleIds: ReadonlySet<string>;
 }) {
   const [items, setItems] = useState(() => sortByOrder(tools));
@@ -444,7 +458,9 @@ function ToolGroup({
                 getId={(tool) => tool.id}
                 items={categoryItems}
                 onReorder={(nextItems) => handleReorder(category, nextItems)}
-                renderItem={(tool, orderable) => <ToolRow orderable={orderable} tool={tool} />}
+                renderItem={(tool, orderable) => (
+                  <ToolRow orderable={orderable} tool={tool} publicSiteUrl={publicSiteUrl} />
+                )}
               />
             ) : null}
           </div>
@@ -485,9 +501,10 @@ function RailItem({
 
 export interface ToolListProps {
   tools: readonly AdminTool[];
+  publicSiteUrl: string;
 }
 
-export function ToolList({ tools }: ToolListProps) {
+export function ToolList({ tools, publicSiteUrl }: ToolListProps) {
   const searchRef = useRef<HTMLInputElement>(null);
   const [query] = useAdminQueryState<string>("q", "");
   const [rawPage, setPage] = useAdminQueryState<string>("page", "1");
@@ -775,6 +792,7 @@ export function ToolList({ tools }: ToolListProps) {
                       key={group.app}
                       title={group.title}
                       tools={groupTools}
+                      publicSiteUrl={publicSiteUrl}
                       visibleIds={visibleIds}
                     />
                   ) : null;

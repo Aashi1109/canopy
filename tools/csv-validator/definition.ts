@@ -7,7 +7,7 @@ export default {
   keywords: ["csv", "validate", "headers", "quoting", "rows", "lint"],
   name: "CSV Validator",
   description: "Validate CSV quoting, headers, and row widths.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
     language: "csv",

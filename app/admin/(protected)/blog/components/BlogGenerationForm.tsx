@@ -1,5 +1,6 @@
 "use client";
 
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Sparkles } from "lucide-react";
@@ -255,7 +256,9 @@ export function BlogGenerationForm({
     navigated.current = run.resourceId;
     clearSubmission();
     router.push(
-      `/admin/blog/${encodeURIComponent(run.resourceId)}?review=1${run.threadId ? `&thread=${encodeURIComponent(run.threadId)}` : ""}`,
+      appHref(
+        `/admin/blog/${encodeURIComponent(run.resourceId)}?review=1${run.threadId ? `&thread=${encodeURIComponent(run.threadId)}` : ""}`,
+      ),
     );
   }, [run, router]);
 
@@ -388,7 +391,9 @@ export function BlogGenerationForm({
         onRetry={() => void generate()}
         onRefresh={run ? () => void restoreRun(run.id) : undefined}
         onEdit={
-          run?.resourceId ? () => router.push(`/admin/blog/${encodeURIComponent(run.resourceId!)}?edit=1`) : undefined
+          run?.resourceId
+            ? () => router.push(appHref(`/admin/blog/${encodeURIComponent(run.resourceId!)}?edit=1`))
+            : undefined
         }
       />
     );

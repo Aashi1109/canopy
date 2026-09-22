@@ -79,6 +79,9 @@ export {
 export { ChapterScrubber } from "./components/ChapterScrubber.tsx";
 export type { Chapter, ChapterScrubberProps } from "./components/ChapterScrubber.tsx";
 export { OrderableList } from "./components/OrderableList.tsx";
+export { ColorControl } from "./components/ColorControl.tsx";
+export type { ColorControlProps } from "./components/ColorControl.tsx";
+export { ColorSwatch } from "./components/ColorSwatch.tsx";
 export type { OrderableItemState } from "./components/OrderableList.tsx";
 export { MediaOutputCard } from "./components/MediaOutputCard.tsx";
 export type { MediaOutputCardProps } from "./components/MediaOutputCard.tsx";
@@ -238,8 +241,10 @@ export function ProductHeader({
   minimal = false,
   showSearch = true,
   account,
+  publicSiteUrl = account?.publicSiteUrl,
   href,
   name,
+  subtitle,
 }: {
   actions?: ReactNode;
   className?: string;
@@ -247,8 +252,10 @@ export function ProductHeader({
   minimal?: boolean;
   showSearch?: boolean;
   account?: AccountNavigationProps;
+  publicSiteUrl?: string;
   href: string;
   name: string;
+  subtitle?: string;
 }) {
   return (
     <ScrollAwareHeader
@@ -265,27 +272,37 @@ export function ProductHeader({
         <a
           aria-label="SmartTools home"
           className="flex shrink-0 items-center gap-2 rounded-lg text-foreground no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          href="/"
+          href={publicSiteUrl ? new URL("/", publicSiteUrl).href : "/"}
         >
           <SmartToolsLogoMark className={cn("shrink-0", compact ? "size-10" : "size-10 xl:size-12")} />
           <span className="flex flex-col gap-0.5">
             <Strong className="">
               Smart<span className="text-primary">Tools</span>
             </Strong>
-            <Caption className="hidden text-muted-foreground xl:block">small tools, thoughtfully made</Caption>
+            <Caption className={cn("text-muted-foreground", subtitle === undefined && "hidden xl:block")}>
+              {subtitle ?? "small tools, thoughtfully made"}
+            </Caption>
           </span>
         </a>
 
-        {!minimal && showSearch ? <GlobalToolSearch /> : null}
+        {!minimal && showSearch ? <GlobalToolSearch publicSiteUrl={publicSiteUrl} /> : null}
 
         {!minimal ? (
           <EcosystemTabFilters
             currentHref={href}
+            publicSiteUrl={publicSiteUrl}
             className={account?.user ? "[@media(width<=1024px)]:hidden" : undefined}
           />
         ) : null}
 
-        {!minimal ? <MobileNavigation account={account} currentHref={href} showSearch={showSearch} /> : null}
+        {!minimal ? (
+          <MobileNavigation
+            account={account}
+            publicSiteUrl={publicSiteUrl}
+            currentHref={href}
+            showSearch={showSearch}
+          />
+        ) : null}
         <div className={cn("shrink-0 items-center gap-2", minimal ? "flex" : "hidden md:flex")}>
           {!minimal ? <SavedToolsTrigger className="h-10 rounded-full" /> : null}
           {actions}
@@ -724,7 +741,7 @@ export function CatalogCard({
         {...props}
       >
         {icon || status ? (
-          <span className="flex items-center justify-between gap-3">
+          <span className="flex items-center justify-between gap-3 pr-12">
             {icon ? (
               <span
                 aria-hidden="true"
@@ -736,11 +753,11 @@ export function CatalogCard({
             {status ? <span className="min-w-0">{status}</span> : null}
           </span>
         ) : null}
-        <Large>{title}</Large>
+        <Large className={icon || status ? undefined : "pr-12"}>{title}</Large>
         <Caption className="-mt-2 text-muted-foreground">{description}</Caption>
-        <Caption className="mt-auto pr-12 text-primary group-hover:underline">{action}</Caption>
+        <Caption className="mt-auto text-primary group-hover:underline">{action}</Caption>
       </a>
-      <div className="absolute right-3 bottom-3">
+      <div className="absolute top-5 right-5">
         <SaveToolButton href={props.href} iconOnly />
       </div>
     </div>

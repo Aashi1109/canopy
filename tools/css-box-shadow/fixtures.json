@@ -15,7 +15,8 @@
       },
       "expected": {
         "output": "box-shadow: 0px 12px 30px -8px #0f172a;",
-        "render": "text"
+        "render": "text",
+        "downloadName": "box-shadow.css"
       }
     },
     {
@@ -36,7 +37,8 @@
       },
       "expected": {
         "output": "-webkit-box-shadow: 0px 12px 30px -8px #00000080, 0 2px 4px rgba(10, 20, 30, 0.502), 0 8px 16px rgba(10, 20, 30, 0.502);\nbox-shadow: 0px 12px 30px -8px #00000080, 0 2px 4px rgba(10, 20, 30, 0.502), 0 8px 16px rgba(10, 20, 30, 0.502);",
-        "render": "text"
+        "render": "text",
+        "downloadName": "box-shadow.css"
       }
     },
     {

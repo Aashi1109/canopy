@@ -39,6 +39,9 @@ export const sentryOptions = {
 
 export function initializeSentry(): void {
   if (!sentryOptions.enabled) return;
+  // The local sign-in handoff carries a one-time ticket in its URL fragment.
+  // Browser tracing runs before React can remove it, so never start it here.
+  if (typeof window !== "undefined" && window.location.pathname === "/auth/local-session") return;
   init({
     ...sentryOptions,
     // Shared clients create safe spans without SQL, cache keys, or values.

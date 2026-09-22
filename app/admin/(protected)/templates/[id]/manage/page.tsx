@@ -1,3 +1,4 @@
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 import {
   H3,
@@ -38,14 +39,16 @@ export default async function ManageTemplatePage({ params }: { params: Promise<{
   if (!template) notFound();
 
   const isAdvanced = template.layoutFamily === "advanced";
-  const editorHref = isAdvanced ? `/admin/templates/${template.id}/advanced` : `/admin/templates/${template.id}`;
-  const previewHref = isAdvanced ? editorHref : `/admin/templates/${template.id}/preview`;
+  const editorHref = isAdvanced
+    ? appHref(`/admin/templates/${template.id}/advanced`)
+    : appHref(`/admin/templates/${template.id}`);
+  const previewHref = isAdvanced ? editorHref : appHref(`/admin/templates/${template.id}/preview`);
 
   return (
     <div className="min-h-dvh w-full bg-muted pb-8">
       <header className="flex flex-col gap-4 bg-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <BackButton href="/admin/templates" label="Back to templates" className="shrink-0" />
+          <BackButton href={appHref("/admin/templates")} label="Back to templates" className="shrink-0" />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <H1 className="truncate text-foreground">{template.name}</H1>

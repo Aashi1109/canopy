@@ -1,3 +1,5 @@
+import { appHref } from "../../../../lib/routing/subdomains.ts";
+
 export function paginateAdminItems<T>(items: readonly T[], value?: string | string[]) {
   const raw = Array.isArray(value) ? value[0] : value;
   const requested = raw && /^\d+$/.test(raw) ? Number(raw) : 1;
@@ -21,5 +23,5 @@ export function adminPageHref(path: string, page: number, filters: Record<string
   }
   if (page > 1) params.set("page", String(page));
   const query = params.toString();
-  return query ? `${path}?${query}` : path;
+  return appHref(query ? `${path}?${query}` : path);
 }

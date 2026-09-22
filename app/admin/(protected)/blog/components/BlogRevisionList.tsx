@@ -1,5 +1,6 @@
 "use client";
 
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -70,7 +71,7 @@ export function BlogRevisionList({
         setError(result.message);
         return;
       }
-      router.push(`/admin/blog/${postId}`);
+      router.push(appHref(`/admin/blog/${postId}`));
       router.refresh();
     } catch {
       setError("Couldn’t restore this revision. Your current draft is unchanged; try again.");
@@ -90,7 +91,7 @@ export function BlogRevisionList({
           }
           if (historyPage) query.set("page", String(historyPage));
           if (!expanded) query.set("revision", revision.id);
-          const historyUrl = `/admin/blog/${postId}/history${query.size ? `?${query}` : ""}`;
+          const historyUrl = appHref(`/admin/blog/${postId}/history${query.size ? `?${query}` : ""}`);
           const detailsId = `revision-details-${revision.id}`;
           return (
             <li key={revision.id} className="min-w-0">
@@ -144,7 +145,9 @@ export function BlogRevisionList({
                     </Link>
                   </Button>
                   <Button asChild variant={compact ? "ghost" : "outline"} size={compact ? "xs" : "sm"}>
-                    <Link href={`/admin/blog/${postId}/preview?${new URLSearchParams({ revision: revision.id })}`}>
+                    <Link
+                      href={appHref(`/admin/blog/${postId}/preview?${new URLSearchParams({ revision: revision.id })}`)}
+                    >
                       <Eye aria-hidden="true" />
                       Preview
                     </Link>

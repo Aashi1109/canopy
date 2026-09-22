@@ -37,6 +37,7 @@ export default async function BlogEditorPage({
     <BlogEditor
       key={`${post.id}:${post.version}`}
       actorId={session.user.id}
+      publicPostHref={new URL(`/blog/${post.slug}`, config.appUrl).href}
       initialAssistantReview={query.review === "1"}
       post={post}
       categories={categories}

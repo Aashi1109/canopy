@@ -1,3 +1,4 @@
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
 import {
   H3,
@@ -80,16 +81,16 @@ export default async function HomePage() {
   ];
 
   const quickActions: readonly { href: string; icon: LucideIcon; label: string }[] = [
-    { href: "/admin/users", icon: UserPlus, label: "Assign a user role" },
-    { href: "/admin/roles", icon: BadgePlus, label: "Create custom role" },
-    { href: "/admin/audit", icon: ScrollText, label: "Review audit history" },
+    { href: appHref("/admin/users"), icon: UserPlus, label: "Assign a user role" },
+    { href: appHref("/admin/roles"), icon: BadgePlus, label: "Create custom role" },
+    { href: appHref("/admin/audit"), icon: ScrollText, label: "Review audit history" },
   ];
 
   return (
     <div className="flex min-h-full flex-col gap-6">
       <AdminPageHeader
         actions={
-          <a className={buttonVariants({ variant: "secondary" })} href="/admin/audit">
+          <a className={buttonVariants({ variant: "secondary" })} href={appHref("/admin/audit")}>
             View audit history
           </a>
         }
@@ -118,7 +119,7 @@ export default async function HomePage() {
         >
           <div className="flex items-center justify-between border-b border-border px-5 py-[18px]">
             <H3 id="recent-access-heading">Recent access changes</H3>
-            <TextLink className="text-primary hover:underline" href="/admin/audit">
+            <TextLink className="text-primary hover:underline" href={appHref("/admin/audit")}>
               View all →
             </TextLink>
           </div>

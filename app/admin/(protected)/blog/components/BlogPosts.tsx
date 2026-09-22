@@ -1,5 +1,6 @@
 "use client";
 
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -23,6 +24,7 @@ import { useBlogTaxonomyOptions, type TaxonomyOptions } from "../lib/useBlogTaxo
 type Post = Awaited<ReturnType<typeof listBlogPosts>>["items"][number];
 interface Props {
   posts: Post[];
+  publicBlogHref?: string;
   categories: TaxonomyOptions;
   filters: {
     search?: string;
@@ -39,6 +41,7 @@ interface Props {
 
 export function BlogPosts({
   posts,
+  publicBlogHref,
   categories: initialCategories,
   filters: initial,
   pagination,
@@ -76,7 +79,7 @@ export function BlogPosts({
     if (next.status !== "all") query.set("status", next.status);
     if (next.category !== "all") query.set("categoryId", next.category);
     if (page > 1) query.set("page", String(page));
-    return `/admin/blog${query.size ? `?${query}` : ""}`;
+    return appHref(`/admin/blog${query.size ? `?${query}` : ""}`);
   }
 
   async function archive(post: BlogPostListItem, operation: "trash" | "restoreTrash") {
@@ -109,7 +112,7 @@ export function BlogPosts({
                 },
               }
             : undefined,
-          cancel: { label: "Open Trash", onClick: () => router.push("/admin/blog?status=trash") },
+          cancel: { label: "Open Trash", onClick: () => router.push(appHref("/admin/blog?status=trash")) },
         });
       } else {
         noticeId.current = toast.success("Draft restored", {
@@ -138,7 +141,7 @@ export function BlogPosts({
       }
       noticeId.current = toast.success("Draft restored", {
         description: "The post is private. Open it to edit or publish again.",
-        action: { label: "Open draft", onClick: () => router.push(`/admin/blog/${undo.postId}`) },
+        action: { label: "Open draft", onClick: () => router.push(appHref(`/admin/blog/${undo.postId}`)) },
         closeButton: true,
       });
       router.refresh();
@@ -161,7 +164,7 @@ export function BlogPosts({
         setError(result.message);
         return;
       }
-      router.push(`/admin/blog/${result.data.id}`);
+      router.push(appHref(`/admin/blog/${result.data.id}`));
       router.refresh();
     } catch {
       setError("Couldn’t duplicate this post. The original is unchanged. Try again.");
@@ -194,8 +197,8 @@ export function BlogPosts({
       : post.hasUnpublishedChanges
         ? "Unpublished changes"
         : undefined,
-    editHref: `/admin/blog/${post.id}`,
-    historyHref: `/admin/blog/${post.id}/history`,
+    editHref: appHref(`/admin/blog/${post.id}`),
+    historyHref: appHref(`/admin/blog/${post.id}/history`),
   }));
 
   return (
@@ -234,8 +237,9 @@ export function BlogPosts({
           </>
         }
         busy={mutating}
-        newPostHref="/admin/blog/new"
-        taxonomyHref={canManageTerms ? "/admin/blog/taxonomy" : undefined}
+        newPostHref={appHref("/admin/blog/new")}
+        publicBlogHref={publicBlogHref}
+        taxonomyHref={canManageTerms ? appHref("/admin/blog/taxonomy") : undefined}
         onDuplicate={(post) => {
           void duplicate(post);
         }}

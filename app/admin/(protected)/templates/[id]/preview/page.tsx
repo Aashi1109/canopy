@@ -1,3 +1,4 @@
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
 import { InvoiceTemplatePreview } from "@/lib/invoice-templates/TemplatePreview.tsx";
 import type { InvoiceTemplate } from "@/lib/invoice-templates/index.ts";
@@ -10,7 +11,7 @@ export default async function TemplatePreviewPage({ params }: { params: Promise<
   const template = await getTemplate((await params).id);
   if (!template) notFound();
   if (template.layoutFamily === "advanced") {
-    redirect(`/admin/templates/${template.id}/advanced`);
+    redirect(appHref(`/admin/templates/${template.id}/advanced`));
   }
   const preview = {
     ...template,

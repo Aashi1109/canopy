@@ -31,12 +31,21 @@ const footerColumns = [
   },
 ] as const;
 
-export function CanopyFooter() {
+export function CanopyFooter({ publicOrigin }: { publicOrigin?: string } = {}) {
+  const columns = publicOrigin
+    ? footerColumns.map((column) => ({
+        ...column,
+        links: column.links.map((link) => ({
+          ...link,
+          href: link.href === "/auth" ? link.href : new URL(link.href, publicOrigin).href,
+        })),
+      }))
+    : footerColumns;
   return (
     <ProductFooter
       brand="SmartTools"
       brandMark={<SmartToolsLogoMark aria-hidden="true" mode="dark" />}
-      columns={footerColumns}
+      columns={columns}
       copyright={`© ${new Date().getFullYear()} SmartTools. All rights reserved.`}
       description="Practical browser tools for documents, developer workflows, media, and everyday tasks."
     />

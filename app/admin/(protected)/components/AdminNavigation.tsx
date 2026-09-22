@@ -1,6 +1,7 @@
 "use client";
 
 import { SidebarNavItem } from "@/components/ui/index.tsx";
+import { appHref, subdomainHref } from "@/lib/routing/subdomains.ts";
 import { FileText, Newspaper, Flag, History, LayoutDashboard, Palette, ShieldCheck, Users, Wrench } from "lucide-react";
 import { useSelectedLayoutSegment } from "next/navigation";
 
@@ -23,7 +24,7 @@ export function AdminNavigation() {
       <SidebarNavItem
         active={segment === null}
         className="shrink-0"
-        href="/admin"
+        href={subdomainHref("admin")}
         icon={<LayoutDashboard aria-hidden="true" />}
       >
         Overview
@@ -32,7 +33,7 @@ export function AdminNavigation() {
         <SidebarNavItem
           active={href === `/admin/${segment}`}
           className="shrink-0"
-          href={href}
+          href={appHref(href)}
           icon={<Icon aria-hidden="true" />}
           key={href}
         >

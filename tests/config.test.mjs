@@ -3,6 +3,24 @@ import test from "node:test";
 import config from "../lib/config/config.ts";
 import publicConfig from "../lib/config/public.ts";
 
+test("auth cookie prefix keeps the existing default and reads environment overrides lazily", (t) => {
+  const previous = process.env;
+  t.after(() => {
+    process.env = previous;
+  });
+  process.env = {};
+  assert.equal(config.auth.cookiePrefix, "smarttools");
+  for (const [value, expected] of [
+    ["", "smarttools"],
+    ["   ", "smarttools"],
+    ["canopy", "canopy"],
+    [" canopy-test ", "canopy-test"],
+  ]) {
+    process.env.AUTH_COOKIE_PREFIX = value;
+    assert.equal(config.auth.cookiePrefix, expected);
+  }
+});
+
 test("cache reads default off in development and support an explicit environment override", (t) => {
   const previous = process.env;
   t.after(() => {
@@ -75,6 +93,7 @@ test("configuration stays lazy across environment loading, updates and replaceme
     ["NODE_ENV", () => publicConfig.environment],
     ["NEXT_PUBLIC_SENTRY_DSN", () => publicConfig.sentryDsn],
     ["NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME", () => publicConfig.cloudinaryCloudName],
+    ["APP_URL", () => publicConfig.appUrl],
   ];
   for (const [key, read] of fields) {
     process.env[key] = ` first ${key} `;
@@ -108,6 +127,7 @@ test("public configuration exposes only browser-safe values", (t) => {
   });
   process.env = {
     NODE_ENV: "production",
+    APP_URL: "https://smarttools.test",
     NEXT_PUBLIC_SENTRY_DSN: "https://public@example.test/1",
     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "public-cloud",
     DATABASE_URL: "postgres://private",
@@ -117,6 +137,7 @@ test("public configuration exposes only browser-safe values", (t) => {
   };
   assert.deepEqual(JSON.parse(JSON.stringify(publicConfig)), {
     environment: "production",
+    appUrl: "https://smarttools.test",
     sentryDsn: "https://public@example.test/1",
     cloudinaryCloudName: "public-cloud",
   });

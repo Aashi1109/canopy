@@ -138,19 +138,26 @@
   border: 0;
   box-shadow: inset 0 calc(var(--spacing) * -0.25) var(--border);
 }
-.assistantMarkdown {
+.agentPanel .assistantMarkdown {
   min-width: 0;
   max-width: 100%;
-  font-size: var(--text-sm);
+  font-size: var(--text-caption);
   line-height: 1.5;
+}
+.agentPanel .assistantMarkdown :is(h1, h2) {
+  font-size: var(--text-heading-5);
+}
+.agentPanel .assistantMarkdown :is(h3, h4, h5, h6) {
+  font-size: var(--text-sm);
 }
 .assistantMarkdown > :last-child {
   margin-bottom: 0;
 }
-.assistantMarkdown table {
+.agentPanel .assistantMarkdown table {
   display: block;
   max-width: 100%;
   overflow-x: auto;
+  font-size: inherit;
 }
 .assistantTabs > button {
   height: calc(var(--spacing) * 9.5);

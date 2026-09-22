@@ -1,3 +1,4 @@
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { AdminListing } from "@/app/admin/(protected)/components/AdminListing";
 import { adminPageHref, paginateAdminItems } from "../lib/pagination";
 import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
@@ -34,7 +35,7 @@ export default async function FeaturesPage({ searchParams }: { searchParams: Pro
         actions={
           <TextLink
             className="inline-flex h-10 items-center gap-2 rounded-full border border-input bg-card px-4 hover:bg-muted"
-            href="/admin/audit"
+            href={appHref("/admin/audit")}
           >
             <History aria-hidden="true" className="size-4" />
             View history

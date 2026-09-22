@@ -40,8 +40,22 @@ export function useEcosystemGroups(enabled = true) {
   return groups;
 }
 
-export function EcosystemTabFilters({ currentHref, className }: { currentHref?: string; className?: string }) {
-  const groups = useEcosystemGroups();
+export function EcosystemTabFilters({
+  currentHref,
+  className,
+  publicSiteUrl,
+}: {
+  currentHref?: string;
+  className?: string;
+  publicSiteUrl?: string;
+}) {
+  const siteHref = (path: string) => (publicSiteUrl ? new URL(path, publicSiteUrl).href : path);
+  const groups = useEcosystemGroups().map((group) => ({
+    ...group,
+    href: siteHref(group.href),
+    categories: group.categories.map((category) => ({ ...category, href: siteHref(category.href) })),
+    tools: group.tools.map((tool) => ({ ...tool, href: siteHref(tool.href) })),
+  }));
   const [activeId, setActiveId] = useState<string | null>(null);
 
   return (
@@ -54,7 +68,7 @@ export function EcosystemTabFilters({ currentHref, className }: { currentHref?: 
     >
       <a
         className="rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
-        href="/"
+        href={siteHref("/")}
       >
         All tools
       </a>
@@ -80,7 +94,7 @@ export function EcosystemTabFilters({ currentHref, className }: { currentHref?: 
       <a
         aria-current={currentHref === "/blog" ? "page" : undefined}
         className="rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:text-primary"
-        href="/blog"
+        href={siteHref("/blog")}
       >
         Blog
       </a>

@@ -6,6 +6,7 @@ import {
   type StreamingCsvResult,
 } from "./streaming-csv.ts";
 import { BoundedUtf8Preview } from "./bounded-text-preview.ts";
+import { createTablePreview } from "./table-preview.ts";
 import { LARGE_TEXT_PREVIEW_BYTES } from "../../tool-framework/limits.ts";
 import type { ToolResult } from "../../tool-framework/result.ts";
 import { ToolError, type ToolRunContext } from "../../tool-framework/run.ts";
@@ -141,12 +142,15 @@ export async function streamCsvRows(
 ): Promise<ToolResult> {
   const sink = createTextArtifactSink(ctx, options);
   let first = true;
+  let preview: ReturnType<typeof createTablePreview> | undefined;
   let parsed: StreamingCsvResult;
   try {
     parsed = await parseCsvRun(ctx, {
       delimiter: options.inputDelimiter,
       onRow: async (row, rowNumber) => {
         const output = options.mapRow?.(row, rowNumber) ?? row;
+        if (first) preview = createTablePreview(output);
+        else preview?.append(output);
         await sink.write(`${first ? "" : "\n"}${serializeCsvRow(output, options.outputDelimiter)}`);
         first = false;
       },
@@ -162,6 +166,7 @@ export async function streamCsvRows(
     code: sink.preview,
     language: options.outputDelimiter === "\t" ? "tsv" : "csv",
     truncated: sink.previewTruncated,
+    tablePreview: preview?.result,
     stats: [
       { label: "Rows", value: String(parsed.rowCount) },
       { label: "Columns", value: String(parsed.columnCount) },

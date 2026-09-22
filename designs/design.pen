@@ -139153,7 +139153,7 @@
           ]
         },
         {
-          "id": "jyP8H",
+          "id": "k7TPC0",
           "type": "ref",
           "ref": "KhiTv",
           "name": "Shared footer",
@@ -139279,7 +139279,7 @@
                   "id": "NGbZh",
                   "name": "Byline",
                   "width": "fill_container",
-                  "gap": 12,
+                  "gap": 16,
                   "alignItems": "center",
                   "children": [
                     {
@@ -139329,13 +139329,83 @@
                       ]
                     },
                     {
+                      "type": "frame",
+                      "id": "QXtfR",
+                      "x": 0,
+                      "y": 0,
+                      "name": "Author avatar and publication details",
+                      "enabled": false,
+                      "width": 1,
+                      "height": 1,
+                      "gap": 12,
+                      "alignItems": "center"
+                    },
+                    {
                       "id": "zUi47",
                       "type": "ref",
                       "ref": "TjqJu",
                       "name": "Copy link",
+                      "enabled": false,
                       "descendants": {
                         "DXbTG": {
                           "content": "Copy link"
+                        }
+                      }
+                    },
+                    {
+                      "id": "zEKj9",
+                      "type": "ref",
+                      "ref": "Suwsq",
+                      "name": "Share article — beside author",
+                      "width": 144,
+                      "height": 40,
+                      "context": "Compact article sharing. Copy-link icon has accessible name Copy article link and shared tooltip on hover/focus; successful copy changes icon to check and announces Link copied. Share opens native sharing or an accessible Copy link / Email menu.",
+                      "descendants": {
+                        "B5egd": {
+                          "width": "fill_container",
+                          "height": 40,
+                          "gap": 8
+                        },
+                        "aMNDy": {
+                          "id": "u58s4",
+                          "type": "ref",
+                          "ref": "LYbwR",
+                          "name": "Copy article link — tooltip on hover and focus",
+                          "width": 40,
+                          "height": 40,
+                          "strokeWidth": 0,
+                          "fill": "$surface",
+                          "descendants": {
+                            "Sha4x": {
+                              "icon": "link",
+                              "width": 18,
+                              "height": 18,
+                              "fill": "$fg-secondary"
+                            }
+                          }
+                        },
+                        "IwUEi": {
+                          "width": 96,
+                          "height": 40,
+                          "fill": "$surface-muted",
+                          "strokeWidth": 0,
+                          "padding": [
+                            0,
+                            12
+                          ],
+                          "gap": 8
+                        },
+                        "IwUEi/YXu3R": {
+                          "icon": "share-2",
+                          "width": 16,
+                          "height": 16,
+                          "fill": "$fg-secondary"
+                        },
+                        "IwUEi/eZ6aj": {
+                          "content": "Share",
+                          "fontSize": 13,
+                          "fontWeight": "500",
+                          "fill": "$fg-primary"
                         }
                       }
                     }
@@ -139737,61 +139807,6 @@
                           "fontWeight": "normal"
                         }
                       ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "Suwsq",
-                      "name": "Author biography",
-                      "width": "fill_container",
-                      "stroke": "$border-subtle",
-                      "strokeWidth": {
-                        "top": 1
-                      },
-                      "layout": "vertical",
-                      "gap": 8,
-                      "padding": [
-                        24,
-                        0
-                      ],
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "TDf1s",
-                          "name": "Written by Maya Chen",
-                          "fill": "$fg-primary",
-                          "textGrowth": "fixed-width",
-                          "width": "fill_container",
-                          "content": "Written by Maya Chen",
-                          "lineHeight": 1.6,
-                          "fontFamily": "$font-body",
-                          "fontSize": 17,
-                          "fontWeight": "600"
-                        },
-                        {
-                          "type": "text",
-                          "id": "zoTRm",
-                          "name": "Maya writes practical guides that help independent workers spend less time on paperwork and more time on their craft.",
-                          "fill": "$fg-secondary",
-                          "textGrowth": "fixed-width",
-                          "width": "fill_container",
-                          "content": "Maya writes practical guides that help independent workers spend less time on paperwork and more time on their craft.",
-                          "lineHeight": 1.6,
-                          "fontFamily": "$font-body",
-                          "fontSize": 15,
-                          "fontWeight": "normal"
-                        },
-                        {
-                          "id": "aMNDy",
-                          "type": "ref",
-                          "ref": "TjqJu",
-                          "name": "Share this guide · Copy link",
-                          "descendants": {
-                            "DXbTG": {
-                              "content": "Share this guide · Copy link"
-                            }
-                          }
-                        }
-                      ]
                     }
                   ]
                 },
@@ -139849,88 +139864,268 @@
         {
           "type": "frame",
           "id": "wOpD9",
-          "name": "Keep reading",
+          "name": "Article footer / Keep reading — related stories",
+          "context": "Public article end section, before the unchanged product footer. Each complete story is one link to its published article; Browse all stories goes to /blog. Hide section when no related stories exist; one story retains its normal column width.",
           "width": "fill_container",
           "fill": "$surface-muted",
-          "layout": "vertical",
-          "gap": 28,
+          "stroke": "$border-subtle",
+          "strokeWidth": {
+            "top": 1
+          },
+          "gap": 56,
           "padding": [
-            40,
-            260,
             56,
-            260
+            64
           ],
           "children": [
             {
-              "type": "text",
-              "id": "UNk1i",
-              "name": "Keep a good thing going.",
-              "fill": "$fg-primary",
-              "textGrowth": "fixed-width",
-              "width": "fill_container",
-              "content": "Keep a good thing going.",
-              "lineHeight": 1.6,
-              "fontFamily": "$font-body",
-              "fontSize": 30,
-              "fontWeight": "600"
+              "type": "frame",
+              "id": "S99iz",
+              "name": "Keep reading heading and archive link",
+              "width": 280,
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "oMHmC",
+                  "name": "Editorial eyebrow — Further reading",
+                  "fill": "$fg-secondary",
+                  "content": "THE NEXT CHAPTER",
+                  "fontFamily": "$font-body",
+                  "fontSize": 11,
+                  "fontWeight": "600",
+                  "letterSpacing": 1.8
+                },
+                {
+                  "type": "text",
+                  "id": "UNk1i",
+                  "name": "Keep a good thing going.",
+                  "fill": "$fg-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Keep a good\nthing going.",
+                  "lineHeight": 1.05,
+                  "fontFamily": "$font-body",
+                  "fontSize": 46,
+                  "fontWeight": "600",
+                  "letterSpacing": -1.8
+                },
+                {
+                  "id": "do451",
+                  "type": "ref",
+                  "ref": "o5XSq",
+                  "name": "Browse all stories — /blog",
+                  "context": "Navigate to /blog",
+                  "height": 44,
+                  "fill": "$surface-muted",
+                  "strokeWidth": 0,
+                  "padding": 0,
+                  "descendants": {
+                    "Y4AAX": {
+                      "content": "Explore all stories  →",
+                      "fill": "$accent-text",
+                      "fontSize": 14
+                    }
+                  }
+                }
+              ]
             },
             {
               "type": "frame",
               "id": "J72IY",
               "name": "Related articles",
               "width": "fill_container",
-              "gap": 40,
+              "gap": 32,
               "children": [
                 {
-                  "id": "BO5ao",
-                  "type": "ref",
-                  "ref": "TSJow",
-                  "name": "Related paperwork guide",
+                  "type": "frame",
+                  "id": "VZTT5",
+                  "name": "Reading pick 01",
                   "width": "fill_container",
-                  "descendants": {
-                    "yx5hh": {
-                      "enabled": false,
-                      "width": 400
+                  "layout": "vertical",
+                  "gap": 22,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "e36dh",
+                      "name": "Story 01 — reading order and link affordance",
+                      "width": "fill_container",
+                      "stroke": "$border-strong",
+                      "strokeWidth": {
+                        "bottom": 1
+                      },
+                      "padding": [
+                        0,
+                        0,
+                        16,
+                        0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ymquZ",
+                          "name": "Reading pick number 01",
+                          "fill": "$accent-text",
+                          "content": "01",
+                          "lineHeight": 1,
+                          "fontFamily": "$font-caption",
+                          "fontSize": 48,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "U5Ofq",
+                          "name": "Open article — whole story is linked",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$accent-text"
+                        }
+                      ]
                     },
-                    "x5N3w7": {
-                      "content": "BUSINESS · 5 MIN READ"
-                    },
-                    "UnIJK": {
-                      "content": "Your first freelance invoice"
-                    },
-                    "vR7SU": {
-                      "content": "The essentials, from first line item to final PDF."
+                    {
+                      "id": "BO5ao",
+                      "type": "ref",
+                      "ref": "TSJow",
+                      "name": "Related paperwork guide",
+                      "width": "fill_container",
+                      "padding": 0,
+                      "fill": "$surface-muted",
+                      "cornerRadius": 0,
+                      "stroke": "$border-subtle",
+                      "strokeWidth": 0,
+                      "gap": 16,
+                      "context": "Entire article teaser is a single link. Hover: title becomes accent-text; keyboard focus: visible accent outline. Title wraps; metadata stays below excerpt.",
+                      "descendants": {
+                        "yx5hh": {
+                          "enabled": false,
+                          "width": 400
+                        },
+                        "x5N3w7": {
+                          "content": "BUSINESS  ·  5 MIN READ",
+                          "fontWeight": "600",
+                          "fontSize": 12
+                        },
+                        "UnIJK": {
+                          "content": "Your first freelance invoice",
+                          "fontSize": 28,
+                          "lineHeight": 1.15,
+                          "letterSpacing": -0.6
+                        },
+                        "vR7SU": {
+                          "content": "The essentials, from your first line item to a polished PDF.",
+                          "fontSize": 15,
+                          "lineHeight": 1.5
+                        },
+                        "d0lDb": {
+                          "content": "Maya Chen  ·  Sep 16, 2026",
+                          "fontSize": 12
+                        }
+                      }
                     }
-                  }
+                  ]
                 },
                 {
-                  "id": "w6hQn",
-                  "type": "ref",
-                  "ref": "TSJow",
-                  "name": "Related data guide",
+                  "type": "frame",
+                  "id": "y1cl4g",
+                  "name": "Reading pick 02",
                   "width": "fill_container",
-                  "descendants": {
-                    "yx5hh": {
-                      "enabled": false,
-                      "width": 400
+                  "layout": "vertical",
+                  "gap": 22,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "YKDlm",
+                      "name": "Story 02 — reading order and link affordance",
+                      "width": "fill_container",
+                      "stroke": "$border-strong",
+                      "strokeWidth": {
+                        "bottom": 1
+                      },
+                      "padding": [
+                        0,
+                        0,
+                        16,
+                        0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "CSSFM",
+                          "name": "Reading pick number 02",
+                          "fill": "$accent-text",
+                          "content": "02",
+                          "lineHeight": 1,
+                          "fontFamily": "$font-caption",
+                          "fontSize": 48,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "eZ0G8",
+                          "name": "Open article — whole story is linked",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$accent-text"
+                        }
+                      ]
                     },
-                    "x5N3w7": {
-                      "content": "TECHNOLOGY · 4 MIN READ"
-                    },
-                    "UnIJK": {
-                      "content": "JSON errors, explained like a human."
-                    },
-                    "vR7SU": {
-                      "content": "Find the problem and understand the fix."
+                    {
+                      "id": "w6hQn",
+                      "type": "ref",
+                      "ref": "TSJow",
+                      "name": "Related data guide",
+                      "width": "fill_container",
+                      "padding": 0,
+                      "fill": "$surface-muted",
+                      "cornerRadius": 0,
+                      "stroke": "$border-subtle",
+                      "strokeWidth": 0,
+                      "gap": 16,
+                      "context": "Entire article teaser is a single link. Hover: title becomes accent-text; keyboard focus: visible accent outline. Title wraps; metadata stays below excerpt.",
+                      "descendants": {
+                        "yx5hh": {
+                          "enabled": false,
+                          "width": 400
+                        },
+                        "x5N3w7": {
+                          "content": "TECHNOLOGY  ·  4 MIN READ",
+                          "fontWeight": "600",
+                          "fontSize": 12
+                        },
+                        "UnIJK": {
+                          "content": "JSON errors, explained like a human.",
+                          "fontSize": 28,
+                          "lineHeight": 1.15,
+                          "letterSpacing": -0.6
+                        },
+                        "vR7SU": {
+                          "content": "Find the problem, understand the fix, and get back to building.",
+                          "fontSize": 15,
+                          "lineHeight": 1.5
+                        },
+                        "d0lDb": {
+                          "content": "SmartTools Team  ·  Sep 12, 2026",
+                          "fontSize": 12
+                        }
+                      }
                     }
-                  }
+                  ]
                 }
               ]
             }
           ]
         },
         {
-          "id": "T9ssxw",
+          "id": "s68e0",
           "type": "ref",
           "ref": "KhiTv",
           "name": "Shared footer",
@@ -140056,13 +140251,13 @@
             "zUi47": {
               "enabled": false
             },
-            "aMNDy": {
+            "zEKj9": {
               "enabled": false
             }
           }
         },
         {
-          "id": "asrfC",
+          "id": "DRnq3",
           "type": "ref",
           "ref": "jfyGi",
           "name": "Private preview status — bottom footer",
@@ -141781,7 +141976,7 @@
           ]
         },
         {
-          "id": "S498t",
+          "id": "RE7RX",
           "type": "ref",
           "ref": "KhiTv",
           "name": "Shared footer",
@@ -144147,15 +144342,15 @@
           ]
         },
         {
-          "id": "eGfIO",
+          "id": "NDQWf",
           "type": "ref",
           "ref": "KhiTv",
+          "name": "Shared responsive footer",
+          "width": "fill_container",
           "padding": [
             32,
             20
           ],
-          "name": "Shared footer",
-          "width": "fill_container",
           "descendants": {
             "aKI48": {
               "layout": "vertical",
@@ -144226,6 +144421,21 @@
             "hXXB1": {
               "fontSize": 18
             },
+            "NGbZh": {
+              "layout": "horizontal",
+              "alignItems": "start",
+              "gap": 12,
+              "height": "fit_content"
+            },
+            "zEKj9": {
+              "width": 96
+            },
+            "u58s4": {
+              "enabled": false
+            },
+            "zEKj9/IwUEi": {
+              "width": 96
+            },
             "K30ywl": {
               "padding": [
                 0,
@@ -144260,7 +144470,272 @@
           }
         },
         {
-          "id": "h1w5p",
+          "type": "frame",
+          "id": "GtYIT",
+          "name": "Article footer / Keep reading — mobile",
+          "context": "Public article end section, before the unchanged product footer. Each complete story is one link to its published article; Browse all stories goes to /blog. Hide section when no related stories exist; one story retains its normal column width.",
+          "width": "fill_container",
+          "fill": "$surface-muted",
+          "stroke": "$border-subtle",
+          "strokeWidth": {
+            "top": 1
+          },
+          "layout": "vertical",
+          "gap": 36,
+          "padding": [
+            36,
+            24
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "FQ4o7",
+              "name": "Keep reading heading and archive link",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "rzrVY",
+                  "name": "Editorial eyebrow — Further reading",
+                  "fill": "$fg-secondary",
+                  "content": "THE NEXT CHAPTER",
+                  "fontFamily": "$font-body",
+                  "fontSize": 11,
+                  "fontWeight": "600",
+                  "letterSpacing": 1.8
+                },
+                {
+                  "type": "text",
+                  "id": "Gvwuk",
+                  "name": "Keep a good thing going.",
+                  "fill": "$fg-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Keep a good\nthing going.",
+                  "lineHeight": 1.05,
+                  "fontFamily": "$font-body",
+                  "fontSize": 40,
+                  "fontWeight": "600",
+                  "letterSpacing": -1.8
+                },
+                {
+                  "id": "DY6so",
+                  "type": "ref",
+                  "ref": "o5XSq",
+                  "name": "Browse all stories — /blog",
+                  "context": "Navigate to /blog",
+                  "height": 44,
+                  "fill": "$surface-muted",
+                  "strokeWidth": 0,
+                  "padding": 0,
+                  "descendants": {
+                    "Y4AAX": {
+                      "content": "Explore all stories  →",
+                      "fill": "$accent-text",
+                      "fontSize": 14
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "k9yJ1E",
+              "name": "Related articles",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 32,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "jkAOP",
+                  "name": "Reading pick 01",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 22,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "KM7XN",
+                      "name": "Story 01 — reading order and link affordance",
+                      "width": "fill_container",
+                      "stroke": "$border-strong",
+                      "strokeWidth": {
+                        "bottom": 1
+                      },
+                      "padding": [
+                        0,
+                        0,
+                        16,
+                        0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "XWwC5",
+                          "name": "Reading pick number 01",
+                          "fill": "$accent-text",
+                          "content": "01",
+                          "lineHeight": 1,
+                          "fontFamily": "$font-caption",
+                          "fontSize": 48,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "B9mtY1",
+                          "name": "Open article — whole story is linked",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$accent-text"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "h5T052",
+                      "type": "ref",
+                      "ref": "TSJow",
+                      "padding": 0,
+                      "name": "Related paperwork guide",
+                      "width": "fill_container",
+                      "fill": "$surface-muted",
+                      "cornerRadius": 0,
+                      "stroke": "$border-subtle",
+                      "strokeWidth": 0,
+                      "gap": 16,
+                      "context": "Entire article teaser is a single link. Hover: title becomes accent-text; keyboard focus: visible accent outline. Title wraps; metadata stays below excerpt.",
+                      "descendants": {
+                        "yx5hh": {
+                          "enabled": false,
+                          "width": 400
+                        },
+                        "x5N3w7": {
+                          "content": "BUSINESS  ·  5 MIN READ",
+                          "fontWeight": "600",
+                          "fontSize": 12
+                        },
+                        "UnIJK": {
+                          "content": "Your first freelance invoice",
+                          "fontSize": 27,
+                          "lineHeight": 1.15,
+                          "letterSpacing": -0.6
+                        },
+                        "vR7SU": {
+                          "content": "The essentials, from your first line item to a polished PDF.",
+                          "fontSize": 15,
+                          "lineHeight": 1.5
+                        },
+                        "d0lDb": {
+                          "content": "Maya Chen  ·  Sep 16, 2026",
+                          "fontSize": 12
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "RRkES",
+                  "name": "Reading pick 02",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 22,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "OcDIR",
+                      "name": "Story 02 — reading order and link affordance",
+                      "width": "fill_container",
+                      "stroke": "$border-strong",
+                      "strokeWidth": {
+                        "bottom": 1
+                      },
+                      "padding": [
+                        0,
+                        0,
+                        16,
+                        0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "iJEM0",
+                          "name": "Reading pick number 02",
+                          "fill": "$accent-text",
+                          "content": "02",
+                          "lineHeight": 1,
+                          "fontFamily": "$font-caption",
+                          "fontSize": 48,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "Jx8zd",
+                          "name": "Open article — whole story is linked",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$accent-text"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "PqLY2",
+                      "type": "ref",
+                      "ref": "TSJow",
+                      "padding": 0,
+                      "name": "Related data guide",
+                      "width": "fill_container",
+                      "fill": "$surface-muted",
+                      "cornerRadius": 0,
+                      "stroke": "$border-subtle",
+                      "strokeWidth": 0,
+                      "gap": 16,
+                      "context": "Entire article teaser is a single link. Hover: title becomes accent-text; keyboard focus: visible accent outline. Title wraps; metadata stays below excerpt.",
+                      "descendants": {
+                        "yx5hh": {
+                          "enabled": false,
+                          "width": 400
+                        },
+                        "x5N3w7": {
+                          "content": "TECHNOLOGY  ·  4 MIN READ",
+                          "fontWeight": "600",
+                          "fontSize": 12
+                        },
+                        "UnIJK": {
+                          "content": "JSON errors, explained like a human.",
+                          "fontSize": 27,
+                          "lineHeight": 1.15,
+                          "letterSpacing": -0.6
+                        },
+                        "vR7SU": {
+                          "content": "Find the problem, understand the fix, and get back to building.",
+                          "fontSize": 15,
+                          "lineHeight": 1.5
+                        },
+                        "d0lDb": {
+                          "content": "SmartTools Team  ·  Sep 12, 2026",
+                          "fontSize": 12
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "dFZZq",
           "type": "ref",
           "ref": "KhiTv",
           "name": "Shared responsive footer",
@@ -147065,6 +147540,9 @@
             "zUi47": {
               "enabled": false
             },
+            "zEKj9": {
+              "enabled": false
+            },
             "K30ywl": {
               "padding": [
                 0,
@@ -147091,9 +147569,6 @@
             },
             "u9nZIE": {
               "width": "fill_container"
-            },
-            "aMNDy": {
-              "enabled": false
             },
             "kWVsE": {
               "enabled": false,
@@ -319881,6 +320356,1221 @@
                   ]
                 }
               ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "cn4JE",
+      "x": 112227,
+      "y": -1439,
+      "name": "Related articles / 01 / Visual feature",
+      "clip": true,
+      "width": 1366,
+      "fill": "$surface",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "jsTIz",
+          "name": "Approach rationale",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "padding": [
+            24,
+            64
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "sw759",
+              "name": "Approach title",
+              "fill": "$fg-primary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "01 / Visual feature",
+              "fontFamily": "$font-body",
+              "fontSize": 16,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "B6kPu",
+              "name": "Approach description",
+              "fill": "$fg-secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "A photo-led recommendation paired with a quieter text story.",
+              "fontFamily": "$font-body",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Grtvn",
+          "name": "Article ending / shared sharing block",
+          "width": "fill_container",
+          "padding": [
+            0,
+            64,
+            24,
+            64
+          ],
+          "children": [
+            {
+              "id": "XWt7Q",
+              "type": "ref",
+              "ref": "Suwsq",
+              "name": "Article end sharing",
+              "width": "fill_container",
+              "x": 64,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "CiURd",
+          "name": "01 / Visual feature / related articles",
+          "context": "Public article end section, before the unchanged product footer. Each complete story is one link to its published article; Browse all stories goes to /blog. Hide section when no related stories exist; one story retains its normal column width.",
+          "width": "fill_container",
+          "fill": "$surface-muted",
+          "stroke": "$border-subtle",
+          "strokeWidth": {
+            "top": 1
+          },
+          "layout": "vertical",
+          "gap": 32,
+          "padding": [
+            40,
+            64
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "zBbW1",
+              "name": "Keep reading heading and archive link",
+              "width": "fill_container",
+              "gap": 24,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "T7qCp",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Editorial eyebrow — Further reading",
+                  "enabled": false,
+                  "fill": "$fg-secondary",
+                  "content": "THE NEXT CHAPTER",
+                  "fontFamily": "$font-body",
+                  "fontSize": 11,
+                  "fontWeight": "600",
+                  "letterSpacing": 1.8
+                },
+                {
+                  "type": "text",
+                  "id": "n5kvZ",
+                  "name": "Keep a good thing going.",
+                  "fill": "$fg-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "A little more to explore.",
+                  "lineHeight": 1.05,
+                  "fontFamily": "$font-body",
+                  "fontSize": 38,
+                  "fontWeight": "600",
+                  "letterSpacing": -1.8
+                },
+                {
+                  "id": "FhLfk",
+                  "type": "ref",
+                  "ref": "o5XSq",
+                  "name": "Browse all stories — /blog",
+                  "context": "Navigate to /blog",
+                  "height": 44,
+                  "fill": "$surface-muted",
+                  "strokeWidth": 0,
+                  "padding": 0,
+                  "descendants": {
+                    "Y4AAX": {
+                      "content": "Explore all stories  →",
+                      "fill": "$accent-text",
+                      "fontSize": 14
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "uZN7C",
+              "name": "Related articles",
+              "width": "fill_container",
+              "gap": 40,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Z1G5S",
+                  "name": "Reading pick 01",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "N3gRE0",
+                      "x": 0,
+                      "y": 0,
+                      "name": "Story 01 — reading order and link affordance",
+                      "enabled": false,
+                      "width": 472,
+                      "stroke": "$border-strong",
+                      "strokeWidth": {
+                        "bottom": 1
+                      },
+                      "padding": [
+                        0,
+                        0,
+                        16,
+                        0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "q2NIBp",
+                          "name": "Reading pick number 01",
+                          "fill": "$accent-text",
+                          "content": "01",
+                          "lineHeight": 1,
+                          "fontFamily": "$font-caption",
+                          "fontSize": 48,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "wc8aM",
+                          "name": "Open article — whole story is linked",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$accent-text"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "b0STc",
+                      "type": "ref",
+                      "ref": "TSJow",
+                      "name": "Related paperwork guide",
+                      "width": "fill_container",
+                      "padding": 0,
+                      "fill": "$surface-muted",
+                      "cornerRadius": 0,
+                      "stroke": "$border-subtle",
+                      "strokeWidth": 0,
+                      "gap": 16,
+                      "context": "Entire article teaser is a single link. Hover: title becomes accent-text; keyboard focus: visible accent outline. Title wraps; metadata stays below excerpt.",
+                      "descendants": {
+                        "yx5hh": {
+                          "enabled": true,
+                          "height": 220,
+                          "width": "fill_container"
+                        },
+                        "x5N3w7": {
+                          "content": "TECHNOLOGY  ·  4 MIN READ",
+                          "fontWeight": "600",
+                          "fontSize": 12
+                        },
+                        "UnIJK": {
+                          "fontSize": 30,
+                          "content": "JSON errors, explained like a human.",
+                          "lineHeight": 1.15,
+                          "letterSpacing": -0.6
+                        },
+                        "vR7SU": {
+                          "content": "Find the problem, understand the fix, and get back to building.",
+                          "fontSize": 15,
+                          "lineHeight": 1.5
+                        },
+                        "d0lDb": {
+                          "content": "SmartTools Team  ·  Sep 12, 2026",
+                          "fontSize": 12
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "qbL1R",
+                  "name": "Reading pick 02",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 22,
+                  "padding": [
+                    36,
+                    0,
+                    0,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "vvJjt",
+                      "x": 0,
+                      "y": 0,
+                      "name": "Story 02 — reading order and link affordance",
+                      "enabled": false,
+                      "width": 472,
+                      "stroke": "$border-strong",
+                      "strokeWidth": {
+                        "bottom": 1
+                      },
+                      "padding": [
+                        0,
+                        0,
+                        16,
+                        0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "GQtcU",
+                          "name": "Reading pick number 02",
+                          "fill": "$accent-text",
+                          "content": "02",
+                          "lineHeight": 1,
+                          "fontFamily": "$font-caption",
+                          "fontSize": 48,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "A5OIC",
+                          "name": "Open article — whole story is linked",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$accent-text"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "ShAgs",
+                      "type": "ref",
+                      "ref": "TSJow",
+                      "name": "Related data guide",
+                      "width": "fill_container",
+                      "padding": 0,
+                      "fill": "$surface-muted",
+                      "cornerRadius": 0,
+                      "stroke": "$border-subtle",
+                      "strokeWidth": 0,
+                      "gap": 16,
+                      "context": "Entire article teaser is a single link. Hover: title becomes accent-text; keyboard focus: visible accent outline. Title wraps; metadata stays below excerpt.",
+                      "descendants": {
+                        "yx5hh": {
+                          "enabled": false,
+                          "width": 400
+                        },
+                        "x5N3w7": {
+                          "content": "BUSINESS  ·  5 MIN READ",
+                          "fontWeight": "600",
+                          "fontSize": 12
+                        },
+                        "UnIJK": {
+                          "fontSize": 36,
+                          "content": "Your first freelance invoice",
+                          "lineHeight": 1.15,
+                          "letterSpacing": -0.6
+                        },
+                        "vR7SU": {
+                          "content": "The essentials, from your first line item to a polished PDF.",
+                          "fontSize": 15,
+                          "lineHeight": 1.5
+                        },
+                        "d0lDb": {
+                          "content": "Maya Chen  ·  Sep 16, 2026",
+                          "fontSize": 12
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Y6n3zK",
+      "x": 113693,
+      "y": -1439,
+      "name": "Related articles / 02 / Reading index",
+      "clip": true,
+      "width": 1366,
+      "fill": "$surface",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "j09nL",
+          "name": "Approach rationale",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "padding": [
+            24,
+            64
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "Dkgeh",
+              "name": "Approach title",
+              "fill": "$fg-primary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "02 / Reading index",
+              "fontFamily": "$font-body",
+              "fontSize": 16,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "kAgYc",
+              "name": "Approach description",
+              "fill": "$fg-secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "A compact, numbered list that puts titles and scanning first.",
+              "fontFamily": "$font-body",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "h0TEZ",
+          "name": "Article ending / shared sharing block",
+          "width": "fill_container",
+          "padding": [
+            0,
+            64,
+            24,
+            64
+          ],
+          "children": [
+            {
+              "id": "gNwbV",
+              "type": "ref",
+              "ref": "Suwsq",
+              "name": "Article end sharing",
+              "width": "fill_container",
+              "x": 64,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "WinCm",
+          "name": "02 / Reading index / related articles",
+          "context": "Public article end section, before the unchanged product footer. Each complete story is one link to its published article; Browse all stories goes to /blog. Hide section when no related stories exist; one story retains its normal column width.",
+          "width": "fill_container",
+          "fill": "$surface-muted",
+          "stroke": "$border-subtle",
+          "strokeWidth": {
+            "top": 1
+          },
+          "gap": 32,
+          "padding": [
+            40,
+            64
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "JWjc8",
+              "name": "Keep reading heading and archive link",
+              "width": 280,
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "BiTvs",
+                  "name": "Editorial eyebrow — Further reading",
+                  "fill": "$fg-secondary",
+                  "content": "YOUR READING LIST",
+                  "fontFamily": "$font-body",
+                  "fontSize": 11,
+                  "fontWeight": "600",
+                  "letterSpacing": 1.8
+                },
+                {
+                  "type": "text",
+                  "id": "ovCeM",
+                  "name": "Keep a good thing going.",
+                  "fill": "$fg-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Stay\ncurious.",
+                  "lineHeight": 1.05,
+                  "fontFamily": "$font-body",
+                  "fontSize": 60,
+                  "fontWeight": "600",
+                  "letterSpacing": -1.8
+                },
+                {
+                  "id": "fYGSE",
+                  "type": "ref",
+                  "ref": "o5XSq",
+                  "name": "Browse all stories — /blog",
+                  "context": "Navigate to /blog",
+                  "height": 44,
+                  "fill": "$surface-muted",
+                  "strokeWidth": 0,
+                  "padding": 0,
+                  "descendants": {
+                    "Y4AAX": {
+                      "content": "Explore all stories  →",
+                      "fill": "$accent-text",
+                      "fontSize": 14
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "PYMfY",
+              "name": "Related articles",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 28,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "LllKK",
+                  "name": "Reading pick 01",
+                  "width": "fill_container",
+                  "stroke": "$border-strong",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "u3hPU",
+                      "name": "Story 01 — reading order and link affordance",
+                      "width": 56,
+                      "stroke": "$border-strong",
+                      "layout": "vertical",
+                      "gap": 20,
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "IyTTb",
+                          "name": "Reading pick number 01",
+                          "fill": "$accent-text",
+                          "content": "01",
+                          "lineHeight": 1,
+                          "fontFamily": "$font-caption",
+                          "fontSize": 32,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "srkuw",
+                          "name": "Open article — whole story is linked",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$accent-text"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "qs9sR",
+                      "type": "ref",
+                      "ref": "TSJow",
+                      "name": "Related paperwork guide",
+                      "width": "fill_container",
+                      "padding": 0,
+                      "fill": "$surface-muted",
+                      "cornerRadius": 0,
+                      "stroke": "$border-subtle",
+                      "strokeWidth": 0,
+                      "gap": 16,
+                      "context": "Entire article teaser is a single link. Hover: title becomes accent-text; keyboard focus: visible accent outline. Title wraps; metadata stays below excerpt.",
+                      "descendants": {
+                        "yx5hh": {
+                          "enabled": false,
+                          "width": 400
+                        },
+                        "x5N3w7": {
+                          "content": "BUSINESS  ·  5 MIN READ",
+                          "fontWeight": "600",
+                          "fontSize": 12
+                        },
+                        "UnIJK": {
+                          "content": "Your first freelance invoice",
+                          "fontSize": 28,
+                          "lineHeight": 1.15,
+                          "letterSpacing": -0.6
+                        },
+                        "vR7SU": {
+                          "content": "The essentials, from your first line item to a polished PDF.",
+                          "fontSize": 15,
+                          "lineHeight": 1.5
+                        },
+                        "d0lDb": {
+                          "content": "Maya Chen  ·  Sep 16, 2026",
+                          "fontSize": 12
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Q8VOa",
+                  "name": "Reading pick 02",
+                  "context": "Reading index row: shared numbered rail and article teaser, separated by a top rule. Use instances for further recommendations.",
+                  "reusable": true,
+                  "width": "fill_container",
+                  "stroke": "$border-strong",
+                  "strokeWidth": {
+                    "top": 1
+                  },
+                  "gap": 24,
+                  "padding": [
+                    28,
+                    0,
+                    0,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "k3zgw",
+                      "name": "Story 02 — reading order and link affordance",
+                      "width": 56,
+                      "stroke": "$border-strong",
+                      "layout": "vertical",
+                      "gap": 20,
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "sbgpa",
+                          "name": "Reading pick number 02",
+                          "fill": "$accent-text",
+                          "content": "02",
+                          "lineHeight": 1,
+                          "fontFamily": "$font-caption",
+                          "fontSize": 32,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "p6j96",
+                          "name": "Open article — whole story is linked",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$accent-text"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "Z29po",
+                      "type": "ref",
+                      "ref": "TSJow",
+                      "name": "Related data guide",
+                      "width": "fill_container",
+                      "padding": 0,
+                      "fill": "$surface-muted",
+                      "cornerRadius": 0,
+                      "stroke": "$border-subtle",
+                      "strokeWidth": 0,
+                      "gap": 16,
+                      "context": "Entire article teaser is a single link. Hover: title becomes accent-text; keyboard focus: visible accent outline. Title wraps; metadata stays below excerpt.",
+                      "descendants": {
+                        "yx5hh": {
+                          "enabled": false,
+                          "width": 400
+                        },
+                        "x5N3w7": {
+                          "content": "TECHNOLOGY  ·  4 MIN READ",
+                          "fontWeight": "600",
+                          "fontSize": 12
+                        },
+                        "UnIJK": {
+                          "content": "JSON errors, explained like a human.",
+                          "fontSize": 28,
+                          "lineHeight": 1.15,
+                          "letterSpacing": -0.6
+                        },
+                        "vR7SU": {
+                          "content": "Find the problem, understand the fix, and get back to building.",
+                          "fontSize": 15,
+                          "lineHeight": 1.5
+                        },
+                        "d0lDb": {
+                          "content": "SmartTools Team  ·  Sep 12, 2026",
+                          "fontSize": 12
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "T0WXpY",
+                  "type": "ref",
+                  "ref": "Q8VOa",
+                  "name": "Reading pick 03 — Design guide",
+                  "width": "fill_container",
+                  "descendants": {
+                    "sbgpa": {
+                      "content": "03"
+                    },
+                    "Z29po/x5N3w7": {
+                      "content": "DESIGN  ·  6 MIN READ"
+                    },
+                    "Z29po/UnIJK": {
+                      "content": "Small files. Sharp images."
+                    },
+                    "Z29po/vR7SU": {
+                      "content": "Choose the right image format without sacrificing the details."
+                    },
+                    "Z29po/d0lDb": {
+                      "content": "SmartTools Team  ·  Sep 10, 2026"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "fttCr",
+      "x": 115159,
+      "y": -1439,
+      "name": "Related articles / 03 / Two-tone reading spread",
+      "clip": true,
+      "width": 1366,
+      "fill": "$surface",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "Uhhr0",
+          "name": "Approach rationale",
+          "width": "fill_container",
+          "gap": 24,
+          "padding": [
+            24,
+            64
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "hiLr7",
+              "name": "Approach heading",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "KmLRN",
+                  "name": "Approach title",
+                  "fill": "$fg-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "03 / Two-tone reading spread",
+                  "fontFamily": "$font-body",
+                  "fontSize": 16,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "sfe15",
+                  "name": "Approach description",
+                  "fill": "$fg-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "A bold next-read feature with a contrasting second recommendation.",
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "id": "vGbgn",
+              "type": "ref",
+              "ref": "Suwsq",
+              "name": "Compact sharing — top right",
+              "width": 216,
+              "x": 1086,
+              "y": 26.5,
+              "height": 40,
+              "padding": 0,
+              "gap": 0,
+              "strokeWidth": 0,
+              "descendants": {
+                "TDf1s": {
+                  "enabled": false,
+                  "width": 216
+                },
+                "zoTRm": {
+                  "enabled": false,
+                  "width": 216
+                },
+                "B5egd": {
+                  "width": "fit_content",
+                  "height": "fit_content",
+                  "padding": 0,
+                  "gap": 8
+                },
+                "aMNDy": {
+                  "width": 96,
+                  "height": 40,
+                  "fill": "$surface",
+                  "stroke": "$border-strong",
+                  "strokeWidth": 1
+                },
+                "aMNDy/DXbTG": {
+                  "fill": "$fg-primary",
+                  "fontSize": 13
+                },
+                "IwUEi": {
+                  "width": 112,
+                  "height": 40
+                },
+                "IwUEi/eZ6aj": {
+                  "fontSize": 13
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "W7BUj",
+          "x": 0,
+          "y": 229,
+          "name": "Article ending / shared sharing block",
+          "enabled": false,
+          "width": 1366,
+          "height": 1,
+          "padding": [
+            0,
+            64,
+            24,
+            64
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Ev4zL",
+          "name": "03 / Two-tone reading spread / related articles",
+          "context": "Public article end section, before the unchanged product footer. Each complete story is one link to its published article; Browse all stories goes to /blog. Hide section when no related stories exist; one story retains its normal column width.",
+          "width": "fill_container",
+          "fill": "$surface-muted",
+          "stroke": "$border-subtle",
+          "strokeWidth": {
+            "top": 1
+          },
+          "layout": "vertical",
+          "gap": 32,
+          "padding": [
+            40,
+            64
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "o5YTWM",
+              "name": "Keep reading heading and archive link",
+              "width": "fill_container",
+              "gap": 24,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "RpjBD",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Editorial eyebrow — Further reading",
+                  "enabled": false,
+                  "fill": "$fg-secondary",
+                  "content": "THE NEXT CHAPTER",
+                  "fontFamily": "$font-body",
+                  "fontSize": 11,
+                  "fontWeight": "600",
+                  "letterSpacing": 1.8
+                },
+                {
+                  "type": "text",
+                  "id": "fbn4x",
+                  "name": "Keep a good thing going.",
+                  "fill": "$fg-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "One good read leads to another.",
+                  "lineHeight": 1.05,
+                  "fontFamily": "$font-body",
+                  "fontSize": 36,
+                  "fontWeight": "600",
+                  "letterSpacing": -1.8
+                },
+                {
+                  "id": "yGEBi",
+                  "type": "ref",
+                  "ref": "o5XSq",
+                  "name": "Browse all stories — /blog",
+                  "context": "Navigate to /blog",
+                  "height": 44,
+                  "fill": "$surface-muted",
+                  "strokeWidth": 0,
+                  "padding": 0,
+                  "descendants": {
+                    "Y4AAX": {
+                      "content": "Explore all stories  →",
+                      "fill": "$accent-text",
+                      "fontSize": 14
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pxWEz",
+              "name": "Related articles",
+              "context": "Equal-height reading cards. Row height follows the tallest story; cards fill the row. Recalculate for content changes, and use natural heights when stacked on mobile.",
+              "width": "fill_container",
+              "height": 341,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "e5vRc",
+                  "name": "Reading pick 01",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "$surface-ink",
+                  "layout": "vertical",
+                  "gap": 28,
+                  "padding": 32,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "WZHP1",
+                      "name": "Story 01 — reading order and link affordance",
+                      "width": "fill_container",
+                      "stroke": "#FFFFFF33",
+                      "strokeWidth": {
+                        "bottom": 1
+                      },
+                      "padding": [
+                        0,
+                        0,
+                        16,
+                        0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Ac3NL",
+                          "name": "Reading pick number 01",
+                          "fill": "$fg-onink",
+                          "content": "01",
+                          "lineHeight": 1,
+                          "fontFamily": "$font-caption",
+                          "fontSize": 48,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "tEA6U",
+                          "name": "Open article — whole story is linked",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$fg-onink"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "WeyXl",
+                      "type": "ref",
+                      "ref": "TSJow",
+                      "fill": "$surface-ink",
+                      "name": "Related paperwork guide",
+                      "width": "fill_container",
+                      "padding": 0,
+                      "cornerRadius": 0,
+                      "stroke": "$border-subtle",
+                      "strokeWidth": 0,
+                      "gap": 16,
+                      "context": "Entire article teaser is a single link. Hover: title becomes accent-text; keyboard focus: visible accent outline. Title wraps; metadata stays below excerpt.",
+                      "descendants": {
+                        "yx5hh": {
+                          "enabled": false,
+                          "width": 400
+                        },
+                        "x5N3w7": {
+                          "fill": "$fg-onink-muted",
+                          "content": "BUSINESS  ·  5 MIN READ",
+                          "fontWeight": "600",
+                          "fontSize": 12
+                        },
+                        "UnIJK": {
+                          "fill": "$fg-onink",
+                          "fontSize": 34,
+                          "content": "Your first freelance invoice",
+                          "lineHeight": 1.15,
+                          "letterSpacing": -0.6
+                        },
+                        "vR7SU": {
+                          "fill": "$fg-onink-muted",
+                          "content": "The essentials, from your first line item to a polished PDF.",
+                          "fontSize": 15,
+                          "lineHeight": 1.5
+                        },
+                        "d0lDb": {
+                          "fill": "$fg-onink-muted",
+                          "content": "Maya Chen  ·  Sep 16, 2026",
+                          "fontSize": 12
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ZfkKL",
+                  "name": "Reading pick 02",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "$accent-soft",
+                  "layout": "vertical",
+                  "gap": 28,
+                  "padding": 32,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "y5fVq",
+                      "name": "Story 02 — reading order and link affordance",
+                      "width": "fill_container",
+                      "stroke": "$border-strong",
+                      "strokeWidth": {
+                        "bottom": 1
+                      },
+                      "padding": [
+                        0,
+                        0,
+                        16,
+                        0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "R4YBk",
+                          "name": "Reading pick number 02",
+                          "fill": "$accent-text",
+                          "content": "02",
+                          "lineHeight": 1,
+                          "fontFamily": "$font-caption",
+                          "fontSize": 48,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "yQK9h",
+                          "name": "Open article — whole story is linked",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$accent-text"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "I27mKJ",
+                      "type": "ref",
+                      "ref": "TSJow",
+                      "fill": "$accent-soft",
+                      "name": "Related data guide",
+                      "width": "fill_container",
+                      "padding": 0,
+                      "cornerRadius": 0,
+                      "stroke": "$border-subtle",
+                      "strokeWidth": 0,
+                      "gap": 16,
+                      "context": "Entire article teaser is a single link. Hover: title becomes accent-text; keyboard focus: visible accent outline. Title wraps; metadata stays below excerpt.",
+                      "descendants": {
+                        "yx5hh": {
+                          "enabled": false,
+                          "width": 400
+                        },
+                        "x5N3w7": {
+                          "content": "TECHNOLOGY  ·  4 MIN READ",
+                          "fontWeight": "600",
+                          "fontSize": 12
+                        },
+                        "UnIJK": {
+                          "fontSize": 34,
+                          "content": "JSON errors, explained like a human.",
+                          "lineHeight": 1.15,
+                          "letterSpacing": -0.6
+                        },
+                        "vR7SU": {
+                          "content": "Find the problem, understand the fix, and get back to building.",
+                          "fontSize": 15,
+                          "lineHeight": 1.5
+                        },
+                        "d0lDb": {
+                          "content": "SmartTools Team  ·  Sep 12, 2026",
+                          "fontSize": 12
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Suwsq",
+      "x": 622,
+      "y": 1365,
+      "name": "Article header / Compact sharing",
+      "context": "Author attribution remains in the article header. Share uses the canonical public article URL, never preview URL. Copy success: label becomes Link copied for 2 seconds and announces via polite live region. Failure: shared error toast and a selectable URL with Retry. Share opens native share sheet when available; desktop fallback offers Copy link and Email. Cancelling preserves reading position.",
+      "reusable": true,
+      "width": 216,
+      "height": 40,
+      "stroke": "$border-subtle",
+      "children": [
+        {
+          "type": "text",
+          "id": "TDf1s",
+          "x": 0,
+          "y": 28,
+          "name": "Sharing heading",
+          "enabled": false,
+          "fill": "$fg-primary",
+          "textGrowth": "fixed-width",
+          "width": 216,
+          "content": "Worth passing along?",
+          "lineHeight": 1.2,
+          "fontFamily": "$font-body",
+          "fontSize": 24,
+          "fontWeight": "600",
+          "letterSpacing": -0.4
+        },
+        {
+          "type": "text",
+          "id": "zoTRm",
+          "x": 0,
+          "y": 67,
+          "name": "Sharing description",
+          "enabled": false,
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": 216,
+          "content": "Send a little clarity to someone who could use it.",
+          "lineHeight": 1.6,
+          "fontFamily": "$font-body",
+          "fontSize": 15,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "B5egd",
+          "name": "Article sharing actions",
+          "width": "fill_container",
+          "height": 40,
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "aMNDy",
+              "type": "ref",
+              "ref": "TjqJu",
+              "name": "Copy canonical article link",
+              "height": 40,
+              "fill": "$surface",
+              "padding": [
+                0,
+                16
+              ],
+              "width": 96,
+              "stroke": "$border-strong",
+              "strokeWidth": 1,
+              "descendants": {
+                "DXbTG": {
+                  "content": "Copy link",
+                  "fill": "$fg-primary",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                }
+              }
+            },
+            {
+              "id": "IwUEi",
+              "type": "ref",
+              "ref": "G6hEn",
+              "name": "Share article — native share or accessible menu",
+              "width": 112,
+              "x": 104,
+              "y": 0,
+              "height": 40,
+              "descendants": {
+                "YXu3R": {
+                  "icon": "share-2"
+                },
+                "eZ6aj": {
+                  "content": "Share…",
+                  "fontSize": 13
+                }
+              }
             }
           ]
         }

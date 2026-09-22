@@ -8,6 +8,8 @@ export default {
   name: "CSV to TSV",
   description: "Convert comma-separated values to tab-separated values.",
   outputLanguage: "tsv",
+  previewLayout: "table",
+  layout: "side-by-side",
   input: {
     kind: "text",
     language: "csv",

@@ -39,6 +39,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getActorUserId } from "../../lib/admin/access";
 import { errorMessage } from "../../utils/errorMessage.ts";
+import { appHref } from "../../lib/routing/subdomains.ts";
 
 function text(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -143,7 +144,7 @@ export async function createRoleAction(formData: FormData) {
       name: text(formData, "name"),
       description: text(formData, "description"),
     });
-    redirect(`/admin/roles/${role.id}`);
+    redirect(appHref(`/admin/roles/${role.id}`));
   });
 }
 
@@ -194,7 +195,7 @@ export async function deleteRoleAction(formData: FormData) {
         error: errorMessage(error, "Unable to delete the role. Please try again."),
       };
     }
-    redirect("/admin/roles");
+    redirect(appHref("/admin/roles"));
   });
 }
 
@@ -209,7 +210,7 @@ export async function createTemplateAction(formData: FormData) {
       layoutFamily,
       config: getDefaultTemplateConfigByFamily(layoutFamily),
     });
-    redirect(`/admin/templates/${template.id}`);
+    redirect(appHref(`/admin/templates/${template.id}`));
   });
 }
 
@@ -224,7 +225,7 @@ export async function createAdvancedTemplateAction(formData: FormData) {
       documentType: documentType as TemplateDocumentType,
       pageFormat: pageFormat as TemplatePageFormat,
     });
-    redirect(`/admin/templates/${template.id}/advanced`);
+    redirect(appHref(`/admin/templates/${template.id}/advanced`));
   });
 }
 
@@ -235,9 +236,11 @@ export async function duplicateTemplateAction(formData: FormData) {
       slug: text(formData, "slug"),
     });
     redirect(
-      template.layoutFamily === "advanced"
-        ? `/admin/templates/${template.id}/advanced`
-        : `/admin/templates/${template.id}`,
+      appHref(
+        template.layoutFamily === "advanced"
+          ? `/admin/templates/${template.id}/advanced`
+          : `/admin/templates/${template.id}`,
+      ),
     );
   });
 }
@@ -249,9 +252,11 @@ export async function importTemplateAction(formData: FormData) {
       json(formData, "template", "Template JSON", 5_000_000),
     );
     redirect(
-      template.layoutFamily === "advanced"
-        ? `/admin/templates/${template.id}/advanced`
-        : `/admin/templates/${template.id}`,
+      appHref(
+        template.layoutFamily === "advanced"
+          ? `/admin/templates/${template.id}/advanced`
+          : `/admin/templates/${template.id}`,
+      ),
     );
   });
 }
@@ -294,7 +299,7 @@ export async function updateAndPublishTemplateAction(formData: FormData) {
     revalidatePath("/admin/templates");
     revalidatePath(`/admin/templates/${templateId}`);
     revalidatePath(`/admin/templates/${templateId}/advanced`);
-    redirect("/admin/templates");
+    redirect(appHref("/admin/templates"));
   });
 }
 

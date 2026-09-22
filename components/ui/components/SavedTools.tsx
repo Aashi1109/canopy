@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Bookmark, BookmarkCheck, BookmarkMinus, Braces, Files, LoaderCircle, X } from "lucide-react";
+import { ArrowRight, Bookmark, Braces, Files, LoaderCircle, X } from "lucide-react";
 import { Dialog, Popover } from "radix-ui";
 import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Button } from "./button.tsx";
@@ -8,6 +8,9 @@ import { ContentState } from "./ContentState.tsx";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip.tsx";
 import { cn } from "../lib/utils.ts";
 import { SavedToolsStore, STORAGE_KEY, type SavedTool } from "../lib/saved-tools.ts";
+
+const ACTIVE_SAVE_BUTTON_CLASS_NAME =
+  "border-primary/25 bg-accent text-primary ring-1 ring-inset ring-primary/25 hover:bg-primary/15 hover:text-primary active:bg-primary/20 active:text-primary";
 
 type SavedContextValue = {
   store: SavedToolsStore;
@@ -17,7 +20,8 @@ type SavedContextValue = {
 };
 const SavedContext = createContext<SavedContextValue | null>(null);
 
-export function SavedToolsProvider({ children }: { children: ReactNode }) {
+export function SavedToolsProvider({ children, publicSiteUrl }: { children: ReactNode; publicSiteUrl?: string }) {
+  const siteHref = (path: string) => (publicSiteUrl ? new URL(path, publicSiteUrl).href : path);
   const [store] = useState(
     () =>
       new SavedToolsStore({
@@ -151,7 +155,7 @@ export function SavedToolsProvider({ children }: { children: ReactNode }) {
                 return (
                   <div key={tool.toolId} className="flex min-h-16 items-center gap-1 rounded-lg px-1">
                     <a
-                      href={tool.href}
+                      href={siteHref(tool.href)}
                       onClick={() => setOpen(false)}
                       className="group/saved-tool flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-3 no-underline outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     >
@@ -172,10 +176,11 @@ export function SavedToolsProvider({ children }: { children: ReactNode }) {
                       <TooltipTrigger asChild>
                         <Button
                           aria-label={`Remove ${tool.name} from Saved`}
+                          aria-pressed
                           disabled={state.pending}
                           size="icon"
                           variant="ghost"
-                          className="text-muted-foreground"
+                          className={ACTIVE_SAVE_BUTTON_CLASS_NAME}
                           onClick={async () => {
                             if (await store.change(tool.toolId, false)) {
                               setRemoved(tool);
@@ -184,7 +189,7 @@ export function SavedToolsProvider({ children }: { children: ReactNode }) {
                             }
                           }}
                         >
-                          <BookmarkMinus aria-hidden="true" className="size-[18px]" />
+                          <Bookmark aria-hidden="true" className="size-[18px] fill-current" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Remove from Saved</TooltipContent>
@@ -192,7 +197,7 @@ export function SavedToolsProvider({ children }: { children: ReactNode }) {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button asChild size="icon" variant="ghost" className="text-primary">
-                          <a aria-label={`Open ${tool.name}`} href={tool.href} onClick={() => setOpen(false)}>
+                          <a aria-label={`Open ${tool.name}`} href={siteHref(tool.href)} onClick={() => setOpen(false)}>
                             <ArrowRight aria-hidden="true" className="size-[18px]" />
                           </a>
                         </Button>
@@ -211,7 +216,7 @@ export function SavedToolsProvider({ children }: { children: ReactNode }) {
               description="Choose Save on a tool to keep a shortcut here."
               action={
                 <Button asChild variant="outline" size="sm">
-                  <a href="/" onClick={() => setOpen(false)}>
+                  <a href={siteHref("/")} onClick={() => setOpen(false)}>
                     Browse tools
                   </a>
                 </Button>
@@ -240,9 +245,6 @@ export function SavedToolsProvider({ children }: { children: ReactNode }) {
       ) : null}
       <p aria-live="polite" className="sr-only">
         {notice}
-      </p>
-      <p className="mt-2 border-t border-border px-2 pt-3 pb-1 text-xs text-muted-foreground">
-        {state.userId ? "Saved to your account · Synced across devices" : "Saved in this browser · No account needed"}
       </p>
     </TooltipProvider>
   );
@@ -333,7 +335,7 @@ export function SaveToolButton({
       disabled={saved.state.pending || saved.state.status !== "ready"}
       size={iconOnly ? "icon" : "sm"}
       variant={iconOnly ? "ghost" : "outline"}
-      className={className}
+      className={cn(active && ACTIVE_SAVE_BUTTON_CLASS_NAME, className)}
       onClick={async () => {
         const success = await saved.store.change(tool.toolId, !active);
         setMessage(
@@ -343,12 +345,12 @@ export function SaveToolButton({
         );
       }}
     >
-      {active ? <BookmarkCheck aria-hidden="true" /> : <Bookmark aria-hidden="true" />}
+      <Bookmark aria-hidden="true" className={active ? "fill-current" : undefined} />
       {!iconOnly && (active ? "Saved" : "Save tool")}
     </Button>
   );
   return (
-    <span className="inline-flex flex-col items-start">
+    <span className={cn("inline-flex flex-col", iconOnly ? "items-end" : "items-start")}>
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>{control}</TooltipTrigger>

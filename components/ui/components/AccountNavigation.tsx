@@ -1,4 +1,5 @@
 "use client";
+import { subdomainHref } from "../../../lib/routing/subdomains.ts";
 import { Caption, P } from "./typography.tsx";
 
 import {
@@ -40,6 +41,7 @@ import { cn } from "../lib/utils.ts";
 export type AccountNavigationProps = {
   className?: string;
   isAdminPage?: boolean;
+  publicSiteUrl?: string;
   returnTo: string;
   restricted?: boolean;
   showSignIn?: boolean;
@@ -122,6 +124,7 @@ export function SwitchAccountButton({ returnTo }: { returnTo: string }) {
 export function AccountNavigation({
   className,
   isAdminPage = false,
+  publicSiteUrl,
   returnTo,
   restricted = false,
   showSignIn = true,
@@ -129,7 +132,8 @@ export function AccountNavigation({
 }: AccountNavigationProps) {
   const [open, setOpen] = useState(false);
   const groups = useEcosystemGroups(open && !restricted);
-  const { pending, error, signOut } = useSignOut(restricted ? "/auth" : "/");
+  const siteHref = (path: string) => (publicSiteUrl ? new URL(path, publicSiteUrl).href : path);
+  const { pending, error, signOut } = useSignOut(restricted ? "/auth" : siteHref("/"));
   const target = `${user ? "/auth/profile" : "/auth"}?${new URLSearchParams({ returnTo })}`;
   const accountName = user?.name.trim() || "Account";
   const initials = accountName
@@ -178,7 +182,7 @@ export function AccountNavigation({
                     if (!group)
                       return (
                         <DropdownMenu.Item asChild className={itemClassName} key={href}>
-                          <a href={href}>
+                          <a href={siteHref(href)}>
                             <Icon aria-hidden="true" />
                             {label}
                           </a>
@@ -212,7 +216,7 @@ export function AccountNavigation({
                             className="z-[100] max-h-[var(--radix-dropdown-menu-content-available-height)] w-64 max-w-[calc(100vw-24px)] overflow-y-auto rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-lg [@media(width>1024px)]:hidden"
                           >
                             <DropdownMenu.Item asChild className={itemClassName}>
-                              <a href={href}>
+                              <a href={siteHref(href)}>
                                 <Icon aria-hidden="true" />
                                 All {label.toLowerCase()} tools
                               </a>
@@ -220,7 +224,7 @@ export function AccountNavigation({
                             {links.length ? <DropdownMenu.Separator className="my-1 h-px bg-border" /> : null}
                             {links.map((link) => (
                               <DropdownMenu.Item asChild className={itemClassName} key={link.href}>
-                                <a href={link.href}>
+                                <a href={siteHref(link.href)}>
                                   {"icon" in link ? (
                                     <PreviewIcon icon={link.icon} />
                                   ) : (
@@ -240,7 +244,7 @@ export function AccountNavigation({
               ) : null}
               {!restricted && user.isAdmin ? (
                 <DropdownMenu.Item asChild className={itemClassName}>
-                  <a href={isAdminPage ? "/" : "/admin"}>
+                  <a href={isAdminPage ? siteHref("/") : subdomainHref("admin")}>
                     {isAdminPage ? <ArrowLeft aria-hidden="true" /> : <Shield aria-hidden="true" />}
                     {isAdminPage ? "Back to product" : "Admin page"}
                   </a>

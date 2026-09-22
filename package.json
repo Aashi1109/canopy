@@ -13,7 +13,7 @@
     "tool:new": "node scripts/new-tool.mjs",
     "admin:promote": "node db/scripts/promote-admin.mjs",
     "build": "pnpm run prepare:vendor && tsc --noEmit && next build --webpack",
-    "build:docker": "docker buildx build --platform linux/amd64 --target runner --tag aashishpal09/canopy:latest --push .",
+    "build:docker": "docker buildx build --build-arg APP_URL=\"${APP_URL:?Set APP_URL to the public origin}\" --platform linux/amd64 --target runner --tag aashishpal09/canopy:latest --push .",
     "build:cloudflare": "opennextjs-cloudflare build && node scripts/clear-cloudflare-build-env.mjs",
     "preview": "pnpm build:cloudflare && node --env-file-if-exists=.env.local node_modules/wrangler/bin/wrangler.js dev --port 8787 --var APP_URL:http://localhost:8787",
     "deploy": "pnpm build:cloudflare && opennextjs-cloudflare deploy",

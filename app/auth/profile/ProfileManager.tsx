@@ -114,9 +114,11 @@ async function prepareProfileImage(file: File): Promise<string> {
 export function ProfileManager({
   initialUser,
   currentSessionId,
+  publicSiteUrl,
 }: {
   initialUser: InitialUser;
   currentSessionId: string;
+  publicSiteUrl: string;
 }) {
   const { data: liveSession, refetch } = authClient.useSession();
   const [accounts, setAccounts] = useState<LinkedAccount[]>([]);
@@ -300,7 +302,7 @@ export function ProfileManager({
       setPending(undefined);
       return;
     }
-    window.location.assign("/");
+    window.location.assign(publicSiteUrl);
   }
 
   async function requestDeletion(event: FormEvent<HTMLFormElement>) {
@@ -316,7 +318,7 @@ export function ProfileManager({
 
     setPending("delete");
     setFeedback(null);
-    const result = await authClient.deleteUser({ callbackURL: "/" });
+    const result = await authClient.deleteUser({ callbackURL: publicSiteUrl });
     if (result.error) {
       setFeedback({ kind: "error", text: getSafeAuthError(result.error) });
     } else {

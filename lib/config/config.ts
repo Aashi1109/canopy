@@ -1,3 +1,5 @@
+import publicConfig from "./public.ts";
+
 /** Server/build configuration. Browser code must use ./public.ts. */
 // Read lazily: CLI entry points load dotenv after imports, and request runtimes
 // can supply environment values after module initialization.
@@ -6,7 +8,7 @@ const config = {
     return process.env.NODE_ENV;
   },
   get appUrl() {
-    return process.env.APP_URL ?? "http://localhost:3000";
+    return publicConfig.appUrl;
   },
   get databaseUrl() {
     return process.env.DATABASE_URL;
@@ -26,6 +28,7 @@ const config = {
   get auth() {
     return {
       secret: process.env.BETTER_AUTH_SECRET,
+      cookiePrefix: process.env.AUTH_COOKIE_PREFIX?.trim() || "smarttools",
       googleClientId: process.env.GOOGLE_CLIENT_ID,
       googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
     };

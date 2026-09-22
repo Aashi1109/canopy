@@ -203,6 +203,58 @@ test("new conversation stays local until its first send and uses that message as
   assert.equal(render().message, "Keep the old conversation draft");
 });
 
+test("the first accepted request titles an existing empty conversation without fetching history", async () => {
+  await mounted(["thread-1"]);
+  let finish;
+  state.stream = (input, _signal, onEvent) =>
+    new Promise((resolve) => {
+      const accepted = run(input, "running", { inputMessageId: "user", assistantMessageId: "assistant" });
+      onEvent({ type: "run", run: accepted });
+      finish = () => resolve({ ...accepted, status: "completed" });
+    });
+  const callsBeforeSend = state.calls.length;
+  const sending = render().send(request("Explain this section"));
+  assert.equal(render().threads[0].title, "Explain this section");
+  assert.equal(render().detail.thread.title, "Explain this section");
+  assert.deepEqual(
+    state.calls.slice(callsBeforeSend).filter((call) => call.method === "GET"),
+    [],
+  );
+  finish();
+  await sending;
+});
+
+test("a new conversation does not inherit standalone executions or pagination from the last opened thread", async () => {
+  const execution = { id: "old-execution", threadId: "thread-1", status: "completed" };
+  onRequest = (url, _body, method) =>
+    method === "GET" && url.endsWith("/thread-1")
+      ? { ...serverDetails["thread-1"], executions: [execution], executionsCursor: "old-cursor" }
+      : undefined;
+  await mounted(["thread-1"]);
+  assert.deepEqual(render().detail.executions, [execution]);
+  render().startNewThread();
+  state.stream = async (input) => run(input, "completed");
+  const sending = render().send(request("New question"));
+  assert.deepEqual(render().detail.executions ?? [], []);
+  assert.equal(render().detail.executionsCursor ?? null, null);
+  await sending;
+  assert.equal(render().selected, "thread-2");
+  assert.deepEqual(render().detail.executions ?? [], []);
+  assert.equal(render().detail.executionsCursor ?? null, null);
+});
+
+test("an unavailable configuration response does not prevent local new-thread initialization", async () => {
+  onRequest = (url) => (url.endsWith("/config") ? Promise.reject(new Error("Configuration unavailable")) : undefined);
+  await mounted();
+  assert.equal(render().availability, null);
+  state.stream = async (input) => run(input, "failed");
+  const result = await render().send(request("Draft"));
+  assert.equal(result.status, "failed");
+  assert.equal(render().selected, "thread-1");
+  assert.equal(render().detail.thread.title, "Draft");
+  assert.equal(render().message, "Draft");
+});
+
 test("implicit first thread preserves composer after acknowledged generation failure", async () => {
   let hook = await mounted();
   hook.draft("Keep this message");
@@ -215,7 +267,98 @@ test("implicit first thread preserves composer after acknowledged generation fai
   assert.equal(hook.detail.runs[0].status, "failed");
 });
 
-test("chat completion preserves formatting edited while the response is pending", async () => {
+test("refresh preserves a failed first query alongside a newer draft when thread creation failed", async () => {
+  await mounted();
+  render().draft("First query");
+  let rejectCreation;
+  onRequest = (url, _body, method) =>
+    method === "POST" && url.endsWith("/threads?resourceId=post")
+      ? new Promise((_resolve, reject) => {
+          rejectCreation = reject;
+        })
+      : undefined;
+  const sending = render().send(request("First query"));
+  render().draft("Newer draft");
+  rejectCreation(new Error("Thread unavailable"));
+  await sending;
+  await render().refresh();
+  const hook = render();
+  assert.equal(hook.message, "Newer draft");
+  assert.equal(hook.detail.messages[0].parts[0].text, "First query");
+  assert.equal(hook.detail.messages[0].meta.failed, true);
+});
+
+for (const conversation of ["existing", "new"])
+  test(`${conversation} conversation displays the submitted query and clears its rich composer before acknowledgment`, async () => {
+    await mounted(conversation === "existing" ? ["thread-1"] : []);
+    render().draft("Draft");
+    render().composerState({ attachmentIds: ["source"], content: richComposerContent });
+    let acknowledge;
+    let finish;
+    state.stream = (input, _signal, onEvent) =>
+      new Promise((resolve) => {
+        const accepted = run(input, "running", { inputMessageId: "saved-user", assistantMessageId: "saved-assistant" });
+        acknowledge = () => onEvent({ type: "run", run: accepted });
+        finish = () => {
+          const completed = { ...accepted, status: "completed" };
+          onEvent({ type: "completed", run: completed });
+          resolve(completed);
+        };
+      });
+    const sending = render().send({ ...request("Draft"), attachmentIds: ["source"] });
+    let hook = render();
+    assert.equal(hook.message, "");
+    assert.deepEqual(hook.composerSelection, { attachmentIds: [] });
+    assert.equal(hook.submitting, true);
+    assert.deepEqual(
+      hook.detail.messages.map((message) => [message.role, message.parts]),
+      [
+        [
+          "user",
+          [
+            { type: "text", text: "Draft" },
+            { type: "attachment", attachmentId: "source" },
+          ],
+        ],
+      ],
+    );
+    await setImmediate();
+    acknowledge();
+    hook = render();
+    assert.equal(hook.detail.messages.filter((message) => message.role === "user").length, 1);
+    assert.equal(hook.detail.messages.find((message) => message.role === "user").id, "saved-user");
+    finish();
+    await sending;
+    assert.equal(render().submitting, false);
+  });
+
+for (const followUp of [false, true])
+  test(`failed send ${followUp ? "preserves a newer draft" : "restores the submitted rich draft"}`, async () => {
+    await mounted(["thread-1"]);
+    render().draft("Draft");
+    render().composerState({ attachmentIds: ["source"], content: richComposerContent });
+    let fail;
+    state.stream = () =>
+      new Promise((_resolve, reject) => {
+        fail = reject;
+      });
+    const sending = render().send({ ...request("Draft"), attachmentIds: ["source"] });
+    await setImmediate();
+    if (followUp) {
+      render().draft("Next question");
+      render().composerState({ attachmentIds: ["next-source"] });
+    }
+    fail(new Error("Offline"));
+    assert.equal(await sending, null);
+    assert.equal(render().message, followUp ? "Next question" : "Draft");
+    assert.deepEqual(
+      render().composerSelection,
+      followUp ? { attachmentIds: ["next-source"] } : { attachmentIds: ["source"], content: richComposerContent },
+    );
+    assert.equal(render().submitting, false);
+  });
+
+test("chat completion preserves a new rich draft entered while the response is pending", async () => {
   await mounted(["thread-1"]);
   render().draft("Draft");
   render().composerState({ attachmentIds: [], content: richComposerContent });
@@ -229,11 +372,162 @@ test("chat completion preserves formatting edited while the response is pending"
   const editedContent = structuredClone(richComposerContent);
   editedContent.content[0].content[0].marks = [{ type: "italic" }];
   const editedSelection = { attachmentIds: [], content: editedContent };
+  render().draft("Draft");
   render().composerState(editedSelection);
   finish();
   await sending;
   assert.equal(render().message, "Draft");
   assert.deepEqual(render().composerSelection, editedSelection);
+});
+
+test("completion preserves an identical follow-up after the composer was cleared for send", async () => {
+  await mounted(["thread-1"]);
+  let finish;
+  state.stream = (input) =>
+    new Promise((resolve) => {
+      finish = () => resolve(run(input, "completed"));
+    });
+  const sending = render().send(request("Ask again"));
+  await setImmediate();
+  render().draft("Ask again");
+  finish();
+  await sending;
+  assert.equal(render().message, "Ask again");
+});
+
+test("reference preparation preserves a follow-up entered before the run is submitted", async () => {
+  await mounted(["thread-1"]);
+  render().draft("Same question");
+  let finishLink;
+  onRequest = (url, _body, method) =>
+    url.endsWith("/attachments") && method === "POST"
+      ? new Promise((resolve) => {
+          finishLink = () => resolve({ attachment: { id: "source", threadId: "thread-1", label: "Source" } });
+        })
+      : undefined;
+  let submitted;
+  state.stream = async (input) => {
+    submitted = input;
+    return run(input, "completed");
+  };
+  const sending = render().send(request("Same question"), undefined, "thread-1", {
+    referenceLinks: ["https://example.com/source"],
+  });
+  await setImmediate();
+  assert.equal(render().message, "");
+  assert.equal(render().submitting, true);
+  render().draft("Same question");
+  finishLink();
+  await sending;
+  assert.equal(render().message, "Same question");
+  assert.deepEqual(submitted.attachmentIds, ["source"]);
+});
+
+test("stopping reference preparation preserves the draft and completed links without dispatching a run", async () => {
+  await mounted(["thread-1"]);
+  render().draft("Draft");
+  render().composerState({ attachmentIds: [], content: richComposerContent });
+  let finishLink;
+  const remainingLinks = [];
+  const attachment = { id: "source", threadId: "thread-1", messageId: null, type: "link", label: "Source" };
+  onRequest = (url, _body, method) =>
+    url.endsWith("/attachments") && method === "POST"
+      ? new Promise((resolve) => {
+          finishLink = () => {
+            serverDetails["thread-1"].attachments.push(attachment);
+            resolve({ attachment });
+          };
+        })
+      : undefined;
+  let submissions = 0;
+  state.stream = async (input) => {
+    submissions++;
+    return run(input, "completed");
+  };
+  const sending = render().send(request("Draft"), undefined, "thread-1", {
+    referenceLinks: ["https://example.com/first", "https://example.com/second"],
+    onReferenceAdded: (id, links) => remainingLinks.push({ id, links }),
+  });
+  await setImmediate();
+  await render().stop();
+  finishLink();
+  assert.equal(await sending, null);
+  await setImmediate();
+  const hook = render();
+  assert.equal(submissions, 0);
+  assert.equal(hook.submitting, false);
+  assert.equal(hook.message, "Draft");
+  assert.deepEqual(hook.composerSelection, { attachmentIds: ["source"], content: richComposerContent });
+  assert.deepEqual(remainingLinks, [{ id: "thread-1", links: ["https://example.com/second"] }]);
+  assert.deepEqual(hook.detail.attachments, [attachment]);
+  assert.deepEqual(hook.detail.messages, []);
+  assert.equal(state.calls.filter((call) => call.url.endsWith("/attachments")).length, 1);
+});
+
+test("accepted chat binds its source attachments while artifacts and unselected sources remain reusable", async () => {
+  await mounted(["thread-1"]);
+  for (const [id, type] of [
+    ["source", "link"],
+    ["artifact", "artifact"],
+    ["unused", "image"],
+  ])
+    render().rememberAttachment({ id, type, threadId: "thread-1", messageId: null, label: id });
+  let acknowledge;
+  let finish;
+  state.stream = (input, _signal, onEvent) =>
+    new Promise((resolve) => {
+      const accepted = run(input, "running", { inputMessageId: "user", assistantMessageId: "assistant" });
+      acknowledge = () => onEvent({ type: "run", run: accepted });
+      finish = () => resolve({ ...accepted, status: "completed" });
+    });
+  const sending = render().send({ ...request("Use these"), attachmentIds: ["source", "artifact"] });
+  assert.deepEqual(
+    render().detail.attachments.map((file) => file.messageId),
+    [null, null, null],
+  );
+  acknowledge();
+  assert.deepEqual(
+    render().detail.attachments.map((file) => [file.id, file.messageId]),
+    [
+      ["source", "user"],
+      ["artifact", null],
+      ["unused", null],
+    ],
+  );
+  finish();
+  await sending;
+  assert.deepEqual(render().detail.messages.find((message) => message.id === "user").parts, [
+    { type: "text", text: "Use these" },
+    { type: "attachment", attachmentId: "source" },
+    { type: "attachment", attachmentId: "artifact" },
+  ]);
+});
+
+test("full-text stream events replace previous deltas and an interrupted response retains the latest partial answer", async () => {
+  await mounted(["thread-1"]);
+  let emit;
+  let fail;
+  state.stream = (input, _signal, onEvent) =>
+    new Promise((_resolve, reject) => {
+      emit = onEvent;
+      fail = reject;
+      onEvent({ type: "run", run: run(input, "running", { inputMessageId: "user", assistantMessageId: "assistant" }) });
+    });
+  const sending = render().send(request("Ask"));
+  emit({ type: "text-delta", text: "First draft" });
+  assert.equal(render().stream.text, "First draft");
+  emit({ type: "text", text: "Corrected answer" });
+  assert.equal(render().stream.text, "Corrected answer");
+  emit({ type: "text-delta", text: " continues" });
+  assert.equal(render().stream.text, "Corrected answer continues");
+  fail(new Error("Connection interrupted"));
+  assert.equal(await sending, null);
+  const hook = render();
+  assert.equal(hook.submitting, false);
+  assert.equal(hook.detail.runs[0].status, "unknown");
+  assert.deepEqual(hook.detail.messages.find((message) => message.id === "assistant").parts, [
+    { type: "text", text: "Corrected answer continues" },
+  ]);
 });
 
 test("first-thread completion preserves a new instruction entered during the response", async () => {
@@ -257,7 +551,7 @@ test("first-thread completion preserves a new instruction entered during the res
   assert.deepEqual(render().composerSelection.content, content);
 });
 
-test("first-thread completion preserves a formatting-only edit", async () => {
+test("first-thread completion preserves a new rich draft with the same text", async () => {
   await mounted();
   render().draft("Draft");
   render().composerState({ attachmentIds: [], content: richComposerContent });
@@ -270,6 +564,7 @@ test("first-thread completion preserves a formatting-only edit", async () => {
   await setImmediate();
   const content = structuredClone(richComposerContent);
   content.content[0].content[0].marks = [{ type: "italic" }];
+  render().draft("Draft");
   render().composerState({ attachmentIds: [], content });
   finish();
   await sending;
@@ -491,7 +786,7 @@ test("new and existing conversations run in parallel with separate streams and d
   assert.equal(render().stream.text, "Second answer");
   await render().choose("thread-1");
   assert.equal(render().stream.text, "First answer");
-  assert.equal(render().message, "First question");
+  assert.equal(render().message, "");
   assert.deepEqual(render().composerSelection, { attachmentIds: [] });
   render().draft("First follow-up");
   streams.get("thread-2").complete();
@@ -560,7 +855,7 @@ test("switching during thread creation does not block or reopen the destination 
   finishCreation();
   await setImmediate();
   assert.equal(render().selected, "thread-1");
-  assert.equal(render().message, "Existing question");
+  assert.equal(render().message, "");
   assert.deepEqual(render().activeThreadIds.sort(), ["thread-1", "thread-2"]);
   streams.get("thread-2").complete();
   streams.get("thread-1").complete();
@@ -605,7 +900,7 @@ test("two unsaved conversations can create and send concurrently without sharing
   streams.get("thread-1").complete();
   await first;
   assert.equal(render().submitting, true);
-  assert.equal(render().message, "Same question");
+  assert.equal(render().message, "");
   assert.equal(await render().send(request("Duplicate")), undefined);
   creations[1]();
   await setImmediate();
@@ -775,7 +1070,99 @@ test("proposal actions belong to fresh completions and are never restored by his
   );
 });
 
-test("a completed proposal stays usable when the final history refresh fails", async () => {
+for (const conversation of ["existing", "new"])
+  test(`a successful ${conversation} conversation receives its full response through the stream without fetching history`, async () => {
+    await mounted(conversation === "existing" ? ["thread-1"] : []);
+    const proposal = { toolCallId: "edit", type: "edit", status: "pending", originalText: "Opening", replacement: [] };
+    state.stream = async (input, _signal, onEvent) => {
+      const completed = run(input, "completed", {
+        inputMessageId: "user",
+        assistantMessageId: "assistant",
+        response: {
+          text: "A clearer opening",
+          proposals: [proposal],
+          findings: [],
+          keywords: [],
+          citations: [],
+          searchStatus: "not_requested",
+        },
+      });
+      onEvent({ type: "run", run: { ...completed, status: "running", response: null } });
+      onEvent({ type: "text-delta", text: "A clearer" });
+      onEvent({ type: "text-delta", text: " opening" });
+      onEvent({ type: "completed", run: completed });
+      return completed;
+    };
+    const callsBeforeSend = state.calls.length;
+    const completed = await render().send({ ...request("Improve the opening"), attachmentIds: ["source"] });
+    const hook = render();
+    assert.equal(completed.status, "completed");
+    assert.deepEqual(
+      state.calls.slice(callsBeforeSend).filter((call) => call.method === "GET"),
+      [],
+    );
+    assert.deepEqual(
+      hook.detail.messages.map((message) => [message.id, message.role]),
+      [
+        ["user", "user"],
+        ["assistant", "assistant"],
+      ],
+    );
+    assert.deepEqual(hook.detail.messages[0].parts, [
+      { type: "text", text: "Improve the opening" },
+      { type: "attachment", attachmentId: "source" },
+    ]);
+    assert.deepEqual(hook.detail.messages[1].parts, [
+      { type: "text", text: "A clearer opening" },
+      { type: "proposal", proposal },
+    ]);
+    assert.deepEqual(hook.freshRunIds, ["run"]);
+    assert.deepEqual(state.toasts, []);
+  });
+
+test("a delayed history snapshot cannot discard messages accepted and completed after the read began", async () => {
+  await mounted(["thread-1"]);
+  const oldDetail = structuredClone(serverDetails["thread-1"]);
+  let releaseHistory;
+  onRequest = (url, _body, method) =>
+    url.endsWith("/thread-1") && method === "GET" && !releaseHistory
+      ? new Promise((resolve) => {
+          releaseHistory = resolve;
+        })
+      : undefined;
+  const choosing = render().choose("thread-1");
+  state.stream = async (input, _signal, onEvent) => {
+    const completed = run(input, "completed", {
+      inputMessageId: "user",
+      assistantMessageId: "assistant",
+      response: {
+        text: "New response",
+        proposals: [],
+        findings: [],
+        keywords: [],
+        citations: [],
+        searchStatus: "not_requested",
+      },
+    });
+    onEvent({ type: "run", run: { ...completed, status: "running", response: null } });
+    onEvent({ type: "completed", run: completed });
+    return completed;
+  };
+  const sending = render().send(request("New question"));
+  await setImmediate();
+  releaseHistory(oldDetail);
+  await Promise.all([choosing, sending]);
+  assert.deepEqual(
+    render().detail.messages.map((message) => [message.id, message.parts[0].text]),
+    [
+      ["user", "New question"],
+      ["assistant", "New response"],
+    ],
+  );
+  assert.equal(render().detail.runs[0].status, "completed");
+});
+
+test("a completed proposal stays usable without relying on history transport", async () => {
   await mounted(["thread-1"]);
   const proposal = { toolCallId: "edit", type: "edit", status: "pending", originalText: "Opening", replacement: [] };
   state.stream = async (input, _signal, onEvent) => {
@@ -796,6 +1183,7 @@ test("a completed proposal stays usable when the final history refresh fails", a
     return completed;
   };
   onRequest = (url) => (url.endsWith("/thread-1") ? Promise.reject(new Error("History unavailable")) : undefined);
+  const callsBeforeSend = state.calls.length;
   const completed = await render().send(request("Improve the opening"));
   const hook = render();
   assert.equal(completed?.status, "completed");
@@ -805,9 +1193,14 @@ test("a completed proposal stays usable when the final history refresh fails", a
     { type: "text", text: "A clearer opening" },
     { type: "proposal", proposal },
   ]);
+  assert.deepEqual(
+    state.calls.slice(callsBeforeSend).filter((call) => call.method === "GET"),
+    [],
+  );
+  assert.deepEqual(state.toasts, []);
 });
 
-test("agent completion survives history failure without inventing a chat message", async () => {
+test("agent completion uses the streamed execution without fetching history or inventing a chat message", async () => {
   await mounted(["thread-1"]);
   state.stream = async (input, _signal, onEvent) => {
     const completed = run(input, "completed", {
@@ -828,12 +1221,60 @@ test("agent completion survives history failure without inventing a chat message
     return completed;
   };
   onRequest = (url) => (url.endsWith("/thread-1") ? Promise.reject(new Error("History unavailable")) : undefined);
-  const result = await render().send({ operation: "agent", agentId: "auditor", message: "Review" });
+  const callsBeforeSend = state.calls.length;
+  const result = await render().send(
+    { operation: "agent", agentId: "auditor", message: "Review" },
+    undefined,
+    "thread-1",
+    {
+      executionMode: "standalone",
+    },
+  );
   assert.equal(result.status, "completed");
   assert.equal(render().detail.executions[0].artifact.attachmentId, "artifact");
   assert.equal(render().detail.executions[0].requestMessage, "Review");
   assert.deepEqual(render().detail.messages, []);
+  assert.deepEqual(
+    state.calls.slice(callsBeforeSend).filter((call) => call.method === "GET"),
+    [],
+  );
+  assert.deepEqual(state.toasts, []);
 });
+
+for (const failureAt of ["second-link", "run-start"])
+  test(`standalone ${failureAt} failure preserves its draft and prepared reference attachments`, async () => {
+    await mounted(["thread-1"]);
+    render().draft("Draft");
+    render().composerState({ agentId: "auditor", attachmentIds: ["uploaded"], content: richComposerContent });
+    let added = 0;
+    onRequest = (url, _body, method) => {
+      if (!url.endsWith("/attachments") || method !== "POST") return undefined;
+      added++;
+      if (failureAt === "second-link" && added === 2) return Promise.reject(new Error("Link unavailable"));
+      return {
+        attachment: { id: `link-${added}`, threadId: "thread-1", messageId: null, type: "link", label: "Source" },
+      };
+    };
+    let submissions = 0;
+    state.stream = async () => {
+      submissions++;
+      throw new Error("Run unavailable");
+    };
+    const result = await render().send(
+      { operation: "agent", agentId: "auditor", message: "Draft", attachmentIds: ["uploaded"] },
+      undefined,
+      "thread-1",
+      { executionMode: "standalone", referenceLinks: ["https://example.com/first", "https://example.com/second"] },
+    );
+    assert.equal(result, null);
+    assert.equal(submissions, failureAt === "run-start" ? 1 : 0);
+    assert.equal(render().message, "Draft");
+    assert.deepEqual(render().composerSelection, {
+      agentId: "auditor",
+      attachmentIds: failureAt === "second-link" ? ["uploaded", "link-1"] : ["uploaded", "link-1", "link-2"],
+      content: richComposerContent,
+    });
+  });
 
 test("agent and attachment selection restores independently for each thread and syncs with draft", async () => {
   await mounted(["thread-1", "thread-2"]);

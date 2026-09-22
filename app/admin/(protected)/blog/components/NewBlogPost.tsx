@@ -1,5 +1,6 @@
 "use client";
 
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackButton, Button, Label, Textarea, toast, Toaster } from "@/components/ui/index.tsx";
@@ -46,7 +47,7 @@ export function NewBlogPost({ userId }: { userId: string }) {
       const result = await mutateBlogAction("create", { title: title.trim() });
       if (!active.current) return;
       if (result.ok) {
-        router.push(`/admin/blog/${result.data.id}`);
+        router.push(appHref(`/admin/blog/${result.data.id}`));
         return;
       }
       toast.error(result.message);
@@ -61,7 +62,7 @@ export function NewBlogPost({ userId }: { userId: string }) {
     <section className={styles.shell} aria-label="New blog post">
       <Toaster position="top-right" />
       <header className={styles.header}>
-        <BackButton href="/admin/blog" label="Back to posts" />
+        <BackButton href={appHref("/admin/blog")} label="Back to posts" />
         <h1 className={styles.title}>{aiMode ? "New blog" : title || "Untitled post"}</h1>
         <Button
           variant="outline"

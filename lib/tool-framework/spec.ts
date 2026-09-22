@@ -153,6 +153,12 @@ export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   readonly capabilities?: ToolCapabilities;
   /** How the source and derived result share the main task surface. */
   readonly layout?: ToolLayout;
+  /** Input pane percentages: width side-by-side, height when stacked. Enables resizing for stacked layouts. */
+  readonly inputSize?: {
+    readonly default: number;
+    readonly min?: number;
+    readonly max?: number;
+  };
   /** Optional behavior for the persistent settings rail. */
   readonly optionsPanel?: ToolOptionsPanel;
   readonly workbenchMark?: ToolWorkbenchMark;

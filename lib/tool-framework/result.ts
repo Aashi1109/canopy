@@ -26,6 +26,8 @@ export type ToolTextRender = {
   readonly truncated?: boolean;
   /** Alternate structured view; copy and download retain the original text. */
   readonly tablePreview?: ToolTableRender;
+  /** Read-only structured view; exports retain the original text. */
+  readonly jsonPreview?: ToolJsonTreeRender;
   readonly downloadName?: string;
 };
 
@@ -36,6 +38,8 @@ export type ToolCodeRender = {
   readonly language: string;
   /** Alternate structured view; copy and download retain the original code. */
   readonly tablePreview?: ToolTableRender;
+  /** Read-only structured view; exports retain the original code. */
+  readonly jsonPreview?: ToolJsonTreeRender;
   readonly downloadName?: string;
   /** The displayed code is a bounded preview of a complete generated artifact. */
   readonly truncated?: boolean;
@@ -47,6 +51,8 @@ export type ToolJsonTreeRender = {
   readonly value: unknown;
   /** Pretty-printed form, when the tool already produced one. */
   readonly text?: string;
+  /** Only a bounded portion of the complete result is represented. */
+  readonly truncated?: boolean;
   readonly downloadName?: string;
 };
 

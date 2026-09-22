@@ -228,6 +228,115 @@ directory on failure; fix the reported error and rerun the command. Completed
 uploads are reused, existing assignments are preserved, and successful runs clean
 up their temporary manifest. Database migrations remain a separate command.
 
+## Admin subdomain on Vercel
+
+The public site and admin use the same Vercel project and deployment. The admin
+origin is derived automatically from `APP_URL`: `https://example.com` and
+`https://www.example.com` both use `https://admin.example.com`, with paths such
+as `/users` and `/tools`. There is no separate admin URL setting.
+
+1. Add `admin.example.com` to the project's **Settings → Domains**, assigned to
+   Production. Add the exact CNAME record Vercel displays at your DNS provider
+   and wait for domain verification and HTTPS.
+2. Set the public site's URL for the production build:
+
+   ```dotenv
+   APP_URL=https://example.com
+   ```
+
+   Use an HTTPS origin without a path. The derived admin URL preserves the
+   protocol and port, removes a leading `www.`, and prefixes the hostname with
+   `admin.`. Keep `BETTER_AUTH_SECRET` unchanged.
+3. If using Google login, register both callbacks with the OAuth provider:
+   `https://example.com/api/auth/callback/google` and
+   `https://admin.example.com/api/auth/callback/google`.
+4. Redeploy. `APP_URL` must be available at build time so server and browser
+   navigation agree; changing it requires a new deployment. IP addresses and
+   `*.vercel.app` values retain `/admin` routes instead of deriving a subdomain.
+   Bare `localhost` derives `admin.localhost` for development.
+
+The app internally rewrites admin pages to `app/admin`; browser URLs have no
+`/admin` prefix. Old `/admin/...` page URLs redirect to the corresponding clean
+admin URL, preserving queries. APIs, authentication, and assets retain their
+existing paths. Mutations to legacy paths on the public host return 404 instead
+of forwarding their request bodies to the admin host.
+
+On real domains, login is shared with cookies scoped to the common parent
+hostname. All subdomains within that cookie scope must be trusted. Authentication
+and the request proxy use `config.auth.cookiePrefix`, configured through
+`AUTH_COOKIE_PREFIX` (default:
+`smarttools`). Keep the same value on both hosts. Login and logout apply to both
+hosts. Existing server-side admin permissions remain required.
+Admin responses are marked `noindex`, and its `robots.txt` disallows crawling.
+
+Before switching an existing deployment to shared-domain cookies, clear existing
+cookies for both the public and admin hosts, then sign in again. Existing
+host-only cookies do not migrate to the shared domain; keep the `smarttools`
+cookie prefix unchanged.
+
+After deploying, verify login from both hosts, navigation to `/users` and `/tools`,
+an admin save, logout on both hosts, and a public-page link from admin.
+
+### Local development
+
+Keep `APP_URL=http://localhost:3000` in `.env.local`, then start or restart
+`pnpm dev`. The public site runs at `http://localhost:3000` and admin at
+`http://admin.localhost:3000`, with clean paths such as `/users` and `/tools`.
+
+For Google login, register this local OAuth callback:
+`http://localhost:3000/api/auth/callback/google`. Google sign-in starts and
+returns on `localhost`, including when initiated from `admin.localhost`.
+Local development uses a session handoff to establish host-only cookies on both
+hosts because browsers do not reliably share `Domain=localhost` cookies. The
+cookies refer to the same backend session, so logout invalidates access on both
+hosts. Production domains continue to use shared-domain cookies and callbacks
+on the host where Google sign-in began.
+
+To check the flow, sign in at `http://localhost:3000` with a verified account that
+has admin access. If needed, grant that existing account access with
+`pnpm admin:promote you@example.com`. Open the account menu's admin link and
+confirm it reaches `http://admin.localhost:3000` without another login. Check
+`/users`, return to the public site, and confirm that logging out signs out both
+hosts. Opening `http://localhost:3000/admin/users` should redirect to
+`http://admin.localhost:3000/users`. Also verify the deployed flow on the real
+HTTPS domain.
+
+### Register another subdomain
+
+`lib/config/subdomains.ts` is the registry for subdomains served by this app.
+Only `admin` is currently registered. To add another scope, add one entry to
+`SUBDOMAINS`; for example, a future billing scope could use:
+
+```ts
+billing: { routePrefix: "/billing", indexable: false },
+```
+
+Create its pages beneath that route prefix, such as
+`app/billing/invoices/page.tsx`. The registered name determines the hostname:
+`billing.example.com/invoices` serves the internal `/billing/invoices` route.
+Use `appHref("/billing/invoices")` or `subdomainHref("billing", "/invoices")`
+from `lib/routing/subdomains.ts` for links and redirects. For section pages, these
+helpers retain the internal route prefix when `APP_URL` uses a host without
+subdomain support.
+Use `getSubdomainOrigin`, `getSubdomainOrigins`, and `internalSubdomainPath`
+from the same module when resolving origins or internal route identities.
+
+Shared authentication automatically trusts the configured public origin and
+registered subdomain origins. Each route scope still owns its server-side
+permission checks. `/api`, `/auth`, `/account`, `/_next`, `/assets`, `/tool-icons`,
+`/media/vendor`, and `/media/licenses`, plus shared logo and favicon files, are
+reserved shared paths and are not rewritten into a subdomain's route prefix.
+
+With `indexable: false`, responses receive `noindex`, `robots.txt` disallows
+crawling, and `sitemap.xml` returns 404. With `indexable: true`, the scope must
+provide its own robots and sitemap routes beneath its route prefix; the public
+site's root robots or sitemap are never used as a fallback.
+
+For production, add the new hostname and DNS record at the hosting provider,
+and register its OAuth callback if using Google login. These steps remain manual.
+Restart development or rebuild and redeploy after changing the registry or
+`APP_URL`.
+
 ## Docker
 
 The web image is `aashishpal09/canopy:latest`, targeting `linux/amd64`.
@@ -235,7 +344,7 @@ Build and push it to Docker Hub from the repository root:
 
 ```bash
 docker login
-pnpm docker
+APP_URL=https://example.com pnpm build:docker
 ```
 
 To build locally with Compose instead:
@@ -243,6 +352,12 @@ To build locally with Compose instead:
 ```bash
 docker compose --env-file .env.local build web
 ```
+
+Set `APP_URL` in `.env.local` before the Compose build; Compose passes it as a
+build argument and also provides it at runtime. For a direct `docker buildx build`,
+pass `--build-arg APP_URL=https://example.com`. Use the same public origin during
+the build and at runtime. Changing it requires rebuilding the image because
+Next.js embeds it in browser navigation and the derived admin URLs.
 
 Configure runtime environment variables on the deployment platform. The image
 does not include `.env.local`; PostgreSQL and database migrations are managed

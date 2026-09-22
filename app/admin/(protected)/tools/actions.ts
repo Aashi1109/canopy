@@ -1,5 +1,6 @@
 "use server";
 
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { measureServerAction } from "../../../../lib/observability/sentry.ts";
 import { errorMessage } from "../../../../utils/errorMessage.ts";
 
@@ -94,7 +95,7 @@ export async function createToolAction(
       return failure(error);
     }
     revalidatePath("/admin/tools");
-    redirect(`/admin/tools/${encodeURIComponent(toolId)}`);
+    redirect(appHref(`/admin/tools/${encodeURIComponent(toolId)}`));
   });
 }
 

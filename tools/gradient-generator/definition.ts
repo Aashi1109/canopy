@@ -17,19 +17,31 @@ export default {
         label: "Start color",
         placeholder: "#2563eb",
         required: true,
-        maxLength: 9,
+        maxLength: 100,
       },
       {
         channel: "secondary",
         label: "End color",
         placeholder: "#7c3aed",
         required: true,
-        maxLength: 9,
+        maxLength: 100,
       },
     ],
   },
   settings: {
     fields: {
+      stops: { kind: "textarea", label: "Color stops", default: "", help: "Visual color-stop editor data." },
+      radialShape: {
+        kind: "select",
+        label: "Radial shape",
+        default: "circle",
+        choices: [
+          { label: "Circle", value: "circle" },
+          { label: "Ellipse", value: "ellipse" },
+        ],
+      },
+      radialX: { kind: "number", label: "Center X", default: 50, min: 0, max: 100, suffix: "%" },
+      radialY: { kind: "number", label: "Center Y", default: 50, min: 0, max: 100, suffix: "%" },
       type: {
         kind: "select",
         label: "Gradient type",
@@ -74,9 +86,9 @@ export default {
       "Copy the finished `background:` line straight into your stylesheet.",
     ],
     limitations: [
-      "Exactly two colour stops are supported. Multi-stop gradients, explicit stop positions, and repeating gradients have to be written by hand.",
-      "Colours must be HEX. Named colours, `rgb()`, `hsl()`, and CSS custom properties are rejected.",
-      "The radial form is always `circle` from the centre — there is no ellipse, sizing keyword, or custom origin.",
+      "Use up to 12 color stops. Repeating and conic gradients are not supported.",
+      "Colors accept HEX, supported CSS names, rgb(), and hsl(). CSS variables are not resolved.",
+      "Radial gradients support circle or ellipse shapes and a custom center; sizing keywords use browser defaults.",
       "No vendor prefixes are emitted. None are needed by any browser still receiving security updates.",
     ],
     faq: [
@@ -97,6 +109,13 @@ export default {
         a: "Fading to plain `transparent` interpolates through transparent black. Fade to the same colour with alpha 00 instead, which is what the #RRGGBBAA form gives you.",
       },
     ],
-    examples: [{ label: "Blue to purple", text: "#2563eb", secondary: "#7c3aed" }],
+    examples: [
+      {
+        label: "Blue to purple",
+        text: "#2563eb",
+        secondary: "#7c3aed",
+        settings: { stops: "", type: "linear", angle: 135, radialShape: "circle", radialX: 50, radialY: 50 },
+      },
+    ],
   },
 } as const satisfies ToolSpec;

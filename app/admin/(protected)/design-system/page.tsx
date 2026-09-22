@@ -1,4 +1,5 @@
 "use client";
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
 import { SyntaxHighlight } from "@/components/content/SyntaxHighlight";
 import { CodeEditor } from "@/components/content/CodeEditor";
@@ -60,6 +61,8 @@ import {
   ChapterScrubber,
   Checkbox,
   CompactAction,
+  ColorControl,
+  ColorSwatch,
   DownloadResult,
   FileQueueItem,
   FileChip,
@@ -279,6 +282,7 @@ export default function DesignSystemPage() {
   const [inlineTitle, setInlineTitle] = useState("Viewer");
   const [inlineDescription, setInlineDescription] = useState("Can view content without making changes.");
   const [suggestedPath, setSuggestedPath] = useState("users");
+  const [exampleColor, setExampleColor] = useState("#3366FF80");
   const handbookSection = handbookSectionAtPage(handbookPage);
 
   return (
@@ -471,7 +475,7 @@ export default function DesignSystemPage() {
             <Separator />
             <Specimen label="Back navigation">
               <div className="flex items-center gap-2">
-                <BackButton href="/admin" label="Back to overview" />
+                <BackButton href={appHref("/admin")} label="Back to overview" />
                 <span className="text-sm text-muted-foreground">
                   Compact arrow with a longer shaft and subtle hover movement.
                 </span>
@@ -562,6 +566,14 @@ export default function DesignSystemPage() {
             title="Form controls"
           />
           <div className="grid gap-6 xl:grid-cols-2">
+            <SectionCard>
+              <SectionHeading
+                title="Color controls"
+                description="Visual selection, CSS text, and explicit opacity share one validated value."
+              />
+              <ColorControl label="Example color" value={exampleColor} onChange={setExampleColor} />
+              <ColorSwatch color="#3366FF80" className="h-16" label="Half-transparent blue over a checkerboard" />
+            </SectionCard>
             <SectionCard>
               <SectionHeading
                 className="mb-0"
@@ -903,7 +915,7 @@ export default function DesignSystemPage() {
               </Specimen>
               <Separator className="hidden min-h-20 lg:block" orientation="vertical" />
               <Specimen label="Brand lockup">
-                <BrandLockup href="/admin/design-system" name="Paperwork" />
+                <BrandLockup href={appHref("/admin/design-system")} name="Paperwork" />
               </Specimen>
             </div>
             <Separator />
@@ -1426,9 +1438,11 @@ export default function DesignSystemPage() {
 
             <div className="overflow-hidden rounded-xl border border-border">
               <ProductHeader
-                account={{ returnTo: "/admin/design-system", user: { name: "Jordan Chen" } }}
-                actions={<AccountNavigation returnTo="/admin/design-system" user={{ name: "Jordan Chen" }} />}
-                href="/admin/design-system"
+                account={{ returnTo: appHref("/admin/design-system"), user: { name: "Jordan Chen" } }}
+                actions={
+                  <AccountNavigation returnTo={appHref("/admin/design-system")} user={{ name: "Jordan Chen" }} />
+                }
+                href={appHref("/admin/design-system")}
                 name="Paperwork"
               />
               <PageHero

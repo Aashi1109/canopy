@@ -7,6 +7,8 @@ services:
     build:
       context: .
       target: runner
+      args:
+        APP_URL: "${APP_URL:?Set APP_URL in .env.local}"
     init: true
     restart: unless-stopped
     environment:

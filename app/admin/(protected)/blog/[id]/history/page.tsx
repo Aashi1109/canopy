@@ -1,3 +1,4 @@
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { z } from "zod";
 import config from "@/lib/config/config.ts";
 import { notFound } from "next/navigation";
@@ -105,7 +106,7 @@ export default async function BlogHistoryPage({
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col gap-5 p-5 md:p-10 [&>header]:shrink-0">
       <header className="flex items-start gap-2">
-        <BackButton href={`/admin/blog/${id}`} label="Back to editor" />
+        <BackButton href={appHref(`/admin/blog/${id}`)} label="Back to editor" />
         <h1 className="text-[30px] font-semibold leading-normal">Revision history</h1>
       </header>
       <p className="break-words text-lg font-medium">{post.draftDocument.title || "Untitled post"}</p>
@@ -120,7 +121,7 @@ export default async function BlogHistoryPage({
             "aria-label": "Revision pages",
             page: revisions.page,
             pageCount: revisions.pageCount,
-            getPageHref: (page) => `/admin/blog/${id}/history?page=${page}`,
+            getPageHref: (page) => appHref(`/admin/blog/${id}/history?page=${page}`),
             summary: `Showing ${revisions.total ? (revisions.page - 1) * 25 + 1 : 0}–${(revisions.page - 1) * 25 + revisions.items.length} of ${revisions.total} revisions`,
           }}
         >

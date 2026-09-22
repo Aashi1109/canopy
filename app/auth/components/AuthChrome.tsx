@@ -1,22 +1,23 @@
 import type { ReactNode } from "react";
 import { AccountNavigation, ProductHeader, Toaster } from "@/components/ui/index.tsx";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
+import config from "@/lib/config/config.ts";
 import type { AuthProjectPaths } from "./AuthDiscoveryNavigation";
 
 export function AuthNavbar() {
   return (
     <ProductHeader
-      account={{ returnTo: "/auth", showSignIn: false, user: null }}
-      actions={<AccountNavigation returnTo="/auth" showSignIn={false} user={null} />}
+      account={{ publicSiteUrl: config.appUrl, returnTo: "/auth", showSignIn: false, user: null }}
+      actions={<AccountNavigation publicSiteUrl={config.appUrl} returnTo="/auth" showSignIn={false} user={null} />}
       className="sticky top-0 z-50"
-      href="/"
+      href={config.appUrl}
       name="SmartTools"
     />
   );
 }
 
 export function AuthFooter() {
-  return <CanopyFooter />;
+  return <CanopyFooter publicOrigin={config.appUrl} />;
 }
 
 export function AuthScreen({ children }: { children: ReactNode; projects?: AuthProjectPaths }) {

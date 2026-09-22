@@ -8,6 +8,7 @@ export default {
   name: "CSV Formatter",
   description: "Normalize CSV quoting and row structure.",
   outputLanguage: "csv",
+  previewLayout: "table",
   input: {
     kind: "text",
     language: "csv",

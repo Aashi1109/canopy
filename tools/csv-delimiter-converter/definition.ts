@@ -8,6 +8,7 @@ export default {
   name: "CSV Delimiter Converter",
   description: "Change delimiters without corrupting quoted values.",
   outputLanguage: "csv",
+  previewLayout: "table",
   input: {
     kind: "text",
     language: "csv",

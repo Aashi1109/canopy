@@ -1,3 +1,4 @@
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 import { H3, Caption, Strong, Card, Field, Input, StatusBadge, Textarea } from "@/components/ui/index.tsx";
@@ -56,7 +57,7 @@ function RoleRow({ role }: { role: Awaited<ReturnType<typeof listRoles>>[number]
   ) : (
     <Link
       className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-      href={`/admin/roles/${role.id}`}
+      href={appHref(`/admin/roles/${role.id}`)}
     >
       {content}
     </Link>

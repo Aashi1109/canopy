@@ -1,5 +1,6 @@
 "use client";
 
+import { subdomainHref } from "../../../lib/routing/subdomains.ts";
 import { ArrowLeft, LogOut, Menu, Shield, UserRound, X } from "lucide-react";
 import { SavedToolsTrigger } from "./SavedTools.tsx";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
@@ -13,10 +14,12 @@ const linkClass =
 
 export function MobileNavigation({
   account,
+  publicSiteUrl = account?.publicSiteUrl,
   currentHref,
   showSearch = true,
 }: {
   account?: AccountNavigationProps;
+  publicSiteUrl?: string;
   currentHref: string;
   showSearch?: boolean;
 }) {
@@ -29,7 +32,8 @@ export function MobileNavigation({
   const user = account?.user;
   const returnTo = account?.returnTo ?? currentHref;
   const target = `${user ? "/auth/profile" : "/auth"}?${new URLSearchParams({ returnTo })}`;
-  const { pending, error, signOut } = useSignOut(account?.restricted ? "/auth" : "/");
+  const siteHref = (path: string) => (publicSiteUrl ? new URL(path, publicSiteUrl).href : path);
+  const { pending, error, signOut } = useSignOut(account?.restricted ? "/auth" : siteHref("/"));
   const name = user?.name.trim() || "Account";
   const initials = name
     .split(/\s+/)
@@ -96,7 +100,10 @@ export function MobileNavigation({
   return (
     <div ref={root} className="flex shrink-0 items-center gap-2 md:hidden">
       {showSearch ? (
-        <GlobalToolSearch mobile={{ open: panel === "search", onOpenChange: setSearchOpen, ...position }} />
+        <GlobalToolSearch
+          publicSiteUrl={publicSiteUrl}
+          mobile={{ open: panel === "search", onOpenChange: setSearchOpen, ...position }}
+        />
       ) : null}
       <button
         ref={toggle}
@@ -153,7 +160,7 @@ export function MobileNavigation({
                     {SITE_NAVIGATION_ITEMS.map(({ href, label, icon: Icon }) => (
                       <a
                         key={href}
-                        href={href}
+                        href={siteHref(href)}
                         className={linkClass}
                         aria-current={currentHref === href ? "page" : undefined}
                         onClick={() => setPanel(null)}
@@ -184,7 +191,7 @@ export function MobileNavigation({
                         ) : null}
                         {!account?.restricted && user.isAdmin ? (
                           <a
-                            href={account?.isAdminPage ? "/" : "/admin"}
+                            href={account?.isAdminPage ? siteHref("/") : subdomainHref("admin")}
                             className={linkClass}
                             onClick={() => setPanel(null)}
                           >

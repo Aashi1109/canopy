@@ -70,40 +70,46 @@ test.beforeAll(async () => {
   html = `<!doctype html><html><head><style>${fonts}\n${globals.css}\n${css}</style></head><body><div id="root"></div><script>${javascript.replaceAll("</script", "<\\/script")}</script></body></html>`;
 });
 
-test("chat streams concurrently across threads, stops only the selected run, and aborts when leaving the page", async ({
-  page,
-}) => {
+async function streamingChatHarness(page: import("@playwright/test").Page, emptyHistory = false) {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.setViewportSize({ width: 1366, height: 768 });
-  await page.addInitScript(() => {
+  await page.addInitScript((emptyHistory) => {
     const now = new Date().toISOString();
     const config = {
       enabled: true,
       provider: "fixture",
       capabilities: { images: true, structuredOutput: true, webSearch: false, urlRetrieval: false },
     };
-    const threads = [
-      {
-        id: "thread-1",
-        resourceId: "post",
-        integrationKey: "blog",
-        title: "First conversation",
-        type: "chat",
-        settings: {},
-        composerDraft: "",
-        createdAt: now,
-        updatedAt: now,
-      },
-    ];
+    const firstThread = {
+      id: "thread-1",
+      resourceId: "post",
+      integrationKey: "blog",
+      title: "First conversation",
+      type: "chat",
+      settings: {},
+      composerDraft: "",
+      createdAt: now,
+      updatedAt: now,
+    };
+    const threads = emptyHistory ? [] : [firstThread];
     const runs: Record<string, unknown>[] = [],
       messages: Record<string, unknown>[] = [],
       attachments: Record<string, unknown>[] = [];
     const fixture = {
       starts: 0,
+      requests: [] as Record<string, unknown>[],
       aborts: 0,
       abortedRunIds: [] as string[],
-      threads: 1,
+      threads: threads.length,
+      creates: 0,
+      holdThreadCreation: false,
+      releaseThreadCreation: () => {},
+      historyReads: [] as string[],
+      holdHistoryReads: false,
+      emitInitialText: true,
+      rejectNextRun: "",
+      rejectRunResponse: "",
       titles: [] as string[],
       streams: {} as Record<string, { delta: (text: string) => void; complete: (withProposal?: boolean) => void }>,
       holdNextRun: false,
@@ -118,7 +124,12 @@ test("chat streams concurrently across threads, stops only the selected run, and
       if (url === "/api/assistant/blog/config") return Response.json(config);
       if (new URL(url, location.href).pathname.endsWith("/threads")) {
         if (method === "POST") {
-          const thread = { ...threads[0], id: `thread-${threads.length + 1}`, title: body.title ?? "New thread" };
+          fixture.creates++;
+          if (fixture.holdThreadCreation)
+            await new Promise<void>((resolve) => {
+              fixture.releaseThreadCreation = resolve;
+            });
+          const thread = { ...firstThread, id: `thread-${threads.length + 1}`, title: body.title ?? "New thread" };
           threads.push(thread);
           fixture.titles.push(thread.title);
           fixture.threads = threads.length;
@@ -149,6 +160,8 @@ test("chat streams concurrently across threads, stops only the selected run, and
           Object.assign(thread, body);
           return Response.json({ thread });
         }
+        fixture.historyReads.push(thread.id);
+        if (fixture.holdHistoryReads) await new Promise<void>(() => {});
         return Response.json({
           ...config,
           thread,
@@ -162,6 +175,12 @@ test("chat streams concurrently across threads, stops only the selected run, and
         const holdResponse = fixture.holdNextRun;
         fixture.holdNextRun = false;
         fixture.starts++;
+        fixture.requests.push(body);
+        if (fixture.rejectNextRun) {
+          const error = fixture.rejectNextRun;
+          fixture.rejectNextRun = "";
+          return Response.json({ error }, { status: 400 });
+        }
         const run = {
           id: `run-${fixture.starts}`,
           threadId: body.threadId,
@@ -172,7 +191,7 @@ test("chat streams concurrently across threads, stops only the selected run, and
           status: "running",
           provider: "fixture",
           model: "fixture",
-          inputMessageId: `user-${fixture.starts}`,
+          inputMessageId: body.inputMessageId ?? `user-${fixture.starts}`,
           assistantMessageId: `assistant-${fixture.starts}`,
           request: body,
           response: null,
@@ -184,19 +203,20 @@ test("chat streams concurrently across threads, stops only the selected run, and
         runs.push(run);
         for (const attachment of attachments)
           if (body.attachmentIds?.includes(attachment.id)) attachment.messageId = run.inputMessageId;
-        messages.push({
-          id: run.inputMessageId,
-          threadId: body.threadId,
-          runId: null,
-          role: "user",
-          parts: [
-            { type: "text", text: body.message },
-            ...(body.attachmentIds ?? []).map((attachmentId: string) => ({ type: "attachment", attachmentId })),
-          ],
-          meta: {},
-          createdAt: now,
-          updatedAt: now,
-        });
+        if (!messages.some((message) => message.id === run.inputMessageId))
+          messages.push({
+            id: run.inputMessageId,
+            threadId: body.threadId,
+            runId: null,
+            role: "user",
+            parts: [
+              { type: "text", text: body.message },
+              ...(body.attachmentIds ?? []).map((attachmentId: string) => ({ type: "attachment", attachmentId })),
+            ],
+            meta: {},
+            createdAt: now,
+            updatedAt: now,
+          });
         messages.push({
           id: run.assistantMessageId,
           threadId: body.threadId,
@@ -222,16 +242,29 @@ test("chat streams concurrently across threads, stops only the selected run, and
             options?.signal?.addEventListener("abort", abort, { once: true });
           });
         }
+        if (fixture.rejectRunResponse) {
+          const error = fixture.rejectRunResponse;
+          fixture.rejectRunResponse = "";
+          runs.splice(runs.indexOf(run), 1);
+          for (let index = messages.length - 1; index >= 0; index--)
+            if (
+              messages[index].id === run.assistantMessageId ||
+              (!body.inputMessageId && messages[index].id === run.inputMessageId)
+            )
+              messages.splice(index, 1);
+          return Response.json({ error }, { status: 400 });
+        }
         return new Response(
           new ReadableStream({
             start(controller) {
               const emit = (event: unknown) =>
                 controller.enqueue(new TextEncoder().encode(JSON.stringify(event) + "\n"));
               emit({ type: "run", run });
-              emit({
-                type: "text-delta",
-                text: "**Start with a clear outline**, then explain each step using a practical example.\n\n- First step\n- Second step\n\n[Reference](https://example.com)\n\n```js\nconst amount = 42;\n```\n\n| Item | Value |\n| --- | --- |\n| Total | 42 |",
-              });
+              if (fixture.emitInitialText)
+                emit({
+                  type: "text-delta",
+                  text: "**Start with a clear outline**, then explain each step using a practical example.\n\n- First step\n- Second step\n\n[Reference](https://example.com)\n\n```js\nconst amount = 42;\n```\n\n| Item | Value |\n| --- | --- |\n| Total | 42 |",
+                });
               const complete = (withProposal = false) => {
                 run.status = "completed";
                 const response = {
@@ -293,7 +326,7 @@ test("chat streams concurrently across threads, stops only the selected run, and
       }
       throw new Error(`Unexpected fixture request: ${method} ${url}`);
     };
-  });
+  }, emptyHistory);
   await page.route("https://chat-stream-harness.test/", (route) =>
     route.fulfill({ contentType: "text/html", body: html }),
   );
@@ -301,6 +334,263 @@ test("chat streams concurrently across threads, stops only the selected run, and
   const assistant = page.getByRole("complementary", { name: "Assistant" });
   const composer = assistant.getByRole("combobox", { name: "Message to assistant" });
   await expect(composer).toBeEnabled();
+  return { assistant, composer, errors };
+}
+
+test("chat renders pending, streamed, and completed responses without reading thread history", async ({ page }) => {
+  const { assistant, composer, errors } = await streamingChatHarness(page, true);
+  await page.evaluate(`Object.assign(window.fixture, {
+    holdThreadCreation: true, holdNextRun: true, holdHistoryReads: true, emitInitialText: false
+  })`);
+  const query = "Make this introduction clearer";
+  await composer.fill(query);
+  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect.poll(() => page.evaluate("window.fixture.creates")).toBe(1);
+  await expect(assistant.getByText(query, { exact: true })).toBeVisible();
+  await expect(composer).toHaveText("");
+  await expect(assistant.getByText("Generating response…", { exact: true })).toBeVisible();
+  expect(await page.evaluate("window.fixture.starts")).toBe(0);
+  for (const [width, height] of [
+    [1366, 768],
+    [1280, 720],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await expect(composer).toBeInViewport();
+    await expect(assistant.getByText(query, { exact: true })).toBeInViewport();
+    await expect(assistant.getByText("Generating response…", { exact: true })).toBeInViewport();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+    await page.screenshot({ path: `/tmp/blog-optimistic-chat-${width}.png` });
+  }
+  await page.evaluate("window.fixture.releaseThreadCreation()");
+  await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(1);
+  expect(await page.evaluate("window.fixture.historyReads")).toEqual([]);
+  await expect(assistant.getByText(query, { exact: true })).toHaveCount(1);
+  await expect(composer).toHaveText("");
+  await expect(assistant.getByText("Generating response…", { exact: true })).toBeVisible();
+  await page.evaluate('window.fixture.releaseResponses["run-1"]()');
+  await expect.poll(() => page.evaluate('!!window.fixture.streams["run-1"]')).toBe(true);
+  expect(await page.evaluate("window.fixture.historyReads")).toEqual([]);
+  await expect(assistant.getByText(query, { exact: true })).toHaveCount(1);
+  await expect(assistant.getByText("Generating response…", { exact: true })).toBeVisible();
+  await page.evaluate('window.fixture.streams["run-1"].delta("Start with a concrete example.")');
+  await expect(assistant.getByText("Start with a concrete example.", { exact: true })).toBeVisible();
+  await expect(assistant.getByText(query, { exact: true })).toHaveCount(1);
+  await page.evaluate('window.fixture.streams["run-1"].complete(true)');
+  await expect(assistant.getByText("Use the attached example", { exact: true })).toBeVisible();
+  await expect(assistant.getByRole("button", { name: "Apply edit", exact: true })).toBeEnabled();
+  await expect(
+    assistant.getByText("Start with a concrete invoicing example that readers can follow.", { exact: true }),
+  ).toBeVisible();
+  await expect(assistant.getByText(query, { exact: true })).toHaveCount(1);
+  await expect(composer).toHaveText("");
+  await expect(assistant.getByText("Generating response…", { exact: true })).toHaveCount(0);
+  await expect(assistant.getByRole("button", { name: "Stop", exact: true })).toHaveCount(0);
+  expect(await page.evaluate("window.fixture.historyReads")).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+for (const emptyHistory of [false, true])
+  test(`attachments stay with the sent message in ${emptyHistory ? "a new" : "an existing"} thread without history reads`, async ({
+    page,
+  }) => {
+    const { assistant, composer, errors } = await streamingChatHarness(page, emptyHistory);
+    const initialHistoryReads = emptyHistory ? [] : ["thread-1"];
+    expect(await page.evaluate("window.fixture.historyReads")).toEqual(initialHistoryReads);
+    await assistant.locator('input[type="file"]').setInputFiles({
+      name: "invoice.png",
+      mimeType: "image/png",
+      buffer: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j3bkAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    });
+    await expect(assistant.getByRole("button", { name: "Remove invoice.png from message", exact: true })).toBeVisible();
+    await page.evaluate("window.fixture.holdNextRun = true; window.fixture.holdHistoryReads = true");
+    await composer.fill("Explain the attached invoice");
+    await assistant.getByRole("button", { name: "Send message", exact: true }).click();
+    await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(1);
+    await expect(composer).toHaveText("");
+    await expect(assistant.getByRole("button", { name: "Remove invoice.png from message", exact: true })).toHaveCount(
+      0,
+    );
+    await expect(assistant.getByText("invoice.png", { exact: true })).toBeVisible();
+    await expect(assistant.getByText("Image · Sent with your message", { exact: true })).toBeVisible();
+    await page.evaluate('window.fixture.releaseResponses["run-1"]()');
+    await expect(assistant.getByText("Start with a clear outline", { exact: false })).toBeVisible();
+    expect(await page.evaluate("window.fixture.historyReads")).toEqual(initialHistoryReads);
+    await page.evaluate('window.fixture.streams["run-1"].complete()');
+    await expect(assistant.getByText("Use the attached example", { exact: true })).toBeVisible();
+    await expect(assistant.getByRole("button", { name: "Stop", exact: true })).toHaveCount(0);
+    await expect(assistant.getByText("invoice.png", { exact: true })).toHaveCount(1);
+    await expect(assistant.getByText("Attachment unavailable", { exact: true })).toHaveCount(0);
+    expect(await page.evaluate("window.fixture.historyReads")).toEqual(initialHistoryReads);
+    expect(errors).toEqual([]);
+  });
+
+test("completed responses can be copied and retried without replacing a newer draft or duplicating the query", async ({
+  page,
+}) => {
+  const { assistant, composer, errors } = await streamingChatHarness(page);
+  const query = "Explain the payment steps";
+  const responseMarkdown = "**Use the attached example** to make each invoicing step concrete.";
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await composer.fill(query);
+  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect(assistant.getByText("Start with a clear outline", { exact: false })).toBeVisible();
+  await expect(assistant.getByRole("button", { name: "Copy response", exact: true })).toHaveCount(0);
+  await expect(assistant.getByRole("button", { name: "Retry response", exact: true })).toHaveCount(0);
+  await page.evaluate('window.fixture.streams["run-1"].complete()');
+  const copy = assistant.getByRole("button", { name: "Copy response", exact: true });
+  const retry = assistant.getByRole("button", { name: "Retry response", exact: true });
+  await expect(copy).toBeVisible();
+  await expect(retry).toBeEnabled();
+  await copy.click();
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(responseMarkdown);
+  for (const close of await page.getByRole("button", { name: "Close toast", exact: true }).all()) await close.click();
+  for (const [width, height] of [
+    [1366, 768],
+    [1280, 720],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await expect(copy).toBeInViewport();
+    await expect(retry).toBeInViewport();
+    await expect(composer).toBeInViewport();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+    await page.screenshot({ path: `/tmp/assistant-response-actions-${width}.png` });
+  }
+  await composer.fill("/");
+  await assistant.getByRole("option", { name: /Writer/ }).click();
+  await composer.press("End");
+  await composer.pressSequentially("Draft a follow-up about late payments");
+  const newerDraft = await composer.textContent();
+  await expect(composer.getByText("Writer", { exact: true })).toBeVisible();
+  await page.evaluate("window.fixture.holdNextRun = true; window.fixture.holdHistoryReads = true");
+  await retry.focus();
+  await expect(retry).toBeFocused();
+  await retry.press("Enter");
+  await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(2);
+  expect(await page.evaluate("window.fixture.requests[1]")).toMatchObject({
+    operation: "chat",
+    message: query,
+    inputMessageId: "user-1",
+    threadId: "thread-1",
+  });
+  expect(await page.evaluate("window.fixture.requests[1].agentId")).toBeUndefined();
+  await expect(assistant.getByText(query, { exact: true })).toHaveCount(1);
+  await expect(composer).toHaveText(newerDraft!);
+  await expect(retry).toBeDisabled();
+  await page.evaluate('window.fixture.releaseResponses["run-2"]()');
+  await expect(assistant.getByText("Start with a clear outline", { exact: false })).toBeVisible();
+  await page.evaluate('window.fixture.streams["run-2"].complete()');
+  await expect(assistant.getByRole("button", { name: "Stop", exact: true })).toHaveCount(0);
+  await expect(copy).toHaveCount(2);
+  await expect(retry).toHaveCount(2);
+  await expect(retry.last()).toBeEnabled();
+  await expect(assistant.getByText(query, { exact: true })).toHaveCount(1);
+  await expect(assistant.getByRole("article").first()).toHaveText(query);
+  await expect(composer).toHaveText(newerDraft!);
+  await expect(composer.getByText("Writer", { exact: true })).toBeVisible();
+  expect(await page.evaluate("window.fixture.historyReads")).toEqual(["thread-1"]);
+  for (const close of await page.getByRole("button", { name: "Close toast", exact: true }).all()) await close.click();
+  await page.evaluate(() => {
+    Object.defineProperty(navigator.clipboard, "writeText", {
+      configurable: true,
+      value: () => Promise.reject(new Error("Clipboard blocked for this test")),
+    });
+  });
+  await copy.last().click();
+  await expect(
+    page.locator('[data-slot="toast-title"]').filter({
+      hasText: "Could not copy. Select the response text and copy it manually.",
+    }),
+  ).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("a rejected optimistic send restores the query for retry without a duplicate message", async ({ page }) => {
+  const { assistant, composer, errors } = await streamingChatHarness(page);
+  const query = "Explain the payment steps";
+  await page.evaluate('window.fixture.rejectNextRun = "The request could not be accepted. Try again."');
+  await composer.fill(query);
+  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect(composer).toHaveText(query);
+  await expect(assistant.getByText("Generating response…", { exact: true })).toHaveCount(0);
+  await expect(assistant.getByRole("button", { name: "Send message", exact: true })).toBeEnabled();
+  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect(assistant.getByText("Start with a clear outline", { exact: false })).toBeVisible();
+  await expect(composer).toHaveText("");
+  await expect(assistant.getByText(query, { exact: true })).toHaveCount(1);
+  await page.evaluate('window.fixture.streams["run-2"].complete()');
+  await expect(assistant.getByText(query, { exact: true })).toHaveCount(1);
+  expect(await page.evaluate("window.fixture.starts")).toBe(2);
+  expect(errors).toEqual([]);
+});
+
+test("a delayed rejected send keeps the original query recoverable and preserves a newer draft", async ({ page }) => {
+  const { assistant, composer, errors } = await streamingChatHarness(page);
+  const query = "Explain the payment steps";
+  const followup = "Then explain late payments";
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.evaluate("window.fixture.holdNextRun = true");
+  await composer.fill(query);
+  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(1);
+  await expect(composer).toHaveText("");
+  await expect(assistant.getByText(query, { exact: true })).toBeVisible();
+  await composer.fill(followup);
+  await page.evaluate(`window.fixture.rejectRunResponse = "The request could not be accepted. Try again.";
+    window.fixture.releaseResponses["run-1"]()`);
+  await expect(assistant.getByText("Generating response…", { exact: true })).toHaveCount(0);
+  await expect(assistant.getByText(query, { exact: true })).toBeVisible();
+  await expect(composer).toHaveText(followup);
+  await assistant.getByRole("button", { name: "Copy request", exact: true }).click();
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(query);
+  await expect(composer).toHaveText(followup);
+  await expect(assistant.getByRole("button", { name: "Send message", exact: true })).toBeEnabled();
+  expect(errors).toEqual([]);
+});
+
+test("stopping before acknowledgement restores the query and exits the generating state", async ({ page }) => {
+  const { assistant, composer, errors } = await streamingChatHarness(page);
+  const query = "Explain invoice numbering";
+  await page.evaluate("window.fixture.holdNextRun = true");
+  await composer.fill(query);
+  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(1);
+  await expect(composer).toHaveText("");
+  await expect(assistant.getByText(query, { exact: true })).toBeVisible();
+  await assistant.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect.poll(() => page.evaluate("window.fixture.abortedRunIds")).toEqual(["run-1"]);
+  await expect(composer).toHaveText(query);
+  await expect(assistant.getByText("Generating response…", { exact: true })).toHaveCount(0);
+  await expect(assistant.getByRole("button", { name: "Send message", exact: true })).toBeEnabled();
+  expect(errors).toEqual([]);
+});
+
+test("a follow-up identical to the sent query stays in the composer when the previous reply finishes", async ({
+  page,
+}) => {
+  const { assistant, composer, errors } = await streamingChatHarness(page);
+  const query = "Show another example";
+  await page.evaluate("window.fixture.holdNextRun = true");
+  await composer.fill(query);
+  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(1);
+  await expect(composer).toHaveText("");
+  await composer.fill(query);
+  await page.evaluate('window.fixture.releaseResponses["run-1"]()');
+  await expect(assistant.getByText("Start with a clear outline", { exact: false })).toBeVisible();
+  await page.evaluate('window.fixture.streams["run-1"].complete()');
+  await expect(assistant.getByText("Use the attached example", { exact: true })).toBeVisible();
+  await expect(assistant.getByRole("button", { name: "Stop", exact: true })).toHaveCount(0);
+  await expect(composer).toHaveText(query);
+  expect(errors).toEqual([]);
+});
+
+test("chat streams concurrently across threads, stops only the selected run, and aborts when leaving the page", async ({
+  page,
+}) => {
+  const { assistant, composer, errors } = await streamingChatHarness(page);
   await composer.fill("Help improve this introduction");
   await assistant.getByRole("button", { name: "Send message", exact: true }).click();
   await expect(assistant.locator("strong").getByText("Start with a clear outline", { exact: true })).toBeVisible();
@@ -383,9 +673,14 @@ test("chat streams concurrently across threads, stops only the selected run, and
   await assistant.getByRole("button", { name: "Send message", exact: true }).click();
   await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(3);
   expect(await page.evaluate('!!window.fixture.releaseResponses["run-3"]')).toBe(true);
+  await expect(composer).toHaveText("");
+  await expect(assistant.getByText("Another request", { exact: true })).toBeVisible();
+  await expect(assistant.getByText("Generating response…", { exact: true })).toBeVisible();
   await assistant.getByRole("button", { name: "New thread", exact: true }).click();
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
   expect(await page.evaluate("window.fixture.abortedRunIds")).toEqual(["run-1"]);
+  await expect(assistant.getByText("Another request", { exact: true })).toHaveCount(0);
+  await expect(assistant.getByText("Generating response…", { exact: true })).toHaveCount(0);
   await composer.fill("A parallel request");
   await assistant.getByRole("button", { name: "Send message", exact: true }).click();
   await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(4);

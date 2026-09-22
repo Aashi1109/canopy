@@ -1,3 +1,4 @@
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
 import {
   Caption,
@@ -67,7 +68,7 @@ export default async function AuditPage({ searchParams }: { searchParams: AuditS
     if (query) next.set("q", query);
     if (action) next.set("action", action);
     if (nextPage > 1) next.set("page", String(nextPage));
-    return `/admin/audit?${next}`;
+    return appHref(`/admin/audit?${next}`);
   }
 
   return (

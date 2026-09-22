@@ -1,4 +1,5 @@
 import config from "../config/config.ts";
+import { getSubdomainOrigins } from "../routing/subdomains.ts";
 import { assertCanDeleteUser } from "../authorization/index.ts";
 import {
   authAccount,
@@ -14,12 +15,19 @@ import {
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { captureException } from "@sentry/core";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { createAuthMiddleware, isAPIError } from "better-auth/api";
+import { APIError, createAuthMiddleware, isAPIError } from "better-auth/api";
+import { oneTimeToken } from "better-auth/plugins/one-time-token";
 import { cachedUserAdapter } from "./cachedUserAdapter.ts";
 import { sendAuthEmail } from "./email.ts";
 import { normalizeAccountName, normalizeProfileImage } from "./security.ts";
+import { usesLocalSubdomainSessions } from "./localSession.ts";
 
 const baseURL = config.appUrl;
+const subdomainOrigins = getSubdomainOrigins();
+const appOrigin = new URL(baseURL);
+const trustedOrigins = [appOrigin.origin, ...subdomainOrigins];
+const cookieDomain = appOrigin.hostname.replace(/^www\./, "");
+const localSubdomainSessions = usesLocalSubdomainSessions();
 
 async function notifyPasswordChanged(email: string): Promise<void> {
   try {
@@ -75,7 +83,17 @@ const googleClientSecret = config.auth.googleClientSecret;
 
 export const auth = betterAuth({
   appName: "SmartTools",
-  baseURL,
+  plugins: localSubdomainSessions
+    ? [oneTimeToken({ storeToken: "hashed", expiresIn: 1, disableClientRequest: true })]
+    : [],
+  baseURL:
+    subdomainOrigins.length > 0
+      ? {
+          allowedHosts: trustedOrigins,
+          fallback: baseURL,
+          protocol: appOrigin.protocol === "https:" ? "https" : "http",
+        }
+      : baseURL,
   secret: config.auth.secret,
   onAPIError: {
     onError(error) {
@@ -92,7 +110,7 @@ export const auth = betterAuth({
         transaction: true,
       })(options),
     ),
-  trustedOrigins: [new URL(baseURL).origin],
+  trustedOrigins,
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
@@ -128,6 +146,7 @@ export const auth = betterAuth({
           google: {
             clientId: googleClientId,
             clientSecret: googleClientSecret,
+            ...(localSubdomainSessions ? { redirectURI: new URL("/api/auth/callback/google", baseURL).href } : {}),
           },
         }
       : {},
@@ -170,6 +189,11 @@ export const auth = betterAuth({
     storeIdentifier: "hashed",
   },
   hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (localSubdomainSessions && ctx.request && ctx.path.startsWith("/one-time-token/")) {
+        throw new APIError("FORBIDDEN", { message: "Use the local session handoff." });
+      }
+    }),
     after: createAuthMiddleware(async (ctx) => {
       if (ctx.path !== "/change-password") return;
       const result = ctx.context.returned;
@@ -204,10 +228,14 @@ export const auth = betterAuth({
     },
   },
   advanced: {
+    trustedProxyHeaders: false,
     useSecureCookies: config.environment === "production",
     disableCSRFCheck: false,
     disableOriginCheck: false,
-    cookiePrefix: "smarttools",
+    cookiePrefix: config.auth.cookiePrefix,
+    ...(subdomainOrigins.length > 0 && !localSubdomainSessions
+      ? { crossSubDomainCookies: { enabled: true, domain: cookieDomain } }
+      : {}),
     defaultCookieAttributes: {
       httpOnly: true,
       secure: config.environment === "production",

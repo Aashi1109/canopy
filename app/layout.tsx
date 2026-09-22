@@ -56,7 +56,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       lang="en"
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased print:bg-white print:text-black">
-        <SavedToolsProvider>
+        <SavedToolsProvider publicSiteUrl={config.appUrl}>
           <Analytics measurementId={measurementId(config.analytics)}>{children}</Analytics>
         </SavedToolsProvider>
         <SpeedInsights />

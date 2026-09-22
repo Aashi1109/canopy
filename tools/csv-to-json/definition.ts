@@ -57,7 +57,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Convert to JSON" },
   capabilities: { copy: true, download: true },
-  layout: "stacked",
+  layout: "side-by-side",
   workbenchMark: { text: "C>J" },
   labels: {
     empty: "Paste CSV rows to convert them to JSON.",

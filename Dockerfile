@@ -13,7 +13,8 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --store-dir /pnpm/store --frozen-lockfile
 
 FROM dependencies AS builder
-RUN mkdir -p public && pnpm build
+ARG APP_URL
+RUN test -n "$APP_URL" && mkdir -p public && pnpm build
 
 FROM node:${NODE_VERSION} AS runner
 ENV NODE_ENV=production

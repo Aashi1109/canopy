@@ -1,3 +1,5 @@
+import { appHref } from "@/lib/routing/subdomains.ts";
+import config from "@/lib/config/config.ts";
 import { getToolContentRow, isDatabaseConfigured, type ToolContentRow } from "@/db/index.ts";
 import { BackButton, Text, Caption, H1, H3, InlineCode, Muted, Overline, StatusBadge } from "@/components/ui/index.tsx";
 import { FileText, Image, LayoutDashboard, Search, type LucideIcon } from "lucide-react";
@@ -73,7 +75,7 @@ export default async function ToolContentPage({
     publishedAtLabel: publishedAtLabel(contentRow),
     hasRow: contentRow !== null,
   };
-  const publicHref = tool.slug ? `/${tool.app}/${tool.slug}` : null;
+  const publicHref = tool.slug ? new URL(`/${tool.app}/${tool.slug}`, config.appUrl).href : null;
   const definitionKey = tool.id.split(".").slice(1).join(".");
   const scaffoldCommand = `pnpm tool:new ${definitionKey} --app ${tool.app} --category ${(contentRow?.category ?? inherited.category) || "<category>"}`;
 
@@ -82,7 +84,7 @@ export default async function ToolContentPage({
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
-            <BackButton href="/admin/tools" label="Back to tool catalog" />
+            <BackButton href={appHref("/admin/tools")} label="Back to tool catalog" />
             <H1>{tool.name}</H1>
             <StatusBadge variant={tool.enabled ? "success" : tool.hasDefinition ? "neutral" : "warning"}>
               {tool.enabled ? "Visible" : tool.hasDefinition ? "Hidden" : "Waiting for code"}
@@ -112,7 +114,7 @@ export default async function ToolContentPage({
             <Link
               aria-current={section === key ? "page" : undefined}
               className={`relative inline-flex min-h-12 items-center gap-2 px-3 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${section === key ? "text-primary after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary" : "text-muted-foreground hover:text-foreground"}`}
-              href={`/admin/tools/${encodeURIComponent(tool.id)}?section=${key}`}
+              href={appHref(`/admin/tools/${encodeURIComponent(tool.id)}?section=${key}`)}
               key={key}
             >
               <Icon aria-hidden="true" className="size-4" />

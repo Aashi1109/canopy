@@ -1,5 +1,6 @@
 "use client";
 
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { useRef, useState, type ReactNode } from "react";
 import { ChevronDown, Eye, History, SlidersHorizontal, Sparkles } from "lucide-react";
 import {
@@ -60,7 +61,7 @@ export function BlogEditorShell({
   onReview,
   canEdit = false,
   canPublish = false,
-  backHref = "/admin/blog",
+  backHref = appHref("/admin/blog"),
   initialSettingsOpen = false,
   busy = false,
 }: BlogEditorShellProps) {

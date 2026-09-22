@@ -1,6 +1,9 @@
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { auth } from "@/lib/auth/index.ts";
+import { usesLocalSubdomainSessions } from "@/lib/auth/localSession.ts";
+import config from "@/lib/config/config.ts";
 import { isAdminUser } from "@/lib/auth/session.ts";
+import { getSubdomainForHost } from "@/lib/routing/subdomains.ts";
 import {
   H1,
   Muted,
@@ -27,7 +30,14 @@ function first(value: string | string[] | undefined): string | undefined {
 export default async function ProfilePage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const returnTo = resolveConfiguredReturnTo(first(params.returnTo));
-  const session = await auth.api.getSession({ headers: await headers() });
+  const requestHeaders = await headers();
+  if (usesLocalSubdomainSessions() && getSubdomainForHost(requestHeaders.get("host") ?? "")) {
+    const profileUrl = new URL("/auth/profile", config.appUrl);
+    profileUrl.search = new URLSearchParams({ returnTo }).toString();
+    redirect(profileUrl.href);
+  }
+
+  const session = await auth.api.getSession({ headers: requestHeaders });
   if (!session) {
     const profileReturnTo = new URLSearchParams({ returnTo });
     redirect(`/auth?${new URLSearchParams({ returnTo: `/auth/profile?${profileReturnTo}` })}`);
@@ -38,10 +48,16 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
   return (
     <div className="auth-shell min-h-screen bg-background text-foreground">
       <ProductHeader
-        account={{ returnTo, user: { name: session.user.name, isAdmin } }}
-        actions={<AccountNavigation returnTo={returnTo} user={{ name: session.user.name, isAdmin }} />}
+        account={{ publicSiteUrl: config.appUrl, returnTo, user: { name: session.user.name, isAdmin } }}
+        actions={
+          <AccountNavigation
+            publicSiteUrl={config.appUrl}
+            returnTo={returnTo}
+            user={{ name: session.user.name, isAdmin }}
+          />
+        }
         className="auth-header sticky top-0 z-50"
-        href="/"
+        href={config.appUrl}
         name="SmartTools"
       />
       <AppContainer className="pb-16 sm:pb-20">
@@ -62,6 +78,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
         </header>
         <ProfileManager
           currentSessionId={session.session.id}
+          publicSiteUrl={config.appUrl}
           initialUser={{
             name: session.user.name,
             email: session.user.email,
@@ -70,7 +87,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
           }}
         />
       </AppContainer>
-      <CanopyFooter />
+      <CanopyFooter publicOrigin={config.appUrl} />
     </div>
   );
 }

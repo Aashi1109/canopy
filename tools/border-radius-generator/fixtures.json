@@ -13,7 +13,7 @@
         "bottomLeft": 16
       },
       "expected": {
-        "output": "border-radius: 16px 16px 16px 16px;",
+        "output": "border-radius: 16px;",
         "render": "text"
       }
     }

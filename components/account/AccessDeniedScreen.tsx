@@ -1,3 +1,5 @@
+import { appHref } from "@/lib/routing/subdomains.ts";
+import config from "@/lib/config/config.ts";
 import {
   AccountNavigation,
   Caption,
@@ -28,13 +30,22 @@ export function AccessDeniedScreen({
       .slice(0, 2)
       .map((part) => part.charAt(0).toUpperCase())
       .join("") || "ST";
-  const returnTo = suspended ? "/" : "/admin";
+  const returnTo = suspended ? "/" : appHref("/admin");
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <ProductHeader
-        actions={<AccountNavigation isAdminPage={!suspended} restricted={suspended} returnTo={returnTo} user={user} />}
-        href="/"
+        actions={
+          <AccountNavigation
+            isAdminPage={!suspended}
+            restricted={suspended}
+            returnTo={returnTo}
+            user={user}
+            publicSiteUrl={config.appUrl}
+          />
+        }
+        href={config.appUrl}
+        publicSiteUrl={config.appUrl}
         minimal
         name="SmartTools"
       />
@@ -80,7 +91,7 @@ export function AccessDeniedScreen({
                 Check access again
               </a>
             ) : (
-              <a className={buttonVariants()} href="/paperwork">
+              <a className={buttonVariants()} href={new URL("/paperwork", config.appUrl).href}>
                 Return to Paperwork
               </a>
             )}

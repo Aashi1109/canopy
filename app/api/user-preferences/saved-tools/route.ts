@@ -3,6 +3,7 @@ import { captureException } from "@sentry/core";
 import { z } from "zod";
 import { getPublicTools } from "@/lib/tool-framework/catalog";
 import { changeSavedTools, getSavedTools } from "@/lib/user-preferences/savedTools";
+import { isSameOriginRequest } from "@/lib/routing/requestOrigin.ts";
 
 const headers = { "Cache-Control": "private, no-store" };
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers });
@@ -44,8 +45,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== new URL(request.url).origin)
-    return json({ error: "Invalid request origin." }, 403);
+  if (!isSameOriginRequest(request)) return json({ error: "Invalid request origin." }, 403);
   if (!request.headers.get("content-type")?.startsWith("application/json"))
     return json({ error: "Expected JSON." }, 415);
   try {

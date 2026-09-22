@@ -12,6 +12,8 @@ const stub = (source) => ({
 });
 const hooks = registerHooks({
   resolve(specifier, context, next) {
+    if (specifier === "@/lib/routing/subdomains.ts")
+      return { shortCircuit: true, url: new URL("../lib/routing/subdomains.ts", import.meta.url).href };
     if (!context.parentURL?.endsWith("/BlogEditor.tsx")) return next(specifier, context);
     if (specifier === "react")
       return stub(`

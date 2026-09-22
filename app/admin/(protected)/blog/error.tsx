@@ -1,5 +1,6 @@
 "use client";
 
+import { appHref } from "@/lib/routing/subdomains.ts";
 import Link from "next/link";
 import { ContentState, Button } from "@/components/ui/index.tsx";
 import { captureException } from "@sentry/nextjs";
@@ -22,7 +23,7 @@ export default function BlogError({ error, reset }: { error: Error & { digest?: 
         action={<Button onClick={reset}>Try again</Button>}
         secondaryAction={
           <Button asChild variant="outline">
-            <Link href="/admin/blog">All posts</Link>
+            <Link href={appHref("/admin/blog")}>All posts</Link>
           </Button>
         }
       />

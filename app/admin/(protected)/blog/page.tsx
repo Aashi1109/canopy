@@ -1,4 +1,5 @@
 import { z } from "zod";
+import config from "@/lib/config/config.ts";
 import { hasPermission } from "@/lib/authorization/index.ts";
 import { getUserAuthorization } from "@/lib/admin/index.ts";
 import { requirePagePermission } from "@/lib/admin/access";
@@ -41,6 +42,7 @@ export default async function BlogPage({
     <BlogPosts
       key={JSON.stringify({ ...filters, page: page.page })}
       posts={page.items}
+      publicBlogHref={new URL("/blog", config.appUrl).href}
       pagination={{ page: page.page, pageCount: page.pageCount, total: page.total }}
       categories={categories}
       filters={{ ...filters, cursor: undefined, page: page.page }}

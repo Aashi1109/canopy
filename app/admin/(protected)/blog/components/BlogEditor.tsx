@@ -1,5 +1,6 @@
 "use client";
 
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -112,6 +113,7 @@ const backupDocument = z
   .strict();
 interface Props {
   actorId: string;
+  publicPostHref?: string;
   initialAssistantReview?: boolean;
   post: {
     id: string;
@@ -133,6 +135,7 @@ interface Props {
 
 export function BlogEditor({
   actorId,
+  publicPostHref,
   initialAssistantReview = false,
   post,
   categories: initialCategories,
@@ -525,7 +528,7 @@ export function BlogEditor({
       if (!(await save())) return;
     }
     router.refresh();
-    router.push(`/admin/blog/${post.id}/preview`);
+    router.push(appHref(`/admin/blog/${post.id}/preview`));
   }
 
   async function openReview() {
@@ -644,7 +647,7 @@ export function BlogEditor({
         setLifecycleError(result.message);
         return;
       }
-      router.push(`/admin/blog/${result.data.id}`);
+      router.push(appHref(`/admin/blog/${result.data.id}`));
     } catch {
       setLifecycleError("Couldn’t duplicate this post. Try again.");
     } finally {
@@ -857,7 +860,7 @@ export function BlogEditor({
           <>
             {publication.published && (
               <DropdownMenuItem asChild>
-                <Link href={`/blog/${post.slug}`} target="_blank" rel="noopener noreferrer">
+                <Link href={publicPostHref ?? `/blog/${post.slug}`} target="_blank" rel="noopener noreferrer">
                   <ExternalLink aria-hidden="true" />
                   View live
                 </Link>
@@ -938,7 +941,9 @@ export function BlogEditor({
           tags={tags}
           tools={tools}
           disabled={!editable || publishing || !!recovery}
-          taxonomyHref={`/admin/blog/taxonomy?${new URLSearchParams({ returnTo: `/admin/blog/${post.id}` })}`}
+          taxonomyHref={appHref(
+            `/admin/blog/taxonomy?${new URLSearchParams({ returnTo: appHref(`/admin/blog/${post.id}`) })}`,
+          )}
           categoryPagination={
             <>
               {categoryOptions.hasMore && (
@@ -1028,7 +1033,7 @@ export function BlogEditor({
               Download local draft
             </Button>
             {saveState === "conflict" ? (
-              <Button size="xs" variant="outline" onClick={() => setLeaveHref(`/admin/blog/${post.id}`)}>
+              <Button size="xs" variant="outline" onClick={() => setLeaveHref(appHref(`/admin/blog/${post.id}`))}>
                 Reload saved version
               </Button>
             ) : (
@@ -1349,7 +1354,7 @@ export function BlogEditor({
                 persistence.stop();
                 persistence.forgetBackup();
                 allowUnload.current = true;
-                if (leaveHref === `/admin/blog/${post.id}`) window.location.reload();
+                if (leaveHref === appHref(`/admin/blog/${post.id}`)) window.location.reload();
                 else if (leaveHref) router.push(leaveHref);
                 setLeaveHref(null);
               }}

@@ -6,15 +6,15 @@ export default {
   category: "color-design-tools",
   keywords: ["color", "picker", "hex", "rgb", "hsl", "convert", "alpha"],
   name: "Color Picker",
-  description: "Show HEX, RGB, and HSL forms for a color.",
+  description: "Pick a color visually, adjust transparency, and copy HEX, RGB, or HSL.",
   layout: "stacked",
   input: {
     kind: "fields",
-    label: "HEX Color",
+    label: "Color",
     fields: [
       {
         channel: "text",
-        label: "HEX color",
+        label: "Color",
         placeholder: "#2563eb",
         required: true,
         multiline: false,
@@ -60,28 +60,28 @@ export default {
   capabilities: { copy: true },
   workbenchMark: { text: "PICK" },
   labels: {
-    empty: "Enter a HEX color to view its HEX, RGB, and HSL forms.",
+    empty: "Pick a color or enter HEX, RGB, HSL, or a CSS color name.",
     ready: "Color values are ready.",
-    running: "Converting HEX color…",
+    running: "Updating color values…",
   },
   content: {
     howToUse: [
-      "Type or paste a HEX value. The `#` is optional, and `#RGB`, `#RGBA`, `#RRGGBB`, and `#RRGGBBAA` are all accepted.",
+      "Choose a color visually, move the hue/saturation/lightness controls, or paste HEX, RGB, HSL, or a CSS color name.",
       "The three forms update as you type — HEX for design handoff, `rgb()` for canvas and image work, `hsl()` for making a lighter or darker variant by hand.",
       "Include an alpha channel (`#RRGGBBAA`) and the output switches to `rgba()` and `hsla()` automatically.",
-      "Copy whichever form your target needs; all three describe exactly the same colour.",
+      "Adjust opacity and copy the format your target needs. Recent colors remain available during this visit.",
     ],
     limitations: [
-      "Input is HEX only. `rgb()`, `hsl()`, and CSS colour names are not accepted here.",
+      "Standalone HEX, RGB, HSL, named colors, and transparent are supported. Stylesheet-dependent variables and currentColor are not resolved.",
       "HEX output is uppercase and cannot be switched to lowercase.",
-      "Hue, saturation, and lightness are rounded to whole numbers, so converting HSL back to HEX may land a step away from where you started.",
+      "HSL uses three decimal places; converting arbitrary fractional RGB values to HEX quantizes channels to eight bits.",
       "This is sRGB arithmetic with no colour management — no P3, no OKLCH, and no perceptual lightness. Two colours with the same HSL lightness will not look equally bright.",
       "Alpha is reported to three decimal places.",
     ],
     faq: [
       {
         q: "Can I enter an `rgb()` or a colour name?",
-        a: "No — this tool takes HEX. Use the RGB to HEX tool for the other direction.",
+        a: "Yes. Paste RGB, HSL, any standard CSS color name, or transparent alongside the four HEX forms.",
       },
       {
         q: "Why is the HSL lightness misleading?",

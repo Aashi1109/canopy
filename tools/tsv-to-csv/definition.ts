@@ -8,6 +8,7 @@ export default {
   name: "TSV to CSV",
   description: "Convert tab-separated values to CSV.",
   outputLanguage: "csv",
+  previewLayout: "table",
   input: {
     kind: "text",
     language: "tsv",

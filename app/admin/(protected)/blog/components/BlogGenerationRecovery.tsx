@@ -1,5 +1,6 @@
 "use client";
 
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { AssistantRun } from "@/lib/assistant/types";
@@ -46,12 +47,12 @@ export function BlogGenerationRecovery({ initialRun }: { initialRun: AssistantRu
       onRefresh={() => void refresh()}
       onEdit={
         !activeRun(run.status) && run.resourceId
-          ? () => router.replace(`/admin/blog/${encodeURIComponent(run.resourceId!)}?edit=1`)
+          ? () => router.replace(appHref(`/admin/blog/${encodeURIComponent(run.resourceId!)}?edit=1`))
           : undefined
       }
       onRetry={
         run.canManage !== false && !activeRun(run.status)
-          ? () => router.push(`/admin/blog/new?mode=ai&run=${encodeURIComponent(run.id)}`)
+          ? () => router.push(appHref(`/admin/blog/new?mode=ai&run=${encodeURIComponent(run.id)}`))
           : undefined
       }
     />

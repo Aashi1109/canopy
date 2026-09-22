@@ -63,7 +63,7 @@ export default {
       "Copy the value straight into a stylesheet or a design token file.",
     ],
     limitations: [
-      "The alpha channel is reported as a decimal rounded to three places, so #RRGGBBAA values do not always round-trip back to the exact same byte.",
+      "Alpha is reported to three decimal places, which preserves the source byte when converting back to eight-digit HEX.",
       "Only hexadecimal input is accepted. Named colors, hsl(), and color() notations are not parsed.",
       "Legacy comma-separated syntax is the default; modern space-separated CSS is available in the options.",
     ],

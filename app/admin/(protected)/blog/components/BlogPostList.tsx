@@ -59,6 +59,7 @@ interface BlogPostListProps {
   canArchive?: boolean;
   busy?: boolean;
   newPostHref: string;
+  publicBlogHref?: string;
   taxonomyHref?: string;
   categoryPagination?: ReactNode;
   pagination: { label: string; page: number; pageCount: number; getPageHref: (page: number) => string };
@@ -84,6 +85,7 @@ export function BlogPostList({
   canArchive = false,
   busy = false,
   newPostHref,
+  publicBlogHref = "/blog",
   taxonomyHref,
   pagination,
   categoryPagination,
@@ -107,7 +109,7 @@ export function BlogPostList({
                 </Button>
               )}
               <Button asChild variant="ghost" className={styles.publicLink}>
-                <Link href="/blog">View public blog</Link>
+                <Link href={publicBlogHref}>View public blog</Link>
               </Button>
               {canCreate && (
                 <Button asChild>

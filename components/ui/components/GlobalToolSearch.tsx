@@ -19,7 +19,7 @@ type SearchResult = {
 type SearchState = "idle" | "loading" | "ready" | "error";
 type MobileSearch = { open: boolean; onOpenChange: (open: boolean) => void; top: number; availableHeight: number };
 
-export function GlobalToolSearch({ mobile }: { mobile?: MobileSearch } = {}) {
+export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSearch; publicSiteUrl?: string } = {}) {
   const [desktopOpen, setDesktopOpen] = useState(false);
   const isOpen = mobile ? mobile.open : desktopOpen;
   const setOpen = mobile?.onOpenChange ?? setDesktopOpen;
@@ -195,7 +195,7 @@ export function GlobalToolSearch({ mobile }: { mobile?: MobileSearch } = {}) {
           {results.map((result) => (
             <a
               className="group/search-result flex min-h-[58px] items-center gap-2.5 border-b border-border px-3 py-2 no-underline outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-              href={result.href}
+              href={publicSiteUrl ? new URL(result.href, publicSiteUrl).href : result.href}
               key={result.toolId}
               onClick={() => setOpen(false)}
             >

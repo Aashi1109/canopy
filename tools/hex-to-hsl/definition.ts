@@ -33,7 +33,13 @@ export default {
         kind: "toggle",
         label: "Round percentages",
         help: "Round saturation and lightness to whole percentages.",
-        default: true,
+        default: false,
+      },
+      modernSyntax: {
+        kind: "toggle",
+        label: "Modern CSS syntax",
+        help: "Use spaces between channels and / before alpha.",
+        default: false,
       },
       outputFormat: {
         kind: "select",
@@ -64,9 +70,9 @@ export default {
       "A HEX with an alpha channel produces `hsla()` with the alpha as the fourth value.",
     ],
     limitations: [
-      "Hue, saturation, and lightness are rounded to whole numbers, so a round trip back to HEX can land one step off the original.",
+      "HSL channels use three decimal places by default. Whole-percentage rounding is optional and can change the color.",
       "Only HEX input is accepted — no `rgb()`, no colour names, no `hsl()`.",
-      "The `hsl()` format uses legacy comma-separated `hsl(H, S%, L%)` syntax, not the modern space-separated form.",
+      "Both legacy comma syntax and modern space/slash syntax are available.",
       "HSL lightness is not perceived brightness. Do not use it to judge contrast; use a contrast checker against WCAG thresholds.",
     ],
     faq: [
@@ -76,7 +82,7 @@ export default {
       },
       {
         q: "Why did my colour shift slightly after converting back?",
-        a: "Rounding. The HSL channels are whole numbers, so some HEX values have no exact HSL representation.",
+        a: "Whole-percentage rounding can change the result. Leave Round percentages off to preserve three-decimal precision, including fractional hue.",
       },
       {
         q: "Is transparency supported?",

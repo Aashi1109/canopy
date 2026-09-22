@@ -1,3 +1,4 @@
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { BackButton, Caption, H1, H2, Muted } from "@/components/ui/index.tsx";
 import { requirePagePermission } from "../../../../../lib/admin/access";
 import ImportTemplateForm from "./ImportTemplateForm";
@@ -8,7 +9,7 @@ export default async function ImportTemplatePage() {
   return (
     <div className="min-h-dvh w-full bg-muted pb-8">
       <header className="flex min-h-16 items-center gap-3 bg-card px-4 sm:px-6">
-        <BackButton href="/admin/templates" label="Back to templates" className="shrink-0" />
+        <BackButton href={appHref("/admin/templates")} label="Back to templates" className="shrink-0" />
         <div>
           <H1 className="text-foreground">Import template JSON</H1>
           <Caption className="block text-muted-foreground">Validated locally before upload</Caption>

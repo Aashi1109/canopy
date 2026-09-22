@@ -178,7 +178,7 @@ function ArtifactDownloadButton({
   );
 }
 
-function CopyButton({ content, disabled = false, iconOnly = false, label = "Copy" }: CopyButtonProps) {
+export function CopyButton({ content, disabled = false, iconOnly = false, label = "Copy" }: CopyButtonProps) {
   const toolKey = useAnalyticsToolKey();
   const [feedback, setFeedback] = useState<{
     content: string;
@@ -514,9 +514,9 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
     ),
   "json-tree": (result, options) => {
     const json = result.text ?? JSON.stringify(result.value, null, 2)!;
-    return (
+    const tree = (
       <JsonResultRenderer
-        key={options?.initialJsonView}
+        key={options?.hideJsonHeader && options.initialJsonView === "read-only" ? json : options?.initialJsonView}
         className={`h-full ${options?.hideJsonHeader ? "!bg-transparent" : ""}`}
         defaultOpenDepth={1}
         defaultView={options?.initialJsonView}
@@ -527,6 +527,16 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
         maxVisibleEntries={1_000}
         value={result.value}
       />
+    );
+    return result.truncated ? (
+      <RenderFrame>
+        {tree}
+        <Muted className="shrink-0 px-4 py-2 text-muted-foreground">
+          Showing part of the result. Download the complete file for all data.
+        </Muted>
+      </RenderFrame>
+    ) : (
+      tree
     );
   },
   table: (result, options) => {

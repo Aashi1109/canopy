@@ -49,10 +49,12 @@ export function AuthPanel({
   returnTo,
   initialError,
   initialMode = "sign-in",
+  publicOrigin = "",
 }: {
   returnTo: string;
   initialError?: string;
   initialMode?: AuthMode;
+  publicOrigin?: string;
 }) {
   const panelId = useId();
   const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -364,8 +366,8 @@ export function AuthPanel({
                     onCheckedChange={(checked) => setTermsAccepted(checked === true)}
                   />
                   <Text>
-                    I agree to the <TextLink href="/paperwork/terms">Terms of Service</TextLink> and{" "}
-                    <TextLink href="/privacy">Privacy Policy</TextLink>.
+                    I agree to the <TextLink href={`${publicOrigin}/paperwork/terms`}>Terms of Service</TextLink> and{" "}
+                    <TextLink href={`${publicOrigin}/privacy`}>Privacy Policy</TextLink>.
                   </Text>
                 </Label>
               ) : (

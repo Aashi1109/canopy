@@ -1,3 +1,4 @@
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 import { DOCUMENT_DEFINITIONS } from "@/lib/invoice-templates/index.ts";
 import {
@@ -36,7 +37,7 @@ export default async function NewAdvancedTemplatePage() {
   return (
     <div className="min-h-dvh w-full bg-muted pb-8">
       <header className="flex min-h-16 flex-wrap items-center gap-3 bg-card px-4 sm:px-6">
-        <BackButton href="/admin/templates" label="Back to templates" className="shrink-0" />
+        <BackButton href={appHref("/admin/templates")} label="Back to templates" className="shrink-0" />
         <H1 className="text-foreground">New advanced template</H1>
         <StatusBadge className="min-h-6 px-2.5" variant="info">
           Opens in advanced designer
@@ -68,7 +69,7 @@ export default async function NewAdvancedTemplatePage() {
 
           <Link
             className="group rounded-xl border border-border bg-card p-5 outline-none transition-[border-color,transform] hover:-translate-y-0.5 hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            href="/admin/templates"
+            href={appHref("/admin/templates")}
           >
             <span className="grid size-10 place-items-center rounded-lg bg-muted text-foreground group-hover:bg-primary/10 group-hover:text-primary">
               <Copy aria-hidden="true" className="size-5" />
@@ -81,7 +82,7 @@ export default async function NewAdvancedTemplatePage() {
 
           <Link
             className="group rounded-xl border border-border bg-card p-5 outline-none transition-[border-color,transform] hover:-translate-y-0.5 hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            href="/admin/templates/import"
+            href={appHref("/admin/templates/import")}
           >
             <span className="grid size-10 place-items-center rounded-lg bg-muted text-foreground group-hover:bg-primary/10 group-hover:text-primary">
               <Upload aria-hidden="true" className="size-5" />
@@ -167,7 +168,7 @@ export default async function NewAdvancedTemplatePage() {
           <Caption className="block mr-auto text-muted-foreground">
             Next: add layers, bindings, and repeating regions
           </Caption>
-          <Link className={buttonVariants({ variant: "ghost" })} href="/admin/templates">
+          <Link className={buttonVariants({ variant: "ghost" })} href={appHref("/admin/templates")}>
             Cancel
           </Link>
           <SubmitButton type="submit">

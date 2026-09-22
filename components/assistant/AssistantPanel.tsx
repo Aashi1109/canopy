@@ -6,6 +6,7 @@ import {
   Check,
   ChevronRight,
   CloudOff,
+  Copy,
   MessagesSquare,
   Globe,
   History,
@@ -16,6 +17,7 @@ import {
   LoaderCircle,
   Paperclip,
   Plus,
+  RotateCcw,
   FileText,
   SlidersHorizontal,
   Sparkles,
@@ -53,7 +55,7 @@ import type { AssistantRun, AssistantThread, AssistantMessage, AssistantAttachme
 import type { AssistantIntegrationUI } from "./types";
 import styles from "./Assistant.module.css";
 import { AssistantRunCard, AssistantSources, AssistantResultActions } from "./AssistantOutput";
-import { agentSlashQuery, sameComposerSelection } from "@/lib/assistant/composer";
+import { agentSlashQuery } from "@/lib/assistant/composer";
 import { assistantCacheKey, assistantRequest } from "@/lib/assistant/client";
 import { AssistantComposer, type AssistantComposerHandle } from "./AssistantComposer";
 import { AssistantHeader } from "./AssistantHeader";
@@ -141,7 +143,6 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
   const [preview, setPreview] = useState<{ url: string; filename: string; scope: string } | null>(null);
   const [uploadingScopes, setUploadingScopes] = useState<Record<string, boolean>>({});
   const [preparingScopes, setPreparingScopes] = useState<Record<string, boolean>>({});
-  const sendLocks = useRef(new Set<string>());
   const [confirm, setConfirm] = useState<"history" | "thread" | null>(null);
   const [changing, setChanging] = useState(false);
   const composer = useRef<AssistantComposerHandle>(null);
@@ -329,15 +330,9 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
     retry?: AssistantRun,
     messageOverride?: string,
   ) {
-    if (
-      !ready ||
-      busy ||
-      uploading ||
-      [...sendLocks.current].some((id) => assistant.resolveScopeId(id) === scope) ||
-      !integration.enabled
-    )
-      return;
-    if (operation === integration.conversationOperation && selectedAgent) operation = integration.agentOperation;
+    if (!ready || busy || uploading || !integration.enabled) return;
+    if (!retry && operation === integration.conversationOperation && selectedAgent)
+      operation = integration.agentOperation;
     if (!retry && contextProblem) {
       composer.current?.focus();
       return;
@@ -346,8 +341,6 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
       toast.error("Remove or replace unavailable composer selections first.");
       return;
     }
-    const submittedSelection = { ...assistant.getComposerSelection(), attachmentIds: [...attachmentIds] };
-    const submittedText = assistant.message;
     const message =
       (messageOverride ?? retry?.request.message ?? assistant.message.trim()) ||
       (selectedAgent ? `Run ${selectedAgent.name}.` : "");
@@ -356,77 +349,36 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
       return;
     }
     let prepared: ReturnType<AssistantIntegrationUI["prepareRequest"]> | undefined;
-    sendLocks.current.add(scope);
-    setPreparingScopes((value) => ({ ...value, [scope]: true }));
-    const finishPreparing = () => {
-      sendLocks.current.delete(scope);
-      setPreparingScopes((value) => ({ ...value, [scope]: false }));
-    };
     try {
-      let selectedAttachmentIds = retry?.request.attachmentIds ?? attachmentIds;
-      if (!retry && refs.trim()) {
-        try {
-          const urls = refs
-            .split(/\r?\n/)
-            .map((value) => value.trim())
-            .filter(Boolean);
-          if (urls.length > 5) throw new Error("Use at most five reference links.");
-          for (const [index, url] of urls.entries()) {
-            const link = await assistant.addLink(url, scope);
-            selectedAttachmentIds = [...selectedAttachmentIds, link.id];
-            const selection = assistant.getComposerSelection(link.threadId);
-            assistant.composerState(
-              { ...selection, attachmentIds: [...new Set([...selection.attachmentIds, link.id])] },
-              link.threadId,
-            );
-            const remaining = urls.slice(index + 1).join("\n");
-            setReferences((value) => ({ ...value, [scope]: remaining, [link.threadId]: remaining }));
-          }
-        } catch (cause) {
-          toast.error(readable(cause));
-          return;
-        }
-      }
       prepared = integration.prepareRequest({
         operation,
-        agentId: retry?.request.agentId ?? selectedAgentId,
+        agentId: retry ? retry.request.agentId : selectedAgentId,
         message,
         retry,
-        includeContext: includeContext,
+        includeContext,
         settings,
-        attachmentIds: selectedAttachmentIds,
+        attachmentIds: retry?.request.attachmentIds ?? attachmentIds,
       });
       const sent = await assistant.send(
         prepared.input,
         (run) => {
-          finishPreparing();
           if (run.threadId) transferComposer(run.threadId);
-          if (run.executionMode === "standalone" && run.threadId && !retry) {
-            const currentSelection = assistant.getComposerSelection(run.threadId);
-            if (
-              sameComposerSelection(currentSelection, submittedSelection) &&
-              assistant.getDraft(run.threadId) === submittedText
-            ) {
-              assistant.composerState({ attachmentIds: [] }, run.threadId);
-              assistant.draft("", run.threadId);
-            }
-          }
           prepared?.onCreated?.(run);
         },
         scope,
+        {
+          executionMode: operation === integration.agentOperation ? "standalone" : "conversational",
+          referenceLinks: retry ? [] : referenceLinks,
+          onReferenceAdded: (threadId, remaining) => {
+            const text = remaining.join("\n");
+            setReferences((value) => ({ ...value, [scope]: text, [threadId]: text }));
+          },
+        },
       );
-      if (!sent) prepared?.dispose?.();
-      if (
-        sent?.status === "completed" &&
-        sent.executionMode !== "standalone" &&
-        sameComposerSelection(assistant.getComposerSelection(sent.threadId ?? scope), submittedSelection)
-      )
-        setSelectedFiles((value) => ({ ...value, [sent.threadId ?? scope]: [] }));
+      if (!sent) prepared.dispose?.();
     } catch (cause) {
       prepared?.dispose?.();
       toast.error(readable(cause));
-    } finally {
-      finishPreparing();
     }
   }
   async function upload(file?: File) {
@@ -488,9 +440,51 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
           />
         )}
         {view.warning && <p className="text-caption text-warning">{view.warning}</p>}
-        {view.report && <ReportView report={view.report} />}
+        {view.report && (view.report.summary || view.report.sections.length > 0) && <ReportView report={view.report} />}
         {view.note && <p className="text-caption text-muted-foreground">{view.note}</p>}
         {run.status === "completed" && view.changes.map(({ id, ...change }) => <ChangeCard key={id} {...change} />)}
+        {run.status === "completed" && (
+          <div className="-mt-2 flex w-fit items-center gap-0 text-muted-foreground">
+            {text && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    className="size-6"
+                    aria-label="Copy response"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(text);
+                        toast.success("Response copied");
+                      } catch {
+                        toast.error("Could not copy. Select the response text and copy it manually.");
+                      }
+                    }}
+                  >
+                    <Copy aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Copy response</TooltipContent>
+              </Tooltip>
+            )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon-xs"
+                  variant="ghost"
+                  className="size-6"
+                  aria-label="Retry response"
+                  disabled={busy || !ready || uploading || !integration.enabled}
+                  onClick={() => void send(run.operation, run)}
+                >
+                  <RotateCcw aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Retry response</TooltipContent>
+            </Tooltip>
+          </div>
+        )}
         {["failed", "cancelled"].includes(run.status) && (
           <Button size="sm" variant="outline" disabled={busy || !ready} onClick={() => void send(run.operation, run)}>
             Try again
@@ -520,7 +514,12 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
     !timeline.length &&
     !assistant.stream;
   const showLaunch =
-    tab === "assistant" && !assistant.loading && !timeline.length && !assistant.stream && !showConversationError;
+    tab === "assistant" &&
+    !assistant.loading &&
+    !busy &&
+    !timeline.length &&
+    !assistant.stream &&
+    !showConversationError;
   function newThread() {
     assistant.startNewThread();
     setShowHistory(false);
@@ -926,6 +925,28 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
                               </div>
                             );
                           })}
+                          {message.meta.failed === true && (
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              <span className="text-caption text-muted-foreground">Response unavailable</span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  void navigator.clipboard
+                                    .writeText(
+                                      message.parts
+                                        .filter((part) => part.type === "text")
+                                        .map((part) => part.text)
+                                        .join("\n"),
+                                    )
+                                    .then(() => toast.success("Request copied"))
+                                    .catch((cause) => toast.error(readable(cause)));
+                                }}
+                              >
+                                Copy request
+                              </Button>
+                            </div>
+                          )}
                         </article>
                       );
                     })
@@ -951,6 +972,7 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
                         />
                       </div>
                     )}
+                  {assistant.submitting && !assistant.stream && generatingStatus}
                   {!assistant.loading && assistant.availability && !assistant.availability.enabled && (
                     <p className="text-caption text-muted-foreground">
                       {assistant.availability.reason ??
@@ -1393,51 +1415,51 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
                             />
                           </div>
                           <p className="text-caption text-muted-foreground">Web search uses an external provider.</p>
-                          <details className="text-sm">
-                            <summary className="cursor-pointer py-1 text-muted-foreground">More settings</summary>
-                            {integration.selectSettings?.map((setting) => (
-                              <div className="space-y-1" key={setting.key}>
-                                <Label htmlFor={`${instanceId}-setting-${setting.key}`}>{setting.label}</Label>
-                                <Select
-                                  id={`${instanceId}-setting-${setting.key}`}
-                                  value={
-                                    typeof settings[setting.key] === "string"
-                                      ? (settings[setting.key] as string)
-                                      : (setting.options[0] ?? "")
-                                  }
-                                  onChange={(event) => void updateSettings({ [setting.key]: event.target.value })}
+                          {integration.selectSettings?.map((setting) => (
+                            <div className="space-y-1" key={setting.key}>
+                              <Label htmlFor={`${instanceId}-setting-${setting.key}`}>{setting.label}</Label>
+                              <Select
+                                id={`${instanceId}-setting-${setting.key}`}
+                                value={
+                                  typeof settings[setting.key] === "string"
+                                    ? (settings[setting.key] as string)
+                                    : (setting.options[0] ?? "")
+                                }
+                                onChange={(event) => void updateSettings({ [setting.key]: event.target.value })}
+                              >
+                                {setting.options.map((option) => (
+                                  <option key={option}>{option}</option>
+                                ))}
+                              </Select>
+                            </div>
+                          ))}
+                          {assistant.selected && (
+                            <div className="space-y-2 border-t border-border pt-3">
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={busy}
+                                  onClick={() => setConfirm("history")}
                                 >
-                                  {setting.options.map((option) => (
-                                    <option key={option}>{option}</option>
-                                  ))}
-                                </Select>
+                                  Clear history
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  disabled={busy}
+                                  onClick={() => setConfirm("thread")}
+                                >
+                                  Delete thread
+                                </Button>
                               </div>
-                            ))}
-                            {assistant.selected && (
-                              <details className="text-caption text-muted-foreground">
-                                <summary className="cursor-pointer py-2">Manage current conversation</summary>
-                                <div className="flex flex-wrap gap-2 py-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={busy}
-                                    onClick={() => setConfirm("history")}
-                                  >
-                                    Clear history
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={busy}
-                                    onClick={() => setConfirm("thread")}
-                                  >
-                                    Delete thread
-                                  </Button>
-                                </div>
-                                {busy && <p>Stop the active request before clearing or deleting this conversation.</p>}
-                              </details>
-                            )}
-                          </details>
+                              {busy && (
+                                <p className="text-caption text-muted-foreground">
+                                  Stop the active request before clearing or deleting this conversation.
+                                </p>
+                              )}
+                            </div>
+                          )}
                           <p className="text-caption text-muted-foreground">
                             {assistant.availability?.enabled
                               ? `${includeContext ? "Your content, request," : "Your request"} and selected attachments are sent to ${assistant.availability.provider}. Changes require your approval.`

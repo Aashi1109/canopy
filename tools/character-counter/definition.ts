@@ -8,6 +8,7 @@ export default {
   name: "Character Counter",
   description: "Count characters, bytes, words, and lines.",
   layout: "stacked",
+  inputSize: { default: 70 },
   input: {
     kind: "text",
     label: "Text",

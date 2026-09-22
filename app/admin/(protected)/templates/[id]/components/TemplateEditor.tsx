@@ -1,5 +1,6 @@
 "use client";
 
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 
 import {
@@ -359,7 +360,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
     <>
       <header className="sticky top-2 z-20 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card/95 px-3 py-2 shadow-sm backdrop-blur">
         <div className="flex min-w-0 items-center gap-2">
-          <BackButton href="/admin/templates" label="Back to templates" className="shrink-0" />
+          <BackButton href={appHref("/admin/templates")} label="Back to templates" className="shrink-0" />
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
               <H1 className="truncate text-foreground">Editing: {name || "Untitled template"}</H1>

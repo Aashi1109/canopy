@@ -3,7 +3,12 @@ import { createRequire } from "node:module";
 import { setTimeout } from "node:timers/promises";
 import test from "node:test";
 import { startInactiveSpan } from "@sentry/core";
-import { measureServerAction, sanitizeSentryError, sentryOptions } from "../lib/observability/sentry.ts";
+import {
+  initializeSentry,
+  measureServerAction,
+  sanitizeSentryError,
+  sentryOptions,
+} from "../lib/observability/sentry.ts";
 
 const require = createRequire(import.meta.url);
 const Sentry = require("@sentry/nextjs");
@@ -97,4 +102,20 @@ test("error sanitization preserves useful messages while removing connection cre
   assert.equal(event.exception.values[2].value, "Connection timed out");
   assert.doesNotMatch(JSON.stringify(event), /session-secret|redis-password|private-token|select token/);
   assert.equal(sentryOptions.beforeBreadcrumb({ category: "console", message: "private SQL" }), null);
+});
+
+test("the local sign-in handoff never starts telemetry that could capture its ticket", () => {
+  const previousWindow = globalThis.window;
+  const previousEnabled = sentryOptions.enabled;
+  const previousClient = Sentry.getClient();
+  globalThis.window = { location: { pathname: "/auth/local-session", hash: "#token=private-ticket" } };
+  sentryOptions.enabled = true;
+  try {
+    initializeSentry();
+    assert.equal(Sentry.getClient(), previousClient);
+  } finally {
+    sentryOptions.enabled = previousEnabled;
+    if (previousWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousWindow;
+  }
 });

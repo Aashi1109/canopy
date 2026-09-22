@@ -39,6 +39,8 @@ const mediaSecurityHeaders = [
 const workerIsolationHeaders = [{ key: "Cross-Origin-Embedder-Policy", value: "require-corp" }];
 
 const nextConfig: NextConfig = {
+  // Only the public product URL is exposed; authentication secrets stay server-side.
+  env: { APP_URL: config.appUrl },
   output: "standalone",
   outputFileTracingRoot: appRoot,
   outputFileTracingExcludes: {

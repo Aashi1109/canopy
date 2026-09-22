@@ -1,143 +1,108 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
+const unitChoices = ["px", "rem", "em", "pt", "%", "vw", "vh", "vmin", "vmax"].map((value) => ({
+  label: value,
+  value,
+}));
+
 export default {
   toolId: "devtools.css-unit-converter",
   app: "devtools",
   category: "color-design-tools",
-  keywords: ["css", "px", "rem", "em", "pt", "percent", "unit", "convert"],
+  keywords: ["css", "px", "rem", "em", "pt", "percent", "viewport", "unit", "convert"],
   name: "CSS Unit Converter",
-  description: "Convert px, rem, em, pt, and percentage values.",
-  layout: "stacked",
+  description: "Convert CSS lengths with explicit font, percentage and viewport references.",
   input: {
     kind: "fields",
-    label: "CSS Value",
-    fields: [
-      {
-        channel: "text",
-        label: "Numeric value",
-        placeholder: "16\n24\n48",
-        required: true,
-        multiline: true,
-      },
-    ],
+    label: "CSS values",
+    fields: [{ channel: "text", label: "Values", placeholder: "16px\n2rem\n50%", required: true, multiline: true }],
   },
   settings: {
     fields: {
-      from: {
-        kind: "select",
-        label: "From",
-        default: "px",
-        choices: [
-          {
-            label: "px",
-            value: "px",
-          },
-          {
-            label: "rem",
-            value: "rem",
-          },
-          {
-            label: "em",
-            value: "em",
-          },
-          {
-            label: "pt",
-            value: "pt",
-          },
-          {
-            label: "%",
-            value: "%",
-          },
-        ],
-      },
-      to: {
-        kind: "select",
-        label: "To",
-        default: "rem",
-        choices: [
-          {
-            label: "px",
-            value: "px",
-          },
-          {
-            label: "rem",
-            value: "rem",
-          },
-          {
-            label: "em",
-            value: "em",
-          },
-          {
-            label: "pt",
-            value: "pt",
-          },
-          {
-            label: "%",
-            value: "%",
-          },
-        ],
-      },
+      from: { kind: "select", label: "From", default: "px", choices: unitChoices },
+      to: { kind: "select", label: "To", default: "rem", choices: unitChoices },
       base: {
         kind: "number",
-        label: "Base (px)",
-        help: "The font size that rem, em, and % are relative to. 16 is the browser default.",
+        label: "Root font size",
+        help: "rem uses the computed font size of the root element.",
         default: 16,
         min: 0.01,
         max: 10000,
+        suffix: "px",
       },
+      elementFontSize: { kind: "number", label: "Element font size", default: 16, min: 0.01, max: 10000, suffix: "px" },
+      parentFontSize: { kind: "number", label: "Parent font size", default: 16, min: 0.01, max: 10000, suffix: "px" },
+      emContext: {
+        kind: "select",
+        label: "em reference",
+        default: "element",
+        choices: [
+          { label: "Element (spacing and sizes)", value: "element" },
+          { label: "Parent (font-size)", value: "parent" },
+        ],
+      },
+      percentageReference: {
+        kind: "select",
+        label: "Percentage reference",
+        default: "parent-font",
+        choices: [
+          { label: "Parent font size", value: "parent-font" },
+          { label: "Explicit reference length", value: "length" },
+        ],
+      },
+      percentageBase: {
+        kind: "number",
+        label: "Reference length",
+        help: "The pixel length represented by 100%, such as the containing block width.",
+        default: 100,
+        min: 0.01,
+        max: 100000,
+        suffix: "px",
+      },
+      viewportWidth: { kind: "number", label: "Viewport width", default: 1366, min: 1, max: 100000, suffix: "px" },
+      viewportHeight: { kind: "number", label: "Viewport height", default: 768, min: 1, max: 100000, suffix: "px" },
+      precision: { kind: "number", label: "Decimal places", default: 6, min: 0, max: 12, step: 1 },
       roundResults: {
         kind: "toggle",
-        label: "Round results",
-        help: "Limit converted results to four decimal places.",
+        label: "Use four decimal places",
+        help: "Compatibility setting for saved conversions; changing precision turns it off.",
         default: false,
       },
-      includeFormula: {
-        kind: "toggle",
-        label: "Include formula",
-        help: "Show the calculation used for the conversion.",
-        default: false,
-      },
+      includeFormula: { kind: "toggle", label: "Include formula", default: false },
     },
   },
-  trigger: {
-    mode: "live",
-  },
-  capabilities: {
-    copy: true,
-  },
+  trigger: { mode: "live" },
+  capabilities: { copy: true },
   workbenchMark: { text: "UNIT" },
   labels: {
-    empty: "Enter a number to convert between the selected CSS units.",
-    ready: "Converted CSS value is ready.",
+    empty: "Enter a CSS value to convert.",
+    ready: "Converted CSS values are ready.",
     running: "Converting CSS units…",
   },
   content: {
     howToUse: [
-      "Enter the bare number without a unit — the From selector says what unit it is in.",
-      "Pick the target unit. Set the base to the font size that rem, em, and % are relative to; 16px is the browser default and the right value most of the time.",
-      "Convert the value. Results are rounded to six decimal places unless you enable four-place rounding.",
+      "Enter a number or paste a value with its unit. Use one value per line for a batch; a suffix overrides the From unit for that line.",
+      "Choose the target unit and the relevant font, percentage or viewport references. rem uses the root font; em uses the element font, except when converting font-size itself, which uses the parent.",
+      "Copy the result. Set decimal precision or include the calculation; invalid batch rows are reported without discarding valid conversions.",
     ],
     limitations: [
-      "rem and em share the same base here. In a real page em is relative to the parent's font size, which changes as elements nest, while rem is always relative to the root.",
-      "% is treated as a font-relative percentage of the base. A percentage of width, height, or a container is a different calculation and this tool cannot do it.",
-      "pt uses the CSS definition of 96px per inch, which is not a physical point on any particular display.",
-      "Viewport units (vw, vh, vmin, vmax) and ch/ex are not supported — they depend on the rendered viewport and font metrics.",
+      "Percentages depend on the CSS property. Choose parent font size for font-size, or supply the actual reference length for a size; this tool cannot infer page layout.",
+      "Viewport units use the dimensions supplied here. Dynamic and small viewport variants, ch/ex, expressions such as calc(), and CSS variables are not evaluated.",
+      "Negative numbers are converted mathematically; whether a negative value is valid depends on the CSS property where you use it.",
     ],
     faq: [
       {
-        q: "Why are rem and em the same here?",
-        a: "Both are multiples of a font size, and the tool has only one base to work from. In a page they differ because em inherits from the parent chain.",
+        q: "Why do rem and em give different results?",
+        a: "rem always uses the root element's font size. em uses the element's own font size for lengths, or the parent's font size when setting font-size.",
       },
       {
-        q: "What base should I use?",
-        a: "16, unless you deliberately changed the root font size. Do not use the 62.5% trick's 10 unless your stylesheet actually sets it.",
+        q: "What does 100% mean?",
+        a: "It means the selected reference: the parent font size, or an explicit pixel length. The correct reference depends on the CSS property.",
       },
     ],
     examples: [
-      {
-        label: "32px in rem",
-        text: "32",
-      },
+      { label: "32px in rem", text: "32" },
+      { label: "Mixed units", text: "16px\n2rem\n12pt" },
     ],
   },
 } as const satisfies ToolSpec;

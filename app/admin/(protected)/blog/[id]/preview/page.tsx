@@ -1,3 +1,4 @@
+import { appHref } from "@/lib/routing/subdomains.ts";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Monitor, Smartphone } from "lucide-react";
@@ -42,12 +43,12 @@ export default async function BlogPreviewPage({
   const previewHref = (width: "desktop" | "mobile") => {
     const query = new URLSearchParams({ viewport: width });
     if (typeof revision === "string") query.set("revision", revision);
-    return `/admin/blog/${id}/preview?${query}`;
+    return appHref(`/admin/blog/${id}/preview?${query}`);
   };
   return (
     <div className="flex h-full flex-col bg-background">
       <header className="flex shrink-0 flex-wrap items-center gap-3 bg-muted p-5 md:flex-nowrap md:bg-background md:px-7 md:py-4">
-        <BackButton href={`/admin/blog/${id}`} label="Back to editor" />
+        <BackButton href={appHref(`/admin/blog/${id}`)} label="Back to editor" />
         <p className="order-first min-w-0 basis-full break-words text-sm font-semibold md:order-none md:flex-1 md:basis-auto md:text-base">
           {document.title}
         </p>
@@ -86,7 +87,7 @@ export default async function BlogPreviewPage({
           </ButtonGroup>
         </TooltipProvider>
         <Button asChild size="sm" variant="outline">
-          <Link href={`/admin/blog/${id}?review=1`}>Review &amp; publish</Link>
+          <Link href={appHref(`/admin/blog/${id}?review=1`)}>Review &amp; publish</Link>
         </Button>
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto">

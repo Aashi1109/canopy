@@ -27,6 +27,9 @@ export default {
   },
   settings: {
     fields: {
+      layers: { kind: "textarea", label: "Visual shadow layers", default: "", help: "Visual layer editor data." },
+      previewBackground: { kind: "color", label: "Preview background", default: "#f1f5f9" },
+      previewObject: { kind: "color", label: "Object color", default: "#ffffff" },
       x: {
         kind: "number",
         label: "X offset",
@@ -97,7 +100,7 @@ export default {
     },
   },
   trigger: { mode: "live", debounceMs: 120 },
-  capabilities: { copy: true },
+  capabilities: { copy: true, download: true },
   workbenchMark: { text: "SHDW" },
   labels: {
     empty: "Enter a HEX shadow color to build a CSS box-shadow declaration.",
@@ -113,8 +116,8 @@ export default {
     limitations: [
       "Additional layers accept two to four 0/px lengths, optional inset, and an optional HEX or comma-separated rgb()/rgba() colour.",
       "Lengths are pixels only — no rem, em, or percentage units.",
-      "The primary colour input must be hex (`#RGB`, `#RGBA`, `#RRGGBB`, or `#RRGGBBAA`). Additional layers also accept comma-separated rgb()/rgba().",
-      "The colour is validated and then re-emitted exactly as you typed it, so the output keeps your original casing and shorthand.",
+      "Visual layers accept HEX, supported CSS names, rgb(), and hsl(). Advanced text layers accept HEX or comma-separated rgb()/rgba().",
+      "Use up to 12 visual layers and up to 20 advanced text layers.",
       "This produces `box-shadow`, not `filter: drop-shadow()` — the two differ on transparent PNGs and non-rectangular shapes.",
     ],
     faq: [
@@ -135,6 +138,12 @@ export default {
         a: "Not as input — it has to be a hex value so it can be validated. Swap the literal for `var(--shadow-color)` in the generated declaration afterwards.",
       },
     ],
-    examples: [{ label: "Slate elevation", text: "#0f172a" }],
+    examples: [
+      {
+        label: "Slate elevation",
+        text: "#0f172a",
+        settings: { layers: "", additionalLayers: "", x: 0, y: 12, blur: 30, spread: -8, inset: false },
+      },
+    ],
   },
 } as const satisfies ToolSpec;

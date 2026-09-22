@@ -1,3 +1,4 @@
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 import {
   H3,
@@ -29,7 +30,7 @@ export default async function NewTemplatePage() {
     <div className="flex min-h-dvh w-full flex-col bg-muted">
       <header className="flex h-16 shrink-0 items-center justify-between gap-4 bg-card px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <BackButton href="/admin/templates" label="Back to templates" className="shrink-0" />
+          <BackButton href={appHref("/admin/templates")} label="Back to templates" className="shrink-0" />
           <div className="min-w-0">
             <H1 className="truncate text-foreground">New standard template</H1>
             <Caption className="block mt-0.5 text-muted-foreground">Templates / Create</Caption>
@@ -132,7 +133,7 @@ export default async function NewTemplatePage() {
             <div className="flex items-center justify-end gap-2.5">
               <Link
                 className={buttonVariants({ className: "rounded-full px-5", variant: "ghost" })}
-                href="/admin/templates"
+                href={appHref("/admin/templates")}
               >
                 Cancel
               </Link>

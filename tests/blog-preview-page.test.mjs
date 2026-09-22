@@ -16,6 +16,9 @@ const stub = (source) => ({
 });
 const hooks = registerHooks({
   resolve(specifier, context, next) {
+    if (specifier === "@/lib/routing/subdomains.ts") {
+      return next(new URL("../lib/routing/subdomains.ts", import.meta.url).href, context);
+    }
     if (isPage(context.parentURL)) {
       if (specifier === "next/navigation") return stub('export function notFound(){throw new Error("NOT_FOUND")}');
       if (specifier === "@/lib/admin/access")

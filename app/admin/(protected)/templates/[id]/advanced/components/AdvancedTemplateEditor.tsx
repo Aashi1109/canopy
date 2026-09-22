@@ -1,5 +1,6 @@
 "use client";
 
+import { appHref } from "@/lib/routing/subdomains.ts";
 import type { Plugins, PropPanelWidgetProps, Schema, Template } from "@pdfme/common";
 import {
   getDocumentDefinition,
@@ -2099,7 +2100,10 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
             Freeform positioning needs a larger workspace. You can still preview and use published templates from
             smaller devices.
           </Muted>
-          <Link className={buttonVariants({ className: "mt-5", variant: "secondary" })} href="/admin/templates">
+          <Link
+            className={buttonVariants({ className: "mt-5", variant: "secondary" })}
+            href={appHref("/admin/templates")}
+          >
             Back to templates
           </Link>
         </Card>
@@ -2107,7 +2111,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
 
       <main className="relative hidden h-dvh min-w-[1024px] flex-col overflow-hidden bg-background lg:flex">
         <header className="flex h-16 shrink-0 items-center gap-2.5 bg-card px-4">
-          <BackButton href="/admin/templates" label="Back to template lifecycle" className="shrink-0" />
+          <BackButton href={appHref("/admin/templates")} label="Back to template lifecycle" className="shrink-0" />
           <div className="w-[18.75rem] min-w-0 shrink-0">
             <div className="flex h-8 items-center gap-2">
               <Input

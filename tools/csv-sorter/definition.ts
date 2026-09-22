@@ -9,6 +9,7 @@ export default {
   description: "Sort CSV rows by a named or numbered column.",
   layout: "side-by-side",
   outputLanguage: "csv",
+  previewLayout: "table",
   input: {
     kind: "text",
     language: "csv",

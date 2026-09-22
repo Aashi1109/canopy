@@ -1,3 +1,4 @@
+import { appHref } from "@/lib/routing/subdomains.ts";
 import { AdminListing } from "@/app/admin/(protected)/components/AdminListing";
 import { adminPageHref, paginateAdminItems } from "../lib/pagination";
 import { DOCUMENT_TYPES } from "@/lib/invoice-templates/index.ts";
@@ -73,12 +74,12 @@ export default async function TemplatesPage({
           <div className="flex flex-wrap gap-2.5">
             <Link
               className={buttonVariants({ className: "rounded-full", variant: "secondary" })}
-              href="/admin/templates/import"
+              href={appHref("/admin/templates/import")}
             >
               <Upload aria-hidden="true" className="size-4" />
               Import JSON
             </Link>
-            <Link className={buttonVariants({ className: "rounded-full px-5" })} href="/admin/templates/new">
+            <Link className={buttonVariants({ className: "rounded-full px-5" })} href={appHref("/admin/templates/new")}>
               <Plus aria-hidden="true" className="size-4" />
               Create template
             </Link>
@@ -158,7 +159,7 @@ export default async function TemplatesPage({
                 return (
                   <TableRow className="h-[68px]" key={template.id}>
                     <TableCell className="px-[18px]">
-                      <Link className="group block" href={`/admin/templates/${template.id}/manage`}>
+                      <Link className="group block" href={appHref(`/admin/templates/${template.id}/manage`)}>
                         <Text className="block text-foreground group-hover:text-primary">{template.name}</Text>
                         <Caption className="mt-0.5 block text-muted-foreground">/{template.slug}</Caption>
                       </Link>
@@ -192,7 +193,7 @@ export default async function TemplatesPage({
                       <Link
                         aria-label={`Edit details for ${template.name}`}
                         className="inline-grid size-9 place-items-center rounded-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                        href={`/admin/templates/${template.id}/manage`}
+                        href={appHref(`/admin/templates/${template.id}/manage`)}
                       >
                         <Ellipsis aria-hidden="true" className="size-[18px]" />
                       </Link>
@@ -205,7 +206,7 @@ export default async function TemplatesPage({
         ) : (
           <EmptyState
             action={
-              <Link className={buttonVariants()} href="/admin/templates/new">
+              <Link className={buttonVariants()} href={appHref("/admin/templates/new")}>
                 Create template
               </Link>
             }
@@ -222,7 +223,7 @@ export default async function TemplatesPage({
       <div className="mt-4 flex shrink-0 justify-end">
         <Link
           className="inline-flex items-center gap-2 text-primary hover:underline"
-          href="/admin/templates/new/advanced"
+          href={appHref("/admin/templates/new/advanced")}
         >
           <FilePenLine aria-hidden="true" className="size-4" />
           Create an advanced template

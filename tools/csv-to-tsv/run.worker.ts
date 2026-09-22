@@ -8,21 +8,26 @@ import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 import { parseUtilityTable, serializeTable } from "../../lib/devtools/shared/table.ts";
 import { isLargeCsvRun, streamCsvRows } from "../../lib/devtools/shared/streaming-csv-tool.ts";
+import { createTablePreview } from "../../lib/devtools/shared/table-preview.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> =>
-  isLargeCsvRun(ctx)
-    ? streamCsvRows(ctx, {
-        inputDelimiter: ",",
-        mime: "text/tab-separated-values",
-        name: "table.tsv",
-        outputDelimiter: "\t",
-      })
-    : {
-        render: "text",
-        text: serializeTable(parseUtilityTable(ctx.input.text, ","), "\t"),
-        downloadName: "table.tsv",
-      };
+export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
+  if (isLargeCsvRun(ctx)) {
+    return streamCsvRows(ctx, {
+      inputDelimiter: ",",
+      mime: "text/tab-separated-values",
+      name: "table.tsv",
+      outputDelimiter: "\t",
+    });
+  }
+  const rows = parseUtilityTable(ctx.input.text, ",");
+  return {
+    render: "text",
+    text: serializeTable(rows, "\t"),
+    tablePreview: createTablePreview(rows[0], rows.slice(1)).result,
+    downloadName: "table.tsv",
+  };
+};
 
 export default run;

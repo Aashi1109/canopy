@@ -12,6 +12,7 @@ export default {
   name: "CSV Duplicate Row Remover",
   description: "Remove repeated CSV data rows.",
   outputLanguage: "csv",
+  previewLayout: "table",
   input: {
     kind: "text",
     language: "csv",

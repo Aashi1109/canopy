@@ -110,12 +110,14 @@ function useNarrowWorkspace() {
 function InputResultWorkspace({
   defaultSize,
   input,
+  inputSize,
   layout,
   minSize,
   result,
 }: {
   defaultSize: number;
   input: ReactNode;
+  inputSize?: ToolSpec["inputSize"];
   layout: ToolLayout;
   minSize: number;
   result: ReactNode;
@@ -141,7 +143,7 @@ function InputResultWorkspace({
     );
   }
 
-  if (layout === "stacked") {
+  if (layout === "stacked" && !inputSize) {
     return (
       <div className="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(14rem,1fr)] gap-5 overflow-y-auto p-5">
         {input}
@@ -151,9 +153,15 @@ function InputResultWorkspace({
   }
 
   return (
-    <SplitStack className="h-full" defaultSize={defaultSize} minSize={minSize} orientation="horizontal">
-      {input}
-      {result}
+    <SplitStack
+      className={layout === "stacked" ? "h-full p-5" : "h-full"}
+      defaultSize={inputSize?.default ?? defaultSize}
+      minSize={inputSize?.min ?? minSize}
+      maxSize={inputSize?.max}
+      orientation={layout === "stacked" ? "vertical" : "horizontal"}
+    >
+      {layout === "stacked" ? <div className="h-full pb-2.5">{input}</div> : input}
+      {layout === "stacked" ? <div className="h-full pt-2.5">{result}</div> : result}
     </SplitStack>
   );
 }
@@ -338,6 +346,7 @@ export function ToolWorkspace(
     ) : (
       <InputResultWorkspace
         defaultSize={inputSplit.defaultSize}
+        inputSize={props.spec.inputSize}
         input={
           <WorkspaceInputSurface
             disabled={props.disabled}

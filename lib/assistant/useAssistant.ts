@@ -12,6 +12,7 @@ import type {
   AssistantMessage,
   AssistantExecutionSummary,
   AssistantComposerSelection,
+  AssistantExecutionMode,
 } from "@/lib/assistant/types";
 import {
   assistantApiBase,
@@ -107,6 +108,7 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
       const version = (threadLoads.current[id] ?? 0) + 1;
       threadLoads.current[id] = version;
       const knownRuns = new Set(detailsRef.current[id]?.runs.map((run) => run.id));
+      const knownMessages = new Map(detailsRef.current[id]?.messages.map((message) => [message.id, message]));
       const detail = await assistantRequest<AssistantThreadDetail>(`${base}/${id}`);
       if (!alive.current || scopeVersion.current !== scope || threadLoads.current[id] !== version) return;
       setThreads((value) =>
@@ -116,6 +118,19 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
         ...value,
         [id]: {
           ...detail,
+          messages: [
+            ...detail.messages.map((message) => {
+              const current = value[id]?.messages.find((entry) => entry.id === message.id);
+              return current && (current !== knownMessages.get(message.id) || current.updatedAt > message.updatedAt)
+                ? current
+                : message;
+            }),
+            ...(value[id]?.messages ?? []).filter(
+              (message) =>
+                !detail.messages.some((entry) => entry.id === message.id) &&
+                (message.meta.pending || message.meta.failed || message !== knownMessages.get(message.id)),
+            ),
+          ].sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
           executions: [
             ...(detail.executions ?? []).map((entry) => {
               const current = value[id]?.executions?.find((old) => old.id === entry.id);
@@ -179,7 +194,8 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
         }
         return { ...value, [id]: saved };
       });
-      setAvailability(detail);
+      const { enabled, provider, capabilities, reason } = detail;
+      setAvailability({ enabled, provider, capabilities, reason });
     },
     [base, storageKey, readStored],
   );
@@ -208,7 +224,11 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
       setThreads(list.threads);
       setHistoryStatus("ready");
       setDetails((value) =>
-        Object.fromEntries(Object.entries(value).filter(([id]) => list.threads.some((thread) => thread.id === id))),
+        Object.fromEntries(
+          Object.entries(value).filter(
+            ([id]) => id === "new" || id.startsWith("new:") || list.threads.some((thread) => thread.id === id),
+          ),
+        ),
       );
       let id = selectedRef.current ?? new URLSearchParams(window.location.search).get("thread");
       try {
@@ -291,9 +311,19 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
     };
   }, [refresh, storageKey, readStored]);
 
-  function updateRun(run: AssistantRun) {
+  function updateRun(run: AssistantRun, localMessageId?: string, streamedText = "") {
     if (!run.threadId) return;
     const id = run.threadId;
+    const previousDetail = detailsRef.current[id];
+    const title =
+      previousDetail?.thread.title === "New thread" &&
+      !previousDetail.runs.length &&
+      !previousDetail.executions?.length &&
+      !previousDetail.messages.some(
+        (message) => message.role === "user" && !message.meta.pending && !message.meta.failed,
+      )
+        ? run.request.message.replace(/\s+/g, " ").slice(0, 80)
+        : undefined;
     setDetails((value) => {
       const detail = value[id];
       if (!detail) return value;
@@ -329,8 +359,85 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
               } satisfies AssistantExecutionSummary,
             ].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
           : detail.executions;
-      return { ...value, [id]: { ...detail, runs, executions } };
+      let messages = detail.messages;
+      if (run.executionMode === "conversational") {
+        const upsert = (message: AssistantMessage, replacedId = message.id) => {
+          const index = messages.findIndex((entry) => entry.id === replacedId || entry.id === message.id);
+          const next = messages.filter((entry) => entry.id !== replacedId && entry.id !== message.id);
+          next.splice(index < 0 ? next.length : index, 0, message);
+          messages = next;
+        };
+        if (run.inputMessageId) {
+          const previous = messages.find((message) => message.id === run.inputMessageId);
+          upsert(
+            previous ?? {
+              id: run.inputMessageId,
+              threadId: id,
+              runId: null,
+              role: "user",
+              parts: [
+                { type: "text", text: run.request.message },
+                ...(run.request.attachmentIds ?? []).map((attachmentId) => ({
+                  type: "attachment" as const,
+                  attachmentId,
+                })),
+              ],
+              meta: {},
+              createdAt: run.createdAt,
+              updatedAt: run.createdAt,
+            },
+            localMessageId,
+          );
+        }
+        if (run.assistantMessageId) {
+          const previous = messages.find((message) => message.id === run.assistantMessageId);
+          const text = run.response?.text ?? streamedText;
+          upsert({
+            id: run.assistantMessageId,
+            threadId: id,
+            runId: run.id,
+            role: "assistant",
+            parts: [
+              ...(text
+                ? [{ type: "text" as const, text }]
+                : (previous?.parts.filter((part) => part.type === "text") ?? [])),
+              ...(previous?.parts.filter((part) => part.type === "tool-call" || part.type === "tool-result") ?? []),
+              ...(run.response?.proposals ?? []).map((proposal) => ({ type: "proposal" as const, proposal })),
+            ],
+            meta: previous?.meta ?? {},
+            createdAt: previous?.createdAt ?? run.createdAt,
+            updatedAt: run.updatedAt,
+          });
+        }
+      }
+      return {
+        ...value,
+        [id]: {
+          ...detail,
+          thread: { ...detail.thread, ...(title ? { title } : {}), updatedAt: run.updatedAt },
+          runs,
+          executions,
+          messages: [...messages].sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+          attachments: detail.attachments.map((file) =>
+            run.executionMode === "conversational" &&
+            run.inputMessageId &&
+            file.type !== "artifact" &&
+            run.request.attachmentIds?.includes(file.id)
+              ? { ...file, messageId: run.inputMessageId }
+              : file,
+          ),
+        },
+      };
     });
+    setThreads((value) =>
+      value
+        .map((thread) =>
+          thread.id === id && thread.updatedAt <= run.updatedAt
+            ? { ...thread, ...(title ? { title } : {}), updatedAt: run.updatedAt }
+            : thread,
+        )
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+    );
   }
   useEffect(() => {
     const abort = () => {
@@ -349,6 +456,25 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
     remember(null);
     draft("", next);
     composerState({ attachmentIds: [] }, next);
+  }
+  function emptyDetail(thread: AssistantThread): AssistantThreadDetail {
+    return {
+      enabled: availability?.enabled ?? false,
+      provider: availability?.provider ?? "",
+      capabilities: availability?.capabilities ?? {
+        images: false,
+        webSearch: false,
+        structuredOutput: false,
+        urlRetrieval: false,
+      },
+      reason: availability?.reason,
+      thread,
+      runs: [],
+      messages: [],
+      attachments: [],
+      executions: [],
+      executionsCursor: null,
+    };
   }
   async function createThread(preserveDraft = false, message?: string, targetScope = currentScope()) {
     const existingId = resolvedScope(targetScope);
@@ -369,9 +495,19 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
       if (!alive.current || scopeVersion.current !== scope)
         throw new DOMException("Assistant context changed.", "AbortError");
       setThreads((value) => [thread, ...value.filter((entry) => entry.id !== thread.id)]);
-      await loadThread(thread.id);
-      if (!alive.current || scopeVersion.current !== scope)
-        throw new DOMException("Assistant context changed.", "AbortError");
+      setDetails((value) => {
+        const detail = value[targetScope] ?? emptyDetail(thread);
+        const next = {
+          ...value,
+          [thread.id]: {
+            ...detail,
+            thread,
+            messages: detail.messages.map((message) => ({ ...message, threadId: thread.id })),
+          },
+        };
+        delete next[targetScope];
+        return next;
+      });
       if (preserveDraft) {
         draft(draftsRef.current[targetScope] ?? "", thread.id);
         composerState(composerStatesRef.current[targetScope] ?? { attachmentIds: [] }, thread.id);
@@ -506,6 +642,11 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
     input: Omit<AssistantRunRequest, "threadId" | "clientRequestId" | "resourceId">,
     onCreated?: (run: AssistantRun) => void,
     targetScope = currentScope(),
+    options: {
+      executionMode?: AssistantExecutionMode;
+      referenceLinks?: string[];
+      onReferenceAdded?: (threadId: string, remaining: string[]) => void;
+    } = {},
   ) {
     const scope = scopeVersion.current;
     let id = resolvedScope(targetScope);
@@ -514,17 +655,107 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
     if (resolvedScope(currentScope()) === id) setError("");
     setSubmitting((value) => ({ ...value, [id]: true }));
     const lockId = id;
+    const conversational = options.executionMode !== "standalone";
+    const submittedDraft = draftsRef.current[id] ?? "";
     const submittedSelection = composerStatesRef.current[id] ?? { attachmentIds: [] };
+    let recoverySelection = submittedSelection;
+    const clearComposer =
+      conversational && !input.inputMessageId && (!submittedDraft.trim() || submittedDraft.trim() === input.message);
+    const localMessageId = input.inputMessageId ?? crypto.randomUUID();
     const controller = new AbortController();
     let observedRun: AssistantRun | undefined;
+    let streamedText = "";
+    let completed = false;
     controllers.current.set(id, controller);
     try {
+      if (conversational) {
+        const now = new Date().toISOString();
+        setDetails((value) => {
+          const detail =
+            value[id] ??
+            emptyDetail({
+              id,
+              integrationKey,
+              resourceId: resourceId ?? null,
+              type: "chat",
+              title: input.message.trim().replace(/\s+/g, " ").slice(0, 80),
+              settings: newSettingsRef.current[id] ?? {},
+              composerDraft: "",
+              createdAt: now,
+              updatedAt: now,
+            });
+          if (detail.messages.some((message) => message.id === localMessageId)) return value;
+          return {
+            ...value,
+            [id]: {
+              ...detail,
+              messages: [
+                ...detail.messages,
+                {
+                  id: localMessageId,
+                  threadId: id,
+                  runId: null,
+                  role: "user",
+                  parts: [
+                    { type: "text", text: input.message },
+                    ...(input.attachmentIds ?? []).map((attachmentId) => ({
+                      type: "attachment" as const,
+                      attachmentId,
+                    })),
+                  ],
+                  meta: { pending: true },
+                  createdAt: now,
+                  updatedAt: now,
+                },
+              ],
+            },
+          };
+        });
+        if (clearComposer) {
+          draft("", id);
+          composerState({ attachmentIds: [] }, id);
+        }
+      }
       if (isDraftScope(id)) id = (await createThread(true, input.message, targetScope)).id;
-      controller.signal.throwIfAborted();
       if (lockId !== id) {
         locks.current.delete(lockId);
         controllers.current.delete(lockId);
         setSubmitting((value) => ({ ...value, [lockId]: false }));
+      }
+      locks.current.add(id);
+      controllers.current.set(id, controller);
+      setSubmitting((value) => ({ ...value, [id]: true }));
+      controller.signal.throwIfAborted();
+      const links = options.referenceLinks ?? [];
+      if (links.length > 5) throw new Error("Use at most five reference links.");
+      for (const [index, url] of links.entries()) {
+        const link = await addLink(url, id);
+        if (!alive.current || scopeVersion.current !== scope) return null;
+        input = { ...input, attachmentIds: [...(input.attachmentIds ?? []), link.id] };
+        const previousSelection = recoverySelection;
+        recoverySelection = { ...submittedSelection, attachmentIds: input.attachmentIds! };
+        if (
+          !conversational &&
+          sameComposerSelection(composerStatesRef.current[id] ?? { attachmentIds: [] }, previousSelection)
+        )
+          composerState(recoverySelection, id);
+        setDetails((value) =>
+          value[id]
+            ? {
+                ...value,
+                [id]: {
+                  ...value[id],
+                  messages: value[id].messages.map((message) =>
+                    message.id === localMessageId
+                      ? { ...message, parts: [...message.parts, { type: "attachment", attachmentId: link.id }] }
+                      : message,
+                  ),
+                },
+              }
+            : value,
+        );
+        options.onReferenceAdded?.(id, links.slice(index + 1));
+        controller.signal.throwIfAborted();
       }
       const previous = pending.current[id];
       const { clientRequestId: _previousKey, ...previousInput } = previous ?? {};
@@ -534,126 +765,60 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
         ? previous
         : { ...input, resourceId, threadId: id, clientRequestId: crypto.randomUUID() };
       pending.current[id] = request;
-      locks.current.add(id);
-      setSubmitting((value) => ({ ...value, [id]: true }));
-      controllers.current.set(id, controller);
       const run = await streamAssistantRun(integrationKey, request, controller.signal, (event) => {
         if (!alive.current || scopeVersion.current !== scope || controller.signal.aborted) return;
         if (event.type === "run" || event.type === "completed" || (event.type === "error" && event.run)) {
           const next = event.run!;
           observedRun = next;
-          updateRun(next);
+          updateRun(next, localMessageId, streamedText);
           if (event.type === "completed" && next.status === "completed" && selectedRef.current === id)
             setFreshRunIds((value) => (value.includes(next.id) ? value : [...value, next.id]));
           if (event.type === "run") {
             delete pending.current[id];
-            setStreams((value) => ({ ...value, [id]: { run: next, text: value[id]?.text ?? "" } }));
+            setStreams((value) => ({ ...value, [id]: { run: next, text: streamedText } }));
+            if (
+              !conversational &&
+              draftsRef.current[id] === submittedDraft &&
+              sameComposerSelection(composerStatesRef.current[id] ?? { attachmentIds: [] }, recoverySelection)
+            ) {
+              draft("", id);
+              composerState({ attachmentIds: [] }, id);
+            }
             onCreated?.(next);
-            void loadThread(id).catch(() => {});
           }
-        } else if (event.type === "text-delta") {
-          setStreams((value) =>
-            value[id] ? { ...value, [id]: { ...value[id], text: value[id].text + event.text } } : value,
-          );
+        } else if (event.type === "text-delta" || event.type === "text") {
+          streamedText = event.type === "text" ? event.text : streamedText + event.text;
+          setStreams((value) => (value[id] ? { ...value, [id]: { ...value[id], text: streamedText } } : value));
         }
       });
       if (!alive.current || scopeVersion.current !== scope) return null;
+      completed = run.status === "completed";
       delete pending.current[id];
-      try {
-        await loadThread(id);
-      } catch (cause) {
-        if (!alive.current || scopeVersion.current !== scope) return null;
-        if (run.status !== "completed" || !run.response) throw cause;
-        if (run.executionMode === "standalone") {
-          updateRun(run);
-          toast.error("Your result is saved. History could not refresh; open its card to read it.");
-          return run;
-        }
-        if (!run.assistantMessageId) throw cause;
-        // Completion is already acknowledged; a failed history read must not discard its proposal.
-        const response = run.response;
-        const assistantMessageId = run.assistantMessageId;
-        setDetails((value) => {
-          const detail = value[id];
-          if (!detail) return value;
-          const messages = [...detail.messages];
-          if (run.inputMessageId && !messages.some((message) => message.id === run.inputMessageId))
-            messages.push({
-              id: run.inputMessageId,
-              threadId: id,
-              runId: null,
-              role: "user",
-              parts: [
-                { type: "text", text: request.message },
-                ...(request.attachmentIds ?? []).map((attachmentId) => ({ type: "attachment" as const, attachmentId })),
-              ],
-              meta: {},
-              createdAt: run.createdAt,
-              updatedAt: run.createdAt,
-            });
-          const previous = messages.find((message) => message.id === assistantMessageId);
-          const message: AssistantMessage = {
-            id: assistantMessageId,
-            threadId: id,
-            runId: run.id,
-            role: "assistant",
-            parts: [
-              ...(response.text ? [{ type: "text" as const, text: response.text }] : []),
-              ...(previous?.parts.filter((part) => part.type === "tool-call" || part.type === "tool-result") ?? []),
-              ...response.proposals.map((proposal) => ({ type: "proposal" as const, proposal })),
-            ],
-            meta: previous?.meta ?? {},
-            createdAt: previous?.createdAt ?? run.createdAt,
-            updatedAt: run.updatedAt,
-          };
-          return {
-            ...value,
-            [id]: { ...detail, messages: [...messages.filter((entry) => entry.id !== message.id), message] },
-          };
-        });
-        toast.error("Your response is ready, but conversation history could not refresh. You can continue here.");
-      }
-      if (!alive.current || scopeVersion.current !== scope) return null;
-      setThreads((value) =>
-        value
-          .map((thread) =>
-            thread.id === id
-              ? {
-                  ...thread,
-                  updatedAt: run.updatedAt,
-                }
-              : thread,
-          )
-          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
-      );
-      if (run.status === "completed" && run.executionMode === "conversational") {
-        for (const scope of isDraftScope(targetScope) ? [id, targetScope] : [id]) {
-          if (
-            draftsRef.current[scope]?.trim() === request.message &&
-            sameComposerSelection(composerStatesRef.current[scope] ?? { attachmentIds: [] }, submittedSelection)
-          ) {
-            draft("", scope);
-            composerState({ attachmentIds: [] }, scope);
-          }
-        }
-      }
+      updateRun(run, localMessageId, streamedText);
       if (selectedRef.current === id) setError("");
       return run;
     } catch (cause) {
       if (!alive.current || scopeVersion.current !== scope) return null;
+      if (observedRun && ["queued", "running"].includes(observedRun.status))
+        updateRun(
+          {
+            ...observedRun,
+            status: "unknown",
+            errorMessage: controller.signal.aborted
+              ? "Request stopped. Confirming its saved status."
+              : "Connection interrupted. Check the saved status before retrying.",
+          },
+          localMessageId,
+          streamedText,
+        );
       if (controller.signal.aborted) {
-        void loadThread(id).catch(() => {
-          if (alive.current && scopeVersion.current === scope && selectedRef.current === id)
-            setError("Could not confirm the stopped request. Refresh history to check its saved outcome.");
-        });
+        if (!isDraftScope(id))
+          void loadThread(id).catch(() => {
+            if (alive.current && scopeVersion.current === scope && selectedRef.current === id)
+              setError("Could not confirm the stopped request. Refresh history to check its saved outcome.");
+          });
         return null;
       }
-      if (observedRun && ["queued", "running"].includes(observedRun.status))
-        updateRun({
-          ...observedRun,
-          status: "unknown",
-          errorMessage: "Connection interrupted. Check the saved status before retrying.",
-        });
       if (
         cause instanceof AssistantRequestError &&
         cause.status >= 400 &&
@@ -662,7 +827,7 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
       )
         delete pending.current[id];
       if (!observedRun || observedRun.executionMode !== "standalone") {
-        if (selectedRef.current === id)
+        if (resolvedScope(currentScope()) === id)
           setError(
             cause instanceof Error ? cause.message : "Could not confirm this request. Refresh history to recover it.",
           );
@@ -671,6 +836,34 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
       return null;
     } finally {
       if (alive.current && scopeVersion.current === scope) {
+        let restored = false;
+        if (
+          clearComposer &&
+          !completed &&
+          !draftsRef.current[id] &&
+          sameComposerSelection(composerStatesRef.current[id] ?? { attachmentIds: [] }, { attachmentIds: [] })
+        ) {
+          draft(submittedDraft || input.message, id);
+          composerState(recoverySelection, id);
+          restored = true;
+        }
+        setDetails((value) =>
+          value[id]
+            ? {
+                ...value,
+                [id]: {
+                  ...value[id],
+                  messages: value[id].messages.flatMap((message) =>
+                    message.id !== localMessageId || !message.meta.pending
+                      ? [message]
+                      : restored || completed
+                        ? []
+                        : [{ ...message, meta: { failed: true } }],
+                  ),
+                },
+              }
+            : value,
+        );
         locks.current.delete(lockId);
         locks.current.delete(id);
         controllers.current.delete(id);
@@ -771,7 +964,7 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
     scopeId: selected ?? draftScope,
     resolveScopeId: resolvedScope,
     selected,
-    detail: selected ? details[selected] : undefined,
+    detail: details[selected ?? draftScope],
     message: drafts[selected ?? draftScope] ?? "",
     availability,
     loading,

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { getSession, AuthServiceError } from "../auth/session.ts";
 import { AuthorizationError } from "../admin/index.ts";
 import { AIError } from "../ai/errors.ts";
+import { isSameOriginRequest } from "../routing/requestOrigin.ts";
 import { AssistantError } from "./validation.ts";
 
 const headers = { "Cache-Control": "private, no-store" };
@@ -70,7 +71,7 @@ export function assistantErrorResponse(error: unknown): Response {
 }
 export async function assistantRoute(request: Request, action: (actor: string) => Promise<unknown>): Promise<Response> {
   try {
-    if (!["GET", "HEAD"].includes(request.method) && request.headers.get("origin") !== new URL(request.url).origin)
+    if (!["GET", "HEAD"].includes(request.method) && !isSameOriginRequest(request))
       throw new AssistantError("FORBIDDEN", "Invalid request origin.", 403);
     const session = await getSession(request.headers);
     if (!session) throw new AssistantError("UNAUTHENTICATED", "Sign in to continue.", 401);

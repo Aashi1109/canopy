@@ -1,4 +1,5 @@
 import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
+import config from "@/lib/config/config.ts";
 import { ContentState } from "@/components/ui/index.tsx";
 import { PackageSearch } from "lucide-react";
 import { requirePagePermission } from "../../../../lib/admin/access";
@@ -19,7 +20,7 @@ export default async function ToolsPage() {
         title="Tool catalog"
       />
       {tools.length ? (
-        <ToolList tools={tools} />
+        <ToolList tools={tools} publicSiteUrl={config.appUrl} />
       ) : (
         <ContentState
           description="Tools are added by your development team. Ask them to register and deploy a tool, then reload this page."

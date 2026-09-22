@@ -6,6 +6,7 @@
  */
 
 import { parseUtilityTable, serializeTable, utilityDelimiter } from "../../lib/devtools/shared/table.ts";
+import { createTablePreview } from "../../lib/devtools/shared/table-preview.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
@@ -33,11 +34,13 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     let column = -1;
     let kept = 0;
     let wrote = false;
+    let preview: ReturnType<typeof createTablePreview> | undefined;
     try {
       const parsed = await parseCsvRun(ctx, {
         delimiter,
         onRow: async (row, rowNumber) => {
           if (rowNumber === 1) {
+            preview = createTablePreview(row);
             column = requested ? (/^\d+$/.test(requested) ? Number(requested) - 1 : row.indexOf(requested)) : -1;
             if (requested && (column < 0 || column >= row.length)) {
               throw new ToolError(
@@ -52,6 +55,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
             (column >= 0 ? [row[column] ?? ""] : row).some((cell) => cell.toLocaleLowerCase().includes(query));
           if (!keep) return;
           if (rowNumber > 1) kept += 1;
+          if (rowNumber > 1) preview?.append(row);
           await sink.write(`${wrote ? "\n" : ""}${serializeCsvRow(row, delimiter)}`);
           wrote = true;
         },
@@ -63,6 +67,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         code: sink.preview,
         language: "csv",
         truncated: sink.previewTruncated,
+        tablePreview: preview?.result,
         stats: [
           { label: "Matched rows", value: String(kept) },
           { label: "Scanned rows", value: String(Math.max(0, parsed.rowCount - 1)) },
@@ -95,6 +100,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   return {
     render: "text",
     text: serializeTable([header, ...filtered], delimiter),
+    tablePreview: createTablePreview(header, filtered).result,
     downloadName: "filtered-data.txt",
   };
 };

@@ -9,6 +9,7 @@ export default {
   description: "Keep rows containing text, optionally in one column.",
   layout: "side-by-side",
   outputLanguage: "csv",
+  previewLayout: "table",
   input: {
     kind: "text",
     language: "csv",

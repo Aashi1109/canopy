@@ -16,7 +16,7 @@ const hooks = registerHooks({
     if (specifier === "next/link") return next("next/link.js", context);
     if (specifier === "next/navigation")
       return stub(
-        'export function useRouter(){return {push(){},refresh(){}}} export function usePathname(){return "/admin/blog"} export function useSearchParams(){return new URLSearchParams()} export function notFound(){throw Error("NOT_FOUND")}',
+        'export function useRouter(){return {push(){},refresh(){}}} export function usePathname(){return globalThis.__adminShellPath ?? "/admin/blog"} export function useSelectedLayoutSegment(){return null} export function useSearchParams(){return new URLSearchParams()} export function notFound(){throw Error("NOT_FOUND")}',
       );
     if (specifier === "@/lib/admin/access")
       return stub('export async function requirePagePermission(){return {user:{id:"admin"}}}');
@@ -75,8 +75,38 @@ const { historyPageSchema } = await import("../app/admin/(protected)/blog/compon
 const { BlogRevisionList } = await import("../app/admin/(protected)/blog/components/BlogRevisionList.tsx");
 const taxonomy = await import("../app/admin/(protected)/blog/taxonomy/page.tsx");
 const { Pagination } = await import("../components/ui/components/Pagination.tsx");
+const { AdminShell } = await import("../app/admin/(protected)/components/AdminShell.tsx");
 test.after(() => {
   hooks.deregister();
+});
+
+test("clean admin routes retain the same workspace and navigation as their internal routes", () => {
+  try {
+    for (const path of [
+      "/",
+      "/tools",
+      "/blog",
+      "/blog/post-1",
+      "/blog/taxonomy",
+      "/templates/new",
+      "/templates/post-1/manage",
+      "/templates/post-1/advanced",
+    ]) {
+      const render = (pathname) => {
+        globalThis.__adminShellPath = pathname;
+        return renderToStaticMarkup(
+          createElement(AdminShell, {
+            user: { name: "Admin", isAdmin: true },
+            publicSiteUrl: "https://example.test",
+            children: createElement("section", null, "Working document"),
+          }),
+        );
+      };
+      assert.equal(render(path), render(path === "/" ? "/admin" : `/admin${path}`), path);
+    }
+  } finally {
+    delete globalThis.__adminShellPath;
+  }
 });
 
 test("history panel accepts paginated revision responses and rejects malformed data", () => {
@@ -264,6 +294,30 @@ test("taxonomy rejects external, traversing, and repeated return destinations", 
     const html = renderToStaticMarkup(await taxonomy.default({ searchParams: Promise.resolve({ returnTo }) }));
     assert.doesNotMatch(html, /attacker|outside|returnTo=/);
     assert.match(html, /href="\/admin\/blog"/);
+  }
+});
+
+test("taxonomy preserves clean admin destinations while rejecting lookalike origins", async () => {
+  const previous = process.env.APP_URL;
+  process.env.APP_URL = "https://example.test";
+  try {
+    for (const returnTo of ["/blog/post-1", "/admin/blog/post-1", "https://admin.example.test/blog/post-1"]) {
+      const html = renderToStaticMarkup(await taxonomy.default({ searchParams: Promise.resolve({ returnTo }) }));
+      assert.match(html, /href="https:\/\/admin\.example\.test\/blog\/post-1"/);
+      assert.match(html, /kind=tag&amp;returnTo=https%3A%2F%2Fadmin\.example\.test%2Fblog%2Fpost-1/);
+      assert.doesNotMatch(html, /href="[^\"]*\/admin\//);
+    }
+    for (const returnTo of [
+      "https://admin.example.test.attacker.invalid/blog/post-1",
+      "https://admin.example.test/blog/../outside",
+    ]) {
+      const html = renderToStaticMarkup(await taxonomy.default({ searchParams: Promise.resolve({ returnTo }) }));
+      assert.doesNotMatch(html, /attacker|outside|returnTo=/);
+      assert.match(html, /href="https:\/\/admin\.example\.test\/blog"/);
+    }
+  } finally {
+    if (previous === undefined) delete process.env.APP_URL;
+    else process.env.APP_URL = previous;
   }
 });
 

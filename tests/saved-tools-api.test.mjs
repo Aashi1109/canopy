@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import test from "node:test";
+const previousAppUrl = process.env.APP_URL;
 const state = { session: null, ids: [], calls: [], failure: false, captured: [] };
 globalThis.__savedToolsApiTest = state;
 const routeRoot = new URL("../app/api/user-preferences/", import.meta.url).href;
@@ -8,6 +9,8 @@ const hooks = registerHooks({
   resolve(specifier, context, next) {
     const stub = (source) => ({ shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(source)}` });
     if (context.parentURL?.startsWith(routeRoot)) {
+      if (specifier === "@/lib/routing/requestOrigin.ts")
+        return next(new URL("../lib/routing/requestOrigin.ts", import.meta.url).href, context);
       if (specifier === "@sentry/core")
         return stub("export const captureException = error => globalThis.__savedToolsApiTest.captured.push(error);");
       if (specifier === "@/lib/auth/session.ts")
@@ -34,6 +37,8 @@ const hooks = registerHooks({
   },
 });
 test.after(() => {
+  if (previousAppUrl === undefined) delete process.env.APP_URL;
+  else process.env.APP_URL = previousAppUrl;
   hooks.deregister();
   delete globalThis.__savedToolsApiTest;
 });
@@ -45,6 +50,7 @@ const request = (body, origin = "https://app.test") =>
     body: JSON.stringify(body),
   });
 test.beforeEach(() => {
+  process.env.APP_URL = "https://app.test";
   state.session = null;
   state.ids = [];
   state.calls = [];
@@ -88,6 +94,25 @@ test("writes require auth and reject cross-origin callers", async () => {
   assert.equal((await POST(request({ operation: "merge", toolIds: [], userId: "a" }))).status, 401);
   assert.equal((await POST(request({}, "https://evil.test"))).status, 403);
   assert.deepEqual(state.calls, []);
+  assert.deepEqual(state.captured, []);
+});
+test("local admin origin can save when the internal request URL uses localhost", async () => {
+  process.env.APP_URL = "http://localhost:3000";
+  state.session = { user: { id: "admin", status: "active" } };
+  const response = await POST(
+    new Request("http://localhost:3000/api/user-preferences/saved-tools", {
+      method: "POST",
+      headers: {
+        host: "admin.localhost:3000",
+        origin: "http://admin.localhost:3000",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ userId: "admin", operation: "save", toolIds: ["devtools.json-formatter"] }),
+    }),
+  );
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { userId: "admin", savedTools: ["devtools.json-formatter"] });
+  assert.deepEqual(state.calls, [["admin", "save", ["devtools.json-formatter"]]]);
   assert.deepEqual(state.captured, []);
 });
 test("merge is scoped to session identity, deduplicates and filters stale tools", async () => {

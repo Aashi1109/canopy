@@ -1,4 +1,5 @@
 "use client";
+import { appHref } from "@/lib/routing/subdomains.ts";
 import assistantStyles from "@/components/assistant/Assistant.module.css";
 
 import Link from "next/link";
@@ -58,7 +59,7 @@ export function BlogPostSettings({
   tools,
   disabled = false,
   categoryError,
-  taxonomyHref = "/admin/blog/taxonomy",
+  taxonomyHref = appHref("/admin/blog/taxonomy"),
   defaultTab = "post",
   categoryPagination,
   tagPagination,

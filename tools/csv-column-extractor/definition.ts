@@ -8,6 +8,7 @@ export default {
   name: "CSV Column Extractor",
   description: "Extract CSV columns by name or one-based number.",
   outputLanguage: "csv",
+  previewLayout: "table",
   resultStats: "status-only",
   layout: "side-by-side",
   input: {

@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "name": "HSL to HEX",
+      "input": { "primary": "hsl(210 60% 50%)", "secondary": "" },
+      "settings": {},
+      "expected": { "render": "text", "output": "#3380CC" }
+    },
+    {
+      "name": "named color to modern RGB",
+      "input": { "primary": "rebeccapurple", "secondary": "" },
+      "settings": { "outputFormat": "rgb", "modernSyntax": true },
+      "expected": { "render": "text", "output": "rgb(102 51 153)" }
+    }
+  ]
+}

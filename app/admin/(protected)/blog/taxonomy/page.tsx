@@ -1,3 +1,4 @@
+import { appHref, getSubdomainOrigin, internalSubdomainPath } from "@/lib/routing/subdomains.ts";
 import Link from "next/link";
 import { z } from "zod";
 import { notFound } from "next/navigation";
@@ -16,17 +17,26 @@ export default async function BlogTaxonomyPage({
   const { kind = "category", page, returnTo } = await searchParams;
   const pageNumber = z.coerce.number().int().min(1).max(Number.MAX_SAFE_INTEGER).catch(1).parse(page);
   if (kind !== "category" && kind !== "tag") notFound();
+  const adminOrigin = getSubdomainOrigin("admin");
+  const returnPath =
+    typeof returnTo === "string" && adminOrigin && returnTo.startsWith(`${adminOrigin}/`)
+      ? returnTo.slice(adminOrigin.length)
+      : returnTo;
   const editorHref =
-    typeof returnTo === "string" && /^\/admin\/blog\/[a-zA-Z0-9_-]{1,100}$/.test(returnTo) ? returnTo : undefined;
+    typeof returnPath === "string" && /^\/(?:admin\/)?blog\/[a-zA-Z0-9_-]{1,100}$/.test(returnPath)
+      ? appHref(internalSubdomainPath("admin", returnPath))
+      : undefined;
   function taxonomyHref(nextKind: string, nextPage = 1) {
-    return `/admin/blog/taxonomy?${new URLSearchParams({ kind: nextKind, ...(editorHref ? { returnTo: editorHref } : {}), ...(nextPage > 1 ? { page: String(nextPage) } : {}) })}`;
+    return appHref(
+      `/admin/blog/taxonomy?${new URLSearchParams({ kind: nextKind, ...(editorHref ? { returnTo: editorHref } : {}), ...(nextPage > 1 ? { page: String(nextPage) } : {}) })}`,
+    );
   }
   const terms = await listBlogTaxonomy(session.user.id, kind, { page: pageNumber });
   return (
     <Tabs value={kind} className="h-full min-h-0 min-w-0 gap-5">
       <div className="flex shrink-0 items-start gap-2">
         <BackButton
-          href={editorHref ?? "/admin/blog"}
+          href={editorHref ?? appHref("/admin/blog")}
           label={editorHref ? "Back to editor" : "Back to posts"}
           className="items-start pt-2"
         />

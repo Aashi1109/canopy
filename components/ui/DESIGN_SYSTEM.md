@@ -287,6 +287,10 @@ Select menus inherit the owning `SelectTrigger` size through React context, incl
 
 ### Forms
 
+`ColorControl` (`components/ColorControl.tsx`) combines a native visual color picker, CSS-text input, explicit opacity range and number input, field validation, and a checkerboard swatch. It accepts `value`, `onChange`, `label`, optional `disabled`, and `compact` to omit the extra swatch when the workspace already previews the color. Use one canonical color value in the tool runtime. It accepts standalone HEX, RGB, HSL, CSS names, and transparency; fine opacity edits retain decimal RGB alpha. Parser-owned CSS color settings must use text descriptors to avoid the generic HEX-only color-setting normalization. `ColorSwatch` is the labeled, non-interactive preview primitive. Both are demonstrated in the admin component library.
+
+Color & Design workspaces share `app/devtools/components/color-design/DesignWorkspace.tsx`: the operation-specific preview occupies the main surface, related settings are grouped in the right panel, and copy/download output sits below the preview. `compactOutput` caps the preview height to keep CSS export actions visible; `compactInput` leaves more room for conversion results. `DesignRange` pairs visual adjustment with an exact keyboard-editable number. The adjacent `ColorValueList` uses compact semantic rows and individually labeled copy buttons for picker, converter, and image-sampling values. Tool-specific canvases, spatial corner controls, palettes, and image sampling remain owned by each tool.
+
 | Component                       | Source                 | Variants                                                                                                                                                                                             |
 | ------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Field` (composition)           | `index.tsx`            | `variant: default \| auth`; req `htmlFor`, `label`, single-element `children`                                                                                                                        |
@@ -668,9 +672,9 @@ Documented so nobody rediscovers them. Fix opportunistically; none is a blocker.
 
 ## Saved tools
 
-`SavedToolsProvider` wraps the application once. `SavedToolsTrigger` opens a 400px anchored desktop popover or a modal mobile bottom sheet; opening Saved never changes the route. `SaveToolButton` accepts a tool `href` and supports an `iconOnly` catalog variant. Catalog cards keep the save button outside the destination link.
+`SavedToolsProvider` wraps the application once. `SavedToolsTrigger` opens a 400px anchored desktop popover or a modal mobile bottom sheet; opening Saved never changes the route. `SaveToolButton` accepts a tool `href` and supports an `iconOnly` catalog variant. Catalog cards keep the save button in the top-right corner, outside the destination link, with room reserved in the header. Saved buttons use an accent background, primary-colored icon and outline, and a filled bookmark alongside `aria-pressed`.
 
-Rows show tool identity, then a **remove bookmark icon**, then an **open arrow**. Both actions use shared buttons and hover/focus tooltips. Escape/outside dismissal restores trigger focus; mobile traps focus. Removal offers Undo, and storage/network failures expose retry without claiming success.
+Rows show tool identity, then a **filled bookmark button** using the same saved styling as catalog cards, then an **open arrow**. Both actions use shared buttons and hover/focus tooltips. The popover and mobile sheet omit storage-location information. Escape/outside dismissal restores trigger focus; mobile traps focus. Removal offers Undo, and storage/network failures expose retry without claiming success.
 
 Guests store identifiers under `canopy.saved-tools.v1`. At sign-in, pending guest IDs are staged locally for that account and unioned into `user_preferences` (`user_id`, `key = saved_tools`, JSONB `value`, `updated_at`). Confirmed imports are cleared locally; failed imports remain account-scoped for retry. Account lists are never copied into guest storage on sign-out. The authenticated API derives ownership from the server session and locks the preference row during read/modify/write.
 
@@ -692,6 +696,8 @@ Admin pages use `app/admin/(protected)/components/AdminPageHeader.tsx`, which co
 Admin listings use `app/admin/(protected)/components/AdminListing.tsx` for the shared bordered surface, scrollable body, and separate pagination footer. The containing page supplies bounded height; pagination never overlays rows. Use shared table typography rather than page-specific uppercase headings or row padding. Numbered list queries return total/page/pageCount so both endpoints are actionable.
 
 `TabsList variant="pills"` is the compact result-view switcher: a 28px muted track, rounded 24px tabs with extended pointer targets, and a solid primary fill with contrasting text for the selected view. Use it with `TabsContent` for CSV Raw/Table or generated HTML/Markdown Raw/Preview views; keyboard arrows switch the active tab. HTML table previews reuse the shared `Table`; Markdown results reuse `MarkdownPreview` and `RichContent`. Copy and download preserve the original source in either view.
+
+Structured data results can supply `jsonPreview` to offer Raw/Tree using the shared read-only JSON renderer. The preview has no editing or separate export controls; the result header owns copy/download of the original format. Only structured values get a Tree tab. Bound large previews, label partial data, and omit the alternate view when it would lose numeric precision.
 
 Markdown result previews retain document padding and normal wrapping by default. Table-only tools opt into flush edges, nonwrapping cells, and sticky headers within the table's scroll area with `previewLayout: "table"` in their own definition; do not change the shared default for one page.
 

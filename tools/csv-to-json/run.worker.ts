@@ -1,14 +1,46 @@
 import { convertCsvToJson, parseDelimitedRows } from "../../lib/devtools/shared/csv.ts";
 import { utilityDelimiter } from "../../lib/devtools/shared/table.ts";
-import type { ToolResult } from "../../lib/tool-framework/result.ts";
+import type { ToolJsonTreeRender, ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 import { createTextArtifactSink, isLargeCsvRun, parseCsvRun } from "../../lib/devtools/shared/streaming-csv-tool.ts";
+import { LARGE_TEXT_PREVIEW_BYTES } from "../../lib/tool-framework/limits.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
+type JsonRow = Record<string, string | number> | (string | number)[];
+const JSON_PREVIEW_MAX_NODES = 1_000;
+
+function createJsonPreview() {
+  const rows: JsonRow[] = [];
+  const encoder = new TextEncoder();
+  let nodes = 1;
+  let bytes = 2;
+  let truncated = false;
+  return {
+    addRow(value: JsonRow, json = JSON.stringify(value)) {
+      if (truncated) return false;
+      const rowNodes = Object.keys(value).length + 1;
+      const rowBytes = encoder.encode(json).byteLength + (rows.length ? 1 : 0);
+      if (nodes + rowNodes > JSON_PREVIEW_MAX_NODES || bytes + rowBytes > LARGE_TEXT_PREVIEW_BYTES) {
+        truncated = true;
+        return false;
+      }
+      // Match the exported JSON, including parseNumbers normalizing -0 to 0.
+      rows.push(JSON.parse(json) as JsonRow);
+      nodes += rowNodes;
+      bytes += rowBytes;
+      return true;
+    },
+    result(): ToolJsonTreeRender | undefined {
+      if (truncated && rows.length === 0) return;
+      return { render: "json-tree", value: rows, text: JSON.stringify(rows), truncated };
+    },
+  };
+}
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const delimiter = utilityDelimiter(ctx.settings.delimiter);
+  const preview = createJsonPreview();
   const normalizeCell = (value: string): string | number => {
     const normalized = ctx.settings.trimWhitespace ? value.trim() : value;
     return ctx.settings.parseNumbers && normalized.trim() !== "" && Number.isFinite(Number(normalized))
@@ -44,7 +76,9 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
           const value = useHeaders
             ? Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""]))
             : values;
-          await sink.write(`${outputRows === 0 ? "\n" : ",\n"}  ${JSON.stringify(value)}`);
+          const json = JSON.stringify(value);
+          preview.addRow(value, json);
+          await sink.write(`${outputRows === 0 ? "\n" : ",\n"}  ${json}`);
           outputRows += 1;
         },
         previewRows: 0,
@@ -60,6 +94,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         code: sink.preview,
         language: "json",
         truncated: sink.previewTruncated,
+        jsonPreview: preview.result(),
         stats: [
           { label: "Rows", value: String(outputRows) },
           { label: "Columns", value: String(columnCount) },
@@ -131,9 +166,13 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     rowCount = rows.length;
   }
 
+  for (const row of JSON.parse(output) as JsonRow[]) {
+    if (!preview.addRow(row)) break;
+  }
   return {
     render: "text",
     text: output,
+    jsonPreview: preview.result(),
     downloadName: "data.json",
     stats: [
       { label: "Rows", value: String(rowCount) },

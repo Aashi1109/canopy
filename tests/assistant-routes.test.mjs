@@ -119,6 +119,36 @@ test("Assistant thread listing and creation distinguish absent, valid, and inval
   assert.equal(state.calls.length, 4);
 });
 
+test("Assistant thread creation accepts the configured admin host when Next normalizes the request URL", async (t) => {
+  const previousAppUrl = process.env.APP_URL;
+  process.env.APP_URL = "http://localhost:3000";
+  t.after(() => {
+    if (previousAppUrl === undefined) delete process.env.APP_URL;
+    else process.env.APP_URL = previousAppUrl;
+  });
+  const resourceId = "4fcf4d4b-e31c-4df3-9e45-7ca7d59237b8";
+  const response = await threads.POST(
+    new Request(`http://localhost:3000/api/assistant/blog/threads?resourceId=${resourceId}`, {
+      method: "POST",
+      headers: {
+        host: "admin.localhost:3000",
+        origin: "http://admin.localhost:3000",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ title: "Blog conversation" }),
+    }),
+    context({ integrationKey: "blog" }),
+  );
+  assert.equal(response.status, 200);
+  assert.deepEqual(state.calls, [
+    {
+      integrationKey: "blog",
+      method: "createThread",
+      args: ["owner", resourceId, { title: "Blog conversation" }],
+    },
+  ]);
+});
+
 test("Assistant run endpoints preserve request content, abort signal, and proposal outcomes", async () => {
   const abort = new AbortController();
   const input = {

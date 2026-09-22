@@ -1743,8 +1743,8 @@ export function JsonResultRenderer({
 
         {isStructuredView ? (
           <div
-            aria-label={headerStart ? "JSON result" : undefined}
-            aria-labelledby={headerStart ? undefined : `${resultId}-view-select`}
+            aria-label={headerStart || header === "hidden" ? label : undefined}
+            aria-labelledby={headerStart || header === "hidden" ? undefined : `${resultId}-view-select`}
             className="flex min-h-0 flex-1 flex-col"
             id={`${resultId}-${view}`}
             role="tabpanel"

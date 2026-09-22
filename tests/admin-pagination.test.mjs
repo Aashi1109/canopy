@@ -39,3 +39,20 @@ test("admin page links retain encoded filters and link directly to first and las
   assert.equal(new URL(adminPageHref("/admin/users", 3, filters), first).searchParams.get("page"), "3");
   assert.equal(adminPageHref("/admin/roles", 1), "/admin/roles");
 });
+
+test("admin pagination derives clean subdomain URLs from APP_URL and preserves filters", () => {
+  const previous = process.env.APP_URL;
+  process.env.APP_URL = "https://example.test";
+  try {
+    const destination = new URL(adminPageHref("/admin/users", 2, { q: "Ada & Grace", role: "editor" }));
+    assert.equal(destination.origin, "https://admin.example.test");
+    assert.equal(destination.pathname, "/users");
+    assert.equal(destination.searchParams.get("q"), "Ada & Grace");
+    assert.equal(destination.searchParams.get("role"), "editor");
+    assert.equal(destination.searchParams.get("page"), "2");
+    assert.equal(adminPageHref("/admin/roles", 1), "https://admin.example.test/roles");
+  } finally {
+    if (previous === undefined) delete process.env.APP_URL;
+    else process.env.APP_URL = previous;
+  }
+});

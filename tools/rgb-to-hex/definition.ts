@@ -57,13 +57,13 @@ export default {
   },
   content: {
     howToUse: [
-      "Type or paste a CSS colour in rgb(51, 102, 255) or rgba(51, 102, 255, 0.5) form. Output updates as you type.",
-      "Channels are 0–255 and alpha is 0–1. Fractional channels are rounded to the nearest integer.",
+      "Paste comma-separated RGB/RGBA or modern rgb(51 102 255 / 50%). Use one color per line for a batch.",
+      "Channels accept 0–255 or 0–100%; alpha accepts 0–1 or 0–100%. Fractional channels are rounded to the nearest byte for HEX.",
       "By default, an opaque colour converts to #RRGGBB; anything with alpha below 1 converts to the eight-digit #RRGGBBAA form.",
     ],
     limitations: [
-      "Only the legacy comma-separated syntax is accepted. The modern space-separated form rgb(51 102 255 / 50%) is not parsed.",
-      "Percentage channels such as rgb(20%, 40%, 100%) are not supported — use 0–255 values.",
+      "Comma-separated channels must all use numbers or all use percentages. Modern space syntax may mix them.",
+      "Out-of-range channels are reported as errors rather than silently clamped.",
       "Alpha is quantised to 8 bits on the way to hex, so 0.5 becomes 80 and round-trips back as 0.502.",
       "Named colours and hsl() input are not accepted here.",
     ],

@@ -2,15 +2,23 @@ import { auth } from "./lib/auth/index.ts";
 import { getSessionCookie } from "better-auth/cookies";
 import { NextRequest, NextResponse } from "next/server";
 import { errorMessage } from "./utils/errorMessage.ts";
+import {
+  appHref,
+  getSubdomainForHost,
+  getSubdomainForPath,
+  internalSubdomainPath,
+  isSharedSubdomainPath,
+} from "./lib/routing/subdomains.ts";
+import appConfig from "./lib/config/config.ts";
 
-export async function proxy(request: NextRequest) {
+async function checkAccountAccess(request: NextRequest, redirectOrigin: string): Promise<NextResponse | null> {
   const { pathname } = request.nextUrl;
   // Logout must remain available even when session lookup is unavailable.
   if (pathname === "/api/auth/sign-out" && request.method === "POST") {
-    return NextResponse.next();
+    return null;
   }
-  if (!getSessionCookie(request, { cookiePrefix: "smarttools" })) {
-    return NextResponse.next();
+  if (!getSessionCookie(request, { cookiePrefix: appConfig.auth.cookiePrefix })) {
+    return null;
   }
 
   let session;
@@ -25,11 +33,11 @@ export async function proxy(request: NextRequest) {
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
-  if (!session || session.user.status === "active") return NextResponse.next();
+  if (!session || session.user.status === "active") return null;
 
   const reading = request.method === "GET" || request.method === "HEAD";
   if (reading && (pathname === "/account/suspended" || pathname === "/api/auth/get-session")) {
-    return NextResponse.next();
+    return null;
   }
   if (!reading || pathname.startsWith("/api/")) {
     return NextResponse.json(
@@ -41,10 +49,60 @@ export async function proxy(request: NextRequest) {
       { status: 403, headers: { "Cache-Control": "no-store" } },
     );
   }
-  return NextResponse.redirect(new URL("/account/suspended", request.url), {
+  return NextResponse.redirect(new URL("/account/suspended", redirectOrigin), {
     status: 303,
     headers: { "Cache-Control": "no-store" },
   });
+}
+
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  // Next.js can normalize request.nextUrl to its internal server hostname.
+  // Match only the explicit Host, never a caller-supplied forwarded hostname.
+  const host = (request.headers.get("host") ?? request.nextUrl.host).toLowerCase();
+  const subdomain = getSubdomainForHost(host);
+  const reading = request.method === "GET" || request.method === "HEAD";
+  const finish = (response: NextResponse) => {
+    if (subdomain && !subdomain.indexable) response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
+  };
+  if (subdomain && !subdomain.indexable && pathname === "/robots.txt" && reading) {
+    return finish(
+      new NextResponse("User-agent: *\nDisallow: /\n", {
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      }),
+    );
+  }
+  if (subdomain && !subdomain.indexable && pathname === "/sitemap.xml") {
+    return finish(new NextResponse(null, { status: 404 }));
+  }
+
+  const accountResponse = await checkAccountAccess(request, subdomain?.origin ?? request.url);
+  if (accountResponse) return finish(accountResponse);
+
+  const legacySubdomain = getSubdomainForPath(pathname);
+  if (legacySubdomain) {
+    if (reading) {
+      return finish(
+        NextResponse.redirect(appHref(pathname + request.nextUrl.search), {
+          status: 308,
+          headers: { "Cache-Control": "no-store" },
+        }),
+      );
+    }
+    // Never forward a legacy mutation body across origins. Current forms use clean URLs.
+    if (subdomain?.name !== legacySubdomain.name) {
+      return finish(new NextResponse(null, { status: 404, headers: { "Cache-Control": "no-store" } }));
+    }
+    return finish(NextResponse.next());
+  }
+
+  if (subdomain && !isSharedSubdomainPath(pathname)) {
+    const destination = request.nextUrl.clone();
+    destination.pathname = internalSubdomainPath(subdomain.name, pathname);
+    return finish(NextResponse.rewrite(destination));
+  }
+  return finish(NextResponse.next());
 }
 
 export const config = {
