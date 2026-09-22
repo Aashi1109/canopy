@@ -1,6 +1,7 @@
 "use client";
 
 import CodeMirror, { ExternalChange } from "@uiw/react-codemirror";
+import { autocompletion } from "@codemirror/autocomplete";
 import { EditorState, type Extension, type Range } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, lineNumbers, type ViewUpdate } from "@codemirror/view";
 import {
@@ -30,9 +31,27 @@ const BASIC_SETUP = {
   highlightSelectionMatches: false,
   closeBrackets: false,
   autocompletion: false,
+  completionKeymap: false,
   searchKeymap: false,
   syntaxHighlighting: false,
 };
+
+const COMPLETION_LANGUAGES = new Set([
+  "js",
+  "javascript",
+  "jsx",
+  "ts",
+  "typescript",
+  "tsx",
+  "html",
+  "xml",
+  "css",
+  "sql",
+]);
+const AUTO_COMPLETION_MAX_LENGTH = 100_000;
+const completionOptions = { activateOnTypingDelay: 150, maxRenderedOptions: 20 };
+const automaticCompletion = autocompletion(completionOptions);
+const manualCompletion = autocompletion({ ...completionOptions, activateOnTyping: false });
 
 const foldingExtensions = [
   foldGutter({
@@ -109,6 +128,17 @@ const editorTheme = EditorView.theme({
   ".cm-foldPlaceholder:hover": { borderColor: "var(--primary)" },
   ".cm-foldPlaceholder:focus-visible": { outline: "2px solid var(--ring)", outlineOffset: "2px" },
   ".cm-placeholder": { color: "var(--muted-foreground)" },
+  ".cm-tooltip": {
+    backgroundColor: "var(--popover)",
+    color: "var(--popover-foreground)",
+    border: "1px solid var(--border)",
+    borderRadius: "6px",
+    overflow: "hidden",
+  },
+  ".cm-tooltip-autocomplete > ul > li[aria-selected]": {
+    backgroundColor: "var(--accent)",
+    color: "var(--accent-foreground)",
+  },
   ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--foreground)" },
   "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": {
     backgroundColor: "var(--accent)",
@@ -226,6 +256,13 @@ export default function CodeEditorImpl({
   const languageName = language.trim().toLowerCase();
   const languageExtension = loadedLanguage?.name === languageName ? loadedLanguage.extension : EMPTY_EXTENSION;
   const isReadOnly = readOnly || disabled || !onChange;
+  // Stable extensions reuse native completion results; the length check is constant-time.
+  const completionExtension =
+    isReadOnly || !COMPLETION_LANGUAGES.has(languageName)
+      ? EMPTY_EXTENSION
+      : value.length > AUTO_COMPLETION_MAX_LENGTH
+        ? manualCompletion
+        : automaticCompletion;
   const searchHighlighting = useMemo(
     () => createSearchHighlighting(searchQuery, activeMatch),
     [searchQuery, activeMatch?.from, activeMatch?.to],
@@ -301,6 +338,7 @@ export default function CodeEditorImpl({
       ...(languageName === "csv" || languageName === "tsv" ? [] : [indentGuides]),
       interactionExtensions,
       languageExtension,
+      completionExtension,
       EditorView.contentAttributes.of(contentAttributes),
       ...(showLineNumbers ? [lineNumbers()] : []),
       foldingExtensions,
@@ -317,6 +355,7 @@ export default function CodeEditorImpl({
     ariaInvalid,
     interactionExtensions,
     languageExtension,
+    completionExtension,
     languageName,
     searchHighlighting,
     showLineNumbers,

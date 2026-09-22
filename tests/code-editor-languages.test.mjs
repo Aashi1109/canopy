@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { EditorState } from "@codemirror/state";
 import { ensureSyntaxTree, foldable } from "@codemirror/language";
+import { CompletionContext, completeFromList } from "@codemirror/autocomplete";
 import { classHighlighter, getStyleTags, highlightTree, tags } from "@lezer/highlight";
 
 import { collectYamlScalars, loadCodeEditorLanguage } from "../components/content/codeEditorLanguages.ts";
@@ -14,6 +15,77 @@ async function highlightsFor(code, language) {
   highlightTree(tree, classHighlighter, (from, to, classes) => highlights.push({ from, to, classes }));
   return (offset) => highlights.find(({ from, to }) => from <= offset && offset < to)?.classes ?? "";
 }
+
+async function completionLabels(code, language, explicit = false) {
+  const state = EditorState.create({ doc: code, extensions: [await loadCodeEditorLanguage(language)] });
+  assert.ok(ensureSyntaxTree(state, state.doc.length, 500));
+  const context = new CompletionContext(state, state.doc.length, explicit);
+  const sources = state.languageDataAt("autocomplete", context.pos);
+  const results = await Promise.all(
+    sources.map((source) => (typeof source === "function" ? source : completeFromList(source))(context)),
+  );
+  return {
+    sourceCount: sources.length,
+    labels: results.flatMap((result) => result?.options.map((option) => option.label) ?? []),
+  };
+}
+
+test("JavaScript and TypeScript suggest locally declared names and language keywords", async () => {
+  for (const language of ["javascript", "typescript"]) {
+    const locals = await completionLabels('const userName = "Ada";\nuse', language);
+    assert.ok(locals.labels.includes("userName"), `${language} should suggest a local variable`);
+    const keywords = await completionLabels("ret", language);
+    assert.ok(keywords.labels.includes("return"), `${language} should suggest return`);
+  }
+  const typescript = await completionLabels("dec", "typescript");
+  assert.ok(typescript.labels.includes("declare"));
+});
+
+test("CSS suggests properties and value keywords at their respective positions", async () => {
+  // Native CSS completion discovers supported properties from the browser's style object.
+  const previousDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: { body: { style: { display: "", paddingTop: "" } } },
+  });
+  try {
+    const properties = await completionLabels("a { dis", "css");
+    assert.ok(properties.labels.includes("display"));
+  } finally {
+    if (previousDocument) Object.defineProperty(globalThis, "document", previousDocument);
+    else delete globalThis.document;
+  }
+  const values = await completionLabels("a { display: bl", "css");
+  assert.ok(values.labels.includes("block"));
+});
+
+test("HTML suggests native element names while opening a tag", async () => {
+  const { labels } = await completionLabels("<di", "html");
+  assert.ok(labels.includes("div"));
+});
+
+test("SQL suggests standard query keywords without a configured database schema", async () => {
+  const { labels } = await completionLabels("SEL", "sql");
+  assert.ok(labels.some((label) => label.toLowerCase() === "select"));
+});
+
+test("XML suggests the innermost matching closing tag without a configured schema", async () => {
+  const { labels } = await completionLabels("<root><item></", "xml");
+  assert.deepEqual(labels, ["item>"]);
+});
+
+test("JSON and YAML do not invent completion providers or suggestions", async () => {
+  for (const [language, code] of [
+    ["json", '{"name": "Ada", "n'],
+    ["yaml", "name: Ada\nna"],
+  ]) {
+    for (const explicit of [false, true]) {
+      const { sourceCount, labels } = await completionLabels(code, language, explicit);
+      assert.equal(sourceCount, 0, `${language} should not register a completion provider`);
+      assert.deepEqual(labels, []);
+    }
+  }
+});
 
 test("CSV keeps delimiters and escaped quotes inside multiline quoted cells", async () => {
   const code = 'name,notes,active\nAda,"hello,\n""world""",true\nLin,-1.25e2,false';

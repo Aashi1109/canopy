@@ -110,14 +110,6 @@
   border-radius: var(--radius-lg);
   box-shadow: none;
 }
-.authorFooter {
-  display: grid;
-  justify-items: start;
-  gap: 8px;
-  border-top: 1px solid var(--border);
-  padding-block: 24px;
-  margin-top: 26px;
-}
 @container (min-width: 768px) {
   .previewFooter {
     display: none;
@@ -144,7 +136,7 @@
   .readingLayout {
     grid-template-columns: 180px minmax(0, 1fr);
     gap: 32px;
-    padding: 0 0 48px;
+    padding: 0 0 32px;
   }
   .contents {
     align-self: start;

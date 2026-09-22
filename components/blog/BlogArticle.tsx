@@ -110,7 +110,7 @@ export function BlogArticle({ document, publication }: Props) {
                 {content.readingMinutes} min read
               </Caption>
             </div>
-            {url && <CopyBlogLink url={url} />}
+            {url && <CopyBlogLink url={url} title={document.title} />}
           </div>
           {publication?.publishedUpdatedAt &&
             publication.firstPublishedAt &&
@@ -176,11 +176,6 @@ export function BlogArticle({ document, publication }: Props) {
                   </Button>
                 ))}
               </nav>
-            )}
-            {url && (
-              <footer className={styles.authorFooter}>
-                <CopyBlogLink url={url} label="Share this guide · Copy link" />
-              </footer>
             )}
           </div>
         </div>

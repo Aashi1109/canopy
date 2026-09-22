@@ -31,19 +31,13 @@ export default async function BlogArticlePage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: blogStructuredData(post) }} />
       <BlogArticle document={post.document} publication={{ ...post, categorySlug: post.category.slug }} />
       {related.length > 0 && (
-        <section
-          aria-labelledby="related-stories"
-          className="border-t border-border bg-muted px-6 py-9 lg:px-16 lg:py-14"
-        >
-          <div className="mx-auto grid max-w-[1312px] gap-9 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-14">
-            <div className="flex min-w-0 flex-col items-start gap-6">
+        <section aria-labelledby="related-stories" className="border-t border-border bg-muted px-6 py-8 lg:px-12">
+          <div className="mx-auto grid max-w-[1184px] gap-7 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10">
+            <div className="flex min-w-0 flex-col items-start gap-3">
               <Overline className="font-sans text-[11px] font-semibold tracking-[1.8px] text-muted-foreground">
                 The next chapter
               </Overline>
-              <H2
-                id="related-stories"
-                className="font-sans text-[40px] font-semibold leading-[1.05] tracking-[-1.8px] lg:text-[46px]"
-              >
+              <H2 id="related-stories" className="font-sans text-[34px] font-semibold leading-[1.1] tracking-[-1px]">
                 Keep a good
                 <br />
                 thing going.
@@ -55,7 +49,7 @@ export default async function BlogArticlePage({ params }: Props) {
                 Explore all stories <ArrowRight aria-hidden="true" className="size-4" />
               </TextLink>
             </div>
-            <ol className="m-0 grid min-w-0 list-none gap-8 p-0 sm:grid-cols-2">
+            <ol className="m-0 grid min-w-0 list-none gap-6 p-0 sm:grid-cols-2">
               {related.map((item, index) => (
                 <li key={item.id} className="min-w-0">
                   <BlogTeaser post={item} variant="related" number={index + 1} />
