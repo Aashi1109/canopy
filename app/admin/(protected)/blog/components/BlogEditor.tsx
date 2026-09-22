@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/index.tsx";
 import { createToastManager } from "@/components/ui/components/toast";
 import type { BlogDocument, BlogImage } from "@/lib/blog/document";
-import { BLOG_TITLE_WORD_LIMIT, blogTitleWordCount } from "@/lib/blog/title";
+import { BLOG_TITLE_WORD_LIMIT, blogImageDelivery, blogTitleWordCount } from "@/lib/blog/utils";
 import { mutateBlogAction } from "../actions";
 import { uploadBlogImageDirect } from "../lib/imageUpload.ts";
 import { BlogEditorShell } from "./BlogEditorShell";
@@ -227,6 +227,8 @@ export function BlogEditor({
   const uploading = uploadTarget !== null;
   const uploadToastId = useId();
   const uploadActive = useRef(true);
+  const [coverUploadPreview, setCoverUploadPreview] = useState<string | null>(null);
+  const coverPreviewUrl = useRef<string | null>(null);
   function showUploadError(message: string) {
     if (!uploadActive.current) return;
     if (message) toast.error(message, { id: uploadToastId, duration: 6000, closeButton: true });
@@ -237,6 +239,8 @@ export function BlogEditor({
     return () => {
       uploadActive.current = false;
       toast.dismiss(uploadToastId);
+      if (coverPreviewUrl.current) URL.revokeObjectURL(coverPreviewUrl.current);
+      coverPreviewUrl.current = null;
     };
   }, [uploadToastId]);
   const coverInput = useRef<HTMLInputElement>(null);
@@ -439,6 +443,16 @@ export function BlogEditor({
     inFlight.current = true;
     setUploadTarget(target);
     try {
+      if (
+        target === "cover" &&
+        ["image/jpeg", "image/png", "image/webp"].includes(file.type) &&
+        file.size > 0 &&
+        file.size <= 5 * 1024 * 1024
+      ) {
+        coverPreviewUrl.current = URL.createObjectURL(file);
+        setCoverUploadPreview(coverPreviewUrl.current);
+        setCoverOpen(false);
+      }
       const result = await uploadBlogImageDirect(file);
       if (!uploadActive.current) return null;
       if (!result.ok) {
@@ -451,6 +465,11 @@ export function BlogEditor({
       return null;
     } finally {
       inFlight.current = false;
+      if (target === "cover") {
+        if (coverPreviewUrl.current) URL.revokeObjectURL(coverPreviewUrl.current);
+        coverPreviewUrl.current = null;
+        if (uploadActive.current) setCoverUploadPreview(null);
+      }
       if (uploadActive.current) setUploadTarget(null);
     }
   }
@@ -690,7 +709,8 @@ export function BlogEditor({
             <p className={styles.recapExcerpt}>{document.excerpt}</p>
             {document.coverImage && (
               <img
-                src={imageSource(document.coverImage, cloudName)}
+                {...blogImageDelivery(document.coverImage, cloudName)}
+                sizes="(max-width: 767px) calc(100vw - 32px), (max-width: 1100px) calc(100vw - 480px), calc(100vw - 600px)"
                 alt={document.coverImage.alt}
                 width={document.coverImage.width}
                 height={document.coverImage.height}
@@ -774,15 +794,21 @@ export function BlogEditor({
       </div>
     );
 
-  const coverPreview = document.coverImage && (
+  const coverPreview = coverUploadPreview ? (
+    <span className={styles.coverUploadPreview} role="status">
+      <img src={coverUploadPreview} alt="Selected cover preview" draggable={false} className={styles.cover} />
+      <span className={styles.coverUploadStatus}>Uploading cover…</span>
+    </span>
+  ) : document.coverImage ? (
     <img
-      src={imageSource(document.coverImage, cloudName)}
+      {...blogImageDelivery(document.coverImage, cloudName)}
+      sizes="(max-width: 767px) calc(100vw - 32px), (max-width: 1056px) calc(100vw - 80px), 976px"
       alt={document.coverImage.alt}
       width={document.coverImage.width}
       height={document.coverImage.height}
       className={styles.cover}
     />
-  );
+  ) : null;
 
   return (
     <BlogEditorShell
@@ -1073,6 +1099,7 @@ export function BlogEditor({
         onChange={(event) => change({ ...current.current, excerpt: event.target.value })}
       />
       <div className="my-[22px] space-y-3">
+        {!document.coverImage && coverUploadPreview && coverPreview}
         {document.coverImage && (
           <Popover.Root open={editable && !publishing && !recovery && coverOpen} onOpenChange={setCoverOpen}>
             <div>
@@ -1189,7 +1216,7 @@ export function BlogEditor({
             </Popover.Portal>
           </Popover.Root>
         )}
-        {editable && !document.coverImage && (
+        {editable && !document.coverImage && !coverUploadPreview && (
           <FileUploadZone
             id="blog-add-cover"
             className="min-h-[160px]"
@@ -1214,7 +1241,7 @@ export function BlogEditor({
                 if (file) void uploadCover(file);
               }}
             />
-            {uploadTarget === "cover" && (
+            {uploadTarget === "cover" && !coverUploadPreview && (
               <span role="status" className="text-[13px] text-muted-foreground">
                 Uploading cover…
               </span>

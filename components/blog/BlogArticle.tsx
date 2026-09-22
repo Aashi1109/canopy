@@ -17,7 +17,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/index.tsx";
-import { blogImageUrl, renderBlogDocument, type BlogDocument } from "@/lib/blog/document";
+import { renderBlogDocument, type BlogDocument } from "@/lib/blog/document";
+import { blogImageDelivery } from "@/lib/blog/utils";
 import { blogCanonicalUrl } from "@/lib/blog/publication";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { CopyBlogLink } from "./CopyBlogLink";
@@ -126,9 +127,8 @@ export function BlogArticle({ document, publication }: Props) {
           <figure className={styles.cover}>
             <img
               alt={document.coverImage.alt}
-              src={blogImageUrl(document.coverImage, {
-                cloudName: config.cloudinary.cloudName?.trim(),
-              })}
+              {...blogImageDelivery(document.coverImage, config.cloudinary.cloudName?.trim() ?? "")}
+              sizes="(min-width: 1440px) 1280px, (min-width: 1024px) calc(100vw - 160px), (min-width: 640px) calc(100vw - 64px), calc(100vw - 40px)"
               width={document.coverImage.width}
               height={document.coverImage.height}
               fetchPriority="high"
@@ -183,17 +183,6 @@ export function BlogArticle({ document, publication }: Props) {
               </footer>
             )}
           </div>
-          <aside className={styles.utility}>
-            <Overline className="font-sans text-[11px] font-normal text-muted-foreground">SmartTools</Overline>
-            <P className="leading-[1.6]">Less busywork. More room for your work.</P>
-            {publication ? (
-              <Button asChild variant="ghost">
-                <a href="/">All tools ↗</a>
-              </Button>
-            ) : (
-              <span className={styles.inactiveLink}>All tools ↗</span>
-            )}
-          </aside>
         </div>
       </BlogPageContainer>
       {!publication && (

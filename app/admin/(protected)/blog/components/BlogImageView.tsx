@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/index.tsx";
 import type { BlogImage } from "@/lib/blog/document";
+import { blogImageDelivery } from "@/lib/blog/utils";
 import { blogEditorImageSource } from "../lib/imageNode.ts";
 import { BlogImageCropDialog } from "./BlogImageCropDialog.tsx";
 import styles from "./BlogImageView.module.css";
@@ -246,14 +247,20 @@ export function BlogImageView({
 
   const image = (
     <img
-      src={blogEditorImageSource(
+      {...blogImageDelivery(
         {
           publicId: String(node.attrs.publicId),
           version: Number(node.attrs.version),
-          format: String(node.attrs.format),
+          format: node.attrs.format as BlogImage["format"],
+          width: Number(node.attrs.width),
         },
         options.cloudName,
       )}
+      sizes={
+        containerWidth > 0
+          ? `${Math.max(1, Math.round((containerWidth * visibleWidth) / 100))}px`
+          : `(max-width: 767px) ${visibleWidth}vw, ${Math.round((916 * visibleWidth) / 100)}px`
+      }
       alt={String(node.attrs.alt ?? "")}
       width={Number(node.attrs.width)}
       height={Number(node.attrs.height)}

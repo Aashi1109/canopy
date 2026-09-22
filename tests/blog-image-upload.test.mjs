@@ -16,6 +16,14 @@ const hooks = registerHooks({
       `)}`,
       };
     }
+    if (context.parentURL === helperUrl && specifier === "@sentry/nextjs") {
+      return {
+        shortCircuit: true,
+        url: `data:text/javascript,${encodeURIComponent(`
+          export const captureException = (error) => globalThis.__blogDirectUploadTest.errors.push(error);
+        `)}`,
+      };
+    }
     return next(specifier, context);
   },
 });
@@ -31,7 +39,7 @@ const image = {
   format: "png",
   width: 640,
   height: 480,
-  alt: "",
+  alt: "image",
   caption: "",
 };
 const completion = {
@@ -50,8 +58,19 @@ const prepared = {
     completion,
   },
 };
+const uploaded = {
+  public_id: image.publicId,
+  version: image.version,
+  format: image.format,
+  width: image.width,
+  height: image.height,
+  bytes: 128,
+  resource_type: "image",
+  type: "upload",
+  secure_url: `https://res.cloudinary.com/test-cloud/image/upload/v${image.version}/${image.publicId}.png`,
+};
 const response = () =>
-  new Response(JSON.stringify({ public_id: image.publicId, secure_url: "untrusted-provider-url" }));
+  new Response(JSON.stringify({ ...uploaded, asset_id: "provider-extra-field", signature: "provider-signature" }));
 function png(size = 24) {
   const bytes = new Uint8Array(size);
   bytes.set([137, 80, 78, 71, 13, 10, 26, 10]);
@@ -60,6 +79,7 @@ function png(size = 24) {
 }
 function setup(t) {
   const calls = { prepare: [], complete: [], fetch: [] };
+  state.errors = [];
   state.prepare = async (metadata) => {
     calls.prepare.push(metadata);
     return prepared;
@@ -75,7 +95,7 @@ function setup(t) {
   return calls;
 }
 
-test("a 1.51 MiB image uploads its original bytes directly and finalizes only signed metadata", async (t) => {
+test("a 1.51 MiB image uploads directly and forwards only image metadata with its completion ticket", async (t) => {
   const calls = setup(t);
   const file = png(Math.round(1.51 * 1024 * 1024));
   assert.deepEqual(await uploadBlogImageDirect(file), { ok: true, data: image });
@@ -90,7 +110,29 @@ test("a 1.51 MiB image uploads its original bytes directly and finalizes only si
   assert.deepEqual(await request.body.get("file").arrayBuffer(), await file.arrayBuffer());
   assert.deepEqual([...request.body.keys()].sort(), [...Object.keys(prepared.data.fields), "file"].sort());
   for (const [name, value] of Object.entries(prepared.data.fields)) assert.equal(request.body.get(name), value);
-  assert.deepEqual(calls.complete, [completion]);
+  assert.deepEqual(calls.complete, [{ ...completion, uploaded }]);
+});
+
+test("completion waits for a successful upload response", async (t) => {
+  const calls = setup(t);
+  let release;
+  let entered;
+  const uploading = new Promise((resolve) => {
+    entered = resolve;
+  });
+  const pending = new Promise((resolve) => {
+    release = resolve;
+  });
+  t.mock.method(globalThis, "fetch", () => {
+    entered();
+    return pending;
+  });
+  const result = uploadBlogImageDirect(png());
+  await uploading;
+  assert.equal(calls.complete.length, 0);
+  release(response());
+  assert.deepEqual(await result, { ok: true, data: image });
+  assert.deepEqual(calls.complete, [{ ...completion, uploaded }]);
 });
 
 test("invalid or mismatched files fail before signing", async (t) => {
@@ -132,7 +174,89 @@ for (const [name, provider, expected] of [
   });
 }
 
-test("prepare and completion failures remain failures", async (t) => {
+const invalidMetadata = [
+  ["null response", null],
+  ["array response", [uploaded]],
+  ["empty response", {}],
+  ...Object.keys(uploaded).map((field) => [
+    `missing ${field}`,
+    Object.fromEntries(Object.entries(uploaded).filter(([key]) => key !== field)),
+  ]),
+  ...[
+    ["public_id", "different/image"],
+    ["version", 0],
+    ["version", 1.5],
+    ["version", Number.MAX_SAFE_INTEGER + 1],
+    ["version", "1"],
+    ["format", "svg"],
+    ["width", 0],
+    ["width", 30_001],
+    ["width", 1.5],
+    ["width", "640"],
+    ["height", 0],
+    ["height", 30_001],
+    ["height", 1.5],
+    ["height", "480"],
+    ["bytes", 0],
+    ["bytes", 5 * 1024 * 1024 + 1],
+    ["bytes", 1.5],
+    ["bytes", "128"],
+    ["resource_type", "video"],
+    ["type", "private"],
+    ["secure_url", uploaded.secure_url.replace("https:", "http:")],
+    ["secure_url", uploaded.secure_url.replace("test-cloud", "other-cloud")],
+    ["secure_url", uploaded.secure_url.replace("res.cloudinary.com", "res.cloudinary.com.invalid")],
+    ["secure_url", uploaded.secure_url.replace("/v1/", "/v2/")],
+    ["secure_url", uploaded.secure_url.replace("/upload/", "/upload/c_scale,w_20/")],
+    ["secure_url", `${uploaded.secure_url}?download=true`],
+    ["secure_url", `${uploaded.secure_url}#fragment`],
+  ].map(([field, value]) => [`invalid ${field}: ${JSON.stringify(value)}`, { ...uploaded, [field]: value }]),
+];
+
+for (const [name, metadata] of invalidMetadata) {
+  test(`${name} fails locally before background completion`, async (t) => {
+    const calls = setup(t);
+    t.mock.method(globalThis, "fetch", (...args) => {
+      calls.fetch.push(args);
+      return new Response(JSON.stringify(metadata));
+    });
+    const result = await uploadBlogImageDirect(png());
+    assert.equal(result.ok, false);
+    assert.match(result.message, /incomplete|invalid|try uploading again/i);
+    assert.equal(calls.fetch.length, 1);
+    assert.equal(calls.complete.length, 0);
+    assert.equal(state.errors.length, 0);
+  });
+}
+
+for (const metadata of [
+  ...["png", "jpg", "jpeg", "webp"].map((format) => ({ ...uploaded, format })),
+  { ...uploaded, version: Number.MAX_SAFE_INTEGER, width: 30_000, height: 30_000, bytes: 5 * 1024 * 1024 },
+  { ...uploaded, width: 1, height: 1, bytes: 1 },
+]) {
+  const providerMetadata = {
+    ...metadata,
+    secure_url: `https://res.cloudinary.com/test-cloud/image/upload/v${metadata.version}/${metadata.public_id}.${metadata.format}`,
+  };
+  test(`valid ${metadata.format} metadata accepts ${metadata.width}×${metadata.height} and ${metadata.bytes} bytes`, async (t) => {
+    const calls = setup(t);
+    t.mock.method(globalThis, "fetch", () => new Response(JSON.stringify(providerMetadata)));
+    assert.deepEqual(await uploadBlogImageDirect(png()), {
+      ok: true,
+      data: {
+        ...image,
+        version: metadata.version,
+        format: metadata.format,
+        width: metadata.width,
+        height: metadata.height,
+      },
+    });
+    assert.deepEqual(calls.complete, [{ ...completion, uploaded: providerMetadata }]);
+    assert.equal(state.errors.length, 0);
+  });
+}
+
+test("prepare failure remains a failure and does not upload or complete", async (t) => {
   const calls = setup(t);
   state.prepare = async () => ({ ok: false, message: "You do not have permission to upload images." });
   assert.deepEqual(await uploadBlogImageDirect(png()), {
@@ -140,21 +264,63 @@ test("prepare and completion failures remain failures", async (t) => {
     message: "You do not have permission to upload images.",
   });
   assert.equal(calls.fetch.length, 0);
-  state.prepare = async () => prepared;
-  state.complete = async () => ({ ok: false, message: "The upload could not be saved. Try uploading again." });
-  assert.deepEqual(await uploadBlogImageDirect(png()), {
-    ok: false,
-    message: "The upload could not be saved. Try uploading again.",
-  });
-  state.complete = async () => {
-    throw new Error("private server error");
-  };
-  const result = await uploadBlogImageDirect(png());
-  assert.equal(result.ok, false);
-  assert.doesNotMatch(result.message, /private server error/);
+  assert.equal(calls.complete.length, 0);
+  assert.equal(state.errors.length, 0);
 });
 
-for (const stage of ["prepare", "fetch", "complete"]) {
+for (const [name, complete] of [
+  ["failed", async () => ({ ok: false, message: "private server failure" })],
+  [
+    "rejected",
+    async () => {
+      throw new Error("private server error");
+    },
+  ],
+]) {
+  test(`${name} background completion preserves the uploaded image and reports one generic error`, async (t) => {
+    const calls = setup(t);
+    state.complete = (...args) => {
+      calls.complete.push(...args);
+      return complete();
+    };
+    assert.deepEqual(await uploadBlogImageDirect(png()), { ok: true, data: image });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(calls.complete, [{ ...completion, uploaded }]);
+    assert.equal(state.errors.length, 1);
+    assert.ok(state.errors[0] instanceof Error);
+    assert.doesNotMatch(state.errors[0].message, /private|server failure|server error/);
+  });
+}
+
+test("success uses verified provider metadata without a response signature or completion result", async (t) => {
+  const calls = setup(t);
+  t.mock.method(globalThis, "fetch", (...args) => {
+    calls.fetch.push(args);
+    return new Response(JSON.stringify(uploaded));
+  });
+  state.complete = async (metadata) => {
+    calls.complete.push(metadata);
+    return { ok: true, data: { ...image, alt: "completion result must not replace the image", width: 1 } };
+  };
+  assert.deepEqual(await uploadBlogImageDirect(png()), { ok: true, data: image });
+  assert.equal(calls.fetch.length, 1);
+  assert.deepEqual(calls.complete, [{ ...completion, uploaded }]);
+  assert.equal(state.errors.length, 0);
+});
+
+for (const [name, alt] of [
+  ["  article_header--final.png", "article header final"],
+  ["notes.2026.JPEG", "notes.2026"],
+  ["line\tbreak\u0000image.webp", "line break image"],
+]) {
+  test(`image alt text is normalized from the signed completion name ${JSON.stringify(name)}`, async (t) => {
+    setup(t);
+    state.prepare = async () => ({ ...prepared, data: { ...prepared.data, completion: { ...completion, name } } });
+    assert.deepEqual(await uploadBlogImageDirect(png()), { ok: true, data: { ...image, alt } });
+  });
+}
+
+for (const stage of ["prepare", "fetch"]) {
   test(`120-second deadline bounds ${stage} and prevents late continuation or success`, async (t) => {
     const calls = setup(t);
     let expire;
@@ -192,10 +358,54 @@ for (const stage of ["prepare", "fetch", "complete"]) {
     assert.equal(failed.ok, false);
     assert.match(failed.message, /timed out/);
     if (calls.fetch.length) assert.equal(calls.fetch[0][1].signal.aborted, true);
-    release(stage === "prepare" ? prepared : stage === "fetch" ? response() : { ok: true, data: image });
+    release(stage === "prepare" ? prepared : response());
     await new Promise((resolve) => setImmediate(resolve));
-    assert.equal(calls.complete.length, stage === "complete" ? 1 : 0);
+    assert.equal(calls.complete.length, 0);
     if (stage === "prepare") assert.equal(calls.fetch.length, 0);
     assert.deepEqual(await result, failed);
+  });
+}
+
+for (const rejects of [false, true]) {
+  test(`pending completion returns success, clears the deadline, and preserves success after a late ${rejects ? "rejection" : "failure"}`, async (t) => {
+    const calls = setup(t);
+    const timer = {};
+    const cleared = [];
+    t.mock.method(globalThis, "setTimeout", (_callback, delay) => {
+      assert.equal(delay, 120_000);
+      return timer;
+    });
+    t.mock.method(globalThis, "clearTimeout", (handle) => cleared.push(handle));
+    let entered;
+    const reachedCompletion = new Promise((resolve) => {
+      entered = resolve;
+    });
+    let release;
+    const pending = new Promise((resolve, reject) => {
+      release = rejects ? reject : resolve;
+    });
+    state.complete = (metadata) => {
+      calls.complete.push(metadata);
+      entered();
+      return pending;
+    };
+    const result = uploadBlogImageDirect(png());
+    await reachedCompletion;
+    const returned = await Promise.race([
+      result,
+      new Promise((resolve) => setImmediate(() => resolve("still waiting for completion"))),
+    ]);
+    assert.deepEqual(returned, { ok: true, data: image });
+    assert.deepEqual(cleared, [timer]);
+    assert.equal(state.errors.length, 0);
+    release(rejects ? new Error("private late rejection") : { ok: false, message: "private late failure" });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(await result, returned);
+    assert.equal(calls.fetch[0][1].signal.aborted, false);
+    assert.deepEqual(calls.complete, [{ ...completion, uploaded }]);
+    assert.equal(state.errors.length, 1);
+    assert.ok(state.errors[0] instanceof Error);
+    assert.doesNotMatch(state.errors[0].message, /private|late rejection|late failure/);
+    assert.deepEqual(cleared, [timer]);
   });
 }

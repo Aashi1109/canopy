@@ -42,8 +42,8 @@ const hooks = registerHooks({
       `);
     if (specifier === "./BlogEditor.module.css") return stub("export default {};");
     if (specifier === "./BlogGenerationForm") return stub("export const BlogGenerationForm = 'generation-form';");
-    if (specifier === "@/lib/blog/title")
-      return { shortCircuit: true, url: new URL("../lib/blog/title.ts", import.meta.url).href };
+    if (specifier === "@/lib/blog/utils")
+      return { shortCircuit: true, url: new URL("../lib/blog/utils.ts", import.meta.url).href };
     if (specifier === "../actions")
       return stub(`export async function mutateBlogAction(operation, payload) {
         const state = globalThis.__newBlogPostTest;

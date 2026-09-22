@@ -3,7 +3,7 @@ import test from "node:test";
 import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { blogFormattingExtensions } from "../app/admin/(protected)/blog/lib/formattingExtensions.ts";
-import { BLOG_TITLE_WORD_LIMIT, blogTitleWordCount } from "../lib/blog/title.ts";
+import { BLOG_TITLE_WORD_LIMIT, blogTitleWordCount } from "../lib/blog/utils.ts";
 import {
   assertBlogPublishable,
   blogDocumentHash,
@@ -293,7 +293,17 @@ test("Cloudinary images use immutable configured-cloud URLs and require alt text
   assert.throws(() => validateBlogDocument(value), /cloud/i);
   const normalized = validateBlogDocument(value, { cloudName: "my-cloud" });
   const output = renderBlogDocument(normalized, { cloudName: "my-cloud" });
-  assert.ok(output.html.includes(blogImageUrl(normalized.coverImage, { cloudName: "my-cloud" })));
+  assert.ok(
+    output.html.includes(
+      `src="https://res.cloudinary.com/my-cloud/image/upload/c_limit,w_800/q_auto/f_auto/v1234/${image.publicId}.webp"`,
+    ),
+  );
+  assert.ok(
+    output.html.includes(
+      `srcset="${[320, 640, 800].map((width) => `https://res.cloudinary.com/my-cloud/image/upload/c_limit,w_${width}/q_auto/f_auto/v1234/${image.publicId}.webp ${width}w`).join(", ")}"`,
+    ),
+  );
+  assert.match(output.html, /loading="lazy" decoding="async"/);
   assert.equal(
     blogImageUrl(normalized.coverImage, { cloudName: "my-cloud" }),
     "https://res.cloudinary.com/my-cloud/image/upload/v1234/smarttools/blog/95c40d91-c008-4474-965b-71ec2e4f2b81.webp",
@@ -327,7 +337,11 @@ test("environment-scoped blog assets retain immutable URLs in cover and body rev
     assert.equal(normalized.body.content[0].attrs.publicId, asset.publicId);
     const url = `https://res.cloudinary.com/my-cloud/image/upload/v1234/${asset.publicId}.webp`;
     assert.equal(blogImageUrl(normalized.coverImage, options), url);
-    assert.ok(renderBlogDocument(normalized, options).html.includes(url));
+    assert.ok(
+      renderBlogDocument(normalized, options).html.includes(
+        `src="https://res.cloudinary.com/my-cloud/image/upload/c_limit,w_800/q_auto/f_auto/v1234/${asset.publicId}.webp"`,
+      ),
+    );
   }
 });
 
@@ -338,7 +352,11 @@ test("body image layout survives document roundtrips without changing intrinsic 
     ["center", "auto", "auto"],
     ["right", "auto", "0"],
   ]) {
-    for (const displayWidth of [10, 55, 100]) {
+    for (const [displayWidth, desktopWidth] of [
+      [10, 102],
+      [55, 558],
+      [100, 1015],
+    ]) {
       const value = {
         ...article(),
         coverImage: image,
@@ -355,6 +373,7 @@ test("body image layout survives document roundtrips without changing intrinsic 
       assert.ok(html.includes(`width:${displayWidth}%;margin-left:${marginLeft};margin-right:${marginRight}`));
       assert.match(html, /width="800" height="600"/);
       assert.match(html, /style="width:100%;height:auto"/);
+      assert.ok(html.includes(`sizes="auto, (min-width: 1440px) ${desktopWidth}px, ${displayWidth}vw"`));
     }
   }
 });

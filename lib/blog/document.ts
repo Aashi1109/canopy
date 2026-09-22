@@ -3,7 +3,7 @@ import { slugFromName } from "../tool-catalog/index.ts";
 import { highlightCode } from "../markdown/codeHighlight.ts";
 import { normalizeBlogMath } from "./math.ts";
 import { MAX_MATH_LENGTH, renderMath } from "../markdown/math.ts";
-import { BLOG_TITLE_WORD_LIMIT, blogTitleWordCount } from "./title.ts";
+import { BLOG_TITLE_WORD_LIMIT, blogTitleWordCount, blogImageDelivery } from "./utils.ts";
 import { safeLink as validateLink } from "../content/links.ts";
 
 export interface BlogImage {
@@ -682,7 +682,9 @@ export function renderBlogDocument(
         const { displayWidth, alignment: imageAlignment, ...asset } = node.attrs!;
         const image = validateBlogImage(asset, options);
         const layout = `width:${displayWidth}%;margin-left:${imageAlignment === "left" ? "0" : "auto"};margin-right:${imageAlignment === "right" ? "0" : "auto"}`;
-        return `<figure style="${layout}"><img src="${escapeHtml(blogImageUrl(image, options))}" alt="${escapeHtml(image.alt)}" width="${image.width}" height="${image.height}" style="width:100%;height:auto" loading="lazy" decoding="async">${image.caption ? `<figcaption>${escapeHtml(image.caption)}</figcaption>` : ""}</figure>`;
+        const delivery = blogImageDelivery(image, options.cloudName!);
+        const sizes = `auto, (min-width: 1440px) ${Math.round((1015 * Number(displayWidth)) / 100)}px, ${displayWidth}vw`;
+        return `<figure style="${layout}"><img src="${escapeHtml(delivery.src)}" srcset="${escapeHtml(delivery.srcSet)}" sizes="${sizes}" alt="${escapeHtml(image.alt)}" width="${image.width}" height="${image.height}" style="width:100%;height:auto" loading="lazy" decoding="async">${image.caption ? `<figcaption>${escapeHtml(image.caption)}</figcaption>` : ""}</figure>`;
       }
     }
   }

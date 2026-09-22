@@ -16,7 +16,8 @@ import {
   P,
   TextLink,
 } from "@/components/ui/index.tsx";
-import { BlogValidationError, blogImageUrl } from "@/lib/blog/document";
+import { BlogValidationError } from "@/lib/blog/document";
+import { blogImageDelivery } from "@/lib/blog/utils";
 import { listPublishedBlogPosts, listPublishedBlogTaxonomy } from "@/lib/blog/queries";
 import { BlogByline } from "./components/BlogTeaser";
 import { BlogStories } from "./components/BlogStories";
@@ -195,9 +196,8 @@ export default async function BlogPage({ searchParams }: Props) {
           {featured.coverImage && (
             <img
               className="aspect-[62/41] w-full rounded-lg object-cover lg:aspect-auto lg:h-65"
-              src={blogImageUrl(featured.coverImage, {
-                cloudName: config.cloudinary.cloudName?.trim(),
-              })}
+              {...blogImageDelivery(featured.coverImage, config.cloudinary.cloudName?.trim() ?? "")}
+              sizes="(min-width: 1440px) 560px, (min-width: 1024px) calc((100vw - 248px) * 0.4698), (min-width: 640px) calc(100vw - 104px), calc(100vw - 80px)"
               alt={featured.coverImage.alt}
               width={featured.coverImage.width}
               height={featured.coverImage.height}
@@ -231,11 +231,9 @@ export default async function BlogPage({ searchParams }: Props) {
         initialPage={posts}
         filters={postFilters}
         featuredId={featured?.id}
-        searchCoverUrl={
+        searchCoverDelivery={
           filters.search && posts.items[0]?.coverImage
-            ? blogImageUrl(posts.items[0].coverImage, {
-                cloudName: config.cloudinary.cloudName?.trim(),
-              })
+            ? blogImageDelivery(posts.items[0].coverImage, config.cloudinary.cloudName?.trim() ?? "")
             : undefined
         }
         intro={

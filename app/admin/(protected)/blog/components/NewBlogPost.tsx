@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackButton, Button, Label, Textarea, toast, Toaster } from "@/components/ui/index.tsx";
-import { BLOG_TITLE_WORD_LIMIT, blogTitleWordCount } from "@/lib/blog/title";
+import { BLOG_TITLE_WORD_LIMIT, blogTitleWordCount } from "@/lib/blog/utils";
 import { mutateBlogAction } from "../actions";
 import { BlogGenerationForm } from "./BlogGenerationForm";
 import styles from "./BlogEditor.module.css";

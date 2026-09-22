@@ -32,11 +32,7 @@ const hooks = registerHooks({
         cloudinary: `const f = globalThis.__blogImageTest;
           export const v2 = { utils: f.utils, api: { async resource(publicId, options) {
             f.events.push("resource"); f.lookups.push({publicId, options});
-            if (f.providerError) throw f.providerError;
-            return {public_id: publicId, version: 1234, resource_type: "image", type: "upload",
-              format: "png", width: 1, height: 1, bytes: 128,
-              secure_url: "https://res.cloudinary.com/" + options.cloud_name + "/image/upload/v1234/" + publicId + ".png",
-              ...f.response};
+            throw new Error("Completion must not call the Cloudinary Admin API");
           } } };`,
       };
       if (modules[specifier]) return { shortCircuit: true, url: moduleUrl(modules[specifier]) };
@@ -47,6 +43,22 @@ const hooks = registerHooks({
 const { prepareBlogImageUpload, completeBlogImageUpload, BlogImageUploadError } = await import(sourceUrl);
 hooks.deregister();
 const metadata = (name = "original.png") => ({ name, size: 128, type: "image/png" });
+const uploadResponse = (completion, overrides = {}) => ({
+  public_id: completion.publicId,
+  version: 1234,
+  format: "png",
+  width: 1,
+  height: 1,
+  bytes: 128,
+  resource_type: "image",
+  type: "upload",
+  secure_url: `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/v1234/${completion.publicId}.png`,
+  ...overrides,
+});
+const uploadPayload = (completion, overrides = {}) => ({
+  ...completion,
+  uploaded: uploadResponse(completion, overrides),
+});
 const savedEnv = Object.fromEntries(
   ["NODE_ENV", "CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"].map((key) => [
     key,
@@ -62,8 +74,6 @@ test.beforeEach(() => {
     denyAt: 0,
     failTransactionAt: 0,
     failAudit: false,
-    providerError: null,
-    response: null,
   });
   process.env.NODE_ENV = "development";
   process.env.CLOUDINARY_CLOUD_NAME = "blog-cloud";
@@ -129,38 +139,45 @@ test("preparation rejects invalid metadata before signing and requires edit perm
   assert.equal(fixture.lookups.length, 0);
 });
 
-test("completion fetches authoritative provider data, rechecks permission, and audits after verification", async () => {
+test("completion accepts supplied upload metadata without a resource lookup and authorizes and audits once", async () => {
   const { completion } = await prepareBlogImageUpload("admin", metadata());
   fixture.events = [];
-  const image = await completeBlogImageUpload("admin", completion);
-  assert.deepEqual(
-    { ...image, publicId: "id" },
-    { publicId: "id", version: 1234, format: "png", width: 1, height: 1, alt: "original", caption: "" },
-  );
-  assert.deepEqual(fixture.lookups[0], {
+  const transactionsBefore = fixture.transactions;
+  const image = await completeBlogImageUpload("admin", uploadPayload(completion, { width: 640, height: 480 }));
+  assert.deepEqual(image, {
     publicId: completion.publicId,
-    options: {
-      cloud_name: "blog-cloud",
-      api_key: "test-key",
-      api_secret: "test-secret",
-      resource_type: "image",
-      type: "upload",
-      timeout: 30000,
-    },
+    version: 1234,
+    format: "png",
+    width: 640,
+    height: 480,
+    alt: "original",
+    caption: "",
   });
-  assert.deepEqual(fixture.events.slice(0, 4), [
+  assert.equal(fixture.lookups.length, 0);
+  assert.equal(fixture.transactions - transactionsBefore, 1);
+  assert.deepEqual(fixture.events, [
     "transaction",
     ["permission", "admin", "blog", "edit"],
+    [
+      "audit",
+      "admin",
+      "blog.image.upload",
+      "blog-image",
+      completion.publicId,
+      {
+        publicId: completion.publicId,
+        version: 1234,
+        format: "png",
+        width: 640,
+        height: 480,
+      },
+    ],
     "commit",
-    "resource",
   ]);
-  assert.equal(fixture.events.filter((item) => Array.isArray(item) && item[0] === "permission").length, 2);
-  const audit = fixture.events.find((item) => Array.isArray(item) && item[0] === "audit");
-  assert.deepEqual(audit.slice(1, 5), ["admin", "blog.image.upload", "blog-image", image.publicId]);
-  assert.doesNotMatch(JSON.stringify(audit), /test-secret|test-key|original\.png/);
+  assert.doesNotMatch(JSON.stringify(fixture.events), /test-secret|test-key|original\.png/);
 });
 
-test("completion rejects metadata tampering, other users, unknown fields, and invalid tokens before provider access", async () => {
+test("completion rejects ticket tampering, other users, unknown fields, and invalid tokens before audit", async () => {
   const { completion } = await prepareBlogImageUpload("admin", metadata());
   for (const changed of [
     { publicId: completion.publicId.replace(/.$/, "z") },
@@ -174,9 +191,9 @@ test("completion rejects metadata tampering, other users, unknown fields, and in
     { secure_url: "https://evil.example/image.png" },
     { secure_url: undefined },
   ]) {
-    await assert.rejects(() => completeBlogImageUpload("admin", { ...completion, ...changed }));
+    await assert.rejects(() => completeBlogImageUpload("admin", { ...uploadPayload(completion), ...changed }));
   }
-  await assert.rejects(() => completeBlogImageUpload("other-user", completion));
+  await assert.rejects(() => completeBlogImageUpload("other-user", uploadPayload(completion)));
   assert.equal(fixture.lookups.length, 0);
 });
 
@@ -185,41 +202,70 @@ test("completion rejects expired, future, and other-environment tickets", async 
   const clock = t.mock.method(Date, "now", () => now);
   const { completion } = await prepareBlogImageUpload("admin", metadata());
   clock.mock.mockImplementation(() => now + 601_000);
-  await assert.rejects(() => completeBlogImageUpload("admin", completion), /expired|restart|again/i);
+  await assert.rejects(() => completeBlogImageUpload("admin", uploadPayload(completion)), /expired|restart|again/i);
   clock.mock.mockImplementation(() => now - 1_000);
-  await assert.rejects(() => completeBlogImageUpload("admin", completion));
+  await assert.rejects(() => completeBlogImageUpload("admin", uploadPayload(completion)));
   clock.mock.mockImplementation(() => now);
   process.env.NODE_ENV = "production";
-  await assert.rejects(() => completeBlogImageUpload("admin", completion));
+  await assert.rejects(() => completeBlogImageUpload("admin", uploadPayload(completion)));
   assert.equal(fixture.lookups.length, 0);
 });
 
-test("provider bytes and image metadata are validated before audit", async () => {
+test("supplied upload bytes and image metadata are validated before audit", async () => {
   const { completion } = await prepareBlogImageUpload("admin", metadata());
   for (const response of [
     { bytes: 0 },
     { bytes: 5 * 1024 * 1024 + 1 },
     { bytes: 1.5 },
     { bytes: undefined },
+    { bytes: "128" },
     { public_id: "different" },
     { format: "svg" },
+    { format: undefined },
     { version: 0 },
+    { version: 1.5 },
+    { version: Number.MAX_SAFE_INTEGER + 1 },
     { width: -1 },
+    { width: "1" },
     { height: 30001 },
+    { height: undefined },
     { resource_type: "raw" },
     { type: "private" },
     { secure_url: "https://evil.example/image.png" },
+    { secure_url: uploadResponse(completion).secure_url.replace("blog-cloud", "other-cloud") },
+    { secure_url: uploadResponse(completion).secure_url.replace("/v1234/", "/v9999/") },
+    { secure_url: uploadResponse(completion).secure_url + "?download=true" },
     { secure_url: undefined },
   ]) {
-    fixture.response = response;
-    await assert.rejects(() => completeBlogImageUpload("admin", completion));
+    await assert.rejects(
+      () => completeBlogImageUpload("admin", uploadPayload(completion, response)),
+      BlogImageUploadError,
+    );
+  }
+  for (const uploaded of [
+    undefined,
+    null,
+    [],
+    "uploaded",
+    1,
+    {},
+    new Date(),
+    { ...uploadResponse(completion), extra: true },
+  ]) {
+    await assert.rejects(
+      () => completeBlogImageUpload("admin", { ...completion, uploaded }),
+      (error) => error.code === "UPLOAD_INVALID_RESPONSE",
+    );
   }
   assert.equal(
     fixture.events.some((event) => Array.isArray(event) && event[0] === "audit"),
     false,
   );
-  fixture.response = { bytes: 5 * 1024 * 1024 };
-  assert.equal((await completeBlogImageUpload("admin", completion)).alt, "original");
+  assert.equal(fixture.lookups.length, 0);
+  assert.equal(
+    (await completeBlogImageUpload("admin", uploadPayload(completion, { bytes: 5 * 1024 * 1024 }))).alt,
+    "original",
+  );
 });
 
 test("default alt text preserves Unicode, length bounds, and HTML escaping", async () => {
@@ -233,12 +279,12 @@ test("default alt text preserves Unicode, length bounds, and HTML escaping", asy
     ["📷".repeat(251) + ".png", "📷".repeat(250)],
   ]) {
     const { completion } = await prepareBlogImageUpload("admin", metadata(name));
-    const image = await completeBlogImageUpload("admin", completion);
+    const image = await completeBlogImageUpload("admin", uploadPayload(completion));
     assert.equal(image.alt, expected);
     assert.ok(image.alt.length <= 500 && image.alt.isWellFormed());
   }
   const { completion } = await prepareBlogImageUpload("admin", metadata('\"><img src=x onerror=alert(1)>.png'));
-  const image = await completeBlogImageUpload("admin", completion);
+  const image = await completeBlogImageUpload("admin", uploadPayload(completion));
   const document = createBlogDocument("Image filename");
   document.body.content = [{ type: "image", attrs: image }];
   const { html } = renderBlogDocument(document, { cloudName: "blog-cloud" });
@@ -248,67 +294,46 @@ test("default alt text preserves Unicode, length bounds, and HTML escaping", asy
 
 test("revoked permissions and audit failures never return successful assets", async () => {
   const { completion } = await prepareBlogImageUpload("admin", metadata());
+  fixture.events = [];
   fixture.denyAt = fixture.permissions + 1;
-  await assert.rejects(() => completeBlogImageUpload("admin", completion), AuthorizationError);
-  assert.equal(fixture.lookups.length, 0);
-  fixture.denyAt = fixture.permissions + 2;
-  await assert.rejects(() => completeBlogImageUpload("admin", completion), AuthorizationError);
-  assert.equal(fixture.lookups.length, 1);
+  await assert.rejects(() => completeBlogImageUpload("admin", uploadPayload(completion)), AuthorizationError);
+  assert.deepEqual(fixture.events, ["transaction", ["permission", "admin", "blog", "edit"]]);
   fixture.denyAt = 0;
   fixture.failAudit = true;
+  fixture.events = [];
   await assert.rejects(
-    () => completeBlogImageUpload("admin", completion),
-    (error) => error.code === "UPLOAD_FINALIZATION_FAILED",
+    () => completeBlogImageUpload("admin", uploadPayload(completion)),
+    (error) => error.code === "UPLOAD_FINALIZATION_FAILED" && !/private/.test(error.message),
   );
+  assert.deepEqual(fixture.events, ["transaction", ["permission", "admin", "blog", "edit"]]);
+  assert.equal(fixture.lookups.length, 0);
 });
 
 test("credentials and database failures remain sanitized and configuration is read at runtime", async () => {
+  const { completion: oldCompletion } = await prepareBlogImageUpload("admin", metadata());
   delete process.env.CLOUDINARY_API_SECRET;
-  await assert.rejects(
+  for (const operation of [
     () => prepareBlogImageUpload("admin", metadata()),
-    (error) => error.code === "UPLOAD_NOT_CONFIGURED",
-  );
+    () => completeBlogImageUpload("admin", uploadPayload(oldCompletion)),
+  ]) {
+    await assert.rejects(operation, (error) => error.code === "UPLOAD_NOT_CONFIGURED");
+  }
   process.env.CLOUDINARY_API_SECRET = "changed-secret";
+  await assert.rejects(
+    () => completeBlogImageUpload("admin", uploadPayload(oldCompletion)),
+    /authorization is invalid/i,
+  );
   const { completion } = await prepareBlogImageUpload("admin", metadata());
-  await completeBlogImageUpload("admin", completion);
-  assert.equal(fixture.lookups[0].options.api_secret, "changed-secret");
+  await completeBlogImageUpload("admin", uploadPayload(completion));
   fixture.failTransactionAt = fixture.transactions + 1;
   await assert.rejects(
-    () => completeBlogImageUpload("admin", completion),
+    () => prepareBlogImageUpload("admin", metadata()),
     (error) => error.code === "UPLOAD_TEMPORARY_FAILURE" && !/private/.test(error.message),
   );
-  fixture.failTransactionAt = fixture.transactions + 2;
+  fixture.failTransactionAt = fixture.transactions + 1;
   await assert.rejects(
-    () => completeBlogImageUpload("admin", completion),
+    () => completeBlogImageUpload("admin", uploadPayload(completion)),
     (error) => error.code === "UPLOAD_FINALIZATION_FAILED" && !/private/.test(error.message),
   );
-});
-
-test("provider failures expose safe codes and recovery messages only", async () => {
-  const { completion } = await prepareBlogImageUpload("admin", metadata());
-  for (const [failure, code, message] of [
-    [{ http_code: 400 }, "UPLOAD_REJECTED", /smaller|rejected/i],
-    [{ http_code: 413 }, "UPLOAD_REJECTED", /smaller|rejected/i],
-    [{ http_code: 401 }, "UPLOAD_CONFIGURATION_ERROR", /credentials|permissions/i],
-    [{ http_code: 403 }, "UPLOAD_CONFIGURATION_ERROR", /credentials|permissions/i],
-    [{ http_code: 404 }, "UPLOAD_REJECTED", /upload|again/i],
-    [{ http_code: 429 }, "UPLOAD_TEMPORARY_FAILURE", /rate.limit|wait/i],
-    [{ http_code: 499 }, "UPLOAD_TEMPORARY_FAILURE", /timed out/i],
-    [{ code: "ECONNRESET" }, "UPLOAD_TEMPORARY_FAILURE", /connection|firewall/i],
-    [{ code: "ENOTFOUND" }, "UPLOAD_TEMPORARY_FAILURE", /DNS/i],
-    [{ code: "CERT_HAS_EXPIRED" }, "UPLOAD_TEMPORARY_FAILURE", /certificate/i],
-    [{ code: "private-unknown" }, "UPLOAD_TEMPORARY_FAILURE", /retry/i],
-  ]) {
-    fixture.providerError = { error: { ...failure, message: "private-provider-secret", stack: "private-stack" } };
-    await assert.rejects(
-      () => completeBlogImageUpload("admin", completion),
-      (error) => {
-        assert.ok(error instanceof BlogImageUploadError);
-        assert.equal(error.code, code);
-        assert.match(error.message, message);
-        assert.doesNotMatch(error.message, /private|test-secret|test-key/);
-        return true;
-      },
-    );
-  }
+  assert.equal(fixture.lookups.length, 0);
 });

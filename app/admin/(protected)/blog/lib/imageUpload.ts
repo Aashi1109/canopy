@@ -1,7 +1,55 @@
+import { captureException } from "@sentry/nextjs";
+import { z } from "zod";
 import type { BlogImage } from "@/lib/blog/document";
 import { completeBlogImageUploadAction, prepareBlogImageUploadAction } from "../actions.ts";
 
 type UploadResult = { ok: true; data: BlogImage } | { ok: false; message: string };
+
+const uploadedImageSchema = z.object({
+  public_id: z.string(),
+  version: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
+  format: z.enum(["jpg", "jpeg", "png", "webp"]),
+  width: z.number().int().min(1).max(30000),
+  height: z.number().int().min(1).max(30000),
+  bytes: z
+    .number()
+    .int()
+    .min(1)
+    .max(5 * 1024 * 1024),
+  resource_type: z.literal("image"),
+  type: z.literal("upload"),
+  secure_url: z.string(),
+});
+
+function hasMatchingImageHeader(file: File, bytes: Uint8Array): boolean {
+  const readText = (start: number, end: number) => String.fromCharCode(...bytes.subarray(start, end));
+
+  switch (file.type) {
+    case "image/png": {
+      if (bytes.length < 24) return false;
+      const pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+      const hasPngSignature = pngSignature.every((byte, index) => bytes[index] === byte);
+      const hasImageHeaderChunk = readText(12, 16) === "IHDR";
+      return hasPngSignature && hasImageHeaderChunk;
+    }
+    case "image/jpeg": {
+      if (bytes.length < 4) return false;
+      const hasStartOfImage = bytes[0] === 0xff && bytes[1] === 0xd8;
+      const hasMarkerPrefix = bytes[2] === 0xff;
+      return hasStartOfImage && hasMarkerPrefix;
+    }
+    case "image/webp": {
+      if (bytes.length < 20) return false;
+      const hasWebpContainer = readText(0, 4) === "RIFF" && readText(8, 12) === "WEBP";
+      const hasSupportedImageChunk = ["VP8 ", "VP8L", "VP8X"].includes(readText(12, 16));
+      // RIFF stores the file size minus its first eight bytes, in little-endian order.
+      const declaredFileSize = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(4, true) + 8;
+      return hasWebpContainer && hasSupportedImageChunk && declaredFileSize === file.size;
+    }
+    default:
+      return false;
+  }
+}
 
 export async function uploadBlogImageDirect(file: File): Promise<UploadResult> {
   const failed = (message: string): UploadResult => ({ ok: false, message });
@@ -23,20 +71,8 @@ export async function uploadBlogImageDirect(file: File): Promise<UploadResult> {
     try {
       const bytes = new Uint8Array(await file.slice(0, 24).arrayBuffer());
       checkActive();
-      const text = (start: number, end: number) => String.fromCharCode(...bytes.subarray(start, end));
-      const valid =
-        file.type === "image/png"
-          ? bytes.length >= 24 &&
-            [137, 80, 78, 71, 13, 10, 26, 10].every((byte, i) => bytes[i] === byte) &&
-            text(12, 16) === "IHDR"
-          : file.type === "image/jpeg"
-            ? bytes.length >= 4 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255
-            : bytes.length >= 20 &&
-              text(0, 4) === "RIFF" &&
-              text(8, 12) === "WEBP" &&
-              ["VP8 ", "VP8L", "VP8X"].includes(text(12, 16)) &&
-              new DataView(bytes.buffer).getUint32(4, true) === file.size - 8;
-      if (!valid) return failed("Image content does not match its JPEG, PNG or WebP file type.");
+      if (!hasMatchingImageHeader(file, bytes))
+        return failed("Image content does not match its JPEG, PNG or WebP file type.");
 
       const prepared = await prepareBlogImageUploadAction({ name: file.name, size: file.size, type: file.type });
       checkActive();
@@ -70,16 +106,38 @@ export async function uploadBlogImageDirect(file: File): Promise<UploadResult> {
       }
       const uploaded: unknown = await response.json();
       checkActive();
-      if (
-        !uploaded ||
-        typeof uploaded !== "object" ||
-        !("public_id" in uploaded) ||
-        uploaded.public_id !== completion.publicId
-      )
+      const parsed = uploadedImageSchema.safeParse(uploaded);
+      if (!parsed.success || parsed.data.public_id !== completion.publicId)
         return failed("The image service returned an incomplete response. Try uploading again.");
-      const completed = await completeBlogImageUploadAction(completion);
-      checkActive();
-      return completed;
+      const { public_id, version, format, width, height, secure_url } = parsed.data;
+      const cloudName = new URL(uploadUrl).pathname.split("/")[2];
+      const imageUrl = `https://res.cloudinary.com/${cloudName}/image/upload/v${version}/${public_id.split("/").map(encodeURIComponent).join("/")}.${format}`;
+      if (secure_url !== imageUrl)
+        return failed("The image service returned an incomplete response. Try uploading again.");
+      const image: BlogImage = {
+        publicId: public_id,
+        version,
+        format,
+        width,
+        height,
+        alt: completion.name
+          .replace(/\.[^.]*$/u, "")
+          .replace(/[-_\s\u0000-\u001f\u007f]+/gu, " ")
+          .trim()
+          .slice(0, 500)
+          .replace(/[\uD800-\uDBFF]$/u, ""),
+        caption: "",
+      };
+      // Recording the upload must not delay displaying an image already stored successfully.
+      void (async () => {
+        try {
+          const completed = await completeBlogImageUploadAction({ ...completion, uploaded: parsed.data });
+          if (!completed.ok) throw new Error("Image upload completion failed.");
+        } catch {
+          captureException(new Error("Blog image upload completion failed."));
+        }
+      })();
+      return { ok: true, data: image };
     } catch {
       return controller.signal.aborted
         ? timeout

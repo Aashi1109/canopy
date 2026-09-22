@@ -48,6 +48,8 @@ const hooks = registerHooks({
         }
       `);
       if (specifier === "@tiptap/react") return stub("export function NodeViewWrapper() {};");
+      if (specifier === "@/lib/blog/utils")
+        return { shortCircuit: true, url: new URL("../lib/blog/utils.ts", import.meta.url).href };
       if (specifier === "@/components/ui/index.tsx")
         return stub(`
         ${["Button", "Input", "Label", "Tooltip", "TooltipContent", "TooltipProvider", "TooltipTrigger"].map((name) => `export function ${name}() {}`).join(" ")}

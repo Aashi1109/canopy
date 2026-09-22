@@ -87,15 +87,6 @@
   gap: 2px;
   margin-top: 12px;
 }
-.inactiveLink {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 10px 16px;
-  color: var(--primary);
-  font-size: 14px;
-  overflow-wrap: anywhere;
-}
 .contentsLink {
   display: inline-block;
   min-height: 32px;
@@ -107,9 +98,6 @@
 }
 .main {
   min-width: 0;
-}
-.utility {
-  display: none;
 }
 .toolHandoff {
   display: flex;
@@ -169,13 +157,7 @@
 }
 @container (min-width: 1280px) {
   .readingLayout {
-    grid-template-columns: 210px minmax(0, 1fr) 160px;
+    grid-template-columns: 210px minmax(0, 1fr);
     gap: 55px;
-  }
-  .utility {
-    display: flex;
-    flex-direction: column;
-    align-items: start;
-    gap: 12px;
   }
 }

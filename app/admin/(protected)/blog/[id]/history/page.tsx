@@ -8,7 +8,8 @@ import { AlertBanner, BackButton } from "@/components/ui/index.tsx";
 import { requirePagePermission } from "@/lib/admin/access";
 import { getBlogPost, getBlogRevision, listBlogRevisions } from "@/lib/blog/queries";
 import { BlogRevisionList } from "../../components/BlogRevisionList";
-import { blogImageUrl, renderBlogDocument } from "@/lib/blog/document";
+import { renderBlogDocument } from "@/lib/blog/document";
+import { blogImageDelivery } from "@/lib/blog/utils";
 import styles from "../../components/blog-management.module.css";
 
 export default async function BlogHistoryPage({
@@ -73,9 +74,8 @@ export default async function BlogHistoryPage({
               <figure className="mb-6 space-y-2">
                 <img
                   className="h-auto max-w-full rounded-md"
-                  src={blogImageUrl(document.coverImage, {
-                    cloudName: config.cloudinary.cloudName?.trim(),
-                  })}
+                  {...blogImageDelivery(document.coverImage, config.cloudinary.cloudName?.trim() ?? "")}
+                  sizes="(max-width: 767px) calc(100vw - 80px), calc(50vw - 108px)"
                   alt={document.coverImage.alt}
                   width={document.coverImage.width}
                   height={document.coverImage.height}

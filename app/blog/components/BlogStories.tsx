@@ -13,13 +13,21 @@ type Props = {
   initialPage: Page;
   filters: BlogFilters;
   featuredId?: string;
-  searchCoverUrl?: string;
+  searchCoverDelivery?: { src: string; srcSet: string };
   intro: ReactNode;
   emptyState: ReactNode;
   topics: ReactNode;
 };
 
-export function BlogStories({ initialPage, filters, featuredId, searchCoverUrl, intro, emptyState, topics }: Props) {
+export function BlogStories({
+  initialPage,
+  filters,
+  featuredId,
+  searchCoverDelivery,
+  intro,
+  emptyState,
+  topics,
+}: Props) {
   const [page, setPage] = useState(initialPage);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -86,7 +94,7 @@ export function BlogStories({ initialPage, filters, featuredId, searchCoverUrl, 
               key={post.id}
               post={post}
               variant={filters.search ? "search" : "list"}
-              coverUrl={filters.search && index === 0 ? searchCoverUrl : undefined}
+              coverDelivery={filters.search && index === 0 ? searchCoverDelivery : undefined}
             />
           ))}
         </div>
