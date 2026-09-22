@@ -33,10 +33,6 @@
   background: var(--accent);
   color: var(--color-accent-text);
 }
-.assistantHeaderActions svg {
-  width: calc(var(--spacing) * 4.5);
-  height: calc(var(--spacing) * 4.5);
-}
 .assistantHistory {
   display: flex;
   flex: 1;
@@ -355,7 +351,6 @@
 .agentPanel {
   --content-code-background: var(--card);
 }
-.agentPanel .assistantHeaderActions button,
 .agentPanel .assistantSend {
   width: 36px;
   height: 36px;

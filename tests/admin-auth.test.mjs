@@ -334,6 +334,66 @@ test("another registered subdomain receives auth callbacks, shared sessions, and
   }
 });
 
+test("production shares secure cookies and logout across hosts with the configured prefix", async (t) => {
+  const previousEnvironment = process.env.NODE_ENV;
+  const previousPrefix = process.env.AUTH_COOKIE_PREFIX;
+  t.after(() => {
+    process.env.NODE_ENV = previousEnvironment;
+    if (previousPrefix === undefined) delete process.env.AUTH_COOKIE_PREFIX;
+    else process.env.AUTH_COOKIE_PREFIX = previousPrefix;
+  });
+  process.env.NODE_ENV = "production";
+  const origins = [environment.APP_URL, adminOrigin];
+  for (const configuredPrefix of ["", "canopy-auth"]) {
+    process.env.AUTH_COOKIE_PREFIX = configuredPrefix;
+    const prefix = configuredPrefix || "smarttools";
+    const { auth: productionAuth } = await import(`${authUrl}?production-prefix=${prefix}`);
+    for (const loginOrigin of origins) {
+      const signin = await productionAuth.handler(
+        request(loginOrigin, "/sign-in/email", {
+          email: "admin-origin@example.test",
+          password: "admin-origin-password-123",
+        }),
+      );
+      assert.equal(signin.status, 200);
+      const cookies = signin.headers.getSetCookie();
+      assert.ok(cookies.some((cookie) => cookie.startsWith(`__Secure-${prefix}.session_token=`)));
+      for (const cookie of cookies) {
+        assert.ok(cookie.startsWith(`__Secure-${prefix}.`));
+        const attributes = cookie.split(/;\s*/);
+        for (const attribute of ["Domain=smarttools.test", "Path=/", "Secure", "HttpOnly", "SameSite=Lax"])
+          assert.ok(attributes.includes(attribute), attribute);
+      }
+      const cookie = cookies.map((value) => value.split(";")[0]).join("; ");
+      for (const sessionOrigin of origins) {
+        const session = await productionAuth.api.getSession({
+          headers: new Headers({ host: new URL(sessionOrigin).host, cookie }),
+        });
+        assert.equal(session.user.email, "admin-origin@example.test");
+      }
+      const logoutOrigin = origins.find((origin) => origin !== loginOrigin);
+      const logout = await productionAuth.handler(request(logoutOrigin, "/sign-out", {}, { cookie }));
+      assert.equal(logout.status, 200);
+      assert.ok(
+        logout.headers.getSetCookie().some((value) => {
+          const attributes = value.split(/;\s*/);
+          return (
+            value.startsWith(`__Secure-${prefix}.session_token=;`) &&
+            attributes.includes("Domain=smarttools.test") &&
+            attributes.includes("Max-Age=0")
+          );
+        }),
+      );
+      for (const sessionOrigin of origins) {
+        const session = await productionAuth.api.getSession({
+          headers: new Headers({ host: new URL(sessionOrigin).host, cookie }),
+        });
+        assert.equal(session, null);
+      }
+    }
+  }
+});
+
 test("untrusted callback origins and origin headers remain rejected", async () => {
   for (const [callbackURL, origin] of [
     ["https://evil.test/", adminOrigin],

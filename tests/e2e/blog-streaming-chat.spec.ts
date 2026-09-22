@@ -337,6 +337,72 @@ async function streamingChatHarness(page: import("@playwright/test").Page, empty
   return { assistant, composer, errors };
 }
 
+test("assistant settings replace the chat view, preserve drafts, and share current-content state with the composer", async ({
+  page,
+}) => {
+  const { assistant, composer, errors } = await streamingChatHarness(page);
+  const draft = "Keep this unfinished question";
+  const settings = assistant.getByRole("button", { name: "Assistant settings", exact: true });
+  const historyButton = assistant.getByRole("button", { name: "History", exact: true });
+  const history = assistant.getByRole("region", { name: "Conversation history", exact: true });
+  const include = assistant.getByRole("switch", { name: "Include current content", exact: true });
+  const tone = assistant.getByLabel("Tone", { exact: true });
+  const back = assistant.getByRole("button", { name: "Back to chat", exact: true });
+  const currentContent = assistant.getByRole("button", { name: "Remove current context", exact: true });
+  await composer.fill(draft);
+  await expect(currentContent).toBeVisible();
+  await settings.click();
+  await expect(back).toBeVisible();
+  await expect(composer).toBeHidden();
+  await expect(include).toBeChecked();
+  await expect(assistant.getByRole("switch", { name: "Web search", exact: true })).toBeVisible();
+  await expect(tone).toBeVisible();
+  await expect(assistant.getByRole("button", { name: "Clear history", exact: true })).toHaveCount(0);
+  await expect(assistant.getByRole("button", { name: "Delete thread", exact: true })).toHaveCount(0);
+  await expect(assistant.getByText(/sent to fixture/)).toHaveCount(0);
+  for (const [width, height] of [
+    [1366, 768],
+    [1280, 720],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await expect(settings).toBeInViewport();
+    await expect(back).toBeInViewport();
+    await expect(include).toBeInViewport();
+    await expect(tone).toBeInViewport();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+    await page.screenshot({ path: `/tmp/assistant-settings-panel-${width}.png`, animations: "disabled" });
+  }
+  await historyButton.click();
+  await expect(history).toBeVisible();
+  await expect(tone).toBeHidden();
+  await expect(composer).toBeHidden();
+  await settings.click();
+  await expect(history).toBeHidden();
+  await expect(tone).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(tone).toBeHidden();
+  await expect(composer).toBeVisible();
+  await expect(composer).toHaveText(draft);
+  await settings.click();
+  await include.click();
+  await expect(include).not.toBeChecked();
+  await back.click();
+  await expect(composer).toHaveText(draft);
+  await expect(currentContent).toHaveCount(0);
+  await settings.click();
+  await expect(include).not.toBeChecked();
+  await include.click();
+  await expect(include).toBeChecked();
+  await back.click();
+  await expect(currentContent).toBeVisible();
+  await currentContent.click();
+  await settings.click();
+  await expect(include).not.toBeChecked();
+  await back.click();
+  await expect(composer).toHaveText(draft);
+  expect(errors).toEqual([]);
+});
+
 test("chat renders pending, streamed, and completed responses without reading thread history", async ({ page }) => {
   const { assistant, composer, errors } = await streamingChatHarness(page, true);
   await page.evaluate(`Object.assign(window.fixture, {

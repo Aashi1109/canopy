@@ -22,7 +22,7 @@ export function AssistantHeader({
         {onClose && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button size="icon-sm" variant="ghost" aria-label={closeLabel} onClick={onClose}>
+              <Button size="icon-xs" variant="ghost" aria-label={closeLabel} onClick={onClose}>
                 <X aria-hidden="true" />
               </Button>
             </TooltipTrigger>

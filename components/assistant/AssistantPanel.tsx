@@ -42,13 +42,6 @@ import {
   TooltipProvider,
   TooltipContent,
   TooltipTrigger,
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
   toast,
 } from "@/components/ui/index.tsx";
 import type { AssistantRun, AssistantThread, AssistantMessage, AssistantAttachment } from "@/lib/assistant/types";
@@ -129,10 +122,12 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
   const [caret, setCaret] = useState(0);
   const [dismissedSlash, setDismissedSlash] = useState<string | null>(null);
   const [slashIndex, setSlashIndex] = useState(0);
-  const [showHistory, setShowHistory] = useState(false);
+  const [panelView, setPanelView] = useState<"chat" | "history" | "settings">("chat");
+  const showHistory = panelView === "history";
+  const showSettings = panelView === "settings";
   const [showNewThread, setShowNewThread] = useState(false);
   const historyTrigger = useRef<HTMLButtonElement>(null);
-  const [showSettings, setShowSettings] = useState(false);
+  const settingsTrigger = useRef<HTMLButtonElement>(null);
   const [attachmentMenu, setAttachmentMenu] = useState(false);
   const [showReferences, setShowReferences] = useState(false);
   const [linkDraft, setLinkDraft] = useState("");
@@ -143,8 +138,6 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
   const [preview, setPreview] = useState<{ url: string; filename: string; scope: string } | null>(null);
   const [uploadingScopes, setUploadingScopes] = useState<Record<string, boolean>>({});
   const [preparingScopes, setPreparingScopes] = useState<Record<string, boolean>>({});
-  const [confirm, setConfirm] = useState<"history" | "thread" | null>(null);
-  const [changing, setChanging] = useState(false);
   const composer = useRef<AssistantComposerHandle>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const messages = useRef<HTMLDivElement>(null);
@@ -165,15 +158,6 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
   const selectedAgent = integration.agents.find((agent) => agent.id === selectedAgentId);
   const includeContext =
     selectedAgent?.requiresContext || (contextByThread[scope] ?? contextByThread[originScope] ?? true);
-  function setSelectedFiles(update: (value: Record<string, string[]>) => Record<string, string[]>) {
-    const previous = Object.fromEntries(
-      Object.entries(assistant.composerSelectionsByThread).map(([id, value]) => [id, value.attachmentIds]),
-    );
-    const next = update(previous);
-    for (const [id, attachmentIds] of Object.entries(next))
-      if (attachmentIds !== previous[id])
-        assistant.composerState({ ...assistant.getComposerSelection(id), attachmentIds }, id);
-  }
   const detail = assistant.detail;
   const settings = assistant.requestSettings;
   const runs = detail?.runs ?? [];
@@ -205,7 +189,7 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
     assistant.composerState({ ...assistant.getComposerSelection(), agentId: id, agentOffset: caret });
     composer.current?.insertAgent(id);
     setTab("assistant");
-    setShowHistory(false);
+    setPanelView("chat");
     requestAnimationFrame(() => composer.current?.focus());
   }
   function chooseCommand(index: number) {
@@ -276,9 +260,9 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
       linkInput.current?.focus();
     }
   }
-  function closeHistory() {
-    setShowHistory(false);
-    requestAnimationFrame(() => historyTrigger.current?.focus());
+  function closePanelView() {
+    setPanelView("chat");
+    requestAnimationFrame(() => (showSettings ? settingsTrigger : historyTrigger).current?.focus());
   }
   function threadTime(value: string) {
     const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(value)) / 60000));
@@ -508,6 +492,7 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
   const showConversationError =
     tab === "assistant" &&
     !showHistory &&
+    !showSettings &&
     !activeResult &&
     !!assistant.error &&
     !assistant.loading &&
@@ -522,7 +507,7 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
     !showConversationError;
   function newThread() {
     assistant.startNewThread();
-    setShowHistory(false);
+    setPanelView("chat");
     setShowNewThread(true);
     setTab("assistant");
     requestAnimationFrame(() => composer.current?.focus());
@@ -533,25 +518,25 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
       className={`${styles.sidePanelContent} ${styles.agentPanel}`}
       data-history={showHistory}
       onKeyDown={(event) => {
-        if (event.key === "Escape" && showHistory) {
+        if (event.key === "Escape" && panelView !== "chat") {
           event.preventDefault();
           event.stopPropagation();
-          closeHistory();
+          closePanelView();
         }
       }}
     >
       <AssistantHeader
-        title={showHistory ? "Conversations" : "Assistant"}
+        title={showHistory ? "Conversations" : showSettings ? "Settings" : "Assistant"}
         onClose={onClose}
         closeLabel="Close assistant"
       >
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              size="icon-sm"
+              size="icon-xs"
               variant="ghost"
               aria-label="New thread"
-              disabled={changing || assistant.loading}
+              disabled={assistant.loading}
               onClick={newThread}
             >
               <SquarePen aria-hidden="true" />
@@ -563,25 +548,95 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
           <TooltipTrigger asChild>
             <Button
               ref={historyTrigger}
-              size="icon-sm"
+              size="icon-xs"
               variant="ghost"
               aria-label="History"
               aria-pressed={showHistory}
-              onClick={() => setShowHistory((value) => !value)}
+              onClick={() => setPanelView(showHistory ? "chat" : "history")}
             >
               <History aria-hidden="true" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>History</TooltipContent>
         </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              ref={settingsTrigger}
+              size="icon-xs"
+              variant="ghost"
+              aria-label="Assistant settings"
+              aria-pressed={showSettings}
+              onClick={() => {
+                setAttachmentMenu(false);
+                setPanelView(showSettings ? "chat" : "settings");
+              }}
+            >
+              <SlidersHorizontal aria-hidden="true" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Assistant settings</TooltipContent>
+        </Tooltip>
       </AssistantHeader>
+      {showSettings && (
+        <section className="min-h-0 flex-1 space-y-4 overflow-y-auto" aria-label="Assistant settings">
+          <p className="truncate text-caption text-muted-foreground">
+            {integration.resourceLabel} · {integration.resourceTitle}
+          </p>
+          <BackButton label="Back to chat" showLabel onClick={closePanelView} />
+          <div className="flex items-center gap-3 border-b border-border py-3">
+            <FileText className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <div className="flex-1">
+              <Label htmlFor={`${instanceId}-assistant-draft-context`}>Include current content</Label>
+              <p className="mt-1 text-caption text-muted-foreground">{integration.contextDescription}</p>
+            </div>
+            <Switch
+              id={`${instanceId}-assistant-draft-context`}
+              checked={includeContext}
+              disabled={selectedAgent?.requiresContext}
+              onCheckedChange={(included) => setContextByThread((value) => ({ ...value, [scope]: included }))}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-3 py-2">
+            <Globe className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <div className="flex-1">
+              <Label htmlFor={`${instanceId}-assistant-web`}>Web search</Label>
+              <p className="mt-1 text-caption text-muted-foreground">Find up-to-date sources online.</p>
+            </div>
+            <Switch
+              id={`${instanceId}-assistant-web`}
+              checked={settings.webSearch === true}
+              disabled={!assistant.availability?.capabilities.webSearch}
+              onCheckedChange={(webSearch) => void updateSettings({ webSearch })}
+            />
+          </div>
+          {integration.selectSettings?.map((setting) => (
+            <div className="space-y-1" key={setting.key}>
+              <Label htmlFor={`${instanceId}-setting-${setting.key}`}>{setting.label}</Label>
+              <Select
+                id={`${instanceId}-setting-${setting.key}`}
+                value={
+                  typeof settings[setting.key] === "string"
+                    ? (settings[setting.key] as string)
+                    : (setting.options[0] ?? "")
+                }
+                onChange={(event) => void updateSettings({ [setting.key]: event.target.value })}
+              >
+                {setting.options.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
+              </Select>
+            </div>
+          ))}
+        </section>
+      )}
       {showHistory && (
         <section className={styles.assistantHistory} aria-label="Conversation history">
           <p className="shrink-0 truncate text-caption text-muted-foreground">
             {integration.resourceLabel} · {integration.resourceTitle}
           </p>
           <div className="flex h-9 shrink-0 items-center justify-between gap-2">
-            <BackButton label="Back to chat" showLabel onClick={closeHistory} />
+            <BackButton label="Back to chat" showLabel onClick={closePanelView} />
             {!!assistant.activeThreadIds.length && (
               <span
                 className="flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-caption text-accent-text"
@@ -621,7 +676,7 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
                       Try again
                     </Button>
                   ) : (
-                    <Button size="sm" className="text-body" disabled={changing} onClick={newThread}>
+                    <Button size="sm" className="text-body" onClick={newThread}>
                       New thread
                     </Button>
                   )
@@ -647,7 +702,7 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
                       onClick={() => {
                         void assistant.choose(thread.id);
                         setShowNewThread(false);
-                        setShowHistory(false);
+                        setPanelView("chat");
                       }}
                     >
                       <span className={styles.assistantHistoryMain}>
@@ -679,23 +734,26 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
           )}
         </section>
       )}
-      {assistant.error && !showConversationError && (!showHistory || assistant.historyStatus !== "error") && (
-        <div className="py-2">
-          <p role="alert" className="text-caption text-destructive">
-            {assistant.error}
-          </p>
-          <Button variant="ghost" size="sm" onClick={() => void assistant.refresh()}>
-            Refresh history
-          </Button>
-        </div>
-      )}
+      {assistant.error &&
+        !showSettings &&
+        !showConversationError &&
+        (!showHistory || assistant.historyStatus !== "error") && (
+          <div className="py-2">
+            <p role="alert" className="text-caption text-destructive">
+              {assistant.error}
+            </p>
+            <Button variant="ghost" size="sm" onClick={() => void assistant.refresh()}>
+              Refresh history
+            </Button>
+          </div>
+        )}
       <Tabs
         value={tab}
         onValueChange={(next) => {
           setActiveResult(null);
           setTab(next);
         }}
-        className={`min-h-0 flex-1 gap-2.5 ${showHistory ? "hidden" : ""}`}
+        className={`min-h-0 flex-1 gap-2.5 ${panelView !== "chat" ? "hidden" : ""}`}
       >
         <TabsList className={styles.assistantTabs} aria-label="Assistant workspace">
           <TabsTrigger value="assistant" className="flex-none" onClick={() => setActiveResult(null)}>
@@ -709,7 +767,7 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
           <TabsContent value="sources" forceMount className="min-h-0 flex flex-col data-[state=inactive]:hidden">
             <AssistantSources
               key={`${integration.key}:${resourceId}:${assistant.selected}`}
-              active={tab === "sources" && !showHistory}
+              active={tab === "sources" && panelView === "chat"}
               integration={integration}
               threadId={assistant.selected}
               artifactId={artifactId}
@@ -1347,128 +1405,6 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
                         </Popover.Content>
                       </Popover.Portal>
                     </Popover.Root>
-                    <Popover.Root open={showSettings} onOpenChange={setShowSettings}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Popover.Trigger asChild>
-                            <Button
-                              size="icon-sm"
-                              variant="ghost"
-                              className={showSettings ? "bg-accent text-accent-text" : "text-muted-foreground"}
-                              aria-label="Assistant settings"
-                            >
-                              <SlidersHorizontal aria-hidden="true" />
-                            </Button>
-                          </Popover.Trigger>
-                        </TooltipTrigger>
-                        <TooltipContent>Assistant settings</TooltipContent>
-                      </Tooltip>
-                      <Popover.Portal>
-                        <Popover.Content
-                          side="top"
-                          align="start"
-                          sideOffset={8}
-                          collisionPadding={16}
-                          className="z-50 max-h-96 w-80 max-w-[calc(100vw-2rem)] space-y-3 overflow-y-auto rounded-xl border border-border bg-card p-4 shadow-md"
-                          onEscapeKeyDown={(event) => event.stopPropagation()}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <h3 className="text-base font-medium">Assistant settings</h3>
-                            <Button
-                              size="icon-sm"
-                              variant="ghost"
-                              aria-label="Close assistant settings"
-                              onClick={() => setShowSettings(false)}
-                            >
-                              <X aria-hidden="true" />
-                            </Button>
-                          </div>
-                          <p className="text-caption text-muted-foreground">For your next message</p>
-                          <div className="flex items-center gap-3 border-b border-border py-3">
-                            <FileText className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-                            <div className="flex-1">
-                              <Label htmlFor={`${instanceId}-assistant-draft-context`}>Include current content</Label>
-                              <p className="mt-1 text-caption text-muted-foreground">
-                                {integration.contextDescription}
-                              </p>
-                            </div>
-                            <Switch
-                              id={`${instanceId}-assistant-draft-context`}
-                              checked={includeContext}
-                              disabled={selectedAgent?.requiresContext}
-                              onCheckedChange={(included) =>
-                                setContextByThread((value) => ({ ...value, [scope]: included }))
-                              }
-                            />
-                          </div>
-                          <div className="flex items-center justify-between gap-3 py-2">
-                            <Globe className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-                            <div className="flex-1">
-                              <Label htmlFor={`${instanceId}-assistant-web`}>Web search</Label>
-                              <p className="mt-1 text-caption text-muted-foreground">Find up-to-date sources online.</p>
-                            </div>
-                            <Switch
-                              id={`${instanceId}-assistant-web`}
-                              checked={settings.webSearch === true}
-                              disabled={!assistant.availability?.capabilities.webSearch}
-                              onCheckedChange={(webSearch) => void updateSettings({ webSearch })}
-                            />
-                          </div>
-                          <p className="text-caption text-muted-foreground">Web search uses an external provider.</p>
-                          {integration.selectSettings?.map((setting) => (
-                            <div className="space-y-1" key={setting.key}>
-                              <Label htmlFor={`${instanceId}-setting-${setting.key}`}>{setting.label}</Label>
-                              <Select
-                                id={`${instanceId}-setting-${setting.key}`}
-                                value={
-                                  typeof settings[setting.key] === "string"
-                                    ? (settings[setting.key] as string)
-                                    : (setting.options[0] ?? "")
-                                }
-                                onChange={(event) => void updateSettings({ [setting.key]: event.target.value })}
-                              >
-                                {setting.options.map((option) => (
-                                  <option key={option}>{option}</option>
-                                ))}
-                              </Select>
-                            </div>
-                          ))}
-                          {assistant.selected && (
-                            <div className="space-y-2 border-t border-border pt-3">
-                              <div className="flex flex-wrap gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={busy}
-                                  onClick={() => setConfirm("history")}
-                                >
-                                  Clear history
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  disabled={busy}
-                                  onClick={() => setConfirm("thread")}
-                                >
-                                  Delete thread
-                                </Button>
-                              </div>
-                              {busy && (
-                                <p className="text-caption text-muted-foreground">
-                                  Stop the active request before clearing or deleting this conversation.
-                                </p>
-                              )}
-                            </div>
-                          )}
-                          <p className="text-caption text-muted-foreground">
-                            {assistant.availability?.enabled
-                              ? `${includeContext ? "Your content, request," : "Your request"} and selected attachments are sent to ${assistant.availability.provider}. Changes require your approval.`
-                              : (assistant.availability?.reason ??
-                                "AI assistance is not configured. You can continue writing manually.")}
-                          </p>
-                        </Popover.Content>
-                      </Popover.Portal>
-                    </Popover.Root>
                     <span className="flex-1" />
                     {assistant.message.length > 7600 && (
                       <span className="text-caption text-muted-foreground">{assistant.message.length}/8,000</span>
@@ -1507,44 +1443,6 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
             </>
           ))}
       </Tabs>
-      <AlertDialog
-        open={!!confirm}
-        onOpenChange={(open) => {
-          if (!open && !changing) setConfirm(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {confirm === "history" ? "Clear this conversation?" : "Delete this thread?"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Its private messages and attachments will be removed. Your content and other conversations are preserved.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={changing}>Keep conversation</AlertDialogCancel>
-            <Button
-              variant="destructive"
-              loading={changing}
-              onClick={() => {
-                setChanging(true);
-                void assistant
-                  .remove(confirm === "history")
-                  .then(() => {
-                    setSelectedFiles((value) => ({ ...value, [scope]: [] }));
-                    setReferences((value) => ({ ...value, [scope]: "" }));
-                    setConfirm(null);
-                  })
-                  .catch((cause) => toast.error(readable(cause)))
-                  .finally(() => setChanging(false));
-              }}
-            >
-              {confirm === "history" ? "Clear history" : "Delete thread"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
