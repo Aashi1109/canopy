@@ -512,7 +512,7 @@ test("reference links go directly in a first run and survive rejection until ack
   await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(1);
   await expect(composer).toHaveText("Use this reference");
   await expect(remove).toBeVisible();
-  const first = await page.evaluate("window.fixture.requests[0]");
+  const first = await page.evaluate<Record<string, unknown>>("window.fixture.requests[0]");
   expect(first).toMatchObject({ references: [url], resourceId: "post" });
   expect(await page.evaluate("window.fixture.creates")).toBe(0);
   expect(await page.evaluate("window.fixture.attachmentPosts")).toBe(0);
