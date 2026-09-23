@@ -73,7 +73,7 @@ export async function assistantRoute(request: Request, action: (actor: string) =
   try {
     if (!["GET", "HEAD"].includes(request.method) && !isSameOriginRequest(request))
       throw new AssistantError("FORBIDDEN", "Invalid request origin.", 403);
-    const session = await getSession(request.headers);
+    const session = await getSession(request.headers, { includeAdmin: false });
     if (!session) throw new AssistantError("UNAUTHENTICATED", "Sign in to continue.", 401);
     if (session.user.status !== "active")
       throw new AssistantError("FORBIDDEN", "This account cannot use the assistant.", 403);

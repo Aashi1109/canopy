@@ -3,7 +3,7 @@ import { registerHooks } from "node:module";
 import test from "node:test";
 
 const root = new URL("../", import.meta.url);
-const state = { actor: "owner", status: "active", calls: [] };
+const state = { actor: "owner", status: "active", calls: [], sessionOptions: null, authUnavailable: false };
 globalThis.__assistantRouteTest = state;
 const hooks = registerHooks({
   resolve(specifier, context, next) {
@@ -15,8 +15,10 @@ const hooks = registerHooks({
     if (url === new URL("lib/auth/session.ts", root).href)
       source = `
       export class AuthServiceError extends Error {}
-      export async function getSession() {
+      export async function getSession(_headers, options) {
         const state = globalThis.__assistantRouteTest;
+        state.sessionOptions = options;
+        if (state.authUnavailable) throw new AuthServiceError("Authentication unavailable");
         return state.actor ? { user: { id: state.actor, status: state.status } } : null;
       }
     `;
@@ -74,6 +76,8 @@ test.beforeEach(() => {
   state.actor = "owner";
   state.status = "active";
   state.calls.length = 0;
+  state.sessionOptions = null;
+  state.authUnavailable = false;
 });
 test.after(() => {
   hooks.deregister();
@@ -97,6 +101,15 @@ test("Assistant routes authenticate and validate origins before integration exec
   assert.equal(result.status, 200);
   assert.equal(result.headers.get("cache-control"), "private, no-store");
   assert.deepEqual(state.calls[0], { integrationKey: "fixture", method: "config", args: ["owner"] });
+});
+
+test("Assistant routes skip unused admin enrichment and reject unavailable authentication", async () => {
+  assert.equal((await config.GET(request("config"), context())).status, 200);
+  assert.deepEqual(state.sessionOptions, { includeAdmin: false });
+  state.calls.length = 0;
+  state.authUnavailable = true;
+  assert.equal((await config.GET(request("config"), context())).status, 503);
+  assert.equal(state.calls.length, 0);
 });
 
 test("Assistant thread listing and creation distinguish absent, valid, and invalid resources", async () => {

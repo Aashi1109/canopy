@@ -3,6 +3,39 @@ import test from "node:test";
 import config from "../lib/config/config.ts";
 import publicConfig from "../lib/config/public.ts";
 
+test("database pool maximum defaults safely and reads valid environment overrides lazily", (t) => {
+  const previous = process.env;
+  t.after(() => {
+    process.env = previous;
+  });
+  process.env = {};
+  assert.equal(config.databasePoolMax, 3);
+
+  for (const [value, expected] of [
+    ["", 3],
+    ["   ", 3],
+    ["invalid", 3],
+    ["5connections", 3],
+    ["0", 3],
+    ["-1", 3],
+    ["1.5", 3],
+    ["NaN", 3],
+    ["Infinity", 3],
+    ["9007199254740992", 3],
+    ["1", 1],
+    [" 5 ", 5],
+    ["10", 10],
+  ]) {
+    process.env.DATABASE_POOL_MAX = value;
+    assert.equal(config.databasePoolMax, expected, `DATABASE_POOL_MAX=${value}`);
+  }
+
+  process.env = { DATABASE_POOL_MAX: "7" };
+  assert.equal(config.databasePoolMax, 7);
+  delete process.env.DATABASE_POOL_MAX;
+  assert.equal(config.databasePoolMax, 3);
+});
+
 test("auth cookie prefix keeps the existing default and reads environment overrides lazily", (t) => {
   const previous = process.env;
   t.after(() => {

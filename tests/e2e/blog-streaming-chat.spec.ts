@@ -103,12 +103,13 @@ async function streamingChatHarness(page: import("@playwright/test").Page, empty
       abortedRunIds: [] as string[],
       threads: threads.length,
       creates: 0,
-      holdThreadCreation: false,
-      releaseThreadCreation: () => {},
+      attachmentPosts: 0,
+      nextThreadId: "",
       historyReads: [] as string[],
       holdHistoryReads: false,
       emitInitialText: true,
       rejectNextRun: "",
+      rejectNextRunStatus: 400,
       rejectRunResponse: "",
       titles: [] as string[],
       streams: {} as Record<string, { delta: (text: string) => void; complete: (withProposal?: boolean) => void }>,
@@ -125,10 +126,6 @@ async function streamingChatHarness(page: import("@playwright/test").Page, empty
       if (new URL(url, location.href).pathname.endsWith("/threads")) {
         if (method === "POST") {
           fixture.creates++;
-          if (fixture.holdThreadCreation)
-            await new Promise<void>((resolve) => {
-              fixture.releaseThreadCreation = resolve;
-            });
           const thread = { ...firstThread, id: `thread-${threads.length + 1}`, title: body.title ?? "New thread" };
           threads.push(thread);
           fixture.titles.push(thread.title);
@@ -138,6 +135,7 @@ async function streamingChatHarness(page: import("@playwright/test").Page, empty
         return Response.json({ threads });
       }
       if (/\/threads\/[^/]+\/attachments$/.test(url) && method === "POST") {
+        fixture.attachmentPosts++;
         const file = options?.body instanceof FormData ? (options.body.get("file") as File) : null;
         const attachment = {
           id: `attachment-${attachments.length + 1}`,
@@ -179,11 +177,40 @@ async function streamingChatHarness(page: import("@playwright/test").Page, empty
         if (fixture.rejectNextRun) {
           const error = fixture.rejectNextRun;
           fixture.rejectNextRun = "";
-          return Response.json({ error }, { status: 400 });
+          return Response.json({ error }, { status: fixture.rejectNextRunStatus });
         }
+        let thread = fixture.nextThreadId ? undefined : threads.find((entry) => entry.id === body.threadId);
+        if (!thread) {
+          thread = {
+            ...firstThread,
+            id: fixture.nextThreadId || `thread-${threads.length + 1}`,
+            title: body.message.trim().slice(0, 80),
+            settings: body.settings ?? {},
+          };
+          threads.push(thread);
+          fixture.titles.push(thread.title);
+          fixture.threads = threads.length;
+        }
+        fixture.nextThreadId = "";
+        const referenceAttachments = (body.references ?? []).map((url: string) => {
+          const attachment = {
+            id: `reference-${attachments.length + 1}`,
+            threadId: thread.id,
+            messageId: body.inputMessageId ?? `user-${fixture.starts}`,
+            type: "link",
+            label: new URL(url).hostname,
+            data: { url },
+            status: "ready",
+            expiresAt: null,
+            createdAt: now,
+            updatedAt: now,
+          };
+          attachments.push(attachment);
+          return attachment;
+        });
         const run = {
           id: `run-${fixture.starts}`,
-          threadId: body.threadId,
+          threadId: thread.id,
           resourceId: "post",
           integrationKey: "blog",
           executionMode: "conversational",
@@ -193,7 +220,13 @@ async function streamingChatHarness(page: import("@playwright/test").Page, empty
           model: "fixture",
           inputMessageId: body.inputMessageId ?? `user-${fixture.starts}`,
           assistantMessageId: `assistant-${fixture.starts}`,
-          request: body,
+          request: {
+            ...body,
+            attachmentIds: [
+              ...(body.attachmentIds ?? []),
+              ...referenceAttachments.map((file: { id: string }) => file.id),
+            ],
+          },
           response: null,
           errorMessage: null,
           createdAt: now,
@@ -202,16 +235,16 @@ async function streamingChatHarness(page: import("@playwright/test").Page, empty
         };
         runs.push(run);
         for (const attachment of attachments)
-          if (body.attachmentIds?.includes(attachment.id)) attachment.messageId = run.inputMessageId;
+          if (run.request.attachmentIds.includes(attachment.id)) attachment.messageId = run.inputMessageId;
         if (!messages.some((message) => message.id === run.inputMessageId))
           messages.push({
             id: run.inputMessageId,
-            threadId: body.threadId,
+            threadId: run.threadId,
             runId: null,
             role: "user",
             parts: [
               { type: "text", text: body.message },
-              ...(body.attachmentIds ?? []).map((attachmentId: string) => ({ type: "attachment", attachmentId })),
+              ...run.request.attachmentIds.map((attachmentId: string) => ({ type: "attachment", attachmentId })),
             ],
             meta: {},
             createdAt: now,
@@ -219,7 +252,7 @@ async function streamingChatHarness(page: import("@playwright/test").Page, empty
           });
         messages.push({
           id: run.assistantMessageId,
-          threadId: body.threadId,
+          threadId: run.threadId,
           runId: run.id,
           role: "assistant",
           parts: [],
@@ -259,7 +292,7 @@ async function streamingChatHarness(page: import("@playwright/test").Page, empty
             start(controller) {
               const emit = (event: unknown) =>
                 controller.enqueue(new TextEncoder().encode(JSON.stringify(event) + "\n"));
-              emit({ type: "run", run });
+              emit({ type: "run", run, attachments: referenceAttachments });
               if (fixture.emitInitialText)
                 emit({
                   type: "text-delta",
@@ -406,16 +439,17 @@ test("assistant settings replace the chat view, preserve drafts, and share curre
 test("chat renders pending, streamed, and completed responses without reading thread history", async ({ page }) => {
   const { assistant, composer, errors } = await streamingChatHarness(page, true);
   await page.evaluate(`Object.assign(window.fixture, {
-    holdThreadCreation: true, holdNextRun: true, holdHistoryReads: true, emitInitialText: false
+    holdNextRun: true, holdHistoryReads: true, emitInitialText: false
   })`);
   const query = "Make this introduction clearer";
   await composer.fill(query);
   await assistant.getByRole("button", { name: "Send message", exact: true }).click();
-  await expect.poll(() => page.evaluate("window.fixture.creates")).toBe(1);
+  await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(1);
+  expect(await page.evaluate("window.fixture.creates")).toBe(0);
   await expect(assistant.getByText(query, { exact: true })).toBeVisible();
   await expect(composer).toHaveText("");
   await expect(assistant.getByText("Generating response…", { exact: true })).toBeVisible();
-  expect(await page.evaluate("window.fixture.starts")).toBe(0);
+  expect(await page.evaluate("window.fixture.requests[0].threadId")).toMatch(/^[0-9a-f]{8}-[0-9a-f-]{27}$/i);
   for (const [width, height] of [
     [1366, 768],
     [1280, 720],
@@ -427,7 +461,6 @@ test("chat renders pending, streamed, and completed responses without reading th
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
     await page.screenshot({ path: `/tmp/blog-optimistic-chat-${width}.png` });
   }
-  await page.evaluate("window.fixture.releaseThreadCreation()");
   await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(1);
   expect(await page.evaluate("window.fixture.historyReads")).toEqual([]);
   await expect(assistant.getByText(query, { exact: true })).toHaveCount(1);
@@ -452,6 +485,94 @@ test("chat renders pending, streamed, and completed responses without reading th
   await expect(assistant.getByText("Generating response…", { exact: true })).toHaveCount(0);
   await expect(assistant.getByRole("button", { name: "Stop", exact: true })).toHaveCount(0);
   expect(await page.evaluate("window.fixture.historyReads")).toEqual([]);
+  await composer.fill("Next question in this conversation");
+  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(2);
+  expect(await page.evaluate("window.fixture.requests[1].threadId")).toBe("thread-1");
+  expect(await page.evaluate("window.fixture.creates")).toBe(0);
+  expect(await page.evaluate("window.fixture.historyReads")).toEqual([]);
+  await page.evaluate('window.fixture.streams["run-2"].complete()');
+  expect(errors).toEqual([]);
+});
+
+test("reference links go directly in a first run and survive rejection until acknowledgement", async ({ page }) => {
+  const { assistant, composer, errors } = await streamingChatHarness(page, true);
+  const url = "https://example.com/invoicing";
+  await assistant.getByRole("button", { name: "Attach files or links", exact: true }).click();
+  await page.getByRole("button", { name: "Add link", exact: true }).click();
+  await page.getByRole("textbox", { name: "URL", exact: true }).fill(url);
+  await page.getByRole("button", { name: "Add link", exact: true }).click();
+  const remove = assistant.getByRole("button", { name: `Remove reference ${url}`, exact: true });
+  await expect(remove).toBeVisible();
+  await page.evaluate(
+    'Object.assign(window.fixture, {rejectNextRun: "Temporary connection error", rejectNextRunStatus: 503})',
+  );
+  await composer.fill("Use this reference");
+  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(1);
+  await expect(composer).toHaveText("Use this reference");
+  await expect(remove).toBeVisible();
+  const first = await page.evaluate("window.fixture.requests[0]");
+  expect(first).toMatchObject({ references: [url], resourceId: "post" });
+  expect(await page.evaluate("window.fixture.creates")).toBe(0);
+  expect(await page.evaluate("window.fixture.attachmentPosts")).toBe(0);
+  expect(await page.evaluate("window.fixture.historyReads")).toEqual([]);
+  await page.evaluate("window.fixture.holdNextRun = true");
+  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(2);
+  expect(await page.evaluate("window.fixture.requests[1]")).toMatchObject({
+    threadId: first.threadId,
+    clientRequestId: first.clientRequestId,
+    references: [url],
+  });
+  await expect(remove).toBeVisible();
+  await composer.fill("Newer draft");
+  await page.evaluate('window.fixture.releaseResponses["run-2"]()');
+  await expect(remove).toHaveCount(0);
+  await expect(composer).toHaveText("Newer draft");
+  await expect(assistant.getByText("Use this reference", { exact: true })).toHaveCount(1);
+  await expect(assistant.getByRole("link", { name: /example\.com/ })).toBeVisible();
+  await expect(assistant.getByText("Attachment unavailable", { exact: true })).toHaveCount(0);
+  await page.evaluate('window.fixture.streams["run-2"].complete()');
+  await expect(assistant.getByText("Use the attached example", { exact: true })).toBeVisible();
+  expect(await page.evaluate("window.fixture.creates")).toBe(0);
+  expect(await page.evaluate("window.fixture.attachmentPosts")).toBe(0);
+  expect(await page.evaluate("window.fixture.historyReads")).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("a replacement canonical thread does not inherit the previous conversation and keeps its newer draft", async ({
+  page,
+}) => {
+  const { assistant, composer, errors } = await streamingChatHarness(page);
+  await composer.fill("Old private question");
+  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect.poll(() => page.evaluate('!!window.fixture.streams["run-1"]')).toBe(true);
+  await page.evaluate('window.fixture.streams["run-1"].complete()');
+  await expect(assistant.getByText("Use the attached example", { exact: true })).toBeVisible();
+  await page.evaluate(
+    'Object.assign(window.fixture, {nextThreadId: "replacement", holdNextRun: true, emitInitialText: false})',
+  );
+  await composer.fill("New conversation question");
+  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(2);
+  await expect(assistant.getByText("New conversation question", { exact: true })).toBeVisible();
+  await composer.fill("Follow-up draft");
+  await page.evaluate('window.fixture.releaseResponses["run-2"]()');
+  await expect(assistant.getByText("Old private question", { exact: true })).toHaveCount(0);
+  await expect(assistant.getByText("Use the attached example", { exact: true })).toHaveCount(0);
+  await expect(assistant.getByText("New conversation question", { exact: true })).toHaveCount(1);
+  await expect(composer).toHaveText("Follow-up draft");
+  await page.evaluate('window.fixture.streams["run-2"].delta("New answer in the replacement conversation.")');
+  await expect(assistant.getByText("New answer in the replacement conversation.", { exact: true })).toBeVisible();
+  await page.evaluate('window.fixture.streams["run-2"].complete()');
+  await expect(assistant.getByRole("button", { name: "Stop", exact: true })).toHaveCount(0);
+  await assistant.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect.poll(() => page.evaluate("window.fixture.starts")).toBe(3);
+  expect(await page.evaluate("window.fixture.requests[2].threadId")).toBe("replacement");
+  expect(await page.evaluate("window.fixture.creates")).toBe(0);
+  expect(await page.evaluate("window.fixture.historyReads")).toEqual(["thread-1"]);
+  await page.evaluate('window.fixture.streams["run-3"].complete()');
   expect(errors).toEqual([]);
 });
 

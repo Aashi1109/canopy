@@ -47,8 +47,8 @@ export function validateRunRequest(input: unknown, cloudName?: string, reserved 
     if (!agent) throw new AssistantError("VALIDATION", "Choose an available agent.");
     if (!parsed.resourceId || !parsed.threadId)
       throw new AssistantError("VALIDATION", "Choose an article and private thread first.");
-    if (context.selectedText || context.editorJson || parsed.inputMessageId || parsed.references?.length)
-      throw new AssistantError("VALIDATION", "Agent requests use the current document and attached source IDs.");
+    if (context.selectedText || context.editorJson || parsed.inputMessageId)
+      throw new AssistantError("VALIDATION", "Agent requests use the current document and attached sources.");
     const document = context.document === undefined ? undefined : validateBlogDocument(context.document, { cloudName });
     if (agent.requiresDocument && !document)
       throw new AssistantError("VALIDATION", "Attach the current blog to this agent.");
@@ -75,7 +75,6 @@ export function validateRunRequest(input: unknown, cloudName?: string, reserved 
       context.selectedText ||
       context.editorJson ||
       (parsed.resourceId && !parsed.inputMessageId && !reserved) ||
-      (parsed.threadId && !parsed.inputMessageId && !reserved) ||
       (!parsed.threadId && attachmentIds.length)
     )
       throw new AssistantError(

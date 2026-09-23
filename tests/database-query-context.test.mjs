@@ -31,7 +31,8 @@ test("queued pool queries and checkouts retain the caller's trace context", asyn
   }
   class Pool extends pg.Pool {
     constructor(options) {
-      super({ ...options, Client });
+      // Force contention independently of the production pool size.
+      super({ ...options, max: 1, Client });
     }
   }
   globalThis.__contextPg = { ...pg, Pool };

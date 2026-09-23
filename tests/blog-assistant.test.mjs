@@ -107,6 +107,16 @@ test("chat returns literal prose and JSON examples without an output envelope", 
   assert.equal(validateAssistantResult(result(null, { text }), chat).response.text, text);
   assert.throws(() => validateAssistantResult(result(null), chat), /empty/i);
 });
+test("new generation accepts a client draft thread ID without an existing article", () => {
+  const input = {
+    clientRequestId: "new-generation",
+    operation: "generate",
+    message: "A useful article",
+    threadId: "draft-thread",
+  };
+  assert.equal(validateRunRequest(input).threadId, "draft-thread");
+  assert.throws(() => validateRunRequest({ ...input, resourceId: "existing-article" }));
+});
 test("reference URLs reject credentials, local destinations and encoded private addresses", () => {
   for (const url of [
     "http://openai.com",

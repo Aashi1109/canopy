@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { sql } from "drizzle-orm";
 import { createDatabase, sqlClient } from "../db/runtime.ts";
+import config from "../lib/config/config.ts";
 
 const enabled = process.env.CANOPY_INTEGRATION === "1" && Boolean(process.env.DATABASE_URL);
 
 test(
-  "one database connection completes concurrent reads and releases failed transactions",
+  "a bounded database pool completes concurrent reads and releases failed transactions",
   { skip: enabled ? false : "set CANOPY_INTEGRATION=1 and DATABASE_URL; this test only reads", timeout: 15_000 },
   async (context) => {
     context.after(() => sqlClient.end());
@@ -21,7 +22,7 @@ test(
     };
 
     for (let i = 0; i < 5; i++) await pair(db);
-    assert.equal(sqlClient.totalCount, 1);
+    assert.ok(sqlClient.totalCount > 0 && sqlClient.totalCount <= config.databasePoolMax);
     await db.transaction(
       async (tx) => {
         await pair(tx);
@@ -47,6 +48,6 @@ test(
       /rollback/i,
     );
     await pair(db);
-    assert.equal(sqlClient.idleCount, 1);
+    assert.equal(sqlClient.idleCount, sqlClient.totalCount);
   },
 );

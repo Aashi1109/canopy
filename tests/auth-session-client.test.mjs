@@ -10,6 +10,7 @@ const fixture = {
   authorizationError: null,
   queries: 0,
   headers: null,
+  sessionQuery: null,
 };
 globalThis.__canopySessionTest = fixture;
 const moduleUrl = (source) => `data:text/javascript,${encodeURIComponent(source)}`;
@@ -20,8 +21,9 @@ const hooks = registerHooks({
         shortCircuit: true,
         url: moduleUrl(`
         const fixture = globalThis.__canopySessionTest;
-        export const auth = { api: { async getSession({ headers }) {
+        export const auth = { api: { async getSession({ headers, query }) {
           fixture.headers = headers;
+          fixture.sessionQuery = query;
           if (fixture.authError) throw fixture.authError;
           return fixture.session;
         } } };
@@ -50,10 +52,55 @@ const hooks = registerHooks({
 const { AuthServiceError, getSession, getOptionalSession, isAdminUser } = await import(sessionUrl);
 hooks.deregister();
 
-test("account session uses active users' effective Admin entry grants, including custom roles", async (t) => {
-  t.after(() => {
-    delete globalThis.__canopySessionTest;
-  });
+test.after(() => {
+  delete globalThis.__canopySessionTest;
+});
+test.beforeEach(() => {
+  fixture.session = null;
+  fixture.authorizations.clear();
+  fixture.authError = null;
+  fixture.authorizationError = null;
+  fixture.queries = 0;
+});
+
+test("sessions can omit admin enrichment while default callers still receive it", async () => {
+  const headers = new Headers({ cookie: "session=test" });
+  fixture.session = {
+    session: { id: "session-1" },
+    user: { id: "user-1", name: "Ashish", status: "active" },
+  };
+  fixture.authorizations.set("user-1", { access: { admin: { enter: true } } });
+
+  assert.deepEqual(await getSession(headers, { includeAdmin: false }), fixture.session);
+  assert.equal(fixture.queries, 0);
+  assert.equal(fixture.headers, headers);
+  assert.deepEqual(fixture.sessionQuery, { disableCookieCache: true });
+  assert.equal((await getSession(headers)).user.isAdmin, true);
+  assert.equal(fixture.queries, 1);
+});
+
+test("omitting admin enrichment still checks current session status and authentication failures", async () => {
+  const headers = new Headers();
+  fixture.session = {
+    session: { id: "session-1" },
+    user: { id: "user-1", name: "Ashish", status: "active" },
+  };
+  fixture.authorizationError = new Error("unused authorization service unavailable");
+  assert.equal((await getSession(headers, { includeAdmin: false })).user.status, "active");
+  fixture.session.user.status = "suspended";
+  assert.equal((await getSession(headers, { includeAdmin: false })).user.status, "suspended");
+  assert.deepEqual(fixture.sessionQuery, { disableCookieCache: true });
+  fixture.session = null;
+  assert.equal(await getSession(headers, { includeAdmin: false }), null);
+  fixture.authError = new Error("auth unavailable");
+  await assert.rejects(
+    getSession(headers, { includeAdmin: false }),
+    (error) => error instanceof AuthServiceError && error.cause === fixture.authError,
+  );
+  assert.equal(fixture.queries, 0);
+});
+
+test("account session uses active users' effective Admin entry grants, including custom roles", async () => {
   const headers = new Headers({ cookie: "session=test" });
   fixture.session = {
     session: { id: "session-1" },

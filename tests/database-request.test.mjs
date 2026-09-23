@@ -80,6 +80,8 @@ const deferred = () => Promise.withResolvers();
 
 test("database pools stay inside their request through transactions, streams and cleanup", async () => {
   const originalUrl = process.env.DATABASE_URL;
+  const originalPoolMax = process.env.DATABASE_POOL_MAX;
+  process.env.DATABASE_POOL_MAX = "4";
   delete process.env.DATABASE_URL;
   assert.equal(clients.length, 0, "imports must not open or configure a pool");
   await assert.rejects(
@@ -228,7 +230,7 @@ test("database pools stay inside their request through transactions, streams and
     await Promise.all(waits.splice(0));
     process.env.DATABASE_URL = "postgres://localhost/test";
     const nodeId = await query();
-    assert.equal(db.$client.options.max, 1, "each Node instance limits its database pool to one connection");
+    assert.equal(db.$client.options.max, 4, "Node pools use the configured connection limit");
     assert.equal(db.$client.options.idleTimeoutMillis, 20_000);
     assert.equal(db.$client.options.connectionTimeoutMillis, 10_000);
     assert.ok(db.$client.listenerCount("error") > 0, "idle connection errors have a handler");
@@ -243,6 +245,8 @@ test("database pools stay inside their request through transactions, streams and
   } finally {
     if (originalUrl === undefined) delete process.env.DATABASE_URL;
     else process.env.DATABASE_URL = originalUrl;
+    if (originalPoolMax === undefined) delete process.env.DATABASE_POOL_MAX;
+    else process.env.DATABASE_POOL_MAX = originalPoolMax;
     delete globalThis.__databaseRequestClients;
     delete globalThis.__bootstrapDb;
   }

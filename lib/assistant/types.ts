@@ -117,7 +117,7 @@ export type AssistantMessage = {
   updatedAt: string;
 };
 export type AssistantEvent =
-  | { type: "run"; run: AssistantRun }
+  | { type: "run"; run: AssistantRun; attachments?: AssistantAttachment[] }
   | { type: "text-delta"; text: string }
   | { type: "text"; text: string }
   | { type: "proposal"; proposal: AssistantProposal }

@@ -32,7 +32,7 @@ import type { AssistantIntegration, AssistantTransaction, StoredRun, AuxiliaryRe
 import type { AssistantMessagePart, AssistantProposal, AssistantRunRequest, AssistantEvent } from "./types.ts";
 
 export function createAssistantRuns(integration: AssistantIntegration, storage: AssistantThreads) {
-  const { requireThread, requireAssistantClient, attachmentsForRun, runView, messageView } = storage;
+  const { requireThread, requireAssistantClient, attachmentsForRun, attachmentView, runView, messageView } = storage;
   const active = (run: StoredRun) => ACTIVE_RUN_STATUSES.some((status) => status === run.status);
   const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
   const handlesOf = (run: StoredRun): string[] =>
@@ -54,8 +54,13 @@ export function createAssistantRuns(integration: AssistantIntegration, storage: 
         ),
       );
     if (!candidate) throw new AssistantError("NOT_FOUND", "This private request is no longer available.", 404);
-    if (candidate.threadId) await requireThread(tx, actor, candidate.resourceId, candidate.threadId, false);
-    await integration.authorize(tx, actor, candidate.resourceId, edit, candidate.operation);
+    if (candidate.threadId)
+      await requireThread(tx, actor, candidate.resourceId, candidate.threadId, {
+        edit,
+        operation: candidate.operation,
+        forUpdate: true,
+      });
+    else await integration.authorize(tx, actor, candidate.resourceId, edit, candidate.operation);
     const [run] = await tx
       .select()
       .from(runs)
@@ -100,25 +105,55 @@ export function createAssistantRuns(integration: AssistantIntegration, storage: 
         const authorized = await authorizeRun(tx, actor, existing.id);
         if (existing.continuation.submissionHash !== submissionHash)
           throw new AssistantError("CONFLICT", "This request ID was used for different content.", 409);
-        return { run: authorized, fresh: false };
+        const inputIds = authorized.request.attachmentIds ?? [];
+        const referenceAttachments =
+          request.references?.length && inputIds.length
+            ? await tx
+                .select()
+                .from(attachments)
+                .where(
+                  and(
+                    inArray(attachments.id, inputIds),
+                    eq(attachments.ownerId, actor),
+                    eq(attachments.threadId, authorized.threadId!),
+                  ),
+                )
+            : [];
+        return { run: authorized, fresh: false, attachments: referenceAttachments.map((file) => attachmentView(file)) };
       }
-      if (request.threadId) {
-        const thread = await requireThread(tx, actor, request.resourceId, request.threadId, true);
-        request = { ...request, resourceId: thread.resourceId ?? undefined };
-      }
+      const [thread] = request.threadId
+        ? await tx
+            .select()
+            .from(threads)
+            .where(
+              and(
+                eq(threads.id, request.threadId),
+                eq(threads.ownerId, actor),
+                eq(threads.integrationKey, integration.key),
+                request.resourceId === undefined ? undefined : eq(threads.resourceId, request.resourceId),
+                sql`${threads.updatedAt} > now() - interval '30 days'`,
+              ),
+            )
+            .for("update")
+        : [];
+      if (request.inputMessageId && !thread)
+        throw new AssistantError("NOT_FOUND", "The original message is not in this thread.", 404);
+      if (thread) request = { ...request, resourceId: thread.resourceId ?? undefined };
       request = integration.validateRequest(request);
       const operation = integration.operation(request);
       if (operation.structuredOutput && !caps.structuredOutput)
         throw new AssistantError("CAPABILITY", "This provider cannot produce structured results.");
       await integration.authorize(tx, actor, request.resourceId ?? null, true, request.operation);
       const resourceId = (await integration.reserveResource?.(tx, actor, request)) ?? request.resourceId ?? null;
-      let threadId = request.threadId;
+      if (resourceId !== (request.resourceId ?? null))
+        await integration.authorize(tx, actor, resourceId, true, request.operation);
+      const existingThread = thread?.resourceId === resourceId ? thread : undefined;
+      const threadId = existingThread?.id ?? randomUUID();
       let settings = request.settings ?? {};
       const messageTitle = request.message.replace(/\s+/g, " ").slice(0, 80);
       let titleFromFirstMessage = false;
-      if (threadId) {
-        const thread = await requireThread(tx, actor, resourceId, threadId, true);
-        const { composerDraft: _, composerState: __, ...saved } = thread.settings;
+      if (existingThread) {
+        const { composerDraft: _, composerState: __, ...saved } = existingThread.settings;
         settings = { ...integration.validateSettings(saved), ...settings };
         if (!request.inputMessageId) {
           const [firstMessage] = await tx
@@ -126,13 +161,13 @@ export function createAssistantRuns(integration: AssistantIntegration, storage: 
             .from(messages)
             .where(and(eq(messages.threadId, threadId), eq(messages.role, "user")))
             .limit(1);
-          const [firstRun] = await tx.select({ id: runs.id }).from(runs).where(eq(runs.threadId, threadId)).limit(1);
+          const [firstRun] = firstMessage
+            ? []
+            : await tx.select({ id: runs.id }).from(runs).where(eq(runs.threadId, threadId)).limit(1);
           titleFromFirstMessage = !firstMessage && !firstRun;
         }
       } else {
-        await integration.authorize(tx, actor, resourceId, true, request.operation);
         settings = { ...integration.defaultSettings, ...integration.validateSettings(settings) };
-        threadId = randomUUID();
         await tx.insert(threads).values({
           id: threadId,
           resourceId,
@@ -183,6 +218,29 @@ export function createAssistantRuns(integration: AssistantIntegration, storage: 
         inputMessageId,
         operation.executionMode === "standalone",
       );
+      const referenceAttachments = effective.references?.length
+        ? await tx
+            .insert(attachments)
+            .values(
+              effective.references.map((url) => ({
+                id: randomUUID(),
+                threadId,
+                ownerId: actor,
+                type: "link",
+                label: new URL(url).hostname,
+                data: { url },
+                status: "ready" as const,
+              })),
+            )
+            .returning()
+        : [];
+      if (referenceAttachments.length)
+        effective = {
+          ...effective,
+          attachmentIds: [...(effective.attachmentIds ?? []), ...referenceAttachments.map((file) => file.id)],
+          references: [],
+        };
+      selected.push(...referenceAttachments);
       if (selected.some((file) => file.type === "file") && !caps.images)
         throw new AssistantError("CAPABILITY", "The selected provider cannot read images.");
       if (operation.executionMode === "standalone" || selected.some((file) => file.type === "artifact")) {
@@ -213,23 +271,6 @@ export function createAssistantRuns(integration: AssistantIntegration, storage: 
                 boundInputs.map((file) => file.id),
               ),
             );
-        if (request.references?.length) {
-          const links = request.references.map((url) => ({
-            id: randomUUID(),
-            threadId: threadId!,
-            messageId: inputMessageId!,
-            ownerId: actor,
-            type: "link",
-            label: new URL(url).hostname,
-            data: { url },
-            status: "ready" as const,
-          }));
-          await tx.insert(attachments).values(links);
-          parts.push(...links.map((link) => ({ type: "attachment" as const, attachmentId: link.id })));
-          await tx.update(messages).set({ parts }).where(eq(messages.id, inputMessageId));
-          effective.attachmentIds = [...(effective.attachmentIds ?? []), ...links.map((link) => link.id)];
-          effective.references = [];
-        }
       }
       const assistantMessageId = operation.executionMode === "standalone" ? null : randomUUID();
       const [run] = await tx
@@ -276,7 +317,11 @@ export function createAssistantRuns(integration: AssistantIntegration, storage: 
           threadId,
         },
       );
-      return { run, fresh: true };
+      return {
+        run,
+        fresh: true,
+        attachments: referenceAttachments.map((file) => attachmentView({ ...file, messageId: inputMessageId ?? null })),
+      };
     });
   }
 
@@ -464,7 +509,7 @@ export function createAssistantRuns(integration: AssistantIntegration, storage: 
 
   /** NDJSON keeps SDK/provider details behind the shared AI client. */
   async function streamRun(actor: string, input: unknown, requestSignal: AbortSignal): Promise<Response> {
-    const { run, fresh } = await startRun(actor, input);
+    const { run, fresh, attachments: inputAttachments } = await startRun(actor, input);
     const abort = new AbortController();
     let providerComplete = false;
     const onAbort = () => {
@@ -491,7 +536,11 @@ export function createAssistantRuns(integration: AssistantIntegration, storage: 
         let completedRun: StoredRun | undefined;
         let receivedResult: AIResult | undefined;
         try {
-          emit({ type: "run", run: runView(run) });
+          emit({
+            type: "run",
+            run: runView(run),
+            ...(inputAttachments.length ? { attachments: inputAttachments } : {}),
+          });
           if (!fresh) {
             if (active(run))
               emit({

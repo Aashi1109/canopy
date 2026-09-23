@@ -362,21 +362,21 @@ export function createAssistantThreads(integration: AssistantIntegration) {
     actor: string,
     resourceId: string | null | undefined,
     threadId: string,
-    edit = false,
+    options: { edit?: boolean; operation?: string; forUpdate?: boolean } = {},
   ) {
     assistantId.parse(threadId);
-    const [thread] = await tx
+    const query = tx
       .select()
       .from(threads)
-      .where(and(eq(threads.id, threadId), eq(threads.ownerId, actor), eq(threads.integrationKey, integration.key)))
-      .for("update");
+      .where(and(eq(threads.id, threadId), eq(threads.ownerId, actor), eq(threads.integrationKey, integration.key)));
+    const [thread] = await (options.forUpdate ? query.for("update") : query);
     if (
       !thread ||
       (resourceId !== undefined && thread.resourceId !== resourceId) ||
       thread.updatedAt.getTime() < Date.now() - 30 * 24 * 60 * 60 * 1000
     )
       throw new AssistantError("NOT_FOUND", "This private thread is no longer available.", 404);
-    await requireResourceAccess(tx, actor, thread.resourceId, edit);
+    await requireResourceAccess(tx, actor, thread.resourceId, options.edit ?? false, options.operation);
     return thread;
   }
   async function listThreads(actor: string, resourceId: string | null) {
@@ -515,7 +515,7 @@ export function createAssistantThreads(integration: AssistantIntegration) {
   async function updateThread(actor: string, resourceId: string | null | undefined, threadId: string, input: unknown) {
     const value = threadPatchSchema.parse(input);
     return db.transaction(async (tx) => {
-      const thread = await requireThread(tx, actor, resourceId, threadId, true);
+      const thread = await requireThread(tx, actor, resourceId, threadId, { edit: true, forUpdate: true });
       const [updated] = await tx
         .update(threads)
         .set({
@@ -541,7 +541,7 @@ export function createAssistantThreads(integration: AssistantIntegration) {
     removeThread = false,
   ) {
     const removed = await db.transaction(async (tx) => {
-      const thread = await requireThread(tx, actor, resourceId, threadId, true);
+      const thread = await requireThread(tx, actor, resourceId, threadId, { edit: true, forUpdate: true });
       const [upload] = await tx
         .select({ id: attachments.id })
         .from(attachments)
@@ -648,7 +648,7 @@ export function createAssistantThreads(integration: AssistantIntegration) {
       throw new AssistantError("CAPABILITY", "This provider does not support images.");
     const id = randomUUID();
     await db.transaction(async (tx) => {
-      await requireThread(tx, actor, resourceId, threadId, true);
+      await requireThread(tx, actor, resourceId, threadId, { edit: true, forUpdate: true });
       await tx.insert(attachments).values({
         id,
         threadId,
@@ -675,7 +675,7 @@ export function createAssistantThreads(integration: AssistantIntegration) {
         })
         .where(eq(attachments.id, id));
       return await db.transaction(async (tx) => {
-        const thread = await requireThread(tx, actor, resourceId, threadId, true);
+        const thread = await requireThread(tx, actor, resourceId, threadId, { edit: true, forUpdate: true });
         const [row] = await tx
           .update(attachments)
           .set({ status: "ready", updatedAt: new Date() })
@@ -703,7 +703,7 @@ export function createAssistantThreads(integration: AssistantIntegration) {
   async function removeAttachment(actor: string, resourceId: string | null | undefined, threadId: string, id: string) {
     assistantId.parse(id);
     const file = await db.transaction(async (tx) => {
-      await requireThread(tx, actor, resourceId, threadId, true);
+      await requireThread(tx, actor, resourceId, threadId, { edit: true, forUpdate: true });
       const [row] = await tx
         .select()
         .from(attachments)
@@ -797,7 +797,7 @@ export function createAssistantThreads(integration: AssistantIntegration) {
       .parse(input);
     const url = publicReference(value.url);
     return db.transaction(async (tx) => {
-      const thread = await requireThread(tx, actor, resourceId, threadId, true);
+      const thread = await requireThread(tx, actor, resourceId, threadId, { edit: true, forUpdate: true });
       const [row] = await tx
         .insert(attachments)
         .values({

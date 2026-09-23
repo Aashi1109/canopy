@@ -208,6 +208,25 @@ test(
       assert.equal(submissions, before);
       await assert.rejects(assistant.getRun("b", one.run.id), { code: "NOT_FOUND" });
     });
+    await t.test("a draft or mismatched blog thread starts a private conversation in the requested blog", async () => {
+      const other = await createBlogPost("a", { title: "Separate article" });
+      for (const threadId of [randomUUID(), first.id]) {
+        const input = request({ resourceId: other.id, threadId, references: ["https://openai.com/source"] });
+        const events = await readEvents(await assistant.streamRun("a", input, new AbortController().signal));
+        const run = events.find((event) => event.type === "completed").run;
+        assert.equal(events[0].attachments[0].data.url, "https://openai.com/source");
+        assert.equal(events[0].attachments[0].messageId, run.inputMessageId);
+        assert.notEqual(run.threadId, threadId);
+        assert.equal(run.resourceId, other.id);
+        const detail = await assistant.getThread("a", other.id, run.threadId);
+        assert.equal(detail.messages.filter((message) => message.role === "user").length, 1);
+        assert.equal(detail.attachments[0].data.url, "https://openai.com/source");
+        assert.equal(detail.attachments[0].messageId, run.inputMessageId);
+        await assert.rejects(assistant.getThread("b", other.id, run.threadId), { code: "NOT_FOUND" });
+        const next = await complete(request({ resourceId: other.id, threadId: run.threadId, message: "Continue" }));
+        assert.equal(next.threadId, run.threadId);
+      }
+    });
     await t.test("chat deltas precede persistence and plain prose plus usage are stored in messages", async () => {
       let release;
       const wait = new Promise((resolve) => {
@@ -354,6 +373,10 @@ test(
       );
       const calls = submissions;
       const replay = await readEvents(await assistant.streamRun("a", input, new AbortController().signal));
+      assert.deepEqual(
+        replay[0].attachments.map((attachment) => attachment.data.url).sort(),
+        ["https://openai.com/existing-source", ...references].sort(),
+      );
       assert.equal(replay.at(-1).type, "completed");
       assert.equal(replay.at(-1).run.id, run.id);
       assert.equal(submissions, calls);
@@ -381,6 +404,7 @@ test(
       const input = {
         clientRequestId: randomUUID(),
         operation: "generate",
+        threadId: randomUUID(),
         message: "An invoice guide",
         references: ["https://openai.com/article"],
       };
@@ -557,6 +581,27 @@ test(
           context: { document },
           ...extra,
         });
+        scenarios.push({ result: { output } });
+        const referencedEvents = await readEvents(
+          await assistant.streamRun(
+            "a",
+            agentRequest({ threadId: randomUUID(), references: ["https://openai.com/agent-source"] }),
+            new AbortController().signal,
+          ),
+        );
+        const referenced = referencedEvents[0];
+        assert.ok(referencedEvents.some((event) => event.type === "completed"));
+        assert.equal(referenced.run.executionMode, "standalone");
+        assert.equal(referenced.run.inputMessageId, null);
+        assert.equal(referenced.attachments[0].data.url, "https://openai.com/agent-source");
+        assert.equal(referenced.attachments[0].messageId, null);
+        assert.deepEqual(referenced.run.request.references, []);
+        assert.deepEqual(referenced.run.request.attachmentIds, [referenced.attachments[0].id]);
+        assert.ok(JSON.stringify(providerRequests.at(-1).messages).includes("https://openai.com/agent-source"));
+        assert.equal(
+          (await assistant.listThreadAttachments("a", post.id, referenced.run.threadId, "sources")).attachments[0].id,
+          referenced.attachments[0].id,
+        );
         const originalCapabilities = AIClient.prototype.getCapabilities;
         AIClient.prototype.getCapabilities = function () {
           return { ...originalCapabilities.call(this), webSearch: false };

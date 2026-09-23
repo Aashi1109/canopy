@@ -13,6 +13,10 @@ const config = {
   get databaseUrl() {
     return process.env.DATABASE_URL;
   },
+  get databasePoolMax() {
+    const value = Number(process.env.DATABASE_POOL_MAX);
+    return Number.isSafeInteger(value) && value > 0 ? value : 3;
+  },
   get redisUrl() {
     return process.env.REDIS_URL;
   },

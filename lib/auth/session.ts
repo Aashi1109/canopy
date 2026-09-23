@@ -24,7 +24,10 @@ export class AuthServiceError extends Error {
   }
 }
 
-export async function getSession(requestHeaders: Headers): Promise<AuthServiceSession | null> {
+export async function getSession(
+  requestHeaders: Headers,
+  options: { includeAdmin?: boolean } = {},
+): Promise<AuthServiceSession | null> {
   try {
     const session = await auth.api.getSession({
       headers: requestHeaders,
@@ -38,7 +41,7 @@ export async function getSession(requestHeaders: Headers): Promise<AuthServiceSe
         id: session.user.id,
         name: session.user.name,
         status: session.user.status === "active" ? "active" : "suspended",
-        isAdmin: await isAdminUser(session.user.id),
+        ...(options.includeAdmin === false ? {} : { isAdmin: await isAdminUser(session.user.id) }),
       },
     };
   } catch (cause) {

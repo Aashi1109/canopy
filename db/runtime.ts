@@ -84,7 +84,7 @@ function getSqlClient(): SqlClient {
   const client = new pg.Pool({
     connectionString: databaseUrl ?? "postgres://127.0.0.1:1/canopy_unconfigured",
     // Each warm Vercel instance owns its own pool; keep Node connections bounded.
-    max: request ? 5 : 1,
+    max: request ? 5 : config.databasePoolMax,
     idleTimeoutMillis: 20_000,
     connectionTimeoutMillis: 10_000,
   });

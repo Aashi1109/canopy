@@ -476,6 +476,38 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
       executionsCursor: null,
     };
   }
+  function adoptThread(thread: AssistantThread, sourceId: string, preserveDraft: boolean, localMessageId?: string) {
+    setThreads((value) => [thread, ...value.filter((entry) => entry.id !== thread.id && entry.id !== sourceId)]);
+    setDetails((value) => {
+      const source = value[sourceId];
+      const detail = value[thread.id] ?? (isDraftScope(sourceId) ? source : undefined) ?? emptyDetail(thread);
+      const localMessages = source?.messages.filter((message) => message.id === localMessageId) ?? [];
+      const next = {
+        ...value,
+        [thread.id]: {
+          ...detail,
+          thread,
+          messages: [
+            ...detail.messages,
+            ...localMessages.filter((message) => !detail.messages.some((existing) => existing.id === message.id)),
+          ].map((message) => ({ ...message, threadId: thread.id })),
+        },
+      };
+      if (sourceId !== thread.id) delete next[sourceId];
+      return next;
+    });
+    if (preserveDraft) {
+      draft(draftsRef.current[sourceId] ?? "", thread.id);
+      composerState(composerStatesRef.current[sourceId] ?? { attachmentIds: [] }, thread.id);
+    }
+    for (const [alias, resolved] of createdThreads.current)
+      if (resolved === sourceId) createdThreads.current.set(alias, thread.id);
+    createdThreads.current.set(sourceId, thread.id);
+    if (currentScope() === sourceId) {
+      startingNew.current = false;
+      remember(thread.id);
+    }
+  }
   async function createThread(preserveDraft = false, message?: string, targetScope = currentScope()) {
     const existingId = resolvedScope(targetScope);
     if (!isDraftScope(existingId)) {
@@ -494,29 +526,7 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
       });
       if (!alive.current || scopeVersion.current !== scope)
         throw new DOMException("Assistant context changed.", "AbortError");
-      setThreads((value) => [thread, ...value.filter((entry) => entry.id !== thread.id)]);
-      setDetails((value) => {
-        const detail = value[targetScope] ?? emptyDetail(thread);
-        const next = {
-          ...value,
-          [thread.id]: {
-            ...detail,
-            thread,
-            messages: detail.messages.map((message) => ({ ...message, threadId: thread.id })),
-          },
-        };
-        delete next[targetScope];
-        return next;
-      });
-      if (preserveDraft) {
-        draft(draftsRef.current[targetScope] ?? "", thread.id);
-        composerState(composerStatesRef.current[targetScope] ?? { attachmentIds: [] }, thread.id);
-      }
-      createdThreads.current.set(targetScope, thread.id);
-      if (currentScope() === targetScope) {
-        startingNew.current = false;
-        remember(thread.id);
-      }
+      adoptThread(thread, targetScope, preserveDraft);
       return thread;
     })();
     creating.current.set(targetScope, creation);
@@ -716,7 +726,8 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
           composerState({ attachmentIds: [] }, id);
         }
       }
-      if (isDraftScope(id)) id = (await createThread(true, input.message, targetScope)).id;
+      const creation = creating.current.get(targetScope);
+      if (creation) id = (await creation).id;
       if (lockId !== id) {
         locks.current.delete(lockId);
         controllers.current.delete(lockId);
@@ -728,48 +739,79 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
       controller.signal.throwIfAborted();
       const links = options.referenceLinks ?? [];
       if (links.length > 5) throw new Error("Use at most five reference links.");
-      for (const [index, url] of links.entries()) {
-        const link = await addLink(url, id);
-        if (!alive.current || scopeVersion.current !== scope) return null;
-        input = { ...input, attachmentIds: [...(input.attachmentIds ?? []), link.id] };
-        const previousSelection = recoverySelection;
-        recoverySelection = { ...submittedSelection, attachmentIds: input.attachmentIds! };
-        if (
-          !conversational &&
-          sameComposerSelection(composerStatesRef.current[id] ?? { attachmentIds: [] }, previousSelection)
-        )
-          composerState(recoverySelection, id);
-        setDetails((value) =>
-          value[id]
-            ? {
-                ...value,
-                [id]: {
-                  ...value[id],
-                  messages: value[id].messages.map((message) =>
-                    message.id === localMessageId
-                      ? { ...message, parts: [...message.parts, { type: "attachment", attachmentId: link.id }] }
-                      : message,
-                  ),
-                },
-              }
-            : value,
-        );
-        options.onReferenceAdded?.(id, links.slice(index + 1));
-        controller.signal.throwIfAborted();
-      }
+      input = {
+        ...input,
+        settings: {
+          ...(isDraftScope(id) ? newSettingsRef.current[id] : detailsRef.current[id]?.thread.settings),
+          ...input.settings,
+        },
+        ...(links.length ? { references: [...new Set([...(input.references ?? []), ...links])] } : {}),
+      };
       const previous = pending.current[id];
+      const threadId = isDraftScope(id) ? (previous?.threadId ?? crypto.randomUUID()) : id;
       const { clientRequestId: _previousKey, ...previousInput } = previous ?? {};
       const sameSubmission =
-        previous && JSON.stringify(previousInput) === JSON.stringify({ ...input, resourceId, threadId: id });
+        previous && JSON.stringify(previousInput) === JSON.stringify({ ...input, resourceId, threadId });
       const request = sameSubmission
         ? previous
-        : { ...input, resourceId, threadId: id, clientRequestId: crypto.randomUUID() };
+        : { ...input, resourceId, threadId, clientRequestId: crypto.randomUUID() };
       pending.current[id] = request;
+      function adoptRunThread(next: AssistantRun) {
+        if (next.threadId && next.threadId !== id) {
+          const previousId = id;
+          adoptThread(
+            {
+              id: next.threadId,
+              integrationKey,
+              resourceId: next.resourceId,
+              title: next.request.message.trim().replace(/\s+/g, " ").slice(0, 80),
+              type: next.operation === "rewrite" ? "inline" : "chat",
+              settings: next.request.settings ?? {},
+              composerDraft: draftsRef.current[id] ?? "",
+              composerState: composerStatesRef.current[id] ?? { attachmentIds: [] },
+              createdAt: next.createdAt,
+              updatedAt: next.updatedAt,
+            },
+            id,
+            true,
+            localMessageId,
+          );
+          id = next.threadId;
+          locks.current.delete(previousId);
+          controllers.current.delete(previousId);
+          delete pending.current[previousId];
+          locks.current.add(id);
+          controllers.current.set(id, controller);
+          setSubmitting((value) => ({ ...value, [previousId]: false, [id]: true }));
+        }
+      }
       const run = await streamAssistantRun(integrationKey, request, controller.signal, (event) => {
         if (!alive.current || scopeVersion.current !== scope || controller.signal.aborted) return;
         if (event.type === "run" || event.type === "completed" || (event.type === "error" && event.run)) {
           const next = event.run!;
           observedRun = next;
+          adoptRunThread(next);
+          if (event.type === "run" && event.attachments?.length) {
+            const attachments = event.attachments;
+            recoverySelection = {
+              ...submittedSelection,
+              attachmentIds: [...new Set([...(input.attachmentIds ?? []), ...attachments.map((file) => file.id)])],
+            };
+            setDetails((value) =>
+              value[id]
+                ? {
+                    ...value,
+                    [id]: {
+                      ...value[id],
+                      attachments: [
+                        ...value[id].attachments.filter((file) => !attachments.some((item) => item.id === file.id)),
+                        ...attachments,
+                      ],
+                    },
+                  }
+                : value,
+            );
+          }
           updateRun(next, localMessageId, streamedText);
           if (event.type === "completed" && next.status === "completed" && selectedRef.current === id)
             setFreshRunIds((value) => (value.includes(next.id) ? value : [...value, next.id]));
@@ -779,12 +821,13 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
             if (
               !conversational &&
               draftsRef.current[id] === submittedDraft &&
-              sameComposerSelection(composerStatesRef.current[id] ?? { attachmentIds: [] }, recoverySelection)
+              sameComposerSelection(composerStatesRef.current[id] ?? { attachmentIds: [] }, submittedSelection)
             ) {
               draft("", id);
               composerState({ attachmentIds: [] }, id);
             }
             onCreated?.(next);
+            if (links.length) options.onReferenceAdded?.(id, []);
           }
         } else if (event.type === "text-delta" || event.type === "text") {
           streamedText = event.type === "text" ? event.text : streamedText + event.text;
@@ -792,6 +835,7 @@ export function useAssistant(integrationKey: string, resourceId: string | undefi
         }
       });
       if (!alive.current || scopeVersion.current !== scope) return null;
+      adoptRunThread(run);
       completed = run.status === "completed";
       delete pending.current[id];
       updateRun(run, localMessageId, streamedText);

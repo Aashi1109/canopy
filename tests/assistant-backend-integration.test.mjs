@@ -95,6 +95,7 @@ test(
     );
     ({ AIClient } = await import("../lib/ai/client.ts"));
     ({ sqlClient } = await import("../db/index.ts"));
+    const { withDatabaseRequest } = await import("../db/runtime.ts");
     const { createAssistantService } = await import("../lib/assistant/service.ts");
     const { AssistantError } = await import("../lib/assistant/validation.ts");
     const { sql } = await import("../db/index.ts");
@@ -156,6 +157,8 @@ test(
 
     const revoked = new Set();
     const reservations = [];
+    const authorizations = [];
+    let authorizationGate;
     function integration(key) {
       return {
         key,
@@ -184,7 +187,8 @@ test(
         operationLabel(operation) {
           return `Fixture ${operation}`;
         },
-        async authorize(tx, actor, resourceId) {
+        async authorize(tx, actor, resourceId, edit, operation) {
+          authorizations.push({ key, actor, resourceId, edit, operation });
           if (!["owner", "other"].includes(actor) || revoked.has(key))
             throw new AssistantError("FORBIDDEN", "Access revoked", 403);
           if (resourceId) {
@@ -193,6 +197,7 @@ test(
             );
             if (!result.rows.length) throw new AssistantError("NOT_FOUND", "Fixture resource unavailable", 404);
           }
+          await authorizationGate?.(tx, { key, actor, resourceId, edit, operation });
         },
         async authorizeConfiguration(actor) {
           if (actor !== "owner") throw new AssistantError("FORBIDDEN", "No configuration access", 403);
@@ -417,6 +422,127 @@ test(
       },
     );
 
+    const databaseRequest = async (operation, lockTimeout = 3000) => {
+      const connection = new URL(target);
+      connection.searchParams.set(
+        "options",
+        `-c search_path=${schema} -c lock_timeout=${lockTimeout} -c statement_timeout=5000`,
+      );
+      const cleanup = [];
+      let value;
+      try {
+        await withDatabaseRequest(
+          async () => {
+            value = await operation();
+            return new Response(null, { status: 204 });
+          },
+          (task) => cleanup.push(task),
+          connection.toString(),
+        );
+        return value;
+      } finally {
+        await Promise.allSettled(cleanup);
+      }
+    };
+    const readThread = await alpha.createThread("owner", null, {});
+    const readSource = await alpha.createLinkAttachment("owner", null, readThread.id, {
+      type: "link",
+      url: "https://openai.com/source",
+    });
+    for (const [name, read] of [
+      ["history", () => alpha.getThread("owner", null, readThread.id)],
+      ["executions", () => alpha.getThreadExecutions("owner", null, readThread.id)],
+      ["sources", () => alpha.listThreadAttachments("owner", null, readThread.id, "sources")],
+      ["source detail", () => alpha.getThreadAttachment("owner", null, readThread.id, readSource.id)],
+    ]) {
+      await t.test(`${name} reads neither wait for nor hold a thread write lock`, async () => {
+        const blocker = await pool.connect();
+        try {
+          await blocker.query("BEGIN");
+          await blocker.query("SELECT id FROM assistant_threads WHERE id=$1 FOR UPDATE", [readThread.id]);
+          await assert.doesNotReject(databaseRequest(read, 250));
+        } finally {
+          await blocker.query("ROLLBACK");
+          blocker.release();
+        }
+        const entered = Promise.withResolvers();
+        const release = Promise.withResolvers();
+        authorizationGate = async () => {
+          entered.resolve();
+          await release.promise;
+        };
+        const reading = databaseRequest(read);
+        const writer = await pool.connect();
+        try {
+          await Promise.race([
+            entered.promise,
+            reading.then(() => {
+              throw new Error("Read bypassed authorization");
+            }),
+          ]);
+          await writer.query("BEGIN");
+          await assert.doesNotReject(
+            writer.query("SELECT id FROM assistant_threads WHERE id=$1 FOR UPDATE NOWAIT", [readThread.id]),
+          );
+        } finally {
+          await writer.query("ROLLBACK");
+          writer.release();
+          release.resolve();
+          authorizationGate = undefined;
+          await reading;
+        }
+      });
+    }
+    await t.test("concurrent settings and draft updates serialize without losing either change", async () => {
+      const thread = await alpha.createThread("owner", null, { settings: { tone: "before" } });
+      const entered = Promise.withResolvers();
+      const release = Promise.withResolvers();
+      let firstPid;
+      authorizationGate = async (tx) => {
+        if (firstPid) return;
+        firstPid = (await tx.execute(sql`SELECT pg_backend_pid() AS pid`)).rows[0].pid;
+        entered.resolve();
+        await release.promise;
+      };
+      const first = databaseRequest(() =>
+        alpha.updateThread("owner", null, thread.id, { settings: { tone: "after" } }),
+      );
+      let second;
+      try {
+        await Promise.race([
+          entered.promise,
+          first.then(() => {
+            throw new Error("Update bypassed authorization");
+          }),
+        ]);
+        second = databaseRequest(() =>
+          alpha.updateThread("owner", null, thread.id, { composerDraft: "Preserved new draft" }),
+        );
+        let settled = false;
+        const observed = second.finally(() => {
+          settled = true;
+        });
+        observed.catch(() => {});
+        let blocked = false;
+        const deadline = Date.now() + 2000;
+        while (!blocked && !settled && Date.now() < deadline) {
+          const activity = await pool.query(
+            "SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE $1::int = ANY(pg_blocking_pids(pid))) AS blocked",
+            [firstPid],
+          );
+          blocked = activity.rows[0].blocked;
+        }
+        assert.equal(blocked, true, "the second update must wait for the first transaction's thread row lock");
+      } finally {
+        release.resolve();
+        authorizationGate = undefined;
+        await Promise.all([first, second]);
+      }
+      const detail = await alpha.getThread("owner", null, thread.id);
+      assert.equal(detail.thread.settings.tone, "after");
+      assert.equal(detail.thread.composerDraft, "Preserved new draft");
+    });
+
     await t.test(
       "same resource and request IDs are isolated across integrations and retries stay in their thread",
       async () => {
@@ -449,6 +575,81 @@ test(
         );
       },
     );
+
+    await t.test("run startup reuses only the actor's live integration and resource thread", async () => {
+      await pool.query(
+        "INSERT INTO fixture_resources VALUES ('thread-target','fixture-alpha','owner'),('thread-other','fixture-alpha','owner')",
+      );
+      const own = await alpha.createThread("owner", "thread-target", { settings: { tone: "saved" } });
+      const wrongResource = await alpha.createThread("owner", "thread-other", { settings: { tone: "private" } });
+      const wrongOwner = await alpha.createThread("other", null, { settings: { tone: "private" } });
+      const wrongIntegration = await beta.createThread("owner", null, { settings: { tone: "private" } });
+      const expired = await alpha.createThread("owner", "thread-target", { settings: { tone: "expired" } });
+      await pool.query("UPDATE assistant_threads SET updated_at=now()-interval '31 days' WHERE id=$1", [expired.id]);
+      authorizations.length = 0;
+      const continued = await alpha.startRun("owner", request({ resourceId: "thread-target", threadId: own.id }));
+      assert.equal(continued.run.threadId, own.id);
+      assert.equal(continued.run.request.settings.tone, "saved");
+      assert.deepEqual(authorizations, [
+        { key: "fixture-alpha", actor: "owner", resourceId: "thread-target", edit: true, operation: "chat" },
+      ]);
+      authorizations.length = 0;
+      await alpha.getRun("owner", continued.run.id);
+      assert.deepEqual(authorizations, [
+        { key: "fixture-alpha", actor: "owner", resourceId: "thread-target", edit: false, operation: "chat" },
+      ]);
+      for (const threadId of [randomUUID(), wrongResource.id, wrongOwner.id, wrongIntegration.id, expired.id]) {
+        authorizations.length = 0;
+        const input = request({ resourceId: "thread-target", threadId });
+        const created = await alpha.startRun("owner", input);
+        assert.notEqual(created.run.threadId, threadId);
+        assert.equal(created.run.resourceId, "thread-target");
+        assert.equal(created.run.request.settings.tone, "plain");
+        assert.equal(authorizations.length, 1);
+        const detail = await alpha.getThread("owner", "thread-target", created.run.threadId);
+        assert.equal(detail.messages.filter((message) => message.role === "user").length, 1);
+        const replay = await alpha.startRun("owner", input);
+        assert.equal(replay.run.id, created.run.id);
+        assert.equal(replay.fresh, false);
+      }
+      const before = (await pool.query("SELECT count(*)::int n FROM assistant_threads")).rows[0].n;
+      for (const threadId of [randomUUID(), wrongOwner.id, wrongIntegration.id, wrongResource.id, expired.id]) {
+        await assert.rejects(
+          alpha.startRun(
+            "owner",
+            request({ resourceId: "thread-target", threadId, inputMessageId: continued.run.inputMessageId }),
+          ),
+          { code: "NOT_FOUND" },
+        );
+      }
+      const attachment = await alpha.createLinkAttachment("owner", "thread-other", wrongResource.id, {
+        type: "link",
+        url: "https://openai.com/source",
+      });
+      await assert.rejects(
+        alpha.startRun(
+          "owner",
+          request({ resourceId: "thread-target", threadId: wrongResource.id, attachmentIds: [attachment.id] }),
+        ),
+        { code: "VALIDATION" },
+      );
+      await assert.rejects(alpha.startRun("owner", request({ resourceId: "inaccessible", threadId: own.id })), {
+        code: "NOT_FOUND",
+      });
+      revoked.add("fixture-alpha");
+      try {
+        await assert.rejects(alpha.startRun("owner", request({ resourceId: "thread-target", threadId: own.id })), {
+          code: "FORBIDDEN",
+        });
+        await assert.rejects(
+          alpha.startRun("owner", request({ resourceId: "thread-target", threadId: randomUUID() })),
+          { code: "FORBIDDEN" },
+        );
+      } finally {
+        revoked.delete("fixture-alpha");
+      }
+      assert.equal((await pool.query("SELECT count(*)::int n FROM assistant_threads")).rows[0].n, before);
+    });
 
     await t.test("idempotency precedes resource reservation and replay never creates a second resource", async () => {
       const input = request({ operation: "create", clientRequestId: "create-once" });
