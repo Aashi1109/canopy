@@ -2,6 +2,7 @@ import config from "./lib/config/config.ts";
 import publicConfig from "./lib/config/public.ts";
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs/config";
+import withSerwistInit from "@serwist/next";
 import { fileURLToPath } from "node:url";
 
 const appRoot = fileURLToPath(new URL(".", import.meta.url));
@@ -106,7 +107,18 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+// Serwist compiles `app/sw.ts` into `public/sw.js` during `next build --webpack`.
+// Turbopack `next dev` cannot run the webpack-based plugin, so the service
+// worker is disabled in development — test offline via `pnpm build && pnpm start`.
+const withSerwist = withSerwistInit({
+  swSrc: "app/sw.ts",
+  swDest: "public/sw.js",
+  cacheOnNavigation: true,
+  reloadOnOnline: true,
+  disable: development,
+});
+
+export default withSentryConfig(withSerwist(nextConfig), {
   org: config.sentry.org,
   project: config.sentry.project,
   authToken: config.sentry.authToken,
