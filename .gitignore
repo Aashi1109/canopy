@@ -27,3 +27,6 @@ tmp/
 /designs/**
 !/designs/**/
 !/designs/**/*.pen
+
+# git worktrees
+.worktrees/
