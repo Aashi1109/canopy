@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { test, expect } from "vitest";
 import { buildReplacementPreview } from "../tools/find-and-replace/preview.ts";
 
 function replacements(preview) {
@@ -15,9 +13,9 @@ test("find and replace preview identifies every literal match", () => {
     replace: "production",
   });
 
-  assert.equal(preview.count, 2);
-  assert.equal(preview.invalidPattern, false);
-  assert.deepEqual(replacements(preview), [
+  expect(preview.count).toBe(2);
+  expect(preview.invalidPattern).toBe(false);
+  expect(replacements(preview)).toEqual([
     { found: "staging", kind: "replacement", replacement: "production" },
     { found: "staging", kind: "replacement", replacement: "production" },
   ]);
@@ -31,10 +29,7 @@ test("find and replace preview respects case-insensitive literal matching", () =
     replace: "production",
   });
 
-  assert.deepEqual(
-    replacements(preview).map((part) => part.found),
-    ["Stage", "STAGE", "stage"],
-  );
+  expect(replacements(preview).map((part) => part.found)).toEqual(["Stage", "STAGE", "stage"]);
 });
 
 test("find and replace preview expands regular-expression capture groups", () => {
@@ -45,10 +40,7 @@ test("find and replace preview expands regular-expression capture groups", () =>
     replace: "$2, $1",
   });
 
-  assert.deepEqual(
-    replacements(preview).map((part) => part.replacement),
-    ["Lovelace, Ada", "Hopper, Grace"],
-  );
+  expect(replacements(preview).map((part) => part.replacement)).toEqual(["Lovelace, Ada", "Hopper, Grace"]);
 });
 
 test("find and replace preview reports an invalid regular expression", () => {
@@ -59,9 +51,9 @@ test("find and replace preview reports an invalid regular expression", () => {
     replace: "value",
   });
 
-  assert.equal(preview.invalidPattern, true);
-  assert.equal(preview.count, 0);
-  assert.deepEqual(preview.parts, [{ kind: "text", text: "text" }]);
+  expect(preview.invalidPattern).toBe(true);
+  expect(preview.count).toBe(0);
+  expect(preview.parts).toEqual([{ kind: "text", text: "text" }]);
 });
 
 test("find and replace preview preserves the exact count when inline rendering is capped", () => {
@@ -72,11 +64,11 @@ test("find and replace preview preserves the exact count when inline rendering i
     replace: "b",
   });
 
-  assert.equal(preview.count, 205);
-  assert.equal(preview.previewedCount, 200);
-  assert.equal(preview.truncated, true);
-  assert.equal(replacements(preview).length, 200);
-  assert.deepEqual(preview.parts.at(-1), {
+  expect(preview.count).toBe(205);
+  expect(preview.previewedCount).toBe(200);
+  expect(preview.truncated).toBe(true);
+  expect(replacements(preview).length).toBe(200);
+  expect(preview.parts.at(-1)).toEqual({
     hiddenMatchCount: 5,
     kind: "unpreviewed",
     text: "aaaaa",
@@ -91,7 +83,7 @@ test("find and replace preview follows native two-digit capture fallback", () =>
     replace: "$12",
   });
 
-  assert.equal(replacements(preview)[0].replacement, "a2");
+  expect(replacements(preview)[0].replacement).toBe("a2");
 });
 
 test("find and replace preview expands native replacement tokens", () => {
@@ -102,5 +94,5 @@ test("find and replace preview expands native replacement tokens", () => {
     replace: "$$|$&|$<name>|$<missing>|$`|$'|$2",
   });
 
-  assert.equal(replacements(preview)[0].replacement, "$|Ada|Ada||before | after|$2");
+  expect(replacements(preview)[0].replacement).toBe("$|Ada|Ada||before | after|$2");
 });

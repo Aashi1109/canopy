@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { test, expect } from "vitest";
 import { LARGE_CSV_FILE_BYTES } from "../lib/devtools/shared/streaming-csv-tool.ts";
 import { CSV_PREVIEW_BYTES, LARGE_TEXT_PREVIEW_BYTES } from "../lib/tool-framework/limits.ts";
 import { run } from "../tools/csv-column-extractor/run.worker.ts";
@@ -33,9 +31,9 @@ for (const streaming of [false, true]) {
       streaming,
     });
 
-    assert.equal(result.render, "text");
-    assert.equal(result.text, "firstName,lastName\nAarav,Sharma\nPriya,Mehta");
-    assert.deepEqual(result.tablePreview, {
+    expect(result.render).toBe("text");
+    expect(result.text).toBe("firstName,lastName\nAarav,Sharma\nPriya,Mehta");
+    expect(result.tablePreview).toEqual({
       render: "table",
       columns: ["firstName", "lastName"],
       rows: [
@@ -45,17 +43,17 @@ for (const streaming of [false, true]) {
       showColumnDividers: true,
       truncated: false,
     });
-    assert.deepEqual(result.stats, [
+    expect(result.stats).toEqual([
       { label: "Rows", value: "2" },
       { label: "Columns", value: "2" },
     ]);
     if (streaming) {
-      assert.equal(await result.artifacts[0].blob.text(), result.text);
-      assert.equal(result.artifacts[0].name, "extracted-columns.csv");
-      assert.equal(result.artifacts[0].mime, "text/csv");
-      assert.equal(result.downloadName, undefined);
+      expect(await result.artifacts[0].blob.text()).toBe(result.text);
+      expect(result.artifacts[0].name).toBe("extracted-columns.csv");
+      expect(result.artifacts[0].mime).toBe("text/csv");
+      expect(result.downloadName).toBe(undefined);
     } else {
-      assert.equal(result.downloadName, "extracted-columns.csv");
+      expect(result.downloadName).toBe("extracted-columns.csv");
     }
   });
 
@@ -63,10 +61,10 @@ for (const streaming of [false, true]) {
     const source = "id,firstName,lastName\n1001,Aarav,Sharma";
     const result = await extract(source, " 3, firstName , 1,3 ", { streaming });
 
-    assert.equal(result.text, "lastName,firstName,id,lastName\nSharma,Aarav,1001,Sharma");
-    assert.equal((await extract(source, " firstName ", { streaming })).text, "firstName\nAarav");
-    assert.equal((await extract(source, "2", { streaming })).text, "firstName\nAarav");
-    assert.equal((await extract("2,name\nleft,right", "2", { streaming })).text, "name\nright");
+    expect(result.text).toBe("lastName,firstName,id,lastName\nSharma,Aarav,1001,Sharma");
+    expect((await extract(source, " firstName ", { streaming })).text).toBe("firstName\nAarav");
+    expect((await extract(source, "2", { streaming })).text).toBe("firstName\nAarav");
+    expect((await extract("2,name\nleft,right", "2", { streaming })).text).toBe("name\nright");
   });
 
   test(`${mode}: serializes selected rows with each configured delimiter and CSV quoting`, async () => {
@@ -75,47 +73,45 @@ for (const streaming of [false, true]) {
       const result = await extract(source, "note,firstName", { delimiter, streaming });
       const expected = [`note${delimiter}firstName`, `"a${delimiter}b ""quoted""\nnext"${delimiter}Ada`];
 
-      assert.equal(result.text, expected.join("\n"));
-      assert.deepEqual(result.tablePreview.columns, ["note", "firstName"]);
-      assert.deepEqual(result.tablePreview.rows, [[`a${delimiter}b "quoted"\nnext`, "Ada"]]);
-      if (streaming) assert.equal(await result.artifacts[0].blob.text(), expected.join("\n"));
+      expect(result.text).toBe(expected.join("\n"));
+      expect(result.tablePreview.columns).toEqual(["note", "firstName"]);
+      expect(result.tablePreview.rows).toEqual([[`a${delimiter}b "quoted"\nnext`, "Ada"]]);
+      if (streaming) expect(await result.artifacts[0].blob.text()).toBe(expected.join("\n"));
     }
   });
 
   test(`${mode}: retains comma headers and accepts quoted selectors with surrounding whitespace`, async () => {
     const source = '"last,name","a""quote",firstName\nLovelace,hello,Ada';
 
-    assert.equal((await extract(source, "last,name", { streaming })).text, '"last,name"\nLovelace');
-    assert.equal(
-      (await extract(source, ' "last,name" , firstName , "a""quote" ', { streaming })).text,
+    expect((await extract(source, "last,name", { streaming })).text).toBe('"last,name"\nLovelace');
+    expect((await extract(source, ' "last,name" , firstName , "a""quote" ', { streaming })).text).toBe(
       '"last,name",firstName,"a""quote"\nLovelace,Ada,hello',
     );
 
     const ambiguous = '"firstName,lastName",firstName,lastName\nFull,Ada,Lovelace';
-    assert.equal((await extract(ambiguous, "firstName,lastName", { streaming })).text, '"firstName,lastName"\nFull');
-    assert.equal(
-      (await extract(ambiguous, '"firstName","lastName"', { streaming })).text,
+    expect((await extract(ambiguous, "firstName,lastName", { streaming })).text).toBe('"firstName,lastName"\nFull');
+    expect((await extract(ambiguous, '"firstName","lastName"', { streaming })).text).toBe(
       "firstName,lastName\nAda,Lovelace",
     );
     const spaced = await extract('" first ",lastName\nAda,Lovelace', '" first ",lastName', { streaming });
-    assert.equal(spaced.text, " first ,lastName\nAda,Lovelace");
-    assert.deepEqual(spaced.tablePreview.columns, [" first ", "lastName"]);
+    expect(spaced.text).toBe(" first ,lastName\nAda,Lovelace");
+    expect(spaced.tablePreview.columns).toEqual([" first ", "lastName"]);
   });
 
   test(`${mode}: keeps empty selected cells as table rows and reports data row counts`, async () => {
     const result = await extract("id,note\n1,\n2,", "note", { streaming });
 
-    assert.equal(result.text, "note\n\n");
-    assert.deepEqual(result.tablePreview.columns, ["note"]);
-    assert.deepEqual(result.tablePreview.rows, [[""], [""]]);
-    assert.deepEqual(result.stats, [
+    expect(result.text).toBe("note\n\n");
+    expect(result.tablePreview.columns).toEqual(["note"]);
+    expect(result.tablePreview.rows).toEqual([[""], [""]]);
+    expect(result.stats).toEqual([
       { label: "Rows", value: "2" },
       { label: "Columns", value: "1" },
     ]);
     const headerOnly = await extract("id,note", "note", { streaming });
-    assert.equal(headerOnly.text, "note");
-    assert.deepEqual(headerOnly.tablePreview.rows, []);
-    assert.equal(headerOnly.stats[0].value, "0");
+    expect(headerOnly.text).toBe("note");
+    expect(headerOnly.tablePreview.rows).toEqual([]);
+    expect(headerOnly.stats[0].value).toBe("0");
   });
 
   test(`${mode}: bounds table previews by rows and cells without shortening CSV`, async () => {
@@ -132,20 +128,20 @@ for (const streaming of [false, true]) {
         { streaming },
       );
 
-      assert.equal(result.tablePreview.rows.length, previewRows);
-      assert.equal(result.tablePreview.columns.length, columnCount);
-      assert.equal(result.tablePreview.truncated, true);
-      assert.equal(result.stats[0].value, String(rowCount));
-      assert.equal(result.stats[1].value, String(columnCount));
+      expect(result.tablePreview.rows.length).toBe(previewRows);
+      expect(result.tablePreview.columns.length).toBe(columnCount);
+      expect(result.tablePreview.truncated).toBe(true);
+      expect(result.stats[0].value).toBe(String(rowCount));
+      expect(result.stats[1].value).toBe(String(columnCount));
       const complete = streaming ? await result.artifacts[0].blob.text() : result.text;
-      assert.equal(complete.split("\n").length, rowCount + 1);
+      expect(complete.split("\n").length).toBe(rowCount + 1);
     }
   });
 
   test(`${mode}: rejects empty, malformed, unknown, and out-of-range selectors clearly`, async () => {
     const source = "firstName,lastName\nAda,Lovelace";
     for (const column of ["", "   "]) {
-      await assert.rejects(extract(source, column, { streaming }), { code: "column-required" });
+      await expect(extract(source, column, { streaming })).rejects.toMatchObject({ code: "column-required" });
     }
     for (const column of [
       ",",
@@ -155,13 +151,13 @@ for (const streaming of [false, true]) {
       '"firstName',
       "firstName\nlastName",
     ]) {
-      await assert.rejects(extract(source, column, { streaming }), { code: "invalid-column-selection" });
+      await expect(extract(source, column, { streaming })).rejects.toMatchObject({ code: "invalid-column-selection" });
     }
     for (const column of ["missing", "firstName,missing", "0", "firstName,3", "999999999999999999999"]) {
-      await assert.rejects(extract(source, column, { streaming }), (error) => {
-        assert.equal(error.code, "column-not-found");
-        assert.match(error.message, /missing|0|3|999999999999999999999/);
-        assert.match(error.recovery, /1.*2/);
+      await expect(extract(source, column, { streaming })).rejects.toSatisfy((error) => {
+        expect(error.code).toBe("column-not-found");
+        expect(error.message).toMatch(/missing|0|3|999999999999999999999/);
+        expect(error.recovery).toMatch(/1.*2/);
         return true;
       });
     }
@@ -171,40 +167,43 @@ for (const streaming of [false, true]) {
     const value = "😀".repeat(150_000);
     const result = await extract(`id,value\n1,${value}\n2,${value}\n3,end`, "value,value", { streaming });
 
-    assert.equal(result.tablePreview.rows.length, 1);
-    assert.ok(
+    expect(result.tablePreview.rows.length).toBe(1);
+    expect(
       result.tablePreview.rows[0].every((cell) => cell === value),
       "Preview cells remain complete",
-    );
-    assert.equal(result.tablePreview.truncated, true);
+    ).toBeTruthy();
+    expect(result.tablePreview.truncated).toBe(true);
     const previewBytes = [...result.tablePreview.columns, ...result.tablePreview.rows.flat()].reduce(
       (size, cell) => size + new TextEncoder().encode(cell).byteLength,
       0,
     );
-    assert.ok(previewBytes <= CSV_PREVIEW_BYTES);
+    expect(previewBytes <= CSV_PREVIEW_BYTES).toBeTruthy();
     const output = streaming ? await result.artifacts[0].blob.text() : result.text;
-    assert.ok(
+    expect(
       output === `value,value\n${value},${value}\n${value},${value}\nend,end`,
       "CSV export retains every selected row",
-    );
-    assert.equal(result.stats[0].value, "3");
+    ).toBeTruthy();
+    expect(result.stats[0].value).toBe("3");
 
     const oversized = "😀".repeat(CSV_PREVIEW_BYTES / 4 + 1);
     const oversizedResult = await extract(`id,value\n1,${oversized}\n2,end`, "value", { streaming });
-    assert.deepEqual(oversizedResult.tablePreview.rows, []);
-    assert.equal(oversizedResult.tablePreview.truncated, true);
+    expect(oversizedResult.tablePreview.rows).toEqual([]);
+    expect(oversizedResult.tablePreview.truncated).toBe(true);
     const complete = streaming ? await oversizedResult.artifacts[0].blob.text() : oversizedResult.text;
-    assert.ok(complete === `value\n${oversized}\nend`, "CSV export retains the oversized cell and later rows");
+    expect(
+      complete === `value\n${oversized}\nend`,
+      "CSV export retains the oversized cell and later rows",
+    ).toBeTruthy();
   });
 
   test(`${mode}: omits an oversized table header while preserving complete CSV export`, async () => {
     const header = "😀".repeat(300_000);
     const result = await extract(`${header}\nvalue`, "1,1", { streaming });
 
-    assert.ok(result.tablePreview === undefined, "Oversized headers must not enter the table preview");
+    expect(result.tablePreview === undefined, "Oversized headers must not enter the table preview").toBeTruthy();
     const output = streaming ? await result.artifacts[0].blob.text() : result.text;
-    assert.ok(output === `${header},${header}\nvalue,value`, "CSV export retains repeated oversized headers");
-    assert.deepEqual(result.stats, [
+    expect(output === `${header},${header}\nvalue,value`, "CSV export retains repeated oversized headers").toBeTruthy();
+    expect(result.stats).toEqual([
       { label: "Rows", value: "1" },
       { label: "Columns", value: "2" },
     ]);
@@ -215,20 +214,20 @@ test("file streaming bounds raw text while retaining complete CSV in a downloada
   const rows = Array.from({ length: 1002 }, (_, index) => `${index},${"F".repeat(300)}${index},Last${index}`);
   const result = await extract(["id,firstName,lastName", ...rows].join("\n"), "lastName,2", { streaming: true });
 
-  assert.equal(result.render, "text");
-  assert.equal(result.tablePreview.rows.length, 1000);
-  assert.equal(result.tablePreview.truncated, true);
-  assert.equal(result.truncated, true);
-  assert.ok(new TextEncoder().encode(result.text).byteLength <= LARGE_TEXT_PREVIEW_BYTES);
-  assert.deepEqual(result.stats, [
+  expect(result.render).toBe("text");
+  expect(result.tablePreview.rows.length).toBe(1000);
+  expect(result.tablePreview.truncated).toBe(true);
+  expect(result.truncated).toBe(true);
+  expect(new TextEncoder().encode(result.text).byteLength <= LARGE_TEXT_PREVIEW_BYTES).toBeTruthy();
+  expect(result.stats).toEqual([
     { label: "Rows", value: "1002" },
     { label: "Columns", value: "2" },
   ]);
   const output = await result.artifacts[0].blob.text();
-  assert.equal(output.split("\n").length, 1003);
-  assert.ok(output.endsWith(`\nLast1001,${"F".repeat(300)}1001`));
-  assert.ok(output.startsWith(result.text));
-  assert.equal(result.artifacts[0].mime, "text/csv");
-  assert.equal(result.artifacts[0].name, "extracted-columns.csv");
-  assert.equal(result.downloadName, undefined);
+  expect(output.split("\n").length).toBe(1003);
+  expect(output.endsWith(`\nLast1001,${"F".repeat(300)}1001`)).toBeTruthy();
+  expect(output.startsWith(result.text)).toBeTruthy();
+  expect(result.artifacts[0].mime).toBe("text/csv");
+  expect(result.artifacts[0].name).toBe("extracted-columns.csv");
+  expect(result.downloadName).toBe(undefined);
 });

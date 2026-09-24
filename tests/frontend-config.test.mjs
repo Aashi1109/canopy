@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
+import { test, expect } from "vitest";
 import { readdir, readFile } from "node:fs/promises";
-import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 
@@ -22,11 +21,11 @@ test("the root-owned frontend has one manifest and merged Next.js configuration"
     readJson("tsconfig.json"),
   ]);
 
-  assert.equal(packageJson.name, "canopy");
-  assert.equal(packageJson.private, true);
-  assert.equal(baseTypescript.compilerOptions.strict, true);
-  assert.match(theme, /@source\s+["']\.["'];/);
-  assert.match(theme, /@theme\s*\{/);
+  expect(packageJson.name).toBe("canopy");
+  expect(packageJson.private).toBe(true);
+  expect(baseTypescript.compilerOptions.strict).toBe(true);
+  expect(theme).toMatch(/@source\s+["']\.["'];/);
+  expect(theme).toMatch(/@theme\s*\{/);
 
   for (const dependency of [
     "@jsquash/jpeg",
@@ -41,36 +40,32 @@ test("the root-owned frontend has one manifest and merged Next.js configuration"
     "react",
     "react-dom",
   ]) {
-    assert.equal(
-      typeof packageJson.dependencies[dependency],
+    expect(typeof packageJson.dependencies[dependency], `${dependency} must belong to the root application`).toBe(
       "string",
-      `${dependency} must belong to the root application`,
     );
   }
   for (const dependency of ["@tailwindcss/postcss", "postcss", "tailwindcss", "typescript"]) {
-    assert.equal(
-      typeof packageJson.devDependencies[dependency],
+    expect(typeof packageJson.devDependencies[dependency], `${dependency} must belong to the root application`).toBe(
       "string",
-      `${dependency} must belong to the root application`,
     );
   }
 
-  assert.match(nextConfig, /output:\s*["']standalone["']/);
-  assert.match(nextConfig, /outputFileTracingRoot:\s*appRoot/);
-  assert.match(nextConfig, /reactStrictMode:\s*true/);
-  assert.doesNotMatch(nextConfig, /next\.config\.shared/);
-  assert.match(nextConfig, /bodySizeLimit:\s*["']6mb["']/);
-  assert.match(nextConfig, /module:\s*\{\s*browser:/);
-  assert.match(nextConfig, /transpilePackages:\s*\[/);
+  expect(nextConfig).toMatch(/output:\s*["']standalone["']/);
+  expect(nextConfig).toMatch(/outputFileTracingRoot:\s*appRoot/);
+  expect(nextConfig).toMatch(/reactStrictMode:\s*true/);
+  expect(nextConfig).not.toMatch(/next\.config\.shared/);
+  expect(nextConfig).toMatch(/bodySizeLimit:\s*["']6mb["']/);
+  expect(nextConfig).toMatch(/module:\s*\{\s*browser:/);
+  expect(nextConfig).toMatch(/transpilePackages:\s*\[/);
   for (const dependency of ["@jsquash/jpeg", "heic-to", "pdfjs-dist", "qpdf-wasm"]) {
-    assert.match(nextConfig, new RegExp(`["']${dependency}["']`));
+    expect(nextConfig).toMatch(new RegExp(`["']${dependency}["']`));
   }
-  assert.match(nextConfig, /source:\s*["']\/media\/:path\*["']/);
-  assert.doesNotMatch(nextConfig, /source:\s*["']\/\(\.\*\)["']/);
+  expect(nextConfig).toMatch(/source:\s*["']\/media\/:path\*["']/);
+  expect(nextConfig).not.toMatch(/source:\s*["']\/\(\.\*\)["']/);
 
-  assert.match(postcssConfig, /["']@tailwindcss\/postcss["']/);
-  assert.equal(tsconfig.extends, "./tsconfig.base.json");
-  assert.deepEqual(tsconfig.compilerOptions, {
+  expect(postcssConfig).toMatch(/["']@tailwindcss\/postcss["']/);
+  expect(tsconfig.extends).toBe("./tsconfig.base.json");
+  expect(tsconfig.compilerOptions).toEqual({
     paths: {
       "@/*": ["./*"],
     },
@@ -91,24 +86,22 @@ test("Tailwind and the shared theme are imported once at the root layout", async
   const layout = await readText("app/layout.tsx");
   const theme = await readText("components/ui/theme.css");
 
-  assert.ok(rootStyles);
-  assert.match(rootStyles.source, /^@import "tailwindcss";\n@import "\.\.\/components\/ui\/theme\.css";/);
-  assert.equal(
+  expect(rootStyles).toBeTruthy();
+  expect(rootStyles.source).toMatch(/^@import "tailwindcss";\n@import "\.\.\/components\/ui\/theme\.css";/);
+  expect(
     stylesheets.reduce((count, { source }) => count + (source.match(/@import ["']tailwindcss["'];/g) ?? []).length, 0),
-    1,
-  );
-  assert.equal(
+  ).toBe(1);
+  expect(
     stylesheets.reduce(
       (count, { source }) => count + (source.match(/@import ["']\.\.\/components\/ui\/theme\.css["'];/g) ?? []).length,
       0,
     ),
-    1,
-  );
-  assert.match(layout, /import ["']\.\/globals\.css["']/);
-  assert.match(layout, /\bGeist_Mono\b/);
-  assert.match(layout, /variable:\s*["']--font-geist-mono["']/);
-  assert.match(layout, /\bgeistMono\.variable\b/);
-  assert.match(theme, /--font-mono:\s*var\(--font-geist-mono,\s*["']Geist Mono["']\),\s*ui-monospace,\s*monospace;/);
+  ).toBe(1);
+  expect(layout).toMatch(/import ["']\.\/globals\.css["']/);
+  expect(layout).toMatch(/\bGeist_Mono\b/);
+  expect(layout).toMatch(/variable:\s*["']--font-geist-mono["']/);
+  expect(layout).toMatch(/\bgeistMono\.variable\b/);
+  expect(theme).toMatch(/--font-mono:\s*var\(--font-geist-mono,\s*["']Geist Mono["']\),\s*ui-monospace,\s*monospace;/);
 });
 
 test("frontend navigation and browser tests use one origin with scoped paths", async () => {
@@ -123,23 +116,23 @@ test("frontend navigation and browser tests use one origin with scoped paths", a
     readText("playwright.config.ts"),
   ]);
 
-  assert.match(environment, /^APP_URL=http:\/\/localhost:3000$/m);
-  assert.doesNotMatch(environment, /(?:PLATFORM|PAPERWORK|DEVTOOLS|MEDIA)_URL=/);
+  expect(environment).toMatch(/^APP_URL=http:\/\/localhost:3000$/m);
+  expect(environment).not.toMatch(/(?:PLATFORM|PAPERWORK|DEVTOOLS|MEDIA)_URL=/);
   for (const source of [platformPage, authPage]) {
-    assert.doesNotMatch(source, /http:\/\/localhost:300[1-9]/);
+    expect(source).not.toMatch(/http:\/\/localhost:300[1-9]/);
   }
   for (const path of ["/paperwork", "/devtools", "/media"]) {
-    assert.match(platformPage, new RegExp(`["']${path}["']`));
-    assert.match(authPage, new RegExp(`["']${path}["']`));
+    expect(platformPage).toMatch(new RegExp(`["']${path}["']`));
+    expect(authPage).toMatch(new RegExp(`["']${path}["']`));
   }
-  assert.match(adminTools, /app:\s*["']media["']/);
-  assert.match(devtoolsPage, /Web & Markup Tools/);
-  assert.doesNotMatch(devtoolsPage, /PDF & Document Tools/);
-  assert.match(playwright, /APP_URL:\s*["']http:\/\/localhost:3000["']/);
-  assert.match(playwright, /webServer:\s*\{/);
-  assert.match(playwright, /command:\s*["']pnpm dev["']/);
-  assert.doesNotMatch(playwright, /@canopy\/platform/);
-  assert.doesNotMatch(playwright, /localhost:300[1-9]/);
+  expect(adminTools).toMatch(/app:\s*["']media["']/);
+  expect(devtoolsPage).toMatch(/Web & Markup Tools/);
+  expect(devtoolsPage).not.toMatch(/PDF & Document Tools/);
+  expect(playwright).toMatch(/APP_URL:\s*["']http:\/\/localhost:3000["']/);
+  expect(playwright).toMatch(/webServer:\s*\{/);
+  expect(playwright).toMatch(/command:\s*["']pnpm dev["']/);
+  expect(playwright).not.toMatch(/@canopy\/platform/);
+  expect(playwright).not.toMatch(/localhost:300[1-9]/);
 });
 
 test("Media HEIC dependency and corresponding-source notice stay in sync", async () => {
@@ -149,8 +142,8 @@ test("Media HEIC dependency and corresponding-source notice stay in sync", async
   ]);
   const version = packageJson.dependencies["heic-to"];
 
-  assert.match(version, /^\d+\.\d+\.\d+$/);
-  assert.match(notice, new RegExp(`heic-to ${version.replaceAll(".", "\\.")}`));
-  assert.match(notice, new RegExp(`heic-to-${version.replaceAll(".", "\\.")}\\.tgz`));
-  assert.match(notice, new RegExp(`/tree/v${version.replaceAll(".", "\\.")}`));
+  expect(version).toMatch(/^\d+\.\d+\.\d+$/);
+  expect(notice).toMatch(new RegExp(`heic-to ${version.replaceAll(".", "\\.")}`));
+  expect(notice).toMatch(new RegExp(`heic-to-${version.replaceAll(".", "\\.")}\\.tgz`));
+  expect(notice).toMatch(new RegExp(`/tree/v${version.replaceAll(".", "\\.")}`));
 });

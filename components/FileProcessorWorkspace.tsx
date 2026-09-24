@@ -681,6 +681,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
       resultContent
     ) : (
       <SplitStack
+        presentation={Boolean(props.result)}
         className="h-full"
         defaultSize={hasSettings ? (hasEmptyFileQueue ? 48 : 52) : 50}
         key={hasEmptyFileQueue ? "empty-file-queue" : "input"}

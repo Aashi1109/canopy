@@ -1,4 +1,12 @@
-import { cloneElement, isValidElement, type ComponentProps, type HTMLAttributes, type ReactNode } from "react";
+"use client";
+
+import { cloneElement, isValidElement, useRef, type ComponentProps, type HTMLAttributes, type ReactNode } from "react";
+import {
+  WorkbenchPresentationProvider,
+  WorkbenchFocusButton,
+  WorkbenchViewControl,
+  useWorkbenchFocus,
+} from "./workbench-presentation.tsx";
 
 import { Badge } from "./badge.tsx";
 import { Card, CardDescription, CardHeader, CardTitle } from "./card.tsx";
@@ -84,10 +92,19 @@ type WorkbenchShellProps = HTMLAttributes<HTMLElement> & {
   statusMeta?: ReactNode;
   toolbar: ReactNode;
   toolbarActions?: ReactNode;
+  workspaceTitle?: string;
   variant?: "json" | "conversion" | "media" | "utility";
 };
 
-function WorkbenchShell({
+function WorkbenchShell(props: WorkbenchShellProps) {
+  return (
+    <WorkbenchPresentationProvider>
+      <WorkbenchShellContent {...props} />
+    </WorkbenchPresentationProvider>
+  );
+}
+
+function WorkbenchShellContent({
   children,
   className,
   options,
@@ -95,9 +112,12 @@ function WorkbenchShell({
   statusMeta,
   toolbar,
   toolbarActions,
+  workspaceTitle,
   variant = "utility",
   ...props
 }: WorkbenchShellProps) {
+  const containerRef = useRef<HTMLElement>(null);
+  const { focused, placeholderHeight } = useWorkbenchFocus(containerRef);
   const compactToolbarActions = isValidElement<{ className?: string }>(toolbarActions)
     ? cloneElement(toolbarActions, {
         className: toolbarActions.props.className
@@ -108,56 +128,79 @@ function WorkbenchShell({
     : toolbarActions;
 
   return (
-    <section
-      data-slot="workbench-shell"
-      data-variant={variant}
-      className={cn(
-        "flex h-[calc(100dvh-4.5rem)] min-h-0 w-full flex-col overflow-hidden rounded-xl border border-input bg-card",
-        "[&_[data-slot=button]:not([data-variant=card-action])]:h-8 [&_[data-slot=button]:not([data-variant=card-action])]:min-h-8 [&_[data-slot=button]:not([data-variant=card-action])]:gap-1.5 [&_[data-slot=button]:not([data-variant=card-action])]:rounded-lg [&_[data-slot=button]:not([data-variant=card-action])]:px-2.5 [&_[data-slot=button][data-size^=icon]]:size-8 [&_[data-slot=button][data-size^=icon]]:px-0 [&_[data-slot=button]_svg:not([class*=size-])]:size-3.5",
-        "[&_[data-slot=input]]:h-8 [&_[data-slot=input]]:min-h-8 [&_[data-slot=input]:not([type=range]):not([data-leading-icon])]:pl-2.5 [&_[data-slot=input]:not([type=range]):not([data-suffix])]:pr-2.5",
-        "[&_[data-slot=select-trigger]]:h-8 [&_[data-slot=select-trigger]]:min-h-8 [&_[data-slot=select-trigger]]:px-2.5 [&_[data-slot=select-trigger]>svg]:size-3.5",
-        "[&_[data-slot=workbench-status]_[role=status]>span.text-success]:text-foreground",
-        variant === "media" ? "shadow-sm" : variant === "conversion" ? "shadow-md" : "shadow-lg",
-        className,
-      )}
-      {...props}
-    >
-      <div
-        data-slot="workbench-toolbar"
-        className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-2"
+    <div style={focused ? { height: placeholderHeight } : undefined}>
+      <section
+        ref={containerRef}
+        data-focus-mode={focused}
+        data-slot="workbench-shell"
+        data-variant={variant}
+        className={cn(
+          "flex h-[calc(100dvh-4.5rem)] min-h-0 w-full flex-col overflow-hidden rounded-xl border border-input bg-card",
+          "[&_[data-slot=button]:not([data-variant=card-action])]:h-8 [&_[data-slot=button]:not([data-variant=card-action])]:min-h-8 [&_[data-slot=button]:not([data-variant=card-action])]:gap-1.5 [&_[data-slot=button]:not([data-variant=card-action])]:rounded-lg [&_[data-slot=button]:not([data-variant=card-action])]:px-2.5 [&_[data-slot=button][data-size^=icon]]:size-8 [&_[data-slot=button][data-size^=icon]]:px-0 [&_[data-slot=button]_svg:not([class*=size-])]:size-3.5",
+          "[&_[data-slot=input]]:h-8 [&_[data-slot=input]]:min-h-8 [&_[data-slot=input]:not([type=range]):not([data-leading-icon])]:pl-2.5 [&_[data-slot=input]:not([type=range]):not([data-suffix])]:pr-2.5",
+          "[&_[data-slot=select-trigger]]:h-8 [&_[data-slot=select-trigger]]:min-h-8 [&_[data-slot=select-trigger]]:px-2.5 [&_[data-slot=select-trigger]>svg]:size-3.5",
+          "[&_[data-slot=workbench-status]_[role=status]>span.text-success]:text-foreground",
+          variant === "media" ? "shadow-sm" : variant === "conversion" ? "shadow-md" : "shadow-lg",
+          className,
+          focused &&
+            "fixed inset-0 z-40 h-dvh max-h-dvh rounded-none border-0 shadow-none print:static print:h-auto print:max-h-none",
+        )}
+        {...props}
       >
-        {toolbar}
-        {toolbarActions ? (
-          <div data-slot="workbench-toolbar-actions" className="ml-auto flex shrink-0 items-center gap-2">
+        <div
+          data-slot="workbench-toolbar"
+          className={cn(
+            "shrink-0 items-center gap-2 border-b border-border px-5 py-2",
+            focused
+              ? "grid grid-cols-2 min-[64rem]:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
+              : "flex flex-wrap justify-between",
+          )}
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            {toolbar}
+            {focused && workspaceTitle ? (
+              <span className="truncate font-sans text-sm font-semibold">{workspaceTitle}</span>
+            ) : null}
+          </div>
+          {focused ? (
+            <div className="order-3 col-span-2 justify-self-center min-[64rem]:order-none min-[64rem]:col-span-1">
+              <WorkbenchViewControl />
+            </div>
+          ) : null}
+          <div
+            data-slot="workbench-toolbar-actions"
+            className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2"
+          >
             {compactToolbarActions}
+            <WorkbenchFocusButton />
+          </div>
+        </div>
+        {options ? (
+          <div
+            data-slot="workbench-options"
+            className="flex h-12 shrink-0 items-center gap-6 border-b border-border bg-muted px-5"
+          >
+            {options}
           </div>
         ) : null}
-      </div>
-      {options ? (
-        <div
-          data-slot="workbench-options"
-          className="flex h-12 shrink-0 items-center gap-6 border-b border-border bg-muted px-5"
-        >
-          {options}
+        <div data-slot="workbench-content" className="min-h-0 flex-1">
+          {children}
         </div>
-      ) : null}
-      <div data-slot="workbench-content" className="min-h-0 flex-1">
-        {children}
-      </div>
-      {status || (statusMeta !== undefined && statusMeta !== null) ? (
-        <div
-          data-slot="workbench-status"
-          className="flex h-[42px] shrink-0 items-center justify-between border-t border-border px-4"
-        >
-          {status}
-          {statusMeta !== undefined && statusMeta !== null ? (
-            <Caption className="ml-auto shrink-0 text-right text-muted-foreground max-[32rem]:hidden">
-              {statusMeta}
-            </Caption>
-          ) : null}
-        </div>
-      ) : null}
-    </section>
+        {status || (statusMeta !== undefined && statusMeta !== null) ? (
+          <div
+            data-slot="workbench-status"
+            className="flex h-[42px] shrink-0 items-center justify-between border-t border-border px-4"
+          >
+            {status}
+            {statusMeta !== undefined && statusMeta !== null ? (
+              <Caption className="ml-auto shrink-0 text-right text-muted-foreground max-[32rem]:hidden">
+                {statusMeta}
+              </Caption>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+    </div>
   );
 }
 

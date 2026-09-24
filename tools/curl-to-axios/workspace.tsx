@@ -1,5 +1,7 @@
 "use client";
 
+import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
+
 import {
   Overline,
   Muted,
@@ -86,7 +88,7 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
       defaultSize={75}
       minSize={75}
     >
-      <div className="grid min-h-0 grid-rows-[minmax(12rem,0.55fr)_minmax(14rem,1fr)] gap-4 border-r border-border p-5 max-[54rem]:min-h-[44rem] max-[54rem]:border-r-0 max-[54rem]:border-b">
+      <WorkbenchPanes className="grid h-full min-h-0 grid-rows-[minmax(12rem,0.55fr)_minmax(14rem,1fr)] gap-4 overflow-auto border-r border-border p-5">
         <section className="flex min-h-0 flex-col gap-2" aria-labelledby={`${inputId}-label`}>
           <FieldLabel className="text-muted-foreground" htmlFor={inputId} id={`${inputId}-label`}>
             {inputSpec.label} <span aria-hidden="true">*</span>
@@ -178,7 +180,7 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
             </AlertBanner>
           ) : null}
         </section>
-      </div>
+      </WorkbenchPanes>
 
       <ToolOptionsPanel
         className="h-full overflow-y-auto bg-card p-[22px] max-[54rem]:min-h-[26rem]"

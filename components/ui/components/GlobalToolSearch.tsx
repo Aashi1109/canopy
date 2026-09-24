@@ -161,7 +161,7 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
         "overflow-y-auto rounded-lg border border-border bg-card shadow-[0_12px_32px_rgb(17_18_20_/_12%)]",
         mobile ? "mt-2.5 w-full" : "absolute top-[56px] left-0 z-50 max-h-[min(480px,70dvh)] w-[360px]",
       )}
-      style={mobile ? { maxHeight: Math.max(60, mobile.availableHeight - 70) } : undefined}
+      style={mobile ? { maxHeight: `min(320px, 50dvh, ${Math.max(60, mobile.availableHeight - 70)}px)` } : undefined}
       id={resultsId}
       role="dialog"
       aria-label="Tool search results"

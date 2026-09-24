@@ -1,5 +1,4 @@
-import test from "node:test";
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { agentSlashQuery, removeAgentSlash, sameComposerSelection } from "../lib/assistant/composer.ts";
@@ -33,35 +32,34 @@ const richContent = {
 test("slash actions activate only at an empty token, preserving surrounding instruction", () => {
   const text = "Please /audit this guide";
   const token = agentSlashQuery(text, 13);
-  assert.deepEqual(token, { start: 7, end: 13, query: "audit" });
-  assert.deepEqual(removeAgentSlash(text, token), { text: "Please  this guide", caret: 7 });
-  assert.deepEqual(agentSlashQuery("/", 1), { start: 0, end: 1, query: "" });
-  assert.equal(agentSlashQuery("https://example.com/audit", 25), null);
-  assert.equal(agentSlashQuery("/usr/local/", 11), null);
-  assert.equal(agentSlashQuery("some/path", 9), null);
-  assert.equal(agentSlashQuery("Please /audit now", 17), null);
+  expect(token).toEqual({ start: 7, end: 13, query: "audit" });
+  expect(removeAgentSlash(text, token)).toEqual({ text: "Please  this guide", caret: 7 });
+  expect(agentSlashQuery("/", 1)).toEqual({ start: 0, end: 1, query: "" });
+  expect(agentSlashQuery("https://example.com/audit", 25)).toBe(null);
+  expect(agentSlashQuery("/usr/local/", 11)).toBe(null);
+  expect(agentSlashQuery("some/path", 9)).toBe(null);
+  expect(agentSlashQuery("Please /audit now", 17)).toBe(null);
 });
 
 test("acknowledgement clears only the selection that was actually submitted", () => {
   const submitted = { agentId: "writer", attachmentIds: ["plan"] };
-  assert.equal(sameComposerSelection(submitted, { ...submitted, attachmentIds: ["plan"] }), true);
-  assert.equal(sameComposerSelection(submitted, { agentId: "auditor", attachmentIds: ["plan"] }), false);
-  assert.equal(sameComposerSelection(submitted, { agentId: "writer", attachmentIds: ["plan", "source"] }), false);
-  assert.equal(sameComposerSelection(submitted, { ...submitted, agentOffset: 0 }), true);
-  assert.equal(sameComposerSelection(submitted, { ...submitted, agentOffset: 7 }), false);
-  assert.equal(sameComposerSelection({ ...submitted, agentOffset: 7 }, { ...submitted, agentOffset: 7 }), true);
+  expect(sameComposerSelection(submitted, { ...submitted, attachmentIds: ["plan"] })).toBe(true);
+  expect(sameComposerSelection(submitted, { agentId: "auditor", attachmentIds: ["plan"] })).toBe(false);
+  expect(sameComposerSelection(submitted, { agentId: "writer", attachmentIds: ["plan", "source"] })).toBe(false);
+  expect(sameComposerSelection(submitted, { ...submitted, agentOffset: 0 })).toBe(true);
+  expect(sameComposerSelection(submitted, { ...submitted, agentOffset: 7 })).toBe(false);
+  expect(sameComposerSelection({ ...submitted, agentOffset: 7 }, { ...submitted, agentOffset: 7 })).toBe(true);
   const content = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Write" }] }] };
-  assert.equal(
-    sameComposerSelection({ ...submitted, content }, { ...submitted, content: structuredClone(content) }),
+  expect(sameComposerSelection({ ...submitted, content }, { ...submitted, content: structuredClone(content) })).toBe(
     true,
   );
   const changed = structuredClone(content);
   changed.content[0].content[0].marks = [{ type: "bold" }];
-  assert.equal(sameComposerSelection({ ...submitted, content }, { ...submitted, content: changed }), false);
+  expect(sameComposerSelection({ ...submitted, content }, { ...submitted, content: changed })).toBe(false);
 });
 
 test("composer rich text preserves supported marks, lists, newlines and an inline agent", () => {
-  assert.deepEqual(parseComposerContent(richContent), richContent);
+  expect(parseComposerContent(richContent)).toEqual(richContent);
   for (const href of ["https://example.com", "http://example.com", "mailto:editor@example.com", "/local", "#section"]) {
     const content = {
       type: "doc",
@@ -80,7 +78,7 @@ test("composer rich text preserves supported marks, lists, newlines and an inlin
         },
       ],
     };
-    assert.deepEqual(parseComposerContent(content), content);
+    expect(parseComposerContent(content)).toEqual(content);
   }
 });
 
@@ -99,12 +97,12 @@ test("composer links roundtrip the installed TipTap schema default attributes", 
       ],
     })
     .toJSON();
-  assert.equal(content.content[0].content[0].marks[0].attrs.title, null);
-  assert.deepEqual(parseComposerContent(content), content);
+  expect(content.content[0].content[0].marks[0].attrs.title).toBe(null);
+  expect(parseComposerContent(content)).toEqual(content);
   for (const title of ["Native tooltip", 42, { html: "<script>" }]) {
     const invalid = structuredClone(content);
     invalid.content[0].content[0].marks[0].attrs.title = title;
-    assert.equal(parseComposerContent(invalid), undefined);
+    expect(parseComposerContent(invalid)).toBe(undefined);
   }
 });
 
@@ -130,7 +128,7 @@ test("composer content rejects unsafe links, unsupported nodes and malformed nes
         },
       ],
     };
-    assert.equal(parseComposerContent(content), undefined);
+    expect(parseComposerContent(content)).toBe(undefined);
   }
   for (const content of [
     { type: "doc", content: [{ type: "image", attrs: { src: "https://example.com/image.png" } }] },
@@ -142,27 +140,26 @@ test("composer content rejects unsafe links, unsupported nodes and malformed nes
       content: [{ type: "paragraph", content: [{ type: "text", text: "Underlined", marks: [{ type: "underline" }] }] }],
     },
   ])
-    assert.equal(parseComposerContent(content), undefined);
+    expect(parseComposerContent(content)).toBe(undefined);
 });
 
 test("composer content bounds text, nodes, depth, size and inline agent count", () => {
   const textDoc = (text) => ({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text }] }] });
-  assert.ok(parseComposerContent(textDoc("x".repeat(8000))));
-  assert.equal(parseComposerContent(textDoc("x".repeat(8001))), undefined);
-  assert.equal(
+  expect(parseComposerContent(textDoc("x".repeat(8000)))).toBeTruthy();
+  expect(parseComposerContent(textDoc("x".repeat(8001)))).toBe(undefined);
+  expect(
     parseComposerContent({ type: "doc", content: Array.from({ length: 2000 }, () => ({ type: "paragraph" })) }),
-    undefined,
-  );
+  ).toBe(undefined);
   const duplicateAgents = structuredClone(richContent);
   duplicateAgents.content[0].content.push({ type: "agentMention", attrs: { agentId: "writer" } });
-  assert.equal(parseComposerContent(duplicateAgents), undefined);
+  expect(parseComposerContent(duplicateAgents)).toBe(undefined);
   const longAgent = structuredClone(richContent);
   longAgent.content[0].content[1].attrs.agentId = "x".repeat(101);
-  assert.equal(parseComposerContent(longAgent), undefined);
+  expect(parseComposerContent(longAgent)).toBe(undefined);
   let nested = { type: "paragraph", content: [{ type: "text", text: "Nested" }] };
   for (let i = 0; i < 8; i++)
     nested = { type: "bulletList", content: [{ type: "listItem", content: [{ type: "paragraph" }, nested] }] };
-  assert.equal(parseComposerContent({ type: "doc", content: [nested] }), undefined);
+  expect(parseComposerContent({ type: "doc", content: [nested] })).toBe(undefined);
   const oversized = {
     type: "doc",
     content: [
@@ -176,5 +173,5 @@ test("composer content bounds text, nodes, depth, size and inline agent count", 
       },
     ],
   };
-  assert.equal(parseComposerContent(oversized), undefined);
+  expect(parseComposerContent(oversized)).toBe(undefined);
 });

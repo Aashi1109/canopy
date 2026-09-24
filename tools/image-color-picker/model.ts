@@ -1,4 +1,4 @@
-import { rgbToHex } from "../../lib/devtools/shared/color.ts";
+import { rgbToHex, rgbToHsl } from "../../lib/devtools/shared/color.ts";
 import { ToolError } from "../../lib/tool-framework/run.ts";
 
 export function validateImageFile(file: { type: string; size: number }) {
@@ -19,6 +19,26 @@ export function pixelCoordinates(
   return {
     x: Math.max(0, Math.min(width - 1, Math.floor((left / displayedWidth) * width))),
     y: Math.max(0, Math.min(height - 1, Math.floor((top / displayedHeight) * height))),
+  };
+}
+
+export function pixelColorValues(canvas: HTMLCanvasElement, x: number, y: number) {
+  const context = canvas.getContext("2d");
+  if (!context) throw new ToolError("canvas-unavailable", "Image sampling is unavailable in this browser.");
+  const rgba = context.getImageData(x, y, 1, 1).data;
+  const color = { red: rgba[0], green: rgba[1], blue: rgba[2], alpha: rgba[3] / 255 };
+  const hex = rgbToHex(color);
+  return {
+    hex,
+    entries: [
+      { label: "Pixel", value: `${x}, ${y}` },
+      { label: "HEX", value: hex },
+      {
+        label: "RGB",
+        value: `rgb(${color.red} ${color.green} ${color.blue}${color.alpha < 1 ? ` / ${Number(color.alpha.toFixed(3))}` : ""})`,
+      },
+      { label: "HSL", value: rgbToHsl(color) },
+    ],
   };
 }
 

@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test, expect } from "vitest";
 import { errorMessage } from "../utils/errorMessage.ts";
 
 test("response errors preserve original messages without stack traces", () => {
@@ -8,17 +7,16 @@ test("response errors preserve original messages without stack traces", () => {
     { message: " Storage is unavailable " },
     "Storage is unavailable",
   ]) {
-    assert.equal(errorMessage(error, "Try again"), "Storage is unavailable");
+    expect(errorMessage(error, "Try again")).toBe("Storage is unavailable");
   }
-  assert.equal(
-    errorMessage(new Error("Connection refused\n    at upload (/private/app.ts:4:2)"), "Try again"),
+  expect(errorMessage(new Error("Connection refused\n    at upload (/private/app.ts:4:2)"), "Try again")).toBe(
     "Connection refused",
   );
 });
 
 test("missing messages use the supplied fallback", () => {
   for (const error of [undefined, null, 42, {}, { message: 42 }, new Error("  "), ""]) {
-    assert.equal(errorMessage(error, "Try again"), "Try again");
+    expect(errorMessage(error, "Try again")).toBe("Try again");
   }
 });
 
@@ -36,11 +34,10 @@ test("sensitive values are hidden while the rest of the message is preserved", (
     ["Invalid Authorization: Bearer private-value", "Invalid Authorization: [hidden]"],
     ["Invalid Bearer private-value", "Invalid Bearer [hidden]"],
   ]) {
-    assert.equal(errorMessage(new Error(original), "Try again"), expected);
+    expect(errorMessage(new Error(original), "Try again")).toBe(expected);
   }
   for (const name of ["api_secret", "access_token", "refreshToken", "clientSecret"]) {
-    assert.equal(
-      errorMessage(new Error(`Rejected ${name}=private-value; retry`), "Try again"),
+    expect(errorMessage(new Error(`Rejected ${name}=private-value; retry`), "Try again")).toBe(
       `Rejected ${name}=[hidden]; retry`,
     );
   }

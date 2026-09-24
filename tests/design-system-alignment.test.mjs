@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
+import { test, expect } from "vitest";
 import { readFile } from "node:fs/promises";
-import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 
@@ -25,7 +24,7 @@ test("shared UI exposes the exact design-system foundation tokens", async () => 
     "--shadow-sm: 0 1px 2px #0000000d",
     "--shadow-lg: 0 2px 4px #00000008, 0 12px 32px #0000000f",
   ]) {
-    assert.match(css, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    expect(css).toMatch(new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
 });
 
@@ -39,53 +38,55 @@ test("shared controls retain design-system dimensions and states", async () => {
     source("components/ui/components/switch.tsx"),
     source("components/ui/components/tabs.tsx"),
   ]);
-  assert.match(button, /hover:bg-\[#0052CC\].*active:bg-\[#003D99\]/);
-  assert.match(checkbox, /size-5.*rounded-\[4px\]/);
+  expect(button).toMatch(/hover:bg-\[#0052CC\].*active:bg-\[#003D99\]/);
+  expect(checkbox).toMatch(/rounded-\[4px\]/);
+  expect(checkbox).toMatch(/default: "size-4 \[&_svg\]:size-3/);
+  expect(checkbox).toMatch(/md: "size-5 \[&_svg\]:size-4/);
   for (const expected of [
-    /xs: "h-8 px-2\.5 text-\[11px\]"/,
-    /sm: "h-9 px-3 text-\[13px\]"/,
-    /default: "h-11 px-4 text-sm"/,
-    /md: "h-12 px-\[18px\] text-\[15px\]"/,
-    /lg: "h-13 px-5\.5 text-base"/,
+    /xs: "h-7 px-2 text-\[11px\]"/,
+    /sm: "h-8 px-2\.5 text-\[11px\]"/,
+    /default: "h-9 px-3 text-\[13px\]"/,
+    /md: "h-11 px-4 text-sm"/,
+    /lg: "h-12 px-\[18px\] text-\[15px\]"/,
   ]) {
-    assert.match(input, expected);
+    expect(input).toMatch(expected);
   }
   for (const expected of [
-    /xs: "h-8 px-2\.5 text-\[11px\]"/,
-    /sm: "h-9 px-3 text-\[13px\]"/,
-    /default: "h-11 px-4 text-sm"/,
-    /md: "h-12 px-\[18px\] text-\[15px\]"/,
-    /lg: "h-13 px-5\.5 text-base"/,
+    /xs: "h-7 px-2 text-\[11px\]"/,
+    /sm: "h-8 px-2\.5 text-\[11px\]"/,
+    /default: "h-9 px-3 text-\[13px\]"/,
+    /md: "h-11 px-4 text-sm"/,
+    /lg: "h-12 px-\[18px\] text-\[15px\]"/,
   ]) {
-    assert.match(select, expected);
+    expect(select).toMatch(expected);
   }
-  assert.match(select, /function findOptionLabel\b/);
-  assert.match(select, /\{findOptionLabel\(children, selectedValue\)\}/);
+  expect(select).toMatch(/function findOptionLabel\b/);
+  expect(select).toMatch(/\{findOptionLabel\(children, selectedValue\)\}/);
   for (const expected of [
-    /xs: "size-3\.5 border/,
-    /sm: "size-4 border/,
-    /default: "size-5 border-2/,
-    /md: "size-\[22px\] border-2/,
-    /lg: "size-6 border-2/,
+    /xs: "size-3 border/,
+    /sm: "size-3\.5 border/,
+    /default: "size-4 border-2/,
+    /md: "size-5 border-2/,
+    /lg: "size-\[22px\] border-2/,
   ]) {
-    assert.match(radio, expected);
+    expect(radio).toMatch(expected);
   }
-  assert.match(radio, /before:absolute before:content-\[''\]/);
-  assert.match(radio, /default: "size-5 border-2 before:inset-\[-12px\]"/);
-  assert.match(switchSource, /h-\[26px\].*w-11/);
-  assert.match(tabs, /segmented: "rounded-lg bg-muted p-1"/);
+  expect(radio).toMatch(/before:absolute before:content-\[''\]/);
+  expect(radio).toMatch(/md: "size-5 border-2 before:inset-\[-12px\]"/);
+  expect(switchSource).toMatch(/h-\[26px\].*w-11/);
+  expect(tabs).toMatch(/segmented: "rounded-lg bg-muted p-1"/);
 });
 
 test("the admin design-system page demonstrates every design-backed form-control size", async () => {
   const page = await source("app/admin/(protected)/design-system/page.tsx");
 
   for (const size of ["xs", "sm", "default", "md", "lg"]) {
-    assert.match(page, new RegExp(`\\["${size}",`));
+    expect(page).toMatch(new RegExp(`\\["${size}",`));
   }
-  assert.match(page, /<Input[\s\S]*?size=\{size\}/);
-  assert.match(page, /<SelectTrigger[^>]+size=\{size\}/s);
-  assert.match(page, /<RadioGroupItem[\s\S]*?size=\{size\}/);
-  assert.match(page, /Switch defaultChecked id="switch-default"/);
+  expect(page).toMatch(/<Input[\s\S]*?size=\{size\}/);
+  expect(page).toMatch(/<SelectTrigger[^>]+size=\{size\}/s);
+  expect(page).toMatch(/<RadioGroupItem[\s\S]*?size=\{size\}/);
+  expect(page).toMatch(/Switch defaultChecked id="switch-default"/);
 });
 
 test("reusable tool patterns cover the design-system component set", async () => {
@@ -110,7 +111,7 @@ test("reusable tool patterns cover the design-system component set", async () =>
     "InlineProductHeader",
     "ProductFooter",
   ]) {
-    assert.match(patterns, new RegExp(`function ${component}\\b`));
+    expect(patterns).toMatch(new RegExp(`function ${component}\\b`));
   }
 });
 
@@ -122,8 +123,8 @@ test("every reusable design.pen component has a named code implementation", asyn
   ]);
   const designIds = [...manifest.matchAll(/designId: "([^"]+)"/g)].map((match) => match[1]);
 
-  assert.equal(designIds.length, 60);
-  assert.equal(new Set(designIds).size, 60);
+  expect(designIds.length).toBe(71);
+  expect(new Set(designIds).size).toBe(71);
 
   for (const designId of [
     "wm1rh",
@@ -187,7 +188,7 @@ test("every reusable design.pen component has a named code implementation", asyn
     "bWOKG",
     "FM7qR",
   ]) {
-    assert.ok(designIds.includes(designId), `missing design component ${designId}`);
+    expect(designIds.includes(designId), `missing design component ${designId}`).toBeTruthy();
   }
 
   for (const component of [
@@ -200,10 +201,10 @@ test("every reusable design.pen component has a named code implementation", asyn
     "UtilityWorkbench",
     "ToolPageSystemControls",
   ]) {
-    assert.match(compatibilityComponents, new RegExp(`function ${component}\\b`));
+    expect(compatibilityComponents).toMatch(new RegExp(`function ${component}\\b`));
   }
-  assert.match(index, /function AuthField\b/);
-  assert.match(index, /function ToolCard\b/);
+  expect(index).toMatch(/function AuthField\b/);
+  expect(index).toMatch(/function ToolCard\b/);
 });
 
 test("tool routes share the design-system page shell", async () => {
@@ -214,10 +215,10 @@ test("tool routes share the design-system page shell", async () => {
     source("components/UniversalWorkbench.tsx"),
   ]);
 
-  assert.match(index, /function ToolPageShell\b/);
-  assert.match(index, /<ProductHeader/);
-  assert.match(index, /<ToolPageIntro/);
-  assert.match(index, /systemControls/);
-  assert.match(workbench, /<ToolPageShell/);
-  assert.doesNotMatch(workbench, /function ToolBreadcrumb\b/);
+  expect(index).toMatch(/function ToolPageShell\b/);
+  expect(index).toMatch(/<ProductHeader/);
+  expect(index).toMatch(/<ToolPageIntro/);
+  expect(index).toMatch(/systemControls/);
+  expect(workbench).toMatch(/<ToolPageShell/);
+  expect(workbench).not.toMatch(/function ToolBreadcrumb\b/);
 });

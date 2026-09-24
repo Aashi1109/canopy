@@ -1,10 +1,13 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test, vi, afterEach, onTestFinished } from "vitest";
 import redis from "redis";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { authUser, db } from "../db/index.ts";
 import { Cache } from "../lib/cache/index.ts";
 import { AuthorizationError, getUserAuthorization, withUserCacheInvalidation } from "../lib/admin/index.ts";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 const initialTime = new Date("2026-09-16T00:00:00.000Z");
 const editor = {
@@ -26,7 +29,7 @@ function setup(t) {
   const originalSelect = db.select;
   const variables = ["DATABASE_URL", "REDIS_URL"];
   const previous = variables.map((key) => process.env[key]);
-  t.after(() => {
+  onTestFinished(() => {
     db.select = originalSelect;
     variables.forEach((key, index) => {
       if (previous[index] === undefined) delete process.env[key];
@@ -49,8 +52,8 @@ function setup(t) {
   };
   const pending = new Map();
   const generations = new Map();
-  t.mock.method(Cache.prototype, "rememberGuarded", async function (id, load, ttl) {
-    assert.equal(ttl, this.namespace === "user" ? 3600 : 86400);
+  vi.spyOn(Cache.prototype, "rememberGuarded").mockImplementation(async function (id, load, ttl) {
+    expect(ttl).toBe(this.namespace === "user" ? 3600 : 86400);
     const key = `${this.namespace}:${id}`;
     if (!process.env.REDIS_URL || state.redisError || pending.has(key)) return load();
     if (state.entries.has(key)) return JSON.parse(state.entries.get(key));
@@ -59,8 +62,8 @@ function setup(t) {
     if (!pending.has(key) && generations.get(key) === generation) state.entries.set(key, JSON.stringify(value));
     return value;
   });
-  t.mock.method(Cache.prototype, "beginInvalidation", async function (id, ttl) {
-    assert.equal(ttl, this.namespace === "user" ? 3600 : 86400);
+  vi.spyOn(Cache.prototype, "beginInvalidation").mockImplementation(async function (id, ttl) {
+    expect(ttl).toBe(this.namespace === "user" ? 3600 : 86400);
     if (state.redisError) throw new Error("Redis unavailable");
     const key = `${this.namespace}:${id}`;
     const token = crypto.randomUUID();
@@ -69,7 +72,7 @@ function setup(t) {
     pending.set(key, token);
     return token;
   });
-  t.mock.method(Cache.prototype, "endInvalidation", async function (id, token) {
+  vi.spyOn(Cache.prototype, "endInvalidation").mockImplementation(async function (id, token) {
     const key = `${this.namespace}:${id}`;
     if (pending.get(key) === token) pending.delete(key);
     generations.set(key, crypto.randomUUID());
@@ -81,7 +84,7 @@ function setup(t) {
     let userId;
     const query = {
       from(table) {
-        if (statusQuery) assert.equal(table, authUser);
+        if (statusQuery) expect(table).toBe(authUser);
         return query;
       },
       leftJoin() {
@@ -133,22 +136,24 @@ function setup(t) {
     };
     return query;
   };
-  t.mock.method(redis, "createClient", () => assert.fail("cache is mocked; no Redis connections expected"));
+  vi.spyOn(redis, "createClient").mockImplementation(() =>
+    expect.fail("cache is mocked; no Redis connections expected"),
+  );
   return state;
 }
 
 test("authorization caches each user profile for one hour and roles for one day", async (t) => {
   const state = setup(t);
-  assert.deepEqual(await getUserAuthorization("alice"), { roles: [editor], access: editor.access });
-  assert.deepEqual(await getUserAuthorization("alice"), { roles: [editor], access: editor.access });
-  assert.deepEqual(await getUserAuthorization("bob"), { roles: [reader], access: reader.access });
-  assert.equal(state.roleReads, 2);
-  assert.equal(state.statusReads, 2);
-  assert.deepEqual(
-    [...state.entries.keys()].filter((key) => key.startsWith("user-roles:")),
-    ["user-roles:alice", "user-roles:bob"],
-  );
-  assert.deepEqual(JSON.parse(state.entries.get("user-roles:alice")), [editor]);
+  expect(await getUserAuthorization("alice")).toEqual({ roles: [editor], access: editor.access });
+  expect(await getUserAuthorization("alice")).toEqual({ roles: [editor], access: editor.access });
+  expect(await getUserAuthorization("bob")).toEqual({ roles: [reader], access: reader.access });
+  expect(state.roleReads).toBe(2);
+  expect(state.statusReads).toBe(2);
+  expect([...state.entries.keys()].filter((key) => key.startsWith("user-roles:"))).toEqual([
+    "user-roles:alice",
+    "user-roles:bob",
+  ]);
+  expect(JSON.parse(state.entries.get("user-roles:alice"))).toEqual([editor]);
 });
 
 test("user invalidation refreshes the same roles key without a timestamp change", async (t) => {
@@ -158,11 +163,11 @@ test("user invalidation refreshes the same roles key without a timestamp change"
     await invalidate(["alice"]);
     state.users.set("alice", { status: "active", updatedAt: initialTime, roles: [reader] });
   });
-  assert.deepEqual(await getUserAuthorization("alice"), { roles: [reader], access: reader.access });
-  assert.equal(state.roleReads, 2);
-  assert.deepEqual([...state.entries.keys()], ["user:alice", "user-roles:alice"]);
-  assert.deepEqual(await getUserAuthorization("alice"), { roles: [reader], access: reader.access });
-  assert.equal(state.roleReads, 2);
+  expect(await getUserAuthorization("alice")).toEqual({ roles: [reader], access: reader.access });
+  expect(state.roleReads).toBe(2);
+  expect([...state.entries.keys()]).toEqual(["user:alice", "user-roles:alice"]);
+  expect(await getUserAuthorization("alice")).toEqual({ roles: [reader], access: reader.access });
+  expect(state.roleReads).toBe(2);
 });
 
 test("suspended and deleted users cannot reuse cached authorization", async (t) => {
@@ -172,35 +177,35 @@ test("suspended and deleted users cannot reuse cached authorization", async (t) 
     await invalidate(["alice"]);
     state.users.get("alice").status = "suspended";
   });
-  await assert.rejects(getUserAuthorization("alice"), AuthorizationError);
+  await expect(getUserAuthorization("alice")).rejects.toThrow(AuthorizationError);
   await withUserCacheInvalidation(async (invalidate) => {
     await invalidate(["alice"]);
     state.users.delete("alice");
   });
-  await assert.rejects(getUserAuthorization("alice"), AuthorizationError);
-  assert.equal(state.roleReads, 1);
+  await expect(getUserAuthorization("alice")).rejects.toThrow(AuthorizationError);
+  expect(state.roleReads).toBe(1);
 });
 
 test("authorization falls back to the database without working Redis", async (t) => {
   const state = setup(t);
   delete process.env.REDIS_URL;
-  assert.deepEqual(await getUserAuthorization("alice"), { roles: [editor], access: editor.access });
+  expect(await getUserAuthorization("alice")).toEqual({ roles: [editor], access: editor.access });
   process.env.REDIS_URL = "redis://cache.example.test:6379";
   state.redisError = true;
-  assert.deepEqual(await getUserAuthorization("alice"), { roles: [editor], access: editor.access });
-  assert.equal(state.roleReads, 2);
-  assert.equal(state.entries.size, 0);
+  expect(await getUserAuthorization("alice")).toEqual({ roles: [editor], access: editor.access });
+  expect(state.roleReads).toBe(2);
+  expect(state.entries.size).toBe(0);
 });
 
 test("cached authorization avoids the database until explicit invalidation", async (t) => {
   const state = setup(t);
   await getUserAuthorization("alice");
   state.databaseError = true;
-  assert.deepEqual(await getUserAuthorization("alice"), { roles: [editor], access: editor.access });
+  expect(await getUserAuthorization("alice")).toEqual({ roles: [editor], access: editor.access });
   await withUserCacheInvalidation(async (invalidate) => {
     await invalidate(["alice"]);
   });
-  await assert.rejects(getUserAuthorization("alice"), /Database unavailable/);
+  await expect(getUserAuthorization("alice")).rejects.toThrow(/Database unavailable/);
 });
 
 test("a late cache fill from before an update cannot replace current authorization", async (t) => {
@@ -222,9 +227,9 @@ test("a late cache fill from before an update cannot replace current authorizati
     state.users.set("alice", { status: "active", updatedAt: initialTime, roles: [reader] });
   });
   state.roleLoader = undefined;
-  assert.deepEqual(await getUserAuthorization("alice"), { roles: [reader], access: reader.access });
+  expect(await getUserAuthorization("alice")).toEqual({ roles: [reader], access: reader.access });
   release();
   await staleRead;
-  assert.deepEqual(await getUserAuthorization("alice"), { roles: [reader], access: reader.access });
-  assert.equal(state.roleReads, 2);
+  expect(await getUserAuthorization("alice")).toEqual({ roles: [reader], access: reader.access });
+  expect(state.roleReads).toBe(2);
 });

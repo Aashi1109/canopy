@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { RichContent } from "@/components/content/RichContent";
+import { useWorkbenchPresentation } from "@/components/ui/components/workbench-presentation";
 import { downloadResultContent, ResultActions, ResultView } from "@/components/ResultView";
 import { SandboxedHtmlPreview } from "@/components/SandboxedHtmlPreview";
 import { ToolWorkspace, type WorkspaceProps } from "@/components/ToolWorkspace";
@@ -101,13 +102,15 @@ function scrollProgress(element: Element) {
 }
 
 export default function MarkdownWorkspace(props: WorkspaceProps) {
+  const presentation = useWorkbenchPresentation();
+  const readingView = presentation?.focused && presentation.view === "preview";
+  const narrow = presentation?.narrow ?? false;
   const [retainedResult, setRetainedResult] = useState<ToolResult | null>(null);
   useEffect(() => {
     if (props.result) setRetainedResult(props.result);
     else if (!props.input.text) setRetainedResult(null);
   }, [props.result, props.input.text]);
-  const visibleResult = props.result ?? (props.input.text ? retainedResult : null);
-  const highlightClient = useMemo(() => createMarkdownHighlightClient(), [visibleResult]);
+  const highlightClient = useMemo(() => createMarkdownHighlightClient(), []);
   useEffect(() => () => highlightClient.dispose(), [highlightClient]);
   const sourceRef = useRef<HTMLElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -206,7 +209,9 @@ export default function MarkdownWorkspace(props: WorkspaceProps) {
               setScroll(sourceRef.current, progress);
             }}
           >
-            <article className={styles.preview}>
+            <article
+              className={`${styles.preview} mx-auto w-full ${readingView ? "max-w-[760px]" : narrow ? "" : "max-w-[80%]"}`}
+            >
               <RichContent
                 html={result.html}
                 showToaster

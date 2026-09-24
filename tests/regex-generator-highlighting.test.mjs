@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { highlightRegexOutput } from "../tools/regex-generator/highlighting.ts";
 import { run } from "../tools/regex-generator/run.ts";
 
@@ -10,23 +9,23 @@ function texts(tokens, kind) {
 test("regex highlighting distinguishes classes, escapes, groups, quantifiers, anchors and alternatives", () => {
   const output = String.raw`/^(?<match>[a-z#'|]+|\d{2,4})(?:\.)?(?=end).*$/gim`;
   const tokens = highlightRegexOutput(output);
-  assert.equal(tokens.map((token) => token.text).join(""), output);
-  assert.deepEqual(texts(tokens, "character-class"), ["[a-z#'|]"]);
-  assert.deepEqual(texts(tokens, "escape"), [String.raw`\d`, String.raw`\.`]);
-  assert.deepEqual(texts(tokens, "group"), ["(?<match>", ")", "(?:", ")", "(?=", ")"]);
-  assert.deepEqual(texts(tokens, "quantifier"), ["+", "{2,4}", "?", "*"]);
-  assert.deepEqual(texts(tokens, "anchor"), ["^", ".", "$"]);
-  assert.deepEqual(texts(tokens, "alternation"), ["|"]);
-  assert.deepEqual(texts(tokens, "delimiter"), ["/", "/gim"]);
-  assert.deepEqual(texts(tokens, "comment"), []);
+  expect(tokens.map((token) => token.text).join("")).toBe(output);
+  expect(texts(tokens, "character-class")).toEqual(["[a-z#'|]"]);
+  expect(texts(tokens, "escape")).toEqual([String.raw`\d`, String.raw`\.`]);
+  expect(texts(tokens, "group")).toEqual(["(?<match>", ")", "(?:", ")", "(?=", ")"]);
+  expect(texts(tokens, "quantifier")).toEqual(["+", "{2,4}", "?", "*"]);
+  expect(texts(tokens, "anchor")).toEqual(["^", ".", "$"]);
+  expect(texts(tokens, "alternation")).toEqual(["|"]);
+  expect(texts(tokens, "delimiter")).toEqual(["/", "/gim"]);
+  expect(texts(tokens, "comment")).toEqual([]);
 });
 
 test("escaped class terminators and regex operators stay inside their character class", () => {
   const tokens = highlightRegexOutput(String.raw`/[\]\\#'|?]+\?\|\//`);
-  assert.deepEqual(texts(tokens, "character-class"), [String.raw`[\]\\#'|?]`]);
-  assert.deepEqual(texts(tokens, "escape"), [String.raw`\?`, String.raw`\|`, String.raw`\/`]);
-  assert.deepEqual(texts(tokens, "quantifier"), ["+"]);
-  assert.deepEqual(texts(tokens, "alternation"), []);
+  expect(texts(tokens, "character-class")).toEqual([String.raw`[\]\\#'|?]`]);
+  expect(texts(tokens, "escape")).toEqual([String.raw`\?`, String.raw`\|`, String.raw`\/`]);
+  expect(texts(tokens, "quantifier")).toEqual(["+"]);
+  expect(texts(tokens, "alternation")).toEqual([]);
 });
 
 test("Python and PHP wrappers keep calls and comments separate from the regex body", () => {
@@ -38,11 +37,11 @@ test("Python and PHP wrappers keep calls and comments separate from the regex bo
   ];
   for (const [output, delimiters, groups] of cases) {
     const tokens = highlightRegexOutput(output);
-    assert.equal(tokens.map((token) => token.text).join(""), output);
-    assert.deepEqual(texts(tokens, "delimiter"), delimiters);
-    assert.deepEqual(texts(tokens, "group"), groups);
-    assert.equal(texts(tokens, "comment").length, Number(output.includes("Explanation")));
-    assert.ok(texts(tokens, "character-class").some((value) => value.startsWith("[a-z")));
+    expect(tokens.map((token) => token.text).join("")).toBe(output);
+    expect(texts(tokens, "delimiter")).toEqual(delimiters);
+    expect(texts(tokens, "group")).toEqual(groups);
+    expect(texts(tokens, "comment").length).toBe(Number(output.includes("Explanation")));
+    expect(texts(tokens, "character-class").some((value) => value.startsWith("[a-z"))).toBeTruthy();
   }
 });
 
@@ -59,11 +58,11 @@ test("all generated presets and settings preserve their complete copyable text",
                 signal: new AbortController().signal,
               });
               const tokens = highlightRegexOutput(result.text);
-              assert.equal(tokens.map((token) => token.text).join(""), result.text);
-              assert.equal(texts(tokens, "delimiter").length, 2);
-              assert.equal(texts(tokens, "comment").length, Number(explain));
-              assert.ok(texts(tokens, "character-class").length > 0);
-              assert.ok(tokens.every((token) => token.text.length > 0));
+              expect(tokens.map((token) => token.text).join("")).toBe(result.text);
+              expect(texts(tokens, "delimiter").length).toBe(2);
+              expect(texts(tokens, "comment").length).toBe(Number(explain));
+              expect(texts(tokens, "character-class").length > 0).toBeTruthy();
+              expect(tokens.every((token) => token.text.length > 0)).toBeTruthy();
             }
           }
         }
@@ -81,6 +80,6 @@ test("unrecognized or incomplete output is returned as literal text", () => {
     "// Explanation\nunknown()",
     '<img src=x onerror="alert(1)">',
   ]) {
-    assert.deepEqual(highlightRegexOutput(output), [{ kind: "literal", text: output }]);
+    expect(highlightRegexOutput(output)).toEqual([{ kind: "literal", text: output }]);
   }
 });

@@ -1,29 +1,17 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
+import { expect, test, vi } from "vitest";
 import { unzipSync } from "fflate";
 import { createArtifactWriter, readArtifact } from "../lib/tool-framework/artifacts.ts";
 
 // Isolate browser/WASM codecs only; exercise the real workers, ZIP and storage.
-const hooks = registerHooks({
-  load(url, context, nextLoad) {
-    if (url.endsWith("/lib/tool-framework/media/imageCodec.ts")) {
-      return {
-        format: "module",
-        shortCircuit: true,
-        source: `
-        export async function decodeImage(input) {
-          return { image: new Uint8Array(await input.arrayBuffer()) };
-        }
-        export async function encodeImage(image, format) {
-          return new TextEncoder().encode(format + ':' + image.join(',')).buffer;
-        }
-      `,
-      };
-    }
-    return nextLoad(url, context);
+vi.mock("@/lib/tool-framework/media/imageCodec.ts", () => ({
+  async decodeImage(input) {
+    return { image: new Uint8Array(await input.arrayBuffer()) };
   },
-});
+  async encodeImage(image, format) {
+    return new TextEncoder().encode(format + ":" + image.join(",")).buffer;
+  },
+}));
+
 const keys = [
   "jpg-to-png",
   "png-to-jpg",
@@ -35,7 +23,6 @@ const keys = [
   "heic-to-png",
 ];
 const runners = await Promise.all(keys.map(async (key) => [key, (await import(`../tools/${key}/run.worker.ts`)).run]));
-hooks.deregister();
 
 async function bytes(artifact) {
   return new Uint8Array(await (await readArtifact(artifact)).arrayBuffer());
@@ -59,26 +46,26 @@ for (const [key, run] of runners) {
         progress() {},
         writeArtifact: writer.write,
       });
-      assert.equal(result.render, "files");
-      assert.equal(result.inputBytes, count * 2);
-      assert.equal(result.files.length, count === 1 ? 1 : count + 1);
-      assert.equal(result.outputBytes, result.files[0].size);
+      expect(result.render).toBe("files");
+      expect(result.inputBytes).toBe(count * 2);
+      expect(result.files.length).toBe(count === 1 ? 1 : count + 1);
+      expect(result.outputBytes).toBe(result.files[0].size);
       const images = count === 1 ? result.files : result.files.slice(1);
       let archive;
       if (count > 1) {
-        assert.equal(result.files[0].mime, "application/zip");
-        assert.equal(result.files[0].name, "photo-0-converted.zip");
+        expect(result.files[0].mime).toBe("application/zip");
+        expect(result.files[0].name).toBe("photo-0-converted.zip");
         archive = unzipSync(await bytes(result.files[0]));
-        assert.equal(Object.keys(archive).length, count);
-        assert.ok(writer.bytesWritten > result.outputBytes);
+        expect(Object.keys(archive).length).toBe(count);
+        expect(writer.bytesWritten > result.outputBytes).toBeTruthy();
       }
       for (const [index, image] of images.entries()) {
-        assert.equal(image.name, `photo-${index}-converted.${target}`);
-        assert.equal(image.mime, `image/${format}`);
+        expect(image.name).toBe(`photo-${index}-converted.${target}`);
+        expect(image.mime).toBe(`image/${format}`);
         const encoded = await bytes(image);
-        assert.deepEqual(encoded, new TextEncoder().encode(`${format}:${index + 1},42`));
-        assert.equal(image.size, encoded.byteLength);
-        if (archive) assert.deepEqual(archive[image.name], encoded);
+        expect(encoded).toEqual(new TextEncoder().encode(`${format}:${index + 1},42`));
+        expect(image.size).toBe(encoded.byteLength);
+        if (archive) expect(archive[image.name]).toEqual(encoded);
       }
     });
   }
@@ -86,7 +73,7 @@ for (const [key, run] of runners) {
     const controller = new AbortController();
     controller.abort();
     let writes = 0;
-    await assert.rejects(
+    await expect(
       run({
         input: { files: [new File(["input"], `photo.${source}`)] },
         settings: { quality: 80 },
@@ -96,8 +83,7 @@ for (const [key, run] of runners) {
           writes += 1;
         },
       }),
-      { name: "AbortError" },
-    );
-    assert.equal(writes, 0);
+    ).rejects.toMatchObject({ name: "AbortError" });
+    expect(writes).toBe(0);
   });
 }

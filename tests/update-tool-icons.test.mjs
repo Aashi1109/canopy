@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import pg from "pg";
 import { assignToolIcons, planToolIconUpdates } from "../scripts/update-tool-icons.mjs";
 
@@ -16,19 +15,19 @@ const icon = {
 const tools = [{ tool_id: "json_editor_v2", slug: "json-editor" }];
 
 test("maps only successful uploads to database IDs with their complete delivery URLs", () => {
-  assert.deepEqual(planToolIconUpdates({ icons: [icon], failures: [{ slug: "missing-tool" }] }, tools, cloudName), [
+  expect(planToolIconUpdates({ icons: [icon], failures: [{ slug: "missing-tool" }] }, tools, cloudName)).toEqual([
     {
       tool_id: "json_editor_v2",
       icon_url:
         "https://res.cloudinary.com/demo/image/upload/f_png,c_fill,w_256,h_256,q_auto/v123/Canopy/platform/assets/default/icons/json-editor.png",
     },
   ]);
-  assert.deepEqual(planToolIconUpdates({ icons: [], failures: [{ slug: "missing-tool" }] }, [], cloudName), []);
+  expect(planToolIconUpdates({ icons: [], failures: [{ slug: "missing-tool" }] }, [], cloudName)).toEqual([]);
 });
 
 test("rejects invalid manifests, duplicate slugs, and inconsistent Cloudinary metadata", () => {
   for (const manifest of [null, {}, { icons: {} }, { icons: [null] }, { icons: [icon, icon] }]) {
-    assert.throws(() => planToolIconUpdates(manifest, tools, cloudName));
+    expect(() => planToolIconUpdates(manifest, tools, cloudName)).toThrow();
   }
   for (const patch of [
     { slug: "JSON-editor" },
@@ -51,21 +50,18 @@ test("rejects invalid manifests, duplicate slugs, and inconsistent Cloudinary me
     { secureUrl: icon.secureUrl.replace(".svg", ".png") },
     { secureUrl: `${icon.secureUrl}?download=true` },
   ]) {
-    assert.throws(
-      () => planToolIconUpdates({ icons: [{ ...icon, ...patch }] }, tools, cloudName),
-      JSON.stringify(patch),
-    );
+    expect(() => planToolIconUpdates({ icons: [{ ...icon, ...patch }] }, tools, cloudName)).toThrow();
   }
   for (const invalidCloud of [undefined, "", "demo/other", "demo.example"]) {
-    assert.throws(() => planToolIconUpdates({ icons: [icon] }, tools, invalidCloud));
+    expect(() => planToolIconUpdates({ icons: [icon] }, tools, invalidCloud)).toThrow();
   }
 });
 
 test("requires exactly one database match for every successful slug", () => {
-  assert.throws(() => planToolIconUpdates({ icons: [icon] }, [], cloudName));
-  assert.throws(() =>
+  expect(() => planToolIconUpdates({ icons: [icon] }, [], cloudName)).toThrow();
+  expect(() =>
     planToolIconUpdates({ icons: [icon] }, [...tools, { tool_id: "other-id", slug: "json-editor" }], cloudName),
-  );
+  ).toThrow();
 });
 
 test("bulk icon updates bind their values and skip an empty batch", async () => {
@@ -78,14 +74,14 @@ test("bulk icon updates bind their values and skip an empty batch", async () => 
       return { rows: updated };
     },
   };
-  assert.deepEqual(await assignToolIcons(client, []), []);
-  assert.equal(calls.length, 0);
-  assert.deepEqual(await assignToolIcons(client, rows, { missingOnly: true }), updated);
-  assert.deepEqual(calls[0].values, [[rows[0].tool_id], [rows[0].icon_url], true]);
-  assert.ok(!calls[0].text.includes(rows[0].tool_id));
-  assert.ok(!calls[0].text.includes(rows[0].icon_url));
+  expect(await assignToolIcons(client, [])).toEqual([]);
+  expect(calls.length).toBe(0);
+  expect(await assignToolIcons(client, rows, { missingOnly: true })).toEqual(updated);
+  expect(calls[0].values).toEqual([[rows[0].tool_id], [rows[0].icon_url], true]);
+  expect(!calls[0].text.includes(rows[0].tool_id)).toBeTruthy();
+  expect(!calls[0].text.includes(rows[0].icon_url)).toBeTruthy();
   await assignToolIcons(client, rows);
-  assert.deepEqual(calls[1].values, [[rows[0].tool_id], [rows[0].icon_url], false]);
+  expect(calls[1].values).toEqual([[rows[0].tool_id], [rows[0].icon_url], false]);
 });
 
 test(
@@ -113,22 +109,20 @@ test(
         const before = (await client.query("SELECT * FROM managed_tools WHERE tool_id = $1", [row.tool_id])).rows;
         const missing = { ...row, tool_id: "another-tool" };
         const unknown = { ...row, tool_id: "unknown-tool" };
-        assert.deepEqual(await assignToolIcons(client, [row, missing, unknown], { missingOnly: true }), [
+        expect(await assignToolIcons(client, [row, missing, unknown], { missingOnly: true })).toEqual([
           { tool_id: missing.tool_id },
         ]);
-        assert.deepEqual(
-          (await client.query("SELECT * FROM managed_tools WHERE tool_id = $1", [row.tool_id])).rows,
+        expect((await client.query("SELECT * FROM managed_tools WHERE tool_id = $1", [row.tool_id])).rows).toEqual(
           before,
         );
-        assert.equal((await assignToolIcons(client, [row, missing], { missingOnly: true })).length, 0);
-        assert.equal((await assignToolIcons(client, [row])).length, 1);
-        assert.equal(
+        expect((await assignToolIcons(client, [row, missing], { missingOnly: true })).length).toBe(0);
+        expect((await assignToolIcons(client, [row])).length).toBe(1);
+        expect(
           (await client.query("SELECT icon_url FROM managed_tools WHERE tool_id = $1", [row.tool_id])).rows[0].icon_url,
-          row.icon_url,
-        );
-        assert.equal((await client.query("SELECT * FROM managed_tools")).rows.length, 2);
-        assert.equal((await assignToolIcons(client, [row])).length, 0);
-        assert.deepEqual(await assignToolIcons(client, [], { missingOnly: true }), []);
+        ).toBe(row.icon_url);
+        expect((await client.query("SELECT * FROM managed_tools")).rows.length).toBe(2);
+        expect((await assignToolIcons(client, [row])).length).toBe(0);
+        expect(await assignToolIcons(client, [], { missingOnly: true })).toEqual([]);
         await client.query("COMMIT");
       } catch (error) {
         await client.query("ROLLBACK");

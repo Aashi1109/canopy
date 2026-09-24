@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { history, undo } from "@tiptap/pm/history";
@@ -40,7 +39,7 @@ function figure(metadata, src = blogEditorImageSource(image, "blog-cloud"), extr
 }
 
 test("native image drops move the image in either direction, preserve metadata, and undo as one edit", () => {
-  assert.equal(schema.nodes.image.spec.draggable, true);
+  expect(schema.nodes.image.spec.draggable).toBe(true);
   const before = schema.nodes.paragraph.create(null, schema.text("Before"));
   const after = schema.nodes.paragraph.create(null, schema.text("After"));
   const imageNode = schema.nodes.image.create(image);
@@ -75,32 +74,30 @@ test("native image drops move the image in either direction, preserve metadata, 
     });
     // Exercise ProseMirror's installed drop handler, including source removal and position mapping.
     EditorView.prototype.dispatchEvent.call(view, event);
-    assert.equal(event.defaultPrevented, true);
-    assert.equal(view.dragging, null);
-    assert.deepEqual(
-      state.doc.toJSON(),
+    expect(event.defaultPrevented).toBe(true);
+    expect(view.dragging).toBe(null);
+    expect(state.doc.toJSON()).toEqual(
       schema.nodes.doc.create(null, target === 0 ? [imageNode, before, after] : [before, after, imageNode]).toJSON(),
     );
-    assert.ok(state.selection instanceof NodeSelection);
-    assert.deepEqual({ ...state.selection.node.attrs }, image);
-    assert.equal(
+    expect(state.selection instanceof NodeSelection).toBeTruthy();
+    expect({ ...state.selection.node.attrs }).toEqual(image);
+    expect(
       undo(state, (transaction) => {
         state = state.apply(transaction);
       }),
-      true,
-    );
-    assert.deepEqual(state.doc.toJSON(), original.toJSON());
-    assert.equal(undo(state), false);
+    ).toBe(true);
+    expect(state.doc.toJSON()).toEqual(original.toJSON());
+    expect(undo(state)).toBe(false);
   }
 });
 
 test("the installed image node serializes and parses clipboard metadata without losing image layout", () => {
   const rendered = schema.nodes.image.spec.toDOM(schema.nodes.image.create(image));
-  assert.equal(rendered[0], "figure");
-  assert.equal(rendered[2][0], "img");
+  expect(rendered[0]).toBe("figure");
+  expect(rendered[2][0]).toBe("img");
   const parsed = parse(figure(rendered[1]["data-blog-image"], rendered[2][1].src));
-  assert.deepEqual(parsed, image);
-  assert.deepEqual(schema.nodes.image.create(parsed).toJSON().attrs, schema.nodes.image.create(image).toJSON().attrs);
+  expect(parsed).toEqual(image);
+  expect(schema.nodes.image.create(parsed).toJSON().attrs).toEqual(schema.nodes.image.create(image).toJSON().attrs);
 });
 
 test("validated clipboard metadata cannot be overridden by arbitrary HTML attributes", () => {
@@ -114,9 +111,9 @@ test("validated clipboard metadata cannot be overridden by arbitrary HTML attrib
       alignment: "absolute",
     }),
   );
-  assert.deepEqual(parsed, image);
+  expect(parsed).toEqual(image);
   const { displayWidth, alignment, ...legacyImage } = image;
-  assert.deepEqual(parse(figure(JSON.stringify(legacyImage))), {
+  expect(parse(figure(JSON.stringify(legacyImage)))).toEqual({
     ...legacyImage,
     displayWidth: 100,
     alignment: "center",
@@ -127,8 +124,8 @@ test("maximum-length Unicode descriptions fit the bounded clipboard metadata", (
   const maximum = { ...image, alt: "汉".repeat(500), caption: "汉".repeat(1000) };
   const rendered = schema.nodes.image.spec.toDOM(schema.nodes.image.create(maximum));
   const metadata = rendered[1]["data-blog-image"];
-  assert.ok(new TextEncoder().encode(metadata).length <= 6144);
-  assert.deepEqual(parse(figure(metadata, rendered[2][1].src)), maximum);
+  expect(new TextEncoder().encode(metadata).length <= 6144).toBeTruthy();
+  expect(parse(figure(metadata, rendered[2][1].src))).toEqual(maximum);
 });
 
 test("clipboard parsing rejects untrusted URLs, malformed metadata, and values outside the image contract", () => {
@@ -139,7 +136,7 @@ test("clipboard parsing rejects untrusted URLs, malformed metadata, and values o
     "javascript:alert(1)",
     "data:image/png;base64,AAAA",
   ]) {
-    assert.equal(parse(figure(JSON.stringify(image), src)), false);
+    expect(parse(figure(JSON.stringify(image), src))).toBe(false);
   }
   for (const metadata of [
     "",
@@ -150,7 +147,7 @@ test("clipboard parsing rejects untrusted URLs, malformed metadata, and values o
     JSON.stringify({ ...image, padding: "汉".repeat(2100) }),
     '{"__proto__":{},' + JSON.stringify(image).slice(1),
   ]) {
-    assert.equal(parse(figure(metadata)), false);
+    expect(parse(figure(metadata))).toBe(false);
   }
   for (const attrs of [
     { publicId: "../outside" },
@@ -169,7 +166,7 @@ test("clipboard parsing rejects untrusted URLs, malformed metadata, and values o
     { caption: "\ud800" },
     { src: "https://external.invalid/image.png" },
   ])
-    assert.equal(parse(figure(JSON.stringify({ ...image, ...attrs }))), false, JSON.stringify(attrs));
+    expect(parse(figure(JSON.stringify({ ...image, ...attrs }))), JSON.stringify(attrs)).toBe(false);
 });
 
 test("copied image JSON survives the plain Server Action payload and backend validation", async () => {
@@ -182,13 +179,13 @@ test("copied image JSON survives the plain Server Action payload and backend val
     version: 1,
     onState() {},
     request: async (input) => {
-      assert.equal(Object.getPrototypeOf(input.document.body.content[0].attrs), Object.prototype);
+      expect(Object.getPrototypeOf(input.document.body.content[0].attrs)).toBe(Object.prototype);
       saved = validateBlogDocument(input.document, { cloudName: "blog-cloud" });
       return { ok: true, data: { version: 2 } };
     },
   });
   persistence.change(document);
-  assert.equal(await persistence.save(), true);
+  expect(await persistence.save()).toBe(true);
   persistence.stop();
-  assert.deepEqual(saved.body.content[0].attrs, image);
+  expect(saved.body.content[0].attrs).toEqual(image);
 });

@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
+import { afterAll, expect, test, vi } from "vitest";
 import { cloudinaryFolder } from "../lib/cloudinary/paths.ts";
 
 const originalEnv = Object.fromEntries(
@@ -12,27 +10,23 @@ const originalEnv = Object.fromEntries(
 process.env.CLOUDINARY_CLOUD_NAME = "test-cloud";
 process.env.CLOUDINARY_API_KEY = "test-key";
 process.env.CLOUDINARY_API_SECRET = "test-secret";
-const uploads = [];
+const uploads = vi.hoisted(() => []);
 globalThis.__cloudinaryUploadTest = uploads;
-const sourceUrl = new URL("../lib/tool-framework/cloudinary.ts", import.meta.url).href;
-const hooks = registerHooks({
-  resolve(specifier, context, next) {
-    if (context.parentURL === sourceUrl && specifier === "cloudinary")
-      return {
-        shortCircuit: true,
-        url: `data:text/javascript,${encodeURIComponent(`
-        export const v2 = { config() {}, uploader: { async upload(source, options) {
-          globalThis.__cloudinaryUploadTest.push(options);
-          return { public_id: options.public_id, version: 1, format: "png", ...globalThis.__cloudinaryUploadResponse };
-        } } };
-      `)}`,
-      };
-    return next(specifier, context);
+
+vi.mock("cloudinary", () => ({
+  v2: {
+    config() {},
+    uploader: {
+      async upload(source, options) {
+        uploads.push(options);
+        return { public_id: options.public_id, version: 1, format: "png", ...globalThis.__cloudinaryUploadResponse };
+      },
+    },
   },
-});
-const { uploadToolIcon } = await import(sourceUrl);
-hooks.deregister();
-test.after(() => {
+}));
+
+const { uploadToolIcon } = await import("@/lib/tool-framework/cloudinary.ts");
+afterAll(() => {
   for (const [key, value] of Object.entries(originalEnv)) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
@@ -45,52 +39,54 @@ test("every environment keeps tool icon IDs and asset folders under its Canopy b
   for (const environment of ["production", "development", "test"]) {
     process.env.NODE_ENV = environment;
     const result = await uploadToolIcon("media.extract-pdf-pages", png, "image/png");
-    assert.equal(result.ok, true);
+    expect(result.ok).toBe(true);
     const expectedFolder = `Canopy/${environment}/tool-icons`;
-    assert.equal(uploads.at(-1).asset_folder, expectedFolder);
-    assert.equal(result.publicId, `${expectedFolder}/media.extract-pdf-pages`);
-    assert.equal(uploads.at(-1).overwrite, true);
-    assert.equal(result.format, "png");
-    assert.equal(
-      result.iconUrl,
+    expect(uploads.at(-1).asset_folder).toBe(expectedFolder);
+    expect(result.publicId).toBe(`${expectedFolder}/media.extract-pdf-pages`);
+    expect(uploads.at(-1).overwrite).toBe(true);
+    expect(result.format).toBe("png");
+    expect(result.iconUrl).toBe(
       `https://res.cloudinary.com/test-cloud/image/upload/f_png,c_fill,w_256,h_256,q_auto/v1/${expectedFolder}/media.extract-pdf-pages.png`,
     );
   }
   const count = uploads.length;
   delete process.env.NODE_ENV;
-  await assert.rejects(uploadToolIcon("media.extract-pdf-pages", png, "image/png"), /NODE_ENV/);
-  assert.equal(uploads.length, count);
+  await expect(uploadToolIcon("media.extract-pdf-pages", png, "image/png")).rejects.toThrow(/NODE_ENV/);
+  expect(uploads.length).toBe(count);
 });
 
 test("upload folders require an environment and reject paths outside the base", () => {
   for (const environment of [undefined, "", "PROD", "../production"]) {
     if (environment === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = environment;
-    assert.throws(() => cloudinaryFolder("blog"), /NODE_ENV/);
+    expect(() => cloudinaryFolder("blog")).toThrow(/NODE_ENV/);
   }
   process.env.NODE_ENV = "production";
-  assert.equal(cloudinaryFolder("platform/assets/default/icons"), "Canopy/production/platform/assets/default/icons");
+  expect(cloudinaryFolder("platform/assets/default/icons")).toBe("Canopy/production/platform/assets/default/icons");
   for (const folder of ["", "/blog", "../blog", "blog/../icons", "blog//icons", "blog\\icons"]) {
-    assert.throws(() => cloudinaryFolder(folder), /folder/);
+    expect(() => cloudinaryFolder(folder)).toThrow(/folder/);
   }
 });
 
-test("malformed Cloudinary responses never become saved icon URLs", async (t) => {
+test("malformed Cloudinary responses never become saved icon URLs", async () => {
   process.env.NODE_ENV = "test";
-  t.after(() => delete globalThis.__cloudinaryUploadResponse);
-  const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-  for (const response of [
-    { public_id: "other/icon" },
-    { version: 0 },
-    { version: "1" },
-    { version: 1.5 },
-    { version: Number.MAX_SAFE_INTEGER + 1 },
-    { format: "svg" },
-  ]) {
-    globalThis.__cloudinaryUploadResponse = response;
-    assert.deepEqual(await uploadToolIcon("media.extract-pdf-pages", png, "image/png"), {
-      ok: false,
-      reason: "The icon could not be uploaded. Try again.",
-    });
+  try {
+    const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    for (const response of [
+      { public_id: "other/icon" },
+      { version: 0 },
+      { version: "1" },
+      { version: 1.5 },
+      { version: Number.MAX_SAFE_INTEGER + 1 },
+      { format: "svg" },
+    ]) {
+      globalThis.__cloudinaryUploadResponse = response;
+      expect(await uploadToolIcon("media.extract-pdf-pages", png, "image/png")).toEqual({
+        ok: false,
+        reason: "The icon could not be uploaded. Try again.",
+      });
+    }
+  } finally {
+    delete globalThis.__cloudinaryUploadResponse;
   }
 });

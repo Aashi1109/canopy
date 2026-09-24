@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 
 import {
   DEFAULT_LABELS,
@@ -16,22 +15,22 @@ test("every layout family produces an independent valid default config", () => {
   const configs = layoutFamilies.map(getDefaultTemplateConfigByFamily);
 
   for (const config of configs) {
-    assert.equal(InvoiceTemplateConfigSchema.safeParse(config).success, true);
-    assert.deepEqual(config.labels, DEFAULT_LABELS);
-    assert.deepEqual(config.sectionOrder, DEFAULT_SECTION_ORDER);
+    expect(InvoiceTemplateConfigSchema.safeParse(config).success).toBe(true);
+    expect(config.labels).toEqual(DEFAULT_LABELS);
+    expect(config.sectionOrder).toEqual(DEFAULT_SECTION_ORDER);
   }
 
-  assert.notStrictEqual(configs[0].labels, configs[1].labels);
-  assert.notStrictEqual(configs[0].sectionOrder, configs[1].sectionOrder);
+  expect(configs[0].labels).not.toBe(configs[1].labels);
+  expect(configs[0].sectionOrder).not.toBe(configs[1].sectionOrder);
 });
 
 test("seed templates are valid with unique slugs and one published default", () => {
   for (const template of seedTemplates) {
-    assert.equal(InvoiceTemplateSchema.safeParse(template).success, true, `${template.slug} is invalid`);
+    expect(InvoiceTemplateSchema.safeParse(template).success, `${template.slug} is invalid`).toBe(true);
   }
 
-  assert.equal(new Set(seedTemplates.map((template) => template.slug)).size, seedTemplates.length);
-  assert.equal(seedTemplates.filter((template) => template.status === "published" && template.isDefault).length, 1);
+  expect(new Set(seedTemplates.map((template) => template.slug)).size).toBe(seedTemplates.length);
+  expect(seedTemplates.filter((template) => template.status === "published" && template.isDefault).length).toBe(1);
 });
 
 test("validation rejects unsafe colors, duplicate sections, and unusable invoices", () => {
@@ -46,15 +45,12 @@ test("validation rejects unsafe colors, duplicate sections, and unusable invoice
 
   const result = InvoiceTemplateSchema.safeParse(template);
 
-  assert.equal(result.success, false);
-  assert.deepEqual(
-    result.error.issues.map((issue) => issue.path.join(".")),
-    [
-      "config.theme.primaryColor",
-      "config.sectionOrder",
-      "config.visibility.showBusinessBlock",
-      "config.visibility.showLineItems",
-      "config.visibility.showTotals",
-    ],
-  );
+  expect(result.success).toBe(false);
+  expect(result.error.issues.map((issue) => issue.path.join("."))).toEqual([
+    "config.theme.primaryColor",
+    "config.sectionOrder",
+    "config.visibility.showBusinessBlock",
+    "config.visibility.showLineItems",
+    "config.visibility.showTotals",
+  ]);
 });

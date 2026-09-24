@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { test, expect } from "vitest";
 import { LARGE_CSV_FILE_BYTES } from "../lib/devtools/shared/streaming-csv-tool.ts";
 import { CSV_PREVIEW_BYTES, LARGE_TEXT_PREVIEW_BYTES } from "../lib/tool-framework/limits.ts";
 import { run } from "../tools/csv-to-table/run.worker.ts";
@@ -38,8 +36,8 @@ for (const streaming of [false, true]) {
     const html =
       "<table><thead><tr><th>na&lt;me</th><th>note</th></tr></thead><tbody><tr><td>&lt;img src=x onerror=&quot;alert(1)&quot;&gt;</td><td>line one\nline two &amp; &lt;script&gt;</td></tr></tbody></table>";
 
-    assert.equal(await completeHtml(result), html);
-    assert.deepEqual(result.tablePreview, {
+    expect(await completeHtml(result)).toBe(html);
+    expect(result.tablePreview).toEqual({
       render: "table",
       columns: ["na<me", "note"],
       rows: [['<img src=x onerror="alert(1)">', "line one\nline two & <script>"]],
@@ -47,14 +45,14 @@ for (const streaming of [false, true]) {
       truncated: false,
     });
     if (streaming) {
-      assert.equal(result.render, "code");
-      assert.equal(result.language, "html");
-      assert.equal(result.code, html);
-      assert.equal(result.sections[0].body.files[0].name, "table.html");
-      assert.equal(result.sections[0].body.files[0].mime, "text/html");
+      expect(result.render).toBe("code");
+      expect(result.language).toBe("html");
+      expect(result.code).toBe(html);
+      expect(result.sections[0].body.files[0].name).toBe("table.html");
+      expect(result.sections[0].body.files[0].mime).toBe("text/html");
     } else {
-      assert.equal(result.render, "html");
-      assert.equal(result.downloadName, "table.html");
+      expect(result.render).toBe("html");
+      expect(result.downloadName).toBe("table.html");
     }
   });
 
@@ -65,13 +63,12 @@ for (const streaming of [false, true]) {
         { delimiter, streaming },
       );
 
-      assert.deepEqual(result.tablePreview.columns, ["name", "note"]);
-      assert.deepEqual(result.tablePreview.rows, [
+      expect(result.tablePreview.columns).toEqual(["name", "note"]);
+      expect(result.tablePreview.rows).toEqual([
         ["Ada", `a${delimiter}b "quoted"`],
         ["Lin", ""],
       ]);
-      assert.equal(
-        await completeHtml(result),
+      expect(await completeHtml(result)).toBe(
         `<table><thead><tr><th>name</th><th>note</th></tr></thead><tbody><tr><td>Ada</td><td>a${delimiter}b &quot;quoted&quot;</td></tr><tr><td>Lin</td><td></td></tr></tbody></table>`,
       );
     }
@@ -80,20 +77,21 @@ for (const streaming of [false, true]) {
   test(`${mode}: supports a header-only table and preserves CSV validation`, async () => {
     const result = await buildTable("name,role", { streaming });
 
-    assert.deepEqual(result.tablePreview.columns, ["name", "role"]);
-    assert.deepEqual(result.tablePreview.rows, []);
-    assert.equal(result.tablePreview.truncated, false);
-    assert.equal(
-      await completeHtml(result),
+    expect(result.tablePreview.columns).toEqual(["name", "role"]);
+    expect(result.tablePreview.rows).toEqual([]);
+    expect(result.tablePreview.truncated).toBe(false);
+    expect(await completeHtml(result)).toBe(
       "<table><thead><tr><th>name</th><th>role</th></tr></thead><tbody></tbody></table>",
     );
-    await assert.rejects(buildTable("name,role\nAda", { streaming }), {
+    await expect(buildTable("name,role\nAda", { streaming })).rejects.toMatchObject({
       code: streaming ? "csv-width" : "inconsistent-row-width",
     });
-    await assert.rejects(buildTable('name,role\nAda,"unfinished', { streaming }), {
+    await expect(buildTable('name,role\nAda,"unfinished', { streaming })).rejects.toMatchObject({
       code: streaming ? "csv-unclosed-quote" : "invalid-delimited-input",
     });
-    await assert.rejects(buildTable("name,role", { streaming, delimiter: ":" }), { code: "invalid-delimiter" });
+    await expect(buildTable("name,role", { streaming, delimiter: ":" })).rejects.toMatchObject({
+      code: "invalid-delimiter",
+    });
   });
 
   test(`${mode}: bounds table rows and cells while keeping the complete HTML artifact`, async () => {
@@ -108,12 +106,12 @@ for (const streaming of [false, true]) {
         streaming,
       });
 
-      assert.equal(result.tablePreview.columns.length, columnCount);
-      assert.equal(result.tablePreview.rows.length, previewRows);
-      assert.equal(result.tablePreview.truncated, true);
+      expect(result.tablePreview.columns.length).toBe(columnCount);
+      expect(result.tablePreview.rows.length).toBe(previewRows);
+      expect(result.tablePreview.truncated).toBe(true);
       const html = await completeHtml(result);
-      assert.equal(html.match(/<tr>/g).length, rowCount + 1);
-      assert.ok(html.endsWith(`<td>${columnCount - 1}</td></tr></tbody></table>`));
+      expect(html.match(/<tr>/g).length).toBe(rowCount + 1);
+      expect(html.endsWith(`<td>${columnCount - 1}</td></tr></tbody></table>`)).toBeTruthy();
     }
   });
 
@@ -121,33 +119,33 @@ for (const streaming of [false, true]) {
     const value = "😀".repeat(300_000);
     const result = await buildTable(`name\n${value}\n${value}\nend`, { streaming });
 
-    assert.equal(result.tablePreview.rows.length, 1);
-    assert.ok(result.tablePreview.rows[0][0] === value, "Preview retains the complete first cell");
-    assert.equal(result.tablePreview.truncated, true);
-    assert.ok(
+    expect(result.tablePreview.rows.length).toBe(1);
+    expect(result.tablePreview.rows[0][0] === value, "Preview retains the complete first cell").toBeTruthy();
+    expect(result.tablePreview.truncated).toBe(true);
+    expect(
       new TextEncoder().encode(result.tablePreview.columns.join("") + result.tablePreview.rows.flat().join(""))
         .byteLength <= CSV_PREVIEW_BYTES,
-    );
+    ).toBeTruthy();
     const expected = `<table><thead><tr><th>name</th></tr></thead><tbody><tr><td>${value}</td></tr><tr><td>${value}</td></tr><tr><td>end</td></tr></tbody></table>`;
-    assert.ok((await completeHtml(result)) === expected, "Export retains all complete cells in source order");
+    expect((await completeHtml(result)) === expected, "Export retains all complete cells in source order").toBeTruthy();
     if (streaming) {
-      assert.equal(result.truncated, true);
-      assert.ok(new TextEncoder().encode(result.code).byteLength <= LARGE_TEXT_PREVIEW_BYTES);
+      expect(result.truncated).toBe(true);
+      expect(new TextEncoder().encode(result.code).byteLength <= LARGE_TEXT_PREVIEW_BYTES).toBeTruthy();
     }
 
     const tooLarge = "😀".repeat(CSV_PREVIEW_BYTES / 4 + 1);
     const oversizedCell = await buildTable(`name\n${tooLarge}\nend`, { streaming });
-    assert.equal(oversizedCell.tablePreview.rows.length, 0);
-    assert.equal(oversizedCell.tablePreview.truncated, true);
-    assert.ok(
+    expect(oversizedCell.tablePreview.rows.length).toBe(0);
+    expect(oversizedCell.tablePreview.truncated).toBe(true);
+    expect(
       (await completeHtml(oversizedCell)).includes(`<td>${tooLarge}</td>`),
       "Oversized cells remain in the HTML artifact",
-    );
+    ).toBeTruthy();
     const oversizedHeader = await buildTable(`${tooLarge}\nvalue`, { streaming });
-    assert.ok(oversizedHeader.tablePreview === undefined, "Oversized headers do not enter the table preview");
-    assert.ok(
+    expect(oversizedHeader.tablePreview === undefined, "Oversized headers do not enter the table preview").toBeTruthy();
+    expect(
       (await completeHtml(oversizedHeader)).includes(`<th>${tooLarge}</th>`),
       "Oversized headers remain in the HTML artifact",
-    );
+    ).toBeTruthy();
   });
 }

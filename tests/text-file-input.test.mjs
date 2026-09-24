@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 
 import { LARGE_TEXT_PREVIEW_BYTES } from "../lib/tool-framework/limits.ts";
 import { readTextFileForEditor } from "../lib/tool-framework/textFileInput.ts";
@@ -10,7 +9,7 @@ test("small text imports stay editable and read the complete file", async () => 
     maxEditableBytes: 10,
     maxLength: 4,
   });
-  assert.deepEqual(result, { large: false, text: "hell" });
+  expect(result).toEqual({ large: false, text: "hell" });
 });
 
 test("large text imports read only the bounded preview", async () => {
@@ -33,10 +32,10 @@ test("large text imports read only the bounded preview", async () => {
     maxEditableBytes: 16,
     previewBytes: 8,
   });
-  assert.equal(result.large, true);
-  assert.equal(result.text, "x".repeat(8));
-  assert.equal(file.textCalled, false);
-  assert.deepEqual(file.slices, [[0, 8]]);
+  expect(result.large).toBe(true);
+  expect(result.text).toBe("x".repeat(8));
+  expect(file.textCalled).toBe(false);
+  expect(file.slices).toEqual([[0, 8]]);
 });
 
 test("large preview size is capped by the shared 256 KiB budget", async () => {
@@ -45,7 +44,7 @@ test("large preview size is capped by the shared 256 KiB budget", async () => {
     maxEditableBytes: 1,
     previewBytes: LARGE_TEXT_PREVIEW_BYTES * 2,
   });
-  assert.equal(result.text.length, LARGE_TEXT_PREVIEW_BYTES);
+  expect(result.text.length).toBe(LARGE_TEXT_PREVIEW_BYTES);
 });
 
 test("large previews do not split a UTF-8 code point at the byte boundary", async () => {
@@ -57,7 +56,7 @@ test("large previews do not split a UTF-8 code point at the byte boundary", asyn
     previewBytes: 3,
   });
 
-  assert.equal(result.large, true);
-  assert.equal(result.text, "a");
-  assert.doesNotMatch(result.text, /�/);
+  expect(result.large).toBe(true);
+  expect(result.text).toBe("a");
+  expect(result.text).not.toMatch(/�/);
 });

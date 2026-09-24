@@ -13,7 +13,10 @@ import {
   type PdfmeSchema,
 } from "@/lib/invoice-templates/index.ts";
 import {
-  Strong,
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
   Caption,
   H1,
   H3,
@@ -1432,463 +1435,470 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
               ))}
             </div>
 
-            <details className="mt-4 border-t border-border pt-3">
-              <summary className="cursor-pointer text-muted-foreground">
-                <Strong>Published form configuration</Strong>
-              </summary>
-              <div className="mt-3 flex items-center justify-between gap-2">
-                <div>
-                  <H3>Published form</H3>
-                  <Caption className="block text-muted-foreground">
-                    Drag handles work with pointer and keyboard.
-                  </Caption>
-                </div>
-                <Button onClick={addCustomSection} size="sm" type="button" variant="secondary">
-                  <Plus aria-hidden="true" size={14} />
-                  Section
-                </Button>
-              </div>
-
-              <OrderableList
-                ariaLabel="Form sections"
-                className="mt-3 grid gap-3"
-                getId={(section) => section.id}
-                getLabel={(section) => section.label}
-                items={form.sections}
-                onReorder={setFormSections}
-                renderItem={(section, sectionOrderState) => (
-                  <section className="rounded-xl border border-border bg-background p-3">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        {...sectionOrderState.attributes}
-                        {...sectionOrderState.listeners}
-                        aria-label={`Reorder ${section.label} section`}
-                        className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                        ref={sectionOrderState.setActivatorNodeRef}
-                        size="icon-sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <GripVertical aria-hidden="true" className="size-[15px]" />
-                      </Button>
-                      <Input
-                        aria-label="Section label"
-                        className="h-8"
-                        onChange={(event) =>
-                          updateSection(section.id, (current) => ({
-                            ...current,
-                            label: event.target.value,
-                          }))
-                        }
-                        value={section.label}
-                      />
-                      {section.entries.every((entry) => entry.kind !== "builtin") ? (
-                        <Button
-                          aria-label={`Remove ${section.label} section`}
-                          onClick={() =>
-                            setFormSections(form.sections.filter((candidate) => candidate.id !== section.id))
-                          }
-                          size="icon"
-                          type="button"
-                          variant="ghost"
-                        >
-                          <X aria-hidden="true" size={14} />
-                        </Button>
-                      ) : null}
+            <Accordion className="mt-4 border-t border-border" collapsible type="single">
+              <AccordionItem value="published-form">
+                <AccordionTrigger className="py-3 text-muted-foreground">Published form configuration</AccordionTrigger>
+                <AccordionContent className="pb-0">
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <div>
+                      <H3>Published form</H3>
+                      <Caption className="block text-muted-foreground">
+                        Drag handles work with pointer and keyboard.
+                      </Caption>
                     </div>
+                    <Button onClick={addCustomSection} size="sm" type="button" variant="secondary">
+                      <Plus aria-hidden="true" size={14} />
+                      Section
+                    </Button>
+                  </div>
 
-                    <OrderableList
-                      ariaLabel={`Fields in ${section.label}`}
-                      className="mt-3 grid gap-2"
-                      getId={(entry) => entry.key}
-                      getLabel={(entry) => entry.label}
-                      items={section.entries}
-                      onReorder={(entries) =>
-                        updateSection(section.id, (current) => ({
-                          ...current,
-                          entries,
-                        }))
-                      }
-                      renderItem={(entry, entryOrderState) => {
-                        const definitionField = entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
-                        const coreField = Boolean(definitionField?.required || definitionField?.computationRequired);
-                        const compatible =
-                          selectedBindingType !== null &&
-                          (definitionField
-                            ? definitionField.allowedBindingTypes.includes(selectedBindingType)
-                            : entry.kind === "repeater"
-                              ? selectedBindingType === "table"
-                              : selectedBindingType === "text");
-                        return (
-                          <div className="grid gap-2 rounded-lg border border-border bg-card p-2.5">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                {...entryOrderState.attributes}
-                                {...entryOrderState.listeners}
-                                aria-label={`Reorder ${entry.label}`}
-                                className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                                ref={entryOrderState.setActivatorNodeRef}
-                                size="icon-sm"
-                                type="button"
-                                variant="ghost"
-                              >
-                                <GripVertical aria-hidden="true" className="size-3.5" />
-                              </Button>
-                              <Input
-                                aria-label={`${entry.key} label`}
-                                className="h-8 min-w-0"
-                                onChange={(event) =>
-                                  updateFormEntry(section.id, entry.key, (current) => ({
-                                    ...current,
-                                    label: event.target.value,
-                                  }))
-                                }
-                                value={entry.label}
-                              />
-                              <Button
-                                className="h-auto rounded-md px-2 py-1"
-                                disabled={!selectedSchema || !compatible}
-                                onClick={() => bindSelection(entry.key)}
-                                size="xs"
-                                type="button"
-                                variant="ghost"
-                              >
-                                Bind
-                              </Button>
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-2">
-                              <StatusBadge>{entry.kind === "builtin" ? definitionField?.source : "custom"}</StatusBadge>
-                              <Text className="max-w-48 truncate text-muted-foreground">{entry.key}</Text>
-                              <span className="ml-auto flex items-center gap-1">
-                                <CheckboxControl
-                                  className="size-4"
-                                  id={`${section.id}-${entry.key}-enabled`}
-                                  checked={entry.enabled}
-                                  disabled={coreField}
-                                  onCheckedChange={(checked) =>
-                                    updateFormEntry(section.id, entry.key, (current) => ({
-                                      ...current,
-                                      enabled: checked === true,
-                                    }))
-                                  }
-                                />
-                                <Label className="text-foreground" htmlFor={`${section.id}-${entry.key}-enabled`}>
-                                  Enabled
-                                </Label>
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <CheckboxControl
-                                  className="size-4"
-                                  id={`${section.id}-${entry.key}-required`}
-                                  checked={entry.required}
-                                  disabled={coreField}
-                                  onCheckedChange={(checked) =>
-                                    updateFormEntry(section.id, entry.key, (current) => ({
-                                      ...current,
-                                      required: checked === true,
-                                    }))
-                                  }
-                                />
-                                <Label className="text-foreground" htmlFor={`${section.id}-${entry.key}-required`}>
-                                  Required
-                                </Label>
-                              </span>
-                            </div>
-
-                            <Input
-                              aria-label={`${entry.label} help text`}
-                              className="h-8"
-                              onChange={(event) =>
-                                updateFormEntry(section.id, entry.key, (current) => ({
-                                  ...current,
-                                  helpText: event.target.value,
-                                }))
+                  <OrderableList
+                    ariaLabel="Form sections"
+                    className="mt-3 grid gap-3"
+                    getId={(section) => section.id}
+                    getLabel={(section) => section.label}
+                    items={form.sections}
+                    onReorder={setFormSections}
+                    renderItem={(section, sectionOrderState) => (
+                      <section className="rounded-xl border border-border bg-background p-3">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            {...sectionOrderState.attributes}
+                            {...sectionOrderState.listeners}
+                            aria-label={`Reorder ${section.label} section`}
+                            className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                            ref={sectionOrderState.setActivatorNodeRef}
+                            size="icon-sm"
+                            type="button"
+                            variant="ghost"
+                          >
+                            <GripVertical aria-hidden="true" className="size-[15px]" />
+                          </Button>
+                          <Input
+                            aria-label="Section label"
+                            className="h-8"
+                            onChange={(event) =>
+                              updateSection(section.id, (current) => ({
+                                ...current,
+                                label: event.target.value,
+                              }))
+                            }
+                            value={section.label}
+                          />
+                          {section.entries.every((entry) => entry.kind !== "builtin") ? (
+                            <Button
+                              aria-label={`Remove ${section.label} section`}
+                              onClick={() =>
+                                setFormSections(form.sections.filter((candidate) => candidate.id !== section.id))
                               }
-                              placeholder="Optional help text"
-                              value={entry.helpText ?? ""}
-                            />
-
-                            <Field
-                              className="gap-1 [&_[data-slot=field-label]]:text-foreground"
-                              htmlFor={`${section.id}-${entry.key}-section`}
-                              label="Move to section"
+                              size="icon"
+                              type="button"
+                              variant="ghost"
                             >
-                              <Select
-                                className="h-8"
-                                onChange={(event) => moveFormEntry(section.id, event.target.value, entry.key)}
-                                value={section.id}
-                              >
-                                {form.sections.map((candidate) => (
-                                  <option key={candidate.id} value={candidate.id}>
-                                    {candidate.label}
-                                  </option>
-                                ))}
-                              </Select>
-                            </Field>
+                              <X aria-hidden="true" size={14} />
+                            </Button>
+                          ) : null}
+                        </div>
 
-                            {entry.kind === "custom" ? (
-                              <>
+                        <OrderableList
+                          ariaLabel={`Fields in ${section.label}`}
+                          className="mt-3 grid gap-2"
+                          getId={(entry) => entry.key}
+                          getLabel={(entry) => entry.label}
+                          items={section.entries}
+                          onReorder={(entries) =>
+                            updateSection(section.id, (current) => ({
+                              ...current,
+                              entries,
+                            }))
+                          }
+                          renderItem={(entry, entryOrderState) => {
+                            const definitionField =
+                              entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
+                            const coreField = Boolean(
+                              definitionField?.required || definitionField?.computationRequired,
+                            );
+                            const compatible =
+                              selectedBindingType !== null &&
+                              (definitionField
+                                ? definitionField.allowedBindingTypes.includes(selectedBindingType)
+                                : entry.kind === "repeater"
+                                  ? selectedBindingType === "table"
+                                  : selectedBindingType === "text");
+                            return (
+                              <div className="grid gap-2 rounded-lg border border-border bg-card p-2.5">
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    {...entryOrderState.attributes}
+                                    {...entryOrderState.listeners}
+                                    aria-label={`Reorder ${entry.label}`}
+                                    className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                    ref={entryOrderState.setActivatorNodeRef}
+                                    size="icon-sm"
+                                    type="button"
+                                    variant="ghost"
+                                  >
+                                    <GripVertical aria-hidden="true" className="size-3.5" />
+                                  </Button>
+                                  <Input
+                                    aria-label={`${entry.key} label`}
+                                    className="h-8 min-w-0"
+                                    onChange={(event) =>
+                                      updateFormEntry(section.id, entry.key, (current) => ({
+                                        ...current,
+                                        label: event.target.value,
+                                      }))
+                                    }
+                                    value={entry.label}
+                                  />
+                                  <Button
+                                    className="h-auto rounded-md px-2 py-1"
+                                    disabled={!selectedSchema || !compatible}
+                                    onClick={() => bindSelection(entry.key)}
+                                    size="xs"
+                                    type="button"
+                                    variant="ghost"
+                                  >
+                                    Bind
+                                  </Button>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <StatusBadge>
+                                    {entry.kind === "builtin" ? definitionField?.source : "custom"}
+                                  </StatusBadge>
+                                  <Text className="max-w-48 truncate text-muted-foreground">{entry.key}</Text>
+                                  <span className="ml-auto flex items-center gap-1">
+                                    <CheckboxControl
+                                      className="size-4"
+                                      id={`${section.id}-${entry.key}-enabled`}
+                                      checked={entry.enabled}
+                                      disabled={coreField}
+                                      onCheckedChange={(checked) =>
+                                        updateFormEntry(section.id, entry.key, (current) => ({
+                                          ...current,
+                                          enabled: checked === true,
+                                        }))
+                                      }
+                                    />
+                                    <Label className="text-foreground" htmlFor={`${section.id}-${entry.key}-enabled`}>
+                                      Enabled
+                                    </Label>
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <CheckboxControl
+                                      className="size-4"
+                                      id={`${section.id}-${entry.key}-required`}
+                                      checked={entry.required}
+                                      disabled={coreField}
+                                      onCheckedChange={(checked) =>
+                                        updateFormEntry(section.id, entry.key, (current) => ({
+                                          ...current,
+                                          required: checked === true,
+                                        }))
+                                      }
+                                    />
+                                    <Label className="text-foreground" htmlFor={`${section.id}-${entry.key}-required`}>
+                                      Required
+                                    </Label>
+                                  </span>
+                                </div>
+
+                                <Input
+                                  aria-label={`${entry.label} help text`}
+                                  className="h-8"
+                                  onChange={(event) =>
+                                    updateFormEntry(section.id, entry.key, (current) => ({
+                                      ...current,
+                                      helpText: event.target.value,
+                                    }))
+                                  }
+                                  placeholder="Optional help text"
+                                  value={entry.helpText ?? ""}
+                                />
+
                                 <Field
                                   className="gap-1 [&_[data-slot=field-label]]:text-foreground"
-                                  htmlFor={`${section.id}-${entry.key}-control`}
-                                  label="Control"
+                                  htmlFor={`${section.id}-${entry.key}-section`}
+                                  label="Move to section"
                                 >
                                   <Select
                                     className="h-8"
-                                    onChange={(event) =>
-                                      updateFormEntry(section.id, entry.key, (current) =>
-                                        current.kind === "custom"
-                                          ? {
-                                              ...current,
-                                              control: event.target.value as typeof current.control,
-                                            }
-                                          : current,
-                                      )
-                                    }
-                                    value={entry.control}
+                                    onChange={(event) => moveFormEntry(section.id, event.target.value, entry.key)}
+                                    value={section.id}
                                   >
-                                    {CUSTOM_FIELD_CONTROLS.map((control) => (
-                                      <option key={control}>{control}</option>
+                                    {form.sections.map((candidate) => (
+                                      <option key={candidate.id} value={candidate.id}>
+                                        {candidate.label}
+                                      </option>
                                     ))}
                                   </Select>
                                 </Field>
-                                {entry.control === "select" ? (
-                                  <Input
-                                    aria-label={`${entry.label} select options`}
-                                    className="h-8"
-                                    onChange={(event) =>
-                                      updateFormEntry(section.id, entry.key, (current) =>
-                                        current.kind === "custom"
-                                          ? {
-                                              ...current,
-                                              options: event.target.value
-                                                .split(",")
-                                                .map((value) => value.trim())
-                                                .filter(Boolean),
-                                            }
-                                          : current,
-                                      )
-                                    }
-                                    placeholder="Option one, option two"
-                                    value={entry.options?.join(", ") ?? ""}
-                                  />
-                                ) : null}
-                              </>
-                            ) : null}
 
-                            {entry.kind === "repeater" ? (
-                              <div className="grid gap-2 rounded-lg bg-muted/40 p-2">
-                                <Field
-                                  className="gap-1 [&_[data-slot=field-label]]:text-foreground"
-                                  htmlFor={`${section.id}-${entry.key}-min-rows`}
-                                  label="Minimum rows"
-                                >
-                                  <Input
-                                    className="h-8"
-                                    max={MAX_RUNTIME_REPEATER_ROWS}
-                                    min={0}
-                                    onChange={(event) =>
-                                      updateFormEntry(section.id, entry.key, (current) =>
-                                        current.kind === "repeater"
-                                          ? {
-                                              ...current,
-                                              minRows: Number(event.target.value || 0),
-                                            }
-                                          : current,
-                                      )
-                                    }
-                                    type="number"
-                                    value={entry.minRows ?? 0}
-                                  />
-                                </Field>
-                                <OrderableList
-                                  ariaLabel={`${entry.label} columns`}
-                                  className="grid gap-1.5"
-                                  getId={(column) => column.key}
-                                  getLabel={(column) => column.label}
-                                  items={entry.columns}
-                                  onReorder={(columns) =>
-                                    updateFormEntry(section.id, entry.key, (current) =>
-                                      current.kind === "repeater" ? { ...current, columns } : current,
-                                    )
-                                  }
-                                  renderItem={(column, columnOrderState) => (
-                                    <div className="grid grid-cols-[2rem_1fr_7rem_2rem] items-center gap-1 rounded-md border border-border bg-background p-1">
-                                      <Button
-                                        {...columnOrderState.attributes}
-                                        {...columnOrderState.listeners}
-                                        aria-label={`Reorder ${column.label} column`}
-                                        className="grid size-8 touch-none place-items-center rounded text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                                        ref={columnOrderState.setActivatorNodeRef}
-                                        size="icon-sm"
-                                        type="button"
-                                        variant="ghost"
-                                      >
-                                        <GripVertical aria-hidden="true" className="size-[13px]" />
-                                      </Button>
-                                      <Input
-                                        aria-label={`${column.key} column label`}
-                                        className="h-8"
-                                        onChange={(event) =>
-                                          updateFormEntry(section.id, entry.key, (current) =>
-                                            current.kind === "repeater"
-                                              ? {
-                                                  ...current,
-                                                  columns: current.columns.map((candidate) =>
-                                                    candidate.key === column.key
-                                                      ? {
-                                                          ...candidate,
-                                                          label: event.target.value,
-                                                        }
-                                                      : candidate,
-                                                  ),
-                                                }
-                                              : current,
-                                          )
-                                        }
-                                        value={column.label}
-                                      />
+                                {entry.kind === "custom" ? (
+                                  <>
+                                    <Field
+                                      className="gap-1 [&_[data-slot=field-label]]:text-foreground"
+                                      htmlFor={`${section.id}-${entry.key}-control`}
+                                      label="Control"
+                                    >
                                       <Select
-                                        aria-label={`${column.label} control`}
                                         className="h-8"
                                         onChange={(event) =>
                                           updateFormEntry(section.id, entry.key, (current) =>
-                                            current.kind === "repeater"
+                                            current.kind === "custom"
                                               ? {
                                                   ...current,
-                                                  columns: current.columns.map((candidate) =>
-                                                    candidate.key === column.key
-                                                      ? {
-                                                          ...candidate,
-                                                          control: event.target.value as typeof candidate.control,
-                                                        }
-                                                      : candidate,
-                                                  ),
+                                                  control: event.target.value as typeof current.control,
                                                 }
                                               : current,
                                           )
                                         }
-                                        value={column.control}
+                                        value={entry.control}
                                       >
                                         {CUSTOM_FIELD_CONTROLS.map((control) => (
                                           <option key={control}>{control}</option>
                                         ))}
                                       </Select>
-                                      <Button
-                                        aria-label={`Remove ${column.label} column`}
-                                        disabled={entry.columns.length === 1}
-                                        onClick={() =>
+                                    </Field>
+                                    {entry.control === "select" ? (
+                                      <Input
+                                        aria-label={`${entry.label} select options`}
+                                        className="h-8"
+                                        onChange={(event) =>
                                           updateFormEntry(section.id, entry.key, (current) =>
-                                            current.kind === "repeater"
+                                            current.kind === "custom"
                                               ? {
                                                   ...current,
-                                                  columns: current.columns.filter(
-                                                    (candidate) => candidate.key !== column.key,
-                                                  ),
+                                                  options: event.target.value
+                                                    .split(",")
+                                                    .map((value) => value.trim())
+                                                    .filter(Boolean),
                                                 }
                                               : current,
                                           )
                                         }
-                                        size="icon"
-                                        type="button"
-                                        variant="ghost"
-                                      >
-                                        <X aria-hidden="true" size={13} />
-                                      </Button>
-                                      {column.control === "select" ? (
-                                        <Input
-                                          aria-label={`${column.label} options`}
-                                          className="col-span-4 h-8"
-                                          onChange={(event) =>
-                                            updateFormEntry(section.id, entry.key, (current) =>
-                                              current.kind === "repeater"
-                                                ? {
-                                                    ...current,
-                                                    columns: current.columns.map((candidate) =>
-                                                      candidate.key === column.key
-                                                        ? {
-                                                            ...candidate,
-                                                            options: event.target.value
-                                                              .split(",")
-                                                              .map((value) => value.trim())
-                                                              .filter(Boolean),
-                                                          }
-                                                        : candidate,
-                                                    ),
-                                                  }
-                                                : current,
-                                            )
-                                          }
-                                          placeholder="Option one, option two"
-                                          value={column.options?.join(", ") ?? ""}
-                                        />
-                                      ) : null}
-                                    </div>
-                                  )}
+                                        placeholder="Option one, option two"
+                                        value={entry.options?.join(", ") ?? ""}
+                                      />
+                                    ) : null}
+                                  </>
+                                ) : null}
+
+                                {entry.kind === "repeater" ? (
+                                  <div className="grid gap-2 rounded-lg bg-muted/40 p-2">
+                                    <Field
+                                      className="gap-1 [&_[data-slot=field-label]]:text-foreground"
+                                      htmlFor={`${section.id}-${entry.key}-min-rows`}
+                                      label="Minimum rows"
+                                    >
+                                      <Input
+                                        className="h-8"
+                                        max={MAX_RUNTIME_REPEATER_ROWS}
+                                        min={0}
+                                        onChange={(event) =>
+                                          updateFormEntry(section.id, entry.key, (current) =>
+                                            current.kind === "repeater"
+                                              ? {
+                                                  ...current,
+                                                  minRows: Number(event.target.value || 0),
+                                                }
+                                              : current,
+                                          )
+                                        }
+                                        type="number"
+                                        value={entry.minRows ?? 0}
+                                      />
+                                    </Field>
+                                    <OrderableList
+                                      ariaLabel={`${entry.label} columns`}
+                                      className="grid gap-1.5"
+                                      getId={(column) => column.key}
+                                      getLabel={(column) => column.label}
+                                      items={entry.columns}
+                                      onReorder={(columns) =>
+                                        updateFormEntry(section.id, entry.key, (current) =>
+                                          current.kind === "repeater" ? { ...current, columns } : current,
+                                        )
+                                      }
+                                      renderItem={(column, columnOrderState) => (
+                                        <div className="grid grid-cols-[2rem_1fr_7rem_2rem] items-center gap-1 rounded-md border border-border bg-background p-1">
+                                          <Button
+                                            {...columnOrderState.attributes}
+                                            {...columnOrderState.listeners}
+                                            aria-label={`Reorder ${column.label} column`}
+                                            className="grid size-8 touch-none place-items-center rounded text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                            ref={columnOrderState.setActivatorNodeRef}
+                                            size="icon-sm"
+                                            type="button"
+                                            variant="ghost"
+                                          >
+                                            <GripVertical aria-hidden="true" className="size-[13px]" />
+                                          </Button>
+                                          <Input
+                                            aria-label={`${column.key} column label`}
+                                            className="h-8"
+                                            onChange={(event) =>
+                                              updateFormEntry(section.id, entry.key, (current) =>
+                                                current.kind === "repeater"
+                                                  ? {
+                                                      ...current,
+                                                      columns: current.columns.map((candidate) =>
+                                                        candidate.key === column.key
+                                                          ? {
+                                                              ...candidate,
+                                                              label: event.target.value,
+                                                            }
+                                                          : candidate,
+                                                      ),
+                                                    }
+                                                  : current,
+                                              )
+                                            }
+                                            value={column.label}
+                                          />
+                                          <Select
+                                            aria-label={`${column.label} control`}
+                                            className="h-8"
+                                            onChange={(event) =>
+                                              updateFormEntry(section.id, entry.key, (current) =>
+                                                current.kind === "repeater"
+                                                  ? {
+                                                      ...current,
+                                                      columns: current.columns.map((candidate) =>
+                                                        candidate.key === column.key
+                                                          ? {
+                                                              ...candidate,
+                                                              control: event.target.value as typeof candidate.control,
+                                                            }
+                                                          : candidate,
+                                                      ),
+                                                    }
+                                                  : current,
+                                              )
+                                            }
+                                            value={column.control}
+                                          >
+                                            {CUSTOM_FIELD_CONTROLS.map((control) => (
+                                              <option key={control}>{control}</option>
+                                            ))}
+                                          </Select>
+                                          <Button
+                                            aria-label={`Remove ${column.label} column`}
+                                            disabled={entry.columns.length === 1}
+                                            onClick={() =>
+                                              updateFormEntry(section.id, entry.key, (current) =>
+                                                current.kind === "repeater"
+                                                  ? {
+                                                      ...current,
+                                                      columns: current.columns.filter(
+                                                        (candidate) => candidate.key !== column.key,
+                                                      ),
+                                                    }
+                                                  : current,
+                                              )
+                                            }
+                                            size="icon"
+                                            type="button"
+                                            variant="ghost"
+                                          >
+                                            <X aria-hidden="true" size={13} />
+                                          </Button>
+                                          {column.control === "select" ? (
+                                            <Input
+                                              aria-label={`${column.label} options`}
+                                              className="col-span-4 h-8"
+                                              onChange={(event) =>
+                                                updateFormEntry(section.id, entry.key, (current) =>
+                                                  current.kind === "repeater"
+                                                    ? {
+                                                        ...current,
+                                                        columns: current.columns.map((candidate) =>
+                                                          candidate.key === column.key
+                                                            ? {
+                                                                ...candidate,
+                                                                options: event.target.value
+                                                                  .split(",")
+                                                                  .map((value) => value.trim())
+                                                                  .filter(Boolean),
+                                                              }
+                                                            : candidate,
+                                                        ),
+                                                      }
+                                                    : current,
+                                                )
+                                              }
+                                              placeholder="Option one, option two"
+                                              value={column.options?.join(", ") ?? ""}
+                                            />
+                                          ) : null}
+                                        </div>
+                                      )}
+                                    />
+                                    <Button
+                                      onClick={() => addRepeaterColumn(section.id, entry.key)}
+                                      size="sm"
+                                      type="button"
+                                      variant="ghost"
+                                    >
+                                      <Plus aria-hidden="true" size={13} />
+                                      Column
+                                    </Button>
+                                  </div>
+                                ) : null}
+
+                                <Textarea
+                                  aria-label={`${entry.label} sample value`}
+                                  className="min-h-12 resize-y rounded-lg border border-input bg-background px-2.5 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                  onChange={(event) => {
+                                    setSampleData((values) => ({
+                                      ...values,
+                                      [entry.key]: event.target.value,
+                                    }));
+                                    setIsDirty(true);
+                                  }}
+                                  value={sampleData[entry.key] ?? ""}
                                 />
-                                <Button
-                                  onClick={() => addRepeaterColumn(section.id, entry.key)}
-                                  size="sm"
-                                  type="button"
-                                  variant="ghost"
-                                >
-                                  <Plus aria-hidden="true" size={13} />
-                                  Column
-                                </Button>
+
+                                {entry.kind !== "builtin" ? (
+                                  <Button
+                                    onClick={() => removeCustomEntry(section.id, entry.key)}
+                                    size="sm"
+                                    type="button"
+                                    variant="ghost"
+                                  >
+                                    Remove custom field
+                                  </Button>
+                                ) : null}
                               </div>
-                            ) : null}
+                            );
+                          }}
+                        />
 
-                            <Textarea
-                              aria-label={`${entry.label} sample value`}
-                              className="min-h-12 resize-y rounded-lg border border-input bg-background px-2.5 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                              onChange={(event) => {
-                                setSampleData((values) => ({
-                                  ...values,
-                                  [entry.key]: event.target.value,
-                                }));
-                                setIsDirty(true);
-                              }}
-                              value={sampleData[entry.key] ?? ""}
-                            />
-
-                            {entry.kind !== "builtin" ? (
-                              <Button
-                                onClick={() => removeCustomEntry(section.id, entry.key)}
-                                size="sm"
-                                type="button"
-                                variant="ghost"
-                              >
-                                Remove custom field
-                              </Button>
-                            ) : null}
-                          </div>
-                        );
-                      }}
-                    />
-
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <Button
-                        onClick={() => addCustomEntry(section.id, "custom")}
-                        size="sm"
-                        type="button"
-                        variant="secondary"
-                      >
-                        Add custom field
-                      </Button>
-                      <Button
-                        onClick={() => addCustomEntry(section.id, "repeater")}
-                        size="sm"
-                        type="button"
-                        variant="secondary"
-                      >
-                        Add repeatable table
-                      </Button>
-                    </div>
-                  </section>
-                )}
-              />
-            </details>
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          <Button
+                            onClick={() => addCustomEntry(section.id, "custom")}
+                            size="sm"
+                            type="button"
+                            variant="secondary"
+                          >
+                            Add custom field
+                          </Button>
+                          <Button
+                            onClick={() => addCustomEntry(section.id, "repeater")}
+                            size="sm"
+                            type="button"
+                            variant="secondary"
+                          >
+                            Add repeatable table
+                          </Button>
+                        </div>
+                      </section>
+                    )}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         ) : null}
 
@@ -2280,21 +2290,28 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
           </AlertBanner>
         ) : null}
         {warnings.length ? (
-          <details className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-amber-900">
-            <summary className="cursor-pointer">
-              <Strong>{warnings.length}</Strong>
-              <Strong> non-blocking publish</Strong>
-              <Strong> </Strong>
-              <Strong>{warnings.length === 1 ? "warning" : "warnings"}</Strong>
-            </summary>
-            <List className="mt-2 list-disc space-y-1 pl-5">
-              {warnings.map((warning) => (
-                <li key={warning}>
-                  <Text>{warning}</Text>
-                </li>
-              ))}
-            </List>
-          </details>
+          <Accordion
+            className="shrink-0 border-b border-status-warning/20 bg-status-warning-soft px-4 text-status-warning"
+            collapsible
+            type="single"
+          >
+            <AccordionItem value="publish-warnings">
+              <AccordionTrigger className="py-2 text-status-warning [&>svg]:text-status-warning">
+                <span>
+                  {warnings.length} non-blocking publish {warnings.length === 1 ? "warning" : "warnings"}
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="pb-2">
+                <List className="list-disc space-y-1 pl-5">
+                  {warnings.map((warning) => (
+                    <li key={warning}>
+                      <Text>{warning}</Text>
+                    </li>
+                  ))}
+                </List>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         ) : null}
 
         <div className="relative flex min-h-0 flex-1">

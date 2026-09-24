@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { test, expect } from "vitest";
 import { EditorState } from "@codemirror/state";
 import { ensureSyntaxTree, StreamLanguage } from "@codemirror/language";
 import { json } from "@codemirror/lang-json";
@@ -32,14 +31,11 @@ function rows(state, result) {
 test("infers two- and four-space indentation without adding phantom nesting", () => {
   for (const width of [2, 4]) {
     const state = editor(JSON.stringify({ item: { value: true } }, null, width));
-    assert.deepEqual(
-      rows(state, collect(state)).map(({ line, columns }) => [line, columns]),
-      [
-        [2, [0]],
-        [3, [0, width]],
-        [4, [0]],
-      ],
-    );
+    expect(rows(state, collect(state)).map(({ line, columns }) => [line, columns])).toEqual([
+      [2, [0]],
+      [3, [0, width]],
+      [4, [0]],
+    ]);
   }
 });
 
@@ -48,45 +44,39 @@ test("tab stops and mixed space-tab prefixes use visual columns", () => {
   for (const tabSize of [4, 8]) {
     const state = editor(code, json(), code.indexOf("value"), tabSize);
     const line = rows(state, collect(state, true)).find((row) => row.line === 3);
-    assert.deepEqual(line.columns, [0, tabSize]);
-    assert.equal(line.activeColumn, tabSize);
+    expect(line.columns).toEqual([0, tabSize]);
+    expect(line.activeColumn).toBe(tabSize);
   }
 });
 
 test("only the focused caret's innermost JSON block receives active guides", () => {
   const code = JSON.stringify({ first: { value: 1 }, second: { value: 2 } }, null, 2);
   const state = editor(code, json(), code.indexOf("value"));
-  assert.ok(collect(state).lines.every((row) => row.activeColumn === undefined));
-  assert.deepEqual(
-    rows(state, collect(state, true)).filter((row) => row.activeColumn !== undefined),
-    [{ line: 3, columns: [0, 2], activeColumn: 2 }],
-  );
+  expect(collect(state).lines.every((row) => row.activeColumn === undefined)).toBeTruthy();
+  expect(rows(state, collect(state, true)).filter((row) => row.activeColumn !== undefined)).toEqual([
+    { line: 3, columns: [0, 2], activeColumn: 2 },
+  ]);
   const moved = state.update({ selection: { anchor: code.lastIndexOf("value") } }).state;
-  assert.deepEqual(
-    rows(moved, collect(moved, true)).filter((row) => row.activeColumn !== undefined),
-    [{ line: 6, columns: [0, 2], activeColumn: 2 }],
-  );
+  expect(rows(moved, collect(moved, true)).filter((row) => row.activeColumn !== undefined)).toEqual([
+    { line: 6, columns: [0, 2], activeColumn: 2 },
+  ]);
 });
 
 test("blank lines continue surrounding guides and closing rows retain only outer indentation", () => {
   const code = '{\n  "item": {\n\n    "value": 1\n\n  }\n}';
   const state = editor(code, json(), code.indexOf("value"));
-  assert.deepEqual(
-    rows(state, collect(state)).map(({ line, columns }) => [line, columns]),
-    [
-      [2, [0]],
-      [3, [0, 2]],
-      [4, [0, 2]],
-      [5, [0, 2]],
-      [6, [0]],
-    ],
-  );
-  assert.deepEqual(
+  expect(rows(state, collect(state)).map(({ line, columns }) => [line, columns])).toEqual([
+    [2, [0]],
+    [3, [0, 2]],
+    [4, [0, 2]],
+    [5, [0, 2]],
+    [6, [0]],
+  ]);
+  expect(
     rows(state, collect(state, true))
       .filter((row) => row.activeColumn === 2)
       .map((row) => row.line),
-    [3, 4, 5],
-  );
+  ).toEqual([3, 4, 5]);
 });
 
 test("TypeScript, XML, and YAML use the nearest parsed multiline block", () => {
@@ -97,8 +87,8 @@ test("TypeScript, XML, and YAML use the nearest parsed multiline block", () => {
   ]) {
     const state = editor(code, extension, code.indexOf(word));
     const active = rows(state, collect(state, true)).filter((row) => row.activeColumn !== undefined);
-    assert.ok(active.length > 0);
-    assert.ok(active.every((row) => row.activeColumn === expectedColumn));
+    expect(active.length > 0).toBeTruthy();
+    expect(active.every((row) => row.activeColumn === expectedColumn)).toBeTruthy();
   }
 });
 
@@ -114,17 +104,16 @@ test("scrolled and folded visible ranges keep guide columns without decorating h
     { from: state.doc.line(135).from, to: state.doc.line(140).to },
   ];
   const result = collect(state, false, ranges);
-  assert.ok(result.lines.length > 0);
-  assert.ok(result.lines.every((row) => ranges.some((range) => row.from >= range.from && row.from <= range.to)));
+  expect(result.lines.length > 0).toBeTruthy();
+  expect(
+    result.lines.every((row) => ranges.some((range) => row.from >= range.from && row.from <= range.to)),
+  ).toBeTruthy();
   for (const row of result.lines) {
     const indent = state.doc.lineAt(row.from).text.match(/^ */)[0].length;
-    assert.deepEqual(
-      row.columns,
-      Array.from({ length: indent / 4 }, (_, index) => index * 4),
-    );
+    expect(row.columns).toEqual(Array.from({ length: indent / 4 }, (_, index) => index * 4));
   }
-  assert.ok(result.readLines < 50);
-  assert.equal(result.limited, false);
+  expect(result.readLines < 50).toBeTruthy();
+  expect(result.limited).toBe(false);
 });
 
 test("bounded indentation fallback supports languages without a block parser", () => {
@@ -136,18 +125,19 @@ test("bounded indentation fallback supports languages without a block parser", (
   });
   const code = "root:\n    child:\n        value\n    sibling\nend";
   const state = editor(code, stream, code.indexOf("value"));
-  assert.deepEqual(
-    rows(state, collect(state, true)).filter((row) => row.activeColumn !== undefined),
-    [{ line: 3, columns: [0, 4], activeColumn: 4 }],
-  );
+  expect(rows(state, collect(state, true)).filter((row) => row.activeColumn !== undefined)).toEqual([
+    { line: 3, columns: [0, 4], activeColumn: 4 },
+  ]);
 });
 
 test("missing languages and malformed input remain safe", () => {
-  assert.deepEqual(collect(editor("    plain\n        text", [])).lines, []);
+  expect(collect(editor("    plain\n        text", [])).lines).toEqual([]);
   for (const code of ['{\n  "item": {\n    "value":', "<root>\n  <item>\n    <value", "root:\n  item: [\n    broken"]) {
     const state = editor(code, code[0] === "<" ? xml() : code[0] === "{" ? json() : yaml(), code.length);
     const result = collect(state, true);
-    assert.ok(result.lines.every((row) => row.from >= 0 && row.from <= code.length && row.columns.length <= 32));
+    expect(
+      result.lines.every((row) => row.from >= 0 && row.from <= code.length && row.columns.length <= 32),
+    ).toBeTruthy();
   }
 });
 
@@ -160,24 +150,24 @@ test("large documents, long prefixes, blank runs, and deep trees have explicit w
   const state = editor(code);
   const from = state.doc.line(40_000).from;
   const visible = collect(state, false, [{ from, to: from + 300 }]);
-  assert.ok(visible.readLines < 50);
-  assert.ok(visible.readCharacters < 10_000);
-  assert.equal(visible.limited, false);
+  expect(visible.readLines < 50).toBeTruthy();
+  expect(visible.readCharacters < 10_000).toBeTruthy();
+  expect(visible.limited).toBe(false);
 
   const spaces = editor("{\n" + " ".repeat(100_000) + '"value": 1\n}');
   const long = collect(spaces);
-  assert.equal(long.limited, true);
-  assert.ok(long.readCharacters <= 3 * 256);
-  assert.ok(long.lines.every((row) => row.columns.length <= 32));
+  expect(long.limited).toBe(true);
+  expect(long.readCharacters <= 3 * 256).toBeTruthy();
+  expect(long.lines.every((row) => row.columns.length <= 32)).toBeTruthy();
 
   const blanks = editor("{\n" + "\n".repeat(2_000) + '  "value": 1\n}');
   const blankResult = collect(blanks);
-  assert.equal(blankResult.limited, true);
-  assert.ok(blankResult.readLines <= 656);
-  assert.ok(blankResult.lines.length <= 400);
+  expect(blankResult.limited).toBe(true);
+  expect(blankResult.readLines <= 656).toBeTruthy();
+  expect(blankResult.lines.length <= 400).toBeTruthy();
 
   const deep = editor("[\n".repeat(200) + "0" + "\n]".repeat(200), json(), 400);
   const deepResult = collect(deep, true, [{ from: 390, to: 410 }]);
-  assert.equal(deepResult.limited, true);
-  assert.ok(deepResult.visitedNodes <= 128);
+  expect(deepResult.limited).toBe(true);
+  expect(deepResult.visitedNodes <= 128).toBeTruthy();
 });

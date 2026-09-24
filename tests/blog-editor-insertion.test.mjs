@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { Editor, Node } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { TableKit, createTable } from "@tiptap/extension-table";
@@ -42,10 +41,10 @@ test("append preserves a selected last image when adding another image, block, o
         : kind === "table"
           ? createTable(editor.schema, 3, 3, true).toJSON()
           : { type: "blockquote", content: [paragraph("quote")] };
-    assert.equal(captureBlogInsertion(editor, true).insert(content), true);
-    assert.equal(editor.state.doc.childCount, 2);
-    assert.equal(editor.state.doc.firstChild.attrs.publicId, "original");
-    assert.equal(editor.state.doc.lastChild.type.name, kind);
+    expect(captureBlogInsertion(editor, true).insert(content)).toBe(true);
+    expect(editor.state.doc.childCount).toBe(2);
+    expect(editor.state.doc.firstChild.attrs.publicId).toBe("original");
+    expect(editor.state.doc.lastChild.type.name).toBe(kind);
     editor.destroy();
   }
 });
@@ -56,11 +55,11 @@ test("a pending upload follows its original insertion point through edits and ig
   const pending = captureBlogInsertion(editor);
   editor.commands.insertContentAt(1, { type: "text", text: "New " });
   editor.commands.setTextSelection(1);
-  assert.equal(pending.insert(image("uploaded")), true);
-  assert.equal(editor.state.doc.childCount, 3);
-  assert.equal(editor.state.doc.child(0).textContent, "New Before");
-  assert.equal(editor.state.doc.child(1).attrs.publicId, "uploaded");
-  assert.equal(editor.state.doc.child(2).textContent, "After");
+  expect(pending.insert(image("uploaded"))).toBe(true);
+  expect(editor.state.doc.childCount).toBe(3);
+  expect(editor.state.doc.child(0).textContent).toBe("New Before");
+  expect(editor.state.doc.child(1).attrs.publicId).toBe("uploaded");
+  expect(editor.state.doc.child(2).textContent).toBe("After");
   editor.destroy();
 });
 
@@ -69,10 +68,10 @@ test("pending append remains an append even if another block is inserted during 
   const pending = captureBlogInsertion(editor, true);
   editor.commands.insertContentAt(editor.state.doc.content.size, paragraph("New paragraph"));
   editor.commands.setNodeSelection(0);
-  assert.equal(pending.insert(image("uploaded")), true);
-  assert.equal(editor.state.doc.firstChild.attrs.publicId, "original");
-  assert.equal(editor.state.doc.child(1).textContent, "New paragraph");
-  assert.equal(editor.state.doc.lastChild.attrs.publicId, "uploaded");
+  expect(pending.insert(image("uploaded"))).toBe(true);
+  expect(editor.state.doc.firstChild.attrs.publicId).toBe("original");
+  expect(editor.state.doc.child(1).textContent).toBe("New paragraph");
+  expect(editor.state.doc.lastChild.attrs.publicId).toBe("uploaded");
   editor.destroy();
 });
 
@@ -81,12 +80,14 @@ test("one captured upload inserts multiple images together in clipboard order", 
   editor.commands.setTextSelection(9);
   const pending = captureBlogInsertion(editor);
   editor.commands.setTextSelection(1);
-  assert.equal(pending.insert([image("first"), image("second")]), true);
-  assert.deepEqual(
-    editor.getJSON().content.map((node) => node.attrs?.publicId || node.content?.[0]?.text),
-    ["Before", "first", "second", "After"],
-  );
-  assert.equal(pending.insert(image("duplicate")), false);
+  expect(pending.insert([image("first"), image("second")])).toBe(true);
+  expect(editor.getJSON().content.map((node) => node.attrs?.publicId || node.content?.[0]?.text)).toEqual([
+    "Before",
+    "first",
+    "second",
+    "After",
+  ]);
+  expect(pending.insert(image("duplicate"))).toBe(false);
   editor.destroy();
 });
 
@@ -97,9 +98,9 @@ test("cancelled, read-only, and destroyed upload destinations leave content unto
     if (stop === "cancelled") pending.dispose();
     if (stop === "read-only") editor.setEditable(false);
     if (stop === "destroyed") Object.defineProperty(editor, "isDestroyed", { value: true });
-    assert.equal(pending.insert(image("uploaded")), false);
-    assert.equal(editor.state.doc.childCount, 1);
-    assert.equal(editor.state.doc.firstChild.attrs.publicId, "original");
+    expect(pending.insert(image("uploaded"))).toBe(false);
+    expect(editor.state.doc.childCount).toBe(1);
+    expect(editor.state.doc.firstChild.attrs.publicId).toBe("original");
     pending.dispose();
     editor.destroy();
   }
@@ -114,13 +115,13 @@ test("table dimensions preserve chosen rows, columns, header row, and the existi
   ]) {
     const editor = editorFor([image("original")]);
     const table = createBlogTable(editor, columns, rows);
-    assert.equal(captureBlogInsertion(editor, true).insert(table), true);
-    assert.equal(editor.state.doc.firstChild.attrs.publicId, "original");
+    expect(captureBlogInsertion(editor, true).insert(table)).toBe(true);
+    expect(editor.state.doc.firstChild.attrs.publicId).toBe("original");
     const inserted = editor.state.doc.lastChild;
-    assert.equal(inserted.childCount, rows);
+    expect(inserted.childCount).toBe(rows);
     for (let row = 0; row < rows; row++) {
-      assert.equal(inserted.child(row).childCount, columns);
-      assert.equal(inserted.child(row).firstChild.type.name, row === 0 ? "tableHeader" : "tableCell");
+      expect(inserted.child(row).childCount).toBe(columns);
+      expect(inserted.child(row).firstChild.type.name).toBe(row === 0 ? "tableHeader" : "tableCell");
     }
     editor.destroy();
   }
@@ -129,10 +130,10 @@ test("table dimensions preserve chosen rows, columns, header row, and the existi
 test("invalid table dimensions are rejected without changing editor content", () => {
   const editor = editorFor([image("original")]);
   for (const value of [0, -1, 21, 2.5, NaN, Infinity]) {
-    assert.throws(() => createBlogTable(editor, value, 3), /1.*20/);
-    assert.throws(() => createBlogTable(editor, 3, value), /1.*20/);
+    expect(() => createBlogTable(editor, value, 3)).toThrow(/1.*20/);
+    expect(() => createBlogTable(editor, 3, value)).toThrow(/1.*20/);
   }
-  assert.equal(editor.state.doc.childCount, 1);
+  expect(editor.state.doc.childCount).toBe(1);
   editor.destroy();
 });
 
@@ -142,9 +143,9 @@ test("image descriptions update the original mapped image after cursor movement"
   const edit = captureBlogInsertion(editor);
   editor.commands.insertContentAt(0, paragraph("Before"));
   editor.commands.setNodeSelection(editor.state.doc.content.size - 1);
-  assert.equal(edit.updateImage({ alt: "Original description", caption: "Original caption" }), true);
-  assert.equal(editor.state.doc.child(1).attrs.alt, "Original description");
-  assert.equal(editor.state.doc.child(2).attrs.alt, "");
+  expect(edit.updateImage({ alt: "Original description", caption: "Original caption" })).toBe(true);
+  expect(editor.state.doc.child(1).attrs.alt).toBe("Original description");
+  expect(editor.state.doc.child(2).attrs.alt).toBe("");
   editor.destroy();
 });
 
@@ -155,8 +156,8 @@ test("a stale image description never changes a replacement or neighboring image
     const edit = captureBlogInsertion(editor);
     if (changed === "removed") editor.commands.deleteSelection();
     else editor.commands.updateAttributes("image", { publicId: "replacement" });
-    assert.equal(edit.updateImage({ alt: "Wrong description", caption: "" }), false);
-    for (const node of editor.getJSON().content) assert.equal(node.attrs.alt, "");
+    expect(edit.updateImage({ alt: "Wrong description", caption: "" })).toBe(false);
+    for (const node of editor.getJSON().content) expect(node.attrs.alt).toBe("");
     editor.destroy();
   }
 });
@@ -166,10 +167,10 @@ test("removing an image while editing its description does not change an identic
   editor.commands.setNodeSelection(0);
   const edit = captureBlogInsertion(editor);
   editor.commands.deleteSelection();
-  assert.equal(edit.updateImage({ alt: "Wrong description", caption: "Wrong caption" }), false);
-  assert.equal(editor.state.doc.childCount, 1);
-  assert.equal(editor.state.doc.firstChild.attrs.alt, "");
-  assert.equal(editor.state.doc.firstChild.attrs.caption, "");
+  expect(edit.updateImage({ alt: "Wrong description", caption: "Wrong caption" })).toBe(false);
+  expect(editor.state.doc.childCount).toBe(1);
+  expect(editor.state.doc.firstChild.attrs.alt).toBe("");
+  expect(editor.state.doc.firstChild.attrs.caption).toBe("");
   editor.destroy();
 });
 
@@ -178,13 +179,10 @@ test("inline insertion uses the hovered whole block instead of the selection", (
     const editor = editorFor([block, paragraph("Last")]);
     editor.commands.setTextSelection(editor.state.doc.content.size - 1);
     const pending = captureBlogInsertion(editor, false, 0);
-    assert.equal(pending.insert(paragraph("Added")), true);
-    assert.deepEqual(
-      editor.getJSON().content.map((node) => node.type),
-      [block.type, "paragraph", "paragraph"],
-    );
-    assert.equal(editor.state.doc.child(1).textContent, "Added");
-    assert.equal(editor.state.doc.child(2).textContent, "Last");
+    expect(pending.insert(paragraph("Added"))).toBe(true);
+    expect(editor.getJSON().content.map((node) => node.type)).toEqual([block.type, "paragraph", "paragraph"]);
+    expect(editor.state.doc.child(1).textContent).toBe("Added");
+    expect(editor.state.doc.child(2).textContent).toBe("Last");
     editor.destroy();
   }
 });
@@ -194,10 +192,10 @@ test("inline insertion reuses an empty line without changing content on cancel",
   const position = editor.state.doc.firstChild.nodeSize;
   const cancelled = captureBlogInsertion(editor, false, position);
   cancelled.dispose();
-  assert.equal(editor.state.doc.childCount, 3);
-  assert.equal(captureBlogInsertion(editor, false, position).insert(image("new")), true);
-  assert.equal(editor.state.doc.childCount, 3);
-  assert.equal(editor.state.doc.child(1).attrs.publicId, "new");
+  expect(editor.state.doc.childCount).toBe(3);
+  expect(captureBlogInsertion(editor, false, position).insert(image("new"))).toBe(true);
+  expect(editor.state.doc.childCount).toBe(3);
+  expect(editor.state.doc.child(1).attrs.publicId).toBe("new");
   editor.destroy();
 });
 
@@ -206,13 +204,13 @@ test("inline insertion follows block edits and rejects a deleted destination", (
   const pending = captureBlogInsertion(editor, false, 0);
   editor.commands.insertContentAt(1, { type: "text", text: "New " });
   editor.commands.setTextSelection(editor.state.doc.content.size - 1);
-  assert.equal(pending.insert(image("uploaded")), true);
-  assert.equal(editor.state.doc.child(0).textContent, "New Before");
-  assert.equal(editor.state.doc.child(1).attrs.publicId, "uploaded");
+  expect(pending.insert(image("uploaded"))).toBe(true);
+  expect(editor.state.doc.child(0).textContent).toBe("New Before");
+  expect(editor.state.doc.child(1).attrs.publicId).toBe("uploaded");
   const deleted = captureBlogInsertion(editor, false, 0);
   editor.commands.deleteRange({ from: 0, to: editor.state.doc.firstChild.nodeSize });
-  assert.equal(deleted.insert(paragraph("Wrong place")), false);
-  assert.equal(editor.state.doc.childCount, 2);
+  expect(deleted.insert(paragraph("Wrong place"))).toBe(false);
+  expect(editor.state.doc.childCount).toBe(2);
   editor.destroy();
 });
 
@@ -222,10 +220,10 @@ test("inline insertion keeps newly typed empty-line content and follows precedin
   const pending = captureBlogInsertion(editor, false, position);
   editor.commands.insertContentAt(position + 1, { type: "text", text: "Keep me" });
   editor.commands.insertContentAt(0, paragraph("First"));
-  assert.equal(pending.insert({ type: "heading", attrs: { level: 2 } }), true);
-  assert.equal(editor.state.doc.child(2).textContent, "Keep me");
-  assert.equal(editor.state.doc.child(3).type.name, "heading");
-  assert.equal(editor.state.doc.child(3).attrs.level, 2);
-  assert.equal(editor.state.doc.child(4).textContent, "After");
+  expect(pending.insert({ type: "heading", attrs: { level: 2 } })).toBe(true);
+  expect(editor.state.doc.child(2).textContent).toBe("Keep me");
+  expect(editor.state.doc.child(3).type.name).toBe("heading");
+  expect(editor.state.doc.child(3).attrs.level).toBe(2);
+  expect(editor.state.doc.child(4).textContent).toBe("After");
   editor.destroy();
 });

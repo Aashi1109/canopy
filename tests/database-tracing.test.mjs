@@ -1,10 +1,6 @@
-import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { registerHooks } from "node:module";
-import test from "node:test";
-import { sql } from "drizzle-orm";
+import { beforeAll, expect, test, vi } from "vitest";
 
-const runtimeUrl = new URL("../db/runtime.ts", import.meta.url).href;
 const failure = new Error("private query failure");
 const result = { rows: [{ value: "private result" }] };
 const spans = [];
@@ -61,108 +57,100 @@ class Pool extends EventEmitter {
 }
 
 globalThis.__databaseTracingPg = { Pool, types: { builtins: {}, getTypeParser: () => (value) => value } };
-const hooks = registerHooks({
-  resolve(specifier, context, nextResolve) {
-    if (specifier === "@sentry/core" && context.parentURL === runtimeUrl) {
-      return {
-        shortCircuit: true,
-        url: "data:text/javascript,export const {startInactiveSpan} = globalThis.__databaseTracingSentry",
-      };
-    }
-    if (specifier === "pg") {
-      return { shortCircuit: true, url: "data:text/javascript,export default globalThis.__databaseTracingPg" };
-    }
-    return nextResolve(specifier, context);
-  },
+
+// Sentry stub captured at factory eval (when runtime.ts imports it), mirroring the
+// original data-URL destructure so the globals can be cleared afterwards.
+vi.mock("@sentry/core", () => {
+  const { startInactiveSpan } = globalThis.__databaseTracingSentry;
+  return { startInactiveSpan };
 });
-const { createDatabase, sqlClient } = await import(runtimeUrl);
-hooks.deregister();
-delete globalThis.__databaseTracingPg;
-delete globalThis.__databaseTracingSentry;
+vi.mock("pg", () => ({ default: globalThis.__databaseTracingPg }));
+
+let createDatabase, sqlClient, sql;
+beforeAll(async () => {
+  ({ sql } = await import("drizzle-orm"));
+  ({ createDatabase, sqlClient } = await import("@/db/runtime.ts"));
+  delete globalThis.__databaseTracingPg;
+  delete globalThis.__databaseTracingSentry;
+});
 
 test("database spans cover pooled and transaction queries without altering results", async () => {
   try {
-    assert.equal(await sqlClient.query("SELECT private_column", ["private parameter"]), result);
-    assert.equal(spans.length, 1);
-    await assert.rejects(sqlClient.query("FAIL"), (error) => error === failure);
-    assert.equal(spans.length, 2);
+    expect(await sqlClient.query("SELECT private_column", ["private parameter"])).toBe(result);
+    expect(spans.length).toBe(1);
+    await expect(sqlClient.query("FAIL")).rejects.toBe(failure);
+    expect(spans.length).toBe(2);
 
     const db = createDatabase({});
-    assert.equal(await db.transaction((tx) => tx.execute(sql`select 1`)), result);
-    assert.equal(spans.length, 5, "begin, query and commit each emit once");
-    await assert.rejects(
-      db.transaction((tx) => tx.execute(sql.raw("FAIL"))),
-      /Failed query/,
-    );
-    assert.equal(spans.length, 8, "begin, failed query and rollback each emit once");
+    expect(await db.transaction((tx) => tx.execute(sql`select 1`))).toBe(result);
+    expect(spans.length, "begin, query and commit each emit once").toBe(5);
+    await expect(db.transaction((tx) => tx.execute(sql.raw("FAIL")))).rejects.toThrow(/Failed query/);
+    expect(spans.length, "begin, failed query and rollback each emit once").toBe(8);
 
     const client = await sqlClient.connect();
     const callbackQuery = (makeArgs, error) =>
       new Promise((resolve, reject) => {
         const callback = function (actualError, actualResult) {
           try {
-            assert.equal(actualError, error);
-            assert.equal(actualResult, result);
-            assert.equal(this, client, "callback receiver is preserved");
+            expect(actualError).toBe(error);
+            expect(actualResult).toBe(result);
+            expect(this, "callback receiver is preserved").toBe(client);
             resolve();
           } catch (failure) {
             reject(failure);
           }
         };
-        assert.equal(client.query(...makeArgs(callback)), undefined, "callback overload keeps its return value");
+        expect(client.query(...makeArgs(callback)), "callback overload keeps its return value").toBe(undefined);
       });
     await callbackQuery((callback) => ["select 1", callback], null);
     await callbackQuery((callback) => ["FAIL", ["private parameter"], callback], failure);
     await callbackQuery((callback) => [{ text: "select 1", callback }], null);
-    assert.throws(
-      () => client.query("THROW"),
-      (error) => error === failure,
-    );
-    assert.equal(spans.length, 12);
-    assert.equal(connections, 1, "reusing a connection does not add another observer");
-    assert.deepEqual(
-      spans.map((span) => (span.status.code === 2 ? "error" : "success")),
-      [
-        "success",
-        "error",
-        "success",
-        "success",
-        "success",
-        "success",
-        "error",
-        "success",
-        "success",
-        "error",
-        "success",
-        "error",
-      ],
-    );
+    expect(() => client.query("THROW")).toThrow(failure);
+    expect(spans.length).toBe(12);
+    expect(connections, "reusing a connection does not add another observer").toBe(1);
+    expect(spans.map((span) => (span.status.code === 2 ? "error" : "success"))).toEqual([
+      "success",
+      "error",
+      "success",
+      "success",
+      "success",
+      "success",
+      "error",
+      "success",
+      "success",
+      "error",
+      "success",
+      "error",
+    ]);
     for (const span of spans) {
-      assert.deepEqual(span.options, {
+      expect(span.options).toEqual({
         name: "db.query",
         op: "db.query",
         onlyIfParent: true,
         attributes: { "db.system": "postgresql" },
       });
-      assert.equal(span.ended, 1);
+      expect(span.ended).toBe(1);
     }
-    assert.ok(!JSON.stringify(spans).includes("private"), "SQL, parameters, results and errors are never recorded");
+    expect(
+      !JSON.stringify(spans).includes("private"),
+      "SQL, parameters, results and errors are never recorded",
+    ).toBeTruthy();
 
     const submittable = { submit() {} };
-    assert.equal(client.query(submittable), submittable);
-    assert.equal(spans.length, 12, "custom query lifecycles are left untouched");
+    expect(client.query(submittable)).toBe(submittable);
+    expect(spans.length, "custom query lifecycles are left untouched").toBe(12);
     failSpanEnd = true;
-    assert.equal(await client.query("select 1"), result);
-    await assert.rejects(client.query("FAIL"), (error) => error === failure);
+    expect(await client.query("select 1")).toBe(result);
+    await expect(client.query("FAIL")).rejects.toBe(failure);
     await callbackQuery((callback) => ["select 1", callback], null);
     await callbackQuery((callback) => ["FAIL", callback], failure);
-    assert.ok(
+    expect(
       spans.every((span) => span.ended === 1),
       "span completion failures never alter query results",
-    );
+    ).toBeTruthy();
     failTracing = true;
-    assert.equal(await client.query("select 1"), result);
-    await assert.rejects(client.query("FAIL"), (error) => error === failure);
+    expect(await client.query("select 1")).toBe(result);
+    await expect(client.query("FAIL")).rejects.toBe(failure);
     client.release();
   } finally {
     await sqlClient.end();

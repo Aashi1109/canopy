@@ -1,43 +1,46 @@
-import assert from "node:assert/strict";
+import { expect, test, vi, afterEach, onTestFinished } from "vitest";
 import { execFile, spawn } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { setTimeout as delay } from "node:timers/promises";
-import test from "node:test";
 import redisClient from "redis";
 import { createServer } from "node:net";
 import { Cache, closeRedis } from "../lib/cache/index.ts";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 const run = promisify(execFile);
 
 function configure(t, enabled = true) {
   for (const name of ["REDIS_URL"]) {
     const previous = process.env[name];
-    t.after(() => {
+    onTestFinished(() => {
       if (previous === undefined) delete process.env[name];
       else process.env[name] = previous;
     });
     if (enabled) process.env[name] = "redis://127.0.0.1:6379";
     else delete process.env[name];
   }
-  t.after(() => closeRedis());
+  onTestFinished(() => closeRedis());
 }
 
 test("guarded user cache bypasses unconfigured Redis and fails closed before writes", async (t) => {
   const cache = new Cache("user");
-  await t.test("unconfigured caching allows database reads and mutations", async (t) => {
+  await (async (t) => {
     configure(t, false);
-    t.mock.method(redisClient, "createClient", () => assert.fail("Redis must not be called"));
-    assert.deepEqual(await cache.rememberGuarded("one", async () => ({ active: true }), 3600), { active: true });
-    assert.equal(await cache.beginInvalidation("one", 3600), null);
+    vi.spyOn(redisClient, "createClient").mockImplementation(() => expect.fail("Redis must not be called"));
+    expect(await cache.rememberGuarded("one", async () => ({ active: true }), 3600)).toEqual({ active: true });
+    expect(await cache.beginInvalidation("one", 3600)).toBe(null);
     await cache.endInvalidation("one", null, 3600);
-  });
-  await t.test("Redis outages preserve reads but block starting a mutation", async (t) => {
+  })();
+  await (async (t) => {
     configure(t);
-    t.mock.method(console, "warn", () => {});
-    t.mock.method(redisClient, "createClient", () => ({
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(redisClient, "createClient").mockImplementation(() => ({
       isOpen: false,
       on() {
         return this;
@@ -46,13 +49,13 @@ test("guarded user cache bypasses unconfigured Redis and fails closed before wri
         throw new Error("Redis unavailable");
       },
     }));
-    assert.equal(await cache.rememberGuarded("one", async () => "database", 3600), "database");
-    await assert.rejects(cache.beginInvalidation("one", 3600), /Redis cache unavailable/);
+    expect(await cache.rememberGuarded("one", async () => "database", 3600)).toBe("database");
+    await expect(cache.beginInvalidation("one", 3600)).rejects.toThrow(/Redis cache unavailable/);
     await cache.endInvalidation("one", "already-committed", 3600);
-  });
-  await t.test("unexpected Redis acknowledgements block mutations", async (t) => {
+  })();
+  await (async (t) => {
     configure(t);
-    t.mock.method(redisClient, "createClient", () => ({
+    vi.spyOn(redisClient, "createClient").mockImplementation(() => ({
       isOpen: false,
       on() {
         return this;
@@ -68,8 +71,8 @@ test("guarded user cache bypasses unconfigured Redis and fails closed before wri
         this.isOpen = false;
       },
     }));
-    await assert.rejects(cache.beginInvalidation("one", 3600), /Cache invalidation failed/);
-  });
+    await expect(cache.beginInvalidation("one", 3600)).rejects.toThrow(/Cache invalidation failed/);
+  })();
 });
 
 test("guarded user cache prevents stale fills and overlapping mutation races with real Redis", async (t) => {
@@ -118,7 +121,7 @@ test("guarded user cache prevents stale fills and overlapping mutation races wit
   server.stderr.on("data", (chunk) => {
     serverOutput += chunk;
   });
-  t.after(async () => {
+  onTestFinished(async () => {
     closeRedis();
     server.kill();
     await new Promise((resolve) =>
@@ -156,9 +159,9 @@ test("guarded user cache prevents stale fills and overlapping mutation races wit
     }
   }
   let failRedis = false;
-  t.mock.method(console, "warn", () => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
   const createClient = redisClient.createClient;
-  t.mock.method(redisClient, "createClient", (...options) => {
+  vi.spyOn(redisClient, "createClient").mockImplementation((...options) => {
     const client = createClient(...options);
     const send = client.sendCommand.bind(client);
     client.sendCommand = async (args) => {
@@ -174,28 +177,28 @@ test("guarded user cache prevents stale fills and overlapping mutation races wit
     reads++;
     return structuredClone(row);
   };
-  assert.deepEqual(await cache.rememberGuarded("one", load, 3600), row);
-  assert.deepEqual(await cache.rememberGuarded("one", load, 3600), row);
-  assert.equal(reads, 1);
-  assert.deepEqual(await redis("KEYS", "*"), ["user:one"]);
-  assert.ok((await redis("TTL", "user:one")) > 3590);
+  expect(await cache.rememberGuarded("one", load, 3600)).toEqual(row);
+  expect(await cache.rememberGuarded("one", load, 3600)).toEqual(row);
+  expect(reads).toBe(1);
+  expect(await redis("KEYS", "*")).toEqual(["user:one"]);
+  expect((await redis("TTL", "user:one")) > 3590).toBeTruthy();
   await cache.rememberGuarded("array", async () => ({ roles: [] }), 3600);
-  assert.deepEqual(await cache.rememberGuarded("array", () => assert.fail("array payload is cached"), 3600), {
+  expect(await cache.rememberGuarded("array", () => expect.fail("array payload is cached"), 3600)).toEqual({
     roles: [],
   });
 
   const first = await cache.beginInvalidation("one", 3600);
   const second = await cache.beginInvalidation("one", 3600);
-  assert.equal(await redis("TTL", "user:one"), -1, "pending mutation must not expire and permit stale caching");
+  expect(await redis("TTL", "user:one"), "pending mutation must not expire and permit stale caching").toBe(-1);
   row = { name: "Updated", active: false };
   await cache.endInvalidation("one", first, 3600);
   await cache.rememberGuarded("one", load, 3600);
   await cache.rememberGuarded("one", load, 3600);
-  assert.equal(reads, 3, "another mutation still pending bypasses caching");
+  expect(reads, "another mutation still pending bypasses caching").toBe(3);
   await cache.endInvalidation("one", second, 3600);
   await cache.rememberGuarded("one", load, 3600);
   await cache.rememberGuarded("one", load, 3600);
-  assert.equal(reads, 4, "cache resumes after all mutations finish");
+  expect(reads, "cache resumes after all mutations finish").toBe(4);
 
   let releaseOld;
   let startedOld;
@@ -220,7 +223,7 @@ test("guarded user cache prevents stale fills and overlapping mutation races wit
   await cache.endInvalidation("race", token, 3600);
   releaseOld();
   await old;
-  assert.deepEqual(await cache.rememberGuarded("race", load, 3600), row, "old read cannot refill after invalidation");
+  expect(await cache.rememberGuarded("race", load, 3600), "old read cannot refill after invalidation").toEqual(row);
 
   const failedRelease = await cache.beginInvalidation("race", 3600);
   row.active = false;
@@ -228,17 +231,17 @@ test("guarded user cache prevents stale fills and overlapping mutation races wit
   await cache.endInvalidation("race", failedRelease, 3600);
   failRedis = false;
   const previousReads = reads;
-  assert.deepEqual(await cache.rememberGuarded("race", load, 3600), row);
-  assert.deepEqual(await cache.rememberGuarded("race", load, 3600), row);
-  assert.equal(reads, previousReads + 2, "failed release remains a cache bypass");
+  expect(await cache.rememberGuarded("race", load, 3600)).toEqual(row);
+  expect(await cache.rememberGuarded("race", load, 3600)).toEqual(row);
+  expect(reads, "failed release remains a cache bypass").toBe(previousReads + 2);
   await cache.endInvalidation("race", failedRelease, 3600);
 
   const deletion = await cache.beginInvalidation("race", 3600);
   await cache.endInvalidation("race", deletion, 3600);
-  assert.equal(await cache.rememberGuarded("race", async () => null, 3600), null);
-  assert.equal(await cache.rememberGuarded("race", () => assert.fail("deleted result is cached"), 3600), null);
+  expect(await cache.rememberGuarded("race", async () => null, 3600)).toBe(null);
+  expect(await cache.rememberGuarded("race", () => expect.fail("deleted result is cached"), 3600)).toBe(null);
 
   await redis("SET", "user:broken", "{bad");
-  assert.deepEqual(await cache.rememberGuarded("broken", load, 3600), row);
-  await assert.rejects(cache.beginInvalidation("broken", 3600));
+  expect(await cache.rememberGuarded("broken", load, 3600)).toEqual(row);
+  await expect(cache.beginInvalidation("broken", 3600)).rejects.toThrow();
 });

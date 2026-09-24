@@ -9,7 +9,7 @@ if ! git diff --cached --quiet --no-renames -- \
   package.json pnpm-lock.yaml pnpm-workspace.yaml 'tsconfig*.json' \
   wrangler.jsonc Dockerfile compose.yml .githooks/pre-commit
 then
-  pnpm test || printf '%s\n' 'Tests failed; continuing with staged-file formatting.'
+  pnpm test:affected || printf '%s\n' 'Tests failed; continuing with staged-file formatting.'
 else
   printf '%s\n' 'No staged source or runtime configuration changes; skipping tests.'
 fi

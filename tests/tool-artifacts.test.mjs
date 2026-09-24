@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test, { afterEach } from "node:test";
+import { expect, test, afterEach } from "vitest";
 
 import {
   ARTIFACT_STALE_MS,
@@ -25,9 +24,9 @@ afterEach(() => {
 });
 
 test("publishes the fixed platform and fallback output ceilings", () => {
-  assert.equal(PLATFORM_MAX_OUTPUT_BYTES, 100 * 1024 * 1024);
-  assert.equal(BLOB_FALLBACK_MAX_BYTES, 16 * 1024 * 1024);
-  assert.equal(ARTIFACT_STALE_MS, 24 * 60 * 60 * 1000);
+  expect(PLATFORM_MAX_OUTPUT_BYTES).toBe(100 * 1024 * 1024);
+  expect(BLOB_FALLBACK_MAX_BYTES).toBe(16 * 1024 * 1024);
+  expect(ARTIFACT_STALE_MS).toBe(24 * 60 * 60 * 1000);
 });
 
 test("uses a bounded Blob artifact when OPFS is unavailable", async () => {
@@ -40,12 +39,12 @@ test("uses a bounded Blob artifact when OPFS is unavailable", async () => {
     source: new Uint8Array([104, 101, 108, 108, 111]),
   });
 
-  assert.equal(artifact.storage, "blob");
-  assert.equal(artifact.name, "report.txt");
-  assert.equal(artifact.size, 5);
-  assert.equal(writer.bytesWritten, 5);
-  assert.equal(await (await readArtifact(artifact)).text(), "hello");
-  assert.doesNotThrow(() => structuredClone(artifact));
+  expect(artifact.storage).toBe("blob");
+  expect(artifact.name).toBe("report.txt");
+  expect(artifact.size).toBe(5);
+  expect(writer.bytesWritten).toBe(5);
+  expect(await (await readArtifact(artifact)).text()).toBe("hello");
+  expect(() => structuredClone(artifact)).not.toThrow();
 });
 
 test("streams into OPFS and reads the committed artifact as a named File", async () => {
@@ -66,14 +65,14 @@ test("streams into OPFS and reads the committed artifact as a named File", async
     source,
   });
 
-  assert.equal(artifact.storage, "opfs");
-  assert.equal(artifact.size, 5);
-  assert.equal(writer.bytesWritten, 5);
-  assert.doesNotThrow(() => structuredClone(artifact));
+  expect(artifact.storage).toBe("opfs");
+  expect(artifact.size).toBe(5);
+  expect(writer.bytesWritten).toBe(5);
+  expect(() => structuredClone(artifact)).not.toThrow();
   const file = await readArtifact(artifact);
-  assert.equal(file.name, "result.bin");
-  assert.equal(file.type, "application/octet-stream");
-  assert.deepEqual(new Uint8Array(await file.arrayBuffer()), new Uint8Array([1, 2, 3, 4, 5]));
+  expect(file.name).toBe("result.bin");
+  expect(file.type).toBe("application/octet-stream");
+  expect(new Uint8Array(await file.arrayBuffer())).toEqual(new Uint8Array([1, 2, 3, 4, 5]));
 });
 
 test("warns about estimated storage pressure without treating the estimate as authoritative", async () => {
@@ -90,8 +89,8 @@ test("warns about estimated storage pressure without treating the estimate as au
     source: new Uint8Array([1, 2, 3]),
   });
 
-  assert.equal(artifact.size, 3);
-  assert.deepEqual(warnings, [
+  expect(artifact.size).toBe(3);
+  expect(warnings).toEqual([
     {
       availableBytes: 1,
       requiredBytes: 3,
@@ -109,21 +108,27 @@ test("enforces the aggregate output limit while consuming an unknown stream", as
     source: new Uint8Array([1, 2, 3]),
   });
 
-  await assert.rejects(
-    writer.write({
-      name: "second.bin",
-      mime: "application/octet-stream",
-      source: new ReadableStream({
-        start(controller) {
-          controller.enqueue(new Uint8Array([4, 5]));
-          controller.enqueue(new Uint8Array([6]));
-          controller.close();
-        },
-      }),
-    }),
-    (error) => error instanceof ArtifactStorageError && error.code === "output-too-large",
-  );
-  assert.equal(writer.bytesWritten, 3);
+  await (async () => {
+    let __err;
+    try {
+      await writer.write({
+        name: "second.bin",
+        mime: "application/octet-stream",
+        source: new ReadableStream({
+          start(controller) {
+            controller.enqueue(new Uint8Array([4, 5]));
+            controller.enqueue(new Uint8Array([6]));
+            controller.close();
+          },
+        }),
+      });
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error instanceof ArtifactStorageError && error.code === "output-too-large")(__err)).toBe(true);
+  })();
+  expect(writer.bytesWritten).toBe(3);
 });
 
 test("accepts an aggregate exactly at its configured limit", async () => {
@@ -143,22 +148,30 @@ test("accepts an aggregate exactly at its configured limit", async () => {
     }),
   ]);
 
-  assert.equal(writer.bytesWritten, 5);
+  expect(writer.bytesWritten).toBe(5);
 });
 
 test("rejects an oversized fallback instead of retaining it in memory", async () => {
   installNavigator();
   const writer = createArtifactWriter("job-large-fallback");
 
-  await assert.rejects(
-    writer.write({
-      name: "large.bin",
-      mime: "application/octet-stream",
-      source: new Uint8Array(BLOB_FALLBACK_MAX_BYTES + 1),
-    }),
-    (error) => error instanceof ArtifactStorageError && error.code === "storage-unavailable",
-  );
-  assert.equal(writer.bytesWritten, 0);
+  await (async () => {
+    let __err;
+    try {
+      await writer.write({
+        name: "large.bin",
+        mime: "application/octet-stream",
+        source: new Uint8Array(BLOB_FALLBACK_MAX_BYTES + 1),
+      });
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error instanceof ArtifactStorageError && error.code === "storage-unavailable")(__err)).toBe(
+      true,
+    );
+  })();
+  expect(writer.bytesWritten).toBe(0);
 });
 
 test("the Blob fallback limit applies to the whole job", async () => {
@@ -168,15 +181,23 @@ test("the Blob fallback limit applies to the whole job", async () => {
     mime: "application/octet-stream",
     source: new Uint8Array(10 * 1024 * 1024),
   });
-  assert.equal(first.storage, "blob");
-  await assert.rejects(
-    writer.write({
-      name: "second.bin",
-      mime: "application/octet-stream",
-      source: new Uint8Array(7 * 1024 * 1024),
-    }),
-    (error) => error instanceof ArtifactStorageError && error.code === "storage-unavailable",
-  );
+  expect(first.storage).toBe("blob");
+  await (async () => {
+    let __err;
+    try {
+      await writer.write({
+        name: "second.bin",
+        mime: "application/octet-stream",
+        source: new Uint8Array(7 * 1024 * 1024),
+      });
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error instanceof ArtifactStorageError && error.code === "storage-unavailable")(__err)).toBe(
+      true,
+    );
+  })();
 });
 
 test("detects a partial OPFS commit and falls back without returning corrupt bytes", async () => {
@@ -191,8 +212,8 @@ test("detects a partial OPFS commit and falls back without returning corrupt byt
     source: new Uint8Array([1, 2, 3]),
   });
 
-  assert.equal(artifact.storage, "blob");
-  assert.deepEqual(new Uint8Array(await (await readArtifact(artifact)).arrayBuffer()), new Uint8Array([1, 2, 3]));
+  expect(artifact.storage).toBe("blob");
+  expect(new Uint8Array(await (await readArtifact(artifact)).arrayBuffer())).toEqual(new Uint8Array([1, 2, 3]));
 });
 
 test("recovers from an OPFS quota error only within the Blob fallback ceiling", async () => {
@@ -207,8 +228,8 @@ test("recovers from an OPFS quota error only within the Blob fallback ceiling", 
     source: new Blob(["recoverable"]),
   });
 
-  assert.equal(artifact.storage, "blob");
-  assert.equal(await artifact.blob.text(), "recoverable");
+  expect(artifact.storage).toBe("blob");
+  expect(await artifact.blob.text()).toBe("recoverable");
 });
 
 test("removes a job directory when its creation marker cannot be committed", async () => {
@@ -222,8 +243,8 @@ test("removes a job directory when its creation marker cannot be committed", asy
     source: new Blob(["recoverable"]),
   });
 
-  assert.equal(artifact.storage, "blob");
-  await assert.rejects(getJob(root, "job-marker-failure"), { name: "NotFoundError" });
+  expect(artifact.storage).toBe("blob");
+  await expect(getJob(root, "job-marker-failure")).rejects.toMatchObject({ name: "NotFoundError" });
 });
 
 test("does not return a partial Blob when an OPFS stream fails before completion", async () => {
@@ -232,21 +253,27 @@ test("does not return a partial Blob when an OPFS stream fails before completion
   installNavigator(root);
   const writer = createArtifactWriter("job-stream-quota");
 
-  await assert.rejects(
-    writer.write({
-      name: "stream.bin",
-      mime: "application/octet-stream",
-      source: new ReadableStream({
-        start(controller) {
-          controller.enqueue(new Uint8Array([1, 2]));
-          controller.enqueue(new Uint8Array([3, 4]));
-          controller.close();
-        },
-      }),
-    }),
-    (error) => error instanceof ArtifactStorageError && error.code === "storage-full",
-  );
-  assert.equal(writer.bytesWritten, 0);
+  await (async () => {
+    let __err;
+    try {
+      await writer.write({
+        name: "stream.bin",
+        mime: "application/octet-stream",
+        source: new ReadableStream({
+          start(controller) {
+            controller.enqueue(new Uint8Array([1, 2]));
+            controller.enqueue(new Uint8Array([3, 4]));
+            controller.close();
+          },
+        }),
+      });
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error instanceof ArtifactStorageError && error.code === "storage-full")(__err)).toBe(true);
+  })();
+  expect(writer.bytesWritten).toBe(0);
 });
 
 test("preserves cancellation and removes the partial OPFS file", async () => {
@@ -256,7 +283,7 @@ test("preserves cancellation and removes the partial OPFS file", async () => {
   const writer = createArtifactWriter("job-cancel", { signal: controller.signal });
   let pulls = 0;
 
-  await assert.rejects(
+  await expect(
     writer.write({
       name: "cancel.bin",
       mime: "application/octet-stream",
@@ -275,52 +302,77 @@ test("preserves cancellation and removes the partial OPFS file", async () => {
         { highWaterMark: 0 },
       ),
     }),
-    { name: "AbortError" },
-  );
+  ).rejects.toMatchObject({ name: "AbortError" });
   const job = await getJob(root, "job-cancel");
-  assert.deepEqual([...job.children.keys()], [".created-at"]);
+  expect([...job.children.keys()]).toEqual([".created-at"]);
 });
 
 test("rejects invalid boundary data and missing or corrupt artifacts", async () => {
   installNavigator();
-  assert.throws(() => createArtifactWriter("../job"), TypeError);
-  assert.throws(() => createArtifactWriter("job", { maxOutputBytes: 0 }), RangeError);
+  expect(() => createArtifactWriter("../job")).toThrow(TypeError);
+  expect(() => createArtifactWriter("job", { maxOutputBytes: 0 })).toThrow(RangeError);
 
   const writer = createArtifactWriter("job-invalid");
-  await assert.rejects(
-    writer.write({ name: "bad", mime: "not-a-mime", source: new Uint8Array() }),
-    (error) => error instanceof ArtifactStorageError && error.code === "invalid-artifact",
-  );
-  await assert.rejects(
-    writer.write({ name: "bad", mime: "text/plain", source: {} }),
-    (error) => error instanceof ArtifactStorageError && error.code === "invalid-artifact",
-  );
+  await (async () => {
+    let __err;
+    try {
+      await writer.write({ name: "bad", mime: "not-a-mime", source: new Uint8Array() });
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error instanceof ArtifactStorageError && error.code === "invalid-artifact")(__err)).toBe(true);
+  })();
+  await (async () => {
+    let __err;
+    try {
+      await writer.write({ name: "bad", mime: "text/plain", source: {} });
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error instanceof ArtifactStorageError && error.code === "invalid-artifact")(__err)).toBe(true);
+  })();
 
-  await assert.rejects(
-    readArtifact({
-      storage: "blob",
-      id: "artifact",
-      jobId: "job-invalid",
-      name: "bad.txt",
-      mime: "text/plain",
-      size: 2,
-      createdAt: Date.now(),
-      blob: new Blob(["x"]),
-    }),
-    (error) => error instanceof ArtifactStorageError && error.code === "artifact-corrupt",
-  );
-  await assert.rejects(
-    readArtifact({
-      storage: "opfs",
-      id: "missing",
-      jobId: "job-invalid",
-      name: "missing.txt",
-      mime: "text/plain",
-      size: 1,
-      createdAt: Date.now(),
-    }),
-    (error) => error instanceof ArtifactStorageError && error.code === "storage-unavailable",
-  );
+  await (async () => {
+    let __err;
+    try {
+      await readArtifact({
+        storage: "blob",
+        id: "artifact",
+        jobId: "job-invalid",
+        name: "bad.txt",
+        mime: "text/plain",
+        size: 2,
+        createdAt: Date.now(),
+        blob: new Blob(["x"]),
+      });
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error instanceof ArtifactStorageError && error.code === "artifact-corrupt")(__err)).toBe(true);
+  })();
+  await (async () => {
+    let __err;
+    try {
+      await readArtifact({
+        storage: "opfs",
+        id: "missing",
+        jobId: "job-invalid",
+        name: "missing.txt",
+        mime: "text/plain",
+        size: 1,
+        createdAt: Date.now(),
+      });
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error instanceof ArtifactStorageError && error.code === "storage-unavailable")(__err)).toBe(
+      true,
+    );
+  })();
 
   for (const metadata of [
     null,
@@ -363,41 +415,59 @@ test("rejects invalid boundary data and missing or corrupt artifacts", async () 
       blob: "not-a-blob",
     },
   ]) {
-    await assert.rejects(
-      readArtifact(metadata),
-      (error) => error instanceof ArtifactStorageError && error.code === "invalid-artifact",
-    );
+    await (async () => {
+      let __err;
+      try {
+        await readArtifact(metadata);
+      } catch (__e) {
+        __err = __e;
+      }
+      expect(__err).toBeDefined();
+      expect(((error) => error instanceof ArtifactStorageError && error.code === "invalid-artifact")(__err)).toBe(true);
+    })();
   }
 });
 
 test("validates streamed chunks in both OPFS and fallback modes", async () => {
   installNavigator();
-  await assert.rejects(
-    createArtifactWriter("job-invalid-fallback").write({
-      name: "bad.bin",
-      mime: "application/octet-stream",
-      source: new ReadableStream({
-        start(controller) {
-          controller.enqueue("bad");
-        },
-      }),
-    }),
-    (error) => error instanceof ArtifactStorageError && error.code === "invalid-artifact",
-  );
+  await (async () => {
+    let __err;
+    try {
+      await createArtifactWriter("job-invalid-fallback").write({
+        name: "bad.bin",
+        mime: "application/octet-stream",
+        source: new ReadableStream({
+          start(controller) {
+            controller.enqueue("bad");
+          },
+        }),
+      });
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error instanceof ArtifactStorageError && error.code === "invalid-artifact")(__err)).toBe(true);
+  })();
 
   installNavigator(new MemoryDirectoryHandle("root"));
-  await assert.rejects(
-    createArtifactWriter("job-invalid-opfs").write({
-      name: "bad.bin",
-      mime: "application/octet-stream",
-      source: new ReadableStream({
-        start(controller) {
-          controller.enqueue("bad");
-        },
-      }),
-    }),
-    (error) => error instanceof ArtifactStorageError && error.code === "invalid-artifact",
-  );
+  await (async () => {
+    let __err;
+    try {
+      await createArtifactWriter("job-invalid-opfs").write({
+        name: "bad.bin",
+        mime: "application/octet-stream",
+        source: new ReadableStream({
+          start(controller) {
+            controller.enqueue("bad");
+          },
+        }),
+      });
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error instanceof ArtifactStorageError && error.code === "invalid-artifact")(__err)).toBe(true);
+  })();
 });
 
 test("maps worker storage failures to stable recoverable codes", async () => {
@@ -409,19 +479,25 @@ test("maps worker storage failures to stable recoverable codes", async () => {
     root.failNextWrite = new DOMException("Write failed", name);
     installNavigator(root);
     const writer = createArtifactWriter(`job-${name.toLowerCase()}`);
-    await assert.rejects(
-      writer.write({
-        name: "stream.bin",
-        mime: "application/octet-stream",
-        source: new ReadableStream({
-          start(controller) {
-            controller.enqueue(new Uint8Array([1]));
-            controller.close();
-          },
-        }),
-      }),
-      (error) => error instanceof ArtifactStorageError && error.code === code,
-    );
+    await (async () => {
+      let __err;
+      try {
+        await writer.write({
+          name: "stream.bin",
+          mime: "application/octet-stream",
+          source: new ReadableStream({
+            start(controller) {
+              controller.enqueue(new Uint8Array([1]));
+              controller.close();
+            },
+          }),
+        });
+      } catch (__e) {
+        __err = __e;
+      }
+      expect(__err).toBeDefined();
+      expect(((error) => error instanceof ArtifactStorageError && error.code === code)(__err)).toBe(true);
+    })();
   }
 
   Object.defineProperty(globalThis, "navigator", {
@@ -439,7 +515,7 @@ test("maps worker storage failures to stable recoverable codes", async () => {
     mime: "text/plain",
     source: new Blob(["safe"]),
   });
-  assert.equal(fallback.storage, "blob");
+  expect(fallback.storage).toBe("blob");
 });
 
 test("reports missing and corrupt OPFS artifacts without exposing storage errors", async () => {
@@ -456,20 +532,32 @@ test("reports missing and corrupt OPFS artifacts without exposing storage errors
     createdAt: Date.now(),
   };
 
-  await assert.rejects(
-    readArtifact(metadata),
-    (error) => error instanceof ArtifactStorageError && error.code === "artifact-not-found",
-  );
+  await (async () => {
+    let __err;
+    try {
+      await readArtifact(metadata);
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error instanceof ArtifactStorageError && error.code === "artifact-not-found")(__err)).toBe(true);
+  })();
 
   const job = await getJob(root, "job-read");
   const handle = await job.getFileHandle("artifact", { create: true });
   const writable = await handle.createWritable();
   await writable.write(new Uint8Array([1]));
   await writable.close();
-  await assert.rejects(
-    readArtifact(metadata),
-    (error) => error instanceof ArtifactStorageError && error.code === "artifact-corrupt",
-  );
+  await (async () => {
+    let __err;
+    try {
+      await readArtifact(metadata);
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error instanceof ArtifactStorageError && error.code === "artifact-corrupt")(__err)).toBe(true);
+  })();
 });
 
 test("cleans one job and sweeps only stale marked OPFS jobs", async () => {
@@ -479,14 +567,14 @@ test("cleans one job and sweeps only stale marked OPFS jobs", async () => {
   await seedJob(root, "stale-job", now - ARTIFACT_STALE_MS - 1);
   await seedJob(root, "fresh-job", now - ARTIFACT_STALE_MS + 1);
 
-  assert.equal(await sweepStaleArtifactJobs({ now }), 1);
-  await assert.rejects(getJob(root, "stale-job"), { name: "NotFoundError" });
-  assert.ok(await getJob(root, "fresh-job"));
+  expect(await sweepStaleArtifactJobs({ now })).toBe(1);
+  await expect(getJob(root, "stale-job")).rejects.toMatchObject({ name: "NotFoundError" });
+  expect(await getJob(root, "fresh-job")).toBeTruthy();
 
   await cleanupArtifactJob("fresh-job");
-  await assert.rejects(getJob(root, "fresh-job"), { name: "NotFoundError" });
+  await expect(getJob(root, "fresh-job")).rejects.toMatchObject({ name: "NotFoundError" });
   await cleanupArtifactJob("already-missing");
-  await assert.rejects(sweepStaleArtifactJobs({ now: Number.NaN }), RangeError);
+  await expect(sweepStaleArtifactJobs({ now: Number.NaN })).rejects.toThrow(RangeError);
 });
 
 test("retries transient cleanup failures and coalesces the startup stale sweep", async () => {
@@ -499,12 +587,12 @@ test("retries transient cleanup failures and coalesces the startup stale sweep",
   jobs.failRemoveCount = 1;
 
   await cleanupArtifactJobWithRetry("retry-job", { retryDelayMs: 0 });
-  await assert.rejects(getJob(root, "retry-job"), { name: "NotFoundError" });
+  await expect(getJob(root, "retry-job")).rejects.toMatchObject({ name: "NotFoundError" });
 
   const [first, second] = await Promise.all([sweepStaleArtifactJobsOnce(), sweepStaleArtifactJobsOnce()]);
-  assert.equal(first, 1);
-  assert.equal(second, 1);
-  await assert.rejects(getJob(root, "startup-stale-job"), { name: "NotFoundError" });
+  expect(first).toBe(1);
+  expect(second).toBe(1);
+  await expect(getJob(root, "startup-stale-job")).rejects.toMatchObject({ name: "NotFoundError" });
 });
 
 function installNavigator(root, estimate) {

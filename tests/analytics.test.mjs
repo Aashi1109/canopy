@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { CONSENT_KEY, createAnalytics, measurementId, publicPath } from "../lib/analytics/ga4.ts";
 
 function browserFixture(saved, storageBlocked = false) {
@@ -35,19 +34,19 @@ function browserFixture(saved, storageBlocked = false) {
 }
 
 test("GA4 is valid only in production, never in previews or development", () => {
-  assert.equal(measurementId({ NODE_ENV: "production", GA_MEASUREMENT_ID: "G-ABC123" }), "G-ABC123");
+  expect(measurementId({ NODE_ENV: "production", GA_MEASUREMENT_ID: "G-ABC123" })).toBe("G-ABC123");
   for (const env of [
     { NODE_ENV: "development", GA_MEASUREMENT_ID: "G-ABC123" },
     { NODE_ENV: "production", VERCEL_ENV: "preview", GA_MEASUREMENT_ID: "G-ABC123" },
     { NODE_ENV: "production", GA_MEASUREMENT_ID: 'G-X"><script>' },
     { NODE_ENV: "production" },
   ])
-    assert.equal(measurementId(env), null);
+    expect(measurementId(env)).toBe(null);
 });
 
 test("public paths discard queries, hashes and arbitrary dynamic identifiers", () => {
-  assert.equal(publicPath("/privacy?email=secret#token"), "/privacy");
-  assert.equal(publicPath("/media/customer-jane-doe"), "/media/[tool]");
+  expect(publicPath("/privacy?email=secret#token")).toBe("/privacy");
+  expect(publicPath("/media/customer-jane-doe")).toBe("/media/[tool]");
   for (const path of [
     "/auth",
     "/auth/profile",
@@ -57,7 +56,7 @@ test("public paths discard queries, hashes and arbitrary dynamic identifiers", (
     "/media/name%40email.com",
     "/media/tool/document-id",
   ])
-    assert.equal(publicPath(path), null);
+    expect(publicPath(path)).toBe(null);
 });
 
 test("no network or queued events before permission, after decline, or when disabled", () => {
@@ -71,9 +70,9 @@ test("no network or queued events before permission, after decline, or when disa
     const client = createAnalytics(browser, id);
     client.pageView();
     client.track("tool_start");
-    assert.equal(scripts.length, 0);
-    assert.equal(browser.dataLayer, undefined);
-    assert.deepEqual(events(), []);
+    expect(scripts.length).toBe(0);
+    expect(browser.dataLayer).toBe(undefined);
+    expect(events()).toEqual([]);
   }
 });
 
@@ -81,19 +80,19 @@ test("opt-in loads once; manual SPA views are deduplicated and payloads contain 
   const { browser, scripts, events } = browserFixture();
   const client = createAnalytics(browser, "G-TEST");
   client.setConsent("accepted");
-  assert.equal(scripts.length, 1);
-  assert.equal(events().length, 0);
+  expect(scripts.length).toBe(1);
+  expect(events().length).toBe(0);
   scripts[0].onload();
   client.pageView();
-  assert.equal(events().length, 1);
-  assert.equal(events()[0][2].page_referrer, "https://search.example");
+  expect(events().length).toBe(1);
+  expect(events()[0][2].page_referrer).toBe("https://search.example");
   browser.location.pathname = "/devtools/json-formatter";
   client.pageView();
   client.pageView();
-  assert.equal(events().length, 2);
+  expect(events().length).toBe(2);
   client.track("tool_complete");
   client.track("private-payload");
-  assert.deepEqual(events().at(-1), [
+  expect(events().at(-1)).toEqual([
     "event",
     "tool_complete",
     {
@@ -103,15 +102,15 @@ test("opt-in loads once; manual SPA views are deduplicated and payloads contain 
     },
   ]);
   const configs = browser.dataLayer.map((entry) => [...entry]).filter(([command]) => command === "config");
-  assert.ok(
+  expect(
     configs.every(
       (entry) =>
         entry[2].send_page_view === false &&
         entry[2].allow_google_signals === false &&
         entry[2].allow_ad_personalization_signals === false,
     ),
-  );
-  assert.equal(scripts.length, 1);
+  ).toBeTruthy();
+  expect(scripts.length).toBe(1);
 });
 
 test("private SPA navigation disables collection and returning resumes a single safe view", () => {
@@ -122,13 +121,13 @@ test("private SPA navigation disables collection and returning resumes a single 
   browser.location.pathname = "/auth/profile";
   client.pageView();
   client.track("result_download");
-  assert.equal(browser["ga-disable-G-TEST"], true);
-  assert.equal(events().length, 1);
+  expect(browser["ga-disable-G-TEST"]).toBe(true);
+  expect(events().length).toBe(1);
   browser.location.pathname = "/";
   client.pageView();
-  assert.equal(browser["ga-disable-G-TEST"], false);
-  assert.equal(events().length, 2);
-  assert.equal(events().at(-1)[2].page_referrer, "");
+  expect(browser["ga-disable-G-TEST"]).toBe(false);
+  expect(events().length).toBe(2);
+  expect(events().at(-1)[2].page_referrer).toBe("");
 });
 
 test("revocation stops collection, clears GA cookies, and regrant works without another script", () => {
@@ -138,28 +137,28 @@ test("revocation stops collection, clears GA cookies, and regrant works without 
   scripts[0].onload();
   client.setConsent("declined");
   client.track("tool_complete");
-  assert.equal(browser["ga-disable-G-TEST"], true);
-  assert.deepEqual(events(), []);
-  assert.deepEqual(cookies, ["_ga=; Max-Age=0; Path=/; SameSite=Lax", "_ga_TEST=; Max-Age=0; Path=/; SameSite=Lax"]);
+  expect(browser["ga-disable-G-TEST"]).toBe(true);
+  expect(events()).toEqual([]);
+  expect(cookies).toEqual(["_ga=; Max-Age=0; Path=/; SameSite=Lax", "_ga_TEST=; Max-Age=0; Path=/; SameSite=Lax"]);
   client.setConsent("accepted");
-  assert.equal(events().length, 1);
-  assert.equal(scripts.length, 1);
+  expect(events().length).toBe(1);
+  expect(scripts.length).toBe(1);
 });
 
 test("blocked storage and Google never break tool interactions", () => {
   const { browser, scripts, events } = browserFixture(undefined, true);
   const client = createAnalytics(browser, "G-TEST");
-  assert.equal(client.consent(), null);
-  assert.equal(client.setConsent("accepted"), false);
+  expect(client.consent()).toBe(null);
+  expect(client.setConsent("accepted")).toBe(false);
   scripts[0].onerror();
-  assert.doesNotThrow(() => client.track("tool_start"));
-  assert.deepEqual(events(), []);
+  expect(() => client.track("tool_start")).not.toThrow();
+  expect(events()).toEqual([]);
   scripts[0].onload();
   browser.gtag = () => {
     throw Error("blocked");
   };
-  assert.doesNotThrow(() => client.track("result_copy"));
-  assert.doesNotThrow(() => client.setConsent("declined"));
+  expect(() => client.track("result_copy")).not.toThrow();
+  expect(() => client.setConsent("declined")).not.toThrow();
 });
 
 test("revocation or private navigation while script loads cannot leak a delayed view", () => {
@@ -173,8 +172,8 @@ test("revocation or private navigation while script loads cannot leak a delayed 
       client.pageView();
     }
     scripts[0].onload();
-    assert.deepEqual(events(), []);
-    assert.equal(browser["ga-disable-G-TEST"], true);
+    expect(events()).toEqual([]);
+    expect(browser["ga-disable-G-TEST"]).toBe(true);
   }
 });
 
@@ -184,10 +183,10 @@ test("tool events accept a bounded compiled key without accepting arbitrary payl
   client.pageView();
   scripts[0].onload();
   client.track("tool_complete", "json-formatter");
-  assert.equal(events().at(-1)[2].tool_key, "json-formatter");
+  expect(events().at(-1)[2].tool_key).toBe("json-formatter");
   for (const key of ["report.pdf", "jane@example.com", "User Name", "x".repeat(65), undefined]) {
     client.track("result_copy", key);
-    assert.equal(events().at(-1)[2].tool_key, undefined);
+    expect(events().at(-1)[2].tool_key).toBe(undefined);
   }
 });
 
@@ -209,10 +208,10 @@ test("blocked script insertion and cookie access preserve app behavior and conse
         },
       });
     const client = createAnalytics(browser, "G-TEST");
-    assert.doesNotThrow(() => client.setConsent("accepted"));
-    assert.doesNotThrow(() => client.setConsent("declined"));
-    assert.equal(client.consent(), "declined");
-    assert.equal(browser["ga-disable-G-TEST"], true);
-    assert.deepEqual(events(), []);
+    expect(() => client.setConsent("accepted")).not.toThrow();
+    expect(() => client.setConsent("declined")).not.toThrow();
+    expect(client.consent()).toBe("declined");
+    expect(browser["ga-disable-G-TEST"]).toBe(true);
+    expect(events()).toEqual([]);
   }
 });

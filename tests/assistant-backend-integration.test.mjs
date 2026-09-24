@@ -1,19 +1,36 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { registerHooks } from "node:module";
-import test from "node:test";
 import pg from "pg";
+import { test, vi } from "vitest";
+
+// vi.hoisted runs before the hoisted vi.mock factories so the fake auth and
+// integration modules can read the shared http fixture the test mutates.
+const state = vi.hoisted(() => ({ http: { actor: "owner", services: new Map() } }));
+
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/auth/session.ts", () => ({
+  AuthServiceError: class AuthServiceError extends Error {},
+  async getSession() {
+    const actor = state.http.actor;
+    return actor ? { user: { id: actor, status: "active" } } : null;
+  },
+}));
+vi.mock("@/app/api/assistant/integrations.ts", () => ({
+  getAssistantService(key) {
+    const service = state.http.services.get(key);
+    if (!service) throw new Error("Unknown test integration");
+    return service;
+  },
+}));
 
 // Explicit disposable database only. Never use the application's configured URL.
 const url = process.env.ASSISTANT_TEST_DATABASE_URL;
 
-test(
+test.skipIf(!url)(
   "generic Assistant services persist isolated feature conversations without Blog resources",
-  {
-    skip: url ? false : "set ASSISTANT_TEST_DATABASE_URL to a disposable PostgreSQL database",
-  },
   async (t) => {
+    const subtest = (_name, fn) => fn();
     const schema = `assistant_backend_${randomUUID().replaceAll("-", "")}`;
     const admin = new pg.Client({ connectionString: url });
     await admin.connect();
@@ -30,51 +47,14 @@ test(
       OPENAI_API_KEY: "fixture-only",
     });
     const pool = new pg.Pool({ connectionString: target.toString(), max: 5 });
-    const http = { actor: "owner", services: new Map() };
-    globalThis.__assistantBackendHttpTest = http;
-    const hooks = registerHooks({
-      resolve(specifier, context, next) {
-        if (specifier === "server-only") return { shortCircuit: true, url: "data:text/javascript,export {};" };
-        if (specifier.startsWith("@/")) return next(new URL("../" + specifier.slice(2), import.meta.url).href, context);
-        return next(specifier, context);
-      },
-      load(url, context, next) {
-        if (url === new URL("../lib/auth/session.ts", import.meta.url).href)
-          return {
-            shortCircuit: true,
-            format: "module",
-            source: `
-            export class AuthServiceError extends Error {}
-            export async function getSession() {
-              const actor = globalThis.__assistantBackendHttpTest.actor;
-              return actor ? { user: { id: actor, status: 'active' } } : null;
-            }
-          `,
-          };
-        if (url === new URL("../app/api/assistant/integrations.ts", import.meta.url).href)
-          return {
-            shortCircuit: true,
-            format: "module",
-            source: `
-            export function getAssistantService(key) {
-              const service = globalThis.__assistantBackendHttpTest.services.get(key);
-              if (!service) throw new Error('Unknown test integration');
-              return service;
-            }
-          `,
-          };
-        return next(url, context);
-      },
-    });
+    const http = state.http;
     let sqlClient;
     let AIClient;
     let original;
-    t.after(async () => {
+    t.onTestFinished(async () => {
       if (sqlClient) await sqlClient.end();
       await pool.end();
       if (AIClient && original) Object.assign(AIClient.prototype, original);
-      hooks.deregister();
-      delete globalThis.__assistantBackendHttpTest;
       for (const [key, value] of Object.entries(previous)) {
         if (value === undefined) delete process.env[key];
         else process.env[key] = value;
@@ -306,7 +286,7 @@ test(
       return completed.run;
     }
 
-    await t.test("non-Blog HTTP workflow uses real shared services and persistence without a resource", async () => {
+    await subtest("non-Blog HTTP workflow uses real shared services and persistence without a resource", async () => {
       const root = new URL("../app/api/assistant/[integrationKey]/", import.meta.url);
       const runRoutes = await import(new URL("runs/route.ts", root));
       const runRoute = await import(new URL("runs/[runId]/route.ts", root));
@@ -391,7 +371,7 @@ test(
       assert.equal((await pool.query("SELECT to_regclass('blog_posts') AS table_name")).rows[0].table_name, null);
     });
 
-    await t.test(
+    await subtest(
       "no-resource threads support settings and composer persistence with owner/integration isolation",
       async () => {
         const a = await alpha.createThread("owner", null, { title: "A" });
@@ -455,7 +435,7 @@ test(
       ["sources", () => alpha.listThreadAttachments("owner", null, readThread.id, "sources")],
       ["source detail", () => alpha.getThreadAttachment("owner", null, readThread.id, readSource.id)],
     ]) {
-      await t.test(`${name} reads neither wait for nor hold a thread write lock`, async () => {
+      await subtest(`${name} reads neither wait for nor hold a thread write lock`, async () => {
         const blocker = await pool.connect();
         try {
           await blocker.query("BEGIN");
@@ -493,7 +473,7 @@ test(
         }
       });
     }
-    await t.test("concurrent settings and draft updates serialize without losing either change", async () => {
+    await subtest("concurrent settings and draft updates serialize without losing either change", async () => {
       const thread = await alpha.createThread("owner", null, { settings: { tone: "before" } });
       const entered = Promise.withResolvers();
       const release = Promise.withResolvers();
@@ -543,7 +523,7 @@ test(
       assert.equal(detail.thread.composerDraft, "Preserved new draft");
     });
 
-    await t.test(
+    await subtest(
       "same resource and request IDs are isolated across integrations and retries stay in their thread",
       async () => {
         await pool.query(
@@ -576,7 +556,7 @@ test(
       },
     );
 
-    await t.test("run startup reuses only the actor's live integration and resource thread", async () => {
+    await subtest("run startup reuses only the actor's live integration and resource thread", async () => {
       await pool.query(
         "INSERT INTO fixture_resources VALUES ('thread-target','fixture-alpha','owner'),('thread-other','fixture-alpha','owner')",
       );
@@ -651,7 +631,7 @@ test(
       assert.equal((await pool.query("SELECT count(*)::int n FROM assistant_threads")).rows[0].n, before);
     });
 
-    await t.test("idempotency precedes resource reservation and replay never creates a second resource", async () => {
+    await subtest("idempotency precedes resource reservation and replay never creates a second resource", async () => {
       const input = request({ operation: "create", clientRequestId: "create-once" });
       const [one, two] = await Promise.all([alpha.startRun("owner", input), alpha.startRun("owner", input)]);
       assert.equal(one.run.id, two.run.id);
@@ -664,7 +644,7 @@ test(
       assert.equal(reservations.length, 2);
     });
 
-    await t.test(
+    await subtest(
       "standalone artifacts are atomic, versioned, and enter future history only by attachment",
       async () => {
         const thread = await alpha.createThread("owner", null, {});
@@ -730,7 +710,7 @@ test(
       },
     );
 
-    await t.test("plain conversational output streams even when an integration excludes history", async () => {
+    await subtest("plain conversational output streams even when an integration excludes history", async () => {
       const thread = await alpha.createThread("owner", null, {});
       await complete(alpha, request({ threadId: thread.id, message: "Excluded prior context" }));
       scenarios.push({ result: { text: "A visible streaming response" } });
@@ -746,7 +726,7 @@ test(
       assert.equal(JSON.stringify(providerRequests.at(-1).messages).includes("Excluded prior context"), false);
     });
 
-    await t.test("an optional auxiliary rejection does not interrupt primary completion or lose usage", async () => {
+    await subtest("an optional auxiliary rejection does not interrupt primary completion or lose usage", async () => {
       const run = await complete(alpha, request({ operation: "aux-failure" }));
       assert.equal(run.status, "completed");
       assert.equal(run.response.text, "Fixture answer");
@@ -762,7 +742,7 @@ test(
       );
     });
 
-    await t.test("proposal outcomes are recorded once and update the saved conversation", async () => {
+    await subtest("proposal outcomes are recorded once and update the saved conversation", async () => {
       const run = await complete(alpha, request({ operation: "proposal" }));
       const applied = await alpha.updateProposal("owner", run.id, "change", { status: "applied" });
       assert.equal(applied.response.proposals[0].status, "applied");
@@ -778,7 +758,7 @@ test(
       );
     });
 
-    await t.test("clear and delete while provider work is pending cannot recreate private artifacts", async () => {
+    await subtest("clear and delete while provider work is pending cannot recreate private artifacts", async () => {
       for (const removeThread of [false, true]) {
         const thread = await alpha.createThread("owner", null, {});
         let release;
@@ -819,7 +799,7 @@ test(
       }
     });
 
-    await t.test("completion rechecks integration permissions and rolls back artifacts on revocation", async () => {
+    await subtest("completion rechecks integration permissions and rolls back artifacts on revocation", async () => {
       let release;
       let started;
       const wait = new Promise((resolve) => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { SquareRoundCorner } from "lucide-react";
 
 import { DesignWorkspace } from "@/app/devtools/components/color-design/DesignWorkspace";
 import { ResultSurface } from "@/components/ResultSurface";
@@ -8,11 +9,17 @@ import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import { Button, ButtonGroup, Checkbox, Field, Input, Select } from "@/components/ui/index.tsx";
 
 const CORNERS = [
-  ["topLeft", "Top-left"],
-  ["topRight", "Top-right"],
-  ["bottomLeft", "Bottom-left"],
-  ["bottomRight", "Bottom-right"],
+  ["topLeft", "Top-left", "-rotate-90"],
+  ["topRight", "Top-right", "rotate-0"],
+  ["bottomLeft", "Bottom-left", "rotate-180"],
+  ["bottomRight", "Bottom-right", "rotate-90"],
 ] as const;
+
+const PRESETS = {
+  card: { radius: 16, unit: "px", width: 280, height: 200 },
+  pill: { radius: 9999, unit: "px", width: 280, height: 100 },
+  circle: { radius: 50, unit: "%", width: 220, height: 220 },
+} as const;
 
 export default function BorderRadiusWorkspace(props: WorkspaceProps) {
   const [bounds, setBounds] = useState({ width: 300, height: 180 });
@@ -30,6 +37,16 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
   const elliptical = props.settings.elliptical === true;
   const width = number("width", 280);
   const height = number("height", 200);
+  const selectedPreset =
+    linked && !elliptical
+      ? Object.entries(PRESETS).find(
+          ([, value]) =>
+            unit === value.unit &&
+            width === value.width &&
+            height === value.height &&
+            CORNERS.every(([key]) => number(key, 16) === value.radius),
+        )?.[0]
+      : undefined;
   const scale = Math.min(1, bounds.width / width, bounds.height / height);
   const css = props.result?.render === "text" ? props.result.text : "";
   const radius = css.replace(/^border-radius:\s*/, "").replace(/;$/, "");
@@ -47,21 +64,19 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
     if (linked) for (const [corner] of CORNERS) props.onSettingChange(`${corner}${vertical ? "Y" : ""}`, next);
     else props.onSettingChange(`${key}${vertical ? "Y" : ""}`, next);
   }
-  function preset(kind: "card" | "pill" | "circle") {
-    const value = kind === "card" ? 16 : kind === "pill" ? 9999 : 50;
+  function preset(kind: keyof typeof PRESETS) {
+    const { radius: value, ...settings } = PRESETS[kind];
     patch({
-      unit: kind === "circle" ? "%" : "px",
-      width: kind === "circle" ? 220 : 280,
-      height: kind === "pill" ? 100 : kind === "circle" ? 220 : 200,
+      ...settings,
       linked: true,
       elliptical: false,
       rootFontSize: 16,
     });
     for (const [corner] of CORNERS) patch({ [corner]: value, [`${corner}Y`]: value });
   }
-  function cornerControl(key: string, label: string) {
+  function cornerControl(key: string, label: string, rotation: string) {
     return (
-      <div className={elliptical ? "grid max-w-56 grid-cols-2 gap-2" : "max-w-32"} key={key}>
+      <div className={elliptical ? "grid max-w-64 grid-cols-2 gap-2" : "max-w-32"} key={key}>
         <Field htmlFor={`radius-${key}`} label={`${label}${elliptical ? " X" : ""}`}>
           <Input
             disabled={props.disabled}
@@ -69,6 +84,7 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
             max={10000}
             step="any"
             type="number"
+            leadingIcon={<SquareRoundCorner className={rotation} />}
             suffix={unit}
             value={number(key, 16)}
             onChange={(event) => changeCorner(key, event.currentTarget.valueAsNumber)}
@@ -82,6 +98,7 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
               max={10000}
               step="any"
               type="number"
+              leadingIcon={<SquareRoundCorner className={rotation} />}
               suffix={unit}
               value={number(`${key}Y`, 16)}
               onChange={(event) => changeCorner(key, event.currentTarget.valueAsNumber, true)}
@@ -113,6 +130,7 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
   return (
     <DesignWorkspace
       compactOutput
+      workspaceClassName="min-h-[32rem] grid-rows-[minmax(22rem,2fr)_minmax(10rem,1fr)]"
       title="Shape and corners"
       controlTitle="Shape settings"
       previewActions={
@@ -124,7 +142,7 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
       preview={
         <div className="flex h-full min-h-0 flex-col gap-2 p-3">
           <div className="flex justify-between gap-3">
-            {CORNERS.slice(0, 2).map(([key, label]) => cornerControl(key, label))}
+            {CORNERS.slice(0, 2).map(([key, label, rotation]) => cornerControl(key, label, rotation))}
           </div>
           <div className="relative grid min-h-20 flex-1 place-items-center overflow-hidden" ref={measurePreview}>
             {radius ? (
@@ -144,7 +162,7 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
             )}
           </div>
           <div className="flex justify-between gap-3">
-            {CORNERS.slice(2).map(([key, label]) => cornerControl(key, label))}
+            {CORNERS.slice(2).map(([key, label, rotation]) => cornerControl(key, label, rotation))}
           </div>
         </div>
       }
@@ -152,7 +170,14 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
         <>
           <ButtonGroup aria-label="Shape presets">
             {(["card", "pill", "circle"] as const).map((name) => (
-              <Button disabled={props.disabled} key={name} variant="outline" size="sm" onClick={() => preset(name)}>
+              <Button
+                disabled={props.disabled}
+                key={name}
+                variant={selectedPreset === name ? "default" : "outline"}
+                aria-pressed={selectedPreset === name}
+                size="sm"
+                onClick={() => preset(name)}
+              >
                 {name[0].toUpperCase() + name.slice(1)}
               </Button>
             ))}

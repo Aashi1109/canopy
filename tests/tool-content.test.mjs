@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 
 import { TOOL_CONTENT_DOC_VERSION, resolveContent, resolveContentMap } from "../lib/tool-framework/content.ts";
 
@@ -61,7 +60,7 @@ function countWarnings(fn) {
 
 test("an absent row resolves every field from the spec", () => {
   const spec = makeSpec();
-  assert.deepEqual(resolveContent(spec, null), {
+  expect(resolveContent(spec, null)).toEqual({
     toolId: "devtools.fixture-alpha",
     category: "text-tools",
     keywords: ["spec-keyword"],
@@ -73,7 +72,7 @@ test("an absent row resolves every field from the spec", () => {
 
 test("seoTitle falls back to the spec name when the spec has no title", () => {
   const spec = makeSpec({ content: { howToUse: ["Only step"] } });
-  assert.equal(resolveContent(spec, null).seoTitle, "Fixture Alpha");
+  expect(resolveContent(spec, null).seoTitle).toBe("Fixture Alpha");
 });
 
 test("an unpublished row is ignored even when it carries data", () => {
@@ -87,18 +86,18 @@ test("an unpublished row is ignored even when it carries data", () => {
     contentDoc: { version: TOOL_CONTENT_DOC_VERSION, howToUse: ["Row step"] },
   });
 
-  assert.deepEqual(resolveContent(spec, row), resolveContent(spec, null));
+  expect(resolveContent(spec, row)).toEqual(resolveContent(spec, null));
 });
 
 test("a partial published row overrides only the fields it sets", () => {
   const spec = makeSpec();
   const resolved = resolveContent(spec, makeRow({ seoTitle: "Row SEO Title" }));
 
-  assert.equal(resolved.seoTitle, "Row SEO Title");
-  assert.equal(resolved.seoDescription, "Spec description.");
-  assert.equal(resolved.category, "text-tools");
-  assert.deepEqual(resolved.keywords, ["spec-keyword"]);
-  assert.deepEqual(resolved.content, SPEC_CONTENT);
+  expect(resolved.seoTitle).toBe("Row SEO Title");
+  expect(resolved.seoDescription).toBe("Spec description.");
+  expect(resolved.category).toBe("text-tools");
+  expect(resolved.keywords).toEqual(["spec-keyword"]);
+  expect(resolved.content).toEqual(SPEC_CONTENT);
 });
 
 test("a valid published content doc replaces the spec content", () => {
@@ -114,12 +113,12 @@ test("a valid published content doc replaces the spec content", () => {
     }),
   );
 
-  assert.deepEqual(resolved.content, {
+  expect(resolved.content).toEqual({
     howToUse: ["Row step one", "Row step two"],
     faq: [{ q: "Row question?", a: "Row answer." }],
   });
   // The spec object is never mutated.
-  assert.deepEqual(spec.content, SPEC_CONTENT);
+  expect(spec.content).toEqual(SPEC_CONTENT);
 });
 
 test("an invalid content doc falls back to the spec content without throwing", () => {
@@ -143,9 +142,9 @@ test("an invalid content doc falls back to the spec content without throwing", (
     const spec = makeSpec({ toolId: `devtools.fixture-invalid-${index}` });
     const row = makeRow({ toolId: spec.toolId, ...overrides });
     const warnings = countWarnings(() => {
-      assert.deepEqual(resolveContent(spec, row).content, SPEC_CONTENT);
+      expect(resolveContent(spec, row).content).toEqual(SPEC_CONTENT);
     });
-    assert.equal(warnings, 1, `expected one warning for doc #${index}`);
+    expect(warnings, `expected one warning for doc #${index}`).toBe(1);
   });
 });
 
@@ -158,7 +157,7 @@ test("the invalid-doc warning is logged only once per tool", () => {
     resolveContent(spec, row);
     resolveContent(spec, row);
   });
-  assert.equal(warnings, 1);
+  expect(warnings).toBe(1);
 });
 
 test("a content doc that is not an object falls back without throwing", () => {
@@ -168,7 +167,7 @@ test("a content doc that is not an object falls back without throwing", () => {
     const spec = makeSpec({ toolId: `devtools.fixture-nonobject-${index}` });
     const row = makeRow({ toolId: spec.toolId, contentDoc });
     countWarnings(() => {
-      assert.deepEqual(resolveContent(spec, row).content, SPEC_CONTENT);
+      expect(resolveContent(spec, row).content).toEqual(SPEC_CONTENT);
     });
   });
 
@@ -176,35 +175,35 @@ test("a content doc that is not an object falls back without throwing", () => {
   const spec = makeSpec({ toolId: "devtools.fixture-nulldoc" });
   const warnings = countWarnings(() => {
     const resolved = resolveContent(spec, makeRow({ toolId: spec.toolId, contentDoc: null }));
-    assert.deepEqual(resolved.content, SPEC_CONTENT);
+    expect(resolved.content).toEqual(SPEC_CONTENT);
   });
-  assert.equal(warnings, 0);
+  expect(warnings).toBe(0);
 });
 
 test("an unknown category falls back to the spec category", () => {
   const spec = makeSpec();
 
   for (const category of ["not-a-real-category", "", "__proto__"]) {
-    assert.equal(resolveContent(spec, makeRow({ category })).category, "text-tools");
+    expect(resolveContent(spec, makeRow({ category })).category).toBe("text-tools");
   }
 
-  assert.equal(resolveContent(spec, makeRow({ category: "json-tools" })).category, "json-tools");
+  expect(resolveContent(spec, makeRow({ category: "json-tools" })).category).toBe("json-tools");
 });
 
 test("an empty keywords array is a fallback, not an override", () => {
   const spec = makeSpec();
 
-  assert.deepEqual(resolveContent(spec, makeRow({ keywords: [] })).keywords, ["spec-keyword"]);
-  assert.deepEqual(resolveContent(spec, makeRow({ keywords: ["  ", ""] })).keywords, ["spec-keyword"]);
-  assert.deepEqual(resolveContent(spec, makeRow({ keywords: [" row-keyword "] })).keywords, ["row-keyword"]);
+  expect(resolveContent(spec, makeRow({ keywords: [] })).keywords).toEqual(["spec-keyword"]);
+  expect(resolveContent(spec, makeRow({ keywords: ["  ", ""] })).keywords).toEqual(["spec-keyword"]);
+  expect(resolveContent(spec, makeRow({ keywords: [" row-keyword "] })).keywords).toEqual(["row-keyword"]);
 });
 
 test("blank stored text is not an override", () => {
   const spec = makeSpec();
   const resolved = resolveContent(spec, makeRow({ seoTitle: "   ", seoDescription: "" }));
 
-  assert.equal(resolved.seoTitle, "Spec SEO Title");
-  assert.equal(resolved.seoDescription, "Spec description.");
+  expect(resolved.seoTitle).toBe("Spec SEO Title");
+  expect(resolved.seoDescription).toBe("Spec description.");
 });
 
 test("resolveContentMap keeps spec order and drops unknown toolIds", () => {
@@ -219,13 +218,13 @@ test("resolveContentMap keeps spec order and drops unknown toolIds", () => {
 
   const map = resolveContentMap(specs, rows);
 
-  assert.deepEqual([...map.keys()], ["devtools.fixture-alpha", "devtools.fixture-beta"]);
-  assert.equal(map.get("devtools.fixture-alpha").seoTitle, "Spec SEO Title");
-  assert.equal(map.get("devtools.fixture-beta").seoTitle, "Row Beta Title");
-  assert.equal(map.has("devtools.fixture-ghost"), false);
+  expect([...map.keys()]).toEqual(["devtools.fixture-alpha", "devtools.fixture-beta"]);
+  expect(map.get("devtools.fixture-alpha").seoTitle).toBe("Spec SEO Title");
+  expect(map.get("devtools.fixture-beta").seoTitle).toBe("Row Beta Title");
+  expect(map.has("devtools.fixture-ghost")).toBe(false);
 });
 
 test("resolveContentMap tolerates an empty row set", () => {
   const specs = [makeSpec()];
-  assert.deepEqual(resolveContentMap(specs, []), new Map([["devtools.fixture-alpha", resolveContent(specs[0], null)]]));
+  expect(resolveContentMap(specs, [])).toEqual(new Map([["devtools.fixture-alpha", resolveContent(specs[0], null)]]));
 });

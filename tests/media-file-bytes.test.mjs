@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { expect, test } from "vitest";
 import { readToolFile } from "../lib/tool-framework/media/fileBytes.ts";
 
 test("readToolFile releases a completed full-file read instead of caching it", async () => {
@@ -19,7 +17,7 @@ test("readToolFile releases a completed full-file read instead of caching it", a
     source,
   };
 
-  assert.deepEqual(new Uint8Array(await readToolFile(file)), Uint8Array.of(1));
-  assert.deepEqual(new Uint8Array(await readToolFile(file)), Uint8Array.of(2));
-  assert.equal(reads, 2);
+  expect(new Uint8Array(await readToolFile(file))).toEqual(Uint8Array.of(1));
+  expect(new Uint8Array(await readToolFile(file))).toEqual(Uint8Array.of(2));
+  expect(reads).toBe(2);
 });

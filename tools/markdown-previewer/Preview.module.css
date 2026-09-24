@@ -1,6 +1,4 @@
 .preview {
-  max-width: 76ch;
-  margin-inline: auto;
   padding: clamp(20px, 4vw, 32px);
 }
 

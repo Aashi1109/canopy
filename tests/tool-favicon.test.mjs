@@ -1,31 +1,13 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
+import { afterAll, afterEach, beforeEach, expect, test, vi } from "vitest";
 import nextTesting from "next/experimental/testing/server.js";
 
-const iconsUrl = new URL("../lib/tool-framework/icons.ts", import.meta.url).href;
-const proxyUrl = new URL("../proxy.ts", import.meta.url).href;
-const hooks = registerHooks({
-  resolve(specifier, context, nextResolve) {
-    if (context.parentURL === proxyUrl && specifier === "./lib/auth/index.ts") {
-      return { shortCircuit: true, url: "data:text/javascript,export const auth = {}" };
-    }
-    if (specifier === "next/server") return nextResolve("next/server.js", context);
-    if (specifier === "@/lib/tool-framework/icons") {
-      return nextResolve(iconsUrl, context);
-    }
-    if (context.parentURL === iconsUrl && specifier === "./identicon") {
-      return nextResolve(new URL("../lib/tool-framework/identicon.ts", import.meta.url).href, context);
-    }
-    if (specifier === "@/lib/config/public.ts")
-      return nextResolve(new URL("../lib/config/public.ts", import.meta.url).href, context);
-    return nextResolve(specifier, context);
-  },
-});
-const { resolveIcon, toolFaviconHref, toolIconUrl } = await import(iconsUrl);
-const { GET } = await import("../app/tool-icons/[...path]/route.ts");
-const { config } = await import(proxyUrl);
-hooks.deregister();
+vi.mock("@/lib/auth/index.ts", () => ({ auth: {} }));
+
+const { resolveIcon, toolFaviconHref, toolIconUrl } = await import("@/lib/tool-framework/icons.ts");
+const { GET } = await import("@/app/tool-icons/[...path]/route.ts");
+const { config } = await import("@/proxy.ts");
+
+afterEach(() => vi.restoreAllMocks());
 
 const png = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aKo8AAAAASUVORK5CYII=",
@@ -48,48 +30,46 @@ const request = (pathname = "/tool-icons/" + validPath.join("/")) =>
   });
 const call = (path = validPath) => GET(request(), { params: Promise.resolve({ path }) });
 
-test.beforeEach(() => {
+beforeEach(() => {
   process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "favicon-test";
 });
-test.after(() => {
+afterAll(() => {
   if (cloudEnv === undefined) delete process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   else process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = cloudEnv;
 });
 
-test("uploaded tool favicons round-trip through a versioned same-origin PNG URL", async (t) => {
+test("uploaded tool favicons round-trip through a versioned same-origin PNG URL", async () => {
   const requests = [];
-  t.mock.method(globalThis, "fetch", async (input, options) => {
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input, options) => {
     requests.push({ input, options });
     return new Response(png, { headers: { "Content-Type": "image/png" } });
   });
   const href = toolFaviconHref(resolveIcon(row.toolId, "Resize image", toolIconUrl("favicon-test", row)));
-  assert.equal(href, "/tool-icons/v123/smarttools/tool-icons/media.resize-image.png");
-  assert.equal(
+  expect(href).toBe("/tool-icons/v123/smarttools/tool-icons/media.resize-image.png");
+  expect(
     toolFaviconHref(resolveIcon(row.toolId, "Resize image", toolIconUrl("favicon-test", { ...row, version: "124" }))),
-    "/tool-icons/v124/smarttools/tool-icons/media.resize-image.png",
     "replaced icons receive a different browser cache key",
-  );
+  ).toBe("/tool-icons/v124/smarttools/tool-icons/media.resize-image.png");
   const url = new URL(href, "https://app.example");
   const path = url.pathname.slice("/tool-icons/".length).split("/").map(decodeURIComponent);
   const response = await GET(request(href), { params: Promise.resolve({ path }) });
-  assert.equal(response.status, 200);
-  assert.deepEqual(Buffer.from(await response.arrayBuffer()), png);
-  assert.equal(response.headers.get("Content-Type"), "image/png");
-  assert.equal(response.headers.get("X-Content-Type-Options"), "nosniff");
-  assert.match(response.headers.get("Cache-Control"), /public/);
-  assert.match(response.headers.get("Cache-Control"), /max-age=[1-9]\d*/);
-  assert.equal(response.headers.get("Location"), null);
-  assert.equal(requests.length, 1);
+  expect(response.status).toBe(200);
+  expect(Buffer.from(await response.arrayBuffer())).toEqual(png);
+  expect(response.headers.get("Content-Type")).toBe("image/png");
+  expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+  expect(response.headers.get("Cache-Control")).toMatch(/public/);
+  expect(response.headers.get("Cache-Control")).toMatch(/max-age=[1-9]\d*/);
+  expect(response.headers.get("Location")).toBe(null);
+  expect(requests.length).toBe(1);
   const [{ input, options }] = requests;
-  assert.equal(
-    String(input),
+  expect(String(input)).toBe(
     "https://res.cloudinary.com/favicon-test/image/upload/f_png,c_fill,w_256,h_256,q_auto/v123/smarttools/tool-icons/media.resize-image.png",
   );
-  assert.equal(options.redirect, "error");
-  assert.ok(options.signal instanceof AbortSignal, "upstream request has a timeout signal");
+  expect(options.redirect).toBe("error");
+  expect(options.signal instanceof AbortSignal, "upstream request has a timeout signal").toBeTruthy();
   const headers = new Headers(options.headers);
-  assert.equal(headers.get("Cookie"), null);
-  assert.equal(headers.get("Authorization"), null);
+  expect(headers.get("Cookie")).toBe(null);
+  expect(headers.get("Authorization")).toBe(null);
 
   const escaped = toolFaviconHref(
     resolveIcon(
@@ -98,13 +78,12 @@ test("uploaded tool favicons round-trip through a versioned same-origin PNG URL"
       toolIconUrl("favicon-test", { ...row, publicId: "smarttools/tool-icons/resize image + café" }),
     ),
   );
-  assert.equal(escaped, "/tool-icons/v123/smarttools/tool-icons/resize%20image%20%2B%20caf%C3%A9.png");
+  expect(escaped).toBe("/tool-icons/v123/smarttools/tool-icons/resize%20image%20%2B%20caf%C3%A9.png");
   const escapedPath = escaped.slice("/tool-icons/".length).split("/").map(decodeURIComponent);
   const escapedResponse = await GET(request(escaped), { params: Promise.resolve({ path: escapedPath }) });
-  assert.equal(escapedResponse.status, 200);
-  assert.deepEqual(Buffer.from(await escapedResponse.arrayBuffer()), png);
-  assert.equal(
-    String(requests[1].input),
+  expect(escapedResponse.status).toBe(200);
+  expect(Buffer.from(await escapedResponse.arrayBuffer())).toEqual(png);
+  expect(String(requests[1].input)).toBe(
     "https://res.cloudinary.com/favicon-test/image/upload/f_png,c_fill,w_256,h_256,q_auto/v123/smarttools/tool-icons/resize%20image%20%2B%20caf%C3%A9.png",
   );
 });
@@ -112,24 +91,24 @@ test("uploaded tool favicons round-trip through a versioned same-origin PNG URL"
 test("stored icon URLs resolve unchanged without Cloudinary configuration", () => {
   delete process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const iconUrl = toolIconUrl("favicon-test", row);
-  assert.deepEqual(resolveIcon(row.toolId, "Resize image", iconUrl), { kind: "url", url: iconUrl });
+  expect(resolveIcon(row.toolId, "Resize image", iconUrl)).toEqual({ kind: "url", url: iconUrl });
 });
 
 test("generated fallback SVG remains a correctly escaped data URI", () => {
   for (const configured of [true, false]) {
     if (!configured) delete process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const icon = resolveIcon("tool-fallback", "<script &test", null);
-    assert.equal(icon.kind, "svg");
+    expect(icon.kind).toBe("svg");
     const href = toolFaviconHref(icon);
-    assert.match(href, /^data:image\/svg\+xml,/);
-    assert.equal(decodeURIComponent(href.split(",").slice(1).join(",")), icon.svg);
-    assert.match(icon.svg, /&lt;&amp;/);
-    assert.doesNotMatch(href, /[<>\s#]/);
+    expect(href).toMatch(/^data:image\/svg\+xml,/);
+    expect(decodeURIComponent(href.split(",").slice(1).join(","))).toBe(icon.svg);
+    expect(icon.svg).toMatch(/&lt;&amp;/);
+    expect(href).not.toMatch(/[<>\s#]/);
   }
 });
 
-test("invalid favicon paths never issue an upstream request", async (t) => {
-  const fetch = t.mock.method(globalThis, "fetch", async () => {
+test("invalid favicon paths never issue an upstream request", async () => {
+  const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
     throw new Error("Invalid path reached the network");
   });
   for (const path of [
@@ -158,10 +137,10 @@ test("invalid favicon paths never issue an upstream request", async (t) => {
     ["v123", ...Array(16).fill("folder"), "icon.png"],
   ]) {
     const response = await GET(request(), { params: Promise.resolve({ path }) });
-    assert.equal(response.status, 404, String(JSON.stringify(path)));
-    assert.match(response.headers.get("Cache-Control"), /no-store/);
+    expect(response.status, String(JSON.stringify(path))).toBe(404);
+    expect(response.headers.get("Cache-Control")).toMatch(/no-store/);
   }
-  assert.equal(fetch.mock.callCount(), 0);
+  expect(fetch.mock.calls.length).toBe(0);
 });
 
 test("public favicon files bypass session lookups without bypassing page or API protection", () => {
@@ -170,25 +149,25 @@ test("public favicon files bypass session lookups without bypassing page or API 
     "/tool-icons/v123/smarttools/tool-icons/media.resize-image.png",
     "/tool-icons/v124/Canopy/platform/assets/default/icons/extract-pdf-pages.png",
   ]) {
-    assert.equal(doesProxyMatch({ config, url }), false, url);
+    expect(doesProxyMatch({ config, url }), url).toBe(false);
   }
   for (const url of ["/media/extract-pdf-pages", "/devtools/json-editor", "/api/tools/search", "/tool-icons-other"]) {
-    assert.equal(doesProxyMatch({ config, url }), true, url);
+    expect(doesProxyMatch({ config, url }), url).toBe(true);
   }
 });
 
-test("missing delivery configuration fails without requesting another Cloudinary account", async (t) => {
-  const fetch = t.mock.method(globalThis, "fetch", async () => {
+test("missing delivery configuration fails without requesting another Cloudinary account", async () => {
+  const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
     throw new Error("Unconfigured route reached the network");
   });
   delete process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const response = await call();
-  assert.equal(response.status, 503);
-  assert.match(response.headers.get("Cache-Control"), /no-store/);
-  assert.equal(fetch.mock.callCount(), 0);
+  expect(response.status).toBe(503);
+  expect(response.headers.get("Cache-Control")).toMatch(/no-store/);
+  expect(fetch.mock.calls.length).toBe(0);
 });
 
-test("upstream redirects, non-PNG responses, failures and timeouts never become cached favicons", async (t) => {
+test("upstream redirects, non-PNG responses, failures and timeouts never become cached favicons", async () => {
   const responses = [
     () => new Response("unavailable", { status: 404 }),
     () => new Response("unavailable", { status: 500 }),
@@ -203,13 +182,13 @@ test("upstream redirects, non-PNG responses, failures and timeouts never become 
     },
   ];
   let current;
-  t.mock.method(globalThis, "fetch", async () => current());
+  vi.spyOn(globalThis, "fetch").mockImplementation(async () => current());
   for (current of responses) {
     const response = await call();
-    assert.equal(response.status, 502);
-    assert.match(response.headers.get("Cache-Control"), /no-store/);
-    assert.notEqual(response.headers.get("Content-Type"), "image/png");
-    assert.equal(response.headers.get("Location"), null);
-    assert.doesNotMatch(await response.text(), /private-upstream-detail/);
+    expect(response.status).toBe(502);
+    expect(response.headers.get("Cache-Control")).toMatch(/no-store/);
+    expect(response.headers.get("Content-Type")).not.toBe("image/png");
+    expect(response.headers.get("Location")).toBe(null);
+    expect(await response.text()).not.toMatch(/private-upstream-detail/);
   }
 });

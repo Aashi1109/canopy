@@ -1,48 +1,36 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
 import { NextRequest } from "next/server.js";
 import nextTesting from "next/experimental/testing/server.js";
+import { expect, test, vi } from "vitest";
 
 const { unstable_doesMiddlewareMatch: doesProxyMatch } = nextTesting;
 
-const proxyUrl = new URL("../proxy.ts", import.meta.url).href;
-const fixture = { session: null, error: null, queries: 0 };
-globalThis.__accountAccessTest = fixture;
-const hooks = registerHooks({
-  resolve(specifier, context, nextResolve) {
-    if (context.parentURL === proxyUrl && specifier === "./lib/auth/index.ts") {
-      return {
-        shortCircuit: true,
-        url: `data:text/javascript,${encodeURIComponent(`
-        export const auth = { api: { async getSession({ query }) {
-          const fixture = globalThis.__accountAccessTest;
-          fixture.queries++;
-          if (!query.disableCookieCache) throw new Error("Must read current status");
-          if (fixture.error) throw fixture.error;
-          return fixture.session;
-        } } };
-      `)}`,
-      };
-    }
-    if (specifier === "next/server") return nextResolve("next/server.js", context);
-    return nextResolve(specifier, context);
-  },
-});
-const { proxy, config } = await import(proxyUrl);
-hooks.deregister();
+// vi.hoisted runs before the hoisted vi.mock factory below so the fake session
+// service can read the fixture the test mutates.
+const fixture = vi.hoisted(() => ({ session: null, error: null, queries: 0 }));
 
-test("suspension blocks pages, actions and APIs while preserving identity and logout", async (t) => {
-  t.after(() => {
-    delete globalThis.__accountAccessTest;
-  });
+vi.mock("@/lib/auth/index.ts", () => ({
+  auth: {
+    api: {
+      async getSession({ query }) {
+        fixture.queries++;
+        if (!query.disableCookieCache) throw new Error("Must read current status");
+        if (fixture.error) throw fixture.error;
+        return fixture.session;
+      },
+    },
+  },
+}));
+
+const { proxy, config } = await import("@/proxy.ts");
+
+test("suspension blocks pages, actions and APIs while preserving identity and logout", async () => {
   const request = (path, method = "GET", cookie = "smarttools.session_token=test") =>
     new NextRequest(`http://localhost:3000${path}`, { method, headers: { cookie } });
-  assert.equal((await proxy(request("/", "GET", ""))).headers.get("x-middleware-next"), "1");
-  assert.equal(fixture.queries, 0);
+  expect((await proxy(request("/", "GET", ""))).headers.get("x-middleware-next")).toBe("1");
+  expect(fixture.queries).toBe(0);
   for (const session of [null, { user: { status: "active" } }]) {
     fixture.session = session;
-    assert.equal((await proxy(request("/paperwork"))).headers.get("x-middleware-next"), "1");
+    expect((await proxy(request("/paperwork"))).headers.get("x-middleware-next")).toBe("1");
   }
   fixture.session = { user: { status: "suspended" } };
   for (const path of [
@@ -56,10 +44,10 @@ test("suspension blocks pages, actions and APIs while preserving identity and lo
     "/auth/profile",
     "/media/file.pdf",
   ]) {
-    assert.ok(doesProxyMatch({ config, url: path }));
+    expect(doesProxyMatch({ config, url: path })).toBeTruthy();
     const response = await proxy(request(path));
-    assert.equal(response.headers.get("location"), "http://localhost:3000/account/suspended");
-    assert.equal(response.status, 303);
+    expect(response.headers.get("location")).toBe("http://localhost:3000/account/suspended");
+    expect(response.status).toBe(303);
   }
   for (const path of [
     "/api/tools/search",
@@ -68,31 +56,31 @@ test("suspension blocks pages, actions and APIs while preserving identity and lo
     "/api/auth/delete-user",
     "/api/auth/sign-out/extra",
   ]) {
-    assert.ok(doesProxyMatch({ config, url: path }));
+    expect(doesProxyMatch({ config, url: path })).toBeTruthy();
     const response = await proxy(request(path, "POST"));
-    assert.equal(response.status, 403);
-    assert.equal((await response.json()).code, "ACCOUNT_SUSPENDED");
+    expect(response.status).toBe(403);
+    expect((await response.json()).code).toBe("ACCOUNT_SUSPENDED");
   }
-  assert.equal((await proxy(request("/admin", "POST"))).status, 403);
-  assert.equal((await proxy(request("/account/suspended", "POST"))).status, 403);
+  expect((await proxy(request("/admin", "POST"))).status).toBe(403);
+  expect((await proxy(request("/account/suspended", "POST"))).status).toBe(403);
   for (const [path, method] of [
     ["/account/suspended", "GET"],
     ["/account/suspended", "HEAD"],
     ["/api/auth/get-session", "GET"],
     ["/api/auth/sign-out", "POST"],
   ]) {
-    assert.equal((await proxy(request(path, method))).headers.get("x-middleware-next"), "1");
+    expect((await proxy(request(path, method))).headers.get("x-middleware-next")).toBe("1");
   }
   fixture.error = new Error("database unavailable");
   const unavailable = await proxy(request("/paperwork"));
-  assert.equal(unavailable.status, 503);
-  assert.deepEqual(await unavailable.json(), { error: "database unavailable" });
+  expect(unavailable.status).toBe(503);
+  expect(await unavailable.json()).toEqual({ error: "database unavailable" });
   fixture.error = new Error("");
-  assert.deepEqual(await (await proxy(request("/paperwork"))).json(), {
+  expect(await (await proxy(request("/paperwork"))).json()).toEqual({
     error: "Unable to check account access. Please try again.",
   });
-  assert.equal((await proxy(request("/api/auth/sign-out", "POST"))).headers.get("x-middleware-next"), "1");
+  expect((await proxy(request("/api/auth/sign-out", "POST"))).headers.get("x-middleware-next")).toBe("1");
   for (const path of ["/_next/static/chunks/app.js", "/_next/image", "/favicon.ico"]) {
-    assert.equal(doesProxyMatch({ config, url: path }), false);
+    expect(doesProxyMatch({ config, url: path })).toBe(false);
   }
 });

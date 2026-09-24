@@ -1,14 +1,13 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, onTestFinished, test } from "vitest";
 import { isSameOriginRequest } from "../lib/routing/requestOrigin.ts";
 
 function check(url, headers) {
   return isSameOriginRequest(new Request(url, { method: "POST", headers }));
 }
 
-test("same-origin validation uses configured public origins behind normalized request URLs", (t) => {
+test("same-origin validation uses configured public origins behind normalized request URLs", () => {
   const previousAppUrl = process.env.APP_URL;
-  t.after(() => {
+  onTestFinished(() => {
     if (previousAppUrl === undefined) delete process.env.APP_URL;
     else process.env.APP_URL = previousAppUrl;
   });
@@ -19,15 +18,12 @@ test("same-origin validation uses configured public origins behind normalized re
     const admin = new URL(appUrl);
     admin.hostname = `admin.${main.hostname}`;
     for (const publicUrl of [main, admin]) {
-      assert.equal(
-        check("http://localhost:3000/api/example", { host: publicUrl.host, origin: publicUrl.origin }),
-        true,
-      );
+      expect(check("http://localhost:3000/api/example", { host: publicUrl.host, origin: publicUrl.origin })).toBe(true);
     }
     for (const origin of [main.origin, "https://foreign.example", "null", `${admin.origin}/`, ""]) {
-      assert.equal(check("http://localhost:3000/api/example", { host: admin.host, origin }), false);
+      expect(check("http://localhost:3000/api/example", { host: admin.host, origin })).toBe(false);
     }
-    assert.equal(check("http://localhost:3000/api/example", { host: admin.host }), false);
+    expect(check("http://localhost:3000/api/example", { host: admin.host })).toBe(false);
   }
 
   process.env.APP_URL = "http://localhost:3000";
@@ -48,15 +44,14 @@ test("same-origin validation uses configured public origins behind normalized re
       "x-forwarded-proto": "https",
     },
   ]) {
-    assert.equal(check("http://localhost:3000/api/example", headers), false);
+    expect(check("http://localhost:3000/api/example", headers)).toBe(false);
   }
 
-  assert.equal(check("http://localhost:3000/api/example", { origin: "http://localhost:3000" }), true);
-  assert.equal(
+  expect(check("http://localhost:3000/api/example", { origin: "http://localhost:3000" })).toBe(true);
+  expect(
     check("https://preview.vercel.app/api/example", {
       host: "preview.vercel.app",
       origin: "https://preview.vercel.app",
     }),
-    true,
-  );
+  ).toBe(true);
 });

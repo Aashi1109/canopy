@@ -41,6 +41,8 @@ import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { seedTemplates, type DocumentTemplate } from "@/lib/invoice-templates/index.ts";
 import type { ResolvedTool } from "@/lib/tool-catalog/index.ts";
 import AdvancedTemplateWorkspace from "./AdvancedTemplateWorkspace";
+import { PaperworkWorkspace } from "./PaperworkWorkspace";
+import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
 import ExpenseReportPage from "./expense/ExpenseReportPage";
 import FAQSection from "./FAQSection";
 import InvoiceForm from "./InvoiceForm";
@@ -401,9 +403,15 @@ export default function App({
 
       <main className={isInvoice ? "grow pb-20 lg:pb-0" : "grow"}>
         {isReceipt ? (
-          <ReceiptGeneratorPage onTrackClick={handleTrackClick} templates={templates} />
+          <PaperworkWorkspace title="Receipt Generator">
+            <ReceiptGeneratorPage onTrackClick={handleTrackClick} templates={templates} />
+          </PaperworkWorkspace>
         ) : ToolComponent ? (
-          <ToolComponent onTrackClick={handleTrackClick} templates={templates} />
+          <PaperworkWorkspace
+            title={tools.find((tool) => tool.componentKey === componentKey)?.name ?? "Document workspace"}
+          >
+            <ToolComponent onTrackClick={handleTrackClick} templates={templates} />
+          </PaperworkWorkspace>
         ) : isInvoice ? (
           <>
             <PageHero
@@ -437,100 +445,57 @@ export default function App({
               title="Free Invoice Generator for Contractors & Small Businesses"
             />
 
-            <div id="invoice-generator" ref={formSectionRef}>
-              <H2 className="sr-only">Invoice workspace</H2>
-              <AppContainer className="py-8">
-                {Object.keys(errors).length ? (
-                  <AlertBanner
-                    className="mb-6 print:hidden"
-                    title={`${Object.keys(errors).length} invoice ${Object.keys(errors).length === 1 ? "field needs" : "fields need"} attention`}
-                    variant="warning"
-                  >
-                    Review the highlighted seller, client, invoice, line-item, and date details. Correct them before
-                    downloading or printing the PDF.
-                  </AlertBanner>
-                ) : null}
-
-                {selectedTemplate.layoutFamily !== "advanced" ? (
-                  <Tabs
-                    id="mobile-view-tabs"
-                    className="mb-6 print:hidden lg:hidden"
-                    onValueChange={(value) => showMobileTab(value as "edit" | "preview")}
-                    value={activeMobileTab}
-                  >
-                    <TabsList
-                      aria-label="Invoice workspace view"
-                      className="grid w-full grid-cols-2 border border-border"
-                      variant="segmented"
+            <PaperworkWorkspace title="Invoice Generator">
+              <div id="invoice-generator" ref={formSectionRef}>
+                <H2 className="sr-only">Invoice workspace</H2>
+                <AppContainer className="py-8">
+                  {Object.keys(errors).length ? (
+                    <AlertBanner
+                      className="mb-6 print:hidden"
+                      title={`${Object.keys(errors).length} invoice ${Object.keys(errors).length === 1 ? "field needs" : "fields need"} attention`}
+                      variant="warning"
                     >
-                      <TabsTrigger aria-controls="editor-panel" className="min-h-11" id="mobile-edit-tab" value="edit">
-                        <PenLine aria-hidden="true" className="size-4" />
-                        Edit details
-                      </TabsTrigger>
-                      <TabsTrigger
-                        aria-controls="preview-panel"
-                        className="min-h-11"
-                        id="mobile-preview-tab"
-                        value="preview"
+                      Review the highlighted seller, client, invoice, line-item, and date details. Correct them before
+                      downloading or printing the PDF.
+                    </AlertBanner>
+                  ) : null}
+
+                  {selectedTemplate.layoutFamily !== "advanced" ? (
+                    <Tabs
+                      id="mobile-view-tabs"
+                      className="mb-6 print:hidden lg:hidden"
+                      onValueChange={(value) => showMobileTab(value as "edit" | "preview")}
+                      value={activeMobileTab}
+                    >
+                      <TabsList
+                        aria-label="Invoice workspace view"
+                        className="grid w-full grid-cols-2 border border-border"
+                        variant="segmented"
                       >
-                        <Eye aria-hidden="true" className="size-4" />
-                        Live preview
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                ) : null}
+                        <TabsTrigger
+                          aria-controls="editor-panel"
+                          className="min-h-11"
+                          id="mobile-edit-tab"
+                          value="edit"
+                        >
+                          <PenLine aria-hidden="true" className="size-4" />
+                          Edit details
+                        </TabsTrigger>
+                        <TabsTrigger
+                          aria-controls="preview-panel"
+                          className="min-h-11"
+                          id="mobile-preview-tab"
+                          value="preview"
+                        >
+                          <Eye aria-hidden="true" className="size-4" />
+                          Live preview
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  ) : null}
 
-                {selectedTemplate.layoutFamily === "advanced" ? (
-                  <div className="grid gap-6">
-                    <Card className="p-4">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <Grid aria-hidden="true" className="size-5 shrink-0 text-primary" />
-                          <div className="min-w-0">
-                            <H3>Invoice theme: {selectedTemplate.name}</H3>
-                            <Muted className="text-muted-foreground">Published templates are managed centrally.</Muted>
-                          </div>
-                        </div>
-                        <Button onClick={() => setShowTemplates((shown) => !shown)} size="sm">
-                          {showTemplates ? "Hide themes" : "Change theme"}
-                        </Button>
-                      </div>
-                      {showTemplates ? (
-                        <div className="mt-4">
-                          <TemplateSelector
-                            documentLabel="invoice"
-                            onSelect={(nextTemplate) => {
-                              setSelectedTemplate(nextTemplate);
-                              setInvoiceData((current) => ({
-                                ...current,
-                                template: nextTemplate.slug,
-                              }));
-                              showToast(`Invoice theme changed to ${nextTemplate.name}.`);
-                            }}
-                            selectedTemplateId={selectedTemplate.id}
-                            templates={templates}
-                          />
-                        </div>
-                      ) : null}
-                    </Card>
-                    <AdvancedTemplateWorkspace
-                      adapter={invoiceAdapter}
-                      draft={invoiceData}
-                      onDraftChange={setInvoiceData}
-                      onTrackClick={handleTrackClick}
-                      templates={[selectedTemplate]}
-                    />
-                  </div>
-                ) : (
-                  <div className="grid items-start gap-8 lg:grid-cols-12">
-                    <div
-                      aria-labelledby="mobile-edit-tab"
-                      className={`space-y-6 print:hidden lg:col-span-7 lg:block ${
-                        activeMobileTab === "edit" ? "block" : "hidden"
-                      }`}
-                      id="editor-panel"
-                      role="tabpanel"
-                    >
+                  {selectedTemplate.layoutFamily === "advanced" ? (
+                    <div className="grid gap-6">
                       <Card className="p-4">
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex min-w-0 items-center gap-3">
@@ -549,13 +514,14 @@ export default function App({
                         {showTemplates ? (
                           <div className="mt-4">
                             <TemplateSelector
-                              onSelect={(template) => {
-                                setSelectedTemplate(template);
+                              documentLabel="invoice"
+                              onSelect={(nextTemplate) => {
+                                setSelectedTemplate(nextTemplate);
                                 setInvoiceData((current) => ({
                                   ...current,
-                                  template: template.slug,
+                                  template: nextTemplate.slug,
                                 }));
-                                showToast(`Invoice theme changed to ${template.name}.`);
+                                showToast(`Invoice theme changed to ${nextTemplate.name}.`);
                               }}
                               selectedTemplateId={selectedTemplate.id}
                               templates={templates}
@@ -563,55 +529,106 @@ export default function App({
                           </div>
                         ) : null}
                       </Card>
-                      <InvoiceForm data={invoiceData} errors={errors} onChange={setInvoiceData} />
+                      <AdvancedTemplateWorkspace
+                        adapter={invoiceAdapter}
+                        draft={invoiceData}
+                        onDraftChange={setInvoiceData}
+                        onTrackClick={handleTrackClick}
+                        templates={[selectedTemplate]}
+                      />
                     </div>
-                    <div
-                      aria-labelledby="mobile-preview-tab"
-                      className={`space-y-4 lg:sticky lg:top-20 lg:col-span-5 lg:block ${
-                        activeMobileTab === "preview" ? "block" : "hidden"
-                      }`}
-                      id="preview-panel"
-                      role="tabpanel"
-                    >
-                      <Card className="space-y-3 p-4 print:hidden">
-                        <div className="flex items-center justify-between border-b border-border pb-2 text-muted-foreground">
-                          <Text>PDF ACTIONS</Text>
-                          <StatusBadge variant="success">Ready to export</StatusBadge>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <ToolActionButton
-                            action="download"
-                            disabled={pdfAction !== null}
-                            onClick={() => void generateInvoicePdf("download")}
-                          >
-                            {pdfAction === "download" ? "Generating…" : "Download PDF"}
-                          </ToolActionButton>
-                          <Button
-                            disabled={pdfAction !== null}
-                            onClick={() => void generateInvoicePdf("print")}
-                            variant="secondary"
-                          >
-                            <Printer className="mr-1 inline h-4 w-4" />
-                            {pdfAction === "print" ? "Opening…" : "Print PDF"}
-                          </Button>
-                        </div>
-                        {pdfError ? (
-                          <P className="text-destructive" role="alert">
-                            {pdfError}
-                          </P>
-                        ) : null}
-                        <Muted className="text-center text-muted-foreground">
-                          Download saves a PDF. Print opens the same PDF in a new tab; allow pop-ups if prompted.
-                        </Muted>
-                      </Card>
-                      <Card className="overflow-hidden p-0 shadow-xl">
-                        <InvoicePreviewRenderer data={invoiceData} template={selectedTemplate} />
-                      </Card>
-                    </div>
-                  </div>
-                )}
-              </AppContainer>
-            </div>
+                  ) : (
+                    <WorkbenchPanes className="grid items-start gap-8 lg:grid-cols-12">
+                      <div
+                        aria-labelledby="mobile-edit-tab"
+                        className={`space-y-6 print:hidden lg:col-span-7 lg:block ${
+                          activeMobileTab === "edit" ? "block" : "hidden"
+                        }`}
+                        id="editor-panel"
+                        role="tabpanel"
+                      >
+                        <Card className="p-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <Grid aria-hidden="true" className="size-5 shrink-0 text-primary" />
+                              <div className="min-w-0">
+                                <H3>Invoice theme: {selectedTemplate.name}</H3>
+                                <Muted className="text-muted-foreground">
+                                  Published templates are managed centrally.
+                                </Muted>
+                              </div>
+                            </div>
+                            <Button onClick={() => setShowTemplates((shown) => !shown)} size="sm">
+                              {showTemplates ? "Hide themes" : "Change theme"}
+                            </Button>
+                          </div>
+                          {showTemplates ? (
+                            <div className="mt-4">
+                              <TemplateSelector
+                                onSelect={(template) => {
+                                  setSelectedTemplate(template);
+                                  setInvoiceData((current) => ({
+                                    ...current,
+                                    template: template.slug,
+                                  }));
+                                  showToast(`Invoice theme changed to ${template.name}.`);
+                                }}
+                                selectedTemplateId={selectedTemplate.id}
+                                templates={templates}
+                              />
+                            </div>
+                          ) : null}
+                        </Card>
+                        <InvoiceForm data={invoiceData} errors={errors} onChange={setInvoiceData} />
+                      </div>
+                      <div
+                        aria-labelledby="mobile-preview-tab"
+                        className={`space-y-4 lg:sticky lg:top-20 lg:col-span-5 lg:block ${
+                          activeMobileTab === "preview" ? "block" : "hidden"
+                        }`}
+                        id="preview-panel"
+                        role="tabpanel"
+                      >
+                        <Card className="space-y-3 p-4 print:hidden">
+                          <div className="flex items-center justify-between border-b border-border pb-2 text-muted-foreground">
+                            <Text>PDF ACTIONS</Text>
+                            <StatusBadge variant="success">Ready to export</StatusBadge>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <ToolActionButton
+                              action="download"
+                              disabled={pdfAction !== null}
+                              onClick={() => void generateInvoicePdf("download")}
+                            >
+                              {pdfAction === "download" ? "Generating…" : "Download PDF"}
+                            </ToolActionButton>
+                            <Button
+                              disabled={pdfAction !== null}
+                              onClick={() => void generateInvoicePdf("print")}
+                              variant="secondary"
+                            >
+                              <Printer className="mr-1 inline h-4 w-4" />
+                              {pdfAction === "print" ? "Opening…" : "Print PDF"}
+                            </Button>
+                          </div>
+                          {pdfError ? (
+                            <P className="text-destructive" role="alert">
+                              {pdfError}
+                            </P>
+                          ) : null}
+                          <Muted className="text-center text-muted-foreground">
+                            Download saves a PDF. Print opens the same PDF in a new tab; allow pop-ups if prompted.
+                          </Muted>
+                        </Card>
+                        <Card className="overflow-hidden p-0 shadow-xl">
+                          <InvoicePreviewRenderer data={invoiceData} template={selectedTemplate} />
+                        </Card>
+                      </div>
+                    </WorkbenchPanes>
+                  )}
+                </AppContainer>
+              </div>
+            </PaperworkWorkspace>
           </>
         ) : null}
       </main>

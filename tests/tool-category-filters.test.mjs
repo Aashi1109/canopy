@@ -1,30 +1,29 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { resolveCategoryKey, TOOL_CATEGORIES } from "../lib/tool-framework/categories.ts";
 
 test("category filters resolve both canonical keys and existing display-name links", () => {
   for (const [key, { app, label }] of Object.entries(TOOL_CATEGORIES)) {
-    assert.equal(resolveCategoryKey(key, app), key);
-    assert.equal(resolveCategoryKey(label, app), key);
+    expect(resolveCategoryKey(key, app)).toBe(key);
+    expect(resolveCategoryKey(label, app)).toBe(key);
   }
 });
 
 test("category filters tolerate surrounding whitespace and letter case", () => {
-  assert.equal(resolveCategoryKey("  Developer Generators  ", "devtools"), "developer-generators");
-  assert.equal(resolveCategoryKey("IMAGE-EDITING", "media"), "image-editing");
-  assert.equal(resolveCategoryKey("csv & data tools", "devtools"), "csv-data-tools");
+  expect(resolveCategoryKey("  Developer Generators  ", "devtools")).toBe("developer-generators");
+  expect(resolveCategoryKey("IMAGE-EDITING", "media")).toBe("image-editing");
+  expect(resolveCategoryKey("csv & data tools", "devtools")).toBe("csv-data-tools");
 });
 
 test("category filters stay scoped to their tool suite", () => {
-  assert.equal(resolveCategoryKey("image-editing", "devtools"), "");
-  assert.equal(resolveCategoryKey("Image Editing", "devtools"), "");
-  assert.equal(resolveCategoryKey("developer-generators", "media"), "");
-  assert.equal(resolveCategoryKey("Developer Generators", "media"), "");
+  expect(resolveCategoryKey("image-editing", "devtools")).toBe("");
+  expect(resolveCategoryKey("Image Editing", "devtools")).toBe("");
+  expect(resolveCategoryKey("developer-generators", "media")).toBe("");
+  expect(resolveCategoryKey("Developer Generators", "media")).toBe("");
 });
 
 test("blank and unknown category filters are ignored", () => {
   for (const value of ["", "   ", "unknown-category", "toString", "__proto__"]) {
-    assert.equal(resolveCategoryKey(value, "devtools"), "");
-    assert.equal(resolveCategoryKey(value, "media"), "");
+    expect(resolveCategoryKey(value, "devtools")).toBe("");
+    expect(resolveCategoryKey(value, "media")).toBe("");
   }
 });

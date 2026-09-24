@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { applyBlogLink, removeBlogLink } from "../app/admin/(protected)/blog/lib/linkEditing.ts";
@@ -36,8 +35,8 @@ test("empty cursor inserts visible linked text for each supported destination", 
   ]) {
     for (const label of [undefined, "Read more"]) {
       const editor = editorFor();
-      assert.equal(applyBlogLink(editor, href, label), true);
-      assert.deepEqual(runs(editor), [{ text: label ?? href, href, formatting: [] }]);
+      expect(applyBlogLink(editor, href, label)).toBe(true);
+      expect(runs(editor)).toEqual([{ text: label ?? href, href, formatting: [] }]);
       editor.destroy();
     }
   }
@@ -46,9 +45,9 @@ test("empty cursor inserts visible linked text for each supported destination", 
 test("inserting a link between words preserves surrounding content", () => {
   const editor = editorFor([text("Before  After")]);
   editor.commands.setTextSelection(8);
-  assert.equal(applyBlogLink(editor, "https://example.com/guide", "guide"), true);
-  assert.equal(editor.state.doc.textContent, "Before guide After");
-  assert.deepEqual(runs(editor), [
+  expect(applyBlogLink(editor, "https://example.com/guide", "guide")).toBe(true);
+  expect(editor.state.doc.textContent).toBe("Before guide After");
+  expect(runs(editor)).toEqual([
     { text: "Before ", href: undefined, formatting: [] },
     { text: "guide", href: "https://example.com/guide", formatting: [] },
     { text: " After", href: undefined, formatting: [] },
@@ -58,9 +57,9 @@ test("inserting a link between words preserves surrounding content", () => {
 
 test("ordinary typing after an inserted link does not extend the link", () => {
   const editor = editorFor();
-  assert.equal(applyBlogLink(editor, "/guide", "Guide"), true);
+  expect(applyBlogLink(editor, "/guide", "Guide")).toBe(true);
   editor.commands.insertContent({ type: "text", text: " details" });
-  assert.deepEqual(runs(editor), [
+  expect(runs(editor)).toEqual([
     { text: "Guide", href: "/guide", formatting: [] },
     { text: " details", href: undefined, formatting: [] },
   ]);
@@ -72,8 +71,8 @@ test("code blocks reject link insertion without changing their content", () => {
     const editor = editorFor(content ? [text(content)] : []);
     editor.commands.setCodeBlock();
     const before = editor.getJSON();
-    assert.equal(applyBlogLink(editor, "/guide", "Guide"), false);
-    assert.deepEqual(editor.getJSON(), before);
+    expect(applyBlogLink(editor, "/guide", "Guide")).toBe(false);
+    expect(editor.getJSON()).toEqual(before);
     editor.destroy();
   }
 });
@@ -85,8 +84,8 @@ test("linking a selection retains its text and mixed formatting", () => {
     text(" outside"),
   ]);
   editor.commands.setTextSelection({ from: 1, to: 16 });
-  assert.equal(applyBlogLink(editor, "/guide"), true);
-  assert.deepEqual(runs(editor), [
+  expect(applyBlogLink(editor, "/guide")).toBe(true);
+  expect(runs(editor)).toEqual([
     { text: "Bold", href: "/guide", formatting: ["bold"] },
     { text: " and italic", href: "/guide", formatting: ["italic"] },
     { text: " outside", href: undefined, formatting: [] },
@@ -103,8 +102,8 @@ test("editing from inside a link updates its whole range without replacing its l
     text("Other", [link("/other")]),
   ]);
   editor.commands.setTextSelection(10);
-  assert.equal(applyBlogLink(editor, "/new"), true);
-  assert.deepEqual(runs(editor), [
+  expect(applyBlogLink(editor, "/new")).toBe(true);
+  expect(runs(editor)).toEqual([
     { text: "Before ", href: undefined, formatting: [] },
     { text: "Read ", href: "/new", formatting: [] },
     { text: "guide", href: "/new", formatting: ["bold"] },
@@ -117,8 +116,8 @@ test("editing from inside a link updates its whole range without replacing its l
 test("removing a link from an interior cursor retains the whole label and formatting", () => {
   const editor = editorFor([text("Read ", [link("/guide")]), text("guide", [link("/guide"), { type: "bold" }])]);
   editor.commands.setTextSelection(3);
-  assert.equal(removeBlogLink(editor), true);
-  assert.deepEqual(runs(editor), [
+  expect(removeBlogLink(editor)).toBe(true);
+  expect(runs(editor)).toEqual([
     { text: "Read ", href: undefined, formatting: [] },
     { text: "guide", href: undefined, formatting: ["bold"] },
   ]);
@@ -137,8 +136,8 @@ test("unsafe destinations reject insertion and link edits without changing conte
       const editor = editorFor(content);
       if (content.length) editor.commands.setTextSelection(3);
       const before = editor.getJSON();
-      assert.equal(applyBlogLink(editor, href, "New label"), false);
-      assert.deepEqual(editor.getJSON(), before);
+      expect(applyBlogLink(editor, href, "New label")).toBe(false);
+      expect(editor.getJSON()).toEqual(before);
       editor.destroy();
     }
   }
@@ -151,9 +150,9 @@ test("read-only and destroyed editors reject link changes and removals", () => {
     const before = editor.getJSON();
     if (stop === "read-only") editor.setEditable(false);
     else Object.defineProperty(editor, "isDestroyed", { value: true });
-    assert.equal(applyBlogLink(editor, "/new"), false);
-    assert.equal(removeBlogLink(editor), false);
-    assert.deepEqual(editor.getJSON(), before);
+    expect(applyBlogLink(editor, "/new")).toBe(false);
+    expect(removeBlogLink(editor)).toBe(false);
+    expect(editor.getJSON()).toEqual(before);
     editor.destroy();
   }
 });

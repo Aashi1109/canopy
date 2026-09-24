@@ -1,93 +1,185 @@
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { registerHooks } from "node:module";
-import test from "node:test";
-import { transformSync } from "next/dist/build/swc/index.js";
+import { afterAll, afterEach, expect, test, vi } from "vitest";
 
-const state = { values: [], index: 0, changes: [], uploads: [], editable: true };
+const state = vi.hoisted(() => ({ values: [], index: 0, changes: [], uploads: [], editable: true }));
 globalThis.__coverCropTest = state;
-const stub = (source) => ({
-  shortCircuit: true,
-  url: `data:text/javascript,${encodeURIComponent(source)}`,
-});
-const hooks = registerHooks({
-  resolve(specifier, context, next) {
-    if (specifier === "@/lib/routing/subdomains.ts")
-      return { shortCircuit: true, url: new URL("../lib/routing/subdomains.ts", import.meta.url).href };
-    if (!context.parentURL?.endsWith("/BlogEditor.tsx")) return next(specifier, context);
-    if (specifier === "react")
-      return stub(`
-      const s = globalThis.__coverCropTest;
-      export function useState(initial) { const i = s.index++; if (!(i in s.values)) s.values[i] = typeof initial === 'function' ? initial() : initial; return [s.values[i], value => { if (s.unmounted) s.updatesAfterUnmount++; const next = typeof value === 'function' ? value(s.values[i]) : value; if (!Object.is(next, s.values[i])) { s.values[i] = next; s.dirty = true; } }]; }
-      export function useRef(initial) { return useState(() => ({current: initial}))[0]; }
-      export function useEffect(callback, deps) { if (!s.runEffects) return; const i = s.index++, previous = s.values[i]; if (!previous || !deps || deps.some((value, j) => !Object.is(value, previous.deps[j]))) { s.values[i] = {deps, cleanup: previous?.cleanup}; s.effects.push(() => { previous?.cleanup?.(); s.values[i].cleanup = callback(); }); } }
-      export function useId() { return 'test'; }
-    `);
-    if (specifier === "next/navigation") return stub("export function useRouter() { return {}; }");
-    if (specifier === "next/link") return stub("export default function Link() {}");
-    if (specifier === "@tiptap/react")
-      return stub(
-        "const editor = {get isEditable() {return globalThis.__coverCropTest.editable}, setEditable() {}}; export function useEditor() { return editor; } export function ReactNodeViewRenderer() {} export function EditorContent() {}",
-      );
-    if (specifier === "@tiptap/starter-kit") return stub("export default {configure() { return {}; }};");
-    if (specifier === "@tiptap/extension-table") return stub("export const TableKit = {configure() { return {}; }};");
-    if (specifier === "@/components/ui/index.tsx")
-      return stub(
-        `export const toast = Object.assign(() => {}, {error(message) {globalThis.__coverCropTest.errors?.push(message);}, success() {}, dismiss() {}}); ${["BackButton", "DropdownMenuItem", "AlertBanner", "AlertDialog", "AlertDialogContent", "AlertDialogHeader", "AlertDialogTitle", "AlertDialogDescription", "AlertDialogFooter", "AlertDialogCancel", "Button", "FileUploadZone", "Input", "Label", "Textarea", "Toaster"].map((name) => `export function ${name}() {}`).join(" ")} export const Popover = {Root() {}, Trigger() {}, Portal() {}, Content() {}, Arrow() {}};`,
-      );
-    if (specifier === "@/components/ui/components/toast")
-      return stub("export function createToastManager() { return {add() {}, close() {}}; }");
-    if (specifier === "../actions") return stub("export async function mutateBlogAction() {}");
-    if (specifier === "../lib/imageUpload.ts")
-      return stub(
-        "export async function uploadBlogImageDirect(file) { const s = globalThis.__coverCropTest; s.uploads.push(file); return s.upload(); }",
-      );
-    if (specifier === "../lib/draftPersistence")
-      return stub(
-        "export function createDraftPersistence() { return {start() {}, stop() {}, attachStorage() {return null;}, change(value) {globalThis.__coverCropTest.changes.push(value)}}; }",
-      );
-    if (specifier === "../lib/useBlogTaxonomyOptions")
-      return stub("export function useBlogTaxonomyOptions(kind, initial) { return initial; }");
-    if (specifier === "../lib/imageNode")
-      return stub(
-        "export const BlogImageNode = {extend() {return {configure() {return {}}}}}; export function blogEditorImageSource(image) {return 'https://example.test/' + image.publicId;}",
-      );
-    if (specifier === "../lib/formattingExtensions") return stub("export const blogFormattingExtensions = [];");
-    if (specifier === "@/lib/markdown/codeHighlight") return stub("export const codeLowlight = {};");
-    if (specifier === "@/lib/blog/math") return stub("export const normalizeBlogMath = node => node;");
-    if (specifier === "@/lib/blog/utils")
-      return { shortCircuit: true, url: new URL("../lib/blog/utils.ts", import.meta.url).href };
-    if (specifier === "../lib/mathExtensions") return stub("export const BlogInlineMath = {}, BlogBlockMath = {};");
-    if (specifier === "../lib/imagePaste") return stub("export function pasteBlogImages() {}");
-    if (specifier === "../lib/tableEditing") return stub("export const BlogTableCell = {}, BlogTableHeader = {};");
-    if (specifier.endsWith(".css")) return stub("export default {};");
-    if (specifier.startsWith("./Blog")) {
-      const name = specifier.slice(2);
-      return stub(
-        `export function ${name}() {} ${name === "BlogFormattingToolbar" ? "export function BlogBlockMenu() {}" : ""}`,
-      );
+
+vi.mock("react", () => {
+  const s = state;
+  function useState(initial) {
+    const i = s.index++;
+    if (!(i in s.values)) s.values[i] = typeof initial === "function" ? initial() : initial;
+    return [
+      s.values[i],
+      (value) => {
+        if (s.unmounted) s.updatesAfterUnmount++;
+        const next = typeof value === "function" ? value(s.values[i]) : value;
+        if (!Object.is(next, s.values[i])) {
+          s.values[i] = next;
+          s.dirty = true;
+        }
+      },
+    ];
+  }
+  function useRef(initial) {
+    return useState(() => ({ current: initial }))[0];
+  }
+  function useEffect(callback, deps) {
+    if (!s.runEffects) return;
+    const i = s.index++,
+      previous = s.values[i];
+    if (!previous || !deps || deps.some((value, j) => !Object.is(value, previous.deps[j]))) {
+      s.values[i] = { deps, cleanup: previous?.cleanup };
+      s.effects.push(() => {
+        previous?.cleanup?.();
+        s.values[i].cleanup = callback();
+      });
     }
-    return next(specifier, context);
-  },
-  load(url, context, next) {
-    if (!url.endsWith("/BlogEditor.tsx")) return next(url, context);
-    return {
-      format: "module",
-      shortCircuit: true,
-      source: transformSync(readFileSync(new URL(url), "utf8"), {
-        filename: new URL(url).pathname,
-        jsc: {
-          parser: { syntax: "typescript", tsx: true },
-          transform: { react: { runtime: "automatic" } },
-        },
-        module: { type: "es6" },
-      }).code,
-    };
-  },
+  }
+  function useId() {
+    return "test";
+  }
+  return { useState, useRef, useEffect, useId };
 });
-const { BlogEditor } = await import("../app/admin/(protected)/blog/components/BlogEditor.tsx");
-test.after(() => {
-  hooks.deregister();
+vi.mock("next/navigation", () => ({ useRouter: () => ({}) }));
+vi.mock("next/link", () => ({ default: function Link() {} }));
+vi.mock("@tiptap/react", () => {
+  const editor = {
+    get isEditable() {
+      return state.editable;
+    },
+    setEditable() {},
+  };
+  return { useEditor: () => editor, ReactNodeViewRenderer: () => {}, EditorContent: () => {} };
+});
+vi.mock("@tiptap/starter-kit", () => ({ default: { configure: () => ({}) } }));
+vi.mock("@tiptap/extension-table", () => ({ TableKit: { configure: () => ({}) } }));
+vi.mock("@/components/ui/index.tsx", () => {
+  const toast = Object.assign(() => {}, {
+    error(message) {
+      state.errors?.push(message);
+    },
+    success() {},
+    dismiss() {},
+  });
+  const ui = { toast, Popover: { Root() {}, Trigger() {}, Portal() {}, Content() {}, Arrow() {} } };
+  for (const name of [
+    "BackButton",
+    "DropdownMenuItem",
+    "AlertBanner",
+    "AlertDialog",
+    "AlertDialogContent",
+    "AlertDialogHeader",
+    "AlertDialogTitle",
+    "AlertDialogDescription",
+    "AlertDialogFooter",
+    "AlertDialogCancel",
+    "Button",
+    "FileUploadZone",
+    "Input",
+    "Label",
+    "Textarea",
+    "Toaster",
+  ]) {
+    ui[name] = { [name]: () => {} }[name];
+  }
+  return ui;
+});
+vi.mock("@/components/ui/components/toast", () => ({ createToastManager: () => ({ add() {}, close() {} }) }));
+vi.mock("@/app/admin/(protected)/blog/actions", () => ({ mutateBlogAction: async () => {} }));
+vi.mock("@/app/admin/(protected)/blog/lib/imageUpload.ts", () => ({
+  uploadBlogImageDirect: async (file) => {
+    state.uploads.push(file);
+    return state.upload();
+  },
+}));
+vi.mock("@/app/admin/(protected)/blog/lib/draftPersistence", () => ({
+  createDraftPersistence: () => ({
+    start() {},
+    stop() {},
+    attachStorage() {
+      return null;
+    },
+    change(value) {
+      state.changes.push(value);
+    },
+  }),
+}));
+vi.mock("@/app/admin/(protected)/blog/lib/useBlogTaxonomyOptions", () => ({
+  useBlogTaxonomyOptions: (kind, initial) => initial,
+}));
+vi.mock("@/app/admin/(protected)/blog/lib/imageNode", () => ({
+  BlogImageNode: {
+    extend() {
+      return {
+        configure() {
+          return {};
+        },
+      };
+    },
+  },
+  blogEditorImageSource: (image) => "https://example.test/" + image.publicId,
+}));
+vi.mock("@/app/admin/(protected)/blog/lib/formattingExtensions", () => ({ blogFormattingExtensions: [] }));
+vi.mock("@/lib/markdown/codeHighlight", () => ({ codeLowlight: {} }));
+vi.mock("@/lib/blog/math", () => ({ normalizeBlogMath: (node) => node }));
+vi.mock("@/app/admin/(protected)/blog/lib/mathExtensions", () => ({ BlogInlineMath: {}, BlogBlockMath: {} }));
+vi.mock("@/app/admin/(protected)/blog/lib/imagePaste", () => ({ pasteBlogImages: () => {} }));
+vi.mock("@/app/admin/(protected)/blog/lib/tableEditing", () => ({ BlogTableCell: {}, BlogTableHeader: {} }));
+vi.mock("katex/dist/katex.min.css", () => ({ default: {} }));
+vi.mock("@/app/admin/(protected)/blog/components/BlogEditor.module.css", () => ({ default: {} }));
+vi.mock("@/components/content/codeHighlight.module.css", () => ({ default: {} }));
+vi.mock("@/components/content/content.module.css", () => ({ default: {} }));
+vi.mock("@/app/admin/(protected)/blog/components/BlogEditorShell", () => ({
+  BlogEditorShell: function BlogEditorShell() {},
+}));
+vi.mock("@/app/admin/(protected)/blog/components/BlogAssistantPanel", () => ({
+  BlogAssistantPanel: function BlogAssistantPanel() {},
+}));
+vi.mock("@/app/admin/(protected)/blog/components/BlogArticleOutline", () => ({
+  BlogArticleOutline: function BlogArticleOutline() {},
+}));
+vi.mock("@/app/admin/(protected)/blog/components/BlogSelectionToolbar", () => ({
+  BlogSelectionToolbar: function BlogSelectionToolbar() {},
+}));
+vi.mock("@/app/admin/(protected)/blog/components/BlogHistoryPanel", () => ({
+  BlogHistoryPanel: function BlogHistoryPanel() {},
+}));
+vi.mock("@/app/admin/(protected)/blog/components/BlogTableControls", () => ({
+  BlogTableControls: function BlogTableControls() {},
+}));
+vi.mock("@/app/admin/(protected)/blog/components/BlogBlockControls", () => ({
+  BlogBlockControls: function BlogBlockControls() {},
+}));
+vi.mock("@/app/admin/(protected)/blog/components/BlogImageView", () => ({
+  BlogImageView: function BlogImageView() {},
+}));
+vi.mock("@/app/admin/(protected)/blog/components/BlogTaskItemView", () => ({
+  BlogTaskItemView: function BlogTaskItemView() {},
+}));
+vi.mock("@/app/admin/(protected)/blog/components/BlogCodeBlockView", () => ({
+  BlogCodeBlockView: function BlogCodeBlockView() {},
+}));
+vi.mock("@/app/admin/(protected)/blog/components/BlogImageCropDialog", () => ({
+  BlogImageCropDialog: function BlogImageCropDialog() {},
+}));
+vi.mock("@/app/admin/(protected)/blog/components/BlogPostSettings", () => ({
+  BlogPostSettings: function BlogPostSettings() {},
+}));
+vi.mock("@/app/admin/(protected)/blog/components/BlogPublishPanel", () => ({
+  BlogPublishPanel: function BlogPublishPanel() {},
+}));
+vi.mock("@/app/admin/(protected)/blog/components/BlogFormattingToolbar", () => ({
+  BlogFormattingToolbar: function BlogFormattingToolbar() {},
+  BlogBlockMenu: function BlogBlockMenu() {},
+}));
+
+const { BlogEditor } = await import("@/app/admin/(protected)/blog/components/BlogEditor.tsx");
+
+const cleanups = [];
+afterEach(() => {
+  while (cleanups.length) cleanups.pop()();
+});
+afterAll(() => {
   delete globalThis.__coverCropTest;
 });
 
@@ -152,22 +244,22 @@ test("cover crop preserves metadata and current draft, rejects failures and stal
 
   reset();
   button(render(), "Crop cover").props.onClick();
-  assert.ok(dialog());
+  expect(dialog()).toBeTruthy();
   dialog().props.onClose();
-  assert.equal(dialog(), undefined);
-  assert.equal(state.changes.length, 0);
-  assert.equal(state.uploads.length, 0);
+  expect(dialog()).toBe(undefined);
+  expect(state.changes.length).toBe(0);
+  expect(state.uploads.length).toBe(0);
 
   button(render(), "Crop cover").props.onClick();
   state.upload = async () => ({ ok: false, message: "Upload failed" });
-  await assert.rejects(dialog().props.onApply(file));
-  assert.equal(state.changes.length, 0);
+  await expect(dialog().props.onApply(file)).rejects.toThrow();
+  expect(state.changes.length).toBe(0);
   state.upload = async () => ({ ok: true, data: cropped });
   const title = render().find((node) => node.props.id === "blog-title");
   title.props.onChange({ target: { value: "Updated title" } });
   await dialog().props.onApply(file);
-  assert.equal(state.changes.at(-1).title, "Updated title");
-  assert.deepEqual(state.changes.at(-1).coverImage, {
+  expect(state.changes.at(-1).title).toBe("Updated title");
+  expect(state.changes.at(-1).coverImage).toEqual({
     ...cropped,
     alt: original.alt,
     caption: original.caption,
@@ -177,9 +269,9 @@ test("cover crop preserves metadata and current draft, rejects failures and stal
   button(render(), "Crop cover").props.onClick();
   const apply = dialog().props.onApply;
   button(render(), "Remove cover").props.onClick();
-  await assert.rejects(apply(file));
-  assert.equal(state.uploads.length, 0);
-  assert.equal(state.changes.at(-1).coverImage, null);
+  await expect(apply(file)).rejects.toThrow();
+  expect(state.uploads.length).toBe(0);
+  expect(state.changes.at(-1).coverImage).toBe(null);
 
   reset();
   button(render(), "Crop cover").props.onClick();
@@ -187,11 +279,11 @@ test("cover crop preserves metadata and current draft, rejects failures and stal
     state.editable = false;
     return { ok: true, data: cropped };
   };
-  await assert.rejects(dialog().props.onApply(file));
-  assert.equal(state.changes.length, 0);
+  await expect(dialog().props.onApply(file)).rejects.toThrow();
+  expect(state.changes.length).toBe(0);
 });
 
-test("cover settings open only on activation and remain open until dismissed", (t) => {
+test("cover settings open only on activation and remain open until dismissed", () => {
   state.values = [];
   state.changes = [];
   state.editable = true;
@@ -242,32 +334,33 @@ test("cover settings open only on activation and remain open until dismissed", (
     configurable: true,
     value: { getElementById: () => ({ focus() {} }) },
   });
-  t.after(() => {
+  vi.useFakeTimers({ toFake: ["setTimeout"] });
+  try {
+    expect(render().root.open).toBe(false);
+    for (const pointerType of ["mouse", "pen", "touch"]) {
+      render().trigger.onPointerEnter?.({ pointerType });
+      render().trigger.onFocus?.({});
+      vi.advanceTimersByTime(1000);
+      expect(render().root.open).toBe(false);
+    }
+    render().trigger.onClick({ preventDefault() {} });
+    expect(render().root.open).toBe(true);
+    render().trigger.onPointerLeave?.();
+    render().panel.onPointerLeave?.();
+    render().panel.onBlurCapture?.();
+    vi.advanceTimersByTime(1000);
+    expect(render().root.open).toBe(true);
+    render().root.onOpenChange(false);
+    expect(render().root.open).toBe(false);
+    render().trigger.onPointerEnter?.({ pointerType: "mouse" });
+    vi.advanceTimersByTime(1000);
+    expect(render().root.open).toBe(false);
+    expect(state.changes.length).toBe(0);
+  } finally {
+    vi.useRealTimers();
     if (previousDocument) Object.defineProperty(globalThis, "document", previousDocument);
     else delete globalThis.document;
-  });
-  t.mock.timers.enable({ apis: ["setTimeout"] });
-
-  assert.equal(render().root.open, false);
-  for (const pointerType of ["mouse", "pen", "touch"]) {
-    render().trigger.onPointerEnter?.({ pointerType });
-    render().trigger.onFocus?.({});
-    t.mock.timers.tick(1000);
-    assert.equal(render().root.open, false);
   }
-  render().trigger.onClick({ preventDefault() {} });
-  assert.equal(render().root.open, true);
-  render().trigger.onPointerLeave?.();
-  render().panel.onPointerLeave?.();
-  render().panel.onBlurCapture?.();
-  t.mock.timers.tick(1000);
-  assert.equal(render().root.open, true);
-  render().root.onOpenChange(false);
-  assert.equal(render().root.open, false);
-  render().trigger.onPointerEnter?.({ pointerType: "mouse" });
-  t.mock.timers.tick(1000);
-  assert.equal(render().root.open, false);
-  assert.equal(state.changes.length, 0);
 });
 
 const savedCover = {
@@ -287,7 +380,7 @@ const uploadedCover = {
   caption: "",
 };
 
-function coverUploadHarness(t, coverImage = null) {
+function coverUploadHarness(coverImage = null) {
   Object.assign(state, {
     values: [],
     index: 0,
@@ -319,11 +412,11 @@ function coverUploadHarness(t, coverImage = null) {
   });
   const created = [];
   const revoked = [];
-  t.mock.method(URL, "createObjectURL", (file) => {
+  const createSpy = vi.spyOn(URL, "createObjectURL").mockImplementation((file) => {
     created.push(file);
     return `blob:cover-preview-${created.length}`;
   });
-  t.mock.method(URL, "revokeObjectURL", (url) => revoked.push(url));
+  const revokeSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation((url) => revoked.push(url));
   const props = {
     actorId: "admin",
     canEdit: true,
@@ -361,9 +454,11 @@ function coverUploadHarness(t, coverImage = null) {
     for (const value of state.values) value?.cleanup?.();
     state.unmounted = true;
   }
-  t.after(() => {
+  cleanups.push(() => {
     unmount();
     state.runEffects = false;
+    createSpy.mockRestore();
+    revokeSpy.mockRestore();
     for (const [name, descriptor] of originalGlobals) {
       if (descriptor) Object.defineProperty(globalThis, name, descriptor);
       else delete globalThis[name];
@@ -390,33 +485,28 @@ function coverUploadHarness(t, coverImage = null) {
   };
 }
 
-test("a new cover shows its local preview immediately and persists only the completed image", async (t) => {
-  const h = coverUploadHarness(t);
+test("a new cover shows its local preview immediately and persists only the completed image", async () => {
+  const h = coverUploadHarness();
   h.select();
   const pending = h.render();
-  assert.equal(pending.find((node) => node.type === "img").props.src, "blob:cover-preview-1");
-  assert.equal(pending.find((node) => node.type === "img").props.srcSet, undefined);
-  assert.equal(
-    pending.find((node) => node.props.id === "blog-add-cover"),
-    undefined,
-  );
-  assert.deepEqual(h.created, [h.file]);
-  assert.deepEqual(state.uploads, [h.file]);
-  assert.equal(state.changes.length, 0);
-  assert.deepEqual(h.revoked, []);
+  expect(pending.find((node) => node.type === "img").props.src).toBe("blob:cover-preview-1");
+  expect(pending.find((node) => node.type === "img").props.srcSet).toBe(undefined);
+  expect(pending.find((node) => node.props.id === "blog-add-cover")).toBe(undefined);
+  expect(h.created).toEqual([h.file]);
+  expect(state.uploads).toEqual([h.file]);
+  expect(state.changes.length).toBe(0);
+  expect(h.revoked).toEqual([]);
 
   pending
     .find((node) => node.props.id === "blog-title")
     .props.onChange({ target: { value: "Updated while uploading" } });
-  assert.equal(state.changes.at(-1).coverImage, null);
+  expect(state.changes.at(-1).coverImage).toBe(null);
   await h.finish({ ok: true, data: uploadedCover });
   const delivered = h.render().find((node) => node.type === "img").props;
-  assert.equal(
-    delivered.src,
+  expect(delivered.src).toBe(
     "https://res.cloudinary.com/demo/image/upload/c_limit,w_800/q_auto/f_auto/v2/uploaded-cover.png",
   );
-  assert.equal(
-    delivered.srcSet,
+  expect(delivered.srcSet).toBe(
     [320, 640, 800]
       .map(
         (width) =>
@@ -424,73 +514,68 @@ test("a new cover shows its local preview immediately and persists only the comp
       )
       .join(", "),
   );
-  assert.ok(delivered.sizes);
-  assert.equal(delivered.width, 800);
-  assert.equal(delivered.height, 600);
-  assert.equal(state.changes.at(-1).title, "Updated while uploading");
-  assert.deepEqual(state.changes.at(-1).coverImage, uploadedCover);
-  assert.deepEqual(h.revoked, ["blob:cover-preview-1"]);
+  expect(delivered.sizes).toBeTruthy();
+  expect(delivered.width).toBe(800);
+  expect(delivered.height).toBe(600);
+  expect(state.changes.at(-1).title).toBe("Updated while uploading");
+  expect(state.changes.at(-1).coverImage).toEqual(uploadedCover);
+  expect(h.revoked).toEqual(["blob:cover-preview-1"]);
   h.unmount();
-  assert.deepEqual(h.revoked, ["blob:cover-preview-1"]);
+  expect(h.revoked).toEqual(["blob:cover-preview-1"]);
 });
 
 for (const original of [null, savedCover]) {
-  test(`failed ${original ? "replacement restores the saved cover" : "first cover restores the upload control"} and releases its preview`, async (t) => {
-    const h = coverUploadHarness(t, original);
+  test(`failed ${original ? "replacement restores the saved cover" : "first cover restores the upload control"} and releases its preview`, async () => {
+    const h = coverUploadHarness(original);
     h.select();
-    assert.equal(h.render().find((node) => node.type === "img").props.src, "blob:cover-preview-1");
+    expect(h.render().find((node) => node.type === "img").props.src).toBe("blob:cover-preview-1");
     await h.finish({ ok: false, message: "Upload failed" });
     const restored = h.render();
     if (original)
-      assert.equal(
-        restored.find((node) => node.type === "img").props.src,
+      expect(restored.find((node) => node.type === "img").props.src).toBe(
         "https://res.cloudinary.com/demo/image/upload/c_limit,w_800/q_auto/f_auto/v1/saved-cover.png",
       );
     else {
-      assert.equal(
-        restored.find((node) => node.type === "img"),
-        undefined,
-      );
-      assert.ok(restored.find((node) => node.props.id === "blog-add-cover"));
+      expect(restored.find((node) => node.type === "img")).toBe(undefined);
+      expect(restored.find((node) => node.props.id === "blog-add-cover")).toBeTruthy();
     }
-    assert.equal(state.changes.length, 0);
-    assert.deepEqual(state.errors, ["Upload failed"]);
-    assert.deepEqual(h.revoked, ["blob:cover-preview-1"]);
+    expect(state.changes.length).toBe(0);
+    expect(state.errors).toEqual(["Upload failed"]);
+    expect(h.revoked).toEqual(["blob:cover-preview-1"]);
   });
 }
 
-test("unmount releases an uploading cover preview and ignores late upload success", async (t) => {
-  const h = coverUploadHarness(t, savedCover);
+test("unmount releases an uploading cover preview and ignores late upload success", async () => {
+  const h = coverUploadHarness(savedCover);
   h.select();
   h.render();
   h.unmount();
-  assert.deepEqual(h.revoked, ["blob:cover-preview-1"]);
+  expect(h.revoked).toEqual(["blob:cover-preview-1"]);
   await h.finish({ ok: true, data: uploadedCover });
-  assert.equal(state.changes.length, 0);
-  assert.equal(state.updatesAfterUnmount, 0);
-  assert.deepEqual(h.revoked, ["blob:cover-preview-1"]);
+  expect(state.changes.length).toBe(0);
+  expect(state.updatesAfterUnmount).toBe(0);
+  expect(h.revoked).toEqual(["blob:cover-preview-1"]);
 });
 
-test("cover cropping previews locally while pending and retains saved descriptions on completion", async (t) => {
-  const h = coverUploadHarness(t, savedCover);
+test("cover cropping previews locally while pending and retains saved descriptions on completion", async () => {
+  const h = coverUploadHarness(savedCover);
   h.render()
     .find((node) => node.type.name === "Button" && [node.props.children].flat().includes("Crop cover"))
     .props.onClick();
   const cropDialog = h.render().find((node) => node.type.name === "BlogImageCropDialog");
-  assert.equal(cropDialog.props.src, "https://example.test/saved-cover");
+  expect(cropDialog.props.src).toBe("https://example.test/saved-cover");
   const applying = cropDialog.props.onApply(h.file);
-  assert.equal(h.render().find((node) => node.type === "img").props.src, "blob:cover-preview-1");
-  assert.equal(state.changes.length, 0);
+  expect(h.render().find((node) => node.type === "img").props.src).toBe("blob:cover-preview-1");
+  expect(state.changes.length).toBe(0);
   await h.finish({ ok: true, data: uploadedCover });
   await applying;
-  assert.deepEqual(state.changes.at(-1).coverImage, {
+  expect(state.changes.at(-1).coverImage).toEqual({
     ...uploadedCover,
     alt: savedCover.alt,
     caption: savedCover.caption,
   });
-  assert.equal(
-    h.render().find((node) => node.type === "img").props.src,
+  expect(h.render().find((node) => node.type === "img").props.src).toBe(
     "https://res.cloudinary.com/demo/image/upload/c_limit,w_800/q_auto/f_auto/v2/uploaded-cover.png",
   );
-  assert.deepEqual(h.revoked, ["blob:cover-preview-1"]);
+  expect(h.revoked).toEqual(["blob:cover-preview-1"]);
 });

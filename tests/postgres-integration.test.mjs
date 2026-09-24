@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
+import { expect, onTestFinished, test } from "vitest";
 import { randomUUID } from "node:crypto";
-import test from "node:test";
 
 import {
   assignUserRoles,
@@ -39,13 +38,10 @@ async function toolManifest() {
 
 const enabled = process.env.CANOPY_INTEGRATION === "1" && Boolean(process.env.DATABASE_URL);
 
-test(
+test.runIf(enabled)(
   "PostgreSQL enforces live roles, Admin safeguards, tools, templates, and audit writes",
-  {
-    skip: enabled ? false : "set CANOPY_INTEGRATION=1 with a migrated disposable DATABASE_URL",
-  },
-  async (context) => {
-    context.after(async () => sqlClient.end());
+  async () => {
+    onTestFinished(async () => sqlClient.end());
 
     const suffix = randomUUID();
     const actorId = `integration-actor-${suffix}`;
@@ -60,10 +56,10 @@ test(
         (SELECT COUNT(*)::integer FROM invoice_templates WHERE status = 'published' AND is_default) AS default_count
     `)
     ).rows;
-    assert.equal(catalog.role_count, 2);
-    assert.ok(catalog.tool_count >= 8);
-    assert.ok(catalog.template_count >= 6);
-    assert.equal(catalog.default_count, 1);
+    expect(catalog.role_count).toBe(2);
+    expect(catalog.tool_count >= 8).toBeTruthy();
+    expect(catalog.template_count >= 6).toBeTruthy();
+    expect(catalog.default_count).toBe(1);
 
     await db.execute(sql`
       INSERT INTO auth_users (id, name, email, email_verified, status)
@@ -77,24 +73,24 @@ test(
       WHERE role_id = 'user' AND user_id IN (${actorId}, ${targetId})
     `)
     ).rows;
-    assert.equal(defaultAssignments.length, 2);
+    expect(defaultAssignments.length).toBe(2);
 
     await db.execute(sql`
       INSERT INTO user_roles (user_id, role_id) VALUES (${actorId}, 'admin')
     `);
     const authorization = await getUserAuthorization(actorId);
-    assert.equal(authorization.access.admin?.enter, true);
+    expect(authorization.access.admin?.enter).toBe(true);
 
     const role = await createCustomRole(actorId, {
       name: `Integration editor ${suffix}`,
       description: "Edits invoice templates during the PostgreSQL integration test.",
     });
-    assert.deepEqual(role.access, {});
+    expect(role.access).toEqual({});
     await updateCustomRole(actorId, role.id, {
       access: { templates: { view: true, edit: true } },
     });
     await assignUserRoles(actorId, targetId, [role.id]);
-    await assert.rejects(() => deleteCustomRole(actorId, role.id), /assigned to users/i);
+    await expect(() => deleteCustomRole(actorId, role.id)).rejects.toThrow(/assigned to users/i);
     await assignUserRoles(actorId, targetId, ["user"]);
     await deleteCustomRole(actorId, role.id);
 
@@ -108,13 +104,13 @@ test(
       SELECT COUNT(*)::integer AS count FROM auth_sessions WHERE user_id = ${targetId}
     `)
     ).rows;
-    assert.equal(sessionCount.count, 0);
+    expect(sessionCount.count).toBe(0);
     await setUserStatus(actorId, targetId, "active");
 
     await setManagedToolEnabled(actorId, "devtools.json-formatter", false);
-    assert.equal(await getAvailableToolBySlug("devtools", "json-formatter", await toolManifest()), undefined);
+    expect(await getAvailableToolBySlug("devtools", "json-formatter", await toolManifest())).toBe(undefined);
     await setManagedToolEnabled(actorId, "devtools.json-formatter", true);
-    assert.ok(await getAvailableToolBySlug("devtools", "json-formatter", await toolManifest()));
+    expect(await getAvailableToolBySlug("devtools", "json-formatter", await toolManifest())).toBeTruthy();
 
     const seed = seedTemplates[0];
     const template = await createInvoiceTemplate(actorId, {
@@ -134,16 +130,14 @@ test(
       WHERE status = 'published' AND is_default
     `)
     ).rows;
-    assert.equal(defaultCount.count, 1);
+    expect(defaultCount.count).toBe(1);
 
-    await assert.rejects(() => assignUserRoles(actorId, actorId, ["user"]), /final Admin/i);
-    await assert.rejects(() => setUserStatus(actorId, actorId, "suspended"), /final Admin/i);
-    await assert.rejects(
-      () => db.execute(sql`DELETE FROM user_roles WHERE user_id = ${actorId} AND role_id = 'admin'`),
-      (error) => /final Admin/i.test(error.cause?.message ?? error.message),
-    );
-    await assert.rejects(
-      () => db.execute(sql`UPDATE roles SET name = 'Changed' WHERE id = 'admin'`),
+    await expect(() => assignUserRoles(actorId, actorId, ["user"])).rejects.toThrow(/final Admin/i);
+    await expect(() => setUserStatus(actorId, actorId, "suspended")).rejects.toThrow(/final Admin/i);
+    await expect(() =>
+      db.execute(sql`DELETE FROM user_roles WHERE user_id = ${actorId} AND role_id = 'admin'`),
+    ).rejects.toSatisfy((error) => /final Admin/i.test(error.cause?.message ?? error.message));
+    await expect(() => db.execute(sql`UPDATE roles SET name = 'Changed' WHERE id = 'admin'`)).rejects.toSatisfy(
       (error) => /System roles are protected/i.test(error.cause?.message ?? error.message),
     );
 
@@ -152,6 +146,7 @@ test(
       SELECT COUNT(*)::integer AS count FROM audit_events WHERE actor_user_id = ${actorId}
     `)
     ).rows;
-    assert.ok(auditCount.count >= 10);
+    expect(auditCount.count >= 10).toBeTruthy();
   },
+  60000,
 );

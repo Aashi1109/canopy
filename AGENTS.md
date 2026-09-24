@@ -133,8 +133,8 @@ tooling instead of source-text assertions.
 For code changes:
 
 1. Run the smallest relevant test while iterating.
-2. Run `pnpm test`.
-3. Run `pnpm lint`.
+2. Run only affected test suites with `node --test tests/<affected>.test.mjs`, including tests for affected consumers of shared code. Run the full suite with `pnpm test` only when explicitly requested or there are more changes than ideal changes done, do not run it automatically before every commit.
+3. Run only the typecheck or lint checks relevant to the changed surface; use `pnpm lint` when the application-wide TypeScript check is necessary.
 4. Never run `pnpm build` unless asked or something type error or issue come in project which may affect build.
 5. Run focused checks for affected shared modules.
 6. Finish with `git diff --check` and `git status --short`; inspect all changed and untracked files.

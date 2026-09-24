@@ -1,13 +1,9 @@
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { registerHooks } from "node:module";
-import test from "node:test";
-import { transformSync } from "next/dist/build/swc/index.js";
 import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { history, undo } from "@tiptap/pm/history";
 import { EditorState } from "@tiptap/pm/state";
-import { BlogImageNode } from "../app/admin/(protected)/blog/lib/imageNode.ts";
+import { expect, onTestFinished, test, vi } from "vitest";
+import { BlogImageNode } from "@/app/admin/(protected)/blog/lib/imageNode.ts";
 
 const componentState = {
   values: [],
@@ -18,93 +14,78 @@ const componentState = {
   updatesAfterUnmount: 0,
 };
 globalThis.__blogImageViewTest = componentState;
-const stub = (source) => ({
-  shortCircuit: true,
-  url: `data:text/javascript,${encodeURIComponent(source)}`,
-});
-const hooks = registerHooks({
-  resolve(specifier, context, next) {
-    if (context.parentURL?.endsWith("/BlogImageView.tsx")) {
-      if (specifier === "react")
-        return stub(`
-        const s = globalThis.__blogImageViewTest;
-        export function useState(initial) {
-          const i = s.index++;
-          if (!(i in s.values)) s.values[i] = typeof initial === 'function' ? initial() : initial;
-          return [s.values[i], value => {
-            if (s.unmounted) s.updatesAfterUnmount++;
-            const next = typeof value === 'function' ? value(s.values[i]) : value;
-            if (!Object.is(next, s.values[i])) { s.values[i] = next; s.dirty = true; }
-          }];
+
+// Fake React hooks so the component can be hand-rendered; JSX still uses the real
+// react/jsx-runtime, which returns walkable element objects.
+vi.mock("react", () => {
+  const store = () => globalThis.__blogImageViewTest;
+  function useState(initial) {
+    const s = store();
+    const i = s.index++;
+    if (!(i in s.values)) s.values[i] = typeof initial === "function" ? initial() : initial;
+    return [
+      s.values[i],
+      (value) => {
+        if (s.unmounted) s.updatesAfterUnmount++;
+        const next = typeof value === "function" ? value(s.values[i]) : value;
+        if (!Object.is(next, s.values[i])) {
+          s.values[i] = next;
+          s.dirty = true;
         }
-        export function useRef(initial) { return useState(() => ({ current: initial }))[0]; }
-        export function useId() { return 'image-test'; }
-        export function useEffect(callback, deps) {
-          const i = s.index++, previous = s.values[i];
-          if (!previous || !deps || deps.some((value, j) => !Object.is(value, previous.deps[j]))) {
-            s.values[i] = { deps, cleanup: previous?.cleanup };
-            s.effects.push(() => { previous?.cleanup?.(); s.values[i].cleanup = callback(); });
-          }
-        }
-      `);
-      if (specifier === "@tiptap/react") return stub("export function NodeViewWrapper() {};");
-      if (specifier === "@/lib/blog/utils")
-        return { shortCircuit: true, url: new URL("../lib/blog/utils.ts", import.meta.url).href };
-      if (specifier === "@/components/ui/index.tsx")
-        return stub(`
-        ${["Button", "Input", "Label", "Tooltip", "TooltipContent", "TooltipProvider", "TooltipTrigger"].map((name) => `export function ${name}() {}`).join(" ")}
-        export const Popover = { Root() {}, Anchor() {}, Portal() {}, Content() {} };
-      `);
+      },
+    ];
+  }
+  function useRef(initial) {
+    return useState(() => ({ current: initial }))[0];
+  }
+  function useId() {
+    return "image-test";
+  }
+  function useEffect(callback, deps) {
+    const s = store();
+    const i = s.index++;
+    const previous = s.values[i];
+    if (!previous || !deps || deps.some((value, j) => !Object.is(value, previous.deps[j]))) {
+      s.values[i] = { deps, cleanup: previous?.cleanup };
+      s.effects.push(() => {
+        previous?.cleanup?.();
+        s.values[i].cleanup = callback();
+      });
     }
-    if (specifier === "./BlogImageCropDialog.tsx")
-      return {
-        url: "data:text/javascript,export function BlogImageCropDialog() { return null; }",
-        shortCircuit: true,
-      };
-    return next(specifier, context);
-  },
-  load(url, context, next) {
-    if (url.endsWith(".css")) return { format: "module", shortCircuit: true, source: "export default {};" };
-    if (url.endsWith(".png"))
-      return {
-        format: "module",
-        shortCircuit: true,
-        source: 'export default {src:"/test-logo.png"};',
-      };
-    if (!url.endsWith(".tsx")) return next(url, context);
-    return {
-      format: "module",
-      shortCircuit: true,
-      source: transformSync(readFileSync(new URL(url), "utf8"), {
-        filename: new URL(url).pathname,
-        jsc: {
-          parser: { syntax: "typescript", tsx: true },
-          transform: { react: { runtime: "automatic" } },
-        },
-        module: { type: "es6" },
-      }).code,
-    };
-  },
+  }
+  const mod = { useState, useRef, useId, useEffect };
+  return { ...mod, default: mod };
 });
+vi.mock("@tiptap/react", () => ({ NodeViewWrapper: () => {} }));
+vi.mock("@/components/ui/index.tsx", () => ({
+  Button: () => {},
+  Input: () => {},
+  Label: () => {},
+  Tooltip: () => {},
+  TooltipContent: () => {},
+  TooltipProvider: () => {},
+  TooltipTrigger: () => {},
+  Popover: { Root() {}, Anchor() {}, Portal() {}, Content() {} },
+}));
+vi.mock("@/app/admin/(protected)/blog/components/BlogImageCropDialog.tsx", () => ({
+  BlogImageCropDialog: () => null,
+}));
+
 const { BlogImageView, resizedImageWidth, uploadBlogImageReplacement } =
-  await import("../app/admin/(protected)/blog/components/BlogImageView.tsx");
-test.after(() => {
-  hooks.deregister();
-  delete globalThis.__blogImageViewTest;
-});
+  await import("@/app/admin/(protected)/blog/components/BlogImageView.tsx");
 
 test("image resizing follows its anchored edge and stays within the document width", () => {
-  assert.equal(resizedImageWidth(50, 80, 800, "left"), 60);
-  assert.equal(resizedImageWidth(50, -80, 800, "left"), 40);
-  assert.equal(resizedImageWidth(50, 80, 800, "center"), 70);
-  assert.equal(resizedImageWidth(50, -80, 800, "center"), 30);
-  assert.equal(resizedImageWidth(50, -80, 800, "right"), 60);
-  assert.equal(resizedImageWidth(50, 80, 800, "right"), 40);
-  assert.equal(resizedImageWidth(50, 99999, 800, "left"), 100);
-  assert.equal(resizedImageWidth(50, -99999, 800, "left"), 10);
-  assert.equal(resizedImageWidth(50, 3, 800, "left"), 50);
-  assert.equal(resizedImageWidth(50, 4, 800, "left"), 51);
-  assert.equal(resizedImageWidth(50, 100, 0, "center"), 50);
+  expect(resizedImageWidth(50, 80, 800, "left")).toBe(60);
+  expect(resizedImageWidth(50, -80, 800, "left")).toBe(40);
+  expect(resizedImageWidth(50, 80, 800, "center")).toBe(70);
+  expect(resizedImageWidth(50, -80, 800, "center")).toBe(30);
+  expect(resizedImageWidth(50, -80, 800, "right")).toBe(60);
+  expect(resizedImageWidth(50, 80, 800, "right")).toBe(40);
+  expect(resizedImageWidth(50, 99999, 800, "left")).toBe(100);
+  expect(resizedImageWidth(50, -99999, 800, "left")).toBe(10);
+  expect(resizedImageWidth(50, 3, 800, "left")).toBe(50);
+  expect(resizedImageWidth(50, 4, 800, "left")).toBe(51);
+  expect(resizedImageWidth(50, 100, 0, "center")).toBe(50);
 });
 
 const source = {
@@ -152,7 +133,7 @@ function imageEditor() {
   };
 }
 
-function imageViewHarness(t, selected = false) {
+function imageViewHarness(selected = false) {
   Object.assign(componentState, {
     values: [],
     index: 0,
@@ -214,90 +195,91 @@ function imageViewHarness(t, selected = false) {
           wrapper: nodes.find((node) => node.type.name === "NodeViewWrapper").props,
         };
     }
-    assert.fail("Image view did not settle after its effects");
+    expect.fail("Image view did not settle after its effects");
   }
   function unmount() {
     if (componentState.unmounted) return;
     for (const value of componentState.values) value?.cleanup?.();
     componentState.unmounted = true;
   }
-  t.after(() => {
+  onTestFinished(() => {
     unmount();
     if (previousDocument) Object.defineProperty(globalThis, "document", previousDocument);
     else delete globalThis.document;
+    vi.useRealTimers();
   });
-  t.mock.timers.enable({ apis: ["setTimeout"] });
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
   return { render, props, calls, document, unmount };
 }
 
-test("image hover shows settings without selecting or editing and bridges to focused controls", (t) => {
-  const h = imageViewHarness(t);
-  assert.equal(h.render().root.open, false);
+test("image hover shows settings without selecting or editing and bridges to focused controls", () => {
+  const h = imageViewHarness();
+  expect(h.render().root.open).toBe(false);
   h.render().figure.onPointerEnter({ pointerType: "mouse" });
-  assert.equal(h.render().root.open, true);
+  expect(h.render().root.open).toBe(true);
   let autofocusPrevented = false;
   h.render().panel.onOpenAutoFocus({
     preventDefault() {
       autofocusPrevented = true;
     },
   });
-  assert.equal(autofocusPrevented, true);
-  assert.deepEqual(h.calls, { select: 0, focus: 0, changes: 0 });
+  expect(autofocusPrevented).toBe(true);
+  expect(h.calls).toEqual({ select: 0, focus: 0, changes: 0 });
 
   h.render().figure.onPointerLeave();
-  t.mock.timers.tick(100);
+  vi.advanceTimersByTime(100);
   h.render().panel.onPointerEnter();
-  t.mock.timers.tick(250);
-  assert.equal(h.render().root.open, true);
+  vi.advanceTimersByTime(250);
+  expect(h.render().root.open).toBe(true);
   const field = {};
   h.render().panel.ref.current = { contains: (node) => node === field };
   h.document.activeElement = field;
   h.render().panel.onFocusCapture();
   h.render().panel.onPointerLeave();
-  t.mock.timers.tick(250);
-  assert.equal(h.render().root.open, true);
+  vi.advanceTimersByTime(250);
+  expect(h.render().root.open).toBe(true);
   h.document.activeElement = null;
   h.render().panel.onBlurCapture();
-  t.mock.timers.tick(250);
-  assert.equal(h.render().root.open, false);
-  assert.deepEqual(h.calls, { select: 0, focus: 0, changes: 0 });
+  vi.advanceTimersByTime(250);
+  expect(h.render().root.open).toBe(false);
+  expect(h.calls).toEqual({ select: 0, focus: 0, changes: 0 });
 
   h.render().figure.onPointerEnter({ pointerType: "touch" });
-  assert.equal(h.render().root.open, false);
+  expect(h.render().root.open).toBe(false);
   h.render().button.onClick();
-  assert.equal(h.render().root.open, true);
-  assert.deepEqual(h.calls, { select: 1, focus: 1, changes: 0 });
+  expect(h.render().root.open).toBe(true);
+  expect(h.calls).toEqual({ select: 1, focus: 1, changes: 0 });
   h.render().root.onOpenChange(false);
-  assert.equal(h.render().root.open, false);
+  expect(h.render().root.open).toBe(false);
   h.props.node = h.props.editor.state.doc.nodeAt(0);
-  assert.equal(h.render().root.open, false);
+  expect(h.render().root.open).toBe(false);
   h.render().figure.onPointerEnter({ pointerType: "mouse" });
-  assert.equal(h.render().root.open, true);
+  expect(h.render().root.open).toBe(true);
   h.render().panel.onEscapeKeyDown();
   h.render().root.onOpenChange(false);
-  assert.equal(h.render().root.open, false);
+  expect(h.render().root.open).toBe(false);
   h.render().button.onFocus();
-  assert.equal(h.render().root.open, true);
+  expect(h.render().root.open).toBe(true);
   h.render().root.onOpenChange(false);
   h.props.selected = false;
   h.render();
   h.props.selected = true;
-  assert.equal(h.render().root.open, true);
+  expect(h.render().root.open).toBe(true);
 });
 
-test("image drag dismisses controls, resizing keeps them open, and unmount cancels hover work", (t) => {
-  const h = imageViewHarness(t);
+test("image drag dismisses controls, resizing keeps them open, and unmount cancels hover work", () => {
+  const h = imageViewHarness();
   h.render().figure.onPointerEnter({ pointerType: "mouse" });
-  assert.equal(h.render().root.open, true);
+  expect(h.render().root.open).toBe(true);
   h.render().image.onDragStart();
-  assert.equal(h.render().root.open, false);
+  expect(h.render().root.open).toBe(false);
   h.props.selected = true;
-  assert.equal(h.render().root.open, false);
+  expect(h.render().root.open).toBe(false);
   h.render().figure.onPointerEnter({ pointerType: "mouse" });
-  assert.equal(h.render().root.open, false);
+  expect(h.render().root.open).toBe(false);
   h.render().image.onDragEnd();
   h.render().button.onClick();
-  assert.equal(h.render().root.open, true);
+  expect(h.render().root.open).toBe(true);
   h.render().wrapper.ref.current = { getBoundingClientRect: () => ({ width: 800 }) };
   const event = {
     pointerId: 1,
@@ -313,18 +295,18 @@ test("image drag dismisses controls, resizing keeps them open, and unmount cance
   };
   h.render().resize.onPointerDown(event);
   h.render().figure.onPointerLeave();
-  t.mock.timers.tick(300);
-  assert.equal(h.render().root.open, true);
+  vi.advanceTimersByTime(300);
+  expect(h.render().root.open).toBe(true);
   h.render().resize.onPointerMove({ ...event, clientX: 60 });
   h.render().resize.onPointerUp(event);
-  assert.equal(h.calls.changes, 1);
-  assert.equal(h.props.editor.state.doc.nodeAt(0).attrs.displayWidth, 50);
+  expect(h.calls.changes).toBe(1);
+  expect(h.props.editor.state.doc.nodeAt(0).attrs.displayWidth).toBe(50);
 
   h.render().figure.onPointerEnter({ pointerType: "mouse" });
   h.render().figure.onPointerLeave();
   h.unmount();
-  t.mock.timers.tick(1000);
-  assert.equal(componentState.updatesAfterUnmount, 0);
+  vi.advanceTimersByTime(1000);
+  expect(componentState.updatesAfterUnmount).toBe(0);
 });
 
 test("cropping uploads a new image, preserves current descriptions and layout, and undoes independently", async () => {
@@ -343,21 +325,18 @@ test("cropping uploads a new image, preserves current descriptions and layout, a
     },
     () => true,
   );
-  assert.equal(uploaded, file);
-  assert.deepEqual(
-    { ...props.editor.state.doc.nodeAt(0).attrs },
-    {
-      ...cropped,
-      alt: source.alt,
-      caption: "Updated caption",
-      displayWidth: 45,
-      alignment: "right",
-    },
-  );
-  assert.equal(undo(props.editor.state, props.editor.view.dispatch), true);
-  assert.deepEqual(props.editor.state.doc.toJSON(), beforeCrop);
-  assert.equal(undo(props.editor.state, props.editor.view.dispatch), true);
-  assert.equal(props.editor.state.doc.nodeAt(0).attrs.caption, source.caption);
+  expect(uploaded).toBe(file);
+  expect({ ...props.editor.state.doc.nodeAt(0).attrs }).toEqual({
+    ...cropped,
+    alt: source.alt,
+    caption: "Updated caption",
+    displayWidth: 45,
+    alignment: "right",
+  });
+  expect(undo(props.editor.state, props.editor.view.dispatch)).toBe(true);
+  expect(props.editor.state.doc.toJSON()).toEqual(beforeCrop);
+  expect(undo(props.editor.state, props.editor.view.dispatch)).toBe(true);
+  expect(props.editor.state.doc.nodeAt(0).attrs.caption).toBe(source.caption);
 });
 
 test("failed uploads leave the current inline image unchanged and reject for retry", async () => {
@@ -369,8 +348,10 @@ test("failed uploads leave the current inline image unchanged and reject for ret
   ]) {
     const props = imageEditor();
     const original = props.editor.state.doc.toJSON();
-    await assert.rejects(uploadBlogImageReplacement(new File(["crop"], "crop.png"), source, props, upload, () => true));
-    assert.deepEqual(props.editor.state.doc.toJSON(), original);
+    await expect(
+      uploadBlogImageReplacement(new File(["crop"], "crop.png"), source, props, upload, () => true),
+    ).rejects.toThrow();
+    expect(props.editor.state.doc.toJSON()).toEqual(original);
   }
 });
 
@@ -400,7 +381,7 @@ test("cropping refuses stale, removed, read-only and unmounted inline images bef
       if (timing === "before") invalidate(props);
       let uploads = 0;
       let expected = props.editor.state.doc.toJSON();
-      await assert.rejects(
+      await expect(
         uploadBlogImageReplacement(
           new File(["crop"], "crop.png"),
           source,
@@ -413,9 +394,9 @@ test("cropping refuses stale, removed, read-only and unmounted inline images bef
           },
           () => props.mounted,
         ),
-      );
-      assert.equal(uploads, timing === "before" ? 0 : 1);
-      assert.deepEqual(props.editor.state.doc.toJSON(), expected);
+      ).rejects.toThrow();
+      expect(uploads).toBe(timing === "before" ? 0 : 1);
+      expect(props.editor.state.doc.toJSON()).toEqual(expected);
     }
   }
 });

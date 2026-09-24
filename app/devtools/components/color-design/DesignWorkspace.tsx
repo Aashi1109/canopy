@@ -4,6 +4,7 @@ import { useId, type ReactNode } from "react";
 
 import { WorkspaceSurface } from "@/components/Surfaces";
 import { Field, Input, ToolOptionsPanel } from "@/components/ui/index.tsx";
+import { cn } from "@/components/ui/lib/utils";
 
 /** Shared geometry for visual design tools; each tool owns its actual canvas and controls. */
 export function DesignWorkspace({
@@ -13,8 +14,10 @@ export function DesignWorkspace({
   title = "Preview",
   controlTitle = "Adjust",
   previewActions,
+  previewMeta,
   compactOutput = false,
   compactInput = false,
+  workspaceClassName,
 }: {
   preview: ReactNode;
   controls: ReactNode;
@@ -22,26 +25,31 @@ export function DesignWorkspace({
   title?: string;
   controlTitle?: string;
   previewActions?: ReactNode;
+  previewMeta?: ReactNode;
   compactOutput?: boolean;
   compactInput?: boolean;
+  workspaceClassName?: string;
 }) {
   return (
     <div className="grid h-full min-h-0 min-w-0 grid-cols-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_21rem] lg:overflow-hidden">
       <div
-        className={
+        className={cn(
           output
             ? compactInput
               ? "grid min-h-[28rem] min-w-0 grid-rows-[15rem_minmax(13rem,1fr)] lg:min-h-0"
               : compactOutput
                 ? "grid min-h-[31rem] min-w-0 grid-rows-[minmax(16rem,21rem)_minmax(10rem,1fr)] lg:min-h-0"
                 : "grid min-h-[28rem] min-w-0 grid-rows-[minmax(14rem,1fr)_minmax(12rem,1fr)] lg:min-h-0"
-            : "flex min-h-[20rem] min-w-0 flex-col lg:min-h-0"
-        }
+            : "flex min-h-[20rem] min-w-0 flex-col lg:min-h-0",
+          workspaceClassName,
+        )}
       >
         <WorkspaceSurface
           actions={previewActions}
           className="min-h-0 flex-1"
           contentClassName="min-h-0"
+          meta={previewMeta}
+          metaPosition={previewMeta ? "start" : "actions"}
           purpose="preview"
           title={title}
         >

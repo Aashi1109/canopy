@@ -29,7 +29,7 @@ export async function renderMarkdownPreview(
 ): Promise<ToolHtmlRender> {
   signal?.throwIfAborted();
   const source = requireUtilityInput(input, "Markdown input");
-  const deferCodeHighlighting = settings.syntaxHighlighting && (options.deferHighlighting ?? source.length > 100_000);
+  const deferCodeHighlighting = settings.syntaxHighlighting && (options.deferHighlighting ?? true);
   const { marked, Renderer } = await import("marked");
   const renderer =
     settings.safeLinks || (settings.syntaxHighlighting && !deferCodeHighlighting) ? new Renderer() : undefined;

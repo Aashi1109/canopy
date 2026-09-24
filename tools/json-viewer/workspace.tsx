@@ -789,14 +789,8 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
   return (
     <>
       <Toaster position="bottom-right" />
-      <SplitStack
-        className="h-full max-[54rem]:h-[56rem]"
-        defaultSize={40}
-        maxSize={65}
-        minSize={35}
-        orientation="horizontal"
-      >
-        <div className="h-full min-h-0 max-[64.01rem]:h-[286px] max-[42.01rem]:h-[28rem]">
+      <SplitStack className="h-full" presentation defaultSize={40} maxSize={65} minSize={35} orientation="horizontal">
+        <div className="h-full min-h-0">
           <JsonSourceEditor
             {...props}
             editorId={editorId}
@@ -807,7 +801,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
             }}
           />
         </div>
-        <div className="h-full min-h-0 max-[64.01rem]:h-[28rem]">
+        <div className="h-full min-h-0">
           {largeFile ? (
             <WorkspaceSurface
               className="h-full"

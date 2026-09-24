@@ -1,80 +1,76 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
-import { sql } from "drizzle-orm";
+import { beforeAll, expect, test, vi } from "vitest";
 
-const runtimeUrl = new URL("../db/runtime.ts", import.meta.url).href;
-const bootstrapUrl = new URL("../db/bootstrap.ts", import.meta.url).href;
 const clients = [];
 globalThis.__databaseRequestClients = clients;
-const hooks = registerHooks({
-  resolve(specifier, context, nextResolve) {
-    if (context.parentURL === bootstrapUrl && specifier === "./paperwork.ts") {
+
+// Fake pg Pool that records checkouts/commits/rollbacks per request client.
+vi.mock("pg", async () => {
+  const { EventEmitter } = await import("node:events");
+  class Pool extends EventEmitter {
+    constructor(options) {
+      super();
+      const clients = globalThis.__databaseRequestClients;
+      Object.assign(this, {
+        id: clients.length + 1,
+        url: options.connectionString,
+        options,
+        closed: false,
+        commits: 0,
+        rollbacks: 0,
+        queries: 0,
+        checkouts: 0,
+        releases: 0,
+      });
+      clients.push(this);
+    }
+    async query(config) {
+      if (this.closed) throw new Error("Query after close");
+      this.queries++;
+      await this.gate;
+      const text = typeof config === "string" ? config : config.text;
+      if (text === "commit") this.commits++;
+      if (text === "rollback") this.rollbacks++;
+      return { rows: [{ clientId: this.id }], rowCount: 1 };
+    }
+    async connect() {
+      this.checkouts++;
+      let released = false;
       return {
-        shortCircuit: true,
-        url: "data:text/javascript,export const db = globalThis.__bootstrapDb",
+        query: this.query.bind(this),
+        release: () => {
+          if (released) throw new Error("Client released twice");
+          released = true;
+          this.releases++;
+        },
       };
     }
-    if (context.parentURL === bootstrapUrl && specifier === "./paperworkSchema.ts") {
-      return { shortCircuit: true, url: new URL("../db/paperworkSchema.ts", import.meta.url).href };
+    async end() {
+      if (this.checkouts !== this.releases) throw new Error("Client still checked out");
+      this.closed = true;
     }
-    if (specifier === "pg") {
-      return {
-        shortCircuit: true,
-        url: `data:text/javascript,${encodeURIComponent(`
-          import { EventEmitter } from "node:events";
-          export class Pool extends EventEmitter {
-            constructor(options) {
-              super();
-              const clients = globalThis.__databaseRequestClients;
-              Object.assign(this, {
-                id: clients.length + 1, url: options.connectionString, options,
-                closed: false, commits: 0, rollbacks: 0, queries: 0, checkouts: 0, releases: 0,
-              });
-              clients.push(this);
-            }
-            async query(config) {
-              if (this.closed) throw new Error("Query after close");
-              this.queries++;
-              await this.gate;
-              const text = typeof config === "string" ? config : config.text;
-              if (text === "commit") this.commits++;
-              if (text === "rollback") this.rollbacks++;
-              return { rows: [{ clientId: this.id }], rowCount: 1 };
-            }
-            async connect() {
-              this.checkouts++;
-              let released = false;
-              return {
-                query: this.query.bind(this),
-                release: () => {
-                  if (released) throw new Error("Client released twice");
-                  released = true;
-                  this.releases++;
-                },
-              };
-            }
-            async end() {
-              if (this.checkouts !== this.releases) throw new Error("Client still checked out");
-              this.closed = true;
-            }
-          }
-          export const types = { builtins: {}, getTypeParser: () => (value) => value };
-          export default { Pool, types };
-        `)}`,
-      };
-    }
-    return nextResolve(specifier, context);
-  },
+  }
+  const types = { builtins: {}, getTypeParser: () => (value) => value };
+  return { Pool, types, default: { Pool, types } };
 });
-const { createDatabase, sqlClient, withDatabaseRequest } = await import(runtimeUrl);
-// The Worker and Next server have separate module instances in production.
-const duplicateRuntime = await import(`${runtimeUrl}?second-bundle`);
-const db = createDatabase({});
-const otherDb = duplicateRuntime.createDatabase({});
-globalThis.__bootstrapDb = db;
-const { ensureDatabaseBootstrapped } = await import(bootstrapUrl);
-hooks.deregister();
+
+// bootstrap imports db from paperwork; back it with the runtime db created below.
+vi.mock("@/db/paperwork.ts", () => ({
+  get db() {
+    return globalThis.__bootstrapDb;
+  },
+}));
+
+let createDatabase, sqlClient, withDatabaseRequest, db, otherDb, ensureDatabaseBootstrapped, sql;
+beforeAll(async () => {
+  ({ sql } = await import("drizzle-orm"));
+  ({ createDatabase, sqlClient, withDatabaseRequest } = await import("@/db/runtime.ts"));
+  // The Worker and Next server have separate module instances in production.
+  const duplicateRuntime = await import("@/db/runtime.ts?second-bundle");
+  db = createDatabase({});
+  otherDb = duplicateRuntime.createDatabase({});
+  globalThis.__bootstrapDb = db;
+  ({ ensureDatabaseBootstrapped } = await import("@/db/bootstrap.ts"));
+});
 const query = async (database = db) => (await database.execute(sql`select 1`)).rows[0].clientId;
 const deferred = () => Promise.withResolvers();
 
@@ -83,8 +79,8 @@ test("database pools stay inside their request through transactions, streams and
   const originalPoolMax = process.env.DATABASE_POOL_MAX;
   process.env.DATABASE_POOL_MAX = "4";
   delete process.env.DATABASE_URL;
-  assert.equal(clients.length, 0, "imports must not open or configure a pool");
-  await assert.rejects(
+  expect(clients.length, "imports must not open or configure a pool").toBe(0);
+  await expect(
     withDatabaseRequest(
       async () => {
         await query();
@@ -92,8 +88,7 @@ test("database pools stay inside their request through transactions, streams and
       },
       () => {},
     ),
-    /DATABASE_URL is required/,
-  );
+  ).rejects.toThrow(/DATABASE_URL is required/);
   process.env.DATABASE_URL = "postgres://localhost/test";
   try {
     const waits = [];
@@ -104,16 +99,15 @@ test("database pools stay inside their request through transactions, streams and
       async () => {
         firstId = await query();
         await barrier.promise;
-        assert.equal(db.$client.url, "postgres://hyperdrive/first");
-        assert.equal(await query(otherDb), firstId, "separate bundles share request state");
-        assert.equal((await sqlClient.query("select 1")).rows[0].clientId, firstId);
-        assert.equal(await db.transaction(query), firstId);
-        await assert.rejects(
+        expect(db.$client.url).toBe("postgres://hyperdrive/first");
+        expect(await query(otherDb), "separate bundles share request state").toBe(firstId);
+        expect((await sqlClient.query("select 1")).rows[0].clientId).toBe(firstId);
+        expect(await db.transaction(query)).toBe(firstId);
+        await expect(
           db.transaction(async () => {
             throw new Error("rollback");
           }),
-          /rollback/,
-        );
+        ).rejects.toThrow(/rollback/);
         return new Response(null, { status: 204 });
       },
       waitUntil,
@@ -122,8 +116,8 @@ test("database pools stay inside their request through transactions, streams and
     const second = await withDatabaseRequest(
       async () => {
         const id = await query();
-        assert.notEqual(id, firstId);
-        assert.equal(db.$client.url, "postgres://hyperdrive/second");
+        expect(id).not.toBe(firstId);
+        expect(db.$client.url).toBe("postgres://hyperdrive/second");
         barrier.resolve();
         return new Response("second");
       },
@@ -131,31 +125,31 @@ test("database pools stay inside their request through transactions, streams and
       "postgres://hyperdrive/second",
     );
     await first;
-    assert.equal(await second.text(), "second");
+    expect(await second.text()).toBe("second");
     await Promise.all(waits.splice(0));
-    assert.ok(clients.every((client) => client.closed));
-    assert.equal(clients[0].commits, 1);
-    assert.equal(clients[0].rollbacks, 1);
-    assert.equal(clients[0].checkouts, 2);
-    assert.equal(clients[0].releases, 2, "committed and rolled-back transactions release their connections");
-    assert.ok(
+    expect(clients.every((client) => client.closed)).toBeTruthy();
+    expect(clients[0].commits).toBe(1);
+    expect(clients[0].rollbacks).toBe(1);
+    expect(clients[0].checkouts).toBe(2);
+    expect(clients[0].releases, "committed and rolled-back transactions release their connections").toBe(2);
+    expect(
       clients.every((client) => client.options.max === 5),
       "request pools stay bounded",
-    );
+    ).toBeTruthy();
 
     const streamGate = deferred();
     const backgroundGate = deferred();
     let streamedClient;
     const streaming = await withDatabaseRequest(async (background) => {
       const id = await query();
-      assert.equal(db.$client.url, process.env.DATABASE_URL, "unbound requests use the environment URL");
+      expect(db.$client.url, "unbound requests use the environment URL").toBe(process.env.DATABASE_URL);
       streamedClient = clients.find((client) => client.id === id);
       background(backgroundGate.promise.then(() => query()));
       return new Response(
         new ReadableStream({
           async start(controller) {
             await streamGate.promise;
-            assert.equal(await query(), id, "queries after fetch returns retain request state");
+            expect(await query(), "queries after fetch returns retain request state").toBe(id);
             controller.enqueue(new TextEncoder().encode("streamed"));
             controller.close();
           },
@@ -163,14 +157,14 @@ test("database pools stay inside their request through transactions, streams and
         { headers: { "x-test": "preserved" } },
       );
     }, waitUntil);
-    assert.equal(streamedClient.closed, false);
-    assert.equal(streaming.headers.get("x-test"), "preserved");
+    expect(streamedClient.closed).toBe(false);
+    expect(streaming.headers.get("x-test")).toBe("preserved");
     streamGate.resolve();
-    assert.equal(await streaming.text(), "streamed");
-    assert.equal(streamedClient.closed, false, "background work retains the pool");
+    expect(await streaming.text()).toBe("streamed");
+    expect(streamedClient.closed, "background work retains the pool").toBe(false);
     backgroundGate.resolve();
     await Promise.all(waits.splice(0));
-    assert.equal(streamedClient.closed, true);
+    expect(streamedClient.closed).toBe(true);
 
     for (const failure of ["throw", "stream error", "cancel"]) {
       const run = withDatabaseRequest(async () => {
@@ -184,14 +178,14 @@ test("database pools stay inside their request through transactions, streams and
           }),
         );
       }, waitUntil);
-      if (failure === "throw") await assert.rejects(run, /throw/);
+      if (failure === "throw") await expect(run).rejects.toThrow(/throw/);
       else {
         const response = await run;
         if (failure === "cancel") await response.body.cancel();
-        else await assert.rejects(response.text(), /stream error/);
+        else await expect(response.text()).rejects.toThrow(/stream error/);
       }
       await Promise.all(waits.splice(0));
-      assert.equal(clients.at(-1).closed, true, failure);
+      expect(clients.at(-1).closed, failure).toBe(true);
     }
 
     const bootstrapStarted = deferred();
@@ -203,14 +197,14 @@ test("database pools stay inside their request through transactions, streams and
       const sameRequest = ensureDatabaseBootstrapped();
       bootstrapStarted.resolve();
       await Promise.all([pending, sameRequest]);
-      assert.equal(client.queries, 3, "one bootstrap per request client");
+      expect(client.queries, "one bootstrap per request client").toBe(3);
       return new Response(null, { status: 204 });
     }, waitUntil);
     await bootstrapStarted.promise;
     await withDatabaseRequest(async () => {
       const client = db.$client;
       await ensureDatabaseBootstrapped();
-      assert.equal(client.queries, 3, "concurrent requests do not share pending database I/O");
+      expect(client.queries, "concurrent requests do not share pending database I/O").toBe(3);
       bootstrapGate.resolve();
       return new Response(null, { status: 204 });
     }, waitUntil);
@@ -221,7 +215,7 @@ test("database pools stay inside their request through transactions, streams and
     await withDatabaseRequest(
       async () => {
         await query();
-        assert.equal(db.$client.url, "postgres://hyperdrive/without-env");
+        expect(db.$client.url).toBe("postgres://hyperdrive/without-env");
         return new Response(null, { status: 204 });
       },
       waitUntil,
@@ -230,17 +224,17 @@ test("database pools stay inside their request through transactions, streams and
     await Promise.all(waits.splice(0));
     process.env.DATABASE_URL = "postgres://localhost/test";
     const nodeId = await query();
-    assert.equal(db.$client.options.max, 4, "Node pools use the configured connection limit");
-    assert.equal(db.$client.options.idleTimeoutMillis, 20_000);
-    assert.equal(db.$client.options.connectionTimeoutMillis, 10_000);
-    assert.ok(db.$client.listenerCount("error") > 0, "idle connection errors have a handler");
-    assert.equal(db.$client.url, process.env.DATABASE_URL, "request bindings do not leak into Node pooling");
-    assert.equal(await query(), nodeId, "Node development retains its pooled connection");
+    expect(db.$client.options.max, "Node pools use the configured connection limit").toBe(4);
+    expect(db.$client.options.idleTimeoutMillis).toBe(20_000);
+    expect(db.$client.options.connectionTimeoutMillis).toBe(10_000);
+    expect(db.$client.listenerCount("error") > 0, "idle connection errors have a handler").toBeTruthy();
+    expect(db.$client.url, "request bindings do not leak into Node pooling").toBe(process.env.DATABASE_URL);
+    expect(await query(), "Node development retains its pooled connection").toBe(nodeId);
     const execute = db.execute;
     db.execute = async () => ({ rows: [{ clientId: "replacement" }] });
-    assert.equal(await query(), "replacement", "existing Node clients remain mutable");
+    expect(await query(), "existing Node clients remain mutable").toBe("replacement");
     db.execute = execute;
-    assert.equal(await query(), nodeId);
+    expect(await query()).toBe(nodeId);
     await sqlClient.end();
   } finally {
     if (originalUrl === undefined) delete process.env.DATABASE_URL;

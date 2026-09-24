@@ -1,7 +1,36 @@
-import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import test from "node:test";
+import { expect, test } from "vitest";
+
+const errorMatch = (error, matcher) => {
+  if (matcher === undefined) return;
+  if (typeof matcher === "function") {
+    if (matcher.prototype instanceof Error || matcher === Error) expect(error).toBeInstanceOf(matcher);
+    else expect(matcher(error)).toBeTruthy();
+  } else if (matcher instanceof RegExp) expect(error.message).toMatch(matcher);
+  else expect(error).toMatchObject(matcher);
+};
+function assertThrows(fn, matcher) {
+  let error;
+  try {
+    fn();
+  } catch (e) {
+    error = e;
+  }
+  expect(error, "expected throw").toBeDefined();
+  errorMatch(error, matcher);
+}
+async function assertRejects(input, matcher) {
+  const promise = typeof input === "function" ? input() : input;
+  let error;
+  try {
+    await promise;
+  } catch (e) {
+    error = e;
+  }
+  expect(error, "expected rejection").toBeDefined();
+  errorMatch(error, matcher);
+}
 
 import { TOOL_CATEGORIES } from "../lib/tool-framework/categories.ts";
 import { QpdfAdapterError, buildQpdfArguments, preservePdfWithQpdf } from "../lib/tool-framework/media/qpdf.ts";
@@ -123,31 +152,30 @@ async function toolSource(folder, file) {
 test("the Media runtime defines exactly the public tool routes, one per folder", () => {
   const expected = Object.values(EXPECTED_TOOLS_BY_CATEGORY).flat();
 
-  assert.deepEqual([...mediaToolByFolder.keys()].sort(), [...expected].sort());
-  assert.equal(mediaTools.length, expected.length);
+  expect([...mediaToolByFolder.keys()].sort()).toEqual([...expected].sort());
+  expect(mediaTools.length).toBe(expected.length);
 
   for (const [label, folders] of Object.entries(EXPECTED_TOOLS_BY_CATEGORY)) {
-    assert.deepEqual(
+    expect(
       mediaTools
         .filter(({ spec }) => TOOL_CATEGORIES[spec.category].label === label)
         .map(({ folder }) => folder)
         .sort(),
-      [...folders].sort(),
       label,
-    );
+    ).toEqual([...folders].sort());
   }
 
   for (const { folder, spec } of mediaTools) {
-    assert.equal(spec.toolId, `media.${folder}`, folder);
-    assert.equal(TOOL_CATEGORIES[spec.category].app, "media", folder);
-    assert.match(spec.name, /\S/, folder);
-    assert.match(spec.description, /\S/, folder);
-    assert.equal(spec.input.kind, "files", folder);
-    assert.match(spec.input.accept, /^(application|image)\//, folder);
-    assert.ok(spec.input.engine === "image" || spec.input.engine === "pdf", folder);
-    assert.equal(typeof (spec.input.multiple ?? false), "boolean", folder);
+    expect(spec.toolId, folder).toBe(`media.${folder}`);
+    expect(TOOL_CATEGORIES[spec.category].app, folder).toBe("media");
+    expect(spec.name, folder).toMatch(/\S/);
+    expect(spec.description, folder).toMatch(/\S/);
+    expect(spec.input.kind, folder).toBe("files");
+    expect(spec.input.accept, folder).toMatch(/^(application|image)\//);
+    expect(spec.input.engine === "image" || spec.input.engine === "pdf", folder).toBeTruthy();
+    expect(typeof (spec.input.multiple ?? false), folder).toBe("boolean");
   }
-  assert.equal(mediaToolByFolder.get("not-a-tool"), undefined);
+  expect(mediaToolByFolder.get("not-a-tool")).toBe(undefined);
 });
 
 test("every Media catalog entry resolves to exactly one runtime implementation", async () => {
@@ -156,8 +184,8 @@ test("every Media catalog entry resolves to exactly one runtime implementation",
   // prevent — so uniqueness is asserted on the folders themselves.
   const catalogKeys = mediaTools.map(({ spec }) => spec.toolId.split(".")[1]);
 
-  assert.deepEqual([...catalogKeys].sort(), [...mediaToolByFolder.keys()].sort());
-  assert.equal(new Set(catalogKeys).size, catalogKeys.length);
+  expect([...catalogKeys].sort()).toEqual([...mediaToolByFolder.keys()].sort());
+  expect(new Set(catalogKeys).size).toBe(catalogKeys.length);
 
   // One run module per folder, and it is the worker variant: every media tool
   // decodes bytes off the main thread.
@@ -168,36 +196,33 @@ test("every Media catalog entry resolves to exactly one runtime implementation",
     }),
   );
   for (const [folder, files] of runFiles) {
-    assert.deepEqual(files, ["run.worker.ts"], folder);
+    expect(files, folder).toEqual(["run.worker.ts"]);
   }
 
   // The image/pdf engine split is total and disjoint, which is what the old
   // IMAGE_WORKER_OPERATIONS / PDF_WORKER_OPERATIONS partition guaranteed.
   const byEngine = { image: [], pdf: [] };
   for (const { folder, spec } of mediaTools) byEngine[spec.input.engine].push(folder);
-  assert.deepEqual(
-    byEngine.image.filter((folder) => byEngine.pdf.includes(folder)),
-    [],
-  );
-  assert.equal(byEngine.image.length + byEngine.pdf.length, mediaTools.length);
+  expect(byEngine.image.filter((folder) => byEngine.pdf.includes(folder))).toEqual([]);
+  expect(byEngine.image.length + byEngine.pdf.length).toBe(mediaTools.length);
 });
 
 test("crop rejects HEIC at the public input boundary", () => {
   const crop = mediaToolByFolder.get("crop-image");
 
-  assert.ok(crop);
-  assert.doesNotMatch(crop.input.accept, /image\/hei[cf]/);
-  assert.match(crop.input.accept, /image\/jpeg/);
-  assert.match(crop.input.accept, /image\/png/);
-  assert.match(crop.input.accept, /image\/webp/);
-  assert.equal(crop.input.multiple ?? false, false);
+  expect(crop).toBeTruthy();
+  expect(crop.input.accept).not.toMatch(/image\/hei[cf]/);
+  expect(crop.input.accept).toMatch(/image\/jpeg/);
+  expect(crop.input.accept).toMatch(/image\/png/);
+  expect(crop.input.accept).toMatch(/image\/webp/);
+  expect(crop.input.multiple ?? false).toBe(false);
 });
 
 test("the tool worker uses the classic runtime emitted by the production build", async () => {
   const source = await readFile(new URL("../lib/tool-framework/useToolRun.ts", import.meta.url), "utf8");
 
-  assert.ok((source.match(/new Worker\(/g) ?? []).length > 0);
-  assert.doesNotMatch(source, /type:\s*["']module["']/);
+  expect((source.match(/new Worker\(/g) ?? []).length > 0).toBeTruthy();
+  expect(source).not.toMatch(/type:\s*["']module["']/);
 });
 
 test("worker teardown invalidates async continuations before releasing resources", async () => {
@@ -205,20 +230,20 @@ test("worker teardown invalidates async continuations before releasing resources
   const dispatch = source.indexOf("const dispatch = useCallback(");
   const terminate = source.indexOf("terminate();", dispatch);
   const spawn = source.indexOf("new Worker(", dispatch);
-  const guard = source.indexOf("if (workerRef.current !== worker) return;", dispatch);
+  const guard = source.indexOf("if (workerRef.current !== worker", dispatch);
 
-  assert.ok(dispatch >= 0);
+  expect(dispatch >= 0).toBeTruthy();
   // The previous worker is killed before a new one can post into the same state.
-  assert.ok(terminate > dispatch && terminate < spawn);
+  expect(terminate > dispatch && terminate < spawn).toBeTruthy();
   // A message from a worker that is no longer current never reaches the reducer.
-  assert.ok(guard > spawn);
-  assert.ok(source.indexOf("reduceWorkerJobState(", guard) > guard);
+  expect(guard > spawn).toBeTruthy();
+  expect(source.indexOf("reduceWorkerJobState(", guard) > guard).toBeTruthy();
   // Unmount asks a persistent inspection to close, with forced teardown as a
   // watchdog; ordinary run workers still terminate immediately.
-  assert.match(source, /postMessage\(createToolInspectionCloseRequest\(jobId\)\)/);
-  assert.match(source, /setTimeout\(\(\) => currentWorker\.terminate\(\)/);
-  assert.match(source, /cleanupJob\(jobId\);/);
-  assert.match(source, /workerRef\.current\?\.terminate\(\);/);
+  expect(source).toMatch(/postMessage\(createToolInspectionCloseRequest\(jobId\)\)/);
+  expect(source).toMatch(/setTimeout\(\(\) => currentWorker\.terminate\(\)/);
+  expect(source).toMatch(/cleanupJob\(jobId\);/);
+  expect(source).toMatch(/workerRef\.current\?\.terminate\(\);/);
 });
 
 /**
@@ -229,40 +254,42 @@ test("worker teardown invalidates async continuations before releasing resources
  */
 test("preset mappings preserve the product defaults and engine values", async () => {
   const compressImage = await toolSource("compress-image", "run.worker.ts");
-  assert.match(compressImage, /preset === "best"\s*\?\s*0\.9\s*:\s*preset === "smallest"\s*\?\s*0\.6\s*:\s*0\.8/);
-  assert.match(
-    compressImage,
+  expect(compressImage).toMatch(/preset === "best"\s*\?\s*0\.9\s*:\s*preset === "smallest"\s*\?\s*0\.6\s*:\s*0\.8/);
+  expect(compressImage).toMatch(
     /PNG_COMPRESSION_PRESETS = \{\s*fast: \{ effort: 3 \},\s*balanced: \{ effort: 6 \},\s*maximum: \{ effort: 9 \},\s*\}/,
   );
-  assert.doesNotMatch(compressImage, /PNG_COMPRESSION_PRESETS = \{[^}]*\{[^}]*quality/);
+  expect(compressImage).not.toMatch(/PNG_COMPRESSION_PRESETS = \{[^}]*\{[^}]*quality/);
 
   const imageToPdf = await toolSource("image-to-pdf", "run.worker.ts");
-  assert.match(
-    imageToPdf,
+  expect(imageToPdf).toMatch(
     /original: \{ quality: 1, reencode: false \},\s*balanced: \{ quality: 0\.82, reencode: true \},\s*small: \{ quality: 0\.65, reencode: true \},/,
   );
 
   const compressPdf = await toolSource("compress-pdf", "run.worker.ts");
-  assert.match(
-    compressPdf,
+  expect(compressPdf).toMatch(
     /high: \{ dpi: 150, quality: 0\.85 \},\s*balanced: \{ dpi: 120, quality: 0\.75 \},\s*smallest: \{ dpi: 96, quality: 0\.6 \},/,
   );
 
   // The choices and defaults each tool publishes are the definition's job.
-  assert.deepEqual(
-    mediaToolByFolder.get("compress-image").settings.fields.preset.choices.map(({ value }) => value),
-    ["best", "balanced", "smallest", "fast", "maximum"],
-  );
-  assert.equal(mediaToolByFolder.get("compress-image").settings.fields.preset.default, "balanced");
-  assert.deepEqual(
-    mediaToolByFolder.get("image-to-pdf").settings.fields.quality.choices.map(({ value }) => value),
-    ["original", "balanced", "small"],
-  );
-  assert.deepEqual(
-    mediaToolByFolder.get("compress-pdf").settings.fields.strongPreset.choices.map(({ value }) => value),
-    ["high", "balanced", "smallest"],
-  );
-  assert.equal(mediaToolByFolder.get("compress-pdf").settings.fields.strongPreset.default, "balanced");
+  expect(mediaToolByFolder.get("compress-image").settings.fields.preset.choices.map(({ value }) => value)).toEqual([
+    "best",
+    "balanced",
+    "smallest",
+    "fast",
+    "maximum",
+  ]);
+  expect(mediaToolByFolder.get("compress-image").settings.fields.preset.default).toBe("balanced");
+  expect(mediaToolByFolder.get("image-to-pdf").settings.fields.quality.choices.map(({ value }) => value)).toEqual([
+    "original",
+    "balanced",
+    "small",
+  ]);
+  expect(mediaToolByFolder.get("compress-pdf").settings.fields.strongPreset.choices.map(({ value }) => value)).toEqual([
+    "high",
+    "balanced",
+    "smallest",
+  ]);
+  expect(mediaToolByFolder.get("compress-pdf").settings.fields.strongPreset.default).toBe("balanced");
 });
 
 test("social image presets map every published target to exact dimensions", async () => {
@@ -278,26 +305,23 @@ test("social image presets map every published target to exact dimensions", asyn
 
   // What the picker offers, and the size each option promises the user.
   const { choices, default: fallback } = mediaToolByFolder.get("social-media-image-resizer").settings.fields.preset;
-  assert.deepEqual(
-    Object.fromEntries(choices.map(({ value, label }) => [value, label])),
+  expect(Object.fromEntries(choices.map(({ value, label }) => [value, label]))).toEqual(
     Object.fromEntries(
       Object.entries(EXPECTED).map(([value, [label, width, height]]) => [value, `${label} · ${width} × ${height}`]),
     ),
   );
-  assert.equal(fallback, "instagram-square");
+  expect(fallback).toBe("instagram-square");
 
   // What the encoder actually resizes to, which must agree with the promise.
   const source = await toolSource("social-media-image-resizer", "run.worker.ts");
   for (const [value, [label, width, height]] of Object.entries(EXPECTED)) {
-    assert.match(
-      source,
+    expect(source, value).toMatch(
       new RegExp(
         `"${value}": \\{\\s*label: "${label.replaceAll("/", "\\/")}",\\s*width: ${width},\\s*height: ${height},?\\s*\\}`,
       ),
-      value,
     );
   }
-  assert.equal((source.match(/^\s{2}"[a-z-]+": \{/gm) ?? []).length, Object.keys(EXPECTED).length);
+  expect((source.match(/^\s{2}"[a-z-]+": \{/gm) ?? []).length).toBe(Object.keys(EXPECTED).length);
 });
 
 test("media signatures are detected from bytes rather than extensions", () => {
@@ -310,84 +334,75 @@ test("media signatures are detected from bytes rather than extensions", () => {
   };
 
   for (const [kind, bytes] of Object.entries(fixtures)) {
-    assert.equal(detectMediaKind(bytes), kind);
+    expect(detectMediaKind(bytes)).toBe(kind);
   }
-  assert.equal(detectMediaKind(new TextEncoder().encode("photo.jpg")), null);
+  expect(detectMediaKind(new TextEncoder().encode("photo.jpg"))).toBe(null);
 });
 
 test("signature validation rejects MIME mismatches and unsupported animation", () => {
-  assert.deepEqual(validateMediaSignature(Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]), "image/png"), {
+  expect(validateMediaSignature(Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]), "image/png")).toEqual({
     ok: false,
     code: "mime-mismatch",
     message: "The file contents do not match its reported type.",
   });
-  assert.equal(
-    validateMediaSignature(Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]), "image/jpeg", ["png"]).code,
+  expect(validateMediaSignature(Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]), "image/jpeg", ["png"]).code).toBe(
     "unsupported-type",
   );
-  assert.equal(validateMediaSignature(riff("VP8X", Uint8Array.of(0x02)), "image/webp").code, "animated-image");
-  assert.equal(validateMediaSignature(ftyp("hevc", ["msf1"]), "image/heic").code, "image-sequence");
-  assert.deepEqual(validateMediaSignature(ftyp("heic", ["mif1"]), ""), {
+  expect(validateMediaSignature(riff("VP8X", Uint8Array.of(0x02)), "image/webp").code).toBe("animated-image");
+  expect(validateMediaSignature(ftyp("hevc", ["msf1"]), "image/heic").code).toBe("image-sequence");
+  expect(validateMediaSignature(ftyp("heic", ["mif1"]), "")).toEqual({
     ok: true,
     kind: "heic",
     mime: "image/heic",
   });
-  assert.equal(validateMediaSignature(Uint8Array.of(1, 2, 3), "image/jpeg").code, "invalid-signature");
+  expect(validateMediaSignature(Uint8Array.of(1, 2, 3), "image/jpeg").code).toBe("invalid-signature");
 });
 
 test("image limits enforce per-file, batch, total, and decoded-pixel ceilings", () => {
-  assert.deepEqual(validateImageSelection(Array.from({ length: MEDIA_LIMITS.images.maxFiles }, () => ({ size: 1 }))), {
+  expect(validateImageSelection(Array.from({ length: MEDIA_LIMITS.images.maxFiles }, () => ({ size: 1 })))).toEqual({
     ok: true,
   });
-  assert.equal(validateImageSelection([{ size: MEDIA_LIMITS.images.maxFileBytes + 1 }]).code, "file-too-large");
-  assert.equal(
+  expect(validateImageSelection([{ size: MEDIA_LIMITS.images.maxFileBytes + 1 }]).code).toBe("file-too-large");
+  expect(
     validateImageSelection(Array.from({ length: MEDIA_LIMITS.images.maxFiles + 1 }, () => ({ size: 1 }))).code,
-    "too-many-files",
-  );
-  assert.equal(
-    validateImageSelection([{ size: 200 * 1024 * 1024 }, { size: 51 * 1024 * 1024 }]).code,
-    "file-too-large",
-  );
-  assert.equal(
-    validateImageSelection(Array.from({ length: 11 }, () => ({ size: 24 * 1024 * 1024 }))).code,
+  ).toBe("too-many-files");
+  expect(validateImageSelection([{ size: 200 * 1024 * 1024 }, { size: 51 * 1024 * 1024 }]).code).toBe("file-too-large");
+  expect(validateImageSelection(Array.from({ length: 11 }, () => ({ size: 24 * 1024 * 1024 }))).code).toBe(
     "total-too-large",
   );
-  assert.deepEqual(validateDecodedImageDimensions(10_000, 10_000), { ok: true });
-  assert.equal(validateDecodedImageDimensions(10_001, 10_000).code, "too-many-pixels");
-  assert.equal(validateDecodedImageDimensions(0, 10).code, "invalid-dimensions");
+  expect(validateDecodedImageDimensions(10_000, 10_000)).toEqual({ ok: true });
+  expect(validateDecodedImageDimensions(10_001, 10_000).code).toBe("too-many-pixels");
+  expect(validateDecodedImageDimensions(0, 10).code).toBe("invalid-dimensions");
 });
 
 test("PDF limits distinguish merge, structural, and raster jobs", () => {
-  assert.deepEqual(
+  expect(
     validatePdfSelection([{ size: MEDIA_LIMITS.pdfs.maxFileBytes }], {
       pageCount: MEDIA_LIMITS.pdfs.maxStructuralPages,
     }),
-    { ok: true },
-  );
-  assert.equal(validatePdfSelection([{ size: MEDIA_LIMITS.pdfs.maxFileBytes + 1 }]).code, "file-too-large");
-  assert.equal(
+  ).toEqual({ ok: true });
+  expect(validatePdfSelection([{ size: MEDIA_LIMITS.pdfs.maxFileBytes + 1 }]).code).toBe("file-too-large");
+  expect(
     validatePdfSelection(
       Array.from({ length: MEDIA_LIMITS.pdfs.maxMergeFiles + 1 }, () => ({
         size: 1,
       })),
       { merge: true },
     ).code,
-    "too-many-files",
-  );
-  assert.equal(
+  ).toBe("too-many-files");
+  expect(
     validatePdfSelection(
       Array.from({ length: 20 }, () => ({ size: 13 * 1024 * 1024 })),
       { merge: true },
     ).code,
-    "total-too-large",
-  );
-  assert.equal(validatePdfSelection([{ size: 1 }], { pageCount: 501 }).code, "too-many-pages");
-  assert.equal(validatePdfSelection([{ size: 1 }], { pageCount: 201, raster: true }).code, "too-many-pages");
+  ).toBe("total-too-large");
+  expect(validatePdfSelection([{ size: 1 }], { pageCount: 501 }).code).toBe("too-many-pages");
+  expect(validatePdfSelection([{ size: 1 }], { pageCount: 201, raster: true }).code).toBe("too-many-pages");
 });
 
 test("digitally signed PDFs are detected before a rewriting operation", () => {
-  assert.equal(hasPdfDigitalSignature(new TextEncoder().encode("%PDF-1.7\n/Type /Sig /ByteRange [0 10 20 30]")), true);
-  assert.equal(hasPdfDigitalSignature(new TextEncoder().encode("%PDF-1.7\n/Pages 2 0 R")), false);
+  expect(hasPdfDigitalSignature(new TextEncoder().encode("%PDF-1.7\n/Type /Sig /ByteRange [0 10 20 30]"))).toBe(true);
+  expect(hasPdfDigitalSignature(new TextEncoder().encode("%PDF-1.7\n/Pages 2 0 R"))).toBe(false);
 });
 
 test("qpdf preserve arguments toggle metadata removal without changing compression", () => {
@@ -398,8 +413,8 @@ test("qpdf preserve arguments toggle metadata removal without changing compressi
     "--recompress-flate",
     "--compression-level=9",
   ];
-  assert.deepEqual(buildQpdfArguments("/input.pdf", "/output.pdf", false), [...base, "/output.pdf"]);
-  assert.deepEqual(buildQpdfArguments("/input.pdf", "/output.pdf", true), [
+  expect(buildQpdfArguments("/input.pdf", "/output.pdf", false)).toEqual([...base, "/output.pdf"]);
+  expect(buildQpdfArguments("/input.pdf", "/output.pdf", true)).toEqual([
     ...base,
     "--remove-info",
     "--remove-metadata",
@@ -414,7 +429,7 @@ test("qpdf preserve fails closed outside a cross-origin-isolated browser", async
     value: false,
   });
   try {
-    await assert.rejects(
+    await assertRejects(
       preservePdfWithQpdf(new ArrayBuffer(0), {
         jobId: "unit-test",
         removeMetadata: true,
@@ -433,29 +448,29 @@ test("qpdf preserve fails closed outside a cross-origin-isolated browser", async
   }
 
   const failure = new QpdfAdapterError("qpdf-failed", "qpdf failed safely");
-  assert.equal(failure.code, "qpdf-failed");
-  assert.equal(failure.message, "qpdf failed safely");
+  expect(failure.code).toBe("qpdf-failed");
+  expect(failure.message).toBe("qpdf failed safely");
 });
 
 test("image-to-PDF detects PNG alpha that must be flattened onto the selected background", () => {
-  assert.equal(hasTransparentPixels(Uint8ClampedArray.from([20, 30, 40, 255, 50, 60, 70, 255])), false);
-  assert.equal(hasTransparentPixels(Uint8ClampedArray.from([20, 30, 40, 255, 50, 60, 70, 64])), true);
+  expect(hasTransparentPixels(Uint8ClampedArray.from([20, 30, 40, 255, 50, 60, 70, 255]))).toBe(false);
+  expect(hasTransparentPixels(Uint8ClampedArray.from([20, 30, 40, 255, 50, 60, 70, 64]))).toBe(true);
 });
 
 test("PDF fill and cover clip exactly to the inner page box", () => {
   const pdfLib = requireFromMedia("pdf-lib");
   const box = getPdfContentBox(612, 792, 18);
-  assert.deepEqual(box, { x: 18, y: 18, width: 576, height: 756 });
-  assert.deepEqual(clipStartOperators(box, pdfLib).map(String), ["q", "18 18 576 756 re", "W", "n"]);
-  assert.deepEqual(clipEndOperators(pdfLib).map(String), ["Q"]);
+  expect(box).toEqual({ x: 18, y: 18, width: 576, height: 756 });
+  expect(clipStartOperators(box, pdfLib).map(String)).toEqual(["q", "18 18 576 756 re", "W", "n"]);
+  expect(clipEndOperators(pdfLib).map(String)).toEqual(["Q"]);
 });
 
 test("Preserve Document preflight rejects encrypted and oversized structural PDFs", async () => {
-  assert.throws(
+  assertThrows(
     () => assertStructuralPdfInspection({ isEncrypted: true, pageCount: 1 }),
     (error) => error instanceof PdfPreflightError && error.code === "encrypted-pdf",
   );
-  assert.throws(
+  assertThrows(
     () => assertStructuralPdfInspection({ isEncrypted: false, pageCount: 501 }),
     (error) => error instanceof PdfPreflightError && error.code === "too-many-pages",
   );
@@ -465,8 +480,8 @@ test("Preserve Document preflight rejects encrypted and oversized structural PDF
   source.addPage([200, 300]);
   const bytes = await source.save();
   const data = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-  assert.deepEqual(await inspectPdfBeforeStructuralRewrite(data), { pageCount: 1 });
-  await assert.rejects(
+  expect(await inspectPdfBeforeStructuralRewrite(data)).toEqual({ pageCount: 1 });
+  await assertRejects(
     inspectPdfBeforeStructuralRewrite(new TextEncoder().encode("%PDF-broken").buffer),
     (error) => error instanceof PdfPreflightError && error.code === "malformed-pdf",
   );
@@ -487,8 +502,8 @@ test("structural page processing reports start and completion for every page", a
     },
   );
 
-  assert.deepEqual(visited, [3, 0]);
-  assert.deepEqual(updates, [
+  expect(visited).toEqual([3, 0]);
+  expect(updates).toEqual([
     { current: 4, completed: 0, total: 2, stage: "Resizing PDF page" },
     { current: 4, completed: 1, total: 2, stage: "Page complete" },
     { current: 1, completed: 1, total: 2, stage: "Resizing PDF page" },
@@ -497,23 +512,23 @@ test("structural page processing reports start and completion for every page", a
 });
 
 test("output names remove paths, controls, reserved names, and unsafe punctuation", () => {
-  assert.equal(sanitizeBaseName("../CON"), "download");
-  assert.equal(sanitizeBaseName("  report:*?\u0000  "), "report");
-  assert.equal(sanitizeBaseName("Résumé 2026"), "Résumé 2026");
-  assert.equal(sanitizeBaseName("..."), "download");
-  assert.equal(sanitizeFileName("../quarterly:report.PDF"), "quarterly-report.PDF");
-  assert.equal(createOutputFilename("../../invoice.final.JPG", "png"), "invoice.final.png");
-  assert.equal(createOutputFilename("CON.pdf", ".pdf", "compressed"), "download-compressed.pdf");
-  assert.equal(createPageOutputFilename("report.pdf", 3, 120, "jpg"), "report-page-003.jpg");
-  assert.equal(createPageArchiveFilename("report.pdf"), "report-pages.zip");
+  expect(sanitizeBaseName("../CON")).toBe("download");
+  expect(sanitizeBaseName("  report:*?\u0000  ")).toBe("report");
+  expect(sanitizeBaseName("Résumé 2026")).toBe("Résumé 2026");
+  expect(sanitizeBaseName("...")).toBe("download");
+  expect(sanitizeFileName("../quarterly:report.PDF")).toBe("quarterly-report.PDF");
+  expect(createOutputFilename("../../invoice.final.JPG", "png")).toBe("invoice.final.png");
+  expect(createOutputFilename("CON.pdf", ".pdf", "compressed")).toBe("download-compressed.pdf");
+  expect(createPageOutputFilename("report.pdf", 3, 120, "jpg")).toBe("report-page-003.jpg");
+  expect(createPageArchiveFilename("report.pdf")).toBe("report-pages.zip");
 });
 
 test("page ranges expand in display order and reject ambiguous selections", () => {
-  assert.deepEqual(parsePageRange("1-3, 5, 8", 8), {
+  expect(parsePageRange("1-3, 5, 8", 8)).toEqual({
     ok: true,
     pages: [1, 2, 3, 5, 8],
   });
-  assert.deepEqual(parsePageRange("all", 3), { ok: true, pages: [1, 2, 3] });
+  expect(parsePageRange("all", 3)).toEqual({ ok: true, pages: [1, 2, 3] });
 
   for (const [input, code] of [
     ["", "empty-range"],
@@ -524,31 +539,27 @@ test("page ranges expand in display order and reject ambiguous selections", () =
     ["1-3,3", "duplicate-page"],
     ["one", "invalid-range"],
   ]) {
-    assert.equal(parsePageRange(input, 8).code, code, input);
+    expect(parsePageRange(input, 8).code, input).toBe(code);
   }
 });
 
 test("resize and fit geometry covers aspect lock, no-upscale, contain, cover, and stretch", () => {
-  assert.deepEqual(
+  expect(
     calculateResizeDimensions({ width: 400, height: 200 }, { width: 100, lockAspectRatio: true, noUpscale: true }),
-    { width: 100, height: 50 },
-  );
-  assert.deepEqual(
+  ).toEqual({ width: 100, height: 50 });
+  expect(
     calculateResizeDimensions({ width: 400, height: 200 }, { percentage: 50, lockAspectRatio: true, noUpscale: true }),
-    { width: 200, height: 100 },
-  );
-  assert.deepEqual(
+  ).toEqual({ width: 200, height: 100 });
+  expect(
     calculateResizeDimensions({ width: 400, height: 200 }, { width: 800, lockAspectRatio: true, noUpscale: true }),
-    { width: 400, height: 200 },
-  );
-  assert.deepEqual(
+  ).toEqual({ width: 400, height: 200 });
+  expect(
     calculateResizeDimensions(
       { width: 400, height: 200 },
       { width: 100, height: 100, lockAspectRatio: false, noUpscale: false },
     ),
-    { width: 100, height: 100 },
-  );
-  assert.deepEqual(fitRect({ width: 400, height: 200 }, { width: 100, height: 100 }, "contain"), {
+  ).toEqual({ width: 100, height: 100 });
+  expect(fitRect({ width: 400, height: 200 }, { width: 100, height: 100 }, "contain")).toEqual({
     x: 0,
     y: 25,
     width: 100,
@@ -556,7 +567,7 @@ test("resize and fit geometry covers aspect lock, no-upscale, contain, cover, an
     scaleX: 0.25,
     scaleY: 0.25,
   });
-  assert.deepEqual(fitRect({ width: 400, height: 200 }, { width: 100, height: 100 }, "cover"), {
+  expect(fitRect({ width: 400, height: 200 }, { width: 100, height: 100 }, "cover")).toEqual({
     x: -50,
     y: 0,
     width: 200,
@@ -564,7 +575,7 @@ test("resize and fit geometry covers aspect lock, no-upscale, contain, cover, an
     scaleX: 0.5,
     scaleY: 0.5,
   });
-  assert.deepEqual(fitRect({ width: 400, height: 200 }, { width: 100, height: 100 }, "stretch"), {
+  expect(fitRect({ width: 400, height: 200 }, { width: 100, height: 100 }, "stretch")).toEqual({
     x: 0,
     y: 0,
     width: 100,
@@ -575,74 +586,72 @@ test("resize and fit geometry covers aspect lock, no-upscale, contain, cover, an
 });
 
 test("geometry handles no-op, height-only, upscale, and invalid requests", () => {
-  assert.deepEqual(calculateResizeDimensions({ width: 400, height: 200 }, { lockAspectRatio: true, noUpscale: true }), {
+  expect(calculateResizeDimensions({ width: 400, height: 200 }, { lockAspectRatio: true, noUpscale: true })).toEqual({
     width: 400,
     height: 200,
   });
-  assert.deepEqual(
+  expect(
     calculateResizeDimensions({ width: 400, height: 200 }, { height: 50, lockAspectRatio: true, noUpscale: false }),
-    { width: 100, height: 50 },
-  );
-  assert.deepEqual(
+  ).toEqual({ width: 100, height: 50 });
+  expect(
     calculateResizeDimensions(
       { width: 400, height: 200 },
       { percentage: 200, lockAspectRatio: true, noUpscale: false },
     ),
-    { width: 800, height: 400 },
-  );
-  assert.deepEqual(
-    calculateResizeDimensions({ width: 400, height: 200 }, { lockAspectRatio: false, noUpscale: false }),
-    { width: 400, height: 200 },
-  );
-  assert.throws(
+  ).toEqual({ width: 800, height: 400 });
+  expect(calculateResizeDimensions({ width: 400, height: 200 }, { lockAspectRatio: false, noUpscale: false })).toEqual({
+    width: 400,
+    height: 200,
+  });
+  assertThrows(
     () =>
       calculateResizeDimensions({ width: 400, height: 200 }, { percentage: 0, lockAspectRatio: true, noUpscale: true }),
     /positive dimensions/,
   );
-  assert.throws(() => fitRect({ width: 1, height: 1 }, { width: 1, height: 1 }, "tile"), /Unknown fit mode/);
-  assert.throws(() => rotatedDimensions(10, 20, 45), /Rotation must be/);
+  assertThrows(() => fitRect({ width: 1, height: 1 }, { width: 1, height: 1 }, "tile"), /Unknown fit mode/);
+  assertThrows(() => rotatedDimensions(10, 20, 45), /Rotation must be/);
 });
 
 test("crop, rotation, and EXIF orientation helpers keep pixels in bounds", () => {
-  assert.deepEqual(normalizeCropRect({ x: -10, y: 10, width: 150, height: 100 }, { width: 100, height: 80 }), {
+  expect(normalizeCropRect({ x: -10, y: 10, width: 150, height: 100 }, { width: 100, height: 80 })).toEqual({
     x: 0,
     y: 10,
     width: 100,
     height: 70,
   });
-  assert.throws(
+  assertThrows(
     () => normalizeCropRect({ x: 0, y: 0, width: 0, height: 10 }, { width: 100, height: 80 }),
     /positive dimensions/,
   );
-  assert.deepEqual(rotatedDimensions(400, 200, 90), { width: 200, height: 400 });
-  assert.deepEqual(rotatedDimensions(400, 200, 180), { width: 400, height: 200 });
-  assert.deepEqual(rotatedDimensions(400, 200, 270), { width: 200, height: 400 });
+  expect(rotatedDimensions(400, 200, 90)).toEqual({ width: 200, height: 400 });
+  expect(rotatedDimensions(400, 200, 180)).toEqual({ width: 400, height: 200 });
+  expect(rotatedDimensions(400, 200, 270)).toEqual({ width: 200, height: 400 });
 
-  assert.deepEqual(getExifOrientationTransform(6, 400, 200), {
+  expect(getExifOrientationTransform(6, 400, 200)).toEqual({
     matrix: [0, 1, -1, 0, 200, 0],
     width: 200,
     height: 400,
   });
-  assert.deepEqual(getExifOrientationTransform(2, 400, 200), {
+  expect(getExifOrientationTransform(2, 400, 200)).toEqual({
     matrix: [-1, 0, 0, 1, 400, 0],
     width: 400,
     height: 200,
   });
-  assert.equal(readExifOrientation(jpegWithExifOrientation(8)), 8);
-  assert.equal(readExifOrientation(Uint8Array.of(0xff, 0xd8, 0xff, 0xd9)), 1);
-  assert.equal(readExifOrientation(Uint8Array.of()), 1);
-  assert.deepEqual(getExifOrientationTransform(99, 400, 200), {
+  expect(readExifOrientation(jpegWithExifOrientation(8))).toBe(8);
+  expect(readExifOrientation(Uint8Array.of(0xff, 0xd8, 0xff, 0xd9))).toBe(1);
+  expect(readExifOrientation(Uint8Array.of())).toBe(1);
+  expect(getExifOrientationTransform(99, 400, 200)).toEqual({
     matrix: [1, 0, 0, 1, 0, 0],
     width: 400,
     height: 200,
   });
-  assert.deepEqual(normalizeCropRect({ x: 10, y: 20, width: 30, height: 40 }, { width: 100, height: 100 }), {
+  expect(normalizeCropRect({ x: 10, y: 20, width: 30, height: 40 }, { width: 100, height: 100 })).toEqual({
     x: 10,
     y: 20,
     width: 30,
     height: 40,
   });
-  assert.throws(
+  assertThrows(
     () => normalizeCropRect({ x: Number.NaN, y: 0, width: 10, height: 10 }, { width: 100, height: 100 }),
     /Coordinates must be finite/,
   );
@@ -660,25 +669,26 @@ test("worker runs keep the original File with sanitized metadata", () => {
     settings: {},
   });
 
-  assert.equal(message.files[0].source, source);
-  assert.equal(message.files[0].name, "photo.jpg");
-  assert.equal(message.files[0].mime, "image/jpeg");
-  assert.equal(message.files[0].size, 3);
-  assert.deepEqual(
-    { type: message.type, jobId: message.jobId, key: message.key },
-    { type: "run", jobId: "job-1", key: "jpg-to-png" },
-  );
-  assert.equal(isToolWorkerMessage(message), true);
+  expect(message.files[0].source).toBe(source);
+  expect(message.files[0].name).toBe("photo.jpg");
+  expect(message.files[0].mime).toBe("image/jpeg");
+  expect(message.files[0].size).toBe(3);
+  expect({ type: message.type, jobId: message.jobId, key: message.key }).toEqual({
+    type: "run",
+    jobId: "job-1",
+    key: "jpg-to-png",
+  });
+  expect(isToolWorkerMessage(message)).toBe(true);
 });
 
 test("worker protocol rejects malformed File-backed runs", () => {
   const source = new File([Uint8Array.of(1)], "photo.jpg", { type: "image/jpeg" });
   const file = createToolRunFile("file-1", source);
 
-  assert.throws(() => createToolRunFile(" ", source), /ID/);
-  assert.throws(() => createToolRunFile("file", new Blob([Uint8Array.of(1)])), /File/);
-  assert.throws(() => createToolRunFile("file", new File(["x"], "bad.txt", { type: "not a mime" })), /MIME/);
-  assert.throws(
+  assertThrows(() => createToolRunFile(" ", source), /ID/);
+  assertThrows(() => createToolRunFile("file", new Blob([Uint8Array.of(1)])), /File/);
+  assertThrows(() => createToolRunFile("file", new File(["x"], "bad.txt", { type: "not a mime" })), /MIME/);
+  assertThrows(
     () =>
       createToolWorkerRequest({
         jobId: " ",
@@ -688,7 +698,7 @@ test("worker protocol rejects malformed File-backed runs", () => {
       }),
     /job ID/,
   );
-  assert.throws(
+  assertThrows(
     () =>
       createToolWorkerRequest({
         jobId: "job",
@@ -698,44 +708,42 @@ test("worker protocol rejects malformed File-backed runs", () => {
       }),
     /tool key/,
   );
-  assert.throws(() => beginWorkerJob(createToolJobState(), " "), /job ID/);
+  assertThrows(() => beginWorkerJob(createToolJobState(), " "), /job ID/);
 
   // Untrusted structured-clone payloads are shape-checked in both directions.
-  assert.equal(isToolWorkerMessage({ type: "run", jobId: "job" }), false);
-  assert.equal(isToolWorkerMessage({ type: "cancel", jobId: "" }), false);
-  assert.equal(isToolWorkerMessage({ type: "cancel", jobId: "job" }), true);
-  assert.equal(isToolWorkerResponse({ type: "canceled", jobId: "job" }), true);
-  assert.equal(isToolWorkerResponse({ type: "success", jobId: "job" }), false);
-  assert.equal(
+  expect(isToolWorkerMessage({ type: "run", jobId: "job" })).toBe(false);
+  expect(isToolWorkerMessage({ type: "cancel", jobId: "" })).toBe(false);
+  expect(isToolWorkerMessage({ type: "cancel", jobId: "job" })).toBe(true);
+  expect(isToolWorkerResponse({ type: "canceled", jobId: "job" })).toBe(true);
+  expect(isToolWorkerResponse({ type: "success", jobId: "job" })).toBe(false);
+  expect(
     isToolWorkerResponse({
       type: "success",
       jobId: "job",
       result: { render: "files" },
     }),
-    true,
-  );
+  ).toBe(true);
 });
 
 test("page inspection requests keep one document and a positive thumbnail width", () => {
   const file = createToolRunFile("pdf-1", new File([new ArrayBuffer(8)], "document.pdf", { type: "application/pdf" }));
-  assert.deepEqual(createToolInspectRequest({ jobId: " inspect-1 ", key: "crop-pdf", file }), {
+  expect(createToolInspectRequest({ jobId: " inspect-1 ", key: "crop-pdf", file })).toEqual({
     type: "inspect",
     jobId: "inspect-1",
     key: "crop-pdf",
     files: [file],
     thumbnailWidth: INSPECT_THUMBNAIL_WIDTH,
   });
-  assert.equal(
+  expect(
     createToolInspectRequest({
       jobId: "inspect-1",
       key: "crop-pdf",
       file,
       thumbnailWidth: 160,
     }).thumbnailWidth,
-    160,
-  );
-  assert.throws(() => createToolInspectRequest({ jobId: "", key: "crop-pdf", file }), /job ID/);
-  assert.throws(
+  ).toBe(160);
+  assertThrows(() => createToolInspectRequest({ jobId: "", key: "crop-pdf", file }), /job ID/);
+  assertThrows(
     () =>
       createToolInspectRequest({
         jobId: "inspect",
@@ -747,7 +755,7 @@ test("page inspection requests keep one document and a positive thumbnail width"
   );
 
   // Exactly one document per inspection — page geometry belongs to one file.
-  assert.equal(
+  expect(
     isToolWorkerMessage({
       type: "inspect",
       jobId: "j",
@@ -755,26 +763,24 @@ test("page inspection requests keep one document and a positive thumbnail width"
       files: [file, file],
       thumbnailWidth: 180,
     }),
-    false,
-  );
+  ).toBe(false);
 
-  assert.deepEqual(
+  expect(
     createToolThumbnailRequest({
       jobId: " inspect-1 ",
       pageNumbers: [3, 1, 3, 2],
     }),
-    {
-      type: "inspect-thumbnails",
-      jobId: "inspect-1",
-      pageNumbers: [3, 1, 2],
-    },
-  );
-  assert.deepEqual(createToolInspectionCloseRequest(" inspect-1 "), {
+  ).toEqual({
+    type: "inspect-thumbnails",
+    jobId: "inspect-1",
+    pageNumbers: [3, 1, 2],
+  });
+  expect(createToolInspectionCloseRequest(" inspect-1 ")).toEqual({
     type: "inspect-close",
     jobId: "inspect-1",
   });
-  assert.throws(() => createToolThumbnailRequest({ jobId: "inspect-1", pageNumbers: [0] }), /positive integers/);
-  assert.throws(
+  assertThrows(() => createToolThumbnailRequest({ jobId: "inspect-1", pageNumbers: [0] }), /positive integers/);
+  assertThrows(
     () =>
       createToolThumbnailRequest({
         jobId: "inspect-1",
@@ -782,22 +788,20 @@ test("page inspection requests keep one document and a positive thumbnail width"
       }),
     /24/,
   );
-  assert.equal(
+  expect(
     isToolWorkerMessage({
       type: "inspect-thumbnails",
       jobId: "inspect-1",
       pageNumbers: [1, 2],
     }),
-    true,
-  );
-  assert.equal(
+  ).toBe(true);
+  expect(
     isToolWorkerMessage({
       type: "inspect-thumbnails",
       jobId: "inspect-1",
       pageNumbers: [1, 1],
     }),
-    false,
-  );
+  ).toBe(false);
 });
 
 test("PDF inspection can target generated output and rejects unknown sources", () => {
@@ -808,24 +812,24 @@ test("PDF inspection can target generated output and rejects unknown sources", (
     file,
     source: "output",
   });
-  assert.equal(request.source, "output");
-  assert.equal(request.key, "image-to-pdf");
-  assert.equal(isToolWorkerMessage(request), true);
-  assert.equal(isToolWorkerMessage({ ...request, source: undefined }), true);
+  expect(request.source).toBe("output");
+  expect(request.key).toBe("image-to-pdf");
+  expect(isToolWorkerMessage(request)).toBe(true);
+  expect(isToolWorkerMessage({ ...request, source: undefined })).toBe(true);
   for (const source of ["other", null, false, 1]) {
-    assert.equal(isToolWorkerMessage({ ...request, source }), false);
+    expect(isToolWorkerMessage({ ...request, source })).toBe(false);
   }
 });
 
 test("display preview requests validate pixel width and accept lossless PNG responses", () => {
   const input = { jobId: "preview", pageNumbers: [1], renderWidth: 2048 };
-  assert.equal(createToolThumbnailRequest(input).renderWidth, 2048);
-  assert.equal(isToolWorkerMessage({ type: "inspect-thumbnails", ...input }), true);
+  expect(createToolThumbnailRequest(input).renderWidth).toBe(2048);
+  expect(isToolWorkerMessage({ type: "inspect-thumbnails", ...input })).toBe(true);
   for (const renderWidth of [0, -1, 1.5, Infinity, 4097]) {
-    assert.throws(() => createToolThumbnailRequest({ ...input, renderWidth }), /Preview width/);
-    assert.equal(isToolWorkerMessage({ type: "inspect-thumbnails", ...input, renderWidth }), false);
+    assertThrows(() => createToolThumbnailRequest({ ...input, renderWidth }), /Preview width/);
+    expect(isToolWorkerMessage({ type: "inspect-thumbnails", ...input, renderWidth })).toBe(false);
   }
-  assert.equal(
+  expect(
     isToolWorkerResponse({
       type: "thumbnails",
       jobId: "preview",
@@ -842,8 +846,7 @@ test("display preview requests validate pixel width and accept lossless PNG resp
         },
       ],
     }),
-    true,
-  );
+  ).toBe(true);
 });
 
 test("large PDF previews evict raster bytes by pixel budget while preserving all page geometry", () => {
@@ -875,19 +878,16 @@ test("large PDF previews evict raster bytes by pixel budget while preserving all
       ],
     });
   }
-  assert.equal(state.previews.length, 6);
-  assert.deepEqual(
-    state.previews.filter((page) => page.buffer).map((page) => page.pageNumber),
-    [3, 4, 5, 6],
-  );
-  assert.equal("renderWidth" in state.previews[0], false, "Evicted pages must be eligible to render again.");
+  expect(state.previews.length).toBe(6);
+  expect(state.previews.filter((page) => page.buffer).map((page) => page.pageNumber)).toEqual([3, 4, 5, 6]);
+  expect("renderWidth" in state.previews[0], "Evicted pages must be eligible to render again.").toBe(false);
 });
 
 test("worker job state ignores stale responses and cannot complete after cancellation", () => {
   const idle = createToolJobState();
   const started = beginWorkerJob(idle, "job-1");
-  assert.deepEqual(idle, createToolJobState(), "beginWorkerJob must not mutate");
-  assert.deepEqual({ status: started.status, jobId: started.jobId }, { status: "running", jobId: "job-1" });
+  expect(idle, "beginWorkerJob must not mutate").toEqual(createToolJobState());
+  expect({ status: started.status, jobId: started.jobId }).toEqual({ status: "running", jobId: "job-1" });
 
   // A response addressed to another job never advances the running job.
   const stale = reduceWorkerJobState(started, {
@@ -897,8 +897,8 @@ test("worker job state ignores stale responses and cannot complete after cancell
     total: 9,
     stage: "encode",
   });
-  assert.equal(stale, started);
-  assert.equal(stale.progress, null);
+  expect(stale).toBe(started);
+  expect(stale.progress).toBe(null);
 
   const progressed = reduceWorkerJobState(started, {
     type: "progress",
@@ -907,33 +907,32 @@ test("worker job state ignores stale responses and cannot complete after cancell
     total: 4,
     stage: "decode",
   });
-  assert.deepEqual(progressed.progress, {
+  expect(progressed.progress).toEqual({
     completed: 1,
     total: 4,
     stage: "decode",
   });
-  assert.equal(started.progress, null, "reduce must not mutate its input");
+  expect(started.progress, "reduce must not mutate its input").toBe(null);
 
   const canceled = cancelWorkerJob(progressed);
-  assert.deepEqual(canceled.message, { type: "cancel", jobId: "job-1" });
-  assert.equal(canceled.state.status, "canceled");
-  assert.equal(canceled.state.progress, null);
-  assert.equal(progressed.status, "running", "cancel must not mutate its input");
+  expect(canceled.message).toEqual({ type: "cancel", jobId: "job-1" });
+  expect(canceled.state.status).toBe("canceled");
+  expect(canceled.state.progress).toBe(null);
+  expect(progressed.status, "cancel must not mutate its input").toBe("running");
 
   // Terminal states are frozen: a late success for the same job changes nothing.
-  assert.equal(
+  expect(
     reduceWorkerJobState(canceled.state, {
       type: "success",
       jobId: "job-1",
       result: { render: "files", files: [] },
     }),
-    canceled.state,
-  );
+  ).toBe(canceled.state);
   // Only a running job can be cancelled.
-  assert.equal(cancelWorkerJob(createToolJobState()), null);
-  assert.equal(cancelWorkerJob(canceled.state), null);
+  expect(cancelWorkerJob(createToolJobState())).toBe(null);
+  expect(cancelWorkerJob(canceled.state)).toBe(null);
   // And an idle state ignores every response.
-  assert.equal(
+  expect(
     reduceWorkerJobState(idle, {
       type: "progress",
       jobId: "job-1",
@@ -941,8 +940,7 @@ test("worker job state ignores stale responses and cannot complete after cancell
       total: 2,
       stage: "decode",
     }),
-    idle,
-  );
+  ).toBe(idle);
 });
 
 test("thumbnail failures surface after inspection while completed conversions stay frozen", () => {
@@ -961,24 +959,23 @@ test("thumbnail failures surface after inspection while completed conversions st
     recovery: "Retry the preview.",
   };
   const failed = reduceWorkerJobState(inspected, failure);
-  assert.equal(failed.status, "failed");
-  assert.equal(failed.error.message, failure.message);
-  assert.equal(failed.error.recovery, failure.recovery);
-  assert.equal(reduceWorkerJobState(inspected, { ...failure, jobId: "old-job" }), inspected);
-  assert.equal(
+  expect(failed.status).toBe("failed");
+  expect(failed.error.message).toBe(failure.message);
+  expect(failed.error.recovery).toBe(failure.recovery);
+  expect(reduceWorkerJobState(inspected, { ...failure, jobId: "old-job" })).toBe(inspected);
+  expect(
     reduceWorkerJobState(failed, {
       type: "thumbnails",
       jobId: "preview-job",
       previews: [],
     }),
-    failed,
-  );
+  ).toBe(failed);
   const converted = reduceWorkerJobState(started, {
     type: "success",
     jobId: "preview-job",
     result: { render: "files", files: [] },
   });
-  assert.equal(reduceWorkerJobState(converted, failure), converted);
+  expect(reduceWorkerJobState(converted, failure)).toBe(converted);
 });
 
 test("worker failures, cancellations, and successes produce frozen terminal state", () => {
@@ -989,21 +986,20 @@ test("worker failures, cancellations, and successes produce frozen terminal stat
     message: "This file needs more memory than the browser can provide.",
     recovery: "Try a smaller file.",
   });
-  assert.equal(failed.status, "failed");
-  assert.equal(failed.progress, null);
-  assert.deepEqual(failed.error, {
+  expect(failed.status).toBe("failed");
+  expect(failed.progress).toBe(null);
+  expect(failed.error).toEqual({
     code: "memory-limit",
     message: "This file needs more memory than the browser can provide.",
     recovery: "Try a smaller file.",
   });
-  assert.equal(
+  expect(
     reduceWorkerJobState(failed, {
       type: "success",
       jobId: "job-2",
       result: { render: "text", text: "too late" },
     }),
-    failed,
-  );
+  ).toBe(failed);
 
   const result = {
     render: "files",
@@ -1025,9 +1021,9 @@ test("worker failures, cancellations, and successes produce frozen terminal stat
     jobId: "job-3",
     result,
   });
-  assert.equal(complete.status, "completed");
-  assert.equal(complete.progress, null);
-  assert.deepEqual(complete.result, result);
+  expect(complete.status).toBe("completed");
+  expect(complete.progress).toBe(null);
+  expect(complete.result).toEqual(result);
 
   const inspected = reduceWorkerJobState(beginWorkerJob(createToolJobState(), "job-4"), {
     type: "inspected",
@@ -1038,9 +1034,9 @@ test("worker failures, cancellations, and successes produce frozen terminal stat
       { pageNumber: 2, pageWidth: 612, pageHeight: 792 },
     ],
   });
-  assert.equal(inspected.status, "completed");
-  assert.equal(inspected.pageCount, 2);
-  assert.equal(inspected.previews.length, 2);
+  expect(inspected.status).toBe("completed");
+  expect(inspected.pageCount).toBe(2);
+  expect(inspected.previews.length).toBe(2);
 
   const thumbnail = {
     pageNumber: 2,
@@ -1056,18 +1052,17 @@ test("worker failures, cancellations, and successes produce frozen terminal stat
     jobId: "job-4",
     previews: [thumbnail],
   });
-  assert.equal(withThumbnail.status, "completed");
-  assert.equal(withThumbnail.previews.length, 2);
-  assert.equal(withThumbnail.previews[0].pageNumber, 1);
-  assert.equal(withThumbnail.previews[1].buffer, thumbnail.buffer);
-  assert.equal(
+  expect(withThumbnail.status).toBe("completed");
+  expect(withThumbnail.previews.length).toBe(2);
+  expect(withThumbnail.previews[0].pageNumber).toBe(1);
+  expect(withThumbnail.previews[1].buffer).toBe(thumbnail.buffer);
+  expect(
     isToolWorkerResponse({
       type: "thumbnails",
       jobId: "job-4",
       previews: [{ pageNumber: 2, pageWidth: 612, pageHeight: 792 }],
     }),
-    false,
-  );
+  ).toBe(false);
 
   let cached = reduceWorkerJobState(beginWorkerJob(createToolJobState(), "job-4"), {
     type: "inspected",
@@ -1096,22 +1091,21 @@ test("worker failures, cancellations, and successes produce frozen terminal stat
       ],
     });
   }
-  assert.equal(cached.previews.filter((preview) => "buffer" in preview).length, 24);
-  assert.equal("buffer" in cached.previews[0], false);
+  expect(cached.previews.filter((preview) => "buffer" in preview).length).toBe(24);
+  expect("buffer" in cached.previews[0]).toBe(false);
 
   const stopped = reduceWorkerJobState(beginWorkerJob(createToolJobState(), "job-5"), {
     type: "canceled",
     jobId: "job-5",
   });
-  assert.equal(stopped.status, "canceled");
-  assert.equal(
+  expect(stopped.status).toBe("canceled");
+  expect(
     reduceWorkerJobState(stopped, {
       type: "success",
       jobId: "job-5",
       result: { render: "text", text: "too late" },
     }),
-    stopped,
-  );
+  ).toBe(stopped);
 });
 
 function riff(chunkType, payload) {

@@ -2,7 +2,17 @@
 import { useState } from "react";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import { ResultActions } from "@/components/ResultView";
-import { Button, ColorControl, Field, Input, Badge } from "@/components/ui/index.tsx";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+  Button,
+  ColorControl,
+  Field,
+  Input,
+  Badge,
+} from "@/components/ui/index.tsx";
 import { DesignWorkspace } from "@/app/devtools/components/color-design/DesignWorkspace";
 import { contrast, suggestForeground, CONTRAST_CHECKS } from "./model";
 import type { ToolResult } from "@/lib/tool-framework/result";
@@ -127,20 +137,22 @@ export default function ContrastWorkspace(props: WorkspaceProps) {
               Find a passing text color
             </Button>
           ) : null}
-          <details className="border-t border-border pt-4">
-            <summary className="cursor-pointer text-sm font-medium">Transparency canvas · {canvas}</summary>
-            <div className="mt-4">
-              <ColorControl
-                compact
-                label="Canvas behind transparency"
-                value={canvas}
-                onChange={(value) => update("canvas", value)}
-              />
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Use an opaque color. Transparent layers are composited over this surface.
-            </p>
-          </details>
+          <Accordion type="multiple" className="border-t border-border">
+            <AccordionItem value="transparency-canvas">
+              <AccordionTrigger>Transparency canvas · {canvas}</AccordionTrigger>
+              <AccordionContent>
+                <ColorControl
+                  compact
+                  label="Canvas behind transparency"
+                  value={canvas}
+                  onChange={(value) => update("canvas", value)}
+                />
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Use an opaque color. Transparent layers are composited over this surface.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
           <Field htmlFor="contrast-preview-text" label="Preview text">
             <Input maxLength={160} value={sample} onChange={(event) => setSample(event.target.value)} />
           </Field>

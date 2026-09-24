@@ -1,7 +1,6 @@
-import assert from "node:assert/strict";
+import { expect, test, onTestFinished } from "vitest";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import test from "node:test";
 import pg from "pg";
 
 const enabled = process.env.CANOPY_INTEGRATION === "1" && Boolean(process.env.DATABASE_URL);
@@ -13,7 +12,7 @@ test(
   async (context) => {
     const tx = new pg.Client({ connectionString: process.env.DATABASE_URL });
     await tx.connect();
-    context.after(() => tx.end());
+    onTestFinished(() => tx.end());
     const schema = `preferences_test_${randomUUID().replaceAll("-", "")}`;
     const migration = await readFile(
       new URL("../db/migration/0001-baseline/0008_user_preferences.sql", import.meta.url),
@@ -32,34 +31,44 @@ test(
       await tx.query(
         "UPDATE user_preferences SET value='[\"media.merge-pdf\"]' WHERE user_id='a' AND key='saved_tools'",
       );
-      assert.deepEqual(
+      expect(
         (await tx.query("SELECT value FROM user_preferences WHERE user_id='a' AND key='theme'")).rows[0].value,
-        "light",
-      );
-      assert.deepEqual(
+      ).toEqual("light");
+      expect(
         (await tx.query("SELECT value FROM user_preferences WHERE user_id='b' AND key='saved_tools'")).rows[0].value,
-        [],
-      );
+      ).toEqual([]);
       await tx.query("SAVEPOINT constraint_check");
-      await assert.rejects(
-        tx.query("INSERT INTO user_preferences (user_id,key,value) VALUES ('a','saved_tools','[]')"),
-        (e) => e.code === "23505",
-      );
+      await (async () => {
+        let __err;
+        try {
+          await tx.query("INSERT INTO user_preferences (user_id,key,value) VALUES ('a','saved_tools','[]')");
+        } catch (__e) {
+          __err = __e;
+        }
+        expect(__err).toBeDefined();
+        expect(((e) => e.code === "23505")(__err)).toBe(true);
+      })();
       await tx.query("ROLLBACK TO SAVEPOINT constraint_check");
       await tx.query("RELEASE SAVEPOINT constraint_check");
       await tx.query("SAVEPOINT constraint_check");
-      await assert.rejects(
-        tx.query("INSERT INTO user_preferences (user_id,key,value) VALUES ('missing','saved_tools','[]')"),
-        (e) => e.code === "23503",
-      );
+      await (async () => {
+        let __err;
+        try {
+          await tx.query("INSERT INTO user_preferences (user_id,key,value) VALUES ('missing','saved_tools','[]')");
+        } catch (__e) {
+          __err = __e;
+        }
+        expect(__err).toBeDefined();
+        expect(((e) => e.code === "23503")(__err)).toBe(true);
+      })();
       await tx.query("ROLLBACK TO SAVEPOINT constraint_check");
       await tx.query("RELEASE SAVEPOINT constraint_check");
       await tx.query("DELETE FROM auth_users WHERE id='a'");
-      assert.equal((await tx.query("SELECT * FROM user_preferences WHERE user_id='a'")).rows.length, 0);
-      assert.equal((await tx.query("SELECT * FROM user_preferences WHERE user_id='b'")).rows.length, 1);
+      expect((await tx.query("SELECT * FROM user_preferences WHERE user_id='a'")).rows.length).toBe(0);
+      expect((await tx.query("SELECT * FROM user_preferences WHERE user_id='b'")).rows.length).toBe(1);
     } finally {
       await tx.query("ROLLBACK");
     }
-    assert.equal((await tx.query("SELECT 1 FROM pg_namespace WHERE nspname = $1", [schema])).rows.length, 0);
+    expect((await tx.query("SELECT 1 FROM pg_namespace WHERE nspname = $1", [schema])).rows.length).toBe(0);
   },
 );

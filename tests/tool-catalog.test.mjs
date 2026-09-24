@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 
 import {
   areToolSlugsUnique,
@@ -91,11 +90,8 @@ function resolve(storedRow) {
 test("the manifest is the map: one resolved tool per entry, in manifest order", () => {
   const tools = merge();
 
-  assert.deepEqual(
-    tools.map((tool) => tool.id),
-    MANIFEST.map((entry) => entry.id),
-  );
-  assert.equal(tools.length, MANIFEST.length);
+  expect(tools.map((tool) => tool.id)).toEqual(MANIFEST.map((entry) => entry.id));
+  expect(tools.length).toBe(MANIFEST.length);
 });
 
 test("stored rows override the seeded name, description, order, and enabled flag", () => {
@@ -109,10 +105,10 @@ test("stored rows override the seeded name, description, order, and enabled flag
     archived: false,
   });
 
-  assert.equal(tool?.name, "Configured Name");
-  assert.equal(tool?.description, "Configured externally.");
-  assert.equal(tool?.order, STORED_ORDER);
-  assert.equal(tool?.enabled, true);
+  expect(tool?.name).toBe("Configured Name");
+  expect(tool?.description).toBe("Configured externally.");
+  expect(tool?.order).toBe(STORED_ORDER);
+  expect(tool?.enabled).toBe(true);
 });
 
 test("merging keeps every code registration and drops unknown stored tool ids", () => {
@@ -137,26 +133,22 @@ test("merging keeps every code registration and drops unknown stored tool ids", 
     },
   );
 
-  assert.equal(tools.length, MANIFEST.length);
-  assert.deepEqual(
-    tools.find((tool) => tool.id === secondPaperwork.id),
-    {
-      ...secondPaperwork,
-      iconUrl: null,
-      toolId: secondPaperwork.id,
-      slug: "receipts",
-      name: "Receipt Maker",
-      description: "Create a receipt.",
-      order: STORED_ORDER,
-      enabled: false,
-      archived: true,
-    },
-  );
-  assert.equal(
+  expect(tools.length).toBe(MANIFEST.length);
+  expect(tools.find((tool) => tool.id === secondPaperwork.id)).toEqual({
+    ...secondPaperwork,
+    iconUrl: null,
+    toolId: secondPaperwork.id,
+    slug: "receipts",
+    name: "Receipt Maker",
+    description: "Create a receipt.",
+    order: STORED_ORDER,
+    enabled: false,
+    archived: true,
+  });
+  expect(
     tools.some((tool) => tool.id === "removed.unknown-tool"),
-    false,
     "a stored row named by no manifest entry is dropped, silently",
-  );
+  ).toBe(false);
 });
 
 test("blank stored strings and non-integer orders fall back to the manifest", () => {
@@ -170,9 +162,9 @@ test("blank stored strings and non-integer orders fall back to the manifest", ()
     archived: false,
   });
 
-  assert.equal(tool?.name, firstPaperwork.defaultName);
-  assert.equal(tool?.description, firstPaperwork.defaultDescription);
-  assert.equal(tool?.order, paperwork.indexOf(firstPaperwork));
+  expect(tool?.name).toBe(firstPaperwork.defaultName);
+  expect(tool?.description).toBe(firstPaperwork.defaultDescription);
+  expect(tool?.order).toBe(paperwork.indexOf(firstPaperwork));
 });
 
 test("invalid persisted slugs fail closed while valid fields still merge", () => {
@@ -186,30 +178,30 @@ test("invalid persisted slugs fail closed while valid fields still merge", () =>
     archived: false,
   });
 
-  assert.equal(tool?.slug, null);
-  assert.equal(tool?.enabled, false, "a routeless tool can never be enabled");
-  assert.equal(tool?.name, "Receipt Maker");
+  expect(tool?.slug).toBe(null);
+  expect(tool?.enabled, "a routeless tool can never be enabled").toBe(false);
+  expect(tool?.name).toBe("Receipt Maker");
 });
 
 test("a cleared slug returns the tool to setup-required and disabled", () => {
   const tool = resolve(row(firstPaperwork, { slug: null, order: STORED_ORDER }));
 
-  assert.equal(tool?.slug, null);
-  assert.equal(tool?.enabled, false);
-  assert.equal(isToolAvailable(tool), false);
+  expect(tool?.slug).toBe(null);
+  expect(tool?.enabled).toBe(false);
+  expect(isToolAvailable(tool)).toBe(false);
 });
 
 test("an archived tool stops being available even while enabled", () => {
   const tool = resolve(row(firstPaperwork, { archived: true }));
 
-  assert.equal(tool?.archived, true);
-  assert.equal(isToolAvailable(tool), false);
+  expect(tool?.archived).toBe(true);
+  expect(isToolAvailable(tool)).toBe(false);
 });
 
 test("an unconfigured tool is setup-required and disabled by default", () => {
   // No stored row at all: the merge must not invent a route from the component
   // key, which is what would silently publish a tool nobody configured.
-  assert.deepEqual(merge(), [
+  expect(merge()).toEqual([
     ...MANIFEST.map((entry) => ({
       ...entry,
       iconUrl: null,
@@ -236,13 +228,13 @@ test("mergeManagedTool falls back wholesale when the stored value is not a row",
   };
 
   for (const stored of [undefined, null, "row", 7, [{ slug: "alpha" }]]) {
-    assert.deepEqual(mergeManagedTool(firstPaperwork, fallback, stored), fallback);
+    expect(mergeManagedTool(firstPaperwork, fallback, stored)).toEqual(fallback);
   }
 });
 
 test("tool slugs use lowercase segments and reject reserved application routes", () => {
   for (const slug of ["invoice", "invoice-2", "2fa-tool", "w9-request"]) {
-    assert.equal(isValidToolSlug("paperwork", slug), true, slug);
+    expect(isValidToolSlug("paperwork", slug), slug).toBe(true);
   }
 
   for (const slug of [
@@ -256,21 +248,21 @@ test("tool slugs use lowercase segments and reject reserved application routes",
     null,
     undefined,
   ]) {
-    assert.equal(isValidToolSlug("paperwork", slug), false, String(slug));
+    expect(isValidToolSlug("paperwork", slug), String(slug)).toBe(false);
   }
 
   for (const [app, reserved] of Object.entries(reservedToolSlugs)) {
     for (const slug of reserved) {
-      assert.equal(isValidToolSlug(app, slug), false, `${app}:${slug}`);
+      expect(isValidToolSlug(app, slug), `${app}:${slug}`).toBe(false);
     }
   }
-  assert.equal(isValidToolSlug(firstDevtool.app, firstDevtool.componentKey), true);
+  expect(isValidToolSlug(firstDevtool.app, firstDevtool.componentKey)).toBe(true);
 });
 
 test("slugFromName produces a valid slug or refuses", () => {
-  assert.equal(slugFromName("Receipt & Invoice Maker"), "receipt-and-invoice-maker");
-  assert.equal(isValidToolSlug("devtools", slugFromName("JSON  Formatter!")), true);
-  assert.throws(() => slugFromName("---"), /at least one letter or number/i);
+  expect(slugFromName("Receipt & Invoice Maker")).toBe("receipt-and-invoice-maker");
+  expect(isValidToolSlug("devtools", slugFromName("JSON  Formatter!"))).toBe(true);
+  expect(() => slugFromName("---")).toThrow(/at least one letter or number/i);
 });
 
 test("tool slugs are unique within an application but may repeat across applications", () => {
@@ -278,22 +270,21 @@ test("tool slugs are unique within an application but may repeat across applicat
   const takenSlug = firstPaperwork.componentKey;
   const withSlug = (id, slug) => tools.map((tool) => (tool.id === id ? { ...tool, slug } : tool));
 
-  assert.equal(areToolSlugsUnique(tools, MANIFEST), true);
-  assert.equal(areToolSlugsUnique(withSlug(secondPaperwork.id, takenSlug), MANIFEST), false);
-  assert.equal(areToolSlugsUnique(withSlug(firstDevtool.id, takenSlug), MANIFEST), true);
-  assert.equal(areToolSlugsUnique(withSlug(secondPaperwork.id, null), MANIFEST), true);
-  assert.equal(
+  expect(areToolSlugsUnique(tools, MANIFEST)).toBe(true);
+  expect(areToolSlugsUnique(withSlug(secondPaperwork.id, takenSlug), MANIFEST)).toBe(false);
+  expect(areToolSlugsUnique(withSlug(firstDevtool.id, takenSlug), MANIFEST)).toBe(true);
+  expect(areToolSlugsUnique(withSlug(secondPaperwork.id, null), MANIFEST)).toBe(true);
+  expect(
     areToolSlugsUnique([{ ...tools[0], toolId: "removed.unknown-tool" }], MANIFEST),
-    false,
     "a slug held by no manifest entry cannot be proven unique",
-  );
+  ).toBe(false);
 });
 
 test("a saved slug is immutable while setup-required tools may receive their first slug", () => {
-  assert.doesNotThrow(() => assertToolSlugImmutable(null, "proposal-builder"));
-  assert.doesNotThrow(() => assertToolSlugImmutable("invoice-generator", "invoice-generator"));
-  assert.throws(() => assertToolSlugImmutable("invoice-generator", "invoices"), /immutable/i);
-  assert.throws(() => assertToolSlugImmutable("invoice-generator", null), /immutable/i);
+  expect(() => assertToolSlugImmutable(null, "proposal-builder")).not.toThrow();
+  expect(() => assertToolSlugImmutable("invoice-generator", "invoice-generator")).not.toThrow();
+  expect(() => assertToolSlugImmutable("invoice-generator", "invoices")).toThrow(/immutable/i);
+  expect(() => assertToolSlugImmutable("invoice-generator", null)).toThrow(/immutable/i);
 });
 
 test("disabled, archived, setup-required, and ambiguous tools are blocked", () => {
@@ -307,24 +298,21 @@ test("disabled, archived, setup-required, and ambiguous tools are blocked", () =
   const setupRequired = patch(firstPaperwork.id, { slug: null });
   const duplicateRoute = patch(secondPaperwork.id, { slug });
 
-  assert.equal(isToolAvailable(tools[0]), true);
-  assert.deepEqual(
+  expect(isToolAvailable(tools[0])).toBe(true);
+  expect(
     getEnabledTools(disabled, "paperwork").map((tool) => tool.id),
-    enabledPaperwork.filter((tool) => tool.id !== firstPaperwork.id).map((tool) => tool.id),
     "disabling one tool removes exactly that tool, in stored order",
-  );
-  assert.deepEqual(
+  ).toEqual(enabledPaperwork.filter((tool) => tool.id !== firstPaperwork.id).map((tool) => tool.id));
+  expect(
     enabledPaperwork.map((tool) => tool.order),
-    [...enabledPaperwork.map((tool) => tool.order)].sort((a, b) => a - b),
     "enabled tools come back sorted by stored order",
-  );
-  assert.deepEqual(
+  ).toEqual([...enabledPaperwork.map((tool) => tool.order)].sort((a, b) => a - b));
+  expect(
     getEnabledTools(tools)
       .map((tool) => tool.id)
       .sort(),
-    MANIFEST.map((entry) => entry.id).sort(),
     "an omitted app returns every available tool",
-  );
+  ).toEqual(MANIFEST.map((entry) => entry.id).sort());
 
   for (const [label, candidates] of [
     ["disabled", disabled],
@@ -332,23 +320,21 @@ test("disabled, archived, setup-required, and ambiguous tools are blocked", () =
     ["setup-required", setupRequired],
     ["ambiguous", duplicateRoute],
   ]) {
-    assert.equal(
-      findAvailableToolBySlug(candidates, "paperwork", slug),
+    expect(findAvailableToolBySlug(candidates, "paperwork", slug), `${label} tools must not resolve a route`).toBe(
       undefined,
-      `${label} tools must not resolve a route`,
     );
   }
 
-  assert.equal(findAvailableToolBySlug(tools, "paperwork", slug)?.id, firstPaperwork.id);
+  expect(findAvailableToolBySlug(tools, "paperwork", slug)?.id).toBe(firstPaperwork.id);
   for (const reserved of reservedToolSlugs.paperwork) {
-    assert.equal(findAvailableToolBySlug(tools, "paperwork", reserved), undefined);
+    expect(findAvailableToolBySlug(tools, "paperwork", reserved)).toBe(undefined);
   }
 });
 
 test("stored tool icon URLs survive catalog resolution and missing icons stay null", () => {
   const iconUrl = "https://example.test/tool.png";
-  assert.equal(resolve(row(firstPaperwork, { iconUrl })).iconUrl, iconUrl);
+  expect(resolve(row(firstPaperwork, { iconUrl })).iconUrl).toBe(iconUrl);
   for (const missing of [null, undefined, "", "  ", 42]) {
-    assert.equal(resolve(row(firstPaperwork, { iconUrl: missing })).iconUrl, null);
+    expect(resolve(row(firstPaperwork, { iconUrl: missing })).iconUrl).toBe(null);
   }
 });

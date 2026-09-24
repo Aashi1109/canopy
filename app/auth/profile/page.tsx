@@ -60,33 +60,35 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
         href={config.appUrl}
         name="SmartTools"
       />
-      <AppContainer className="pb-16 sm:pb-20">
-        <header className="mb-10 border-b border-border pb-8 pt-8 sm:pt-10">
-          <div className="-ml-3">
-            <ProfileBackLink fallbackHref={returnTo} />
-          </div>
-          <Overline className="block mt-6 text-primary">Account settings</Overline>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <H1 className="text-foreground">Your SmartTools account</H1>
-            <StatusBadge variant={session.user.emailVerified ? "success" : "warning"}>
-              {session.user.emailVerified ? "Verified account" : "Verification pending"}
-            </StatusBadge>
-          </div>
-          <Muted className="mt-2 max-w-2xl text-muted-foreground">
-            Update your profile, sign-in methods, and account security.
-          </Muted>
-        </header>
-        <ProfileManager
-          currentSessionId={session.session.id}
-          publicSiteUrl={config.appUrl}
-          initialUser={{
-            name: session.user.name,
-            email: session.user.email,
-            image: session.user.image ?? null,
-            emailVerified: session.user.emailVerified,
-          }}
-        />
-      </AppContainer>
+      <main>
+        <AppContainer className="pb-16 sm:pb-20">
+          <header className="mb-10 border-b border-border pb-8 pt-8 sm:pt-10">
+            <div className="-ml-3">
+              <ProfileBackLink fallbackHref={returnTo} />
+            </div>
+            <Overline className="block mt-6 text-primary">Account settings</Overline>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <H1 className="text-foreground">Your SmartTools account</H1>
+              <StatusBadge variant={session.user.emailVerified ? "success" : "warning"}>
+                {session.user.emailVerified ? "Verified account" : "Verification pending"}
+              </StatusBadge>
+            </div>
+            <Muted className="mt-2 max-w-2xl text-muted-foreground">
+              Update your profile, sign-in methods, and account security.
+            </Muted>
+          </header>
+          <ProfileManager
+            currentSessionId={session.session.id}
+            publicSiteUrl={config.appUrl}
+            initialUser={{
+              name: session.user.name,
+              email: session.user.email,
+              image: session.user.image ?? null,
+              emailVerified: session.user.emailVerified,
+            }}
+          />
+        </AppContainer>
+      </main>
       <CanopyFooter publicOrigin={config.appUrl} />
     </div>
   );

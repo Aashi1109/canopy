@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { Editor, getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { blogFormattingExtensions } from "../app/admin/(protected)/blog/lib/formattingExtensions.ts";
@@ -24,13 +23,13 @@ test("native highlight commands apply, recolor without duplicates, and remove on
     },
   });
   editor.commands.setTextSelection({ from: 1, to: 12 });
-  assert.equal(editor.commands.setMark("highlight", { color: "#dcfce7" }), true);
-  assert.equal(editor.commands.setMark("highlight", { color: "#dbeafe" }), true);
-  assert.deepEqual(content(editor)[0].marks, [{ type: "highlight", attrs: { color: "#dbeafe" } }]);
+  expect(editor.commands.setMark("highlight", { color: "#dcfce7" })).toBe(true);
+  expect(editor.commands.setMark("highlight", { color: "#dbeafe" })).toBe(true);
+  expect(content(editor)[0].marks).toEqual([{ type: "highlight", attrs: { color: "#dbeafe" } }]);
   editor.commands.setTextSelection({ from: 1, to: 6 });
   editor.commands.setMark("bold");
-  assert.equal(editor.commands.unsetMark("highlight"), true);
-  assert.deepEqual(content(editor), [
+  expect(editor.commands.unsetMark("highlight")).toBe(true);
+  expect(content(editor)).toEqual([
     { type: "text", text: "Hello", marks: [{ type: "bold" }] },
     { type: "text", text: " world", marks: [{ type: "highlight", attrs: { color: "#dbeafe" } }] },
   ]);
@@ -50,7 +49,7 @@ test("native highlights at the caret apply to typing and clear for following tex
   editor.view.dispatch(editor.state.tr.insertText("Second"));
   editor.commands.unsetMark("highlight");
   editor.view.dispatch(editor.state.tr.insertText("Third"));
-  assert.deepEqual(content(editor), [
+  expect(content(editor)).toEqual([
     { type: "text", text: "First", marks: [{ type: "highlight", attrs: { color: "#f3e8ff" } }] },
     { type: "text", text: "Second", marks: [{ type: "highlight", attrs: { color: "#fce7f3" } }] },
     { type: "text", text: "Third" },
@@ -60,18 +59,18 @@ test("native highlights at the caret apply to typing and clear for following tex
 
 test("highlight clipboard serialization preserves safe color and imports public CSS colors", () => {
   const rendered = highlight.spec.toDOM(highlight.create({ color: "#ABCDEF" }));
-  assert.deepEqual(rendered, ["mark", { "data-color": "#abcdef", style: "background-color: #abcdef" }, 0]);
-  assert.equal(parse(element(rendered[1]["data-color"])).color, "#abcdef");
-  assert.equal(parse(element(null, "rgb(171, 205, 239)")).color, "#abcdef");
-  assert.equal(parse(element(null, "#ABCDEF")).color, "#abcdef");
-  assert.equal(highlight.create(parse(element(null))).attrs.color, null);
-  assert.deepEqual(highlight.spec.toDOM(highlight.create()), ["mark", {}, 0]);
+  expect(rendered).toEqual(["mark", { "data-color": "#abcdef", style: "background-color: #abcdef" }, 0]);
+  expect(parse(element(rendered[1]["data-color"])).color).toBe("#abcdef");
+  expect(parse(element(null, "rgb(171, 205, 239)")).color).toBe("#abcdef");
+  expect(parse(element(null, "#ABCDEF")).color).toBe("#abcdef");
+  expect(highlight.create(parse(element(null))).attrs.color).toBe(null);
+  expect(highlight.spec.toDOM(highlight.create())).toEqual(["mark", {}, 0]);
 });
 
 test("clipboard color parsing and rendering discard untrusted or malformed CSS values", () => {
   for (const color of ["#fff", "#123456;background:url(x)", "url(evil)", "rgb(999, 0, 0)", "transparent", ""]) {
-    assert.equal(highlight.create(parse(element(color))).attrs.color, null);
-    assert.equal(highlight.create(parse(element(null, color))).attrs.color, null);
-    assert.deepEqual(highlight.spec.toDOM(highlight.create({ color })), ["mark", {}, 0]);
+    expect(highlight.create(parse(element(color))).attrs.color).toBe(null);
+    expect(highlight.create(parse(element(null, color))).attrs.color).toBe(null);
+    expect(highlight.spec.toDOM(highlight.create({ color }))).toEqual(["mark", {}, 0]);
   }
 });

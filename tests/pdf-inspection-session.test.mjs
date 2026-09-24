@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { expect, test } from "vitest";
 import { PDFDocument } from "pdf-lib";
 
 import { openPdfInspectionSession } from "../lib/tool-framework/media/pdfRender.ts";
@@ -44,13 +42,13 @@ test("PDF inspection keeps a range-backed session and returns geometry before ra
     new AbortController().signal,
   );
 
-  assert.equal(session.pageCount, 2);
-  assert.deepEqual(session.pages, [
+  expect(session.pageCount).toBe(2);
+  expect(session.pages).toEqual([
     { pageNumber: 1, pageWidth: 300, pageHeight: 400 },
     { pageNumber: 2, pageWidth: 500, pageHeight: 600 },
   ]);
-  assert.ok(sliceCalls > 0, "PDF.js should request bounded File slices");
-  await assert.rejects(session.renderThumbnails([3]), (error) => error?.code === "invalid-page-selection");
+  expect(sliceCalls > 0, "PDF.js should request bounded File slices").toBeTruthy();
+  await expect(session.renderThumbnails([3])).rejects.toSatisfy((error) => error?.code === "invalid-page-selection");
   await session.close();
   await session.close();
-});
+}, 30000);

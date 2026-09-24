@@ -1,14 +1,27 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
+import { expect, test, vi } from "vitest";
 
-registerHooks({
-  resolve(specifier, context, next) {
-    if (specifier === "server-only") return { shortCircuit: true, url: "data:text/javascript,export {};" };
-    if (specifier.startsWith("@/")) return next(new URL("../" + specifier.slice(2), import.meta.url).href, context);
-    return next(specifier, context);
-  },
-});
+const errorMatch = (error, matcher) => {
+  if (matcher === undefined) return;
+  if (typeof matcher === "function") {
+    if (matcher.prototype instanceof Error || matcher === Error) expect(error).toBeInstanceOf(matcher);
+    else expect(matcher(error)).toBeTruthy();
+  } else if (matcher instanceof RegExp) expect(error.message).toMatch(matcher);
+  else expect(error).toMatchObject(matcher);
+};
+async function assertRejects(input, matcher) {
+  const promise = typeof input === "function" ? input() : input;
+  let error;
+  try {
+    await promise;
+  } catch (e) {
+    error = e;
+  }
+  expect(error, "expected rejection").toBeDefined();
+  errorMatch(error, matcher);
+}
+
+vi.mock("server-only", () => ({}));
+
 const { createAssistantService } = await import("../lib/assistant/service.ts");
 const { blogAssistantIntegration } = await import("../lib/blog/assistantIntegration.ts");
 const { attachmentProvider } = await import("../lib/assistant/resources.ts");
@@ -39,15 +52,14 @@ const attachment = {
 
 test("attachment views expose display fields without provider/storage credentials", () => {
   const view = attachmentView(attachment);
-  assert.deepEqual(view.data, { mimeType: "image/png", sizeBytes: 128 });
-  assert.equal(view.expiresAt, null);
-  assert.equal(
-    attachmentView({ ...attachment, type: "link", data: { url: "javascript:alert(1)" } }).data.url,
+  expect(view.data).toEqual({ mimeType: "image/png", sizeBytes: 128 });
+  expect(view.expiresAt).toBe(null);
+  expect(attachmentView({ ...attachment, type: "link", data: { url: "javascript:alert(1)" } }).data.url).toBe(
     undefined,
   );
-  assert.deepEqual(attachmentProvider(attachment.data), { name: "openai", fileId: "private-file" });
-  assert.equal(attachmentProvider({ provider: { fileId: "missing-provider-name" } }), null);
-  assert.equal(attachmentProvider({ provider: null }), null);
+  expect(attachmentProvider(attachment.data)).toEqual({ name: "openai", fileId: "private-file" });
+  expect(attachmentProvider({ provider: { fileId: "missing-provider-name" } })).toBe(null);
+  expect(attachmentProvider({ provider: null })).toBe(null);
 });
 test("message views preserve content and usage but omit raw provider details", () => {
   const parts = [{ type: "text", text: "Answer" }];
@@ -64,8 +76,8 @@ test("message views preserve content and usage but omit raw provider details", (
     createdAt: date,
     updatedAt: date,
   });
-  assert.deepEqual(view.parts, parts);
-  assert.deepEqual(view.meta, { usage: { totalTokens: 12 }, provider: { name: "openai", model: "configured" } });
+  expect(view.parts).toEqual(parts);
+  expect(view.meta).toEqual({ usage: { totalTokens: 12 }, provider: { name: "openai", model: "configured" } });
 });
 function transaction(rows) {
   return {
@@ -91,21 +103,18 @@ function transaction(rows) {
 }
 test("attachment preparation allows links and same-input retry but rejects cross-message reuse", async () => {
   const link = { ...attachment, id: "link", type: "link", data: { url: "https://openai.com/article" } };
-  assert.equal((await attachmentsForRun(transaction([link]), "owner", "thread", "other-provider", ["link"])).length, 1);
+  expect((await attachmentsForRun(transaction([link]), "owner", "thread", "other-provider", ["link"])).length).toBe(1);
   const sent = { ...attachment, messageId: "input" };
-  await assert.rejects(attachmentsForRun(transaction([sent]), "owner", "thread", "openai", ["file"]), /unavailable/i);
-  assert.equal(
-    (await attachmentsForRun(transaction([sent]), "owner", "thread", "openai", ["file"], "input")).length,
-    1,
-  );
+  await assertRejects(attachmentsForRun(transaction([sent]), "owner", "thread", "openai", ["file"]), /unavailable/i);
+  expect((await attachmentsForRun(transaction([sent]), "owner", "thread", "openai", ["file"], "input")).length).toBe(1);
   for (const row of [
     { ...attachment, status: "processing" },
     { ...attachment, expiresAt: new Date(0) },
     { ...attachment, data: { provider: { name: "openai" } } },
     { ...attachment, type: "unsupported" },
   ])
-    await assert.rejects(attachmentsForRun(transaction([row]), "owner", "thread", "openai", ["file"]), /unavailable/i);
-  await assert.rejects(
+    await assertRejects(attachmentsForRun(transaction([row]), "owner", "thread", "openai", ["file"]), /unavailable/i);
+  await assertRejects(
     attachmentsForRun(transaction([attachment]), "owner", "thread", "different", ["file"]),
     /unavailable/i,
   );
@@ -202,12 +211,12 @@ test("first send titles a provisional thread immediately and later sends preserv
         message,
         context: { editorJson: { type: "doc", content: [] } },
       });
-      assert.equal(run.status, "queued");
-      assert.equal(thread.title, "How can I improve this draft?");
-      assert.equal(userMessages.length, index + 1);
-      assert.equal(savedRuns[index].integrationKey, "blog");
-      assert.equal(savedRuns[index].resourceId, "post");
-      assert.equal(savedRuns[index].executionMode, "conversational");
+      expect(run.status).toBe("queued");
+      expect(thread.title).toBe("How can I improve this draft?");
+      expect(userMessages.length).toBe(index + 1);
+      expect(savedRuns[index].integrationKey).toBe("blog");
+      expect(savedRuns[index].resourceId).toBe("post");
+      expect(savedRuns[index].executionMode).toBe("conversational");
     }
   } finally {
     db.transaction = previous.transaction;
@@ -219,10 +228,9 @@ test("first send titles a provisional thread immediately and later sends preserv
 
 test("agent reuse accepts prior sources but artifacts remain immutable and expire before reuse", async () => {
   const sent = { ...attachment, messageId: "old-message" };
-  assert.equal(
+  expect(
     (await attachmentsForRun(transaction([sent]), "owner", "thread", "openai", ["file"], undefined, true)).length,
-    1,
-  );
+  ).toBe(1);
   const artifact = {
     ...attachment,
     id: "report",
@@ -239,8 +247,8 @@ test("agent reuse accepts prior sources but artifacts remain immutable and expir
       },
     },
   };
-  assert.equal((await attachmentsForRun(transaction([artifact]), "owner", "thread", "openai", ["report"])).length, 1);
-  await assert.rejects(
+  expect((await attachmentsForRun(transaction([artifact]), "owner", "thread", "openai", ["report"])).length).toBe(1);
+  await assertRejects(
     attachmentsForRun(
       transaction([{ ...artifact, expiresAt: new Date(0) }]),
       "owner",
@@ -252,7 +260,7 @@ test("agent reuse accepts prior sources but artifacts remain immutable and expir
     ),
     /unavailable/,
   );
-  await assert.rejects(
+  await assertRejects(
     attachmentsForRun(
       transaction([{ ...artifact, data: { artifact: { ...artifact.data.artifact, agentVersion: 2 } } }]),
       "owner",

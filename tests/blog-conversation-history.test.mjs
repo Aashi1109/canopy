@@ -1,19 +1,6 @@
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { runInNewContext } from "node:vm";
-import test from "node:test";
-import { transformSync } from "next/dist/build/swc/index.js";
+import { expect, test } from "vitest";
+import { groupConversationHistory } from "../components/assistant/AssistantPanel.tsx";
 
-const filename = new URL("../components/assistant/AssistantPanel.tsx", import.meta.url);
-const { code } = transformSync(readFileSync(filename, "utf8"), {
-  filename: filename.pathname,
-  jsc: { parser: { syntax: "typescript", tsx: true }, transform: { react: { runtime: "automatic" } } },
-  module: { type: "commonjs" },
-});
-// Only exercise the pure grouping export; UI dependencies are not rendered here.
-const exports = {};
-runInNewContext(code, { exports, require: () => ({}), Date });
-const { groupConversationHistory } = exports;
 const thread = (id, date) => ({ id, updatedAt: date.toISOString() });
 
 test("history groups local calendar dates and sorts newest first without changing input", () => {
@@ -26,16 +13,13 @@ test("history groups local calendar dates and sorts newest first without changin
   ];
   const before = JSON.stringify(threads);
   const groups = groupConversationHistory(threads, now);
-  assert.equal(groups.length, 3);
-  assert.equal(groups[0].label, "Today");
-  assert.equal(groups[0].threads[0].id, "today");
-  assert.equal(groups[1].label, "Yesterday");
-  assert.deepEqual(
-    Array.from(groups[1].threads, ({ id }) => id),
-    ["yesterday", "earlier-yesterday"],
-  );
-  assert.equal(groups[2].threads[0].id, "older");
-  assert.equal(JSON.stringify(threads), before);
+  expect(groups.length).toBe(3);
+  expect(groups[0].label).toBe("Today");
+  expect(groups[0].threads[0].id).toBe("today");
+  expect(groups[1].label).toBe("Yesterday");
+  expect(Array.from(groups[1].threads, ({ id }) => id)).toEqual(["yesterday", "earlier-yesterday"]);
+  expect(groups[2].threads[0].id).toBe("older");
+  expect(JSON.stringify(threads)).toBe(before);
 });
 
 test("yesterday crosses month and year boundaries", () => {
@@ -43,7 +27,7 @@ test("yesterday crosses month and year boundaries", () => {
     [thread("last-year", new Date(2025, 11, 31, 23, 59))],
     new Date(2026, 0, 1, 0, 1),
   );
-  assert.equal(groups[0].label, "Yesterday");
+  expect(groups[0].label).toBe("Yesterday");
 });
 
 test("calendar grouping handles daylight-saving transitions", () => {
@@ -58,7 +42,7 @@ test("calendar grouping handles daylight-saving transitions", () => {
         [thread("previous-day", new Date(2026, month, day - 1, 0, 5))],
         new Date(2026, month, day, 23, 55),
       );
-      assert.equal(groups[0].label, "Yesterday");
+      expect(groups[0].label).toBe("Yesterday");
     }
   } finally {
     if (previous === undefined) delete process.env.TZ;
@@ -67,8 +51,8 @@ test("calendar grouping handles daylight-saving transitions", () => {
 });
 
 test("empty history stays empty and unknown dates remain reachable", () => {
-  assert.equal(groupConversationHistory([]).length, 0);
+  expect(groupConversationHistory([]).length).toBe(0);
   const groups = groupConversationHistory([{ id: "unknown", updatedAt: "invalid" }]);
-  assert.equal(groups[0].label, "Earlier");
-  assert.equal(groups[0].threads[0].id, "unknown");
+  expect(groups[0].label).toBe("Earlier");
+  expect(groups[0].threads[0].id).toBe("unknown");
 });

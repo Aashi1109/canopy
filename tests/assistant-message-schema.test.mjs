@@ -1,7 +1,6 @@
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import test from "node:test";
 import pg from "pg";
 
 const url = process.env.ASSISTANT_TEST_DATABASE_URL;
@@ -30,8 +29,8 @@ test(
         FROM unnest(ARRAY['compose','extract','summarize']) operation
         RETURNING thread_id,resource_id
       `);
-      assert.equal(unscoped.rowCount, 3);
-      assert.ok(unscoped.rows.every((row) => row.thread_id === null && row.resource_id === null));
+      expect(unscoped.rowCount).toBe(3);
+      expect(unscoped.rows.every((row) => row.thread_id === null && row.resource_id === null)).toBeTruthy();
       await client.query(
         "INSERT INTO assistant_threads(id,integration_key,resource_id,owner_id,title) VALUES ('thread','fixture','resource','owner','Chat'),('private','fixture','resource','other','Private')",
       );
@@ -47,43 +46,33 @@ test(
       await client.query(
         "INSERT INTO assistant_attachments(id,thread_id,message_id,owner_id,type,label,data,status) VALUES ('link','thread','input','owner','link','Reference','{\"url\":\"https://openai.com\"}','ready')",
       );
-      await assert.rejects(
+      await expect(
         client.query("UPDATE assistant_attachments SET thread_id='private' WHERE id='link'"),
-        /foreign key/i,
-      );
-      await assert.rejects(
+      ).rejects.toThrow(/foreign key/i);
+      await expect(
         client.query("UPDATE assistant_runs SET input_message_id='foreign-input' WHERE id='parallel-1'"),
-        /foreign key/i,
-      );
-      await assert.rejects(
-        client.query("UPDATE assistant_messages SET role='system' WHERE id='output'"),
+      ).rejects.toThrow(/foreign key/i);
+      await expect(client.query("UPDATE assistant_messages SET role='system' WHERE id='output'")).rejects.toThrow(
         /check constraint/i,
       );
-      await assert.rejects(
-        client.query("UPDATE assistant_messages SET parts='{}' WHERE id='output'"),
+      await expect(client.query("UPDATE assistant_messages SET parts='{}' WHERE id='output'")).rejects.toThrow(
         /check constraint/i,
       );
-      await assert.rejects(
-        client.query("UPDATE assistant_messages SET meta='[]' WHERE id='output'"),
+      await expect(client.query("UPDATE assistant_messages SET meta='[]' WHERE id='output'")).rejects.toThrow(
         /check constraint/i,
       );
-      await assert.rejects(
+      await expect(
         client.query(
           "INSERT INTO assistant_messages(id,thread_id,run_id,role) VALUES ('duplicate','thread','parallel-1','assistant')",
         ),
-        /unique constraint/i,
-      );
+      ).rejects.toThrow(/unique constraint/i);
       await client.query("UPDATE assistant_runs SET model='actual-model' WHERE id='parallel-1'");
-      assert.equal(
-        (await client.query("SELECT count(*)::int n FROM assistant_runs WHERE status='running'")).rows[0].n,
+      expect((await client.query("SELECT count(*)::int n FROM assistant_runs WHERE status='running'")).rows[0].n).toBe(
         2,
       );
-      assert.deepEqual(
-        (await client.query("SELECT meta FROM assistant_messages WHERE id='output'")).rows[0].meta.usage,
-        {
-          totalTokens: 12,
-        },
-      );
+      expect((await client.query("SELECT meta FROM assistant_messages WHERE id='output'")).rows[0].meta.usage).toEqual({
+        totalTokens: 12,
+      });
     } finally {
       await client.query("ROLLBACK");
       await client.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);

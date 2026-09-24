@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { access, readFile } from "node:fs/promises";
-import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 
@@ -19,14 +18,14 @@ async function readJson(path) {
 
 test("SmartTools is a root-owned direct-layout Next.js application", async () => {
   const packageJson = await readJson("package.json");
-  assert.equal(packageJson.name, "canopy");
-  assert.equal(packageJson.private, true);
-  assert.equal(typeof packageJson.dependencies.next, "string");
-  assert.equal(await exists("apps"), false);
-  assert.equal(await exists("components/canopy/PublicInfoChrome.tsx"), true);
-  assert.equal(await exists("app/paperwork/components/App.tsx"), true);
-  assert.equal(await exists("app/layout.tsx"), true);
-  assert.equal(await exists("src"), false);
+  expect(packageJson.name).toBe("canopy");
+  expect(packageJson.private).toBe(true);
+  expect(typeof packageJson.dependencies.next).toBe("string");
+  expect(await exists("apps")).toBe(false);
+  expect(await exists("components/canopy/PublicInfoChrome.tsx")).toBe(true);
+  expect(await exists("app/paperwork/components/App.tsx")).toBe(true);
+  expect(await exists("app/layout.tsx")).toBe(true);
+  expect(await exists("src")).toBe(false);
 });
 
 test("public tools use scoped server-resolved dynamic slugs", async () => {
@@ -39,21 +38,21 @@ test("public tools use scoped server-resolved dynamic slugs", async () => {
     readFile(new URL("app/media/[slug]/page.tsx", root), "utf8"),
   ]);
 
-  assert.match(paperworkCatalog, /href=\{`\/paperwork\/\$\{tool\.slug\}`\}/);
-  assert.match(paperworkTool, /notFound\(\)/);
-  assert.match(paperworkTool, /componentKey/);
-  assert.match(devtoolsCatalog, /getTools\(["']devtools["']\)/);
-  assert.match(devtoolsCatalog, /`\/devtools\/\$\{tool\.slug\}`/);
-  assert.doesNotMatch(devtoolsCatalog, /redirect\(/);
-  assert.match(devtoolsTool, /resolveToolPage\(["']devtools["']/);
-  assert.match(devtoolsTool, /notFound\(\)/);
-  assert.match(mediaCatalog, /getTools\(["']media["']\)/);
-  assert.match(mediaCatalog, /`\/media\/\$\{tool\.slug\}`/);
-  assert.match(mediaTool, /resolveToolPage\(["']media["']/);
-  assert.match(mediaTool, /notFound\(\)/);
+  expect(paperworkCatalog).toMatch(/href=\{`\/paperwork\/\$\{tool\.slug\}`\}/);
+  expect(paperworkTool).toMatch(/notFound\(\)/);
+  expect(paperworkTool).toMatch(/componentKey/);
+  expect(devtoolsCatalog).toMatch(/getTools\(["']devtools["']\)/);
+  expect(devtoolsCatalog).toMatch(/`\/devtools\/\$\{tool\.slug\}`/);
+  expect(devtoolsCatalog).not.toMatch(/redirect\(/);
+  expect(devtoolsTool).toMatch(/resolveToolPage\(["']devtools["']/);
+  expect(devtoolsTool).toMatch(/notFound\(\)/);
+  expect(mediaCatalog).toMatch(/getTools\(["']media["']\)/);
+  expect(mediaCatalog).toMatch(/`\/media\/\$\{tool\.slug\}`/);
+  expect(mediaTool).toMatch(/resolveToolPage\(["']media["']/);
+  expect(mediaTool).toMatch(/notFound\(\)/);
   // Prerendering a slug would need a redeploy per admin toggle.
-  assert.doesNotMatch(devtoolsTool, /export\s[^\n]*generateStaticParams/);
-  assert.doesNotMatch(mediaTool, /export\s[^\n]*generateStaticParams/);
+  expect(devtoolsTool).not.toMatch(/export\s[^\n]*generateStaticParams/);
+  expect(mediaTool).not.toMatch(/export\s[^\n]*generateStaticParams/);
 
   for (const path of [
     "app/paperwork/receipt-generator/page.tsx",
@@ -64,22 +63,22 @@ test("public tools use scoped server-resolved dynamic slugs", async () => {
     "app/paperwork/1099-nec-tracker/page.tsx",
     "app/devtools/json-formatter/page.tsx",
   ]) {
-    assert.equal(await exists(path), false, `${path} must stay dynamic`);
+    expect(await exists(path), `${path} must stay dynamic`).toBe(false);
   }
 });
 
 test("root scripts run the root-owned application directly", async () => {
   const packageJson = await readJson("package.json");
 
-  assert.match(packageJson.scripts.dev, /\bnext dev -p 3000$/);
-  assert.match(packageJson.scripts["test:media"], /\bnode --test\b/);
+  expect(packageJson.scripts.dev).toMatch(/\bnext dev -p 3000$/);
+  expect(packageJson.scripts["test:media"]).toMatch(/\bvitest run\b/);
   // The media processing source lives in the tool framework; `app/media/` is
   // now only the route shell and holds nothing worth covering.
-  assert.match(packageJson.scripts["test:media"], /lib\/tool-framework\/media/);
-  assert.doesNotMatch(packageJson.scripts.dev, /--filter/);
-  assert.doesNotMatch(packageJson.scripts["test:media"], /--filter/);
+  expect(packageJson.scripts["test:media"]).toMatch(/lib\/tool-framework\/media/);
+  expect(packageJson.scripts.dev).not.toMatch(/--filter/);
+  expect(packageJson.scripts["test:media"]).not.toMatch(/--filter/);
   for (const script of ["dev:platform", "dev:paperwork", "dev:devtools", "dev:media", "dev:admin", "dev:auth"]) {
-    assert.equal(packageJson.scripts[script], undefined);
+    expect(packageJson.scripts[script]).toBe(undefined);
   }
 });
 
@@ -87,35 +86,36 @@ test("Paperwork navigation uses scoped paths without URL hashes", async () => {
   const navigationFiles = ["app/paperwork/components/App.tsx", "app/paperwork/components/RelatedTools.tsx"];
   const source = (await Promise.all(navigationFiles.map((path) => readFile(new URL(path, root), "utf8")))).join("\n");
 
-  assert.doesNotMatch(source, /window\.location\.hash|hashchange|href\s*=\s*["']#|\bhash:\s*["']#/);
-  assert.match(source, /["']\/paperwork/);
+  expect(source).not.toMatch(/window\.location\.hash|hashchange|href\s*=\s*["']#|\bhash:\s*["']#/);
+  expect(source).toMatch(/["'`]\/paperwork/);
 });
 
 test("contact and privacy are global while Paperwork-owned information stays scoped", async () => {
-  const app = await readFile(new URL("app/paperwork/components/App.tsx", root), "utf8");
+  // Shared footer navigation lives in CanopyFooter (suite and company links only);
+  // Paperwork-owned information pages keep their scoped route and chrome.
+  const app = await readFile(new URL("components/canopy/CanopyFooter.tsx", root), "utf8");
 
   for (const slug of ["contact", "privacy"]) {
     const page = await readFile(new URL(`app/${slug}/page.tsx`, root), "utf8");
-    assert.match(app, new RegExp(`href(?:=|:)\\s*["']/${slug}["']`));
-    assert.match(page, /PublicInfoChrome/);
-    assert.doesNotMatch(app, new RegExp(`/paperwork/${slug}`));
+    expect(app).toMatch(new RegExp(`href(?:=|:)\\s*["']/${slug}["']`));
+    expect(page).toMatch(/PublicInfoChrome/);
+    expect(app).not.toMatch(new RegExp(`/paperwork/${slug}`));
   }
 
   for (const slug of ["about", "terms"]) {
     const page = await readFile(new URL(`app/paperwork/${slug}/page.tsx`, root), "utf8");
-    assert.match(app, new RegExp(`href(?:=|:)\\s*["']/paperwork/${slug}["']`));
-    assert.match(page, /InformationPage/);
+    expect(page).toMatch(/InformationPage/);
   }
 });
 
 test("Paperwork routes components from managed tool props", async () => {
   const source = await readFile(new URL("app/paperwork/components/App.tsx", root), "utf8");
 
-  assert.match(source, /componentKey/);
-  assert.match(source, /tools/);
-  assert.match(source, /templates/);
-  assert.doesNotMatch(source, /usePathname|useRouter/);
-  assert.doesNotMatch(source, /AdminAuthGate|TemplateService/);
+  expect(source).toMatch(/componentKey/);
+  expect(source).toMatch(/tools/);
+  expect(source).toMatch(/templates/);
+  expect(source).not.toMatch(/usePathname|useRouter/);
+  expect(source).not.toMatch(/AdminAuthGate|TemplateService/);
 });
 
 test("legacy Paperwork template administration is removed", async () => {
@@ -130,7 +130,7 @@ test("legacy Paperwork template administration is removed", async () => {
     "lib/paperwork/admin/session.ts",
     "lib/paperwork/templates/templateService.ts",
   ]) {
-    assert.equal(await exists(path), false, `${path} must stay removed`);
+    expect(await exists(path), `${path} must stay removed`).toBe(false);
   }
 
   const [environment, bootstrap, schema] = await Promise.all([
@@ -138,19 +138,19 @@ test("legacy Paperwork template administration is removed", async () => {
     readFile(new URL("db/bootstrap.ts", root), "utf8"),
     readFile(new URL("db/paperworkSchema.ts", root), "utf8"),
   ]);
-  assert.doesNotMatch(environment, /ADMIN_PASSCODE/);
-  assert.doesNotMatch(bootstrap, /admin_passcode|ADMIN_PASSCODE|invoice_templates/);
-  assert.doesNotMatch(schema, /appConfigTable|invoiceTemplatesTable/);
+  expect(environment).not.toMatch(/ADMIN_PASSCODE/);
+  expect(bootstrap).not.toMatch(/admin_passcode|ADMIN_PASSCODE|invoice_templates/);
+  expect(schema).not.toMatch(/appConfigTable|invoiceTemplatesTable/);
 });
 
 test("Paperwork exposes published templates through its scoped read-only API", async () => {
   const route = await readFile(new URL("app/api/paperwork/templates/route.ts", root), "utf8");
 
-  assert.match(route, /getPublishedTemplates/);
-  assert.match(route, /tool\.componentKey === componentKey/);
-  assert.match(route, /export\s+async\s+function\s+GET/);
-  assert.doesNotMatch(route, /export\s+async\s+function\s+POST/);
-  assert.doesNotMatch(route, /localStorage|invoiceTemplatesTable/);
+  expect(route).toMatch(/getPublishedTemplates/);
+  expect(route).toMatch(/tool\.componentKey === componentKey/);
+  expect(route).toMatch(/export\s+async\s+function\s+GET/);
+  expect(route).not.toMatch(/export\s+async\s+function\s+POST/);
+  expect(route).not.toMatch(/localStorage|invoiceTemplatesTable/);
 });
 
 test("Paperwork scoped persistence APIs check the owning tool", async () => {
@@ -161,10 +161,10 @@ test("Paperwork scoped persistence APIs check the owning tool", async () => {
     readFile(new URL("app/api/paperwork/vendors/route.ts", root), "utf8"),
   ]);
 
-  assert.match(accessSource, /getAvailableToolBySlug/);
-  assert.match(storage, /requireAvailableToolForStorageKey/);
-  assert.match(storedKey, /requireAvailableToolForStorageKey/);
-  assert.match(vendors, /requireAnyAvailablePaperworkTool/);
+  expect(accessSource).toMatch(/getAvailableToolBySlug/);
+  expect(storage).toMatch(/requireAvailableToolForStorageKey/);
+  expect(storedKey).toMatch(/requireAvailableToolForStorageKey/);
+  expect(vendors).toMatch(/requireAnyAvailablePaperworkTool/);
 });
 
 test("Admin and Media ordering use the shared accessible drag-and-drop list", async () => {
@@ -174,11 +174,11 @@ test("Admin and Media ordering use the shared accessible drag-and-drop list", as
     readFile(new URL("components/ui/components/OrderableList.tsx", root), "utf8"),
   ]);
 
-  assert.match(editor, /<OrderableList/);
-  assert.match(editor, /GripVertical/);
-  assert.doesNotMatch(editor, /moveSection|ArrowUp|ArrowDown/);
-  assert.match(toolList, /@\/components\/ui\/components\/OrderableList/);
-  assert.match(orderableList, /KeyboardSensor/);
-  assert.match(orderableList, /PointerSensor/);
-  assert.match(orderableList, /sortableKeyboardCoordinates/);
+  expect(editor).toMatch(/<OrderableList/);
+  expect(editor).toMatch(/GripVertical/);
+  expect(editor).not.toMatch(/moveSection|ArrowUp|ArrowDown/);
+  expect(toolList).toMatch(/@\/components\/ui\/components\/OrderableList/);
+  expect(orderableList).toMatch(/KeyboardSensor/);
+  expect(orderableList).toMatch(/PointerSensor/);
+  expect(orderableList).toMatch(/sortableKeyboardCoordinates/);
 });

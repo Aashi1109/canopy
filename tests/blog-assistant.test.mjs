@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { createBlogDocument } from "../lib/blog/document.ts";
 import {
   validateRunRequest,
@@ -21,13 +20,13 @@ import {
 
 test("composer state accepts bounded inline agent positions and optional selections", () => {
   const selection = { agentId: "writer", attachmentIds: ["plan"] };
-  assert.deepEqual(threadPatchSchema.parse({ composerState: selection }).composerState, selection);
+  expect(threadPatchSchema.parse({ composerState: selection }).composerState).toEqual(selection);
   for (const agentOffset of [0, 7, 8000]) {
     const composerState = { ...selection, agentOffset };
-    assert.deepEqual(threadPatchSchema.parse({ composerState }).composerState, composerState);
+    expect(threadPatchSchema.parse({ composerState }).composerState).toEqual(composerState);
   }
   for (const agentOffset of [-1, 0.5, 8001, "7", null]) {
-    assert.equal(threadPatchSchema.safeParse({ composerState: { ...selection, agentOffset } }).success, false);
+    expect(threadPatchSchema.safeParse({ composerState: { ...selection, agentOffset } }).success).toBe(false);
   }
 });
 
@@ -37,12 +36,11 @@ test("thread patches validate and preserve rich composer content", () => {
     content: [{ type: "paragraph", content: [{ type: "text", text: "Draft", marks: [{ type: "bold" }] }] }],
   };
   const composerState = { attachmentIds: [], content };
-  assert.deepEqual(threadPatchSchema.parse({ composerState }).composerState, composerState);
+  expect(threadPatchSchema.parse({ composerState }).composerState).toEqual(composerState);
   const unsafe = structuredClone(content);
   unsafe.content[0].content[0].marks = [{ type: "link", attrs: { href: "javascript:alert(1)" } }];
-  assert.equal(threadPatchSchema.safeParse({ composerState: { ...composerState, content: unsafe } }).success, false);
-  assert.equal(
-    threadPatchSchema.safeParse({ composerState: { ...composerState, content: "not a document" } }).success,
+  expect(threadPatchSchema.safeParse({ composerState: { ...composerState, content: unsafe } }).success).toBe(false);
+  expect(threadPatchSchema.safeParse({ composerState: { ...composerState, content: "not a document" } }).success).toBe(
     false,
   );
 });
@@ -75,12 +73,12 @@ const result = (output, overrides = {}) => ({
 
 test("inline requests send selected text without an article wrapper or coordinates", () => {
   const inline = { ...request, threadId: undefined };
-  assert.equal(validateRunRequest(inline).context.selectedText, "Original text");
-  assert.throws(() => validateRunRequest({ ...inline, resourceId: undefined }));
-  assert.throws(() => validateRunRequest({ ...inline, context: {} }));
-  assert.throws(() => validateRunRequest({ ...inline, document, version: 1 }));
-  assert.throws(() => validateRunRequest({ ...inline, message: "x".repeat(8001) }));
-  assert.throws(() => validateRunRequest({ ...inline, attachmentIds: ["private-image"] }));
+  expect(validateRunRequest(inline).context.selectedText).toBe("Original text");
+  expect(() => validateRunRequest({ ...inline, resourceId: undefined })).toThrow();
+  expect(() => validateRunRequest({ ...inline, context: {} })).toThrow();
+  expect(() => validateRunRequest({ ...inline, document, version: 1 })).toThrow();
+  expect(() => validateRunRequest({ ...inline, message: "x".repeat(8001) })).toThrow();
+  expect(() => validateRunRequest({ ...inline, attachmentIds: ["private-image"] })).toThrow();
 });
 test("chat accepts bounded editor JSON without validating full document publishing rules", () => {
   const chat = {
@@ -91,21 +89,21 @@ test("chat accepts bounded editor JSON without validating full document publishi
     threadId: "thread",
     context: { editorJson: document.body },
   };
-  assert.deepEqual(validateRunRequest(chat).context.editorJson, document.body);
-  assert.throws(() => validateRunRequest({ ...chat, threadId: undefined }));
-  assert.throws(() => validateRunRequest({ ...chat, context: { ...chat.context, editorJson: [] } }));
-  assert.throws(() =>
+  expect(validateRunRequest(chat).context.editorJson).toEqual(document.body);
+  expect(() => validateRunRequest({ ...chat, threadId: undefined })).toThrow();
+  expect(() => validateRunRequest({ ...chat, context: { ...chat.context, editorJson: [] } })).toThrow();
+  expect(() =>
     validateRunRequest({
       ...chat,
       context: { ...chat.context, editorJson: { type: "doc", content: [], extra: "x".repeat(1000000) } },
     }),
-  );
+  ).toThrow();
 });
 test("chat returns literal prose and JSON examples without an output envelope", () => {
   const text = 'Here is an example: {"text":"literal"}\nKeep this line.';
   const chat = { ...request, operation: "chat" };
-  assert.equal(validateAssistantResult(result(null, { text }), chat).response.text, text);
-  assert.throws(() => validateAssistantResult(result(null), chat), /empty/i);
+  expect(validateAssistantResult(result(null, { text }), chat).response.text).toBe(text);
+  expect(() => validateAssistantResult(result(null), chat)).toThrow(/empty/i);
 });
 test("new generation accepts a client draft thread ID without an existing article", () => {
   const input = {
@@ -114,8 +112,8 @@ test("new generation accepts a client draft thread ID without an existing articl
     message: "A useful article",
     threadId: "draft-thread",
   };
-  assert.equal(validateRunRequest(input).threadId, "draft-thread");
-  assert.throws(() => validateRunRequest({ ...input, resourceId: "existing-article" }));
+  expect(validateRunRequest(input).threadId).toBe("draft-thread");
+  expect(() => validateRunRequest({ ...input, resourceId: "existing-article" })).toThrow();
 });
 test("reference URLs reject credentials, local destinations and encoded private addresses", () => {
   for (const url of [
@@ -133,34 +131,33 @@ test("reference URLs reject credentials, local destinations and encoded private 
     "https://openai.com:8443",
     "file:///tmp/file",
   ]) {
-    assert.throws(() => publicReference(url), /HTTPS/);
+    expect(() => publicReference(url)).toThrow(/HTTPS/);
   }
-  assert.equal(publicReference("https://openai.com/docs"), "https://openai.com/docs");
+  expect(publicReference("https://openai.com/docs")).toBe("https://openai.com/docs");
 });
 test("private images require matching signatures and bounded nonempty data", () => {
-  assert.doesNotThrow(() => validateAssistantImage(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), "image/png"));
-  assert.doesNotThrow(() => validateAssistantImage(new Uint8Array([255, 216, 255, 0]), "image/jpeg"));
-  assert.doesNotThrow(() => validateAssistantImage(new TextEncoder().encode("RIFFxxxxWEBP"), "image/webp"));
+  expect(() => validateAssistantImage(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), "image/png")).not.toThrow();
+  expect(() => validateAssistantImage(new Uint8Array([255, 216, 255, 0]), "image/jpeg")).not.toThrow();
+  expect(() => validateAssistantImage(new TextEncoder().encode("RIFFxxxxWEBP"), "image/webp")).not.toThrow();
   for (const [bytes, type] of [
     [new Uint8Array(), "image/png"],
     [new Uint8Array([255, 216, 255]), "image/png"],
     [new Uint8Array(5242881), "image/png"],
     [new TextEncoder().encode("<svg/>"), "image/svg+xml"],
   ])
-    assert.throws(() => validateAssistantImage(bytes, type));
+    expect(() => validateAssistantImage(bytes, type)).toThrow();
 });
 test("rewrite proposals are validated and do not mutate the working article", () => {
   const before = structuredClone(document);
   const output = validateAssistantResult(result({ originalText: "Original text", blocks: [block] }), request).response;
-  assert.equal(output.proposals[0].status, "pending");
-  assert.equal(output.proposals[0].data.replacement[0].content[0].text, "Improved text");
-  assert.deepEqual(document, before);
-  assert.throws(
-    () => validatedProposal("bad", "proposeEdit", { originalText: "Other text", blocks: [block] }, request),
-    /selected/,
-  );
-  assert.throws(() => validatedProposal("bad", "publish", {}, request), /unsupported/);
-  assert.throws(() => validateAssistantResult(result(null, { text: '{"broken"' }), request), /incomplete/);
+  expect(output.proposals[0].status).toBe("pending");
+  expect(output.proposals[0].data.replacement[0].content[0].text).toBe("Improved text");
+  expect(document).toEqual(before);
+  expect(() =>
+    validatedProposal("bad", "proposeEdit", { originalText: "Other text", blocks: [block] }, request),
+  ).toThrow(/selected/);
+  expect(() => validatedProposal("bad", "publish", {}, request)).toThrow(/unsupported/);
+  expect(() => validateAssistantResult(result(null, { text: '{"broken"' }), request)).toThrow(/incomplete/);
 });
 const chatRequest = {
   ...request,
@@ -183,24 +180,24 @@ test("section proposals preserve their operation and review context without chan
       { ...sectionEdit, action, blocks: action === "delete" ? [] : [block] },
       chatRequest,
     );
-    assert.equal(proposal.data.type, "edit");
-    assert.equal(proposal.status, "pending");
-    assert.equal(proposal.data.action, action);
-    assert.equal(proposal.title, sectionEdit.title);
-    assert.equal(proposal.data.placement, sectionEdit.placement);
-    assert.equal(proposal.data.originalText, "Original text");
-    if (action === "delete") assert.equal(proposal.data.replacement, undefined);
-    else assert.equal(proposal.data.replacement[0].content[0].text, "Improved text");
+    expect(proposal.data.type).toBe("edit");
+    expect(proposal.status).toBe("pending");
+    expect(proposal.data.action).toBe(action);
+    expect(proposal.title).toBe(sectionEdit.title);
+    expect(proposal.data.placement).toBe(sectionEdit.placement);
+    expect(proposal.data.originalText).toBe("Original text");
+    if (action === "delete") expect(proposal.data.replacement).toBe(undefined);
+    else expect(proposal.data.replacement[0].content[0].text).toBe("Improved text");
   }
-  assert.deepEqual(document, before);
+  expect(document).toEqual(before);
 });
 test("chat rejects obsolete replacement shape while inline rewrite has an explicit replace action", () => {
   const input = { originalText: "Original text", blocks: [block] };
-  assert.throws(() => validatedProposal("old", "proposeEdit", input, chatRequest));
+  expect(() => validatedProposal("old", "proposeEdit", input, chatRequest)).toThrow();
   const proposal = validatedProposal("inline", "proposeEdit", input, request);
-  assert.equal(proposal.data.action, "replace");
-  assert.equal(proposal.data.replacement[0].content[0].text, "Improved text");
-  assert.throws(() => validatedProposal("inline", "proposeEdit", sectionEdit, request));
+  expect(proposal.data.action).toBe("replace");
+  expect(proposal.data.replacement[0].content[0].text).toBe("Improved text");
+  expect(() => validatedProposal("inline", "proposeEdit", sectionEdit, request)).toThrow();
 });
 test("section operations reject incomplete metadata and incompatible replacement content", () => {
   for (const input of [
@@ -216,16 +213,16 @@ test("section operations reject incomplete metadata and incompatible replacement
     { ...sectionEdit, blocks: [{ ...block, type: "bulletList", text: "Unused", items: [" "] }] },
     { ...sectionEdit, blocks: [{ ...block, type: "paragraph", text: "", items: ["Unused"] }] },
   ]) {
-    assert.throws(() => validatedProposal("bad", "proposeEdit", input, chatRequest));
+    expect(() => validatedProposal("bad", "proposeEdit", input, chatRequest)).toThrow();
   }
-  assert.throws(() =>
+  expect(() =>
     validatedProposal(
       "empty-inline",
       "proposeEdit",
       { originalText: "Original text", blocks: [{ ...block, text: " " }] },
       request,
     ),
-  );
+  ).toThrow();
 });
 test("section proposals require one exact anchor from the supplied editor body", () => {
   const paragraph = (text) => ({ type: "paragraph", content: [{ type: "text", text }] });
@@ -249,14 +246,14 @@ test("section proposals require one exact anchor from the supplied editor body",
     ],
   ]) {
     for (const action of ["insert", "replace", "delete"]) {
-      assert.throws(() =>
+      expect(() =>
         validatedProposal(
           "anchor",
           "proposeEdit",
           { ...sectionEdit, originalText, action, blocks: action === "delete" ? [] : [block] },
           context,
         ),
-      );
+      ).toThrow();
     }
   }
   const body = {
@@ -274,15 +271,14 @@ test("section proposals require one exact anchor from the supplied editor body",
     ],
   };
   const originalText = "Section\nOriginal text\nList item";
-  assert.equal(
+  expect(
     validatedProposal(
       "formatted",
       "proposeEdit",
       { ...sectionEdit, originalText },
       { ...chatRequest, context: { ...chatRequest.context, editorJson: body } },
     ).data.originalText,
-    originalText,
-  );
+  ).toBe(originalText);
 });
 test("empty insertion anchors are allowed only for genuinely empty drafts", () => {
   const input = { ...sectionEdit, action: "insert", originalText: "" };
@@ -292,13 +288,12 @@ test("empty insertion anchors are allowed only for genuinely empty drafts", () =
     { type: "doc", content: [{ type: "paragraph" }] },
     { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: " " }] }] },
   ]) {
-    assert.equal(
+    expect(
       validatedProposal("empty", "proposeEdit", input, {
         ...chatRequest,
         context: { ...chatRequest.context, editorJson },
       }).data.action,
-      "insert",
-    );
+    ).toBe("insert");
   }
   for (const editorJson of [
     undefined,
@@ -307,12 +302,12 @@ test("empty insertion anchors are allowed only for genuinely empty drafts", () =
     { type: "doc", content: [{ type: "horizontalRule" }] },
     { type: "doc", content: [{ type: "blockMath", attrs: { latex: "x" } }] },
   ]) {
-    assert.throws(() =>
+    expect(() =>
       validatedProposal("nonempty", "proposeEdit", input, {
         ...chatRequest,
         context: { ...chatRequest.context, editorJson },
       }),
-    );
+    ).toThrow();
   }
 });
 test("an empty draft receives one combined insertion proposal, never competing insertions", () => {
@@ -324,46 +319,46 @@ test("an empty draft receives one combined insertion proposal, never competing i
     blocks: [block, { ...block, text: "A second section" }],
   };
   const proposal = validatedProposal("first", "proposeEdit", input, context);
-  assert.equal(proposal.data.replacement.length, 2);
+  expect(proposal.data.replacement.length).toBe(2);
   const prior = [proposal];
   const before = structuredClone(prior);
-  assert.throws(() => validatedProposal("second", "proposeEdit", input, context, prior), {
-    code: "INVALID_OUTPUT",
-    message: /one insertion proposal/i,
-  });
-  assert.deepEqual(prior, before);
-  assert.doesNotThrow(() =>
+  let secondError;
+  try {
+    validatedProposal("second", "proposeEdit", input, context, prior);
+  } catch (error) {
+    secondError = error;
+  }
+  expect(secondError).toMatchObject({ code: "INVALID_OUTPUT", message: /one insertion proposal/i });
+  expect(prior).toEqual(before);
+  expect(() =>
     validatedProposal("seo", "proposeSeo", { seoTitle: "Title", seoDescription: "Description" }, context, prior),
-  );
+  ).not.toThrow();
   const anchoredInput = { ...sectionEdit, action: "insert" };
   const anchoredProposal = validatedProposal("anchored-first", "proposeEdit", anchoredInput, chatRequest);
-  assert.doesNotThrow(() =>
+  expect(() =>
     validatedProposal("anchored-second", "proposeEdit", anchoredInput, chatRequest, [anchoredProposal]),
-  );
-  assert.throws(
-    () =>
-      validatedProposal("missing-body", "proposeEdit", input, {
-        ...context,
-        context: { ...context.context, editorJson: undefined },
-      }),
-    {
-      code: "INVALID_OUTPUT",
-      message: /article context/i,
-    },
-  );
+  ).not.toThrow();
+  let missingBodyError;
+  try {
+    validatedProposal("missing-body", "proposeEdit", input, {
+      ...context,
+      context: { ...context.context, editorJson: undefined },
+    });
+  } catch (error) {
+    missingBodyError = error;
+  }
+  expect(missingBodyError).toMatchObject({ code: "INVALID_OUTPUT", message: /article context/i });
 });
 test("all section operations reject a quote that differs from the explicit selection", () => {
   for (const action of ["insert", "replace", "delete"]) {
-    assert.throws(
-      () =>
-        validatedProposal(
-          "selection",
-          "proposeEdit",
-          { ...sectionEdit, action, blocks: action === "delete" ? [] : [block] },
-          { ...chatRequest, context: { ...chatRequest.context, selectedText: "Different selection" } },
-        ),
-      /selected/,
-    );
+    expect(() =>
+      validatedProposal(
+        "selection",
+        "proposeEdit",
+        { ...sectionEdit, action, blocks: action === "delete" ? [] : [block] },
+        { ...chatRequest, context: { ...chatRequest.context, selectedText: "Different selection" } },
+      ),
+    ).toThrow(/selected/);
   }
 });
 test("SEO fields have separate proposal identities in the shared proposal contract", () => {
@@ -374,13 +369,10 @@ test("SEO fields have separate proposal identities in the shared proposal contra
     chatRequest,
   );
   const proposals = separateSeoProposals(proposal);
-  assert.deepEqual(
-    proposals.map((p) => p.id),
-    ["seo:title", "seo:description"],
-  );
-  assert.equal(proposals[0].data.seoDescription, undefined);
-  assert.equal(proposals[1].data.seoTitle, undefined);
-  assert.equal(separateSeoProposals({ id: "edit", data: { type: "edit" }, status: "pending" }).length, 1);
+  expect(proposals.map((p) => p.id)).toEqual(["seo:title", "seo:description"]);
+  expect(proposals[0].data.seoDescription).toBe(undefined);
+  expect(proposals[1].data.seoTitle).toBe(undefined);
+  expect(separateSeoProposals({ id: "edit", data: { type: "edit" }, status: "pending" }).length).toBe(1);
 });
 test("generated blocks become constrained editor JSON without HTML or invented assets", () => {
   const output = {
@@ -400,11 +392,11 @@ test("generated blocks become constrained editor JSON without HTML or invented a
     operation: "generate",
     message: "Write",
   });
-  assert.equal(validated.document.schemaVersion, 1);
-  assert.equal(validated.document.coverImage, null);
-  assert.equal(validated.document.category, null);
-  assert.deepEqual(validated.document.tags, []);
-  assert.equal(blocksToNodes(output.blocks)[2].content[0].type, "listItem");
+  expect(validated.document.schemaVersion).toBe(1);
+  expect(validated.document.coverImage).toBe(null);
+  expect(validated.document.category).toBe(null);
+  expect(validated.document.tags).toEqual([]);
+  expect(blocksToNodes(output.blocks)[2].content[0].type).toBe("listItem");
 });
 
 test("chat exposes actual web execution status and filters unsafe citations", () => {
@@ -420,23 +412,23 @@ test("chat exposes actual web execution status and filters unsafe citations", ()
       }),
       { ...chatRequest, settings: { webSearch: true } },
     ).response;
-    assert.equal(response.data.searchStatus, searchStatus === "completed" ? "completed" : "failed");
-    assert.deepEqual(response.citations, [{ url: "https://openai.com/", title: "Source" }]);
+    expect(response.data.searchStatus).toBe(searchStatus === "completed" ? "completed" : "failed");
+    expect(response.citations).toEqual([{ url: "https://openai.com/", title: "Source" }]);
   }
 });
 
 test("old Blog request fields and old persisted payloads are rejected without translation", () => {
-  assert.throws(() => validateRunRequest({ ...request, postId: "post" }));
+  expect(() => validateRunRequest({ ...request, postId: "post" })).toThrow();
   for (const operation of ["review", "optimize", "check_sources"]) {
-    assert.throws(() => validateRunRequest({ ...request, operation }));
+    expect(() => validateRunRequest({ ...request, operation })).toThrow();
   }
-  assert.throws(() => parseStoredRequest({ ...request, schemaVersion: undefined }));
-  assert.throws(() => parseStoredRequest({ ...request, schemaVersion: 1, postId: "post" }));
+  expect(() => parseStoredRequest({ ...request, schemaVersion: undefined })).toThrow();
+  expect(() => parseStoredRequest({ ...request, schemaVersion: 1, postId: "post" })).toThrow();
   const proposal = { toolCallId: "old", type: "edit", status: "pending" };
-  assert.throws(() => parseStoredResult({ text: "Old", citations: [], proposals: [proposal] }));
-  assert.throws(() => parseStoredResult({ text: "Old", citations: [], proposals: [], keywords: [] }));
-  assert.throws(() => parseMessageParts([{ type: "proposal", proposal }]));
-  assert.deepEqual(parseStoredRequest({ ...request, schemaVersion: 1 }), { ...request, schemaVersion: 1 });
+  expect(() => parseStoredResult({ text: "Old", citations: [], proposals: [proposal] })).toThrow();
+  expect(() => parseStoredResult({ text: "Old", citations: [], proposals: [], keywords: [] })).toThrow();
+  expect(() => parseMessageParts([{ type: "proposal", proposal }])).toThrow();
+  expect(parseStoredRequest({ ...request, schemaVersion: 1 })).toEqual({ ...request, schemaVersion: 1 });
 });
 
 test("combined references and attachments are bounded before resource creation", () => {
@@ -447,12 +439,13 @@ test("combined references and attachments are bounded before resource creation",
     attachmentIds: ["one", "two", "three"],
     references: ["https://openai.com/a", "https://openai.com/b"],
   };
-  assert.equal(validateSharedRequest(input).attachmentIds.length, 3);
-  assert.throws(() => validateSharedRequest({ ...input, references: [...input.references, "https://openai.com/c"] }), {
-    code: "VALIDATION",
-  });
-  assert.equal(
-    validateSharedRequest({ ...input, references: [...input.references, input.references[0]] }).references.length,
-    2,
+  expect(validateSharedRequest(input).attachmentIds.length).toBe(3);
+  expect(() => validateSharedRequest({ ...input, references: [...input.references, "https://openai.com/c"] })).toThrow(
+    expect.objectContaining({
+      code: "VALIDATION",
+    }),
   );
+  expect(
+    validateSharedRequest({ ...input, references: [...input.references, input.references[0]] }).references.length,
+  ).toBe(2);
 });

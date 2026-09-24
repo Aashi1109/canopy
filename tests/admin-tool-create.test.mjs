@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { expect, test } from "vitest";
 import { ADMIN_ACCESS } from "../lib/authorization/index.ts";
 import { auditEventsTable, db, managedToolsTable, toolContentTable } from "../db/index.ts";
 import { reservedToolSlugs } from "../lib/tool-catalog/index.ts";
@@ -144,8 +142,8 @@ function siblings(...rows) {
 
 test("creating a tool requires tools.edit and writes nothing without it", async () => {
   await withFakeDatabase([permissionRows(accessWithout("tools", "edit"))], async (state) => {
-    await assert.rejects(() => createManagedTool("actor", DRAFT), /Missing permission: tools\.edit/);
-    assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    await expect(() => createManagedTool("actor", DRAFT)).rejects.toThrow(/Missing permission: tools\.edit/);
+    expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
   });
 });
 
@@ -155,8 +153,10 @@ test("a tool id that already exists is rejected", async () => {
   await withFakeDatabase(
     [EDITOR, siblings({ toolId: `${APP}.${KEY}`, slug: "something-else", order: 0 })],
     async (state) => {
-      await assert.rejects(() => createManagedTool("actor", DRAFT), new RegExp(`Tool ${APP}\\.${KEY} already exists`));
-      assert.deepEqual(state.inserts, []);
+      await expect(() => createManagedTool("actor", DRAFT)).rejects.toThrow(
+        new RegExp(`Tool ${APP}\\.${KEY} already exists`),
+      );
+      expect(state.inserts).toEqual([]);
     },
   );
 });
@@ -164,19 +164,20 @@ test("a tool id that already exists is rejected", async () => {
 test("a folder key that is not a valid slug is rejected before any read", async () => {
   for (const key of ["Not A Key", "trailing-", "double--hyphen", "under_score"]) {
     await withFakeDatabase([EDITOR], async (state) => {
-      await assert.rejects(() => createManagedTool("actor", { ...DRAFT, key }), /Folder key must be lowercase words/);
-      assert.deepEqual(state.inserts, []);
+      await expect(() => createManagedTool("actor", { ...DRAFT, key })).rejects.toThrow(
+        /Folder key must be lowercase words/,
+      );
+      expect(state.inserts).toEqual([]);
     });
   }
 });
 
 test("an app outside devtools and media is rejected", async () => {
   await withFakeDatabase([EDITOR], async (state) => {
-    await assert.rejects(
-      () => createManagedTool("actor", { ...DRAFT, app: "paperwork" }),
+    await expect(() => createManagedTool("actor", { ...DRAFT, app: "paperwork" })).rejects.toThrow(
       /must be "devtools" or "media"/,
     );
-    assert.deepEqual(state.inserts, []);
+    expect(state.inserts).toEqual([]);
   });
 });
 
@@ -184,8 +185,10 @@ test("an app outside devtools and media is rejected", async () => {
 
 test("a reserved slug is rejected", async () => {
   await withFakeDatabase([EDITOR], async (state) => {
-    await assert.rejects(() => createManagedTool("actor", { ...DRAFT, slug: RESERVED_SLUG }), /invalid or reserved/);
-    assert.deepEqual(state.inserts, []);
+    await expect(() => createManagedTool("actor", { ...DRAFT, slug: RESERVED_SLUG })).rejects.toThrow(
+      /invalid or reserved/,
+    );
+    expect(state.inserts).toEqual([]);
   });
 });
 
@@ -193,8 +196,8 @@ test("a slug already used by the same app is rejected", async () => {
   await withFakeDatabase(
     [EDITOR, siblings({ toolId: `${APP}.other`, slug: "aardvark-widget", order: 0 })],
     async (state) => {
-      await assert.rejects(() => createManagedTool("actor", DRAFT), /already in use/);
-      assert.deepEqual(state.inserts, []);
+      await expect(() => createManagedTool("actor", DRAFT)).rejects.toThrow(/already in use/);
+      expect(state.inserts).toEqual([]);
     },
   );
 });
@@ -202,7 +205,7 @@ test("a slug already used by the same app is rejected", async () => {
 test("a blank slug falls back to the name, recomputed on the server", async () => {
   await withFakeDatabase([EDITOR, siblings()], async (state) => {
     await createManagedTool("actor", { ...DRAFT, slug: "   " });
-    assert.equal(toolWrite(state).values.slug, "aardvark-widget");
+    expect(toolWrite(state).values.slug).toBe("aardvark-widget");
   });
 });
 
@@ -210,21 +213,19 @@ test("a blank slug falls back to the name, recomputed on the server", async () =
 
 test("a category outside the registry is rejected", async () => {
   await withFakeDatabase([EDITOR], async (state) => {
-    await assert.rejects(
-      () => createManagedTool("actor", { ...DRAFT, category: "totally-made-up" }),
+    await expect(() => createManagedTool("actor", { ...DRAFT, category: "totally-made-up" })).rejects.toThrow(
       /not registered for devtools/,
     );
-    assert.deepEqual(state.inserts, []);
+    expect(state.inserts).toEqual([]);
   });
 });
 
 test("a category belonging to the other app is rejected", async () => {
   await withFakeDatabase([EDITOR], async (state) => {
-    await assert.rejects(
-      () => createManagedTool("actor", { ...DRAFT, category: OTHER_APP_CATEGORY }),
+    await expect(() => createManagedTool("actor", { ...DRAFT, category: OTHER_APP_CATEGORY })).rejects.toThrow(
       /not registered for devtools/,
     );
-    assert.deepEqual(state.inserts, []);
+    expect(state.inserts).toEqual([]);
   });
 });
 
@@ -244,14 +245,14 @@ test("order appends above every existing row, so UNIQUE (app, sort_order) cannot
     ],
     async (state) => {
       await createManagedTool("actor", DRAFT);
-      assert.equal(toolWrite(state).values.order, 8);
+      expect(toolWrite(state).values.order).toBe(8);
     },
   );
 
   // The first tool of an app starts at zero rather than at one.
   await withFakeDatabase([EDITOR, siblings()], async (state) => {
     await createManagedTool("actor", DRAFT);
-    assert.equal(toolWrite(state).values.order, 0);
+    expect(toolWrite(state).values.order).toBe(0);
   });
 });
 
@@ -262,38 +263,38 @@ test("a created tool is disabled, unarchived, and paired with a tool_content row
     const created = await createManagedTool("actor", DRAFT);
 
     const { values } = toolWrite(state);
-    assert.equal(values.toolId, `${APP}.${KEY}`);
-    assert.equal(values.app, APP);
-    assert.equal(values.slug, "aardvark-widget");
-    assert.equal(values.name, "Aardvark Widget");
-    assert.equal(values.description, "Does an aardvark-shaped thing.");
-    assert.equal(values.order, 1);
-    assert.equal(values.enabled, false);
-    assert.equal(values.archived, false);
-    assert.equal(created.toolId, `${APP}.${KEY}`);
+    expect(values.toolId).toBe(`${APP}.${KEY}`);
+    expect(values.app).toBe(APP);
+    expect(values.slug).toBe("aardvark-widget");
+    expect(values.name).toBe("Aardvark Widget");
+    expect(values.description).toBe("Does an aardvark-shaped thing.");
+    expect(values.order).toBe(1);
+    expect(values.enabled).toBe(false);
+    expect(values.archived).toBe(false);
+    expect(created.toolId).toBe(`${APP}.${KEY}`);
 
     // The content row carries the chosen category and nothing else. Every
     // other column stays null so it still inherits from `definition.ts` once
     // the folder ships; the category is persisted because the form asked for
     // it and there is no code yet to fall back to.
-    assert.deepEqual(contentWrite(state).values, {
+    expect(contentWrite(state).values).toEqual({
       toolId: `${APP}.${KEY}`,
       category: CATEGORY,
     });
 
     const audit = auditWrite(state);
-    assert.equal(audit.values.action, "tool.create");
-    assert.equal(audit.values.targetId, `${APP}.${KEY}`);
-    assert.equal(audit.values.metadata.category, CATEGORY);
-    assert.equal(audit.values.metadata.order, 1);
+    expect(audit.values.action).toBe("tool.create");
+    expect(audit.values.targetId).toBe(`${APP}.${KEY}`);
+    expect(audit.values.metadata.category).toBe(CATEGORY);
+    expect(audit.values.metadata.order).toBe(1);
   });
 });
 
 test("name and description are required and stored trimmed", async () => {
   for (const field of ["name", "description"]) {
     await withFakeDatabase([EDITOR], async (state) => {
-      await assert.rejects(() => createManagedTool("actor", { ...DRAFT, [field]: "   " }), /is required/);
-      assert.deepEqual(state.inserts, []);
+      await expect(() => createManagedTool("actor", { ...DRAFT, [field]: "   " })).rejects.toThrow(/is required/);
+      expect(state.inserts).toEqual([]);
     });
   }
 
@@ -303,7 +304,7 @@ test("name and description are required and stored trimmed", async () => {
       name: "  Aardvark Widget  ",
       description: "  Does an aardvark-shaped thing.  ",
     });
-    assert.equal(toolWrite(state).values.name, "Aardvark Widget");
-    assert.equal(toolWrite(state).values.description, "Does an aardvark-shaped thing.");
+    expect(toolWrite(state).values.name).toBe("Aardvark Widget");
+    expect(toolWrite(state).values.description).toBe("Does an aardvark-shaped thing.");
   });
 });

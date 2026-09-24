@@ -1,11 +1,17 @@
-import assert from "node:assert/strict";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { EventEmitter } from "node:events";
-import { registerHooks } from "node:module";
-import test from "node:test";
-import pg from "pg";
+import { expect, test, vi } from "vitest";
+
+// runtime.ts gets the fake pg/sentry via globals set inside the test; the test itself
+// uses the real pg (vi.importActual) to subclass pg.Pool.
+vi.mock("pg", () => ({ default: globalThis.__contextPg }));
+vi.mock("@sentry/core", () => {
+  const { startInactiveSpan } = globalThis.__contextSentry;
+  return { startInactiveSpan };
+});
 
 test("queued pool queries and checkouts retain the caller's trace context", async () => {
+  const { default: pg } = await vi.importActual("pg");
   const context = new AsyncLocalStorage();
   const spans = [];
   class Client extends EventEmitter {
@@ -42,33 +48,14 @@ test("queued pool queries and checkouts retain the caller's trace context", asyn
       return { setStatus() {}, end() {} };
     },
   };
-  const runtimeUrl = new URL("../db/runtime.ts", import.meta.url).href;
-  const hooks = registerHooks({
-    resolve(specifier, location, nextResolve) {
-      if (location.parentURL === runtimeUrl && ["pg", "@sentry/core"].includes(specifier)) {
-        return {
-          shortCircuit: true,
-          url:
-            specifier === "pg"
-              ? "data:text/javascript,export default globalThis.__contextPg"
-              : "data:text/javascript,export const {startInactiveSpan} = globalThis.__contextSentry",
-        };
-      }
-      return nextResolve(specifier, location);
-    },
-  });
-  const { sqlClient } = await import(runtimeUrl);
-  hooks.deregister();
+  const { sqlClient } = await import("@/db/runtime.ts");
   delete globalThis.__contextPg;
   delete globalThis.__contextSentry;
   try {
     const names = ["request-a", "request-b"];
     const results = await Promise.all(names.map((name) => context.run(name, () => sqlClient.query(name))));
-    assert.deepEqual(
-      results.map((result) => result.rows[0].text),
-      names,
-    );
-    assert.deepEqual(spans, names, "queued requests must not inherit the releasing request's parent span");
+    expect(results.map((result) => result.rows[0].text)).toEqual(names);
+    expect(spans, "queued requests must not inherit the releasing request's parent span").toEqual(names);
 
     await Promise.all(
       ["callback-a", "callback-b"].map((name) =>
@@ -78,41 +65,40 @@ test("queued pool queries and checkouts retain the caller's trace context", asyn
             new Promise((resolve, reject) => {
               const returned = sqlClient.query(name, (error, result) => {
                 try {
-                  assert.equal(error, undefined);
-                  assert.equal(context.getStore(), name);
-                  assert.equal(result.rows[0].text, name);
+                  expect(error).toBe(undefined);
+                  expect(context.getStore()).toBe(name);
+                  expect(result.rows[0].text).toBe(name);
                   resolve();
                 } catch (error) {
                   reject(error);
                 }
               });
-              assert.equal(returned, undefined, "callback queries keep their return contract");
+              expect(returned, "callback queries keep their return contract").toBe(undefined);
             }),
         ),
       ),
     );
-    assert.deepEqual(spans.slice(-2), ["callback-a", "callback-b"]);
+    expect(spans.slice(-2)).toEqual(["callback-a", "callback-b"]);
 
     const holder = await sqlClient.connect();
     const checkout = context.run(
       "checkout",
       () =>
         new Promise((resolve, reject) => {
-          assert.equal(
+          expect(
             sqlClient.connect((error, client, release) => {
               try {
-                assert.equal(error, undefined);
-                assert.equal(context.getStore(), "checkout");
-                assert.equal(client, holder);
-                assert.equal(release, client.release);
+                expect(error).toBe(undefined);
+                expect(context.getStore()).toBe("checkout");
+                expect(client).toBe(holder);
+                expect(release).toBe(client.release);
                 release();
                 resolve();
               } catch (error) {
                 reject(error);
               }
             }),
-            undefined,
-          );
+          ).toBe(undefined);
         }),
     );
     holder.release();
@@ -120,10 +106,10 @@ test("queued pool queries and checkouts retain the caller's trace context", asyn
   } finally {
     await sqlClient.end();
   }
-  await assert.rejects(sqlClient.connect(), /Cannot use a pool after calling end/);
+  await expect(sqlClient.connect()).rejects.toThrow(/Cannot use a pool after calling end/);
   const returned = sqlClient.connect((error) => {
-    assert.match(error.message, /Cannot use a pool after calling end/);
+    expect(error.message).toMatch(/Cannot use a pool after calling end/);
     return "callback result";
   });
-  assert.equal(returned, "callback result");
+  expect(returned).toBe("callback result");
 });

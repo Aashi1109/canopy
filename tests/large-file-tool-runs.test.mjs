@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { expect, test } from "vitest";
 import { createArtifactWriter, readArtifact } from "../lib/tool-framework/artifacts.ts";
 import { LARGE_TEXT_PREVIEW_BYTES } from "../lib/tool-framework/limits.ts";
 import { run as formatJson } from "../tools/json-formatter/run.worker.ts";
@@ -25,14 +23,14 @@ test("JSON formatter streams a complete large File into an artifact with a bound
 
   const result = await formatJson(context);
 
-  assert.equal(file.size > LARGE_FILE_THRESHOLD, true);
-  assert.equal(result.render, "code");
-  assert.equal(result.code.length, LARGE_TEXT_PREVIEW_BYTES);
-  assert.equal(result.code, expected.slice(0, LARGE_TEXT_PREVIEW_BYTES));
-  assert.equal(result.sections?.length, 1);
+  expect(file.size > LARGE_FILE_THRESHOLD).toBe(true);
+  expect(result.render).toBe("code");
+  expect(result.code.length).toBe(LARGE_TEXT_PREVIEW_BYTES);
+  expect(result.code).toBe(expected.slice(0, LARGE_TEXT_PREVIEW_BYTES));
+  expect(result.sections?.length).toBe(1);
   const artifact = onlyArtifact(result);
-  assert.equal(artifact.size, new TextEncoder().encode(expected).byteLength);
-  assert.equal(await (await readArtifact(artifact)).text(), expected);
+  expect(artifact.size).toBe(new TextEncoder().encode(expected).byteLength);
+  expect(await (await readArtifact(artifact)).text()).toBe(expected);
 });
 
 test("CSV viewer parses the complete large File but keeps at most 1,000 data rows", async () => {
@@ -42,15 +40,15 @@ test("CSV viewer parses the complete large File but keeps at most 1,000 data row
 
   const result = await viewCsv(context);
 
-  assert.equal(file.size > LARGE_FILE_THRESHOLD, true);
-  assert.equal(result.render, "table");
-  assert.deepEqual(result.columns, ["id", "value"]);
-  assert.equal(result.rows.length, 1_000);
-  assert.deepEqual(result.rows[0], ["1", fixture.value]);
-  assert.deepEqual(result.rows.at(-1), ["1000", fixture.value]);
-  assert.equal(result.truncated, true);
-  assert.equal(statValue(result, "Rows"), String(fixture.dataRows));
-  assert.equal(statValue(result, "Columns"), "2");
+  expect(file.size > LARGE_FILE_THRESHOLD).toBe(true);
+  expect(result.render).toBe("table");
+  expect(result.columns).toEqual(["id", "value"]);
+  expect(result.rows.length).toBe(1_000);
+  expect(result.rows[0]).toEqual(["1", fixture.value]);
+  expect(result.rows.at(-1)).toEqual(["1000", fixture.value]);
+  expect(result.truncated).toBe(true);
+  expect(statValue(result, "Rows")).toBe(String(fixture.dataRows));
+  expect(statValue(result, "Columns")).toBe("2");
 });
 
 test("CSV-to-TSV converts every row of a large File into a streamed artifact", async () => {
@@ -60,15 +58,15 @@ test("CSV-to-TSV converts every row of a large File into a streamed artifact", a
 
   const result = await convertCsvToTsv(context);
 
-  assert.equal(file.size > LARGE_FILE_THRESHOLD, true);
-  assert.equal(result.render, "code");
-  assert.equal(result.code.length, LARGE_TEXT_PREVIEW_BYTES);
-  assert.equal(result.code, fixture.tsv.slice(0, LARGE_TEXT_PREVIEW_BYTES));
-  assert.equal(statValue(result, "Rows"), String(fixture.dataRows + 1));
-  assert.equal(statValue(result, "Columns"), "2");
+  expect(file.size > LARGE_FILE_THRESHOLD).toBe(true);
+  expect(result.render).toBe("code");
+  expect(result.code.length).toBe(LARGE_TEXT_PREVIEW_BYTES);
+  expect(result.code).toBe(fixture.tsv.slice(0, LARGE_TEXT_PREVIEW_BYTES));
+  expect(statValue(result, "Rows")).toBe(String(fixture.dataRows + 1));
+  expect(statValue(result, "Columns")).toBe("2");
   const artifact = onlyArtifact(result);
-  assert.equal(artifact.size, new TextEncoder().encode(fixture.tsv).byteLength);
-  assert.equal(await (await readArtifact(artifact)).text(), fixture.tsv);
+  expect(artifact.size).toBe(new TextEncoder().encode(fixture.tsv).byteLength);
+  expect(await (await readArtifact(artifact)).text()).toBe(fixture.tsv);
 });
 
 function runContext(file, settings, jobId) {
@@ -98,9 +96,9 @@ function runContext(file, settings, jobId) {
 
 function onlyArtifact(result) {
   const section = result.sections?.[0];
-  assert.ok(section);
-  assert.equal(section.body.render, "files");
-  assert.equal(section.body.files.length, 1);
+  expect(section).toBeTruthy();
+  expect(section.body.render).toBe("files");
+  expect(section.body.files.length).toBe(1);
   return section.body.files[0];
 }
 

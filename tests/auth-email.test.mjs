@@ -1,40 +1,30 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
+import { afterAll, expect, test, vi } from "vitest";
 
-const state = { sent: [], error: null };
-globalThis.__authEmailTest = state;
-const sourceUrl = new URL("../lib/auth/email.ts", import.meta.url).href;
-const hooks = registerHooks({
-  resolve(specifier, context, next) {
-    if (context.parentURL === sourceUrl && specifier === "resend") {
-      return {
-        shortCircuit: true,
-        url: `data:text/javascript,${encodeURIComponent(`
-          export class Resend {
-            emails = { async send(message) {
-              const state = globalThis.__authEmailTest;
-              state.sent.push(message);
-              return { error: state.error };
-            } };
-          }
-        `)}`,
-      };
-    }
-    return next(specifier, context);
+// vi.hoisted runs before the hoisted vi.mock factory so the fake Resend client
+// can record messages where the test can read them.
+const state = vi.hoisted(() => ({ sent: [], error: null }));
+
+vi.mock("resend", () => ({
+  Resend: class Resend {
+    emails = {
+      async send(message) {
+        state.sent.push(message);
+        return { error: state.error };
+      },
+    };
   },
-});
-const { sendAuthEmail } = await import(sourceUrl);
-hooks.deregister();
+}));
+
+import { sendAuthEmail } from "@/lib/auth/email.ts";
+
 const originalEnv = Object.fromEntries(
   ["RESEND_API_KEY", "ACCOUNTS_EMAIL", "AUTH_EMAIL_FROM"].map((key) => [key, process.env[key]]),
 );
-test.after(() => {
+afterAll(() => {
   for (const [key, value] of Object.entries(originalEnv)) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
   }
-  delete globalThis.__authEmailTest;
 });
 
 test("account email uses the shared address and rejects missing configuration or delivery failures", async () => {
@@ -49,24 +39,24 @@ test("account email uses the shared address and rejects missing configuration or
   process.env.AUTH_EMAIL_FROM = "Old Sender <old@example.com>";
   process.env.ACCOUNTS_EMAIL = "  accounts@smarttools.lol  ";
   await sendAuthEmail(message);
-  assert.equal(state.sent[0].from, "SmartTools Accounts <accounts@smarttools.lol>");
-  assert.deepEqual(state.sent[0].to, [message.to]);
-  assert.equal(state.sent[0].subject, message.subject);
+  expect(state.sent[0].from).toBe("SmartTools Accounts <accounts@smarttools.lol>");
+  expect(state.sent[0].to).toEqual([message.to]);
+  expect(state.sent[0].subject).toBe(message.subject);
 
   for (const address of [undefined, "", "   "]) {
     if (address === undefined) delete process.env.ACCOUNTS_EMAIL;
     else process.env.ACCOUNTS_EMAIL = address;
-    await assert.rejects(sendAuthEmail(message), /ACCOUNTS_EMAIL/);
+    await expect(sendAuthEmail(message)).rejects.toThrow(/ACCOUNTS_EMAIL/);
   }
   process.env.ACCOUNTS_EMAIL = "accounts@smarttools.lol";
   delete process.env.RESEND_API_KEY;
-  await assert.rejects(sendAuthEmail(message), /RESEND_API_KEY/);
-  assert.equal(state.sent.length, 1);
+  await expect(sendAuthEmail(message)).rejects.toThrow(/RESEND_API_KEY/);
+  expect(state.sent.length).toBe(1);
 
   process.env.RESEND_API_KEY = "test-key";
   state.error = { message: "Domain not verified" };
-  await assert.rejects(sendAuthEmail(message), /Unable to send/);
-  assert.equal(state.sent.length, 2);
+  await expect(sendAuthEmail(message)).rejects.toThrow(/Unable to send/);
+  expect(state.sent.length).toBe(2);
 });
 
 test("account email supports escaped confirmation copy instead of expiring-link instructions", async () => {
@@ -82,6 +72,6 @@ test("account email supports escaped confirmation copy instead of expiring-link 
     actionUrl: "http://localhost:3000/auth?mode=forgot",
   });
   const { html } = state.sent.at(-1);
-  assert.match(html, /Changed &lt;safely&gt; &amp; successfully\./);
-  assert.doesNotMatch(html, /expires automatically|ignore this email/);
+  expect(html).toMatch(/Changed &lt;safely&gt; &amp; successfully\./);
+  expect(html).not.toMatch(/expires automatically|ignore this email/);
 });

@@ -1,5 +1,7 @@
 "use client";
 
+import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -164,7 +166,7 @@ export default function QuarterlyTaxEstimatorPage({
       )}
 
       {/* Main interactive cards split */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <WorkbenchPanes className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* INPUT PARAMETERS CARD COLUMN */}
         <div className="lg:col-span-6 space-y-6 print:hidden">
           <Card className="space-y-5">
@@ -436,7 +438,7 @@ export default function QuarterlyTaxEstimatorPage({
             </>
           )}
         </div>
-      </div>
+      </WorkbenchPanes>
     </div>
   );
 }

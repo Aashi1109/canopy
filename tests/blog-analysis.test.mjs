@@ -1,16 +1,10 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test, vi } from "vitest";
 import { createBlogDocument, validateBlogDocument } from "../lib/blog/document.ts";
 import { validateRunRequest } from "../lib/blog/assistantValidation.ts";
-import { registerHooks } from "node:module";
-registerHooks({
-  resolve(specifier, context, next) {
-    return specifier === "server-only"
-      ? { shortCircuit: true, url: "data:text/javascript,export {};" }
-      : next(specifier, context);
-  },
-});
-const { validateAgentOutput, AUDIT_CATEGORIES } = await import("../lib/blog/agentRegistry.ts");
+
+vi.mock("server-only", () => ({}));
+
+import { validateAgentOutput, AUDIT_CATEGORIES } from "../lib/blog/agentRegistry.ts";
 import { BLOG_AGENTS } from "../lib/blog/agentCatalog.ts";
 const paragraph = (text) => ({ type: "paragraph", content: [{ type: "text", text }] });
 const document = {
@@ -91,54 +85,52 @@ const optimization = (body = document.body) => ({
 });
 test("all four agents share one validated operation and reject obsolete direct analysis requests", () => {
   for (const { id } of BLOG_AGENTS) {
-    assert.equal(validateRunRequest(request(id)).agentId, id);
+    expect(validateRunRequest(request(id)).agentId).toBe(id);
     for (const field of ["postId", "threadId"])
-      assert.throws(() => validateRunRequest(request(id, { [field]: undefined })));
-    assert.throws(() => validateRunRequest(request(id, { context: { selectedText: "partial" } })));
-    assert.throws(() => validateRunRequest(request(id, { inputMessageId: "chat-message" })));
+      expect(() => validateRunRequest(request(id, { [field]: undefined }))).toThrow();
+    expect(() => validateRunRequest(request(id, { context: { selectedText: "partial" } }))).toThrow();
+    expect(() => validateRunRequest(request(id, { inputMessageId: "chat-message" }))).toThrow();
   }
   for (const operation of ["review", "optimize", "check_sources"])
-    assert.throws(() => validateRunRequest({ ...request("auditor"), operation }));
-  assert.throws(() => validateRunRequest(request("unknown")));
+    expect(() => validateRunRequest({ ...request("auditor"), operation })).toThrow();
+  expect(() => validateRunRequest(request("unknown"))).toThrow();
   for (const agent of ["writer", "auditor", "optimizer"])
-    assert.throws(() => validateRunRequest(request(agent, { context: { document: undefined } })));
-  assert.equal(
-    validateRunRequest(request("planner", { context: { document: undefined } })).context.document,
-    undefined,
-  );
-  assert.throws(() => validateRunRequest(request("planner", { message: "", context: { document: undefined } })));
-  assert.equal(
+    expect(() => validateRunRequest(request(agent, { context: { document: undefined } }))).toThrow();
+  expect(validateRunRequest(request("planner", { context: { document: undefined } })).context.document).toBe(undefined);
+  expect(() => validateRunRequest(request("planner", { message: "", context: { document: undefined } }))).toThrow();
+  expect(
     validateRunRequest(request("writer", { message: "", context: { document: createBlogDocument("Empty") } })).agentId,
-    "writer",
-  );
-  assert.throws(() => validateRunRequest(request("auditor", { context: { document: createBlogDocument("Empty") } })));
-  assert.throws(() =>
+  ).toBe("writer");
+  expect(() =>
+    validateRunRequest(request("auditor", { context: { document: createBlogDocument("Empty") } })),
+  ).toThrow();
+  expect(() =>
     validateRunRequest(request("optimizer", { context: { document: { ...document, unexpected: true } } })),
-  );
+  ).toThrow();
 });
 test("audits cover all categories and contain no draft or ordinary chat output", () => {
   const value = validateAgentOutput(result(audit()), request("auditor"), []);
-  assert.equal(value.artifact.agentId, "auditor");
-  assert.equal(value.artifact.content.sections.length, 8);
-  assert.equal(value.artifact.content.document, undefined);
-  assert.equal(value.response, undefined);
+  expect(value.artifact.agentId).toBe("auditor");
+  expect(value.artifact.content.sections.length).toBe(8);
+  expect(value.artifact.content.document).toBe(undefined);
+  expect(value.response).toBe(undefined);
   const output = audit();
   output.sections.pop();
-  assert.throws(() => validateAgentOutput(result(output), request("auditor"), []));
+  expect(() => validateAgentOutput(result(output), request("auditor"), [])).toThrow();
   output.sections.push(output.sections[0]);
-  assert.throws(() => validateAgentOutput(result(output), request("auditor"), []));
+  expect(() => validateAgentOutput(result(output), request("auditor"), [])).toThrow();
 });
 test("optimizer produces complete immutable generic artifact preserving administrative metadata", () => {
   const value = validateAgentOutput(result(optimization()), request("optimizer"), ["plan"]);
-  assert.equal(value.artifact.content.document.title, "Improved article");
+  expect(value.artifact.content.document.title).toBe("Improved article");
   for (const field of ["authorName", "category", "tags", "relatedToolIds", "coverImage"])
-    assert.deepEqual(value.artifact.content.document[field], document[field]);
-  assert.deepEqual(value.artifact.inputArtifactIds, ["plan"]);
-  assert.equal(value.artifact.content.html, undefined);
-  assert.throws(() => validateAgentOutput(result({ ...optimization(), keywords: [] }), request("optimizer"), []));
-  assert.throws(() =>
+    expect(value.artifact.content.document[field]).toEqual(document[field]);
+  expect(value.artifact.inputArtifactIds).toEqual(["plan"]);
+  expect(value.artifact.content.html).toBe(undefined);
+  expect(() => validateAgentOutput(result({ ...optimization(), keywords: [] }), request("optimizer"), [])).toThrow();
+  expect(() =>
     validateAgentOutput(result(optimization({ type: "doc", content: [paragraph("")] })), request("optimizer"), []),
-  );
+  ).toThrow();
 });
 test("draft agents normalize recoverable provider heading levels without changing heading content", () => {
   const heading = (attrs) => ({
@@ -165,11 +157,11 @@ test("draft agents normalize recoverable provider heading levels without changin
       };
       const expected = heading({ level, ...(attrs?.textAlign ? { textAlign: attrs.textAlign } : {}) });
       const value = validateAgentOutput(result(optimization(body)), request(agent), []);
-      assert.deepEqual(value.artifact.content.document.body, {
+      expect(value.artifact.content.document.body).toEqual({
         type: "doc",
         content: [expected, { type: "blockquote", content: [expected, paragraph("Supporting text.")] }],
       });
-      assert.deepEqual(body.content[0], heading(attrs), "The provider document must not be mutated");
+      expect(body.content[0]).toEqual(heading(attrs));
     }
   }
 });
@@ -180,18 +172,17 @@ test("draft agents still reject malformed provider heading levels", () => {
         type: "doc",
         content: [{ type: "heading", attrs: { level }, content: [{ type: "text", text: "Invalid heading" }] }],
       };
-      assert.throws(
+      expect(
         () => validateAgentOutput(result(optimization(body)), request(agent), []),
-        /Heading level/,
         `${agent} must reject heading level ${JSON.stringify(level)}`,
-      );
+      ).toThrow(/Heading level/);
     }
     for (const attrs of [null, []]) {
       const body = {
         type: "doc",
         content: [{ type: "heading", attrs, content: [{ type: "text", text: "Invalid attributes" }] }],
       };
-      assert.throws(() => validateAgentOutput(result(optimization(body)), request(agent), []), /Node attributes/);
+      expect(() => validateAgentOutput(result(optimization(body)), request(agent), [])).toThrow(/Node attributes/);
     }
   }
 });
@@ -207,7 +198,7 @@ test("saved blog documents retain strict heading validation outside agent output
         },
       ],
     };
-    assert.throws(() => validateBlogDocument({ ...document, body }), /Heading level/);
+    expect(() => validateBlogDocument({ ...document, body })).toThrow(/Heading level/);
   }
 });
 test("whole-draft proposals cannot silently remove rich blocks or links", () => {
@@ -232,21 +223,18 @@ test("whole-draft proposals cannot silently remove rich blocks or links", () => 
   const rich = validateBlogDocument({ ...document, body: { type: "doc", content: [paragraph("Intro"), ...nodes] } });
   const body = { ...rich.body, content: [paragraph("Improved intro"), ...rich.body.content.slice(1)] };
   for (const agent of ["writer", "optimizer"]) {
-    assert.deepEqual(
+    expect(
       validateAgentOutput(result(optimization(body)), request(agent, { context: { document: rich } }), []).artifact
         .content.document.body,
-      body,
-    );
+    ).toEqual(body);
     for (let index = 1; index < rich.body.content.length; index++)
-      assert.throws(
-        () =>
-          validateAgentOutput(
-            result(optimization({ ...body, content: body.content.filter((_, i) => i !== index) })),
-            request(agent, { context: { document: rich } }),
-            [],
-          ),
-        /preserve/,
-      );
+      expect(() =>
+        validateAgentOutput(
+          result(optimization({ ...body, content: body.content.filter((_, i) => i !== index) })),
+          request(agent, { context: { document: rich } }),
+          [],
+        ),
+      ).toThrow(/preserve/);
   }
 });
 test("agent images validate against configured cloud and preserve image identity", () => {
@@ -275,12 +263,11 @@ test("agent images validate against configured cloud and preserve image identity
     },
   };
   const input = validateRunRequest(request("optimizer", { context: { document: rich } }), cloud);
-  assert.deepEqual(
+  expect(
     validateAgentOutput(result(optimization(input.context.document.body)), input, [], cloud).artifact.content.document
       .coverImage,
-    image,
-  );
-  assert.throws(() => validateRunRequest(request("auditor", { context: { document: rich } }), "other-cloud"));
+  ).toEqual(image);
+  expect(() => validateRunRequest(request("auditor", { context: { document: rich } }), "other-cloud")).toThrow();
 });
 
 test("Planner validates complete planning sections and Writer accepts an empty draft base", () => {
@@ -293,24 +280,24 @@ test("Planner validates complete planning sections and Writer accepts an empty d
       findings: [],
     })),
   };
-  assert.equal(
+  expect(
     validateAgentOutput(result(plan), request("planner", { context: { document: undefined } }), []).artifact.content
       .sections.length,
-    5,
-  );
-  assert.throws(() =>
+  ).toBe(5);
+  expect(() =>
     validateAgentOutput(result({ ...plan, sections: plan.sections.slice(1) }), request("planner"), []),
-  );
+  ).toThrow();
   const empty = createBlogDocument("Empty draft");
-  assert.equal(
+  expect(
     validateAgentOutput(result(optimization()), request("writer", { context: { document: empty } }), []).artifact
       .content.document.title,
-    "Improved article",
-  );
+  ).toBe("Improved article");
 });
 
 test("results reject invented metric fields, new internal destinations, unsafe URLs, malformed and oversized payloads", () => {
-  assert.throws(() => validateAgentOutput(result({ ...optimization(), searchVolume: 5000 }), request("optimizer"), []));
+  expect(() =>
+    validateAgentOutput(result({ ...optimization(), searchVolume: 5000 }), request("optimizer"), []),
+  ).toThrow();
   const linked = (href) => ({
     type: "doc",
     content: [
@@ -326,18 +313,16 @@ test("results reject invented metric fields, new internal destinations, unsafe U
       },
     ],
   });
-  assert.throws(
-    () => validateAgentOutput(result(optimization(linked("/invented-destination"))), request("optimizer"), []),
-    /unverified internal link/,
-  );
-  assert.throws(() =>
+  expect(() =>
+    validateAgentOutput(result(optimization(linked("/invented-destination"))), request("optimizer"), []),
+  ).toThrow(/unverified internal link/);
+  expect(() =>
     validateAgentOutput(result(optimization(linked("javascript:alert(1)"))), request("optimizer"), []),
-  );
-  assert.throws(() => validateAgentOutput({ ...result(null), text: "not JSON" }, request("auditor"), []));
-  assert.throws(
-    () => validateAgentOutput(result({ ...audit(), summary: "a".repeat(2 * 1024 * 1024) }), request("auditor"), []),
-    /exceeded/,
-  );
+  ).toThrow();
+  expect(() => validateAgentOutput({ ...result(null), text: "not JSON" }, request("auditor"), [])).toThrow();
+  expect(() =>
+    validateAgentOutput(result({ ...audit(), summary: "a".repeat(2 * 1024 * 1024) }), request("auditor"), []),
+  ).toThrow(/exceeded/);
   const cited = {
     ...result(audit()),
     citations: [
@@ -345,7 +330,7 @@ test("results reject invented metric fields, new internal destinations, unsafe U
       { url: "https://127.0.0.1/private", title: "Unsafe" },
     ],
   };
-  assert.deepEqual(validateAgentOutput(cited, request("auditor"), []).artifact.content.citations, [
+  expect(validateAgentOutput(cited, request("auditor"), []).artifact.content.citations).toEqual([
     { url: "https://openai.com/research", title: "Actual citation" },
   ]);
 });

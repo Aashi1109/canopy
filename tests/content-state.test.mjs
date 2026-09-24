@@ -1,34 +1,15 @@
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { registerHooks } from "node:module";
-import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { transformSync } from "next/dist/build/swc/index.js";
+import { expect, test } from "vitest";
+import { ContentState } from "../components/ui/components/ContentState.tsx";
 
-const hooks = registerHooks({
-  load(url, context, nextLoad) {
-    if (!url.endsWith(".tsx")) return nextLoad(url, context);
-    return {
-      format: "module",
-      shortCircuit: true,
-      source: transformSync(readFileSync(new URL(url), "utf8"), {
-        filename: new URL(url).pathname,
-        jsc: { parser: { syntax: "typescript", tsx: true }, transform: { react: { runtime: "automatic" } } },
-        module: { type: "es6" },
-      }).code,
-    };
-  },
-});
-const { ContentState } = await import("../components/ui/components/ContentState.tsx");
-hooks.deregister();
 const render = (props) => renderToStaticMarkup(createElement(ContentState, props));
 
 test("passive empty content has a semantic heading and no invented recovery action", () => {
   const html = render({ title: "No revisions yet", description: "Save a draft to create a revision." });
-  assert.match(html, /<h2\b[^>]*>No revisions yet<\/h2>/);
-  assert.match(html, /Save a draft to create a revision\./);
-  assert.doesNotMatch(html, /<button|<a\s|<svg|role="alert"/);
+  expect(html).toMatch(/<h2\b[^>]*>No revisions yet<\/h2>/);
+  expect(html).toMatch(/Save a draft to create a revision\./);
+  expect(html).not.toMatch(/<button|<a\s|<svg|role="alert"/);
 });
 
 test("page errors preserve caller-owned recovery and heading semantics", () => {
@@ -39,10 +20,10 @@ test("page errors preserve caller-owned recovery and heading semantics", () => {
     action: createElement("button", { disabled: true, "aria-busy": true }, "Trying…"),
     secondaryAction: createElement("a", { href: "/blog" }, "All posts"),
   });
-  assert.match(html, /<h1\b[^>]*>Could not load posts<\/h1>/);
-  assert.match(html, /<button[^>]*disabled=""[^>]*aria-busy="true"/);
-  assert.match(html, /<a href="\/blog">All posts<\/a>/);
-  assert.match(html, /aria-hidden="true"/);
+  expect(html).toMatch(/<h1\b[^>]*>Could not load posts<\/h1>/);
+  expect(html).toMatch(/<button[^>]*disabled=""[^>]*aria-busy="true"/);
+  expect(html).toMatch(/<a href="\/blog">All posts<\/a>/);
+  expect(html).toMatch(/aria-hidden="true"/);
 });
 
 test("compact states support an explicitly absent icon and opt-in announcements", () => {
@@ -53,9 +34,9 @@ test("compact states support an explicitly absent icon and opt-in announcements"
     density: "compact",
     announcement: "polite",
   });
-  assert.doesNotMatch(html, /<svg/);
-  assert.match(html, /aria-live="polite"/);
-  assert.match(html, /aria-atomic="true"/);
+  expect(html).not.toMatch(/<svg/);
+  expect(html).toMatch(/aria-live="polite"/);
+  expect(html).toMatch(/aria-atomic="true"/);
 });
 
 test("loading announces progress, while the caller controls its recovery action", () => {
@@ -64,9 +45,9 @@ test("loading announces progress, while the caller controls its recovery action"
     title: "Loading history",
     secondaryAction: createElement("button", {}, "Cancel"),
   });
-  assert.match(html, /aria-live="polite"/);
-  assert.match(html, /<button>Cancel<\/button>/);
-  assert.doesNotMatch(html, /disabled=/);
+  expect(html).toMatch(/aria-live="polite"/);
+  expect(html).toMatch(/<button>Cancel<\/button>/);
+  expect(html).not.toMatch(/disabled=/);
 });
 
 test("host accessibility attributes and heading level are retained", () => {
@@ -76,15 +57,15 @@ test("host accessibility attributes and heading level are retained", () => {
     id: "search-status",
     "aria-label": "Search feedback",
   });
-  assert.match(html, /id="search-status"/);
-  assert.match(html, /aria-label="Search feedback"/);
-  assert.match(html, /<h3\b[^>]*>No matches<\/h3>/);
+  expect(html).toMatch(/id="search-status"/);
+  expect(html).toMatch(/aria-label="Search feedback"/);
+  expect(html).toMatch(/<h3\b[^>]*>No matches<\/h3>/);
 });
 
 test("waiting, cancellation and successful no-output states do not invent retry or download actions", () => {
   for (const state of ["waiting", "cancelled", "complete"]) {
     const html = render({ state, title: "Caller-owned status", description: "<untrusted>" });
-    assert.match(html, /&lt;untrusted&gt;/);
-    assert.doesNotMatch(html, /<button|<a\s|<svg/);
+    expect(html).toMatch(/&lt;untrusted&gt;/);
+    expect(html).not.toMatch(/<button|<a\s|<svg/);
   }
 });

@@ -1,15 +1,14 @@
-import assert from "node:assert/strict";
+import { expect, onTestFinished, test } from "vitest";
 import { spawnSync } from "node:child_process";
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-test("the commit hook formats staged files safely, even when advisory tests fail", (t) => {
+test("the commit hook formats staged files safely, even when advisory tests fail", () => {
   const root = fileURLToPath(new URL("../", import.meta.url));
   const directory = mkdtempSync(join(tmpdir(), "canopy-pre-commit-"));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
   const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("GIT_")));
   const run = (command, args, extraEnvironment = {}) =>
     spawnSync(command, args, {
@@ -19,8 +18,8 @@ test("the commit hook formats staged files safely, even when advisory tests fail
       timeout: 30_000,
     });
   const successful = (result) => {
-    assert.equal(result.error, undefined, result.stdout + result.stderr);
-    assert.equal(result.status, 0, result.stdout + result.stderr);
+    expect(result.error, result.stdout + result.stderr).toBe(undefined);
+    expect(result.status, result.stdout + result.stderr).toBe(0);
     return result.stdout;
   };
   const git = (...args) => successful(run("git", args));
@@ -66,37 +65,37 @@ test("the commit hook formats staged files safely, even when advisory tests fail
   write("partial.js", `${unformatted}${context}const unstaged = 2;\n`);
   successful(hook());
   for (const name of ["staged [file].js", "renamed [file].js"]) {
-    assert.equal(read(name), formatted);
-    assert.equal(git("show", `:${name}`), formatted);
+    expect(read(name)).toBe(formatted);
+    expect(git("show", `:${name}`)).toBe(formatted);
   }
-  assert.equal(git("show", ":partial.js"), `${formatted}${context}const unstaged = 0;\n`);
-  assert.equal(read("partial.js"), `${formatted}${context}const unstaged = 2;\n`);
-  assert.equal(read("unrelated.js"), unformatted);
-  assert.equal(git("show", ":unrelated.js"), "const value = 0;\n");
-  assert.equal(git("show", ":unsupported.blob"), "opaque content\n");
-  assert.equal(git("diff", "--cached", "--name-only", "--diff-filter=D", "--", "deleted.js"), "deleted.js\n");
+  expect(git("show", ":partial.js")).toBe(`${formatted}${context}const unstaged = 0;\n`);
+  expect(read("partial.js")).toBe(`${formatted}${context}const unstaged = 2;\n`);
+  expect(read("unrelated.js")).toBe(unformatted);
+  expect(git("show", ":unrelated.js")).toBe("const value = 0;\n");
+  expect(git("show", ":unsupported.blob")).toBe("opaque content\n");
+  expect(git("diff", "--cached", "--name-only", "--diff-filter=D", "--", "deleted.js")).toBe("deleted.js\n");
 
   git("reset", "--hard", "HEAD");
   write("unrelated.js", unformatted);
   successful(hook());
-  assert.equal(read("unrelated.js"), unformatted);
-  assert.equal(git("diff", "--cached"), "");
+  expect(read("unrelated.js")).toBe(unformatted);
+  expect(git("diff", "--cached")).toBe("");
 
   write("staged [file].js", unformatted);
   git("add", "staged [file].js");
   successful(hook({ FAIL_TEST: "1" }));
-  assert.equal(git("show", ":staged [file].js"), formatted);
-  assert.equal(read("unrelated.js"), unformatted);
+  expect(git("show", ":staged [file].js")).toBe(formatted);
+  expect(read("unrelated.js")).toBe(unformatted);
 
   write("staged [file].js", unformatted);
   write("invalid.js", "const =\n");
   git("add", "staged [file].js", "invalid.js");
   const stagedBefore = git("diff", "--cached");
   const failed = hook();
-  assert.equal(failed.error, undefined);
-  assert.notEqual(failed.status, 0, failed.stdout + failed.stderr);
-  assert.equal(git("diff", "--cached"), stagedBefore);
-  assert.equal(read("staged [file].js"), unformatted);
-  assert.equal(read("invalid.js"), "const =\n");
-  assert.equal(read("unrelated.js"), unformatted);
-});
+  expect(failed.error).toBe(undefined);
+  expect(failed.status, failed.stdout + failed.stderr).not.toBe(0);
+  expect(git("diff", "--cached")).toBe(stagedBefore);
+  expect(read("staged [file].js")).toBe(unformatted);
+  expect(read("invalid.js")).toBe("const =\n");
+  expect(read("unrelated.js")).toBe(unformatted);
+}, 120000);

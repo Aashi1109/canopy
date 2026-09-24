@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { test, expect } from "vitest";
 import { LARGE_CSV_FILE_BYTES } from "../lib/devtools/shared/streaming-csv-tool.ts";
 import { CSV_PREVIEW_BYTES } from "../lib/tool-framework/limits.ts";
 import { run as format } from "../tools/csv-formatter/run.worker.ts";
@@ -133,8 +131,8 @@ for (const example of cases) {
     test(`${label}: previews the transformed cells and preserves the exact complete output`, async () => {
       const result = await execute(example.run, example.source, example.settings, streaming);
 
-      assert.equal(await completeText(result), example.expected);
-      assert.deepEqual(result.tablePreview, {
+      expect(await completeText(result)).toBe(example.expected);
+      expect(result.tablePreview).toEqual({
         render: "table",
         columns: ["name", "note"],
         rows: example.rows,
@@ -146,10 +144,10 @@ for (const example of cases) {
     test(`${label}: a header-only result has an empty, complete table preview`, async () => {
       const result = await execute(example.run, example.header, example.settings, streaming);
 
-      assert.equal(await completeText(result), example.outputHeader ?? example.header);
-      assert.deepEqual(result.tablePreview.columns, ["name", "note"]);
-      assert.deepEqual(result.tablePreview.rows, []);
-      assert.equal(result.tablePreview.truncated, false);
+      expect(await completeText(result)).toBe(example.outputHeader ?? example.header);
+      expect(result.tablePreview.columns).toEqual(["name", "note"]);
+      expect(result.tablePreview.rows).toEqual([]);
+      expect(result.tablePreview.truncated).toBe(false);
     });
   }
 }
@@ -165,9 +163,9 @@ for (const streaming of [false, true]) {
       const source = [header, ...Array.from({ length: count }, () => row)].join("\n");
       const result = await execute(format, source, { delimiter: "," }, streaming);
 
-      assert.equal(result.tablePreview.rows.length, retained);
-      assert.equal(result.tablePreview.truncated, true);
-      assert.equal(await completeText(result), source);
+      expect(result.tablePreview.rows.length).toBe(retained);
+      expect(result.tablePreview.truncated).toBe(true);
+      expect(await completeText(result)).toBe(source);
     }
   });
 
@@ -178,13 +176,13 @@ for (const streaming of [false, true]) {
       const source = `${header}\n${row}`;
       const result = await execute(format, source, { delimiter: "," }, streaming);
 
-      assert.equal(await completeText(result), source);
+      expect(await completeText(result)).toBe(source);
       if (width > 10_000) {
-        assert.ok(result.tablePreview === undefined, "Oversized headers omit the table preview");
+        expect(result.tablePreview === undefined, "Oversized headers omit the table preview").toBeTruthy();
       } else {
-        assert.equal(result.tablePreview.columns.length, width);
-        assert.equal(result.tablePreview.rows.length, 1);
-        assert.equal(result.tablePreview.truncated, false);
+        expect(result.tablePreview.columns.length).toBe(width);
+        expect(result.tablePreview.rows.length).toBe(1);
+        expect(result.tablePreview.truncated).toBe(false);
       }
     }
   });
@@ -194,24 +192,24 @@ for (const streaming of [false, true]) {
     const source = `name\n${large}\n${large}\nlast`;
     const result = await execute(format, source, { delimiter: "," }, streaming);
 
-    assert.equal(result.tablePreview.rows.length, 1);
-    assert.ok(result.tablePreview.rows[0][0] === large);
-    assert.equal(result.tablePreview.truncated, true);
-    assert.ok(
+    expect(result.tablePreview.rows.length).toBe(1);
+    expect(result.tablePreview.rows[0][0] === large).toBeTruthy();
+    expect(result.tablePreview.truncated).toBe(true);
+    expect(
       new TextEncoder().encode(result.tablePreview.columns.join("") + result.tablePreview.rows.flat().join(""))
         .byteLength <= CSV_PREVIEW_BYTES,
-    );
-    assert.ok((await completeText(result)) === source);
+    ).toBeTruthy();
+    expect((await completeText(result)) === source).toBeTruthy();
 
     const oversized = "😀".repeat(CSV_PREVIEW_BYTES / 4 + 1);
     const cell = await execute(format, `name\n${oversized}\nlast`, { delimiter: "," }, streaming);
-    assert.deepEqual(cell.tablePreview.rows, []);
-    assert.equal(cell.tablePreview.truncated, true);
-    assert.ok((await completeText(cell)).includes(oversized));
+    expect(cell.tablePreview.rows).toEqual([]);
+    expect(cell.tablePreview.truncated).toBe(true);
+    expect((await completeText(cell)).includes(oversized)).toBeTruthy();
 
     const header = await execute(format, `${oversized}\nvalue`, { delimiter: "," }, streaming);
-    assert.ok(header.tablePreview === undefined);
-    assert.ok((await completeText(header)).startsWith(oversized));
+    expect(header.tablePreview === undefined).toBeTruthy();
+    expect((await completeText(header)).startsWith(oversized)).toBeTruthy();
   });
 
   test(`filter ${streaming ? "streaming" : "inline"}: no matches keeps the header, and truncation counts only matched rows`, async () => {
@@ -221,14 +219,14 @@ for (const streaming of [false, true]) {
       { delimiter: ",", column: "note", query: "keep" },
       streaming,
     );
-    assert.deepEqual(empty.tablePreview.rows, []);
-    assert.equal(empty.tablePreview.truncated, false);
-    assert.equal(await completeText(empty), "name,note");
+    expect(empty.tablePreview.rows).toEqual([]);
+    expect(empty.tablePreview.truncated).toBe(false);
+    expect(await completeText(empty)).toBe("name,note");
 
     const source = ["name,note", ...Array.from({ length: 1001 }, (_, i) => `${i},discard`), "Ada,keep"].join("\n");
     const result = await execute(filter, source, { delimiter: ",", column: "note", query: "keep" }, streaming);
-    assert.deepEqual(result.tablePreview.rows, [["Ada", "keep"]]);
-    assert.equal(result.tablePreview.truncated, false);
-    assert.equal(await completeText(result), "name,note\nAda,keep");
+    expect(result.tablePreview.rows).toEqual([["Ada", "keep"]]);
+    expect(result.tablePreview.truncated).toBe(false);
+    expect(await completeText(result)).toBe("name,note\nAda,keep");
   });
 }

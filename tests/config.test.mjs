@@ -1,15 +1,14 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { test, expect, onTestFinished } from "vitest";
 import config from "../lib/config/config.ts";
 import publicConfig from "../lib/config/public.ts";
 
 test("database pool maximum defaults safely and reads valid environment overrides lazily", (t) => {
   const previous = process.env;
-  t.after(() => {
+  onTestFinished(() => {
     process.env = previous;
   });
   process.env = {};
-  assert.equal(config.databasePoolMax, 3);
+  expect(config.databasePoolMax).toBe(3);
 
   for (const [value, expected] of [
     ["", 3],
@@ -27,22 +26,22 @@ test("database pool maximum defaults safely and reads valid environment override
     ["10", 10],
   ]) {
     process.env.DATABASE_POOL_MAX = value;
-    assert.equal(config.databasePoolMax, expected, `DATABASE_POOL_MAX=${value}`);
+    expect(config.databasePoolMax, `DATABASE_POOL_MAX=${value}`).toBe(expected);
   }
 
   process.env = { DATABASE_POOL_MAX: "7" };
-  assert.equal(config.databasePoolMax, 7);
+  expect(config.databasePoolMax).toBe(7);
   delete process.env.DATABASE_POOL_MAX;
-  assert.equal(config.databasePoolMax, 3);
+  expect(config.databasePoolMax).toBe(3);
 });
 
 test("auth cookie prefix keeps the existing default and reads environment overrides lazily", (t) => {
   const previous = process.env;
-  t.after(() => {
+  onTestFinished(() => {
     process.env = previous;
   });
   process.env = {};
-  assert.equal(config.auth.cookiePrefix, "smarttools");
+  expect(config.auth.cookiePrefix).toBe("smarttools");
   for (const [value, expected] of [
     ["", "smarttools"],
     ["   ", "smarttools"],
@@ -50,13 +49,13 @@ test("auth cookie prefix keeps the existing default and reads environment overri
     [" canopy-test ", "canopy-test"],
   ]) {
     process.env.AUTH_COOKIE_PREFIX = value;
-    assert.equal(config.auth.cookiePrefix, expected);
+    expect(config.auth.cookiePrefix).toBe(expected);
   }
 });
 
 test("cache reads default off in development and support an explicit environment override", (t) => {
   const previous = process.env;
-  t.after(() => {
+  onTestFinished(() => {
     process.env = previous;
   });
   for (const [environment, override, expected] of [
@@ -73,22 +72,22 @@ test("cache reads default off in development and support an explicit environment
     process.env = {};
     if (environment !== undefined) process.env.NODE_ENV = environment;
     if (override !== undefined) process.env.CACHE_ENABLED = override;
-    assert.equal(config.cacheEnabled, expected, `${environment}, CACHE_ENABLED=${override}`);
+    expect(config.cacheEnabled, `${environment}, CACHE_ENABLED=${override}`).toBe(expected);
   }
 });
 
 test("configuration stays lazy across environment loading, updates and replacement", (t) => {
   const previous = process.env;
-  t.after(() => {
+  onTestFinished(() => {
     process.env = previous;
   });
   process.env = {};
-  assert.equal(config.appUrl, "http://localhost:3000");
-  assert.equal(config.databaseUrl, undefined);
-  assert.equal(config.auth.secret, undefined);
-  assert.equal(config.cloudinary.apiSecret, undefined);
-  assert.equal(publicConfig.sentryDsn, undefined);
-  assert.deepEqual(config.playwright, {
+  expect(config.appUrl).toBe("http://localhost:3000");
+  expect(config.databaseUrl).toBe(undefined);
+  expect(config.auth.secret).toBe(undefined);
+  expect(config.cloudinary.apiSecret).toBe(undefined);
+  expect(publicConfig.sentryDsn).toBe(undefined);
+  expect(config.playwright).toEqual({
     appUrl: "http://localhost:3000",
     port: undefined,
     reuseServer: false,
@@ -130,32 +129,32 @@ test("configuration stays lazy across environment loading, updates and replaceme
   ];
   for (const [key, read] of fields) {
     process.env[key] = ` first ${key} `;
-    assert.equal(read(), ` first ${key} `, `${key} preserves its raw value`);
+    expect(read(), `${key} preserves its raw value`).toBe(` first ${key} `);
     process.env[key] = `second ${key}`;
-    assert.equal(read(), `second ${key}`, `${key} is read at access time`);
+    expect(read(), `${key} is read at access time`).toBe(`second ${key}`);
     delete process.env[key];
-    assert.equal(read(), key === "APP_URL" ? "http://localhost:3000" : undefined);
+    expect(read()).toBe(key === "APP_URL" ? "http://localhost:3000" : undefined);
   }
   process.env = { DATABASE_URL: "postgres://replacement", APP_URL: "" };
-  assert.equal(config.databaseUrl, "postgres://replacement");
-  assert.equal(config.appUrl, "", "only an absent APP_URL receives the default");
+  expect(config.databaseUrl).toBe("postgres://replacement");
+  expect(config.appUrl, "only an absent APP_URL receives the default").toBe("");
   Object.assign(process.env, {
     PLAYWRIGHT_APP_URL: "http://localhost:3100",
     PLAYWRIGHT_PORT: "3100",
     PLAYWRIGHT_REUSE_SERVER: "1",
   });
-  assert.deepEqual(config.playwright, {
+  expect(config.playwright).toEqual({
     appUrl: "http://localhost:3100",
     port: "3100",
     reuseServer: true,
   });
   process.env.PLAYWRIGHT_REUSE_SERVER = "true";
-  assert.equal(config.playwright.reuseServer, false);
+  expect(config.playwright.reuseServer).toBe(false);
 });
 
 test("public configuration exposes only browser-safe values", (t) => {
   const previous = process.env;
-  t.after(() => {
+  onTestFinished(() => {
     process.env = previous;
   });
   process.env = {
@@ -168,7 +167,7 @@ test("public configuration exposes only browser-safe values", (t) => {
     CLOUDINARY_API_SECRET: "private-cloudinary-secret",
     SENTRY_AUTH_TOKEN: "private-sentry-token",
   };
-  assert.deepEqual(JSON.parse(JSON.stringify(publicConfig)), {
+  expect(JSON.parse(JSON.stringify(publicConfig))).toEqual({
     environment: "production",
     appUrl: "https://smarttools.test",
     sentryDsn: "https://public@example.test/1",

@@ -1,8 +1,7 @@
-import assert from "node:assert/strict";
+import { expect, test, onTestFinished } from "vitest";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { setTimeout } from "node:timers/promises";
-import test from "node:test";
 import pg from "pg";
 
 const enabled = process.env.CANOPY_INTEGRATION === "1" && Boolean(process.env.DATABASE_URL);
@@ -15,7 +14,7 @@ test(
   async (context) => {
     const transaction = new pg.Client({ connectionString: process.env.DATABASE_URL });
     await transaction.connect();
-    context.after(() => transaction.end());
+    onTestFinished(() => transaction.end());
     const schema = `user_role_cache_test_${randomUUID().replaceAll("-", "")}`;
     const migration = await readFile(
       new URL("../db/migration/0001-baseline/0007_user_role_cache.sql", import.meta.url),
@@ -56,8 +55,9 @@ test(
         await change();
         const after = await timestamps();
         for (const id of Object.keys(before)) {
-          if (ids.includes(id)) assert.ok(after[id] > before[id], `${id} gets a distinct millisecond cache key`);
-          else assert.equal(after[id], before[id], `${id} is unaffected`);
+          if (ids.includes(id))
+            expect(after[id] > before[id], `${id} gets a distinct millisecond cache key`).toBeTruthy();
+          else expect(after[id], `${id} is unaffected`).toBe(before[id]);
         }
       }
 
@@ -75,7 +75,7 @@ test(
       await changesOnly([], () => transaction.query("UPDATE roles SET name = 'Unused' WHERE id = 'free'"));
       await changesOnly(["d"], () => transaction.query("UPDATE auth_users SET status = 'suspended' WHERE id = 'd'"));
       await changesOnly(["c"], () => transaction.query("DELETE FROM roles WHERE id = 'editor'"));
-      assert.equal((await transaction.query("SELECT * FROM user_roles WHERE user_id = 'c'")).rows.length, 0);
+      expect((await transaction.query("SELECT * FROM user_roles WHERE user_id = 'c'")).rows.length).toBe(0);
       await changesOnly(["b"], () => transaction.query("DELETE FROM user_roles WHERE role_id = 'viewer'"));
 
       const beforeRollback = await timestamps();
@@ -87,8 +87,8 @@ test(
         await transaction.query("ROLLBACK TO SAVEPOINT authorization_update");
         await transaction.query("RELEASE SAVEPOINT authorization_update");
       }
-      assert.deepEqual(await timestamps(), beforeRollback);
-      assert.equal((await transaction.query("SELECT * FROM user_roles")).rows.length, 0);
+      expect(await timestamps()).toEqual(beforeRollback);
+      expect((await transaction.query("SELECT * FROM user_roles")).rows.length).toBe(0);
 
       // Future seed timestamps force the monotonic millisecond branch even when
       // several writes share one transaction and complete in the same millisecond.
@@ -97,11 +97,11 @@ test(
         await transaction.query("UPDATE auth_users SET status = 'active' WHERE id = 'd'");
         keys.add((await timestamps()).d);
       }
-      assert.equal(keys.size, 11);
+      expect(keys.size).toBe(11);
     } finally {
       await transaction.query("ROLLBACK");
     }
-    assert.equal((await transaction.query("SELECT 1 FROM pg_namespace WHERE nspname = $1", [schema])).rows.length, 0);
+    expect((await transaction.query("SELECT 1 FROM pg_namespace WHERE nspname = $1", [schema])).rows.length).toBe(0);
   },
 );
 
@@ -115,7 +115,7 @@ test(
     const admin = new pg.Client({ connectionString: process.env.DATABASE_URL });
     await admin.connect();
     const clients = [];
-    context.after(async () => {
+    onTestFinished(async () => {
       await Promise.all(
         clients.map(async (client) => {
           await client.query("ROLLBACK");
@@ -169,7 +169,7 @@ test(
         if (waiting) return;
         await setTimeout(10);
       }
-      assert.fail("concurrent authorization mutation must wait for the other transaction");
+      expect.fail("concurrent authorization mutation must wait for the other transaction");
     }
 
     await roleWriter.query("BEGIN");
@@ -180,7 +180,7 @@ test(
     await roleWriter.query("COMMIT");
     await assignment;
     const [visibleRole] = (await assignmentWriter.query("SELECT access FROM roles WHERE id = 'editor'")).rows;
-    assert.deepEqual(visibleRole.access, { admin: { enter: true } });
+    expect(visibleRole.access).toEqual({ admin: { enter: true } });
     await assignmentWriter.query("COMMIT");
 
     await roleWriter.query("BEGIN");
@@ -197,9 +197,9 @@ test(
     const [{ updated_at: after }] = (
       await assignmentWriter.query("SELECT updated_at FROM auth_users WHERE id = 'assignment-first'")
     ).rows;
-    assert.ok(
+    expect(
       after.toISOString() > before.toISOString(),
       "role update invalidates the just-committed assignment's cache key",
-    );
+    ).toBeTruthy();
   },
 );

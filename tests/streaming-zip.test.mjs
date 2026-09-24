@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 
 import { unzipSync } from "fflate";
 
@@ -29,13 +28,13 @@ test("streams a byte-correct ZIP without retaining separate output artifacts", a
     },
   );
 
-  assert.equal(files.length, 1);
-  assert.equal(files[0].name, "images.zip");
-  assert.equal(files[0].mime, "application/zip");
+  expect(files.length).toBe(1);
+  expect(files[0].name).toBe("images.zip");
+  expect(files[0].mime).toBe("application/zip");
   const archive = unzipSync(new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()));
-  assert.deepEqual(Object.keys(archive), ["first.txt", "second.txt"]);
-  assert.equal(new TextDecoder().decode(archive["first.txt"]), "first payload");
-  assert.equal(new TextDecoder().decode(archive["second.txt"]), "second payload");
+  expect(Object.keys(archive)).toEqual(["first.txt", "second.txt"]);
+  expect(new TextDecoder().decode(archive["first.txt"])).toBe("first payload");
+  expect(new TextDecoder().decode(archive["second.txt"])).toBe("second payload");
 });
 
 test("retains individually downloadable images alongside a byte-correct ZIP when requested", async () => {
@@ -49,14 +48,11 @@ test("retains individually downloadable images alongside a byte-correct ZIP when
       await write({ name: "page-2.jpg", mime: "image/jpeg", source: new Uint8Array([1, 2, 3]) });
     },
   );
-  assert.deepEqual(
-    files.map((file) => file.name),
-    ["images.zip", "page-1.jpg", "page-2.jpg"],
-  );
+  expect(files.map((file) => file.name)).toEqual(["images.zip", "page-1.jpg", "page-2.jpg"]);
   const archive = unzipSync(new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()));
   for (const file of files.slice(1)) {
-    assert.equal(file.mime, "image/jpeg");
-    assert.deepEqual(new Uint8Array(await (await readArtifact(file)).arrayBuffer()), archive[file.name]);
+    expect(file.mime).toBe("image/jpeg");
+    expect(new Uint8Array(await (await readArtifact(file)).arrayBuffer())).toEqual(archive[file.name]);
   }
 });
 
@@ -75,10 +71,10 @@ test("writes one output directly instead of wrapping it in a ZIP", async () => {
       }),
   );
 
-  assert.equal(files.length, 1);
-  assert.equal(files[0].name, "converted.png");
-  assert.equal(files[0].mime, "image/png");
-  assert.deepEqual(new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()), new Uint8Array([1, 2, 3]));
+  expect(files.length).toBe(1);
+  expect(files[0].name).toBe("converted.png");
+  expect(files[0].mime).toBe("image/png");
+  expect(new Uint8Array(await (await readArtifact(files[0])).arrayBuffer())).toEqual(new Uint8Array([1, 2, 3]));
 });
 
 test("can force a valid ZIP for a one-entry batch", async () => {
@@ -96,9 +92,9 @@ test("can force a valid ZIP for a one-entry batch", async () => {
       }),
   );
 
-  assert.equal(files[0].mime, "application/zip");
+  expect(files[0].mime).toBe("application/zip");
   const archive = unzipSync(new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()));
-  assert.deepEqual(archive["part.pdf"], new Uint8Array([37, 80, 68, 70]));
+  expect(archive["part.pdf"]).toEqual(new Uint8Array([37, 80, 68, 70]));
 });
 
 test("renames duplicate entry filenames so a batch cannot overwrite data", async () => {
@@ -123,9 +119,9 @@ test("renames duplicate entry filenames so a batch cannot overwrite data", async
   );
 
   const archive = unzipSync(new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()));
-  assert.deepEqual(Object.keys(archive), ["same.txt", "same-2.txt"]);
-  assert.equal(new TextDecoder().decode(archive["same.txt"]), "first");
-  assert.equal(new TextDecoder().decode(archive["same-2.txt"]), "second");
+  expect(Object.keys(archive)).toEqual(["same.txt", "same-2.txt"]);
+  expect(new TextDecoder().decode(archive["same.txt"])).toBe("first");
+  expect(new TextDecoder().decode(archive["same-2.txt"])).toBe("second");
 });
 
 test("aborts the ZIP artifact stream when processing is canceled", async () => {
@@ -134,7 +130,7 @@ test("aborts the ZIP artifact stream when processing is canceled", async () => {
     signal: controller.signal,
   });
 
-  await assert.rejects(
+  await expect(
     writeArtifactBatch(
       { signal: controller.signal, writeArtifact: artifacts.write },
       { archiveName: "canceled.zip", count: 2 },
@@ -152,9 +148,8 @@ test("aborts the ZIP artifact stream when processing is canceled", async () => {
         });
       },
     ),
-    { name: "AbortError" },
-  );
-  assert.equal(artifacts.bytesWritten, 0);
+  ).rejects.toMatchObject({ name: "AbortError" });
+  expect(artifacts.bytesWritten).toBe(0);
 });
 
 test("propagates the artifact output ceiling while the ZIP is streaming", async () => {
@@ -164,24 +159,30 @@ test("propagates the artifact output ceiling while the ZIP is streaming", async 
     signal,
   });
 
-  await assert.rejects(
-    writeArtifactBatch(
-      { signal, writeArtifact: artifacts.write },
-      { archiveName: "too-large.zip", count: 2 },
-      async (write) => {
-        await write({
-          name: "first.bin",
-          mime: "application/octet-stream",
-          source: new Uint8Array(64).fill(1),
-        });
-        await write({
-          name: "second.bin",
-          mime: "application/octet-stream",
-          source: new Uint8Array(64).fill(2),
-        });
-      },
-    ),
-    (error) => error instanceof ArtifactStorageError && error.code === "output-too-large",
-  );
-  assert.equal(artifacts.bytesWritten, 0);
+  await (async () => {
+    let __err;
+    try {
+      await writeArtifactBatch(
+        { signal, writeArtifact: artifacts.write },
+        { archiveName: "too-large.zip", count: 2 },
+        async (write) => {
+          await write({
+            name: "first.bin",
+            mime: "application/octet-stream",
+            source: new Uint8Array(64).fill(1),
+          });
+          await write({
+            name: "second.bin",
+            mime: "application/octet-stream",
+            source: new Uint8Array(64).fill(2),
+          });
+        },
+      );
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error instanceof ArtifactStorageError && error.code === "output-too-large")(__err)).toBe(true);
+  })();
+  expect(artifacts.bytesWritten).toBe(0);
 });

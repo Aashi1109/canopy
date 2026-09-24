@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -60,7 +59,7 @@ void [render, result, kind];
       encoding: "utf8",
     });
 
-    assert.equal(compiled.status, 0, compiled.stdout + compiled.stderr);
+    expect(compiled.status, compiled.stdout + compiled.stderr).toBe(0);
   } finally {
     await rm(directory, { force: true, recursive: true });
   }

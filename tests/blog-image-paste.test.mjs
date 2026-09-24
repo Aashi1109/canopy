@@ -1,9 +1,16 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test, afterEach, vi } from "vitest";
 import { setImmediate } from "node:timers/promises";
 import { Editor, Node } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { pasteBlogImages } from "../app/admin/(protected)/blog/lib/imagePaste.ts";
+
+const fail = () => {
+  throw new Error("callback should not be called");
+};
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 const Image = Node.create({
   name: "image",
@@ -42,18 +49,18 @@ function clipboard(files, items = files.map((image) => ({ kind: "file", type: im
   };
 }
 
-test("clipboard previews appear immediately, map through edits, and atomically become ordered images", async (t) => {
+test("clipboard previews appear immediately, map through edits, and atomically become ordered images", async () => {
   const editor = editorFor();
   const originalPlugins = new Set(editor.state.plugins);
   const originalDocument = editor.getJSON();
   const urls = [];
   const revoked = [];
-  t.mock.method(URL, "createObjectURL", (image) => {
+  vi.spyOn(URL, "createObjectURL").mockImplementation((image) => {
     const url = `blob:preview-${urls.length}`;
     urls.push([image.name, url]);
     return url;
   });
-  t.mock.method(URL, "revokeObjectURL", (url) => revoked.push(url));
+  vi.spyOn(URL, "revokeObjectURL").mockImplementation((url) => revoked.push(url));
   const images = [file("one.png"), file("two.png")];
   const event = clipboard(images);
   const requests = [];
@@ -62,7 +69,7 @@ test("clipboard previews appear immediately, map through edits, and atomically b
     finish = resolve;
   });
   const errors = [];
-  assert.equal(
+  expect(
     pasteBlogImages(
       editor,
       event,
@@ -73,33 +80,26 @@ test("clipboard previews appear immediately, map through edits, and atomically b
       },
       (error) => errors.push(error),
     ),
-    true,
-  );
-  assert.equal(event.defaultPrevented, true);
+  ).toBe(true);
+  expect(event.defaultPrevented).toBe(true);
   const preview = editor.state.plugins.find((plugin) => !originalPlugins.has(plugin));
-  assert.ok(preview, "a preview decoration is registered before upload finishes");
-  assert.equal(preview.props.decorations(editor.state).find()[0].from, 9);
-  assert.deepEqual(editor.getJSON(), originalDocument, "previews are never document/autosave content");
-  assert.deepEqual(
-    urls.map(([name]) => name),
-    ["one.png", "two.png"],
-  );
+  expect(preview, "a preview decoration is registered before upload finishes").toBeTruthy();
+  expect(preview.props.decorations(editor.state).find()[0].from).toBe(9);
+  expect(editor.getJSON(), "previews are never document/autosave content").toEqual(originalDocument);
+  expect(urls.map(([name]) => name)).toEqual(["one.png", "two.png"]);
   editor.commands.insertContentAt(1, { type: "text", text: "New " });
-  assert.equal(preview.props.decorations(editor.state).find()[0].from, 13);
+  expect(preview.props.decorations(editor.state).find()[0].from).toBe(13);
   editor.commands.setTextSelection(1);
   finish();
   await setImmediate();
-  assert.deepEqual(requests, ["one.png", "two.png"]);
-  assert.deepEqual(
-    editor.getJSON().content.map((node) => node.type),
-    ["paragraph", "image", "image", "paragraph"],
-  );
-  assert.equal(editor.state.doc.firstChild.textContent, "New Before");
-  assert.equal(editor.state.doc.child(1).attrs.publicId, "one.png");
-  assert.equal(editor.state.doc.child(2).attrs.publicId, "two.png");
-  assert.deepEqual(errors, []);
-  assert.equal(editor.state.plugins.includes(preview), false);
-  assert.deepEqual(revoked.sort(), urls.map(([, url]) => url).sort());
+  expect(requests).toEqual(["one.png", "two.png"]);
+  expect(editor.getJSON().content.map((node) => node.type)).toEqual(["paragraph", "image", "image", "paragraph"]);
+  expect(editor.state.doc.firstChild.textContent).toBe("New Before");
+  expect(editor.state.doc.child(1).attrs.publicId).toBe("one.png");
+  expect(editor.state.doc.child(2).attrs.publicId).toBe("two.png");
+  expect(errors).toEqual([]);
+  expect(editor.state.plugins.includes(preview)).toBe(false);
+  expect(revoked.sort()).toEqual(urls.map(([, url]) => url).sort());
   editor.destroy();
 });
 
@@ -111,16 +111,16 @@ test("preview mapping survives deletion of the original selected text without pe
   const pending = new Promise((resolve) => {
     finish = resolve;
   });
-  pasteBlogImages(editor, clipboard([file("pending.png")]), () => pending, assert.fail);
+  pasteBlogImages(editor, clipboard([file("pending.png")]), () => pending, fail);
   const preview = editor.state.plugins.find((plugin) => !existing.has(plugin));
   editor.commands.deleteSelection();
-  assert.equal(preview.props.decorations(editor.state).find().length, 1);
-  assert.equal(preview.props.decorations(editor.state).find()[0].from, 9);
-  assert.equal(editor.getJSON().content.filter((node) => node.type === "image").length, 0);
+  expect(preview.props.decorations(editor.state).find().length).toBe(1);
+  expect(preview.props.decorations(editor.state).find()[0].from).toBe(9);
+  expect(editor.getJSON().content.filter((node) => node.type === "image").length).toBe(0);
   finish(uploaded("pending.png"));
   await setImmediate();
-  assert.equal(editor.getJSON().content.filter((node) => node.type === "image").length, 1);
-  assert.equal(editor.state.plugins.includes(preview), false);
+  expect(editor.getJSON().content.filter((node) => node.type === "image").length).toBe(1);
+  expect(editor.state.plugins.includes(preview)).toBe(false);
   editor.destroy();
 });
 
@@ -137,20 +137,20 @@ test("file-only clipboard works while text, missing data, and unrelated files re
     { clipboardData: null },
     clipboard([], [{ kind: "string", type: "text/plain" }]),
   ]) {
-    assert.equal(pasteBlogImages(editor, event, upload, assert.fail), false);
-    assert.notEqual(event.defaultPrevented, true);
+    expect(pasteBlogImages(editor, event, upload, fail)).toBe(false);
+    expect(event.defaultPrevented).not.toBe(true);
   }
-  assert.equal(pasteBlogImages(editor, clipboard([file("screenshot.png")], []), upload, assert.fail), true);
+  expect(pasteBlogImages(editor, clipboard([file("screenshot.png")], []), upload, fail)).toBe(true);
   await setImmediate();
-  assert.equal(uploads, 1);
+  expect(uploads).toBe(1);
   editor.destroy();
 });
 
-test("failed uploads remove previews and leave the original selection intact while preserving the upload error", async (t) => {
+test("failed uploads remove previews and leave the original selection intact while preserving the upload error", async () => {
   const editor = editorFor();
   const existing = editor.state.plugins;
   const revoked = [];
-  t.mock.method(URL, "revokeObjectURL", (url) => revoked.push(url));
+  vi.spyOn(URL, "revokeObjectURL").mockImplementation((url) => revoked.push(url));
   editor.commands.setTextSelection({ from: 1, to: 7 });
   const before = editor.getJSON();
   const errors = [];
@@ -165,17 +165,17 @@ test("failed uploads remove previews and leave the original selection intact whi
     (error) => errors.push(error),
   );
   await setImmediate();
-  assert.deepEqual(requests, ["first.png", "bad.gif"]);
-  assert.deepEqual(editor.getJSON(), before);
-  assert.deepEqual(errors, []);
-  assert.deepEqual(editor.state.plugins, existing);
-  assert.equal(revoked.length, 3);
+  expect(requests).toEqual(["first.png", "bad.gif"]);
+  expect(editor.getJSON()).toEqual(before);
+  expect(errors).toEqual([]);
+  expect(editor.state.plugins).toEqual(existing);
+  expect(revoked.length).toBe(3);
   editor.destroy();
 });
 
-test("unavailable editors remove pending previews immediately and never write after disposal", async (t) => {
+test("unavailable editors remove pending previews immediately and never write after disposal", async () => {
   const revoked = [];
-  t.mock.method(URL, "revokeObjectURL", (url) => revoked.push(url));
+  vi.spyOn(URL, "revokeObjectURL").mockImplementation((url) => revoked.push(url));
   for (const stop of ["read-only", "destroyed"]) {
     const editor = editorFor();
     const existing = editor.state.plugins;
@@ -193,27 +193,27 @@ test("unavailable editors remove pending previews immediately and never write af
     );
     if (stop === "read-only") editor.setEditable(false);
     else editor.emit("destroy");
-    assert.deepEqual(editor.state.plugins, existing, "remove preview without waiting for the network");
-    assert.equal(revoked.length, stop === "read-only" ? 2 : 4);
+    expect(editor.state.plugins, "remove preview without waiting for the network").toEqual(existing);
+    expect(revoked.length).toBe(stop === "read-only" ? 2 : 4);
     Object.defineProperty(editor, "isDestroyed", {
       configurable: true,
       value: stop === "destroyed",
     });
     finish(uploaded("pending.png"));
     await setImmediate();
-    assert.deepEqual(editor.getJSON(), before);
-    assert.equal(pasteBlogImages(editor, clipboard([file("later.png")]), assert.fail, assert.fail), false);
-    if (stop === "read-only") assert.equal(errors.length, 1);
-    else assert.equal(errors.length, 0);
+    expect(editor.getJSON()).toEqual(before);
+    expect(pasteBlogImages(editor, clipboard([file("later.png")]), fail, fail)).toBe(false);
+    if (stop === "read-only") expect(errors.length).toBe(1);
+    else expect(errors.length).toBe(0);
     editor.destroy();
   }
 });
 
-test("silent read-only changes remove decorations and dispose preview resources through the plugin view", async (t) => {
+test("silent read-only changes remove decorations and dispose preview resources through the plugin view", async () => {
   const editor = editorFor();
   const existing = new Set(editor.state.plugins);
   const revoked = [];
-  t.mock.method(URL, "revokeObjectURL", (url) => revoked.push(url));
+  vi.spyOn(URL, "revokeObjectURL").mockImplementation((url) => revoked.push(url));
   let finish;
   const pending = new Promise((resolve) => {
     finish = resolve;
@@ -228,16 +228,16 @@ test("silent read-only changes remove decorations and dispose preview resources 
   const preview = editor.state.plugins.find((plugin) => !existing.has(plugin));
   const pluginView = preview.spec.view(editor.view);
   editor.setEditable(false, false);
-  assert.equal(preview.props.decorations(editor.state).find().length, 0);
+  expect(preview.props.decorations(editor.state).find().length).toBe(0);
   pluginView.update(editor.view);
   await setImmediate();
-  assert.equal(editor.state.plugins.includes(preview), false);
-  assert.equal(revoked.length, 1);
-  assert.equal(errors.length, 1);
+  expect(editor.state.plugins.includes(preview)).toBe(false);
+  expect(revoked.length).toBe(1);
+  expect(errors.length).toBe(1);
   finish(uploaded("pending.png"));
   await setImmediate();
-  assert.equal(errors.length, 1);
-  assert.equal(editor.state.doc.childCount, 2);
+  expect(errors.length).toBe(1);
+  expect(editor.state.doc.childCount).toBe(2);
   editor.destroy();
 });
 
@@ -251,28 +251,24 @@ test("finishing one paste leaves a separate pending paste preview alive", async 
   const second = new Promise((resolve) => {
     finishSecond = resolve;
   });
-  pasteBlogImages(editor, clipboard([file("first.png")]), () => first, assert.fail);
-  pasteBlogImages(editor, clipboard([file("second.png")]), () => second, assert.fail);
+  pasteBlogImages(editor, clipboard([file("first.png")]), () => first, fail);
+  pasteBlogImages(editor, clipboard([file("second.png")]), () => second, fail);
   const previews = editor.state.plugins.filter((plugin) => !existing.has(plugin));
-  assert.equal(previews.length, 2);
+  expect(previews.length).toBe(2);
   finishFirst(uploaded("first.png"));
   await setImmediate();
-  assert.equal(editor.state.plugins.includes(previews[0]), false);
-  assert.equal(editor.state.plugins.includes(previews[1]), true);
-  assert.equal(previews[1].props.decorations(editor.state).find().length, 1);
+  expect(editor.state.plugins.includes(previews[0])).toBe(false);
+  expect(editor.state.plugins.includes(previews[1])).toBe(true);
+  expect(previews[1].props.decorations(editor.state).find().length).toBe(1);
   finishSecond(uploaded("second.png"));
   await setImmediate();
-  assert.deepEqual(
+  expect(
     editor
       .getJSON()
       .content.filter((node) => node.type === "image")
       .map((node) => node.attrs.publicId),
-    ["first.png", "second.png"],
-  );
-  assert.equal(
-    editor.state.plugins.some((plugin) => previews.includes(plugin)),
-    false,
-  );
+  ).toEqual(["first.png", "second.png"]);
+  expect(editor.state.plugins.some((plugin) => previews.includes(plugin))).toBe(false);
   editor.destroy();
 });
 
@@ -294,9 +290,9 @@ test("temporarily losing edit access cancels the paste even when edit access ret
   editor.setEditable(true);
   finish(uploaded("pending.png"));
   await setImmediate();
-  assert.deepEqual(editor.getJSON(), before);
-  assert.equal(errors.length, 1);
-  assert.match(errors[0], /paste.*again/i);
+  expect(editor.getJSON()).toEqual(before);
+  expect(errors.length).toBe(1);
+  expect(errors[0]).toMatch(/paste.*again/i);
   editor.destroy();
 });
 
@@ -312,27 +308,22 @@ test("unexpected upload errors produce recoverable feedback without unhandled re
     (error) => errors.push(error),
   );
   await setImmediate();
-  assert.equal(errors.length, 1);
-  assert.match(errors[0], /paste.*again/i);
-  assert.equal(editor.state.doc.childCount, 2);
+  expect(errors.length).toBe(1);
+  expect(errors[0]).toMatch(/paste.*again/i);
+  expect(editor.state.doc.childCount).toBe(2);
   editor.destroy();
 });
 
-test("insertion errors still report recovery and remove previews after the upload succeeds", async (t) => {
+test("insertion errors still report recovery and remove previews after the upload succeeds", async () => {
   const editor = editorFor();
   const existing = editor.state.plugins;
   const revoked = [];
-  t.mock.method(URL, "revokeObjectURL", (url) => revoked.push(url));
-  t.mock.method(
-    editor,
-    "commands",
-    () => ({
-      insertContentAt() {
-        throw new Error("insertion unavailable");
-      },
-    }),
-    { getter: true },
-  );
+  vi.spyOn(URL, "revokeObjectURL").mockImplementation((url) => revoked.push(url));
+  vi.spyOn(editor, "commands", "get").mockImplementation(() => ({
+    insertContentAt() {
+      throw new Error("insertion unavailable");
+    },
+  }));
   const errors = [];
   pasteBlogImages(
     editor,
@@ -341,9 +332,9 @@ test("insertion errors still report recovery and remove previews after the uploa
     (error) => errors.push(error),
   );
   await setImmediate();
-  assert.equal(errors.length, 1);
-  assert.match(errors[0], /paste.*again/i);
-  assert.deepEqual(editor.state.plugins, existing);
-  assert.equal(revoked.length, 1);
+  expect(errors.length).toBe(1);
+  expect(errors[0]).toMatch(/paste.*again/i);
+  expect(editor.state.plugins).toEqual(existing);
+  expect(revoked.length).toBe(1);
   editor.destroy();
 });

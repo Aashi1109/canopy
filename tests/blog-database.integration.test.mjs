@@ -1,7 +1,6 @@
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import test from "node:test";
 import pg from "pg";
 
 // Explicit opt-in only: never read the application's DATABASE_URL or env files.
@@ -44,13 +43,12 @@ test(
       async () => {
         const [adminRole] = (await sql.query("SELECT access FROM roles WHERE id = 'admin'")).rows;
         const [customRole] = (await sql.query("SELECT access FROM roles WHERE id = 'editor'")).rows;
-        assert.deepEqual(adminRole.access, {
+        expect(adminRole.access).toEqual({
           ...adminBefore.access,
           blog: { view: true, create: true, edit: true, publish: true, archive: true },
         });
-        assert.deepEqual(customRole.access, customAccess);
-        await assert.rejects(
-          sql.query("UPDATE roles SET name = 'Changed' WHERE id = 'admin'"),
+        expect(customRole.access).toEqual(customAccess);
+        await expect(sql.query("UPDATE roles SET name = 'Changed' WHERE id = 'admin'")).rejects.toThrow(
           /System roles are protected/,
         );
       },
@@ -71,99 +69,88 @@ test(
     );
 
     await context.test("slugs are unique forever and cannot change with draft edits", async () => {
-      await assert.rejects(
-        sql.query("UPDATE blog_posts SET slug = 'changed' WHERE id = 'post-a'"),
+      await expect(sql.query("UPDATE blog_posts SET slug = 'changed' WHERE id = 'post-a'")).rejects.toThrow(
         /slug is immutable/i,
       );
       await sql.query("UPDATE blog_posts SET draft_document = '{\"title\":\"Renamed\"}' WHERE id = 'post-a'");
       const [post] = (await sql.query("SELECT slug FROM blog_posts WHERE id = 'post-a'")).rows;
-      assert.equal(post.slug, "first-post");
+      expect(post.slug).toBe("first-post");
       await sql.query("UPDATE blog_posts SET trashed_at = NOW() WHERE id = 'post-b'");
-      await assert.rejects(
+      await expect(
         sql.query(
           "INSERT INTO blog_posts (id, slug, draft_document, draft_hash) VALUES ('duplicate', 'second-post', '{}', 'hash')",
         ),
-        { code: "23505" },
-      );
+      ).rejects.toMatchObject({ code: "23505" });
       await sql.query("UPDATE blog_posts SET trashed_at = NULL WHERE id = 'post-b'");
-      await assert.rejects(
+      await expect(
         sql.query(
           "INSERT INTO blog_posts (id, slug, draft_document, draft_hash) VALUES ('bad-slug', 'UPPER CASE', '{}', 'hash')",
         ),
-        { code: "23514" },
-      );
+      ).rejects.toMatchObject({ code: "23514" });
     });
 
     await context.test("snapshots and publication are constrained to their owning post", async () => {
-      await assert.rejects(
+      await expect(
         sql.query(
           "UPDATE blog_posts SET published_revision_id = 'revision-b', published_category_id = 'category', first_published_at = NOW(), published_updated_at = NOW() WHERE id = 'post-a'",
         ),
-        { code: "23503" },
-      );
-      await assert.rejects(
+      ).rejects.toMatchObject({ code: "23503" });
+      await expect(
         sql.query(
           "INSERT INTO blog_revisions (id, post_id, revision_number, document, content_hash, reason, source_revision_id) VALUES ('bad-restore', 'post-a', 2, '{}', 'hash', 'restore', 'revision-b')",
         ),
-        { code: "23503" },
-      );
-      await assert.rejects(
+      ).rejects.toMatchObject({ code: "23503" });
+      await expect(
         sql.query("UPDATE blog_posts SET published_revision_id = 'revision-a' WHERE id = 'post-a'"),
-        {
-          code: "23514",
-        },
-      );
-      await assert.rejects(sql.query("UPDATE blog_posts SET draft_document = '[]' WHERE id = 'post-a'"), {
+      ).rejects.toMatchObject({
         code: "23514",
       });
-      await assert.rejects(
+      await expect(sql.query("UPDATE blog_posts SET draft_document = '[]' WHERE id = 'post-a'")).rejects.toMatchObject({
+        code: "23514",
+      });
+      await expect(
         sql.query(
           "INSERT INTO blog_revisions (id, post_id, revision_number, document, content_hash, reason) VALUES ('bad-doc', 'post-a', 2, '[]', 'hash', 'create')",
         ),
-        { code: "23514" },
-      );
-      await assert.rejects(
+      ).rejects.toMatchObject({ code: "23514" });
+      await expect(
         sql.query(
           "INSERT INTO blog_revisions (id, post_id, revision_number, document, content_hash, reason) VALUES ('bad-number', 'post-a', 1, '{}', 'hash', 'create')",
         ),
-        { code: "23505" },
-      );
+      ).rejects.toMatchObject({ code: "23505" });
       await sql.query(
         "UPDATE blog_posts SET published_revision_id = 'revision-a', published_category_id = 'category', first_published_at = NOW(), published_updated_at = NOW(), published_search = to_tsvector('english', 'Original article') WHERE id = 'post-a'",
       );
-      await assert.rejects(sql.query("UPDATE blog_posts SET trashed_at = NOW() WHERE id = 'post-a'"), {
+      await expect(sql.query("UPDATE blog_posts SET trashed_at = NOW() WHERE id = 'post-a'")).rejects.toMatchObject({
         code: "23514",
       });
       await sql.query("INSERT INTO blog_published_post_tags (post_id, tag_id) VALUES ('post-a', 'tag')");
     });
 
     await context.test("taxonomy names are shared and case-insensitively unique", async () => {
-      await assert.rejects(
+      await expect(
         sql.query(
           "INSERT INTO blog_categories (id, name, slug) VALUES ('duplicate-category', 'GUIDES', 'other-guides')",
         ),
-        { code: "23505" },
-      );
-      await assert.rejects(
+      ).rejects.toMatchObject({ code: "23505" });
+      await expect(
         sql.query("INSERT INTO blog_tags (id, name, slug) VALUES ('duplicate-tag', 'pdf', 'other-pdf')"),
-        {
-          code: "23505",
-        },
-      );
+      ).rejects.toMatchObject({
+        code: "23505",
+      });
       await sql.query("INSERT INTO blog_published_post_tags (post_id, tag_id) VALUES ('post-b', 'tag')");
       const [usage] = (
         await sql.query("SELECT COUNT(*)::integer AS count FROM blog_published_post_tags WHERE tag_id = 'tag'")
       ).rows;
-      assert.equal(usage.count, 2);
+      expect(usage.count).toBe(2);
     });
 
     await context.test("schedules freeze a same-post revision and permit only one active request", async () => {
-      await assert.rejects(
+      await expect(
         sql.query(
           "INSERT INTO blog_post_schedules (id, post_id, revision_id, scheduled_at) VALUES ('bad-schedule', 'post-a', 'revision-b', NOW())",
         ),
-        { code: "23503" },
-      );
+      ).rejects.toMatchObject({ code: "23503" });
       const results = await Promise.allSettled(
         ["schedule-a", "schedule-b"].map((id) =>
           sql.query(
@@ -172,11 +159,11 @@ test(
           ),
         ),
       );
-      assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
+      expect(results.filter((result) => result.status === "fulfilled").length).toBe(1);
       const rejected = results.find((result) => result.status === "rejected");
-      assert.equal(rejected.reason.code, "23505");
+      expect(rejected.reason.code).toBe("23505");
       const [schedule] = (await sql.query("SELECT revision_id FROM blog_post_schedules WHERE post_id = 'post-a'")).rows;
-      assert.equal(schedule.revision_id, "revision-a");
+      expect(schedule.revision_id).toBe("revision-a");
     });
 
     await context.test(
@@ -185,18 +172,18 @@ test(
         await sql.query("DELETE FROM auth_users WHERE id = 'author'");
         for (const table of ["blog_categories", "blog_tags"]) {
           const [term] = (await sql.query(`SELECT created_by, updated_by FROM ${table}`)).rows;
-          assert.deepEqual(term, { created_by: null, updated_by: null });
+          expect(term).toEqual({ created_by: null, updated_by: null });
         }
         const [post] = (await sql.query("SELECT created_by, draft_updated_by FROM blog_posts WHERE id = 'post-a'"))
           .rows;
-        assert.deepEqual(post, { created_by: null, draft_updated_by: null });
+        expect(post).toEqual({ created_by: null, draft_updated_by: null });
         const [revision] = (await sql.query("SELECT created_by, document FROM blog_revisions WHERE id = 'revision-a'"))
           .rows;
-        assert.deepEqual(revision, { created_by: null, document: { title: "Original" } });
+        expect(revision).toEqual({ created_by: null, document: { title: "Original" } });
         const [schedule] = (
           await sql.query("SELECT scheduled_by, revision_id FROM blog_post_schedules WHERE post_id = 'post-a'")
         ).rows;
-        assert.deepEqual(schedule, { scheduled_by: null, revision_id: "revision-a" });
+        expect(schedule).toEqual({ scheduled_by: null, revision_id: "revision-a" });
       },
     );
 
@@ -207,16 +194,14 @@ test(
         const schedules = (await sql.query("SELECT * FROM blog_post_schedules ORDER BY id")).rows;
         const [roleBefore] = (await sql.query("SELECT * FROM roles WHERE id = 'admin'")).rows;
         await sql.query(migration);
-        assert.deepEqual((await sql.query("SELECT * FROM blog_posts ORDER BY id")).rows, before);
-        assert.deepEqual((await sql.query("SELECT * FROM blog_post_schedules ORDER BY id")).rows, schedules);
+        expect((await sql.query("SELECT * FROM blog_posts ORDER BY id")).rows).toEqual(before);
+        expect((await sql.query("SELECT * FROM blog_post_schedules ORDER BY id")).rows).toEqual(schedules);
         const [roleAfter] = (await sql.query("SELECT * FROM roles WHERE id = 'admin'")).rows;
-        assert.deepEqual(roleAfter, roleBefore);
-        await assert.rejects(
-          sql.query("UPDATE roles SET name = 'Changed' WHERE id = 'admin'"),
+        expect(roleAfter).toEqual(roleBefore);
+        await expect(sql.query("UPDATE roles SET name = 'Changed' WHERE id = 'admin'")).rejects.toThrow(
           /System roles are protected/,
         );
-        await assert.rejects(
-          sql.query("UPDATE blog_posts SET slug = 'changed' WHERE id = 'post-a'"),
+        await expect(sql.query("UPDATE blog_posts SET slug = 'changed' WHERE id = 'post-a'")).rejects.toThrow(
           /slug is immutable/i,
         );
       },

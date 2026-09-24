@@ -1,5 +1,7 @@
 "use client";
 
+import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -389,7 +391,10 @@ export default function ReceiptGeneratorPage({
       </Tabs>
 
       {/* 4. Split Screen Editor & Live Rendered Frame */}
-      <div className={`${selectedAdvancedTemplate ? "hidden" : "grid"} grid-cols-1 lg:grid-cols-12 gap-8 items-start`}>
+      <WorkbenchPanes
+        active={!selectedAdvancedTemplate}
+        className={`${selectedAdvancedTemplate ? "hidden" : "grid"} grid-cols-1 lg:grid-cols-12 gap-8 items-start`}
+      >
         {/* Editor Fields Column */}
         <div className={`lg:col-span-7 space-y-6 ${activeTab === "edit" ? "block" : "hidden md:block"} print:hidden`}>
           <Card className="space-y-6 rounded-2xl p-6 shadow-sm">
@@ -1232,7 +1237,7 @@ export default function ReceiptGeneratorPage({
             </div>
           )}
         </div>
-      </div>
+      </WorkbenchPanes>
 
       {/* 5. Frequently Asked Questions (FAQ) Section - SEO Content */}
       <div

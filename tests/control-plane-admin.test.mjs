@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { test, expect, vi, afterEach, onTestFinished } from "vitest";
 import redis from "redis";
 import { Cache, closeRedis } from "../lib/cache/index.ts";
 import { catalogCache } from "../lib/tool-framework/catalogCache.ts";
@@ -41,6 +40,10 @@ import {
   updateInvoiceTemplate,
   updateManagedTool,
 } from "../lib/admin/adminMutations.ts";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 function permissionRows(access) {
   return [
@@ -156,14 +159,14 @@ async function withFakeDatabase(selectResults, callback) {
 
 test("user and role mutations invalidate affected users through commit and rollback", async (t) => {
   let events = [];
-  t.mock.method(Cache.prototype, "beginInvalidation", async function (id, ttl) {
-    assert.equal(ttl, this.namespace === "user" ? 3600 : 86400);
+  vi.spyOn(Cache.prototype, "beginInvalidation").mockImplementation(async function (id, ttl) {
+    expect(ttl).toBe(this.namespace === "user" ? 3600 : 86400);
     events.push(`begin:${this.namespace}:${id}`);
     return id;
   });
-  t.mock.method(Cache.prototype, "endInvalidation", async function (id, token, ttl) {
-    assert.equal(token, id);
-    assert.equal(ttl, this.namespace === "user" ? 3600 : 86400);
+  vi.spyOn(Cache.prototype, "endInvalidation").mockImplementation(async function (id, token, ttl) {
+    expect(token).toBe(id);
+    expect(ttl).toBe(this.namespace === "user" ? 3600 : 86400);
     events.push(`end:${this.namespace}:${id}`);
   });
   const target = { id: "target", status: "active", name: "Target", email: "target@example.test" };
@@ -201,29 +204,29 @@ test("user and role mutations invalidate affected users through commit and rollb
           if (rollback) throw new Error("Transaction rolled back");
           return result;
         };
-        if (rollback) await assert.rejects(example.run, /Transaction rolled back/);
+        if (rollback) await expect(example.run()).rejects.toThrow(/Transaction rolled back/);
         else await example.run();
       });
-      assert.deepEqual(events, [
+      expect(events).toEqual([
         ...example.ids.flatMap((id) => [`begin:user:${id}`, `begin:user-roles:${id}`]),
         rollback ? "rollback" : "commit",
         ...example.ids.flatMap((id) => [`end:user:${id}`, `end:user-roles:${id}`]),
       ]);
     }
   }
-  t.mock.method(Cache.prototype, "beginInvalidation", async () => {
+  vi.spyOn(Cache.prototype, "beginInvalidation").mockImplementation(async () => {
     throw new Error("Cache unavailable");
   });
   await withFakeDatabase(cases[0].reads, async (state) => {
-    await assert.rejects(cases[0].run, /Cache unavailable/);
-    assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    await expect(cases[0].run()).rejects.toThrow(/Cache unavailable/);
+    expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
   });
 });
 
 test("catalog and role caches invalidate only after successful commits", async (t) => {
   const variables = ["REDIS_URL"];
   const previous = variables.map((key) => process.env[key]);
-  t.after(async () => {
+  onTestFinished(async () => {
     await closeRedis();
     catalogCache.clear();
     variables.forEach((key, index) => {
@@ -234,7 +237,7 @@ test("catalog and role caches invalidate only after successful commits", async (
   process.env.REDIS_URL = "redis://cache.example.test:6379";
   let committed = false;
   const invalidated = [];
-  t.mock.method(redis, "createClient", () => ({
+  vi.spyOn(redis, "createClient").mockImplementation(() => ({
     isOpen: false,
     isReady: false,
     on() {
@@ -245,8 +248,8 @@ test("catalog and role caches invalidate only after successful commits", async (
       return this;
     },
     async sendCommand(command) {
-      assert.equal(committed, true, "Redis must not be called before commit");
-      assert.equal(command[0], "DEL");
+      expect(committed, "Redis must not be called before commit").toBe(true);
+      expect(command[0]).toBe("DEL");
       invalidated.push(command[1]);
       return 1;
     },
@@ -272,17 +275,17 @@ test("catalog and role caches invalidate only after successful commits", async (
         const transaction = db.transaction;
         db.transaction = async (callback) => {
           const result = await transaction(callback);
-          assert.equal(invalidated.length, before);
-          assert.equal(catalogCache.get("all"), snapshot, "public cache remains live until commit succeeds");
+          expect(invalidated.length).toBe(before);
+          expect(catalogCache.get("all"), "public cache remains live until commit succeeds").toBe(snapshot);
           if (rollback) throw new Error("Commit failed");
           committed = true;
           return result;
         };
-        if (rollback) await assert.rejects(operation, /Commit failed/);
+        if (rollback) await expect(operation()).rejects.toThrow(/Commit failed/);
         else await operation();
       });
-      assert.deepEqual(invalidated.slice(before), rollback || key === "catalog:all" ? [] : [key]);
-      assert.equal(catalogCache.get("all"), !rollback && key === "catalog:all" ? undefined : snapshot);
+      expect(invalidated.slice(before)).toEqual(rollback || key === "catalog:all" ? [] : [key]);
+      expect(catalogCache.get("all")).toBe(!rollback && key === "catalog:all" ? undefined : snapshot);
     }
   }
 });
@@ -305,23 +308,22 @@ test("bulk role assignment adds only the requested role, preserves status and is
     ],
     async (state) => {
       await assignRoleToUsers("actor", "reviewer", ["b", "a", "a"]);
-      assert.deepEqual(
-        state.inserts.filter((entry) => entry.table === userRolesTable).map((entry) => entry.values),
-        [{ userId: "a", roleId: "reviewer" }],
-      );
-      assert.equal(state.deletes.length, 0);
-      assert.equal(state.updates.length, 0);
-      assert.equal(state.inserts.filter((entry) => entry.table === auditEventsTable).length, 1);
+      expect(state.inserts.filter((entry) => entry.table === userRolesTable).map((entry) => entry.values)).toEqual([
+        { userId: "a", roleId: "reviewer" },
+      ]);
+      expect(state.deletes.length).toBe(0);
+      expect(state.updates.length).toBe(0);
+      expect(state.inserts.filter((entry) => entry.table === auditEventsTable).length).toBe(1);
     },
   );
 });
 
 test("bulk assignment rejects invalid selections, missing users and system roles", async () => {
-  await assert.rejects(() => assignRoleToUsers("actor", "reviewer", []), /Select/);
-  await assert.rejects(() => assignRoleToUsers("actor", "reviewer", Array(101).fill("a")), /100/);
+  await expect(assignRoleToUsers("actor", "reviewer", [])).rejects.toThrow(/Select/);
+  await expect(assignRoleToUsers("actor", "reviewer", Array(101).fill("a"))).rejects.toThrow(/100/);
   await withFakeDatabase([permissionRows(ADMIN_ACCESS), permissionRows(ADMIN_ACCESS), []], async (state) => {
-    await assert.rejects(() => assignRoleToUsers("actor", "reviewer", ["missing"]), /not found/i);
-    assert.equal(state.inserts.length, 0);
+    await expect(assignRoleToUsers("actor", "reviewer", ["missing"])).rejects.toThrow(/not found/i);
+    expect(state.inserts.length).toBe(0);
   });
   await withFakeDatabase(
     [
@@ -331,8 +333,8 @@ test("bulk assignment rejects invalid selections, missing users and system roles
       [{ id: "admin", isSystem: true, access: ADMIN_ACCESS }],
     ],
     async (state) => {
-      await assert.rejects(() => assignRoleToUsers("actor", "admin", ["a"]), /custom role/i);
-      assert.equal(state.inserts.length, 0);
+      await expect(assignRoleToUsers("actor", "admin", ["a"])).rejects.toThrow(/custom role/i);
+      expect(state.inserts.length).toBe(0);
     },
   );
 });
@@ -340,8 +342,8 @@ test("bulk assignment rejects invalid selections, missing users and system roles
 test("bulk role assignment requires role viewing and user assignment permissions", async () => {
   for (const reads of [[permissionRows({})], [permissionRows(ADMIN_ACCESS), permissionRows({})]]) {
     await withFakeDatabase(reads, async (state) => {
-      await assert.rejects(() => assignRoleToUsers("actor", "reviewer", ["a"]));
-      assert.equal(state.inserts.length, 0);
+      await expect(assignRoleToUsers("actor", "reviewer", ["a"])).rejects.toThrow();
+      expect(state.inserts.length).toBe(0);
     });
   }
 });
@@ -449,14 +451,14 @@ test("every privileged mutation checks its exact PostgreSQL permission", async (
   for (const [permission, invoke] of cases) {
     const [resource, action] = permission.split(".");
     await withFakeDatabase([permissionRows(accessWithout(resource, action))], async (state) => {
-      await assert.rejects(invoke, new RegExp(`Missing permission: ${permission.replace(".", "\\.")}`));
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      await expect(invoke()).rejects.toThrow(new RegExp(`Missing permission: ${permission.replace(".", "\\.")}`));
+      expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
     });
   }
 });
 
 test("audit metadata recursively redacts authentication material", () => {
-  assert.deepEqual(
+  expect(
     redactAuditMetadata({
       changed: ["name", "accessToken"],
       password: "hunter2",
@@ -467,17 +469,16 @@ test("audit metadata recursively redacts authentication material", () => {
         safe: true,
       },
     }),
-    {
-      changed: ["name", "accessToken"],
-      password: "[REDACTED]",
-      nested: {
-        refreshToken: "[REDACTED]",
-        cookie_header: "[REDACTED]",
-        oauthProvider: "google",
-        safe: true,
-      },
+  ).toEqual({
+    changed: ["name", "accessToken"],
+    password: "[REDACTED]",
+    nested: {
+      refreshToken: "[REDACTED]",
+      cookie_header: "[REDACTED]",
+      oauthProvider: "google",
+      safe: true,
     },
-  );
+  });
 });
 
 test("tool setup validates and stores a code-owned slug with its audit event", async () => {
@@ -502,10 +503,10 @@ test("tool setup validates and stores a code-owned slug with its audit event", a
 
     const toolWrite = state.inserts.find(({ table }) => table === managedToolsTable);
     const auditWrite = state.inserts.find(({ table }) => table === auditEventsTable);
-    assert.equal(toolWrite.values.app, "devtools");
-    assert.equal(toolWrite.values.slug, "json-formatter");
-    assert.equal(auditWrite.values.action, "tool.edit");
-    assert.equal(auditWrite.values.actorUserId, "actor");
+    expect(toolWrite.values.app).toBe("devtools");
+    expect(toolWrite.values.slug).toBe("json-formatter");
+    expect(auditWrite.values.action).toBe("tool.edit");
+    expect(auditWrite.values.actorUserId).toBe("actor");
   });
 });
 
@@ -525,17 +526,16 @@ test("tool reordering stores one contiguous app order and one audit event", asyn
     async (state) => {
       await reorderManagedTools("actor", "paperwork", toolIds);
 
-      assert.deepEqual(
+      expect(
         toolIds.map(
           (toolId) =>
             state.inserts.find(({ table, values }) => table === managedToolsTable && values.toolId === toolId).values
               .order,
         ),
-        toolIds.map((_, order) => order),
-      );
+      ).toEqual(toolIds.map((_, order) => order));
       const auditWrite = state.inserts.find(({ table }) => table === auditEventsTable);
-      assert.equal(auditWrite.values.action, "tool.reorder");
-      assert.equal(auditWrite.values.targetId, "paperwork");
+      expect(auditWrite.values.action).toBe("tool.reorder");
+      expect(auditWrite.values.targetId).toBe("paperwork");
     },
   );
 });
@@ -550,15 +550,14 @@ test("tool reordering accepts a complete app roster in reverse", async () => {
   await withFakeDatabase([permissionRows({ tools: { edit: true } }), roster], async (state) => {
     await reorderManagedTools("actor", "media", toolIds);
 
-    assert.ok(toolIds.length > 0, "the roster must not be empty");
-    assert.deepEqual(
+    expect(toolIds.length > 0, "the roster must not be empty").toBeTruthy();
+    expect(
       toolIds.map(
         (toolId) =>
           state.inserts.find(({ table, values }) => table === managedToolsTable && values.toolId === toolId).values
             .order,
       ),
-      toolIds.map((_, order) => order),
-    );
+    ).toEqual(toolIds.map((_, order) => order));
   });
 });
 
@@ -600,11 +599,10 @@ test("tool reordering rejects incomplete, duplicate, and cross-app orders", asyn
 
   for (const toolIds of invalidOrders) {
     await withFakeDatabase([permissionRows({ tools: { edit: true } }), paperworkRoster], async (state) => {
-      await assert.rejects(
-        () => reorderManagedTools("actor", "paperwork", toolIds),
+      await expect(reorderManagedTools("actor", "paperwork", toolIds)).rejects.toThrow(
         /every registered paperwork tool exactly once/,
       );
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
     });
   }
 });
@@ -622,14 +620,12 @@ test("a saved tool slug is immutable and failed changes are not audited", async 
   };
 
   await withFakeDatabase([permissionRows({ tools: { edit: true } }), [stored]], async (state) => {
-    await assert.rejects(
-      () =>
-        updateManagedTool("actor", stored.toolId, {
-          slug: "json-prettifier",
-        }),
-      /slug is immutable/,
-    );
-    assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    await expect(
+      updateManagedTool("actor", stored.toolId, {
+        slug: "json-prettifier",
+      }),
+    ).rejects.toThrow(/slug is immutable/);
+    expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
   });
 });
 
@@ -649,33 +645,32 @@ test("stored tools toggle, and archiving disables them", async () => {
     async (state) => {
       await setManagedToolEnabled("actor", stored.toolId, true);
       const write = state.inserts.find(({ table }) => table === managedToolsTable);
-      assert.equal(write.values.slug, stored.slug);
-      assert.equal(write.values.enabled, true);
+      expect(write.values.slug).toBe(stored.slug);
+      expect(write.values.enabled).toBe(true);
     },
   );
 
   await withFakeDatabase([permissionRows({ tools: { archive: true } }), [stored]], async (state) => {
     await setManagedToolArchived("actor", stored.toolId, true);
     const write = state.inserts.find(({ table }) => table === managedToolsTable);
-    assert.equal(write.values.archived, true);
-    assert.equal(write.values.enabled, false);
-    assert.equal(state.inserts.find(({ table }) => table === auditEventsTable).values.action, "tool.archive");
+    expect(write.values.archived).toBe(true);
+    expect(write.values.enabled).toBe(false);
+    expect(state.inserts.find(({ table }) => table === auditEventsTable).values.action).toBe("tool.archive");
   });
 
   await withFakeDatabase(
     [permissionRows({ tools: { toggle: true } }), [{ ...stored, archived: true }]],
     async (state) => {
-      await assert.rejects(
-        () => setManagedToolEnabled("actor", stored.toolId, true),
+      await expect(setManagedToolEnabled("actor", stored.toolId, true)).rejects.toThrow(
         /archived tool cannot be enabled/,
       );
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
     },
   );
 
   await withFakeDatabase([permissionRows({ tools: { toggle: true } }), [stored]], async (state) => {
     await setManagedToolEnabled("actor", stored.toolId, false);
-    assert.equal(state.inserts.find(({ table }) => table === managedToolsTable).values.enabled, false);
+    expect(state.inserts.find(({ table }) => table === managedToolsTable).values.enabled).toBe(false);
   });
 });
 
@@ -701,16 +696,16 @@ test("tool edits reject unknown tools, invalid slugs, and blank text", async () 
   ];
   for (const [storedRows, input, error] of cases) {
     await withFakeDatabase([permissionRows({ tools: { edit: true } }), storedRows], async (state) => {
-      await assert.rejects(() => updateManagedTool("actor", "devtools.json-formatter", input), error);
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      await expect(updateManagedTool("actor", "devtools.json-formatter", input)).rejects.toThrow(error);
+      expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
     });
   }
 });
 
 test("unregistered feature keys cannot create overrides", async () => {
   await withFakeDatabase([permissionRows({ features: { edit: true } })], async (state) => {
-    await assert.rejects(() => updateFeature("actor", "paperwork", "unknown", {}, []), /Unknown feature/);
-    assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    await expect(updateFeature("actor", "paperwork", "unknown", {}, [])).rejects.toThrow(/Unknown feature/);
+    expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
   });
 });
 
@@ -726,9 +721,9 @@ test("registered features default disabled and preserve metadata when toggled", 
   await withFakeDatabase([permissionRows({ features: { edit: true } }), []], async (state) => {
     await updateFeature("actor", "paperwork", "new-editor", { name: "Invoice editor" }, manifest);
     const write = state.inserts.find(({ table }) => table === featureOverridesTable);
-    assert.equal(write.values.name, "Invoice editor");
-    assert.equal(write.values.description, "Controls the new editor.");
-    assert.equal(write.values.enabled, false);
+    expect(write.values.name).toBe("Invoice editor");
+    expect(write.values.description).toBe("Controls the new editor.");
+    expect(write.values.enabled).toBe(false);
   });
 
   await withFakeDatabase(
@@ -747,8 +742,8 @@ test("registered features default disabled and preserve metadata when toggled", 
     async (state) => {
       await setFeatureEnabled("actor", "paperwork", "new-editor", true, manifest);
       const write = state.inserts.find(({ table }) => table === featureOverridesTable);
-      assert.equal(write.values.name, "Invoice editor");
-      assert.equal(write.values.enabled, true);
+      expect(write.values.name).toBe("Invoice editor");
+      expect(write.values.enabled).toBe(true);
     },
   );
 });
@@ -770,8 +765,8 @@ test("suspension protects the final admin and retains identity while auditing th
       [{ userId: "target", status: "active" }],
     ],
     async (state) => {
-      await assert.rejects(() => setUserStatus("actor", "target", "suspended"), /final Admin/);
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      await expect(setUserStatus("actor", "target", "suspended")).rejects.toThrow(/final Admin/);
+      expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
     },
   );
 
@@ -779,12 +774,9 @@ test("suspension protects the final admin and retains identity while auditing th
     [permissionRows({ users: { suspend: true } }), [target], [{ roleId: "user" }]],
     async (state) => {
       await setUserStatus("actor", "target", "suspended");
-      assert.equal(state.updates.find(({ table }) => table === authUser).values.status, "suspended");
-      assert.equal(
-        state.deletes.some(({ table }) => table === authSession),
-        false,
-      );
-      assert.equal(state.inserts.find(({ table }) => table === auditEventsTable).values.action, "user.suspend");
+      expect(state.updates.find(({ table }) => table === authUser).values.status).toBe("suspended");
+      expect(state.deletes.some(({ table }) => table === authSession)).toBe(false);
+      expect(state.inserts.find(({ table }) => table === auditEventsTable).values.action).toBe("user.suspend");
     },
   );
 });
@@ -808,14 +800,11 @@ test("role assignment keeps the default user role and protects the final admin",
       ],
     ],
     async (state) => {
-      assert.deepEqual(await assignUserRoles("actor", "target", ["editor", "editor"]), ["user", "editor"]);
-      assert.deepEqual(state.inserts.find(({ table }) => table === userRolesTable).values, [
+      expect(await assignUserRoles("actor", "target", ["editor", "editor"])).toEqual(["user", "editor"]);
+      expect(state.inserts.find(({ table }) => table === userRolesTable).values).toEqual([
         { userId: "target", roleId: "editor" },
       ]);
-      assert.equal(
-        state.deletes.some(({ table }) => table === userRolesTable),
-        false,
-      );
+      expect(state.deletes.some(({ table }) => table === userRolesTable)).toBe(false);
     },
   );
 
@@ -828,24 +817,24 @@ test("role assignment keeps the default user role and protects the final admin",
       [{ userId: "target", status: "active" }],
     ],
     async (state) => {
-      await assert.rejects(() => assignUserRoles("actor", "target", ["user"]), /final Admin/);
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      await expect(assignUserRoles("actor", "target", ["user"])).rejects.toThrow(/final Admin/);
+      expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
     },
   );
 
   await withFakeDatabase(
     [permissionRows({ users: { assignRoles: true } }), [target], [{ roleId: "user" }], [{ id: "user", access: {} }]],
     async (state) => {
-      assert.deepEqual(await assignUserRoles("actor", "target", ["user"]), ["user"]);
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      expect(await assignUserRoles("actor", "target", ["user"])).toEqual(["user"]);
+      expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
     },
   );
 
   await withFakeDatabase(
     [permissionRows({ users: { assignRoles: true } }), [target], [{ roleId: "user" }], [{ id: "user", access: {} }]],
     async (state) => {
-      await assert.rejects(() => assignUserRoles("actor", "target", ["missing"]), /roles do not exist/);
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      await expect(assignUserRoles("actor", "target", ["missing"])).rejects.toThrow(/roles do not exist/);
+      expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
     },
   );
 
@@ -858,24 +847,21 @@ test("role assignment keeps the default user role and protects the final admin",
     ],
     async (state) => {
       await assignUserRoles("actor", "target", ["user"]);
-      assert.ok(state.deletes.some(({ table }) => table === userRolesTable));
-      assert.equal(
-        state.inserts.some(({ table }) => table === userRolesTable),
-        false,
-      );
+      expect(state.deletes.some(({ table }) => table === userRolesTable)).toBeTruthy();
+      expect(state.inserts.some(({ table }) => table === userRolesTable)).toBe(false);
     },
   );
 });
 
 test("inactive actors and invalid user statuses fail before mutation", async () => {
   await withFakeDatabase([[]], async (state) => {
-    await assert.rejects(() => createCustomRole("actor", { name: "Role", description: "Role." }), /Access denied/);
-    assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    await expect(createCustomRole("actor", { name: "Role", description: "Role." })).rejects.toThrow(/Access denied/);
+    expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
   });
 
   await withFakeDatabase([permissionRows({ users: { suspend: true } })], async (state) => {
-    await assert.rejects(() => setUserStatus("actor", "target", "deleted"), /must be active or suspended/);
-    assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    await expect(setUserStatus("actor", "target", "deleted")).rejects.toThrow(/must be active or suspended/);
+    expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
   });
 });
 
@@ -906,18 +892,17 @@ test("role assignment validates prerequisites across the combined selected roles
       ],
       async (state) => {
         if (error) {
-          await assert.rejects(() => assignUserRoles("actor", target.id, requested), error);
-          assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+          await expect(assignUserRoles("actor", target.id, requested)).rejects.toThrow(error);
+          expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
         } else {
-          assert.deepEqual(await assignUserRoles("actor", target.id, requested), ["user", ...requested]);
+          expect(await assignUserRoles("actor", target.id, requested)).toEqual(["user", ...requested]);
           if (requested.length) {
-            assert.deepEqual(
-              state.inserts.find(({ table }) => table === userRolesTable).values,
+            expect(state.inserts.find(({ table }) => table === userRolesTable).values).toEqual(
               requested.map((roleId) => ({ userId: target.id, roleId })),
             );
-            assert.ok(state.inserts.some(({ table }) => table === auditEventsTable));
+            expect(state.inserts.some(({ table }) => table === auditEventsTable)).toBeTruthy();
           } else {
-            assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+            expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
           }
         }
       },
@@ -935,8 +920,8 @@ test("role saves and direct mutations reject missing prerequisites before writin
   };
   for (const access of [{ tools: { edit: true } }, { admin: { enter: true }, tools: { edit: true } }]) {
     await withFakeDatabase([permissionRows({ roles: { edit: true } }), [role]], async (state) => {
-      await assert.rejects(() => updateCustomRole("actor", role.id, { access }), /requires/);
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      await expect(updateCustomRole("actor", role.id, { access })).rejects.toThrow(/requires/);
+      expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
     });
   }
   for (const access of [
@@ -944,8 +929,8 @@ test("role saves and direct mutations reject missing prerequisites before writin
     { roles: { view: false, edit: true } },
   ]) {
     await withFakeDatabase([permissionRows(access)], async (state) => {
-      await assert.rejects(() => updateCustomRole("actor", role.id, { name: "New name" }), /Missing permission/);
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      await expect(updateCustomRole("actor", role.id, { name: "New name" })).rejects.toThrow(/Missing permission/);
+      expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
     });
   }
 });
@@ -957,9 +942,9 @@ test("custom roles start with admin entry only and assigned roles cannot be dele
       description: "Edits invoice templates.",
     });
     const roleWrite = state.inserts.find(({ table }) => table === rolesTable);
-    assert.deepEqual(roleWrite.values.access, { admin: { enter: true } });
-    assert.equal(roleWrite.values.isSystem, false);
-    assert.ok(state.inserts.some(({ table }) => table === auditEventsTable));
+    expect(roleWrite.values.access).toEqual({ admin: { enter: true } });
+    expect(roleWrite.values.isSystem).toBe(false);
+    expect(state.inserts.some(({ table }) => table === auditEventsTable)).toBeTruthy();
   });
 
   await withFakeDatabase(
@@ -977,8 +962,8 @@ test("custom roles start with admin entry only and assigned roles cannot be dele
       [{ userId: "target" }],
     ],
     async (state) => {
-      await assert.rejects(() => deleteCustomRole("actor", "editor"), /assigned to users/);
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      await expect(deleteCustomRole("actor", "editor")).rejects.toThrow(/assigned to users/);
+      expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
     },
   );
 });
@@ -999,20 +984,20 @@ test("custom role saves retain admin entry while accepting only valid entity gra
   ]) {
     await withFakeDatabase([permissionRows({ roles: { edit: true } }), [role], []], async (state) => {
       const saved = await updateCustomRole("actor", role.id, input);
-      assert.deepEqual(saved.access, {
+      expect(saved.access).toEqual({
         ...(input.access ?? role.access),
         admin: { enter: true },
       });
-      assert.deepEqual(state.updates.find(({ table }) => table === rolesTable).values.access, saved.access);
-      assert.ok(
+      expect(state.updates.find(({ table }) => table === rolesTable).values.access).toEqual(saved.access);
+      expect(
         state.inserts.find(({ table }) => table === auditEventsTable).values.metadata.changes.includes("access"),
-      );
+      ).toBeTruthy();
     });
   }
   for (const access of [null, [], { admin: null }, { admin: { enter: "yes" } }, { admin: { unknown: true } }]) {
     await withFakeDatabase([permissionRows({ roles: { edit: true } }), [role]], async (state) => {
-      await assert.rejects(() => updateCustomRole("actor", role.id, { access }), /object|boolean|Unknown permission/);
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      await expect(updateCustomRole("actor", role.id, { access })).rejects.toThrow(/object|boolean|Unknown permission/);
+      expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
     });
   }
   for (const protectedRole of [
@@ -1021,11 +1006,10 @@ test("custom role saves retain admin entry while accepting only valid entity gra
     { ...role, isSystem: true },
   ]) {
     await withFakeDatabase([permissionRows({ roles: { edit: true } }), [protectedRole]], async (state) => {
-      await assert.rejects(
-        () => updateCustomRole("actor", protectedRole.id, { access: {} }),
+      await expect(updateCustomRole("actor", protectedRole.id, { access: {} })).rejects.toThrow(
         /System roles are protected/,
       );
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
     });
   }
 });
@@ -1044,17 +1028,17 @@ test("custom role edits validate access and unassigned custom roles can be delet
       access: { admin: { enter: true }, templates: { view: true, edit: true, publish: true } },
     });
     const write = state.updates.find(({ table }) => table === rolesTable);
-    assert.deepEqual(write.values.access, {
+    expect(write.values.access).toEqual({
       admin: { enter: true },
       templates: { view: true, edit: true, publish: true },
     });
-    assert.ok(state.inserts.some(({ table }) => table === auditEventsTable));
+    expect(state.inserts.some(({ table }) => table === auditEventsTable)).toBeTruthy();
   });
 
   await withFakeDatabase([permissionRows({ roles: { delete: true } }), [role], []], async (state) => {
     await deleteCustomRole("actor", role.id);
-    assert.ok(state.deletes.some(({ table }) => table === rolesTable));
-    assert.ok(state.inserts.some(({ table }) => table === auditEventsTable));
+    expect(state.deletes.some(({ table }) => table === rolesTable)).toBeTruthy();
+    expect(state.inserts.some(({ table }) => table === auditEventsTable)).toBeTruthy();
   });
 });
 
@@ -1062,17 +1046,16 @@ test("template creation uses shared validation and starts as a non-default draft
   await withFakeDatabase([permissionRows({ templates: { create: true } }), []], async (state) => {
     await createInvoiceTemplate("actor", templateContent());
     const templateWrite = state.inserts.find(({ table }) => table === invoiceTemplatesTable);
-    assert.equal(templateWrite.values.status, "draft");
-    assert.equal(templateWrite.values.isDefault, false);
-    assert.ok(state.inserts.some(({ table }) => table === auditEventsTable));
+    expect(templateWrite.values.status).toBe("draft");
+    expect(templateWrite.values.isDefault).toBe(false);
+    expect(state.inserts.some(({ table }) => table === auditEventsTable)).toBeTruthy();
   });
 
   await withFakeDatabase([permissionRows({ templates: { create: true } })], async (state) => {
-    await assert.rejects(
-      () => createInvoiceTemplate("actor", templateContent({ name: "x" })),
+    await expect(createInvoiceTemplate("actor", templateContent({ name: "x" }))).rejects.toThrow(
       /Template name must be at least 2 characters/,
     );
-    assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
   });
 });
 
@@ -1089,21 +1072,20 @@ test("advanced template creation validates invoice and receipt drafts", async ()
     await withFakeDatabase([permissionRows({ templates: { create: true } }), []], async (state) => {
       await createAdvancedDocumentTemplate("actor", input);
       const templateWrite = state.inserts.find(({ table }) => table === invoiceTemplatesTable);
-      assert.equal(templateWrite.values.status, "draft");
-      assert.equal(templateWrite.values.isDefault, false);
-      assert.equal(templateWrite.values.documentType, input.documentType);
-      assert.equal(templateWrite.values.layoutFamily, "advanced");
-      assert.equal(templateWrite.values.config.editor, "pdfme");
-      assert.equal(templateWrite.values.config.pageFormat, input.pageFormat);
+      expect(templateWrite.values.status).toBe("draft");
+      expect(templateWrite.values.isDefault).toBe(false);
+      expect(templateWrite.values.documentType).toBe(input.documentType);
+      expect(templateWrite.values.layoutFamily).toBe("advanced");
+      expect(templateWrite.values.config.editor).toBe("pdfme");
+      expect(templateWrite.values.config.pageFormat).toBe(input.pageFormat);
     });
   }
 
   await withFakeDatabase([permissionRows({ templates: { create: true } })], async (state) => {
-    await assert.rejects(
-      () => createAdvancedDocumentTemplate("actor", advancedTemplateInput({ pageFormat: "RECEIPT_80MM" })),
-      /invoice|page format/i,
-    );
-    assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    await expect(
+      createAdvancedDocumentTemplate("actor", advancedTemplateInput({ pageFormat: "RECEIPT_80MM" })),
+    ).rejects.toThrow(/invoice|page format/i);
+    expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
   });
 });
 
@@ -1115,8 +1097,8 @@ test("template duplicate, import, and edit stay validated and audited", async ()
       slug: "classic-copy",
     });
     const write = state.inserts.find(({ table }) => table === invoiceTemplatesTable);
-    assert.equal(write.values.name, "Classic copy");
-    assert.equal(write.values.status, "draft");
+    expect(write.values.name).toBe("Classic copy");
+    expect(write.values.status).toBe("draft");
   });
 
   await withFakeDatabase([permissionRows({ templates: { create: true } }), []], async (state) => {
@@ -1124,7 +1106,7 @@ test("template duplicate, import, and edit stay validated and audited", async ()
       ...seedTemplates[1],
       slug: "imported-modern",
     });
-    assert.equal(state.inserts.find(({ table }) => table === auditEventsTable).values.action, "template.import");
+    expect(state.inserts.find(({ table }) => table === auditEventsTable).values.action).toBe("template.import");
   });
 
   await withFakeDatabase([permissionRows({ templates: { edit: true } }), [source], []], async (state) => {
@@ -1132,16 +1114,15 @@ test("template duplicate, import, and edit stay validated and audited", async ()
       name: "Classic updated",
     });
     const write = state.updates.find(({ table }) => table === invoiceTemplatesTable);
-    assert.equal(write.values.name, "Classic updated");
-    assert.equal(write.values.version, source.version + 1);
+    expect(write.values.name).toBe("Classic updated");
+    expect(write.values.version).toBe(source.version + 1);
   });
 
   await withFakeDatabase([permissionRows({ templates: { edit: true } }), [source]], async (state) => {
-    await assert.rejects(
-      () => updateInvoiceTemplate("actor", source.id, { slug: "changed-slug" }),
+    await expect(updateInvoiceTemplate("actor", source.id, { slug: "changed-slug" })).rejects.toThrow(
       /Template slug cannot be changed/,
     );
-    assert.equal(state.updates.length, 0);
+    expect(state.updates.length).toBe(0);
   });
 });
 
@@ -1154,17 +1135,17 @@ test("advanced templates can be duplicated, imported, and edited", async () => {
       slug: "advanced-copy",
     });
     const write = state.inserts.find(({ table }) => table === invoiceTemplatesTable);
-    assert.equal(write.values.documentType, "invoice");
-    assert.equal(write.values.layoutFamily, "advanced");
-    assert.deepEqual(write.values.config, source.config);
+    expect(write.values.documentType).toBe("invoice");
+    expect(write.values.layoutFamily).toBe("advanced");
+    expect(write.values.config).toEqual(source.config);
   });
 
   await withFakeDatabase([permissionRows({ templates: { create: true } }), []], async (state) => {
     await importInvoiceTemplate("actor", source);
     const write = state.inserts.find(({ table }) => table === invoiceTemplatesTable);
-    assert.equal(write.values.layoutFamily, "advanced");
-    assert.equal(write.values.status, "draft");
-    assert.equal(write.values.isDefault, false);
+    expect(write.values.layoutFamily).toBe("advanced");
+    expect(write.values.status).toBe("draft");
+    expect(write.values.isDefault).toBe(false);
   });
 
   const nextConfig = structuredClone(source.config);
@@ -1175,9 +1156,9 @@ test("advanced templates can be duplicated, imported, and edited", async () => {
       config: nextConfig,
     });
     const write = state.updates.find(({ table }) => table === invoiceTemplatesTable);
-    assert.equal(write.values.name, "Advanced updated");
-    assert.equal(write.values.layoutFamily, "advanced");
-    assert.deepEqual(write.values.config, nextConfig);
+    expect(write.values.name).toBe("Advanced updated");
+    expect(write.values.layoutFamily).toBe("advanced");
+    expect(write.values.config).toEqual(nextConfig);
   });
 });
 
@@ -1194,8 +1175,8 @@ test("template publication maintains one default and protects it from archival",
     async (state) => {
       await publishInvoiceTemplate("actor", draft.id);
       const write = state.updates.find(({ table }) => table === invoiceTemplatesTable);
-      assert.equal(write.values.status, "published");
-      assert.equal(write.values.isDefault, true);
+      expect(write.values.status).toBe("published");
+      expect(write.values.isDefault).toBe(true);
     },
   );
 
@@ -1203,22 +1184,22 @@ test("template publication maintains one default and protects it from archival",
   await withFakeDatabase([permissionRows({ templates: { publish: true } }), [published], []], async (state) => {
     await setDefaultInvoiceTemplate("actor", published.id);
     const templateUpdates = state.updates.filter(({ table }) => table === invoiceTemplatesTable);
-    assert.equal(templateUpdates.length, 2);
-    assert.equal(templateUpdates[0].values.isDefault, false);
-    assert.equal(templateUpdates[1].values.isDefault, true);
+    expect(templateUpdates.length).toBe(2);
+    expect(templateUpdates[0].values.isDefault).toBe(false);
+    expect(templateUpdates[1].values.isDefault).toBe(true);
   });
 
   const currentDefault = templateRow({ isDefault: true });
   await withFakeDatabase([permissionRows({ templates: { archive: true } }), [currentDefault]], async (state) => {
-    await assert.rejects(() => archiveInvoiceTemplate("actor", currentDefault.id), /Set another published default/);
-    assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    await expect(archiveInvoiceTemplate("actor", currentDefault.id)).rejects.toThrow(/Set another published default/);
+    expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
   });
 
   await withFakeDatabase(
     [permissionRows({ templates: { archive: true } }), [templateRow({ id: "old", isDefault: false })]],
     async (state) => {
       await archiveInvoiceTemplate("actor", "old");
-      assert.equal(state.updates.find(({ table }) => table === invoiceTemplatesTable).values.status, "archived");
+      expect(state.updates.find(({ table }) => table === invoiceTemplatesTable).values.status).toBe("archived");
     },
   );
 
@@ -1228,8 +1209,8 @@ test("template publication maintains one default and protects it from archival",
       [templateRow({ id: "draft", status: "draft", isDefault: false })],
     ],
     async (state) => {
-      await assert.rejects(() => setDefaultInvoiceTemplate("actor", "draft"), /Only a published template/);
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      await expect(setDefaultInvoiceTemplate("actor", "draft")).rejects.toThrow(/Only a published template/);
+      expect(state).toEqual({ inserts: [], updates: [], deletes: [] });
     },
   );
 });
@@ -1247,8 +1228,8 @@ test("advanced templates publish and use defaults within their document kind", a
     async (state) => {
       await publishInvoiceTemplate("actor", draft.id);
       const write = state.updates.find(({ table }) => table === invoiceTemplatesTable);
-      assert.equal(write.values.status, "published");
-      assert.equal(write.values.isDefault, false);
+      expect(write.values.status).toBe("published");
+      expect(write.values.isDefault).toBe(false);
     },
   );
 
@@ -1258,9 +1239,9 @@ test("advanced templates publish and use defaults within their document kind", a
     async (state) => {
       await setDefaultInvoiceTemplate("actor", published.id);
       const templateUpdates = state.updates.filter(({ table }) => table === invoiceTemplatesTable);
-      assert.equal(templateUpdates.length, 2);
-      assert.equal(templateUpdates[0].values.isDefault, false);
-      assert.equal(templateUpdates[1].values.isDefault, true);
+      expect(templateUpdates.length).toBe(2);
+      expect(templateUpdates[0].values.isDefault).toBe(false);
+      expect(templateUpdates[1].values.isDefault).toBe(true);
     },
   );
 });
@@ -1287,9 +1268,9 @@ test("template update and publish use a version-gated publication transaction", 
         name: updated.name,
       });
       const templateUpdates = state.updates.filter(({ table }) => table === invoiceTemplatesTable);
-      assert.equal(templateUpdates.length, 2);
-      assert.equal(templateUpdates[0].values.name, updated.name);
-      assert.equal(templateUpdates[1].values.status, "published");
+      expect(templateUpdates.length).toBe(2);
+      expect(templateUpdates[0].values.name).toBe(updated.name);
+      expect(templateUpdates[1].values.status).toBe("published");
     },
   );
 });

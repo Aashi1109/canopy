@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 
 import { createThrottledProgressReporter } from "../lib/tool-framework/progress.ts";
 
@@ -18,5 +17,5 @@ test("progress emits at most once per 100 milliseconds", () => {
   time = 250;
   report("final");
 
-  assert.deepEqual(values, ["start", "next", "final"]);
+  expect(values).toEqual(["start", "next", "final"]);
 });

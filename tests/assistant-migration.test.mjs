@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { registerHooks } from "node:module";
-import test from "node:test";
 import pg from "pg";
+import { test, vi } from "vitest";
+
+vi.mock("server-only", () => ({}));
 
 // Never fall back to the application's configured DATABASE_URL.
 const url = process.env.ASSISTANT_TEST_DATABASE_URL;
-const databaseOnly = { skip: url ? false : "set ASSISTANT_TEST_DATABASE_URL to a disposable PostgreSQL database" };
 const migration = await readFile(
   new URL("../db/migration/0007-generic-assistant/0001_generic_assistant.sql", import.meta.url),
   "utf8",
@@ -134,9 +134,8 @@ async function readTables(client, prefix) {
   return result;
 }
 
-test(
+test.skipIf(!url)(
   "Assistant migration creates fresh storage without Blog tables and preserves populated reruns",
-  databaseOnly,
   async () => {
     await withDatabase(async (client) => {
       await client.query(migration);
@@ -153,9 +152,8 @@ test(
   },
 );
 
-test(
+test.skipIf(!url)(
   "Assistant migration drops populated legacy tables and their provider function without backfill",
-  databaseOnly,
   async () => {
     await withDatabase(
       async (client) => {
@@ -181,9 +179,8 @@ test(
   },
 );
 
-test(
+test.skipIf(!url)(
   "Assistant scope and idempotency remain enforced for non-Blog and null-resource threads",
-  databaseOnly,
   async () => {
     await withDatabase(async (client) => {
       await client.query(migration);
@@ -258,7 +255,7 @@ test(
   },
 );
 
-test("Assistant clear ordering preserves cyclic reference protection and permits cleanup", databaseOnly, async () => {
+test.skipIf(!url)("Assistant clear ordering preserves cyclic reference protection and permits cleanup", async () => {
   await withDatabase(async (client) => {
     await client.query(migration);
     await seedAssistantConversation(client);
@@ -283,9 +280,8 @@ test("Assistant clear ordering preserves cyclic reference protection and permits
   });
 });
 
-test(
+test.skipIf(!url)(
   "Assistant migration removes the older uploaded-file layout and provider trigger without touching Blog content",
-  databaseOnly,
   async () => {
     await withDatabase(
       async (client) => {
@@ -317,9 +313,8 @@ test(
   },
 );
 
-test(
+test.skipIf(!url)(
   "an external legacy dependency aborts retirement without collateral changes or lost Assistant data",
-  databaseOnly,
   async () => {
     await withDatabase(async (client) => {
       await client.query(migration);
@@ -353,34 +348,25 @@ test(
   },
 );
 
-test(
+test.skipIf(!url)(
   "Assistant retention erases stale thread settings while preserving usage and cleanup retries",
-  databaseOnly,
   async () => {
-    const hooks = registerHooks({
-      resolve(specifier, context, next) {
-        if (specifier === "server-only") return { shortCircuit: true, url: "data:text/javascript,export {};" };
-        if (specifier.startsWith("@/")) return next(new URL("../" + specifier.slice(2), import.meta.url).href, context);
-        return next(specifier, context);
-      },
-    });
+    const [{ cleanupAssistant }, { withDatabaseRequest }, { AIClient }] = await Promise.all([
+      import("../lib/assistant/maintenance.ts"),
+      import("../db/runtime.ts"),
+      import("../lib/ai/client.ts"),
+    ]);
+    const originalDelete = AIClient.prototype.deleteResponse;
+    const deletedResponses = [];
+    let failProviderDeletion = true;
+    AIClient.prototype.deleteResponse = async (id) => {
+      deletedResponses.push(id);
+      if (failProviderDeletion) throw new Error("Provider cleanup needs retry");
+    };
     try {
-      const [{ cleanupAssistant }, { withDatabaseRequest }, { AIClient }] = await Promise.all([
-        import("../lib/assistant/maintenance.ts"),
-        import("../db/runtime.ts"),
-        import("../lib/ai/client.ts"),
-      ]);
-      const originalDelete = AIClient.prototype.deleteResponse;
-      const deletedResponses = [];
-      let failProviderDeletion = true;
-      AIClient.prototype.deleteResponse = async (id) => {
-        deletedResponses.push(id);
-        if (failProviderDeletion) throw new Error("Provider cleanup needs retry");
-      };
-      try {
-        await withDatabase(async (client, schema) => {
-          await client.query(migration);
-          await client.query(`
+      await withDatabase(async (client, schema) => {
+        await client.query(migration);
+        await client.query(`
           INSERT INTO assistant_threads(id,integration_key,owner_id,title,settings,updated_at) VALUES
             ('retained','fixture','owner','Retained metrics','{"composerDraft":"Private unsent text","composerState":{"attachmentIds":["private-id"]},"privateContext":"Sensitive setting"}',now()-interval '31 days'),
             ('recent','fixture','owner','Recent work','{"composerDraft":"Keep working","composerState":{"attachmentIds":[]},"language":"English"}',now()-interval '29 days'),
@@ -388,74 +374,71 @@ test(
           INSERT INTO assistant_runs(id,thread_id,integration_key,owner_id,client_request_id,operation,execution_mode,provider,model,provider_response_id,status,request,response,continuation,usage,created_at,updated_at,completed_at,expires_at)
             VALUES ('retained-run','retained','fixture','owner','retained-request','custom_action','conversational','openai','fixture-model','opaque-response','completed','{"clientRequestId":"retained-request","operation":"custom_action","message":"Private sent text"}','{"text":"Private answer","proposals":[],"citations":[]}','{"handles":["opaque-response"]}','{"totalTokens":42}',now()-interval '40 days',now()-interval '31 days',now()-interval '31 days',now()-interval '1 day');
         `);
-          const before = (await client.query("SELECT id,settings,updated_at FROM assistant_threads ORDER BY id")).rows;
-          const target = new URL(url);
-          target.searchParams.set("options", `-c search_path=${schema}`);
-          const cleanup = async () => {
-            const background = [];
-            let counts;
-            await withDatabaseRequest(
-              async () => {
-                counts = await cleanupAssistant();
-                return new Response(null, { status: 204 });
-              },
-              (task) => background.push(task),
-              target.href,
-            );
-            await Promise.all(background);
-            return counts;
-          };
-          const first = await cleanup();
-          assert.equal(first.failed, 1);
-          assert.deepEqual(deletedResponses, ["opaque-response"]);
-          const after = (await client.query("SELECT id,settings,updated_at FROM assistant_threads ORDER BY id")).rows;
-          assert.deepEqual(
-            after.map((row) => row.id),
-            ["recent", "retained"],
+        const before = (await client.query("SELECT id,settings,updated_at FROM assistant_threads ORDER BY id")).rows;
+        const target = new URL(url);
+        target.searchParams.set("options", `-c search_path=${schema}`);
+        const cleanup = async () => {
+          const background = [];
+          let counts;
+          await withDatabaseRequest(
+            async () => {
+              counts = await cleanupAssistant();
+              return new Response(null, { status: 204 });
+            },
+            (task) => background.push(task),
+            target.href,
           );
-          assert.deepEqual(
-            after.find((row) => row.id === "recent"),
-            before.find((row) => row.id === "recent"),
-          );
-          assert.deepEqual(
-            after.find((row) => row.id === "retained"),
-            { ...before.find((row) => row.id === "retained"), settings: {} },
-          );
-          const pending = (
-            await client.query(
-              "SELECT usage,provider_response_id,continuation,request,response FROM assistant_runs WHERE id='retained-run'",
-            )
-          ).rows[0];
-          assert.deepEqual(pending.usage, { totalTokens: 42 });
-          assert.equal(pending.provider_response_id, "opaque-response");
-          assert.deepEqual(pending.continuation.handles, ["opaque-response"]);
-          assert.equal(pending.request.message, "Expired content");
-          assert.equal(pending.response, null);
+          await Promise.all(background);
+          return counts;
+        };
+        const first = await cleanup();
+        assert.equal(first.failed, 1);
+        assert.deepEqual(deletedResponses, ["opaque-response"]);
+        const after = (await client.query("SELECT id,settings,updated_at FROM assistant_threads ORDER BY id")).rows;
+        assert.deepEqual(
+          after.map((row) => row.id),
+          ["recent", "retained"],
+        );
+        assert.deepEqual(
+          after.find((row) => row.id === "recent"),
+          before.find((row) => row.id === "recent"),
+        );
+        assert.deepEqual(
+          after.find((row) => row.id === "retained"),
+          { ...before.find((row) => row.id === "retained"), settings: {} },
+        );
+        const pending = (
+          await client.query(
+            "SELECT usage,provider_response_id,continuation,request,response FROM assistant_runs WHERE id='retained-run'",
+          )
+        ).rows[0];
+        assert.deepEqual(pending.usage, { totalTokens: 42 });
+        assert.equal(pending.provider_response_id, "opaque-response");
+        assert.deepEqual(pending.continuation.handles, ["opaque-response"]);
+        assert.equal(pending.request.message, "Expired content");
+        assert.equal(pending.response, null);
 
-          failProviderDeletion = false;
-          const second = await cleanup();
-          assert.equal(second.failed, 0);
-          assert.equal(second.runs, 1);
-          assert.deepEqual(deletedResponses, ["opaque-response", "opaque-response"]);
-          const cleaned = (
-            await client.query(
-              "SELECT usage,provider_response_id,continuation FROM assistant_runs WHERE id='retained-run'",
-            )
-          ).rows[0];
-          assert.deepEqual(cleaned.usage, { totalTokens: 42 });
-          assert.equal(cleaned.provider_response_id, null);
-          assert.deepEqual(cleaned.continuation.handles, []);
-          assert.equal(cleaned.continuation.providerDeleted, true);
-          assert.deepEqual(
-            (await client.query("SELECT settings FROM assistant_threads WHERE id='retained'")).rows[0].settings,
-            {},
-          );
-        });
-      } finally {
-        AIClient.prototype.deleteResponse = originalDelete;
-      }
+        failProviderDeletion = false;
+        const second = await cleanup();
+        assert.equal(second.failed, 0);
+        assert.equal(second.runs, 1);
+        assert.deepEqual(deletedResponses, ["opaque-response", "opaque-response"]);
+        const cleaned = (
+          await client.query(
+            "SELECT usage,provider_response_id,continuation FROM assistant_runs WHERE id='retained-run'",
+          )
+        ).rows[0];
+        assert.deepEqual(cleaned.usage, { totalTokens: 42 });
+        assert.equal(cleaned.provider_response_id, null);
+        assert.deepEqual(cleaned.continuation.handles, []);
+        assert.equal(cleaned.continuation.providerDeleted, true);
+        assert.deepEqual(
+          (await client.query("SELECT settings FROM assistant_threads WHERE id='retained'")).rows[0].settings,
+          {},
+        );
+      });
     } finally {
-      hooks.deregister();
+      AIClient.prototype.deleteResponse = originalDelete;
     }
   },
 );

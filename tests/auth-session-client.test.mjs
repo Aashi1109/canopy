@@ -1,8 +1,5 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
+import { afterAll, beforeEach, expect, test, vi } from "vitest";
 
-const sessionUrl = new URL("../lib/auth/session.ts", import.meta.url).href;
 const fixture = {
   session: null,
   authorizations: new Map(),
@@ -13,49 +10,41 @@ const fixture = {
   sessionQuery: null,
 };
 globalThis.__canopySessionTest = fixture;
-const moduleUrl = (source) => `data:text/javascript,${encodeURIComponent(source)}`;
-const hooks = registerHooks({
-  resolve(specifier, context, nextResolve) {
-    if (context.parentURL === sessionUrl && specifier === "./auth.ts") {
-      return {
-        shortCircuit: true,
-        url: moduleUrl(`
-        const fixture = globalThis.__canopySessionTest;
-        export const auth = { api: { async getSession({ headers, query }) {
-          fixture.headers = headers;
-          fixture.sessionQuery = query;
-          if (fixture.authError) throw fixture.authError;
-          return fixture.session;
-        } } };
-      `),
-      };
-    }
-    if (context.parentURL === sessionUrl && specifier === "../admin/index.ts") {
-      return {
-        shortCircuit: true,
-        url: moduleUrl(`
-        const fixture = globalThis.__canopySessionTest;
-        export class AuthorizationError extends Error {}
-        export async function getUserAuthorization(userId) {
-          fixture.queries++;
-          if (fixture.authorizationError) throw fixture.authorizationError;
-          const result = fixture.authorizations.get(userId);
-          if (!result) throw new AuthorizationError("Access denied");
-          return result;
-        }
-      `),
-      };
-    }
-    return nextResolve(specifier, context);
-  },
-});
-const { AuthServiceError, getSession, getOptionalSession, isAdminUser } = await import(sessionUrl);
-hooks.deregister();
 
-test.after(() => {
+vi.mock("@/lib/auth/auth.ts", () => ({
+  auth: {
+    api: {
+      async getSession({ headers, query }) {
+        const fixture = globalThis.__canopySessionTest;
+        fixture.headers = headers;
+        fixture.sessionQuery = query;
+        if (fixture.authError) throw fixture.authError;
+        return fixture.session;
+      },
+    },
+  },
+}));
+vi.mock("@/lib/admin/index.ts", () => {
+  class AuthorizationError extends Error {}
+  return {
+    AuthorizationError,
+    async getUserAuthorization(userId) {
+      const fixture = globalThis.__canopySessionTest;
+      fixture.queries++;
+      if (fixture.authorizationError) throw fixture.authorizationError;
+      const result = fixture.authorizations.get(userId);
+      if (!result) throw new AuthorizationError("Access denied");
+      return result;
+    },
+  };
+});
+
+const { AuthServiceError, getSession, getOptionalSession, isAdminUser } = await import("@/lib/auth/session.ts");
+
+afterAll(() => {
   delete globalThis.__canopySessionTest;
 });
-test.beforeEach(() => {
+beforeEach(() => {
   fixture.session = null;
   fixture.authorizations.clear();
   fixture.authError = null;
@@ -71,12 +60,12 @@ test("sessions can omit admin enrichment while default callers still receive it"
   };
   fixture.authorizations.set("user-1", { access: { admin: { enter: true } } });
 
-  assert.deepEqual(await getSession(headers, { includeAdmin: false }), fixture.session);
-  assert.equal(fixture.queries, 0);
-  assert.equal(fixture.headers, headers);
-  assert.deepEqual(fixture.sessionQuery, { disableCookieCache: true });
-  assert.equal((await getSession(headers)).user.isAdmin, true);
-  assert.equal(fixture.queries, 1);
+  expect(await getSession(headers, { includeAdmin: false })).toEqual(fixture.session);
+  expect(fixture.queries).toBe(0);
+  expect(fixture.headers).toBe(headers);
+  expect(fixture.sessionQuery).toEqual({ disableCookieCache: true });
+  expect((await getSession(headers)).user.isAdmin).toBe(true);
+  expect(fixture.queries).toBe(1);
 });
 
 test("omitting admin enrichment still checks current session status and authentication failures", async () => {
@@ -86,18 +75,17 @@ test("omitting admin enrichment still checks current session status and authenti
     user: { id: "user-1", name: "Ashish", status: "active" },
   };
   fixture.authorizationError = new Error("unused authorization service unavailable");
-  assert.equal((await getSession(headers, { includeAdmin: false })).user.status, "active");
+  expect((await getSession(headers, { includeAdmin: false })).user.status).toBe("active");
   fixture.session.user.status = "suspended";
-  assert.equal((await getSession(headers, { includeAdmin: false })).user.status, "suspended");
-  assert.deepEqual(fixture.sessionQuery, { disableCookieCache: true });
+  expect((await getSession(headers, { includeAdmin: false })).user.status).toBe("suspended");
+  expect(fixture.sessionQuery).toEqual({ disableCookieCache: true });
   fixture.session = null;
-  assert.equal(await getSession(headers, { includeAdmin: false }), null);
+  expect(await getSession(headers, { includeAdmin: false })).toBe(null);
   fixture.authError = new Error("auth unavailable");
-  await assert.rejects(
-    getSession(headers, { includeAdmin: false }),
+  await expect(getSession(headers, { includeAdmin: false })).rejects.toSatisfy(
     (error) => error instanceof AuthServiceError && error.cause === fixture.authError,
   );
-  assert.equal(fixture.queries, 0);
+  expect(fixture.queries).toBe(0);
 });
 
 test("account session uses active users' effective Admin entry grants, including custom roles", async () => {
@@ -119,41 +107,39 @@ test("account session uses active users' effective Admin entry grants, including
     fixture.session.user.status = status;
     fixture.authorizations.clear();
     if (status === "active") fixture.authorizations.set(id, { roles: [{ id: roleId }], access });
-    assert.deepEqual(await getSession(headers), {
+    expect(await getSession(headers)).toEqual({
       session: { id: "session-1" },
       user: { id: "user-1", name: "Ashish", status, isAdmin: expected },
     });
-    assert.equal(await isAdminUser("user-1"), expected);
-    assert.equal(fixture.headers, headers);
+    expect(await isAdminUser("user-1")).toBe(expected);
+    expect(fixture.headers).toBe(headers);
   }
   fixture.authorizations.set("user-1", {
     roles: [{ id: "user" }, { id: "custom" }],
     access: { admin: { enter: true } },
   });
-  assert.equal(await isAdminUser("user-1"), true, "entry permission may come from any assigned role");
+  expect(await isAdminUser("user-1"), "entry permission may come from any assigned role").toBe(true);
   fixture.authorizations.get("user-1").access = { admin: { enter: false } };
-  assert.equal(await isAdminUser("user-1"), false, "revocation is reflected on the next lookup");
+  expect(await isAdminUser("user-1"), "revocation is reflected on the next lookup").toBe(false);
   fixture.authorizations.set("user-1", { roles: [], access: {} });
-  assert.equal((await getSession(headers)).user.isAdmin, false);
+  expect((await getSession(headers)).user.isAdmin).toBe(false);
 
   fixture.session = null;
   const queries = fixture.queries;
-  assert.equal(await getSession(headers), null);
-  assert.equal(fixture.queries, queries);
+  expect(await getSession(headers)).toBe(null);
+  expect(fixture.queries).toBe(queries);
 
   fixture.authError = new Error("auth unavailable");
-  await assert.rejects(
-    getSession(headers),
+  await expect(getSession(headers)).rejects.toSatisfy(
     (error) => error instanceof AuthServiceError && error.cause === fixture.authError,
   );
-  assert.equal(await getOptionalSession(headers), null);
+  expect(await getOptionalSession(headers)).toBe(null);
   fixture.authError = null;
   fixture.session = { session: { id: "session-1" }, user: { id: "user-1", name: "Ashish" } };
   fixture.authorizationError = new Error("database unavailable");
-  await assert.rejects(isAdminUser("user-1"), (error) => error === fixture.authorizationError);
-  await assert.rejects(
-    getSession(headers),
+  await expect(isAdminUser("user-1")).rejects.toSatisfy((error) => error === fixture.authorizationError);
+  await expect(getSession(headers)).rejects.toSatisfy(
     (error) => error instanceof AuthServiceError && error.cause === fixture.authorizationError,
   );
-  assert.equal(await getOptionalSession(headers), null);
+  expect(await getOptionalSession(headers)).toBe(null);
 });

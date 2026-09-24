@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { test, expect } from "vitest";
 import { LARGE_TEXT_PREVIEW_BYTES } from "../lib/tool-framework/limits.ts";
 import { run } from "../tools/csv-to-json/run.worker.ts";
 
@@ -22,9 +20,9 @@ function context(text, settings = {}, streaming = false) {
 }
 
 function assertPreview(result, expected) {
-  assert.equal(result.jsonPreview?.render, "json-tree");
-  assert.deepEqual(result.jsonPreview.value, expected);
-  assert.deepEqual(JSON.parse(result.jsonPreview.text), expected);
+  expect(result.jsonPreview?.render).toBe("json-tree");
+  expect(result.jsonPreview.value).toEqual(expected);
+  expect(JSON.parse(result.jsonPreview.text)).toEqual(expected);
 }
 
 async function completeOutput(result) {
@@ -51,12 +49,11 @@ for (const streaming of [false, true]) {
       { name: "Lin", count: 2 },
     ];
     assertPreview(result, value);
-    assert.equal(
-      await completeOutput(result),
+    expect(await completeOutput(result)).toBe(
       streaming ? '[\n  {"name":"Ada","count":0},\n  {"name":"Lin","count":2}\n]' : JSON.stringify(value, null, 2),
     );
-    assert.equal(streaming ? result.sections[0].body.files[0].name : result.downloadName, "data.json");
-    assert.deepEqual(result.stats, [
+    expect(streaming ? result.sections[0].body.files[0].name : result.downloadName).toBe("data.json");
+    expect(result.stats).toEqual([
       { label: "Rows", value: "2" },
       { label: "Columns", value: "2" },
     ]);
@@ -78,7 +75,7 @@ for (const streaming of [false, true]) {
         ["Ada", `quoted${delimiter}value`],
         ["Lin", "0"],
       ]);
-      assert.deepEqual(JSON.parse(await completeOutput(result)), result.jsonPreview.value);
+      expect(JSON.parse(await completeOutput(result))).toEqual(result.jsonPreview.value);
     }
   });
 
@@ -92,18 +89,20 @@ for (const streaming of [false, true]) {
       { ["__proto__"]: "last", note: "" },
     ];
     assertPreview(result, expected);
-    assert.deepEqual(JSON.parse(await completeOutput(result)), expected);
+    expect(JSON.parse(await completeOutput(result))).toEqual(expected);
     const numbers = await run(context("value\n-0\n1.00\n9007199254740993", { parseNumbers: true }, streaming));
     assertPreview(numbers, [{ value: 0 }, { value: 1 }, { value: 9007199254740992 }]);
-    assert.deepEqual(JSON.parse(await completeOutput(numbers)), numbers.jsonPreview.value);
+    expect(JSON.parse(await completeOutput(numbers))).toEqual(numbers.jsonPreview.value);
   });
 
   test(`${mode}: header-only input previews an empty array and malformed rows still fail`, async () => {
     const result = await run(context("name,role", {}, streaming));
     assertPreview(result, []);
-    assert.equal(await completeOutput(result), "[]");
-    await assert.rejects(run(context("name,name\nAda,Admin", {}, streaming)), /CSV headers must be unique/);
-    await assert.rejects(run(context("name,role\nAda", {}, streaming)), /same number of fields|expected 2 columns/);
+    expect(await completeOutput(result)).toBe("[]");
+    await expect(run(context("name,name\nAda,Admin", {}, streaming))).rejects.toThrow(/CSV headers must be unique/);
+    await expect(run(context("name,role\nAda", {}, streaming))).rejects.toThrow(
+      /same number of fields|expected 2 columns/,
+    );
   });
 }
 
@@ -114,33 +113,30 @@ for (const streaming of [false, true])
     const expected = rows.map((_, index) => ({ name: `row_${index}`, id: index }));
     const limit = 333;
     assertPreview(result, expected.slice(0, limit));
-    assert.equal(result.jsonPreview.truncated, true);
-    assert.deepEqual(JSON.parse(await completeOutput(result)), expected);
-    assert.equal(result.stats[0].value, "1500");
+    expect(result.jsonPreview.truncated).toBe(true);
+    expect(JSON.parse(await completeOutput(result))).toEqual(expected);
+    expect(result.stats[0].value).toBe("1500");
   });
 
 test("streaming CSV bounds retained UTF-8 bytes independently of its raw prefix", async () => {
   const value = "😀".repeat(20_000);
   const result = await run(context(`value\n${Array(5).fill(value).join("\n")}`, {}, true));
-  assert.equal(result.truncated, true);
-  assert.equal(result.jsonPreview.truncated, true);
+  expect(result.truncated).toBe(true);
+  expect(result.jsonPreview.truncated).toBe(true);
   assertPreview(
     result,
     Array.from({ length: 3 }, () => ({ value })),
   );
-  assert.ok(Buffer.byteLength(result.jsonPreview.text) <= LARGE_TEXT_PREVIEW_BYTES);
-  assert.deepEqual(
-    JSON.parse(await completeOutput(result)),
-    Array.from({ length: 5 }, () => ({ value })),
-  );
+  expect(Buffer.byteLength(result.jsonPreview.text) <= LARGE_TEXT_PREVIEW_BYTES).toBeTruthy();
+  expect(JSON.parse(await completeOutput(result))).toEqual(Array.from({ length: 5 }, () => ({ value })));
 });
 
 test("a single oversized streamed row retains its artifact without an empty misleading tree", async () => {
   const value = "x".repeat(300_000);
   const result = await run(context(`value\n${value}`, {}, true));
-  assert.equal(result.truncated, true);
-  assert.equal(result.jsonPreview, undefined);
-  assert.equal(await completeOutput(result), `[\n  {"value":"${value}"}\n]`);
+  expect(result.truncated).toBe(true);
+  expect(result.jsonPreview).toBe(undefined);
+  expect(await completeOutput(result)).toBe(`[\n  {"value":"${value}"}\n]`);
 });
 
 test("CSV previews preserve exact numeric strings when number conversion is disabled", async () => {
@@ -151,6 +147,6 @@ test("CSV previews preserve exact numeric strings when number conversion is disa
       result,
       values.map((value) => ({ value })),
     );
-    assert.deepEqual(JSON.parse(await completeOutput(result)), result.jsonPreview.value);
+    expect(JSON.parse(await completeOutput(result))).toEqual(result.jsonPreview.value);
   }
 });

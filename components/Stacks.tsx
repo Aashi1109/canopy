@@ -13,6 +13,12 @@ import {
   usePanelRef,
 } from "@/components/ui/index.tsx";
 import { cn } from "@/components/ui/lib/utils.ts";
+import { SegmentedControl } from "@/components/ui/index.tsx";
+import {
+  useWorkbenchPaneView,
+  useWorkbenchPresentation,
+  type WorkbenchView,
+} from "@/components/ui/components/workbench-presentation";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, SlidersHorizontal } from "lucide";
 import { MorphIcon } from "morphicons/react";
 import { Children, type HTMLAttributes, type ReactNode, useEffect, useId, useRef, useState } from "react";
@@ -110,6 +116,8 @@ export type SplitStackProps = Omit<HTMLAttributes<HTMLDivElement>, "children" | 
   onSizeChange?: (size: number) => void;
   orientation?: SplitOrientation;
   resizable?: boolean;
+  /** Opt in only for the tool's actual input/preview pair, never its settings split. */
+  presentation?: boolean;
   /** Hides the secondary pane until content is available, preserving the primary workspace. */
   secondaryHidden?: boolean;
   storageKey?: string;
@@ -148,12 +156,16 @@ function SplitStack({
   onSizeChange,
   orientation = "horizontal",
   resizable = true,
+  presentation = false,
   secondaryHidden,
   storageKey,
   style,
   ...props
 }: SplitStackProps) {
   const panes = Children.toArray(children);
+  const presentationContext = useWorkbenchPresentation();
+  const focusView = useWorkbenchPaneView(presentation);
+  const [mobileView, setMobileView] = useState<WorkbenchView>("input");
   const splitId = useId();
   const primaryPaneId = `${splitId}-primary`;
   const secondaryPaneId = `${splitId}-secondary`;
@@ -167,7 +179,28 @@ function SplitStack({
   const initialPrimarySize = useRef(collapsed === "secondary" ? 100 : collapsed === "primary" ? 0 : size);
   const [animateCollapse, setAnimateCollapse] = useState(false);
   const narrow = useNarrowWorkbench();
-  const stacked = orientation === "horizontal" && narrow;
+  const stacked = (orientation === "horizontal" || presentation) && narrow;
+  const view = presentation && narrow && !presentationContext?.focused ? mobileView : focusView;
+  const inputHidden = presentation && view === "preview";
+  const previewHidden = presentation && view === "input";
+
+  useEffect(() => {
+    if (!presentation || stacked) return;
+    setAnimateCollapse(true);
+    const frame = requestAnimationFrame(() => {
+      if (view === "input") {
+        primaryPanelRef.current?.resize("100%");
+      } else if (view === "preview") {
+        secondaryPanelRef.current?.resize("100%");
+      } else {
+        primaryPanelRef.current?.resize(`${size}%`);
+        secondaryPanelRef.current?.resize(`${100 - size}%`);
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+    // Only view changes resize the panes; dragging must not feed back into this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presentation, stacked, view, primaryPanelRef, secondaryPanelRef]);
 
   useEffect(() => {
     if (!stacked) return;
@@ -249,6 +282,17 @@ function SplitStack({
         style={style}
         {...props}
       >
+        {presentation && !presentationContext?.focused ? (
+          <SegmentedControl
+            className="shrink-0 items-center border-b border-border p-2"
+            items={[
+              { label: "Input", value: "input" },
+              { label: "Preview", value: "preview" },
+            ]}
+            onValueChange={(next) => setMobileView(next as WorkbenchView)}
+            value={mobileView}
+          />
+        ) : null}
         {collapsible ? (
           <div className="flex shrink-0 justify-end border-b border-border p-2">
             <Button
@@ -270,8 +314,13 @@ function SplitStack({
         <div
           className={cn(
             "min-w-0 shrink-0 overflow-visible",
-            collapsed === "primary" ? "hidden" : collapsed === "secondary" ? "min-h-0 flex-1" : undefined,
+            inputHidden || collapsed === "primary"
+              ? "hidden"
+              : previewHidden || collapsed === "secondary"
+                ? "min-h-0 flex-1 [&>*]:h-full"
+                : undefined,
           )}
+          inert={inputHidden || undefined}
           data-split-pane="primary"
           id={primaryPaneId}
         >
@@ -280,8 +329,13 @@ function SplitStack({
         <div
           className={cn(
             "min-w-0 shrink-0 overflow-visible",
-            collapsed === "secondary" ? "hidden" : collapsed === "primary" ? "min-h-0 flex-1" : undefined,
+            previewHidden || collapsed === "secondary"
+              ? "hidden"
+              : inputHidden || collapsed === "primary"
+                ? "min-h-0 flex-1 [&>*]:h-full"
+                : undefined,
           )}
+          inert={previewHidden || undefined}
           data-split-pane="secondary"
           id={secondaryPaneId}
         >
@@ -320,7 +374,7 @@ function SplitStack({
         className={cn(
           "h-full min-h-0 min-w-0",
           animateCollapse &&
-            "motion-safe:[&>[data-panel]]:transition-[flex-grow] motion-safe:[&>[data-panel]]:duration-200 motion-safe:[&>[data-panel]]:ease-out",
+            "motion-safe:[&>[data-panel]]:transition-[flex-grow] motion-safe:[&>[data-panel]]:duration-[320ms] motion-safe:[&>[data-panel]]:ease-[cubic-bezier(0.4,0,0.2,1)]",
           orientation === "horizontal"
             ? "max-[64rem]:!flex-col max-[64rem]:overflow-y-auto max-[64rem]:[&>[data-slot=resizable-handle]]:!hidden"
             : undefined,
@@ -330,6 +384,7 @@ function SplitStack({
         onPointerDownCapture={() => setAnimateCollapse(false)}
         onKeyDownCapture={() => setAnimateCollapse(false)}
         onLayoutChange={(layout) => {
+          if (presentation && view !== "split") return;
           const nextSize = layout[primaryPaneId];
           if (!Number.isFinite(nextSize)) return;
           if (nextSize > 0 && nextSize < 100) setSize(nextSize);
@@ -357,17 +412,19 @@ function SplitStack({
         resizeTargetMinimumSize={{ coarse: 44, fine: 24 }}
       >
         <ResizablePanel
-          aria-hidden={collapsed === "primary" || undefined}
+          aria-hidden={inputHidden || collapsed === "primary" || undefined}
           className="min-h-0 min-w-0 overflow-hidden"
-          collapsible={collapsible && collapseSide === "primary"}
+          collapsible={presentation || (collapsible && collapseSide === "primary")}
           collapsedSize="0%"
           data-split-pane="primary"
           defaultSize={`${initialPrimarySize.current}%`}
           disabled={!resizable}
           id={primaryPaneId}
-          inert={collapsed === "primary" || undefined}
+          inert={inputHidden || collapsed === "primary" || undefined}
           maxSize={
-            secondaryHidden !== undefined || (collapsible && collapseSide === "secondary") ? "100%" : `${maxSize}%`
+            presentation || secondaryHidden !== undefined || (collapsible && collapseSide === "secondary")
+              ? "100%"
+              : `${maxSize}%`
           }
           minSize={`${minSize}%`}
           panelRef={primaryPanelRef}
@@ -376,21 +433,21 @@ function SplitStack({
         </ResizablePanel>
         <ResizableHandle
           aria-label={orientation === "horizontal" ? "Resize workspace panels" : "Resize workspace regions"}
-          className={cn("z-20", secondaryHidden && "hidden")}
-          disabled={!resizable || secondaryHidden}
+          className={cn("z-20", (secondaryHidden || inputHidden || previewHidden) && "hidden")}
+          disabled={!resizable || secondaryHidden || inputHidden || previewHidden}
           withHandle={resizable && !collapsed && (!collapsible || collapseControlPosition !== "center")}
         />
         <ResizablePanel
-          aria-hidden={collapsed === "secondary" || undefined}
+          aria-hidden={previewHidden || collapsed === "secondary" || undefined}
           className="min-h-0 min-w-0 overflow-hidden"
-          collapsible={secondaryHidden !== undefined || (collapsible && collapseSide === "secondary")}
+          collapsible={presentation || secondaryHidden !== undefined || (collapsible && collapseSide === "secondary")}
           collapsedSize="0%"
           data-split-pane="secondary"
           defaultSize={`${100 - initialPrimarySize.current}%`}
           disabled={!resizable}
           id={secondaryPaneId}
-          inert={collapsed === "secondary" || undefined}
-          maxSize={collapsible && collapseSide === "primary" ? "100%" : `${100 - minSize}%`}
+          inert={previewHidden || collapsed === "secondary" || undefined}
+          maxSize={presentation || (collapsible && collapseSide === "primary") ? "100%" : `${100 - minSize}%`}
           minSize={`${100 - maxSize}%`}
           panelRef={secondaryPanelRef}
         >
@@ -408,7 +465,7 @@ function SplitStack({
                 className={cn(
                   "absolute z-30 !size-8 -translate-x-1/2 -translate-y-1/2 shadow-sm",
                   animateCollapse &&
-                    "motion-safe:transition-[left,top,translate] motion-safe:duration-200 motion-safe:ease-out",
+                    "motion-safe:transition-[left,top,translate] motion-safe:duration-[320ms] motion-safe:ease-[cubic-bezier(0.4,0,0.2,1)]",
                   collapseSide === "secondary" &&
                     orientation === "horizontal" && [
                       "rounded-r-none",

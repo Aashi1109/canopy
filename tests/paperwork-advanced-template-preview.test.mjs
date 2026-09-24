@@ -1,22 +1,21 @@
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { readFile } from "node:fs/promises";
-import test from "node:test";
 
 const previewPath = "app/paperwork/components/AdvancedDocumentPreview.tsx";
 
 test("Paperwork advanced template preview owns the complete pdfme lifecycle", async () => {
   const source = await readFile(previewPath, "utf8");
 
-  assert.match(source, /^"use client";/);
-  assert.match(source, /template: AdvancedDocumentTemplate/);
-  assert.match(source, /data: Record<string, string>/);
+  expect(source).toMatch(/^"use client";/);
+  expect(source).toMatch(/template: AdvancedDocumentTemplate/);
+  expect(source).toMatch(/data: Record<string, string>/);
 
-  assert.match(source, /import\("@pdfme\/ui"\)/);
-  assert.match(source, /import\("@pdfme\/schemas"\)/);
-  assert.match(source, /new Viewer\(/);
-  assert.match(source, /\.updateTemplate\(/);
-  assert.match(source, /\.setInputs\(/);
-  assert.match(source, /\.destroy\(\)/);
+  expect(source).toMatch(/import\("@pdfme\/ui"\)/);
+  expect(source).toMatch(/import\("@pdfme\/schemas"\)/);
+  expect(source).toMatch(/new Viewer\(/);
+  expect(source).toMatch(/\.updateTemplate\(/);
+  expect(source).toMatch(/\.setInputs\(/);
+  expect(source).toMatch(/\.destroy\(\)/);
 
   for (const plugin of [
     "text",
@@ -37,30 +36,29 @@ test("Paperwork advanced template preview owns the complete pdfme lifecycle", as
     "checkbox",
     "circleMark",
   ]) {
-    assert.match(source, new RegExp(`${plugin}: schemas\\.${plugin}`));
+    expect(source).toMatch(new RegExp(`${plugin}: schemas\\.${plugin}`));
   }
-  assert.match(source, /\.\.\.schemas\.barcodes/);
+  expect(source).toMatch(/\.\.\.schemas\.barcodes/);
 
-  assert.match(source, /import\("@pdfme\/generator"\)/);
-  assert.match(source, /generate\(\{/);
-  assert.match(source, /export async function downloadAdvancedDocumentPdf/);
-  assert.match(source, /export async function openAdvancedDocumentPdf/);
-  assert.match(source, /URL\.createObjectURL\(/);
-  assert.match(source, /finally\s*\{[\s\S]*URL\.revokeObjectURL\(/);
-  assert.match(source, /role="alert"/);
+  expect(source).toMatch(/import\("@pdfme\/generator"\)/);
+  expect(source).toMatch(/generate\(\{/);
+  expect(source).toMatch(/export async function downloadAdvancedDocumentPdf/);
+  expect(source).toMatch(/export async function openAdvancedDocumentPdf/);
+  expect(source).toMatch(/URL\.createObjectURL\(/);
+  expect(source).toMatch(/finally\s*\{[\s\S]*URL\.revokeObjectURL\(/);
+  expect(source).toMatch(/role="alert"/);
 });
 
 test("Paperwork advanced preview fills its container and anchors controls at the bottom", async () => {
   const [source, styles] = await Promise.all([readFile(previewPath, "utf8"), readFile("app/globals.css", "utf8")]);
 
-  assert.match(source, /className="pdfme-preview-surface size-full"/);
-  assert.match(styles, /\.pdfme-preview-surface\s*>\s*\.pdfme-designer-root[\s\S]*?height:\s*100%\s*!important/);
-  assert.match(
-    styles,
+  expect(source).toMatch(/className="pdfme-preview-surface size-full"/);
+  expect(styles).toMatch(/\.pdfme-preview-surface\s*>\s*\.pdfme-designer-root[\s\S]*?height:\s*100%\s*!important/);
+  expect(styles).toMatch(
     /\.pdfme-preview-surface[\s\S]*?:has\(>\s*\.pdfme-ui-control-bar\)[\s\S]*?bottom:\s*16px\s*!important/,
   );
-  assert.match(source, /function fitViewerPageToSurface/);
-  assert.match(source, /container\.clientWidth - 16/);
-  assert.match(source, /container\.clientHeight - controls\.getBoundingClientRect\(\)\.height - 48/);
-  assert.match(source, /viewer\.updateOptions\(\{\s*zoomLevel\s*\}\)/);
+  expect(source).toMatch(/function fitViewerPageToSurface/);
+  expect(source).toMatch(/container\.clientWidth - 16/);
+  expect(source).toMatch(/container\.clientHeight - controls\.getBoundingClientRect\(\)\.height - 48/);
+  expect(source).toMatch(/viewer\.updateOptions\(\{\s*zoomLevel\s*\}\)/);
 });

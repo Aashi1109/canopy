@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-import { startCase } from "../utils/strings.ts";
+import { expect, test } from "vitest";
+import { startCase } from "@/utils/strings.ts";
 
 test("startCase formats labels while preserving acronyms", () => {
   for (const [input, expected] of [
@@ -13,6 +12,6 @@ test("startCase formats labels while preserving acronyms", () => {
     ["", ""],
     ["---", ""],
   ]) {
-    assert.equal(startCase(input), expected, input);
+    expect(startCase(input), input).toBe(expected);
   }
 });

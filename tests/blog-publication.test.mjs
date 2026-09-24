@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { test, expect } from "vitest";
 import { blogCanonicalUrl, blogArticleMetadata, blogStructuredData, buildBlogFeed } from "../lib/blog/publication.ts";
 import { createBlogDocument } from "../lib/blog/document.ts";
 
@@ -14,17 +13,17 @@ const post = {
   publishedUpdatedAt: new Date("2026-09-16T01:00:00Z"),
 };
 test("article metadata uses canonical immutable slug, explicit overrides and publication dates", () => {
-  assert.equal(blogCanonicalUrl("first-post", "https://example.test/base"), "https://example.test/blog/first-post");
-  assert.throws(() => blogCanonicalUrl("../private", "https://example.test"));
-  assert.throws(() => blogCanonicalUrl("post", "javascript:alert(1)"));
+  expect(blogCanonicalUrl("first-post", "https://example.test/base")).toBe("https://example.test/blog/first-post");
+  expect(() => blogCanonicalUrl("../private", "https://example.test")).toThrow();
+  expect(() => blogCanonicalUrl("post", "javascript:alert(1)")).toThrow();
   const metadata = blogArticleMetadata(post, "https://example.test");
-  assert.equal(metadata.title, "SEO title");
-  assert.equal(metadata.description, "Useful summary");
-  assert.equal(metadata.alternates.canonical, "https://example.test/blog/first-post");
-  assert.equal(metadata.openGraph.publishedTime, "2026-09-16T00:00:00.000Z");
-  assert.equal(metadata.openGraph.modifiedTime, "2026-09-16T01:00:00.000Z");
-  assert.throws(() => blogArticleMetadata({ ...post, firstPublishedAt: null }, "https://example.test"), /timestamp/);
-  assert.throws(() => blogCanonicalUrl("post", "https://user:pass@example.test"));
+  expect(metadata.title).toBe("SEO title");
+  expect(metadata.description).toBe("Useful summary");
+  expect(metadata.alternates.canonical).toBe("https://example.test/blog/first-post");
+  expect(metadata.openGraph.publishedTime).toBe("2026-09-16T00:00:00.000Z");
+  expect(metadata.openGraph.modifiedTime).toBe("2026-09-16T01:00:00.000Z");
+  expect(() => blogArticleMetadata({ ...post, firstPublishedAt: null }, "https://example.test")).toThrow(/timestamp/);
+  expect(() => blogCanonicalUrl("post", "https://user:pass@example.test")).toThrow();
   const cloud = process.env.CLOUDINARY_CLOUD_NAME;
   process.env.CLOUDINARY_CLOUD_NAME = "test-cloud";
   try {
@@ -44,13 +43,11 @@ test("article metadata uses canonical immutable slug, explicit overrides and pub
       },
     };
     const withImage = blogArticleMetadata(imagePost, "https://example.test");
-    assert.equal(withImage.twitter.card, "summary_large_image");
-    assert.equal(
-      withImage.openGraph.images[0].url,
+    expect(withImage.twitter.card).toBe("summary_large_image");
+    expect(withImage.openGraph.images[0].url).toBe(
       "https://res.cloudinary.com/test-cloud/image/upload/v123/smarttools/blog/aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee.png",
     );
-    assert.equal(
-      JSON.parse(blogStructuredData(imagePost, "https://example.test")).image,
+    expect(JSON.parse(blogStructuredData(imagePost, "https://example.test")).image).toBe(
       withImage.openGraph.images[0].url,
     );
   } finally {
@@ -63,11 +60,11 @@ test("structured data is safe to embed in an application/ld+json script", () => 
     { ...post, document: { ...post.document, title: "</script><script>alert(1)</script>" } },
     "https://example.test",
   );
-  assert.doesNotMatch(json, /<script|<\/script/i);
+  expect(json).not.toMatch(/<script|<\/script/i);
   const data = JSON.parse(json);
-  assert.equal(data["@type"], "BlogPosting");
-  assert.equal(data.author.name, "SmartTools Team");
-  assert.equal(data.mainEntityOfPage, "https://example.test/blog/first-post");
+  expect(data["@type"]).toBe("BlogPosting");
+  expect(data.author.name).toBe("SmartTools Team");
+  expect(data.mainEntityOfPage).toBe("https://example.test/blog/first-post");
 });
 test("RSS escapes stored text and uses publication dates rather than draft updates", () => {
   const xml = buildBlogFeed(
@@ -83,10 +80,10 @@ test("RSS escapes stored text and uses publication dates rather than draft updat
     ],
     "https://example.test",
   );
-  assert.match(xml, /&lt;Title &amp; &quot;quote&quot;&gt;/);
-  assert.match(xml, /Description &lt;\/item&gt;/);
-  assert.match(xml, /<pubDate>Wed, 16 Sep 2026 00:00:00 GMT<\/pubDate>/);
-  assert.match(xml, /https:\/\/example.test\/blog\/first-post/);
-  assert.doesNotMatch(xml, /draft|actor|createdBy/);
-  assert.match(buildBlogFeed([], "https://example.test"), /<channel>/);
+  expect(xml).toMatch(/&lt;Title &amp; &quot;quote&quot;&gt;/);
+  expect(xml).toMatch(/Description &lt;\/item&gt;/);
+  expect(xml).toMatch(/<pubDate>Wed, 16 Sep 2026 00:00:00 GMT<\/pubDate>/);
+  expect(xml).toMatch(/https:\/\/example.test\/blog\/first-post/);
+  expect(xml).not.toMatch(/draft|actor|createdBy/);
+  expect(buildBlogFeed([], "https://example.test")).toMatch(/<channel>/);
 });

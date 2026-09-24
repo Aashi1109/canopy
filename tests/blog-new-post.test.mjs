@@ -1,81 +1,87 @@
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { registerHooks } from "node:module";
-import test from "node:test";
 import { setImmediate } from "node:timers/promises";
-import { transformSync } from "next/dist/build/swc/index.js";
+import { afterAll, beforeEach, expect, test, vi } from "vitest";
 
-const state = { values: [], index: 0, calls: [], paths: [], toasts: [], cleanups: [], response: null };
-globalThis.__newBlogPostTest = state;
+const state = vi.hoisted(() => ({
+  values: [],
+  index: 0,
+  calls: [],
+  paths: [],
+  toasts: [],
+  cleanups: [],
+  response: null,
+}));
 const originalWindow = globalThis.window;
 globalThis.window = { location: { search: "" } };
-const stub = (source) => ({ shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(source)}` });
-const hooks = registerHooks({
-  resolve(specifier, context, next) {
-    if (specifier === "@/lib/routing/subdomains.ts")
-      return { shortCircuit: true, url: new URL("../lib/routing/subdomains.ts", import.meta.url).href };
-    if (!context.parentURL?.endsWith("/NewBlogPost.tsx")) return next(specifier, context);
-    if (specifier === "react")
-      return stub(`
-        const state = globalThis.__newBlogPostTest;
-        export function useState(initial) {
-          const index = state.index++;
-          if (!(index in state.values)) state.values[index] = initial;
-          return [state.values[index], value => { state.values[index] = value; }];
-        }
-        export function useRef(initial) { return useState({ current: initial })[0]; }
-        export function useEffect(effect) {
-          const index = state.index++;
-          if (!(index in state.values)) {
-            state.values[index] = true;
-            state.cleanups.push(effect());
-          }
-        }
-      `);
-    if (specifier === "next/navigation")
-      return stub(`export function useRouter() {
-        return { push(path) { globalThis.__newBlogPostTest.paths.push(path); } };
-      }`);
-    if (specifier === "next/link") return stub("export default 'link';");
-    if (specifier === "@/components/ui/index.tsx")
-      return stub(`
-        export const BackButton = 'back-button', Button = 'button', Label = 'label', Textarea = 'textarea', Toaster = 'toaster';
-        export const toast = { error(message) { globalThis.__newBlogPostTest.toasts.push(message); } };
-      `);
-    if (specifier === "./BlogEditor.module.css") return stub("export default {};");
-    if (specifier === "./BlogGenerationForm") return stub("export const BlogGenerationForm = 'generation-form';");
-    if (specifier === "@/lib/blog/utils")
-      return { shortCircuit: true, url: new URL("../lib/blog/utils.ts", import.meta.url).href };
-    if (specifier === "../actions")
-      return stub(`export async function mutateBlogAction(operation, payload) {
-        const state = globalThis.__newBlogPostTest;
-        state.calls.push({ operation, payload });
-        if (state.response instanceof Error) throw state.response;
-        return state.response;
-      }`);
-    return next(specifier, context);
-  },
-  load(url, context, next) {
-    if (!url.endsWith("/NewBlogPost.tsx")) return next(url, context);
-    return {
-      format: "module",
-      shortCircuit: true,
-      source: transformSync(readFileSync(new URL(url), "utf8"), {
-        filename: new URL(url).pathname,
-        jsc: { parser: { syntax: "typescript", tsx: true }, transform: { react: { runtime: "automatic" } } },
-        module: { type: "es6" },
-      }).code,
-    };
-  },
-});
-const { NewBlogPost } = await import("../app/admin/(protected)/blog/components/NewBlogPost.tsx");
-test.after(() => {
-  hooks.deregister();
-  delete globalThis.__newBlogPostTest;
+// APP_URL without subdomains so appHref stays a passthrough (matches the asserted /admin/... paths).
+const originalAppUrl = process.env.APP_URL;
+process.env.APP_URL = "http://127.0.0.1:3000";
+afterAll(() => {
   if (originalWindow === undefined) delete globalThis.window;
   else globalThis.window = originalWindow;
+  if (originalAppUrl === undefined) delete process.env.APP_URL;
+  else process.env.APP_URL = originalAppUrl;
 });
-test.beforeEach(() => {
+
+vi.mock("react", () => {
+  function useState(initial) {
+    const index = state.index++;
+    if (!(index in state.values)) state.values[index] = initial;
+    return [
+      state.values[index],
+      (value) => {
+        state.values[index] = value;
+      },
+    ];
+  }
+  function useRef(initial) {
+    return useState({ current: initial })[0];
+  }
+  function useEffect(effect) {
+    const index = state.index++;
+    if (!(index in state.values)) {
+      state.values[index] = true;
+      state.cleanups.push(effect());
+    }
+  }
+  return { useState, useRef, useEffect };
+});
+vi.mock("next/navigation", () => ({
+  useRouter() {
+    return {
+      push(path) {
+        state.paths.push(path);
+      },
+    };
+  },
+}));
+vi.mock("next/link", () => ({ default: "link" }));
+vi.mock("@/components/ui/index.tsx", () => ({
+  BackButton: "back-button",
+  Button: "button",
+  Label: "label",
+  Textarea: "textarea",
+  Toaster: "toaster",
+  toast: {
+    error(message) {
+      state.toasts.push(message);
+    },
+  },
+}));
+vi.mock("@/app/admin/(protected)/blog/components/BlogEditor.module.css", () => ({ default: {} }));
+vi.mock("@/app/admin/(protected)/blog/components/BlogGenerationForm", () => ({
+  BlogGenerationForm: "generation-form",
+}));
+vi.mock("@/app/admin/(protected)/blog/actions", () => ({
+  async mutateBlogAction(operation, payload) {
+    state.calls.push({ operation, payload });
+    if (state.response instanceof Error) throw state.response;
+    return state.response;
+  },
+}));
+
+const { NewBlogPost } = await import("@/app/admin/(protected)/blog/components/NewBlogPost.tsx");
+
+beforeEach(() => {
   Object.assign(state, {
     values: [],
     index: 0,
@@ -142,22 +148,22 @@ test("Enter creates a trimmed title once and keeps input read-only through clien
     resolve = done;
   });
   const view = typeTitle("  My story  ");
-  assert.equal(enter(view), true);
+  expect(enter(view)).toBe(true);
   enter(view);
   view.form.props.onSubmit({ preventDefault() {} });
-  assert.deepEqual(state.calls, [{ operation: "create", payload: { title: "My story" } }]);
-  assert.equal(render().input.props.readOnly, true);
-  assert.deepEqual(state.paths, []);
+  expect(state.calls).toEqual([{ operation: "create", payload: { title: "My story" } }]);
+  expect(render().input.props.readOnly).toBe(true);
+  expect(state.paths).toEqual([]);
   resolve({ ok: true, data: { id: "draft-1" } });
   await setImmediate();
-  assert.deepEqual(state.paths, ["/admin/blog/draft-1"]);
-  assert.equal(render().input.props.readOnly, true);
+  expect(state.paths).toEqual(["/admin/blog/draft-1"]);
+  expect(render().input.props.readOnly).toBe(true);
 });
 
 test("blank titles, composition, held Enter, and other keys do not create drafts", async () => {
   enter(typeTitle("   "));
-  assert.equal(state.toasts.length, 1);
-  assert.match(state.toasts[0], /title/i);
+  expect(state.toasts.length).toBe(1);
+  expect(state.toasts[0]).toMatch(/title/i);
   const view = typeTitle("My story");
   for (const event of [
     { nativeEvent: { isComposing: true, keyCode: 13 } },
@@ -168,17 +174,17 @@ test("blank titles, composition, held Enter, and other keys do not create drafts
     enter(view, event);
   }
   await setImmediate();
-  assert.deepEqual(state.calls, []);
-  assert.equal(state.toasts.length, 1);
-  assert.equal(render().input.props.readOnly, false);
+  expect(state.calls).toEqual([]);
+  expect(state.toasts.length).toBe(1);
+  expect(render().input.props.readOnly).toBe(false);
 });
 
 test("20 words separated by varied whitespace are accepted", async () => {
   const title = `  ${Array.from({ length: 20 }, (_, index) => `w${index}`).join(" \t\n ")}  `;
   enter(typeTitle(title));
   await setImmediate();
-  assert.deepEqual(state.calls, [{ operation: "create", payload: { title: title.trim() } }]);
-  assert.deepEqual(state.paths, ["/admin/blog/draft-1"]);
+  expect(state.calls).toEqual([{ operation: "create", payload: { title: title.trim() } }]);
+  expect(state.paths).toEqual(["/admin/blog/draft-1"]);
 });
 
 test("21 words prevent creation and show a recoverable title limit error", async () => {
@@ -186,17 +192,17 @@ test("21 words prevent creation and show a recoverable title limit error", async
   enter(typeTitle(title));
   await setImmediate();
   const view = render();
-  assert.deepEqual(state.calls, []);
-  assert.equal(view.input.props.value, title);
-  assert.equal(view.input.props.readOnly, false);
-  assert.equal(view.input.props["aria-invalid"], true);
-  assert.ok(view.nodes.some((node) => /20\s+words/i.test(visibleText(node))));
-  assert.equal(state.toasts.length, 1);
-  assert.match(state.toasts[0], /20\s+words/i);
+  expect(state.calls).toEqual([]);
+  expect(view.input.props.value).toBe(title);
+  expect(view.input.props.readOnly).toBe(false);
+  expect(view.input.props["aria-invalid"]).toBe(true);
+  expect(view.nodes.some((node) => /20\s+words/i.test(visibleText(node)))).toBeTruthy();
+  expect(state.toasts.length).toBe(1);
+  expect(state.toasts[0]).toMatch(/20\s+words/i);
   enter(typeTitle("A shorter title"));
   await setImmediate();
-  assert.equal(state.calls.length, 1);
-  assert.deepEqual(state.paths, ["/admin/blog/draft-1"]);
+  expect(state.calls.length).toBe(1);
+  expect(state.paths).toEqual(["/admin/blog/draft-1"]);
 });
 
 for (const failure of [{ ok: false, message: "Title is already in use." }, new Error("Offline")]) {
@@ -205,17 +211,17 @@ for (const failure of [{ ok: false, message: "Title is already in use." }, new E
     enter(typeTitle("My story"));
     await setImmediate();
     const view = render();
-    assert.equal(view.input.props.value, "My story");
-    assert.equal(view.input.props.readOnly, false);
-    assert.deepEqual(state.paths, []);
-    assert.equal(state.toasts.length, 1);
-    if (!(failure instanceof Error)) assert.equal(state.toasts[0], failure.message);
-    else assert.match(state.toasts[0], /try again/i);
+    expect(view.input.props.value).toBe("My story");
+    expect(view.input.props.readOnly).toBe(false);
+    expect(state.paths).toEqual([]);
+    expect(state.toasts.length).toBe(1);
+    if (!(failure instanceof Error)) expect(state.toasts[0]).toBe(failure.message);
+    else expect(state.toasts[0]).toMatch(/try again/i);
     state.response = { ok: true, data: { id: "draft-2" } };
     enter(view);
     await setImmediate();
-    assert.equal(state.calls.length, 2);
-    assert.deepEqual(state.paths, ["/admin/blog/draft-2"]);
+    expect(state.calls.length).toBe(2);
+    expect(state.paths).toEqual(["/admin/blog/draft-2"]);
   });
 }
 
@@ -225,10 +231,10 @@ test("a pending creation cannot navigate after leaving the form", async () => {
     resolve = done;
   });
   enter(typeTitle("My story"));
-  assert.equal(state.calls.length, 1);
+  expect(state.calls.length).toBe(1);
   for (const cleanup of state.cleanups) cleanup?.();
   resolve({ ok: true, data: { id: "draft-1" } });
   await setImmediate();
-  assert.deepEqual(state.paths, []);
-  assert.deepEqual(state.toasts, []);
+  expect(state.paths).toEqual([]);
+  expect(state.toasts).toEqual([]);
 });

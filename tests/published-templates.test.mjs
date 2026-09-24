@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { readFile } from "node:fs/promises";
-import test from "node:test";
 
 import { db } from "../db/index.ts";
 import { createAdvancedTemplateConfig, seedTemplates } from "../lib/invoice-templates/index.ts";
@@ -129,29 +128,29 @@ test("published template queries validate advanced rows and filter by document t
   try {
     await withTemplateRows(rows, async (whereConditions) => {
       const allTemplates = await getPublishedTemplates();
-      assert.deepEqual(
-        allTemplates.map((template) => template.id),
-        [seedTemplates[0].id, "advanced-invoice", "legacy-invoice", "advanced-receipt"],
-      );
-      assert.equal(allTemplates[0].createdAt, rows[0].createdAt.toISOString());
-      assert.equal(allTemplates[0].requiredPlan, "free");
-      assert.deepEqual(
-        (await getPublishedTemplates("invoice")).map((template) => template.id),
-        [seedTemplates[0].id, "advanced-invoice", "legacy-invoice"],
-      );
-      assert.deepEqual(
-        (await getPublishedTemplates("receipt")).map((template) => template.id),
-        ["advanced-receipt"],
-      );
-      assert.deepEqual(queryParts(whereConditions[0]), {
+      expect(allTemplates.map((template) => template.id)).toEqual([
+        seedTemplates[0].id,
+        "advanced-invoice",
+        "legacy-invoice",
+        "advanced-receipt",
+      ]);
+      expect(allTemplates[0].createdAt).toBe(rows[0].createdAt.toISOString());
+      expect(allTemplates[0].requiredPlan).toBe("free");
+      expect((await getPublishedTemplates("invoice")).map((template) => template.id)).toEqual([
+        seedTemplates[0].id,
+        "advanced-invoice",
+        "legacy-invoice",
+      ]);
+      expect((await getPublishedTemplates("receipt")).map((template) => template.id)).toEqual(["advanced-receipt"]);
+      expect(queryParts(whereConditions[0])).toEqual({
         columns: ["status"],
         params: ["published"],
       });
-      assert.deepEqual(queryParts(whereConditions[1]), {
+      expect(queryParts(whereConditions[1])).toEqual({
         columns: ["status", "document_type"],
         params: ["published", "invoice"],
       });
-      assert.deepEqual(queryParts(whereConditions[2]), {
+      expect(queryParts(whereConditions[2])).toEqual({
         columns: ["status", "document_type"],
         params: ["published", "receipt"],
       });
@@ -159,14 +158,14 @@ test("published template queries validate advanced rows and filter by document t
   } finally {
     console.error = originalConsoleError;
   }
-  assert.ok(
+  expect(
     loggedErrors.some((args) => args.includes("invalid-receipt")),
     "invalid stored template IDs are logged",
-  );
-  assert.ok(
+  ).toBeTruthy();
+  expect(
     loggedErrors.some((args) => args.includes("unsafe-w9")),
     "compliance-invalid stored template IDs are logged",
-  );
+  ).toBeTruthy();
 });
 
 test("published template query keeps the seed fallback and applies its filter", async () => {
@@ -177,11 +176,8 @@ test("published template query keeps the seed fallback and applies its filter", 
       .filter((template) => template.status === "published")
       .map((template) => template.id);
 
-    assert.deepEqual(
-      (await getPublishedTemplates("invoice")).map((template) => template.id),
-      expectedInvoices,
-    );
-    assert.deepEqual(await getPublishedTemplates("receipt"), []);
+    expect((await getPublishedTemplates("invoice")).map((template) => template.id)).toEqual(expectedInvoices);
+    expect(await getPublishedTemplates("receipt")).toEqual([]);
   } finally {
     if (originalDatabaseUrl !== undefined) {
       process.env.DATABASE_URL = originalDatabaseUrl;
@@ -192,12 +188,12 @@ test("published template query keeps the seed fallback and applies its filter", 
 test("templates API validates its document type and defaults to invoices", async () => {
   const route = await readFile(new URL("../app/api/paperwork/templates/route.ts", import.meta.url), "utf8");
 
-  assert.match(route, /GET\(request:\s*(?:Next)?Request\)/);
-  assert.match(route, /getAll\("documentType"\)/);
-  assert.match(route, /documentTypes\.length\s*===\s*0\s*\?\s*"invoice"/);
-  assert.match(route, /documentTypes\.length\s*>\s*1/);
-  assert.match(route, /DocumentTypeSchema\.safeParse\(documentType\)/);
-  assert.match(route, /status:\s*400/);
-  assert.match(route, /getDocumentDefinition\((?:validated|parsed)?DocumentType(?:\.data)?\)\.toolComponentKey/);
-  assert.match(route, /getPublishedTemplates\((?:validated|parsed)?DocumentType(?:\.data)?\)/);
+  expect(route).toMatch(/GET\(request:\s*(?:Next)?Request\)/);
+  expect(route).toMatch(/getAll\("documentType"\)/);
+  expect(route).toMatch(/documentTypes\.length\s*===\s*0\s*\?\s*"invoice"/);
+  expect(route).toMatch(/documentTypes\.length\s*>\s*1/);
+  expect(route).toMatch(/DocumentTypeSchema\.safeParse\(documentType\)/);
+  expect(route).toMatch(/status:\s*400/);
+  expect(route).toMatch(/getDocumentDefinition\((?:validated|parsed)?DocumentType(?:\.data)?\)\.toolComponentKey/);
+  expect(route).toMatch(/getPublishedTemplates\((?:validated|parsed)?DocumentType(?:\.data)?\)/);
 });

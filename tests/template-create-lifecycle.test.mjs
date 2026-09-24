@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { readFile } from "node:fs/promises";
-import test from "node:test";
 
 const templatesPage = "app/admin/(protected)/templates/page.tsx";
 const standardCreatePage = "app/admin/(protected)/templates/new/page.tsx";
@@ -21,38 +20,38 @@ test("template lifecycle uses dedicated full-page routes", async () => {
     readFile(adminLayout, "utf8"),
   ]);
 
-  assert.match(list, /href="\/admin\/templates\/new"/);
-  assert.match(list, /href="\/admin\/templates\/new\/advanced"/);
-  assert.match(list, /href="\/admin\/templates\/import"/);
-  assert.match(list, /TableHeader/);
-  assert.match(list, /Search templates/);
-  assert.match(list, /Document type/);
-  assert.doesNotMatch(list, /id="create-template"/);
-  assert.doesNotMatch(list, /id="create-advanced-template"/);
-  assert.doesNotMatch(list, /popover="auto"/);
+  expect(list).toMatch(/href=\{appHref\("\/admin\/templates\/new"\)\}/);
+  expect(list).toMatch(/href=\{appHref\("\/admin\/templates\/new\/advanced"\)\}/);
+  expect(list).toMatch(/href=\{appHref\("\/admin\/templates\/import"\)\}/);
+  expect(list).toMatch(/TableHeader/);
+  expect(list).toMatch(/Search templates/);
+  expect(list).toMatch(/Document type/);
+  expect(list).not.toMatch(/id="create-template"/);
+  expect(list).not.toMatch(/id="create-advanced-template"/);
+  expect(list).not.toMatch(/popover="auto"/);
 
-  assert.match(standardCreate, /requirePagePermission\("templates", "create"\)/);
-  assert.match(standardCreate, /action=\{createTemplateAction\}/);
-  assert.match(standardCreate, /name="layoutFamily"/);
-  assert.match(standardCreate, /Create template/);
-  assert.match(standardCreate, /lg:grid-cols-\[minmax\(0,1fr\)_340px\]/);
-  assert.match(standardCreate, /A dependable starting point/);
+  expect(standardCreate).toMatch(/requirePagePermission\("templates", "create"\)/);
+  expect(standardCreate).toMatch(/action=\{createTemplateAction\}/);
+  expect(standardCreate).toMatch(/name="layoutFamily"/);
+  expect(standardCreate).toMatch(/Create template/);
+  expect(standardCreate).toMatch(/lg:grid-cols-\[minmax\(0,1fr\)_340px\]/);
+  expect(standardCreate).toMatch(/A dependable starting point/);
 
-  assert.match(advancedCreate, /requirePagePermission\("templates", "create"\)/);
-  assert.match(advancedCreate, /action=\{createAdvancedTemplateAction\}/);
-  assert.match(advancedCreate, /name="starter"/);
-  assert.match(advancedCreate, /Blank canvas/);
+  expect(advancedCreate).toMatch(/requirePagePermission\("templates", "create"\)/);
+  expect(advancedCreate).toMatch(/action=\{createAdvancedTemplateAction\}/);
+  expect(advancedCreate).toMatch(/name="starter"/);
+  expect(advancedCreate).toMatch(/Blank canvas/);
 
-  assert.match(importRoute, /ImportTemplateForm/);
-  assert.match(importRoute, /requirePagePermission\("templates", "create"\)/);
-  assert.match(manageRoute, /updateTemplateMetadataAction/);
-  assert.match(manageRoute, /Open editor/);
-  assert.match(manageRoute, /Lifecycle/);
+  expect(importRoute).toMatch(/ImportTemplateForm/);
+  expect(importRoute).toMatch(/requirePagePermission\("templates", "create"\)/);
+  expect(manageRoute).toMatch(/updateTemplateMetadataAction/);
+  expect(manageRoute).toMatch(/Open editor/);
+  expect(manageRoute).toMatch(/Lifecycle/);
 
-  assert.match(shell, /isFullPageTemplateLifecycle/);
-  assert.match(shell, /pathname === "\/admin\/templates\/new"/);
-  assert.match(shell, /pathname === "\/admin\/templates\/import"/);
-  assert.match(shell, /templates\\\/\[\^\/\]\+\\\/\(\?:advanced\|manage\)/);
-  assert.match(shell, /if \(isFullPageTemplateLifecycle\(pathname\)\)/);
-  assert.match(layout, /<AdminShell user=\{session\.user\}>/);
+  expect(shell).toMatch(/isFullPageTemplateLifecycle/);
+  expect(shell).toMatch(/pathname === "\/admin\/templates\/new"/);
+  expect(shell).toMatch(/pathname === "\/admin\/templates\/import"/);
+  expect(shell).toMatch(/templates\\\/\[\^\/\]\+\\\/\(\?:advanced\|manage\)/);
+  expect(shell).toMatch(/if \(isFullPageTemplateLifecycle\(pathname\)\)/);
+  expect(layout).toMatch(/<AdminShell user=\{session\.user\}/);
 });

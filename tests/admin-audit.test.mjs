@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { readFile } from "node:fs/promises";
-import test from "node:test";
 import { Activity, Import, KeyRound, UserRoundCog, UserX } from "lucide-react";
 import { auditEventPresentation } from "../app/admin/(protected)/audit/eventPresentation.ts";
 
@@ -12,21 +11,20 @@ test("admin audit history shows readable users without losing deleted-user event
     readFile(new URL("app/admin/(protected)/audit/page.tsx", root), "utf8"),
   ]);
 
-  assert.match(data, /\.leftJoin\(\s*auditActor,\s*eq\(auditActor\.id,\s*auditEventsTable\.actorUserId\),?\s*\)/s);
-  assert.match(
-    data,
+  expect(data).toMatch(/\.leftJoin\(\s*auditActor,\s*eq\(auditActor\.id,\s*auditEventsTable\.actorUserId\),?\s*\)/s);
+  expect(data).toMatch(
     /\.leftJoin\(\s*auditTargetUser,[\s\S]*eq\(auditEventsTable\.targetType,\s*["']user["']\)[\s\S]*eq\(auditTargetUser\.id,\s*auditEventsTable\.targetId\)/,
   );
-  assert.match(data, /actorName:\s*auditActor\.name/);
-  assert.match(data, /actorEmail:\s*auditActor\.email/);
-  assert.match(data, /targetUserName:\s*auditTargetUser\.name/);
-  assert.match(data, /targetUserEmail:\s*auditTargetUser\.email/);
+  expect(data).toMatch(/actorName:\s*auditActor\.name/);
+  expect(data).toMatch(/actorEmail:\s*auditActor\.email/);
+  expect(data).toMatch(/targetUserName:\s*auditTargetUser\.name/);
+  expect(data).toMatch(/targetUserEmail:\s*auditTargetUser\.email/);
 
-  assert.match(page, /event\.actorName\s*\?\?\s*["']Deleted user["']/);
-  assert.match(page, /event\.actorEmail\s*\?\?\s*event\.actorUserId/);
-  assert.match(page, /event\.targetType\s*===\s*["']user["']/);
-  assert.match(page, /event\.targetUserName\s*\?\?\s*["']Deleted user["']/);
-  assert.match(page, /event\.targetUserEmail\s*\?\?\s*event\.targetId/);
+  expect(page).toMatch(/event\.actorName\s*\?\?\s*["']Deleted user["']/);
+  expect(page).toMatch(/event\.actorEmail\s*\?\?\s*event\.actorUserId/);
+  expect(page).toMatch(/event\.targetType\s*===\s*["']user["']/);
+  expect(page).toMatch(/event\.targetUserName\s*\?\?\s*["']Deleted user["']/);
+  expect(page).toMatch(/event\.targetUserEmail\s*\?\?\s*event\.targetId/);
 });
 
 test("admin audit events have readable labels", () => {
@@ -53,38 +51,37 @@ test("admin audit events have readable labels", () => {
     "user.suspend": "Suspended user",
   };
 
-  assert.deepEqual(
+  expect(
     Object.fromEntries(Object.keys(expectedLabels).map((action) => [action, auditEventPresentation(action).label])),
-    expectedLabels,
-  );
+  ).toEqual(expectedLabels);
 });
 
 test("admin audit event icons communicate the event type", () => {
-  assert.equal(auditEventPresentation("user.assign-roles").icon, UserRoundCog);
-  assert.equal(auditEventPresentation("user.suspend").icon, UserX);
-  assert.equal(auditEventPresentation("role.edit").icon, KeyRound);
-  assert.equal(auditEventPresentation("template.import").icon, Import);
+  expect(auditEventPresentation("user.assign-roles").icon).toBe(UserRoundCog);
+  expect(auditEventPresentation("user.suspend").icon).toBe(UserX);
+  expect(auditEventPresentation("role.edit").icon).toBe(KeyRound);
+  expect(auditEventPresentation("template.import").icon).toBe(Import);
 });
 
 test("admin audit table renders the readable event treatment", async () => {
   const page = await readFile(new URL("app/admin/(protected)/audit/page.tsx", root), "utf8");
 
-  assert.match(page, /auditEventPresentation\(event\.action\)/);
-  assert.match(page, /<EventIcon aria-hidden=["']true["']/);
-  assert.match(page, /\{label\}/);
-  assert.doesNotMatch(page, /<StatusBadge/);
+  expect(page).toMatch(/auditEventPresentation\(event\.action\)/);
+  expect(page).toMatch(/<EventIcon aria-hidden=["']true["']/);
+  expect(page).toMatch(/\{label\}/);
+  expect(page).not.toMatch(/<StatusBadge/);
 });
 
 test("admin overview reuses the readable event treatment", async () => {
   const page = await readFile(new URL("app/admin/(protected)/page.tsx", root), "utf8");
 
-  assert.match(page, /auditEventPresentation\(event\.action\)/);
-  assert.match(page, /const \{ icon: Icon, label \}/);
-  assert.doesNotMatch(page, /function eventIcon/);
+  expect(page).toMatch(/auditEventPresentation\(event\.action\)/);
+  expect(page).toMatch(/const \{ icon: Icon, label \}/);
+  expect(page).not.toMatch(/function eventIcon/);
 });
 
 test("unknown audit actions still get a readable fallback", () => {
-  assert.deepEqual(auditEventPresentation("billing.permission_revoked"), {
+  expect(auditEventPresentation("billing.permission_revoked")).toEqual({
     icon: Activity,
     label: "Billing permission revoked",
   });

@@ -1,5 +1,7 @@
 "use client";
 
+import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -571,7 +573,7 @@ export default function ExpenseReportPage({
       </Tabs>
 
       {/* 4. Split Screen layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <WorkbenchPanes className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* LEFT COLUMN: THE REPORT DATA INPUTS */}
         <div className={`lg:col-span-7 space-y-6 ${activeTab === "edit" ? "block" : "hidden md:block"} print:hidden`}>
           <Card className="space-y-6 rounded-2xl p-6 shadow-sm">
@@ -1244,7 +1246,7 @@ export default function ExpenseReportPage({
             </div>
           </div>
         </div>
-      </div>
+      </WorkbenchPanes>
 
       {/* SEO Faq block */}
       <div

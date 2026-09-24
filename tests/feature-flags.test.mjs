@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { test, expect } from "vitest";
 import { isFeatureEnabled, mergeFeatureOverrides } from "../lib/admin/featureFlags.ts";
 
 const manifest = [
@@ -19,7 +17,7 @@ const manifest = [
 ];
 
 test("new feature registrations default disabled", () => {
-  assert.deepEqual(mergeFeatureOverrides(manifest), [
+  expect(mergeFeatureOverrides(manifest)).toEqual([
     {
       ...manifest[0],
       name: "Invoice reminders",
@@ -53,8 +51,8 @@ test("known overrides merge and unknown keys are ignored", () => {
     },
   ]);
 
-  assert.equal(flags.length, 2);
-  assert.equal(isFeatureEnabled(flags, "paperwork", "invoice-reminders"), true);
-  assert.equal(isFeatureEnabled(flags, "paperwork", "unknown"), false);
-  assert.equal(isFeatureEnabled(flags, "devtools", "invoice-reminders"), false);
+  expect(flags.length).toBe(2);
+  expect(isFeatureEnabled(flags, "paperwork", "invoice-reminders")).toBe(true);
+  expect(isFeatureEnabled(flags, "paperwork", "unknown")).toBe(false);
+  expect(isFeatureEnabled(flags, "devtools", "invoice-reminders")).toBe(false);
 });

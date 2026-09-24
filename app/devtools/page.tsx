@@ -9,6 +9,7 @@ import {
   TOOL_CATEGORIES,
 } from "@/lib/tool-framework/categories";
 import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
+import { searchTools } from "@/lib/tool-catalog/index";
 import { getOptionalSession } from "@/lib/auth/session.ts";
 import {
   Caption,
@@ -69,12 +70,9 @@ export default async function HomePage({
   const requestedCategory = first(params.category).slice(0, 80);
   const [tools, session] = await Promise.all([getTools("devtools"), getOptionalSession(requestHeaders)]);
   const category = resolveCategoryKey(requestedCategory, "devtools");
-  const normalizedQuery = query.toLocaleLowerCase();
-  const filteredTools = tools.filter(
-    (tool) =>
-      (!category || tool.category === category) &&
-      (!normalizedQuery ||
-        `${tool.name} ${tool.description} ${tool.keywords.join(" ")}`.toLocaleLowerCase().includes(normalizedQuery)),
+  const filteredTools = searchTools(
+    tools.filter((tool) => !category || tool.category === category),
+    query,
   );
   // Featured ordering is per-deployment data, not code. Until it has a home
   // beside `sort_order`, `FEATURED_TOOL_IDS` is empty and these sections

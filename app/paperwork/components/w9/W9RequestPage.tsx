@@ -1,5 +1,7 @@
 "use client";
 
+import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -310,7 +312,7 @@ export default function W9RequestPage({
       />
 
       {/* Main split panels layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <WorkbenchPanes className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* CONTRACTOR LIST SIDEBAR ROW */}
         <div className="lg:col-span-4 space-y-4">
           <Card className="space-y-3">
@@ -546,7 +548,7 @@ export default function W9RequestPage({
             </Card>
           )}
         </div>
-      </div>
+      </WorkbenchPanes>
     </div>
   );
 }

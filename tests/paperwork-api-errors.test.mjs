@@ -1,80 +1,47 @@
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { registerHooks } from "node:module";
-import test from "node:test";
-import { transformSync } from "next/dist/build/swc/index.js";
+import { afterAll, afterEach, beforeEach, expect, test, vi } from "vitest";
 
-const root = new URL("../", import.meta.url);
-const fixture = { error: null, available: true, captured: [] };
-globalThis.__paperworkApiErrors = fixture;
-const moduleUrl = (source) => `data:text/javascript,${encodeURIComponent(source)}`;
-const stubs = {
-  "@sentry/core": "export const captureException = error => globalThis.__paperworkApiErrors.captured.push(error);",
-  "@/lib/admin/index.ts": `
-    export async function getAvailableToolBySlug() {
-      const fixture = globalThis.__paperworkApiErrors;
-      if (fixture.error !== null) throw fixture.error;
-      return fixture.available ? { componentKey: "invoice-generator" } : null;
-    }
-    export async function getAvailableTools() {
-      const tool = await getAvailableToolBySlug();
-      return tool ? [tool] : [];
-    }
-    export async function getPublishedTemplates() { return []; }
-  `,
-  "@/lib/tool-framework/catalog": `
-    export async function getPaperworkTools() {
-      const fixture = globalThis.__paperworkApiErrors;
-      if (fixture.error !== null) throw fixture.error;
-      return fixture.available ? [{ componentKey: "invoice-generator" }] : [];
-    }
-  `,
-  "@/lib/invoice-templates/index.ts": `
-    export const DocumentTypeSchema = { safeParse: data => ({success: data === "invoice", data}) };
-    export const getDocumentDefinition = () => ({toolComponentKey: "invoice-generator"});
-  `,
-  "@/db/paperwork": "export const db = {};",
-  "@/db/paperworkSchema": "export const keyValuePairTable = {}; export const vendorProfilesTable = {};",
-  "@/db/bootstrap": "export async function ensureDatabaseBootstrapped() {} export async function ensureUserExists() {}",
-  "@/lib/tool-framework/manifest": "export async function getToolManifest() { return {}; }",
-};
-const hooks = registerHooks({
-  resolve(specifier, context, nextResolve) {
-    if (stubs[specifier]) return { shortCircuit: true, url: moduleUrl(stubs[specifier]) };
-    if (specifier === "../admin/index.ts") {
-      return { shortCircuit: true, url: moduleUrl(stubs["@/lib/admin/index.ts"]) };
-    }
-    if (specifier === "../tool-framework/manifest") {
-      return { shortCircuit: true, url: moduleUrl(stubs["@/lib/tool-framework/manifest"]) };
-    }
-    if (specifier === "next/server") return nextResolve("next/server.js", context);
-    if (specifier.startsWith("@/"))
-      return nextResolve(new URL(`${specifier.slice(2)}${specifier.endsWith(".ts") ? "" : ".ts"}`, root).href, context);
-    if (specifier === "../_lib/input") {
-      return nextResolve(new URL("app/api/paperwork/_lib/input.ts", root).href, context);
-    }
-    return nextResolve(specifier, context);
-  },
-  load(url, context, nextLoad) {
-    if (url === new URL("lib/paperwork/toolAccess.ts", root).href) {
-      return {
-        format: "module",
-        shortCircuit: true,
-        source: transformSync(readFileSync(new URL(url), "utf8"), {
-          filename: new URL(url).pathname,
-          jsc: { parser: { syntax: "typescript" } },
-          module: { type: "es6" },
-        }).code,
-      };
-    }
-    return nextLoad(url, context);
-  },
+const fixture = vi.hoisted(() => {
+  const shared = { error: null, available: true, captured: [] };
+  globalThis.__paperworkApiErrors = shared;
+  return shared;
 });
-const templates = await import("../app/api/paperwork/templates/route.ts");
-const storage = await import("../app/api/paperwork/storage/route.ts");
-const storageKey = await import("../app/api/paperwork/storage/[key]/route.ts");
-const vendors = await import("../app/api/paperwork/vendors/route.ts");
-hooks.deregister();
+
+vi.mock("@sentry/core", () => ({
+  captureException: (error) => fixture.captured.push(error),
+}));
+vi.mock("@/lib/admin/index.ts", () => ({
+  getAvailableToolBySlug: async () => {
+    if (fixture.error !== null) throw fixture.error;
+    return fixture.available ? { componentKey: "invoice-generator" } : null;
+  },
+  getAvailableTools: async () => {
+    if (fixture.error !== null) throw fixture.error;
+    return fixture.available ? [{ componentKey: "invoice-generator" }] : [];
+  },
+  getPublishedTemplates: async () => [],
+}));
+vi.mock("@/lib/tool-framework/catalog", () => ({
+  getPaperworkTools: async () => {
+    if (fixture.error !== null) throw fixture.error;
+    return fixture.available ? [{ componentKey: "invoice-generator" }] : [];
+  },
+}));
+vi.mock("@/lib/invoice-templates/index.ts", () => ({
+  DocumentTypeSchema: { safeParse: (data) => ({ success: data === "invoice", data }) },
+  getDocumentDefinition: () => ({ toolComponentKey: "invoice-generator" }),
+}));
+vi.mock("@/db/paperwork", () => ({ db: {} }));
+vi.mock("@/db/paperworkSchema", () => ({ keyValuePairTable: {}, vendorProfilesTable: {} }));
+vi.mock("@/db/bootstrap", () => ({
+  ensureDatabaseBootstrapped: async () => {},
+  ensureUserExists: async () => {},
+}));
+vi.mock("@/lib/tool-framework/manifest", () => ({ getToolManifest: async () => ({}) }));
+
+const templates = await import("@/app/api/paperwork/templates/route.ts");
+const storage = await import("@/app/api/paperwork/storage/route.ts");
+const storageKey = await import("@/app/api/paperwork/storage/[key]/route.ts");
+const vendors = await import("@/app/api/paperwork/vendors/route.ts");
 
 const request = (path, body) =>
   new Request(
@@ -106,26 +73,27 @@ const operations = [
   ["vendor save", () => vendors.POST(request("vendors", { vendors: [] })), "Vendor storage is unavailable."],
 ];
 
-test.after(() => {
+afterAll(() => {
   delete globalThis.__paperworkApiErrors;
 });
-test.beforeEach(() => {
+afterEach(() => vi.restoreAllMocks());
+beforeEach(() => {
   fixture.captured = [];
 });
 
-test("Paperwork APIs return the original message without the stack and retain fallback/status", async (t) => {
-  t.mock.method(console, "error", () => {});
+test("Paperwork APIs return the original message without the stack and retain fallback/status", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
   for (const [name, call, fallback] of operations) {
     fixture.error = new Error("Service connection timed out.");
     let response = await call();
-    assert.equal(fixture.captured.at(-1), fixture.error);
-    assert.equal(response.status, 500, name);
-    assert.deepEqual(await response.json(), { error: fixture.error.message }, name);
+    expect(fixture.captured.at(-1)).toBe(fixture.error);
+    expect(response.status, name).toBe(500);
+    expect(await response.json(), name).toEqual({ error: fixture.error.message });
     fixture.error = new Error(" ");
     response = await call();
-    assert.equal(fixture.captured.at(-1), fixture.error);
-    assert.equal(response.status, 500, name);
-    assert.deepEqual(await response.json(), { error: fallback }, name);
+    expect(fixture.captured.at(-1)).toBe(fixture.error);
+    expect(response.status, name).toBe(500);
+    expect(await response.json(), name).toEqual({ error: fallback });
   }
 });
 
@@ -134,19 +102,19 @@ test("Paperwork access and input errors retain their original statuses and messa
   fixture.available = false;
   for (const [name, call] of operations) {
     const response = await call();
-    assert.equal(response.status, 404, name);
-    assert.deepEqual(await response.json(), { error: "Tool not found." }, name);
+    expect(response.status, name).toBe(404);
+    expect(await response.json(), name).toEqual({ error: "Tool not found." });
   }
   const response = await vendors.POST(request("vendors", { vendors: "invalid" }));
-  assert.equal(response.status, 400);
-  assert.deepEqual(await response.json(), { error: "Vendor payload must contain a vendor array." });
+  expect(response.status).toBe(400);
+  expect(await response.json()).toEqual({ error: "Vendor payload must contain a vendor array." });
   const oversized = await vendors.POST(
     new Request("https://app.example/api/paperwork/vendors", {
       method: "POST",
       headers: { "content-length": "4000000" },
     }),
   );
-  assert.equal(oversized.status, 413);
-  assert.deepEqual(await oversized.json(), { error: "API payload is too large." });
-  assert.deepEqual(fixture.captured, [], "expected access and input errors are not reported");
+  expect(oversized.status).toBe(413);
+  expect(await oversized.json()).toEqual({ error: "API payload is too large." });
+  expect(fixture.captured, "expected access and input errors are not reported").toEqual([]);
 });

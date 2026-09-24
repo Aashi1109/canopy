@@ -1,9 +1,7 @@
-import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { registerHooks } from "node:module";
-import test from "node:test";
 import JSON5 from "next/dist/compiled/json5/index.js";
-import { handleBlogPublishRequest, runBlogPublishCron } from "../lib/blog/cron.ts";
+import { expect, test, vi } from "vitest";
+import { handleBlogPublishRequest, runBlogPublishCron } from "@/lib/blog/cron.ts";
 
 const secret = "test-blog-scheduler-secret-for-tests";
 const path = "/api/internal/blog/publish-due";
@@ -28,18 +26,18 @@ test("publishing authenticates before invoking domain logic and returns only saf
     `Bearer ${secret} extra`,
   ]) {
     const response = await handleBlogPublishRequest(request(authorization), secret, publish);
-    assert.equal(response.status, 401);
-    assert.equal(response.headers.get("cache-control"), "no-store");
+    expect(response.status).toBe(401);
+    expect(response.headers.get("cache-control")).toBe("no-store");
   }
   for (const configured of [undefined, "", "   ", "secret with spaces"]) {
     const response = await handleBlogPublishRequest(request(`Bearer ${secret}`), configured, publish);
-    assert.equal(response.status, 503);
+    expect(response.status).toBe(503);
   }
-  assert.equal(calls, 0);
+  expect(calls).toBe(0);
   const response = await handleBlogPublishRequest(request(`bearer ${secret}`), secret, publish);
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), counts);
-  assert.equal(calls, 1);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual(counts);
+  expect(calls).toBe(1);
 });
 
 test("GET cannot publish and failed domain requests never expose internal error details", async () => {
@@ -49,13 +47,13 @@ test("GET cannot publish and failed domain requests never expose internal error 
     throw new Error("postgres://private-password@database");
   };
   const get = await handleBlogPublishRequest(request(`Bearer ${secret}`, "GET"), secret, publish);
-  assert.equal(get.status, 405);
-  assert.equal(get.headers.get("allow"), "POST");
-  assert.equal(calls, 0);
+  expect(get.status).toBe(405);
+  expect(get.headers.get("allow")).toBe("POST");
+  expect(calls).toBe(0);
   const failed = await handleBlogPublishRequest(request(`Bearer ${secret}`), secret, publish);
-  assert.equal(failed.status, 503);
-  assert.deepEqual(await failed.json(), { error: "[hidden]" });
-  assert.equal(calls, 1);
+  expect(failed.status).toBe(503);
+  expect(await failed.json()).toEqual({ error: "[hidden]" });
+  expect(calls).toBe(1);
 });
 
 test("publishing returns the original failure message with a default for empty errors", async () => {
@@ -66,8 +64,8 @@ test("publishing returns the original failure message with a default for empty e
     const response = await handleBlogPublishRequest(request(`Bearer ${secret}`), secret, async () => {
       throw error;
     });
-    assert.equal(response.status, 503);
-    assert.deepEqual(await response.json(), { error: expected });
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: expected });
   }
 });
 
@@ -83,12 +81,12 @@ test("scheduled handler uses its service binding and awaits the authenticated PO
       },
     },
   };
-  assert.deepEqual(await runBlogPublishCron(env), counts);
-  assert.equal(received.url, `https://app.example.test${path}`);
-  assert.equal(received.method, "POST");
-  assert.equal(received.headers.get("authorization"), `Bearer ${secret}`);
-  assert.equal(received.redirect, "manual");
-  assert.ok(received.signal instanceof AbortSignal);
+  expect(await runBlogPublishCron(env)).toEqual(counts);
+  expect(received.url).toBe(`https://app.example.test${path}`);
+  expect(received.method).toBe("POST");
+  expect(received.headers.get("authorization")).toBe(`Bearer ${secret}`);
+  expect(received.redirect).toBe("manual");
+  expect(received.signal instanceof AbortSignal).toBeTruthy();
 });
 
 test("remote target is explicit, uses HTTPS, and cannot forward credentials through redirects", async () => {
@@ -109,11 +107,11 @@ test("remote target is explicit, uses HTTPS, and cannot forward credentials thro
     received = req;
     return Response.json(counts);
   };
-  assert.deepEqual(await runBlogPublishCron(env, fetchRemote), counts);
-  assert.equal(received.url, env.BLOG_PUBLISH_URL);
-  assert.equal(received.redirect, "manual");
-  assert.equal(bindingCalls, 0);
-  await assert.rejects(
+  expect(await runBlogPublishCron(env, fetchRemote)).toEqual(counts);
+  expect(received.url).toBe(env.BLOG_PUBLISH_URL);
+  expect(received.redirect).toBe("manual");
+  expect(bindingCalls).toBe(0);
+  await expect(
     runBlogPublishCron(
       env,
       async () =>
@@ -122,8 +120,7 @@ test("remote target is explicit, uses HTTPS, and cannot forward credentials thro
           headers: { location: "https://untrusted.example.test" },
         }),
     ),
-    /HTTP 307/,
-  );
+  ).rejects.toThrow(/HTTP 307/);
 });
 
 test("invalid cron configuration fails before sending any secret", async () => {
@@ -140,17 +137,15 @@ test("invalid cron configuration fails before sending any secret", async () => {
     "https://docker.example.test/wrong-path",
     "invalid",
   ]) {
-    await assert.rejects(
+    await expect(
       runBlogPublishCron({ BLOG_SCHEDULER_SECRET: secret, BLOG_PUBLISH_URL: target }, fetchRemote),
-      /configuration/,
-    );
+    ).rejects.toThrow(/configuration/);
   }
-  await assert.rejects(
+  await expect(
     runBlogPublishCron({ BLOG_PUBLISH_URL: `https://docker.example.test${path}` }, fetchRemote),
-    /configuration/,
-  );
-  await assert.rejects(runBlogPublishCron({ BLOG_SCHEDULER_SECRET: secret }), /configuration/);
-  assert.equal(calls, 0);
+  ).rejects.toThrow(/configuration/);
+  await expect(runBlogPublishCron({ BLOG_SCHEDULER_SECRET: secret })).rejects.toThrow(/configuration/);
+  expect(calls).toBe(0);
 });
 
 test("cron consumes successful responses and rejects unsafe, oversized or failed outcomes", async () => {
@@ -159,39 +154,28 @@ test("cron consumes successful responses and rejects unsafe, oversized or failed
     BLOG_PUBLISH_URL: `https://docker.example.test${path}`,
   };
   const response = Response.json(counts);
-  assert.deepEqual(await runBlogPublishCron(env, async () => response), counts);
-  assert.equal(response.bodyUsed, true);
+  expect(await runBlogPublishCron(env, async () => response)).toEqual(counts);
+  expect(response.bodyUsed).toBe(true);
   for (const value of [null, {}, { ...counts, published: -1 }, { ...counts, remaining: 1.5 }]) {
-    await assert.rejects(
-      runBlogPublishCron(env, async () => Response.json(value)),
-      /invalid response/,
-    );
+    await expect(runBlogPublishCron(env, async () => Response.json(value))).rejects.toThrow(/invalid response/);
   }
-  await assert.rejects(
-    runBlogPublishCron(env, async () => new Response("x".repeat(4097))),
-    /invalid response/,
-  );
-  await assert.rejects(
+  await expect(runBlogPublishCron(env, async () => new Response("x".repeat(4097)))).rejects.toThrow(/invalid response/);
+  await expect(
     runBlogPublishCron(env, async () => new Response("private database error", { status: 503 })),
-    /HTTP 503/,
-  );
-  await assert.rejects(
+  ).rejects.toThrow(/HTTP 503/);
+  await expect(
     runBlogPublishCron(env, async () => {
       throw new Error(`Secret ${secret}`);
     }),
-    {
-      message: "Blog publishing request failed.",
-    },
-  );
+  ).rejects.toThrow("Blog publishing request failed.");
 });
 
 test("deployment configuration schedules publishing twice per hour", async () => {
   const config = JSON5.parse(await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"));
-  assert.deepEqual(config.triggers.crons, ["*/30 * * * *"]);
+  expect(config.triggers.crons).toEqual(["*/30 * * * *"]);
 });
 
-test("actual Worker schedule re-enters the fetch database wrapper through its self binding", async (t) => {
-  const workerUrl = new URL("../worker.ts", import.meta.url).href;
+test("actual Worker schedule re-enters the fetch database wrapper through its self binding", async () => {
   const maintenanceCounts = { files: 2, runs: 3, failed: 0 };
   const state = {
     wrapped: 0,
@@ -204,52 +188,38 @@ test("actual Worker schedule re-enters the fetch database wrapper through its se
     maintenanceStatus: 200,
   };
   globalThis.__blogCronWorkerTest = state;
-  const hooks = registerHooks({
-    resolve(specifier, context, nextResolve) {
-      if (context.parentURL === workerUrl && specifier === "./lib/blog/cron") {
-        return { shortCircuit: true, url: new URL("../lib/blog/cron.ts", import.meta.url).href };
-      }
-      if (context.parentURL === workerUrl && specifier === "./db/runtime.ts") {
-        return {
-          shortCircuit: true,
-          url: `data:text/javascript,${encodeURIComponent(`
-          export async function withDatabaseRequest(handler, waitUntil, databaseUrl) {
-            const state = globalThis.__blogCronWorkerTest;
-            state.wrapped++;
-            state.databaseUrl = databaseUrl;
-            return handler(waitUntil);
-          }
-        `)}`,
-        };
-      }
-      if (context.parentURL === workerUrl && specifier === "./.open-next/worker.js") {
-        return {
-          shortCircuit: true,
-          url: `data:text/javascript,${encodeURIComponent(`
-          export default { async fetch(request, env, ctx) {
-            const state = globalThis.__blogCronWorkerTest;
-            if (!state.wrapped) throw new Error("Database wrapper was bypassed");
-            state.dispatched++;
-            ctx.waitUntil(Promise.resolve());
-            const path = new URL(request.url).pathname;
-            state.paths.push(path);
-            const maintenance = path === "/api/internal/assistant/maintenance";
-            return Response.json(maintenance ? state.maintenanceCounts : state.counts, {
-              status: maintenance ? state.maintenanceStatus : state.publishStatus
-            });
-          } };
-        `)}`,
-        };
-      }
-      return nextResolve(specifier, context);
+  vi.resetModules();
+  vi.doMock("@/db/runtime.ts", () => ({
+    async withDatabaseRequest(handler, waitUntil, databaseUrl) {
+      const state = globalThis.__blogCronWorkerTest;
+      state.wrapped++;
+      state.databaseUrl = databaseUrl;
+      return handler(waitUntil);
     },
-  });
+  }));
+  vi.doMock("@/.open-next/worker.js", () => ({
+    default: {
+      async fetch(request, env, ctx) {
+        const state = globalThis.__blogCronWorkerTest;
+        if (!state.wrapped) throw new Error("Database wrapper was bypassed");
+        state.dispatched++;
+        ctx.waitUntil(Promise.resolve());
+        const path = new URL(request.url).pathname;
+        state.paths.push(path);
+        const maintenance = path === "/api/internal/assistant/maintenance";
+        return Response.json(maintenance ? state.maintenanceCounts : state.counts, {
+          status: maintenance ? state.maintenanceStatus : state.publishStatus,
+        });
+      },
+    },
+  }));
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  const info = vi.spyOn(console, "info").mockImplementation(() => {});
   try {
-    const { default: worker } = await import(workerUrl);
+    const { default: worker } = await import("@/worker.ts");
     const waits = [];
     const logs = [];
-    t.mock.method(console, "warn", (...args) => logs.push(args));
-    t.mock.method(console, "info", () => {});
+    warn.mockImplementation((...args) => logs.push(args));
     const env = {
       BLOG_SCHEDULER_SECRET: secret,
       ASSISTANT_SCHEDULER_SECRET: "test-assistant-secret",
@@ -260,33 +230,35 @@ test("actual Worker schedule re-enters the fetch database wrapper through its se
     };
     await worker.scheduled({}, env);
     await Promise.all(waits);
-    assert.equal(state.wrapped, 2);
-    assert.equal(state.dispatched, 2);
-    assert.equal(state.databaseUrl, env.HYPERDRIVE.connectionString);
-    assert.equal(waits.length, 2);
-    assert.deepEqual(logs, [["Blog scheduled publishing has failed posts", counts]]);
-    assert.deepEqual(state.paths.sort(), ["/api/internal/assistant/maintenance", path]);
+    expect(state.wrapped).toBe(2);
+    expect(state.dispatched).toBe(2);
+    expect(state.databaseUrl).toBe(env.HYPERDRIVE.connectionString);
+    expect(waits.length).toBe(2);
+    expect(logs).toEqual([["Blog scheduled publishing has failed posts", counts]]);
+    expect(state.paths.sort()).toEqual(["/api/internal/assistant/maintenance", path]);
 
     state.paths.length = 0;
     state.publishStatus = 503;
-    await assert.rejects(worker.scheduled({}, env), /Blog publishing request returned HTTP 503/);
-    assert.deepEqual(
-      state.paths.sort(),
-      ["/api/internal/assistant/maintenance", path],
-      "publication failure must not prevent maintenance",
-    );
+    await expect(worker.scheduled({}, env)).rejects.toThrow(/Blog publishing request returned HTTP 503/);
+    expect(state.paths.sort(), "publication failure must not prevent maintenance").toEqual([
+      "/api/internal/assistant/maintenance",
+      path,
+    ]);
 
     state.paths.length = 0;
     state.publishStatus = 200;
     state.maintenanceStatus = 503;
-    await assert.rejects(worker.scheduled({}, env), /Assistant maintenance request returned HTTP 503/);
-    assert.deepEqual(
-      state.paths.sort(),
-      ["/api/internal/assistant/maintenance", path],
-      "maintenance failure must not prevent publication",
-    );
+    await expect(worker.scheduled({}, env)).rejects.toThrow(/Assistant maintenance request returned HTTP 503/);
+    expect(state.paths.sort(), "maintenance failure must not prevent publication").toEqual([
+      "/api/internal/assistant/maintenance",
+      path,
+    ]);
   } finally {
-    hooks.deregister();
+    warn.mockRestore();
+    info.mockRestore();
+    vi.doUnmock("@/db/runtime.ts");
+    vi.doUnmock("@/.open-next/worker.js");
+    vi.resetModules();
     delete globalThis.__blogCronWorkerTest;
   }
 });

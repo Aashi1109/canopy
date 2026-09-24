@@ -1,7 +1,6 @@
-import assert from "node:assert/strict";
+import { expect, test, onTestFinished } from "vitest";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import test from "node:test";
 import pg from "pg";
 
 const url = process.env.BLOG_TEST_DATABASE_URL;
@@ -21,7 +20,7 @@ test(
     process.env.DATABASE_URL = target.toString();
     const sql = new pg.Pool({ connectionString: target.toString(), max: 5 });
     const { sqlClient } = await import("../db/index.ts");
-    t.after(async () => {
+    onTestFinished(async () => {
       await sqlClient.end();
       if (previousUrl === undefined) delete process.env.DATABASE_URL;
       else process.env.DATABASE_URL = previousUrl;
@@ -52,14 +51,14 @@ test(
     });
     let post;
     await t.test("permission denial, forged fields, and concurrent slug collisions", async () => {
-      await assert.rejects(m.createBlogPost("viewer", { title: "No access" }), /permission|denied/i);
-      await assert.rejects(m.saveBlogTerm("admin-a", { kind: "tag", name: "Forgery", createdBy: "viewer" }));
+      await expect(m.createBlogPost("viewer", { title: "No access" })).rejects.toThrow(/permission|denied/i);
+      await expect(m.saveBlogTerm("admin-a", { kind: "tag", name: "Forgery", createdBy: "viewer" })).rejects.toThrow();
       const created = await Promise.all([
         m.createBlogPost("admin-a", { title: "Same Title" }),
         m.createBlogPost("admin-a", { title: "Same Title" }),
       ]);
-      assert.equal(new Set(created.map((p) => p.slug)).size, 2);
-      assert.ok(created.every((p) => /^same-title(?:-[a-f0-9]{8})?$/.test(p.slug)));
+      expect(new Set(created.map((p) => p.slug)).size).toBe(2);
+      expect(created.every((p) => /^same-title(?:-[a-f0-9]{8})?$/.test(p.slug))).toBeTruthy();
       post = created[0];
     });
     await t.test("taxonomy attribution is server assigned and no-op rename is stable", async () => {
@@ -68,16 +67,16 @@ test(
         id: category.id,
         name: "Tutorials",
       });
-      assert.equal(renamed.createdBy, "admin-a");
-      assert.equal(renamed.updatedBy, "admin-b");
+      expect(renamed.createdBy).toBe("admin-a");
+      expect(renamed.updatedBy).toBe("admin-b");
       const same = await m.saveBlogTerm("admin-a", {
         kind: "category",
         id: category.id,
         name: "Tutorials",
       });
-      assert.equal(same.updatedBy, "admin-b");
-      assert.deepEqual(same.updatedAt, renamed.updatedAt);
-      await assert.rejects(m.saveBlogTerm("admin-a", { kind: "category", name: "TUTORIALS" }), /exists/i);
+      expect(same.updatedBy).toBe("admin-b");
+      expect(same.updatedAt).toEqual(renamed.updatedAt);
+      await expect(m.saveBlogTerm("admin-a", { kind: "category", name: "TUTORIALS" })).rejects.toThrow(/exists/i);
     });
     await t.test("stale save cannot overwrite draft; slug is immutable and snapshot saves deduplicate", async () => {
       const initial = post;
@@ -87,30 +86,29 @@ test(
         document: content("First revision"),
         mode: "manual",
       });
-      assert.equal(post.slug, initial.slug);
-      await assert.rejects(
+      expect(post.slug).toBe(initial.slug);
+      await expect(
         m.saveBlogDraft("admin-a", {
           postId: post.id,
           version: initial.version,
           document: content("Lost update"),
         }),
-        { code: "CONFLICT" },
-      );
-      await assert.rejects(
+      ).rejects.toMatchObject({ code: "CONFLICT" });
+      await expect(
         m.saveBlogDraft("admin-a", {
           postId: post.id,
           version: post.version,
           document: { ...post.draftDocument, slug: "changed" },
         }),
-      );
+      ).rejects.toThrow();
       const noOp = await m.saveBlogDraft("admin-a", {
         postId: post.id,
         version: post.version,
         document: post.draftDocument,
         mode: "manual",
       });
-      assert.equal(noOp.version, post.version);
-      assert.equal(noOp.revisionSequence, post.revisionSequence);
+      expect(noOp.version).toBe(post.version);
+      expect(noOp.revisionSequence).toBe(post.revisionSequence);
     });
     let firstRevision;
     await t.test(
@@ -138,14 +136,11 @@ test(
           frozen.id,
         ]);
         const results = await Promise.all([m.publishDueBlogPosts(), m.publishDueBlogPosts()]);
-        assert.equal(
-          results.reduce((n, r) => n + r.published, 0),
-          1,
-        );
+        expect(results.reduce((n, r) => n + r.published, 0)).toBe(1);
         const [stored] = (await sql.query("SELECT * FROM blog_posts WHERE id=$1", [post.id])).rows;
-        assert.equal(stored.published_revision_id, frozen.revision_id);
-        assert.equal(stored.draft_document.title, "Private newer draft");
-        assert.equal((await sql.query("SELECT * FROM blog_post_schedules WHERE post_id=$1", [post.id])).rows.length, 0);
+        expect(stored.published_revision_id).toBe(frozen.revision_id);
+        expect(stored.draft_document.title).toBe("Private newer draft");
+        expect((await sql.query("SELECT * FROM blog_post_schedules WHERE post_id=$1", [post.id])).rows.length).toBe(0);
         post = {
           ...post,
           version: stored.version,
@@ -160,25 +155,24 @@ test(
         version: post.version,
         revisionId: firstRevision,
       });
-      assert.equal(post.draftDocument.title, "First revision");
-      assert.equal(post.publishedRevisionId, live);
+      expect(post.draftDocument.title).toBe("First revision");
+      expect(post.publishedRevisionId).toBe(live);
       const backups = (
         await sql.query("SELECT document FROM blog_revisions WHERE post_id=$1 AND reason='restore_backup'", [post.id])
       ).rows;
-      assert.ok(backups.some((r) => r.document.title === "Private newer draft"));
+      expect(backups.some((r) => r.document.title === "Private newer draft")).toBeTruthy();
       post = await m.trashBlogPost("admin-a", { postId: post.id, version: post.version });
-      assert.equal(post.publishedRevisionId, null);
-      assert.ok(post.trashedAt);
-      assert.equal(
-        (await sql.query("SELECT * FROM blog_published_post_tags WHERE post_id=$1", [post.id])).rows.length,
+      expect(post.publishedRevisionId).toBe(null);
+      expect(post.trashedAt).toBeTruthy();
+      expect((await sql.query("SELECT * FROM blog_published_post_tags WHERE post_id=$1", [post.id])).rows.length).toBe(
         0,
       );
       post = await m.restoreTrashedBlogPost("admin-a", {
         postId: post.id,
         version: post.version,
       });
-      assert.equal(post.publishedRevisionId, null);
-      assert.equal(post.trashedAt, null);
+      expect(post.publishedRevisionId).toBe(null);
+      expect(post.trashedAt).toBe(null);
     });
     await t.test("revoked publisher leaves recoverable diagnostics without changing draft/version", async () => {
       post = await m.scheduleBlogPost("admin-b", {
@@ -191,15 +185,15 @@ test(
       ]);
       await sql.query("UPDATE auth_users SET status='suspended' WHERE id='admin-b'");
       const result = await m.publishDueBlogPosts();
-      assert.equal(result.failed, 1);
+      expect(result.failed).toBe(1);
       const [schedule] = (await sql.query("SELECT * FROM blog_post_schedules WHERE post_id=$1", [post.id])).rows;
-      assert.equal(schedule.last_error_code, "PUBLISHER_FORBIDDEN");
+      expect(schedule.last_error_code).toBe("PUBLISHER_FORBIDDEN");
       const [stored] = (await sql.query("SELECT version, published_revision_id FROM blog_posts WHERE id=$1", [post.id]))
         .rows;
-      assert.equal(stored.version, post.version);
-      assert.equal(stored.published_revision_id, null);
+      expect(stored.version).toBe(post.version);
+      expect(stored.published_revision_id).toBe(null);
       post = await m.cancelBlogSchedule("admin-a", { postId: post.id, version: post.version });
-      assert.equal((await sql.query("SELECT * FROM blog_post_schedules WHERE post_id=$1", [post.id])).rows.length, 0);
+      expect((await sql.query("SELECT * FROM blog_post_schedules WHERE post_id=$1", [post.id])).rows.length).toBe(0);
     });
   },
 );

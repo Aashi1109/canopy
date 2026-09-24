@@ -1,9 +1,9 @@
 "use client";
 
-import { Overline, H3, Muted, Caption, Strong, SegmentedControl, ToolOptionsPanel } from "@/components/ui/index.tsx";
+import { Overline, H3, Muted, Caption, Strong, ToolOptionsPanel } from "@/components/ui/index.tsx";
 import { Settings } from "lucide";
 import { ArrowDownToLine, FileSpreadsheet } from "lucide-react";
-import { type DragEvent, type ReactNode, type Ref, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type DragEvent, type ReactNode, type Ref, useEffect, useRef, useState } from "react";
 
 import { ImageConversionWorkspace } from "@/app/media/components/ImageConversionWorkspace";
 import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
@@ -88,25 +88,6 @@ function stackedResultTitle(spec: ToolSpec) {
   );
 }
 
-const INPUT_RESULT_ITEMS = [
-  { label: "Input", value: "input" },
-  { label: "Result", value: "result" },
-] as const;
-
-function useNarrowWorkspace() {
-  const [narrow, setNarrow] = useState(false);
-
-  useLayoutEffect(() => {
-    const query = window.matchMedia("(max-width: 64rem)");
-    const update = () => setNarrow(query.matches);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
-
-  return narrow;
-}
-
 function InputResultWorkspace({
   defaultSize,
   input,
@@ -122,38 +103,9 @@ function InputResultWorkspace({
   minSize: number;
   result: ReactNode;
 }) {
-  const narrow = useNarrowWorkspace();
-  const [view, setView] = useState<(typeof INPUT_RESULT_ITEMS)[number]["value"]>("input");
-
-  if (narrow) {
-    return (
-      <div className="flex h-full min-h-0 flex-col">
-        <SegmentedControl
-          className="shrink-0 items-center border-b border-border p-3 [&_[data-slot=tabs-trigger]]:min-h-11"
-          items={INPUT_RESULT_ITEMS}
-          onValueChange={(value) => setView(value as typeof view)}
-          size="navigation"
-          value={view}
-        />
-        <div className="min-h-0 flex-1 overflow-hidden">
-          <div className={view === "input" ? "h-full" : "hidden h-full"}>{input}</div>
-          <div className={view === "result" ? "h-full" : "hidden h-full"}>{result}</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (layout === "stacked" && !inputSize) {
-    return (
-      <div className="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(14rem,1fr)] gap-5 overflow-y-auto p-5">
-        {input}
-        {result}
-      </div>
-    );
-  }
-
   return (
     <SplitStack
+      presentation
       className={layout === "stacked" ? "h-full p-5" : "h-full"}
       defaultSize={inputSize?.default ?? defaultSize}
       minSize={inputSize?.min ?? minSize}
@@ -324,7 +276,7 @@ export function ToolWorkspace(
       values={props.settings}
     />
   ) : undefined;
-  const inputSplit = getInputSplitSizes(props.spec.input, 50, 30);
+  const inputSplit = getInputSplitSizes(props.spec.input, 50, props.spec.layout === "stacked" ? 30 : 15);
   const surfaceVariant = props.spec.input.kind !== "none" && props.spec.layout === "stacked" ? "card" : "panel";
   const result = (
     <ResultSurface

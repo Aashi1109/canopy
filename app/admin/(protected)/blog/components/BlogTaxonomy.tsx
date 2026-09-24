@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
   Button,
   EmptyState,
   Input,
@@ -133,11 +137,15 @@ export function BlogTaxonomy({ kind, terms, returnTo, pagination }: Props) {
                     <p className="mt-1 text-xs text-muted-foreground sm:hidden">
                       Updated {new Date(term.updatedAt).toISOString().slice(0, 10)}
                     </p>
-                    <details className="mt-2 text-xs text-muted-foreground sm:hidden">
-                      <summary className="cursor-pointer">Account attribution</summary>
-                      <p className="mt-2 break-all">Created by: {term.createdBy ?? "Deleted account"}</p>
-                      <p className="mt-1 break-all">Last edited by: {term.updatedBy ?? "Deleted account"}</p>
-                    </details>
+                    <Accordion type="single" collapsible className="mt-2 text-muted-foreground sm:hidden">
+                      <AccordionItem value="attribution">
+                        <AccordionTrigger>Account attribution</AccordionTrigger>
+                        <AccordionContent>
+                          <p className="break-all">Created by: {term.createdBy ?? "Deleted account"}</p>
+                          <p className="mt-1 break-all">Last edited by: {term.updatedBy ?? "Deleted account"}</p>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                   </TableCell>
                   <TableCell className="hidden max-w-64 whitespace-normal text-sm text-muted-foreground sm:table-cell">
                     <p>
@@ -145,11 +153,15 @@ export function BlogTaxonomy({ kind, terms, returnTo, pagination }: Props) {
                         new Date(term.updatedAt),
                       )}
                     </p>
-                    <details className="mt-2">
-                      <summary className="cursor-pointer">Account attribution</summary>
-                      <p className="mt-2 break-all">Created by: {term.createdBy ?? "Deleted account"}</p>
-                      <p className="mt-1 break-all">Last edited by: {term.updatedBy ?? "Deleted account"}</p>
-                    </details>
+                    <Accordion type="single" collapsible className="mt-2">
+                      <AccordionItem value="attribution">
+                        <AccordionTrigger>Account attribution</AccordionTrigger>
+                        <AccordionContent>
+                          <p className="break-all">Created by: {term.createdBy ?? "Deleted account"}</p>
+                          <p className="mt-1 break-all">Last edited by: {term.updatedBy ?? "Deleted account"}</p>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-2">

@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { expect, test } from "vitest";
 import { validateInvoiceData } from "../lib/paperwork/utils/invoiceValidation.ts";
 
 function validInvoice() {
@@ -29,7 +27,7 @@ function validInvoice() {
 }
 
 test("a complete invoice passes export validation", () => {
-  assert.deepEqual(validateInvoiceData(validInvoice()), {});
+  expect(validateInvoiceData(validInvoice())).toEqual({});
 });
 
 test("invoice validation covers required identity and date fields", () => {
@@ -40,7 +38,7 @@ test("invoice validation covers required identity and date fields", () => {
   invoice.invoice.invoiceDate = "";
   invoice.invoice.dueDate = "";
 
-  assert.deepEqual(Object.keys(validateInvoiceData(invoice)).sort(), [
+  expect(Object.keys(validateInvoiceData(invoice)).sort()).toEqual([
     "business.name",
     "client.name",
     "invoice.dueDate",
@@ -55,7 +53,7 @@ test("invoice validation rejects malformed emails and a due date before issue", 
   invoice.client.email = "accounts@";
   invoice.invoice.dueDate = "2026-07-21";
 
-  assert.deepEqual(Object.keys(validateInvoiceData(invoice)).sort(), [
+  expect(Object.keys(validateInvoiceData(invoice)).sort()).toEqual([
     "business.email",
     "client.email",
     "invoice.dueDate",
@@ -69,7 +67,7 @@ test("invoice validation rejects unusable line items", () => {
     { description: "Hosting", quantity: -1, unitPrice: Number.NaN },
   ];
 
-  assert.deepEqual(Object.keys(validateInvoiceData(invoice)).sort(), [
+  expect(Object.keys(validateInvoiceData(invoice)).sort()).toEqual([
     "lineItems[0].description",
     "lineItems[0].quantity",
     "lineItems[1].quantity",
@@ -77,5 +75,5 @@ test("invoice validation rejects unusable line items", () => {
   ]);
 
   invoice.lineItems = [];
-  assert.deepEqual(Object.keys(validateInvoiceData(invoice)), ["lineItems"]);
+  expect(Object.keys(validateInvoiceData(invoice))).toEqual(["lineItems"]);
 });

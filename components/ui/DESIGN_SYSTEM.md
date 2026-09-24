@@ -287,7 +287,11 @@ Select menus inherit the owning `SelectTrigger` size through React context, incl
 
 ### Forms
 
-`ColorControl` (`components/ColorControl.tsx`) combines a native visual color picker, CSS-text input, explicit opacity range and number input, field validation, and a checkerboard swatch. It accepts `value`, `onChange`, `label`, optional `disabled`, and `compact` to omit the extra swatch when the workspace already previews the color. Use one canonical color value in the tool runtime. It accepts standalone HEX, RGB, HSL, CSS names, and transparency; fine opacity edits retain decimal RGB alpha. Parser-owned CSS color settings must use text descriptors to avoid the generic HEX-only color-setting normalization. `ColorSwatch` is the labeled, non-interactive preview primitive. Both are demonstrated in the admin component library.
+`ColorControl` (`components/ColorControl.tsx`) combines a native visual color picker, CSS-text input, explicit opacity controls, and field validation. It accepts `value`, `onChange`, `label`, optional `disabled`, `compact`, and `layout: stacked | inline` (default `stacked`). All layouts expose a named group using `label`.
+
+The default stacked layout includes an opacity slider, percent input, and checkerboard swatch. Compact stacked mode uses 8px gaps, places the opacity label, slider, and percent input together in one row directly below the picker and text input, and omits the extra swatch when the workspace already previews the color. Use `layout="inline"` for a single row: a labeled color-text field with a circular, clickable native picker inside its left edge sits beside a separately labeled Opacity percent field. Inline layout omits the slider and standalone swatch.
+
+Use one canonical color value in the tool runtime. It accepts standalone HEX, RGB, HSL, CSS names, and transparency; fine opacity edits retain decimal RGB alpha. Parser-owned CSS color settings must use text descriptors to avoid the generic HEX-only color-setting normalization. `ColorSwatch` is the labeled, non-interactive preview primitive. The admin component library demonstrates default and inline color controls alongside the standalone swatch.
 
 Color & Design workspaces share `app/devtools/components/color-design/DesignWorkspace.tsx`: the operation-specific preview occupies the main surface, related settings are grouped in the right panel, and copy/download output sits below the preview. `compactOutput` caps the preview height to keep CSS export actions visible; `compactInput` leaves more room for conversion results. `DesignRange` pairs visual adjustment with an exact keyboard-editable number. The adjacent `ColorValueList` uses compact semantic rows and individually labeled copy buttons for picker, converter, and image-sampling values. Tool-specific canvases, spatial corner controls, palettes, and image sampling remain owned by each tool.
 
@@ -389,6 +393,14 @@ Do **not** replace field errors, the upload/drop surface, cached data during bac
 | `ToolSupportSections`                                                     | `patterns.tsx`                 | req string `action`, `result`, `source`                                                                                                                                   |
 
 `WorkbenchShell` force-downsizes descendant `[data-slot=button|input|select-trigger]` to 32px. Do not fight it with per-call size props — pass content and let the shell size it.
+
+#### Focus mode
+
+`WorkbenchShell` provides **Expand workspace / Exit focus mode** with maximize/minimize icons. Supply `workspaceTitle` for the expanded toolbar. It expands the existing DOM rather than opening a second editor or navigating: edits, undo history, settings and results remain mounted. Surrounding page content becomes inert and invisible; exiting restores scrolling and focus. Escape defers to open dialogs, menus and editor completions. Same-origin preview frames also support Escape.
+
+Mark only a genuine input/preview `SplitStack` with `presentation`. Static two-pane grids can use `components/tool-workbench/WorkbenchPanes.tsx`. These register the centered **Input / Split / Preview** icon-and-label control. Do not register settings panels, two-input comparisons or single-surface tools as input/preview pairs. Settings remain independent. Below 1024px only Input and Preview are offered. The mode switch never clears or remounts the panes, and returning to Split restores the resized proportion.
+
+Paperwork uses `PaperworkWorkspace` with the same presentation provider and controls, preserving its scrollable document forms and export actions. The compositions section of `/admin/design-system` includes an interactive focus-mode example.
 
 #### Input workspace layout
 

@@ -1,17 +1,14 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { expect, test } from "vitest";
 import { getTrustedOrigins, normalizeAccountName, normalizeProfileImage, safeReturnTo } from "../lib/auth/security.ts";
 
 const trustedOrigins = ["https://smarttools.example.com", "https://admin.smarttools.example.com"];
 
 test("trusted origins accept only explicit HTTP origins", () => {
-  assert.deepEqual(
+  expect(
     getTrustedOrigins(
       "https://smarttools.example.com, https://admin.smarttools.example.com,https://smarttools.example.com",
     ),
-    trustedOrigins,
-  );
+  ).toEqual(trustedOrigins);
 
   for (const invalid of [
     "*.smarttools.example.com",
@@ -20,15 +17,14 @@ test("trusted origins accept only explicit HTTP origins", () => {
     "https://user@canopy.example.com",
     "https://smarttools.example.com#fragment",
   ]) {
-    assert.throws(() => getTrustedOrigins(invalid), /trusted origin/i, invalid);
+    expect(() => getTrustedOrigins(invalid)).toThrow(/trusted origin/i);
   }
 });
 
 test("return URLs allow local paths and exact trusted origins only", () => {
-  assert.equal(safeReturnTo("/profile?tab=sessions", trustedOrigins), "/profile?tab=sessions");
-  assert.equal(safeReturnTo("/auth/profile?returnTo=%2Fadmin", trustedOrigins), "/auth/profile?returnTo=%2Fadmin");
-  assert.equal(
-    safeReturnTo("https://admin.smarttools.example.com/tools?updated=1", trustedOrigins),
+  expect(safeReturnTo("/profile?tab=sessions", trustedOrigins)).toBe("/profile?tab=sessions");
+  expect(safeReturnTo("/auth/profile?returnTo=%2Fadmin", trustedOrigins)).toBe("/auth/profile?returnTo=%2Fadmin");
+  expect(safeReturnTo("https://admin.smarttools.example.com/tools?updated=1", trustedOrigins)).toBe(
     "https://admin.smarttools.example.com/tools?updated=1",
   );
 
@@ -42,22 +38,22 @@ test("return URLs allow local paths and exact trusted origins only", () => {
     "javascript:alert(1)",
     "https://user@admin.smarttools.example.com/tools",
   ]) {
-    assert.equal(safeReturnTo(invalid, trustedOrigins), "/", invalid);
+    expect(safeReturnTo(invalid, trustedOrigins), invalid).toBe("/");
   }
 });
 
 test("server account fields reject unsafe or oversized profile input", () => {
-  assert.equal(normalizeAccountName("  Ada Lovelace  "), "Ada Lovelace");
-  assert.throws(() => normalizeAccountName(" "), /name/i);
-  assert.throws(() => normalizeAccountName("a".repeat(101)), /name/i);
+  expect(normalizeAccountName("  Ada Lovelace  ")).toBe("Ada Lovelace");
+  expect(() => normalizeAccountName(" ")).toThrow(/name/i);
+  expect(() => normalizeAccountName("a".repeat(101))).toThrow(/name/i);
 
-  assert.equal(normalizeProfileImage(""), null);
-  assert.equal(normalizeProfileImage(" https://images.example/avatar.png "), "https://images.example/avatar.png");
+  expect(normalizeProfileImage("")).toBe(null);
+  expect(normalizeProfileImage(" https://images.example/avatar.png ")).toBe("https://images.example/avatar.png");
   const embeddedWebp = "data:image/webp;base64,UklGRnh4eHhXRUJQ";
-  assert.equal(normalizeProfileImage(embeddedWebp), embeddedWebp);
-  assert.throws(() => normalizeProfileImage("data:image/svg+xml;base64,PHN2Zz4="), /image/i);
-  assert.throws(() => normalizeProfileImage("data:image/webp;base64,ZmFrZQ=="), /image/i);
-  assert.throws(() => normalizeProfileImage(`data:image/webp;base64,${"A".repeat(200_001)}`), /image/i);
-  assert.throws(() => normalizeProfileImage("javascript:alert(1)"), /image/i);
-  assert.throws(() => normalizeProfileImage("https://user:pass@images.example/avatar.png"), /image/i);
+  expect(normalizeProfileImage(embeddedWebp)).toBe(embeddedWebp);
+  expect(() => normalizeProfileImage("data:image/svg+xml;base64,PHN2Zz4=")).toThrow(/image/i);
+  expect(() => normalizeProfileImage("data:image/webp;base64,ZmFrZQ==")).toThrow(/image/i);
+  expect(() => normalizeProfileImage(`data:image/webp;base64,${"A".repeat(200_001)}`)).toThrow(/image/i);
+  expect(() => normalizeProfileImage("javascript:alert(1)")).toThrow(/image/i);
+  expect(() => normalizeProfileImage("https://user:pass@images.example/avatar.png")).toThrow(/image/i);
 });

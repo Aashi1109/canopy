@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import {
   createBlogDocument,
   validateBlogDocument,
@@ -20,25 +19,22 @@ $$
 \int_{-\infty}^{\infty}
 e^{-x^2}dx = \sqrt{\pi}
 $$`);
-  assert.match(html, /data-type="inline-math" data-latex="E = mc\^2"/);
-  assert.match(html, /data-latex="\\frac\{a_1\}\{b\}"/);
-  assert.match(html, /data-type="block-math"/);
-  assert.match(blogMarkdownHtml("$2 + 2$"), /data-latex="2 \+ 2"/);
-  assert.match(html, /\\int_\{-\\infty\}\^\{\\infty\}/);
+  expect(html).toMatch(/data-type="inline-math" data-latex="E = mc\^2"/);
+  expect(html).toMatch(/data-latex="\\frac\{a_1\}\{b\}"/);
+  expect(html).toMatch(/data-type="block-math"/);
+  expect(blogMarkdownHtml("$2 + 2$")).toMatch(/data-latex="2 \+ 2"/);
+  expect(html).toMatch(/\\int_\{-\\infty\}\^\{\\infty\}/);
 });
 
 test("currency, escaped delimiters and code remain literal", () => {
   const literal = String.raw`Costs $5 and $10. Escaped \$x\$. Code: ` + "`$x$`";
-  assert.doesNotMatch(blogMarkdownHtml(literal), /data-type="(?:inline|block)-math"/);
-  assert.doesNotMatch(blogMarkdownHtml("```tex\n$x$\n$$y$$\n```"), /data-type="(?:inline|block)-math"/);
+  expect(blogMarkdownHtml(literal)).not.toMatch(/data-type="(?:inline|block)-math"/);
+  expect(blogMarkdownHtml("```tex\n$x$\n$$y$$\n```")).not.toMatch(/data-type="(?:inline|block)-math"/);
   const code = { type: "codeBlock", content: [{ type: "text", text: "$x$" }] };
-  assert.deepEqual(normalizeBlogMath(code), code);
+  expect(normalizeBlogMath(code)).toEqual(code);
   const marked = { type: "paragraph", content: [{ type: "text", text: "$x$", marks: [{ type: "code" }] }] };
-  assert.deepEqual(normalizeBlogMath(marked), marked);
-  assert.deepEqual(
-    normalizeBlogMath(paragraph(String.raw`$5 and $10; \$x\$`)),
-    paragraph(String.raw`$5 and $10; \$x\$`),
-  );
+  expect(normalizeBlogMath(marked)).toEqual(marked);
+  expect(normalizeBlogMath(paragraph(String.raw`$5 and $10; \$x\$`))).toEqual(paragraph(String.raw`$5 and $10; \$x\$`));
 });
 
 test("legacy paragraphs and hard-break display math render without mutating saved JSON", () => {
@@ -57,13 +53,13 @@ test("legacy paragraphs and hard-break display math render without mutating save
   ]);
   const before = structuredClone(article);
   const normalized = normalizeBlogMath(article.body);
-  assert.equal(normalized.content[0].content[1].type, "inlineMath");
-  assert.equal(normalized.content[1].type, "blockMath");
+  expect(normalized.content[0].content[1].type).toBe("inlineMath");
+  expect(normalized.content[1].type).toBe("blockMath");
   const { html } = renderBlogDocument(article);
-  assert.match(html, /class="blog-math-inline"/);
-  assert.match(html, /class="blog-math-block"/);
-  assert.match(html, /class="katex"/);
-  assert.deepEqual(article, before);
+  expect(html).toMatch(/class="blog-math-inline"/);
+  expect(html).toMatch(/class="blog-math-block"/);
+  expect(html).toMatch(/class="katex"/);
+  expect(article).toEqual(before);
 });
 
 test("math nodes validate, retain source and contribute searchable plain text", () => {
@@ -72,28 +68,28 @@ test("math nodes validate, retain source and contribute searchable plain text", 
     { type: "blockMath", attrs: { latex: String.raw`\sqrt{x}` } },
   ]);
   const validated = validateBlogDocument(article);
-  assert.match(blogDocumentText(validated), /E=mc\^2/);
-  assert.match(blogDocumentText(validated), /\\sqrt\{x\}/);
-  assert.match(renderBlogDocument(validated).html, /katex/);
+  expect(blogDocumentText(validated)).toMatch(/E=mc\^2/);
+  expect(blogDocumentText(validated)).toMatch(/\\sqrt\{x\}/);
+  expect(renderBlogDocument(validated).html).toMatch(/katex/);
   for (const attrs of [{ latex: "" }, { latex: "x".repeat(10001) }, { latex: "x", html: "unsafe" }]) {
-    assert.throws(() => validateBlogDocument(document([{ type: "blockMath", attrs }])));
+    expect(() => validateBlogDocument(document([{ type: "blockMath", attrs }]))).toThrow();
   }
-  assert.throws(() => validateBlogDocument(document([{ type: "blockMath", attrs: { latex: "x" }, content: [] }])));
+  expect(() => validateBlogDocument(document([{ type: "blockMath", attrs: { latex: "x" }, content: [] }]))).toThrow();
 });
 
 test("invalid formulas preserve escaped source and hostile LaTeX cannot activate HTML", () => {
   const source = String.raw`\unknown{<script>alert(1)</script>}`;
   const result = renderMath(source, true);
-  assert.equal(result.error, true);
-  assert.match(result.html, /&lt;script&gt;/);
-  assert.doesNotMatch(result.html, /<script>/);
+  expect(result.error).toBe(true);
+  expect(result.html).toMatch(/&lt;script&gt;/);
+  expect(result.html).not.toMatch(/<script>/);
   for (const latex of [
     String.raw`\href{javascript:alert(1)}{click}`,
     String.raw`\includegraphics{https://example.com/track}`,
     String.raw`\htmlClass{evil}{x}`,
   ]) {
     const { html } = renderMath(latex, false);
-    assert.doesNotMatch(html, /<a\b|<img\b|class="evil"/);
+    expect(html).not.toMatch(/<a\b|<img\b|class="evil"/);
   }
-  assert.equal(renderMath(String.raw`\def\x{\x}\x`, false).error, true);
+  expect(renderMath(String.raw`\def\x{\x}\x`, false).error).toBe(true);
 });

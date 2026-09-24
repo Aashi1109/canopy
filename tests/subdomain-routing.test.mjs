@@ -1,54 +1,41 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
-import { NextRequest } from "next/server.js";
+import { NextRequest } from "next/server";
+import { afterAll, beforeEach, expect, test, vi } from "vitest";
 
-const routingUrl = new URL("../lib/routing/subdomains.ts", import.meta.url).href;
-const registryUrl = new URL("../lib/config/subdomains.ts", import.meta.url).href;
-const proxyUrl = new URL("../proxy.ts", import.meta.url).href;
 const state = { session: null, error: null, queries: 0 };
 globalThis.__adminSubdomainTest = state;
-const hooks = registerHooks({
-  resolve(specifier, context, next) {
-    if (context.parentURL === routingUrl && specifier === "../config/subdomains.ts") {
-      return {
-        shortCircuit: true,
-        url: `data:text/javascript,${encodeURIComponent(`
-          export * from "${registryUrl}";
-          export const SUBDOMAINS = {
-            admin: { routePrefix: "/admin", indexable: false },
-            billing: { routePrefix: "/billing", indexable: true },
-            support: { routePrefix: "/billing/help", indexable: true },
-          };
-        `)}`,
-      };
-    }
-    if (context.parentURL === proxyUrl && specifier === "./lib/auth/index.ts") {
-      return {
-        shortCircuit: true,
-        url: `data:text/javascript,${encodeURIComponent(`export const auth = {api: {async getSession() {
-          const state = globalThis.__adminSubdomainTest;
-          state.queries++;
-          if (state.error) throw state.error;
-          return state.session;
-        }}};`)}`,
-      };
-    }
-    return next(specifier === "next/server" ? "next/server.js" : specifier, context);
+
+// routing.ts reads the subdomain registry; keep the real exports but override the map.
+vi.mock("@/lib/config/subdomains.ts", async (importOriginal) => ({
+  ...(await importOriginal()),
+  SUBDOMAINS: {
+    admin: { routePrefix: "/admin", indexable: false },
+    billing: { routePrefix: "/billing", indexable: true },
+    support: { routePrefix: "/billing/help", indexable: true },
   },
-});
-const { appHref, subdomainHref, getSubdomainOrigin, getSubdomainOrigins, internalSubdomainPath } = await import(
-  routingUrl
-);
-const { proxy } = await import(proxyUrl);
-hooks.deregister();
+}));
+vi.mock("@/lib/auth/index.ts", () => ({
+  auth: {
+    api: {
+      async getSession() {
+        const state = globalThis.__adminSubdomainTest;
+        state.queries++;
+        if (state.error) throw state.error;
+        return state.session;
+      },
+    },
+  },
+}));
+
+const { appHref, subdomainHref, getSubdomainOrigin, getSubdomainOrigins, internalSubdomainPath } =
+  await import("@/lib/routing/subdomains.ts");
+const { proxy } = await import("@/proxy.ts");
 const previousEnvironment = process.env;
-test.beforeEach(() => {
+beforeEach(() => {
   process.env = { ...previousEnvironment, APP_URL: "https://example.test" };
   delete process.env.AUTH_COOKIE_PREFIX;
   Object.assign(state, { session: null, error: null, queries: 0 });
 });
-test.after(() => {
+afterAll(() => {
   process.env = previousEnvironment;
   delete globalThis.__adminSubdomainTest;
 });
@@ -56,16 +43,16 @@ const request = (path, { host = "admin.example.test", method = "GET", cookie = "
   new NextRequest(`https://${host}${path}`, { method, headers: { cookie, ...headers } });
 
 test("admin links use clean paths and retain queries, fragments and the default local origin", () => {
-  assert.equal(subdomainHref("admin"), "https://admin.example.test/");
-  assert.equal(appHref("/admin/users?q=A%26B#roles"), "https://admin.example.test/users?q=A%26B#roles");
-  assert.equal(appHref("/admin?tab=tools"), "https://admin.example.test/?tab=tools");
-  assert.equal(appHref("/administrator"), "/administrator");
-  assert.equal(internalSubdomainPath("admin", "/"), "/admin");
-  assert.equal(internalSubdomainPath("admin", "/templates/id/manage"), "/admin/templates/id/manage");
-  assert.equal(internalSubdomainPath("admin", "/admin/tools"), "/admin/tools");
+  expect(subdomainHref("admin")).toBe("https://admin.example.test/");
+  expect(appHref("/admin/users?q=A%26B#roles")).toBe("https://admin.example.test/users?q=A%26B#roles");
+  expect(appHref("/admin?tab=tools")).toBe("https://admin.example.test/?tab=tools");
+  expect(appHref("/administrator")).toBe("/administrator");
+  expect(internalSubdomainPath("admin", "/")).toBe("/admin");
+  expect(internalSubdomainPath("admin", "/templates/id/manage")).toBe("/admin/templates/id/manage");
+  expect(internalSubdomainPath("admin", "/admin/tools")).toBe("/admin/tools");
   delete process.env.APP_URL;
-  assert.equal(getSubdomainOrigin("admin"), "http://admin.localhost:3000");
-  assert.equal(appHref("/admin/users?q=Ada"), "http://admin.localhost:3000/users?q=Ada");
+  expect(getSubdomainOrigin("admin")).toBe("http://admin.localhost:3000");
+  expect(appHref("/admin/users?q=Ada")).toBe("http://admin.localhost:3000/users?q=Ada");
 });
 
 test("admin origins derive from the product hostname and preserve local ports", () => {
@@ -80,7 +67,7 @@ test("admin origins derive from the product hostname and preserve local ports", 
     [" https://example.test/ ", "https://admin.example.test"],
   ]) {
     process.env.APP_URL = appUrl;
-    assert.equal(getSubdomainOrigin("admin"), expected, appUrl);
+    expect(getSubdomainOrigin("admin"), appUrl).toBe(expected);
   }
 });
 
@@ -92,10 +79,10 @@ test("IPs and Vercel preview domains keep same-host admin routes", async () => {
     "https://canopy-preview.vercel.app",
   ]) {
     process.env.APP_URL = appUrl;
-    assert.equal(getSubdomainOrigin("admin"), null, appUrl);
-    assert.equal(appHref("/admin/users"), "/admin/users", appUrl);
+    expect(getSubdomainOrigin("admin"), appUrl).toBe(null);
+    expect(appHref("/admin/users"), appUrl).toBe("/admin/users");
     const response = await proxy(new NextRequest(`${appUrl}/admin/users`));
-    assert.equal(response.headers.get("x-middleware-next"), "1", appUrl);
+    expect(response.headers.get("x-middleware-next"), appUrl).toBe("1");
   }
 });
 
@@ -112,7 +99,7 @@ test("product URL configuration accepts valid origins only", () => {
     "",
   ]) {
     process.env.APP_URL = value;
-    assert.throws(() => getSubdomainOrigin("admin"), /APP_URL/, value);
+    expect(() => getSubdomainOrigin("admin"), value).toThrow(/APP_URL/);
   }
 });
 
@@ -125,55 +112,54 @@ test("clean admin pages and Server Action requests rewrite to their existing rou
   ]) {
     for (const method of ["GET", "HEAD", "POST"]) {
       const response = await proxy(request(path, { method }));
-      assert.equal(response.headers.get("x-middleware-rewrite"), `https://admin.example.test${target}`);
-      assert.equal(response.headers.get("location"), null);
-      assert.equal(response.headers.get("x-robots-tag"), "noindex, nofollow");
+      expect(response.headers.get("x-middleware-rewrite")).toBe(`https://admin.example.test${target}`);
+      expect(response.headers.get("location")).toBe(null);
+      expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
     }
   }
-  assert.equal(state.queries, 0);
+  expect(state.queries).toBe(0);
 });
 
 test("legacy admin URLs redirect to the exact configured host without losing query parameters", async () => {
   for (const host of ["example.test", "admin.example.test", "preview.vercel.app"]) {
     for (const method of ["GET", "HEAD"]) {
       const response = await proxy(request("/admin/users?role=editor&page=2", { host, method }));
-      assert.equal(response.status, 308);
-      assert.equal(response.headers.get("location"), "https://admin.example.test/users?role=editor&page=2");
+      expect(response.status).toBe(308);
+      expect(response.headers.get("location")).toBe("https://admin.example.test/users?role=editor&page=2");
     }
   }
-  assert.equal(
-    (await proxy(request("/admin", { host: "example.test" }))).headers.get("location"),
+  expect((await proxy(request("/admin", { host: "example.test" }))).headers.get("location")).toBe(
     "https://admin.example.test/",
   );
   const mutation = await proxy(request("/admin/users", { host: "example.test", method: "POST" }));
-  assert.equal(mutation.status, 404, "never forward a mutation body to another origin");
+  expect(mutation.status, "never forward a mutation body to another origin").toBe(404);
 });
 
 test("public pages and unrelated or spoofed hosts never become the admin workspace", async () => {
   for (const host of ["example.test", "admin.example.test.evil.test", "preview.vercel.app"]) {
     const response = await proxy(request("/users", { host, headers: { "x-forwarded-host": "admin.example.test" } }));
-    assert.equal(response.headers.get("x-middleware-next"), "1");
-    assert.equal(response.headers.get("x-middleware-rewrite"), null);
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+    expect(response.headers.get("x-middleware-rewrite")).toBe(null);
   }
 });
 
 test("bare localhost routes only exact registered subdomains and preserves their port", async () => {
   process.env.APP_URL = "http://localhost:3000";
-  assert.deepEqual(getSubdomainOrigins(), [
+  expect(getSubdomainOrigins()).toEqual([
     "http://admin.localhost:3000",
     "http://billing.localhost:3000",
     "http://support.localhost:3000",
   ]);
-  assert.equal(subdomainHref("admin", "/users?q=Ada#roles"), "http://admin.localhost:3000/users?q=Ada#roles");
-  assert.equal(appHref("/billing/help/article"), "http://support.localhost:3000/article");
+  expect(subdomainHref("admin", "/users?q=Ada#roles")).toBe("http://admin.localhost:3000/users?q=Ada#roles");
+  expect(appHref("/billing/help/article")).toBe("http://support.localhost:3000/article");
   for (const [path, internalPath] of [
     ["/", "/admin"],
     ["/users?q=Ada", "/admin/users?q=Ada"],
   ]) {
     for (const method of ["GET", "HEAD", "POST"]) {
       const response = await proxy(new NextRequest(`http://admin.localhost:3000${path}`, { method }));
-      assert.equal(response.headers.get("x-middleware-rewrite"), `http://admin.localhost:3000${internalPath}`);
-      assert.equal(response.headers.get("x-robots-tag"), "noindex, nofollow");
+      expect(response.headers.get("x-middleware-rewrite")).toBe(`http://admin.localhost:3000${internalPath}`);
+      expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
     }
   }
   for (const host of ["localhost:3000", "admin.localhost:3001", "admin.localhost.evil.test:3000"]) {
@@ -182,8 +168,8 @@ test("bare localhost routes only exact registered subdomains and preserves their
         headers: { "x-forwarded-host": "admin.localhost:3000" },
       }),
     );
-    assert.equal(response.headers.get("x-middleware-next"), "1", host);
-    assert.equal(response.headers.get("x-middleware-rewrite"), null, host);
+    expect(response.headers.get("x-middleware-next"), host).toBe("1");
+    expect(response.headers.get("x-middleware-rewrite"), host).toBe(null);
   }
 });
 
@@ -192,17 +178,16 @@ test("bare localhost legacy admin pages redirect to clean admin URLs without for
   for (const host of ["localhost:3000", "admin.localhost:3000"]) {
     for (const method of ["GET", "HEAD"]) {
       const response = await proxy(new NextRequest(`http://${host}/admin/users?role=editor&page=2`, { method }));
-      assert.equal(response.status, 308);
-      assert.equal(response.headers.get("location"), "http://admin.localhost:3000/users?role=editor&page=2");
+      expect(response.status).toBe(308);
+      expect(response.headers.get("location")).toBe("http://admin.localhost:3000/users?role=editor&page=2");
     }
   }
   const root = await proxy(new NextRequest("http://localhost:3000/admin"));
-  assert.equal(root.headers.get("location"), "http://admin.localhost:3000/");
+  expect(root.headers.get("location")).toBe("http://admin.localhost:3000/");
   const mutation = await proxy(new NextRequest("http://localhost:3000/admin/users", { method: "POST" }));
-  assert.equal(mutation.status, 404);
+  expect(mutation.status).toBe(404);
   for (const path of ["/auth", "/api/auth/get-session", "/logo.svg"]) {
-    assert.equal(
-      (await proxy(new NextRequest(`http://admin.localhost:3000${path}`))).headers.get("x-middleware-next"),
+    expect((await proxy(new NextRequest(`http://admin.localhost:3000${path}`))).headers.get("x-middleware-next")).toBe(
       "1",
     );
   }
@@ -211,11 +196,11 @@ test("bare localhost legacy admin pages redirect to clean admin URLs without for
 test("routing uses the exact Host when Next.js normalizes its internal request URL", async () => {
   const options = { host: "localhost:3000", headers: { host: "admin.example.test" } };
   const response = await proxy(request("/users", options));
-  assert.equal(response.headers.get("x-middleware-rewrite"), "https://localhost:3000/admin/users");
-  assert.equal(response.headers.get("x-robots-tag"), "noindex, nofollow");
+  expect(response.headers.get("x-middleware-rewrite")).toBe("https://localhost:3000/admin/users");
+  expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
   state.session = { user: { status: "suspended" } };
   const blocked = await proxy(request("/users", { ...options, cookie: "smarttools.session_token=test" }));
-  assert.equal(blocked.headers.get("location"), "https://admin.example.test/account/suspended");
+  expect(blocked.headers.get("location")).toBe("https://admin.example.test/account/suspended");
 });
 
 test("a configured named localhost admin root reaches the protected admin route for signed-out visitors", async () => {
@@ -223,10 +208,10 @@ test("a configured named localhost admin root reaches the protected admin route 
   const response = await proxy(
     new NextRequest("http://localhost:3000/", { headers: { host: "admin.smarttools.localhost:3000" } }),
   );
-  assert.equal(response.headers.get("x-middleware-rewrite"), "http://localhost:3000/admin");
-  assert.equal(response.headers.get("x-middleware-next"), null);
-  assert.equal(response.headers.get("x-robots-tag"), "noindex, nofollow");
-  assert.equal(state.queries, 0);
+  expect(response.headers.get("x-middleware-rewrite")).toBe("http://localhost:3000/admin");
+  expect(response.headers.get("x-middleware-next")).toBe(null);
+  expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+  expect(state.queries).toBe(0);
 });
 
 test("auth, APIs and static assets retain their paths on the admin host", async () => {
@@ -249,11 +234,10 @@ test("auth, APIs and static assets retain their paths on the admin host", async 
     "/tool-icons/v1/icon.png",
   ]) {
     const response = await proxy(request(path));
-    assert.equal(response.headers.get("x-middleware-next"), "1", path);
+    expect(response.headers.get("x-middleware-next"), path).toBe("1");
   }
   for (const path of ["/authentic", "/apiary", "/assets-other", "/media"]) {
-    assert.equal(
-      (await proxy(request(path))).headers.get("x-middleware-rewrite"),
+    expect((await proxy(request(path))).headers.get("x-middleware-rewrite")).toBe(
       `https://admin.example.test/admin${path}`,
     );
   }
@@ -261,32 +245,30 @@ test("auth, APIs and static assets retain their paths on the admin host", async 
 
 test("admin crawl rules block all pages and do not expose the public sitemap", async () => {
   const robots = await proxy(request("/robots.txt"));
-  assert.equal(robots.status, 200);
-  assert.equal(await robots.text(), "User-agent: *\nDisallow: /\n");
-  assert.equal((await proxy(request("/sitemap.xml"))).status, 404);
+  expect(robots.status).toBe(200);
+  expect(await robots.text()).toBe("User-agent: *\nDisallow: /\n");
+  expect((await proxy(request("/sitemap.xml"))).status).toBe(404);
 });
 
 test("shared sessions retain suspension enforcement, recovery and logout on clean admin paths", async () => {
   const cookie = "smarttools.session_token=test";
   state.session = { user: { status: "active" } };
-  assert.equal(
-    (await proxy(request("/users", { cookie }))).headers.get("x-middleware-rewrite"),
+  expect((await proxy(request("/users", { cookie }))).headers.get("x-middleware-rewrite")).toBe(
     "https://admin.example.test/admin/users",
   );
-  assert.equal(state.queries, 1);
+  expect(state.queries).toBe(1);
   state.session.user.status = "suspended";
   const blocked = await proxy(request("/users", { cookie }));
-  assert.equal(blocked.status, 303);
-  assert.equal(blocked.headers.get("location"), "https://admin.example.test/account/suspended");
-  assert.equal((await proxy(request("/users", { cookie, method: "POST" }))).status, 403);
-  assert.equal((await proxy(request("/api/admin/templates/id/export", { cookie }))).status, 403);
-  assert.equal((await proxy(request("/account/suspended", { cookie }))).headers.get("x-middleware-next"), "1");
+  expect(blocked.status).toBe(303);
+  expect(blocked.headers.get("location")).toBe("https://admin.example.test/account/suspended");
+  expect((await proxy(request("/users", { cookie, method: "POST" }))).status).toBe(403);
+  expect((await proxy(request("/api/admin/templates/id/export", { cookie }))).status).toBe(403);
+  expect((await proxy(request("/account/suspended", { cookie }))).headers.get("x-middleware-next")).toBe("1");
   state.error = new Error("Session service unavailable");
-  assert.equal((await proxy(request("/users", { cookie }))).status, 503);
-  assert.equal(
+  expect((await proxy(request("/users", { cookie }))).status).toBe(503);
+  expect(
     (await proxy(request("/api/auth/sign-out", { cookie, method: "POST" }))).headers.get("x-middleware-next"),
-    "1",
-  );
+  ).toBe("1");
 });
 
 test("configured cookie prefixes preserve account checks for plain and secure cookies", async () => {
@@ -294,82 +276,77 @@ test("configured cookie prefixes preserve account checks for plain and secure co
   state.session = { user: { status: "suspended" } };
   for (const prefix of ["canopy-test", "__Secure-canopy-test"]) {
     const response = await proxy(request("/users", { cookie: `${prefix}.session_token=test` }));
-    assert.equal(response.status, 303);
-    assert.equal(response.headers.get("location"), "https://admin.example.test/account/suspended");
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe("https://admin.example.test/account/suspended");
   }
-  assert.equal(state.queries, 2);
+  expect(state.queries).toBe(2);
 });
 
 test("a second registered subdomain uses the same link helpers and IP fallback", () => {
-  assert.deepEqual(getSubdomainOrigins(), [
+  expect(getSubdomainOrigins()).toEqual([
     "https://admin.example.test",
     "https://billing.example.test",
     "https://support.example.test",
   ]);
-  assert.equal(getSubdomainOrigin("billing"), "https://billing.example.test");
-  assert.equal(subdomainHref("billing"), "https://billing.example.test/");
-  assert.equal(
-    subdomainHref("billing", "/invoices?q=paid#total"),
-    "https://billing.example.test/invoices?q=paid#total",
-  );
-  assert.equal(appHref("/billing/invoices?q=paid#total"), "https://billing.example.test/invoices?q=paid#total");
-  assert.equal(appHref("/billing?tab=plans"), "https://billing.example.test/?tab=plans");
-  assert.equal(appHref("/billing-extra"), "/billing-extra");
-  assert.equal(internalSubdomainPath("billing", "/"), "/billing");
-  assert.equal(internalSubdomainPath("billing", "/invoices"), "/billing/invoices");
-  assert.equal(internalSubdomainPath("billing", "/billing/invoices"), "/billing/invoices");
+  expect(getSubdomainOrigin("billing")).toBe("https://billing.example.test");
+  expect(subdomainHref("billing")).toBe("https://billing.example.test/");
+  expect(subdomainHref("billing", "/invoices?q=paid#total")).toBe("https://billing.example.test/invoices?q=paid#total");
+  expect(appHref("/billing/invoices?q=paid#total")).toBe("https://billing.example.test/invoices?q=paid#total");
+  expect(appHref("/billing?tab=plans")).toBe("https://billing.example.test/?tab=plans");
+  expect(appHref("/billing-extra")).toBe("/billing-extra");
+  expect(internalSubdomainPath("billing", "/")).toBe("/billing");
+  expect(internalSubdomainPath("billing", "/invoices")).toBe("/billing/invoices");
+  expect(internalSubdomainPath("billing", "/billing/invoices")).toBe("/billing/invoices");
   process.env.APP_URL = "http://127.0.0.1:3000";
-  assert.deepEqual(getSubdomainOrigins(), []);
-  assert.equal(subdomainHref("billing"), "/billing");
-  assert.equal(subdomainHref("billing", "/invoices"), "/billing/invoices");
-  assert.equal(subdomainHref("billing", "/auth?returnTo=%2Fbilling"), "/auth?returnTo=%2Fbilling");
-  assert.equal(subdomainHref("billing", "/api/auth/get-session"), "/api/auth/get-session");
-  assert.equal(subdomainHref("billing", "/logo.svg?v=2"), "/logo.svg?v=2");
+  expect(getSubdomainOrigins()).toEqual([]);
+  expect(subdomainHref("billing")).toBe("/billing");
+  expect(subdomainHref("billing", "/invoices")).toBe("/billing/invoices");
+  expect(subdomainHref("billing", "/auth?returnTo=%2Fbilling")).toBe("/auth?returnTo=%2Fbilling");
+  expect(subdomainHref("billing", "/api/auth/get-session")).toBe("/api/auth/get-session");
+  expect(subdomainHref("billing", "/logo.svg?v=2")).toBe("/logo.svg?v=2");
 });
 
 test("a second registered subdomain gets routing, redirects, shared paths and suspension checks", async () => {
   const host = "billing.example.test";
   for (const method of ["GET", "HEAD", "POST"]) {
     const response = await proxy(request("/invoices?page=2", { host, method }));
-    assert.equal(response.headers.get("x-middleware-rewrite"), "https://billing.example.test/billing/invoices?page=2");
-    assert.equal(response.headers.get("x-robots-tag"), null);
+    expect(response.headers.get("x-middleware-rewrite")).toBe("https://billing.example.test/billing/invoices?page=2");
+    expect(response.headers.get("x-robots-tag")).toBe(null);
   }
   for (const path of ["/auth", "/api/auth/get-session", "/assets/icon.svg", "/logo.svg"]) {
-    assert.equal((await proxy(request(path, { host }))).headers.get("x-middleware-next"), "1");
+    expect((await proxy(request(path, { host }))).headers.get("x-middleware-next")).toBe("1");
   }
   const legacy = await proxy(request("/billing/invoices?page=2", { host: "example.test" }));
-  assert.equal(legacy.status, 308);
-  assert.equal(legacy.headers.get("location"), "https://billing.example.test/invoices?page=2");
-  assert.equal((await proxy(request("/billing/invoices", { host: "admin.example.test", method: "POST" }))).status, 404);
-  assert.equal(
-    (await proxy(request("/billing/invoices", { host, method: "POST" }))).headers.get("x-middleware-next"),
+  expect(legacy.status).toBe(308);
+  expect(legacy.headers.get("location")).toBe("https://billing.example.test/invoices?page=2");
+  expect((await proxy(request("/billing/invoices", { host: "admin.example.test", method: "POST" }))).status).toBe(404);
+  expect((await proxy(request("/billing/invoices", { host, method: "POST" }))).headers.get("x-middleware-next")).toBe(
     "1",
   );
   state.session = { user: { status: "suspended" } };
-  assert.equal(
+  expect(
     (await proxy(request("/invoices", { host, cookie: "smarttools.session_token=test" }))).headers.get("location"),
-    "https://billing.example.test/account/suspended",
-  );
+  ).toBe("https://billing.example.test/account/suspended");
 });
 
 test("indexable subdomains serve their own crawl routes instead of the public site's sitemap", async () => {
   for (const path of ["/robots.txt", "/sitemap.xml"]) {
     const response = await proxy(request(path, { host: "billing.example.test" }));
-    assert.equal(response.headers.get("x-robots-tag"), null);
-    assert.equal(response.headers.get("x-middleware-rewrite"), `https://billing.example.test/billing${path}`);
+    expect(response.headers.get("x-robots-tag")).toBe(null);
+    expect(response.headers.get("x-middleware-rewrite")).toBe(`https://billing.example.test/billing${path}`);
   }
 });
 
 test("subdomain names are independent of route folders and the most specific prefix wins", async () => {
-  assert.equal(appHref("/billing/help/article?q=1"), "https://support.example.test/article?q=1");
-  assert.equal(subdomainHref("support", "/article"), "https://support.example.test/article");
-  assert.equal(internalSubdomainPath("support", "/article"), "/billing/help/article");
+  expect(appHref("/billing/help/article?q=1")).toBe("https://support.example.test/article?q=1");
+  expect(subdomainHref("support", "/article")).toBe("https://support.example.test/article");
+  expect(internalSubdomainPath("support", "/article")).toBe("/billing/help/article");
   const response = await proxy(request("/article", { host: "support.example.test" }));
-  assert.equal(response.headers.get("x-middleware-rewrite"), "https://support.example.test/billing/help/article");
+  expect(response.headers.get("x-middleware-rewrite")).toBe("https://support.example.test/billing/help/article");
 });
 
 test("named subdomain links accept only local paths", () => {
   for (const path of ["https://evil.test/", "//evil.test/", "/\\evil.test/", "users"]) {
-    assert.throws(() => subdomainHref("admin", path), /single slash/);
+    expect(() => subdomainHref("admin", path), path).toThrow(/single slash/);
   }
 });

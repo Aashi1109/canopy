@@ -1,53 +1,35 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
+import { expect, onTestFinished, test, vi } from "vitest";
 
-const manifestUrl = new URL("../lib/tool-framework/manifest.ts", import.meta.url).href;
 const fixture = { configured: true, rows: [], content: [], queries: 0 };
 globalThis.__canopyDraftTest = fixture;
-const moduleUrl = (source) => `data:text/javascript,${encodeURIComponent(source)}`;
-const hooks = registerHooks({
-  resolve(specifier, context, nextResolve) {
-    if (context.parentURL === manifestUrl) {
-      if (specifier === "../../db/index.ts") {
-        return {
-          shortCircuit: true,
-          url: moduleUrl(`
-          const fixture = globalThis.__canopyDraftTest;
-          export const managedToolsTable = {};
-          export const isDatabaseConfigured = () => fixture.configured;
-          export const db = { select() { return { async from() {
-            fixture.queries++;
-            return fixture.rows;
-          } }; } };
-          export async function getToolContentRows() {
-            fixture.queries++;
-            return fixture.content;
-          }
-        `),
-        };
-      }
-      if (specifier === "./catalog") {
-        return {
-          shortCircuit: true,
-          url: moduleUrl(`
-          export const definitionKeyOf = (id) => id.split(".")[1];
-          export const loadSpec = async () => null;
-        `),
-        };
-      }
-      if (specifier === "./categories") {
-        return nextResolve(new URL("../lib/tool-framework/categories.ts", import.meta.url).href, context);
-      }
-    }
-    return nextResolve(specifier, context);
-  },
-});
-const { getAdminTools } = await import(manifestUrl);
-hooks.deregister();
 
-test("admin drafts match unpublished content by tool ID and require a configured database", async (t) => {
-  t.after(() => {
+vi.mock("@/db/index.ts", () => ({
+  managedToolsTable: {},
+  isDatabaseConfigured: () => globalThis.__canopyDraftTest.configured,
+  db: {
+    select() {
+      return {
+        async from() {
+          globalThis.__canopyDraftTest.queries++;
+          return globalThis.__canopyDraftTest.rows;
+        },
+      };
+    },
+  },
+  async getToolContentRows() {
+    globalThis.__canopyDraftTest.queries++;
+    return globalThis.__canopyDraftTest.content;
+  },
+}));
+vi.mock("@/lib/tool-framework/catalog.ts", () => ({
+  definitionKeyOf: (id) => id.split(".")[1],
+  loadSpec: async () => null,
+}));
+
+const { getAdminTools } = await import("@/lib/tool-framework/manifest.ts");
+
+test("admin drafts match unpublished content by tool ID and require a configured database", async () => {
+  onTestFinished(() => {
     delete globalThis.__canopyDraftTest;
   });
   const cases = [
@@ -91,13 +73,12 @@ test("admin drafts match unpublished content by tool ID and require a configured
     seoTitle: "Another tool's draft",
     publishedAt: null,
   });
-  assert.deepEqual(
-    (await getAdminTools()).map(({ id, hasDraftContent }) => [id, hasDraftContent]),
+  expect((await getAdminTools()).map(({ id, hasDraftContent }) => [id, hasDraftContent])).toEqual(
     cases.map(([name, , expected]) => [`paperwork.${name}`, expected]),
   );
 
   fixture.configured = false;
   const queries = fixture.queries;
-  assert.deepEqual(await getAdminTools(), []);
-  assert.equal(fixture.queries, queries, "unconfigured database is never queried");
+  expect(await getAdminTools()).toEqual([]);
+  expect(fixture.queries, "unconfigured database is never queried").toBe(queries);
 });

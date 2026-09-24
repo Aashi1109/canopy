@@ -3,6 +3,8 @@ import { appHref } from "@/lib/routing/subdomains.ts";
 import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
 import { SyntaxHighlight } from "@/components/content/SyntaxHighlight";
 import { CodeEditor } from "@/components/content/CodeEditor";
+import { WorkbenchShell } from "@/components/ui/components/design-system-components";
+import { SplitStack } from "@/components/Stacks";
 import {
   H1,
   H2,
@@ -145,6 +147,7 @@ import {
   AlertTriangle,
   Bell,
   Check,
+  Code,
   Copy,
   FilePlus2,
   FileText,
@@ -274,6 +277,7 @@ function Specimen({ children, className, label }: { children: ReactNode; classNa
 
 export default function DesignSystemPage() {
   const [documents, setDocuments] = useState(initialDocuments);
+  const [focusExample, setFocusExample] = useState("Edits stay here when you switch views or exit focus mode.");
   const [uploadedFileVisible, setUploadedFileVisible] = useState(true);
   const [handbookPage, setHandbookPage] = useState(9);
   const [paginationPage, setPaginationPage] = useState(2);
@@ -572,6 +576,17 @@ export default function DesignSystemPage() {
                 description="Visual selection, CSS text, and explicit opacity share one validated value."
               />
               <ColorControl label="Example color" value={exampleColor} onChange={setExampleColor} />
+              <Specimen label="Inline">
+                <ColorControl
+                  layout="inline"
+                  label="Inline example color"
+                  value={exampleColor}
+                  onChange={setExampleColor}
+                />
+                <Caption className="block mt-2 text-muted-foreground">
+                  Color and opacity in one row. Click the color dot to open the picker.
+                </Caption>
+              </Specimen>
               <ColorSwatch color="#3366FF80" className="h-16" label="Half-transparent blue over a checkerboard" />
             </SectionCard>
             <SectionCard>
@@ -1489,6 +1504,34 @@ export default function DesignSystemPage() {
                 status={<StatusBadge variant="warning">Setup</StatusBadge>}
                 title="Smart templates"
               />
+            </div>
+
+            <div className="space-y-4">
+              <SectionHeading
+                title="Tool focus mode"
+                description="Expand the same workspace, then switch Input / Split / Preview. Escape exits; draft and pane sizes are preserved."
+              />
+              <WorkbenchShell
+                className="h-80"
+                workspaceTitle="Focus mode example"
+                toolbar={<Code aria-hidden="true" />}
+              >
+                <SplitStack presentation defaultSize={50}>
+                  <div className="flex h-full flex-col gap-2 p-4">
+                    <FieldLabel htmlFor="focus-example">Input</FieldLabel>
+                    <Textarea
+                      id="focus-example"
+                      className="min-h-0 flex-1"
+                      value={focusExample}
+                      onChange={(event) => setFocusExample(event.target.value)}
+                    />
+                  </div>
+                  <div className="h-full overflow-auto p-4">
+                    <H3>Preview</H3>
+                    <P className="mt-2 whitespace-pre-wrap">{focusExample}</P>
+                  </div>
+                </SplitStack>
+              </WorkbenchShell>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">

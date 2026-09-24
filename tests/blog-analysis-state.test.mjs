@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import {
   agentDocumentFingerprint,
   sameAgentDocument,
@@ -30,22 +29,22 @@ const artifact = {
 };
 test("snapshot comparison ignores key order and administrative metadata but detects editable changes", () => {
   const shuffled = { ...document, body: { content: document.body.content, type: "doc" }, authorName: "New author" };
-  assert.equal(sameAgentDocument(document, shuffled), true);
-  assert.equal(agentDocumentFingerprint(document), agentDocumentFingerprint(shuffled));
+  expect(sameAgentDocument(document, shuffled)).toBe(true);
+  expect(agentDocumentFingerprint(document)).toBe(agentDocumentFingerprint(shuffled));
   for (const field of ["title", "excerpt", "seoTitle", "seoDescription"])
-    assert.notEqual(agentDocumentFingerprint(document), agentDocumentFingerprint({ ...document, [field]: "Changed" }));
-  assert.equal(sameAgentDocument(undefined, document), false);
+    expect(agentDocumentFingerprint(document)).not.toBe(agentDocumentFingerprint({ ...document, [field]: "Changed" }));
+  expect(sameAgentDocument(undefined, document)).toBe(false);
 });
 test("approved replacement preserves unrelated fields and rejects stale or unsupported artifacts", () => {
   const current = { ...document, authorName: "New author" };
   const replacement = agentReplacement(artifact, current);
-  assert.equal(replacement.title, "Optimized");
-  assert.equal(replacement.authorName, "New author");
-  assert.deepEqual(replacement.tags, []);
-  assert.equal(document.title, "Original");
-  assert.throws(() => agentReplacement(artifact, { ...document, seoTitle: "Changed" }), /changed/);
-  assert.throws(() => agentReplacement({ ...artifact, agentId: "auditor" }, current), /no supported draft/);
-  assert.equal(supportedArtifact({ ...artifact, agentVersion: 2 }), false);
+  expect(replacement.title).toBe("Optimized");
+  expect(replacement.authorName).toBe("New author");
+  expect(replacement.tags).toEqual([]);
+  expect(document.title).toBe("Original");
+  expect(() => agentReplacement(artifact, { ...document, seoTitle: "Changed" })).toThrow(/changed/);
+  expect(() => agentReplacement({ ...artifact, agentId: "auditor" }, current)).toThrow(/no supported draft/);
+  expect(supportedArtifact({ ...artifact, agentVersion: 2 })).toBe(false);
 });
 
 test("TipTap default attributes and normalized server JSON have identical freshness and undo comparisons", async () => {
@@ -99,17 +98,17 @@ test("TipTap default attributes and normalized server JSON have identical freshn
     },
   };
   const normalized = validateBlogDocument(raw);
-  assert.equal(agentDocumentFingerprint(raw), agentDocumentFingerprint(normalized));
-  assert.equal(sameAgentDocument(raw, normalized), true);
+  expect(agentDocumentFingerprint(raw)).toBe(agentDocumentFingerprint(normalized));
+  expect(sameAgentDocument(raw, normalized)).toBe(true);
   const approved = {
     ...artifact,
     baseDocumentFingerprint: agentDocumentFingerprint(normalized),
     content: { document: normalized },
   };
-  assert.doesNotThrow(() => agentReplacement(approved, raw));
+  expect(() => agentReplacement(approved, raw)).not.toThrow();
   const changed = structuredClone(raw);
   changed.body.content[0].content[0].marks[0].attrs.href = "https://example.org/";
-  assert.equal(sameAgentDocument(changed, normalized), false);
+  expect(sameAgentDocument(changed, normalized)).toBe(false);
 });
 
 test("malformed persisted result content is unsupported instead of crashing a viewer", () => {
@@ -119,5 +118,5 @@ test("malformed persisted result content is unsupported instead of crashing a vi
     { keywords: [{ keyword: 3 }] },
     { document: { title: "Bad" } },
   ])
-    assert.equal(supportedArtifact({ ...artifact, content }), false);
+    expect(supportedArtifact({ ...artifact, content })).toBe(false);
 });

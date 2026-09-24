@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 
 import { run } from "../tools/json-array-to-table/run.ts";
 
@@ -13,13 +12,12 @@ const buildTable = async (text, repairMode = "off") =>
 test("JSON array table preserves its HTML artifact and provides a structured preview", async () => {
   const result = await buildTable('[{"name":"Ada","role":"Admin"},{"name":"Lin","role":"Editor"}]');
 
-  assert.equal(result.render, "html");
-  assert.equal(result.downloadName, "table.html");
-  assert.equal(
-    result.html,
+  expect(result.render).toBe("html");
+  expect(result.downloadName).toBe("table.html");
+  expect(result.html).toBe(
     "<table><thead><tr><th>name</th><th>role</th></tr></thead><tbody><tr><td>Ada</td><td>Admin</td></tr><tr><td>Lin</td><td>Editor</td></tr></tbody></table>",
   );
-  assert.deepEqual(result.tablePreview, {
+  expect(result.tablePreview).toEqual({
     render: "table",
     columns: ["name", "role"],
     rows: [
@@ -38,12 +36,14 @@ test("JSON array table aligns nested and missing fields without losing falsy val
     ]),
   );
 
-  assert.deepEqual(result.tablePreview.columns, ["profile.city", "active", "count", "note", "tags", "extra"]);
-  assert.deepEqual(result.tablePreview.rows, [
+  expect(result.tablePreview.columns).toEqual(["profile.city", "active", "count", "note", "tags", "extra"]);
+  expect(result.tablePreview.rows).toEqual([
     ["Pune", "false", "0", "", "a,b", ""],
     ["Lisbon", "", "", "", "", "new"],
   ]);
-  assert.ok(result.html.includes("<tr><td>Pune</td><td>false</td><td>0</td><td></td><td>a,b</td><td></td></tr>"));
+  expect(
+    result.html.includes("<tr><td>Pune</td><td>false</td><td>0</td><td></td><td>a,b</td><td></td></tr>"),
+  ).toBeTruthy();
 });
 
 test("JSON array table keeps markup literal in preview data and escapes the HTML artifact", async () => {
@@ -51,34 +51,36 @@ test("JSON array table keeps markup literal in preview data and escapes the HTML
   const cell = '<script>alert("x")</script>&\'';
   const result = await buildTable(JSON.stringify([{ [column]: cell }]));
 
-  assert.deepEqual(result.tablePreview.columns, [column]);
-  assert.deepEqual(result.tablePreview.rows, [[cell]]);
-  assert.equal(
-    result.html,
+  expect(result.tablePreview.columns).toEqual([column]);
+  expect(result.tablePreview.rows).toEqual([[cell]]);
+  expect(result.html).toBe(
     "<table><thead><tr><th>&lt;img src=x onerror=&quot;alert(1)&quot;&gt;</th></tr></thead><tbody><tr><td>&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;&amp;&#39;</td></tr></tbody></table>",
   );
 });
 
 test("JSON array table rejects invalid shapes and arrays without columns", async () => {
   for (const text of ['{"name":"Ada"}', '["Ada"]', "[null]", '[{"name":"Ada"},2]']) {
-    await assert.rejects(buildTable(text), { code: "shape", message: "JSON input must be an array of objects." });
+    await expect(buildTable(text)).rejects.toMatchObject({
+      code: "shape",
+      message: "JSON input must be an array of objects.",
+    });
   }
   for (const text of ["[]", "[{}]"]) {
-    await assert.rejects(buildTable(text), {
+    await expect(buildTable(text)).rejects.toMatchObject({
       code: "empty-columns",
       message: "JSON array objects need at least one field.",
     });
   }
-  await assert.rejects(buildTable("  "), { code: "input-required" });
-  await assert.rejects(buildTable("[{"), { code: "invalid-json" });
+  await expect(buildTable("  ")).rejects.toMatchObject({ code: "input-required" });
+  await expect(buildTable("[{")).rejects.toMatchObject({ code: "invalid-json" });
 });
 
 test("JSON array table applies the selected repair mode to artifact and preview", async () => {
   const source = '[{"name":"Ada","age":}]';
   const repaired = await buildTable(source, "null");
 
-  assert.deepEqual(repaired.tablePreview.columns, ["name", "age"]);
-  assert.deepEqual(repaired.tablePreview.rows, [["Ada", ""]]);
-  assert.ok(repaired.html.includes("<tr><td>Ada</td><td></td></tr>"));
-  await assert.rejects(buildTable(source), { code: "invalid-json" });
+  expect(repaired.tablePreview.columns).toEqual(["name", "age"]);
+  expect(repaired.tablePreview.rows).toEqual([["Ada", ""]]);
+  expect(repaired.html.includes("<tr><td>Ada</td><td></td></tr>")).toBeTruthy();
+  await expect(buildTable(source)).rejects.toMatchObject({ code: "invalid-json" });
 });

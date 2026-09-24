@@ -1,7 +1,7 @@
 "use client";
 import { Caption, P, Small, Strong, Text, TextLink } from "@/components/ui/index.tsx";
 
-import type { ToolApp } from "@/lib/tool-catalog/index.ts";
+import { searchTools, type ToolApp } from "@/lib/tool-catalog/index.ts";
 import type { CatalogTool } from "@/lib/tool-framework/catalog";
 import { TOOL_CATEGORIES, type CategoryKey } from "@/lib/tool-framework/categories";
 import {
@@ -96,20 +96,20 @@ export function AuthDiscoveryNavigation({
 
     try {
       return {
-        results: tools
-          .filter((tool) =>
-            [tool.name, tool.description, TOOL_CATEGORIES[tool.category].label, ...tool.keywords]
-              .join(" ")
-              .toLowerCase()
-              .includes(normalized),
-          )
-          .slice(0, 6),
+        results: searchTools(tools, normalized),
         searchError: false,
       };
     } catch {
       return { results: [], searchError: true };
     }
   }, [searchAttempt, stableQuery, tools]);
+
+  useEffect(() => {
+    if (!searchOpen || isSearching) return;
+    rootRef.current
+      ?.querySelector<HTMLAnchorElement>('.auth-search-result[aria-selected="true"]')
+      ?.scrollIntoView({ block: "nearest" });
+  }, [activeResult, isSearching, results, searchOpen]);
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {

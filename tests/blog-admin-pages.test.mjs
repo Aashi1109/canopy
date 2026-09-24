@@ -1,73 +1,38 @@
-import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
-import { registerHooks } from "node:module";
-import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { transformSync } from "next/dist/build/swc/index.js";
+import { afterAll, expect, test, vi } from "vitest";
 
-const root = new URL("../", import.meta.url);
-const stub = (source) => ({
-  shortCircuit: true,
-  url: `data:text/javascript,${encodeURIComponent(source)}`,
-});
-const hooks = registerHooks({
-  resolve(specifier, context, next) {
-    if (specifier === "next/link") return next("next/link.js", context);
-    if (specifier === "next/navigation")
-      return stub(
-        'export function useRouter(){return {push(){},refresh(){}}} export function usePathname(){return globalThis.__adminShellPath ?? "/admin/blog"} export function useSelectedLayoutSegment(){return null} export function useSearchParams(){return new URLSearchParams()} export function notFound(){throw Error("NOT_FOUND")}',
-      );
-    if (specifier === "@/lib/admin/access")
-      return stub('export async function requirePagePermission(){return {user:{id:"admin"}}}');
-    if (specifier === "@/lib/blog/queries")
-      return stub(
-        "export async function listBlogTaxonomy(){return {items:[],nextCursor:null,total:60,page:1,pageCount:3}}",
-      );
-    if (specifier === "../actions")
-      return stub(
-        'export async function mutateBlogAction(){throw Error("Unexpected mutation")} export async function readBlogAction(){throw Error("Unexpected query")}',
-      );
-    if (specifier.startsWith("@/")) specifier = new URL(specifier.slice(2), root).href;
-    if (
-      (specifier.startsWith(".") || specifier.startsWith("file:")) &&
-      context.parentURL?.startsWith("file:") &&
-      !context.parentURL.includes("/node_modules/")
-    ) {
-      const target = new URL(specifier, context.parentURL);
-      for (const extension of ["", ".ts", ".tsx"])
-        if (existsSync(new URL(target.href + extension))) return next(target.href + extension, context);
-    }
-    return next(specifier, context);
+// Admin routes resolve through the admin subdomain whenever APP_URL is a real
+// host (localhost included), so appHref() rewrites "/admin/..." to
+// "http://admin.localhost/...". A loopback IP has no subdomains, keeping
+// appHref() an identity — the environment these tests assert against.
+const originalAppUrl = process.env.APP_URL;
+process.env.APP_URL = "http://127.0.0.1:3000";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push() {}, refresh() {} }),
+  usePathname: () => globalThis.__adminShellPath ?? "/admin/blog",
+  useSelectedLayoutSegment: () => null,
+  useSearchParams: () => new URLSearchParams(),
+  notFound: () => {
+    throw new Error("NOT_FOUND");
   },
-  load(url, context, next) {
-    if (url.endsWith(".css"))
-      return {
-        format: "module",
-        shortCircuit: true,
-        source: "export default new Proxy({}, { get: (_, name) => String(name) });",
-      };
-    if (url.endsWith(".png"))
-      return {
-        format: "module",
-        shortCircuit: true,
-        source: 'export default {src:"/test-logo.png"};',
-      };
-    if (!url.endsWith(".tsx")) return next(url, context);
-    return {
-      format: "module",
-      shortCircuit: true,
-      source: transformSync(readFileSync(new URL(url), "utf8"), {
-        filename: new URL(url).pathname,
-        jsc: {
-          parser: { syntax: "typescript", tsx: true },
-          transform: { react: { runtime: "automatic" } },
-        },
-        module: { type: "es6" },
-      }).code,
-    };
+}));
+vi.mock("@/lib/admin/access", () => ({
+  requirePagePermission: async () => ({ user: { id: "admin" } }),
+}));
+vi.mock("@/lib/blog/queries", () => ({
+  listBlogTaxonomy: async () => ({ items: [], nextCursor: null, total: 60, page: 1, pageCount: 3 }),
+}));
+vi.mock("../app/admin/(protected)/blog/actions", () => ({
+  mutateBlogAction: async () => {
+    throw new Error("Unexpected mutation");
   },
-});
+  readBlogAction: async () => {
+    throw new Error("Unexpected query");
+  },
+}));
+
 const { BlogPosts } = await import("../app/admin/(protected)/blog/components/BlogPosts.tsx");
 const { BlogPublishPanel } = await import("../app/admin/(protected)/blog/components/BlogPublishPanel.tsx");
 const { filterRelatedTools } = await import("../app/admin/(protected)/blog/components/BlogPostSettings.tsx");
@@ -76,8 +41,10 @@ const { BlogRevisionList } = await import("../app/admin/(protected)/blog/compone
 const taxonomy = await import("../app/admin/(protected)/blog/taxonomy/page.tsx");
 const { Pagination } = await import("../components/ui/components/Pagination.tsx");
 const { AdminShell } = await import("../app/admin/(protected)/components/AdminShell.tsx");
-test.after(() => {
-  hooks.deregister();
+afterAll(() => {
+  delete globalThis.__adminShellPath;
+  if (originalAppUrl === undefined) delete process.env.APP_URL;
+  else process.env.APP_URL = originalAppUrl;
 });
 
 test("clean admin routes retain the same workspace and navigation as their internal routes", () => {
@@ -102,7 +69,7 @@ test("clean admin routes retain the same workspace and navigation as their inter
           }),
         );
       };
-      assert.equal(render(path), render(path === "/" ? "/admin" : `/admin${path}`), path);
+      expect(render(path), path).toBe(render(path === "/" ? "/admin" : `/admin${path}`));
     }
   } finally {
     delete globalThis.__adminShellPath;
@@ -118,24 +85,22 @@ test("history panel accepts paginated revision responses and rejects malformed d
     createdAt: "2026-09-16T10:00:00Z",
   };
   const page = historyPageSchema.parse({ items: [revision], nextCursor: "older", page: 1, pageCount: 2, total: 26 });
-  assert.equal(page.items[0].createdAt.getTime(), Date.parse(revision.createdAt));
-  assert.equal(page.nextCursor, "older");
-  assert.deepEqual(historyPageSchema.parse({ items: [], nextCursor: null, page: 1, pageCount: 1, total: 0 }), {
+  expect(page.items[0].createdAt.getTime()).toBe(Date.parse(revision.createdAt));
+  expect(page.nextCursor).toBe("older");
+  expect(historyPageSchema.parse({ items: [], nextCursor: null, page: 1, pageCount: 1, total: 0 })).toEqual({
     items: [],
     nextCursor: null,
     page: 1,
     pageCount: 1,
     total: 0,
   });
-  assert.equal(
+  expect(
     historyPageSchema.safeParse({
       items: [{ ...revision, createdAt: "invalid" }],
       nextCursor: null,
     }).success,
-    false,
-  );
-  assert.equal(
-    historyPageSchema.safeParse({ items: [{ id: "category", name: "News" }], nextCursor: null }).success,
+  ).toBe(false);
+  expect(historyPageSchema.safeParse({ items: [{ id: "category", name: "News" }], nextCursor: null }).success).toBe(
     false,
   );
 });
@@ -180,29 +145,29 @@ test("revision comparison opens and closes without losing pagination; previews r
     comparison: createElement("p", null, "Changes"),
   });
   const close = links.find((link) => link.label === "Hide details");
-  assert.ok(close);
-  assert.equal(close.url.pathname, "/admin/blog/post-1/history");
-  assert.deepEqual([...close.url.searchParams], [["cursor", cursor]]);
+  expect(close).toBeTruthy();
+  expect(close.url.pathname).toBe("/admin/blog/post-1/history");
+  expect([...close.url.searchParams]).toEqual([["cursor", cursor]]);
   const compare = links.find((link) => link.label === "Compare");
-  assert.equal(compare.url.pathname, "/admin/blog/post-1/history");
-  assert.equal(compare.url.searchParams.get("cursor"), cursor);
-  assert.equal(compare.url.searchParams.get("revision"), "revision-1");
+  expect(compare.url.pathname).toBe("/admin/blog/post-1/history");
+  expect(compare.url.searchParams.get("cursor")).toBe(cursor);
+  expect(compare.url.searchParams.get("revision")).toBe("revision-1");
   const previews = links.filter((link) => link.label === "Preview");
-  assert.deepEqual(
-    previews.map((link) => link.url.pathname),
-    ["/admin/blog/post-1/preview", "/admin/blog/post-1/preview"],
-  );
-  assert.deepEqual(
-    previews.map((link) => [...link.url.searchParams]),
-    [[["revision", "revision-2"]], [["revision", "revision-1"]]],
-  );
+  expect(previews.map((link) => link.url.pathname)).toEqual([
+    "/admin/blog/post-1/preview",
+    "/admin/blog/post-1/preview",
+  ]);
+  expect(previews.map((link) => [...link.url.searchParams])).toEqual([
+    [["revision", "revision-2"]],
+    [["revision", "revision-1"]],
+  ]);
 
   const firstPageClose = revisionLinks({
     comparedRevisionId: "revision-2",
     comparison: createElement("p", null, "Changes"),
   }).find((link) => link.label === "Hide details");
-  assert.equal(firstPageClose.url.pathname, "/admin/blog/post-1/history");
-  assert.equal(firstPageClose.url.search, "");
+  expect(firstPageClose.url.pathname).toBe("/admin/blog/post-1/history");
+  expect(firstPageClose.url.search).toBe("");
 });
 
 test("compact history and rows without loaded comparison navigate to the revision instead of closing details", () => {
@@ -215,19 +180,16 @@ test("compact history and rows without loaded comparison navigate to the revisio
     },
   ]) {
     const links = revisionLinks(props);
-    assert.equal(
-      links.some((link) => link.label === "Hide details"),
-      false,
-    );
+    expect(links.some((link) => link.label === "Hide details")).toBe(false);
     const comparisons = links.filter((link) => link.label === "Compare");
-    assert.deepEqual(
-      comparisons.map((link) => link.url.pathname),
-      ["/admin/blog/post-1/history", "/admin/blog/post-1/history"],
-    );
-    assert.deepEqual(
-      comparisons.map((link) => [...link.url.searchParams]),
-      [[["revision", "revision-2"]], [["revision", "revision-1"]]],
-    );
+    expect(comparisons.map((link) => link.url.pathname)).toEqual([
+      "/admin/blog/post-1/history",
+      "/admin/blog/post-1/history",
+    ]);
+    expect(comparisons.map((link) => [...link.url.searchParams])).toEqual([
+      [["revision", "revision-2"]],
+      [["revision", "revision-1"]],
+    ]);
   }
 });
 
@@ -237,12 +199,12 @@ test("related tool search ignores case and surrounding whitespace without changi
     Object.freeze({ id: "api", name: "API Key Generator" }),
     Object.freeze({ id: "uuid", name: "UUID Generator" }),
   ]);
-  assert.deepEqual(filterRelatedTools(tools, "  gEnErAtOr  "), [tools[1], tools[2]]);
-  assert.deepEqual(filterRelatedTools(tools, "json"), [tools[0]]);
-  assert.deepEqual(filterRelatedTools(tools, "not a tool"), []);
-  assert.deepEqual(filterRelatedTools(tools, ""), tools);
-  assert.deepEqual(filterRelatedTools(tools, "   "), tools);
-  assert.deepEqual(filterRelatedTools([], "json"), []);
+  expect(filterRelatedTools(tools, "  gEnErAtOr  ")).toEqual([tools[1], tools[2]]);
+  expect(filterRelatedTools(tools, "json")).toEqual([tools[0]]);
+  expect(filterRelatedTools(tools, "not a tool")).toEqual([]);
+  expect(filterRelatedTools(tools, "")).toEqual(tools);
+  expect(filterRelatedTools(tools, "   ")).toEqual(tools);
+  expect(filterRelatedTools([], "json")).toEqual([]);
 });
 
 test("a published article with a scheduled revision exposes both live and scheduled states", () => {
@@ -268,9 +230,9 @@ test("a published article with a scheduled revision exposes both live and schedu
       canManageTerms: false,
     }),
   );
-  assert.match(html, /Update scheduled/);
-  assert.match(html, /Current article is live/);
-  assert.match(html, /Publishing delayed/);
+  expect(html).toMatch(/Update scheduled/);
+  expect(html).toMatch(/Current article is live/);
+  expect(html).toMatch(/Publishing delayed/);
 });
 
 test("taxonomy keeps the originating editor across topic type and pagination changes", async () => {
@@ -279,9 +241,9 @@ test("taxonomy keeps the originating editor across topic type and pagination cha
       searchParams: Promise.resolve({ returnTo: "/admin/blog/post-1", page: "1" }),
     }),
   );
-  assert.match(html, /href="\/admin\/blog\/post-1"/);
-  assert.match(html, /kind=tag&amp;returnTo=%2Fadmin%2Fblog%2Fpost-1/);
-  assert.match(html, /kind=category&amp;returnTo=%2Fadmin%2Fblog%2Fpost-1&amp;page=2/);
+  expect(html).toMatch(/href="\/admin\/blog\/post-1"/);
+  expect(html).toMatch(/kind=tag&amp;returnTo=%2Fadmin%2Fblog%2Fpost-1/);
+  expect(html).toMatch(/kind=category&amp;returnTo=%2Fadmin%2Fblog%2Fpost-1&amp;page=2/);
 });
 
 test("taxonomy rejects external, traversing, and repeated return destinations", async () => {
@@ -292,8 +254,8 @@ test("taxonomy rejects external, traversing, and repeated return destinations", 
     ["/admin/blog/post-1"],
   ]) {
     const html = renderToStaticMarkup(await taxonomy.default({ searchParams: Promise.resolve({ returnTo }) }));
-    assert.doesNotMatch(html, /attacker|outside|returnTo=/);
-    assert.match(html, /href="\/admin\/blog"/);
+    expect(html).not.toMatch(/attacker|outside|returnTo=/);
+    expect(html).toMatch(/href="\/admin\/blog"/);
   }
 });
 
@@ -303,17 +265,17 @@ test("taxonomy preserves clean admin destinations while rejecting lookalike orig
   try {
     for (const returnTo of ["/blog/post-1", "/admin/blog/post-1", "https://admin.example.test/blog/post-1"]) {
       const html = renderToStaticMarkup(await taxonomy.default({ searchParams: Promise.resolve({ returnTo }) }));
-      assert.match(html, /href="https:\/\/admin\.example\.test\/blog\/post-1"/);
-      assert.match(html, /kind=tag&amp;returnTo=https%3A%2F%2Fadmin\.example\.test%2Fblog%2Fpost-1/);
-      assert.doesNotMatch(html, /href="[^\"]*\/admin\//);
+      expect(html).toMatch(/href="https:\/\/admin\.example\.test\/blog\/post-1"/);
+      expect(html).toMatch(/kind=tag&amp;returnTo=https%3A%2F%2Fadmin\.example\.test%2Fblog%2Fpost-1/);
+      expect(html).not.toMatch(/href="[^\"]*\/admin\//);
     }
     for (const returnTo of [
       "https://admin.example.test.attacker.invalid/blog/post-1",
       "https://admin.example.test/blog/../outside",
     ]) {
       const html = renderToStaticMarkup(await taxonomy.default({ searchParams: Promise.resolve({ returnTo }) }));
-      assert.doesNotMatch(html, /attacker|outside|returnTo=/);
-      assert.match(html, /href="https:\/\/admin\.example\.test\/blog"/);
+      expect(html).not.toMatch(/attacker|outside|returnTo=/);
+      expect(html).toMatch(/href="https:\/\/admin\.example\.test\/blog"/);
     }
   } finally {
     if (previous === undefined) delete process.env.APP_URL;
@@ -338,7 +300,7 @@ test("publication recovery selects the first failed requirement and blocks publi
     onEditSeo() {},
     onBack() {},
     onSubmit() {
-      assert.fail("Invalid publication must not submit");
+      throw new Error("Invalid publication must not submit");
     },
     onFixCheck: (id) => fixed.push(id),
     canPublish: true,
@@ -352,9 +314,9 @@ test("publication recovery selects the first failed requirement and blocks publi
   }
   const action = walk(element).find((node) => Array.isArray(node.props.children) && node.props.children[0] === "Fix ");
   action.props.onClick();
-  assert.deepEqual(fixed, ["excerpt"]);
+  expect(fixed).toEqual(["excerpt"]);
   element.props.onSubmit({ preventDefault() {} });
-  assert.match(renderToStaticMarkup(element), /type="submit"[^>]*disabled=""/);
+  expect(renderToStaticMarkup(element)).toMatch(/type="submit"[^>]*disabled=""/);
 });
 
 test("numbered pagination keeps first and last jumps and handles both boundaries", () => {
@@ -366,12 +328,12 @@ test("numbered pagination keeps first and last jumps and handles both boundaries
         getPageHref: (target) => `/admin/audit?page=${target}`,
       }),
     );
-    assert.match(html, /aria-label="Page 1"[^>]*href="\/admin\/audit\?page=1"/);
-    assert.match(html, /aria-label="Page 100"[^>]*href="\/admin\/audit\?page=100"/);
-    assert.match(html, new RegExp(`aria-label="Page ${page}" aria-current="page"`));
-    if (page === 1) assert.match(html, /aria-label="Previous page"[^>]*disabled/);
-    if (page === 100) assert.match(html, /aria-label="Next page"[^>]*disabled/);
+    expect(html).toMatch(/aria-label="Page 1"[^>]*href="\/admin\/audit\?page=1"/);
+    expect(html).toMatch(/aria-label="Page 100"[^>]*href="\/admin\/audit\?page=100"/);
+    expect(html).toMatch(new RegExp(`aria-label="Page ${page}" aria-current="page"`));
+    if (page === 1) expect(html).toMatch(/aria-label="Previous page"[^>]*disabled/);
+    if (page === 100) expect(html).toMatch(/aria-label="Next page"[^>]*disabled/);
   }
   const one = renderToStaticMarkup(createElement(Pagination, { page: 1, pageCount: 1 }));
-  assert.equal([...one.matchAll(/aria-label="Page 1"/g)].length, 1);
+  expect([...one.matchAll(/aria-label="Page 1"/g)].length).toBe(1);
 });

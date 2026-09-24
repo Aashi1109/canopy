@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { readFile } from "node:fs/promises";
-import test from "node:test";
 
 import {
   DEFAULT_AUTH_ERROR,
@@ -24,40 +23,40 @@ test("profile keeps the auth theme and returns through the validated origin", as
     readFile(new URL("../app/auth/profile/components/ProfileBackLink.tsx", import.meta.url), "utf8"),
   ]);
 
-  assert.match(page, /resolveConfiguredReturnTo\(first\(params\.returnTo\)\)/);
-  assert.match(page, /<main className=["']auth-shell /);
-  assert.match(page, /<ProfileBackLink fallbackHref=\{returnTo\}/);
-  assert.match(backLink, /aria-label=["']Back to previous page["']/);
-  assert.match(backLink, /href=\{fallbackHref\}/);
-  assert.match(backLink, /shouldUseBrowserBack\(/);
-  assert.match(backLink, /event\.preventDefault\(\)/);
-  assert.match(backLink, /window\.history\.back\(\)/);
+  expect(page).toMatch(/resolveConfiguredReturnTo\(first\(params\.returnTo\)\)/);
+  expect(page).toMatch(/<div className=["']auth-shell /);
+  expect(page).toMatch(/<main>/);
+  expect(page).toMatch(/<ProfileBackLink fallbackHref=\{returnTo\}/);
+  expect(backLink).toMatch(/aria-label=["']Back to previous page["']/);
+  expect(backLink).toMatch(/href=\{fallbackHref\}/);
+  expect(backLink).toMatch(/shouldUseBrowserBack\(/);
+  expect(backLink).toMatch(/event\.preventDefault\(\)/);
+  expect(backLink).toMatch(/window\.history\.back\(\)/);
 });
 
 test("profile uses browser history only for the validated return origin", () => {
   const fallback = "/admin";
   const current = "https://smarttools.test/auth/profile";
 
-  assert.equal(shouldUseBrowserBack(fallback, current, "https://smarttools.test/admin/audit", 2), true);
-  assert.equal(shouldUseBrowserBack(fallback, current, "", 2), false);
-  assert.equal(shouldUseBrowserBack(fallback, current, "https://untrusted.example/profile-link", 2), false);
-  assert.equal(shouldUseBrowserBack(fallback, current, "https://smarttools.test/admin/audit", 1), false);
-  assert.equal(shouldUseBrowserBack(fallback, current, "https://smarttools.test/admin/audit", 2, true), false);
+  expect(shouldUseBrowserBack(fallback, current, "https://smarttools.test/admin/audit", 2)).toBe(true);
+  expect(shouldUseBrowserBack(fallback, current, "", 2)).toBe(false);
+  expect(shouldUseBrowserBack(fallback, current, "https://untrusted.example/profile-link", 2)).toBe(false);
+  expect(shouldUseBrowserBack(fallback, current, "https://smarttools.test/admin/audit", 1)).toBe(false);
+  expect(shouldUseBrowserBack(fallback, current, "https://smarttools.test/admin/audit", 2, true)).toBe(false);
 });
 
 test("profile photo uses a native image picker instead of a URL field", async () => {
   const source = await readFile(new URL("../app/auth/profile/ProfileManager.tsx", import.meta.url), "utf8");
 
-  assert.match(source, /accept=["']image\/jpeg,image\/png,image\/webp["']/);
-  assert.match(source, /type=["']file["']/);
-  assert.doesNotMatch(source, /type=["']url["']/);
+  expect(source).toMatch(/accept=["']image\/jpeg,image\/png,image\/webp["']/);
+  expect(source).toMatch(/type=["']file["']/);
+  expect(source).not.toMatch(/type=["']url["']/);
 });
 
 test("auth return URLs keep navigation inside the unified application", () => {
-  assert.equal(resolveReturnTo("/auth/profile", redirectPolicy), "/auth/profile");
-  assert.equal(resolveReturnTo("/paperwork/invoice-generator", redirectPolicy), "/paperwork/invoice-generator");
-  assert.equal(
-    resolveReturnTo("https://smarttools.test/devtools/json-formatter", redirectPolicy),
+  expect(resolveReturnTo("/auth/profile", redirectPolicy)).toBe("/auth/profile");
+  expect(resolveReturnTo("/paperwork/invoice-generator", redirectPolicy)).toBe("/paperwork/invoice-generator");
+  expect(resolveReturnTo("https://smarttools.test/devtools/json-formatter", redirectPolicy)).toBe(
     "https://smarttools.test/devtools/json-formatter",
   );
 
@@ -67,29 +66,29 @@ test("auth return URLs keep navigation inside the unified application", () => {
     "https://smarttools.test.evil.test/",
     "https://user@canopy.test/",
   ]) {
-    assert.equal(resolveReturnTo(unsafe, redirectPolicy), "/");
+    expect(resolveReturnTo(unsafe, redirectPolicy)).toBe("/");
   }
 });
 
 test("auth errors never expose server or provider details", () => {
   const secret = "postgres://admin:password@database.internal";
 
-  assert.equal(getSafeAuthError({ message: secret }), DEFAULT_AUTH_ERROR);
-  assert.doesNotMatch(getSafeAuthError({ message: secret }), /postgres|password/);
-  assert.equal(getSafeAuthError({ code: "TOO_MANY_REQUESTS" }), "Too many attempts. Try again in a few minutes.");
-  assert.equal(isEmailVerificationError({ code: "EMAIL_NOT_VERIFIED" }), true);
+  expect(getSafeAuthError({ message: secret })).toBe(DEFAULT_AUTH_ERROR);
+  expect(getSafeAuthError({ message: secret })).not.toMatch(/postgres|password/);
+  expect(getSafeAuthError({ code: "TOO_MANY_REQUESTS" })).toBe("Too many attempts. Try again in a few minutes.");
+  expect(isEmailVerificationError({ code: "EMAIL_NOT_VERIFIED" })).toBe(true);
 });
 
 test("account inputs enforce password, image, and deletion boundaries", () => {
-  assert.equal(isValidPassword("a".repeat(11)), false);
-  assert.equal(isValidPassword("a".repeat(12)), true);
-  assert.equal(isValidPassword("a".repeat(128)), true);
-  assert.equal(isValidPassword("a".repeat(129)), false);
+  expect(isValidPassword("a".repeat(11))).toBe(false);
+  expect(isValidPassword("a".repeat(12))).toBe(true);
+  expect(isValidPassword("a".repeat(128))).toBe(true);
+  expect(isValidPassword("a".repeat(129))).toBe(false);
 
-  assert.equal(normalizeProfileImage(""), null);
-  assert.equal(normalizeProfileImage(" https://images.example/avatar.png "), "https://images.example/avatar.png");
-  assert.throws(() => normalizeProfileImage("javascript:alert(1)"));
+  expect(normalizeProfileImage("")).toBe(null);
+  expect(normalizeProfileImage(" https://images.example/avatar.png ")).toBe("https://images.example/avatar.png");
+  expect(() => normalizeProfileImage("javascript:alert(1)")).toThrow();
 
-  assert.equal(canConfirmAccountDeletion(" Person@Example.com ", "person@example.com"), true);
-  assert.equal(canConfirmAccountDeletion("other@example.com", "person@example.com"), false);
+  expect(canConfirmAccountDeletion(" Person@Example.com ", "person@example.com")).toBe(true);
+  expect(canConfirmAccountDeletion("other@example.com", "person@example.com")).toBe(false);
 });

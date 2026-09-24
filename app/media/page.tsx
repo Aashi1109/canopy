@@ -3,6 +3,7 @@ import { CatalogListing } from "@/components/canopy/CatalogListing";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { ToolIcon } from "@/components/ToolIcon";
 import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
+import { searchTools } from "@/lib/tool-catalog/index";
 import { categoriesForApp, resolveCategoryKey, TOOL_CATEGORIES } from "@/lib/tool-framework/categories";
 import { getOptionalSession } from "@/lib/auth/session.ts";
 import {
@@ -56,13 +57,10 @@ export default async function HomePage({
   const requestedCategory = first(params.category).slice(0, 80);
   const category = resolveCategoryKey(requestedCategory, "media");
   const [tools, session] = await Promise.all([getTools("media"), getOptionalSession(requestHeaders)]);
-  const normalizedQuery = query.toLocaleLowerCase();
   const categoryLabel = category ? TOOL_CATEGORIES[category].label : "";
-  const filteredTools = tools.filter(
-    (tool) =>
-      (!category || tool.category === category) &&
-      (!normalizedQuery ||
-        `${tool.name} ${tool.description} ${tool.keywords.join(" ")}`.toLocaleLowerCase().includes(normalizedQuery)),
+  const filteredTools = searchTools(
+    tools.filter((tool) => !category || tool.category === category),
+    query,
   );
   return (
     <div className="min-h-screen bg-background text-foreground">

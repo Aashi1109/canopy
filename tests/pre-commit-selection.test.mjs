@@ -1,14 +1,14 @@
-import assert from "node:assert/strict";
+import { expect, onTestFinished, test } from "vitest";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-test("the commit hook runs advisory tests only for staged executable or runtime changes", async (t) => {
+test("the commit hook runs advisory tests only for staged executable or runtime changes", async () => {
+  const step = async (label, fn) => fn();
   const directory = mkdtempSync(join(tmpdir(), "canopy-hook-selection-"));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
   const repository = join(directory, "repository");
   const bin = join(directory, "bin");
   const log = join(directory, "pnpm.log");
@@ -16,7 +16,7 @@ test("the commit hook runs advisory tests only for staged executable or runtime 
   mkdirSync(bin);
   writeFileSync(
     join(bin, "pnpm"),
-    '#!/bin/sh\nprintf "%s\\n" "$*" >> "$HOOK_PNPM_LOG"\nif [ "$1" = test ]; then exit "${HOOK_TEST_STATUS:-0}"; fi\nexit "${HOOK_FORMAT_STATUS:-0}"\n',
+    '#!/bin/sh\nprintf "%s\\n" "$*" >> "$HOOK_PNPM_LOG"\nif [ "$1" = "test:affected" ]; then exit "${HOOK_TEST_STATUS:-0}"; fi\nexit "${HOOK_FORMAT_STATUS:-0}"\n',
     { mode: 0o755 },
   );
   const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("GIT_")));
@@ -29,8 +29,8 @@ test("the commit hook runs advisory tests only for staged executable or runtime 
     });
   const git = (...args) => {
     const result = run("git", args);
-    assert.equal(result.error, undefined);
-    assert.equal(result.status, 0, result.stdout + result.stderr);
+    expect(result.error).toBe(undefined);
+    expect(result.status, result.stdout + result.stderr).toBe(0);
   };
   const write = (path, content = "changed\n") => {
     const target = join(repository, path);
@@ -44,7 +44,7 @@ test("the commit hook runs advisory tests only for staged executable or runtime 
   const hook = (overrides) => {
     writeFileSync(log, "");
     const result = run("sh", [fileURLToPath(new URL("../.githooks/pre-commit", import.meta.url))], overrides);
-    assert.equal(result.error, undefined);
+    expect(result.error).toBe(undefined);
     return { ...result, calls: readFileSync(log, "utf8").trim().split("\n") };
   };
   git("init", "--quiet");
@@ -96,12 +96,12 @@ test("the commit hook runs advisory tests only for staged executable or runtime 
     [runsTests, true],
   ]) {
     for (const path of paths) {
-      await t.test(`${shouldTest ? "tests" : "skips tests for"} ${JSON.stringify(path)}`, () => {
+      await step(`${shouldTest ? "tests" : "skips tests for"} ${JSON.stringify(path)}`, () => {
         reset();
         stage(path);
         const result = hook();
-        assert.equal(result.status, 0, result.stdout + result.stderr);
-        assert.deepEqual(result.calls, shouldTest ? ["test", "exec lint-staged"] : ["exec lint-staged"]);
+        expect(result.status, result.stdout + result.stderr).toBe(0);
+        expect(result.calls).toEqual(shouldTest ? ["test:affected", "exec lint-staged"] : ["exec lint-staged"]);
       });
     }
   }
@@ -119,26 +119,26 @@ test("the commit hook runs advisory tests only for staged executable or runtime 
     ["source deletion", () => git("rm", "tracked.js"), true],
     ["source renamed to documentation", () => git("mv", "tracked.js", "notes.md"), true],
   ]) {
-    await t.test(name, () => {
+    await step(name, () => {
       reset();
       prepare();
       const result = hook();
-      assert.equal(result.status, 0, result.stdout + result.stderr);
-      assert.deepEqual(result.calls, shouldTest ? ["test", "exec lint-staged"] : ["exec lint-staged"]);
+      expect(result.status, result.stdout + result.stderr).toBe(0);
+      expect(result.calls).toEqual(shouldTest ? ["test:affected", "exec lint-staged"] : ["exec lint-staged"]);
     });
   }
-  await t.test("advisory test failures still allow formatting", () => {
+  await step("advisory test failures still allow formatting", () => {
     reset();
     stage("app/changed.ts");
     const result = hook({ HOOK_TEST_STATUS: "1" });
-    assert.equal(result.status, 0, result.stdout + result.stderr);
-    assert.deepEqual(result.calls, ["test", "exec lint-staged"]);
+    expect(result.status, result.stdout + result.stderr).toBe(0);
+    expect(result.calls).toEqual(["test:affected", "exec lint-staged"]);
   });
-  await t.test("formatting failures fail the hook", () => {
+  await step("formatting failures fail the hook", () => {
     reset();
     stage("README.md");
     const result = hook({ HOOK_FORMAT_STATUS: "23" });
-    assert.equal(result.status, 23, result.stdout + result.stderr);
-    assert.deepEqual(result.calls, ["exec lint-staged"]);
+    expect(result.status, result.stdout + result.stderr).toBe(23);
+    expect(result.calls).toEqual(["exec lint-staged"]);
   });
-});
+}, 120000);

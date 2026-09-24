@@ -1,38 +1,37 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { test, expect, onTestFinished } from "vitest";
 import { paletteFromPixels, pixelCoordinates, validateImageFile } from "../tools/image-color-picker/model.ts";
 import { run } from "../tools/image-color-picker/run.ts";
 
 test("palette ignores transparent pixels and weights visible colors by alpha", () => {
   const pixels = new Uint8ClampedArray([255, 0, 0, 255, 255, 0, 0, 255, 0, 0, 255, 128, 0, 255, 0, 0]);
   const palette = paletteFromPixels(pixels, 6);
-  assert.equal(palette.length, 2);
-  assert.equal(palette[0].hex, "#FF0000");
-  assert.equal(palette[1].hex, "#0000FF");
-  assert.ok(palette[0].share > 79 && palette[0].share < 81);
+  expect(palette.length).toBe(2);
+  expect(palette[0].hex).toBe("#FF0000");
+  expect(palette[1].hex).toBe("#0000FF");
+  expect(palette[0].share > 79 && palette[0].share < 81).toBeTruthy();
 });
 
 test("palette is bounded, deterministic and reports fully transparent images", () => {
   const pixels = new Uint8ClampedArray([255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255]);
-  assert.deepEqual(paletteFromPixels(pixels, 2), paletteFromPixels(pixels, 2));
-  assert.equal(paletteFromPixels(pixels, 2).length, 2);
-  assert.deepEqual(paletteFromPixels(new Uint8ClampedArray([20, 20, 20, 0]), 6), []);
+  expect(paletteFromPixels(pixels, 2)).toEqual(paletteFromPixels(pixels, 2));
+  expect(paletteFromPixels(pixels, 2).length).toBe(2);
+  expect(paletteFromPixels(new Uint8ClampedArray([20, 20, 20, 0]), 6)).toEqual([]);
 });
 
 test("pixel coordinates map a fitted image and clamp to valid exact pixels", () => {
-  assert.deepEqual(pixelCoordinates(100, 50, 200, 100, 400, 200), { x: 200, y: 100 });
-  assert.deepEqual(pixelCoordinates(200, 100, 200, 100, 400, 200), { x: 399, y: 199 });
-  assert.deepEqual(pixelCoordinates(-1, -1, 200, 100, 400, 200), { x: 0, y: 0 });
+  expect(pixelCoordinates(100, 50, 200, 100, 400, 200)).toEqual({ x: 200, y: 100 });
+  expect(pixelCoordinates(200, 100, 200, 100, 400, 200)).toEqual({ x: 399, y: 199 });
+  expect(pixelCoordinates(-1, -1, 200, 100, 400, 200)).toEqual({ x: 0, y: 0 });
 });
 
 test("image intake rejects unsupported formats, empty files and oversized files", () => {
-  assert.doesNotThrow(() => validateImageFile({ type: "image/png", size: 1024 }));
+  expect(() => validateImageFile({ type: "image/png", size: 1024 })).not.toThrow();
   for (const file of [
     { type: "image/svg+xml", size: 1024 },
     { type: "image/png", size: 21 * 1024 * 1024 },
     { type: "image/jpeg", size: 0 },
   ])
-    assert.throws(() => validateImageFile(file));
+    expect(() => validateImageFile(file)).toThrow();
 });
 
 test("image sampling returns the exact selected alpha and matching palette artifact", async (t) => {
@@ -46,7 +45,7 @@ test("image sampling returns the exact selected alpha and matching palette artif
       closed = true;
     },
   });
-  t.after(() => {
+  onTestFinished(() => {
     if (originalBitmap === undefined) delete globalThis.createImageBitmap;
     else globalThis.createImageBitmap = originalBitmap;
   });
@@ -57,7 +56,7 @@ test("image sampling returns the exact selected alpha and matching palette artif
   };
   const originalDocument = globalThis.document;
   globalThis.document = { createElement: () => ({ ...canvas }) };
-  t.after(() => {
+  onTestFinished(() => {
     if (originalDocument === undefined) delete globalThis.document;
     else globalThis.document = originalDocument;
   });
@@ -77,8 +76,8 @@ test("image sampling returns the exact selected alpha and matching palette artif
     settings: { x: 1, y: 0, colors: 6 },
     signal: new AbortController().signal,
   });
-  assert.equal(result.sections[0].body.entries.find((entry) => entry.label === "HEX").value, "#0A141E80");
-  assert.match(result.text, /--sampled-color: #0A141E80;/);
-  assert.equal(result.downloadName, "image-palette.css");
-  assert.equal(closed, true);
+  expect(result.sections[0].body.entries.find((entry) => entry.label === "HEX").value).toBe("#0A141E80");
+  expect(result.text).toMatch(/--sampled-color: #0A141E80;/);
+  expect(result.downloadName).toBe("image-palette.css");
+  expect(closed).toBe(true);
 });

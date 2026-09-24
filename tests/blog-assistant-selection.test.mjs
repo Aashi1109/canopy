@@ -1,5 +1,4 @@
-import test from "node:test";
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { history, undo } from "@tiptap/pm/history";
@@ -29,12 +28,12 @@ test("proposal follows its selected occurrence through earlier edits and undo re
   editor.commands.insertContentAt(1, { type: "text", text: "New " });
   editor.commands.setTextSelection(1);
   const before = editor.getJSON();
-  assert.equal(target.range.text, "target");
-  assert.equal(target.apply(document("better"), "replace"), true);
-  assert.equal(editor.state.doc.textContent, "New Before better after target");
+  expect(target.range.text).toBe("target");
+  expect(target.apply(document("better"), "replace")).toBe(true);
+  expect(editor.state.doc.textContent).toBe("New Before better after target");
   undo(editor.state, editor.view.dispatch);
-  assert.deepEqual(editor.getJSON(), before);
-  assert.equal(target.apply(document("again"), "replace"), false);
+  expect(editor.getJSON()).toEqual(before);
+  expect(target.apply(document("again"), "replace")).toBe(false);
   editor.destroy();
 });
 test("changed and deleted passages reject stale proposals without any mutation", () => {
@@ -44,9 +43,9 @@ test("changed and deleted passages reject stale proposals without any mutation",
     if (replacement) editor.commands.insertContentAt({ from: 8, to: 14 }, { type: "text", text: replacement });
     else editor.commands.deleteRange({ from: 8, to: 14 });
     const before = editor.getJSON();
-    assert.equal(target.valid(), false);
-    assert.equal(target.apply(document("proposal"), "replace"), false);
-    assert.deepEqual(editor.getJSON(), before);
+    expect(target.valid()).toBe(false);
+    expect(target.apply(document("proposal"), "replace")).toBe(false);
+    expect(editor.getJSON()).toEqual(before);
     target.dispose();
     editor.destroy();
   }
@@ -55,22 +54,22 @@ test("insert below preserves original passage and is one undo operation", () => 
   const editor = setup();
   const before = editor.getJSON();
   const target = captureAssistantSelection(editor);
-  assert.equal(target.apply(document("More context"), "insert"), true);
-  assert.equal(editor.state.doc.child(0).textContent, "Before target after target");
-  assert.equal(editor.state.doc.child(1).textContent, "More context");
+  expect(target.apply(document("More context"), "insert")).toBe(true);
+  expect(editor.state.doc.child(0).textContent).toBe("Before target after target");
+  expect(editor.state.doc.child(1).textContent).toBe("More context");
   undo(editor.state, editor.view.dispatch);
-  assert.deepEqual(editor.getJSON(), before);
+  expect(editor.getJSON()).toEqual(before);
   editor.destroy();
 });
 
 test("whole-article proposals resolve only unique passages, including marked text", () => {
   const editor = setup();
-  assert.equal(findAssistantPassage(editor, "target"), null);
-  assert.deepEqual(findAssistantPassage(editor, "Before target"), { from: 1, to: 14 });
+  expect(findAssistantPassage(editor, "target")).toBe(null);
+  expect(findAssistantPassage(editor, "Before target")).toEqual({ from: 1, to: 14 });
   editor.commands.setTextSelection({ from: 1, to: 7 });
   editor.commands.toggleBold();
-  assert.deepEqual(findAssistantPassage(editor, "Before target"), { from: 1, to: 14 });
-  assert.equal(findAssistantPassage(editor, "missing"), null);
+  expect(findAssistantPassage(editor, "Before target")).toEqual({ from: 1, to: 14 });
+  expect(findAssistantPassage(editor, "missing")).toBe(null);
   editor.destroy();
 });
 test("a multi-paragraph proposal replaces its exact span with a single undo", () => {
@@ -78,26 +77,25 @@ test("a multi-paragraph proposal replaces its exact span with a single undo", ()
   editor.commands.setContent({ type: "doc", content: [paragraph("First"), paragraph("Second"), paragraph("Last")] });
   const before = editor.getJSON();
   const range = findAssistantPassage(editor, "First\nSecond");
-  assert.ok(range);
+  expect(range).toBeTruthy();
   const target = captureAssistantSelection(editor, range);
-  assert.equal(target.apply(document("Combined"), "replace"), true);
-  assert.equal(editor.state.doc.textContent, "CombinedLast");
+  expect(target.apply(document("Combined"), "replace")).toBe(true);
+  expect(editor.state.doc.textContent).toBe("CombinedLast");
   undo(editor.state, editor.view.dispatch);
-  assert.deepEqual(editor.getJSON(), before);
+  expect(editor.getJSON()).toEqual(before);
   editor.destroy();
 });
 
 test("stored bodies with reordered JSON keys and default attributes still match the current article", () => {
   const editor = setup();
-  assert.equal(
+  expect(
     assistantBodyMatches(editor, {
       content: [{ content: [{ text: "Before target after target", type: "text" }], type: "paragraph" }],
       type: "doc",
     }),
-    true,
-  );
-  assert.equal(assistantBodyMatches(editor, document("Changed")), false);
-  assert.equal(assistantBodyMatches(editor, { type: "unsupported" }), false);
+  ).toBe(true);
+  expect(assistantBodyMatches(editor, document("Changed"))).toBe(false);
+  expect(assistantBodyMatches(editor, { type: "unsupported" })).toBe(false);
   editor.destroy();
 });
 
@@ -116,11 +114,11 @@ test("delete removes a whole section without leaving an empty block and has its 
   editor.commands.insertContentAt(1, { type: "text", text: "New " });
   editor.commands.setTextSelection(1);
   const before = editor.getJSON();
-  assert.equal(target.apply(undefined, "delete"), true);
-  assert.deepEqual(editor.getJSON().content, [paragraph("New Before"), paragraph("After")]);
+  expect(target.apply(undefined, "delete")).toBe(true);
+  expect(editor.getJSON().content).toEqual([paragraph("New Before"), paragraph("After")]);
   undo(editor.state, editor.view.dispatch);
-  assert.deepEqual(editor.getJSON(), before);
-  assert.equal(target.apply(undefined, "delete"), false);
+  expect(editor.getJSON()).toEqual(before);
+  expect(target.apply(undefined, "delete")).toBe(false);
   editor.destroy();
 });
 
@@ -128,8 +126,8 @@ test("delete of a partial passage preserves surrounding content and targets the 
   const editor = setup();
   const target = captureAssistantSelection(editor);
   editor.commands.setTextSelection(1);
-  assert.equal(target.apply(undefined, "delete"), true);
-  assert.equal(editor.state.doc.textContent, "Before  after target");
+  expect(target.apply(undefined, "delete")).toBe(true);
+  expect(editor.state.doc.textContent).toBe("Before  after target");
   editor.destroy();
 });
 
@@ -147,9 +145,8 @@ test("delete of a complete nested list item removes only that item", () => {
       ],
     });
     const target = captureAssistantSelection(editor, findAssistantPassage(editor, removed));
-    assert.equal(target.apply(undefined, "delete"), true);
-    assert.deepEqual(
-      editor.getJSON().content[0].content,
+    expect(target.apply(undefined, "delete")).toBe(true);
+    expect(editor.getJSON().content[0].content).toEqual(
       items.filter((text) => text !== removed).map((text) => ({ type: "listItem", content: [paragraph(text)] })),
     );
     editor.destroy();
@@ -160,11 +157,11 @@ test("deleting the entire article leaves an editable empty document and supports
   const editor = setup();
   const before = editor.getJSON();
   const target = captureAssistantSelection(editor, findAssistantPassage(editor, "Before target after target"));
-  assert.equal(target.apply(undefined, "delete"), true);
-  assert.equal(editor.isEmpty, true);
+  expect(target.apply(undefined, "delete")).toBe(true);
+  expect(editor.isEmpty).toBe(true);
   editor.state.doc.check();
   undo(editor.state, editor.view.dispatch);
-  assert.deepEqual(editor.getJSON(), before);
+  expect(editor.getJSON()).toEqual(before);
   editor.destroy();
 });
 
@@ -175,8 +172,8 @@ test("delete refuses changed targets and read-only editors without modifying the
     if (stale) editor.commands.insertContentAt(10, { type: "text", text: "changed" });
     else editor.setEditable(false);
     const before = editor.getJSON();
-    assert.equal(target.apply(undefined, "delete"), false);
-    assert.deepEqual(editor.getJSON(), before);
+    expect(target.apply(undefined, "delete")).toBe(false);
+    expect(editor.getJSON()).toEqual(before);
     target.dispose();
     editor.destroy();
   }
@@ -185,8 +182,8 @@ test("delete refuses changed targets and read-only editors without modifying the
 test("insert works after a captured range ending at the document boundary", () => {
   const editor = setup();
   const target = captureAssistantSelection(editor, { from: 0, to: editor.state.doc.content.size });
-  assert.equal(target.apply(document("Next section"), "insert"), true);
-  assert.deepEqual(editor.getJSON().content, [paragraph("Before target after target"), paragraph("Next section")]);
+  expect(target.apply(document("Next section"), "insert")).toBe(true);
+  expect(editor.getJSON().content).toEqual([paragraph("Before target after target"), paragraph("Next section")]);
   editor.destroy();
 });
 
@@ -196,13 +193,13 @@ test("empty-article insertion replaces blank paragraphs and has a single undo", 
     editor.commands.setContent({ type: "doc", content });
     const before = editor.getJSON();
     const target = captureAssistantInsertion(editor);
-    assert.ok(target);
+    expect(target).toBeTruthy();
     editor.commands.setTextSelection(1);
-    assert.equal(target.apply(document("First section"), "insert"), true);
-    assert.deepEqual(editor.getJSON().content, [paragraph("First section")]);
+    expect(target.apply(document("First section"), "insert")).toBe(true);
+    expect(editor.getJSON().content).toEqual([paragraph("First section")]);
     undo(editor.state, editor.view.dispatch);
-    assert.deepEqual(editor.getJSON(), before);
-    assert.equal(target.apply(document("Again"), "insert"), false);
+    expect(editor.getJSON()).toEqual(before);
+    expect(target.apply(document("Again"), "insert")).toBe(false);
     editor.destroy();
   }
 });
@@ -211,7 +208,7 @@ test("empty-article insertion refuses nonempty articles and structural content",
   for (const content of [[paragraph("Content")], [{ type: "horizontalRule" }]]) {
     const editor = setup();
     editor.commands.setContent({ type: "doc", content });
-    assert.equal(captureAssistantInsertion(editor), null);
+    expect(captureAssistantInsertion(editor)).toBe(null);
     editor.destroy();
   }
 });
@@ -221,12 +218,12 @@ test("empty-article insertion rejects edits made after the proposal was captured
     const editor = setup();
     editor.commands.setContent({ type: "doc", content: [{ type: "paragraph" }] });
     const target = captureAssistantInsertion(editor);
-    assert.ok(target);
+    expect(target).toBeTruthy();
     editor.commands.insertContentAt(position, paragraph("User content"));
     const before = editor.getJSON();
-    assert.equal(target.valid(), false);
-    assert.equal(target.apply(document("First section"), "insert"), false);
-    assert.deepEqual(editor.getJSON(), before);
+    expect(target.valid()).toBe(false);
+    expect(target.apply(document("First section"), "insert")).toBe(false);
+    expect(editor.getJSON()).toEqual(before);
     target.dispose();
     editor.destroy();
   }
@@ -236,9 +233,9 @@ test("invalid section content cannot mutate or consume a captured proposal", () 
   const editor = setup();
   const target = captureAssistantSelection(editor);
   const before = editor.getJSON();
-  assert.equal(target.apply({ type: "doc", content: [{ type: "unknown" }] }, "insert"), false);
-  assert.deepEqual(editor.getJSON(), before);
-  assert.equal(target.valid(), true);
-  assert.equal(target.apply(document("Valid section"), "insert"), true);
+  expect(target.apply({ type: "doc", content: [{ type: "unknown" }] }, "insert")).toBe(false);
+  expect(editor.getJSON()).toEqual(before);
+  expect(target.valid()).toBe(true);
+  expect(target.apply(document("Valid section"), "insert")).toBe(true);
   editor.destroy();
 });

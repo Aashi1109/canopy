@@ -1,7 +1,7 @@
-import assert from "node:assert/strict";
+// @vitest-environment jsdom
+import { expect, test } from "vitest";
 import { createRequire } from "node:module";
 import { setTimeout } from "node:timers/promises";
-import test from "node:test";
 import { startInactiveSpan } from "@sentry/core";
 import {
   initializeSentry,
@@ -16,7 +16,7 @@ const { getRedirectError } = require("next/dist/client/components/redirect.js");
 
 test("Sentry preserves actions and redirects, marks failures, and correlates child timings", async () => {
   const value = { ok: true, data: "private action result" };
-  assert.equal(await measureServerAction("disabled", async () => value), value);
+  expect(await measureServerAction("disabled", async () => value)).toBe(value);
   const envelopes = [];
   Sentry.init({
     ...sentryOptions,
@@ -33,56 +33,66 @@ test("Sentry preserves actions and redirects, marks failures, and correlates chi
     }),
   });
   try {
-    assert.equal(
+    expect(
       await measureServerAction("test.success", async () => {
         const span = startInactiveSpan({ name: "db.query", op: "db.query", onlyIfParent: true });
         await setTimeout(5);
         span.end();
         return value;
       }),
-      value,
-    );
+    ).toBe(value);
     for (const result of [{ ok: false }, { status: "error" }, { error: "private failure" }]) {
-      assert.equal(await measureServerAction("test.handled", async () => result), result);
+      expect(await measureServerAction("test.handled", async () => result)).toBe(result);
     }
     const failure = new Error("Failed query: select secret from users\nparams: private-token");
-    await assert.rejects(
-      measureServerAction("test.thrown", async () => {
-        throw failure;
-      }),
-      (error) => error === failure,
-    );
+    await (async () => {
+      let __err;
+      try {
+        await measureServerAction("test.thrown", async () => {
+          throw failure;
+        });
+      } catch (__e) {
+        __err = __e;
+      }
+      expect(__err).toBeDefined();
+      expect(((error) => error === failure)(__err)).toBe(true);
+    })();
     const redirect = getRedirectError("/admin", "replace", 303);
-    await assert.rejects(
-      measureServerAction("test.redirect", async () => {
-        throw redirect;
-      }),
-      (error) => error === redirect,
-    );
+    await (async () => {
+      let __err;
+      try {
+        await measureServerAction("test.redirect", async () => {
+          throw redirect;
+        });
+      } catch (__e) {
+        __err = __e;
+      }
+      expect(__err).toBeDefined();
+      expect(((error) => error === redirect)(__err)).toBe(true);
+    })();
     await Sentry.flush(2000);
 
     const items = envelopes.flatMap(([, entries]) => entries);
     const transactions = items.filter(([header]) => header.type === "transaction").map(([, event]) => event);
     const success = transactions.find((event) => event.transaction === "serverAction/test.success");
-    assert.ok(success);
-    assert.equal(success.release, process.env.NODE_ENV ?? "development");
+    expect(success).toBeTruthy();
+    expect(success.release).toBe(process.env.NODE_ENV ?? "development");
     const query = success.spans.find((span) => span.description === "db.query");
-    assert.equal(query.trace_id, success.contexts.trace.trace_id);
-    assert.equal(query.parent_span_id, success.contexts.trace.span_id);
-    assert.ok(query.timestamp > query.start_timestamp);
+    expect(query.trace_id).toBe(success.contexts.trace.trace_id);
+    expect(query.parent_span_id).toBe(success.contexts.trace.span_id);
+    expect(query.timestamp > query.start_timestamp).toBeTruthy();
     const handled = transactions.filter((event) => event.transaction === "serverAction/test.handled");
-    assert.equal(handled.length, 3);
-    assert.ok(handled.every((event) => event.contexts.trace.status === "internal_error"));
-    assert.equal(
-      transactions.find((event) => event.transaction === "serverAction/test.redirect").contexts.trace.status,
+    expect(handled.length).toBe(3);
+    expect(handled.every((event) => event.contexts.trace.status === "internal_error")).toBeTruthy();
+    expect(transactions.find((event) => event.transaction === "serverAction/test.redirect").contexts.trace.status).toBe(
       "ok",
     );
     const errors = items.filter(([header]) => header.type === "event").map(([, event]) => event);
-    assert.equal(errors.length, 1, "redirects and returned failures do not generate duplicate error issues");
-    assert.equal(errors[0].release, process.env.NODE_ENV ?? "development");
-    assert.equal(errors[0].exception.values[0].value, "Database query failed");
-    assert.ok(errors[0].exception.values[0].stacktrace.frames.length > 0);
-    assert.doesNotMatch(JSON.stringify(envelopes), /private action result|private failure|private-token|select secret/);
+    expect(errors.length, "redirects and returned failures do not generate duplicate error issues").toBe(1);
+    expect(errors[0].release).toBe(process.env.NODE_ENV ?? "development");
+    expect(errors[0].exception.values[0].value).toBe("Database query failed");
+    expect(errors[0].exception.values[0].stacktrace.frames.length > 0).toBeTruthy();
+    expect(JSON.stringify(envelopes)).not.toMatch(/private action result|private failure|private-token|select secret/);
   } finally {
     await Sentry.close(2000);
   }
@@ -98,10 +108,10 @@ test("error sanitization preserves useful messages while removing connection cre
       ],
     },
   };
-  assert.equal(sanitizeSentryError(event), event);
-  assert.equal(event.exception.values[2].value, "Connection timed out");
-  assert.doesNotMatch(JSON.stringify(event), /session-secret|redis-password|private-token|select token/);
-  assert.equal(sentryOptions.beforeBreadcrumb({ category: "console", message: "private SQL" }), null);
+  expect(sanitizeSentryError(event)).toBe(event);
+  expect(event.exception.values[2].value).toBe("Connection timed out");
+  expect(JSON.stringify(event)).not.toMatch(/session-secret|redis-password|private-token|select token/);
+  expect(sentryOptions.beforeBreadcrumb({ category: "console", message: "private SQL" })).toBe(null);
 });
 
 test("the local sign-in handoff never starts telemetry that could capture its ticket", () => {
@@ -112,7 +122,7 @@ test("the local sign-in handoff never starts telemetry that could capture its ti
   sentryOptions.enabled = true;
   try {
     initializeSentry();
-    assert.equal(Sentry.getClient(), previousClient);
+    expect(Sentry.getClient()).toBe(previousClient);
   } finally {
     sentryOptions.enabled = previousEnabled;
     if (previousWindow === undefined) delete globalThis.window;

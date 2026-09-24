@@ -1,5 +1,7 @@
 "use client";
 
+import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
+
 import type {
   AdvancedDocumentTemplate,
   DocumentFieldDefinition,
@@ -595,7 +597,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
         </P>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.8fr)]">
+      <WorkbenchPanes className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.8fr)]">
         <div className="grid gap-5">
           {selectedTemplate.config.form.sections.map((section) => {
             const entries = section.entries.filter((entry) => entry.enabled);
@@ -655,8 +657,10 @@ export default function AdvancedTemplateWorkspace<TDraft>({
             );
           })}
         </div>
-        <AdvancedDocumentPreview className="xl:sticky xl:top-20" data={documentData} template={selectedTemplate} />
-      </div>
+        <div className="xl:sticky xl:top-20">
+          <AdvancedDocumentPreview data={documentData} template={selectedTemplate} />
+        </div>
+      </WorkbenchPanes>
     </Card>
   );
 }

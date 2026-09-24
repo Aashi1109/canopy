@@ -1,8 +1,6 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
-import { NextRequest } from "next/server.js";
 import { memoryAdapter } from "better-auth/adapters/memory";
+import { NextRequest } from "next/server.js";
+import { afterAll, beforeAll, expect, test, vi } from "vitest";
 
 const parentOrigin = "http://localhost:3000";
 const adminOrigin = "http://admin.localhost:3000";
@@ -19,33 +17,32 @@ Object.assign(process.env, environment);
 const database = { authUser: [], authSession: [], authAccount: [], authVerification: [] };
 const state = { database, sent: [], adapter: memoryAdapter(database) };
 globalThis.__localSessionTest = state;
-const authUrl = new URL("../lib/auth/auth.ts", import.meta.url).href;
-const routeUrl = new URL("../app/api/auth/local-session/route.ts", import.meta.url).href;
-const mocks = {
-  "../authorization/index.ts": "export const assertCanDeleteUser = () => {};",
-  "../../db/index.ts": `
-    export const authAccount = {}, authSession = {}, authUser = {}, authVerification = {}, userRolesTable = {};
-    export const and = () => {}, countDistinct = () => {}, eq = () => {};
-    export const db = { insert: () => ({ values: () => ({ onConflictDoNothing: async () => {} }) }) };
-  `,
-  "better-auth/adapters/drizzle": "export const drizzleAdapter = () => globalThis.__localSessionTest.adapter;",
-  "./cachedUserAdapter.ts": "export const cachedUserAdapter = adapter => adapter;",
-  "./email.ts": "export const sendAuthEmail = async message => globalThis.__localSessionTest.sent.push(message);",
-};
-const hooks = registerHooks({
-  resolve(specifier, context, next) {
-    const source = context.parentURL === authUrl ? mocks[specifier] : undefined;
-    if (source !== undefined) return { shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(source)}` };
-    if (context.parentURL === routeUrl && specifier.startsWith("@/"))
-      return { shortCircuit: true, url: new URL(`../${specifier.slice(2)}`, import.meta.url).href };
-    return next(specifier === "next/server" ? "next/server.js" : specifier, context);
-  },
-});
-const { auth } = await import(authUrl);
-const { GET, POST } = await import(routeUrl);
-const { usesLocalSubdomainSessions, getLocalSessionStartUrl } = await import("../lib/auth/localSession.ts");
-test.after(() => {
-  hooks.deregister();
+
+vi.mock("@/lib/authorization/index.ts", () => ({ assertCanDeleteUser: () => {} }));
+vi.mock("@/db/index.ts", () => ({
+  authAccount: {},
+  authSession: {},
+  authUser: {},
+  authVerification: {},
+  userRolesTable: {},
+  and: () => {},
+  countDistinct: () => {},
+  eq: () => {},
+  db: { insert: () => ({ values: () => ({ onConflictDoNothing: async () => {} }) }) },
+}));
+vi.mock("better-auth/adapters/drizzle", () => ({
+  drizzleAdapter: () => globalThis.__localSessionTest.adapter,
+}));
+vi.mock("@/lib/auth/cachedUserAdapter.ts", () => ({ cachedUserAdapter: (adapter) => adapter }));
+vi.mock("@/lib/auth/email.ts", () => ({
+  sendAuthEmail: async (message) => globalThis.__localSessionTest.sent.push(message),
+}));
+
+const { auth } = await import("@/lib/auth/auth.ts");
+const { GET, POST } = await import("@/app/api/auth/local-session/route.ts");
+const { usesLocalSubdomainSessions, getLocalSessionStartUrl } = await import("@/lib/auth/localSession.ts");
+
+afterAll(() => {
   for (const [key, value] of Object.entries(originalEnv)) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
@@ -74,24 +71,26 @@ function cookieHeader(response) {
     .join("; ");
 }
 function noSessionCookie(response) {
-  assert.ok(response.headers.getSetCookie().every((cookie) => !cookie.startsWith("local-test.session_token=")));
+  expect(
+    response.headers.getSetCookie().every((cookie) => !cookie.startsWith("local-test.session_token=")),
+  ).toBeTruthy();
 }
 function privateResponse(response) {
-  assert.equal(response.headers.get("cache-control"), "no-store");
-  assert.equal(response.headers.get("referrer-policy"), "no-referrer");
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(response.headers.get("referrer-policy")).toBe("no-referrer");
 }
 const email = "local-session@example.test";
 const password = "local-session-password-123";
-test.before(async () => {
+beforeAll(async () => {
   const signup = await auth.handler(
     request(`${parentOrigin}/api/auth/sign-up/email`, {
       method: "POST",
       body: { name: "Local Session", email, password },
     }),
   );
-  assert.equal(signup.status, 200);
+  expect(signup.status).toBe(200);
   const verification = await auth.handler(request(state.sent.pop().actionUrl));
-  assert.equal(verification.status, 302);
+  expect(verification.status).toBe(302);
 });
 async function signIn() {
   const response = await auth.handler(
@@ -100,8 +99,8 @@ async function signIn() {
       body: { email, password },
     }),
   );
-  assert.equal(response.status, 200);
-  assert.ok(response.headers.getSetCookie().every((cookie) => !/;\s*domain=/i.test(cookie)));
+  expect(response.status).toBe(200);
+  expect(response.headers.getSetCookie().every((cookie) => !/;\s*domain=/i.test(cookie))).toBeTruthy();
   return cookieHeader(response);
 }
 async function session(origin, cookie) {
@@ -109,21 +108,21 @@ async function session(origin, cookie) {
 }
 async function begin(mode = "check", returnTo = `${adminOrigin}/users?role=editor`) {
   const response = await GET(request(new URL(getLocalSessionStartUrl(returnTo, mode), adminOrigin).href));
-  assert.equal(response.status, 303);
+  expect(response.status).toBe(303);
   privateResponse(response);
   return { authorizeUrl: response.headers.get("location"), nonceCookie: cookieHeader(response), response };
 }
 async function ticket(cookie) {
   const start = await begin();
   const response = await GET(request(start.authorizeUrl, { cookie }));
-  assert.equal(response.status, 303);
+  expect(response.status).toBe(303);
   privateResponse(response);
   const completion = new URL(response.headers.get("location"));
-  assert.equal(completion.origin, adminOrigin);
-  assert.equal(completion.pathname, "/auth/local-session");
-  assert.equal(completion.search, "");
+  expect(completion.origin).toBe(adminOrigin);
+  expect(completion.pathname).toBe("/auth/local-session");
+  expect(completion.search).toBe("");
   const body = Object.fromEntries(new URLSearchParams(completion.hash.slice(1)));
-  assert.ok(body.token && body.state && body.returnTo);
+  expect(body.token && body.state && body.returnTo).toBeTruthy();
   return { ...start, body };
 }
 const complete = (transfer, overrides = {}) =>
@@ -137,28 +136,29 @@ const complete = (transfer, overrides = {}) =>
   );
 
 test("local session helpers preserve the main localhost origin and encode explicit modes", () => {
-  assert.equal(usesLocalSubdomainSessions(), true);
-  assert.equal(
-    new URL(getLocalSessionStartUrl("/users?q=A&B", "google"), adminOrigin).searchParams.get("returnTo"),
+  expect(usesLocalSubdomainSessions()).toBe(true);
+  expect(new URL(getLocalSessionStartUrl("/users?q=A&B", "google"), adminOrigin).searchParams.get("returnTo")).toBe(
     "/users?q=A&B",
   );
-  assert.equal(new URL(getLocalSessionStartUrl("/"), adminOrigin).searchParams.get("mode"), "check");
+  expect(new URL(getLocalSessionStartUrl("/"), adminOrigin).searchParams.get("mode")).toBe("check");
 });
 
 test("Google starts on localhost with its existing callback and host-only state cookies", async () => {
   const start = await begin("google");
-  assert.equal(new URL(start.authorizeUrl).origin, parentOrigin);
-  assert.ok(start.response.headers.getSetCookie().some((cookie) => cookie.startsWith("local-test.local_auth_state=")));
-  assert.ok(
+  expect(new URL(start.authorizeUrl).origin).toBe(parentOrigin);
+  expect(
+    start.response.headers.getSetCookie().some((cookie) => cookie.startsWith("local-test.local_auth_state=")),
+  ).toBeTruthy();
+  expect(
     start.response.headers.getSetCookie().every((cookie) => /HttpOnly/i.test(cookie) && !/;\s*domain=/i.test(cookie)),
-  );
+  ).toBeTruthy();
   const response = await GET(request(start.authorizeUrl));
-  assert.equal(response.status, 303);
+  expect(response.status).toBe(303);
   const google = new URL(response.headers.get("location"));
-  assert.equal(google.origin, "https://accounts.google.com");
-  assert.equal(google.searchParams.get("redirect_uri"), `${parentOrigin}/api/auth/callback/google`);
-  assert.ok(response.headers.getSetCookie().some((cookie) => cookie.startsWith("local-test.state=")));
-  assert.ok(response.headers.getSetCookie().every((cookie) => !/;\s*domain=/i.test(cookie)));
+  expect(google.origin).toBe("https://accounts.google.com");
+  expect(google.searchParams.get("redirect_uri")).toBe(`${parentOrigin}/api/auth/callback/google`);
+  expect(response.headers.getSetCookie().some((cookie) => cookie.startsWith("local-test.state="))).toBeTruthy();
+  expect(response.headers.getSetCookie().every((cookie) => !/;\s*domain=/i.test(cookie))).toBeTruthy();
   privateResponse(response);
 });
 
@@ -166,10 +166,10 @@ test("an unauthenticated session check returns to admin sign-in once without sta
   const start = await begin();
   const response = await GET(request(start.authorizeUrl));
   const destination = new URL(response.headers.get("location"));
-  assert.equal(destination.origin, adminOrigin);
-  assert.equal(destination.pathname, "/auth");
-  assert.equal(destination.searchParams.get("localChecked"), "1");
-  assert.equal(destination.searchParams.get("returnTo"), `${adminOrigin}/users?role=editor`);
+  expect(destination.origin).toBe(adminOrigin);
+  expect(destination.pathname).toBe("/auth");
+  expect(destination.searchParams.get("localChecked")).toBe("1");
+  expect(destination.searchParams.get("returnTo")).toBe(`${adminOrigin}/users?role=editor`);
   noSessionCookie(response);
   privateResponse(response);
 });
@@ -178,27 +178,26 @@ test("the handoff installs the same backend session on admin and logout revokes 
   const parentCookie = await signIn();
   const transfer = await ticket(parentCookie);
   const response = await complete(transfer);
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { redirectTo: transfer.body.returnTo });
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({ redirectTo: transfer.body.returnTo });
   privateResponse(response);
   const adminCookie = cookieHeader(response);
-  assert.ok(
+  expect(
     response.headers
       .getSetCookie()
       .some((cookie) => cookie.startsWith("local-test.local_auth_state=;") && /Max-Age=0/.test(cookie)),
-  );
-  assert.ok(response.headers.getSetCookie().some((cookie) => cookie.startsWith("local-test.session_token=")));
-  assert.ok(response.headers.getSetCookie().every((cookie) => !/;\s*domain=/i.test(cookie)));
-  assert.equal(
-    (await session(parentOrigin, parentCookie)).session.id,
+  ).toBeTruthy();
+  expect(response.headers.getSetCookie().some((cookie) => cookie.startsWith("local-test.session_token="))).toBeTruthy();
+  expect(response.headers.getSetCookie().every((cookie) => !/;\s*domain=/i.test(cookie))).toBeTruthy();
+  expect((await session(parentOrigin, parentCookie)).session.id).toBe(
     (await session(adminOrigin, adminCookie)).session.id,
   );
   const logout = await auth.handler(
     request(`${adminOrigin}/api/auth/sign-out`, { method: "POST", body: {}, cookie: adminCookie }),
   );
-  assert.equal(logout.status, 200);
-  assert.equal(await session(parentOrigin, parentCookie), null);
-  assert.equal(await session(adminOrigin, adminCookie), null);
+  expect(logout.status).toBe(200);
+  expect(await session(parentOrigin, parentCookie)).toBe(null);
+  expect(await session(adminOrigin, adminCookie)).toBe(null);
 });
 
 test("nonce, exact origin, and destination checks run before consuming the one-time ticket", async () => {
@@ -215,13 +214,13 @@ test("nonce, exact origin, and destination checks run before consuming the one-t
     [{ body: {} }, 400],
   ]) {
     const response = await complete(transfer, overrides);
-    assert.equal(response.status, status);
+    expect(response.status).toBe(status);
     noSessionCookie(response);
     privateResponse(response);
   }
-  assert.equal((await complete(transfer)).status, 200);
+  expect((await complete(transfer)).status).toBe(200);
   const replay = await complete(transfer);
-  assert.equal(replay.status, 400);
+  expect(replay.status).toBe(400);
   noSessionCookie(replay);
 });
 
@@ -231,16 +230,16 @@ test("the raw one-time-token endpoints cannot bypass the nonce-bound handoff", a
   const generate = await auth.handler(
     request(`${parentOrigin}/api/auth/one-time-token/generate`, { cookie: parentCookie }),
   );
-  assert.equal(generate.status, 403);
+  expect(generate.status).toBe(403);
   const verify = await auth.handler(
     request(`${adminOrigin}/api/auth/one-time-token/verify`, {
       method: "POST",
       body: { token: transfer.body.token },
     }),
   );
-  assert.equal(verify.status, 403);
+  expect(verify.status).toBe(403);
   noSessionCookie(verify);
-  assert.equal((await complete(transfer)).status, 200);
+  expect((await complete(transfer)).status).toBe(200);
 });
 
 test("expired tickets and suspended accounts never receive a session cookie", async () => {
@@ -248,11 +247,11 @@ test("expired tickets and suspended accounts never receive a session cookie", as
   const transfer = await ticket(parentCookie);
   const currentSession = await session(parentOrigin, parentCookie);
   const verification = database.authVerification.find((record) => record.value === currentSession.session.token);
-  assert.ok(verification);
-  assert.ok(!verification.identifier.includes(transfer.body.token), "tickets are hashed in storage");
+  expect(verification).toBeTruthy();
+  expect(!verification.identifier.includes(transfer.body.token), "tickets are hashed in storage").toBeTruthy();
   verification.expiresAt = new Date(Date.now() - 1000);
   const expired = await complete(transfer);
-  assert.equal(expired.status, 400);
+  expect(expired.status).toBe(400);
   noSessionCookie(expired);
 
   const suspendedTransfer = await ticket(parentCookie);
@@ -261,9 +260,9 @@ test("expired tickets and suspended accounts never receive a session cookie", as
   try {
     const start = await begin();
     const source = await GET(request(start.authorizeUrl, { cookie: parentCookie }));
-    assert.equal(source.headers.get("location"), `${parentOrigin}/account/suspended`);
+    expect(source.headers.get("location")).toBe(`${parentOrigin}/account/suspended`);
     const response = await complete(suspendedTransfer);
-    assert.equal(response.status, 403);
+    expect(response.status).toBe(403);
     noSessionCookie(response);
   } finally {
     user.status = "active";
@@ -282,15 +281,14 @@ test("unknown hosts, callback loops, and non-local deployments cannot use the br
     [`${parentOrigin}/api/auth/local-session?step=authorize&state=x`, {}, 400],
   ]) {
     const response = await GET(request(url, { headers }));
-    assert.equal(response.status, status, url);
+    expect(response.status, url).toBe(status);
     privateResponse(response);
   }
   process.env.APP_URL = "https://smarttools.test";
   try {
-    assert.equal(usesLocalSubdomainSessions(), false);
-    assert.equal((await GET(request(`${adminOrigin}/api/auth/local-session?step=start`))).status, 404);
-    assert.equal(
-      (await POST(request(`${adminOrigin}/api/auth/local-session`, { method: "POST", body: {} }))).status,
+    expect(usesLocalSubdomainSessions()).toBe(false);
+    expect((await GET(request(`${adminOrigin}/api/auth/local-session?step=start`))).status).toBe(404);
+    expect((await POST(request(`${adminOrigin}/api/auth/local-session`, { method: "POST", body: {} }))).status).toBe(
       404,
     );
   } finally {

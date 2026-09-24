@@ -1,9 +1,29 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
+import { afterAll, expect, test, vi } from "vitest";
+import { searchTools } from "../lib/tool-catalog/index.ts";
 
-test("global search matches the public catalog including Paperwork and preserves its response contract", async (t) => {
-  const routeUrl = new URL("../app/api/tools/search/route.ts", import.meta.url).href;
+// Hoisted so the vi.mock factory below can read the shared catalog fixture.
+const state = vi.hoisted(() => {
+  const shared = { tools: [], reads: 0, failure: false };
+  globalThis.__toolSearchTest = shared;
+  return shared;
+});
+
+vi.mock("@sentry/core", () => ({ captureException: () => {} }));
+vi.mock("@/lib/tool-framework/catalog", () => ({
+  getPublicTools: async () => {
+    state.reads++;
+    if (state.failure) throw new Error("Database unavailable");
+    return state.tools;
+  },
+}));
+
+const { GET } = await import("@/app/api/tools/search/route.ts");
+
+afterAll(() => {
+  delete globalThis.__toolSearchTest;
+});
+
+test("global search matches the public catalog including Paperwork and preserves its response contract", async () => {
   const tools = [
     {
       app: "paperwork",
@@ -27,59 +47,125 @@ test("global search matches the public catalog including Paperwork and preserves
       name: `Text ${index}`,
       toolId: `devtools.text-${index}`,
     })),
-  ];
-  const state = { tools, reads: 0, failure: false };
-  globalThis.__toolSearchTest = state;
-  const modules = {
-    "@sentry/core": "export const captureException = () => {};",
-    "@/lib/tool-framework/catalog": `export const getPublicTools = async () => {
-      const state = globalThis.__toolSearchTest;
-      state.reads++;
-      if (state.failure) throw new Error("Database unavailable");
-      return state.tools;
-    };`,
-  };
-  const hooks = registerHooks({
-    resolve(specifier, context, nextResolve) {
-      if (context.parentURL === routeUrl) {
-        if (modules[specifier])
-          return { shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(modules[specifier])}` };
-        if (specifier.startsWith("@/"))
-          return nextResolve(new URL(`../${specifier.slice(2)}.ts`, import.meta.url).href, context);
-      }
-      return nextResolve(specifier, context);
+    {
+      app: "devtools",
+      category: "Text Tools",
+      categoryKey: "text-tools",
+      description: "Manipulate text",
+      href: "/devtools/text",
+      icon: { kind: "svg", svg: "<svg/>" },
+      keywords: ["words"],
+      name: "Text",
+      toolId: "devtools.text",
     },
-  });
-  t.after(() => {
-    hooks.deregister();
-    delete globalThis.__toolSearchTest;
-  });
-  const { GET } = await import(routeUrl);
+  ];
+  state.tools = tools;
+  state.reads = 0;
+  state.failure = false;
   const search = (query) =>
     GET(
       new Request(`https://app.test/api/tools/search${query === undefined ? "" : `?q=${encodeURIComponent(query)}`}`),
     );
   for (const query of [undefined, "", "   "]) {
-    assert.deepEqual(await (await search(query)).json(), { results: [] });
+    expect(await (await search(query)).json()).toEqual({ results: [] });
   }
-  assert.equal(state.reads, 0, "empty searches do not load the catalog");
+  expect(state.reads, "empty searches do not load the catalog").toBe(0);
 
   const { category, description, href, icon, name, toolId } = tools[0];
   for (const query of ["  INVOICE  ", "bills", "DOCUMENTS", "receipt"]) {
-    assert.deepEqual(await (await search(query)).json(), {
+    expect(await (await search(query)).json()).toEqual({
       results: [{ category, description, href, icon, name, toolId }],
     });
   }
-  const limited = await (await search("text")).json();
-  assert.deepEqual(
-    limited.results.map((tool) => tool.toolId),
-    tools.slice(1, 7).map((tool) => tool.toolId),
-  );
-  assert.deepEqual(await (await search("does not exist")).json(), { results: [] });
+  const textResults = await (await search("text")).json();
+  expect(
+    textResults.results.map((tool) => tool.toolId),
+    "all matches are returned, with a late exact name match ranked first",
+  ).toEqual([tools.at(-1), ...tools.slice(1, -1)].map((tool) => tool.toolId));
+  expect(await (await search("does not exist")).json()).toEqual({ results: [] });
   state.failure = true;
   const failed = await search("invoice");
-  assert.equal(failed.status, 500);
-  assert.deepEqual(await failed.json(), { error: "Database unavailable" });
+  expect(failed.status).toBe(500);
+  expect(await failed.json()).toEqual({ error: "Database unavailable" });
   state.failure = false;
-  assert.equal((await search("invoice")).status, 200);
+  expect((await search("invoice")).status).toBe(200);
+});
+
+function tool(name, overrides = {}) {
+  return { name, description: "", keywords: [], category: "", ...overrides };
+}
+
+test("tool search ranks exact names, prefixes, name substrings, keywords, descriptions, then categories", () => {
+  const tools = [
+    tool("Category match", { category: "Web & Markup Tools" }),
+    tool("Description match", { description: "Read markdown documents" }),
+    tool("Keyword match", { keywords: ["markdown"] }),
+    tool("CSV to Markdown Table"),
+    tool("Markdown Preview"),
+    tool("Mark"),
+    tool("Unrelated"),
+  ];
+
+  expect(searchTools(tools, "mark")).toEqual([tools[5], tools[4], tools[3], tools[2], tools[1], tools[0]]);
+});
+
+test("Markdown tools precede broad category matches for both category keys and display labels", () => {
+  for (const category of ["web-markup-tools", "Web & Markup Tools"]) {
+    const tools = [
+      tool("CSS Formatter", { category }),
+      tool("CSS Minifier", { category }),
+      tool("CSV to Markdown Table", { category: "csv-data-tools" }),
+      tool("Markdown to HTML", { category }),
+    ];
+
+    expect(searchTools(tools, "mark")).toEqual([tools[3], tools[2], tools[0], tools[1]]);
+    expect(searchTools(tools, "Web & Markup")).toEqual([tools[0], tools[1], tools[3]]);
+  }
+});
+
+test("tool search keeps every match, preserves ties, and does not mutate the input", () => {
+  const tools = Object.freeze([
+    ...Array.from({ length: 8 }, (_, index) =>
+      Object.freeze(tool(`Tool ${index}`, { keywords: Object.freeze(["mark"]) })),
+    ),
+    Object.freeze(tool("Markdown Editor", { keywords: Object.freeze([]) })),
+    Object.freeze(tool("Markdown Viewer", { keywords: Object.freeze([]) })),
+  ]);
+  const original = [...tools];
+
+  expect(searchTools(tools, "mark")).toEqual([tools[8], tools[9], ...tools.slice(0, 8)]);
+  expect(tools).toEqual(original);
+});
+
+test("tool search normalizes queries and matches field text without case sensitivity", () => {
+  const tools = [
+    tool("MARK"),
+    tool("A", { keywords: ["MARKDOWN"] }),
+    tool("B", { description: "MARKDOWN" }),
+    tool("C", { category: "MARKUP" }),
+  ];
+
+  expect(searchTools(tools, "  MaRk  ")).toEqual(tools);
+  expect(searchTools(tools, "missing")).toEqual([]);
+  expect(searchTools([], "mark")).toEqual([]);
+});
+
+test("blank tool searches return a fresh array in catalog order", () => {
+  const tools = [tool("Z"), tool("A")];
+
+  for (const query of ["", "   "]) {
+    const result = searchTools(tools, query);
+    expect(result).toEqual(tools);
+    expect(result).not.toBe(tools);
+  }
+});
+
+test("tool search matches complete phrases within fields without crossing field boundaries", () => {
+  const tools = [
+    tool("Alpha", { description: "Beta" }),
+    tool("Keywords", { keywords: ["alpha", "beta"] }),
+    tool("Phrase", { keywords: ["alpha beta"] }),
+  ];
+
+  expect(searchTools(tools, "alpha beta")).toEqual([tools[2]]);
 });

@@ -1,13 +1,8 @@
-import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
-import { registerHooks } from "node:module";
-import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { transformSync } from "next/dist/build/swc/index.js";
+import { afterAll, expect, test, vi } from "vitest";
 import { createBlogDocument, BlogValidationError } from "../lib/blog/document.ts";
 
-const root = new URL("../", import.meta.url);
 const state = {
   calls: [],
   post: null,
@@ -20,78 +15,64 @@ const state = {
   hookIndex: 0,
 };
 globalThis.__publicBlogTest = state;
-const stub = (source) => ({
-  shortCircuit: true,
-  url: `data:text/javascript,${encodeURIComponent(source)}`,
-});
-const hooks = registerHooks({
-  resolve(specifier, context, next) {
-    if (specifier === "react" && context.parentURL?.endsWith("BlogStories.tsx?interaction"))
-      return stub(`
-      const s=globalThis.__publicBlogTest;
-      export function useState(initial){const i=s.hookIndex++;if(!(i in s.hookValues))s.hookValues[i]=initial;return [s.hookValues[i],value=>{s.hookValues[i]=typeof value==='function'?value(s.hookValues[i]):value}];}
-      export function useRef(initial){const i=s.hookIndex++;if(!(i in s.hookValues))s.hookValues[i]={current:initial};return s.hookValues[i];}
-    `);
-    if (specifier === "@/lib/blog/queries")
-      return stub(`
-      const s=globalThis.__publicBlogTest;
-      export async function getPublishedBlogPost(slug){s.calls.push(['post',slug]);if(s.error)throw s.error;return s.post;}
-      export async function listPublishedBlogPosts(input){s.calls.push(['posts',input]);if(s.error||s.relatedError)throw s.error||s.relatedError;if(s.pendingRead)return s.pendingRead;return s.posts;}
-      export async function listPublishedBlogTaxonomy(kind,input){s.calls.push(['categories',kind,input]);if(s.error)throw s.error;return s.categories;}
-    `);
-    if (specifier === "next/navigation") return stub('export function notFound(){throw new Error("TEST_NOT_FOUND")}');
-    if (specifier.startsWith("@/")) specifier = new URL(specifier.slice(2), root).href;
-    if (
-      (specifier.startsWith(".") || specifier.startsWith("file:")) &&
-      context.parentURL?.startsWith("file:") &&
-      !context.parentURL.includes("/node_modules/")
-    ) {
-      const target = new URL(specifier, context.parentURL);
-      for (const extension of ["", ".ts", ".tsx"]) {
-        const file = new URL(target.href + extension);
-        if (existsSync(file)) return next(file.href, context);
-      }
-    }
-    return next(specifier, context);
+
+vi.mock("react", async (importOriginal) => ({
+  ...(await importOriginal()),
+  useState: (initial) => {
+    const s = globalThis.__publicBlogTest;
+    const i = s.hookIndex++;
+    if (!(i in s.hookValues)) s.hookValues[i] = initial;
+    return [
+      s.hookValues[i],
+      (value) => {
+        s.hookValues[i] = typeof value === "function" ? value(s.hookValues[i]) : value;
+      },
+    ];
   },
-  load(url, context, next) {
-    if (url.endsWith(".css"))
-      return {
-        format: "module",
-        shortCircuit: true,
-        source: 'export default {body:"article-body"};',
-      };
-    if (url.endsWith(".png"))
-      return {
-        format: "module",
-        shortCircuit: true,
-        source: 'export default {src:"/test-logo.png"};',
-      };
-    if (!new URL(url).pathname.endsWith(".tsx")) return next(url, context);
-    return {
-      format: "module",
-      shortCircuit: true,
-      source: transformSync(readFileSync(new URL(url), "utf8"), {
-        filename: new URL(url).pathname,
-        jsc: {
-          parser: { syntax: "typescript", tsx: true },
-          transform: { react: { runtime: "automatic" } },
-        },
-        module: { type: "es6" },
-      }).code,
-    };
+  useRef: (initial) => {
+    const s = globalThis.__publicBlogTest;
+    const i = s.hookIndex++;
+    if (!(i in s.hookValues)) s.hookValues[i] = { current: initial };
+    return s.hookValues[i];
   },
+}));
+vi.mock("@/lib/blog/queries", () => {
+  const s = () => globalThis.__publicBlogTest;
+  return {
+    getPublishedBlogPost: async (slug) => {
+      s().calls.push(["post", slug]);
+      if (s().error) throw s().error;
+      return s().post;
+    },
+    listPublishedBlogPosts: async (input) => {
+      s().calls.push(["posts", input]);
+      if (s().error || s().relatedError) throw s().error || s().relatedError;
+      if (s().pendingRead) return s().pendingRead;
+      return s().posts;
+    },
+    listPublishedBlogTaxonomy: async (kind, input) => {
+      s().calls.push(["categories", kind, input]);
+      if (s().error) throw s().error;
+      return s().categories;
+    },
+  };
 });
+vi.mock("next/navigation", () => ({
+  notFound: () => {
+    throw new Error("TEST_NOT_FOUND");
+  },
+}));
+
 const listing = await import("../app/blog/page.tsx");
 const article = await import("../app/blog/[slug]/page.tsx");
 const { BlogArticle } = await import("../components/blog/BlogArticle.tsx");
 const { BlogStories: InteractiveStories } = await import("../app/blog/components/BlogStories.tsx?interaction");
 const { loadMoreBlogPosts } = await import("../app/blog/actions.ts");
 const { parseBlogFilters } = await import("../app/blog/lib/filters.ts");
-const { listPublishedBlogPosts: realPublishedQuery, encodeBlogCursor } = await import("../lib/blog/queries.ts");
+const { listPublishedBlogPosts: realPublishedQuery, encodeBlogCursor } =
+  await vi.importActual("../lib/blog/queries.ts");
 const { db } = await import("../db/index.ts");
-test.after(() => {
-  hooks.deregister();
+afterAll(() => {
   delete globalThis.__publicBlogTest;
 });
 
@@ -146,15 +127,15 @@ test("public listing renders published summaries and keeps filters in next and c
       }),
     }),
   );
-  assert.deepEqual(state.calls[0], [
+  expect(state.calls[0]).toEqual([
     "posts",
     { search: "PDF & docs", category: "guides", tag: "pdf", cursor: "previous" },
   ]);
-  assert.match(html, /href="\/blog\/live-story"/);
-  assert.match(html, /search=PDF\+%26\+docs&amp;category=guides&amp;tag=pdf&amp;cursor=next-page/);
-  assert.match(html, /href="\/blog\?category=guides&amp;tag=pdf">Clear search/);
-  assert.doesNotMatch(html, /<script>title|unsafe\(\)/);
-  assert.ok(state.calls.every(([name]) => ["posts", "categories"].includes(name)));
+  expect(html).toMatch(/href="\/blog\/live-story"/);
+  expect(html).toMatch(/search=PDF\+%26\+docs&amp;category=guides&amp;tag=pdf&amp;cursor=next-page/);
+  expect(html).toMatch(/href="\/blog\?category=guides&amp;tag=pdf">Clear search/);
+  expect(html).not.toMatch(/<script>title|unsafe\(\)/);
+  expect(state.calls.every(([name]) => ["posts", "categories"].includes(name))).toBeTruthy();
 });
 
 test("empty blog has recovery and categories beyond the first page remain reachable", async () => {
@@ -168,20 +149,22 @@ test("empty blog has recovery and categories beyond the first page remain reacha
     nextCursor: "more-topics",
   };
   const html = renderToStaticMarkup(await listing.default({ searchParams: Promise.resolve({}) }));
-  assert.match(html, /Stories are on the way/);
-  assert.match(html, /href="\/"[^>]*>Explore tools/);
-  assert.match(html, /categoryCursor=more-topics/);
-  assert.match(html, /category=topic-24/);
+  expect(html).toMatch(/Stories are on the way/);
+  expect(html).toMatch(/href="\/"[^>]*>Explore tools/);
+  expect(html).toMatch(/categoryCursor=more-topics/);
+  expect(html).toMatch(/category=topic-24/);
 });
 
 test("malformed listing inputs do not reach queries and invalid cursors recover through not-found", async () => {
   reset();
-  await assert.rejects(listing.default({ searchParams: Promise.resolve({ search: ["a", "b"] }) }), /TEST_NOT_FOUND/);
-  assert.equal(state.calls.length, 0);
+  await expect(listing.default({ searchParams: Promise.resolve({ search: ["a", "b"] }) })).rejects.toThrow(
+    /TEST_NOT_FOUND/,
+  );
+  expect(state.calls.length).toBe(0);
   state.error = new BlogValidationError("Invalid blog pagination cursor.");
-  await assert.rejects(listing.default({ searchParams: Promise.resolve({ cursor: "bad" }) }), /TEST_NOT_FOUND/);
+  await expect(listing.default({ searchParams: Promise.resolve({ cursor: "bad" }) })).rejects.toThrow(/TEST_NOT_FOUND/);
   state.error = new Error("Database unavailable");
-  await assert.rejects(listing.default({ searchParams: Promise.resolve({}) }), /Database unavailable/);
+  await expect(listing.default({ searchParams: Promise.resolve({}) })).rejects.toThrow(/Database unavailable/);
 });
 
 test("article renders safe live content, heading destinations, tools, tags, metadata and JSON-LD", async () => {
@@ -189,31 +172,28 @@ test("article renders safe live content, heading destinations, tools, tags, meta
   state.post = published();
   state.posts = { items: [summary(state.post)], nextCursor: null };
   const html = renderToStaticMarkup(await article.default({ params: Promise.resolve({ slug: "live-story" }) }));
-  assert.match(html, /href="#heading-1"/);
-  assert.match(html, /<h2 id="heading-1">First steps<\/h2>/);
-  assert.match(html, /&lt;script&gt;unsafe\(\)&lt;\/script&gt;/);
-  assert.doesNotMatch(html, /<script>unsafe/);
-  assert.match(html, /href="\/media\/pdf-tool"/);
-  assert.match(html, /href="\/blog\?tag=pdf"/);
+  expect(html).toMatch(/href="#heading-1"/);
+  expect(html).toMatch(/<h2 id="heading-1">First steps<\/h2>/);
+  expect(html).toMatch(/&lt;script&gt;unsafe\(\)&lt;\/script&gt;/);
+  expect(html).not.toMatch(/<script>unsafe/);
+  expect(html).toMatch(/href="\/media\/pdf-tool"/);
+  expect(html).toMatch(/href="\/blog\?tag=pdf"/);
   const json = JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)[1]);
-  assert.equal(json.headline, state.post.document.title);
-  assert.equal(json.dateModified, "2026-09-16T11:00:00.000Z");
+  expect(json.headline).toBe(state.post.document.title);
+  expect(json.dateModified).toBe("2026-09-16T11:00:00.000Z");
   const metadata = await article.generateMetadata({
     params: Promise.resolve({ slug: "live-story" }),
   });
-  assert.equal(metadata.openGraph.type, "article");
-  assert.match(metadata.alternates.canonical, /\/blog\/live-story$/);
-  assert.deepEqual(
-    state.calls.filter(([name]) => name === "posts"),
-    [["posts", { category: "guides" }]],
-  );
+  expect(metadata.openGraph.type).toBe("article");
+  expect(metadata.alternates.canonical).toMatch(/\/blog\/live-story$/);
+  expect(state.calls.filter(([name]) => name === "posts")).toEqual([["posts", { category: "guides" }]]);
 });
 
 test("private preview shares safe article presentation without public share links or publication metadata", () => {
   const html = renderToStaticMarkup(createElement(BlogArticle, { document: published().document }));
-  assert.match(html, /href="#heading-1"/);
-  assert.match(html, /<h2 id="heading-1">First steps<\/h2>/);
-  assert.doesNotMatch(html, /Copy link|application\/ld\+json|dateTime=|href="\/blog\//);
+  expect(html).toMatch(/href="#heading-1"/);
+  expect(html).toMatch(/<h2 id="heading-1">First steps<\/h2>/);
+  expect(html).not.toMatch(/Copy link|application\/ld\+json|dateTime=|href="\/blog\//);
 });
 
 test("a failure loading optional related stories does not hide the published article", async () => {
@@ -221,25 +201,25 @@ test("a failure loading optional related stories does not hide the published art
   state.post = published();
   state.relatedError = new Error("Related query unavailable");
   const html = renderToStaticMarkup(await article.default({ params: Promise.resolve({ slug: "live-story" }) }));
-  assert.match(html, /<h2 id="heading-1">First steps<\/h2>/);
-  assert.doesNotMatch(html, /Related query unavailable/);
+  expect(html).toMatch(/<h2 id="heading-1">First steps<\/h2>/);
+  expect(html).not.toMatch(/Related query unavailable/);
 });
 
 test("missing and malformed article slugs return not-found without leaking unpublished content", async () => {
   reset();
-  await assert.rejects(article.default({ params: Promise.resolve({ slug: "../draft" }) }), /TEST_NOT_FOUND/);
-  assert.equal(state.calls.length, 0);
-  await assert.rejects(article.default({ params: Promise.resolve({ slug: "unpublished" }) }), /TEST_NOT_FOUND/);
-  assert.deepEqual(state.calls, [["post", "unpublished"]]);
+  await expect(article.default({ params: Promise.resolve({ slug: "../draft" }) })).rejects.toThrow(/TEST_NOT_FOUND/);
+  expect(state.calls.length).toBe(0);
+  await expect(article.default({ params: Promise.resolve({ slug: "unpublished" }) })).rejects.toThrow(/TEST_NOT_FOUND/);
+  expect(state.calls).toEqual([["post", "unpublished"]]);
 });
 
 test("filtered listing metadata does not create duplicate indexed search pages", async () => {
   const metadata = await listing.generateMetadata({
     searchParams: Promise.resolve({ search: "invoice" }),
   });
-  assert.equal(metadata.robots.index, false);
-  assert.equal(metadata.alternates.canonical, "/blog");
-  assert.equal(metadata.alternates.types["application/rss+xml"], "/blog/feed.xml");
+  expect(metadata.robots.index).toBe(false);
+  expect(metadata.alternates.canonical).toBe("/blog");
+  expect(metadata.alternates.types["application/rss+xml"]).toBe("/blog/feed.xml");
 });
 
 test("load-more preserves loaded stories on failure, retries the same cursor, and appends unique stories", async () => {
@@ -278,48 +258,44 @@ test("load-more preserves loaded stories on failure, retries the same cursor, an
   });
   click(findNext(render()));
   click(findNext(render()));
-  assert.equal(state.calls.length, 1, "a pending read cannot be submitted twice");
-  assert.match(renderToStaticMarkup(render()), /aria-busy="true"/);
+  expect(state.calls.length, "a pending read cannot be submitted twice").toBe(1);
+  expect(renderToStaticMarkup(render())).toMatch(/aria-busy="true"/);
   resolveRead({ items: [first, second, second], nextCursor: "page-3" });
   await new Promise(setImmediate);
   state.pendingRead = null;
   let html = renderToStaticMarkup(render());
-  assert.equal((html.match(/href="\/blog\/second-story"/g) ?? []).length, 1);
-  assert.match(html, /1 more story loaded/);
+  expect((html.match(/href="\/blog\/second-story"/g) ?? []).length).toBe(1);
+  expect(html).toMatch(/1 more story loaded/);
   state.error = new Error("postgres://private-password");
   click(findNext(render()));
   await new Promise(setImmediate);
   html = renderToStaticMarkup(render());
-  assert.match(html, /href="\/blog\/second-story"/);
-  assert.match(html, /Try loading more/);
-  assert.doesNotMatch(html, /private-password/);
-  assert.match(findNext(render()).props.href, /cursor=page-3/);
+  expect(html).toMatch(/href="\/blog\/second-story"/);
+  expect(html).toMatch(/Try loading more/);
+  expect(html).not.toMatch(/private-password/);
+  expect(findNext(render()).props.href).toMatch(/cursor=page-3/);
   state.error = null;
   state.posts = { items: [], nextCursor: null };
   click(findNext(render()));
   await new Promise(setImmediate);
-  assert.equal(findNext(render()), undefined);
-  assert.match(renderToStaticMarkup(render()), /You’re up to date/);
-  assert.deepEqual(
-    state.calls.map(([, input]) => input.cursor),
-    ["page-2", "page-3", "page-3"],
-  );
-  assert.ok(state.calls.every(([, input]) => input.category === "guides" && input.search === "PDF"));
+  expect(findNext(render())).toBe(undefined);
+  expect(renderToStaticMarkup(render())).toMatch(/You’re up to date/);
+  expect(state.calls.map(([, input]) => input.cursor)).toEqual(["page-2", "page-3", "page-3"]);
+  expect(state.calls.every(([, input]) => input.category === "guides" && input.search === "PDF")).toBeTruthy();
 });
 
 test("public load-more action returns only published query data and safe actionable failures", async () => {
   reset();
   state.posts = { items: [summary(published())], nextCursor: null };
   const result = await loadMoreBlogPosts({ category: "guides", cursor: "page-2" });
-  assert.equal(result.ok, true);
-  assert.deepEqual(state.calls, [["posts", { category: "guides", cursor: "page-2" }]]);
+  expect(result.ok).toBe(true);
+  expect(state.calls).toEqual([["posts", { category: "guides", cursor: "page-2" }]]);
   state.error = new BlogValidationError("Invalid pagination cursor");
   const invalid = await loadMoreBlogPosts({ cursor: "invalid" });
-  assert.equal(invalid.ok, false);
-  assert.equal(invalid.message, "Invalid pagination cursor");
+  expect(invalid.ok).toBe(false);
+  expect(invalid.message).toBe("Invalid pagination cursor");
   state.error = new Error("");
-  assert.equal(
-    (await loadMoreBlogPosts({})).message,
+  expect((await loadMoreBlogPosts({})).message).toBe(
     "Couldn’t load more stories. Your loaded stories are still here. Try again.",
   );
 });
@@ -354,7 +330,7 @@ test("load-more excludes taxonomy pagination fields from the real strict public 
   visit(tree).props.onClick({ button: 0, preventDefault() {} });
   await new Promise(setImmediate);
   const payload = state.calls[0][1];
-  assert.equal(Object.hasOwn(payload, "categoryCursor"), false);
+  expect(Object.hasOwn(payload, "categoryCursor")).toBe(false);
   const original = db.select;
   let reads = 0;
   const chain = {
@@ -369,10 +345,10 @@ test("load-more excludes taxonomy pagination fields from the real strict public 
     return chain;
   };
   try {
-    assert.deepEqual(await realPublishedQuery(payload), { items: [], nextCursor: null });
-    assert.equal(reads, 1);
-    await assert.rejects(realPublishedQuery({ ...payload, categoryCursor: undefined }));
-    assert.equal(reads, 1, "an unknown field is rejected before opening a database query");
+    expect(await realPublishedQuery(payload)).toEqual({ items: [], nextCursor: null });
+    expect(reads).toBe(1);
+    await expect(realPublishedQuery({ ...payload, categoryCursor: undefined })).rejects.toThrow();
+    expect(reads, "an unknown field is rejected before opening a database query").toBe(1);
   } finally {
     db.select = original;
   }

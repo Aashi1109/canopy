@@ -1,5 +1,7 @@
 "use client";
 
+import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -411,7 +413,7 @@ export default function NecTrackerPage({
       </div>
 
       {/* Split Columns Editor & Live Render */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <WorkbenchPanes className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* PAYMENT LEDGER INPUTS */}
         <div className="lg:col-span-7 space-y-6 print:hidden">
           <Card className="space-y-6">
@@ -760,7 +762,7 @@ export default function NecTrackerPage({
             </div>
           </div>
         </div>
-      </div>
+      </WorkbenchPanes>
     </div>
   );
 }

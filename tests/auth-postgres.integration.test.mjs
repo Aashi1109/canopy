@@ -1,12 +1,11 @@
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { randomUUID } from "node:crypto";
-import test from "node:test";
 
 const enabled = process.env.CANOPY_INTEGRATION === "1" && Boolean(process.env.DATABASE_URL);
 
 function emailActionUrl(message) {
   const href = message.html?.match(/href="([^"]+)"/)?.[1];
-  assert.ok(href, "authentication email includes an action URL");
+  expect(href, "authentication email includes an action URL").toBeTruthy();
   return new URL(href.replaceAll("&amp;", "&"));
 }
 
@@ -58,14 +57,14 @@ test(
       },
       headers,
     });
-    assert.equal(signup.token, null);
-    assert.equal(signup.user.name, "Auth Integration User");
-    assert.equal(signup.user.emailVerified, false);
-    assert.equal(delivered.length, 1);
+    expect(signup.token).toBe(null);
+    expect(signup.user.name).toBe("Auth Integration User");
+    expect(signup.user.emailVerified).toBe(false);
+    expect(delivered.length).toBe(1);
 
     const verificationUrl = emailActionUrl(delivered.shift());
     const verificationToken = verificationUrl.searchParams.get("token");
-    assert.ok(verificationToken);
+    expect(verificationToken).toBeTruthy();
     const verificationResponse = await auth.api.verifyEmail({
       query: {
         token: verificationToken,
@@ -74,24 +73,21 @@ test(
       headers,
       asResponse: true,
     });
-    assert.equal(verificationResponse.status, 302);
+    expect(verificationResponse.status).toBe(302);
 
     const [storedUser] = (
       await db.execute(sql`
       SELECT id, email_verified, name FROM auth_users WHERE email = ${email}
     `)
     ).rows;
-    assert.equal(storedUser.email_verified, true);
-    assert.equal(storedUser.name, "Auth Integration User");
+    expect(storedUser.email_verified).toBe(true);
+    expect(storedUser.name).toBe("Auth Integration User");
     const assignments = (
       await db.execute(sql`
       SELECT role_id FROM user_roles WHERE user_id = ${storedUser.id}
     `)
     ).rows;
-    assert.deepEqual(
-      assignments.map(({ role_id }) => role_id),
-      ["user"],
-    );
+    expect(assignments.map(({ role_id }) => role_id)).toEqual(["user"]);
 
     const signIn = await auth.api.signInEmail({
       body: {
@@ -101,7 +97,7 @@ test(
       },
       headers,
     });
-    assert.ok(signIn.token);
+    expect(signIn.token).toBeTruthy();
 
     const google = await auth.api.signInSocial({
       body: {
@@ -110,8 +106,8 @@ test(
       },
       headers,
     });
-    assert.equal(google.redirect, true);
-    assert.match(google.url, /^https:\/\/accounts\.google\.com\//);
+    expect(google.redirect).toBe(true);
+    expect(google.url).toMatch(/^https:\/\/accounts\.google\.com\//);
     const unsafeOAuth = await auth.handler(
       new Request("http://localhost:3000/api/auth/sign-in/social", {
         method: "POST",
@@ -125,8 +121,8 @@ test(
         }),
       }),
     );
-    assert.equal(unsafeOAuth.ok, false);
-    assert.doesNotMatch(unsafeOAuth.headers.get("location") ?? "", /evil\.test/);
+    expect(unsafeOAuth.ok).toBe(false);
+    expect(unsafeOAuth.headers.get("location") ?? "").not.toMatch(/evil\.test/);
 
     await auth.api.requestPasswordReset({
       body: {
@@ -135,26 +131,25 @@ test(
       },
       headers,
     });
-    assert.equal(delivered.length, 1);
+    expect(delivered.length).toBe(1);
     const resetUrl = emailActionUrl(delivered.shift());
     const resetToken = resetUrl.searchParams.get("token") ?? resetUrl.pathname.split("/").filter(Boolean).at(-1);
-    assert.ok(resetToken);
+    expect(resetToken).toBeTruthy();
     await auth.api.resetPassword({
       body: { token: resetToken, newPassword: nextPassword },
       headers,
     });
-    await assert.rejects(
-      () => auth.api.signInEmail({ body: { email, password }, headers }),
+    await expect(() => auth.api.signInEmail({ body: { email, password }, headers })).rejects.toThrow(
       /password|credentials|invalid/i,
     );
-    assert.ok(
+    expect(
       (
         await auth.api.signInEmail({
           body: { email, password: nextPassword },
           headers,
         })
       ).token,
-    );
+    ).toBeTruthy();
 
     await db.transaction(async (transaction) => {
       await transaction.execute(sql`
@@ -168,13 +163,13 @@ test(
       body: { email, password: nextPassword },
       headers,
     });
-    assert.ok(suspendedSignIn.token);
-    assert.equal(suspendedSignIn.user.status, "suspended");
+    expect(suspendedSignIn.token).toBeTruthy();
+    expect(suspendedSignIn.user.status).toBe("suspended");
     const [sessionCount] = (
       await db.execute(sql`
       SELECT COUNT(*)::integer AS count FROM auth_sessions WHERE user_id = ${storedUser.id}
     `)
     ).rows;
-    assert.equal(sessionCount.count, 1);
+    expect(sessionCount.count).toBe(1);
   },
 );

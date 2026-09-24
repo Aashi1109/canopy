@@ -4,6 +4,7 @@ import type { ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 import { parseColor, rgbToHex, rgbToHsl } from "../../lib/devtools/shared/color.ts";
+import { additionalColorFormats } from "./colorFormats.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
@@ -22,18 +23,24 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         : `rgb(${channels.join(" ")})`;
   const entries = [
     {
+      format: "hex",
       label: "HEX",
       value:
         (ctx.settings.normalizeShorthand ?? true) || !/^#?[\da-f]{3,8}$/i.test(ctx.input.text.trim())
           ? rgbToHex(color)
           : `#${ctx.input.text.trim().replace(/^#/, "").toUpperCase()}`,
     },
-    { label: "RGB", value: rgb },
-    ...((ctx.settings.includeHsl ?? true) || outputFormat === "hsl" ? [{ label: "HSL", value: rgbToHsl(color) }] : []),
+    { format: "rgb", label: "RGB", value: rgb },
+    ...((ctx.settings.includeHsl ?? true) || outputFormat === "hsl"
+      ? [{ format: "hsl", label: "HSL", value: rgbToHsl(color) }]
+      : []),
+    ...additionalColorFormats(color),
   ];
   return {
     render: "key-value",
-    entries: outputFormat === "all" ? entries : entries.filter(({ label }) => label.toLowerCase() === outputFormat),
+    entries: entries
+      .filter(({ format }) => outputFormat === "all" || format === outputFormat)
+      .map(({ label, value }) => ({ label, value })),
   };
 };
 

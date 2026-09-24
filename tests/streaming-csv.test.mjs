@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 
 import { CsvParseError, parseStreamingCsv } from "../lib/devtools/shared/streaming-csv.ts";
 
@@ -15,12 +14,12 @@ test("parses UTF-8, quotes, embedded newlines, BOM, and CRLF across byte boundar
     },
   });
 
-  assert.deepEqual(rows, [
+  expect(rows).toEqual([
     [1, ["id", "note"]],
     [2, ["1", 'héllo, "world"']],
     [3, ["2", "line one\r\nline two"]],
   ]);
-  assert.deepEqual(result, {
+  expect(result).toEqual({
     columnCount: 2,
     preview: [
       ["id", "note"],
@@ -35,11 +34,11 @@ test("parses UTF-8, quotes, embedded newlines, BOM, and CRLF across byte boundar
 test("supports string chunks and does not add a row after a trailing CRLF", async () => {
   const result = await parseStreamingCsv(["\uFEFFname,active\r", "\nAda,tr", "ue\r", "\n"]);
 
-  assert.deepEqual(result.preview, [
+  expect(result.preview).toEqual([
     ["name", "active"],
     ["Ada", "true"],
   ]);
-  assert.equal(result.rowCount, 2);
+  expect(result.rowCount).toBe(2);
 });
 
 test("reports cumulative bytes while reading streaming CSV input", async () => {
@@ -49,8 +48,8 @@ test("reports cumulative bytes while reading streaming CSV input", async () => {
     { onInputProgress: (bytes) => progress.push(bytes) },
   );
 
-  assert.equal(result.rowCount, 2);
-  assert.deepEqual(progress, [2, 7]);
+  expect(result.rowCount).toBe(2);
+  expect(progress).toEqual([2, 7]);
 });
 
 test("waits for asynchronous row consumers to provide backpressure", async () => {
@@ -64,30 +63,51 @@ test("waits for asynchronous row consumers to provide backpressure", async () =>
     },
   });
 
-  assert.deepEqual(events, ["start:a", "end:a", "start:b", "end:b", "start:c", "end:c"]);
+  expect(events).toEqual(["start:a", "end:a", "start:b", "end:b", "start:c", "end:c"]);
 });
 
 test("validates row width against the first row by default", async () => {
-  await assert.rejects(parseStreamingCsv(["id,name\n1,Ada\n2"]), (error) => {
-    assert.ok(error instanceof CsvParseError);
-    assert.equal(error.code, "width");
-    assert.equal(error.row, 3);
-    assert.equal(error.column, 2);
-    assert.equal(error.message, "Row 3 has 1 column; expected 2 columns.");
-    return true;
-  });
+  await (async () => {
+    let __err;
+    try {
+      await parseStreamingCsv(["id,name\n1,Ada\n2"]);
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(
+      ((error) => {
+        expect(error instanceof CsvParseError).toBeTruthy();
+        expect(error.code).toBe("width");
+        expect(error.row).toBe(3);
+        expect(error.column).toBe(2);
+        expect(error.message).toBe("Row 3 has 1 column; expected 2 columns.");
+        return true;
+      })(__err),
+    ).toBe(true);
+  })();
 });
 
 test("can accept ragged rows or validate a caller-provided width", async () => {
   const ragged = await parseStreamingCsv(["a,b\n1"], {
     validateWidth: false,
   });
-  assert.deepEqual(ragged.preview, [["a", "b"], ["1"]]);
+  expect(ragged.preview).toEqual([["a", "b"], ["1"]]);
 
-  await assert.rejects(
-    parseStreamingCsv(["a,b,c"], { expectedColumns: 2 }),
-    (error) => error instanceof CsvParseError && error.code === "width" && error.row === 1 && error.column === 3,
-  );
+  await (async () => {
+    let __err;
+    try {
+      await parseStreamingCsv(["a,b,c"], { expectedColumns: 2 });
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(
+      ((error) => error instanceof CsvParseError && error.code === "width" && error.row === 1 && error.column === 3)(
+        __err,
+      ),
+    ).toBe(true);
+  })();
 });
 
 test("reports quote errors at the logical row and column", async (t) => {
@@ -116,16 +136,27 @@ test("reports quote errors at the logical row and column", async (t) => {
   ];
 
   for (const expected of cases) {
-    await t.test(expected.code, async () => {
-      await assert.rejects(parseStreamingCsv([expected.input]), (error) => {
-        assert.ok(error instanceof CsvParseError);
-        assert.equal(error.code, expected.code);
-        assert.equal(error.row, expected.row);
-        assert.equal(error.column, expected.column);
-        assert.equal(error.message, expected.message);
-        return true;
-      });
-    });
+    await (async () => {
+      await (async () => {
+        let __err;
+        try {
+          await parseStreamingCsv([expected.input]);
+        } catch (__e) {
+          __err = __e;
+        }
+        expect(__err).toBeDefined();
+        expect(
+          ((error) => {
+            expect(error instanceof CsvParseError).toBeTruthy();
+            expect(error.code).toBe(expected.code);
+            expect(error.row).toBe(expected.row);
+            expect(error.column).toBe(expected.column);
+            expect(error.message).toBe(expected.message);
+            return true;
+          })(__err),
+        ).toBe(true);
+      })();
+    })();
   }
 });
 
@@ -139,11 +170,11 @@ test("keeps only the first 1,000 preview rows while streaming every row", async 
     },
   });
 
-  assert.equal(streamedRows, 1002);
-  assert.equal(result.rowCount, 1002);
-  assert.equal(result.preview.length, 1000);
-  assert.deepEqual(result.preview.at(-1), ["999"]);
-  assert.equal(result.previewTruncated, true);
+  expect(streamedRows).toBe(1002);
+  expect(result.rowCount).toBe(1002);
+  expect(result.preview.length).toBe(1000);
+  expect(result.preview.at(-1)).toEqual(["999"]);
+  expect(result.previewTruncated).toBe(true);
 });
 
 test("bounds the retained preview by UTF-8 bytes as well as row count", async () => {
@@ -152,9 +183,9 @@ test("bounds the retained preview by UTF-8 bytes as well as row count", async ()
     previewRows: 1_000,
   });
 
-  assert.equal(result.rowCount, 2);
-  assert.deepEqual(result.preview, [["header"]]);
-  assert.equal(result.previewTruncated, true);
+  expect(result.rowCount).toBe(2);
+  expect(result.preview).toEqual([["header"]]);
+  expect(result.previewTruncated).toBe(true);
 });
 
 test("drops blank records consistently and bounds pathological fields", async () => {
@@ -162,23 +193,29 @@ test("drops blank records consistently and bounds pathological fields", async ()
     maxFieldBytes: 4,
     maxRowBytes: 8,
   });
-  assert.deepEqual(result.preview, [["id"], ["1"], ["2"]]);
+  expect(result.preview).toEqual([["id"], ["1"], ["2"]]);
 
-  await assert.rejects(
-    parseStreamingCsv(["12345"], { maxFieldBytes: 4, maxRowBytes: 8 }),
-    (error) => error instanceof CsvParseError && error.code === "field-too-large",
-  );
+  await (async () => {
+    let __err;
+    try {
+      await parseStreamingCsv(["12345"], { maxFieldBytes: 4, maxRowBytes: 8 });
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error instanceof CsvParseError && error.code === "field-too-large")(__err)).toBe(true);
+  })();
 });
 
 test("supports an empty preview and an empty input", async () => {
-  assert.deepEqual(await parseStreamingCsv([], { previewRows: 0 }), {
+  expect(await parseStreamingCsv([], { previewRows: 0 })).toEqual({
     columnCount: 0,
     preview: [],
     previewTruncated: false,
     rowCount: 0,
   });
 
-  assert.deepEqual(await parseStreamingCsv(["a\nb"], { previewRows: 0 }), {
+  expect(await parseStreamingCsv(["a\nb"], { previewRows: 0 })).toEqual({
     columnCount: 1,
     preview: [],
     previewTruncated: true,
@@ -189,13 +226,19 @@ test("supports an empty preview and an empty input", async () => {
 test("stops parsing when its AbortSignal is aborted", async () => {
   const controller = new AbortController();
 
-  await assert.rejects(
-    parseStreamingCsv(["a\nb"], {
-      signal: controller.signal,
-      onRow() {
-        controller.abort();
-      },
-    }),
-    (error) => error?.name === "AbortError",
-  );
+  await (async () => {
+    let __err;
+    try {
+      await parseStreamingCsv(["a\nb"], {
+        signal: controller.signal,
+        onRow() {
+          controller.abort();
+        },
+      });
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error?.name === "AbortError")(__err)).toBe(true);
+  })();
 });

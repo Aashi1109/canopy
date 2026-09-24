@@ -1,14 +1,17 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test, vi, afterEach, onTestFinished } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { Cache } from "../lib/cache/index.ts";
 import { authUser, db } from "../db/index.ts";
 import { getCachedUser, withUserCacheInvalidation } from "../lib/admin/index.ts";
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 function setup(t) {
   const previous = process.env.DATABASE_URL;
   process.env.DATABASE_URL = "postgres://test:test@localhost/test";
-  t.after(() => {
+  onTestFinished(() => {
     if (previous === undefined) delete process.env.DATABASE_URL;
     else process.env.DATABASE_URL = previous;
   });
@@ -41,14 +44,14 @@ function setup(t) {
   };
   const dialect = new PgDialect();
   const originalSelect = db.select;
-  t.after(() => {
+  onTestFinished(() => {
     db.select = originalSelect;
   });
   db.select = () => {
     let id;
     const query = {
       from(table) {
-        assert.equal(table, authUser);
+        expect(table).toBe(authUser);
         return query;
       },
       where(condition) {
@@ -56,15 +59,15 @@ function setup(t) {
         return query;
       },
       async limit(count) {
-        assert.equal(count, 1);
+        expect(count).toBe(1);
         state.reads++;
         return users.has(id) ? [structuredClone(users.get(id))] : [];
       },
     };
     return query;
   };
-  t.mock.method(Cache.prototype, "rememberGuarded", async function (id, load, ttl) {
-    assert.equal(ttl, this.namespace === "user" ? 3600 : 86400);
+  vi.spyOn(Cache.prototype, "rememberGuarded").mockImplementation(async function (id, load, ttl) {
+    expect(ttl).toBe(this.namespace === "user" ? 3600 : 86400);
     if (this.namespace === "user-roles") id = `user-roles:${id}`;
     if (state.disabled || state.pending.has(id)) return load();
     if (state.entries.has(id)) return JSON.parse(state.entries.get(id));
@@ -73,8 +76,8 @@ function setup(t) {
     if (!state.pending.has(id) && state.versions.get(id) === version) state.entries.set(id, JSON.stringify(value));
     return value;
   });
-  t.mock.method(Cache.prototype, "beginInvalidation", async function (id, ttl) {
-    assert.equal(ttl, this.namespace === "user" ? 3600 : 86400);
+  vi.spyOn(Cache.prototype, "beginInvalidation").mockImplementation(async function (id, ttl) {
+    expect(ttl).toBe(this.namespace === "user" ? 3600 : 86400);
     if (this.namespace === "user-roles") id = `user-roles:${id}`;
     if (id === state.failBegin) throw new Error("Invalidation unavailable");
     state.begins.push(id);
@@ -85,8 +88,8 @@ function setup(t) {
     state.pending.set(id, token);
     return token;
   });
-  t.mock.method(Cache.prototype, "endInvalidation", async function (id, token, ttl) {
-    assert.equal(ttl, this.namespace === "user" ? 3600 : 86400);
+  vi.spyOn(Cache.prototype, "endInvalidation").mockImplementation(async function (id, token, ttl) {
+    expect(ttl).toBe(this.namespace === "user" ? 3600 : 86400);
     if (this.namespace === "user-roles") id = `user-roles:${id}`;
     if (token === null) return;
     state.ends.push(id);
@@ -98,13 +101,13 @@ function setup(t) {
 
 test("user profiles cache independently for one hour and hydrate dates", async (t) => {
   const state = setup(t);
-  assert.deepEqual(await getCachedUser("alice"), state.users.get("alice"));
+  expect(await getCachedUser("alice")).toEqual(state.users.get("alice"));
   const cached = await getCachedUser("alice");
-  assert.deepEqual(cached, state.users.get("alice"));
-  assert.ok(cached.createdAt instanceof Date);
-  assert.ok(cached.updatedAt instanceof Date);
-  assert.deepEqual(await getCachedUser("bob"), state.users.get("bob"));
-  assert.equal(state.reads, 2);
+  expect(cached).toEqual(state.users.get("alice"));
+  expect(cached.createdAt instanceof Date).toBeTruthy();
+  expect(cached.updatedAt instanceof Date).toBeTruthy();
+  expect(await getCachedUser("bob")).toEqual(state.users.get("bob"));
+  expect(state.reads).toBe(2);
 });
 
 test("profile edits, suspension, reactivation, and deletion invalidate the cached user", async (t) => {
@@ -114,59 +117,60 @@ test("profile edits, suspension, reactivation, and deletion invalidate the cache
     await withUserCacheInvalidation(async (invalidate) => {
       await invalidate(["alice", "alice"]);
       Object.assign(state.users.get("alice"), change);
-      assert.deepEqual(await getCachedUser("alice"), state.users.get("alice"));
+      expect(await getCachedUser("alice")).toEqual(state.users.get("alice"));
     });
-    assert.deepEqual(await getCachedUser("alice"), state.users.get("alice"));
+    expect(await getCachedUser("alice")).toEqual(state.users.get("alice"));
   }
-  assert.deepEqual(
-    state.begins,
-    ["alice", "user-roles:alice", "alice", "user-roles:alice", "alice", "user-roles:alice"],
-    "duplicate invalidation in one operation is acquired once",
-  );
+  expect(state.begins, "duplicate invalidation in one operation is acquired once").toEqual([
+    "alice",
+    "user-roles:alice",
+    "alice",
+    "user-roles:alice",
+    "alice",
+    "user-roles:alice",
+  ]);
   await withUserCacheInvalidation(async (invalidate) => {
     await invalidate(["alice"]);
     state.users.delete("alice");
   });
-  assert.equal(await getCachedUser("alice"), null);
+  expect(await getCachedUser("alice")).toBe(null);
   const reads = state.reads;
-  assert.equal(await getCachedUser("alice"), null);
-  assert.equal(state.reads, reads);
-  assert.equal(state.pending.size, 0);
+  expect(await getCachedUser("alice")).toBe(null);
+  expect(state.reads).toBe(reads);
+  expect(state.pending.size).toBe(0);
 });
 
 test("rollback releases the fence and reloads the original profile", async (t) => {
   const state = setup(t);
   const original = await getCachedUser("alice");
-  await assert.rejects(
+  await expect(
     withUserCacheInvalidation(async (invalidate) => {
       await invalidate(["alice"]);
       const before = structuredClone(state.users.get("alice"));
       state.users.get("alice").name = "Uncommitted";
-      assert.equal((await getCachedUser("alice")).name, "Uncommitted");
+      expect((await getCachedUser("alice")).name).toBe("Uncommitted");
       state.users.set("alice", before);
       throw new Error("Rolled back");
     }),
-    /Rolled back/,
-  );
-  assert.equal(state.pending.size, 0);
-  assert.deepEqual(await getCachedUser("alice"), original);
-  assert.equal(state.reads, 3);
+  ).rejects.toThrow(/Rolled back/);
+  expect(state.pending.size).toBe(0);
+  expect(await getCachedUser("alice")).toEqual(original);
+  expect(state.reads).toBe(3);
 });
 
 test("partial invalidation failure releases previous fences before rejecting", async (t) => {
   const state = setup(t);
   state.failBegin = "bob";
   let mutated = false;
-  await assert.rejects(
+  await expect(
     withUserCacheInvalidation(async (invalidate) => {
       await invalidate(["alice", "bob"]);
       mutated = true;
     }),
-    /Invalidation unavailable/,
-  );
-  assert.equal(mutated, false);
-  assert.deepEqual(state.ends, ["alice", "user-roles:alice"]);
-  assert.equal(state.pending.size, 0);
+  ).rejects.toThrow(/Invalidation unavailable/);
+  expect(mutated).toBe(false);
+  expect(state.ends).toEqual(["alice", "user-roles:alice"]);
+  expect(state.pending.size).toBe(0);
 });
 
 test("cache bypass and invalid cache data always reload the database", async (t) => {
@@ -174,11 +178,11 @@ test("cache bypass and invalid cache data always reload the database", async (t)
   state.disabled = true;
   await getCachedUser("alice");
   await getCachedUser("alice");
-  assert.equal(state.reads, 2);
+  expect(state.reads).toBe(2);
   await withUserCacheInvalidation(async (invalidate) => {
     await invalidate(["alice"]);
   });
-  assert.equal(state.pending.size, 0);
+  expect(state.pending.size).toBe(0);
   state.disabled = false;
   for (const bad of [
     false,
@@ -187,23 +191,22 @@ test("cache bypass and invalid cache data always reload the database", async (t)
     { ...state.users.get("alice"), updatedAt: "bad date" },
   ]) {
     state.entries.set("alice", JSON.stringify(bad));
-    assert.deepEqual(await getCachedUser("alice"), state.users.get("alice"));
+    expect(await getCachedUser("alice")).toEqual(state.users.get("alice"));
   }
-  assert.equal(state.reads, 6);
+  expect(state.reads).toBe(6);
 });
 
 test("failed roles invalidation releases the user fence and prevents the mutation", async (t) => {
   const state = setup(t);
   state.failBegin = "user-roles:alice";
   let mutated = false;
-  await assert.rejects(
+  await expect(
     withUserCacheInvalidation(async (invalidate) => {
       await invalidate(["alice"]);
       mutated = true;
     }),
-    /Invalidation unavailable/,
-  );
-  assert.equal(mutated, false);
-  assert.deepEqual(state.ends, ["alice"]);
-  assert.equal(state.pending.size, 0);
+  ).rejects.toThrow(/Invalidation unavailable/);
+  expect(mutated).toBe(false);
+  expect(state.ends).toEqual(["alice"]);
+  expect(state.pending.size).toBe(0);
 });

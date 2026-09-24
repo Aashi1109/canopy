@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { test, expect } from "vitest";
 import { blogListingHref, parseBlogFilters } from "../app/blog/lib/filters.ts";
 
 test("blog URL filters normalize blank values and reject ambiguous or malformed inputs", () => {
-  assert.deepEqual(parseBlogFilters({ search: "  useful guide  ", category: "", ignored: "tracking" }), {
+  expect(parseBlogFilters({ search: "  useful guide  ", category: "", ignored: "tracking" })).toEqual({
     search: "useful guide",
     category: undefined,
     tag: undefined,
@@ -18,7 +17,7 @@ test("blog URL filters normalize blank values and reject ambiguous or malformed 
     { tag: "bad slug" },
     { cursor: "x".repeat(1201) },
   ]) {
-    assert.throws(() => parseBlogFilters(input));
+    expect(() => parseBlogFilters(input)).toThrow();
   }
 });
 
@@ -31,16 +30,15 @@ test("blog links retain active filters, encode text, and allow resetting paginat
     categoryCursor: "terms",
   };
   const next = new URL(blogListingHref(filters, { cursor: "next" }), "https://example.test");
-  assert.equal(next.searchParams.get("search"), "PDF & images");
-  assert.equal(next.searchParams.get("category"), "guides");
-  assert.equal(next.searchParams.get("tag"), "pdf");
-  assert.equal(next.searchParams.get("cursor"), "next");
-  assert.equal(
+  expect(next.searchParams.get("search")).toBe("PDF & images");
+  expect(next.searchParams.get("category")).toBe("guides");
+  expect(next.searchParams.get("tag")).toBe("pdf");
+  expect(next.searchParams.get("cursor")).toBe("next");
+  expect(
     new URL(
       blogListingHref(filters, { category: undefined, cursor: undefined }),
       "https://example.test",
     ).searchParams.has("cursor"),
-    false,
-  );
-  assert.equal(blogListingHref({}), "/blog");
+  ).toBe(false);
+  expect(blogListingHref({})).toBe("/blog");
 });

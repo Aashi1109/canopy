@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, onTestFinished, test, vi } from "vitest";
 import { Readable } from "node:stream";
 import { gzipSync } from "node:zlib";
 import https from "node:https";
@@ -41,7 +40,7 @@ test("bare public domains default to HTTPS while explicit HTTP URLs retain their
     ["https://slack.com:443/features#overview", "https://slack.com/features"],
     ["http://slack.com:80/features?q=team#overview", "http://slack.com/features?q=team"],
   ]) {
-    assert.equal(parsePublicUrl(input).href, expected, input);
+    expect(parsePublicUrl(input).href, input).toBe(expected);
   }
 });
 
@@ -63,7 +62,7 @@ test("bare-domain normalization still rejects private targets, custom ports, cre
     "mailto:user@slack.com",
     "data:text/html,<title>Example</title>",
   ]) {
-    assert.throws(() => parsePublicUrl(input), { code: "invalid-url" }, input);
+    expect(() => parsePublicUrl(input), input).toThrow(expect.objectContaining({ code: "invalid-url" }));
   }
 });
 
@@ -83,9 +82,9 @@ test("public URL validation rejects local, reserved, credentialed, non-web and o
     "http://10.0.0.1",
     "https://example.com:8443",
   ]) {
-    assert.throws(() => parsePublicUrl(url), { code: "invalid-url" }, url);
+    expect(() => parsePublicUrl(url), url).toThrow(expect.objectContaining({ code: "invalid-url" }));
   }
-  assert.equal(parsePublicUrl("https://example.com/path?q=1#part").href, "https://example.com/path?q=1");
+  expect(parsePublicUrl("https://example.com/path?q=1#part").href).toBe("https://example.com/path?q=1");
   for (const address of [
     "0.0.0.0",
     "100.64.0.1",
@@ -104,36 +103,38 @@ test("public URL validation rejects local, reserved, credentialed, non-web and o
     "2002:7f00:1::",
     "::ffff:8.8.8.8",
   ]) {
-    assert.equal(isPublicAddress(address), false, address);
+    expect(isPublicAddress(address), address).toBe(false);
   }
-  assert.equal(isPublicAddress("8.8.8.8"), true);
-  assert.equal(isPublicAddress("2606:4700:4700::1111"), true);
+  expect(isPublicAddress("8.8.8.8")).toBe(true);
+  expect(isPublicAddress("2606:4700:4700::1111")).toBe(true);
 });
 
 test("every DNS answer must be public and requests receive the validated address", async () => {
   const blocked = transport([], [publicAddress, { address: "127.0.0.1", family: 4 }]);
-  await assert.rejects(fetchPublicResource("https://example.com", "html", new AbortController().signal, blocked), {
+  await expect(
+    fetchPublicResource("https://example.com", "html", new AbortController().signal, blocked),
+  ).rejects.toMatchObject({
     code: "private-address",
   });
-  assert.equal(blocked.calls.length, 0);
+  expect(blocked.calls.length).toBe(0);
   const safe = transport([response()]);
   const result = await fetchPublicResource("https://example.com", "html", new AbortController().signal, safe);
-  assert.equal(result.url, "https://example.com/");
-  assert.deepEqual(safe.calls[0].address, publicAddress);
+  expect(result.url).toBe("https://example.com/");
+  expect(safe.calls[0].address).toEqual(publicAddress);
 });
 
-test("Node transport pins the connection without replacing Host or TLS hostname", async (t) => {
+test("Node transport pins the connection without replacing Host or TLS hostname", async () => {
   let lookupAddress;
   let hostname;
   const original = https.request;
-  t.after(() => {
+  onTestFinished(() => {
     https.request = original;
     syncBuiltinESMExports();
   });
   https.request = (url, options, done) => {
     hostname = url.hostname;
     options.lookup(url.hostname, { all: true }, (error, addresses) => {
-      assert.equal(error, null);
+      expect(error).toBe(null);
       lookupAddress = addresses;
     });
     const request = new EventEmitter();
@@ -143,23 +144,23 @@ test("Node transport pins the connection without replacing Host or TLS hostname"
       body.headers = { "content-type": "text/html" };
       done(body);
     };
-    assert.equal(options.agent, false);
-    assert.equal(options.headers.Cookie, undefined);
+    expect(options.agent).toBe(false);
+    expect(options.headers.Cookie).toBe(undefined);
     return request;
   };
   syncBuiltinESMExports();
   const result = await fetchPublicResource("https://example.com", "html", new AbortController().signal, {
     resolve: async () => [publicAddress],
   });
-  assert.equal(hostname, "example.com");
-  assert.deepEqual(lookupAddress, [publicAddress]);
-  assert.equal(result.bytes.toString(), "<title>Connected</title>");
+  expect(hostname).toBe("example.com");
+  expect(lookupAddress).toEqual([publicAddress]);
+  expect(result.bytes.toString()).toBe("<title>Connected</title>");
 });
 
-test("DNS adapters accept Workers CNAME records alongside IP answers without bypassing private-IP checks", async (t) => {
+test("DNS adapters accept Workers CNAME records alongside IP answers without bypassing private-IP checks", async () => {
   const original4 = dns.resolve4;
   const original6 = dns.resolve6;
-  t.after(() => {
+  onTestFinished(() => {
     dns.resolve4 = original4;
     dns.resolve6 = original6;
     syncBuiltinESMExports();
@@ -169,42 +170,46 @@ test("DNS adapters accept Workers CNAME records alongside IP answers without byp
   syncBuiltinESMExports();
   const network = transport([response()]);
   await fetchPublicResource("https://example.com", "html", new AbortController().signal, { request: network.request });
-  assert.deepEqual(network.calls[0].address, publicAddress);
+  expect(network.calls[0].address).toEqual(publicAddress);
   dns.resolve4 = async () => ["cdn.example.com.", "127.0.0.1"];
   syncBuiltinESMExports();
-  await assert.rejects(
+  await expect(
     fetchPublicResource("https://example.com", "html", new AbortController().signal, { request: network.request }),
-    { code: "private-address" },
-  );
-  assert.equal(network.calls.length, 1);
+  ).rejects.toMatchObject({ code: "private-address" });
+  expect(network.calls.length).toBe(1);
 });
 
 test("redirects are independently validated and bounded", async () => {
   const blocked = transport([
     response("", { status: 302, headers: new Headers({ location: "http://127.0.0.1/admin" }) }),
   ]);
-  await assert.rejects(fetchPublicResource("https://example.com", "html", new AbortController().signal, blocked), {
+  await expect(
+    fetchPublicResource("https://example.com", "html", new AbortController().signal, blocked),
+  ).rejects.toMatchObject({
     code: "invalid-url",
   });
-  assert.equal(blocked.calls.length, 1);
+  expect(blocked.calls.length).toBe(1);
   const safe = transport([response("", { status: 301, headers: new Headers({ location: "/new" }) }), response()]);
-  assert.equal(
-    (await fetchPublicResource("https://example.com", "html", new AbortController().signal, safe)).url,
+  expect((await fetchPublicResource("https://example.com", "html", new AbortController().signal, safe)).url).toBe(
     "https://example.com/new",
   );
   const loop = transport(
     Array.from({ length: 6 }, () => response("", { status: 302, headers: new Headers({ location: "/loop" }) })),
   );
-  await assert.rejects(fetchPublicResource("https://example.com", "html", new AbortController().signal, loop), {
+  await expect(
+    fetchPublicResource("https://example.com", "html", new AbortController().signal, loop),
+  ).rejects.toMatchObject({
     code: "too-many-redirects",
   });
   let resolutions = 0;
   const rebind = transport([response("", { status: 302, headers: new Headers({ location: "/rebound" }) })]);
   rebind.resolve = async () => (++resolutions === 1 ? [publicAddress] : [{ address: "127.0.0.1", family: 4 }]);
-  await assert.rejects(fetchPublicResource("https://example.com", "html", new AbortController().signal, rebind), {
+  await expect(
+    fetchPublicResource("https://example.com", "html", new AbortController().signal, rebind),
+  ).rejects.toMatchObject({
     code: "private-address",
   });
-  assert.equal(rebind.calls.length, 1);
+  expect(rebind.calls.length).toBe(1);
 });
 
 test("fetch rejects non-HTML, upstream errors and decompression bombs", async () => {
@@ -222,35 +227,37 @@ test("fetch rejects non-HTML, upstream errors and decompression bombs", async ()
       "response-too-large",
     ],
   ]) {
-    await assert.rejects(
+    await expect(
       fetchPublicResource("https://example.com", "html", new AbortController().signal, transport([value])),
-      { code },
-    );
+    ).rejects.toMatchObject({ code });
   }
   const compressed = response(gzipSync("<title>Compressed</title>"), {
     headers: new Headers({ "content-type": "text/html", "content-encoding": "gzip" }),
   });
-  assert.equal(
+  expect(
     (
       await fetchPublicResource("https://example.com", "html", new AbortController().signal, transport([compressed]))
     ).bytes.toString(),
-    "<title>Compressed</title>",
-  );
+  ).toBe("<title>Compressed</title>");
 });
 
 test("fetch honors already aborted and in-flight DNS cancellation", async () => {
   const controller = new AbortController();
   controller.abort();
-  await assert.rejects(fetchPublicResource("https://example.com", "html", controller.signal, transport([])), {
+  await expect(
+    fetchPublicResource("https://example.com", "html", controller.signal, transport([])),
+  ).rejects.toMatchObject({
     name: "AbortError",
   });
   const waiting = new AbortController();
   const pending = fetchPublicResource("https://example.com", "html", waiting.signal, {
     resolve: () => new Promise(() => {}),
-    request: () => assert.fail("no request expected"),
+    request: () => {
+      throw new Error("no request expected");
+    },
   });
   waiting.abort();
-  await assert.rejects(pending, { name: "AbortError" });
+  await expect(pending).rejects.toMatchObject({ name: "AbortError" });
 });
 
 test("metadata parses entities and quoted attributes, applies OG/Twitter precedence and resolves relative URLs", () => {
@@ -258,16 +265,16 @@ test("metadata parses entities and quoted attributes, applies OG/Twitter precede
     `<html><head><base href="/assets/"><title>Document &amp; title</title><meta name="description" content="Document description"><meta property="og:title" content="OG &amp; title"><meta property="og:description" content="x > y &quot;quoted&quot;"><meta property="og:image" content="cover.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:url" content="/canonical"><meta property="og:type" content="website"><meta name="twitter:title" content="X title"><meta name="twitter:card" content="summary_large_image"></head><body><script>document.write('<meta property="og:title" content="inert">')</script></body></html>`,
     "https://example.com/page",
   );
-  assert.equal(result.metadata.title, "OG & title");
-  assert.equal(result.metadata.description, 'x > y "quoted"');
-  assert.equal(result.metadata.image.url, "https://example.com/assets/cover.png");
-  assert.equal(result.metadata.image.width, 1200);
-  assert.equal(result.metadata.image.previewUrl, null);
-  assert.equal(result.metadata.url, "https://example.com/canonical");
-  assert.equal(result.metadata.twitter.title, "X title");
-  assert.match(result.tags, /content="OG &amp; title"/);
-  assert.match(result.tags, /x &gt; y &quot;quoted&quot;/);
-  assert.doesNotMatch(result.tags, /inert/);
+  expect(result.metadata.title).toBe("OG & title");
+  expect(result.metadata.description).toBe('x > y "quoted"');
+  expect(result.metadata.image.url).toBe("https://example.com/assets/cover.png");
+  expect(result.metadata.image.width).toBe(1200);
+  expect(result.metadata.image.previewUrl).toBe(null);
+  expect(result.metadata.url).toBe("https://example.com/canonical");
+  expect(result.metadata.twitter.title).toBe("X title");
+  expect(result.tags).toMatch(/content="OG &amp; title"/);
+  expect(result.tags).toMatch(/x &gt; y &quot;quoted&quot;/);
+  expect(result.tags).not.toMatch(/inert/);
 });
 
 test("missing, duplicate and unsafe tags produce truthful diagnostics and document fallbacks", () => {
@@ -275,13 +282,13 @@ test("missing, duplicate and unsafe tags produce truthful diagnostics and docume
     '<title>Fallback</title><meta name="description" content="Details"><meta property="og:image" content="javascript:alert(1)"><meta property="og:title" content=""><meta property="og:title" content="">',
     "https://example.com",
   );
-  assert.equal(fallback.metadata.title, "Fallback");
-  assert.equal(fallback.metadata.description, "Details");
-  assert.equal(fallback.metadata.image, null);
-  assert.ok(fallback.checks.some((check) => check.property === "og:title" && check.level === "warn"));
-  assert.ok(fallback.checks.some((check) => check.property === "og:image" && check.level === "error"));
-  assert.ok(fallback.checks.some((check) => check.label.includes("Duplicate")));
-  assert.equal(parseMetadata("<body>No metadata</body>", "https://example.com/").metadata.title, "");
+  expect(fallback.metadata.title).toBe("Fallback");
+  expect(fallback.metadata.description).toBe("Details");
+  expect(fallback.metadata.image).toBe(null);
+  expect(fallback.checks.some((check) => check.property === "og:title" && check.level === "warn")).toBeTruthy();
+  expect(fallback.checks.some((check) => check.property === "og:image" && check.level === "error")).toBeTruthy();
+  expect(fallback.checks.some((check) => check.label.includes("Duplicate"))).toBeTruthy();
+  expect(parseMetadata("<body>No metadata</body>", "https://example.com/").metadata.title).toBe("");
 });
 
 test("page inspection embeds validated raster images once and preserves real HTML tags", async () => {
@@ -296,13 +303,13 @@ test("page inspection embeds validated raster images once and preserves real HTM
     response(png, { headers: new Headers({ "content-type": "image/png" }) }),
   ]);
   const result = await inspectPage("https://example.com/page", new AbortController().signal, network);
-  assert.equal(result.render, "link-preview");
-  assert.equal(result.metadata.title, "Preview");
-  assert.equal(result.metadata.image.previewUrl, `data:image/png;base64,${png.toString("base64")}`);
-  assert.equal(result.metadata.twitter.image.previewUrl, result.metadata.image.previewUrl);
-  assert.equal(network.calls.length, 2);
-  assert.match(result.tags, /content="\/cover.png"/);
-  assert.doesNotMatch(result.tags, /<article|<!--/);
+  expect(result.render).toBe("link-preview");
+  expect(result.metadata.title).toBe("Preview");
+  expect(result.metadata.image.previewUrl).toBe(`data:image/png;base64,${png.toString("base64")}`);
+  expect(result.metadata.twitter.image.previewUrl).toBe(result.metadata.image.previewUrl);
+  expect(network.calls.length).toBe(2);
+  expect(result.tags).toMatch(/content="\/cover.png"/);
+  expect(result.tags).not.toMatch(/<article|<!--/);
 });
 
 test("private, SVG and mislabeled images do not trigger unsafe browser requests or fail the page scan", async () => {
@@ -322,19 +329,19 @@ test("private, SVG and mislabeled images do not trigger unsafe browser requests 
       ...(imageResponse ? [imageResponse] : []),
     ]);
     const result = await inspectPage("https://example.com", new AbortController().signal, network);
-    assert.equal(result.metadata.title, "Page");
-    assert.equal(result.metadata.image.previewUrl, null);
-    assert.ok(result.checks.some((check) => check.property === "image:fetch" && check.level === "warn"));
-    assert.equal(network.calls.length, imageResponse ? 2 : 1);
+    expect(result.metadata.title).toBe("Page");
+    expect(result.metadata.image.previewUrl).toBe(null);
+    expect(result.checks.some((check) => check.property === "image:fetch" && check.level === "warn")).toBeTruthy();
+    expect(network.calls.length).toBe(imageResponse ? 2 : 1);
   }
 });
 
-test("Cloudflare uses its public-only native fetch without cookies or automatic redirects", async (t) => {
+test("Cloudflare uses its public-only native fetch without cookies or automatic redirects", async () => {
   const navigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, "navigator");
   Object.defineProperty(globalThis, "navigator", { value: { userAgent: "Cloudflare-Workers" }, configurable: true });
-  t.after(() => Object.defineProperty(globalThis, "navigator", navigatorDescriptor));
+  onTestFinished(() => Object.defineProperty(globalThis, "navigator", navigatorDescriptor));
   const calls = [];
-  t.mock.method(globalThis, "fetch", async (url, options) => {
+  const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (url, options) => {
     calls.push({ url: url.href, options });
     return new Response("<title>Decoded response</title>", {
       headers: { "content-type": "text/html", "content-encoding": "gzip" },
@@ -343,9 +350,10 @@ test("Cloudflare uses its public-only native fetch without cookies or automatic 
   const result = await fetchPublicResource("https://example.com", "html", new AbortController().signal, {
     resolve: async () => [publicAddress],
   });
-  assert.match(result.bytes.toString(), /Decoded response/);
-  assert.equal(calls[0].options.redirect, "manual");
-  assert.equal(calls[0].options.credentials, "omit");
-  assert.equal(calls[0].options.headers.Cookie, undefined);
-  assert.equal(calls[0].options.headers.Authorization, undefined);
+  expect(result.bytes.toString()).toMatch(/Decoded response/);
+  expect(calls[0].options.redirect).toBe("manual");
+  expect(calls[0].options.credentials).toBe("omit");
+  expect(calls[0].options.headers.Cookie).toBe(undefined);
+  expect(calls[0].options.headers.Authorization).toBe(undefined);
+  fetchSpy.mockRestore();
 });

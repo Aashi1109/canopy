@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { expect, test } from "vitest";
 import { calculateMileageSummary, getMileageRate } from "../lib/paperwork/mileageRules.ts";
 import { calculateExpenseTotals, normalizeExpenseRows } from "../lib/paperwork/expenseReportRules.ts";
 import {
@@ -18,9 +16,9 @@ import {
 } from "../lib/paperwork/quarterlyTaxRules.ts";
 
 test("mileage uses the 2026 effective-date schedule", () => {
-  assert.equal(getMileageRate("irs-standard", 2026, "2026-06-30", 0), 0.725);
-  assert.equal(getMileageRate("irs-standard", 2026, "2026-07-01", 0), 0.76);
-  assert.equal(getMileageRate("custom", 2026, "2026-07-01", 0.91), 0.91);
+  expect(getMileageRate("irs-standard", 2026, "2026-06-30", 0)).toBe(0.725);
+  expect(getMileageRate("irs-standard", 2026, "2026-07-01", 0)).toBe(0.76);
+  expect(getMileageRate("custom", 2026, "2026-07-01", 0.91)).toBe(0.91);
 });
 
 test("mileage adds parking and tolls but excludes fuel from the deduction", () => {
@@ -35,17 +33,17 @@ test("mileage adds parking and tolls but excludes fuel from the deduction", () =
     fuelRecords: [{ cost: 999, gallons: 10, odometer: 100 }],
   });
 
-  assert.deepEqual(summary.errors, []);
-  assert.equal(summary.standardMileageDeduction, 11.05);
-  assert.equal(summary.parkingAndTolls, 3);
-  assert.equal(summary.totalDeduction, 14.05);
-  assert.equal(summary.totalFuelCost, 999);
+  expect(summary.errors).toEqual([]);
+  expect(summary.standardMileageDeduction).toBe(11.05);
+  expect(summary.parkingAndTolls).toBe(3);
+  expect(summary.totalDeduction).toBe(14.05);
+  expect(summary.totalFuelCost).toBe(999);
 });
 
 test("unsupported mileage years fail instead of using a stale rate", () => {
-  assert.throws(() => getMileageRate("irs-standard", 2027, "2027-01-01", 0), /rules update required/i);
-  assert.throws(() => getMileageRate("custom", 2026, "2026-01-01", -1), /custom mileage rate/i);
-  assert.throws(() => getMileageRate("irs-standard", 2026, "2025-12-31", 0), /within tax year/i);
+  expect(() => getMileageRate("irs-standard", 2027, "2027-01-01", 0)).toThrow(/rules update required/i);
+  expect(() => getMileageRate("custom", 2026, "2026-01-01", -1)).toThrow(/custom mileage rate/i);
+  expect(() => getMileageRate("irs-standard", 2026, "2025-12-31", 0)).toThrow(/within tax year/i);
 });
 
 test("mileage reports invalid trip dates and computes MPG from later fills", () => {
@@ -60,9 +58,9 @@ test("mileage reports invalid trip dates and computes MPG from later fills", () 
     ],
   });
 
-  assert.match(summary.errors[0], /within tax year/i);
-  assert.equal(summary.trips[0].amount, 0);
-  assert.equal(summary.fuelEconomy, 30);
+  expect(summary.errors[0]).toMatch(/within tax year/i);
+  expect(summary.trips[0].amount).toBe(0);
+  expect(summary.fuelEconomy).toBe(30);
 });
 
 test("expense totals make base, tax, tip, mileage, and advance semantics explicit", () => {
@@ -88,37 +86,35 @@ test("expense totals make base, tax, tip, mileage, and advance semantics explici
   ]);
   const totals = calculateExpenseTotals(rows, [{ miles: 20, rate: 1 }], 30);
 
-  assert.equal(totals.baseAmount, 150);
-  assert.equal(totals.taxAmount, 10);
-  assert.equal(totals.tipAmount, 7);
-  assert.equal(totals.expenseTotal, 167);
-  assert.equal(totals.reimbursableTotal, 115);
-  assert.equal(totals.billableTotal, 52);
-  assert.equal(totals.mileageTotal, 20);
-  assert.equal(totals.reportTotal, 187);
-  assert.equal(totals.amountDue, 105);
-  assert.deepEqual(totals.categoryTotals, { Meals: 115, Travel: 52 });
+  expect(totals.baseAmount).toBe(150);
+  expect(totals.taxAmount).toBe(10);
+  expect(totals.tipAmount).toBe(7);
+  expect(totals.expenseTotal).toBe(167);
+  expect(totals.reimbursableTotal).toBe(115);
+  expect(totals.billableTotal).toBe(52);
+  expect(totals.mileageTotal).toBe(20);
+  expect(totals.reportTotal).toBe(187);
+  expect(totals.amountDue).toBe(105);
+  expect(totals.categoryTotals).toEqual({ Meals: 115, Travel: 52 });
 });
 
 test("legacy expense rows normalize missing tax and tip to zero", () => {
-  assert.deepEqual(normalizeExpenseRows([{ id: "legacy", amount: 25 }]), [
-    { id: "legacy", amount: 25, tax: 0, tip: 0 },
-  ]);
-  assert.deepEqual(calculateExpenseTotals([{ amount: 10 }], [{}], 0).categoryTotals, { Other: 10 });
+  expect(normalizeExpenseRows([{ id: "legacy", amount: 25 }])).toEqual([{ id: "legacy", amount: 25, tax: 0, tip: 0 }]);
+  expect(calculateExpenseTotals([{ amount: 10 }], [{}], 0).categoryTotals).toEqual({ Other: 10 });
 });
 
 test("1099 thresholds are year-owned and unknown future years fail safely", () => {
-  assert.deepEqual(get1099ReportingRule(2025), {
+  expect(get1099ReportingRule(2025)).toEqual({
     supported: true,
     year: 2025,
     threshold: 600,
   });
-  assert.deepEqual(get1099ReportingRule(2026), {
+  expect(get1099ReportingRule(2026)).toEqual({
     supported: true,
     year: 2026,
     threshold: 2000,
   });
-  assert.deepEqual(get1099ReportingRule(2027), {
+  expect(get1099ReportingRule(2027)).toEqual({
     supported: false,
     year: 2027,
     error: "1099-NEC rules update required for 2027.",
@@ -150,19 +146,19 @@ test("1099 summary reports missing vendors and annual box adjustments", () => {
     ["known"],
   );
 
-  assert.equal(summary.aboveThresholdCount, 1);
-  assert.deepEqual(summary.missingVendorIds, ["missing"]);
-  assert.match(summary.issues[0], /missing/i);
-  assert.equal(summary.boxTotals.cashTips, 40);
-  assert.equal(summary.boxTotals.qualifiedOvertime, 75);
-  assert.equal(summary.boxTotals.federalWithholding, 12);
+  expect(summary.aboveThresholdCount).toBe(1);
+  expect(summary.missingVendorIds).toEqual(["missing"]);
+  expect(summary.issues[0]).toMatch(/missing/i);
+  expect(summary.boxTotals.cashTips).toBe(40);
+  expect(summary.boxTotals.qualifiedOvertime).toBe(75);
+  expect(summary.boxTotals.federalWithholding).toBe(12);
 });
 
 test("unsupported 1099 summaries and empty W-9 settings stay explicit", () => {
   const summary = calculateNecSummary({ reportingYear: 2027, payments: [], recipientAdjustments: [] }, []);
-  assert.match(summary.issues[0], /rules update required/i);
-  assert.equal(summary.aboveThresholdCount, 0);
-  assert.deepEqual(createEmptyRecipientAdjustment("vendor"), {
+  expect(summary.issues[0]).toMatch(/rules update required/i);
+  expect(summary.aboveThresholdCount).toBe(0);
+  expect(createEmptyRecipientAdjustment("vendor")).toEqual({
     vendorId: "vendor",
     cashTips: 0,
     occupationCodes: "",
@@ -178,14 +174,14 @@ test("unsupported 1099 summaries and empty W-9 settings stay explicit", () => {
     contractorName: "",
     secureSubmissionInstructions: "",
   }).body;
-  assert.match(futureRequest, /rules update required/i);
-  assert.match(futureRequest, /approved secure document portal/i);
-  assert.equal(maskTinReference(""), "");
+  expect(futureRequest).toMatch(/rules update required/i);
+  expect(futureRequest).toMatch(/approved secure document portal/i);
+  expect(maskTinReference("")).toBe("");
 });
 
 test("TIN references retain only the last four digits", () => {
-  assert.equal(maskTinReference("12-3456789"), "•••• 6789");
-  assert.equal(maskTinReference("12"), "•••• 12");
+  expect(maskTinReference("12-3456789")).toBe("•••• 6789");
+  expect(maskTinReference("12")).toBe("•••• 12");
 });
 
 test("W-9 requests use the official form, year rule, secure return instructions, and request-only disclaimer", () => {
@@ -196,11 +192,11 @@ test("W-9 requests use the official form, year rule, secure return instructions,
     secureSubmissionInstructions: "Upload through the Acme secure vendor portal.",
   });
 
-  assert.match(request.body, /https:\/\/www\.irs\.gov\/pub\/irs-pdf\/fw9\.pdf/);
-  assert.match(request.body, /\$2,000/);
-  assert.match(request.body, /Acme secure vendor portal/);
-  assert.match(request.body, /request only/i);
-  assert.match(request.body, /do not send.*(?:TIN|SSN|EIN)/i);
+  expect(request.body).toMatch(/https:\/\/www\.irs\.gov\/pub\/irs-pdf\/fw9\.pdf/);
+  expect(request.body).toMatch(/\$2,000/);
+  expect(request.body).toMatch(/Acme secure vendor portal/);
+  expect(request.body).toMatch(/request only/i);
+  expect(request.body).toMatch(/do not send.*(?:TIN|SSN|EIN)/i);
 });
 
 const BASE_TAX_DRAFT = {
@@ -223,30 +219,30 @@ const BASE_TAX_DRAFT = {
 test("quarterly tax uses the versioned 2026 pack for every filing status", () => {
   for (const filingStatus of ["single", "married_joint", "married_separate", "head_household"]) {
     const result = calculateQuarterlyTax({ ...BASE_TAX_DRAFT, filingStatus });
-    assert.equal(result.ok, true);
-    assert.equal(result.deductionValue, QUARTERLY_TAX_RULES_2026.standardDeductions[filingStatus]);
-    assert.equal(result.calculationVersion, QUARTERLY_TAX_RULES_2026.version);
+    expect(result.ok).toBe(true);
+    expect(result.deductionValue).toBe(QUARTERLY_TAX_RULES_2026.standardDeductions[filingStatus]);
+    expect(result.calculationVersion).toBe(QUARTERLY_TAX_RULES_2026.version);
   }
 });
 
 test("quarterly tax compares safe harbors, subtracts withholding, and returns payment dates", () => {
   const result = calculateQuarterlyTax(BASE_TAX_DRAFT);
-  assert.equal(result.ok, true);
+  expect(result.ok).toBe(true);
 
   const expectedSafeHarbor = Math.min(result.estimatedFederalLiability * 0.9, BASE_TAX_DRAFT.priorYearTaxLiability);
-  assert.equal(
-    result.requiredAnnualPayment,
+  expect(result.requiredAnnualPayment).toBe(
     Math.max(0, expectedSafeHarbor - BASE_TAX_DRAFT.federalWithholding - BASE_TAX_DRAFT.estimatedPaymentsMade),
   );
-  assert.deepEqual(
-    result.paymentSchedule.map(({ dueDate }) => dueDate),
-    ["2026-04-15", "2026-06-15", "2026-09-15", "2027-01-15"],
-  );
-  assert.equal(
-    result.paymentSchedule.reduce((total, payment) => total + payment.amount, 0),
+  expect(result.paymentSchedule.map(({ dueDate }) => dueDate)).toEqual([
+    "2026-04-15",
+    "2026-06-15",
+    "2026-09-15",
+    "2027-01-15",
+  ]);
+  expect(result.paymentSchedule.reduce((total, payment) => total + payment.amount, 0)).toBe(
     result.requiredAnnualPayment,
   );
-  assert.ok(result.assumptions.length > 0);
+  expect(result.assumptions.length > 0).toBeTruthy();
 });
 
 test("quarterly tax keeps self-employment tax outside nonrefundable credits and applies the $1,000 floor", () => {
@@ -263,28 +259,28 @@ test("quarterly tax keeps self-employment tax outside nonrefundable credits and 
     priorYearTaxLiability: 0,
   });
 
-  assert.equal(result.ok, true);
-  assert.equal(result.estimatedFederalLiability, result.selfEmploymentTax);
-  assert.ok(result.estimatedFederalLiability - 500 < 1000);
-  assert.equal(result.requiredAnnualPayment, 0);
+  expect(result.ok).toBe(true);
+  expect(result.estimatedFederalLiability).toBe(result.selfEmploymentTax);
+  expect(result.estimatedFederalLiability - 500 < 1000).toBeTruthy();
+  expect(result.requiredAnnualPayment).toBe(0);
 });
 
 test("quarterly tax rejects unsupported years", () => {
-  assert.deepEqual(calculateQuarterlyTax({ ...BASE_TAX_DRAFT, taxYear: 2027 }), {
+  expect(calculateQuarterlyTax({ ...BASE_TAX_DRAFT, taxYear: 2027 })).toEqual({
     ok: false,
     error: "Quarterly tax rules update required for 2027.",
   });
 });
 
 test("quarterly tax normalizes legacy drafts and applies the high-income safe harbor", () => {
-  assert.deepEqual(normalizeQuarterlyTaxDraft({ taxYear: 2026, filingStatus: "invalid" }), DEFAULT_QUARTERLY_TAX_DRAFT);
+  expect(normalizeQuarterlyTaxDraft({ taxYear: 2026, filingStatus: "invalid" })).toEqual(DEFAULT_QUARTERLY_TAX_DRAFT);
 
   const result = calculateQuarterlyTax({
     ...BASE_TAX_DRAFT,
     priorYearAdjustedGrossIncome: 200000,
     itemizedDeductions: 20000,
   });
-  assert.equal(result.ok, true);
-  assert.equal(result.deductionValue, 20000);
-  assert.equal(result.priorYearSafeHarbor, 13200);
+  expect(result.ok).toBe(true);
+  expect(result.deductionValue).toBe(20000);
+  expect(result.priorYearSafeHarbor).toBe(13200);
 });

@@ -231,6 +231,8 @@
 .auth-search-popover {
   left: 0;
   width: min(360px, calc(100vw - 32px));
+  max-height: min(480px, 70dvh);
+  overflow-y: auto;
 }
 
 .auth-search-count {

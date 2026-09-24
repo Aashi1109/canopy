@@ -1,10 +1,12 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
 import { rm } from "node:fs/promises";
 import { dirname } from "node:path";
-import test from "node:test";
+import { expect, test, vi } from "vitest";
 
-const seedUrl = new URL("../scripts/seed.mjs", import.meta.url).href;
+// The seed script is re-imported to re-run its top-level orchestration; vi.mock
+// persists across vi.resetModules(), so the spawnSync stub stays in effect.
+vi.mock("node:child_process", () => ({
+  spawnSync: (...args) => globalThis.__seedIconProcess(...args),
+}));
 
 test("db seed uploads and assigns icons after catalog seeding, stopping on failures", async () => {
   const argv = process.argv;
@@ -12,41 +14,31 @@ test("db seed uploads and assigns icons after catalog seeding, stopping on failu
   const manifests = new Set();
   let failingStep;
   globalThis.__seedIconProcess = (executable, args, options) => {
-    assert.equal(executable, process.execPath);
-    assert.equal(options.stdio, "inherit");
+    expect(executable).toBe(process.execPath);
+    expect(options.stdio).toBe("inherit");
     calls.push(args);
     const outputIndex = args.indexOf("--output");
     if (outputIndex !== -1) manifests.add(args[outputIndex + 1]);
     return { status: calls.length === failingStep ? 1 : 0 };
   };
-  const hooks = registerHooks({
-    resolve(specifier, context, next) {
-      if (context.parentURL?.startsWith(seedUrl) && specifier === "node:child_process") {
-        return {
-          shortCircuit: true,
-          url: `data:text/javascript,${encodeURIComponent("export const spawnSync = (...args) => globalThis.__seedIconProcess(...args);")}`,
-        };
-      }
-      return next(specifier, context);
-    },
-  });
   try {
     process.argv = [argv[0], "seed.mjs", "--icons-dir", "/tmp/custom icons"];
-    await import(`${seedUrl}?success`);
-    assert.equal(calls.length, 3);
-    assert.ok(calls[0][0].endsWith("/db/scripts/seed.mjs"));
-    assert.ok(calls[1][0].endsWith("/scripts/upload-tool-icons.mjs"));
-    assert.ok(calls[2][0].endsWith("/scripts/update-tool-icons.mjs"));
-    assert.equal(calls[1][calls[1].indexOf("--dir") + 1], "/tmp/custom icons");
-    assert.equal(calls[2][calls[2].indexOf("--manifest") + 1], [...manifests][0]);
-    assert.ok(calls[2].includes("--missing-only"));
+    vi.resetModules();
+    await import("@/scripts/seed.mjs");
+    expect(calls.length).toBe(3);
+    expect(calls[0][0].endsWith("/db/scripts/seed.mjs")).toBeTruthy();
+    expect(calls[1][0].endsWith("/scripts/upload-tool-icons.mjs")).toBeTruthy();
+    expect(calls[2][0].endsWith("/scripts/update-tool-icons.mjs")).toBeTruthy();
+    expect(calls[1][calls[1].indexOf("--dir") + 1]).toBe("/tmp/custom icons");
+    expect(calls[2][calls[2].indexOf("--manifest") + 1]).toBe([...manifests][0]);
+    expect(calls[2].includes("--missing-only")).toBeTruthy();
     for (failingStep of [1, 2, 3]) {
       calls.length = 0;
-      await assert.rejects(import(`${seedUrl}?failure-${failingStep}`), /failed/);
-      assert.equal(calls.length, failingStep);
+      vi.resetModules();
+      await expect(import("@/scripts/seed.mjs")).rejects.toThrow(/failed/);
+      expect(calls.length).toBe(failingStep);
     }
   } finally {
-    hooks.deregister();
     process.argv = argv;
     delete globalThis.__seedIconProcess;
     for (const manifest of manifests) await rm(dirname(manifest), { recursive: true, force: true });

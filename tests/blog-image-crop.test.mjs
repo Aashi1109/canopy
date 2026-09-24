@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test, onTestFinished } from "vitest";
 import {
   cropBlogImage,
   fitCropRatio,
@@ -8,19 +7,19 @@ import {
 } from "../app/admin/(protected)/blog/lib/imageCrop.ts";
 
 test("aspect presets fit and center within landscape and portrait originals", () => {
-  assert.deepEqual(fitCropRatio({ width: 1200, height: 800 }, 1), {
+  expect(fitCropRatio({ width: 1200, height: 800 }, 1)).toEqual({
     x: 200,
     y: 0,
     width: 800,
     height: 800,
   });
-  assert.deepEqual(fitCropRatio({ width: 600, height: 900 }, 4 / 3), {
+  expect(fitCropRatio({ width: 600, height: 900 }, 4 / 3)).toEqual({
     x: 0,
     y: 225,
     width: 600,
     height: 450,
   });
-  assert.deepEqual(fitCropRatio({ width: 1200, height: 800 }, null), {
+  expect(fitCropRatio({ width: 1200, height: 800 }, null)).toEqual({
     x: 0,
     y: 0,
     width: 1200,
@@ -31,21 +30,21 @@ test("aspect presets fit and center within landscape and portrait originals", ()
 test("locked crops keep their ratio when resized at edges and can move without resizing", () => {
   const bounds = { width: 1200, height: 800 };
   const previous = { x: 700, y: 300, width: 400, height: 400 };
-  assert.deepEqual(resizeCrop({ ...previous, width: 500 }, previous, bounds, 1), {
+  expect(resizeCrop({ ...previous, width: 500 }, previous, bounds, 1)).toEqual({
     ...previous,
     width: 500,
     height: 500,
   });
-  assert.deepEqual(resizeCrop({ ...previous, height: 100 }, previous, bounds, 1), {
+  expect(resizeCrop({ ...previous, height: 100 }, previous, bounds, 1)).toEqual({
     ...previous,
     width: 100,
     height: 100,
   });
-  assert.deepEqual(resizeCrop({ ...previous, x: 800 }, previous, bounds, 1), {
+  expect(resizeCrop({ ...previous, x: 800 }, previous, bounds, 1)).toEqual({
     ...previous,
     x: 800,
   });
-  assert.deepEqual(resizeCrop({ ...previous, height: 100 }, previous, bounds, null), {
+  expect(resizeCrop({ ...previous, height: 100 }, previous, bounds, null)).toEqual({
     ...previous,
     height: 100,
   });
@@ -58,9 +57,9 @@ test("invalid and excessive decoded dimensions are rejected", () => {
     { width: 30001, height: 1 },
     { width: 10000, height: 10000 },
   ]) {
-    assert.throws(() => validateCropDimensions(bounds), /image|Image/);
+    expect(() => validateCropDimensions(bounds)).toThrow(/image|Image/);
   }
-  assert.doesNotThrow(() => validateCropDimensions({ width: 8000, height: 5000 }));
+  expect(() => validateCropDimensions({ width: 8000, height: 5000 })).not.toThrow();
 });
 
 function canvasFixture(t, result) {
@@ -73,7 +72,7 @@ function canvasFixture(t, result) {
   };
   const previous = globalThis.document;
   globalThis.document = { createElement: () => canvas };
-  t.after(() => {
+  onTestFinished(() => {
     if (previous === undefined) delete globalThis.document;
     else globalThis.document = previous;
   });
@@ -90,10 +89,10 @@ test("export uses natural pixels and preserves JPEG, PNG, and WebP output format
     ["webp", "image/webp"],
   ]) {
     const result = await cropBlogImage(source, { x: 100, y: 50, width: 300, height: 200 }, format);
-    assert.equal(result.type, type);
-    assert.equal(result.size, 4);
-    assert.deepEqual(calls.at(-1), [source, 100, 50, 300, 200, 0, 0, 300, 200]);
-    assert.equal(canvas.width, 0, "release canvas allocation after export");
+    expect(result.type).toBe(type);
+    expect(result.size).toBe(4);
+    expect(calls.at(-1)).toEqual([source, 100, 50, 300, 200, 0, 0, 300, 200]);
+    expect(canvas.width, "release canvas allocation after export").toBe(0);
   }
 });
 
@@ -101,22 +100,22 @@ test("failed, oversized, fallback-format and out-of-bounds crops reject without 
   const source = { naturalWidth: 1200, naturalHeight: 800 };
   const box = { x: 0, y: 0, width: 300, height: 200 };
   const { canvas } = canvasFixture(t, null);
-  await assert.rejects(cropBlogImage(source, box, "png"), /crop|Crop/);
+  await expect(cropBlogImage(source, box, "png")).rejects.toThrow(/crop|Crop/);
   canvas.toBlob = (callback) => callback(new Blob([new Uint8Array(5 * 1024 * 1024 + 1)], { type: "image/png" }));
-  await assert.rejects(cropBlogImage(source, box, "png"), /5 MiB/);
+  await expect(cropBlogImage(source, box, "png")).rejects.toThrow(/5 MiB/);
   canvas.toBlob = (callback) => callback(new Blob(["crop"], { type: "image/png" }));
-  await assert.rejects(cropBlogImage(source, box, "webp"), /support/);
+  await expect(cropBlogImage(source, box, "webp")).rejects.toThrow(/support/);
   for (const invalid of [
     { ...box, x: -1 },
     { ...box, width: 1201 },
     { ...box, width: NaN },
     { ...box, height: 0 },
   ]) {
-    await assert.rejects(cropBlogImage(source, invalid, "png"), /crop|Crop/);
+    await expect(cropBlogImage(source, invalid, "png")).rejects.toThrow(/crop|Crop/);
   }
   canvas.toBlob = () => {
     throw new DOMException("Tainted canvas", "SecurityError");
   };
-  await assert.rejects(cropBlogImage(source, box, "png"), /crop|Crop/);
-  assert.equal(canvas.width, 0);
+  await expect(cropBlogImage(source, box, "png")).rejects.toThrow(/crop|Crop/);
+  expect(canvas.width).toBe(0);
 });

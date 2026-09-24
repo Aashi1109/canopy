@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { access, readFile } from "node:fs/promises";
-import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 
@@ -16,11 +15,11 @@ async function exists(path) {
 test("the repository root is the only Next.js application", async () => {
   const packageJson = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
 
-  assert.equal(packageJson.name, "canopy");
-  assert.equal(typeof packageJson.dependencies.next, "string");
-  assert.equal(await exists("apps"), false);
-  assert.equal(await exists("src"), false);
-  assert.equal(await exists("app/layout.tsx"), true);
+  expect(packageJson.name).toBe("canopy");
+  expect(typeof packageJson.dependencies.next).toBe("string");
+  expect(await exists("apps")).toBe(false);
+  expect(await exists("src")).toBe(false);
+  expect(await exists("app/layout.tsx")).toBe(true);
 });
 
 test("each product area owns a real pathname segment", async () => {
@@ -37,7 +36,7 @@ test("each product area owns a real pathname segment", async () => {
   ];
 
   for (const route of routes) {
-    assert.equal(await exists(route), true, `${route} must exist`);
+    expect(await exists(route), `${route} must exist`).toBe(true);
   }
 });
 
@@ -52,14 +51,14 @@ test("domain APIs are namespaced in the unified application", async () => {
   ];
 
   for (const route of routes) {
-    assert.equal(await exists(route), true, `${route} must exist`);
+    expect(await exists(route), `${route} must exist`).toBe(true);
   }
 });
 
 test("media isolation headers cover pages and their worker bundles", async () => {
   const source = await readFile(new URL("next.config.ts", root), "utf8");
 
-  assert.match(source, /source:\s*["']\/media\/:path\*["']/);
-  assert.match(source, /source:\s*["']\/_next\/static\/chunks\/:path\*["']/);
-  assert.doesNotMatch(source, /source:\s*["']\/\(\.\*\)["']/);
+  expect(source).toMatch(/source:\s*["']\/media\/:path\*["']/);
+  expect(source).toMatch(/source:\s*["']\/_next\/static\/chunks\/:path\*["']/);
+  expect(source).not.toMatch(/source:\s*["']\/\(\.\*\)["']/);
 });

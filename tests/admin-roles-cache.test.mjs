@@ -1,15 +1,15 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test, vi, onTestFinished } from "vitest";
 import redis from "redis";
 import { closeRedis } from "../lib/cache/index.ts";
 import { db, rolesTable, userRolesTable } from "../db/index.ts";
 import { getRole, listRoles } from "../lib/admin/data.ts";
 
-test("role definitions are cached while membership counts stay current", async (t) => {
+test("role definitions are cached while membership counts stay current", async () => {
   const originalSelect = db.select;
   const variables = ["REDIS_URL"];
   const previous = variables.map((key) => process.env[key]);
-  t.after(async () => {
+  onTestFinished(async () => {
+    vi.restoreAllMocks();
     await closeRedis();
     db.select = originalSelect;
     variables.forEach((key, index) => {
@@ -56,14 +56,14 @@ test("role definitions are cached while membership counts stay current", async (
           definitionsRead++;
           return Promise.resolve(structuredClone(roles)).then(resolve, reject);
         }
-        assert.equal(table, userRolesTable);
+        expect(table).toBe(userRolesTable);
         membershipsRead++;
         return Promise.resolve([{ roleId: "editor", assignedUsers }]).then(resolve, reject);
       },
     };
     return query;
   };
-  t.mock.method(redis, "createClient", () => ({
+  vi.spyOn(redis, "createClient").mockImplementation(() => ({
     isOpen: false,
     isReady: false,
     on() {
@@ -74,9 +74,9 @@ test("role definitions are cached while membership counts stay current", async (
       return this;
     },
     async sendCommand(command) {
-      assert.equal(command[1], "roles:all");
+      expect(command[1]).toBe("roles:all");
       if (command[0] === "GET") return cached;
-      assert.equal(command[0], "SET");
+      expect(command[0]).toBe("SET");
       cached = command[2];
       return 1;
     },
@@ -85,24 +85,18 @@ test("role definitions are cached while membership counts stay current", async (
     },
   }));
 
-  assert.deepEqual(
-    await listRoles(),
-    roles.map((role) => ({ ...role, assignedUsers: role.id === "editor" ? 1 : 0 })),
-  );
+  expect(await listRoles()).toEqual(roles.map((role) => ({ ...role, assignedUsers: role.id === "editor" ? 1 : 0 })));
   assignedUsers = 4;
-  assert.deepEqual(
-    await listRoles(),
-    roles.map((role) => ({ ...role, assignedUsers: role.id === "editor" ? 4 : 0 })),
-  );
-  assert.equal(definitionsRead, 1);
-  assert.equal(membershipsRead, 2);
+  expect(await listRoles()).toEqual(roles.map((role) => ({ ...role, assignedUsers: role.id === "editor" ? 4 : 0 })));
+  expect(definitionsRead).toBe(1);
+  expect(membershipsRead).toBe(2);
   assignedUsers = 0;
-  assert.deepEqual(await getRole("editor"), { ...roles[0], assignedUsers: 0 });
-  assert.equal(await getRole("missing"), undefined);
-  assert.equal(definitionsRead, 1);
+  expect(await getRole("editor")).toEqual({ ...roles[0], assignedUsers: 0 });
+  expect(await getRole("missing")).toBe(undefined);
+  expect(definitionsRead).toBe(1);
 
   cached = "{broken";
   const before = definitionsRead;
-  assert.deepEqual(await getRole("editor"), { ...roles[0], assignedUsers: 0 });
-  assert.equal(definitionsRead, before + 1);
+  expect(await getRole("editor")).toEqual({ ...roles[0], assignedUsers: 0 });
+  expect(definitionsRead).toBe(before + 1);
 });

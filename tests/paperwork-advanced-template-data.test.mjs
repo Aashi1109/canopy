@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { expect, test } from "vitest";
 import {
   applyTemplateFormatting,
   getInvoiceTemplateInputs,
@@ -32,16 +30,15 @@ test("advanced inputs preserve text configured around sample values", () => {
     },
   };
 
-  assert.deepEqual(
+  expect(
     applyTemplateFormatting(template, {
       dueDate: "September 1, 2026",
       subtotal: "$250.00",
     }),
-    {
-      dueDate: "Due September 1, 2026",
-      subtotal: "Subtotal  $250.00",
-    },
-  );
+  ).toEqual({
+    dueDate: "Due September 1, 2026",
+    subtotal: "Subtotal  $250.00",
+  });
 });
 
 test("advanced template inputs replace sample fields with live invoice data", () => {
@@ -113,12 +110,11 @@ test("advanced template inputs replace sample fields with live invoice data", ()
     businessName: "Old sample business",
   });
 
-  assert.equal(inputs.customField, "Keep my configured fallback");
-  assert.equal(inputs.businessName, invoice.business.name);
-  assert.equal(inputs.documentNumber, invoice.invoice.invoiceNumber);
-  assert.equal(inputs.customerName, invoice.client.name);
-  assert.equal(
-    inputs.lineItems,
+  expect(inputs.customField).toBe("Keep my configured fallback");
+  expect(inputs.businessName).toBe(invoice.business.name);
+  expect(inputs.documentNumber).toBe(invoice.invoice.invoiceNumber);
+  expect(inputs.customerName).toBe(invoice.client.name);
+  expect(inputs.lineItems).toBe(
     JSON.stringify(
       invoice.lineItems.map((item) => [
         item.description,
@@ -128,7 +124,7 @@ test("advanced template inputs replace sample fields with live invoice data", ()
       ]),
     ),
   );
-  assert.match(inputs.total, /^\$/);
+  expect(inputs.total).toMatch(/^\$/);
 });
 
 test("advanced template inputs replace sample fields with live receipt data", () => {
@@ -199,11 +195,11 @@ test("advanced template inputs replace sample fields with live receipt data", ()
     { customField: "Keep my configured fallback" },
   );
 
-  assert.equal(inputs.customField, "Keep my configured fallback");
-  assert.equal(inputs.businessName, "Northstar Market");
-  assert.equal(inputs.documentNumber, "RCP-42");
-  assert.equal(inputs.issueDate, "2026-07-23 · 16:32");
-  assert.equal(inputs.lineItems, JSON.stringify([["Design workshop", "2", "$150.00"]]));
-  assert.equal(inputs.paymentMethod, "Card");
-  assert.equal(inputs.total, "$170.00");
+  expect(inputs.customField).toBe("Keep my configured fallback");
+  expect(inputs.businessName).toBe("Northstar Market");
+  expect(inputs.documentNumber).toBe("RCP-42");
+  expect(inputs.issueDate).toBe("2026-07-23 · 16:32");
+  expect(inputs.lineItems).toBe(JSON.stringify([["Design workshop", "2", "$150.00"]]));
+  expect(inputs.paymentMethod).toBe("Card");
+  expect(inputs.total).toBe("$170.00");
 });

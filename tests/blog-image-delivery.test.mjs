@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { blogImageDelivery } from "../lib/blog/utils.ts";
 
 const image = {
@@ -25,17 +24,15 @@ test("responsive image candidates stay within the source width and delivery cap 
     const candidates = delivery.srcSet.split(", ").map((candidate) => {
       const [url, descriptor] = candidate.split(" ");
       const candidateWidth = Number.parseInt(descriptor, 10);
-      assert.equal(descriptor, `${candidateWidth}w`);
-      assert.ok(candidateWidth <= width);
-      assert.equal(
-        url,
+      expect(descriptor).toBe(`${candidateWidth}w`);
+      expect(candidateWidth <= width).toBeTruthy();
+      expect(url).toBe(
         `https://res.cloudinary.com/my-cloud/image/upload/c_limit,w_${candidateWidth}/q_auto/f_auto/v1234/${image.publicId}.webp`,
       );
       return candidateWidth;
     });
-    assert.deepEqual(candidates, expected, `source width ${width}`);
-    assert.equal(
-      delivery.src,
+    expect(candidates, `source width ${width}`).toEqual(expected);
+    expect(delivery.src).toBe(
       `https://res.cloudinary.com/my-cloud/image/upload/c_limit,w_${Math.min(width, 1280)}/q_auto/f_auto/v1234/${image.publicId}.webp`,
     );
   }
@@ -46,24 +43,23 @@ test("delivery preserves immutable versions and source formats while requesting 
     const source = Object.freeze({ ...image, format, version: 987654321 });
     const delivery = blogImageDelivery(source, "cloud_2");
     for (const url of [delivery.src, ...delivery.srcSet.split(", ").map((candidate) => candidate.split(" ")[0])]) {
-      assert.ok(url.endsWith(`/q_auto/f_auto/v987654321/${image.publicId}.${format}`));
+      expect(url.endsWith(`/q_auto/f_auto/v987654321/${image.publicId}.${format}`)).toBeTruthy();
     }
-    assert.equal(source.format, format);
-    assert.equal(source.width, 2400);
+    expect(source.format).toBe(format);
+    expect(source.width).toBe(2400);
   }
 });
 
 test("delivery encodes individual public ID segments while retaining their folder path", () => {
   const delivery = blogImageDelivery({ ...image, publicId: "folder name/diagram #1+é", width: 320 }, "my-cloud");
-  assert.equal(
-    delivery.src,
+  expect(delivery.src).toBe(
     "https://res.cloudinary.com/my-cloud/image/upload/c_limit,w_320/q_auto/f_auto/v1234/folder%20name/diagram%20%231%2B%C3%A9.webp",
   );
-  assert.equal(delivery.srcSet, `${delivery.src} 320w`);
+  expect(delivery.srcSet).toBe(`${delivery.src} 320w`);
 });
 
 test("delivery rejects missing or unsafe cloud names", () => {
   for (const cloudName of ["", "cloud/name", "cloud.example", "cloud?x=1", 'cloud"', " cloud", "cloud\n"]) {
-    assert.throws(() => blogImageDelivery(image, cloudName), /configured Cloudinary cloud/);
+    expect(() => blogImageDelivery(image, cloudName)).toThrow(/configured Cloudinary cloud/);
   }
 });

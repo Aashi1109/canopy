@@ -1,7 +1,5 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
 import { memoryAdapter } from "better-auth/adapters/memory";
+import { afterAll, expect, test, vi } from "vitest";
 
 const state = {
   sent: [],
@@ -19,39 +17,34 @@ const environment = {
 const originalEnv = Object.fromEntries(Object.keys(environment).map((key) => [key, process.env[key]]));
 Object.assign(process.env, environment);
 
-const authUrl = new URL("../lib/auth/auth.ts", import.meta.url).href;
-const emailUrl = new URL("../lib/auth/email.ts", import.meta.url).href;
-const mocks = {
-  "../authorization/index.ts": "export const assertCanDeleteUser = () => {};",
-  "../../db/index.ts": `
-    export const authAccount = {}, authSession = {}, authUser = {}, authVerification = {}, userRolesTable = {};
-    export const and = () => {}, countDistinct = () => {}, eq = () => {};
-    export const db = { insert: () => ({ values: () => ({ onConflictDoNothing: async () => {} }) }) };
-  `,
-  "better-auth/adapters/drizzle": "export const drizzleAdapter = () => globalThis.__passwordEmailTest.adapter;",
-  "./cachedUserAdapter.ts": "export const cachedUserAdapter = (adapter) => adapter;",
-};
-const hooks = registerHooks({
-  resolve(specifier, context, next) {
-    let source = context.parentURL === authUrl ? mocks[specifier] : undefined;
-    if (context.parentURL === emailUrl && specifier === "resend") {
-      source = `export class Resend { emails = { async send(message) {
+vi.mock("@/lib/authorization/index.ts", () => ({ assertCanDeleteUser: () => {} }));
+vi.mock("@/db/index.ts", () => ({
+  authAccount: {},
+  authSession: {},
+  authUser: {},
+  authVerification: {},
+  userRolesTable: {},
+  and: () => {},
+  countDistinct: () => {},
+  eq: () => {},
+  db: { insert: () => ({ values: () => ({ onConflictDoNothing: async () => {} }) }) },
+}));
+vi.mock("better-auth/adapters/drizzle", () => ({ drizzleAdapter: () => globalThis.__passwordEmailTest.adapter }));
+vi.mock("@/lib/auth/cachedUserAdapter.ts", () => ({ cachedUserAdapter: (adapter) => adapter }));
+vi.mock("resend", () => ({
+  Resend: class Resend {
+    emails = {
+      async send(message) {
         const state = globalThis.__passwordEmailTest;
         state.sent.push(message);
-        return { error: state.fail ? { message: 'Simulated delivery failure' } : null };
-      } }; }`;
-    }
-    return source === undefined
-      ? next(specifier, context)
-      : {
-          shortCircuit: true,
-          url: `data:text/javascript,${encodeURIComponent(source)}`,
-        };
+        return { error: state.fail ? { message: "Simulated delivery failure" } : null };
+      },
+    };
   },
-});
-const { auth } = await import(authUrl);
-hooks.deregister();
-test.after(() => {
+}));
+
+const { auth } = await import("@/lib/auth/auth.ts");
+afterAll(() => {
   for (const [key, value] of Object.entries(originalEnv)) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
@@ -67,7 +60,7 @@ const headers = new Headers({ origin: environment.APP_URL });
 const email = "password-notification@example.test";
 async function signIn(password) {
   const response = await auth.api.signInEmail({ body: { email, password }, headers, asResponse: true });
-  assert.equal(response.status, 200);
+  expect(response.status).toBe(200);
   return new Headers({
     origin: environment.APP_URL,
     cookie: response.headers
@@ -92,56 +85,55 @@ test("successful password changes and resets notify the account without breaking
         await auth.api.requestPasswordReset({ body: { email }, headers });
         const url = actionUrl(state.sent.shift());
         token = url.pathname.split("/").at(-1);
-        await assert.rejects(
+        await expect(
           auth.api.resetPassword({ body: { token: "invalid-token", newPassword: password }, headers }),
-        );
-        await assert.rejects(auth.api.resetPassword({ body: { token, newPassword: "short" }, headers }));
+        ).rejects.toThrow();
+        await expect(auth.api.resetPassword({ body: { token, newPassword: "short" }, headers })).rejects.toThrow();
       } else {
-        await assert.rejects(
+        await expect(
           auth.api.changePassword({
             body: { currentPassword: "wrong-password", newPassword: password },
             headers: sessionHeaders,
           }),
-        );
-        await assert.rejects(
+        ).rejects.toThrow();
+        await expect(
           auth.api.changePassword({
             body: { currentPassword: password, newPassword: "short" },
             headers: sessionHeaders,
           }),
-        );
+        ).rejects.toThrow();
       }
-      assert.equal(state.sent.length, 0, "rejected changes must not send confirmation");
+      expect(state.sent.length, "rejected changes must not send confirmation").toBe(0);
 
       const nextPassword = `${operation}-${deliveryFails}-new-password-456`;
       state.fail = deliveryFails;
       if (operation === "reset") {
         const result = await auth.api.resetPassword({ body: { token, newPassword: nextPassword }, headers });
-        assert.equal(result.status, true);
-        await assert.rejects(auth.api.resetPassword({ body: { token, newPassword: nextPassword }, headers }));
-        assert.equal(await auth.api.getSession({ headers: sessionHeaders }), null);
+        expect(result.status).toBe(true);
+        await expect(auth.api.resetPassword({ body: { token, newPassword: nextPassword }, headers })).rejects.toThrow();
+        expect(await auth.api.getSession({ headers: sessionHeaders })).toBe(null);
       } else {
         const result = await auth.api.changePassword({
           body: { currentPassword: password, newPassword: nextPassword, revokeOtherSessions: true },
           headers: sessionHeaders,
         });
-        assert.equal(result.user.email, email);
+        expect(result.user.email).toBe(email);
       }
       state.fail = false;
-      assert.equal(
+      expect(
         await auth.api.getSession({ headers: otherSessionHeaders }),
-        null,
         "previous sessions are revoked even when notification fails",
-      );
-      assert.equal(state.sent.length, 1, `${operation} should attempt exactly one confirmation`);
+      ).toBe(null);
+      expect(state.sent.length, `${operation} should attempt exactly one confirmation`).toBe(1);
       const message = state.sent.shift();
-      assert.deepEqual(message.to, [email]);
-      assert.equal(message.from, "SmartTools Accounts <accounts@smarttools.lol>");
-      assert.match(message.subject, /password.*changed/i);
-      assert.match(message.html, /reset your password/i);
-      assert.doesNotMatch(message.html, /link expires|ignore this email/i);
-      assert.equal(actionUrl(message).href, `${environment.APP_URL}/auth?mode=forgot`);
-      assert.ok(!message.html.includes(password) && !message.html.includes(nextPassword));
-      await assert.rejects(auth.api.signInEmail({ body: { email, password }, headers }));
+      expect(message.to).toEqual([email]);
+      expect(message.from).toBe("SmartTools Accounts <accounts@smarttools.lol>");
+      expect(message.subject).toMatch(/password.*changed/i);
+      expect(message.html).toMatch(/reset your password/i);
+      expect(message.html).not.toMatch(/link expires|ignore this email/i);
+      expect(actionUrl(message).href).toBe(`${environment.APP_URL}/auth?mode=forgot`);
+      expect(!message.html.includes(password) && !message.html.includes(nextPassword)).toBeTruthy();
+      await expect(auth.api.signInEmail({ body: { email, password }, headers })).rejects.toThrow();
       await signIn(nextPassword);
       password = nextPassword;
     }

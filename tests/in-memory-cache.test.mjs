@@ -1,12 +1,14 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { test, expect, vi, beforeEach, afterEach, onTestFinished } from "vitest";
 import { InMemoryCache } from "../lib/cache/inMemoryCache.ts";
 
-test.beforeEach((t) => {
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+beforeEach((t) => {
   const previous = { NODE_ENV: process.env.NODE_ENV, CACHE_ENABLED: process.env.CACHE_ENABLED };
   process.env.CACHE_ENABLED = "true";
-  t.after(() => {
+  onTestFinished(() => {
     for (const [key, value] of Object.entries(previous)) {
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
@@ -20,20 +22,20 @@ test("stores values by key and isolates cache instances", () => {
   const objectKey = {};
   const value = { name: "Canopy" };
 
-  assert.equal(cache.get("missing"), undefined);
-  assert.equal(cache.has("missing"), false);
-  assert.equal(cache.size, 0);
-  assert.equal(cache.set("name", value), cache);
+  expect(cache.get("missing")).toBe(undefined);
+  expect(cache.has("missing")).toBe(false);
+  expect(cache.size).toBe(0);
+  expect(cache.set("name", value)).toBe(cache);
   cache.set(objectKey, "object key");
   cache.set(undefined, "undefined key");
 
-  assert.equal(cache.get("name"), value);
-  assert.equal(cache.get(objectKey), "object key");
-  assert.equal(cache.has({}), false);
-  assert.equal(cache.get(undefined), "undefined key");
-  assert.equal(cache.size, 3);
-  assert.equal(other.has("name"), false);
-  assert.equal(other.size, 0);
+  expect(cache.get("name")).toBe(value);
+  expect(cache.get(objectKey)).toBe("object key");
+  expect(cache.has({})).toBe(false);
+  expect(cache.get(undefined)).toBe("undefined key");
+  expect(cache.size).toBe(3);
+  expect(other.has("name")).toBe(false);
+  expect(other.size).toBe(0);
 });
 
 test("distinguishes cached undefined and other falsy values from missing entries", () => {
@@ -43,45 +45,45 @@ test("distinguishes cached undefined and other falsy values from missing entries
   values.forEach((value, index) => cache.set(index, value));
 
   values.forEach((value, index) => {
-    assert.equal(cache.has(index), true);
-    assert.equal(cache.get(index), value);
+    expect(cache.has(index)).toBe(true);
+    expect(cache.get(index)).toBe(value);
   });
-  assert.equal(cache.size, values.length);
+  expect(cache.size).toBe(values.length);
 });
 
 test("entries without a TTL persist until deleted or cleared", (t) => {
   let now = 1_000;
-  t.mock.method(Date, "now", () => now);
+  vi.spyOn(Date, "now").mockImplementation(() => now);
   const cache = new InMemoryCache();
   cache.set("key", "value");
 
   now += 1_000_000_000;
 
-  assert.equal(cache.get("key"), "value");
-  assert.equal(cache.has("key"), true);
-  assert.equal(cache.size, 1);
+  expect(cache.get("key")).toBe("value");
+  expect(cache.has("key")).toBe(true);
+  expect(cache.size).toBe(1);
 });
 
 test("get and has expire entries at the TTL boundary without extending it on reads", (t) => {
   let now = 1_000;
-  t.mock.method(Date, "now", () => now);
+  vi.spyOn(Date, "now").mockImplementation(() => now);
   const cache = new InMemoryCache();
   cache.set("get", "value", 2);
   cache.set("has", undefined, 2);
 
   now = 2_999;
-  assert.equal(cache.get("get"), "value");
-  assert.equal(cache.has("has"), true);
+  expect(cache.get("get")).toBe("value");
+  expect(cache.has("has")).toBe(true);
 
   now = 3_000;
-  assert.equal(cache.get("get"), undefined);
-  assert.equal(cache.has("has"), false);
-  assert.equal(cache.size, 0);
+  expect(cache.get("get")).toBe(undefined);
+  expect(cache.has("has")).toBe(false);
+  expect(cache.size).toBe(0);
 });
 
 test("overwriting resets TTL and omitting TTL removes the previous expiration", (t) => {
   let now = 0;
-  t.mock.method(Date, "now", () => now);
+  vi.spyOn(Date, "now").mockImplementation(() => now);
   const cache = new InMemoryCache();
   cache.set("reset", "old", 1);
   cache.set("persistent", "old", 1);
@@ -89,57 +91,57 @@ test("overwriting resets TTL and omitting TTL removes the previous expiration", 
   now = 500;
   cache.set("reset", "new", 2);
   cache.set("persistent", "new");
-  assert.equal(cache.size, 2);
+  expect(cache.size).toBe(2);
 
   now = 1_000;
-  assert.equal(cache.get("reset"), "new");
-  assert.equal(cache.get("persistent"), "new");
+  expect(cache.get("reset")).toBe("new");
+  expect(cache.get("persistent")).toBe("new");
   now = 2_500;
-  assert.equal(cache.has("reset"), false);
-  assert.equal(cache.get("persistent"), "new");
-  assert.equal(cache.size, 1);
+  expect(cache.has("reset")).toBe(false);
+  expect(cache.get("persistent")).toBe("new");
+  expect(cache.size).toBe(1);
 });
 
 test("size excludes expired entries and new writes retain live entries", (t) => {
   let now = 0;
-  t.mock.method(Date, "now", () => now);
+  vi.spyOn(Date, "now").mockImplementation(() => now);
   const cache = new InMemoryCache();
   cache.set("expired", "value", 1);
   cache.set("live", "value", 3);
   cache.set("persistent", "value");
 
   now = 1_000;
-  assert.equal(cache.size, 2);
+  expect(cache.size).toBe(2);
   now = 3_000;
   cache.set("new", "value", 1);
-  assert.equal(cache.size, 2);
-  assert.equal(cache.get("persistent"), "value");
-  assert.equal(cache.get("new"), "value");
-  assert.equal(cache.has("live"), false);
+  expect(cache.size).toBe(2);
+  expect(cache.get("persistent")).toBe("value");
+  expect(cache.get("new")).toBe("value");
+  expect(cache.has("live")).toBe(false);
 });
 
 test("delete reports whether a live entry was removed and clear empties the cache", (t) => {
   let now = 0;
-  t.mock.method(Date, "now", () => now);
+  vi.spyOn(Date, "now").mockImplementation(() => now);
   const cache = new InMemoryCache();
   cache.set("live", undefined);
   cache.set("expired", "value", 1);
 
   now = 1_000;
-  assert.equal(cache.delete("missing"), false);
-  assert.equal(cache.delete("expired"), false);
-  assert.equal(cache.delete("live"), true);
-  assert.equal(cache.delete("live"), false);
-  assert.equal(cache.size, 0);
+  expect(cache.delete("missing")).toBe(false);
+  expect(cache.delete("expired")).toBe(false);
+  expect(cache.delete("live")).toBe(true);
+  expect(cache.delete("live")).toBe(false);
+  expect(cache.size).toBe(0);
 
   cache.set("one", 1).set("two", 2);
   cache.clear();
   cache.clear();
-  assert.equal(cache.size, 0);
-  assert.equal(cache.has("one"), false);
-  assert.equal(cache.has("two"), false);
+  expect(cache.size).toBe(0);
+  expect(cache.has("one")).toBe(false);
+  expect(cache.has("two")).toBe(false);
   cache.set("reused", 3);
-  assert.equal(cache.get("reused"), 3);
+  expect(cache.get("reused")).toBe(3);
 });
 
 test("rejects invalid TTLs without overwriting a previously cached value", () => {
@@ -147,15 +149,15 @@ test("rejects invalid TTLs without overwriting a previously cached value", () =>
   cache.set("key", "original");
 
   for (const ttl of [0, -1, 0.5, Infinity, -Infinity, NaN, Number.MAX_SAFE_INTEGER + 1, null, "1"]) {
-    assert.throws(() => cache.set("key", "replacement", ttl), /TTL must be a positive integer/);
-    assert.equal(cache.get("key"), "original");
-    assert.equal(cache.size, 1);
+    expect(() => cache.set("key", "replacement", ttl)).toThrow(/TTL must be a positive integer/);
+    expect(cache.get("key")).toBe("original");
+    expect(cache.size).toBe(1);
   }
 });
 
 test("remember shares loads, caches undefined, and starts TTL after a successful load", async (t) => {
   let now = 0;
-  t.mock.method(Date, "now", () => now);
+  vi.spyOn(Date, "now").mockImplementation(() => now);
   const cache = new InMemoryCache();
   const result = Promise.withResolvers();
   let calls = 0;
@@ -165,20 +167,20 @@ test("remember shares loads, caches undefined, and starts TTL after a successful
   };
   const first = cache.remember("key", load, 2);
   const second = cache.remember("key", load, 2);
-  assert.equal(first, second);
+  expect(first).toBe(second);
   await Promise.resolve();
-  assert.equal(calls, 1);
+  expect(calls).toBe(1);
 
   now = 5_000;
   result.resolve(undefined);
-  assert.equal(await first, undefined);
-  assert.equal(cache.has("key"), true);
+  expect(await first).toBe(undefined);
+  expect(cache.has("key")).toBe(true);
   now = 6_999;
-  assert.equal(await cache.remember("key", load, 2), undefined);
-  assert.equal(calls, 1);
+  expect(await cache.remember("key", load, 2)).toBe(undefined);
+  expect(calls).toBe(1);
   now = 7_000;
-  assert.equal(await cache.remember("key", async () => "fresh"), "fresh");
-  assert.equal(cache.get("key"), "fresh");
+  expect(await cache.remember("key", async () => "fresh")).toBe("fresh");
+  expect(cache.get("key")).toBe("fresh");
 });
 
 test("remember retries rejected and synchronously throwing loaders", async () => {
@@ -190,10 +192,10 @@ test("remember retries rejected and synchronously throwing loaders", async () =>
       throw failure;
     },
   ]) {
-    await assert.rejects(cache.remember("key", load), failure);
-    assert.equal(cache.has("key"), false);
+    await expect(cache.remember("key", load)).rejects.toThrow(failure);
+    expect(cache.has("key")).toBe(false);
   }
-  assert.equal(await cache.remember("key", async () => "recovered"), "recovered");
+  expect(await cache.remember("key", async () => "recovered")).toBe("recovered");
 });
 
 test("delete, clear, and set prevent old loads from overwriting newer values", async () => {
@@ -204,13 +206,13 @@ test("delete, clear, and set prevent old loads from overwriting newer values", a
     if (action === "set") {
       cache.set("key", "fresh");
     } else {
-      if (action === "delete") assert.equal(cache.delete("key"), false);
+      if (action === "delete") expect(cache.delete("key")).toBe(false);
       else cache.clear();
-      assert.equal(await cache.remember("key", async () => "fresh"), "fresh");
+      expect(await cache.remember("key", async () => "fresh")).toBe("fresh");
     }
     result.resolve("stale");
-    assert.equal(await old, "stale");
-    assert.equal(cache.get("key"), "fresh");
+    expect(await old).toBe("stale");
+    expect(cache.get("key")).toBe("fresh");
   }
 });
 
@@ -224,19 +226,16 @@ test("an invalidated load cannot remove a newer pending load when it settles", a
     const current = cache.remember("key", () => next.promise);
     if (rejectOld) {
       previous.reject(new Error("old failure"));
-      await assert.rejects(old, /old failure/);
+      await expect(old).rejects.toThrow(/old failure/);
     } else {
       previous.resolve("stale");
       await old;
     }
-    assert.equal(cache.has("key"), false);
-    assert.equal(
-      cache.remember("key", async () => "duplicate"),
-      current,
-    );
+    expect(cache.has("key")).toBe(false);
+    expect(cache.remember("key", async () => "duplicate")).toBe(current);
     next.resolve("fresh");
-    assert.equal(await current, "fresh");
-    assert.equal(cache.get("key"), "fresh");
+    expect(await current).toBe("fresh");
+    expect(cache.get("key")).toBe("fresh");
   }
 });
 
@@ -247,12 +246,12 @@ test("remember validates TTL before returning hits or sharing pending loads", as
   let calls = 0;
   for (const key of ["miss", "hit", "pending"]) {
     for (const ttl of [0, -1, 0.5, Infinity, -Infinity, NaN, Number.MAX_SAFE_INTEGER + 1, null, "1"]) {
-      assert.throws(() => cache.remember(key, async () => ++calls, ttl), /TTL must be a positive integer/);
+      expect(() => cache.remember(key, async () => ++calls, ttl)).toThrow(/TTL must be a positive integer/);
     }
   }
-  assert.equal(calls, 0);
-  assert.equal(cache.get("hit"), "cached");
-  assert.equal(await pending, "loaded");
+  expect(calls).toBe(0);
+  expect(cache.get("hit")).toBe("cached");
+  expect(await pending).toBe("loaded");
 });
 
 test("development bypasses stored values and duplicate loads when caching is not explicitly enabled", async () => {
@@ -261,19 +260,19 @@ test("development bypasses stored values and duplicate loads when caching is not
     if (configured === undefined) delete process.env.CACHE_ENABLED;
     else process.env.CACHE_ENABLED = configured;
     const cache = new InMemoryCache();
-    assert.equal(cache.set("key", "stored"), cache);
-    assert.equal(cache.get("key"), undefined);
-    assert.equal(cache.has("key"), false);
-    assert.equal(cache.size, 0);
+    expect(cache.set("key", "stored")).toBe(cache);
+    expect(cache.get("key")).toBe(undefined);
+    expect(cache.has("key")).toBe(false);
+    expect(cache.size).toBe(0);
     let calls = 0;
     const load = async () => ++calls;
     const first = cache.remember("key", load);
     const second = cache.remember("key", load);
-    assert.notEqual(first, second);
-    assert.deepEqual(await Promise.all([first, second]), [1, 2]);
-    assert.equal(await cache.remember("key", load), 3);
-    assert.equal(cache.size, 0);
-    assert.equal(cache.delete("key"), false);
+    expect(first).not.toBe(second);
+    expect(await Promise.all([first, second])).toEqual([1, 2]);
+    expect(await cache.remember("key", load)).toBe(3);
+    expect(cache.size).toBe(0);
+    expect(cache.delete("key")).toBe(false);
   }
 });
 
@@ -284,11 +283,11 @@ test("an explicit override enables caching during development", async () => {
   let calls = 0;
   const first = cache.remember("key", async () => ++calls);
   const second = cache.remember("key", async () => ++calls);
-  assert.equal(first, second);
-  assert.equal(await first, 1);
-  assert.equal(cache.get("key"), 1);
-  assert.equal(await cache.remember("key", async () => ++calls), 1);
-  assert.equal(calls, 1);
+  expect(first).toBe(second);
+  expect(await first).toBe(1);
+  expect(cache.get("key")).toBe(1);
+  expect(await cache.remember("key", async () => ++calls)).toBe(1);
+  expect(calls).toBe(1);
 });
 
 test("an explicit override disables caching in production", async () => {
@@ -296,11 +295,11 @@ test("an explicit override disables caching in production", async () => {
   process.env.CACHE_ENABLED = "false";
   const cache = new InMemoryCache();
   cache.set("key", "stored");
-  assert.equal(cache.get("key"), undefined);
-  assert.equal(await cache.remember("key", async () => "fresh"), "fresh");
-  assert.equal(cache.get("key"), undefined);
-  assert.equal(cache.has("key"), false);
-  assert.equal(cache.size, 0);
+  expect(cache.get("key")).toBe(undefined);
+  expect(await cache.remember("key", async () => "fresh")).toBe("fresh");
+  expect(cache.get("key")).toBe(undefined);
+  expect(cache.has("key")).toBe(false);
+  expect(cache.size).toBe(0);
 });
 
 test("disabling the cache removes old entries and detaches pending loads before re-enabling", async () => {
@@ -311,17 +310,17 @@ test("disabling the cache removes old entries and detaches pending loads before 
   await Promise.resolve();
 
   process.env.CACHE_ENABLED = "false";
-  assert.equal(cache.get("stored"), undefined);
-  assert.equal(await cache.remember("pending", async () => "uncached value"), "uncached value");
-  assert.equal(cache.size, 0);
+  expect(cache.get("stored")).toBe(undefined);
+  expect(await cache.remember("pending", async () => "uncached value")).toBe("uncached value");
+  expect(cache.size).toBe(0);
 
   process.env.CACHE_ENABLED = "true";
   result.resolve("old pending value");
-  assert.equal(await oldLoad, "old pending value");
-  assert.equal(cache.has("stored"), false);
-  assert.equal(cache.has("pending"), false);
-  assert.equal(await cache.remember("pending", async () => "new value"), "new value");
-  assert.equal(cache.get("pending"), "new value");
+  expect(await oldLoad).toBe("old pending value");
+  expect(cache.has("stored")).toBe(false);
+  expect(cache.has("pending")).toBe(false);
+  expect(await cache.remember("pending", async () => "new value")).toBe("new value");
+  expect(cache.get("pending")).toBe("new value");
 });
 
 test("disabled caching preserves TTL validation and loader errors", async () => {
@@ -329,15 +328,14 @@ test("disabled caching preserves TTL validation and loader errors", async () => 
   const cache = new InMemoryCache();
   let calls = 0;
   for (const ttl of [0, -1, 0.5, Infinity, NaN, null, "1"]) {
-    assert.throws(() => cache.set("key", "value", ttl), /TTL must be a positive integer/);
-    assert.throws(() => cache.remember("key", async () => ++calls, ttl), /TTL must be a positive integer/);
+    expect(() => cache.set("key", "value", ttl)).toThrow(/TTL must be a positive integer/);
+    expect(() => cache.remember("key", async () => ++calls, ttl)).toThrow(/TTL must be a positive integer/);
   }
-  assert.equal(calls, 0);
-  await assert.rejects(
+  expect(calls).toBe(0);
+  await expect(
     cache.remember("key", () => {
       throw new Error("fresh load failed");
     }),
-    /fresh load failed/,
-  );
-  assert.equal(cache.size, 0);
+  ).rejects.toThrow(/fresh load failed/);
+  expect(cache.size).toBe(0);
 });

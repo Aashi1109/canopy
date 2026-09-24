@@ -1,54 +1,54 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
+import { expect, test, vi, beforeEach } from "vitest";
 
-const root = new URL("../", import.meta.url);
-const state = { actor: "owner", status: "active", calls: [], sessionOptions: null, authUnavailable: false };
-globalThis.__assistantRouteTest = state;
-const hooks = registerHooks({
-  resolve(specifier, context, next) {
-    if (specifier.startsWith("@/")) return { shortCircuit: true, url: new URL(specifier.slice(2), root).href };
-    return next(specifier, context);
-  },
-  load(url, context, next) {
-    let source;
-    if (url === new URL("lib/auth/session.ts", root).href)
-      source = `
-      export class AuthServiceError extends Error {}
-      export async function getSession(_headers, options) {
-        const state = globalThis.__assistantRouteTest;
-        state.sessionOptions = options;
-        if (state.authUnavailable) throw new AuthServiceError("Authentication unavailable");
-        return state.actor ? { user: { id: state.actor, status: state.status } } : null;
-      }
-    `;
-    if (url === new URL("lib/admin/index.ts", root).href) source = `export class AuthorizationError extends Error {}`;
-    if (url === new URL("app/api/assistant/integrations.ts", root).href)
-      source = `
-      export function getAssistantService(integrationKey) {
-        return new Proxy({}, { get(_target, method) {
+// vi.hoisted runs before the hoisted vi.mock factories so the fake auth and
+// integration modules can read the state the tests mutate.
+const state = vi.hoisted(() => ({
+  actor: "owner",
+  status: "active",
+  calls: [],
+  sessionOptions: null,
+  authUnavailable: false,
+}));
+
+vi.mock("@/lib/auth/session.ts", () => {
+  class AuthServiceError extends Error {}
+  return {
+    AuthServiceError,
+    async getSession(_headers, options) {
+      state.sessionOptions = options;
+      if (state.authUnavailable) throw new AuthServiceError("Authentication unavailable");
+      return state.actor ? { user: { id: state.actor, status: state.status } } : null;
+    },
+  };
+});
+vi.mock("@/lib/admin/index.ts", () => ({ AuthorizationError: class AuthorizationError extends Error {} }));
+vi.mock("@/app/api/assistant/integrations.ts", () => ({
+  getAssistantService(integrationKey) {
+    return new Proxy(
+      {},
+      {
+        get(_target, method) {
           return async (...args) => {
-            const state = globalThis.__assistantRouteTest;
             state.calls.push({ integrationKey, method, args });
-            if (method === "streamRun") return new Response('streamed-result', { headers: { 'Content-Type': 'application/x-ndjson' } });
+            if (method === "streamRun")
+              return new Response("streamed-result", { headers: { "Content-Type": "application/x-ndjson" } });
             return { method, result: "fixture" };
           };
-        } });
-      }
-    `;
-    return source ? { shortCircuit: true, format: "module", source } : next(url, context);
+        },
+      },
+    );
   },
-});
-const route = async (suffix) => import(new URL(`app/api/assistant/[integrationKey]/${suffix}/route.ts`, root));
-const config = await route("config");
-const runs = await route("runs");
-const run = await route("runs/[runId]");
-const proposal = await route("runs/[runId]/proposals/[proposalId]");
-const threads = await route("threads");
-const thread = await route("threads/[threadId]");
-const history = await route("threads/[threadId]/history");
-const attachments = await route("threads/[threadId]/attachments");
-const attachment = await route("threads/[threadId]/attachments/[attachmentId]");
+}));
+
+import * as config from "@/app/api/assistant/[integrationKey]/config/route.ts";
+import * as runs from "@/app/api/assistant/[integrationKey]/runs/route.ts";
+import * as run from "@/app/api/assistant/[integrationKey]/runs/[runId]/route.ts";
+import * as proposal from "@/app/api/assistant/[integrationKey]/runs/[runId]/proposals/[proposalId]/route.ts";
+import * as threads from "@/app/api/assistant/[integrationKey]/threads/route.ts";
+import * as thread from "@/app/api/assistant/[integrationKey]/threads/[threadId]/route.ts";
+import * as history from "@/app/api/assistant/[integrationKey]/threads/[threadId]/history/route.ts";
+import * as attachments from "@/app/api/assistant/[integrationKey]/threads/[threadId]/attachments/route.ts";
+import * as attachment from "@/app/api/assistant/[integrationKey]/threads/[threadId]/attachments/[attachmentId]/route.ts";
 
 function request(path, method = "GET", body, options = {}) {
   return new Request(`https://app.example.test/api/assistant/fixture/${path}`, {
@@ -72,44 +72,39 @@ const context = (values = {}) => ({
     ...values,
   }),
 });
-test.beforeEach(() => {
+beforeEach(() => {
   state.actor = "owner";
   state.status = "active";
   state.calls.length = 0;
   state.sessionOptions = null;
   state.authUnavailable = false;
 });
-test.after(() => {
-  hooks.deregister();
-  delete globalThis.__assistantRouteTest;
-});
 
 test("Assistant routes authenticate and validate origins before integration execution", async () => {
   state.actor = null;
-  assert.equal((await config.GET(request("config"), context())).status, 401);
+  expect((await config.GET(request("config"), context())).status).toBe(401);
   state.actor = "owner";
   state.status = "disabled";
-  assert.equal((await config.GET(request("config"), context())).status, 403);
+  expect((await config.GET(request("config"), context())).status).toBe(403);
   state.status = "active";
-  assert.equal(
+  expect(
     (await runs.POST(request("runs", "POST", {}, { headers: { origin: "https://foreign.example.test" } }), context()))
       .status,
-    403,
-  );
-  assert.equal(state.calls.length, 0);
+  ).toBe(403);
+  expect(state.calls.length).toBe(0);
   const result = await config.GET(request("config"), context());
-  assert.equal(result.status, 200);
-  assert.equal(result.headers.get("cache-control"), "private, no-store");
-  assert.deepEqual(state.calls[0], { integrationKey: "fixture", method: "config", args: ["owner"] });
+  expect(result.status).toBe(200);
+  expect(result.headers.get("cache-control")).toBe("private, no-store");
+  expect(state.calls[0]).toEqual({ integrationKey: "fixture", method: "config", args: ["owner"] });
 });
 
 test("Assistant routes skip unused admin enrichment and reject unavailable authentication", async () => {
-  assert.equal((await config.GET(request("config"), context())).status, 200);
-  assert.deepEqual(state.sessionOptions, { includeAdmin: false });
+  expect((await config.GET(request("config"), context())).status).toBe(200);
+  expect(state.sessionOptions).toEqual({ includeAdmin: false });
   state.calls.length = 0;
   state.authUnavailable = true;
-  assert.equal((await config.GET(request("config"), context())).status, 503);
-  assert.equal(state.calls.length, 0);
+  expect((await config.GET(request("config"), context())).status).toBe(503);
+  expect(state.calls.length).toBe(0);
 });
 
 test("Assistant thread listing and creation distinguish absent, valid, and invalid resources", async () => {
@@ -117,25 +112,22 @@ test("Assistant thread listing and creation distinguish absent, valid, and inval
   await threads.GET(request("threads?resourceId=invoice_1"), context());
   await threads.POST(request("threads", "POST", { title: "General conversation" }), context());
   await threads.POST(request("threads?resourceId=invoice_1", "POST", { title: "Invoice" }), context());
-  assert.deepEqual(
-    state.calls.map(({ method, args }) => [method, args]),
-    [
-      ["listThreads", ["owner", null]],
-      ["listThreads", ["owner", "invoice_1"]],
-      ["createThread", ["owner", null, { title: "General conversation" }]],
-      ["createThread", ["owner", "invoice_1", { title: "Invoice" }]],
-    ],
-  );
+  expect(state.calls.map(({ method, args }) => [method, args])).toEqual([
+    ["listThreads", ["owner", null]],
+    ["listThreads", ["owner", "invoice_1"]],
+    ["createThread", ["owner", null, { title: "General conversation" }]],
+    ["createThread", ["owner", "invoice_1", { title: "Invoice" }]],
+  ]);
   for (const query of ["resourceId=", "resourceId=../foreign", `resourceId=${"a".repeat(101)}`]) {
-    assert.equal((await threads.GET(request(`threads?${query}`), context())).status, 400);
+    expect((await threads.GET(request(`threads?${query}`), context())).status).toBe(400);
   }
-  assert.equal(state.calls.length, 4);
+  expect(state.calls.length).toBe(4);
 });
 
 test("Assistant thread creation accepts the configured admin host when Next normalizes the request URL", async (t) => {
   const previousAppUrl = process.env.APP_URL;
   process.env.APP_URL = "http://localhost:3000";
-  t.after(() => {
+  t.onTestFinished(() => {
     if (previousAppUrl === undefined) delete process.env.APP_URL;
     else process.env.APP_URL = previousAppUrl;
   });
@@ -152,8 +144,8 @@ test("Assistant thread creation accepts the configured admin host when Next norm
     }),
     context({ integrationKey: "blog" }),
   );
-  assert.equal(response.status, 200);
-  assert.deepEqual(state.calls, [
+  expect(response.status).toBe(200);
+  expect(state.calls).toEqual([
     {
       integrationKey: "blog",
       method: "createThread",
@@ -172,20 +164,17 @@ test("Assistant run endpoints preserve request content, abort signal, and propos
   };
   const streamedRequest = request("runs", "POST", input, { signal: abort.signal });
   const streamed = await runs.POST(streamedRequest, context());
-  assert.equal(await streamed.text(), "streamed-result");
-  assert.deepEqual(state.calls[0].args.slice(0, 2), ["owner", input]);
-  assert.equal(state.calls[0].args[2], streamedRequest.signal);
+  expect(await streamed.text()).toBe("streamed-result");
+  expect(state.calls[0].args.slice(0, 2)).toEqual(["owner", input]);
+  expect(state.calls[0].args[2]).toBe(streamedRequest.signal);
   abort.abort();
-  assert.equal(state.calls[0].args[2].aborted, true);
+  expect(state.calls[0].args[2].aborted).toBe(true);
   await run.GET(request("runs/run"), context());
   await proposal.PATCH(request("runs/run/proposals/proposal", "PATCH", { status: "applied" }), context());
-  assert.deepEqual(
-    state.calls.slice(1).map(({ method, args }) => [method, args]),
-    [
-      ["getRun", ["owner", "run"]],
-      ["updateProposal", ["owner", "run", "proposal", { status: "applied" }]],
-    ],
-  );
+  expect(state.calls.slice(1).map(({ method, args }) => [method, args])).toEqual([
+    ["getRun", ["owner", "run"]],
+    ["updateProposal", ["owner", "run", "proposal", { status: "applied" }]],
+  ]);
 });
 
 test("known-thread routes resolve stored scope and preserve result pagination and deletion intent", async () => {
@@ -194,16 +183,13 @@ test("known-thread routes resolve stored scope and preserve result pagination an
   await thread.PATCH(request("threads/thread", "PATCH", { composerDraft: "Keep this draft" }), context());
   await history.DELETE(request("threads/thread/history", "DELETE"), context());
   await thread.DELETE(request("threads/thread", "DELETE"), context());
-  assert.deepEqual(
-    state.calls.map(({ method, args }) => [method, args]),
-    [
-      ["getThread", ["owner", undefined, "thread"]],
-      ["getThreadExecutions", ["owner", undefined, "thread", "next-page"]],
-      ["updateThread", ["owner", undefined, "thread", { composerDraft: "Keep this draft" }]],
-      ["removeThreadHistory", ["owner", undefined, "thread"]],
-      ["removeThreadHistory", ["owner", undefined, "thread", true]],
-    ],
-  );
+  expect(state.calls.map(({ method, args }) => [method, args])).toEqual([
+    ["getThread", ["owner", undefined, "thread"]],
+    ["getThreadExecutions", ["owner", undefined, "thread", "next-page"]],
+    ["updateThread", ["owner", undefined, "thread", { composerDraft: "Keep this draft" }]],
+    ["removeThreadHistory", ["owner", undefined, "thread"]],
+    ["removeThreadHistory", ["owner", undefined, "thread", true]],
+  ]);
 });
 
 test("Assistant attachments preserve filters, link payloads, multipart files and deletion", async () => {
@@ -217,33 +203,28 @@ test("Assistant attachments preserve filters, link payloads, multipart files and
   await attachments.POST(request("threads/thread/attachments", "POST", form), context());
   await attachment.GET(request("threads/thread/attachments/attachment"), context());
   await attachment.DELETE(request("threads/thread/attachments/attachment", "DELETE"), context());
-  assert.deepEqual(state.calls[0].args, ["owner", undefined, "thread", "results", "next-page"]);
-  assert.deepEqual(state.calls[1].args, ["owner", undefined, "thread", { url: "https://example.com/source" }]);
-  assert.equal(state.calls[2].method, "uploadAttachment");
+  expect(state.calls[0].args).toEqual(["owner", undefined, "thread", "results", "next-page"]);
+  expect(state.calls[1].args).toEqual(["owner", undefined, "thread", { url: "https://example.com/source" }]);
+  expect(state.calls[2].method).toBe("uploadAttachment");
   const file = state.calls[2].args[3];
-  assert.ok(file instanceof File);
-  assert.equal(file.name, "source.png");
-  assert.equal(file.type, "image/png");
-  assert.equal(file.size, 4);
-  assert.deepEqual(
-    state.calls.slice(3).map(({ method, args }) => [method, args]),
-    [
-      ["getThreadAttachment", ["owner", undefined, "thread", "attachment"]],
-      ["removeAttachment", ["owner", undefined, "thread", "attachment"]],
-    ],
-  );
-  assert.equal(
+  expect(file instanceof File).toBeTruthy();
+  expect(file.name).toBe("source.png");
+  expect(file.type).toBe("image/png");
+  expect(file.size).toBe(4);
+  expect(state.calls.slice(3).map(({ method, args }) => [method, args])).toEqual([
+    ["getThreadAttachment", ["owner", undefined, "thread", "attachment"]],
+    ["removeAttachment", ["owner", undefined, "thread", "attachment"]],
+  ]);
+  expect(
     (await attachments.POST(request("threads/thread/attachments", "POST", new FormData()), context())).status,
-    400,
-  );
-  assert.equal(
+  ).toBe(400);
+  expect(
     (
       await attachments.POST(
         request("threads/thread/attachments", "POST", {}, { headers: { "content-length": String(7 * 1024 * 1024) } }),
         context(),
       )
     ).status,
-    413,
-  );
-  assert.equal(state.calls.length, 5);
+  ).toBe(413);
+  expect(state.calls.length).toBe(5);
 });

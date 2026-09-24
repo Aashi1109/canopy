@@ -108,7 +108,7 @@ function WorkspaceSurface({
       />
     );
   const heading = (
-    <Overline className={cn("truncate", variant === "card" && "text-muted-foreground")} id={headingId}>
+    <Overline className={cn("block truncate", variant === "card" && "text-muted-foreground")} id={headingId}>
       {title}
     </Overline>
   );
@@ -116,8 +116,8 @@ function WorkspaceSurface({
     header === "visible" ? (
       <header
         className={cn(
-          "@container flex shrink-0 items-center justify-between gap-3",
-          variant === "card" ? "min-h-10 px-4 pt-2" : "min-h-[46px] border-b border-border px-4",
+          "@container flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1",
+          variant === "card" ? "min-h-10 px-4 pt-2" : "min-h-[46px] border-b border-border px-4 py-2",
         )}
         data-slot="workspace-header"
       >
@@ -150,12 +150,12 @@ function WorkspaceSurface({
           ) : null}
         </div>
         {metaPosition === "actions" && meta !== undefined && meta !== null ? (
-          <div className="ml-auto flex min-w-0 items-center gap-3">
+          <div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center gap-x-3 gap-y-1">
             <Caption className="min-w-0 truncate text-right text-muted-foreground">{meta}</Caption>
-            {actions ? <div className="flex shrink-0 items-center gap-1">{actions}</div> : null}
+            {actions ? <div className="flex max-w-full shrink-0 flex-wrap items-center gap-1">{actions}</div> : null}
           </div>
         ) : actions ? (
-          <div className="ml-auto flex shrink-0 items-center gap-1">{actions}</div>
+          <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center gap-1">{actions}</div>
         ) : null}
       </header>
     ) : (

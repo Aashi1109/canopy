@@ -1,5 +1,7 @@
 "use client";
 
+import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
+
 import { Strong, FieldLabel, CodeBlock, Muted, ToolOptionsPanel } from "@/components/ui/index.tsx";
 import { ArrowRight } from "lucide-react";
 import { Fragment, useEffect, useId, useMemo } from "react";
@@ -135,7 +137,7 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
       defaultSize={75}
       minSize={75}
     >
-      <div className="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(14rem,1fr)] gap-5 overflow-y-auto border-r border-border p-5 max-[64rem]:min-h-[44rem] max-[64rem]:border-r-0 max-[64rem]:border-b">
+      <WorkbenchPanes className="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(14rem,1fr)] gap-5 overflow-y-auto border-r border-border p-5">
         <WorkspaceSurface
           className="h-full"
           contentClassName="bg-background"
@@ -199,7 +201,7 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
             variant="card"
           />
         )}
-      </div>
+      </WorkbenchPanes>
 
       <ToolOptionsPanel className="h-full overflow-y-auto bg-card p-[18px]" title="FIND & REPLACE" variant="plain">
         <SettingsPanel

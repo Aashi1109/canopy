@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 
 import { processStreamingJson } from "../lib/devtools/shared/streaming-json.ts";
 
@@ -31,9 +30,9 @@ test("minifies byte-by-byte UTF-8 input without changing number lexemes", async 
     outputChunkSize: 5,
   });
 
-  assert.equal(result.ok, true);
-  assert.equal(chunks.join(""), `{"emoji":"😀","number":${number}}`);
-  assert.ok(chunks.every((chunk) => chunk.length <= 5));
+  expect(result.ok).toBe(true);
+  expect(chunks.join("")).toBe(`{"emoji":"😀","number":${number}}`);
+  expect(chunks.every((chunk) => chunk.length <= 5)).toBeTruthy();
 });
 
 test("reports cumulative bytes while reading streaming JSON input", async () => {
@@ -43,8 +42,8 @@ test("reports cumulative bytes while reading streaming JSON input", async () => 
     onInputProgress: (bytes) => progress.push(bytes),
   });
 
-  assert.equal(result.ok, true);
-  assert.deepEqual(progress, [2, 4, 5]);
+  expect(result.ok).toBe(true);
+  expect(progress).toEqual([2, 4, 5]);
 });
 
 test("formats nested JSON and keeps only a bounded preview", async () => {
@@ -69,7 +68,7 @@ test("formats nested JSON and keeps only a bounded preview", async () => {
     "}",
   ].join("\n");
 
-  assert.deepEqual(result, {
+  expect(result).toEqual({
     ok: true,
     inputBytes: 42,
     inputCharacters: 42,
@@ -78,9 +77,9 @@ test("formats nested JSON and keeps only a bounded preview", async () => {
     previewTruncated: true,
     rootType: "object",
   });
-  assert.equal(chunks.join(""), output);
-  assert.ok(chunks.every((chunk) => chunk.length <= 7));
-  assert.equal("output" in result, false);
+  expect(chunks.join("")).toBe(output);
+  expect(chunks.every((chunk) => chunk.length <= 7)).toBeTruthy();
+  expect("output" in result).toBe(false);
 });
 
 test("bounds previews by UTF-8 bytes without splitting a code point", async () => {
@@ -88,10 +87,10 @@ test("bounds previews by UTF-8 bytes without splitting a code point", async () =
     mode: "minify",
     previewLimit: 12,
   });
-  assert.equal(result.ok, true);
-  assert.equal(new TextEncoder().encode(result.preview).byteLength <= 12, true);
-  assert.doesNotMatch(result.preview, /�/);
-  assert.equal(result.previewTruncated, true);
+  expect(result.ok).toBe(true);
+  expect(new TextEncoder().encode(result.preview).byteLength <= 12).toBe(true);
+  expect(result.preview).not.toMatch(/�/);
+  expect(result.previewTruncated).toBe(true);
 });
 
 test("accepts Blob input and validates without producing output", async () => {
@@ -104,11 +103,11 @@ test("accepts Blob input and validates without producing output", async () => {
     previewLimit: 8,
   });
 
-  assert.equal(result.ok, true);
-  assert.equal(result.preview, '\n { "val');
-  assert.equal(result.previewTruncated, true);
-  assert.equal(result.outputCharacters, 0);
-  assert.equal(outputCalls, 0);
+  expect(result.ok).toBe(true);
+  expect(result.preview).toBe('\n { "val');
+  expect(result.previewTruncated).toBe(true);
+  expect(result.outputCharacters).toBe(0);
+  expect(outputCalls).toBe(0);
 });
 
 test("tracks root type independently of a bounded leading-whitespace preview", async () => {
@@ -116,9 +115,9 @@ test("tracks root type independently of a bounded leading-whitespace preview", a
     mode: "validate",
     previewLimit: 4,
   });
-  assert.equal(result.ok, true);
-  assert.equal(result.preview, "    ");
-  assert.equal(result.rootType, "array");
+  expect(result.ok).toBe(true);
+  expect(result.preview).toBe("    ");
+  expect(result.rootType).toBe("array");
 });
 
 test("reports strict syntax errors at the offending line and column", async () => {
@@ -127,7 +126,7 @@ test("reports strict syntax errors at the offending line and column", async () =
     mode: "minify",
   });
 
-  assert.deepEqual(result, {
+  expect(result).toEqual({
     ok: false,
     error: {
       kind: "syntax",
@@ -144,11 +143,11 @@ test("rejects malformed numbers even when the token ends at EOF", async () => {
     mode: "validate",
   });
 
-  assert.equal(result.ok, false);
-  assert.equal(result.error.kind, "syntax");
-  assert.equal(result.error.line, 1);
-  assert.equal(result.error.column, 5);
-  assert.match(result.error.message, /number/i);
+  expect(result.ok).toBe(false);
+  expect(result.error.kind).toBe("syntax");
+  expect(result.error.line).toBe(1);
+  expect(result.error.column).toBe(5);
+  expect(result.error.message).toMatch(/number/i);
 });
 
 test("reports invalid UTF-8 as an encoding error", async () => {
@@ -162,23 +161,22 @@ test("reports invalid UTF-8 as an encoding error", async () => {
 
   const result = await processStreamingJson(stream, { mode: "validate" });
 
-  assert.equal(result.ok, false);
-  assert.equal(result.error.kind, "encoding");
-  assert.match(result.error.message, /UTF-8/);
-  assert.equal(result.error.line, 1);
+  expect(result.ok).toBe(false);
+  expect(result.error.kind).toBe("encoding");
+  expect(result.error.message).toMatch(/UTF-8/);
+  expect(result.error.line).toBe(1);
 });
 
 test("honors an already-aborted signal before reading input", async () => {
   const controller = new AbortController();
   controller.abort(new DOMException("Stopped", "AbortError"));
 
-  await assert.rejects(
+  await expect(
     processStreamingJson("{}", {
       mode: "validate",
       signal: controller.signal,
     }),
-    { name: "AbortError", message: "Stopped" },
-  );
+  ).rejects.toMatchObject({ name: "AbortError", message: "Stopped" });
 });
 
 test("writes valid UTF-8 without splitting surrogate pairs at chunk boundaries", async () => {
@@ -199,8 +197,8 @@ test("writes valid UTF-8 without splitting surrogate pairs at chunk boundaries",
     outputChunkSize: 5,
   });
 
-  assert.equal(result.ok, true);
-  assert.equal(closed, true);
+  expect(result.ok).toBe(true);
+  expect(closed).toBe(true);
   const size = bytes.reduce((total, chunk) => total + chunk.byteLength, 0);
   const joined = new Uint8Array(size);
   let offset = 0;
@@ -208,7 +206,7 @@ test("writes valid UTF-8 without splitting surrogate pairs at chunk boundaries",
     joined.set(chunk, offset);
     offset += chunk.byteLength;
   }
-  assert.equal(new TextDecoder("utf-8", { fatal: true }).decode(joined), '["ab😀"]');
+  expect(new TextDecoder("utf-8", { fatal: true }).decode(joined)).toBe('["ab😀"]');
 });
 
 test("aborts a writable output when later input is invalid", async () => {
@@ -229,22 +227,22 @@ test("aborts a writable output when later input is invalid", async () => {
     outputChunkSize: 2,
   });
 
-  assert.equal(result.ok, false);
-  assert.equal(result.error.message, "Trailing commas are not allowed in objects.");
-  assert.equal(closed, false);
-  assert.equal(abortReason?.name, "JsonStreamParseError");
+  expect(result.ok).toBe(false);
+  expect(result.error.message).toBe("Trailing commas are not allowed in objects.");
+  expect(closed).toBe(false);
+  expect(abortReason?.name).toBe("JsonStreamParseError");
 });
 
 test("rejects non-JSON whitespace and multiple root values", async () => {
   for (const input of ['{"x":1\u00a0}', "true false", "[01]"]) {
     const result = await processStreamingJson(input, { mode: "validate" });
-    assert.equal(result.ok, false, input);
-    assert.equal(result.error.kind, "syntax", input);
+    expect(result.ok, input).toBe(false);
+    expect(result.error.kind, input).toBe("syntax");
   }
 });
 
 test("rejects unsupported modes at the API boundary", async () => {
-  await assert.rejects(processStreamingJson("{}", { mode: "pretty" }), {
+  await expect(processStreamingJson("{}", { mode: "pretty" })).rejects.toMatchObject({
     name: "TypeError",
     message: "Unsupported streaming JSON mode: pretty.",
   });
@@ -255,6 +253,6 @@ test("rejects pathologically deep JSON with a recoverable syntax error", async (
     mode: "validate",
     maxDepth: 2,
   });
-  assert.equal(result.ok, false);
-  assert.match(result.error.message, /nesting exceeds the 2 level limit/);
+  expect(result.ok).toBe(false);
+  expect(result.error.message).toMatch(/nesting exceeds the 2 level limit/);
 });

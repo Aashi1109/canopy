@@ -1,25 +1,12 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { expect, test, vi } from "vitest";
 
-const stateUrl = new URL("../app/admin/hooks/useAdminQueryState.ts", import.meta.url).href;
-const hooks = registerHooks({
-  resolve(specifier, context, nextResolve) {
-    if (context.parentURL === stateUrl && specifier === "next/navigation") {
-      return {
-        shortCircuit: true,
-        url: `data:text/javascript,${encodeURIComponent(`
-          export const useSearchParams = () => new URLSearchParams(window.location.search);
-        `)}`,
-      };
-    }
-    return nextResolve(specifier, context);
-  },
-});
-const { useAdminQueryState, updateAdminQuery } = await import(stateUrl);
-hooks.deregister();
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(window.location.search),
+}));
+
+const { useAdminQueryState, updateAdminQuery } = await import("@/app/admin/hooks/useAdminQueryState.ts");
 
 function browser(t, path = "/admin/tools") {
   const previousWindow = globalThis.window;
@@ -48,7 +35,7 @@ function browser(t, path = "/admin/tools") {
       },
     },
   };
-  t.after(() => {
+  t.onTestFinished(() => {
     if (previousWindow === undefined) delete globalThis.window;
     else globalThis.window = previousWindow;
   });
@@ -67,37 +54,37 @@ function readState(key, defaultValue, allowedValues) {
 
 test("admin links restore allowed filters and fall back for missing or invalid values", (t) => {
   browser(t, "/admin/tools?app=media&visibility=hidden&q=PDF+%26+images&section=content");
-  assert.equal(readState("app", "all", ["all", "paperwork", "devtools", "media"])[0], "media");
-  assert.equal(readState("visibility", "all", ["all", "visible", "hidden"])[0], "hidden");
-  assert.equal(readState("q", "")[0], "PDF & images");
-  assert.equal(readState("section", "overview", ["overview", "content"])[0], "content");
-  assert.equal(readState("category", "all")[0], "all");
+  expect(readState("app", "all", ["all", "paperwork", "devtools", "media"])[0]).toBe("media");
+  expect(readState("visibility", "all", ["all", "visible", "hidden"])[0]).toBe("hidden");
+  expect(readState("q", "")[0]).toBe("PDF & images");
+  expect(readState("section", "overview", ["overview", "content"])[0]).toBe("content");
+  expect(readState("category", "all")[0]).toBe("all");
 
   updateAdminQuery({ app: "unknown", visibility: "unknown", section: "unknown" });
-  assert.equal(readState("app", "all", ["all", "media"])[0], "all");
-  assert.equal(readState("visibility", "all", ["all", "visible", "hidden"])[0], "all");
-  assert.equal(readState("section", "overview", ["overview", "content"])[0], "overview");
+  expect(readState("app", "all", ["all", "media"])[0]).toBe("all");
+  expect(readState("visibility", "all", ["all", "visible", "hidden"])[0]).toBe("all");
+  expect(readState("section", "overview", ["overview", "content"])[0]).toBe("overview");
 });
 
 test("batched query updates preserve unspecified params and hash through history navigation", (t) => {
   const calls = browser(t, "/admin/tools?app=media&category=PDF&q=compress&visibility=hidden&ref=shared#catalog");
   updateAdminQuery({ app: "devtools", category: null });
-  assert.deepEqual(calls, ["push"]);
-  assert.deepEqual(Object.fromEntries(window.location.searchParams), {
+  expect(calls).toEqual(["push"]);
+  expect(Object.fromEntries(window.location.searchParams)).toEqual({
     app: "devtools",
     q: "compress",
     visibility: "hidden",
     ref: "shared",
   });
-  assert.equal(window.location.pathname, "/admin/tools");
-  assert.equal(window.location.hash, "#catalog");
+  expect(window.location.pathname).toBe("/admin/tools");
+  expect(window.location.hash).toBe("#catalog");
 
   window.history.back();
-  assert.equal(readState("app", "all")[0], "media");
-  assert.equal(readState("category", "all")[0], "PDF");
+  expect(readState("app", "all")[0]).toBe("media");
+  expect(readState("category", "all")[0]).toBe("PDF");
   window.history.forward();
-  assert.equal(readState("app", "all")[0], "devtools");
-  assert.equal(readState("category", "all")[0], "all");
+  expect(readState("app", "all")[0]).toBe("devtools");
+  expect(readState("category", "all")[0]).toBe("all");
 });
 
 test("search replaces history, filters push history, and defaults remove their keys", (t) => {
@@ -106,25 +93,25 @@ test("search replaces history, filters push history, and defaults remove their k
   const [, setVisibility] = readState("visibility", "all", ["all", "hidden"]);
   setQuery("PDF & images / 100%", true);
   setVisibility("hidden");
-  assert.deepEqual(calls, ["replace", "push"]);
-  assert.equal(readState("q", "")[0], "PDF & images / 100%");
-  assert.equal(readState("visibility", "all")[0], "hidden");
-  assert.equal(window.location.searchParams.get("ref"), "shared");
+  expect(calls).toEqual(["replace", "push"]);
+  expect(readState("q", "")[0]).toBe("PDF & images / 100%");
+  expect(readState("visibility", "all")[0]).toBe("hidden");
+  expect(window.location.searchParams.get("ref")).toBe("shared");
 
   setQuery("", true);
-  assert.equal(window.location.searchParams.has("q"), false);
+  expect(window.location.searchParams.has("q")).toBe(false);
   setVisibility("all");
-  assert.equal(window.location.searchParams.has("visibility"), false);
-  assert.equal(window.location.hash, "#catalog");
+  expect(window.location.searchParams.has("visibility")).toBe(false);
+  expect(window.location.hash).toBe("#catalog");
 });
 
 test("reset clears catalog state together and unchanged state creates no history entry", (t) => {
   const calls = browser(t, "/admin/tools?q=PDF&app=media&category=PDF&visibility=draft&ref=shared#catalog");
   const reset = { q: null, app: null, category: null, visibility: null };
   updateAdminQuery(reset);
-  assert.equal(window.location.href, "https://smarttools.test/admin/tools?ref=shared#catalog");
-  assert.deepEqual(calls, ["push"]);
+  expect(window.location.href).toBe("https://smarttools.test/admin/tools?ref=shared#catalog");
+  expect(calls).toEqual(["push"]);
   updateAdminQuery(reset);
   readState("q", "")[1]("", true);
-  assert.deepEqual(calls, ["push"]);
+  expect(calls).toEqual(["push"]);
 });

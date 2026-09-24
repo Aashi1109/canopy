@@ -1,77 +1,70 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
-import { BlogError } from "../lib/blog/mutations.ts";
+import { afterAll, expect, test, vi } from "vitest";
 import { AuthorizationError } from "../lib/admin/index.ts";
 import { createBlogDocument, BlogValidationError } from "../lib/blog/document.ts";
+import { BlogError } from "../lib/blog/mutations.ts";
 import { BlogImageUploadError } from "../lib/blog/images.ts";
 
-const url = new URL("../app/admin/(protected)/blog/actions.ts", import.meta.url).href;
-const names = [
-  "createBlogPost",
-  "duplicateBlogPost",
-  "saveBlogDraft",
-  "publishBlogPost",
-  "scheduleBlogPost",
-  "cancelBlogSchedule",
-  "retryBlogSchedule",
-  "unpublishBlogPost",
-  "trashBlogPost",
-  "restoreTrashedBlogPost",
-  "restoreBlogRevision",
-  "saveBlogTerm",
-];
-const reads = ["getBlogPost", "getBlogRevision", "listBlogPosts", "listBlogRevisions", "listBlogTaxonomy"];
-const state = {
-  actor: "session-admin",
-  calls: [],
-  captured: [],
-  error: null,
-  data: { id: "post-id" },
-  sessionError: null,
-  BlogError,
-  BlogImageUploadError,
-};
-globalThis.__blogActionTest = state;
-const stub = (source) => ({
-  shortCircuit: true,
-  url: `data:text/javascript,${encodeURIComponent(source)}`,
+const { state, actionFns, names, reads } = vi.hoisted(() => {
+  const state = {
+    actor: "session-admin",
+    calls: [],
+    captured: [],
+    error: null,
+    data: { id: "post-id" },
+    sessionError: null,
+  };
+  globalThis.__blogActionTest = state;
+  const actionFns = (exports) =>
+    Object.fromEntries(
+      exports.map((name) => [
+        name,
+        async (...args) => {
+          const s = globalThis.__blogActionTest;
+          s.calls.push({ name, args });
+          if (s.error) throw s.error;
+          return s.data;
+        },
+      ]),
+    );
+  const names = [
+    "createBlogPost",
+    "duplicateBlogPost",
+    "saveBlogDraft",
+    "publishBlogPost",
+    "scheduleBlogPost",
+    "cancelBlogSchedule",
+    "retryBlogSchedule",
+    "unpublishBlogPost",
+    "trashBlogPost",
+    "restoreTrashedBlogPost",
+    "restoreBlogRevision",
+    "saveBlogTerm",
+  ];
+  const reads = ["getBlogPost", "getBlogRevision", "listBlogPosts", "listBlogRevisions", "listBlogTaxonomy"];
+  return { state, actionFns, names, reads };
 });
-const functions = (exports) =>
-  exports
-    .map(
-      (name) =>
-        `export const ${name} = async (...args) => {const s=globalThis.__blogActionTest;s.calls.push({name:${JSON.stringify(name)},args});if(s.error)throw s.error;return s.data;};`,
-    )
-    .join("\n");
-const hooks = registerHooks({
-  resolve(specifier, context, next) {
-    if (context.parentURL === url) {
-      if (specifier === "@sentry/core")
-        return stub(
-          "export function captureException(error){globalThis.__blogActionTest.captured.push(error);} export function getActiveSpan(){return undefined;}",
-        );
-      if (specifier.endsWith("/admin/access"))
-        return stub(
-          "export async function getActorUserId(){const s=globalThis.__blogActionTest;if(s.sessionError)throw s.sessionError;return s.actor;}",
-        );
-      if (specifier.endsWith("/blog/mutations"))
-        return stub(`export const BlogError=globalThis.__blogActionTest.BlogError;${functions(names)}`);
-      if (specifier.endsWith("/blog/queries")) return stub(functions(reads));
-      if (specifier.endsWith("/blog/images"))
-        return stub(
-          `export const BlogImageUploadError=globalThis.__blogActionTest.BlogImageUploadError;${functions(["prepareBlogImageUpload", "completeBlogImageUpload"])}`,
-        );
-      if (specifier.endsWith("/blog/document")) return next(`${specifier}.ts`, context);
-    }
-    if (specifier === "@/lib/config/config.ts")
-      return next(new URL("../lib/config/config.ts", import.meta.url).href, context);
-    if (specifier === "@/lib/admin/index.ts")
-      return next(new URL("../lib/admin/index.ts", import.meta.url).href, context);
-    return next(specifier, context);
+
+vi.mock("@sentry/core", async (importOriginal) => ({
+  ...(await importOriginal()),
+  captureException: (error) => globalThis.__blogActionTest.captured.push(error),
+  getActiveSpan: () => undefined,
+}));
+vi.mock("@/lib/admin/access.ts", () => ({
+  getActorUserId: async () => {
+    const s = globalThis.__blogActionTest;
+    if (s.sessionError) throw s.sessionError;
+    return s.actor;
   },
-});
-const actions = await import(url);
+}));
+// Spread the (already test-loaded) real modules to keep their error classes, override the data functions with trackers.
+vi.mock("@/lib/blog/mutations.ts", async (importOriginal) => ({ ...(await importOriginal()), ...actionFns(names) }));
+vi.mock("@/lib/blog/images.ts", async (importOriginal) => ({
+  ...(await importOriginal()),
+  ...actionFns(["prepareBlogImageUpload", "completeBlogImageUpload"]),
+}));
+vi.mock("@/lib/blog/queries.ts", () => actionFns(reads));
+
+const actions = await import("@/app/admin/(protected)/blog/actions.ts");
 
 function reset() {
   state.calls = [];
@@ -80,18 +73,17 @@ function reset() {
   state.sessionError = null;
   state.data = { id: "post-id" };
 }
-test.after(() => {
-  hooks.deregister();
+afterAll(() => {
   delete globalThis.__blogActionTest;
 });
 test("blog action identity always comes from session and unknown operations cannot dispatch", async () => {
   reset();
-  assert.equal((await actions.mutateBlogAction("create", { title: "Post" })).ok, true);
-  assert.deepEqual(state.calls, [{ name: "createBlogPost", args: ["session-admin", { title: "Post" }] }]);
+  expect((await actions.mutateBlogAction("create", { title: "Post" })).ok).toBe(true);
+  expect(state.calls).toEqual([{ name: "createBlogPost", args: ["session-admin", { title: "Post" }] }]);
   for (const operation of ["__proto__", "constructor", "toString", "unknown"]) {
-    assert.equal((await actions.mutateBlogAction(operation, {})).code, "VALIDATION");
+    expect((await actions.mutateBlogAction(operation, {})).code).toBe("VALIDATION");
   }
-  assert.equal(state.calls.length, 1);
+  expect(state.calls.length).toBe(1);
 });
 test("known failures are actionable while unexpected database/provider details stay private", async () => {
   reset();
@@ -104,10 +96,10 @@ test("known failures are actionable while unexpected database/provider details s
     state.error = error;
     state.captured = [];
     const result = await actions.mutateBlogAction("save", {});
-    assert.equal(result.code, code);
-    assert.deepEqual(state.captured, code === "TEMPORARY_FAILURE" ? [error] : []);
-    assert.doesNotMatch(JSON.stringify(result), /secret|password=hidden|Private role data/);
-    if (code === "TEMPORARY_FAILURE") assert.equal(result.message, "[hidden] password=[hidden]");
+    expect(result.code).toBe(code);
+    expect(state.captured).toEqual(code === "TEMPORARY_FAILURE" ? [error] : []);
+    expect(JSON.stringify(result)).not.toMatch(/secret|password=hidden|Private role data/);
+    if (code === "TEMPORARY_FAILURE") expect(result.message).toBe("[hidden] password=[hidden]");
   }
 });
 test("blog actions return original unexpected messages with their existing fallbacks", async () => {
@@ -122,19 +114,19 @@ test("blog actions return original unexpected messages with their existing fallb
   ]) {
     state.error = new Error("Connection timed out");
     const result = await invoke();
-    assert.equal(result.ok, false);
-    assert.equal(result.message, "Connection timed out");
-    assert.equal("stack" in result, false);
+    expect(result.ok).toBe(false);
+    expect(result.message).toBe("Connection timed out");
+    expect("stack" in result).toBe(false);
     state.error = new Error("");
-    assert.equal((await invoke()).message, fallback);
+    expect((await invoke()).message).toBe(fallback);
   }
 });
 test("missing session control flow escapes the action error mapping before any operation", async () => {
   reset();
   state.sessionError = new Error("NEXT_REDIRECT");
-  await assert.rejects(actions.mutateBlogAction("publish", {}), /NEXT_REDIRECT/);
-  await assert.rejects(actions.readBlogAction({ operation: "post", postId: "post" }), /NEXT_REDIRECT/);
-  assert.equal(state.calls.length, 0);
+  await expect(actions.mutateBlogAction("publish", {})).rejects.toThrow(/NEXT_REDIRECT/);
+  await expect(actions.readBlogAction({ operation: "post", postId: "post" })).rejects.toThrow(/NEXT_REDIRECT/);
+  expect(state.calls.length).toBe(0);
 });
 test("private preview renders validated content and keeps revision reads bound to post and actor", async () => {
   reset();
@@ -149,33 +141,32 @@ test("private preview renders validated content and keeps revision reads bound t
     postId: "post",
     revisionId: "rev",
   });
-  assert.equal(result.ok, true);
-  assert.equal(result.data.robots, "noindex, nofollow");
-  assert.match(result.data.html, /&lt;script&gt;/);
-  assert.deepEqual(state.calls, [{ name: "getBlogRevision", args: ["session-admin", "post", "rev"] }]);
+  expect(result.ok).toBe(true);
+  expect(result.data.robots).toBe("noindex, nofollow");
+  expect(result.data.html).toMatch(/&lt;script&gt;/);
+  expect(state.calls).toEqual([{ name: "getBlogRevision", args: ["session-admin", "post", "rev"] }]);
   state.data = null;
-  assert.equal((await actions.readBlogAction({ operation: "preview", postId: "missing" })).code, "NOT_FOUND");
+  expect((await actions.readBlogAction({ operation: "preview", postId: "missing" })).code).toBe("NOT_FOUND");
 });
 test("read rejects forged identity and image actions bind metadata to the session actor", async () => {
   reset();
-  assert.equal(
-    (await actions.readBlogAction({ operation: "post", postId: "post", actor: "forged" })).code,
+  expect((await actions.readBlogAction({ operation: "post", postId: "post", actor: "forged" })).code).toBe(
     "VALIDATION",
   );
-  assert.equal(state.calls.length, 0);
+  expect(state.calls.length).toBe(0);
   const input = { name: "image.png", size: 100, type: "image/png" };
-  assert.equal((await actions.prepareBlogImageUploadAction(input)).ok, true);
+  expect((await actions.prepareBlogImageUploadAction(input)).ok).toBe(true);
   const completion = { publicId: "signed-image", token: "signed-token" };
-  assert.equal((await actions.completeBlogImageUploadAction(completion)).ok, true);
-  assert.deepEqual(state.calls, [
+  expect((await actions.completeBlogImageUploadAction(completion)).ok).toBe(true);
+  expect(state.calls).toEqual([
     { name: "prepareBlogImageUpload", args: ["session-admin", input] },
     { name: "completeBlogImageUpload", args: ["session-admin", completion] },
   ]);
   reset();
   state.sessionError = new Error("NEXT_REDIRECT");
-  await assert.rejects(actions.prepareBlogImageUploadAction(input), /NEXT_REDIRECT/);
-  await assert.rejects(actions.completeBlogImageUploadAction(completion), /NEXT_REDIRECT/);
-  assert.equal(state.calls.length, 0);
+  await expect(actions.prepareBlogImageUploadAction(input)).rejects.toThrow(/NEXT_REDIRECT/);
+  await expect(actions.completeBlogImageUploadAction(completion)).rejects.toThrow(/NEXT_REDIRECT/);
+  expect(state.calls.length).toBe(0);
 });
 
 test("image upload actions preserve safe upload diagnostics and do not report draft-save failures", async () => {
@@ -199,10 +190,10 @@ test("image upload actions preserve safe upload diagnostics and do not report dr
     state.error = error;
     for (const action of [actions.prepareBlogImageUploadAction, actions.completeBlogImageUploadAction]) {
       const result = await action({});
-      assert.equal(result.ok, false);
-      assert.equal(result.code, code);
-      if (message) assert.equal(result.message, message);
-      assert.doesNotMatch(JSON.stringify(result), /credential-secret|private|could not be saved/);
+      expect(result.ok).toBe(false);
+      expect(result.code).toBe(code);
+      if (message) expect(result.message).toBe(message);
+      expect(JSON.stringify(result)).not.toMatch(/credential-secret|private|could not be saved/);
     }
   }
 });

@@ -1,17 +1,13 @@
-import assert from "node:assert/strict";
+import { test, expect, onTestFinished } from "vitest";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import test from "node:test";
 import pg from "pg";
 import { createBlogDocument } from "../lib/blog/document.ts";
 
 const databaseUrl = process.env.BLOG_TEST_DATABASE_URL;
 
-test(
+test.skipIf(!databaseUrl)(
   "blog queries expose only live content and paginate with stable PostgreSQL precision",
-  {
-    skip: databaseUrl ? false : "set BLOG_TEST_DATABASE_URL to a disposable PostgreSQL database",
-  },
   async (context) => {
     const schema = `blog_query_test_${randomUUID().replaceAll("-", "")}`;
     const admin = new pg.Client({ connectionString: databaseUrl });
@@ -28,7 +24,7 @@ test(
     process.env.DATABASE_URL = url.toString();
     const queries = await import("../lib/blog/queries.ts");
     const { sqlClient } = await import("../db/index.ts");
-    context.after(async () => {
+    onTestFinished(async () => {
       await sqlClient.end();
       if (previousUrl === undefined) delete process.env.DATABASE_URL;
       else process.env.DATABASE_URL = previousUrl;
@@ -113,63 +109,59 @@ test(
       "public list projects published summaries and preserves sub-millisecond keyset ties",
       async () => {
         const first = await queries.listPublishedBlogPosts();
-        assert.equal(first.items.length, 12);
-        assert.ok(first.nextCursor);
-        assert.equal(first.items[0].id, "live-13");
+        expect(first.items.length).toBe(12);
+        expect(first.nextCursor).toBeTruthy();
+        expect(first.items[0].id).toBe("live-13");
         const second = await queries.listPublishedBlogPosts({ cursor: first.nextCursor });
-        assert.deepEqual(
-          second.items.map((row) => row.id),
-          ["live-01", "live-00"],
-        );
-        assert.equal(second.nextCursor, null);
-        assert.equal(new Set([...first.items, ...second.items].map((row) => row.id)).size, 14);
+        expect(second.items.map((row) => row.id)).toEqual(["live-01", "live-00"]);
+        expect(second.nextCursor).toBe(null);
+        expect(new Set([...first.items, ...second.items].map((row) => row.id)).size).toBe(14);
         for (const item of first.items) {
-          assert.equal(item.title, document.title);
-          assert.equal(item.category.label, "Current Category");
+          expect(item.title).toBe(document.title);
+          expect(item.category.label).toBe("Current Category");
           for (const key of ["body", "document", "draftDocument", "createdBy", "draftUpdatedBy", "publishedSearch"])
-            assert.equal(Object.hasOwn(item, key), false);
+            expect(Object.hasOwn(item, key)).toBe(false);
         }
-        assert.doesNotMatch(JSON.stringify(first), /Secret draft|viewer/);
+        expect(JSON.stringify(first)).not.toMatch(/Secret draft|viewer/);
       },
     );
 
     await context.test("search and term filters use live projections only", async () => {
       const sitemap = await queries.getBlogSitemapEntries(50000);
-      assert.equal(sitemap.length, 14);
-      assert.ok(sitemap.every((entry) => entry.slug.startsWith("live-")));
-      assert.equal((await queries.getBlogSitemapEntries(2)).length, 2);
-      assert.deepEqual(await queries.getBlogSitemapEntries(0), []);
-      assert.equal((await queries.listPublishedBlogPosts({ search: "quokka" })).items.length, 12);
-      assert.equal((await queries.listPublishedBlogPosts({ search: "Secret" })).items.length, 0);
-      assert.equal(
+      expect(sitemap.length).toBe(14);
+      expect(sitemap.every((entry) => entry.slug.startsWith("live-"))).toBeTruthy();
+      expect((await queries.getBlogSitemapEntries(2)).length).toBe(2);
+      expect(await queries.getBlogSitemapEntries(0)).toEqual([]);
+      expect((await queries.listPublishedBlogPosts({ search: "quokka" })).items.length).toBe(12);
+      expect((await queries.listPublishedBlogPosts({ search: "Secret" })).items.length).toBe(0);
+      expect(
         (await queries.listPublishedBlogPosts({ category: "current-category", tag: "current-tag" })).items.length,
-        12,
-      );
-      assert.equal((await queries.listPublishedBlogPosts({ category: "unused-category" })).items.length, 0);
-      assert.equal((await queries.listPublishedBlogPosts({ tag: "unused-tag" })).items.length, 0);
-      assert.equal((await queries.listPublishedBlogPosts({ search: "' OR true --" })).items.length, 0);
+      ).toBe(12);
+      expect((await queries.listPublishedBlogPosts({ category: "unused-category" })).items.length).toBe(0);
+      expect((await queries.listPublishedBlogPosts({ tag: "unused-tag" })).items.length).toBe(0);
+      expect((await queries.listPublishedBlogPosts({ search: "' OR true --" })).items.length).toBe(0);
     });
 
     await context.test(
       "article reads use live documents and current term names; hidden routes return null",
       async () => {
         for (const slug of ["draft-only", "trashed", "unpublished", "missing"])
-          assert.equal(await queries.getPublishedBlogPost(slug), null);
+          expect(await queries.getPublishedBlogPost(slug)).toBe(null);
         const post = await queries.getPublishedBlogPost("live-00");
-        assert.equal(post.document.title, document.title);
-        assert.deepEqual(post.document.category, { id: "category", label: "Current Category" });
-        assert.deepEqual(post.document.tags, [{ id: "tag", label: "Current Tag" }]);
-        assert.equal(post.tags[0].slug, "current-tag");
-        assert.deepEqual(
-          post.relatedToolLinks.map((tool) => tool.href),
-          ["/devtools/json-formatter", "/paperwork/expense-report"],
-        );
-        assert.deepEqual(post.document.relatedToolIds, ["devtools.json-formatter", "paperwork.expense-report"]);
-        assert.doesNotMatch(JSON.stringify(post), /Secret draft|viewer/);
-        assert.deepEqual((await queries.listPublishedBlogTaxonomy("category")).items, [
+        expect(post.document.title).toBe(document.title);
+        expect(post.document.category).toEqual({ id: "category", label: "Current Category" });
+        expect(post.document.tags).toEqual([{ id: "tag", label: "Current Tag" }]);
+        expect(post.tags[0].slug).toBe("current-tag");
+        expect(post.relatedToolLinks.map((tool) => tool.href)).toEqual([
+          "/devtools/json-formatter",
+          "/paperwork/expense-report",
+        ]);
+        expect(post.document.relatedToolIds).toEqual(["devtools.json-formatter", "paperwork.expense-report"]);
+        expect(JSON.stringify(post)).not.toMatch(/Secret draft|viewer/);
+        expect((await queries.listPublishedBlogTaxonomy("category")).items).toEqual([
           { id: "category", name: "Current Category", slug: "current-category" },
         ]);
-        assert.deepEqual((await queries.listPublishedBlogTaxonomy("tag")).items, [
+        expect((await queries.listPublishedBlogTaxonomy("tag")).items).toEqual([
           { id: "tag", name: "Current Tag", slug: "current-tag" },
         ]);
       },
@@ -185,31 +177,26 @@ test(
           (actor) => queries.getBlogRevision(actor, "live-00", "revision-live-00"),
           (actor) => queries.listBlogTaxonomy(actor, "category"),
         ];
-        for (const read of reads) await assert.rejects(() => read("denied"), /permission|denied/i);
+        for (const read of reads) await expect(read("denied")).rejects.toThrow(/permission|denied/i);
         const post = await queries.getBlogPost("viewer", "live-00");
-        assert.equal(post.draftDocument.title, "Secret draft title");
+        expect(post.draftDocument.title).toBe("Secret draft title");
         const revision = await queries.getBlogRevision("viewer", "live-00", "revision-live-00");
-        assert.equal(revision.document.title, document.title);
-        assert.equal(revision.document.category.label, "Old Category");
-        assert.equal(await queries.getBlogRevision("viewer", "live-01", "revision-live-00"), null);
+        expect(revision.document.title).toBe(document.title);
+        expect(revision.document.category.label).toBe("Old Category");
+        expect(await queries.getBlogRevision("viewer", "live-01", "revision-live-00")).toBe(null);
         const history = await queries.listBlogRevisions("viewer", "live-00");
-        assert.equal(history.items.length, 1);
-        assert.equal(Object.hasOwn(history.items[0], "document"), false);
+        expect(history.items.length).toBe(1);
+        expect(Object.hasOwn(history.items[0], "document")).toBe(false);
         const scheduled = await queries.listBlogPosts("viewer", { status: "scheduled" });
-        assert.deepEqual(
-          scheduled.items.map((row) => row.id),
-          ["draft-only"],
-        );
-        assert.equal(scheduled.items[0].schedule.id, "schedule");
-        assert.deepEqual(
-          (await queries.listBlogPosts("viewer", { status: "draft" })).items.map((row) => row.id),
-          ["unpublished"],
-        );
-        assert.deepEqual(
-          (await queries.listBlogPosts("viewer", { status: "trash" })).items.map((row) => row.id),
-          ["trashed"],
-        );
-        assert.equal((await queries.listBlogTaxonomy("viewer", "category")).items[0].createdBy, "viewer");
+        expect(scheduled.items.map((row) => row.id)).toEqual(["draft-only"]);
+        expect(scheduled.items[0].schedule.id).toBe("schedule");
+        expect((await queries.listBlogPosts("viewer", { status: "draft" })).items.map((row) => row.id)).toEqual([
+          "unpublished",
+        ]);
+        expect((await queries.listBlogPosts("viewer", { status: "trash" })).items.map((row) => row.id)).toEqual([
+          "trashed",
+        ]);
+        expect((await queries.listBlogTaxonomy("viewer", "category")).items[0].createdBy).toBe("viewer");
       },
     );
     await context.test("admin numbered pages count filtered records and jump directly to the last page", async () => {
@@ -220,16 +207,16 @@ test(
       const filters = { search: "Numbered pagination", status: "draft" };
       const first = await queries.listBlogPosts("viewer", { ...filters, page: 1 });
       const last = await queries.listBlogPosts("viewer", { ...filters, page: 3 });
-      assert.deepEqual([first.total, first.pageCount, first.items.length], [61, 3, 25]);
-      assert.deepEqual([last.page, last.items.length, last.nextCursor], [3, 11, null]);
-      assert.ok(last.items.every((row) => !first.items.some((other) => other.id === row.id)));
-      assert.equal((await queries.listBlogPosts("viewer", { ...filters, page: 999 })).page, 3);
+      expect([first.total, first.pageCount, first.items.length]).toEqual([61, 3, 25]);
+      expect([last.page, last.items.length, last.nextCursor]).toEqual([3, 11, null]);
+      expect(last.items.every((row) => !first.items.some((other) => other.id === row.id))).toBeTruthy();
+      expect((await queries.listBlogPosts("viewer", { ...filters, page: 999 })).page).toBe(3);
       const empty = await queries.listBlogPosts("viewer", { search: "No such article", page: 99 });
-      assert.deepEqual([empty.total, empty.page, empty.pageCount, empty.items.length], [0, 1, 1, 0]);
+      expect([empty.total, empty.page, empty.pageCount, empty.items.length]).toEqual([0, 1, 1, 0]);
       const taxonomy = await queries.listBlogTaxonomy("viewer", "category", { page: 99 });
-      assert.deepEqual([taxonomy.total, taxonomy.page, taxonomy.pageCount], [2, 1, 1]);
+      expect([taxonomy.total, taxonomy.page, taxonomy.pageCount]).toEqual([2, 1, 1]);
       const history = await queries.listBlogRevisions("viewer", "live-00", undefined, 99);
-      assert.deepEqual([history.total, history.page, history.pageCount], [1, 1, 1]);
+      expect([history.total, history.page, history.pageCount]).toEqual([1, 1, 1]);
     });
   },
 );

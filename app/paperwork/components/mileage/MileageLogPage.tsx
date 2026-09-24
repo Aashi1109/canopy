@@ -1,5 +1,7 @@
 "use client";
 
+import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -494,7 +496,7 @@ export default function MileageLogPage({
       </Tabs>
 
       {/* Editor Grid Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <WorkbenchPanes className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* EDITING FORM SECTION */}
         <div className={`lg:col-span-7 space-y-6 ${activeTab === "edit" ? "block" : "hidden md:block"} print:hidden`}>
           <Card className="space-y-6">
@@ -960,7 +962,7 @@ export default function MileageLogPage({
             </div>
           </div>
         </div>
-      </div>
+      </WorkbenchPanes>
     </div>
   );
 }

@@ -1,11 +1,15 @@
 "use client";
 
-import { GripVertical, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Check, GripVertical, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { DesignRange, DesignWorkspace } from "@/app/devtools/components/color-design/DesignWorkspace";
+import { DesignWorkspace } from "@/app/devtools/components/color-design/DesignWorkspace";
 import { ResultSurface } from "@/components/ResultSurface";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
   Button,
   Caption,
   CheckboxControl as Checkbox,
@@ -13,6 +17,8 @@ import {
   ColorSwatch,
   FieldRoot as Field,
   FieldLabel,
+  FieldTitle,
+  Input,
   OrderableList,
   Select,
   Textarea,
@@ -30,8 +36,6 @@ const PRESETS: Record<string, ShadowLayer[]> = {
   Hard: [{ ...DEFAULT_LAYER, x: 8, y: 8, blur: 0, spread: 0, color: "#2563eb" }],
 };
 const LENGTHS = [
-  { key: "x", label: "Horizontal offset", min: -100, max: 100 },
-  { key: "y", label: "Vertical offset", min: -100, max: 100 },
   { key: "blur", label: "Blur", min: 0, max: 200 },
   { key: "spread", label: "Spread", min: -100, max: 100 },
 ] as const;
@@ -216,13 +220,14 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
                   disabled={props.disabled}
                   onClick={() => setSelectedId(layer.id)}
                   size="sm"
-                  variant={selected.id === layer.id ? "secondary" : "ghost"}
+                  variant={selected.id === layer.id ? "default" : "ghost"}
                 >
                   <ColorSwatch className="size-5 shrink-0" color={layer.color} />
                   <span className="truncate">
                     Layer {layers.indexOf(layer) + 1}
                     {layer.inset ? " · inset" : ""}
                   </span>
+                  {selected.id === layer.id ? <Check aria-hidden="true" className="ml-auto" /> : null}
                 </Button>
                 <Button
                   aria-label={`Remove shadow layer ${layers.indexOf(layer) + 1}`}
@@ -239,21 +244,55 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
           <ColorControl
             disabled={props.disabled}
             label="Selected shadow color"
+            layout="inline"
             value={selected.color}
             onChange={(color) => update({ color })}
           />
-          {LENGTHS.map(({ key, label, min, max }) => (
-            <DesignRange
-              disabled={props.disabled}
-              key={key}
-              label={label}
-              value={selected[key]}
-              min={min}
-              max={max}
-              suffix="px"
-              onChange={(value) => update({ [key]: value })}
-            />
-          ))}
+          <Field aria-labelledby="shadow-offset-label">
+            <FieldTitle id="shadow-offset-label">Offset</FieldTitle>
+            <div className="grid grid-cols-2 gap-2">
+              {(["x", "y"] as const).map((key) => (
+                <Input
+                  aria-label={`${key === "x" ? "Horizontal" : "Vertical"} offset value`}
+                  disabled={props.disabled}
+                  key={key}
+                  leadingIcon={key.toUpperCase()}
+                  max={100}
+                  min={-100}
+                  step={1}
+                  suffix="px"
+                  type="number"
+                  value={selected[key]}
+                  onChange={(event) => {
+                    const next = event.target.valueAsNumber;
+                    if (Number.isFinite(next)) update({ [key]: Math.max(-100, Math.min(100, next)) });
+                  }}
+                />
+              ))}
+            </div>
+          </Field>
+          <div className="grid grid-cols-2 gap-2">
+            {LENGTHS.map(({ key, label, min, max }) => (
+              <Field key={key}>
+                <FieldLabel htmlFor={`shadow-${key}`}>{label}</FieldLabel>
+                <Input
+                  disabled={props.disabled}
+                  id={`shadow-${key}`}
+                  leadingIcon={label[0]}
+                  max={max}
+                  min={min}
+                  step={1}
+                  suffix="px"
+                  type="number"
+                  value={selected[key]}
+                  onChange={(event) => {
+                    const next = event.target.valueAsNumber;
+                    if (Number.isFinite(next)) update({ [key]: Math.max(min, Math.min(max, next)) });
+                  }}
+                />
+              </Field>
+            ))}
+          </div>
           <Field orientation="horizontal">
             <Checkbox
               checked={selected.inset}
@@ -263,60 +302,64 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
             />
             <FieldLabel htmlFor="shadow-inset">Inset shadow</FieldLabel>
           </Field>
-          <details>
-            <summary className="cursor-pointer font-caption text-sm font-medium">Preview colors</summary>
-            <div className="mt-4 flex flex-col gap-4">
-              <ColorControl
-                disabled={props.disabled}
-                label="Background"
-                value={String(props.settings.previewBackground ?? "#f1f5f9")}
-                onChange={(value) => setting("previewBackground", value)}
-              />
-              <ColorControl
-                disabled={props.disabled}
-                label="Object"
-                value={String(props.settings.previewObject ?? "#ffffff")}
-                onChange={(value) => setting("previewObject", value)}
-              />
-            </div>
-          </details>
-          <details>
-            <summary className="cursor-pointer font-caption text-sm font-medium">Advanced CSS layers</summary>
-            <div className="mt-4 flex flex-col gap-4">
-              <Field>
-                <FieldLabel htmlFor="shadow-extra">Additional layers</FieldLabel>
-                <Textarea
+          <Accordion type="multiple">
+            <AccordionItem value="preview-colors">
+              <AccordionTrigger>Preview colors</AccordionTrigger>
+              <AccordionContent className="flex flex-col gap-5">
+                <ColorControl
                   disabled={props.disabled}
-                  id="shadow-extra"
-                  rows={4}
-                  value={String(props.settings.additionalLayers ?? "")}
-                  onChange={(event) => setting("additionalLayers", event.target.value)}
+                  label="Background"
+                  layout="inline"
+                  value={String(props.settings.previewBackground ?? "#f1f5f9")}
+                  onChange={(value) => setting("previewBackground", value)}
                 />
-                <Caption>
-                  One shadow per line. Use two to four pixel lengths, optional inset, and HEX or comma-separated
-                  rgb()/rgba().
-                </Caption>
-              </Field>
-              <Field orientation="horizontal">
-                <Checkbox
-                  checked={Boolean(props.settings.linkOpacity)}
+                <ColorControl
                   disabled={props.disabled}
-                  id="shadow-link"
-                  onCheckedChange={(checked) => setting("linkOpacity", checked === true)}
+                  label="Object"
+                  layout="inline"
+                  value={String(props.settings.previewObject ?? "#ffffff")}
+                  onChange={(value) => setting("previewObject", value)}
                 />
-                <FieldLabel htmlFor="shadow-link">Use first enabled layer opacity for extra rgba() layers</FieldLabel>
-              </Field>
-              <Field orientation="horizontal">
-                <Checkbox
-                  checked={Boolean(props.settings.showBrowserPrefixes)}
-                  disabled={props.disabled}
-                  id="shadow-prefixes"
-                  onCheckedChange={(checked) => setting("showBrowserPrefixes", checked === true)}
-                />
-                <FieldLabel htmlFor="shadow-prefixes">Include WebKit prefix</FieldLabel>
-              </Field>
-            </div>
-          </details>
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="advanced-layers">
+              <AccordionTrigger>Advanced CSS layers</AccordionTrigger>
+              <AccordionContent className="flex flex-col gap-4">
+                <Field>
+                  <FieldLabel htmlFor="shadow-extra">Additional layers</FieldLabel>
+                  <Textarea
+                    disabled={props.disabled}
+                    id="shadow-extra"
+                    rows={4}
+                    value={String(props.settings.additionalLayers ?? "")}
+                    onChange={(event) => setting("additionalLayers", event.target.value)}
+                  />
+                  <Caption>
+                    One shadow per line. Use two to four pixel lengths, optional inset, and HEX or comma-separated
+                    rgb()/rgba().
+                  </Caption>
+                </Field>
+                <Field orientation="horizontal">
+                  <Checkbox
+                    checked={Boolean(props.settings.linkOpacity)}
+                    disabled={props.disabled}
+                    id="shadow-link"
+                    onCheckedChange={(checked) => setting("linkOpacity", checked === true)}
+                  />
+                  <FieldLabel htmlFor="shadow-link">Use first enabled layer opacity for extra rgba() layers</FieldLabel>
+                </Field>
+                <Field orientation="horizontal">
+                  <Checkbox
+                    checked={Boolean(props.settings.showBrowserPrefixes)}
+                    disabled={props.disabled}
+                    id="shadow-prefixes"
+                    onCheckedChange={(checked) => setting("showBrowserPrefixes", checked === true)}
+                  />
+                  <FieldLabel htmlFor="shadow-prefixes">Include WebKit prefix</FieldLabel>
+                </Field>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
           <Caption>Drag handles or press Space, use arrow keys, and press Space again to reorder layers.</Caption>
         </>
       }

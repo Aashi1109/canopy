@@ -1,45 +1,38 @@
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { registerHooks } from "node:module";
-import test from "node:test";
-import { transformSync } from "next/dist/build/swc/index.js";
+import { afterAll, expect, test, vi } from "vitest";
 
 const state = { values: [], index: 0, png: async () => {}, errors: [] };
 globalThis.__blogMermaidTest = state;
-const stub = (source) => ({ shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(source)}` });
-const hooks = registerHooks({
-  resolve(specifier, context, next) {
-    if (!context.parentURL?.endsWith("/MermaidDiagram.tsx")) return next(specifier, context);
-    if (specifier === "react")
-      return stub(
-        "export function useState(initial) { const s = globalThis.__blogMermaidTest; const i=s.index++; if (!(i in s.values)) s.values[i]=initial; return [s.values[i], value => s.values[i] = value]; } export function useEffect() {}",
-      );
-    if (specifier === "@/components/ui/index.tsx")
-      return stub(
-        "export const Button = 'button', Tooltip = 'tooltip', TooltipContent = 'tooltip-content', TooltipProvider = 'provider', TooltipTrigger = 'trigger'; export const Popover = {Root: 'popover', Trigger: 'trigger', Portal: 'portal', Content: 'content', Close: 'close'}; export const toast = {error(message) { globalThis.__blogMermaidTest.errors.push(message); }};",
-      );
-    if (specifier === "@/lib/markdown/diagramExport")
-      return stub("export async function diagramPng(svg) { return globalThis.__blogMermaidTest.png(svg); }");
-    if (specifier === "./MermaidPreview") return stub("export const MermaidPreview = 'full-preview';");
-    if (specifier.endsWith(".css")) return stub("export default {};");
-    return next(specifier, context);
+
+vi.mock("react", async (importOriginal) => ({
+  ...(await importOriginal()),
+  useState: (initial) => {
+    const s = globalThis.__blogMermaidTest;
+    const i = s.index++;
+    if (!(i in s.values)) s.values[i] = initial;
+    return [s.values[i], (value) => (s.values[i] = value)];
   },
-  load(url, context, next) {
-    if (!url.endsWith("/MermaidDiagram.tsx")) return next(url, context);
-    return {
-      format: "module",
-      shortCircuit: true,
-      source: transformSync(readFileSync(new URL(url), "utf8"), {
-        filename: new URL(url).pathname,
-        jsc: { parser: { syntax: "typescript", tsx: true }, transform: { react: { runtime: "automatic" } } },
-        module: { type: "es6" },
-      }).code,
-    };
+  useEffect: () => {},
+}));
+vi.mock("@/components/ui/index.tsx", () => ({
+  Button: "button",
+  Tooltip: "tooltip",
+  TooltipContent: "tooltip-content",
+  TooltipProvider: "provider",
+  TooltipTrigger: "trigger",
+  Popover: { Root: "popover", Trigger: "trigger", Portal: "portal", Content: "content", Close: "close" },
+  toast: {
+    error(message) {
+      globalThis.__blogMermaidTest.errors.push(message);
+    },
   },
-});
+}));
+vi.mock("@/lib/markdown/diagramExport", () => ({
+  diagramPng: (svg) => globalThis.__blogMermaidTest.png(svg),
+}));
+vi.mock("../components/content/MermaidPreview", () => ({ MermaidPreview: "full-preview" }));
+
 const { MermaidDiagram } = await import("../components/content/MermaidDiagram.tsx");
-test.after(() => {
-  hooks.deregister();
+afterAll(() => {
   delete globalThis.__blogMermaidTest;
 });
 const walk = (node) =>
@@ -52,32 +45,22 @@ function render(previewable = true) {
 }
 test("only read-view diagrams open a preview with exact SVG/source downloads and can close", () => {
   state.values = [{ source, svg }, false];
-  assert.equal(
-    render(false).some((node) => node.type === "button"),
-    false,
-  );
+  expect(render(false).some((node) => node.type === "button")).toBe(false);
   const button = render().find((node) => node.props["aria-label"] === "Open Mermaid diagram preview");
   button.props.onClick();
   const preview = render().find((node) => node.type === "full-preview");
-  assert.equal(preview.props.svg, svg);
+  expect(preview.props.svg).toBe(svg);
   const links = walk(preview.props.downloads).filter((node) => node.type === "a");
-  assert.deepEqual(
+  expect(
     links.map((node) => [node.props.download, decodeURIComponent(node.props.href.split(",").slice(1).join(","))]),
-    [
-      ["diagram.svg", svg],
-      ["diagram.mmd", source],
-    ],
-  );
+  ).toEqual([
+    ["diagram.svg", svg],
+    ["diagram.mmd", source],
+  ]);
   preview.props.onClose();
-  assert.equal(
-    render().some((node) => node.type === "full-preview"),
-    false,
-  );
+  expect(render().some((node) => node.type === "full-preview")).toBe(false);
   state.values = [{ source, error: "Invalid diagram" }, false];
-  assert.equal(
-    render().some((node) => node.type === "button"),
-    false,
-  );
+  expect(render().some((node) => node.type === "button")).toBe(false);
 });
 
 test("PNG export reports loading and offers recovery when rendering fails", async () => {
@@ -90,8 +73,8 @@ test("PNG export reports loading and offers recovery when rendering fails", asyn
   downloadNodes()
     .find((node) => node.type === "button" && node.props.children === "Download PNG")
     .props.onClick();
-  assert.ok(downloadNodes().some((node) => node.props.loading === true));
+  expect(downloadNodes().some((node) => node.props.loading === true)).toBeTruthy();
   await new Promise((resolve) => setImmediate(resolve));
-  assert.deepEqual(state.errors, ["PNG download failed. Try again or download SVG."]);
-  assert.equal(downloadNodes().find((node) => node.props.children === "Download PNG").props.loading, false);
+  expect(state.errors).toEqual(["PNG download failed. Try again or download SVG."]);
+  expect(downloadNodes().find((node) => node.props.children === "Download PNG").props.loading).toBe(false);
 });

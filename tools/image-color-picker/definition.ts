@@ -36,7 +36,7 @@ export default {
   content: {
     howToUse: [
       "Choose or drop a PNG, JPEG, WebP, or GIF image. Processing stays in your browser.",
-      "Click the image, use arrow keys on the image, or enter zero-based X/Y coordinates to sample a pixel.",
+      "Click or drag across the image to sample pixels live. Use the magnifier for precision, arrow keys to move the selection, or enter zero-based X/Y coordinates.",
       "Copy the selected HEX, RGB, or HSL value. Copy or download the extracted palette as CSS variables.",
     ],
     limitations: [

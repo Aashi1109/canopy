@@ -1,6 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-
+import { test, expect } from "vitest";
 import {
   AdvancedDocumentTemplateSchema,
   AdvancedTemplateConfigSchema,
@@ -16,10 +14,10 @@ import {
 } from "../lib/invoice-templates/index.ts";
 
 test("full TINs are rejected while masked references remain safe", () => {
-  assert.equal(containsFullTin("123-45-6789"), true);
-  assert.equal(containsFullTin({ rows: [{ reference: "12-3456789" }] }), true);
-  assert.equal(containsFullTin("•••• 4821"), false);
-  assert.equal(containsFullTin("https://www.irs.gov/pub/irs-pdf/fw9.pdf"), false);
+  expect(containsFullTin("123-45-6789")).toBe(true);
+  expect(containsFullTin({ rows: [{ reference: "12-3456789" }] })).toBe(true);
+  expect(containsFullTin("•••• 4821")).toBe(false);
+  expect(containsFullTin("https://www.irs.gov/pub/irs-pdf/fw9.pdf")).toBe(false);
 });
 
 const expectedDocuments = [
@@ -33,64 +31,58 @@ const expectedDocuments = [
 ];
 
 test("the document registry defines valid defaults and starters for all seven kinds", () => {
-  assert.deepEqual(
-    DOCUMENT_TYPES,
-    expectedDocuments.map(([documentType]) => documentType),
-  );
-  assert.deepEqual(
-    DOCUMENT_DEFINITIONS.map(({ documentType }) => documentType),
-    DOCUMENT_TYPES,
-  );
+  expect(DOCUMENT_TYPES).toEqual(expectedDocuments.map(([documentType]) => documentType));
+  expect(DOCUMENT_DEFINITIONS.map(({ documentType }) => documentType)).toEqual(DOCUMENT_TYPES);
 
   for (const [documentType, toolComponentKey, allowedPageFormats, complianceMode] of expectedDocuments) {
     const definition = getDocumentDefinition(documentType);
     const config = createAdvancedTemplateConfig(documentType, definition.defaultPageFormat);
     const fieldKeys = definition.fields.map((field) => field.key);
 
-    assert.equal(definition.documentType, documentType);
-    assert.equal(definition.toolComponentKey, toolComponentKey);
-    assert.deepEqual(definition.allowedPageFormats, allowedPageFormats);
-    assert.equal(definition.complianceMode, complianceMode);
-    assert.ok(definition.label.length > 2);
-    assert.equal(new Set(fieldKeys).size, fieldKeys.length);
-    assert.ok(definition.fields.length > 5);
-    assert.ok(definition.requiredBindings.every((binding) => fieldKeys.includes(binding)));
+    expect(definition.documentType).toBe(documentType);
+    expect(definition.toolComponentKey).toBe(toolComponentKey);
+    expect(definition.allowedPageFormats).toEqual(allowedPageFormats);
+    expect(definition.complianceMode).toBe(complianceMode);
+    expect(definition.label.length > 2).toBeTruthy();
+    expect(new Set(fieldKeys).size).toBe(fieldKeys.length);
+    expect(definition.fields.length > 5).toBeTruthy();
+    expect(definition.requiredBindings.every((binding) => fieldKeys.includes(binding))).toBeTruthy();
     if (documentType === "quarterly-tax-estimator") {
-      assert.ok(fieldKeys.includes("itemizedDeductions"));
+      expect(fieldKeys.includes("itemizedDeductions")).toBeTruthy();
     }
-    assert.ok(
+    expect(
       definition.defaultForm.sections
         .flatMap((section) => section.entries)
         .every((entry) => {
           const field = definition.fields.find(({ key }) => key === entry.key);
           return entry.kind !== "builtin" || field?.source === "user";
         }),
-    );
+    ).toBeTruthy();
 
     for (const field of definition.fields) {
-      assert.ok(field.key);
-      assert.ok(field.label);
-      assert.ok(field.section);
-      assert.ok(field.valueType);
-      assert.ok(field.control);
-      assert.ok(["user", "computed", "system", "reference"].includes(field.source));
-      assert.equal(typeof field.required, "boolean");
-      assert.equal(typeof field.computationRequired, "boolean");
-      assert.equal(typeof field.sampleValue, "string");
-      assert.ok(field.allowedBindingTypes.length > 0);
-      assert.ok(field.sensitiveData);
+      expect(field.key).toBeTruthy();
+      expect(field.label).toBeTruthy();
+      expect(field.section).toBeTruthy();
+      expect(field.valueType).toBeTruthy();
+      expect(field.control).toBeTruthy();
+      expect(["user", "computed", "system", "reference"].includes(field.source)).toBeTruthy();
+      expect(typeof field.required).toBe("boolean");
+      expect(typeof field.computationRequired).toBe("boolean");
+      expect(typeof field.sampleValue).toBe("string");
+      expect(field.allowedBindingTypes.length > 0).toBeTruthy();
+      expect(field.sensitiveData).toBeTruthy();
     }
 
-    assert.equal(config.schemaVersion, 2);
-    assert.deepEqual(config.form, definition.defaultForm);
-    assert.equal(AdvancedTemplateConfigSchema.safeParse(config).success, true);
-    assert.ok(config.template.schemas.length > 0);
-    assert.ok(config.template.schemas.flat().length > 0);
-    assert.ok(
+    expect(config.schemaVersion).toBe(2);
+    expect(config.form).toEqual(definition.defaultForm);
+    expect(AdvancedTemplateConfigSchema.safeParse(config).success).toBe(true);
+    expect(config.template.schemas.length > 0).toBeTruthy();
+    expect(config.template.schemas.flat().length > 0).toBeTruthy();
+    expect(
       definition.requiredBindings.every((binding) =>
         config.template.schemas.flat().some((schema) => schema.name === binding),
       ),
-    );
+    ).toBeTruthy();
   }
 });
 
@@ -98,7 +90,7 @@ test("page formats are registry-driven and reject every cross-family format", ()
   for (const documentType of DOCUMENT_TYPES) {
     const definition = getDocumentDefinition(documentType);
     for (const pageFormat of ["A4", "LETTER", "RECEIPT_80MM", "RECEIPT_58MM"]) {
-      assert.equal(isSupportedPageFormat(documentType, pageFormat), definition.allowedPageFormats.includes(pageFormat));
+      expect(isSupportedPageFormat(documentType, pageFormat)).toBe(definition.allowedPageFormats.includes(pageFormat));
     }
   }
 });
@@ -116,20 +108,19 @@ test("legacy invoice and receipt configs normalize in memory without losing samp
 
     const normalized = normalizeAdvancedTemplateConfig(legacy, documentType);
 
-    assert.equal(normalized.schemaVersion, 2);
-    assert.deepEqual(normalized.form, getDocumentDefinition(documentType).defaultForm);
-    assert.equal(normalized.sampleData["custom.legacy-note"], "Keep me");
-    assert.equal(
-      normalized.template.schemas[0][0].name,
+    expect(normalized.schemaVersion).toBe(2);
+    expect(normalized.form).toEqual(getDocumentDefinition(documentType).defaultForm);
+    expect(normalized.sampleData["custom.legacy-note"]).toBe("Keep me");
+    expect(normalized.template.schemas[0][0].name).toBe(
       documentType === "invoice" ? "invoiceNumber" : "documentNumber",
     );
   }
 
-  assert.equal(resolveDocumentFieldKey("invoice", "documentNumber"), "invoiceNumber");
-  assert.equal(resolveDocumentFieldKey("invoice", "discount"), "discountAmount");
-  assert.equal(resolveDocumentFieldKey("invoice", "shipping"), "shippingFee");
-  assert.equal(resolveDocumentFieldKey("receipt", "documentNumber"), "receiptNumber");
-  assert.equal(resolveDocumentFieldKey("receipt", "discount"), "discountAmount");
+  expect(resolveDocumentFieldKey("invoice", "documentNumber")).toBe("invoiceNumber");
+  expect(resolveDocumentFieldKey("invoice", "discount")).toBe("discountAmount");
+  expect(resolveDocumentFieldKey("invoice", "shipping")).toBe("shippingFee");
+  expect(resolveDocumentFieldKey("receipt", "documentNumber")).toBe("receiptNumber");
+  expect(resolveDocumentFieldKey("receipt", "discount")).toBe("discountAmount");
 
   const legacyTemplate = {
     id: "legacy-invoice",
@@ -148,8 +139,8 @@ test("legacy invoice and receipt configs normalize in memory without losing samp
   delete legacyTemplate.config.form;
 
   const parsed = AdvancedDocumentTemplateSchema.parse(legacyTemplate);
-  assert.equal(parsed.config.schemaVersion, 2);
-  assert.ok(parsed.config.form.sections.length > 0);
+  expect(parsed.config.schemaVersion).toBe(2);
+  expect(parsed.config.form.sections.length > 0).toBeTruthy();
 
   const computedInput = {
     ...legacyTemplate,
@@ -165,7 +156,7 @@ test("legacy invoice and receipt configs normalize in memory without losing samp
     required: false,
     enabled: true,
   });
-  assert.equal(AdvancedDocumentTemplateSchema.safeParse(computedInput).success, false);
+  expect(AdvancedDocumentTemplateSchema.safeParse(computedInput).success).toBe(false);
 });
 
 test("schema validation accepts custom scalar and repeater fields and rejects malformed structure", () => {
@@ -211,23 +202,23 @@ test("schema validation accepts custom scalar and repeater fields and rejects ma
     { id: "attendee-1", name: "Avery Morgan", email: "avery@example.com" },
   ]);
 
-  assert.equal(AdvancedTemplateConfigSchema.safeParse(valid).success, true);
+  expect(AdvancedTemplateConfigSchema.safeParse(valid).success).toBe(true);
 
   const duplicateSection = structuredClone(valid);
   duplicateSection.form.sections[1].id = duplicateSection.form.sections[0].id;
-  assert.equal(AdvancedTemplateConfigSchema.safeParse(duplicateSection).success, false);
+  expect(AdvancedTemplateConfigSchema.safeParse(duplicateSection).success).toBe(false);
 
   const duplicateField = structuredClone(valid);
   duplicateField.form.sections.at(-1).entries[0].key = duplicateField.form.sections[0].entries[0].key;
-  assert.equal(AdvancedTemplateConfigSchema.safeParse(duplicateField).success, false);
+  expect(AdvancedTemplateConfigSchema.safeParse(duplicateField).success).toBe(false);
 
   const duplicateColumn = structuredClone(valid);
   duplicateColumn.form.sections.at(-1).entries[1].columns[1].key = "name";
-  assert.equal(AdvancedTemplateConfigSchema.safeParse(duplicateColumn).success, false);
+  expect(AdvancedTemplateConfigSchema.safeParse(duplicateColumn).success).toBe(false);
 
   const nestedRepeater = structuredClone(valid);
   nestedRepeater.form.sections.at(-1).entries[1].columns[0].control = "repeater";
-  assert.equal(AdvancedTemplateConfigSchema.safeParse(nestedRepeater).success, false);
+  expect(AdvancedTemplateConfigSchema.safeParse(nestedRepeater).success).toBe(false);
 });
 
 test("publish validation enforces bindings, plugin compatibility, compliance, and warnings", () => {
@@ -257,20 +248,20 @@ test("publish validation enforces bindings, plugin compatibility, compliance, an
   });
 
   const invoiceResult = validateAdvancedTemplateForPublish(invoice, "invoice");
-  assert.equal(invoiceResult.valid, false);
-  assert.ok(invoiceResult.errors.some(({ code }) => code === "incompatible-binding"));
-  assert.ok(invoiceResult.errors.some(({ code }) => code === "unknown-plugin"));
-  assert.ok(invoiceResult.warnings.some(({ code }) => code === "unused-field"));
+  expect(invoiceResult.valid).toBe(false);
+  expect(invoiceResult.errors.some(({ code }) => code === "incompatible-binding")).toBeTruthy();
+  expect(invoiceResult.errors.some(({ code }) => code === "unknown-plugin")).toBeTruthy();
+  expect(invoiceResult.warnings.some(({ code }) => code === "unused-field")).toBeTruthy();
   invoice.form.sections.at(-1).entries[0].required = true;
-  assert.ok(
+  expect(
     validateAdvancedTemplateForPublish(invoice, "invoice").warnings.some(
       ({ code, path }) => code === "unused-field" && path === "form.custom.unused",
     ),
-  );
+  ).toBeTruthy();
 
   const legacyBindings = createAdvancedTemplateConfig("invoice", "A4");
   legacyBindings.template.schemas.flat().find((schema) => schema.name === "invoiceNumber").name = "documentNumber";
-  assert.equal(validateAdvancedTemplateForPublish(legacyBindings, "invoice").valid, true);
+  expect(validateAdvancedTemplateForPublish(legacyBindings, "invoice").valid).toBe(true);
 
   for (const documentType of ["w9-request", "1099-nec-tracker"]) {
     const config = createAdvancedTemplateConfig(documentType, "A4");
@@ -282,45 +273,47 @@ test("publish validation enforces bindings, plugin compatibility, compliance, an
     );
 
     const result = validateAdvancedTemplateForPublish(config, documentType);
-    assert.equal(result.valid, false);
-    assert.ok(result.errors.some(({ code, path }) => code === "missing-binding" && path.includes(disclaimer)));
+    expect(result.valid).toBe(false);
+    expect(
+      result.errors.some(({ code, path }) => code === "missing-binding" && path.includes(disclaimer)),
+    ).toBeTruthy();
   }
 
   const unsafeW9 = createAdvancedTemplateConfig("w9-request", "A4");
   unsafeW9.sampleData.contractorTin = "123-45-6789";
-  assert.ok(
+  expect(
     validateAdvancedTemplateForPublish(unsafeW9, "w9-request").errors.some(({ code }) => code === "forbidden-tax-data"),
-  );
+  ).toBeTruthy();
   const disguisedW9 = createAdvancedTemplateConfig("w9-request", "A4");
   disguisedW9.sampleData["custom.reference"] = "123-45-6789";
-  assert.ok(
+  expect(
     validateAdvancedTemplateForPublish(disguisedW9, "w9-request").errors.some(
       ({ code }) => code === "forbidden-tax-data",
     ),
-  );
+  ).toBeTruthy();
 
   const unsafe1099 = createAdvancedTemplateConfig("1099-nec-tracker", "A4");
   unsafe1099.sampleData.recipientEin = "12-3456789";
-  assert.ok(
+  expect(
     validateAdvancedTemplateForPublish(unsafe1099, "1099-nec-tracker").errors.some(
       ({ code }) => code === "forbidden-tax-data",
     ),
-  );
+  ).toBeTruthy();
   const copyA1099 = createAdvancedTemplateConfig("1099-nec-tracker", "A4");
   copyA1099.sampleData["custom.heading"] = "Fileable Form 1099 Copy A";
-  assert.ok(
+  expect(
     validateAdvancedTemplateForPublish(copyA1099, "1099-nec-tracker").errors.some(
       ({ code }) => code === "fileable-form-claim",
     ),
-  );
+  ).toBeTruthy();
 });
 
 test("publish validation applies every hard limit without accepting partial overflow", () => {
   const pageOverflow = createAdvancedTemplateConfig("invoice", "A4");
   pageOverflow.template.schemas = Array.from({ length: 26 }, () => []);
   const pageResult = validateAdvancedTemplateForPublish(pageOverflow, "invoice");
-  assert.ok(pageResult.errors.some(({ code }) => code === "page-limit"));
-  assert.ok(pageResult.errors.some(({ code }) => code === "missing-binding"));
+  expect(pageResult.errors.some(({ code }) => code === "page-limit")).toBeTruthy();
+  expect(pageResult.errors.some(({ code }) => code === "missing-binding")).toBeTruthy();
 
   const elementOverflow = createAdvancedTemplateConfig("invoice", "A4");
   const element = structuredClone(elementOverflow.template.schemas[0][0]);
@@ -330,9 +323,9 @@ test("publish validation applies every hard limit without accepting partial over
       name: `static-${index}`,
     })),
   ];
-  assert.ok(
+  expect(
     validateAdvancedTemplateForPublish(elementOverflow, "invoice").errors.some(({ code }) => code === "element-limit"),
-  );
+  ).toBeTruthy();
 
   const formOverflow = createAdvancedTemplateConfig("invoice", "A4");
   formOverflow.form.sections.push({
@@ -346,9 +339,9 @@ test("publish validation applies every hard limit without accepting partial over
       enabled: true,
     })),
   });
-  assert.ok(
+  expect(
     validateAdvancedTemplateForPublish(formOverflow, "invoice").errors.some(({ code }) => code === "form-field-limit"),
-  );
+  ).toBeTruthy();
 
   const customOverflow = createAdvancedTemplateConfig("invoice", "A4");
   customOverflow.form.sections.push({
@@ -363,15 +356,15 @@ test("publish validation applies every hard limit without accepting partial over
       enabled: true,
     })),
   });
-  assert.ok(
+  expect(
     validateAdvancedTemplateForPublish(customOverflow, "invoice").errors.some(
       ({ code }) => code === "custom-field-limit",
     ),
-  );
+  ).toBeTruthy();
 
   const sizeOverflow = createAdvancedTemplateConfig("invoice", "A4");
   sizeOverflow.sampleData["custom.large"] = "x".repeat(5 * 1024 * 1024);
-  assert.ok(
+  expect(
     validateAdvancedTemplateForPublish(sizeOverflow, "invoice").errors.some(({ code }) => code === "size-limit"),
-  );
+  ).toBeTruthy();
 });

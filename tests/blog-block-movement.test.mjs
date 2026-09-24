@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { getSchema, Node } from "@tiptap/core";
 import { TableKit } from "@tiptap/extension-table";
 import StarterKit from "@tiptap/starter-kit";
@@ -18,18 +17,15 @@ test("moving a whole block preserves formatting, selection, and one-step undo/re
   const dispatch = (tr) => {
     state = state.apply(tr);
   };
-  assert.equal(moveBlogBlock(a.nodeSize, doc.content.size)(state, dispatch), true);
-  assert.deepEqual(
-    state.doc.content.content.map((node) => node.textContent),
-    ["Alpha", "Charlie", "Quote"],
-  );
-  assert.equal(state.doc.lastChild.eq(quote), true);
-  assert.equal(state.selection.from, a.nodeSize + c.nodeSize + 3);
-  assert.equal(undo(state, dispatch), true);
-  assert.equal(state.doc.eq(doc), true);
-  assert.equal(redo(state, dispatch), true);
-  assert.equal(moveBlogBlock(a.nodeSize + c.nodeSize, 0)(state, dispatch), true);
-  assert.equal(state.doc.firstChild.eq(quote), true);
+  expect(moveBlogBlock(a.nodeSize, doc.content.size)(state, dispatch)).toBe(true);
+  expect(state.doc.content.content.map((node) => node.textContent)).toEqual(["Alpha", "Charlie", "Quote"]);
+  expect(state.doc.lastChild.eq(quote)).toBe(true);
+  expect(state.selection.from).toBe(a.nodeSize + c.nodeSize + 3);
+  expect(undo(state, dispatch)).toBe(true);
+  expect(state.doc.eq(doc)).toBe(true);
+  expect(redo(state, dispatch)).toBe(true);
+  expect(moveBlogBlock(a.nodeSize + c.nodeSize, 0)(state, dispatch)).toBe(true);
+  expect(state.doc.firstChild.eq(quote)).toBe(true);
 });
 
 test("invalid, nested, adjacent, and same-position drops never change content", () => {
@@ -45,12 +41,13 @@ test("invalid, nested, adjacent, and same-position drops never change content", 
     [NaN, 3],
     [0, 2.5],
   ]) {
-    assert.equal(
-      moveBlogBlock(from, to)(state, () => assert.fail("Must not dispatch")),
-      false,
-    );
+    expect(
+      moveBlogBlock(from, to)(state, () => {
+        throw new Error("Must not dispatch");
+      }),
+    ).toBe(false);
   }
-  assert.equal(moveBlogBlock(0, 6)(state), true);
+  expect(moveBlogBlock(0, 6)(state)).toBe(true);
 });
 
 test("table and image moves retain their entire content and metadata", () => {
@@ -82,10 +79,10 @@ test("table and image moves retain their entire content and metadata", () => {
   const dispatch = (tr) => {
     state = state.apply(tr);
   };
-  assert.equal(moveBlogBlock(0, doc.content.size)(state, dispatch), true);
-  assert.equal(state.doc.lastChild.eq(image), true);
-  assert.equal(state.selection.node.eq(image), true);
-  assert.equal(moveBlogBlock(0, state.doc.content.size)(state, dispatch), true);
-  assert.equal(state.doc.lastChild.eq(table), true);
-  assert.equal(state.doc.firstChild.eq(text), true);
+  expect(moveBlogBlock(0, doc.content.size)(state, dispatch)).toBe(true);
+  expect(state.doc.lastChild.eq(image)).toBe(true);
+  expect(state.selection.node.eq(image)).toBe(true);
+  expect(moveBlogBlock(0, state.doc.content.size)(state, dispatch)).toBe(true);
+  expect(state.doc.lastChild.eq(table)).toBe(true);
+  expect(state.doc.firstChild.eq(text)).toBe(true);
 });

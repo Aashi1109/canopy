@@ -1,7 +1,6 @@
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import * as catalog from "../lib/tool-catalog/index.ts";
@@ -145,18 +144,16 @@ const loaded = await Promise.all(
 const specs = loaded.filter((entry) => entry.spec !== null);
 
 test("every migrated definition.ts loads standalone", () => {
-  assert.deepEqual(
+  expect(
     loaded.filter((entry) => entry.error).map((entry) => `${entry.folder.name}: ${entry.error.message}`),
-    [],
     "definition.ts must load without a bundler (type-only imports, no aliased values)",
-  );
-  assert.deepEqual(
+  ).toEqual([]);
+  expect(
     loaded
       .filter((entry) => !entry.error && (entry.spec === null || typeof entry.spec !== "object"))
       .map((entry) => entry.folder.name),
-    [],
     "definition.ts must default-export a spec object",
-  );
+  ).toEqual([]);
 });
 
 // ---------------------------------------------------------------------------
@@ -231,25 +228,23 @@ test("shared code never names a tool", () => {
   );
 
   const unexpected = [...leaksByFile.keys()].filter((file) => !LEGACY_TOOL_NAME_LEAKS.has(file));
-  assert.deepEqual(
+  expect(
     unexpected,
-    [],
     `shared files must resolve tools by folder name as a module path, never by naming one:\n${report(
       new Map(unexpected.map((file) => [file, leaksByFile.get(file)])),
     )}`,
-  );
+  ).toEqual([]);
 });
 
 test("shared code never dispatches on a tool identity", () => {
   console.log(`[identity dispatch scan] ${dispatchByFile.size} files\n${report(dispatchByFile)}`);
   const unexpected = [...dispatchByFile.keys()].filter((file) => !LEGACY_IDENTITY_DISPATCH.has(file));
-  assert.deepEqual(
+  expect(
     unexpected,
-    [],
     `tool dispatch must be a module path, not a comparison:\n${report(
       new Map(unexpected.map((file) => [file, dispatchByFile.get(file)])),
     )}`,
-  );
+  ).toEqual([]);
 });
 
 test("the legacy allowlists only shrink", () => {
@@ -266,7 +261,7 @@ test("the legacy allowlists only shrink", () => {
       }
     }
   }
-  assert.deepEqual(stale, [], "remove these cleaned-up files from the allowlist");
+  expect(stale, "remove these cleaned-up files from the allowlist").toEqual([]);
 });
 
 // ---------------------------------------------------------------------------
@@ -287,17 +282,17 @@ test("migration progress", () => {
 
 test("folder name, spec and toolId are one bijection", () => {
   for (const { folder, spec } of specs) {
-    assert.ok(spec && typeof spec === "object", `${folder.name}: default export must be a spec`);
-    assert.equal(spec.toolId, `${spec.app}.${folder.name}`, `${folder.name}: toolId must be "<app>.<folderName>"`);
+    expect(spec && typeof spec === "object", `${folder.name}: default export must be a spec`).toBeTruthy();
+    expect(spec.toolId, `${folder.name}: toolId must be "<app>.<folderName>"`).toBe(`${spec.app}.${folder.name}`);
   }
   const toolIds = specs.map(({ spec }) => spec.toolId);
-  assert.equal(new Set(toolIds).size, toolIds.length, "toolIds must be unique");
-  assert.equal(new Set(toolFolders).size, toolFolders.length, "folder names must be unique");
+  expect(new Set(toolIds).size, "toolIds must be unique").toBe(toolIds.length);
+  expect(new Set(toolFolders).size, "folder names must be unique").toBe(toolFolders.length);
 });
 
 test("folder names are valid tool slugs", () => {
   for (const folder of toolFolders) {
-    assert.match(folder, TOOL_SLUG_PATTERN, `${folder} is not a valid tool slug`);
+    expect(folder, `${folder} is not a valid tool slug`).toMatch(TOOL_SLUG_PATTERN);
   }
 });
 
@@ -306,49 +301,47 @@ test("no definition re-declares a derived field", () => {
   // uploaded data. Declaring any of them creates a second source of truth.
   for (const { folder, spec } of specs) {
     for (const derived of ["definitionKey", "runtime", "iconKey"]) {
-      assert.equal(
-        Object.hasOwn(spec, derived),
+      expect(Object.hasOwn(spec, derived), `${folder.name}: "${derived}" is derived and must not be declared`).toBe(
         false,
-        `${folder.name}: "${derived}" is derived and must not be declared`,
       );
-      assert.doesNotMatch(
+      expect(
         folder.definitionSource,
-        new RegExp(`\\b${derived}\\b`),
         `${folder.name}: definition.ts mentions the derived field "${derived}"`,
-      );
+      ).not.toMatch(new RegExp(`\\b${derived}\\b`));
     }
   }
 });
 
 test("every migrated folder declares exactly one execution host", () => {
   for (const folder of migrated) {
-    assert.deepEqual(
+    expect(
       folder.runFiles.length,
-      1,
       `${folder.name}: expected exactly one of ${RUN_FILENAMES.join(" / ")}, found [${folder.runFiles.join(", ")}]`,
-    );
+    ).toEqual(1);
   }
 });
 
 test("every spec declares a known category", () => {
   for (const { folder, spec } of specs) {
-    assert.ok(Object.hasOwn(TOOL_CATEGORIES, spec.category), `${folder.name}: unknown category "${spec.category}"`);
-    assert.equal(
+    expect(
+      Object.hasOwn(TOOL_CATEGORIES, spec.category),
+      `${folder.name}: unknown category "${spec.category}"`,
+    ).toBeTruthy();
+    expect(
       TOOL_CATEGORIES[spec.category].app,
-      spec.app,
       `${folder.name}: category "${spec.category}" belongs to another app`,
-    );
+    ).toBe(spec.app);
   }
 });
 
 test("a declared slug is valid and unreserved", () => {
   for (const { folder, spec } of specs) {
     if (spec.slug === undefined) continue;
-    assert.match(spec.slug, TOOL_SLUG_PATTERN, `${folder.name}: invalid slug`);
-    assert.ok(
+    expect(spec.slug, `${folder.name}: invalid slug`).toMatch(TOOL_SLUG_PATTERN);
+    expect(
       catalog.isValidToolSlug(spec.app, spec.slug),
       `${folder.name}: slug "${spec.slug}" is reserved for app "${spec.app}"`,
-    );
+    ).toBeTruthy();
   }
 });
 
@@ -369,11 +362,10 @@ test("definition.ts has no value imports", () => {
           /\brequire\s*\(/.test(line),
       );
     if (!folder.migrated && valueImports.length > 0) continue; // pre-migration shape
-    assert.deepEqual(
+    expect(
       valueImports.map(([line, text]) => `${folder.name}/definition.ts:${line}: ${text.trim()}`),
-      [],
       `${folder.name}: definition.ts must use type-only imports`,
-    );
+    ).toEqual([]);
   }
 });
 
@@ -400,7 +392,7 @@ test("hooks live in hooks.ts and never reach the media graph", async () => {
       }
     }
   }
-  assert.deepEqual(offenders, [], "hooks must live in hooks.ts and stay off the worker-only media graph");
+  expect(offenders, "hooks must live in hooks.ts and stay off the worker-only media graph").toEqual([]);
 });
 
 test("no client or worker module imports a server run module", async () => {
@@ -420,5 +412,5 @@ test("no client or worker module imports a server run module", async () => {
       offenders.push(relative(file));
     }
   }
-  assert.deepEqual(offenders, [], "run.server modules must stay off the client graph");
+  expect(offenders, "run.server modules must stay off the client graph").toEqual([]);
 });

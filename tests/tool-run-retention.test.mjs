@@ -1,41 +1,36 @@
-import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
-import test from "node:test";
+import { afterAll, expect, test, vi } from "vitest";
 
-const hookUrl = new URL("../lib/tool-framework/useToolRun.ts", import.meta.url).href;
 const harnessKey = "__canopyToolRunRetentionHarness";
 const originalWorker = globalThis.Worker;
-const stub = (source) => ({ shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(source)}` });
-const hooks = registerHooks({
-  resolve(specifier, context, nextResolve) {
-    if (context.parentURL === hookUrl) {
-      if (specifier === "react")
-        return stub(`
-          const harness = () => globalThis.${harnessKey};
-          export const useRef = current => ({ current });
-          export const useCallback = callback => callback;
-          export const useEffect = effect => { harness().cleanups.push(effect()); };
-          export const useState = initial => {
-            harness().state = typeof initial === 'function' ? initial() : initial;
-            return [harness().state, next => { harness().state = next; }];
-          };
-        `);
-      if (specifier === "./artifacts")
-        return stub(`
-          export const cleanupArtifactJobWithRetry = async jobId => {
-            globalThis.${harnessKey}.cleaned.push(jobId);
-          };
-        `);
-      if (specifier.startsWith("./")) return nextResolve(`${specifier}.ts`, context);
-    }
-    return nextResolve(specifier, context);
+
+// The factory may only reference globals, so it reads the harness off globalThis
+// (populated per-test by createHost) instead of a module-scoped variable.
+vi.mock("react", () => ({
+  useRef: (current) => ({ current }),
+  useCallback: (callback) => callback,
+  useEffect: (effect) => {
+    globalThis.__canopyToolRunRetentionHarness.cleanups.push(effect());
   },
-});
+  useState: (initial) => {
+    const harness = globalThis.__canopyToolRunRetentionHarness;
+    harness.state = typeof initial === "function" ? initial() : initial;
+    return [
+      harness.state,
+      (next) => {
+        harness.state = next;
+      },
+    ];
+  },
+}));
+vi.mock("@/lib/tool-framework/artifacts.ts", () => ({
+  cleanupArtifactJobWithRetry: async (jobId) => {
+    globalThis.__canopyToolRunRetentionHarness.cleaned.push(jobId);
+  },
+}));
 
-const { useToolRun } = await import(hookUrl);
+const { useToolRun } = await import("@/lib/tool-framework/useToolRun.ts");
 
-test.after(() => {
-  hooks.deregister();
+afterAll(() => {
   delete globalThis[harnessKey];
   if (originalWorker) globalThis.Worker = originalWorker;
   else delete globalThis.Worker;
@@ -58,7 +53,7 @@ function createHost(t) {
   const dispose = () => {
     for (const cleanup of harness.cleanups.splice(0)) cleanup?.();
   };
-  t.after(dispose);
+  t.onTestFinished(dispose);
   const start = () => {
     const jobId = host.start({ key: "test-tool", settings: {} });
     return { jobId, worker: harness.workers.at(-1) };
@@ -73,18 +68,18 @@ test("completed output stays readable through replacement success until the runt
   const first = start();
   complete(first);
   const second = start();
-  assert.equal(cleaned.includes(first.jobId), false);
+  expect(cleaned.includes(first.jobId)).toBe(false);
   complete(second);
-  assert.equal(cleaned.includes(first.jobId), false);
+  expect(cleaned.includes(first.jobId)).toBe(false);
   const third = start();
-  assert.equal(cleaned.includes(second.jobId), false);
+  expect(cleaned.includes(second.jobId)).toBe(false);
   host.cancel();
   third.worker.emit({ type: "canceled", jobId: third.jobId });
-  assert.equal(cleaned.includes(first.jobId), false);
-  assert.equal(cleaned.includes(second.jobId), false);
+  expect(cleaned.includes(first.jobId)).toBe(false);
+  expect(cleaned.includes(second.jobId)).toBe(false);
   host.cleanupArtifacts();
-  assert.ok(cleaned.includes(first.jobId));
-  assert.ok(cleaned.includes(second.jobId));
+  expect(cleaned.includes(first.jobId)).toBeTruthy();
+  expect(cleaned.includes(second.jobId)).toBeTruthy();
 });
 
 test("stale success and replacement failure only remove their own artifacts", (t) => {
@@ -94,17 +89,17 @@ test("stale success and replacement failure only remove their own artifacts", (t
   const superseded = start();
   const latest = start();
   complete(superseded);
-  assert.equal(getState().jobId, latest.jobId);
-  assert.equal(getState().status, "running");
-  assert.ok(cleaned.includes(superseded.jobId));
-  assert.equal(cleaned.includes(original.jobId), false);
+  expect(getState().jobId).toBe(latest.jobId);
+  expect(getState().status).toBe("running");
+  expect(cleaned.includes(superseded.jobId)).toBeTruthy();
+  expect(cleaned.includes(original.jobId)).toBe(false);
   latest.worker.emit({ type: "failure", jobId: latest.jobId, code: "failed", message: "Unable to process" });
-  assert.equal(getState().status, "failed");
-  assert.equal(cleaned.includes(original.jobId), false);
-  assert.ok(cleaned.includes(latest.jobId));
+  expect(getState().status).toBe("failed");
+  expect(cleaned.includes(original.jobId)).toBe(false);
+  expect(cleaned.includes(latest.jobId)).toBeTruthy();
   host.reset();
-  assert.equal(getState().status, "idle");
-  assert.ok(cleaned.includes(original.jobId));
+  expect(getState().status).toBe("idle");
+  expect(cleaned.includes(original.jobId)).toBeTruthy();
 });
 
 test("releasing an undelivered completed replacement keeps the displayed result alive", (t) => {
@@ -114,17 +109,17 @@ test("releasing an undelivered completed replacement keeps the displayed result 
   const undelivered = start();
   complete(undelivered);
   host.cleanupArtifacts(undelivered.jobId);
-  assert.ok(cleaned.includes(undelivered.jobId));
-  assert.equal(cleaned.includes(displayed.jobId), false);
+  expect(cleaned.includes(undelivered.jobId)).toBeTruthy();
+  expect(cleaned.includes(displayed.jobId)).toBe(false);
   const cleanupCount = cleaned.length;
   host.cleanupArtifacts(undelivered.jobId);
-  assert.equal(cleaned.length, cleanupCount);
+  expect(cleaned.length).toBe(cleanupCount);
   const pending = start();
   host.cleanupArtifacts(pending.jobId);
-  assert.equal(cleaned.includes(pending.jobId), false);
-  assert.equal(cleaned.includes(displayed.jobId), false);
+  expect(cleaned.includes(pending.jobId)).toBe(false);
+  expect(cleaned.includes(displayed.jobId)).toBe(false);
   host.cleanupArtifacts();
-  assert.ok(cleaned.includes(displayed.jobId));
+  expect(cleaned.includes(displayed.jobId)).toBeTruthy();
 });
 
 test("a canceled job's late success cannot replace or delete the retained output", (t) => {
@@ -134,9 +129,9 @@ test("a canceled job's late success cannot replace or delete the retained output
   const canceled = start();
   host.cancel();
   complete(canceled);
-  assert.equal(getState().status, "canceled");
-  assert.equal(cleaned.includes(original.jobId), false);
-  assert.ok(cleaned.includes(canceled.jobId));
+  expect(getState().status).toBe("canceled");
+  expect(cleaned.includes(original.jobId)).toBe(false);
+  expect(cleaned.includes(canceled.jobId)).toBeTruthy();
 });
 
 test("unmount releases retained completed jobs and an unfinished replacement", (t) => {
@@ -144,8 +139,8 @@ test("unmount releases retained completed jobs and an unfinished replacement", (
   const original = start();
   complete(original);
   const pending = start();
-  assert.equal(cleaned.includes(original.jobId), false);
+  expect(cleaned.includes(original.jobId)).toBe(false);
   dispose();
-  assert.ok(cleaned.includes(original.jobId));
-  assert.ok(cleaned.includes(pending.jobId));
+  expect(cleaned.includes(original.jobId)).toBeTruthy();
+  expect(cleaned.includes(pending.jobId)).toBeTruthy();
 });

@@ -10,6 +10,8 @@
  * The application-side manifest provider is `lib/tool-framework/manifest.ts`.
  */
 
+import { isCategoryKey, TOOL_CATEGORIES } from "../tool-framework/categories.ts";
+
 export type ToolApp = "paperwork" | "devtools" | "media";
 
 /** One tool as the application knows it, before database overrides. */
@@ -185,6 +187,34 @@ export function getEnabledTools<T extends ResolvedTool>(
   return tools
     .filter((tool): tool is T & { slug: string } => isToolAvailable(tool) && (!app || tool.app === app))
     .sort((left, right) => left.order - right.order);
+}
+
+export function searchTools<
+  T extends { name: string; description: string; keywords: readonly string[]; category: string },
+>(tools: readonly T[], query: string): T[] {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return [...tools];
+
+  // Six relevance tiers, each holding any number of matches; results are never truncated.
+  const matchesByRelevance: T[][] = Array.from({ length: 6 }, () => []);
+
+  for (const tool of tools) {
+    const name = tool.name.toLowerCase();
+    const category = isCategoryKey(tool.category) ? TOOL_CATEGORIES[tool.category].label : tool.category;
+    let rank: number;
+
+    if (name === normalizedQuery) rank = 0;
+    else if (name.startsWith(normalizedQuery)) rank = 1;
+    else if (name.includes(normalizedQuery)) rank = 2;
+    else if (tool.keywords.some((keyword) => keyword.toLowerCase().includes(normalizedQuery))) rank = 3;
+    else if (tool.description.toLowerCase().includes(normalizedQuery)) rank = 4;
+    else if (category.toLowerCase().includes(normalizedQuery)) rank = 5;
+    else continue;
+
+    matchesByRelevance[rank].push(tool);
+  }
+
+  return matchesByRelevance.flat();
 }
 
 export function findAvailableToolBySlug<T extends ResolvedTool>(

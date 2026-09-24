@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { handleAssistantMaintenanceRequest, runAssistantMaintenanceCron } from "../lib/assistant/cron.ts";
 
 const secret = "test-assistant-scheduler-secret-for-tests";
@@ -25,18 +24,18 @@ test("maintenance authenticates before invoking domain logic and returns only sa
     `Bearer ${secret} extra`,
   ]) {
     const response = await handleAssistantMaintenanceRequest(request(authorization), secret, cleanup);
-    assert.equal(response.status, 401);
-    assert.equal(response.headers.get("cache-control"), "no-store");
+    expect(response.status).toBe(401);
+    expect(response.headers.get("cache-control")).toBe("no-store");
   }
   for (const configured of [undefined, "", "   ", "secret with spaces"]) {
     const response = await handleAssistantMaintenanceRequest(request(`Bearer ${secret}`), configured, cleanup);
-    assert.equal(response.status, 503);
+    expect(response.status).toBe(503);
   }
-  assert.equal(calls, 0);
+  expect(calls).toBe(0);
   const response = await handleAssistantMaintenanceRequest(request(`bearer ${secret}`), secret, cleanup);
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), counts);
-  assert.equal(calls, 1);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual(counts);
+  expect(calls).toBe(1);
 });
 
 test("GET cannot clean up and failed domain requests never expose internal error details", async () => {
@@ -46,13 +45,13 @@ test("GET cannot clean up and failed domain requests never expose internal error
     throw new Error("postgres://private-password@database");
   };
   const get = await handleAssistantMaintenanceRequest(request(`Bearer ${secret}`, "GET"), secret, cleanup);
-  assert.equal(get.status, 405);
-  assert.equal(get.headers.get("allow"), "POST");
-  assert.equal(calls, 0);
+  expect(get.status).toBe(405);
+  expect(get.headers.get("allow")).toBe("POST");
+  expect(calls).toBe(0);
   const failed = await handleAssistantMaintenanceRequest(request(`Bearer ${secret}`), secret, cleanup);
-  assert.equal(failed.status, 503);
-  assert.deepEqual(await failed.json(), { error: "[hidden]" });
-  assert.equal(calls, 1);
+  expect(failed.status).toBe(503);
+  expect(await failed.json()).toEqual({ error: "[hidden]" });
+  expect(calls).toBe(1);
 });
 
 test("maintenance returns the original failure message with a default for empty errors", async () => {
@@ -63,8 +62,8 @@ test("maintenance returns the original failure message with a default for empty 
     const response = await handleAssistantMaintenanceRequest(request(`Bearer ${secret}`), secret, async () => {
       throw error;
     });
-    assert.equal(response.status, 503);
-    assert.deepEqual(await response.json(), { error: expected });
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: expected });
   }
 });
 
@@ -80,12 +79,12 @@ test("scheduled handler uses its service binding and awaits the authenticated PO
       },
     },
   };
-  assert.deepEqual(await runAssistantMaintenanceCron(env), counts);
-  assert.equal(received.url, `https://app.example.test${path}`);
-  assert.equal(received.method, "POST");
-  assert.equal(received.headers.get("authorization"), `Bearer ${secret}`);
-  assert.equal(received.redirect, "manual");
-  assert.ok(received.signal instanceof AbortSignal);
+  expect(await runAssistantMaintenanceCron(env)).toEqual(counts);
+  expect(received.url).toBe(`https://app.example.test${path}`);
+  expect(received.method).toBe("POST");
+  expect(received.headers.get("authorization")).toBe(`Bearer ${secret}`);
+  expect(received.redirect).toBe("manual");
+  expect(received.signal instanceof AbortSignal).toBeTruthy();
 });
 
 test("remote target is explicit, uses HTTPS, and cannot forward credentials through redirects", async () => {
@@ -106,11 +105,11 @@ test("remote target is explicit, uses HTTPS, and cannot forward credentials thro
     received = req;
     return Response.json(counts);
   };
-  assert.deepEqual(await runAssistantMaintenanceCron(env, fetchRemote), counts);
-  assert.equal(received.url, env.ASSISTANT_MAINTENANCE_URL);
-  assert.equal(received.redirect, "manual");
-  assert.equal(bindingCalls, 0);
-  await assert.rejects(
+  expect(await runAssistantMaintenanceCron(env, fetchRemote)).toEqual(counts);
+  expect(received.url).toBe(env.ASSISTANT_MAINTENANCE_URL);
+  expect(received.redirect).toBe("manual");
+  expect(bindingCalls).toBe(0);
+  await expect(
     runAssistantMaintenanceCron(
       env,
       async () =>
@@ -119,8 +118,7 @@ test("remote target is explicit, uses HTTPS, and cannot forward credentials thro
           headers: { location: "https://untrusted.example.test" },
         }),
     ),
-    /HTTP 307/,
-  );
+  ).rejects.toThrow(/HTTP 307/);
 });
 
 test("invalid cron configuration fails before sending any secret", async () => {
@@ -137,20 +135,18 @@ test("invalid cron configuration fails before sending any secret", async () => {
     "https://docker.example.test/wrong-path",
     "invalid",
   ]) {
-    await assert.rejects(
+    await expect(
       runAssistantMaintenanceCron(
         { ASSISTANT_SCHEDULER_SECRET: secret, ASSISTANT_MAINTENANCE_URL: target },
         fetchRemote,
       ),
-      /configuration/,
-    );
+    ).rejects.toThrow(/configuration/);
   }
-  await assert.rejects(
+  await expect(
     runAssistantMaintenanceCron({ ASSISTANT_MAINTENANCE_URL: `https://docker.example.test${path}` }, fetchRemote),
-    /configuration/,
-  );
-  await assert.rejects(runAssistantMaintenanceCron({ ASSISTANT_SCHEDULER_SECRET: secret }), /configuration/);
-  assert.equal(calls, 0);
+  ).rejects.toThrow(/configuration/);
+  await expect(runAssistantMaintenanceCron({ ASSISTANT_SCHEDULER_SECRET: secret })).rejects.toThrow(/configuration/);
+  expect(calls).toBe(0);
 });
 
 test("cron consumes successful responses and rejects unsafe, oversized or failed outcomes", async () => {
@@ -159,28 +155,24 @@ test("cron consumes successful responses and rejects unsafe, oversized or failed
     ASSISTANT_MAINTENANCE_URL: `https://docker.example.test${path}`,
   };
   const response = Response.json(counts);
-  assert.deepEqual(await runAssistantMaintenanceCron(env, async () => response), counts);
-  assert.equal(response.bodyUsed, true);
+  expect(await runAssistantMaintenanceCron(env, async () => response)).toEqual(counts);
+  expect(response.bodyUsed).toBe(true);
   for (const value of [null, {}, { ...counts, files: -1 }, { ...counts, runs: 1.5 }]) {
-    await assert.rejects(
-      runAssistantMaintenanceCron(env, async () => Response.json(value)),
+    await expect(runAssistantMaintenanceCron(env, async () => Response.json(value))).rejects.toThrow(
       /invalid response/,
     );
   }
-  await assert.rejects(
-    runAssistantMaintenanceCron(env, async () => new Response("x".repeat(4097))),
+  await expect(runAssistantMaintenanceCron(env, async () => new Response("x".repeat(4097)))).rejects.toThrow(
     /invalid response/,
   );
-  await assert.rejects(
+  await expect(
     runAssistantMaintenanceCron(env, async () => new Response("private database error", { status: 503 })),
-    /HTTP 503/,
-  );
-  await assert.rejects(
+  ).rejects.toThrow(/HTTP 503/);
+  await expect(
     runAssistantMaintenanceCron(env, async () => {
       throw new Error(`Secret ${secret}`);
     }),
-    {
-      message: "Assistant maintenance request failed.",
-    },
-  );
+  ).rejects.toMatchObject({
+    message: "Assistant maintenance request failed.",
+  });
 });

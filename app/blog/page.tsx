@@ -2,11 +2,15 @@ import config from "@/lib/config/config.ts";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
-import { ArrowRight, BookOpen, Search } from "lucide-react";
+import { ArrowRight, BookOpen, ChevronDown, Search } from "lucide-react";
 import {
   Button,
   Card,
   Caption,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   EmptyState,
   H1,
   H2,
@@ -127,29 +131,32 @@ export default async function BlogPage({ searchParams }: Props) {
             </Button>
           ))}
           {(categories.items.length > 3 || categories.nextCursor || categoryCursor) && (
-            <details className="relative w-full lg:w-auto">
-              <summary className="cursor-pointer rounded-md p-3 text-sm font-semibold text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                More topics
-              </summary>
-              <Card className="z-10 mt-2 max-h-80 w-full gap-2 overflow-auto p-4 lg:absolute lg:right-0 lg:top-full lg:w-64">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost">
+                  More topics <ChevronDown aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
                 {categories.items.slice(3).map((category) => (
-                  <TextLink
-                    key={category.id}
-                    href={blogListingHref(filters, { category: category.slug, cursor: undefined })}
-                  >
-                    {category.name}
-                  </TextLink>
+                  <DropdownMenuItem asChild key={category.id}>
+                    <a href={blogListingHref(filters, { category: category.slug, cursor: undefined })}>
+                      {category.name}
+                    </a>
+                  </DropdownMenuItem>
                 ))}
                 {categoryCursor && (
-                  <TextLink href={blogListingHref(filters, { categoryCursor: undefined })}>First topics</TextLink>
+                  <DropdownMenuItem asChild>
+                    <a href={blogListingHref(filters, { categoryCursor: undefined })}>First topics</a>
+                  </DropdownMenuItem>
                 )}
                 {categories.nextCursor && (
-                  <TextLink href={blogListingHref(filters, { categoryCursor: categories.nextCursor })}>
-                    More topics →
-                  </TextLink>
+                  <DropdownMenuItem asChild>
+                    <a href={blogListingHref(filters, { categoryCursor: categories.nextCursor })}>More topics →</a>
+                  </DropdownMenuItem>
                 )}
-              </Card>
-            </details>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </nav>
         <form

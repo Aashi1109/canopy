@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { test, expect } from "vitest";
 import { cropPlan } from "../tools/crop-pdf/plan.ts";
 import { onPagesInspected, onSettingsChanged, validate } from "../tools/crop-pdf/hooks.ts";
 
@@ -10,27 +9,27 @@ const pages = [
 test("crop values must be whole-number points, including on fractional PDF pages", () => {
   const fractionalPages = [{ pageNumber: 1, pageWidth: 595.2756, pageHeight: 841.8898 }];
   const whole = { pages: "all", cropX: 0, cropY: 0, cropWidth: 595, cropHeight: 841 };
-  assert.deepEqual(cropPlan(whole, fractionalPages).box, { x: 0, y: 0, width: 595, height: 841 });
+  expect(cropPlan(whole, fractionalPages).box).toEqual({ x: 0, y: 0, width: 595, height: 841 });
   for (const key of ["cropX", "cropY", "cropWidth", "cropHeight"]) {
     for (const value of [1.5, "1.5"])
-      assert.throws(() => cropPlan({ ...whole, [key]: value }, fractionalPages), /whole-number/);
+      expect(() => cropPlan({ ...whole, [key]: value }, fractionalPages)).toThrow(/whole-number/);
   }
 });
 
 test("inspection and page selection keep crop defaults within fractional page bounds", () => {
   const previews = [{ pageNumber: 1, pageWidth: 595.2756, pageHeight: 841.8898 }];
-  assert.deepEqual(onPagesInspected(previews), { pages: "all", cropWidth: 595, cropHeight: 841 });
+  expect(onPagesInspected(previews)).toEqual({ pages: "all", cropWidth: 595, cropHeight: 841 });
   const box = { pages: "all", cropX: 10, cropY: 10, cropWidth: 595, cropHeight: 841 };
-  assert.deepEqual(onSettingsChanged(box, previews), { cropWidth: 585, cropHeight: 831 });
-  assert.match(validate({ ...box, cropX: 0.5 }), /whole-number/);
-  assert.equal(validate(box), null);
+  expect(onSettingsChanged(box, previews)).toEqual({ cropWidth: 585, cropHeight: 831 });
+  expect(validate({ ...box, cropX: 0.5 })).toMatch(/whole-number/);
+  expect(validate(box)).toBe(null);
 });
 
 const settings = { pages: "all", cropX: 36, cropY: 36, cropWidth: 328, cropHeight: 528 };
 test("crop plan validates the exact selected page geometry", () => {
-  assert.deepEqual(cropPlan(settings, pages).selected, [1, 2]);
-  assert.deepEqual(cropPlan({ ...settings, pages: "1", cropWidth: 523 }, pages).selected, [1]);
-  assert.deepEqual(cropPlan({ ...settings, pages: "even" }, pages).selected, [2]);
+  expect(cropPlan(settings, pages).selected).toEqual([1, 2]);
+  expect(cropPlan({ ...settings, pages: "1", cropWidth: 523 }, pages).selected).toEqual([1]);
+  expect(cropPlan({ ...settings, pages: "even" }, pages).selected).toEqual([2]);
   for (const update of [
     { cropWidth: 0 },
     { cropHeight: -1 },
@@ -42,6 +41,6 @@ test("crop plan validates the exact selected page geometry", () => {
     { pages: "" },
     { cropWidth: "x" },
   ]) {
-    assert.throws(() => cropPlan({ ...settings, ...update }, pages));
+    expect(() => cropPlan({ ...settings, ...update }, pages)).toThrow();
   }
 });

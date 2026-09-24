@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { blogFormattingExtensions } from "../app/admin/(protected)/blog/lib/formattingExtensions.ts";
@@ -36,49 +35,47 @@ function article() {
 
 test("draft creation is normalized and publication requires completed article fields", () => {
   const draft = createBlogDocument("  Hello & world  ");
-  assert.equal(draft.title, "Hello & world");
-  assert.equal(draft.authorName, "SmartTools Team");
-  assert.throws(() => assertBlogPublishable(draft), /excerpt/i);
+  expect(draft.title).toBe("Hello & world");
+  expect(draft.authorName).toBe("SmartTools Team");
+  expect(() => assertBlogPublishable(draft)).toThrow(/excerpt/i);
   for (const [field, value] of [
     ["title", ""],
     ["excerpt", ""],
     ["authorName", ""],
     ["category", null],
   ]) {
-    assert.throws(() => assertBlogPublishable({ ...article(), [field]: value }));
+    expect(() => assertBlogPublishable({ ...article(), [field]: value })).toThrow();
   }
-  assert.throws(
-    () =>
-      assertBlogPublishable({
-        ...article(),
-        body: { type: "doc", content: [{ type: "paragraph" }] },
-      }),
-    /body/i,
-  );
-  assert.doesNotThrow(() => assertBlogPublishable(validateBlogDocument(article())));
+  expect(() =>
+    assertBlogPublishable({
+      ...article(),
+      body: { type: "doc", content: [{ type: "paragraph" }] },
+    }),
+  ).toThrow(/body/i);
+  expect(() => assertBlogPublishable(validateBlogDocument(article()))).not.toThrow();
 });
 
 test("slugs use existing tool normalization, bounded lengths and Unicode fallback", () => {
-  assert.equal(blogSlugFromTitle("  PDFs & Images!  "), "pdfs-and-images");
-  assert.equal(blogSlugFromTitle("a".repeat(200)).length, 160);
-  assert.match(blogSlugFromTitle("हिन्दी"), /^post-[a-f0-9]{8}$/);
-  assert.throws(() => createBlogDocument("   "), /title/i);
+  expect(blogSlugFromTitle("  PDFs & Images!  ")).toBe("pdfs-and-images");
+  expect(blogSlugFromTitle("a".repeat(200)).length).toBe(160);
+  expect(blogSlugFromTitle("हिन्दी")).toMatch(/^post-[a-f0-9]{8}$/);
+  expect(() => createBlogDocument("   ")).toThrow(/title/i);
 });
 
 test("titles allow 20 words but reject 21 on creation and publication while preserving legacy reads", () => {
-  assert.equal(BLOG_TITLE_WORD_LIMIT, 20);
-  assert.equal(blogTitleWordCount(""), 0);
-  assert.equal(blogTitleWordCount(" \t\n\u00a0"), 0);
-  assert.equal(blogTitleWordCount("  hello-world\tworld\nनमस्ते\u00a0again "), 4);
+  expect(BLOG_TITLE_WORD_LIMIT).toBe(20);
+  expect(blogTitleWordCount("")).toBe(0);
+  expect(blogTitleWordCount(" \t\n\u00a0")).toBe(0);
+  expect(blogTitleWordCount("  hello-world\tworld\nनमस्ते\u00a0again ")).toBe(4);
   const title = Array(20).fill("word").join(" \t\n ");
-  assert.equal(createBlogDocument(title).title, title);
-  assert.doesNotThrow(() => assertBlogPublishable({ ...article(), title }));
+  expect(createBlogDocument(title).title).toBe(title);
+  expect(() => assertBlogPublishable({ ...article(), title })).not.toThrow();
   const legacy = { ...article(), title: `${title} extra` };
-  assert.throws(() => createBlogDocument(legacy.title), /20 words/);
-  assert.throws(() => assertBlogPublishable(legacy), /20 words/);
-  assert.equal(validateBlogDocument(legacy).title, legacy.title);
-  assert.equal(renderBlogDocument(legacy).html, "<p>Hello world</p>");
-  assert.throws(() => createBlogDocument("a".repeat(201)), /200 characters/);
+  expect(() => createBlogDocument(legacy.title)).toThrow(/20 words/);
+  expect(() => assertBlogPublishable(legacy)).toThrow(/20 words/);
+  expect(validateBlogDocument(legacy).title).toBe(legacy.title);
+  expect(renderBlogDocument(legacy).html).toBe("<p>Hello world</p>");
+  expect(() => createBlogDocument("a".repeat(201))).toThrow(/200 characters/);
 });
 
 test("document hashes ignore property order and tag order, but preserve article edits", () => {
@@ -89,8 +86,8 @@ test("document hashes ignore property order and tag order, but preserve article 
   ];
   const b = Object.fromEntries(Object.entries(a).reverse());
   b.tags = [...a.tags].reverse();
-  assert.equal(blogDocumentHash(validateBlogDocument(a)), blogDocumentHash(validateBlogDocument(b)));
-  assert.notEqual(blogDocumentHash(a), blogDocumentHash({ ...a, title: "Different" }));
+  expect(blogDocumentHash(validateBlogDocument(a))).toBe(blogDocumentHash(validateBlogDocument(b)));
+  expect(blogDocumentHash(a)).not.toBe(blogDocumentHash({ ...a, title: "Different" }));
 });
 
 test("unknown properties, prototype payloads, cycles and non-JSON input fail closed", () => {
@@ -103,22 +100,22 @@ test("unknown properties, prototype payloads, cycles and non-JSON input fail clo
     { ...article(), category: new Date() },
     { ...article(), title: undefined },
   ]) {
-    assert.throws(() => validateBlogDocument(value));
+    expect(() => validateBlogDocument(value)).toThrow();
   }
   const cycle = article();
   cycle.body.content.push(cycle.body);
-  assert.throws(() => validateBlogDocument(cycle), /JSON|cyclic|depth/i);
+  expect(() => validateBlogDocument(cycle)).toThrow(/JSON|cyclic|depth/i);
   const arrayWithSerializer = article();
   arrayWithSerializer.tags.toJSON = () => [];
-  assert.throws(() => validateBlogDocument(arrayWithSerializer), /JSON/i);
-  assert.throws(() => validateBlogDocument({ ...article(), title: "broken \ud800" }), /text/i);
-  assert.throws(() =>
+  expect(() => validateBlogDocument(arrayWithSerializer)).toThrow(/JSON/i);
+  expect(() => validateBlogDocument({ ...article(), title: "broken \ud800" })).toThrow(/text/i);
+  expect(() =>
     validateBlogDocument({
       ...article(),
       body: { type: "doc", content: [{ type: "html", text: "<script>bad()</script>" }] },
     }),
-  );
-  assert.equal({}.polluted, undefined);
+  ).toThrow();
+  expect({}.polluted).toBe(undefined);
 });
 
 test("normalization is idempotent and rendering supports every basic article block", () => {
@@ -151,13 +148,13 @@ test("normalization is idempotent and rendering supports every basic article blo
     },
   ];
   const normalized = validateBlogDocument(value);
-  assert.deepEqual(validateBlogDocument(normalized), normalized);
+  expect(validateBlogDocument(normalized)).toEqual(normalized);
   const { html } = renderBlogDocument(normalized);
-  assert.match(html, /<blockquote><p>A quotation<\/p><\/blockquote>/);
-  assert.match(html, /<ul><li><p>A bullet<\/p><\/li><\/ul>/);
-  assert.match(html, /<hr>/);
-  assert.match(html, /<br><code>inline code<\/code>/);
-  assert.match(html, /href="\/blog\/another" target="_self" rel="nofollow"/);
+  expect(html).toMatch(/<blockquote><p>A quotation<\/p><\/blockquote>/);
+  expect(html).toMatch(/<ul><li><p>A bullet<\/p><\/li><\/ul>/);
+  expect(html).toMatch(/<hr>/);
+  expect(html).toMatch(/<br><code>inline code<\/code>/);
+  expect(html).toMatch(/href="\/blog\/another" target="_self" rel="nofollow"/);
 });
 
 test("bounded fields, bytes, node count, depth and duplicate selections are enforced", () => {
@@ -169,42 +166,36 @@ test("bounded fields, bytes, node count, depth and duplicate selections are enfo
     ["tags", Array.from({ length: 21 }, (_, i) => ({ id: String(i), label: "Tag" }))],
     ["relatedToolIds", Array.from({ length: 13 }, (_, i) => `media.${i}`)],
   ]) {
-    assert.throws(() => validateBlogDocument({ ...article(), [field]: value }));
+    expect(() => validateBlogDocument({ ...article(), [field]: value })).toThrow();
   }
-  assert.throws(
-    () =>
-      validateBlogDocument({
-        ...article(),
-        body: { type: "doc", content: [paragraph("😀".repeat(300000))] },
-      }),
-    /size|MiB/i,
-  );
-  assert.throws(
-    () =>
-      validateBlogDocument({
-        ...article(),
-        body: {
-          type: "doc",
-          content: Array.from({ length: 10001 }, () => ({ type: "paragraph" })),
-        },
-      }),
-    /nodes|complex/i,
-  );
+  expect(() =>
+    validateBlogDocument({
+      ...article(),
+      body: { type: "doc", content: [paragraph("😀".repeat(300000))] },
+    }),
+  ).toThrow(/size|MiB/i);
+  expect(() =>
+    validateBlogDocument({
+      ...article(),
+      body: {
+        type: "doc",
+        content: Array.from({ length: 10001 }, () => ({ type: "paragraph" })),
+      },
+    }),
+  ).toThrow(/nodes|complex/i);
   let nested = paragraph("deep");
   for (let i = 0; i < 33; i++) nested = { type: "blockquote", content: [nested] };
-  assert.throws(() => validateBlogDocument({ ...article(), body: { type: "doc", content: [nested] } }), /depth/i);
-  assert.throws(
-    () =>
-      validateBlogDocument({
-        ...article(),
-        tags: [
-          { id: "same", label: "A" },
-          { id: "same", label: "B" },
-        ],
-      }),
-    /duplicate/i,
-  );
-  assert.throws(() => validateBlogDocument({ ...article(), relatedToolIds: ["media.a", "media.a"] }), /duplicate/i);
+  expect(() => validateBlogDocument({ ...article(), body: { type: "doc", content: [nested] } })).toThrow(/depth/i);
+  expect(() =>
+    validateBlogDocument({
+      ...article(),
+      tags: [
+        { id: "same", label: "A" },
+        { id: "same", label: "B" },
+      ],
+    }),
+  ).toThrow(/duplicate/i);
+  expect(() => validateBlogDocument({ ...article(), relatedToolIds: ["media.a", "media.a"] })).toThrow(/duplicate/i);
 });
 
 test("malicious links and unsupported attributes cannot reach rendered HTML", () => {
@@ -218,11 +209,11 @@ test("malicious links and unsupported attributes cannot reach rendered HTML", ()
   ]) {
     const value = article();
     value.body.content[0].content[0].marks = [{ type: "link", attrs: { href } }];
-    assert.throws(() => validateBlogDocument(value), /link|URL/i, href);
+    expect(() => validateBlogDocument(value)).toThrow(/link|URL/i);
   }
   const value = article();
   value.body.content[0].attrs = { onclick: "bad()" };
-  assert.throws(() => validateBlogDocument(value), /attribute|property/i);
+  expect(() => validateBlogDocument(value)).toThrow(/attribute|property/i);
 });
 
 test("links survive the installed editor schema and normalize without extra attributes", () => {
@@ -231,7 +222,7 @@ test("links survive the installed editor schema and normalize without extra attr
   const schema = getSchema([StarterKit]);
   value.body = schema.nodeFromJSON(value.body).toJSON();
   const normalized = validateBlogDocument(value);
-  assert.deepEqual(normalized.body.content[0].content[0].marks, [
+  expect(normalized.body.content[0].content[0].marks).toEqual([
     {
       type: "link",
       attrs: {
@@ -241,12 +232,11 @@ test("links survive the installed editor schema and normalize without extra attr
       },
     },
   ]);
-  assert.deepEqual(
-    validateBlogDocument({ ...normalized, body: schema.nodeFromJSON(normalized.body).toJSON() }),
+  expect(validateBlogDocument({ ...normalized, body: schema.nodeFromJSON(normalized.body).toJSON() })).toEqual(
     normalized,
   );
   value.body.content[0].content[0].marks[0].attrs.title = "Unapproved tooltip";
-  assert.throws(() => validateBlogDocument(value), /unsupported attributes/i);
+  expect(() => validateBlogDocument(value)).toThrow(/unsupported attributes/i);
 });
 
 test("renderer safely escapes text, creates stable distinct headings, and protects outbound links", () => {
@@ -277,39 +267,38 @@ test("renderer safely escapes text, creates stable distinct headings, and protec
     },
   ];
   const output = renderBlogDocument(validateBlogDocument(value));
-  assert.equal(output.headings.length, 2);
-  assert.notEqual(output.headings[0].id, output.headings[1].id);
-  assert.match(output.html, /&lt;script&gt;/);
-  assert.doesNotMatch(output.html, /<script>/);
-  assert.match(output.html, /rel="noopener noreferrer"/);
-  assert.match(output.html, /<pre><code class="language-javascript">&lt;b&gt;code&lt;\/b&gt;/);
-  assert.equal(output.readingMinutes, 1);
-  assert.match(blogDocumentText(value), /A & B\s+A & B/);
+  expect(output.headings.length).toBe(2);
+  expect(output.headings[0].id).not.toBe(output.headings[1].id);
+  expect(output.html).toMatch(/&lt;script&gt;/);
+  expect(output.html).not.toMatch(/<script>/);
+  expect(output.html).toMatch(/rel="noopener noreferrer"/);
+  expect(output.html).toMatch(/<pre><code class="language-javascript">&lt;b&gt;code&lt;\/b&gt;/);
+  expect(output.readingMinutes).toBe(1);
+  expect(blogDocumentText(value)).toMatch(/A & B\s+A & B/);
 });
 
 test("Cloudinary images use immutable configured-cloud URLs and require alt text on publication", () => {
   const value = { ...article(), coverImage: image };
   value.body.content.push({ type: "image", attrs: image });
-  assert.throws(() => validateBlogDocument(value), /cloud/i);
+  expect(() => validateBlogDocument(value)).toThrow(/cloud/i);
   const normalized = validateBlogDocument(value, { cloudName: "my-cloud" });
   const output = renderBlogDocument(normalized, { cloudName: "my-cloud" });
-  assert.ok(
+  expect(
     output.html.includes(
       `src="https://res.cloudinary.com/my-cloud/image/upload/c_limit,w_800/q_auto/f_auto/v1234/${image.publicId}.webp"`,
     ),
-  );
-  assert.ok(
+  ).toBeTruthy();
+  expect(
     output.html.includes(
       `srcset="${[320, 640, 800].map((width) => `https://res.cloudinary.com/my-cloud/image/upload/c_limit,w_${width}/q_auto/f_auto/v1234/${image.publicId}.webp ${width}w`).join(", ")}"`,
     ),
-  );
-  assert.match(output.html, /loading="lazy" decoding="async"/);
-  assert.equal(
-    blogImageUrl(normalized.coverImage, { cloudName: "my-cloud" }),
+  ).toBeTruthy();
+  expect(output.html).toMatch(/loading="lazy" decoding="async"/);
+  expect(blogImageUrl(normalized.coverImage, { cloudName: "my-cloud" })).toBe(
     "https://res.cloudinary.com/my-cloud/image/upload/v1234/smarttools/blog/95c40d91-c008-4474-965b-71ec2e4f2b81.webp",
   );
-  assert.match(output.html, /<figcaption>Diagram caption<\/figcaption>/);
-  assert.doesNotThrow(() => assertBlogPublishable(normalized));
+  expect(output.html).toMatch(/<figcaption>Diagram caption<\/figcaption>/);
+  expect(() => assertBlogPublishable(normalized)).not.toThrow();
   for (const attrs of [
     { ...image, publicId: "../escape" },
     { ...image, version: 0 },
@@ -317,10 +306,10 @@ test("Cloudinary images use immutable configured-cloud URLs and require alt text
     { ...image, width: -1 },
     { ...image, src: "https://evil.example/image.webp" },
   ]) {
-    assert.throws(() => validateBlogDocument({ ...article(), coverImage: attrs }, { cloudName: "my-cloud" }));
+    expect(() => validateBlogDocument({ ...article(), coverImage: attrs }, { cloudName: "my-cloud" })).toThrow();
   }
   const noAlt = validateBlogDocument({ ...value, coverImage: { ...image, alt: "" } }, { cloudName: "my-cloud" });
-  assert.throws(() => assertBlogPublishable(noAlt), /alt/i);
+  expect(() => assertBlogPublishable(noAlt)).toThrow(/alt/i);
 });
 
 test("environment-scoped blog assets retain immutable URLs in cover and body revisions", () => {
@@ -333,15 +322,15 @@ test("environment-scoped blog assets retain immutable URLs in cover and body rev
       body: { type: "doc", content: [{ type: "image", attrs: asset }] },
     };
     const normalized = validateBlogDocument(JSON.parse(JSON.stringify(value)), options);
-    assert.deepEqual(normalized.coverImage, asset);
-    assert.equal(normalized.body.content[0].attrs.publicId, asset.publicId);
+    expect(normalized.coverImage).toEqual(asset);
+    expect(normalized.body.content[0].attrs.publicId).toBe(asset.publicId);
     const url = `https://res.cloudinary.com/my-cloud/image/upload/v1234/${asset.publicId}.webp`;
-    assert.equal(blogImageUrl(normalized.coverImage, options), url);
-    assert.ok(
+    expect(blogImageUrl(normalized.coverImage, options)).toBe(url);
+    expect(
       renderBlogDocument(normalized, options).html.includes(
         `src="https://res.cloudinary.com/my-cloud/image/upload/c_limit,w_800/q_auto/f_auto/v1234/${asset.publicId}.webp"`,
       ),
-    );
+    ).toBeTruthy();
   }
 });
 
@@ -366,14 +355,16 @@ test("body image layout survives document roundtrips without changing intrinsic 
         },
       };
       const normalized = validateBlogDocument(value, options);
-      assert.deepEqual(normalized.body.content[0].attrs, { ...image, displayWidth, alignment });
-      assert.deepEqual(normalized.coverImage, image);
-      assert.deepEqual(validateBlogDocument(JSON.parse(JSON.stringify(normalized)), options), normalized);
+      expect(normalized.body.content[0].attrs).toEqual({ ...image, displayWidth, alignment });
+      expect(normalized.coverImage).toEqual(image);
+      expect(validateBlogDocument(JSON.parse(JSON.stringify(normalized)), options)).toEqual(normalized);
       const { html } = renderBlogDocument(normalized, options);
-      assert.ok(html.includes(`width:${displayWidth}%;margin-left:${marginLeft};margin-right:${marginRight}`));
-      assert.match(html, /width="800" height="600"/);
-      assert.match(html, /style="width:100%;height:auto"/);
-      assert.ok(html.includes(`sizes="auto, (min-width: 1440px) ${desktopWidth}px, ${displayWidth}vw"`));
+      expect(
+        html.includes(`width:${displayWidth}%;margin-left:${marginLeft};margin-right:${marginRight}`),
+      ).toBeTruthy();
+      expect(html).toMatch(/width="800" height="600"/);
+      expect(html).toMatch(/style="width:100%;height:auto"/);
+      expect(html.includes(`sizes="auto, (min-width: 1440px) ${desktopWidth}px, ${displayWidth}vw"`)).toBeTruthy();
     }
   }
 });
@@ -385,7 +376,7 @@ test("legacy body images and empty editor layout defaults keep their full-width 
     body: { type: "doc", content: [{ type: "image", attrs: image }] },
   };
   const normalized = validateBlogDocument(legacy, options);
-  assert.deepEqual(normalized.body.content[0].attrs, {
+  expect(normalized.body.content[0].attrs).toEqual({
     ...image,
     displayWidth: 100,
     alignment: "center",
@@ -397,12 +388,12 @@ test("legacy body images and empty editor layout defaults keep their full-width 
       content: [{ type: "image", attrs: { ...image, displayWidth: null, alignment: null } }],
     },
   };
-  assert.deepEqual(validateBlogDocument(defaults, options), normalized);
-  assert.equal(renderBlogDocument(legacy, options).html, renderBlogDocument(normalized, options).html);
-  assert.doesNotThrow(() => assertBlogPublishable(normalized));
+  expect(validateBlogDocument(defaults, options)).toEqual(normalized);
+  expect(renderBlogDocument(legacy, options).html).toBe(renderBlogDocument(normalized, options).html);
+  expect(() => assertBlogPublishable(normalized)).not.toThrow();
   const resized = structuredClone(normalized);
   resized.body.content[0].attrs.displayWidth = 50;
-  assert.notEqual(blogDocumentHash(resized), blogDocumentHash(normalized));
+  expect(blogDocumentHash(resized)).not.toBe(blogDocumentHash(normalized));
 });
 
 test("image layout rejects unsafe values and remains exclusive to body images", () => {
@@ -417,12 +408,11 @@ test("image layout rejects unsafe values and remains exclusive to body images", 
       ...article(),
       body: { type: "doc", content: [{ type: "image", attrs: { ...image, ...layout } }] },
     };
-    assert.throws(() => validateBlogDocument(value, options));
-    assert.throws(() => renderBlogDocument(value, options));
+    expect(() => validateBlogDocument(value, options)).toThrow();
+    expect(() => renderBlogDocument(value, options)).toThrow();
   }
   for (const layout of [{ displayWidth: 50 }, { alignment: "right" }]) {
-    assert.throws(
-      () => validateBlogDocument({ ...article(), coverImage: { ...image, ...layout } }, options),
+    expect(() => validateBlogDocument({ ...article(), coverImage: { ...image, ...layout } }, options)).toThrow(
       /unsupported property/,
     );
   }
@@ -444,21 +434,18 @@ test("images cannot reference mutable Cloudinary assets outside the immutable bl
     "Canopy/production/blog/95c40d91-c008-4474-965b-71ec2e4f2b81/suffix",
     "Canopy/production/../development/blog/95c40d91-c008-4474-965b-71ec2e4f2b81",
   ]) {
-    assert.throws(
-      () => validateBlogDocument({ ...article(), coverImage: { ...image, publicId } }, { cloudName: "my-cloud" }),
-      /immutable blog asset/,
-    );
-    assert.throws(
-      () =>
-        validateBlogDocument(
-          {
-            ...article(),
-            body: { type: "doc", content: [{ type: "image", attrs: { ...image, publicId } }] },
-          },
-          { cloudName: "my-cloud" },
-        ),
-      /immutable blog asset/,
-    );
+    expect(() =>
+      validateBlogDocument({ ...article(), coverImage: { ...image, publicId } }, { cloudName: "my-cloud" }),
+    ).toThrow(/immutable blog asset/);
+    expect(() =>
+      validateBlogDocument(
+        {
+          ...article(),
+          body: { type: "doc", content: [{ type: "image", attrs: { ...image, publicId } }] },
+        },
+        { cloudName: "my-cloud" },
+      ),
+    ).toThrow(/immutable blog asset/);
   }
 });
 
@@ -482,8 +469,8 @@ test("table and list content models reject malformed structures and allow safe m
       ],
     },
   ];
-  assert.match(renderBlogDocument(validateBlogDocument(valid)).html, /<ol start="3">/);
-  assert.match(renderBlogDocument(validateBlogDocument(valid)).html, /colspan="2"/);
+  expect(renderBlogDocument(validateBlogDocument(valid)).html).toMatch(/<ol start="3">/);
+  expect(renderBlogDocument(validateBlogDocument(valid)).html).toMatch(/colspan="2"/);
   const rowspan = {
     type: "table",
     content: [
@@ -494,10 +481,9 @@ test("table and list content models reject malformed structures and allow safe m
       { type: "tableRow", content: [] },
     ],
   };
-  assert.match(
+  expect(
     renderBlogDocument(validateBlogDocument({ ...article(), body: { type: "doc", content: [rowspan] } })).html,
-    /rowspan="2"/,
-  );
+  ).toMatch(/rowspan="2"/);
   for (const node of [
     {
       type: "table",
@@ -512,7 +498,7 @@ test("table and list content models reject malformed structures and allow safe m
     { type: "heading", attrs: { level: 1 }, content: [] },
     { type: "codeBlock", content: [{ type: "text", text: "x", marks: [{ type: "bold" }] }] },
   ])
-    assert.throws(() => validateBlogDocument({ ...article(), body: { type: "doc", content: [node] } }));
+    expect(() => validateBlogDocument({ ...article(), body: { type: "doc", content: [node] } })).toThrow();
 });
 
 test("table cell colors and alignment normalize and render without accepting arbitrary CSS", () => {
@@ -546,10 +532,9 @@ test("table cell colors and alignment normalize and render without accepting arb
       },
     };
     const normalized = validateBlogDocument(value);
-    assert.equal(normalized.body.content[0].content[0].content[0].attrs.backgroundColor, "#abcdef");
-    assert.deepEqual(validateBlogDocument(JSON.parse(JSON.stringify(normalized))), normalized);
-    assert.match(
-      renderBlogDocument(normalized).html,
+    expect(normalized.body.content[0].content[0].content[0].attrs.backgroundColor).toBe("#abcdef");
+    expect(validateBlogDocument(JSON.parse(JSON.stringify(normalized)))).toEqual(normalized);
+    expect(renderBlogDocument(normalized).html).toMatch(
       new RegExp(`style="text-align:${align};background-color:#abcdef"`),
     );
   }
@@ -577,8 +562,8 @@ test("table cell colors and alignment normalize and render without accepting arb
         ],
       },
     };
-    assert.throws(() => validateBlogDocument(value));
-    assert.throws(() => renderBlogDocument(value));
+    expect(() => validateBlogDocument(value)).toThrow();
+    expect(() => renderBlogDocument(value)).toThrow();
   }
 });
 
@@ -606,19 +591,17 @@ test("resized table columns retain widths through merged cells and rows in publi
     },
   };
   const { html } = renderBlogDocument(validateBlogDocument(value));
-  assert.match(
-    html,
+  expect(html).toMatch(
     /<colgroup><col style="width:120px"><col style="width:180px"><col style="width:240px"><\/colgroup>/,
   );
-  assert.match(html, /<table style="display:table;max-width:none;table-layout:fixed;width:540px">/);
-  assert.match(html, /colspan="2" rowspan="1"/);
-  assert.match(html, /role="region" aria-label="Scrollable table" tabindex="0"/);
-  assert.match(html, /max-width:100%;overflow-x:auto/);
+  expect(html).toMatch(/<table style="display:table;max-width:none;table-layout:fixed;width:540px">/);
+  expect(html).toMatch(/colspan="2" rowspan="1"/);
+  expect(html).toMatch(/role="region" aria-label="Scrollable table" tabindex="0"/);
+  expect(html).toMatch(/max-width:100%;overflow-x:auto/);
   value.body.content[0].content[0].content[1].attrs.colwidth = [0, 0];
   value.body.content[0].content[1].content[0].attrs.colwidth = [180];
   value.body.content[0].content[1].content[1].attrs.colwidth = [240];
-  assert.match(
-    renderBlogDocument(value).html,
+  expect(renderBlogDocument(value).html).toMatch(
     /<colgroup><col style="width:120px"><col style="width:180px"><col style="width:240px"><\/colgroup>/,
   );
 
@@ -628,13 +611,13 @@ test("resized table columns retain widths through merged cells and rows in publi
     { type: "tableRow", content: [cell("Merged", { colspan: 2, colwidth: [0, 220] })] },
   ];
   const partial = renderBlogDocument(validateBlogDocument(value)).html;
-  assert.match(partial, /<colgroup><col><col style="width:220px"><\/colgroup>/);
-  assert.match(partial, /min-width:245px/);
+  expect(partial).toMatch(/<colgroup><col><col style="width:220px"><\/colgroup>/);
+  expect(partial).toMatch(/min-width:245px/);
   value.body.content[0].content.push({
     type: "tableRow",
     content: [cell("Auto"), cell("Legacy conflicting width", { colwidth: [300] })],
   });
-  assert.match(renderBlogDocument(value).html, /<colgroup><col><col style="width:220px"><\/colgroup>/);
+  expect(renderBlogDocument(value).html).toMatch(/<colgroup><col><col style="width:220px"><\/colgroup>/);
 });
 
 test("legacy tables without column sizes retain automatic layout", () => {
@@ -659,8 +642,8 @@ test("legacy tables without column sizes retain automatic layout", () => {
     },
   };
   const { html } = renderBlogDocument(validateBlogDocument(value));
-  assert.match(html, /<table style="display:table;max-width:none">/);
-  assert.doesNotMatch(html, /<colgroup>|table-layout:fixed/);
+  expect(html).toMatch(/<table style="display:table;max-width:none">/);
+  expect(html).not.toMatch(/<colgroup>|table-layout:fixed/);
 });
 
 test("editor formatting survives validation and renders safely in public articles", () => {
@@ -691,24 +674,24 @@ test("editor formatting survives validation and renders safely in public article
   const body = schema.nodeFromJSON(value.body);
   body.check();
   const normalized = validateBlogDocument({ ...value, body: body.toJSON() });
-  assert.deepEqual(validateBlogDocument(normalized), normalized);
+  expect(validateBlogDocument(normalized)).toEqual(normalized);
   const { html } = renderBlogDocument(normalized);
-  assert.match(html, /text-align:center/);
-  assert.match(html, /<sup><mark>Highlighted<\/mark><\/sup>/);
-  assert.match(html, /text-align:right/);
-  assert.match(html, /<sub>H2O<\/sub>/);
-  assert.match(html, /role="checkbox" aria-readonly="true" aria-checked="true"/);
-  assert.doesNotMatch(html, /disabled/);
+  expect(html).toMatch(/text-align:center/);
+  expect(html).toMatch(/<sup><mark>Highlighted<\/mark><\/sup>/);
+  expect(html).toMatch(/text-align:right/);
+  expect(html).toMatch(/<sub>H2O<\/sub>/);
+  expect(html).toMatch(/role="checkbox" aria-readonly="true" aria-checked="true"/);
+  expect(html).not.toMatch(/disabled/);
   for (const textAlign of ["center;color:red", "diagonal"]) {
-    assert.throws(() =>
+    expect(() =>
       validateBlogDocument({
         ...article(),
         body: { type: "doc", content: [{ ...paragraph("Unsafe"), attrs: { textAlign } }] },
       }),
-    );
+    ).toThrow();
   }
   value.body.content[2].content[0].attrs.checked = "yes";
-  assert.throws(() => validateBlogDocument(value));
+  expect(() => validateBlogDocument(value)).toThrow();
 });
 
 test("highlight colors retain their value through editor, revision, and public rendering roundtrips", () => {
@@ -719,16 +702,15 @@ test("highlight colors retain their value through editor, revision, and public r
     ...value,
     body: schema.nodeFromJSON(value.body).toJSON(),
   });
-  assert.deepEqual(normalized.body.content[0].content[0].marks, [{ type: "highlight", attrs: { color: "#abcdef" } }]);
-  assert.deepEqual(validateBlogDocument(JSON.parse(JSON.stringify(normalized))), normalized);
-  assert.deepEqual(
-    validateBlogDocument({ ...normalized, body: schema.nodeFromJSON(normalized.body).toJSON() }),
+  expect(normalized.body.content[0].content[0].marks).toEqual([{ type: "highlight", attrs: { color: "#abcdef" } }]);
+  expect(validateBlogDocument(JSON.parse(JSON.stringify(normalized)))).toEqual(normalized);
+  expect(validateBlogDocument({ ...normalized, body: schema.nodeFromJSON(normalized.body).toJSON() })).toEqual(
     normalized,
   );
-  assert.equal(renderBlogDocument(normalized).html, '<p><mark style="background-color:#abcdef">Hello world</mark></p>');
+  expect(renderBlogDocument(normalized).html).toBe('<p><mark style="background-color:#abcdef">Hello world</mark></p>');
   const recolored = structuredClone(normalized);
   recolored.body.content[0].content[0].marks[0].attrs.color = "#123456";
-  assert.notEqual(blogDocumentHash(recolored), blogDocumentHash(normalized));
+  expect(blogDocumentHash(recolored)).not.toBe(blogDocumentHash(normalized));
 });
 
 test("legacy highlights retain their normalized document hash and yellow default rendering", () => {
@@ -743,9 +725,9 @@ test("legacy highlights retain their normalized document hash and yellow default
       ...value,
       body: schema.nodeFromJSON(value.body).toJSON(),
     });
-    assert.deepEqual(roundtrip, normalized);
-    assert.equal(blogDocumentHash(roundtrip), blogDocumentHash(normalized));
-    assert.equal(renderBlogDocument(roundtrip).html, "<p><mark>Hello world</mark></p>");
+    expect(roundtrip).toEqual(normalized);
+    expect(blogDocumentHash(roundtrip)).toBe(blogDocumentHash(normalized));
+    expect(renderBlogDocument(roundtrip).html).toBe("<p><mark>Hello world</mark></p>");
   }
 });
 
@@ -769,13 +751,13 @@ test("highlight colors reject arbitrary CSS and duplicate or unsupported attribu
   ]) {
     const value = article();
     value.body.content[0].content[0].marks = [{ type: "highlight", attrs }];
-    assert.throws(() => validateBlogDocument(value));
-    assert.throws(() => renderBlogDocument(value));
+    expect(() => validateBlogDocument(value)).toThrow();
+    expect(() => renderBlogDocument(value)).toThrow();
   }
   const value = article();
   value.body.content[0].content[0].marks = [
     { type: "highlight", attrs: { color: "#abcdef" } },
     { type: "highlight", attrs: { color: "#123456" } },
   ];
-  assert.throws(() => validateBlogDocument(value), /Duplicate text marks/);
+  expect(() => validateBlogDocument(value)).toThrow(/Duplicate text marks/);
 });

@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 
 import { assertFileSizes, assertRunnableFiles, resolveFileLimits } from "../lib/tool-framework/fileGuard.ts";
 import { PLATFORM_MAX_BYTES } from "../lib/tool-framework/limits.ts";
@@ -15,54 +14,77 @@ const filesInput = (overrides = {}) => ({
 });
 
 test("file limits default to and clamp at the 100 MiB platform ceiling", () => {
-  assert.deepEqual(resolveFileLimits(filesInput()), {
+  expect(resolveFileLimits(filesInput())).toEqual({
     accept: "image/jpeg",
     maxBytes: PLATFORM_MAX_BYTES,
     maxFiles: 50,
     maxTotalBytes: PLATFORM_MAX_BYTES,
   });
-  assert.deepEqual(
+  expect(
     resolveFileLimits(
       filesInput({
         maxBytes: PLATFORM_MAX_BYTES * 2,
         maxTotalBytes: PLATFORM_MAX_BYTES * 2,
       }),
     ),
-    {
-      accept: "image/jpeg",
-      maxBytes: PLATFORM_MAX_BYTES,
-      maxFiles: 50,
-      maxTotalBytes: PLATFORM_MAX_BYTES,
-    },
-  );
+  ).toEqual({
+    accept: "image/jpeg",
+    maxBytes: PLATFORM_MAX_BYTES,
+    maxFiles: 50,
+    maxTotalBytes: PLATFORM_MAX_BYTES,
+  });
 });
 
 test("file size checks accept exact boundaries and reject one byte over", () => {
   const limits = resolveFileLimits(filesInput());
-  assert.ok(limits);
-  assert.doesNotThrow(() => assertFileSizes(limits, [{ size: PLATFORM_MAX_BYTES }]));
-  assert.throws(
-    () => assertFileSizes(limits, [{ size: PLATFORM_MAX_BYTES + 1 }]),
-    (error) => error?.code === "file-too-large",
-  );
-  assert.throws(
-    () => assertFileSizes(limits, [{ size: PLATFORM_MAX_BYTES - 1 }, { size: 2 }]),
-    (error) => error?.code === "total-too-large",
-  );
+  expect(limits).toBeTruthy();
+  expect(() => assertFileSizes(limits, [{ size: PLATFORM_MAX_BYTES }])).not.toThrow();
+  (() => {
+    let __err;
+    try {
+      (() => assertFileSizes(limits, [{ size: PLATFORM_MAX_BYTES + 1 }]))();
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error?.code === "file-too-large")(__err)).toBe(true);
+  })();
+  (() => {
+    let __err;
+    try {
+      (() => assertFileSizes(limits, [{ size: PLATFORM_MAX_BYTES - 1 }, { size: 2 }]))();
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error?.code === "total-too-large")(__err)).toBe(true);
+  })();
 });
 
 test("lower per-tool and aggregate limits remain authoritative", () => {
   const limits = resolveFileLimits(filesInput({ maxBytes: 25, maxFiles: 2, maxTotalBytes: 40 }));
-  assert.ok(limits);
-  assert.doesNotThrow(() => assertFileSizes(limits, [{ size: 20 }, { size: 20 }]));
-  assert.throws(
-    () => assertFileSizes(limits, [{ size: 21 }, { size: 20 }]),
-    (error) => error?.code === "total-too-large",
-  );
-  assert.throws(
-    () => assertFileSizes(limits, [{ size: 26 }]),
-    (error) => error?.code === "file-too-large",
-  );
+  expect(limits).toBeTruthy();
+  expect(() => assertFileSizes(limits, [{ size: 20 }, { size: 20 }])).not.toThrow();
+  (() => {
+    let __err;
+    try {
+      (() => assertFileSizes(limits, [{ size: 21 }, { size: 20 }]))();
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error?.code === "total-too-large")(__err)).toBe(true);
+  })();
+  (() => {
+    let __err;
+    try {
+      (() => assertFileSizes(limits, [{ size: 26 }]))();
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error?.code === "file-too-large")(__err)).toBe(true);
+  })();
 });
 
 test("worker file validation reads only a bounded signature prefix", async () => {
@@ -81,9 +103,9 @@ test("worker file validation reads only a bounded signature prefix", async () =>
   };
 
   await assertRunnableFiles(spec, [createToolRunFile("photo", source)]);
-  assert.equal(source.slices.length, 1);
-  assert.equal(source.slices[0][0], 0);
-  assert.ok(source.slices[0][1] <= 64 * 1024);
+  expect(source.slices.length).toBe(1);
+  expect(source.slices[0][0]).toBe(0);
+  expect(source.slices[0][1] <= 64 * 1024).toBeTruthy();
 });
 
 test("worker file validation rejects a media file whose bytes have no valid signature", async () => {
@@ -92,10 +114,16 @@ test("worker file validation rejects a media file whose bytes have no valid sign
     input: filesInput({ maxBytes: 25, maxTotalBytes: 25 }),
   };
 
-  await assert.rejects(
-    assertRunnableFiles(spec, [createToolRunFile("photo", source)]),
-    (error) => error?.code === "invalid-signature",
-  );
+  await (async () => {
+    let __err;
+    try {
+      await assertRunnableFiles(spec, [createToolRunFile("photo", source)]);
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error?.code === "invalid-signature")(__err)).toBe(true);
+  })();
 });
 
 test("PDF tools accept explicitly declared watermark images but reject disguised images", async () => {
@@ -107,8 +135,14 @@ test("PDF tools accept explicitly declared watermark images but reject disguised
     image,
   ]);
   const disguised = createToolRunFile("fake", new File([png], "fake.pdf", { type: "application/octet-stream" }));
-  await assert.rejects(
-    assertRunnableFiles({ input: filesInput({ engine: "pdf", accept: "application/pdf,.pdf" }) }, [disguised]),
-    (error) => error?.code === "unsupported-type",
-  );
+  await (async () => {
+    let __err;
+    try {
+      await assertRunnableFiles({ input: filesInput({ engine: "pdf", accept: "application/pdf,.pdf" }) }, [disguised]);
+    } catch (__e) {
+      __err = __e;
+    }
+    expect(__err).toBeDefined();
+    expect(((error) => error?.code === "unsupported-type")(__err)).toBe(true);
+  })();
 });

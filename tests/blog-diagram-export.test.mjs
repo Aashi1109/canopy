@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test, onTestFinished } from "vitest";
 import { diagramPng } from "../lib/markdown/diagramExport.ts";
 
 function browser(t) {
@@ -49,7 +48,7 @@ function browser(t) {
   for (const [key, value] of Object.entries(globals)) {
     const previous = globalThis[key];
     globalThis[key] = value;
-    t.after(() => {
+    onTestFinished(() => {
       if (previous === undefined) delete globalThis[key];
       else globalThis[key] = previous;
     });
@@ -60,14 +59,14 @@ function browser(t) {
 test("diagram PNG preserves Unicode labels through a data URI and exports double-resolution on white", async (t) => {
   const { state, canvas } = browser(t);
   const result = await diagramPng("<svg />");
-  assert.equal(result.type, "image/png");
-  assert.deepEqual([canvas.width, canvas.height], [1000, 400]);
-  assert.equal(state.attributes.width, "1000");
-  assert.equal(state.attributes.height, "400");
-  assert.ok(state.removed.includes("max-width"));
-  assert.match(state.uri, /^data:image\/svg\+xml/);
-  assert.match(decodeURIComponent(state.uri), /<foreignObject>Résumé ✓<\/foreignObject>/);
-  assert.deepEqual(state.calls, [
+  expect(result.type).toBe("image/png");
+  expect([canvas.width, canvas.height]).toEqual([1000, 400]);
+  expect(state.attributes.width).toBe("1000");
+  expect(state.attributes.height).toBe("400");
+  expect(state.removed.includes("max-width")).toBeTruthy();
+  expect(state.uri).toMatch(/^data:image\/svg\+xml/);
+  expect(decodeURIComponent(state.uri)).toMatch(/<foreignObject>Résumé ✓<\/foreignObject>/);
+  expect(state.calls).toEqual([
     ["fill", "#ffffff", 0, 0, 1000, 400],
     ["draw", 0, 0, 1000, 400],
   ]);
@@ -78,9 +77,9 @@ test("large diagram exports stay within side and pixel limits", async (t) => {
   for (const bounds of ["0 0 20000 200", "0 0 200 20000", "0 0 20000 20000"]) {
     state.bounds = bounds;
     await diagramPng("<svg />");
-    assert.ok(canvas.width > 0 && canvas.height > 0);
-    assert.ok(canvas.width <= 8192 && canvas.height <= 8192);
-    assert.ok(canvas.width * canvas.height <= 16_000_000);
+    expect(canvas.width > 0 && canvas.height > 0).toBeTruthy();
+    expect(canvas.width <= 8192 && canvas.height <= 8192).toBeTruthy();
+    expect(canvas.width * canvas.height <= 16_000_000).toBeTruthy();
   }
 });
 
@@ -88,11 +87,11 @@ test("invalid dimensions and browser export failures reject without a download",
   const { state } = browser(t);
   for (const bounds of [null, "", "0 0 0 20", "0 0 -1 20", "0 0 Infinity 20", "0 0 NaN 20", "0 0 30", "0 0 1e100 20"]) {
     state.bounds = bounds;
-    await assert.rejects(diagramPng("<svg />"));
+    await expect(diagramPng("<svg />")).rejects.toThrow();
   }
   state.bounds = "0 0 500 200";
   for (const error of ["decode", "context", "empty", "tainted"]) {
     state.error = error;
-    await assert.rejects(diagramPng("<svg />"));
+    await expect(diagramPng("<svg />")).rejects.toThrow();
   }
 });
