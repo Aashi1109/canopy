@@ -65,8 +65,8 @@ export function AdminSignInScreen({
           <Button asChild size="md" variant="ghost">
             <a href={publicSiteUrl} aria-label="Back to SmartTools">
               <ArrowLeft aria-hidden="true" />
-              <span className="hidden sm:inline">Back to SmartTools</span>
-              <span className="sm:hidden">Back</span>
+              <span className="hidden compact:inline">Back to SmartTools</span>
+              <span className="compact:hidden">Back</span>
             </a>
           </Button>
         }

@@ -7,6 +7,7 @@ import { Button } from "./button.tsx";
 import { ContentState } from "./ContentState.tsx";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip.tsx";
 import { cn } from "../lib/utils.ts";
+import { matchBreakpoint } from "../lib/breakpoints.ts";
 import { SavedToolsStore, STORAGE_KEY, type SavedTool } from "../lib/saved-tools.ts";
 
 const ACTIVE_SAVE_BUTTON_CLASS_NAME =
@@ -45,7 +46,7 @@ export function SavedToolsProvider({ children, publicSiteUrl }: { children: Reac
 
   useEffect(() => {
     void store.refresh();
-    const media = window.matchMedia("(max-width: 767px)");
+    const media = matchBreakpoint({ max: "compact" });
     const adapt = () => {
       setMobile(media.matches);
       setOpen(false);

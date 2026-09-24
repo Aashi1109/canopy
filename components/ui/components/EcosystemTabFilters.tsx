@@ -62,7 +62,7 @@ export function EcosystemTabFilters({
     <nav
       aria-label="Tool suites"
       className={cn(
-        "relative hidden h-[46px] shrink-0 items-center gap-0.5 rounded-full border border-border bg-card p-[5px] font-caption text-xs font-semibold md:flex",
+        "relative hidden h-[46px] shrink-0 items-center gap-0.5 rounded-full border border-border bg-card p-[5px] font-caption text-xs font-semibold navigation:flex",
         className,
       )}
     >

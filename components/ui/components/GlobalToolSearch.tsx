@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../lib/utils.ts";
+import { matchBreakpoint } from "../lib/breakpoints.ts";
 import { ContentState } from "./ContentState.tsx";
 import { Button } from "./button.tsx";
 
@@ -19,8 +20,12 @@ type SearchResult = {
 type SearchState = "idle" | "loading" | "ready" | "error";
 type MobileSearch = { open: boolean; onOpenChange: (open: boolean) => void; top: number; availableHeight: number };
 
+// Reserve space for the logo, page/account actions, menu, and header padding.
+const CENTERED_SEARCH_WIDTH_CLASS = "compact:max-navigation:w-[clamp(11rem,calc(100vw-26rem),24rem)]";
+
 export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSearch; publicSiteUrl?: string } = {}) {
   const [desktopOpen, setDesktopOpen] = useState(false);
+  const isMobileSearch = Boolean(mobile);
   const isOpen = mobile ? mobile.open : desktopOpen;
   const setOpen = mobile?.onOpenChange ?? setDesktopOpen;
   const [query, setQuery] = useState("");
@@ -39,6 +44,16 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
   useEffect(() => {
     if (isOpen) inputRef.current?.focus({ preventScroll: true });
   }, [isOpen]);
+
+  useEffect(() => {
+    const desktop = matchBreakpoint({ min: "compact" });
+    const reset = () => {
+      if (isMobileSearch === desktop.matches) setOpen(false);
+    };
+    reset();
+    desktop.addEventListener("change", reset);
+    return () => desktop.removeEventListener("change", reset);
+  }, [isMobileSearch, setOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -101,8 +116,8 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
   const field = (
     <div
       className={cn(
-        "flex h-[46px] w-[220px] xl:w-[250px] items-center gap-2 rounded-full border border-primary bg-card px-3 text-[13px] shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_12%,transparent)]",
-        mobile && "h-12 w-full pr-0.5",
+        "flex h-[46px] w-full items-center gap-2 rounded-full border border-primary bg-card px-3 text-[13px] shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_12%,transparent)]",
+        mobile && "h-12 pr-0.5",
       )}
     >
       {loading ? (
@@ -149,7 +164,7 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
           <X aria-hidden="true" className="size-[15px]" />
         </button>
       ) : !mobile ? (
-        <kbd className="grid size-6 place-items-center rounded border border-border bg-muted font-caption text-[11px] font-semibold">
+        <kbd className="grid size-6 place-items-center rounded border border-border bg-muted font-caption text-[11px] font-semibold max-navigation:hidden">
           /
         </kbd>
       ) : null}
@@ -159,7 +174,9 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
     <div
       className={cn(
         "overflow-y-auto rounded-lg border border-border bg-card shadow-[0_12px_32px_rgb(17_18_20_/_12%)]",
-        mobile ? "mt-2.5 w-full" : "absolute top-[56px] left-0 z-50 max-h-[min(480px,70dvh)] w-[360px]",
+        mobile
+          ? "mt-2.5 w-full"
+          : "absolute top-[56px] left-0 z-50 max-h-[min(480px,70dvh)] w-[360px] compact:max-navigation:left-1/2 compact:max-navigation:-translate-x-1/2",
       )}
       style={mobile ? { maxHeight: `min(320px, 50dvh, ${Math.max(60, mobile.availableHeight - 70)}px)` } : undefined}
       id={resultsId}
@@ -216,7 +233,17 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
   ) : null;
 
   return (
-    <div className={mobile ? "md:hidden" : "relative hidden md:block"} ref={rootRef}>
+    <div
+      className={
+        mobile
+          ? "compact:hidden"
+          : cn(
+              "relative hidden w-[220px] compact:block compact:max-navigation:col-start-2 compact:max-navigation:row-start-1 compact:max-navigation:justify-self-center xl:w-[250px]",
+              CENTERED_SEARCH_WIDTH_CLASS,
+            )
+      }
+      ref={rootRef}
+    >
       {mobile ? (
         <button
           aria-label="Search tools"
@@ -238,21 +265,21 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
         <button
           aria-expanded="false"
           aria-haspopup="dialog"
-          className="flex h-[46px] w-[220px] xl:w-[250px] items-center gap-2 rounded-full border border-border bg-muted px-3 text-[13px] text-muted-foreground outline-none hover:border-input focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex h-[46px] w-full items-center gap-2 rounded-full border border-border bg-muted px-3 text-[13px] text-muted-foreground outline-none hover:border-input focus-visible:ring-2 focus-visible:ring-ring"
           onClick={() => setOpen(true)}
           ref={triggerRef}
           type="button"
         >
           <Search aria-hidden="true" className="size-[17px]" />
           <span>Search 150+ tools</span>
-          <kbd className="ml-auto grid size-6 place-items-center rounded border border-border bg-card font-caption text-[11px] font-semibold">
+          <kbd className="ml-auto grid size-6 place-items-center rounded border border-border bg-card font-caption text-[11px] font-semibold max-navigation:hidden">
             /
           </kbd>
         </button>
       )}
       {isOpen && mobile
         ? createPortal(
-            <div ref={popupRef} className="fixed inset-x-4 z-[60] md:hidden" style={{ top: mobile.top + 8 }}>
+            <div ref={popupRef} className="fixed inset-x-4 z-[60] compact:hidden" style={{ top: mobile.top + 8 }}>
               {field}
               {feedback}
             </div>,

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { RichContent } from "@/components/content/RichContent";
-import { useWorkbenchPresentation } from "@/components/ui/components/workbench-presentation";
 import { downloadResultContent, ResultActions, ResultView } from "@/components/ResultView";
 import { SandboxedHtmlPreview } from "@/components/SandboxedHtmlPreview";
 import { ToolWorkspace, type WorkspaceProps } from "@/components/ToolWorkspace";
@@ -102,9 +101,6 @@ function scrollProgress(element: Element) {
 }
 
 export default function MarkdownWorkspace(props: WorkspaceProps) {
-  const presentation = useWorkbenchPresentation();
-  const readingView = presentation?.focused && presentation.view === "preview";
-  const narrow = presentation?.narrow ?? false;
   const [retainedResult, setRetainedResult] = useState<ToolResult | null>(null);
   useEffect(() => {
     if (props.result) setRetainedResult(props.result);
@@ -209,9 +205,7 @@ export default function MarkdownWorkspace(props: WorkspaceProps) {
               setScroll(sourceRef.current, progress);
             }}
           >
-            <article
-              className={`${styles.preview} mx-auto w-full ${readingView ? "max-w-[760px]" : narrow ? "" : "max-w-[80%]"}`}
-            >
+            <article className={`${styles.preview} w-full`}>
               <RichContent
                 html={result.html}
                 showToaster

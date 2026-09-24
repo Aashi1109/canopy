@@ -266,16 +266,18 @@ export function ProductHeader({
       <AppContainer
         className={cn(
           "flex max-w-[1440px] flex-nowrap items-center justify-between gap-3 px-4 sm:px-6 lg:px-10",
+          !minimal &&
+            "compact:max-navigation:grid compact:max-navigation:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] compact:max-navigation:gap-2",
           compact ? "min-h-[72px]" : "min-h-[72px] xl:min-h-[88px]",
         )}
       >
         <a
           aria-label="SmartTools home"
-          className="flex shrink-0 items-center gap-2 rounded-lg text-foreground no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="flex w-fit shrink-0 items-center gap-2 rounded-lg text-foreground no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 compact:col-start-1 compact:row-start-1"
           href={publicSiteUrl ? new URL("/", publicSiteUrl).href : "/"}
         >
           <SmartToolsLogoMark className={cn("shrink-0", compact ? "size-10" : "size-10 xl:size-12")} />
-          <span className="flex flex-col gap-0.5">
+          <span className={cn("flex flex-col gap-0.5", !minimal && "navigation:max-xl:hidden")}>
             <Strong className="">
               Smart<span className="text-primary">Tools</span>
             </Strong>
@@ -287,25 +289,26 @@ export function ProductHeader({
 
         {!minimal && showSearch ? <GlobalToolSearch publicSiteUrl={publicSiteUrl} /> : null}
 
-        {!minimal ? (
-          <EcosystemTabFilters
-            currentHref={href}
-            publicSiteUrl={publicSiteUrl}
-            className={account?.user ? "[@media(width<=1024px)]:hidden" : undefined}
-          />
-        ) : null}
+        {!minimal ? <EcosystemTabFilters currentHref={href} publicSiteUrl={publicSiteUrl} /> : null}
 
-        {!minimal ? (
-          <MobileNavigation
-            account={account}
-            publicSiteUrl={publicSiteUrl}
-            currentHref={href}
-            showSearch={showSearch}
-          />
-        ) : null}
-        <div className={cn("shrink-0 items-center gap-2", minimal ? "flex" : "hidden md:flex")}>
-          {!minimal ? <SavedToolsTrigger className="h-10 rounded-full" /> : null}
-          {actions}
+        <div className="flex shrink-0 items-center gap-2 compact:col-start-3 compact:row-start-1 compact:justify-self-end">
+          <div
+            className={cn(
+              "shrink-0 items-center gap-2",
+              minimal ? "flex" : "hidden compact:flex compact:max-xl:[&_button>.truncate]:hidden",
+            )}
+          >
+            {!minimal ? <SavedToolsTrigger className="hidden h-10 rounded-full navigation:inline-flex" /> : null}
+            {actions}
+          </div>
+          {!minimal ? (
+            <MobileNavigation
+              account={account}
+              publicSiteUrl={publicSiteUrl}
+              currentHref={href}
+              showSearch={showSearch}
+            />
+          ) : null}
         </div>
       </AppContainer>
     </ScrollAwareHeader>

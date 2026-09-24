@@ -50,7 +50,7 @@ Do not create a standalone file for a one-use wrapper, interface, constant, or t
 
 ## Shared Code and Dependencies
 
-- Reuse an existing helper when it has the same responsibility; do not force unrelated behavior into it merely to avoid a new file.
+- Reuse an existing helper when it has the same responsibility; do not force unrelated behavior into it merely to avoid a new file. Don't also go creating a new file for only a single function.
 - Keep capabilities in application-owned folders. Extract a package only when a real second application or service needs it.
 - Declare runtime and development dependencies in the root `package.json`.
 - Use pnpm only. Add dependencies with `pnpm add <package>`; do not hand-edit `pnpm-lock.yaml`.
@@ -151,12 +151,6 @@ For documentation-only changes, review the diff and verify that documented paths
 ## Commit and Pull Request Guidelines
 
 Use short imperative commit subjects; `feat:`, `fix:`, and `chore:` prefixes are preferred but not required. Pull requests should name affected route scopes and modules, link relevant issues, list verification commands, include screenshots for visible UI changes, and call out environment or database changes.
-
-## Reference Basis
-
-- [OpenAI Codex `AGENTS.md` guidance](https://developers.openai.com/codex/guides/agents-md)
-- [Next.js project structure and colocation](https://nextjs.org/docs/app/getting-started/project-structure)
-- [Git rules for generated and temporary files](https://git-scm.com/docs/gitignore)
 
 <!-- BEGIN:nextjs-agent-rules -->
 

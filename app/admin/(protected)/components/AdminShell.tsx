@@ -48,12 +48,12 @@ export function AdminShell({
           <Caption className="border-l border-white/15 pl-3 text-on-ink-muted">Admin</Caption>
         </div>
         <div className="flex items-center gap-3">
-          <Caption className="hidden rounded-full bg-white/10 px-3 py-1.5 text-on-ink-muted sm:inline-flex">
+          <Caption className="hidden rounded-full bg-white/10 px-3 py-1.5 text-on-ink-muted compact:inline-flex">
             CONTROL PLANE
           </Caption>
           <AccountNavigation
             isAdminPage
-            className="max-sm:[&_button>.truncate]:hidden [&_a]:border-white/15 [&_a]:bg-white/10 [&_a]:text-on-ink [&_a:hover]:bg-white/15"
+            className="max-compact:[&_button>.truncate]:hidden [&_a]:border-white/15 [&_a]:bg-white/10 [&_a]:text-on-ink [&_a:hover]:bg-white/15"
             returnTo={appHref("/admin")}
             publicSiteUrl={publicSiteUrl}
             user={user}

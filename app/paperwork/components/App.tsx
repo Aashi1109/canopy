@@ -421,7 +421,7 @@ export default function App({
                     Start invoice
                   </Button>
                   <Button
-                    className="md:hidden"
+                    className="compact:hidden"
                     onClick={() => setActiveDialog("clear")}
                     size="lg"
                     variant="danger-subtle"

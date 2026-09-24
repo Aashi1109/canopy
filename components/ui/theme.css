@@ -1,5 +1,10 @@
 @source ".";
 
+@theme static {
+  --breakpoint-compact: 36rem;
+  --breakpoint-navigation: 62.5rem;
+}
+
 @theme {
   --color-accent-text: #0052cc;
   --font-sans: var(--font-geist, Geist), ui-sans-serif, system-ui, sans-serif;

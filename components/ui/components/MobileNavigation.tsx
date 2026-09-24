@@ -3,11 +3,12 @@
 import { subdomainHref } from "../../../lib/routing/subdomains.ts";
 import { ArrowLeft, LogOut, Menu, Shield, UserRound, X } from "lucide-react";
 import { SavedToolsTrigger } from "./SavedTools.tsx";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { GlobalToolSearch } from "./GlobalToolSearch.tsx";
 import { SITE_NAVIGATION_ITEMS, useSignOut, type AccountNavigationProps } from "./AccountNavigation.tsx";
 import { cn } from "../lib/utils.ts";
+import { matchBreakpoint } from "../lib/breakpoints.ts";
 
 const linkClass =
   "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-base font-medium text-foreground no-underline outline-none hover:bg-accent hover:text-accent-foreground hover:[&_svg]:text-current focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:text-primary";
@@ -67,7 +68,7 @@ export function MobileNavigation({
   }, [panel]);
 
   useEffect(() => {
-    const desktop = window.matchMedia("(min-width: 768px)");
+    const desktop = matchBreakpoint({ min: "navigation" });
     const reset = () => {
       if (desktop.matches) setPanel(null);
     };
@@ -98,7 +99,7 @@ export function MobileNavigation({
   }, [panel]);
 
   return (
-    <div ref={root} className="flex shrink-0 items-center gap-2 md:hidden">
+    <div ref={root} className="flex shrink-0 items-center gap-2 navigation:hidden">
       {showSearch ? (
         <GlobalToolSearch
           publicSiteUrl={publicSiteUrl}
@@ -120,14 +121,14 @@ export function MobileNavigation({
         aria-controls={panel === "menu" ? menuId : undefined}
         className={cn(
           "flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-input bg-card text-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring",
-          user ? "px-2.5" : "w-11",
+          user ? "px-2.5 compact:w-11 compact:px-0" : "w-11",
         )}
         onClick={() => setPanel((previous) => (previous === "menu" ? null : "menu"))}
       >
         {user ? (
           <span
             aria-hidden="true"
-            className="grid size-7 place-items-center rounded-full bg-accent text-[11px] font-semibold text-primary"
+            className="grid size-7 place-items-center rounded-full bg-accent text-[11px] font-semibold text-primary compact:hidden"
           >
             {initials}
           </span>
@@ -143,7 +144,10 @@ export function MobileNavigation({
             <>
               <div
                 aria-hidden="true"
-                className={cn("fixed inset-x-0 bottom-0 z-40 md:hidden", panel === "search" && "bg-black/[0.19]")}
+                className={cn(
+                  "fixed inset-x-0 bottom-0 z-40 navigation:hidden",
+                  panel === "search" && "bg-black/[0.19]",
+                )}
                 style={{ top: position.top }}
                 onPointerDown={() => setPanel(null)}
               />
@@ -151,12 +155,17 @@ export function MobileNavigation({
                 <div
                   ref={menu}
                   id={menuId}
-                  className="fixed inset-x-0 bottom-0 z-[60] overflow-y-auto overscroll-contain border-b border-border bg-card px-4 py-5 text-foreground shadow-lg md:hidden"
-                  style={{ top: position.top }}
+                  className="fixed inset-x-0 bottom-0 z-[60] overflow-y-auto overscroll-contain border-b border-border bg-card px-4 py-5 text-foreground shadow-lg compact:bottom-auto compact:left-auto compact:right-4 compact:mt-2 compact:w-80 compact:max-h-[var(--navigation-menu-height)] compact:rounded-xl compact:border navigation:hidden"
+                  style={
+                    {
+                      top: position.top,
+                      "--navigation-menu-height": `${position.availableHeight}px`,
+                    } as CSSProperties
+                  }
                 >
                   <p className="text-xl font-semibold">Explore SmartTools</p>
                   <p className="mt-1 text-sm text-muted-foreground">Find a tool. Get something done.</p>
-                  <nav aria-label="Mobile site navigation" className="mt-3">
+                  <nav aria-label="Site navigation menu" className="mt-3">
                     {SITE_NAVIGATION_ITEMS.map(({ href, label, icon: Icon }) => (
                       <a
                         key={href}
