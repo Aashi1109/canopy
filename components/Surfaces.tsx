@@ -3,6 +3,7 @@
 import {
   Overline,
   InlineCode,
+  P,
   Muted,
   H2,
   Caption,
@@ -710,6 +711,7 @@ type GeneratedListProps<Item> = {
   getValue: (item: Item) => string;
   items: readonly Item[];
   renderAction?: (item: Item, index: number) => ReactNode;
+  variant?: "code" | "text";
 };
 
 function GeneratedList<Item>({
@@ -719,6 +721,7 @@ function GeneratedList<Item>({
   getValue,
   items,
   renderAction,
+  variant = "code",
 }: GeneratedListProps<Item>) {
   const longestLine = items.reduce((longest, item) => {
     const content = `${getValue(item)}\n${getDescription?.(item) ?? ""}`;
@@ -730,7 +733,10 @@ function GeneratedList<Item>({
       <ol
         className="grid min-w-0 gap-2 p-4 font-mono text-code"
         style={{
-          gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, calc(${longestLine}ch + 8rem)), 1fr))`,
+          gridTemplateColumns:
+            variant === "text"
+              ? "minmax(0, 1fr)"
+              : `repeat(auto-fill, minmax(min(100%, calc(${longestLine}ch + 8rem)), 1fr))`,
         }}
       >
         {items.map((item, index) => {
@@ -739,9 +745,13 @@ function GeneratedList<Item>({
             <li className="flex min-w-0 items-center gap-3 rounded-lg bg-muted/55 px-3 py-2" key={getId(item)}>
               <Caption className="shrink-0 font-sans text-muted-foreground">{getLabel(item)}</Caption>
               <div className="min-w-0 flex-1">
-                <InlineCode className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                  {getValue(item)}
-                </InlineCode>
+                {variant === "text" ? (
+                  <P className="whitespace-pre-wrap [overflow-wrap:anywhere]">{getValue(item)}</P>
+                ) : (
+                  <InlineCode className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                    {getValue(item)}
+                  </InlineCode>
+                )}
                 {description ? (
                   <Muted className="mt-1 whitespace-pre-wrap font-sans text-muted-foreground [overflow-wrap:anywhere]">
                     {description}

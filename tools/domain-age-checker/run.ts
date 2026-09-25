@@ -60,24 +60,23 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const event = (action: string): unknown =>
     events.find((candidate) => candidate.eventAction === action)?.eventDate ?? null;
 
+  const record = {
+    domain: data.ldhName ?? domain,
+    ...((ctx.settings.showRegistrationDate ?? true) ? { registered: event("registration") } : {}),
+    ...((ctx.settings.showExpiryDate ?? true) ? { expires: event("expiration") } : {}),
+    updated: event("last changed"),
+    status: data.status ?? [],
+    nameservers: Array.isArray(data.nameservers)
+      ? data.nameservers.flatMap((server: unknown) =>
+          isRecord(server) && typeof server.ldhName === "string" ? [server.ldhName] : [],
+        )
+      : [],
+  };
+
   return {
     render: "text",
-    text: JSON.stringify(
-      {
-        domain: data.ldhName ?? domain,
-        ...((ctx.settings.showRegistrationDate ?? true) ? { registered: event("registration") } : {}),
-        ...((ctx.settings.showExpiryDate ?? true) ? { expires: event("expiration") } : {}),
-        updated: event("last changed"),
-        status: data.status ?? [],
-        nameservers: Array.isArray(data.nameservers)
-          ? data.nameservers.flatMap((server: unknown) =>
-              isRecord(server) && typeof server.ldhName === "string" ? [server.ldhName] : [],
-            )
-          : [],
-      },
-      null,
-      2,
-    ),
+    text: JSON.stringify(record, null, 2),
+    downloadName: "domain-registration.json",
   };
 };
 

@@ -7,7 +7,7 @@ export default {
   keywords: ["case", "camelcase", "snake_case", "kebab-case", "uppercase", "title case", "convert"],
   name: "Text Case Converter",
   description: "Convert text between common naming and prose cases.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
     label: "Text to convert",

@@ -39,8 +39,8 @@ export default {
   content: {
     howToUse: [
       "Paste the original version in the first field and the changed version in the second.",
-      "Compare. Lines are aligned with a longest-common-subsequence pass, so one edited line shows as a single removal plus a single addition instead of shifting everything below it.",
-      "Read the markers: two leading spaces mean unchanged, a leading `-` means the line exists only in the original, a leading `+` means it exists only in the changed text.",
+      "Click Compare text to see both versions aligned side by side. Removed lines appear on the left with a minus; added lines appear on the right with a plus.",
+      "Choose Edit text to return to both editors and compare again. Matching text is reported as No differences, with both versions still visible.",
       "Copy or download the marked-up result to paste into a review comment or a ticket.",
     ],
     limitations: [

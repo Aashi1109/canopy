@@ -24,7 +24,8 @@ export default {
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Check domain rating" },
-  capabilities: { network: true },
+  capabilities: { network: true, copy: true, download: true },
+  resultView: { default: "preview" },
   workbenchMark: { text: "DR" },
   labels: {
     empty: "Enter a public domain to look up its Ahrefs Domain Rating.",

@@ -14,6 +14,10 @@ const inputVariants = cva(
         md: "h-11 px-4 text-sm",
         lg: "h-12 px-[18px] text-[15px]",
       },
+      variant: {
+        default: "",
+        expression: "h-[68px] text-center font-mono text-[28px]",
+      },
     },
     defaultVariants: {
       size: "default",
@@ -28,16 +32,26 @@ type InputProps = Omit<React.ComponentProps<"input">, "size"> &
     suffix?: React.ReactNode;
   };
 
-function Input({ className, code = false, size = "default", type, leadingIcon, suffix, ...props }: InputProps) {
+function Input({
+  className,
+  code = false,
+  size = "default",
+  variant = "default",
+  type,
+  leadingIcon,
+  suffix,
+  ...props
+}: InputProps) {
   const control = (
     <input
       type={type}
       data-slot="input"
       data-size={size}
+      data-variant={variant}
       data-leading-icon={leadingIcon ? "true" : undefined}
       data-suffix={suffix ? "true" : undefined}
       className={cn(
-        inputVariants({ size }),
+        inputVariants({ size, variant }),
         code && "font-mono",
         leadingIcon && (typeof leadingIcon === "string" && leadingIcon.length === 1 ? "pl-7" : "pl-8"),
         suffix &&

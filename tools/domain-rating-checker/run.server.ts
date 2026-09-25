@@ -12,9 +12,9 @@ import config from "@/lib/config/config.ts";
 
 import { isIP } from "node:net";
 
-import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
+import type { DomainRatingResult } from "./result.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
@@ -75,7 +75,7 @@ function normalizeDomainRatingTarget(value: unknown): string {
   return domain;
 }
 
-export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
+export const run: ToolRun<Settings> = async (ctx): Promise<DomainRatingResult> => {
   const target = normalizeDomainRatingTarget(ctx.input.text);
   const endpoint = new URL(AHREFS_DOMAIN_RATING_URL);
   endpoint.search = new URLSearchParams({ target, output: "json" }).toString();
@@ -108,16 +108,15 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   let payload: unknown;
   try {
     payload = await response.json();
-  } catch {
-    throw new ToolError("upstream-invalid", "Ahrefs returned an invalid response.");
+  } catch (e) {
+    throw new ToolError("upstream-invalid", `Ahrefs returned an invalid response.`);
   }
-
   if (!isRecord(payload) || !isRecord(payload.domain_rating)) {
     throw new ToolError("upstream-invalid", "Ahrefs returned an invalid response.");
   }
   const rating = payload.domain_rating.domain_rating;
   const license = payload.domain_rating.license;
-  const warning = payload.domain_rating.warning;
+  const warning = payload.domain_rating.warning ?? null;
   if (
     typeof rating !== "number" ||
     !Number.isFinite(rating) ||
@@ -134,6 +133,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
 
   return {
     render: "text",
+    domainRating: { target, score: rating, license: license.trim(), warning: warning?.trim() || null },
     text: [
       `Target: ${target}`,
       `Domain Rating: ${rating}`,

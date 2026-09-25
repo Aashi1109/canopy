@@ -497,7 +497,7 @@ function ToolWorkspaceSlot(): ReactElement {
     <Suspense fallback={null}>
       <Workspace
         key={chrome.workspaceKey}
-        disabled={running && runtime.result === null}
+        disabled={chrome.spec.trigger.mode !== "live" && running && runtime.result === null}
         error={runtime.error || undefined}
         input={runtime.input}
         lifecycle={runtime.lifecycle}

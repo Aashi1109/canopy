@@ -8,7 +8,7 @@ export default {
   keywords: ["cron", "crontab", "schedule", "parse", "explain", "validate"],
   name: "Cron Expression Parser",
   description: "Validate and explain a five-field cron expression.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "fields",
     label: "Cron Expression",
@@ -34,6 +34,7 @@ export default {
   },
   workbenchMark: { text: "CRN?" },
   labels: {
+    result: "Schedule explained",
     empty: "Enter a five-field cron expression to parse it.",
     ready: "Cron schedule is ready.",
     running: "Parsing cron expression…",
@@ -41,14 +42,14 @@ export default {
   content: {
     howToUse: [
       "Paste the five-field expression: minute, hour, day of month, month, weekday.",
-      "Parse. Each field is range-checked and the result restates the schedule in words — the quickest way to catch a field written in the wrong position.",
+      "Parse to see when the task will run in plain language. The field breakdown explains what each part of the expression means.",
       "An out-of-range or unsupported field names the field that failed, so you know which of the five to fix.",
     ],
     limitations: [
       "Five fields only. A leading seconds field (Quartz, some job runners) or a trailing year field is rejected.",
       "Supported syntax is *, */step, single numbers, ranges, and comma-separated lists. Named months and weekdays (JAN, MON), step-on-range (1-30/2), and the L, W, #, and ? specifiers are not accepted.",
       "Weekday accepts 0–7 with both 0 and 7 meaning Sunday.",
-      "Day-of-month and weekday are validated independently; the OR relationship between them when both are restricted is not spelled out in the description.",
+      "When both day-of-month and weekday are restricted, the task runs when either matches. The explanation calls out this rule.",
       "No next-run times are computed here, and no timezone is applied.",
     ],
     faq: [

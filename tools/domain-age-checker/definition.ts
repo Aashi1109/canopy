@@ -15,6 +15,7 @@ export default {
   description: "Query public RDAP data for domain registration details.",
   layout: "stacked",
   outputLanguage: "json",
+  resultView: { default: "preview", previewLabel: "Preview" },
   input: {
     kind: "fields",
     label: "Domain",
@@ -46,18 +47,18 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Check domain age" },
-  capabilities: { network: true },
+  capabilities: { network: true, copy: true, download: true },
   workbenchMark: { text: "AGE" },
   labels: {
-    empty: "Enter a public domain to look up its RDAP registration record.",
-    ready: "RDAP registration record is ready.",
+    empty: "Enter a domain to see when it was registered and when it expires.",
+    ready: "Domain registration details are ready.",
     running: "Looking up domain registration…",
   },
   content: {
     howToUse: [
       "Enter a domain. A full URL works too — the hostname is extracted, lowercased, and a leading www. is dropped before the query.",
       "Run the check. The domain is looked up against the public RDAP bootstrap service, which forwards it to the registry responsible for that TLD.",
-      "Read the returned JSON: enabled date fields come straight from the registry, alongside its status codes and delegated nameservers.",
+      "Read the Preview for the domain's current registration age, dates, status explanations, and nameservers. Switch to Raw for the exact JSON record.",
       "Compare enabled date fields against the age and renewal timing you expected — a lapsed expiry is the usual cause of a domain going dark.",
     ],
     limitations: [

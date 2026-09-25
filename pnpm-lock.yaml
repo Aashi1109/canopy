@@ -26,6 +26,9 @@ importers:
       '@codemirror/autocomplete':
         specifier: 6.20.3
         version: 6.20.3
+      '@codemirror/commands':
+        specifier: 6.10.4
+        version: 6.10.4
       '@codemirror/lang-css':
         specifier: ^6.3.1
         version: 6.3.1
@@ -56,6 +59,9 @@ importers:
       '@codemirror/legacy-modes':
         specifier: ^6.5.4
         version: 6.5.4
+      '@codemirror/lint':
+        specifier: 6.9.7
+        version: 6.9.7
       '@codemirror/search':
         specifier: 6.7.1
         version: 6.7.1
@@ -170,6 +176,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      codemirror-lang-mermaid:
+        specifier: 0.5.0
+        version: 0.5.0
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -4741,6 +4750,9 @@ packages:
   cluster-key-slot@1.1.2:
     resolution: {integrity: sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==}
     engines: {node: '>=0.10.0'}
+
+  codemirror-lang-mermaid@0.5.0:
+    resolution: {integrity: sha512-Taw/2gPCyNArQJCxIP/HSUif+3zrvD+6Ugt7KJZ2dUKou/8r3ZhcfG8krNTZfV2iu8AuGnymKuo7bLPFyqsh/A==}
 
   codemirror@6.0.2:
     resolution: {integrity: sha512-VhydHotNW5w1UGK0Qj96BwSk/Zqbp9WbnyK2W/eVMv4QyF41INRGpjUhFJY7/uDNuudSc33a/PKr4iDqRduvHw==}
@@ -12430,6 +12442,12 @@ snapshots:
   clsx@2.1.1: {}
 
   cluster-key-slot@1.1.2: {}
+
+  codemirror-lang-mermaid@0.5.0:
+    dependencies:
+      '@codemirror/language': 6.12.4
+      '@lezer/highlight': 1.2.3
+      '@lezer/lr': 1.4.10
 
   codemirror@6.0.2:
     dependencies:

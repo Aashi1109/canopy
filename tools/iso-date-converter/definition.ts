@@ -7,7 +7,7 @@ export default {
   keywords: ["iso 8601", "date", "utc", "unix", "timestamp", "convert", "timezone"],
   name: "ISO Date Converter",
   description: "Normalize date input and show ISO, UTC, local, and Unix values.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "fields",
     label: "Date Input",

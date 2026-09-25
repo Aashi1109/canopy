@@ -124,6 +124,14 @@ test("unknown languages preserve the source with a plain-text fallback", async (
   expect(state.doc.toString()).toBe(code);
 });
 
+test("Mermaid flowchart source receives native keyword and label highlighting", async () => {
+  const code = 'flowchart LR\n  A["Start"] --> B["End"]\n  %% Keep the source intact';
+  const classesAt = await highlightsFor(code, "mermaid");
+  expect(classesAt(code.indexOf("flowchart"))).toMatch(/tok-typeName/);
+  expect(classesAt(code.indexOf("Start"))).toMatch(/tok-string/);
+  expect(classesAt(code.indexOf("%%"))).toMatch(/tok-comment/);
+});
+
 async function yamlDocument(code, language = "yaml") {
   const state = EditorState.create({ doc: code, extensions: [await loadCodeEditorLanguage(language)] });
   const tree = ensureSyntaxTree(state, state.doc.length, 500);

@@ -1,5 +1,5 @@
 /**
- * Moved verbatim from the `dns-checker` case in `lib/devtools/format-json.ts`:
+ * Adapted from the `dns-checker` case in `lib/devtools/format-json.ts`:
  * the same `normalizeDomain`, the same closed record-type allowlist, the same
  * DNS-over-HTTPS endpoint and query parameters, the same ten-second timeout,
  * and the same structured/raw output shapes.
@@ -15,35 +15,47 @@
  */
 
 import { isRecord } from "../../lib/devtools/shared/json.ts";
+import { createTablePreview } from "../../lib/devtools/shared/table-preview.ts";
 import { normalizeDomain } from "../../lib/devtools/shared/url.ts";
-import type { ToolResult } from "../../lib/tool-framework/result.ts";
+import type { ToolResult, ToolVerdict } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
+import { DNS_RECORD_TYPES } from "./definition.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-const ALLOWED_TYPES = new Set(["A", "AAAA", "MX", "TXT", "NS", "CNAME"]);
+const ALLOWED_TYPES = new Set<string>(DNS_RECORD_TYPES);
 const LOOKUP_TIMEOUT_MS = 10_000;
+const RECORD_TYPE_NAMES: Readonly<Record<number, string>> = {
+  1: "A",
+  2: "NS",
+  5: "CNAME",
+  15: "MX",
+  16: "TXT",
+  28: "AAAA",
+};
+
+function answerType(answer: Record<string, unknown>, queriedType: string): string {
+  return typeof answer.type === "number" && Number.isInteger(answer.type) && answer.type > 0
+    ? (RECORD_TYPE_NAMES[answer.type] ?? `TYPE${answer.type}`)
+    : queriedType;
+}
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const domain = normalizeDomain(ctx.input.text);
-  const recordFilter = ctx.settings.recordFilter ?? "all";
-  const types =
-    recordFilter === "all"
-      ? [
-          ...new Set(
-            ctx.settings.types
-              .split(",")
-              .map((type) => type.trim().toUpperCase())
-              .filter(Boolean),
-          ),
-        ]
-      : [recordFilter];
+  const types = [
+    ...new Set(
+      ctx.settings.types
+        .split(",")
+        .map((type) => type.trim().toUpperCase())
+        .filter(Boolean),
+    ),
+  ];
   if (!types.length || types.some((type) => !ALLOWED_TYPES.has(type))) {
     throw new ToolError(
       "record-type-unsupported",
       "DNS record types may only include A, AAAA, MX, TXT, NS, and CNAME.",
-      "Use a comma-separated list drawn from those six types.",
+      "Select one or more of those six record types.",
     );
   }
   const records = await Promise.all(
@@ -86,14 +98,6 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   );
   ctx.signal.throwIfAborted();
 
-  if (ctx.settings.recordView === "raw") {
-    return {
-      render: "text",
-      text: JSON.stringify(Object.fromEntries(records), null, 2),
-      downloadName: "dns-records.json",
-    };
-  }
-
   const includeTtl = ctx.settings.includeTtl;
   const rows = records.flatMap(([type, data]) => {
     const answers = Array.isArray(data.Answer) ? data.Answer : [];
@@ -101,14 +105,142 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       if (!isRecord(answer)) return `${type}\t—\tInvalid record`;
       const ttl = includeTtl && typeof answer.TTL === "number" ? String(answer.TTL) : "—";
       const value = typeof answer.data === "string" ? answer.data : JSON.stringify(answer.data ?? "");
-      return `${type}\t${ttl}\t${value}`;
+      return `${answerType(answer, type)}\t${ttl}\t${value}`;
     });
   });
 
+  const preview = createTablePreview(["Type", "Name", "Value", ...(includeTtl ? ["TTL (seconds)"] : [])]);
+  const seen = new Set<string>();
+  let hasWarning = false;
+  let failedLookups = 0;
+  let notFoundLookups = 0;
+  const statusRows = records.map(([type, data]) => {
+    const answers = Array.isArray(data.Answer) ? data.Answer : [];
+    let invalidAnswers = data.Answer !== undefined && !Array.isArray(data.Answer);
+    let answerCount = 0;
+    for (const answer of answers) {
+      if (!isRecord(answer) || answer.data === undefined || answer.data === null) {
+        invalidAnswers = true;
+        continue;
+      }
+      if (
+        answer.type !== undefined &&
+        (typeof answer.type !== "number" || !Number.isInteger(answer.type) || answer.type <= 0 || answer.type > 65535)
+      ) {
+        invalidAnswers = true;
+        continue;
+      }
+      const actualType = answerType(answer, type);
+      const name = typeof answer.name === "string" && answer.name ? answer.name : domain;
+      const value = typeof answer.data === "string" ? answer.data : JSON.stringify(answer.data);
+      const ttl =
+        typeof answer.TTL === "number" && Number.isFinite(answer.TTL) && answer.TTL >= 0 ? String(answer.TTL) : "—";
+      answerCount += 1;
+      const key = JSON.stringify([actualType, name.toLowerCase().replace(/\.$/, ""), value]);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      preview.append([actualType, name, value, ...(includeTtl ? [ttl] : [])]);
+    }
+
+    const status =
+      typeof data.Status === "number" && Number.isInteger(data.Status) && data.Status >= 0
+        ? data.Status
+        : data.Status === undefined && Array.isArray(data.Answer)
+          ? 0
+          : null;
+    if (status === 3) {
+      hasWarning = true;
+      notFoundLookups += 1;
+      return [
+        type,
+        "Domain not found",
+        "The resolver reports that this name does not exist (DNS status 3, NXDOMAIN). Check the spelling.",
+      ];
+    }
+    if (status !== null && status !== 0) {
+      hasWarning = true;
+      failedLookups += 1;
+      const reason =
+        status === 2 ? "could not complete the lookup" : status === 5 ? "refused the lookup" : "returned an error";
+      return [
+        type,
+        "Resolver failed",
+        `The resolver ${reason} (DNS status ${status}). Try again; this does not mean the domain has no records.`,
+      ];
+    }
+    if (status === null || (invalidAnswers && answerCount === 0)) {
+      hasWarning = true;
+      failedLookups += 1;
+      return [
+        type,
+        "Invalid response",
+        "The resolver response could not be read reliably. Try again or inspect the raw response.",
+      ];
+    }
+    if (data.TC === true || invalidAnswers) {
+      hasWarning = true;
+      return [
+        type,
+        "Incomplete response",
+        data.TC === true
+          ? `The resolver truncated its response; ${answerCount} readable answers are shown. Try again or inspect the raw response.`
+          : `${answerCount} readable answers are shown; invalid answer entries were skipped. Try again or inspect the raw response.`,
+      ];
+    }
+    return answerCount
+      ? [
+          type,
+          "Records returned",
+          `${answerCount} answer${answerCount === 1 ? "" : "s"} returned. Aliases may appear under their actual record type.`,
+        ]
+      : [
+          type,
+          "No records",
+          `The resolver returned no ${type} answers. This alone does not indicate a problem with the domain.`,
+        ];
+  });
+
+  const recordCount = `${seen.size} DNS record${seen.size === 1 ? "" : "s"}`;
+  const lookupFailed = failedLookups === records.length && seen.size === 0;
+  const verdict: ToolVerdict =
+    notFoundLookups === records.length && seen.size === 0
+      ? {
+          level: "warn",
+          label: `Domain not found: ${domain}`,
+          detail: "The public resolver could not find this name. Check the domain spelling and try again.",
+        }
+      : hasWarning
+        ? {
+            level: lookupFailed ? "error" : "warn",
+            label: `DNS lookup ${lookupFailed ? "failed" : "warning"} for ${domain}`,
+            detail: `${recordCount} returned. Some lookups were unsuccessful or incomplete; see the affected rows before relying on these results.`,
+          }
+        : seen.size
+          ? {
+              level: "ok",
+              label: `${recordCount} found for ${domain}`,
+              detail: `Queried ${types.join(", ")}. Repeated answers are shown once.`,
+            }
+          : {
+              level: "ok",
+              label: `No DNS records found for ${domain}`,
+              detail: `The resolver returned no answers for ${types.join(", ")}. Try another record type or verify the domain name.`,
+            };
+  const raw = ctx.settings.recordView === "raw";
+
   return {
     render: "text",
-    text: rows.length ? rows.join("\n") : "NO_RECORDS\t—\tNo matching DNS records",
-    downloadName: "dns-records.txt",
+    text: raw
+      ? JSON.stringify(Object.fromEntries(records), null, 2)
+      : rows.length
+        ? rows.join("\n")
+        : "NO_RECORDS\t—\tNo matching DNS records",
+    downloadName: raw ? "dns-records.json" : "dns-records.txt",
+    tablePreview: preview.result,
+    verdict,
+    sections: [
+      { title: "Lookup status", body: { render: "table", columns: ["Type", "Status", "Details"], rows: statusRows } },
+    ],
   };
 };
 

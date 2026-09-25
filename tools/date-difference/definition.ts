@@ -11,7 +11,7 @@ export default {
   keywords: ["date difference", "elapsed", "duration", "days between", "timestamp", "hours"],
   name: "Date Difference Calculator",
   description: "Calculate elapsed time between two dates.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "fields",
     label: "Start and end dates",
@@ -39,7 +39,7 @@ export default {
         default: "",
         placeholder: "09:00",
         maxLength: 8,
-        pane: "main",
+        pane: "input",
       },
       endTime: {
         kind: "text",
@@ -48,7 +48,7 @@ export default {
         default: "",
         placeholder: "17:30",
         maxLength: 8,
-        pane: "main",
+        pane: "input",
       },
       timezone: {
         kind: "select",
@@ -60,7 +60,8 @@ export default {
           { label: "Browser local time", value: "local" },
           { label: "UTC", value: "utc" },
         ],
-        pane: "main",
+        pane: "input",
+        span: "full",
       },
       exactDuration: {
         kind: "toggle",

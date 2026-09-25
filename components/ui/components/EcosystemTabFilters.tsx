@@ -106,40 +106,43 @@ function EcosystemMenu({ group, onClose }: { group: Ecosystem; onClose: () => vo
   const showsCategories = group.id !== "documents" && group.categories.length > 0;
 
   return (
-    <div
-      className="absolute top-full left-1/2 z-50 w-[390px] max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-hidden xl:top-[36px] xl:left-0 xl:translate-x-0 rounded-xl border border-border bg-card p-3 shadow-[0_16px_40px_rgb(17_18_20_/_14%)]"
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) onClose();
-      }}
-      role="menu"
-    >
-      <div className="flex items-start justify-between pb-2">
-        <div>
-          <Strong className="block text-foreground">{group.label} tools</Strong>
-          <Caption className="mt-0.5 block text-muted-foreground">
-            {showsCategories ? "Choose a category to see every tool." : "Create, complete, and export paperwork."}
-          </Caption>
-        </div>
-        <span className="rounded-full bg-muted px-2 py-1 font-caption text-overline font-normal text-muted-foreground">
-          {group.count} tools
-        </span>
-      </div>
-      {showsCategories ? (
-        <CategoryList categories={group.categories} />
-      ) : group.tools.length ? (
-        <ToolPreviewList tools={group.tools} />
-      ) : (
-        <div className="flex min-h-20 items-center justify-center gap-2 text-xs text-muted-foreground">
-          <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> Loading tools
-        </div>
-      )}
-      <a
-        className="mt-2 flex items-center gap-1.5 font-caption text-caption font-semibold text-primary no-underline hover:underline"
-        href={group.href}
+    <div className="absolute top-full left-1/2 z-50 -mt-2 w-[390px] max-w-[calc(100vw-2rem)] -translate-x-1/2 pt-2 xl:top-[36px] xl:left-0 xl:translate-x-0">
+      {/* The transparent top padding connects the trigger and panel for pointer movement. */}
+      <div
+        className="overflow-hidden rounded-xl border border-border bg-card p-3 shadow-[0_16px_40px_rgb(17_18_20_/_14%)]"
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) onClose();
+        }}
+        role="menu"
       >
-        View all {group.count} {group.label.toLowerCase()} tools{" "}
-        <ArrowUpRight aria-hidden="true" className="size-3.5" />
-      </a>
+        <div className="flex items-start justify-between pb-2">
+          <div>
+            <Strong className="block text-foreground">{group.label} tools</Strong>
+            <Caption className="mt-0.5 block text-muted-foreground">
+              {showsCategories ? "Choose a category to see every tool." : "Create, complete, and export paperwork."}
+            </Caption>
+          </div>
+          <span className="rounded-full bg-muted px-2 py-1 font-caption text-overline font-normal text-muted-foreground">
+            {group.count} tools
+          </span>
+        </div>
+        {showsCategories ? (
+          <CategoryList categories={group.categories} />
+        ) : group.tools.length ? (
+          <ToolPreviewList tools={group.tools} />
+        ) : (
+          <div className="flex min-h-20 items-center justify-center gap-2 text-xs text-muted-foreground">
+            <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> Loading tools
+          </div>
+        )}
+        <a
+          className="mt-2 flex items-center gap-1.5 font-caption text-caption font-semibold text-primary no-underline hover:underline"
+          href={group.href}
+        >
+          View all {group.count} {group.label.toLowerCase()} tools{" "}
+          <ArrowUpRight aria-hidden="true" className="size-3.5" />
+        </a>
+      </div>
     </div>
   );
 }

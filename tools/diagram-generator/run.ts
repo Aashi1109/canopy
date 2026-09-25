@@ -39,7 +39,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
 
   const { default: mermaid } = await import("mermaid");
   ctx.signal.throwIfAborted();
-  mermaid.initialize({ securityLevel: "strict", startOnLoad: false });
+  mermaid.initialize({ securityLevel: "strict", startOnLoad: false, suppressErrorRendering: true });
 
   const id = `canopy-diagram-${bytesToHex(getCrypto().getRandomValues(new Uint8Array(8)))}`;
   let svg: string;

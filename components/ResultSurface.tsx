@@ -17,6 +17,8 @@ export interface ResultSurfaceProps {
   result: ToolResult | null;
   /** Display-only snapshot while a replacement is prepared; never used for export actions. */
   retainedResult?: ToolResult | null;
+  /** Tool-owned readable preview; Raw and export actions retain the original result. */
+  renderPreview?: (result: ToolResult) => ReactNode;
   renderResult?: (result: ToolResult) => ReactNode;
   renderResultActions?: (result: ToolResult) => ReactNode;
   running?: boolean;
@@ -32,6 +34,7 @@ export function ResultSurface({
   initialJsonView,
   result,
   retainedResult,
+  renderPreview,
   renderResult,
   renderResultActions,
   running = false,
@@ -39,7 +42,8 @@ export function ResultSurface({
   title = "Result",
   variant,
 }: ResultSurfaceProps) {
-  const [resultView, setResultView] = useState<"raw" | "preview">("raw");
+  const [resultView, setResultView] = useState<"raw" | "preview">(spec.resultView?.default ?? "raw");
+  const resultViews = spec.resultView?.default === "preview" ? ["preview", "raw"] : ["raw", "preview"];
   const visibleResult = result ?? retainedResult;
   const tablePreview =
     !renderResult && visibleResult && "tablePreview" in visibleResult ? visibleResult.tablePreview : undefined;
@@ -54,7 +58,7 @@ export function ResultSurface({
     !renderResult &&
     ((visibleResult?.render === "text" && spec.outputLanguage === "markdown") ||
       (visibleResult?.render === "code" && visibleResult.language === "markdown"));
-  const hasPreview = Boolean(structuredPreview || markdownPreview);
+  const hasPreview = Boolean((visibleResult && renderPreview) || structuredPreview || markdownPreview);
   const retaining = !result && Boolean(retainedResult);
   const state = visibleResult ? "ready" : error ? "error" : running ? "loading" : "empty";
   const updateStatus = visibleResult
@@ -79,7 +83,9 @@ export function ResultSurface({
     Boolean(cardJson || (result?.render !== "json-tree" && (spec.capabilities?.copy || spec.capabilities?.download)));
   const jsonHeader = result?.render === "json-tree" && !cardJson ? <span className="sr-only">{title}</span> : undefined;
   const content = visibleResult ? (
-    renderResult ? (
+    renderPreview && resultView === "preview" ? (
+      renderPreview(visibleResult)
+    ) : renderResult ? (
       renderResult(visibleResult)
     ) : (
       <ResultView
@@ -111,10 +117,14 @@ export function ResultSurface({
             <>
               {hasPreview ? (
                 <TabsList aria-label="Result view" variant="pills">
-                  <TabsTrigger value="raw">Raw</TabsTrigger>
-                  <TabsTrigger value="preview">
-                    {jsonPreview ? "Tree" : tablePreview && !htmlTablePreview ? "Table" : "Preview"}
-                  </TabsTrigger>
+                  {resultViews.map((view) => (
+                    <TabsTrigger key={view} value={view}>
+                      {view === "raw"
+                        ? "Raw"
+                        : (spec.resultView?.previewLabel ??
+                          (jsonPreview ? "Tree" : tablePreview && !htmlTablePreview ? "Table" : "Preview"))}
+                    </TabsTrigger>
+                  ))}
                 </TabsList>
               ) : null}
               {result && renderResultActions ? (
@@ -161,7 +171,7 @@ export function ResultSurface({
         variant={variant}
       >
         {hasPreview
-          ? ["raw", "preview"].map((view) => (
+          ? resultViews.map((view) => (
               <TabsContent className="min-h-0 flex-col data-[state=active]:flex" key={view} value={view}>
                 {content}
               </TabsContent>

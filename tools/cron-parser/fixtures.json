@@ -8,7 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
-        "output": "0 9 * * 1-5\nat minute 0 of hour 9; day *; month *; weekday 1-5",
+        "output": "At 09:00, Monday through Friday.\n\nCron expression: 0 9 * * 1-5\n\nWhat each part means:\nMinute (0): At the start of the hour.\nHour (9): During the 09:00 hour.\nDay of month (*): Every day of the month.\nMonth (*): Every month.\nDay of week (1-5): Monday through Friday.\n\nTimes use the timezone configured in your scheduler. The expression itself does not include a timezone.",
         "render": "text"
       }
     }

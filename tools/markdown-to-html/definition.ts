@@ -7,7 +7,7 @@ export default {
   keywords: ["markdown", "html", "convert", "md", "render", "commonmark", "gfm"],
   name: "Markdown to HTML",
   description: "Convert Markdown source to HTML.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
     language: "markdown",

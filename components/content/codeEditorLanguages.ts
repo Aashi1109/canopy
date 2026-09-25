@@ -1,4 +1,4 @@
-import { StreamLanguage, syntaxTree } from "@codemirror/language";
+import { HighlightStyle, StreamLanguage, syntaxHighlighting, syntaxTree } from "@codemirror/language";
 import type { Extension } from "@codemirror/state";
 import { Decoration, ViewPlugin, type EditorView, type ViewUpdate } from "@codemirror/view";
 import type { Tree } from "@lezer/common";
@@ -134,6 +134,23 @@ async function importLanguage(language: string): Promise<Extension> {
       return (await import("@codemirror/lang-markdown")).markdown();
     case "sql":
       return (await import("@codemirror/lang-sql")).sql();
+    case "mermaid": {
+      // Reuse the community grammar also used by Mermaid's own documentation editor.
+      const { mermaid, foldByIndent, mindmapTags, flowchartTags, sequenceTags } =
+        await import("codemirror-lang-mermaid");
+      const { mermaidFallbackHighlighting } = await import("./mermaidHighlighting");
+      return [
+        mermaid(),
+        mermaidFallbackHighlighting,
+        foldByIndent(),
+        syntaxHighlighting(
+          HighlightStyle.define([
+            { tag: Object.values(mindmapTags), color: "var(--syntax-string)" },
+            { tag: [flowchartTags.orientation, flowchartTags.link, sequenceTags.arrow], color: "var(--primary)" },
+          ]),
+        ),
+      ];
+    }
     case "shell":
     case "sh":
     case "bash":

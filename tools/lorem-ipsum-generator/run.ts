@@ -19,7 +19,14 @@ const LOREM_SENTENCES = [
 ];
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
-  const sentenceCount = ctx.settings.paragraphLength === "short" ? 2 : ctx.settings.paragraphLength === "long" ? 4 : 3;
+  const sentenceCount =
+    ctx.settings.paragraphLength === "custom"
+      ? Math.trunc(ctx.settings.customSentences)
+      : ctx.settings.paragraphLength === "short"
+        ? 2
+        : ctx.settings.paragraphLength === "long"
+          ? 4
+          : 3;
   const text = Array.from({ length: ctx.settings.paragraphs }, (_, index) =>
     Array.from(
       { length: sentenceCount },

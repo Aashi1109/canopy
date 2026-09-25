@@ -5,6 +5,8 @@ import { SyntaxHighlight } from "@/components/content/SyntaxHighlight";
 import { CodeEditor } from "@/components/content/CodeEditor";
 import { WorkbenchShell } from "@/components/ui/components/design-system-components";
 import { SplitStack } from "@/components/Stacks";
+import { GeneratedList } from "@/components/Surfaces";
+import { CopyButton } from "@/components/ResultView";
 import {
   H1,
   H2,
@@ -802,6 +804,13 @@ export default function DesignSystemPage() {
                         <Input id={`input-${size}`} placeholder={`${label} input`} size={size} />
                       </div>
                     ))}
+                    <Field
+                      htmlFor="input-expression"
+                      label="Expression"
+                      description="Prominent, directly editable code values."
+                    >
+                      <Input defaultValue="*/15" variant="expression" />
+                    </Field>
                   </div>
                 </Specimen>
                 <Specimen label="Select inputs">
@@ -1321,6 +1330,29 @@ export default function DesignSystemPage() {
                   <AvatarFallback>L</AvatarFallback>
                 </Avatar>
               </div>
+            </SectionCard>
+
+            <SectionCard>
+              <Specimen label="GeneratedList · paragraph copy cards">
+                <div className="flex h-56 min-h-0 flex-col">
+                  <GeneratedList
+                    getId={(item) => item.id}
+                    getLabel={(item) => item.id}
+                    getValue={(item) => item.text}
+                    items={[
+                      { id: "01", text: "Generated paragraphs use readable body text and wrap inside each copy card." },
+                      {
+                        id: "02",
+                        text: "Each card keeps its own copy action. Bulk copy preserves the complete text and paragraph spacing.",
+                      },
+                    ]}
+                    renderAction={(item) => (
+                      <CopyButton content={item.text} iconOnly label={`Copy paragraph ${item.id}`} />
+                    )}
+                    variant="text"
+                  />
+                </div>
+              </Specimen>
             </SectionCard>
 
             <SectionCard className="xl:col-span-2">

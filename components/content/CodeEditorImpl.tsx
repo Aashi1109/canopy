@@ -1,48 +1,58 @@
 "use client";
 
-import CodeMirror, { ExternalChange } from "@uiw/react-codemirror";
-import { autocompletion } from "@codemirror/autocomplete";
-import { EditorState, type Extension, type Range } from "@codemirror/state";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { Annotation, Compartment, EditorState, type Extension, type Range } from "@codemirror/state";
 import {
   Decoration,
   EditorView,
   MatchDecorator,
   ViewPlugin,
   WidgetType,
+  drawSelection,
+  dropCursor,
+  highlightSpecialChars,
+  keymap,
   lineNumbers,
+  placeholder as editorPlaceholder,
+  rectangularSelection,
   type ViewUpdate,
 } from "@codemirror/view";
 import {
   HighlightStyle,
+  bracketMatching,
   codeFolding,
+  foldKeymap,
   foldGutter,
   foldedRanges,
+  indentOnInput,
   syntaxHighlighting,
   unfoldEffect,
 } from "@codemirror/language";
 import { SearchQuery } from "@codemirror/search";
 import { tags } from "@lezer/highlight";
 import { ChevronDown, ChevronRight, createElement as createIcon } from "lucide";
-import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { CodeEditorHandle, CodeEditorProps } from "./CodeEditor";
 import { loadCodeEditorLanguage } from "./codeEditorLanguages";
+import { scheduleEditorFeatures } from "./deferredEditorFeatures";
 import { indentGuides } from "./indentGuides";
 import { rainbowBrackets } from "./rainbowBrackets";
 
 const EMPTY_EXTENSION: Extension = [];
-const BASIC_SETUP = {
-  lineNumbers: false,
-  foldGutter: false,
-  highlightActiveLine: false,
-  highlightActiveLineGutter: false,
-  highlightSelectionMatches: false,
-  closeBrackets: false,
-  autocompletion: false,
-  completionKeymap: false,
-  searchKeymap: false,
-  syntaxHighlighting: false,
-};
+const EXTERNAL_CHANGE = Annotation.define<boolean>();
+// Keep the editing core independent of UIW/basicSetup, which eagerly imports autocomplete.
+const BASIC_EXTENSIONS = [
+  highlightSpecialChars(),
+  history(),
+  drawSelection(),
+  dropCursor(),
+  EditorState.allowMultipleSelections.of(true),
+  indentOnInput(),
+  bracketMatching(),
+  rectangularSelection(),
+  keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap]),
+];
 
 const COMPLETION_LANGUAGES = new Set([
   "js",
@@ -55,11 +65,10 @@ const COMPLETION_LANGUAGES = new Set([
   "xml",
   "css",
   "sql",
+  "mermaid",
 ]);
 const AUTO_COMPLETION_MAX_LENGTH = 100_000;
-const completionOptions = { activateOnTypingDelay: 150, maxRenderedOptions: 20 };
-const automaticCompletion = autocompletion(completionOptions);
-const manualCompletion = autocompletion({ ...completionOptions, activateOnTyping: false });
+type CompletionExtensions = Awaited<ReturnType<typeof import("./codeEditorCompletions").loadCodeEditorCompletions>>;
 
 class ColorPreviewWidget extends WidgetType {
   constructor(readonly color: string) {
@@ -139,6 +148,7 @@ const editorTheme = EditorView.theme({
   },
   "&.cm-focused": { outline: "none" },
   ".cm-scroller": {
+    height: "100%",
     overflow: "auto",
     overscrollBehavior: "contain",
     fontFamily: "var(--font-mono)",
@@ -311,20 +321,27 @@ export default function CodeEditorImpl({
   "aria-describedby": ariaDescribedBy,
   "aria-invalid": ariaInvalid,
 }: CodeEditorProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const configuration = useMemo(() => new Compartment(), []);
   const [view, setView] = useState<EditorView | null>(null);
+  const [focused, setFocused] = useState(false);
   const [loadedLanguage, setLoadedLanguage] = useState<{ name: string; extension: Extension } | null>(null);
+  const [loadedCompletion, setLoadedCompletion] = useState<{
+    name: string;
+    extensions: CompletionExtensions;
+  } | null>(null);
   const callbacks = useRef({ onChange, onCaretChange, onScroll, maxLength });
   callbacks.current = { onChange, onCaretChange, onScroll, maxLength };
   const languageName = language.trim().toLowerCase();
   const languageExtension = loadedLanguage?.name === languageName ? loadedLanguage.extension : EMPTY_EXTENSION;
   const isReadOnly = readOnly || disabled || !onChange;
-  // Stable extensions reuse native completion results; the length check is constant-time.
+  // Suggestions are optional: editing works before their deferred import resolves.
   const completionExtension =
-    isReadOnly || !COMPLETION_LANGUAGES.has(languageName)
+    isReadOnly || loadedCompletion?.name !== languageName
       ? EMPTY_EXTENSION
       : value.length > AUTO_COMPLETION_MAX_LENGTH
-        ? manualCompletion
-        : automaticCompletion;
+        ? loadedCompletion.extensions.manual
+        : loadedCompletion.extensions.automatic;
   const searchHighlighting = useMemo(
     () => createSearchHighlighting(searchQuery, activeMatch),
     [searchQuery, activeMatch?.from, activeMatch?.to],
@@ -332,18 +349,42 @@ export default function CodeEditorImpl({
 
   useEffect(() => {
     let active = true;
-    loadCodeEditorLanguage(languageName).then(
-      (extension) => {
-        if (active) setLoadedLanguage({ name: languageName, extension });
-      },
-      () => {
-        if (active) setLoadedLanguage({ name: languageName, extension: EMPTY_EXTENSION });
-      },
-    );
+    // Native language packages can themselves import autocomplete. Defer the whole
+    // language boundary until after page load, not just the completion extension.
+    const cancel = scheduleEditorFeatures(() => {
+      loadCodeEditorLanguage(languageName).then(
+        (extension) => {
+          if (active) setLoadedLanguage({ name: languageName, extension });
+        },
+        () => {
+          if (active) setLoadedLanguage({ name: languageName, extension: EMPTY_EXTENSION });
+        },
+      );
+    });
     return () => {
       active = false;
+      cancel();
     };
   }, [languageName]);
+
+  useEffect(() => {
+    if (!focused || isReadOnly || !COMPLETION_LANGUAGES.has(languageName) || loadedCompletion?.name === languageName)
+      return;
+    let active = true;
+    const cancel = scheduleEditorFeatures(() => {
+      import("./codeEditorCompletions")
+        .then(({ loadCodeEditorCompletions }) => loadCodeEditorCompletions(languageName))
+        .then((extensions) => {
+          if (active) setLoadedCompletion({ name: languageName, extensions });
+        })
+        // A failed optional chunk must not interrupt typing; a later focus retries.
+        .catch(() => {});
+    });
+    return () => {
+      active = false;
+      cancel();
+    };
+  }, [focused, isReadOnly, languageName, loadedCompletion?.name]);
 
   const interactionExtensions = useMemo(
     () => [
@@ -351,7 +392,7 @@ export default function CodeEditorImpl({
         const limit = callbacks.current.maxLength;
         if (
           transaction.docChanged &&
-          !transaction.annotation(ExternalChange) &&
+          !transaction.annotation(EXTERNAL_CHANGE) &&
           !transaction.isUserEvent("undo") &&
           !transaction.isUserEvent("redo") &&
           limit !== undefined &&
@@ -403,6 +444,9 @@ export default function CodeEditorImpl({
       languageExtension,
       completionExtension,
       EditorView.contentAttributes.of(contentAttributes),
+      EditorState.readOnly.of(isReadOnly),
+      EditorView.editable.of(!disabled),
+      ...(placeholder ? [editorPlaceholder(placeholder)] : []),
       ...(showLineNumbers ? [lineNumbers()] : []),
       foldingExtensions,
       ...(wrap === "off" ? [] : [EditorView.lineWrapping]),
@@ -412,6 +456,7 @@ export default function CodeEditorImpl({
     isReadOnly,
     disabled,
     required,
+    placeholder,
     ariaLabel,
     ariaLabelledBy,
     ariaDescribedBy,
@@ -435,10 +480,41 @@ export default function CodeEditorImpl({
   const handleUpdate = useCallback(
     (update: ViewUpdate) => {
       if (update.selectionSet || update.docChanged || update.focusChanged) reportCaret(update.view);
+      if (update.focusChanged) setFocused(update.view.hasFocus);
+      if (update.docChanged && !update.transactions.some((transaction) => transaction.annotation(EXTERNAL_CHANGE))) {
+        callbacks.current.onChange?.(update.state.doc.toString());
+      }
     },
     [reportCaret],
   );
-  const handleChange = useCallback((nextValue: string) => callbacks.current.onChange?.(nextValue), []);
+  const initialEditor = useRef({ value, extensions });
+  useLayoutEffect(() => {
+    if (!containerRef.current) return;
+    const currentView = new EditorView({
+      parent: containerRef.current,
+      doc: initialEditor.current.value,
+      extensions: [
+        BASIC_EXTENSIONS,
+        editorTheme,
+        EditorView.updateListener.of(handleUpdate),
+        configuration.of(initialEditor.current.extensions),
+      ],
+    });
+    setView(currentView);
+    return () => currentView.destroy();
+  }, [configuration, handleUpdate]);
+
+  useEffect(() => {
+    if (view) view.dispatch({ effects: configuration.reconfigure(extensions) });
+  }, [view, configuration, extensions]);
+
+  useEffect(() => {
+    if (!view || value === view.state.doc.toString()) return;
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: value },
+      annotations: EXTERNAL_CHANGE.of(true),
+    });
+  }, [view, value]);
 
   useImperativeHandle<CodeEditorHandle | null, CodeEditorHandle | null>(
     editorRef,
@@ -492,21 +568,5 @@ export default function CodeEditorImpl({
     });
   }, [view, activeMatch?.from, activeMatch?.to, value]);
 
-  return (
-    <CodeMirror
-      className="h-full min-h-0 min-w-0"
-      height="100%"
-      value={value}
-      theme={editorTheme}
-      extensions={extensions}
-      basicSetup={BASIC_SETUP}
-      indentWithTab={false}
-      editable={!disabled}
-      readOnly={isReadOnly}
-      placeholder={placeholder}
-      onChange={handleChange}
-      onUpdate={handleUpdate}
-      onCreateEditor={setView}
-    />
-  );
+  return <div ref={containerRef} className="h-full min-h-0 min-w-0" />;
 }

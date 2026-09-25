@@ -11,6 +11,7 @@ export default {
   input: {
     kind: "text",
     label: "Mermaid diagram code",
+    language: "mermaid",
     placeholder: "flowchart LR\n  A[Input] --> B[Transform] --> C[Output]",
     maxLength: 200_000,
   },
@@ -28,7 +29,7 @@ export default {
       "Start with a diagram type on the first line — `flowchart LR`, `sequenceDiagram`, `classDiagram`, `erDiagram`, `gantt` — because Mermaid decides everything else from it.",
       "Write the body underneath. The diagram re-renders as you pause typing, so a syntax error shows up on the line you just wrote rather than after a long edit.",
       "For flowcharts, set direction in the source: `flowchart LR` runs left to right; `flowchart TD` runs top to bottom.",
-      "Download the SVG when it looks right. It is vector, so it stays sharp in a README, a slide, or a printed design doc.",
+      "Open Download and choose SVG for a diagram that stays sharp at any size, or PNG for an image with a white background.",
     ],
     limitations: [
       "Rendering requires a browser — Mermaid measures text to lay the diagram out, so there is no server-side render and no static export outside a tab.",
@@ -47,7 +48,7 @@ export default {
       },
       {
         q: "How do I get a PNG instead of an SVG?",
-        a: "Download the SVG and convert it. SVG is deliberately the output because it scales without going blurry.",
+        a: "Open the download menu above the preview and choose diagram.png. The image is created in your browser only when you select PNG. Choose diagram.svg if you need a scalable vector file.",
       },
       {
         q: "Can I use a label containing brackets or quotes?",

@@ -35,6 +35,25 @@
         "output": "Integer feugiat nibh sed velit luctus vitae facilisis justo luctus Praesent commodo sem at augue posuere non suscipit ipsum viverra",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "custom sentence count cycles the pool",
+      "settings": {
+        "paragraphs": 1,
+        "startWithLorem": true,
+        "paragraphLength": "custom",
+        "customSentences": 5,
+        "includePunctuation": true
+      },
+      "expected": {
+        "downloadName": "lorem-ipsum.txt",
+        "output": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer feugiat nibh sed velit luctus, vitae facilisis justo luctus. Praesent commodo sem at augue posuere, non suscipit ipsum viverra. Donec vitae lectus sed neque efficitur consequat. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+        "render": "text"
+      }
     }
   ]
 }

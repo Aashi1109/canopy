@@ -137,7 +137,7 @@ test("shared line alignment preserves text diff output and newline handling", as
     settings: {},
     signal: new AbortController().signal,
   });
-  expect(result).toEqual({
+  expect(result).toMatchObject({
     render: "text",
     text: "  alpha\n- beta\n+ beta updated\n  gamma",
     downloadName: "text-diff.txt",

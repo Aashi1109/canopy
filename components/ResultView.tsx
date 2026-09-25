@@ -199,32 +199,56 @@ function ArtifactDownloadButton({
   );
 }
 
-function ArtifactDownloadMenu({ artifacts }: { artifacts?: readonly ToolArtifact[] }) {
+// Deferred exports stay in the UI; serializable tool results still use ToolArtifact.
+export type DownloadableArtifact =
+  | ToolArtifact
+  | {
+      storage: "deferred";
+      name: string;
+      mimeType: string;
+      getContent: () => Promise<BlobPart>;
+    };
+
+export function ArtifactDownloadMenu({ artifacts }: { artifacts?: readonly DownloadableArtifact[] }) {
   const toolKey = useAnalyticsToolKey();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
+  const pendingRef = useRef(false);
   const currentArtifacts = useRef(artifacts);
   currentArtifacts.current = artifacts;
 
-  useEffect(() => setOpen(false), [artifacts]);
+  useEffect(() => {
+    currentArtifacts.current = artifacts;
+    setOpen(false);
+    return () => {
+      currentArtifacts.current = undefined;
+    };
+  }, [artifacts]);
 
-  const download = async (artifact: ToolArtifact) => {
-    if (pending || !currentArtifacts.current?.includes(artifact)) return;
+  const download = async (artifact: DownloadableArtifact) => {
+    if (pendingRef.current || !currentArtifacts.current?.includes(artifact)) return;
+    pendingRef.current = true;
     setOpen(false);
     setPending(true);
     try {
       if (artifact.storage === "inline") {
         downloadResultContent(artifact.content, artifact.mimeType, artifact.name, toolKey);
+      } else if (artifact.storage === "deferred") {
+        const content = await artifact.getContent();
+        if (!currentArtifacts.current?.includes(artifact)) return;
+        downloadResultContent(content, artifact.mimeType, artifact.name, toolKey);
       } else {
         const file = await readArtifact(artifact);
         if (!currentArtifacts.current?.includes(artifact)) return;
         downloadResultContent(file, artifact.mime, artifact.name, toolKey);
       }
     } catch (error) {
+      if (!currentArtifacts.current?.includes(artifact)) return;
       toast.error("Unable to download file", {
         description: error instanceof Error ? error.message : "The generated file is unavailable. Run the tool again.",
       });
     } finally {
+      pendingRef.current = false;
       setPending(false);
     }
   };
@@ -244,7 +268,11 @@ function ArtifactDownloadMenu({ artifacts }: { artifacts?: readonly ToolArtifact
         </Tooltip>
         <DropdownMenuContent align="end" aria-label="Download format">
           {artifacts?.map((artifact, index) => (
-            <DropdownMenuItem key={`${artifact.name}-${index}`} onSelect={() => void download(artifact)}>
+            <DropdownMenuItem
+              key={`${artifact.name}-${index}`}
+              disabled={pending}
+              onSelect={() => void download(artifact)}
+            >
               {artifact.name}
             </DropdownMenuItem>
           ))}

@@ -1,5 +1,7 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
+export const DNS_RECORD_TYPES = ["A", "AAAA", "MX", "TXT", "NS", "CNAME"] as const;
+
 /**
  * `slug` is declared because `slugFromName("DNS & Email Records Checker")` is
  * `dns-and-email-records-checker`, which does not match the folder name. The
@@ -13,7 +15,8 @@ export default {
   keywords: ["dns", "mx", "txt", "spf", "nameserver", "cname", "lookup", "dig"],
   name: "DNS & Email Records Checker",
   description: "Query public DNS-over-HTTPS records.",
-  layout: "stacked",
+  layout: "side-by-side",
+  resultView: { default: "preview", previewLabel: "Preview" },
   input: {
     kind: "fields",
     label: "Domain",
@@ -33,35 +36,19 @@ export default {
       types: {
         kind: "text",
         label: "Record types",
-        help: "Comma-separated. Only A, AAAA, MX, TXT, NS, and CNAME are accepted.",
-        default: "A,AAAA,MX,TXT,NS,CNAME",
-        pane: "main",
+        help: "Select one or more record types to look up.",
+        default: DNS_RECORD_TYPES.join(","),
+        pane: "input",
       },
       recordView: {
         kind: "select",
-        label: "Record view",
-        help: "Structured gives one row per answer; raw returns the resolver's JSON for debugging.",
+        label: "Raw output format",
+        help: "Choose what Raw, Copy, and Download contain. Preview always shows readable records.",
         default: "records",
         choices: [
-          { label: "Structured records", value: "records" },
-          { label: "Raw response", value: "raw" },
+          { label: "Records (tab-separated)", value: "records" },
+          { label: "Resolver response (JSON)", value: "raw" },
         ],
-      },
-      recordFilter: {
-        kind: "select",
-        label: "Record filter",
-        help: "A specific filter overrides Record types and queries only that type.",
-        default: "all",
-        choices: [
-          { label: "All records", value: "all" },
-          { label: "A", value: "A" },
-          { label: "AAAA", value: "AAAA" },
-          { label: "MX", value: "MX" },
-          { label: "TXT", value: "TXT" },
-          { label: "NS", value: "NS" },
-          { label: "CNAME", value: "CNAME" },
-        ],
-        pane: "main",
       },
       recursive: {
         kind: "toggle",
@@ -87,6 +74,7 @@ export default {
   capabilities: { copy: true, download: true, network: true },
   workbenchMark: { text: "DNS" },
   labels: {
+    result: "DNS records",
     empty: "Enter a public domain to look up its DNS records.",
     ready: "DNS lookup results are ready.",
     running: "Looking up public DNS records…",
@@ -95,8 +83,8 @@ export default {
     howToUse: [
       "Enter a domain. A full URL works too — the hostname is extracted, lowercased, and a leading www. is dropped before the query.",
       "Choose the record types you care about: A and AAAA for where the site points, MX and TXT for mail delivery and SPF/DKIM/DMARC, NS for delegation, CNAME for aliases.",
-      "Run the check. Configured types are queried in parallel unless Record filter selects one type, and each answer returns its type, TTL, and value.",
-      "Switch to the raw view when a structured row looks wrong — it shows the resolver's own response, including the status code and whether the answer was authenticated.",
+      "Click Check DNS or press Enter in the domain field. Selected types are queried in parallel, and each answer returns its type, TTL, and value.",
+      "Read the Preview for labeled records and lookup status. Use Raw for exact output, and choose Resolver response (JSON) in settings to inspect the resolver's full response.",
     ],
     limitations: [
       "Queries go to a public DNS-over-HTTPS resolver, so you see what that resolver sees. Split-horizon DNS, internal zones, and freshly changed records may differ from your own view.",

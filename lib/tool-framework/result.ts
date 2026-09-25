@@ -28,6 +28,8 @@ export type ToolTextRender = {
   readonly tablePreview?: ToolTableRender;
   /** Read-only structured view; exports retain the original text. */
   readonly jsonPreview?: ToolJsonTreeRender;
+  /** Aligned comparison view; exports retain the original marked text. */
+  readonly diffPreview?: ToolDiffRender;
   readonly downloadName?: string;
 };
 

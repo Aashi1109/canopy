@@ -7,7 +7,7 @@ export default {
   keywords: ["slug", "url", "permalink", "seo", "kebab case", "handle", "sanitize"],
   name: "Slug Generator",
   description: "Create lowercase URL-safe slugs.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
     label: "Titles to slugify",

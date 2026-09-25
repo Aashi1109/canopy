@@ -7,8 +7,10 @@ export default {
   keywords: ["url", "query string", "parameters", "parse", "json", "utm", "searchparams"],
   name: "URL Query Parser",
   description: "Parse URL query parameters into JSON.",
-  layout: "stacked",
+  layout: "side-by-side",
   outputLanguage: "json",
+  previewLayout: "table",
+  resultView: { default: "preview", previewLabel: "Preview" },
   input: {
     kind: "fields",
     label: "URL or Query String",
@@ -48,6 +50,7 @@ export default {
   capabilities: { copy: true },
   workbenchMark: { text: "?{}" },
   labels: {
+    result: "Query parameters",
     empty: "Enter a URL or query string to inspect its parameters.",
     ready: "Query parameters are ready.",
     running: "Parsing query parameters…",

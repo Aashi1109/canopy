@@ -3,6 +3,7 @@
 import {
   typographyStyles,
   FieldLabel,
+  FieldError,
   Muted,
   Alert,
   AlertDescription,
@@ -19,6 +20,7 @@ import { FileText, Upload } from "lucide-react";
 import { MorphIcon } from "morphicons/react";
 import {
   type ReactNode,
+  type KeyboardEvent,
   type Ref,
   type TextareaHTMLAttributes,
   useEffect,
@@ -46,6 +48,7 @@ const DEFAULT_TEXT_FILE_INPUT = {
 
 interface InputSurfaceProps {
   disabled?: boolean;
+  fieldErrors?: Partial<Record<"text" | "secondary", string>>;
   footer?: ReactNode;
   header?: ReactNode;
   highlightedInput?: ReactNode;
@@ -53,6 +56,7 @@ interface InputSurfaceProps {
   input: WorkspaceInputState;
   inputSpec: ToolInputSpec;
   onInputChange: WorkspaceProps["onInputChange"];
+  onSubmit?: () => void;
   onSourceScroll?: (scroller: HTMLElement) => void;
   sourceRef?: Ref<HTMLElement>;
   variant?: "card" | "panel";
@@ -272,6 +276,7 @@ function PlainSourceTextarea({
 }
 export function WorkspaceInputSurface({
   disabled,
+  fieldErrors,
   footer,
   header,
   highlightedInput,
@@ -279,10 +284,29 @@ export function WorkspaceInputSurface({
   input,
   inputSpec,
   onInputChange,
+  onSubmit,
   onSourceScroll,
   sourceRef,
   variant,
 }: InputSurfaceProps) {
+  const submitOnEnter = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (
+      !onSubmit ||
+      disabled ||
+      event.key !== "Enter" ||
+      event.repeat ||
+      event.defaultPrevented ||
+      event.nativeEvent.isComposing ||
+      event.nativeEvent.keyCode === 229 ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey
+    )
+      return;
+    event.preventDefault();
+    onSubmit();
+  };
   const idPrefix = useId();
   const [inputIssue, setInputIssue] = useState("");
   const [revealedSecrets, setRevealedSecrets] = useState<Readonly<Record<string, boolean>>>({});
@@ -506,6 +530,7 @@ export function WorkspaceInputSurface({
       );
       const fields = inputSpec.fields.map((field, index) => {
         const fieldId = `${idPrefix}-${field.channel}`;
+        const fieldError = fieldErrors?.[field.channel];
         const value = field.channel === "text" ? input.text : (input.secondary ?? "");
         const fieldCodeShaped = Boolean(field.multiline);
         const fieldSurface = singleTextarea ? undefined : field.surface;
@@ -558,6 +583,8 @@ export function WorkspaceInputSurface({
                   )}
                 >
                   <SourceTextarea
+                    aria-describedby={fieldError ? `${fieldId}-error` : undefined}
+                    aria-invalid={Boolean(fieldError)}
                     aria-label={field.label}
                     className={`h-full ${resizableFields ? "min-h-0" : "min-h-28"} ${field.secret ? `[&_textarea]:pr-14 ${revealed ? "" : "[&_textarea]:[-webkit-text-security:disc]"}` : ""}`}
                     disabled={disabled}
@@ -593,23 +620,29 @@ export function WorkspaceInputSurface({
                 </div>
               ) : field.secret ? (
                 <PasswordInput
+                  aria-describedby={fieldError ? `${fieldId}-error` : undefined}
+                  aria-invalid={Boolean(fieldError)}
                   code
                   disabled={disabled}
                   id={fieldId}
                   maxLength={field.maxLength}
                   onChange={(event) => updateValue(event.currentTarget.value)}
+                  onKeyDown={submitOnEnter}
                   placeholder={field.placeholder}
                   required={field.required}
                   value={value}
                 />
               ) : (
                 <Input
+                  aria-describedby={fieldError ? `${fieldId}-error` : undefined}
+                  aria-invalid={Boolean(fieldError)}
                   className="flex-1"
                   code
                   disabled={disabled}
                   id={fieldId}
                   maxLength={field.maxLength}
                   onChange={(event) => updateValue(event.currentTarget.value)}
+                  onKeyDown={submitOnEnter}
                   placeholder={field.placeholder}
                   required={field.required}
                   type="text"
@@ -617,6 +650,7 @@ export function WorkspaceInputSurface({
                 />
               )}
             </div>
+            {fieldError ? <FieldError id={`${fieldId}-error`}>{fieldError}</FieldError> : null}
           </div>
         );
       });

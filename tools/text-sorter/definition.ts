@@ -7,7 +7,7 @@ export default {
   keywords: ["sort", "lines", "alphabetical", "order", "ascending", "descending", "list"],
   name: "Text Sorter",
   description: "Sort lines ascending or descending.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
     label: "Lines of text",

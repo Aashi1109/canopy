@@ -47,11 +47,10 @@
         "primary": "example.com",
         "secondary": ""
       },
-      "name": "queries only the selected record filter",
+      "name": "queries only the selected record type",
       "settings": {
-        "types": "ANY",
+        "types": "MX",
         "recordView": "records",
-        "recordFilter": "MX",
         "recursive": true,
         "includeTtl": true,
         "checkDnssec": false

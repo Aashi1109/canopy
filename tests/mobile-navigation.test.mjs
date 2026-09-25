@@ -49,7 +49,7 @@ test.skipIf(!baseURL)("global mobile navigation and search share one exclusive o
       expect(await page.getByRole("navigation", { name: "Mobile site navigation" }).count()).toBe(0);
       const input = page.getByRole("combobox", { name: "Search all SmartTools" });
       await input.fill("invoice");
-      await page.getByRole("link", { name: /Invoice Generator Documents/ }).waitFor();
+      await page.getByRole("option", { name: /Invoice Generator Documents/ }).waitFor();
       await page.getByRole("button", { name: "Clear search", exact: true }).click();
       expect(await input.inputValue()).toBe("");
       expect(await input.evaluate((node) => node === document.activeElement)).toBe(true);
@@ -70,7 +70,7 @@ test.skipIf(!baseURL)("global mobile navigation and search share one exclusive o
     const query = page.getByRole("combobox", { name: "Search all SmartTools" });
     await query.fill("invoice");
     await page.getByRole("button", { name: "Retry search" }).click();
-    await page.getByRole("link", { name: /Invoice Generator Documents/ }).waitFor();
+    await page.getByRole("option", { name: /Invoice Generator Documents/ }).waitFor();
     expect(await query.inputValue()).toBe("invoice");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.mouse.click(8, 500);
@@ -90,7 +90,7 @@ test.skipIf(!baseURL)("global mobile navigation and search share one exclusive o
       expect(await page.getByRole("navigation", { name: "Tool suites" }).isVisible()).toBe(true);
       await page.getByRole("button", { name: "Search 150+ tools" }).click();
       await page.getByRole("combobox", { name: "Search all SmartTools" }).fill("invoice");
-      await page.getByRole("link", { name: /Invoice Generator Documents/ }).waitFor();
+      await page.getByRole("option", { name: /Invoice Generator Documents/ }).waitFor();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     }
   } finally {

@@ -213,8 +213,11 @@ function SplitStack({
     setAnimateCollapse(true);
     setCollapsed(secondaryHidden ? "secondary" : null);
     if (!stacked) {
-      if (secondaryHidden) secondaryPanelRef.current?.collapse();
-      else secondaryPanelRef.current?.resize(`${100 - size}%`);
+      const frame = requestAnimationFrame(() => {
+        if (secondaryHidden) secondaryPanelRef.current?.collapse();
+        else secondaryPanelRef.current?.resize(`${100 - size}%`);
+      });
+      return () => cancelAnimationFrame(frame);
     }
     // Keep user-resized proportions; only availability or orientation changes move the pane.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -418,7 +421,7 @@ function SplitStack({
         <ResizablePanel
           aria-hidden={inputHidden || collapsed === "primary" || undefined}
           className="min-h-0 min-w-0 overflow-hidden"
-          collapsible={presentation || (collapsible && collapseSide === "primary")}
+          collapsible={inputHidden || (collapsible && collapseSide === "primary")}
           collapsedSize="0%"
           data-split-pane="primary"
           defaultSize={`${initialPrimarySize.current}%`}
@@ -444,7 +447,7 @@ function SplitStack({
         <ResizablePanel
           aria-hidden={previewHidden || collapsed === "secondary" || undefined}
           className="min-h-0 min-w-0 overflow-hidden"
-          collapsible={presentation || secondaryHidden !== undefined || (collapsible && collapseSide === "secondary")}
+          collapsible={previewHidden || secondaryHidden || (collapsible && collapseSide === "secondary")}
           collapsedSize="0%"
           data-split-pane="secondary"
           defaultSize={`${100 - initialPrimarySize.current}%`}

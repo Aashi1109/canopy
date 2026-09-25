@@ -7,7 +7,7 @@ export default {
   keywords: ["whitespace", "trim", "spaces", "blank lines", "indentation", "clean text"],
   name: "Whitespace Remover",
   description: "Remove selected kinds of whitespace.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
     label: "Text input",

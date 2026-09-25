@@ -16,7 +16,19 @@ import type { SettingsSpec } from "./settings";
 export type { ToolApp };
 
 export type ToolSyntaxLanguage =
-  "json" | "xml" | "html" | "yaml" | "javascript" | "typescript" | "css" | "bash" | "sql" | "markdown" | "csv" | "tsv";
+  | "json"
+  | "xml"
+  | "html"
+  | "yaml"
+  | "javascript"
+  | "typescript"
+  | "css"
+  | "bash"
+  | "sql"
+  | "markdown"
+  | "csv"
+  | "tsv"
+  | "mermaid";
 
 /**
  * One field of a multi-field input surface. `channel` names which
@@ -146,6 +158,11 @@ export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   readonly outputLanguage?: ToolSyntaxLanguage;
   /** Table-only previews opt into a bounded scroll area with sticky headers. */
   readonly previewLayout?: "document" | "table";
+  /** Initial result tab and optional name for the structured preview. */
+  readonly resultView?: {
+    readonly default: "raw" | "preview";
+    readonly previewLabel?: string;
+  };
   /** Keep result facts in the status bar without duplicating them as cards. */
   readonly resultStats?: "cards" | "status-only";
   readonly settings: S;

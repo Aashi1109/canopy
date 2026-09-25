@@ -7,7 +7,7 @@ export default {
   keywords: ["reverse", "backwards", "flip", "text", "words", "lines"],
   name: "Text Reverser",
   description: "Reverse characters, words, or lines.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
     label: "Text to reverse",

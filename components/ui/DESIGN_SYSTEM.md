@@ -6,6 +6,7 @@
 
 ### Crop PDF control and completion patterns
 
+- `Input variant="expression"` is the prominent expression-editing control: 68px high with centered 28px monospace text. It retains shared validation, focus, and disabled states; default inputs are unchanged. Use it for directly editable cron-style fields.
 - `Input` accepts decorative `leadingIcon` and `suffix` slots. Keep a visible associated label; adornments are hidden from assistive technology. Compact workbench density preserves space for both slots.
 - `DownloadResult variant="action"` is the flat, divided completion area below retained settings: success identity and metadata, then a full-width download action. The default `card` variant is unchanged.
 - Crop PDF composes the shared PDF workspace/viewer, exact-point fields, review, generated PDF preview, and Edit crop / Crop another PDF recovery. Editing retains the source and settings; completing replaces the run action rather than adding another result panel.
@@ -173,7 +174,9 @@ Five families, all loaded via `next/font/google` in `app/layout.tsx` (`display: 
 
 **Code snippets and outputs:** every displayed code chunk, generated snippet, command, and code-valued output must use the lightweight `SyntaxHighlight` from `components/content/SyntaxHighlight` with an explicit language. Compose it with `CodeBlock` for multiline blocks or `InlineCode` for inline code. Do not add a code editor just for syntax coloring. Keep copy/download values unchanged, preserve the shared safe fallback for unsupported languages or oversized content, and leave ordinary text and identifiers as plain text. Existing interactive code panes retain their own highlighting, search, folding, and virtualization.
 
-**Code editors:** use `CodeEditor` from `components/content/CodeEditor` for editable code and scrollable code results. It lazy-loads CodeMirror and the selected language, reuses incremental syntax trees, and renders visible content with rainbow structural brackets. Brackets in strings and comments retain their syntax color. Subtle indentation guides show nested code blocks, with the active block emphasized while the editor has focus. Guides use bounded visible-line work and stop before wrapped continuation text; CSV and TSV retain their plain tabular layout. The folding gutter collapses supported multiline blocks in editable and read-only editors; click the arrow or the folded ellipsis to expand. Native folding shortcuts remain available, and search reveals matches inside folded blocks. The editor fills a bounded flex/grid container; use `min-h-0` and an explicit parent height so long documents remain virtualized. Set an accessible name, preserve Tab navigation, and use `readOnly` for selectable output. Single-textarea workspaces use the full input panel without an inner card or duplicate label. Boxed editors are reserved for workspaces with additional input fields. `SourceTextarea` selects this editor when given a `language`; text tool definitions declare `input.language` (or each multiline field's `language`) and `outputLanguage`. JSON, XML/HTML, YAML, JavaScript/TypeScript, CSS, shell, SQL, Markdown, CSV, and TSV have language support. Every CodeEditor language shows a top-right icon-only **Wrap lines** toggle with an accessible pressed state. CSV and TSV inputs start with wrapping on and their outputs start off; all other languages start off for both inputs and outputs. The on state uses `bg-accent` (`#e8f0ff`) with `text-accent-foreground`; the off state uses the muted input-icon color. Tooltips read **Text wrapping on · Click to disable** or **Text wrapping off · Click to enable**. The display choice lasts only for that editor instance; regenerated results reset to wrapping off. Copy/download continue to use the original result regardless of wrapping. Static inline samples can still compose `CodeBlock` with `SyntaxHighlight`; its 65,536-character plain-text fallback does not limit the CodeMirror editors.
+**Code editors:** use `CodeEditor` from `components/content/CodeEditor` for editable code and scrollable code results. It lazy-loads CodeMirror and the selected language, reuses incremental syntax trees, and renders visible content with rainbow structural brackets. Brackets in strings and comments retain their syntax color. Subtle indentation guides show nested code blocks, with the active block emphasized while the editor has focus. Guides use bounded visible-line work and stop before wrapped continuation text; CSV and TSV retain their plain tabular layout. The folding gutter collapses supported multiline blocks in editable and read-only editors; click the arrow or the folded ellipsis to expand. Native folding shortcuts remain available, and search reveals matches inside folded blocks. The editor fills a bounded flex/grid container; use `min-h-0` and an explicit parent height so long documents remain virtualized. Set an accessible name, preserve Tab navigation, and use `readOnly` for selectable output. Single-textarea workspaces use the full input panel without an inner card or duplicate label. Boxed editors are reserved for workspaces with additional input fields. `SourceTextarea` selects this editor when given a `language`; text tool definitions declare `input.language` (or each multiline field's `language`) and `outputLanguage`. JSON, XML/HTML, YAML, JavaScript/TypeScript, CSS, shell, SQL, Markdown, CSV, TSV, and Mermaid have language support. Every CodeEditor language shows a top-right icon-only **Wrap lines** toggle with an accessible pressed state. CSV and TSV inputs start with wrapping on and their outputs start off; all other languages start off for both inputs and outputs. The on state uses `bg-accent` (`#e8f0ff`) with `text-accent-foreground`; the off state uses the muted input-icon color. Tooltips read **Text wrapping on · Click to disable** or **Text wrapping off · Click to enable**. The display choice lasts only for that editor instance; regenerated results reset to wrapping off. Copy/download continue to use the original result regardless of wrapping. Static inline samples can still compose `CodeBlock` with `SyntaxHighlight`; its 65,536-character plain-text fallback does not limit the CodeMirror editors.
+
+**Editor loading and suggestions:** the editing core loads independently of autocomplete. Language support waits until the page finishes loading and the browser is idle, because some language packages include completion code. Suggestions initialize only after a supported editable editor receives focus, through the same cancellable idle boundary. Read-only editors never activate suggestions. Loading failures leave text editable; late features preserve the document, cursor and undo history. Keep future completion providers behind this shared boundary. Mermaid uses the community `codemirror-lang-mermaid` grammar for supported diagram families, basic viewport-only coloring for additional types, and a separate deferred keyword/snippet provider. Ctrl+Space opens suggestions; automatic suggestions are disabled for documents above 100,000 characters, retaining manual completion.
 
 ```tsx
 <H1>Tool catalog</H1>
@@ -459,6 +462,14 @@ Page settings can opt into `presets` to use the shared `Select` for All pages,
 Odd pages, Even pages, or Custom ranges, with a range input only for custom
 selection. Watermark uses this pattern; preview selection updates the same value.
 
+### Comparison workspaces
+
+`DiffWorkspace` in `components/DiffWorkspace.tsx` shares the JSON Diff and Text
+Diff workflow: equal source editors with individual Paste actions, an aligned
+comparison with change counts, and an Edit action that restores the inputs and
+focus. Tool definitions supply editor language and labels. Optional settings
+remain in the collapsible side panel; copy/download use the original result.
+
 ### Generated value lists
 
 `GeneratedList` in `components/Surfaces.tsx` lays out independent, copyable
@@ -469,6 +480,11 @@ same column widths instead of stretching their last items across unused space.
 Items retain their source order, numbering, and copy controls. Multiline values
 preserve line breaks, and long unbroken values wrap without horizontal overflow.
 Only the results scroll; the result header and bulk actions stay visible.
+
+Use `variant="text"` for prose such as generated paragraphs. It uses readable
+body typography and one full-width card per item, with the same numbering,
+wrapping, and copy actions. The default `code` variant keeps the compact grid
+and code styling for generated strings and identifiers.
 
 ### Generated media output cards
 

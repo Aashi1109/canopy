@@ -28,13 +28,24 @@ export default {
       paragraphLength: {
         kind: "select",
         label: "Paragraph length",
-        help: "Choose two, three, or four sentences per paragraph.",
+        help: "Choose a preset length, or Custom for your own sentence count.",
         default: "medium",
         choices: [
           { label: "Short", value: "short" },
           { label: "Medium", value: "medium" },
           { label: "Long", value: "long" },
+          { label: "Custom", value: "custom" },
         ],
+      },
+      customSentences: {
+        kind: "number",
+        label: "Sentences per paragraph",
+        help: "Choose between 1 and 100 whole sentences per paragraph.",
+        default: 3,
+        min: 1,
+        max: 100,
+        step: 1,
+        visibleWhen: { key: "paragraphLength", equals: "custom" },
       },
       includePunctuation: {
         kind: "toggle",
@@ -55,13 +66,13 @@ export default {
   content: {
     howToUse: [
       "Pick how many paragraphs of filler you need, between 1 and 50.",
+      "Choose Short (2 sentences), Medium (3), Long (4), or Custom (1–100 sentences per paragraph).",
       "Generate, then copy the text into your mockup, template, or CMS draft.",
-      "Each paragraph is three sentences long, and consecutive paragraphs start at a different sentence so the block does not look copy-pasted.",
     ],
     limitations: [
-      "Paragraph length is fixed at three sentences; there is no word- or character-count target.",
+      "Custom length counts sentences, not words or characters. Each paragraph can contain up to 100 sentences.",
       "The sentence pool is small and cycles, so long runs repeat. That is fine for layout, less so for testing text-diff or search behaviour.",
-      "The output is deterministic — the same paragraph count always produces the same text.",
+      "The output is deterministic — the same settings always produce the same text.",
     ],
     faq: [
       {

@@ -7,7 +7,7 @@ export default {
   keywords: ["timestamp", "unix", "epoch", "iso 8601", "utc", "date", "milliseconds", "convert"],
   name: "Timestamp Converter",
   description: "Convert Unix timestamps or date text to standard formats.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "fields",
     label: "Unix Timestamp or Date",

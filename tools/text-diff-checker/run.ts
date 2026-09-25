@@ -7,12 +7,29 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 const LINE_MARKERS = { context: "  ", removed: "- ", added: "+ " } as const;
 
-export const run: ToolRun<Settings> = (ctx): ToolResult => ({
-  render: "text",
-  text: diffLines(ctx.input.text, ctx.input.secondary ?? "")
-    .map(({ kind, text }) => `${LINE_MARKERS[kind]}${text}`)
-    .join("\n"),
-  downloadName: "text-diff.txt",
-});
+export const run: ToolRun<Settings> = (ctx): ToolResult => {
+  const lines = diffLines(ctx.input.text, ctx.input.secondary ?? "");
+  const added = lines.filter(({ kind }) => kind === "added").length;
+  const removed = lines.filter(({ kind }) => kind === "removed").length;
+  return {
+    render: "text",
+    text: lines.map(({ kind, text }) => `${LINE_MARKERS[kind]}${text}`).join("\n"),
+    downloadName: "text-diff.txt",
+    diffPreview: {
+      render: "diff",
+      lines,
+      leftLabel: "Original text",
+      rightLabel: "Changed text",
+    },
+    verdict: {
+      level: "ok",
+      label:
+        added || removed
+          ? `${added} ${added === 1 ? "line" : "lines"} added · ${removed} ${removed === 1 ? "line" : "lines"} removed`
+          : "No differences",
+      detail: "Comparing changed text against original text. Whitespace is significant; line endings are normalized.",
+    },
+  };
+};
 
 export default run;

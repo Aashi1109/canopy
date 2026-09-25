@@ -240,9 +240,14 @@ function TextFileDropTarget({ children, props }: { children: ReactNode; props: W
 
 export function ToolWorkspace(
   props: WorkspaceProps &
-    Pick<ResultSurfaceProps, "initialJsonView" | "renderResult" | "renderResultActions" | "retainedResult"> & {
+    Pick<
+      ResultSurfaceProps,
+      "initialJsonView" | "renderPreview" | "renderResult" | "renderResultActions" | "retainedResult"
+    > & {
       highlightedInput?: ReactNode;
       inputHighlightMode?: "persistent" | "preview";
+      inputFieldErrors?: Partial<Record<"text" | "secondary", string>>;
+      onInputSubmit?: () => void;
       onSourceScroll?: (scroller: HTMLElement) => void;
       renderInputSettings?: () => ReactNode;
       sourceRef?: Ref<HTMLElement>;
@@ -260,11 +265,17 @@ export function ToolWorkspace(
   const hasMainSettings = !settingsOnly && fields.some((field) => field.pane === "main");
   const hasSideSettings = settingsOnly ? fields.length > 0 : fields.some((field) => (field.pane ?? "side") === "side");
   const hasInputSettings = fields.some((field) => field.pane === "input");
+  const inputSettingsPadding =
+    props.spec.input.kind === "fields" && props.spec.input.fields.every((field) => !field.multiline)
+      ? ""
+      : props.spec.input.kind === "text"
+        ? "px-4 pt-4"
+        : "px-4 pb-4";
   const inputSettings = props.renderInputSettings ? (
     props.renderInputSettings()
   ) : hasInputSettings ? (
     <SettingsPanel
-      className={`shrink-0 grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] px-4 ${props.spec.input.kind === "text" ? "pt-4" : "pb-4"}`}
+      className={`shrink-0 grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] ${inputSettingsPadding}`}
       disabled={props.disabled}
       layout="grid"
       onChange={props.onSettingChange}
@@ -285,6 +296,7 @@ export function ToolWorkspace(
       initialJsonView={props.initialJsonView}
       result={props.result}
       retainedResult={props.retainedResult}
+      renderPreview={props.renderPreview}
       renderResult={props.renderResult}
       renderResultActions={props.renderResultActions}
       running={props.running}
@@ -303,6 +315,7 @@ export function ToolWorkspace(
         input={
           <WorkspaceInputSurface
             disabled={props.disabled}
+            fieldErrors={props.inputFieldErrors}
             footer={props.spec.input.kind === "fields" ? inputSettings : undefined}
             header={props.spec.input.kind === "text" ? inputSettings : undefined}
             highlightedInput={props.highlightedInput}
@@ -310,6 +323,7 @@ export function ToolWorkspace(
             input={props.input}
             inputSpec={props.spec.input}
             onInputChange={props.onInputChange}
+            onSubmit={props.onInputSubmit}
             onSourceScroll={props.onSourceScroll}
             sourceRef={props.sourceRef}
             variant={surfaceVariant}

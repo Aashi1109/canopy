@@ -2,7 +2,7 @@
 import { Muted, Small, Strong } from "./typography.tsx";
 import { LoaderCircle, Search, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../lib/utils.ts";
 import { matchBreakpoint } from "../lib/breakpoints.ts";
@@ -33,13 +33,54 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
   const [state, setState] = useState<SearchState>("idle");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [retry, setRetry] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const resultsId = useId();
+  const hintsId = `${resultsId}-hints`;
   const current = query.trim() === debouncedQuery.trim();
   const loading = !!query.trim() && (!current || state === "loading" || state === "idle");
+  const visibleResults = isOpen && query.trim() && current && state === "ready" ? results : [];
+  const selectedIndex = visibleResults.length ? Math.min(activeIndex, visibleResults.length - 1) : -1;
+  const optionId = (index: number) => `${resultsId}-${index}`;
+
+  function navigateResults(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (
+      event.nativeEvent.isComposing ||
+      event.nativeEvent.keyCode === 229 ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      selectedIndex < 0 ||
+      (event.target !== inputRef.current && !listRef.current?.contains(event.target as Node))
+    )
+      return;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex(
+        (selectedIndex + (event.key === "ArrowDown" ? 1 : -1) + visibleResults.length) % visibleResults.length,
+      );
+      inputRef.current?.focus({ preventScroll: true });
+    } else if (event.key === "Enter" && event.target === inputRef.current) {
+      event.preventDefault();
+      listRef.current?.querySelectorAll<HTMLAnchorElement>("a")[selectedIndex]?.click();
+    }
+  }
+
+  useEffect(() => {
+    const selected = listRef.current?.children[selectedIndex];
+    const scroll = scrollRef.current;
+    if (!selected || !scroll) return;
+    const itemBounds = selected.getBoundingClientRect();
+    const scrollBounds = scroll.getBoundingClientRect();
+    if (itemBounds.top < scrollBounds.top) scroll.scrollTop -= scrollBounds.top - itemBounds.top;
+    else if (itemBounds.bottom > scrollBounds.bottom) scroll.scrollTop += itemBounds.bottom - scrollBounds.bottom;
+  }, [selectedIndex, results, isOpen]);
 
   useEffect(() => {
     if (isOpen) inputRef.current?.focus({ preventScroll: true });
@@ -62,7 +103,7 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
       if (!rootRef.current?.contains(node) && !popupRef.current?.contains(node)) setOpen(false);
     }
     function escape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !event.isComposing && event.keyCode !== 229) {
         setOpen(false);
         requestAnimationFrame(() => triggerRef.current?.focus({ preventScroll: true }));
       }
@@ -81,6 +122,7 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
       setDebouncedQuery("");
       setResults([]);
       setState("idle");
+      setActiveIndex(0);
       return;
     }
     const timer = window.setTimeout(() => setDebouncedQuery(query), 300);
@@ -101,6 +143,7 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
       .then(({ results: next }) => {
         if (!controller.signal.aborted) {
           setResults(next);
+          setActiveIndex(0);
           setState("ready");
         }
       })
@@ -132,7 +175,9 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
         aria-controls={query.trim() ? resultsId : undefined}
         aria-expanded={!!query.trim()}
         aria-autocomplete="list"
-        aria-haspopup="dialog"
+        aria-haspopup="listbox"
+        aria-activedescendant={selectedIndex >= 0 ? optionId(selectedIndex) : undefined}
+        aria-describedby={query.trim() ? hintsId : undefined}
         aria-label="Search all SmartTools"
         role="combobox"
         autoComplete="off"
@@ -140,7 +185,10 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
           "min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground",
           mobile && "text-base",
         )}
-        onChange={(event) => setQuery(event.currentTarget.value)}
+        onChange={(event) => {
+          setQuery(event.currentTarget.value);
+          setActiveIndex(0);
+        }}
         placeholder="Search 150+ tools"
         ref={inputRef}
         value={query}
@@ -157,6 +205,7 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
             setDebouncedQuery("");
             setResults([]);
             setState("idle");
+            setActiveIndex(0);
             inputRef.current?.focus();
           }}
           type="button"
@@ -173,14 +222,13 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
   const feedback = query.trim() ? (
     <div
       className={cn(
-        "overflow-y-auto rounded-lg border border-border bg-card shadow-[0_12px_32px_rgb(17_18_20_/_12%)]",
+        "flex flex-col overflow-hidden rounded-lg border border-border bg-card shadow-[0_12px_32px_rgb(17_18_20_/_12%)]",
         mobile
           ? "mt-2.5 w-full"
           : "absolute top-[56px] left-0 z-50 max-h-[min(480px,70dvh)] w-[360px] compact:max-navigation:left-1/2 compact:max-navigation:-translate-x-1/2",
       )}
       style={mobile ? { maxHeight: `min(320px, 50dvh, ${Math.max(60, mobile.availableHeight - 70)}px)` } : undefined}
-      id={resultsId}
-      role="dialog"
+      role="region"
       aria-label="Tool search results"
     >
       <div role="status" className="sr-only">
@@ -190,45 +238,72 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
             ? "Search is temporarily unavailable"
             : `${results.length} results`}
       </div>
-      {loading ? (
-        <>
-          <SearchSkeleton />
-          <SearchSkeleton />
-          <SearchSkeleton />
-        </>
-      ) : state === "error" ? (
-        <SearchMessage title="Search is temporarily unavailable">
-          <Button variant="outline" onClick={() => setRetry((value) => value + 1)}>
-            Retry search
-          </Button>
-        </SearchMessage>
-      ) : current && state === "ready" && !results.length ? (
-        <SearchMessage title={`No tools match “${debouncedQuery.trim()}”`} />
-      ) : current && results.length ? (
-        <>
+      <div ref={scrollRef} className="min-h-0 overflow-y-auto overscroll-contain">
+        {loading ? (
+          <>
+            <SearchSkeleton />
+            <SearchSkeleton />
+            <SearchSkeleton />
+          </>
+        ) : state === "error" ? (
+          <SearchMessage title="Search is temporarily unavailable">
+            <Button variant="outline" onClick={() => setRetry((value) => value + 1)}>
+              Retry search
+            </Button>
+          </SearchMessage>
+        ) : current && state === "ready" && !results.length ? (
+          <SearchMessage title={`No tools match “${debouncedQuery.trim()}”`} />
+        ) : visibleResults.length ? (
           <Muted className="border-b border-border px-3 py-2 text-muted-foreground">
             {results.length} {results.length === 1 ? "result" : "results"} for “{debouncedQuery.trim()}”
           </Muted>
-          {results.map((result) => (
+        ) : null}
+        <div ref={listRef} id={resultsId} role="listbox" aria-label="Matching tools" aria-busy={loading}>
+          {visibleResults.map((result, index) => (
             <a
-              className="group/search-result flex min-h-[58px] items-center gap-2.5 border-b border-border px-3 py-2 no-underline outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              id={optionId(index)}
+              role="option"
+              aria-selected={index === selectedIndex}
+              tabIndex={-1}
+              className="group/search-result flex min-h-[58px] items-center gap-2.5 border-b border-border px-3 py-2 no-underline outline-none hover:bg-accent hover:text-accent-foreground aria-selected:bg-accent aria-selected:text-accent-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
               href={publicSiteUrl ? new URL(result.href, publicSiteUrl).href : result.href}
               key={result.toolId}
+              onPointerMove={() => setActiveIndex(index)}
+              onFocus={() => setActiveIndex(index)}
               onClick={() => setOpen(false)}
             >
               <ToolIcon icon={result.icon} />
               <span className="min-w-0">
-                <Strong className="block truncate text-foreground group-hover/search-result:text-accent-foreground">
+                <Strong className="block truncate text-foreground group-hover/search-result:text-accent-foreground group-aria-selected/search-result:text-accent-foreground">
                   {result.name}
                 </Strong>
-                <Small className="block truncate text-muted-foreground group-hover/search-result:text-accent-foreground">
+                <Small className="block truncate text-muted-foreground group-hover/search-result:text-accent-foreground group-aria-selected/search-result:text-accent-foreground">
                   {result.category}
                 </Small>
               </span>
             </a>
           ))}
-        </>
-      ) : null}
+        </div>
+      </div>
+      <div
+        id={hintsId}
+        aria-label="Search keyboard shortcuts"
+        className="flex shrink-0 flex-wrap items-center gap-3 border-t border-border px-3 py-2 text-xs text-muted-foreground [&>span]:inline-flex [&>span]:items-center [&>span]:gap-1 [&_kbd]:rounded-sm [&_kbd]:border [&_kbd]:border-border [&_kbd]:bg-muted [&_kbd]:px-1 [&_kbd]:py-0.5 [&_kbd]:font-sans [&_kbd]:text-[11px] [&_kbd]:font-medium"
+      >
+        {visibleResults.length ? (
+          <>
+            <span>
+              <kbd>↑ ↓</kbd> Move
+            </span>
+            <span>
+              <kbd>↵</kbd> Open
+            </span>
+          </>
+        ) : null}
+        <span>
+          <kbd>Esc</kbd> Close
+        </span>
+      </div>
     </div>
   ) : null;
 
@@ -243,6 +318,7 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
             )
       }
       ref={rootRef}
+      onKeyDown={navigateResults}
     >
       {mobile ? (
         <button
@@ -264,7 +340,7 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
       ) : (
         <button
           aria-expanded="false"
-          aria-haspopup="dialog"
+          aria-haspopup="listbox"
           className="flex h-[46px] w-full items-center gap-2 rounded-full border border-border bg-muted px-3 text-[13px] text-muted-foreground outline-none hover:border-input focus-visible:ring-2 focus-visible:ring-ring"
           onClick={() => setOpen(true)}
           ref={triggerRef}

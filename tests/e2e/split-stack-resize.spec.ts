@@ -42,6 +42,66 @@ for (const viewport of [
         await expect.poll(width).toBeLessThan(pointerWidth - 5);
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width);
       });
+
+      test(`${tool} caps split resizing and restores the split after focused views`, async ({ page }) => {
+        await page.goto(`/devtools/${tool}`, { waitUntil: "networkidle" });
+        const minimum = tool === "json-viewer" ? 35 : 15;
+        const maximum = tool === "json-viewer" ? 65 : 80;
+        const separator = page.getByRole("separator", { name: "Resize workspace panels" }).first();
+        const groupId = await separator.locator("..").getAttribute("id");
+        expect(groupId).not.toBeNull();
+        const group = page.locator(`[id="${groupId}"]`);
+        const primary = group.locator(':scope > [data-split-pane="primary"]');
+        const secondary = group.locator(':scope > [data-split-pane="secondary"]');
+        const primaryPercent = async () =>
+          (100 * (await primary.evaluate((element) => element.getBoundingClientRect().width))) /
+          (await group.evaluate((element) => element.getBoundingClientRect().width));
+        const expectPercent = (expected: number) =>
+          expect.poll(async () => Math.abs((await primaryPercent()) - expected)).toBeLessThan(0.25);
+
+        for (const [edge, expected] of [
+          ["left", minimum],
+          ["right", maximum],
+        ] as const) {
+          const handle = await separator.boundingBox();
+          const bounds = await group.boundingBox();
+          expect(handle).not.toBeNull();
+          expect(bounds).not.toBeNull();
+          const y = handle!.y + Math.min(100, handle!.height / 4);
+          await page.mouse.move(handle!.x + handle!.width / 2, y);
+          await page.mouse.down();
+          await page.mouse.move(edge === "left" ? bounds!.x - 50 : bounds!.x + bounds!.width + 50, y, { steps: 8 });
+          await expectPercent(expected);
+          await page.mouse.up();
+          await expectPercent(expected);
+          await expect(primary).toBeVisible();
+          await expect(secondary).toBeVisible();
+        }
+
+        await separator.focus();
+        await page.keyboard.press("Home");
+        await expectPercent(minimum);
+        await page.keyboard.press("End");
+        await expectPercent(maximum);
+        await page.keyboard.press("ArrowLeft");
+        await expect.poll(primaryPercent).toBeLessThan(maximum - 0.5);
+        const resizedPercent = await primaryPercent();
+
+        await page.getByRole("button", { name: "Expand workspace", exact: true }).click();
+        const views = page.getByRole("tablist", { name: "Workspace view" });
+        await expectPercent(resizedPercent);
+        for (const [view, expected] of [
+          ["Input", 100],
+          ["Preview", 0],
+        ] as const) {
+          await views.getByRole("tab", { name: view, exact: true }).click();
+          await expectPercent(expected);
+          await views.getByRole("tab", { name: "Split", exact: true }).click();
+          await expectPercent(resizedPercent);
+          await expect(primary).toBeVisible();
+          await expect(secondary).toBeVisible();
+        }
+      });
     }
 
     test("restoring settings preserves the first drag, responsive size, and collapse recovery", async ({ page }) => {

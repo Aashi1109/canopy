@@ -17,7 +17,7 @@
       },
       "expected": {
         "downloadName": "cron-schedule.txt",
-        "output": "0 9 * * 1-5\nat minute 0 of hour 9; day *; month *; weekday 1-5",
+        "output": "0 9 * * 1-5\nAt 09:00, Monday through Friday.",
         "render": "text"
       }
     },
@@ -38,7 +38,7 @@
       },
       "expected": {
         "downloadName": "cron-schedule.txt",
-        "output": "0 9 * * 1-5\nat minute 0 of hour 9; day *; month *; weekday 1-5\nTimezone: Local time\nLabel: Weekday report",
+        "output": "0 9 * * 1-5\nAt 09:00, Monday through Friday.\nTimezone: Local time\nLabel: Weekday report",
         "render": "text"
       }
     }
