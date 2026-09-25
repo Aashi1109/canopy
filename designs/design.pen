@@ -1,5 +1,5 @@
 {
-  "version": "2.18",
+  "version": "2.19",
   "children": [
     {
       "type": "frame",
@@ -8222,8 +8222,7 @@
                               "effect": {
                                 "type": "shadow",
                                 "shadowType": "outer",
-                                "color": "#0066FF33",
-                                "spread": 3
+                                "color": "#0066FF33"
                               }
                             },
                             "s9iZ9": {
@@ -133211,8 +133210,7 @@
                       "type": "shadow",
                       "shadowType": "outer",
                       "color": "#0000000F",
-                      "blur": 2,
-                      "spread": 1
+                      "blur": 2
                     },
                     {
                       "type": "shadow",
@@ -133366,8 +133364,7 @@
                       "type": "shadow",
                       "shadowType": "outer",
                       "color": "#0000000F",
-                      "blur": 2,
-                      "spread": 1
+                      "blur": 2
                     },
                     {
                       "type": "shadow",
@@ -133561,8 +133558,7 @@
                       "type": "shadow",
                       "shadowType": "outer",
                       "color": "#0000000F",
-                      "blur": 2,
-                      "spread": 1
+                      "blur": 2
                     },
                     {
                       "type": "shadow",
@@ -133788,8 +133784,7 @@
                       "type": "shadow",
                       "shadowType": "outer",
                       "color": "#0000000F",
-                      "blur": 1,
-                      "spread": 1
+                      "blur": 1
                     },
                     {
                       "type": "shadow",
@@ -133840,8 +133835,7 @@
                       "type": "shadow",
                       "shadowType": "outer",
                       "color": "#0000000F",
-                      "blur": 1,
-                      "spread": 1
+                      "blur": 1
                     },
                     {
                       "type": "shadow",
@@ -133892,8 +133886,7 @@
                       "type": "shadow",
                       "shadowType": "outer",
                       "color": "#0000000F",
-                      "blur": 1,
-                      "spread": 1
+                      "blur": 1
                     },
                     {
                       "type": "shadow",
@@ -150822,8 +150815,7 @@
                           "x": 0,
                           "y": 6
                         },
-                        "blur": 18,
-                        "spread": -6
+                        "blur": 18
                       },
                       "layout": "none"
                     },
@@ -150848,8 +150840,7 @@
                           "x": 0,
                           "y": 10
                         },
-                        "blur": 26,
-                        "spread": -8
+                        "blur": 26
                       },
                       "layout": "vertical",
                       "gap": 9,
@@ -150956,8 +150947,7 @@
                           "x": 0,
                           "y": 8
                         },
-                        "blur": 20,
-                        "spread": -6
+                        "blur": 20
                       },
                       "layout": "vertical",
                       "padding": 7,
@@ -151004,8 +150994,7 @@
                           "x": 0,
                           "y": 18
                         },
-                        "blur": 40,
-                        "spread": -10
+                        "blur": 40
                       },
                       "layout": "vertical",
                       "gap": 10,
@@ -151262,8 +151251,7 @@
                           "x": 0,
                           "y": 4
                         },
-                        "blur": 12,
-                        "spread": -2
+                        "blur": 12
                       },
                       "justifyContent": "center",
                       "alignItems": "center",
@@ -151360,8 +151348,7 @@
                           "x": 0,
                           "y": 8
                         },
-                        "blur": 20,
-                        "spread": -4
+                        "blur": 20
                       },
                       "gap": 9,
                       "padding": [
@@ -151425,8 +151412,7 @@
                           "x": 0,
                           "y": 10
                         },
-                        "blur": 24,
-                        "spread": -6
+                        "blur": 24
                       },
                       "layout": "none",
                       "children": [
@@ -151569,8 +151555,7 @@
                           "x": 0,
                           "y": 10
                         },
-                        "blur": 24,
-                        "spread": -6
+                        "blur": 24
                       },
                       "layout": "none",
                       "children": [
@@ -151735,8 +151720,7 @@
                           "x": 0,
                           "y": 10
                         },
-                        "blur": 24,
-                        "spread": -6
+                        "blur": 24
                       },
                       "layout": "none",
                       "children": [
@@ -151852,8 +151836,7 @@
                           "x": 0,
                           "y": 10
                         },
-                        "blur": 24,
-                        "spread": -6
+                        "blur": 24
                       },
                       "layout": "none",
                       "children": [
@@ -155797,8 +155780,7 @@
                           "x": 0,
                           "y": 6
                         },
-                        "blur": 18,
-                        "spread": -6
+                        "blur": 18
                       },
                       "layout": "none"
                     },
@@ -155823,8 +155805,7 @@
                           "x": 0,
                           "y": 10
                         },
-                        "blur": 26,
-                        "spread": -8
+                        "blur": 26
                       },
                       "layout": "vertical",
                       "gap": 9,
@@ -155930,8 +155911,7 @@
                           "x": 0,
                           "y": 18
                         },
-                        "blur": 40,
-                        "spread": -10
+                        "blur": 40
                       },
                       "layout": "vertical",
                       "gap": 10,
@@ -156322,8 +156302,7 @@
                           "x": 0,
                           "y": 8
                         },
-                        "blur": 20,
-                        "spread": -6
+                        "blur": 20
                       },
                       "layout": "vertical",
                       "padding": 7,
@@ -156430,8 +156409,7 @@
                           "x": 0,
                           "y": 10
                         },
-                        "blur": 24,
-                        "spread": -6
+                        "blur": 24
                       },
                       "layout": "none",
                       "children": [
@@ -156553,8 +156531,7 @@
                           "x": 0,
                           "y": 10
                         },
-                        "blur": 24,
-                        "spread": -6
+                        "blur": 24
                       },
                       "layout": "none",
                       "children": [
@@ -156762,8 +156739,7 @@
                           "x": 0,
                           "y": 10
                         },
-                        "blur": 24,
-                        "spread": -6
+                        "blur": 24
                       },
                       "layout": "none",
                       "children": [
@@ -156945,8 +156921,7 @@
                           "x": 0,
                           "y": 10
                         },
-                        "blur": 24,
-                        "spread": -6
+                        "blur": 24
                       },
                       "layout": "none",
                       "children": [
@@ -157105,8 +157080,7 @@
                           "x": 0,
                           "y": 4
                         },
-                        "blur": 12,
-                        "spread": -2
+                        "blur": 12
                       },
                       "justifyContent": "center",
                       "alignItems": "center",
@@ -157203,8 +157177,7 @@
                           "x": 0,
                           "y": 8
                         },
-                        "blur": 20,
-                        "spread": -4
+                        "blur": 20
                       },
                       "gap": 9,
                       "padding": [
@@ -233549,8 +233522,7 @@
                               "x": 0,
                               "y": 6
                             },
-                            "blur": 18,
-                            "spread": -6
+                            "blur": 18
                           },
                           "layout": "none"
                         },
@@ -233575,8 +233547,7 @@
                               "x": 0,
                               "y": 10
                             },
-                            "blur": 26,
-                            "spread": -8
+                            "blur": 26
                           },
                           "layout": "vertical",
                           "gap": 9,
@@ -233683,8 +233654,7 @@
                               "x": 0,
                               "y": 8
                             },
-                            "blur": 20,
-                            "spread": -6
+                            "blur": 20
                           },
                           "layout": "vertical",
                           "padding": 7,
@@ -233731,8 +233701,7 @@
                               "x": 0,
                               "y": 18
                             },
-                            "blur": 40,
-                            "spread": -10
+                            "blur": 40
                           },
                           "layout": "vertical",
                           "gap": 10,
@@ -233989,8 +233958,7 @@
                               "x": 0,
                               "y": 4
                             },
-                            "blur": 12,
-                            "spread": -2
+                            "blur": 12
                           },
                           "justifyContent": "center",
                           "alignItems": "center",
@@ -234087,8 +234055,7 @@
                               "x": 0,
                               "y": 8
                             },
-                            "blur": 20,
-                            "spread": -4
+                            "blur": 20
                           },
                           "gap": 9,
                           "padding": [
@@ -234152,8 +234119,7 @@
                               "x": 0,
                               "y": 10
                             },
-                            "blur": 24,
-                            "spread": -6
+                            "blur": 24
                           },
                           "layout": "none",
                           "children": [
@@ -234296,8 +234262,7 @@
                               "x": 0,
                               "y": 10
                             },
-                            "blur": 24,
-                            "spread": -6
+                            "blur": 24
                           },
                           "layout": "none",
                           "children": [
@@ -234462,8 +234427,7 @@
                               "x": 0,
                               "y": 10
                             },
-                            "blur": 24,
-                            "spread": -6
+                            "blur": 24
                           },
                           "layout": "none",
                           "children": [
@@ -234579,8 +234543,7 @@
                               "x": 0,
                               "y": 10
                             },
-                            "blur": 24,
-                            "spread": -6
+                            "blur": 24
                           },
                           "layout": "none",
                           "children": [
@@ -235169,8 +235132,7 @@
                               "x": 0,
                               "y": 6
                             },
-                            "blur": 18,
-                            "spread": -6
+                            "blur": 18
                           },
                           "layout": "none"
                         },
@@ -235195,8 +235157,7 @@
                               "x": 0,
                               "y": 10
                             },
-                            "blur": 26,
-                            "spread": -8
+                            "blur": 26
                           },
                           "layout": "vertical",
                           "gap": 9,
@@ -235302,8 +235263,7 @@
                               "x": 0,
                               "y": 18
                             },
-                            "blur": 40,
-                            "spread": -10
+                            "blur": 40
                           },
                           "layout": "vertical",
                           "gap": 10,
@@ -235694,8 +235654,7 @@
                               "x": 0,
                               "y": 8
                             },
-                            "blur": 20,
-                            "spread": -6
+                            "blur": 20
                           },
                           "layout": "vertical",
                           "padding": 7,
@@ -235802,8 +235761,7 @@
                               "x": 0,
                               "y": 10
                             },
-                            "blur": 24,
-                            "spread": -6
+                            "blur": 24
                           },
                           "layout": "none",
                           "children": [
@@ -235925,8 +235883,7 @@
                               "x": 0,
                               "y": 10
                             },
-                            "blur": 24,
-                            "spread": -6
+                            "blur": 24
                           },
                           "layout": "none",
                           "children": [
@@ -236134,8 +236091,7 @@
                               "x": 0,
                               "y": 10
                             },
-                            "blur": 24,
-                            "spread": -6
+                            "blur": 24
                           },
                           "layout": "none",
                           "children": [
@@ -236317,8 +236273,7 @@
                               "x": 0,
                               "y": 10
                             },
-                            "blur": 24,
-                            "spread": -6
+                            "blur": 24
                           },
                           "layout": "none",
                           "children": [
@@ -236477,8 +236432,7 @@
                               "x": 0,
                               "y": 4
                             },
-                            "blur": 12,
-                            "spread": -2
+                            "blur": 12
                           },
                           "justifyContent": "center",
                           "alignItems": "center",
@@ -236575,8 +236529,7 @@
                               "x": 0,
                               "y": 8
                             },
-                            "blur": 20,
-                            "spread": -4
+                            "blur": 20
                           },
                           "gap": 9,
                           "padding": [
@@ -329777,6 +329730,658 @@
       },
       "width": 28,
       "height": 28
+    },
+    {
+      "type": "frame",
+      "id": "eXiXQ",
+      "x": 103527,
+      "y": 2061,
+      "name": "Palette generator / Top-left panel redesign",
+      "width": 1000,
+      "fill": "$surface-muted",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": 32,
+      "children": [
+        {
+          "type": "text",
+          "id": "o6HA9",
+          "name": "Design scope",
+          "fill": "$fg-secondary",
+          "content": "PALETTE GENERATOR  /  LEFT WORKSPACE",
+          "fontFamily": "$font-body",
+          "fontSize": 12,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "mAOva",
+          "name": "Design direction",
+          "fill": "$fg-primary",
+          "content": "One palette. Not ten cards.",
+          "fontFamily": "$font-body",
+          "fontSize": 26,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "l7Fzdg",
+          "name": "Local component / Palette column library",
+          "width": "fill_container",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "q1hyT",
+              "name": "Component / Palette color column — select, copy, lock, reorder",
+              "reusable": true,
+              "width": 84,
+              "fill": "$surface",
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "XKkeZ",
+                  "name": "Color / Click to select for editing",
+                  "context": "Click selects this color; selected color editor stays in the existing right panel.",
+                  "width": "fill_container",
+                  "height": 136,
+                  "fill": "#1D849A",
+                  "padding": 10,
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "fTQng",
+                      "name": "Position",
+                      "fill": "#FFFFFF",
+                      "content": "01",
+                      "fontFamily": "$font-body",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "icon",
+                      "id": "UBOm8",
+                      "x": 0,
+                      "y": 0,
+                      "name": "Selected check / Not color alone",
+                      "enabled": false,
+                      "width": 18,
+                      "height": 18,
+                      "icon": "circle-check",
+                      "library": "lucide",
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                },
+                {
+                  "id": "y7f8iA",
+                  "type": "ref",
+                  "ref": "TjqJu",
+                  "name": "Copy HEX / Tooltip and copied feedback",
+                  "width": "fill_container",
+                  "padding": 0,
+                  "context": "Click copies the exact HEX. Tooltip on hover/focus: Copy HEX. On success show Copied for 2 seconds; errors use the shared toast.",
+                  "descendants": {
+                    "DXbTG": {
+                      "content": "#1D849A",
+                      "fontSize": 12,
+                      "fontFamily": "Geist Mono",
+                      "fontWeight": "500",
+                      "fill": "$fg-primary"
+                    }
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "t6YNxZ",
+                  "name": "Compact per-color actions",
+                  "width": "fill_container",
+                  "gap": 4,
+                  "padding": [
+                    0,
+                    0,
+                    6,
+                    0
+                  ],
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "id": "EP9gQ",
+                      "type": "ref",
+                      "ref": "E2CZl",
+                      "name": "Reorder color / Drag or keyboard",
+                      "strokeWidth": 0,
+                      "fill": "$surface",
+                      "context": "Tooltip: Reorder color. Keyboard: Space, arrows, Space; Escape cancels.",
+                      "descendants": {
+                        "IBt8m": {
+                          "icon": "grip-vertical"
+                        }
+                      }
+                    },
+                    {
+                      "id": "sd8Lp",
+                      "type": "ref",
+                      "ref": "E2CZl",
+                      "name": "Lock color / Keep on generation",
+                      "strokeWidth": 0,
+                      "fill": "$surface",
+                      "context": "Tooltip: Lock color. Toggle to keep or release this color when generating variations.",
+                      "descendants": {
+                        "IBt8m": {
+                          "icon": "lock-open"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "HsB3u",
+              "name": "Interaction specification",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "KLcaW",
+                  "name": "Component label",
+                  "fill": "$fg-secondary",
+                  "content": "REUSABLE PALETTE COLUMN",
+                  "fontFamily": "$font-body",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "A7Z1Y5",
+                  "name": "Click color → edit in the existing right panel.",
+                  "fill": "$fg-primary",
+                  "content": "Click color → edit in the existing right panel.",
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "MM8id",
+                  "name": "Click HEX → copy. Lock favorites → generate the rest.",
+                  "fill": "$fg-primary",
+                  "content": "Click HEX → copy. Lock favorites → generate the rest.",
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "koZOx",
+                  "name": "Drag grip → reorder. Space + arrows works with the keyboard.",
+                  "fill": "$fg-primary",
+                  "content": "Drag grip → reorder. Space + arrows works with the keyboard.",
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "wVqAy",
+          "name": "Top-left panel / 1366 desktop — 10 colors",
+          "clip": true,
+          "width": 900,
+          "fill": "$surface",
+          "cornerRadius": "$r-md",
+          "stroke": "$border-strong",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "X6oDLX",
+              "name": "Palette toolbar",
+              "width": "fill_container",
+              "stroke": "$border-subtle",
+              "strokeWidth": {
+                "bottom": 1
+              },
+              "padding": [
+                12,
+                16
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "rDRTx",
+                  "name": "Palette title and count",
+                  "gap": 10,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "nAlM1",
+                      "name": "Title",
+                      "fill": "$fg-primary",
+                      "content": "Your palette",
+                      "fontFamily": "$font-body",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "XQrkE",
+                      "name": "Count",
+                      "fill": "$fg-secondary",
+                      "content": "10 colors · 2 locked",
+                      "fontFamily": "$font-body",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "id": "WNNKs",
+                  "type": "ref",
+                  "ref": "o5XSq",
+                  "name": "Generate variation / Preserves locked colors",
+                  "descendants": {
+                    "Y4AAX": {
+                      "content": "Generate variation"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "K7p4H",
+              "name": "Color-first workspace",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "padding": [
+                16,
+                16,
+                0,
+                16
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "DuZzl",
+                  "name": "Inline instruction",
+                  "fill": "$fg-secondary",
+                  "content": "Select a color to edit · Click HEX to copy · Lock colors to keep them",
+                  "fontFamily": "$font-body",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "GzLtF",
+                  "name": "Continuous palette / All ten colors visible",
+                  "clip": true,
+                  "width": "fill_container",
+                  "cornerRadius": "$r-sm",
+                  "children": [
+                    {
+                      "id": "WkpDH",
+                      "type": "ref",
+                      "ref": "q1hyT",
+                      "name": "Color 1 / #1D849A / Locked / Selected",
+                      "width": "fill_container",
+                      "descendants": {
+                        "XKkeZ": {
+                          "fill": "#1D849A"
+                        },
+                        "fTQng": {
+                          "content": "01",
+                          "fill": "#FFFFFF"
+                        },
+                        "UBOm8": {
+                          "enabled": true
+                        },
+                        "y7f8iA/DXbTG": {
+                          "content": "#1D849A"
+                        },
+                        "sd8Lp": {
+                          "fill": "$accent-soft"
+                        },
+                        "sd8Lp/IBt8m": {
+                          "icon": "lock",
+                          "fill": "$accent-text"
+                        }
+                      }
+                    },
+                    {
+                      "id": "rsFnh",
+                      "type": "ref",
+                      "ref": "q1hyT",
+                      "name": "Color 2 / #9A331D",
+                      "width": "fill_container",
+                      "descendants": {
+                        "XKkeZ": {
+                          "fill": "#9A331D"
+                        },
+                        "fTQng": {
+                          "content": "02",
+                          "fill": "#FFFFFF"
+                        },
+                        "UBOm8": {
+                          "enabled": false
+                        },
+                        "y7f8iA/DXbTG": {
+                          "content": "#9A331D"
+                        },
+                        "sd8Lp": {
+                          "fill": "$surface"
+                        },
+                        "sd8Lp/IBt8m": {
+                          "icon": "lock-open",
+                          "fill": "$fg-secondary"
+                        }
+                      }
+                    },
+                    {
+                      "id": "TNBCG",
+                      "type": "ref",
+                      "ref": "q1hyT",
+                      "name": "Color 3 / #27B0CE",
+                      "width": "fill_container",
+                      "descendants": {
+                        "XKkeZ": {
+                          "fill": "#27B0CE"
+                        },
+                        "fTQng": {
+                          "content": "03",
+                          "fill": "#192B30"
+                        },
+                        "UBOm8": {
+                          "enabled": false
+                        },
+                        "y7f8iA/DXbTG": {
+                          "content": "#27B0CE"
+                        },
+                        "sd8Lp": {
+                          "fill": "$surface"
+                        },
+                        "sd8Lp/IBt8m": {
+                          "icon": "lock-open",
+                          "fill": "$fg-secondary"
+                        }
+                      }
+                    },
+                    {
+                      "id": "n5eQde",
+                      "type": "ref",
+                      "ref": "q1hyT",
+                      "name": "Color 4 / #CE4427 / Locked",
+                      "width": "fill_container",
+                      "descendants": {
+                        "XKkeZ": {
+                          "fill": "#CE4427"
+                        },
+                        "fTQng": {
+                          "content": "04",
+                          "fill": "#192B30"
+                        },
+                        "UBOm8": {
+                          "enabled": false
+                        },
+                        "y7f8iA/DXbTG": {
+                          "content": "#CE4427"
+                        },
+                        "sd8Lp": {
+                          "fill": "$accent-soft"
+                        },
+                        "sd8Lp/IBt8m": {
+                          "icon": "lock",
+                          "fill": "$accent-text"
+                        }
+                      }
+                    },
+                    {
+                      "id": "eLQ4g",
+                      "type": "ref",
+                      "ref": "q1hyT",
+                      "name": "Color 5 / #53C6DF",
+                      "width": "fill_container",
+                      "descendants": {
+                        "XKkeZ": {
+                          "fill": "#53C6DF"
+                        },
+                        "fTQng": {
+                          "content": "05",
+                          "fill": "#192B30"
+                        },
+                        "UBOm8": {
+                          "enabled": false
+                        },
+                        "y7f8iA/DXbTG": {
+                          "content": "#53C6DF"
+                        },
+                        "sd8Lp": {
+                          "fill": "$surface"
+                        },
+                        "sd8Lp/IBt8m": {
+                          "icon": "lock-open",
+                          "fill": "$fg-secondary"
+                        }
+                      }
+                    },
+                    {
+                      "id": "pp6Ly",
+                      "type": "ref",
+                      "ref": "q1hyT",
+                      "name": "Color 6 / #DF6C53",
+                      "width": "fill_container",
+                      "descendants": {
+                        "XKkeZ": {
+                          "fill": "#DF6C53"
+                        },
+                        "fTQng": {
+                          "content": "06",
+                          "fill": "#192B30"
+                        },
+                        "UBOm8": {
+                          "enabled": false
+                        },
+                        "y7f8iA/DXbTG": {
+                          "content": "#DF6C53"
+                        },
+                        "sd8Lp": {
+                          "fill": "$surface"
+                        },
+                        "sd8Lp/IBt8m": {
+                          "icon": "lock-open",
+                          "fill": "$fg-secondary"
+                        }
+                      }
+                    },
+                    {
+                      "id": "bmiE0",
+                      "type": "ref",
+                      "ref": "q1hyT",
+                      "name": "Color 7 / #86D7E8",
+                      "width": "fill_container",
+                      "descendants": {
+                        "XKkeZ": {
+                          "fill": "#86D7E8"
+                        },
+                        "fTQng": {
+                          "content": "07",
+                          "fill": "#192B30"
+                        },
+                        "UBOm8": {
+                          "enabled": false
+                        },
+                        "y7f8iA/DXbTG": {
+                          "content": "#86D7E8"
+                        },
+                        "sd8Lp": {
+                          "fill": "$surface"
+                        },
+                        "sd8Lp/IBt8m": {
+                          "icon": "lock-open",
+                          "fill": "$fg-secondary"
+                        }
+                      }
+                    },
+                    {
+                      "id": "aHdk0",
+                      "type": "ref",
+                      "ref": "q1hyT",
+                      "name": "Color 8 / #E89886",
+                      "width": "fill_container",
+                      "descendants": {
+                        "XKkeZ": {
+                          "fill": "#E89886"
+                        },
+                        "fTQng": {
+                          "content": "08",
+                          "fill": "#192B30"
+                        },
+                        "UBOm8": {
+                          "enabled": false
+                        },
+                        "y7f8iA/DXbTG": {
+                          "content": "#E89886"
+                        },
+                        "sd8Lp": {
+                          "fill": "$surface"
+                        },
+                        "sd8Lp/IBt8m": {
+                          "icon": "lock-open",
+                          "fill": "$fg-secondary"
+                        }
+                      }
+                    },
+                    {
+                      "id": "r5vL9D",
+                      "type": "ref",
+                      "ref": "q1hyT",
+                      "name": "Color 9 / #BAE8F2",
+                      "width": "fill_container",
+                      "descendants": {
+                        "XKkeZ": {
+                          "fill": "#BAE8F2"
+                        },
+                        "fTQng": {
+                          "content": "09",
+                          "fill": "#192B30"
+                        },
+                        "UBOm8": {
+                          "enabled": false
+                        },
+                        "y7f8iA/DXbTG": {
+                          "content": "#BAE8F2"
+                        },
+                        "sd8Lp": {
+                          "fill": "$surface"
+                        },
+                        "sd8Lp/IBt8m": {
+                          "icon": "lock-open",
+                          "fill": "$fg-secondary"
+                        }
+                      }
+                    },
+                    {
+                      "id": "F4ypi",
+                      "type": "ref",
+                      "ref": "q1hyT",
+                      "name": "Color 10 / #F2C4BA",
+                      "width": "fill_container",
+                      "descendants": {
+                        "XKkeZ": {
+                          "fill": "#F2C4BA"
+                        },
+                        "fTQng": {
+                          "content": "10",
+                          "fill": "#192B30"
+                        },
+                        "UBOm8": {
+                          "enabled": false
+                        },
+                        "y7f8iA/DXbTG": {
+                          "content": "#F2C4BA"
+                        },
+                        "sd8Lp": {
+                          "fill": "$surface"
+                        },
+                        "sd8Lp/IBt8m": {
+                          "icon": "lock-open",
+                          "fill": "$fg-secondary"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pgcsE",
+              "name": "Selection feedback and contrast link",
+              "width": "fill_container",
+              "stroke": "$border-subtle",
+              "strokeWidth": {
+                "top": 1
+              },
+              "padding": [
+                10,
+                16
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "A5pQ8L",
+                  "name": "Current selection",
+                  "fill": "$fg-secondary",
+                  "content": "01 selected · Edit in the right panel",
+                  "fontFamily": "$font-body",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "id": "g6Nrj",
+                  "type": "ref",
+                  "ref": "TjqJu",
+                  "name": "Check contrast / Opens Contrast Checker",
+                  "height": 28,
+                  "descendants": {
+                    "DXbTG": {
+                      "content": "Check contrast ↗",
+                      "fontSize": 12
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "T81PR",
+          "name": "Scope note",
+          "fill": "$fg-secondary",
+          "content": "Settings and export panel stay unchanged. No application code changes.",
+          "fontFamily": "$font-body",
+          "fontSize": 13,
+          "fontWeight": "normal"
+        }
+      ]
     }
   ],
   "variables": {

@@ -29,6 +29,7 @@ export interface CodeEditorProps extends Pick<
   maxLength?: number;
   placeholder?: string;
   showLineNumbers?: boolean;
+  colorPreviews?: boolean;
   wrap?: "soft" | "hard" | "off";
   onCaretChange?: (position: { line: number; column: number }) => void;
   onScroll?: (scroller: HTMLElement) => void;

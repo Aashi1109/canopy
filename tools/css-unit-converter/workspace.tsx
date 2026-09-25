@@ -1,9 +1,22 @@
 "use client";
 
+import { ArrowLeftRight } from "lucide-react";
+
 import { DesignWorkspace } from "@/app/devtools/components/color-design/DesignWorkspace";
 import { ResultSurface } from "@/components/ResultSurface";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
-import { Button, Checkbox, Field, Input, Select, Textarea } from "@/components/ui/index.tsx";
+import {
+  Button,
+  Checkbox,
+  Field,
+  Input,
+  Select,
+  Textarea,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/index.tsx";
 
 const UNITS = ["px", "rem", "em", "pt", "%", "vw", "vh", "vmin", "vmax"];
 
@@ -55,6 +68,7 @@ export default function CssUnitConverterWorkspace(props: WorkspaceProps) {
   return (
     <DesignWorkspace
       compactInput
+      workspaceClassName="min-h-[33rem] grid-rows-[20rem_minmax(13rem,1fr)]"
       title="Convert CSS values"
       controlTitle="Conversion context"
       preview={
@@ -73,9 +87,22 @@ export default function CssUnitConverterWorkspace(props: WorkspaceProps) {
                 ))}
               </Select>
             </Field>
-            <Button disabled={props.disabled} variant="outline" onClick={swap}>
-              Swap
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    aria-label="Swap units"
+                    disabled={props.disabled}
+                    variant="outline"
+                    size="icon-sm"
+                    onClick={swap}
+                  >
+                    <ArrowLeftRight aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Swap units</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Field className="flex-1" htmlFor="unit-to" label="To">
               <Select
                 disabled={props.disabled}
@@ -97,9 +124,9 @@ export default function CssUnitConverterWorkspace(props: WorkspaceProps) {
             description={props.error ? undefined : "One value per line. A unit suffix overrides From for that value."}
           >
             <Textarea
-              className="h-14 min-h-14 field-sizing-fixed py-2"
+              className="h-32 min-h-32 field-sizing-fixed py-2"
               disabled={props.disabled}
-              rows={2}
+              rows={6}
               placeholder="16px&#10;2rem&#10;50%"
               value={props.input.text}
               onChange={(event) => props.onInputChange({ ...props.input, text: event.target.value })}

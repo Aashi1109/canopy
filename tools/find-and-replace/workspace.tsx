@@ -1,18 +1,11 @@
 "use client";
 
-import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
-
-import { Strong, FieldLabel, CodeBlock, Muted, ToolOptionsPanel } from "@/components/ui/index.tsx";
+import { Strong, CodeBlock, Muted } from "@/components/ui/index.tsx";
 import { ArrowRight } from "lucide-react";
-import { Fragment, useEffect, useId, useMemo } from "react";
+import { Fragment, useEffect, useMemo } from "react";
 
-import { ResultSurface } from "@/components/ResultSurface";
-import { ResultActions } from "@/components/ResultView";
 import { SettingsPanel } from "@/components/SettingsPanel";
-import { SplitStack } from "@/components/Stacks";
-import { WorkspaceSurface } from "@/components/Surfaces";
-import type { WorkspaceProps } from "@/components/ToolWorkspace";
-import { SourceTextarea } from "@/components/WorkspaceInput";
+import { ToolWorkspace, type WorkspaceProps } from "@/components/ToolWorkspace";
 
 import { buildReplacementPreview, type ReplacementPreview } from "./preview";
 
@@ -23,11 +16,7 @@ function PreviewText({ preview }: { preview: ReplacementPreview }) {
     }
     if (part.kind === "unpreviewed") {
       return (
-        <span
-          className="rounded-sm border border-dashed border-border bg-muted px-1 text-muted-foreground"
-          key={index}
-          title={`${part.hiddenMatchCount} additional matches are not expanded inline`}
-        >
+        <span className="rounded-sm border border-dashed border-border bg-muted px-1 text-muted-foreground" key={index}>
           {`[${part.hiddenMatchCount} more matches not expanded] ${part.text}`}
         </span>
       );
@@ -77,14 +66,7 @@ function previewMeta(preview: ReplacementPreview): string {
   return `${preview.count} inline ${preview.count === 1 ? "preview" : "previews"} · Focus to edit`;
 }
 
-function compactPreviewMeta(preview: ReplacementPreview): string {
-  if (preview.invalidPattern) return "Invalid regex";
-  if (preview.count === 0) return "No matches";
-  return `${preview.count} ${preview.count === 1 ? "preview" : "previews"}`;
-}
-
 export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
-  const inputId = useId();
   const inputSpec = props.spec.input;
   const find = typeof props.settings.find === "string" ? props.settings.find : "";
   const replace = typeof props.settings.replace === "string" ? props.settings.replace : "";
@@ -126,109 +108,51 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
 
   if (inputSpec.kind !== "text") return null;
 
-  const highlightedResult = props.result?.render === "text" && !preview.truncated;
+  const highlightedResult =
+    props.result?.render === "text" &&
+    !preview.truncated &&
+    props.result.text ===
+      preview.parts.map((part) => (part.kind === "replacement" ? part.replacement : part.text)).join("");
 
   return (
-    <SplitStack
-      className="h-full"
-      collapseLabel="find and replace settings"
-      collapseSide="secondary"
-      collapsible
-      defaultSize={75}
-      minSize={75}
-    >
-      <WorkbenchPanes className="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(14rem,1fr)] gap-5 overflow-y-auto border-r border-border p-5">
-        <WorkspaceSurface
-          className="h-full"
-          contentClassName="bg-background"
-          meta={
-            <>
-              <span className="max-[30rem]:hidden">{previewMeta(preview)}</span>
-              <span className="hidden max-[30rem]:inline">{compactPreviewMeta(preview)}</span>
-            </>
-          }
-          purpose="source"
-          title="Source text"
-          variant="card"
-        >
-          <FieldLabel className="sr-only" htmlFor={inputId}>
-            {inputSpec.label}
-          </FieldLabel>
-          <SourceTextarea
-            className="min-h-0 flex-1"
+    <ToolWorkspace
+      {...props}
+      highlightedInput={preview.count > 0 ? <PreviewText preview={preview} /> : undefined}
+      inputHighlightMode="preview"
+      renderInputSettings={() => (
+        <div className="grid shrink-0 gap-2 px-4 pt-4">
+          <SettingsPanel
             disabled={props.disabled}
-            highlightedValue={preview.count > 0 ? <PreviewText preview={preview} /> : undefined}
-            highlightMode="preview"
-            id={inputId}
-            maxLength={inputSpec.maxLength}
-            onChange={(text) => props.onInputChange({ ...props.input, text })}
-            placeholder={inputSpec.placeholder}
-            showLineNumbers={false}
-            transparent
-            value={props.input.text}
+            layout="grid"
+            onChange={props.onSettingChange}
+            onSubmit={() => {
+              if (!props.primaryAction || props.primaryAction.disabled || props.primaryAction.running) return;
+              props.primaryAction.onRun();
+            }}
+            pane="input"
+            spec={props.spec.settings}
+            values={props.settings}
           />
-        </WorkspaceSurface>
-
-        {highlightedResult ? (
-          <WorkspaceSurface
-            actions={
-              <ResultActions
-                canCopy={Boolean(props.spec.capabilities?.copy)}
-                canDownload={Boolean(props.spec.capabilities?.download)}
-                result={props.result}
-              />
+          <Muted
+            className={
+              validationReason && (preview.invalidPattern || !find) ? "text-destructive" : "text-muted-foreground"
             }
-            className="h-full"
-            contentClassName="bg-background"
-            meta={`${preview.count} ${preview.count === 1 ? "replacement" : "replacements"} applied`}
-            purpose="result"
-            title="Replaced text"
-            variant="card"
+            role={validationReason && (preview.invalidPattern || !find) ? "alert" : "status"}
           >
-            <div className="min-h-0 flex-1 overflow-auto rounded-lg bg-muted/45 p-4">
-              <CodeBlock className="whitespace-pre-wrap break-words text-foreground">
+            {validationReason ??
+              (preview.count > 0 ? previewMeta(preview) : "Matches preview inline before you apply replacements.")}
+          </Muted>
+        </div>
+      )}
+      renderResult={
+        highlightedResult
+          ? () => (
+              <CodeBlock className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4 text-foreground">
                 <AppliedResultText preview={preview} />
               </CodeBlock>
-            </div>
-          </WorkspaceSurface>
-        ) : (
-          <ResultSurface
-            error={props.error}
-            result={props.result}
-            running={props.running}
-            spec={props.spec}
-            title="Replaced text"
-            variant="card"
-          />
-        )}
-      </WorkbenchPanes>
-
-      <ToolOptionsPanel className="h-full overflow-y-auto bg-card p-[18px]" title="FIND & REPLACE" variant="plain">
-        <SettingsPanel
-          disabled={props.disabled}
-          onChange={props.onSettingChange}
-          pane="side"
-          spec={props.spec.settings}
-          values={props.settings}
-        />
-        <Muted className="text-muted-foreground">
-          In the source, a red background marks text that will be removed; a green background marks what will replace
-          it. Applied replacements stay highlighted in the result.
-        </Muted>
-        {validationReason ? (
-          <Muted
-            className={`${preview.invalidPattern || !find ? "text-destructive" : "text-muted-foreground"}`}
-            role={preview.invalidPattern || !find ? "alert" : "status"}
-          >
-            {validationReason}
-          </Muted>
-        ) : preview.truncated ? (
-          <Muted className="text-muted-foreground" role="status">
-            {preview.count - preview.previewedCount} additional matches will still be replaced; they are grouped in the
-            source to keep the editor responsive.
-          </Muted>
-        ) : null}
-      </ToolOptionsPanel>
-    </SplitStack>
+            )
+          : undefined
+      }
+    />
   );
 }

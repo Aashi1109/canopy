@@ -99,7 +99,7 @@ export default {
       "Choose a color visually, move the hue/saturation/lightness controls, or paste HEX, RGB, HSL, or a CSS color name.",
       "Choose All formats or a specific output: HEX, RGB, HSL, HSV/HSB, HWB, CMYK, Lab, LCH, OKLab, OKLCH, XYZ, or RGB color spaces including Display P3.",
       "Values update as you type. Alpha is preserved in every output; transparent colors use `rgba()` or `hsla()` with legacy syntax, or an alpha component in other formats.",
-      "Adjust opacity and copy the format your target needs. Recent colors remain available during this visit.",
+      "Adjust opacity and copy the format your target needs.",
     ],
     limitations: [
       "Standalone HEX, RGB, HSL, named colors, and transparent are supported. Stylesheet-dependent variables and currentColor are not resolved.",

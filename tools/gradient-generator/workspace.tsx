@@ -13,6 +13,8 @@ import {
   ColorSwatch,
   FieldRoot as Field,
   FieldLabel,
+  FieldTitle,
+  Input,
   OrderableList,
   Select,
 } from "@/components/ui/index.tsx";
@@ -46,6 +48,16 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
   } catch {
     stops = DEFAULT_STOPS;
   }
+  const currentPreset =
+    Object.entries(PRESETS).find(
+      ([, presetStops]) =>
+        stops.length === presetStops.length &&
+        stops.every(
+          (stop, index) =>
+            stop.position === presetStops[index].position &&
+            stop.color.trim().toLowerCase() === presetStops[index].color.toLowerCase(),
+        ),
+    )?.[0] ?? "";
   const selected = stops.find((stop) => stop.id === selectedId) ?? stops[0];
   const type = props.settings.type === "radial" ? "radial" : "linear";
   let preview = "";
@@ -140,9 +152,11 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
                 const next = PRESETS[event.target.value as keyof typeof PRESETS];
                 if (next) preset(next);
               }}
-              value=""
+              value={currentPreset}
             >
-              <option value="">Choose a starting point</option>
+              <option value="" disabled>
+                Custom
+              </option>
               {Object.keys(PRESETS).map((name) => (
                 <option key={name} value={name}>
                   {name}
@@ -186,24 +200,29 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
                   <option value="ellipse">Ellipse</option>
                 </Select>
               </Field>
-              <DesignRange
-                disabled={props.disabled}
-                label="Center X"
-                value={Number(props.settings.radialX ?? 50)}
-                min={0}
-                max={100}
-                suffix="%"
-                onChange={(value) => setting("radialX", value)}
-              />
-              <DesignRange
-                disabled={props.disabled}
-                label="Center Y"
-                value={Number(props.settings.radialY ?? 50)}
-                min={0}
-                max={100}
-                suffix="%"
-                onChange={(value) => setting("radialY", value)}
-              />
+              <Field aria-labelledby="gradient-center-label">
+                <FieldTitle id="gradient-center-label">Center</FieldTitle>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["X", "Y"] as const).map((axis) => (
+                    <Input
+                      aria-label={`Center ${axis} value`}
+                      disabled={props.disabled}
+                      key={axis}
+                      leadingIcon={axis}
+                      max={100}
+                      min={0}
+                      step={1}
+                      suffix="%"
+                      type="number"
+                      value={Number(props.settings[`radial${axis}`] ?? 50)}
+                      onChange={(event) => {
+                        const next = event.target.valueAsNumber;
+                        if (Number.isFinite(next)) setting(`radial${axis}`, Math.max(0, Math.min(100, next)));
+                      }}
+                    />
+                  ))}
+                </div>
+              </Field>
             </>
           )}
           <div className="flex items-center justify-between gap-2">
@@ -227,18 +246,20 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
             </Button>
           </div>
           <OrderableList
+            animateSelection
             ariaLabel="Gradient stops"
-            className="flex flex-col gap-2"
+            className="flex flex-col gap-1"
             disabled={props.disabled}
             getId={(stop) => stop.id}
             getLabel={(stop) => `Color stop at ${stop.position}%`}
             items={stops}
+            selectedId={selected.id}
             onReorder={(next) => {
               const positions = stops.map((stop) => stop.position).sort((a, b) => a - b);
               save(next.map((stop, index) => ({ ...stop, position: positions[index] })));
             }}
             renderItem={(stop, state) => (
-              <div className="flex min-w-0 items-center gap-1">
+              <div className="flex min-w-0 items-center gap-1 p-1">
                 <Button
                   {...state.attributes}
                   {...state.listeners}
@@ -256,11 +277,16 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
                   disabled={props.disabled}
                   onClick={() => setSelectedId(stop.id)}
                   size="sm"
-                  variant={selected.id === stop.id ? "secondary" : "ghost"}
+                  variant="card-action"
                 >
                   <ColorSwatch className="size-5 shrink-0" color={stop.color} />
                   <span className="truncate">{stop.color}</span>
-                  <span className="ml-auto">{stop.position}%</span>
+                  <span className="ml-auto shrink-0">{stop.position}%</span>
+                  {selected.id === stop.id ? (
+                    <Caption aria-hidden="true" className="shrink-0 text-primary">
+                      Editing
+                    </Caption>
+                  ) : null}
                 </Button>
                 <Button
                   aria-label={`Remove color stop at ${stop.position}%`}
@@ -277,6 +303,7 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
           <ColorControl
             disabled={props.disabled}
             label="Selected stop color"
+            layout="inline"
             value={selected.color}
             onChange={(color) => update({ color })}
           />

@@ -14,6 +14,10 @@ const runtime = globalThis as typeof globalThis & {
 const requests = (runtime[requestKey] ??= new AsyncLocalStorage<DatabaseRequest>());
 let nodeClient: SqlClient | undefined;
 
+export function isDatabaseConfigured(): boolean {
+  return Boolean(requests.getStore()?.databaseUrl ?? config.databaseUrl);
+}
+
 function observeQueries(client: pg.PoolClient): void {
   client.query = new Proxy(client.query, {
     apply(query, receiver, args) {

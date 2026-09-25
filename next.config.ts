@@ -113,6 +113,8 @@ const nextConfig: NextConfig = {
 const withSerwist = withSerwistInit({
   swSrc: "app/sw.ts",
   swDest: "public/sw.js",
+  // Cloudflare consumes _headers as deployment metadata; it is not a served asset.
+  globPublicPatterns: ["**/!(_headers)"],
   cacheOnNavigation: true,
   reloadOnOnline: true,
   disable: development,

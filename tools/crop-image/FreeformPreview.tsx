@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef, useState, type PointerEvent } from "react";
-import { Muted } from "@/components/ui/index.tsx";
+import { CanvasHandle, Muted } from "@/components/ui/index.tsx";
 import { moveCropPoint, translateCrop, type CropPoint, type ImageSize } from "./geometry";
 
 interface Props {
@@ -165,14 +165,13 @@ export function FreeformPreview({
                 />
               </svg>
               {points.map((point, index) => (
-                <button
+                <CanvasHandle
                   key={index}
-                  type="button"
                   aria-label={`Crop point ${index + 1}`}
                   aria-pressed={selected === index}
                   aria-describedby={hintId}
                   disabled={disabled}
-                  className="absolute flex size-11 -translate-x-1/2 -translate-y-1/2 touch-none items-center justify-center rounded-full cursor-grab active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-not-allowed"
+                  selected={selected === index}
                   style={{
                     left: `${(point.x / size.width) * 100}%`,
                     top: `${(point.y / size.height) * 100}%`,
@@ -195,11 +194,7 @@ export function FreeformPreview({
                     if (next === points) onInvalidMove();
                     else onChange(next);
                   }}
-                >
-                  <span
-                    className={`size-4 rounded-full border-2 border-white bg-primary ${selected === index ? "ring-4 ring-primary/25" : ""}`}
-                  />
-                </button>
+                />
               ))}
             </>
           ) : null}

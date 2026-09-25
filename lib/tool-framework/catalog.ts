@@ -150,73 +150,71 @@ async function buildTool(
 }
 
 /**
- * Reuse the public catalog snapshot across requests for 24 hours.
- * Cache the resolved catalog, so warm reads need neither Redis nor rebuilding.
- * Admin mutations invalidate it after commit in the current process.
+ * Node reuses resolved snapshots for 24 hours, with invalidation after local edits.
+ * Workers keep only React's per-request cache: an edit cannot invalidate other isolates.
  */
 const loadCatalog = cache(async () => {
   if (!isDatabaseConfigured()) return { tools: [], paperworkTools: [], publicTools: [] };
 
-  return catalogCache.remember(
-    "all",
-    async () => {
-      const [rows, contentRows] = await Promise.all([db.select().from(managedToolsTable), getToolContentRows()]);
-      const contentByToolId = new Map(
-        contentRows.filter((row) => row.publishedAt !== null).map((row) => [row.toolId, row] as const),
-      );
-      const built = await Promise.all(
-        rows
-          .filter(isToolAvailable)
-          .filter((row) => row.app !== "paperwork" && isValidToolSlug(row.app, row.slug))
-          .map((row) => buildTool(row, contentByToolId.get(row.toolId) ?? null)),
-      );
-      const tools = built
-        .filter((tool): tool is CatalogTool => tool !== null)
-        .sort((left, right) => (left.app === right.app ? left.order - right.order : left.app.localeCompare(right.app)));
+  const load = async () => {
+    const [rows, contentRows] = await Promise.all([db.select().from(managedToolsTable), getToolContentRows()]);
+    const contentByToolId = new Map(
+      contentRows.filter((row) => row.publishedAt !== null).map((row) => [row.toolId, row] as const),
+    );
+    const built = await Promise.all(
+      rows
+        .filter(isToolAvailable)
+        .filter((row) => row.app !== "paperwork" && isValidToolSlug(row.app, row.slug))
+        .map((row) => buildTool(row, contentByToolId.get(row.toolId) ?? null)),
+    );
+    const tools = built
+      .filter((tool): tool is CatalogTool => tool !== null)
+      .sort((left, right) => (left.app === right.app ? left.order - right.order : left.app.localeCompare(right.app)));
 
-      // Paperwork's route implementations predate tools/*; preserve its existing manifest merge rules.
-      const paperworkRows = rows.filter((row) => row.app === "paperwork");
-      const paperworkTools = getEnabledTools(
-        mergeToolManifest(
-          paperworkRows,
-          paperworkRows.map((row) => ({
-            id: row.toolId,
-            app: row.app,
-            componentKey: definitionKeyOf(row.toolId) ?? row.toolId,
-            defaultName: row.name,
-            defaultDescription: row.description,
-          })),
-        ),
-        "paperwork",
-      );
-      const publicTools: PublicTool[] = [
-        ...tools.map((tool) => ({
-          toolId: tool.toolId,
-          app: tool.app,
-          name: tool.name,
-          description: tool.description,
-          href: tool.href,
-          icon: tool.icon,
-          keywords: tool.keywords,
-          category: TOOL_CATEGORIES[tool.category].label,
-          categoryKey: tool.category,
+    // Paperwork's route implementations predate tools/*; preserve its existing manifest merge rules.
+    const paperworkRows = rows.filter((row) => row.app === "paperwork");
+    const paperworkTools = getEnabledTools(
+      mergeToolManifest(
+        paperworkRows,
+        paperworkRows.map((row) => ({
+          id: row.toolId,
+          app: row.app,
+          componentKey: definitionKeyOf(row.toolId) ?? row.toolId,
+          defaultName: row.name,
+          defaultDescription: row.description,
         })),
-        ...paperworkTools.map((tool) => ({
-          toolId: tool.toolId,
-          app: tool.app,
-          name: tool.name,
-          description: tool.description,
-          href: `/paperwork/${tool.slug}`,
-          icon: resolveIcon(tool.toolId, tool.name, tool.iconUrl),
-          keywords: tool.keywords ?? [],
-          category: "Documents",
-          categoryKey: null,
-        })),
-      ];
-      return { tools, paperworkTools, publicTools };
-    },
-    24 * 60 * 60,
-  );
+      ),
+      "paperwork",
+    );
+    const publicTools: PublicTool[] = [
+      ...tools.map((tool) => ({
+        toolId: tool.toolId,
+        app: tool.app,
+        name: tool.name,
+        description: tool.description,
+        href: tool.href,
+        icon: tool.icon,
+        keywords: tool.keywords,
+        category: TOOL_CATEGORIES[tool.category].label,
+        categoryKey: tool.category,
+      })),
+      ...paperworkTools.map((tool) => ({
+        toolId: tool.toolId,
+        app: tool.app,
+        name: tool.name,
+        description: tool.description,
+        href: `/paperwork/${tool.slug}`,
+        icon: resolveIcon(tool.toolId, tool.name, tool.iconUrl),
+        keywords: tool.keywords ?? [],
+        category: "Documents",
+        categoryKey: null,
+      })),
+    ];
+    return { tools, paperworkTools, publicTools };
+  };
+  return globalThis.navigator?.userAgent === "Cloudflare-Workers"
+    ? load()
+    : catalogCache.remember("all", load, 24 * 60 * 60);
 });
 
 /** Every enabled, non-archived, slugged tool. Optionally narrowed to one app. */

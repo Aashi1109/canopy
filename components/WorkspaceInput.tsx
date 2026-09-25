@@ -49,6 +49,7 @@ interface InputSurfaceProps {
   footer?: ReactNode;
   header?: ReactNode;
   highlightedInput?: ReactNode;
+  inputHighlightMode?: SourceTextareaProps["highlightMode"];
   input: WorkspaceInputState;
   inputSpec: ToolInputSpec;
   onInputChange: WorkspaceProps["onInputChange"];
@@ -274,6 +275,7 @@ export function WorkspaceInputSurface({
   footer,
   header,
   highlightedInput,
+  inputHighlightMode,
   input,
   inputSpec,
   onInputChange,
@@ -444,6 +446,7 @@ export function WorkspaceInputSurface({
               disabled={disabled}
               id={`${idPrefix}-primary`}
               highlightedValue={highlightedInput}
+              highlightMode={inputHighlightMode}
               language={inputSpec.language}
               showLineNumbers={variant !== "card"}
               surface={editorSurface}

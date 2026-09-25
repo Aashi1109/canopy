@@ -6,13 +6,30 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "minify": true,
   "workers_dev": true,
+  "limits": {
+    "cpu_ms": 30000,
+  },
   "triggers": {
     "crons": ["*/30 * * * *"],
   },
-  "routes": [{ "pattern": "smarttools.lol", "custom_domain": true }],
-  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "1aebf4d16f0b489b99de75318cdd610d" }],
+  "routes": [
+    {
+      "pattern": "smarttools.lol",
+      "custom_domain": true,
+    },
+    {
+      "pattern": "admin.smarttools.lol",
+      "custom_domain": true,
+    },
+  ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "1aebf4d16f0b489b99de75318cdd610d",
+    },
+  ],
   "vars": {
-    "APP_URL": "https://cf.smarttools.lol",
+    "APP_URL": "https://smarttools.lol",
   },
   "assets": {
     "directory": ".open-next/assets",
@@ -27,5 +44,34 @@
   "keep_vars": true,
   "observability": {
     "enabled": true,
+  },
+  "env": {
+    "dev": {
+      "name": "smarttools-dev",
+      "workers_dev": true,
+      "routes": [],
+      "vars": {
+        "APP_URL": "https://smarttools-dev.aashishpal50.workers.dev",
+      },
+      "hyperdrive": [],
+      "services": [
+        {
+          "binding": "WORKER_SELF_REFERENCE",
+          "service": "smarttools-dev",
+        },
+      ],
+      "triggers": {
+        "crons": [],
+      },
+      "placement": {
+        "mode": "smart",
+      },
+      "observability": {
+        "traces": {
+          "enabled": true,
+          "head_sampling_rate": 0.5,
+        },
+      },
+    },
   },
 }

@@ -20,7 +20,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
+import { cn } from "../lib/utils.ts";
+import { SelectionHighlight } from "./SelectionHighlight.tsx";
 
 type SortableItemState = ReturnType<typeof useSortable>;
 
@@ -30,6 +32,7 @@ export type OrderableItemState = Pick<SortableItemState, "attributes" | "listene
 };
 
 type OrderableListProps<Item> = {
+  animateSelection?: boolean;
   ariaLabel: string;
   className?: string;
   disabled?: boolean;
@@ -40,6 +43,7 @@ type OrderableListProps<Item> = {
   layout?: "grid" | "vertical";
   onReorder: (items: Item[]) => void;
   renderItem: (item: Item, state: OrderableItemState) => ReactNode;
+  selectedId?: string;
 };
 
 function OrderableItem<Item>({
@@ -47,11 +51,13 @@ function OrderableItem<Item>({
   id,
   item,
   renderItem,
+  selected,
 }: {
   disabled: boolean;
   id: string;
   item: Item;
   renderItem: OrderableListProps<Item>["renderItem"];
+  selected?: boolean;
 }) {
   const { attributes, isDragging, listeners, setActivatorNodeRef, setNodeRef, transform, transition } = useSortable({
     disabled,
@@ -64,7 +70,16 @@ function OrderableItem<Item>({
   };
 
   return (
-    <li className="relative" ref={setNodeRef} style={style}>
+    <li
+      className={cn(
+        "relative",
+        selected !== undefined && "rounded-lg border",
+        selected !== undefined && (selected ? "border-primary bg-accent" : "border-transparent"),
+      )}
+      data-selected={selected}
+      ref={setNodeRef}
+      style={style}
+    >
       {renderItem(item, {
         attributes,
         disabled,
@@ -77,6 +92,7 @@ function OrderableItem<Item>({
 }
 
 export function OrderableList<Item>({
+  animateSelection = false,
   ariaLabel,
   className,
   disabled = false,
@@ -87,7 +103,9 @@ export function OrderableList<Item>({
   layout = "vertical",
   onReorder,
   renderItem,
+  selectedId,
 }: OrderableListProps<Item>) {
+  const [isDragging, setIsDragging] = useState(false);
   const pointer = useSensor(PointerSensor, { activationConstraint: { distance: 6 } });
   const mouse = useSensor(MouseSensor, { activationConstraint: { distance: 6 } });
   const touch = useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } });
@@ -110,12 +128,38 @@ export function OrderableList<Item>({
   }
 
   function handleDragEnd({ active, over }: DragEndEvent) {
+    setIsDragging(false);
     if (!over || active.id === over.id) return;
     const previousIndex = ids.indexOf(String(active.id));
     const nextIndex = ids.indexOf(String(over.id));
     if (previousIndex === -1 || nextIndex === -1) return;
     onReorder(arrayMove([...items], previousIndex, nextIndex));
   }
+
+  const list = (
+    <ul
+      aria-label={ariaLabel}
+      className={cn(
+        animateSelection &&
+          "data-[selection-highlight-ready=true]:[&>[data-selected=true]]:border-transparent data-[selection-highlight-ready=true]:[&>[data-selected=true]]:bg-transparent",
+        className,
+      )}
+    >
+      {items.map((item) => {
+        const id = getId(item);
+        return (
+          <OrderableItem
+            disabled={disabled}
+            id={id}
+            item={item}
+            key={id}
+            renderItem={renderItem}
+            selected={selectedId === undefined ? undefined : selectedId === id}
+          />
+        );
+      })}
+    </ul>
+  );
 
   return (
     <DndContext
@@ -135,16 +179,19 @@ export function OrderableList<Item>({
         },
       }}
       collisionDetection={closestCenter}
+      onDragCancel={() => setIsDragging(false)}
       onDragEnd={handleDragEnd}
+      onDragStart={() => setIsDragging(true)}
       sensors={sensors}
     >
       <SortableContext items={ids} strategy={layout === "grid" ? rectSortingStrategy : verticalListSortingStrategy}>
-        <ul aria-label={ariaLabel} className={className}>
-          {items.map((item) => {
-            const id = getId(item);
-            return <OrderableItem disabled={disabled} id={id} item={item} key={id} renderItem={renderItem} />;
-          })}
-        </ul>
+        {animateSelection ? (
+          <SelectionHighlight asChild activeSelector=":scope > [data-selected='true']" disabled={isDragging}>
+            {list}
+          </SelectionHighlight>
+        ) : (
+          list
+        )}
       </SortableContext>
     </DndContext>
   );

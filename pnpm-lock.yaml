@@ -10,6 +10,9 @@ overrides:
   postcss: 8.5.23
   sharp: 0.35.4
 
+patchedDependencies:
+  '@opennextjs/cloudflare@1.20.6': 298d6fd17f3c2b16b7a1730aa571cbf3521bbfb68dfe6279979a91f5ff817edd
+
 importers:
 
   .:
@@ -97,7 +100,7 @@ importers:
         version: 1.2.3
       '@opennextjs/cloudflare':
         specifier: ^1.20.6
-        version: 1.20.6(next@16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.61.1)(@types/node@26.1.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(wrangler@4.131.1(@types/node@26.1.1))
+        version: 1.20.6(patch_hash=298d6fd17f3c2b16b7a1730aa571cbf3521bbfb68dfe6279979a91f5ff817edd)(next@16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.61.1)(@types/node@26.1.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(wrangler@4.131.1(@types/node@26.1.1))
       '@pdfme/common':
         specifier: 6.1.11
         version: 6.1.11
@@ -9325,7 +9328,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@opennextjs/cloudflare@1.20.6(next@16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.61.1)(@types/node@26.1.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(wrangler@4.131.1(@types/node@26.1.1))':
+  '@opennextjs/cloudflare@1.20.6(patch_hash=298d6fd17f3c2b16b7a1730aa571cbf3521bbfb68dfe6279979a91f5ff817edd)(next@16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.61.1)(@types/node@26.1.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(wrangler@4.131.1(@types/node@26.1.1))':
     dependencies:
       '@ast-grep/napi': 0.40.5
       '@dotenvx/dotenvx': 1.31.0

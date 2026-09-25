@@ -1,4 +1,3 @@
-import { auth } from "./lib/auth/index.ts";
 import { getSessionCookie } from "better-auth/cookies";
 import { NextRequest, NextResponse } from "next/server";
 import { errorMessage } from "./utils/errorMessage.ts";
@@ -23,6 +22,8 @@ async function checkAccountAccess(request: NextRequest, redirectOrigin: string):
 
   let session;
   try {
+    // Keep async database dependencies out of OpenNext's middleware module loading.
+    const { auth } = await import("./lib/auth/index.ts");
     session = await auth.api.getSession({
       headers: request.headers,
       query: { disableCookieCache: true, disableRefresh: true },

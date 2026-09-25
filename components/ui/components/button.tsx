@@ -18,7 +18,7 @@ const buttonVariants = cva(
         ghost:
           "bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground hover:[&_svg]:text-current active:bg-accent active:text-accent-foreground active:[&_svg]:text-current",
         "card-action":
-          "bg-transparent text-foreground hover:bg-muted focus-visible:ring-inset focus-visible:ring-offset-0",
+          "bg-transparent text-foreground hover:bg-muted focus-visible:ring-inset focus-visible:ring-offset-0 aria-pressed:hover:bg-transparent",
         "input-icon":
           "bg-transparent text-muted-foreground hover:text-foreground focus-visible:ring-inset focus-visible:ring-primary/30 focus-visible:ring-offset-0 disabled:bg-transparent",
         "danger-subtle": "border border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10",

@@ -148,12 +148,12 @@ Put each new migration batch in its own folder and pass that name to the command
 Migrations run only their SQL; run `pnpm db:seed` separately for catalog seeding.
 Applied migrations are not tracked; explicitly rerunning a folder runs its SQL again.
 
-Public tool listings, ecosystem navigation, and global search share a resolved in-memory
-catalog with a 24-hour TTL. Search filters this snapshot, including Paperwork tools, without
-Redis or database reads on cache hits. Admin tool edits clear the snapshot after commit in
-the current process. Other instances refresh on expiry or restart; restart every running
-instance after migrations, seeding, or direct database edits when changes must appear immediately.
-User and authorization caches continue to use Redis.
+On Node deployments, public tool listings, ecosystem navigation, and global search share a
+resolved in-memory catalog with a 24-hour TTL. Admin tool edits clear it in the current
+process; restart other Node instances after edits that must appear immediately.
+Cloudflare Workers bypass this process-local snapshot so edits cannot stay stale in another
+isolate. React still deduplicates catalog reads within a page render. User and authorization
+caches continue to use Redis.
 
 ### Generic Assistant migration
 
@@ -365,39 +365,55 @@ separately from the web service.
 
 ## Cloudflare Workers
 
-The `smarttools` Worker runs at **https://smarttools.aashishpal50.workers.dev**.
-The checked-in configuration targets **https://smarttools.lol** and keeps the
-workers.dev address enabled. Cloudflare Access is not required; the application
+`pnpm run deploy` publishes the production `smarttools` Worker at
+**https://smarttools.lol** and **https://admin.smarttools.lol**.
+`pnpm run deploy:preview` publishes the separate `smarttools-dev` Worker at
+**https://smarttools-dev.aashishpal50.workers.dev**. Both commands deploy to Cloudflare.
+Cloudflare Access is not required; the application
 enforces its own login and admin permissions.
 Deployment uses OpenNext and Wrangler.
-Next.js 16.3.3 and OpenNext 1.20.6 support the app's Node.js authentication proxy
-while preserving the existing webpack build and browser media assets.
-The minified Worker is about 9 MiB. The configuration uses the account's default
-CPU limit and deploys on Workers Free, but concurrent live requests have exceeded
-that limit and returned 503 errors. Reliable production use needs lower CPU usage
-or Workers Paid with a higher CPU limit.
+The target is **Workers Paid**, with an explicit 30,000 ms CPU limit per HTTP request.
+Earlier Free-plan deployments exceeded the CPU allowance under concurrent requests.
+Paid increases the allowance; verify CPU, memory, and request errors under representative
+traffic before cutover. The installed OpenNext adapter implements the app's Node.js
+authentication proxy experimentally, so auth and admin flows require a real Workers smoke
+test after Next.js or adapter upgrades. The existing webpack build and browser media assets
+are preserved.
 
-The `HYPERDRIVE` binding pools connections to the existing PostgreSQL database.
-Query caching is disabled so authentication and permission reads remain fresh.
-Hyperdrive on Free allows 100,000 database statements per day. Live verification
-after enabling pooling still observed CPU-limit 503 errors, including on session
-and admin routes; pooling alone does not make this Next.js app reliable on Free.
+The pnpm patch for OpenNext 1.20.6 enables the `workerd` package condition in its
+Node middleware bundle so PostgreSQL uses its Cloudflare socket adapter. Keep the
+patch until an adapter upgrade passes `tests/cloudflare-middleware-postgres.test.mjs`.
+
+The production `HYPERDRIVE` binding pools connections to the existing PostgreSQL database.
+Keep Hyperdrive query caching disabled so authentication and permission reads remain fresh.
+The binding alone configures database access during Worker requests; a duplicate
+`DATABASE_URL` secret is not required when Hyperdrive is present. Local migration commands
+still need a direct database connection. The dev Worker has no Hyperdrive binding
+and connects directly using `DATABASE_URL` from `.env`.
 
 ### Configure once
 
-1. Activate `smarttools.lol` in the account's Cloudflare DNS zone.
+1. Enable Workers Paid and configure the `smarttools.lol` Cloudflare DNS zone for
+   production's `smarttools.lol` and `admin.smarttools.lol` custom domains.
+   The dev Worker uses workers.dev and needs no custom-domain setup.
 2. Run `pnpm exec wrangler login`.
-3. Set the Worker secrets listed below with `pnpm exec wrangler secret put NAME`
-   (each command prompts for the value):
-   - `DATABASE_URL` — a reachable PostgreSQL URL with TLS.
+3. Prepare `.env.prod` in the repository root with production
+   build settings and runtime secrets. This file is ignored by Git. Include the
+   applicable values below; `pnpm run deploy` uploads runtime secrets with the Worker:
+   - `DATABASE_URL` — only needed for Worker runtime when not using Hyperdrive.
    - `BETTER_AUTH_SECRET` — a persistent, random authentication secret.
    - `RESEND_API_KEY` and `ACCOUNTS_EMAIL` — a verified account-email sender.
    - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` if enabling Google login.
    - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`
      if enabling admin icon uploads.
+   - `BLOG_SCHEDULER_SECRET` and `ASSISTANT_SCHEDULER_SECRET` — separate random bearer
+     secrets for the two internal jobs. The single 30-minute cron invokes both jobs
+     through the Worker's self binding; leave the optional external target URLs unset.
    - Any other integrations used from `.env.example`.
-4. Set the Google OAuth redirect URL to
-   `https://smarttools.lol/api/auth/callback/google` when using Google login.
+4. If using Google login, register the callback URLs for the environments being tested:
+   `https://smarttools.lol/api/auth/callback/google`,
+   `https://admin.smarttools.lol/api/auth/callback/google`, and
+   `https://smarttools-dev.aashishpal50.workers.dev/api/auth/callback/google`.
 5. Point your local migration environment at the intended deployment database,
    then follow the [fresh-database migration sequence](#generic-assistant-migration)
    through `0007-generic-assistant` for first setup, or run `pnpm db:migrate <folder>`
@@ -406,31 +422,61 @@ and admin routes; pooling alone does not make this Next.js app reliable on Free.
    Migrations are a separate, explicit step and are
    never run by the Worker build or deploy command.
 
-`APP_URL` is configured in `wrangler.jsonc`. Supply
-`APP_URL=https://smarttools.lol` during production builds too. If using Cloudinary
-icons, supply `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` at build time; runtime secrets
-cannot change a value already compiled into browser JavaScript. Local credentials
-in `.env.local` are **not** uploaded automatically.
+When run locally, `pnpm run build:cloudflare` and `pnpm run deploy` use `.env.prod` for application
+settings; `pnpm run deploy:preview` and `pnpm run preview` use `.env`.
+Each command stops if its selected file
+is missing. Workers Builds uses the CI behavior described below instead. Values from `.env.local` and other dotenv files do not fill missing
+settings. The commands do not create or edit either environment file.
+
+`APP_URL` comes from the selected configuration in `wrangler.jsonc`:
+`https://smarttools.lol` for production and
+`https://smarttools-dev.aashishpal50.workers.dev` for dev. It takes precedence over
+`APP_URL` in the selected environment file.
+If using Cloudinary icons, put `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` in the
+selected file for the build; runtime secrets cannot change values already compiled
+into browser JavaScript.
+
+Deployment reads runtime settings from the selected file (`.env.prod` for production,
+`.env` for dev) after the build succeeds. Known basic settings such as `CACHE_ENABLED`,
+`AI_ENABLED`, `AI_PROVIDER`, and `OPENAI_MODEL` become plain-text variables visible in
+Cloudflare's dashboard. The allowlist is `PLAIN_VARIABLES` in `scripts/cloudflare.mjs`;
+credentials and unknown settings remain secrets, passed through a temporary secrets file.
+Redeploy the relevant Worker to apply the split to existing bindings.
+Configured Wrangler variables and bindings,
+public/build-only values, and deployment credentials are excluded from that upload.
+Existing secrets on the selected Worker that are omitted from the file are preserved; removing a line does
+not delete the remote secret. See [uploading secrets alongside code](https://developers.cloudflare.com/workers/configuration/secrets/#upload-secrets-alongside-code).
 
 ### Verify and deploy
 
 ```bash
-pnpm test
+pnpm exec vitest run tests/cloudflare-build.test.mjs tests/database-request.test.mjs tests/catalog-cache.test.mjs tests/redis-cache.test.mjs tests/rate-limit.test.mjs tests/blog-cron.test.mjs tests/assistant-cron.test.mjs tests/account-access.test.mjs tests/subdomain-routing.test.mjs
 pnpm lint
-pnpm preview
-# After checking the local Workers preview:
-APP_URL=https://smarttools.lol pnpm deploy
+# Optional local check, without uploading:
+pnpm run preview
+# Deploy the dev Worker:
+pnpm run deploy:preview
+# After checking the deployed dev Worker:
+pnpm run deploy
 ```
 
-`pnpm preview` builds and serves the app at `http://localhost:8787` in Cloudflare's
-local Workers runtime. Wrangler reads `.env.local` and the command sets the local
-authentication origin. Set
-`CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` to your database URL
-in `.env.local` for local preview; it connects directly without Hyperdrive pooling.
-The build removes OpenNext's embedded `.env` fallbacks;
-production credentials must be configured as Worker secrets. Check login,
+`pnpm run preview` builds and runs the app locally at `http://localhost:8787`
+using `.env`, without uploading a Worker. Both the browser build and local Worker
+use that localhost origin.
+
+`pnpm run deploy:preview` builds and deploys with Wrangler's `dev` environment.
+Put dev application settings and a remotely reachable `DATABASE_URL` in `.env`;
+the dev Worker connects directly, without Hyperdrive pooling. Dev has no scheduled
+cron triggers, and its self binding points to `smarttools-dev`.
+The build removes OpenNext's embedded dotenv fallbacks. Check login,
 account recovery, admin reads/writes,
-Paperwork export, and Media image/PDF processing before publishing.
+Paperwork export, and Media image/PDF processing before publishing. Also verify advanced
+template publication (which generates a PDF on the server) and AI streaming.
+Verify both scheduled jobs on production, where the 30-minute cron remains enabled.
+Dev admin stays on the same Worker host at `/admin`; production admin uses
+`https://admin.smarttools.lol`.
+Before production cutover, retain the previous Worker version for rollback and snapshot
+the database before any migration. A Worker rollback does not reverse database changes.
 
 `worker.ts` gives each request its own PostgreSQL connections, retains them while
 the response streams or background tasks run, and closes them afterward. Ordinary
@@ -439,9 +485,39 @@ stays in the browser; `public/_headers` preserves isolation headers on static
 Worker assets. The initial setup uses no R2 cache; add an OpenNext cache binding
 if introducing persistent ISR or server data caching.
 
-For Git deployments, connect this repository to Workers Builds, use the repository
-root and `pnpm deploy` as the deploy command, and configure build variables as well
-as runtime secrets. Keep `APP_URL` aligned with the domain in `wrangler.jsonc`.
+For Git deployments, connect the production branch to the `smarttools` Worker in
+Workers Builds and use the repository root. Under **Settings > Build**, configure:
+
+- Build variables: `NODE_VERSION=24.18.0` and `PNPM_VERSION=11.14.0`.
+- Build command: leave empty; deployment performs the build.
+- Deploy command: `pnpm run deploy`.
+
+The script detects Cloudflare's `WORKERS_CI` flag and deploys code with
+`--keep-vars`, preserving runtime variables and secrets already set by your local
+production deployment. No `.env.prod` file or `PROD_ENV_FILE` build secret is
+required in CI. Local deployments continue to read `.env.prod` and upload its
+runtime settings.
+
+Only values needed during compilation, such as `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
+and `NEXT_PUBLIC_SENTRY_DSN` when used, belong in Build Variables. Sentry upload
+settings also belong in build settings if enabled. Cloudflare does not expose
+the Worker's runtime secrets to its build runner. Better Auth receives a disposable
+key for route collection only; it is excluded from deployment and bundled env
+fallbacks are cleared before upload. The deployed Worker keeps its existing auth key.
+
+Commit the deployment scripts, `next.config.ts`, `pnpm-workspace.yaml`,
+`pnpm-lock.yaml`, and `patches/@opennextjs__cloudflare@1.20.6.patch` together so
+clean CI installs apply the PostgreSQL middleware fix. Keep populated env files out
+of Git. The wrapper preserves Cloudflare's CI target checks and deployment output
+settings. The deployment command rebuilds for the configured production origin,
+including after a dev build.
+Production uses the top-level Wrangler configuration; preview selects `env.dev`.
+The package scripts reject extra arguments or an inherited `CLOUDFLARE_ENV`;
+a flag such as `--dry-run` cannot silently become a live deploy.
+Use `pnpm run build:cloudflare` followed by
+`pnpm exec wrangler deploy --config wrangler.jsonc --env-file .env.prod --dry-run`
+for a local bundle check without uploading. Use explicit `pnpm run deploy`, since
+pnpm also has a built-in command named `deploy`.
 
 References: [OpenNext setup](https://opennext.js.org/cloudflare/get-started),
 [environment variables](https://opennext.js.org/cloudflare/howtos/env-vars), and

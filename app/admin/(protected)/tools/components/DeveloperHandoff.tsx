@@ -1,6 +1,7 @@
 "use client";
 
 import { Caption, CodeBlock, Overline, Button } from "@/components/ui/index.tsx";
+import { SyntaxHighlight } from "@/components/content/SyntaxHighlight";
 import { Check, Clipboard, Code2 } from "lucide-react";
 import { useState, type ReactElement } from "react";
 
@@ -35,7 +36,9 @@ export function DeveloperHandoff({ command }: { readonly command: string }): Rea
           {copied ? <Check aria-hidden="true" /> : <Clipboard aria-hidden="true" />}
         </Button>
       </div>
-      <CodeBlock className="block overflow-x-auto whitespace-pre px-4 py-5 text-on-ink">{command}</CodeBlock>
+      <CodeBlock className="block overflow-x-auto whitespace-pre bg-card px-4 py-5 text-foreground">
+        <SyntaxHighlight code={command} language="bash" />
+      </CodeBlock>
       <Caption className="block border-t border-white/10 px-4 py-3 text-on-ink-muted">
         Run locally, implement the generated definition and execution file, then deploy. The saved database
         configuration survives the seed.

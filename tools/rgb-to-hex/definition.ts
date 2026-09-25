@@ -57,7 +57,8 @@ export default {
   },
   content: {
     howToUse: [
-      "Paste comma-separated RGB/RGBA or modern rgb(51 102 255 / 50%). Use one color per line for a batch.",
+      "Type or paste comma-separated RGB/RGBA or modern rgb(51 102 255 / 50%), then press Enter or choose Add. Paste one color per line to add a batch.",
+      "Click a chip's circle to change its color, or click its text and use Enter or Save to apply an edit. Each added or edited color converts automatically.",
       "Channels accept 0–255 or 0–100%; alpha accepts 0–1 or 0–100%. Fractional channels are rounded to the nearest byte for HEX.",
       "By default, an opaque colour converts to #RRGGBB; anything with alpha below 1 converts to the eight-digit #RRGGBBAA form.",
     ],

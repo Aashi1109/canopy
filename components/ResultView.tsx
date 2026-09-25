@@ -21,6 +21,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  toast,
 } from "@/components/ui/index.tsx";
 import { AlertTriangle, Check, Copy } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -31,9 +40,10 @@ import { useAnalyticsToolKey } from "@/lib/tool-runtime/useToolRuntime";
 import { DiffView } from "@/components/DiffView";
 import { JsonResultRenderer, type JsonResultView } from "@/components/JsonResultRenderer";
 import { CodeEditor } from "@/components/content/CodeEditor";
+import { SyntaxHighlight } from "@/components/content/SyntaxHighlight";
 import { SandboxedHtmlPreview } from "@/components/SandboxedHtmlPreview";
 import { GeneratedList } from "@/components/Surfaces";
-import type { ToolRender, ToolRenderKind, ToolResult } from "@/lib/tool-framework/result";
+import type { ToolArtifact, ToolRender, ToolRenderKind, ToolResult } from "@/lib/tool-framework/result";
 import { readArtifact, type StoredToolArtifact } from "@/lib/tool-framework/artifacts";
 
 const MarkdownPreview = dynamic(
@@ -42,6 +52,8 @@ const MarkdownPreview = dynamic(
 );
 
 export interface ResultViewProps {
+  colorPreviews?: boolean;
+  hideArtifacts?: boolean;
   hideJsonHeader?: boolean;
   hideStats?: boolean;
   htmlPreview?: boolean;
@@ -55,7 +67,14 @@ export interface ResultViewProps {
 
 type ResultRendererOptions = Pick<
   ResultViewProps,
-  "hideJsonHeader" | "htmlPreview" | "initialJsonView" | "jsonHeader" | "language" | "markdownPreview" | "previewLayout"
+  | "colorPreviews"
+  | "hideJsonHeader"
+  | "htmlPreview"
+  | "initialJsonView"
+  | "jsonHeader"
+  | "language"
+  | "markdownPreview"
+  | "previewLayout"
 >;
 
 type ResultRendererRegistry = {
@@ -76,6 +95,8 @@ interface DownloadButtonProps {
 }
 
 interface CopyButtonProps {
+  /** Optional content-only trigger, such as a copyable color value. */
+  children?: ReactNode;
   content: string;
   disabled?: boolean;
   iconOnly?: boolean;
@@ -178,7 +199,62 @@ function ArtifactDownloadButton({
   );
 }
 
-export function CopyButton({ content, disabled = false, iconOnly = false, label = "Copy" }: CopyButtonProps) {
+function ArtifactDownloadMenu({ artifacts }: { artifacts?: readonly ToolArtifact[] }) {
+  const toolKey = useAnalyticsToolKey();
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
+  const currentArtifacts = useRef(artifacts);
+  currentArtifacts.current = artifacts;
+
+  useEffect(() => setOpen(false), [artifacts]);
+
+  const download = async (artifact: ToolArtifact) => {
+    if (pending || !currentArtifacts.current?.includes(artifact)) return;
+    setOpen(false);
+    setPending(true);
+    try {
+      if (artifact.storage === "inline") {
+        downloadResultContent(artifact.content, artifact.mimeType, artifact.name, toolKey);
+      } else {
+        const file = await readArtifact(artifact);
+        if (!currentArtifacts.current?.includes(artifact)) return;
+        downloadResultContent(file, artifact.mime, artifact.name, toolKey);
+      }
+    } catch (error) {
+      toast.error("Unable to download file", {
+        description: error instanceof Error ? error.message : "The generated file is unavailable. Run the tool again.",
+      });
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return (
+    <TooltipProvider>
+      <DropdownMenu open={open && Boolean(artifacts?.length)} onOpenChange={setOpen}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <ToolActionButton action="download" disabled={pending || !artifacts?.length} iconOnly>
+                {pending ? "Preparing download…" : "Download format"}
+              </ToolActionButton>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Choose a download format</TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent align="end" aria-label="Download format">
+          {artifacts?.map((artifact, index) => (
+            <DropdownMenuItem key={`${artifact.name}-${index}`} onSelect={() => void download(artifact)}>
+              {artifact.name}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </TooltipProvider>
+  );
+}
+
+export function CopyButton({ children, content, disabled = false, iconOnly = false, label = "Copy" }: CopyButtonProps) {
   const toolKey = useAnalyticsToolKey();
   const [feedback, setFeedback] = useState<{
     content: string;
@@ -221,8 +297,8 @@ export function CopyButton({ content, disabled = false, iconOnly = false, label 
   return (
     <ToolActionButton
       action="copy"
-      aria-label={iconOnly ? statusLabel : undefined}
-      icon={<StatusIcon aria-hidden="true" />}
+      aria-label={iconOnly || children ? statusLabel : undefined}
+      icon={children && status === "idle" ? <></> : <StatusIcon aria-hidden="true" />}
       iconOnly={iconOnly}
       disabled={disabled}
       onClick={() => void copy()}
@@ -230,7 +306,7 @@ export function CopyButton({ content, disabled = false, iconOnly = false, label 
       type="button"
     >
       <span aria-live="polite" className={iconOnly ? "sr-only" : undefined}>
-        {statusLabel}
+        {status === "idle" ? (children ?? statusLabel) : statusLabel}
       </span>
     </ToolActionButton>
   );
@@ -419,10 +495,12 @@ export function getResultCount(result: ToolResult | null): number | null {
 export function ResultActions({
   canCopy,
   canDownload,
+  downloadMenu = false,
   result,
 }: {
   canCopy: boolean;
   canDownload: boolean;
+  downloadMenu?: boolean;
   result: ToolResult | null;
 }) {
   const artifact = resultArtifact(result);
@@ -441,7 +519,9 @@ export function ResultActions({
         />
       ) : null}
       {canDownload ? (
-        storedArtifact ? (
+        downloadMenu ? (
+          <ArtifactDownloadMenu artifacts={result?.artifacts} />
+        ) : storedArtifact ? (
           <ArtifactDownloadButton artifact={storedArtifact} iconOnly />
         ) : (
           <DownloadButton
@@ -465,7 +545,9 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
       <div className="space-y-3 overflow-auto p-4">
         <Strong>{result.metadata.title || result.resolvedUrl}</Strong>
         <Text>{result.metadata.description}</Text>
-        <CodeBlock className="whitespace-pre-wrap break-words">{result.tags}</CodeBlock>
+        <CodeBlock className="whitespace-pre-wrap break-words">
+          <SyntaxHighlight code={result.tags} language="html" />
+        </CodeBlock>
       </div>
     </RenderFrame>
   ),
@@ -478,6 +560,7 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
           <CodeEditor
             aria-label="Result code"
             className="min-h-0 flex-1"
+            colorPreviews={options.colorPreviews}
             value={result.text}
             language={options.language}
             readOnly
@@ -504,6 +587,7 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
         <CodeEditor
           aria-label="Result code"
           className="min-h-0 flex-1"
+          colorPreviews={options?.colorPreviews}
           value={result.code}
           language={result.language}
           readOnly
@@ -695,12 +779,12 @@ function renderPrimary(result: ToolRender, options?: ResultRendererOptions): Rea
   return RESULT_RENDERERS[result.render](result as never, options);
 }
 
-function CommonResultDetails({ hideStats, result }: ResultViewProps) {
+function CommonResultDetails({ hideArtifacts, hideStats, result }: ResultViewProps) {
   const hasDetails = Boolean(
     (!hideStats && result.stats?.length) ||
     result.verdict ||
     result.issues?.length ||
-    result.artifacts?.length ||
+    (!hideArtifacts && result.artifacts?.length) ||
     result.sections?.length,
   );
   if (!hasDetails) return null;
@@ -753,7 +837,7 @@ function CommonResultDetails({ hideStats, result }: ResultViewProps) {
           </List>
         </AlertBanner>
       ) : null}
-      {result.artifacts?.length ? (
+      {!hideArtifacts && result.artifacts?.length ? (
         <div className="flex flex-wrap items-center gap-2">
           <Text>Downloads</Text>
           {result.artifacts.map((artifact) =>
@@ -782,6 +866,8 @@ function CommonResultDetails({ hideStats, result }: ResultViewProps) {
 }
 
 export function ResultView({
+  colorPreviews,
+  hideArtifacts,
   hideJsonHeader,
   hideStats,
   htmlPreview,
@@ -795,6 +881,7 @@ export function ResultView({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       {renderPrimary(result, {
+        colorPreviews,
         hideJsonHeader,
         htmlPreview,
         initialJsonView,
@@ -803,7 +890,7 @@ export function ResultView({
         markdownPreview,
         previewLayout,
       })}
-      <CommonResultDetails hideStats={hideStats} result={result} />
+      <CommonResultDetails hideArtifacts={hideArtifacts} hideStats={hideStats} result={result} />
     </div>
   );
 }

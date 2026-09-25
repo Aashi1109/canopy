@@ -3,7 +3,15 @@
 import CodeMirror, { ExternalChange } from "@uiw/react-codemirror";
 import { autocompletion } from "@codemirror/autocomplete";
 import { EditorState, type Extension, type Range } from "@codemirror/state";
-import { Decoration, EditorView, ViewPlugin, lineNumbers, type ViewUpdate } from "@codemirror/view";
+import {
+  Decoration,
+  EditorView,
+  MatchDecorator,
+  ViewPlugin,
+  WidgetType,
+  lineNumbers,
+  type ViewUpdate,
+} from "@codemirror/view";
 import {
   HighlightStyle,
   codeFolding,
@@ -52,6 +60,49 @@ const AUTO_COMPLETION_MAX_LENGTH = 100_000;
 const completionOptions = { activateOnTypingDelay: 150, maxRenderedOptions: 20 };
 const automaticCompletion = autocompletion(completionOptions);
 const manualCompletion = autocompletion({ ...completionOptions, activateOnTyping: false });
+
+class ColorPreviewWidget extends WidgetType {
+  constructor(readonly color: string) {
+    super();
+  }
+
+  eq(other: ColorPreviewWidget) {
+    return this.color === other.color;
+  }
+
+  toDOM(view: EditorView) {
+    const swatch = view.dom.ownerDocument.createElement("span");
+    swatch.className = "cm-colorPreview";
+    swatch.style.backgroundColor = this.color;
+    swatch.setAttribute("aria-hidden", "true");
+    return swatch;
+  }
+}
+
+const colorPreviewMatcher = new MatchDecorator({
+  regexp: /#[\da-f]{3,8}/gi,
+  decorate(add, from, to, match, view) {
+    const color = match[0];
+    if (![4, 5, 7, 9].includes(color.length)) return;
+    const before = view.state.doc.sliceString(Math.max(0, from - 1), from);
+    const after = view.state.doc.sliceString(to, Math.min(view.state.doc.length, to + 1));
+    if (/[\p{L}\p{N}_#-]/u.test(before) || /[\p{L}\p{N}_#-]/u.test(after)) return;
+    add(from, from, Decoration.widget({ widget: new ColorPreviewWidget(color), side: -1 }));
+  },
+});
+
+const colorPreviewExtension = ViewPlugin.fromClass(
+  class {
+    decorations;
+    constructor(view: EditorView) {
+      this.decorations = colorPreviewMatcher.createDeco(view);
+    }
+    update(update: ViewUpdate) {
+      this.decorations = colorPreviewMatcher.updateDeco(update, this.decorations);
+    }
+  },
+  { decorations: (plugin) => plugin.decorations },
+);
 
 const foldingExtensions = [
   foldGutter({
@@ -128,6 +179,16 @@ const editorTheme = EditorView.theme({
   ".cm-foldPlaceholder:hover": { borderColor: "var(--primary)" },
   ".cm-foldPlaceholder:focus-visible": { outline: "2px solid var(--ring)", outlineOffset: "2px" },
   ".cm-placeholder": { color: "var(--muted-foreground)" },
+  ".cm-colorPreview": {
+    display: "inline-block",
+    width: "0.85em",
+    height: "0.85em",
+    marginRight: "0.3em",
+    verticalAlign: "-0.05em",
+    border: "1px solid var(--muted-foreground)",
+    borderRadius: "1px",
+    boxSizing: "border-box",
+  },
   ".cm-tooltip": {
     backgroundColor: "var(--popover)",
     color: "var(--popover-foreground)",
@@ -237,6 +298,7 @@ export default function CodeEditorImpl({
   maxLength,
   placeholder,
   showLineNumbers = true,
+  colorPreviews = false,
   wrap = "soft",
   onCaretChange,
   onScroll,
@@ -334,6 +396,7 @@ export default function CodeEditorImpl({
           ? yamlHighlighting
           : codeHighlighting,
       searchHighlighting,
+      ...(colorPreviews ? [colorPreviewExtension] : []),
       rainbowBrackets,
       ...(languageName === "csv" || languageName === "tsv" ? [] : [indentGuides]),
       interactionExtensions,
@@ -359,6 +422,7 @@ export default function CodeEditorImpl({
     languageName,
     searchHighlighting,
     showLineNumbers,
+    colorPreviews,
     wrap,
   ]);
 

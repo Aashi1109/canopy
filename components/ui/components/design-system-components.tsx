@@ -136,7 +136,7 @@ function WorkbenchShellContent({
         data-variant={variant}
         className={cn(
           "flex h-[calc(100dvh-4.5rem)] min-h-0 w-full flex-col overflow-hidden rounded-xl border border-input bg-card",
-          "[&_[data-slot=button]:not([data-variant=card-action])]:h-8 [&_[data-slot=button]:not([data-variant=card-action])]:min-h-8 [&_[data-slot=button]:not([data-variant=card-action])]:gap-1.5 [&_[data-slot=button]:not([data-variant=card-action])]:rounded-lg [&_[data-slot=button]:not([data-variant=card-action])]:px-2.5 [&_[data-slot=button][data-size^=icon]]:size-8 [&_[data-slot=button][data-size^=icon]]:px-0 [&_[data-slot=button]_svg:not([class*=size-])]:size-3.5",
+          "[&_[data-slot=button]:not([data-variant=card-action])]:h-8 [&_[data-slot=button]:not([data-variant=card-action])]:min-h-8 [&_[data-slot=button]:not([data-variant=card-action])]:gap-1.5 [&_[data-slot=button]:not([data-variant=card-action])]:px-2.5 [&_[data-slot=button][data-size^=icon]]:size-8 [&_[data-slot=button][data-size^=icon]]:px-0 [&_[data-slot=button]_svg:not([class*=size-])]:size-3.5",
           "[&_[data-slot=input]]:h-8 [&_[data-slot=input]]:min-h-8 [&_[data-slot=input]:not([type=range]):not([data-leading-icon])]:pl-2.5 [&_[data-slot=input]:not([type=range]):not([data-suffix])]:pr-2.5",
           "[&_[data-slot=select-trigger]]:h-8 [&_[data-slot=select-trigger]]:min-h-8 [&_[data-slot=select-trigger]]:px-2.5 [&_[data-slot=select-trigger]>svg]:size-3.5",
           "[&_[data-slot=workbench-status]_[role=status]>span.text-success]:text-foreground",

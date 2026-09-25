@@ -28,6 +28,7 @@
 
 .highlight :global(.hljs-keyword),
 .highlight :global(.hljs-selector-tag),
+.highlight :global(.hljs-selector-id),
 .highlight :global(.hljs-built_in),
 .highlight :global(.hljs-type) {
   color: var(--primary);

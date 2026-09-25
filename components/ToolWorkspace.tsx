@@ -242,6 +242,7 @@ export function ToolWorkspace(
   props: WorkspaceProps &
     Pick<ResultSurfaceProps, "initialJsonView" | "renderResult" | "renderResultActions" | "retainedResult"> & {
       highlightedInput?: ReactNode;
+      inputHighlightMode?: "persistent" | "preview";
       onSourceScroll?: (scroller: HTMLElement) => void;
       renderInputSettings?: () => ReactNode;
       sourceRef?: Ref<HTMLElement>;
@@ -305,6 +306,7 @@ export function ToolWorkspace(
             footer={props.spec.input.kind === "fields" ? inputSettings : undefined}
             header={props.spec.input.kind === "text" ? inputSettings : undefined}
             highlightedInput={props.highlightedInput}
+            inputHighlightMode={props.inputHighlightMode}
             input={props.input}
             inputSpec={props.spec.input}
             onInputChange={props.onInputChange}

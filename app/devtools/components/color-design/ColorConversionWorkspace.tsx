@@ -4,13 +4,15 @@ import { useId } from "react";
 
 import { ResultSurface } from "@/components/ResultSurface";
 import { CopyButton } from "@/components/ResultView";
+import { SyntaxHighlight } from "@/components/content/SyntaxHighlight";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
-import { Button, ColorSwatch, Field, Textarea } from "@/components/ui/index.tsx";
-import { parseColor, parseHexColor, rgbToHex } from "@/lib/devtools/shared/color";
+import { Button, ColorSwatch, Field } from "@/components/ui/index.tsx";
+import { parseColor, rgbToHex } from "@/lib/devtools/shared/color";
 import type { ToolResult } from "@/lib/tool-framework/result";
 import { DesignWorkspace } from "./DesignWorkspace";
 import { ColorValueList } from "./ColorValueList";
+import { ColorChipInput } from "./ColorChipInput";
 
 function swatch(value: string, outputFunction?: "rgb" | "hsl"): string | undefined {
   for (const candidate of [value, ...(outputFunction ? [`${outputFunction}(${value})`] : [])]) {
@@ -36,15 +38,6 @@ export default function ColorConversionWorkspace({
     .split(/\r\n?|\n/)
     .map((value, index) => ({ value: value.trim(), line: index + 1 }))
     .filter(({ value }) => value);
-  const valid = lines.flatMap(({ value, line }) => {
-    try {
-      const color = inputFormat === "hex" ? parseHexColor(value) : parseColor(value);
-      if (inputFormat === "rgb" && !/^rgba?\(/i.test(value)) return [];
-      return [{ color: rgbToHex(color), line }];
-    } catch {
-      return [];
-    }
-  });
   const renderResult = (result: ToolResult) => {
     const items = result.render === "list" ? result.items : result.render === "text" ? [result.text] : [];
     const labels = result.render === "list" ? result.labels : [lines[0]?.value];
@@ -70,7 +63,9 @@ export default function ColorConversionWorkspace({
                 {result.render === "list" ? (
                   <p className="truncate text-xs text-muted-foreground">{labels?.[index]}</p>
                 ) : null}
-                <code className="whitespace-pre-wrap break-all text-sm">{value}</code>
+                <code className="whitespace-pre-wrap break-all text-sm">
+                  <SyntaxHighlight code={value} language="css" />
+                </code>
               </div>
               <CopyButton
                 disabled={Boolean(props.running || props.error)}
@@ -94,10 +89,10 @@ export default function ColorConversionWorkspace({
             error={
               props.error ??
               (props.result?.issues?.length ? (
-                <ul aria-label="Invalid color lines">
+                <ul aria-label="Invalid colors">
                   {props.result.issues.map((issue, index) => (
                     <li key={index}>
-                      Line {issue.line}: {issue.message}
+                      Color {lines.findIndex(({ line }) => line === issue.line) + 1}: {issue.message}
                     </li>
                   ))}
                 </ul>
@@ -105,36 +100,28 @@ export default function ColorConversionWorkspace({
             }
             htmlFor={`${id}-source`}
             label={label}
-            description="One color per line. Valid batch rows remain available if another line has an error."
+            description="Press Enter to add a color, or paste one per line. Click a circle to pick a color; click its value to edit."
           >
-            <Textarea
+            <ColorChipInput
+              inputFormat={inputFormat}
               disabled={props.disabled}
               id={`${id}-source`}
-              onChange={(event) => props.onInputChange({ ...props.input, text: event.target.value })}
+              onValueChange={(text) => props.onInputChange({ ...props.input, text })}
               placeholder={example}
-              rows={4}
-              spellCheck={false}
               value={props.input.text}
             />
           </Field>
-          <div className="flex flex-wrap items-center gap-2">
-            {valid.slice(0, 24).map(({ color, line }) => (
-              <ColorSwatch className="size-9" color={color} key={line} label={`Source line ${line}: ${color}`} />
-            ))}
-            {valid.length > 24 ? (
-              <span className="text-xs text-muted-foreground">+{valid.length - 24} more</span>
-            ) : null}
-            {!lines.length ? (
-              <Button
-                disabled={props.disabled}
-                onClick={() => props.onInputChange({ ...props.input, text: example })}
-                size="sm"
-                variant="outline"
-              >
-                Try a color
-              </Button>
-            ) : null}
-          </div>
+          {!lines.length ? (
+            <Button
+              className="self-start"
+              disabled={props.disabled}
+              onClick={() => props.onInputChange({ ...props.input, text: example })}
+              size="sm"
+              variant="outline"
+            >
+              Try a color
+            </Button>
+          ) : null}
         </div>
       }
       controls={

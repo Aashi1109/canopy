@@ -66,7 +66,8 @@ export default {
   },
   content: {
     howToUse: [
-      "Paste a HEX, RGB, HSL, or named CSS color. Use one per line for a batch.",
+      "Type or paste a HEX, RGB, HSL, or named CSS color, then press Enter or choose Add. Paste one color per line to add a batch.",
+      "Click a chip's circle to change its color, or click its text and use Enter or Save to apply an edit.",
       "Choose HEX, RGB, or HSL output; transparency is preserved by default.",
       "Copy one result or all successful values. Invalid lines remain identified for correction.",
     ],

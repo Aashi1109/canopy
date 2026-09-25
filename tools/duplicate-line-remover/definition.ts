@@ -7,7 +7,7 @@ export default {
   keywords: ["duplicate", "dedupe", "unique lines", "remove duplicates", "uniq", "list"],
   name: "Duplicate Line Remover",
   description: "Remove repeated lines while preserving order.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
     label: "Text input",

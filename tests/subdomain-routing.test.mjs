@@ -71,12 +71,13 @@ test("admin origins derive from the product hostname and preserve local ports", 
   }
 });
 
-test("IPs and Vercel preview domains keep same-host admin routes", async () => {
+test("IPs and hosted preview domains keep same-host admin routes", async () => {
   for (const appUrl of [
     "http://127.0.0.1:3000",
     "http://[::1]:3000",
     "https://192.168.1.10:3000",
     "https://canopy-preview.vercel.app",
+    "https://smarttools.aashishpal50.workers.dev",
   ]) {
     process.env.APP_URL = appUrl;
     expect(getSubdomainOrigin("admin"), appUrl).toBe(null);

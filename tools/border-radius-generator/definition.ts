@@ -48,7 +48,7 @@ export default {
       bottomLeftY: { kind: "number", label: "Bottom-left vertical", default: 16, min: 0, max: 10000 },
     },
   },
-  trigger: { mode: "live" },
+  trigger: { mode: "live", debounceMs: 0 },
   capabilities: { copy: true },
   workbenchMark: { text: "BR" },
   labels: {

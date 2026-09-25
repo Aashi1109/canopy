@@ -32,7 +32,13 @@ function subdomainBaseUrl(): URL | null {
     );
   }
   // IPs cannot host subdomains; hosted preview subdomains are not owned by this app.
-  if (ipAddress || hostname === "vercel.app" || hostname.endsWith(".vercel.app")) {
+  if (
+    ipAddress ||
+    hostname === "vercel.app" ||
+    hostname.endsWith(".vercel.app") ||
+    hostname === "workers.dev" ||
+    hostname.endsWith(".workers.dev")
+  ) {
     return null;
   }
   url.hostname = hostname;

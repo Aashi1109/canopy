@@ -19,3 +19,6 @@ minimumReleaseAgeExclude:
   - postcss@8.5.23
   - js-yaml@5.2.2
   - prettier@3.9.7
+
+patchedDependencies:
+  "@opennextjs/cloudflare@1.20.6": patches/@opennextjs__cloudflare@1.20.6.patch

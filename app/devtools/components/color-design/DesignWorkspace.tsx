@@ -22,7 +22,7 @@ export function DesignWorkspace({
   preview: ReactNode;
   controls: ReactNode;
   output?: ReactNode;
-  title?: string;
+  title?: ReactNode;
   controlTitle?: string;
   previewActions?: ReactNode;
   previewMeta?: ReactNode;

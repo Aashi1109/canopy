@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus } from "lucide-react";
 import { DesignWorkspace } from "@/app/devtools/components/color-design/DesignWorkspace";
 import { ResultSurface } from "@/components/ResultSurface";
 import { ColorValueList } from "@/app/devtools/components/color-design/ColorValueList";
@@ -79,12 +78,7 @@ export default function ImageColorPickerWorkspace(props: WorkspaceProps) {
       controlTitle="Pick a pixel"
       previewMeta={file ? <FileChip file={file} disabled={props.disabled} onRemove={clearImage} /> : undefined}
       previewActions={
-        <ToolActionButton
-          action="upload"
-          icon={<Plus aria-hidden="true" />}
-          disabled={props.disabled}
-          onClick={() => fileInput.current?.click()}
-        >
+        <ToolActionButton action="upload" disabled={props.disabled} onClick={() => fileInput.current?.click()}>
           Upload
         </ToolActionButton>
       }
@@ -245,8 +239,9 @@ export default function ImageColorPickerWorkspace(props: WorkspaceProps) {
                     palette.rows.map(([hex, share]) => (
                       <div key={hex} className="min-w-0">
                         <ColorSwatch className="h-9" color={hex} />
-                        <Caption className="block truncate">{hex}</Caption>
-                        <Caption>{share}</Caption>
+                        <Caption className="block whitespace-nowrap">
+                          {hex} <span aria-hidden="true">|</span> {share}
+                        </Caption>
                       </div>
                     ))}
                 </div>

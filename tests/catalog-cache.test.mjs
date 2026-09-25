@@ -14,7 +14,9 @@ vi.mock("@/db/index.ts", () => ({
           const fixture = globalThis.__catalogCacheTest;
           fixture.reads++;
           if (fixture.failure) throw new Error("Database unavailable");
-          return structuredClone(fixture.rows);
+          const rows = structuredClone(fixture.rows);
+          await fixture.readGate;
+          return rows;
         },
       };
     },
@@ -36,6 +38,61 @@ test("separately loaded server modules share catalog storage and invalidation", 
     expect(catalogCache.has("all")).toBe(false);
   } finally {
     catalogCache.clear();
+  }
+});
+
+test("Workers read current catalog data without sharing snapshots or pending database work", async () => {
+  const date = new Date("2026-09-25T00:00:00Z");
+  const fixture = {
+    reads: 0,
+    contentReads: 0,
+    configured: true,
+    rows: [
+      {
+        toolId: "devtools.markdown-previewer",
+        app: "devtools",
+        slug: "markdown-previewer",
+        name: "Initial name",
+        description: "Public tool",
+        order: 0,
+        enabled: true,
+        archived: false,
+        iconUrl: null,
+        createdAt: date,
+        updatedAt: date,
+      },
+    ],
+    content: [],
+  };
+  globalThis.__catalogCacheTest = fixture;
+  const navigator = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  try {
+    const { getTools, getPublicTools } = await import("@/lib/tool-framework/catalog.ts");
+    expect((await getTools())[0].name).toBe("Initial name");
+    Object.defineProperty(globalThis, "navigator", {
+      configurable: true,
+      value: { userAgent: "Cloudflare-Workers" },
+    });
+    fixture.rows[0].name = "Published update";
+    expect((await getPublicTools())[0].name, "Workers ignore any existing isolate snapshot").toBe("Published update");
+
+    const gate = Promise.withResolvers();
+    fixture.readGate = gate.promise;
+    fixture.rows[0].name = "First request";
+    const first = getTools();
+    fixture.rows[0].name = "Second request";
+    const second = getTools();
+    gate.resolve();
+    expect((await first)[0].name).toBe("First request");
+    expect((await second)[0].name, "independent requests cannot reuse in-flight database work").toBe("Second request");
+    fixture.rows[0].enabled = false;
+    expect(await getPublicTools(), "disabling a tool takes effect on the next request").toEqual([]);
+    expect(fixture.reads).toBe(5);
+  } finally {
+    catalogCache.clear();
+    delete globalThis.__catalogCacheTest;
+    if (navigator) Object.defineProperty(globalThis, "navigator", navigator);
+    else delete globalThis.navigator;
   }
 });
 

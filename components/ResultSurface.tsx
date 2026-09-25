@@ -10,6 +10,8 @@ import type { ToolResult } from "@/lib/tool-framework/result";
 import type { ToolSpec } from "@/lib/tool-framework/spec";
 
 export interface ResultSurfaceProps {
+  colorPreviews?: boolean;
+  downloadMenu?: boolean;
   error?: string;
   initialJsonView?: ResultViewProps["initialJsonView"];
   result: ToolResult | null;
@@ -24,6 +26,8 @@ export interface ResultSurfaceProps {
 }
 
 export function ResultSurface({
+  colorPreviews = false,
+  downloadMenu = false,
   error,
   initialJsonView,
   result,
@@ -79,6 +83,8 @@ export function ResultSurface({
       renderResult(visibleResult)
     ) : (
       <ResultView
+        colorPreviews={colorPreviews}
+        hideArtifacts={downloadMenu}
         hideJsonHeader={cardJson || showingJsonPreview}
         hideStats={spec.resultStats === "status-only"}
         htmlPreview={htmlTablePreview && resultView === "raw"}
@@ -117,6 +123,7 @@ export function ResultSurface({
                 <ResultActions
                   canCopy={cardJson || Boolean(spec.capabilities?.copy)}
                   canDownload={cardJson || Boolean(spec.capabilities?.download)}
+                  downloadMenu={downloadMenu}
                   result={result}
                 />
               ) : null}

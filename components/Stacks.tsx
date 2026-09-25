@@ -379,6 +379,10 @@ function SplitStack({
             ? "max-[64rem]:!flex-col max-[64rem]:overflow-y-auto max-[64rem]:[&>[data-slot=resizable-handle]]:!hidden"
             : undefined,
         )}
+        defaultLayout={{
+          [primaryPaneId]: initialPrimarySize.current,
+          [secondaryPaneId]: 100 - initialPrimarySize.current,
+        }}
         disabled={!resizable}
         id={storageKey ?? splitId}
         onPointerDownCapture={() => setAnimateCollapse(false)}

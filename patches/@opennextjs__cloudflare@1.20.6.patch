@@ -1,0 +1,13 @@
+diff --git a/dist/cli/build/open-next/bundle-node-middleware.js b/dist/cli/build/open-next/bundle-node-middleware.js
+index 6cc1cb15b8b5cf8aaa8ef2c922bff499b35f9704..caa2e552c0a9ca79a1707bcf754bedf9779d1705 100644
+--- a/dist/cli/build/open-next/bundle-node-middleware.js
++++ b/dist/cli/build/open-next/bundle-node-middleware.js
+@@ -178,7 +178,7 @@ export async function bundleNodeMiddleware(options) {
+         sourcemap: options.debug ? "inline" : false,
+         sourcesContent: false,
+         treeShaking: true,
+-        conditions: ["module"],
++        conditions: ["workerd", "module"],
+         mainFields: ["module", "main"],
+         external: ["node:*", "./open-next.config.mjs"],
+         define: {

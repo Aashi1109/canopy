@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/components/typography.tsx";
 
 import { OrderableList } from "@/components/ui/components/OrderableList.tsx";
+import { SelectionHighlight } from "@/components/ui/components/SelectionHighlight.tsx";
 import {
   AccountNavigation,
   Alert,
@@ -49,6 +50,7 @@ import {
   Badge,
   BrandLockup,
   Button,
+  CanvasHandle,
   BackButton,
   Pagination,
   ToolActionButton,
@@ -277,6 +279,8 @@ function Specimen({ children, className, label }: { children: ReactNode; classNa
 
 export default function DesignSystemPage() {
   const [documents, setDocuments] = useState(initialDocuments);
+  const [selectedDocumentId, setSelectedDocumentId] = useState("invoice");
+  const [highlightedFilter, setHighlightedFilter] = useState("all");
   const [focusExample, setFocusExample] = useState("Edits stay here when you switch views or exit focus mode.");
   const [uploadedFileVisible, setUploadedFileVisible] = useState(true);
   const [handbookPage, setHandbookPage] = useState(9);
@@ -394,11 +398,17 @@ export default function DesignSystemPage() {
               </Specimen>
               <Specimen label="InlineCode · Geist Mono · 12px">
                 <P>
-                  Use <InlineCode>JSON.stringify()</InlineCode> to serialize data.
+                  Use{" "}
+                  <InlineCode>
+                    <SyntaxHighlight code="JSON.stringify()" language="javascript" />
+                  </InlineCode>{" "}
+                  to serialize data.
                 </P>
               </Specimen>
               <Specimen label="CodeBlock · Geist Mono · 12px">
-                <CodeBlock>{'{\n  "ready": true\n}'}</CodeBlock>
+                <CodeBlock>
+                  <SyntaxHighlight code={'{\n  "ready": true\n}'} language="json" />
+                </CodeBlock>
               </Specimen>
               <Specimen label="SyntaxHighlight · language-aware code">
                 <CodeBlock>
@@ -573,21 +583,65 @@ export default function DesignSystemPage() {
             <SectionCard>
               <SectionHeading
                 title="Color controls"
-                description="Visual selection, CSS text, and explicit opacity share one validated value."
+                description="Inline color and opacity are the standard control layout across tools."
               />
-              <ColorControl label="Example color" value={exampleColor} onChange={setExampleColor} />
-              <Specimen label="Inline">
+              <ColorControl label="Default inline color" value={exampleColor} onChange={setExampleColor} />
+              <Specimen label="Stacked · legacy alternative">
                 <ColorControl
-                  layout="inline"
-                  label="Inline example color"
+                  layout="stacked"
+                  label="Stacked example color"
                   value={exampleColor}
                   onChange={setExampleColor}
                 />
                 <Caption className="block mt-2 text-muted-foreground">
-                  Color and opacity in one row. Click the color dot to open the picker.
+                  Explicit stacked layout retains the opacity slider and separate swatch for legacy surfaces.
                 </Caption>
               </Specimen>
               <ColorSwatch color="#3366FF80" className="h-16" label="Half-transparent blue over a checkerboard" />
+              <Specimen label="Canvas handles">
+                <div className="relative h-16">
+                  <CanvasHandle aria-label="Default canvas handle" style={{ left: "25%", top: "50%" }} />
+                  <CanvasHandle
+                    aria-label="Selected canvas handle"
+                    aria-pressed
+                    selected
+                    style={{ left: "50%", top: "50%" }}
+                  />
+                  <CanvasHandle aria-label="Disabled canvas handle" disabled style={{ left: "75%", top: "50%" }} />
+                </div>
+                <Caption>Default, selected, and disabled. A 16px dot keeps a 44px pointer target.</Caption>
+              </Specimen>
+              <Specimen label="Subtle edge handles">
+                <div className="relative h-28">
+                  <div className="absolute left-1/2 top-1/2 h-12 w-28 -translate-x-1/2 -translate-y-1/2 border border-border">
+                    <CanvasHandle
+                      aria-label="Top edge handle"
+                      variant="subtle"
+                      edge="top"
+                      style={{ left: "50%", top: 0 }}
+                    />
+                    <CanvasHandle
+                      aria-label="Right edge handle"
+                      variant="subtle"
+                      edge="right"
+                      style={{ left: "100%", top: "50%" }}
+                    />
+                    <CanvasHandle
+                      aria-label="Bottom edge handle"
+                      variant="subtle"
+                      edge="bottom"
+                      style={{ left: "50%", top: "100%" }}
+                    />
+                    <CanvasHandle
+                      aria-label="Left edge handle"
+                      variant="subtle"
+                      edge="left"
+                      style={{ left: 0, top: "50%" }}
+                    />
+                  </div>
+                </div>
+                <Caption>8px markers with 28px targets outside the preview. Hover or focus to highlight.</Caption>
+              </Specimen>
             </SectionCard>
             <SectionCard>
               <SectionHeading
@@ -902,6 +956,36 @@ export default function DesignSystemPage() {
                   <TabsContent value="raw">Raw output</TabsContent>
                   <TabsContent value="table">Table preview</TabsContent>
                 </Tabs>
+              </Specimen>
+              <Specimen label="Selection highlight · existing buttons">
+                <SelectionHighlight asChild activeSelector='[aria-pressed="true"]'>
+                  <div aria-label="Example file filter" className="flex w-fit max-w-full flex-wrap gap-1" role="group">
+                    <Button
+                      aria-pressed={highlightedFilter === "all"}
+                      className="rounded-lg aria-pressed:text-primary"
+                      onClick={() => setHighlightedFilter("all")}
+                      variant="card-action"
+                    >
+                      All
+                    </Button>
+                    <Button
+                      aria-pressed={highlightedFilter === "images"}
+                      className="rounded-lg aria-pressed:text-primary"
+                      onClick={() => setHighlightedFilter("images")}
+                      variant="card-action"
+                    >
+                      Images
+                    </Button>
+                    <Button
+                      aria-pressed={highlightedFilter === "documents"}
+                      className="rounded-lg aria-pressed:text-primary"
+                      onClick={() => setHighlightedFilter("documents")}
+                      variant="card-action"
+                    >
+                      Documents
+                    </Button>
+                  </div>
+                </SelectionHighlight>
               </Specimen>
               <Specimen label="Tooltip">
                 <TooltipProvider>
@@ -1283,10 +1367,11 @@ export default function DesignSystemPage() {
             <SectionCard className="xl:col-span-2">
               <SectionHeading
                 className="mb-0"
-                description="Drag with the handle, or focus it and use the keyboard."
+                description="Select a row to move the highlight. Reorder with the drag handle or keyboard; selection follows the document."
                 title="Orderable list"
               />
               <OrderableList
+                animateSelection
                 ariaLabel="Document section order"
                 className="grid gap-2"
                 getId={(item) => item.id}
@@ -1295,9 +1380,7 @@ export default function DesignSystemPage() {
                 onReorder={setDocuments}
                 renderItem={(item, state) => (
                   <div
-                    className={`flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 ${
-                      state.isDragging ? "shadow-lg" : ""
-                    }`}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 ${state.isDragging ? "shadow-lg" : ""}`}
                   >
                     <Button
                       {...state.attributes}
@@ -1309,10 +1392,23 @@ export default function DesignSystemPage() {
                     >
                       <GripVertical />
                     </Button>
-                    <FileText className="size-4 text-primary" />
-                    <Caption className="">{item.label}</Caption>
+                    <Button
+                      aria-pressed={item.id === selectedDocumentId}
+                      className="min-w-0 flex-1 justify-start"
+                      onClick={() => setSelectedDocumentId(item.id)}
+                      variant="card-action"
+                    >
+                      <FileText className="size-4 text-primary" />
+                      <span className="truncate">{item.label}</span>
+                      {item.id === selectedDocumentId && (
+                        <Caption aria-hidden="true" className="ml-auto text-primary">
+                          Current
+                        </Caption>
+                      )}
+                    </Button>
                   </div>
                 )}
+                selectedId={selectedDocumentId}
               />
             </SectionCard>
           </div>

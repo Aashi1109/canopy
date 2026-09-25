@@ -58,8 +58,9 @@ export default {
   },
   content: {
     howToUse: [
-      "Type or paste a HEX color. All four CSS forms work: #RGB, #RGBA, #RRGGBB, and #RRGGBBAA — the leading # is optional.",
-      "The result updates as you type. By default, a fully opaque color returns rgb(); anything with alpha below 1 returns rgba().",
+      "Type or paste a HEX color, then press Enter or choose Add. All four CSS forms work: #RGB, #RGBA, #RRGGBB, and #RRGGBBAA — the leading # is optional. Paste one color per line to add a batch.",
+      "Each added color converts automatically. By default, a fully opaque color returns rgb(); anything with alpha below 1 returns rgba().",
+      "Click a chip's circle to change its color, or click its text and use Enter or Save to apply an edit.",
       "Copy the value straight into a stylesheet or a design token file.",
     ],
     limitations: [

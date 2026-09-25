@@ -61,11 +61,14 @@ vi.mock("@/db/paperwork.ts", () => ({
 }));
 
 let createDatabase, sqlClient, withDatabaseRequest, db, otherDb, ensureDatabaseBootstrapped, sql;
+let isDatabaseConfigured, assertDatabaseConfigured, otherIsDatabaseConfigured;
 beforeAll(async () => {
   ({ sql } = await import("drizzle-orm"));
   ({ createDatabase, sqlClient, withDatabaseRequest } = await import("@/db/runtime.ts"));
+  ({ isDatabaseConfigured, assertDatabaseConfigured } = await import("@/db/index.ts"));
   // The Worker and Next server have separate module instances in production.
   const duplicateRuntime = await import("@/db/runtime.ts?second-bundle");
+  otherIsDatabaseConfigured = duplicateRuntime.isDatabaseConfigured;
   db = createDatabase({});
   otherDb = duplicateRuntime.createDatabase({});
   globalThis.__bootstrapDb = db;
@@ -73,6 +76,54 @@ beforeAll(async () => {
 });
 const query = async (database = db) => (await database.execute(sql`select 1`)).rows[0].clientId;
 const deferred = () => Promise.withResolvers();
+
+test("database readiness recognizes only the current request binding without opening a pool", async () => {
+  const originalUrl = process.env.DATABASE_URL;
+  const initialClients = clients.length;
+  const waits = [];
+  const waitUntil = (task) => waits.push(task);
+  const barrier = deferred();
+  delete process.env.DATABASE_URL;
+  try {
+    expect(isDatabaseConfigured()).toBe(false);
+    expect(assertDatabaseConfigured).toThrow(/DATABASE_URL is required/);
+    const boundRequest = withDatabaseRequest(
+      async () => {
+        expect(isDatabaseConfigured()).toBe(true);
+        expect(otherIsDatabaseConfigured(), "separate bundles read the same request binding").toBe(true);
+        expect(assertDatabaseConfigured).not.toThrow();
+        await barrier.promise;
+        expect(isDatabaseConfigured()).toBe(true);
+        return new Response(null, { status: 204 });
+      },
+      waitUntil,
+      "postgres://hyperdrive/configured",
+    );
+    try {
+      await withDatabaseRequest(async () => {
+        expect(isDatabaseConfigured(), "a concurrent request cannot inherit another binding").toBe(false);
+        expect(assertDatabaseConfigured).toThrow(/DATABASE_URL is required/);
+        return new Response(null, { status: 204 });
+      }, waitUntil);
+    } finally {
+      barrier.resolve();
+      await boundRequest;
+    }
+    expect(isDatabaseConfigured(), "request bindings cannot leak into Node calls").toBe(false);
+
+    process.env.DATABASE_URL = "postgres://localhost/test";
+    expect(isDatabaseConfigured(), "Node configuration still uses DATABASE_URL").toBe(true);
+    await withDatabaseRequest(async () => {
+      expect(isDatabaseConfigured(), "requests without Hyperdrive retain the environment fallback").toBe(true);
+      return new Response(null, { status: 204 });
+    }, waitUntil);
+    expect(clients.length, "readiness checks must not create database clients").toBe(initialClients);
+  } finally {
+    await Promise.all(waits);
+    if (originalUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = originalUrl;
+  }
+});
 
 test("database pools stay inside their request through transactions, streams and cleanup", async () => {
   const originalUrl = process.env.DATABASE_URL;

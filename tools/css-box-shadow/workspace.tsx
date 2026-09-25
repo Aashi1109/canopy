@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, GripVertical, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { GripVertical, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { DesignWorkspace } from "@/app/devtools/components/color-design/DesignWorkspace";
 import { ResultSurface } from "@/components/ResultSurface";
@@ -126,16 +126,13 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
               style={{ backgroundColor: safeColor(props.settings.previewObject, "#ffffff"), boxShadow: preview }}
             />
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2 p-3">
-            <Caption>
-              {layers.filter((layer) => layer.enabled).length} enabled layers · first layer paints on top
-            </Caption>
-            {!props.input.text && (
+          {!props.input.text && (
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3">
               <Button disabled={props.disabled} onClick={() => preset([DEFAULT_LAYER])} size="sm" variant="outline">
                 Use this shadow
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       }
       output={
@@ -186,15 +183,17 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
             </Button>
           </div>
           <OrderableList
+            animateSelection
             ariaLabel="Shadow layers"
-            className="flex flex-col gap-2"
+            className="flex flex-col gap-1"
             disabled={props.disabled}
             getId={(layer) => layer.id}
             getLabel={(layer) => `Shadow layer ${layers.indexOf(layer) + 1}`}
             items={layers}
+            selectedId={selected.id}
             onReorder={save}
             renderItem={(layer, state) => (
-              <div className="flex min-w-0 items-center gap-2">
+              <div className="flex min-w-0 items-center gap-1 p-1">
                 <Button
                   {...state.attributes}
                   {...state.listeners}
@@ -215,19 +214,24 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
                   }
                 />
                 <Button
+                  aria-label={`Edit shadow layer ${layers.indexOf(layer) + 1}`}
                   aria-pressed={selected.id === layer.id}
                   className="min-w-0 flex-1 justify-start"
                   disabled={props.disabled}
                   onClick={() => setSelectedId(layer.id)}
                   size="sm"
-                  variant={selected.id === layer.id ? "default" : "ghost"}
+                  variant="card-action"
                 >
                   <ColorSwatch className="size-5 shrink-0" color={layer.color} />
-                  <span className="truncate">
+                  <span className="min-w-0 truncate">
                     Layer {layers.indexOf(layer) + 1}
                     {layer.inset ? " · inset" : ""}
                   </span>
-                  {selected.id === layer.id ? <Check aria-hidden="true" className="ml-auto" /> : null}
+                  {selected.id === layer.id ? (
+                    <Caption aria-hidden="true" className="ml-auto shrink-0 text-primary">
+                      Editing
+                    </Caption>
+                  ) : null}
                 </Button>
                 <Button
                   aria-label={`Remove shadow layer ${layers.indexOf(layer) + 1}`}

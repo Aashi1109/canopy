@@ -1,0 +1,38 @@
+.root {
+  --selection-highlight-duration: 200ms;
+  --selection-highlight-easing: cubic-bezier(0.25, 1, 0.5, 1);
+
+  position: relative;
+  isolation: isolate;
+}
+
+.root::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  box-sizing: border-box;
+  width: var(--selection-highlight-width, 0px);
+  height: var(--selection-highlight-height, 0px);
+  border: 1px solid var(--primary);
+  border-radius: var(--selection-highlight-radius, 0px);
+  background: var(--accent);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(var(--selection-highlight-x, 0px), var(--selection-highlight-y, 0px));
+}
+
+.root[data-selection-highlight-ready="true"]::before {
+  opacity: 1;
+}
+
+.root[data-selection-highlight-animate="true"]::before {
+  transition: transform var(--selection-highlight-duration) var(--selection-highlight-easing);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root[data-selection-highlight-animate="true"]::before {
+    transition: none;
+  }
+}

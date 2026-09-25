@@ -23,7 +23,7 @@ export function ColorControl({
   label,
   disabled,
   compact = false,
-  layout = "stacked",
+  layout = "inline",
 }: ColorControlProps) {
   const id = useId();
   let color: RgbColor | undefined;
@@ -77,7 +77,7 @@ export function ColorControl({
           className={inline ? "relative min-w-0" : "grid min-w-0 grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-2"}
         >
           {inline ? (
-            <span className="group/color-picker absolute inset-y-0 left-1 z-10 flex w-8 items-center justify-center">
+            <span className="group/color-picker absolute inset-y-0 left-2 z-10 flex w-6 items-center justify-center">
               <span aria-hidden="true">
                 <ColorSwatch
                   className="size-4 rounded-full group-focus-within/color-picker:ring-2 group-focus-within/color-picker:ring-ring group-focus-within/color-picker:ring-offset-2"

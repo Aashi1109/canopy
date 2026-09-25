@@ -7,7 +7,7 @@ export default {
   keywords: ["duplicate", "words", "remove", "dedupe", "unique", "text", "clean"],
   name: "Duplicate Word Remover",
   description: "Remove repeated words while preserving first occurrences.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
     label: "Text input",

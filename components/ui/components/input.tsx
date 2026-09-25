@@ -39,7 +39,7 @@ function Input({ className, code = false, size = "default", type, leadingIcon, s
       className={cn(
         inputVariants({ size }),
         code && "font-mono",
-        leadingIcon && (typeof leadingIcon === "string" && leadingIcon.length === 1 ? "pl-7" : "pl-10"),
+        leadingIcon && (typeof leadingIcon === "string" && leadingIcon.length === 1 ? "pl-7" : "pl-8"),
         suffix &&
           "pr-10 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
         type === "range" ? "border-0 bg-transparent px-0" : "group-data-[variant=auth]/field:px-3.5",

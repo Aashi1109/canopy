@@ -7,16 +7,17 @@ export default {
   keywords: ["find", "replace", "search", "substitute", "regex", "bulk edit", "text"],
   name: "Find and Replace",
   description: "Replace literal text or regular-expression matches.",
-  layout: "stacked",
+  layout: "side-by-side",
   input: {
     kind: "text",
     label: "Source text",
+    surface: "card",
     placeholder: "Deploy the staging API, then verify the staging URL.",
   },
   settings: {
     fields: {
-      find: { kind: "text", label: "Find", default: "staging" },
-      replace: { kind: "text", label: "Replace with", default: "production" },
+      find: { kind: "text", label: "Find", pane: "input", default: "staging" },
+      replace: { kind: "text", label: "Replace with", pane: "input", default: "production" },
       regex: {
         kind: "toggle",
         label: "Regex",
@@ -30,6 +31,7 @@ export default {
   capabilities: { copy: true, download: true },
   workbenchMark: { text: "RPLC" },
   labels: {
+    result: "Replaced text",
     empty: "Paste the text you want to search and replace.",
     ready: "Replaced text is ready.",
     running: "Replacing matching text…",

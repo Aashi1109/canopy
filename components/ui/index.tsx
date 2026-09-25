@@ -65,6 +65,7 @@ export {
 export { Badge, badgeVariants } from "./components/badge.tsx";
 export { FileChip } from "./components/file-chip.tsx";
 export { Button, buttonVariants, ToolActionButton } from "./components/button.tsx";
+export { CanvasHandle } from "./components/canvas-handle.tsx";
 export { Pagination, type PaginationProps } from "./components/Pagination.tsx";
 export { ButtonGroup, ButtonGroupSeparator, ButtonGroupText, buttonGroupVariants } from "./components/button-group.tsx";
 export {
@@ -79,6 +80,7 @@ export {
 export { ChapterScrubber } from "./components/ChapterScrubber.tsx";
 export type { Chapter, ChapterScrubberProps } from "./components/ChapterScrubber.tsx";
 export { OrderableList } from "./components/OrderableList.tsx";
+export { SelectionHighlight, type SelectionHighlightProps } from "./components/SelectionHighlight.tsx";
 export { ColorControl } from "./components/ColorControl.tsx";
 export type { ColorControlProps } from "./components/ColorControl.tsx";
 export { ColorSwatch } from "./components/ColorSwatch.tsx";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 
 import { DesignWorkspace } from "@/app/devtools/components/color-design/DesignWorkspace";
 import { ResultSurface } from "@/components/ResultSurface";
@@ -14,7 +14,6 @@ type Channels = [number, number, number];
 
 export default function ColorPickerWorkspace(props: WorkspaceProps) {
   const id = useId();
-  const [recent, setRecent] = useState<string[]>([]);
   const [adjusted, setAdjusted] = useState<{ source: string; values: Channels }>();
   let color: RgbColor | undefined;
   try {
@@ -29,15 +28,6 @@ export default function ColorPickerWorkspace(props: WorkspaceProps) {
     ?.slice(0, 3)
     .map(Number) as Channels;
   const channels = adjusted?.source === props.input.text ? adjusted.values : derived;
-
-  useEffect(() => {
-    if (!hex) return;
-    const timeout = window.setTimeout(
-      () => setRecent((previous) => [hex, ...previous.filter((value) => value !== hex)].slice(0, 8)),
-      600,
-    );
-    return () => window.clearTimeout(timeout);
-  }, [hex]);
 
   const setInput = (text: string) => props.onInputChange({ ...props.input, text });
   const adjust = (index: number, value: string) => {
@@ -62,30 +52,11 @@ export default function ColorPickerWorkspace(props: WorkspaceProps) {
       }
       preview={
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-y-auto p-4 sm:grid-cols-[minmax(8rem,1fr)_minmax(12rem,1fr)]">
-          <div className="flex min-h-0 flex-col gap-3">
-            <ColorSwatch
-              className="min-h-28 flex-1"
-              color={hex || "transparent"}
-              label={hex ? `Selected color ${hex}` : "Choose a color to preview it"}
-            />
-            <p className="text-xs text-muted-foreground">{hex || "Move a slider or use the visual picker to begin."}</p>
-            {recent.length ? (
-              <div className="flex flex-wrap gap-1" role="group" aria-label="Recent colors">
-                {recent.map((value) => (
-                  <Button
-                    aria-label={`Use recent color ${value}`}
-                    disabled={props.disabled}
-                    key={value}
-                    onClick={() => setInput(value)}
-                    size="icon-sm"
-                    variant="ghost"
-                  >
-                    <ColorSwatch className="size-6" color={value} />
-                  </Button>
-                ))}
-              </div>
-            ) : null}
-          </div>
+          <ColorSwatch
+            className="min-h-28"
+            color={hex || "transparent"}
+            label={hex ? `Selected color ${hex}` : "Choose a color to preview it"}
+          />
           <div className="grid content-center gap-3">
             {(["Hue", "Saturation", "Lightness"] as const).map((label, index) => (
               <div className="grid grid-cols-[minmax(0,1fr)_5.5rem] items-end gap-3" key={label}>
@@ -121,7 +92,7 @@ export default function ColorPickerWorkspace(props: WorkspaceProps) {
       controls={
         <>
           <ColorControl
-            compact
+            layout="inline"
             disabled={props.disabled}
             label="HEX, RGB, HSL or color name"
             onChange={setInput}

@@ -64,8 +64,8 @@ export default {
   },
   content: {
     howToUse: [
-      "Type or paste a HEX value with or without the leading `#`. Shorthand (`#f0c`) and alpha (`#RRGGBBAA`) both work.",
-      "The `hsl()` string updates as you type and is ready to paste straight into CSS.",
+      "Type or paste a HEX value, then press Enter or choose Add. The leading `#` is optional; shorthand (`#f0c`) and alpha (`#RRGGBBAA`) both work. Paste one color per line to add a batch.",
+      "Each added color produces an `hsl()` string ready to copy into CSS. Click a chip's circle to change its color, or click its text and use Enter or Save to apply an edit.",
       "Once you are in HSL, build a palette by changing one channel at a time — same hue with different lightness gives you a tint and shade ramp.",
       "A HEX with an alpha channel produces `hsla()` with the alpha as the fourth value.",
     ],
