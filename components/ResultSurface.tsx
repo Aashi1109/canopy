@@ -50,6 +50,8 @@ export function ResultSurface({
   const jsonPreview =
     !renderResult && visibleResult && "jsonPreview" in visibleResult ? visibleResult.jsonPreview : undefined;
   const structuredPreview = tablePreview ?? jsonPreview;
+  const htmlResultPreview =
+    !renderResult && Boolean(spec.resultView) && visibleResult?.render === "html" && !structuredPreview;
   const showingJsonPreview = Boolean(jsonPreview && resultView === "preview");
   const htmlTablePreview =
     spec.previewLayout === "table" &&
@@ -58,7 +60,9 @@ export function ResultSurface({
     !renderResult &&
     ((visibleResult?.render === "text" && spec.outputLanguage === "markdown") ||
       (visibleResult?.render === "code" && visibleResult.language === "markdown"));
-  const hasPreview = Boolean((visibleResult && renderPreview) || structuredPreview || markdownPreview);
+  const hasPreview = Boolean(
+    (visibleResult && renderPreview) || structuredPreview || markdownPreview || htmlResultPreview,
+  );
   const retaining = !result && Boolean(retainedResult);
   const state = visibleResult ? "ready" : error ? "error" : running ? "loading" : "empty";
   const updateStatus = visibleResult
@@ -100,7 +104,11 @@ export function ResultSurface({
         markdownPreview={markdownPreview && resultView === "preview"}
         previewLayout={spec.previewLayout}
         result={
-          structuredPreview && resultView === "preview" ? { ...visibleResult, ...structuredPreview } : visibleResult
+          structuredPreview && resultView === "preview"
+            ? { ...visibleResult, ...structuredPreview }
+            : htmlResultPreview && resultView === "raw" && visibleResult.render === "html"
+              ? { ...visibleResult, render: "code", code: visibleResult.html, language: "html" }
+              : visibleResult
         }
       />
     )

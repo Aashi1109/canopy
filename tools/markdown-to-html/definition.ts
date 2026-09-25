@@ -8,6 +8,7 @@ export default {
   name: "Markdown to HTML",
   description: "Convert Markdown source to HTML.",
   layout: "side-by-side",
+  resultView: { default: "preview", previewLabel: "Preview" },
   input: {
     kind: "text",
     language: "markdown",
