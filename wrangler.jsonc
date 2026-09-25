@@ -10,7 +10,7 @@
     "cpu_ms": 30000,
   },
   "triggers": {
-    "crons": ["*/30 * * * *"],
+    "crons": ["*/30 * * * *", "0 0,12 * * *"],
   },
   "routes": [
     {
@@ -24,8 +24,8 @@
   ],
   "hyperdrive": [
     {
-      "binding": "HYPERDRIVE",
-      "id": "1aebf4d16f0b489b99de75318cdd610d",
+      "binding": "DB",
+      "id": "541347b1a70d402c83927d3e87ee5409",
     },
   ],
   "vars": {
@@ -44,6 +44,19 @@
   "keep_vars": true,
   "observability": {
     "enabled": true,
+    "head_sampling_rate": 0.7,
+    "redact_query_string": false,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true,
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+    },
   },
   "env": {
     "dev": {
@@ -53,7 +66,12 @@
       "vars": {
         "APP_URL": "https://smarttools-dev.aashishpal50.workers.dev",
       },
-      "hyperdrive": [],
+      "hyperdrive": [
+        {
+          "binding": "DB",
+          "id": "1aebf4d16f0b489b99de75318cdd610d",
+        },
+      ],
       "services": [
         {
           "binding": "WORKER_SELF_REFERENCE",

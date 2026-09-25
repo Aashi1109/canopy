@@ -181,7 +181,17 @@ test("preview builds and remotely deploys the dev Worker using only .env", () =>
 });
 
 test("local preview serves the dev configuration without uploading code or secrets", () => {
-  const { calls } = recordRun("local");
+  const { calls } = recordRun(
+    "local",
+    {
+      ...config,
+      env: {
+        dev: { ...config.env.dev, hyperdrive: [{ binding: "DB", id: "fake" }] },
+      },
+    },
+    [],
+    "DATABASE_URL=postgres://local/preview-test-only",
+  );
   expect(calls).toHaveLength(3);
   expect(calls.loadedFile).toMatch(/\/\.env$/);
   expect(calls.every(({ env }) => env.APP_URL === "http://localhost:8787")).toBe(true);
@@ -201,6 +211,7 @@ test("local preview serves the dev configuration without uploading code or secre
     "APP_URL:http://localhost:8787",
   ]);
   expect(calls.at(-1).env.CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV).toBe("true");
+  expect(calls.at(-1).env.CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_DB).toBe("postgres://local/preview-test-only");
   expect(calls.at(-1).secrets).toBeUndefined();
 });
 
@@ -311,18 +322,18 @@ test.each(["deploy", "preview"])(
   },
 );
 
-test("runtime secrets cannot replace configured resource bindings", () => {
+test("runtime secrets cannot replace the DB resource binding", () => {
   const configured = {
     ...config,
     services: [{ binding: "WORKER_SELF_REFERENCE", service: "self" }],
-    hyperdrive: [{ binding: "HYPERDRIVE", id: "fake" }],
+    hyperdrive: [{ binding: "DB", id: "fake" }],
     assets: { binding: "ASSETS" },
   };
   const { calls } = recordRun(
     "deploy",
     configured,
     [],
-    "HYPERDRIVE=bad\nASSETS=bad\nWORKER_SELF_REFERENCE=bad\nREDIS_URL=redis://example.test",
+    "DB=bad\nASSETS=bad\nWORKER_SELF_REFERENCE=bad\nREDIS_URL=redis://example.test",
   );
   expect(calls.at(-1).secrets).toEqual({ REDIS_URL: "redis://example.test" });
 });

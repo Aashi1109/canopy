@@ -4,24 +4,24 @@ import { runAssistantMaintenanceCron, type AssistantCronEnv } from "./lib/assist
 // @ts-ignore OpenNext generates this module during the deployment build.
 import handler from "./.open-next/worker.js";
 
-type Env = BlogCronEnv & AssistantCronEnv & { HYPERDRIVE?: { connectionString: string } };
+type Env = BlogCronEnv & AssistantCronEnv & { DB?: { connectionString: string } };
 
 export default {
-  async scheduled(_controller: unknown, env: Env) {
-    const [publishing, maintenance] = await Promise.allSettled([
-      runBlogPublishCron(env),
-      runAssistantMaintenanceCron(env),
-    ]);
-    if (publishing.status === "fulfilled") {
-      if (publishing.value.failed) console.warn("Blog scheduled publishing has failed posts", publishing.value);
-      else console.info("Blog scheduled publishing completed", publishing.value);
+  async scheduled(controller: { cron: string }, env: Env) {
+    switch (controller.cron) {
+      case "*/30 * * * *": {
+        const publishing = await runBlogPublishCron(env);
+        if (publishing.failed) console.warn("Blog scheduled publishing has failed posts", publishing);
+        else console.info("Blog scheduled publishing completed", publishing);
+        break;
+      }
+      case "0 0,12 * * *": {
+        const maintenance = await runAssistantMaintenanceCron(env);
+        if (maintenance.failed) console.warn("Assistant maintenance needs retry", maintenance);
+        else console.info("Assistant maintenance completed", maintenance);
+        break;
+      }
     }
-    if (maintenance.status === "fulfilled") {
-      if (maintenance.value.failed) console.warn("Assistant maintenance needs retry", maintenance.value);
-      else console.info("Assistant maintenance completed", maintenance.value);
-    }
-    if (publishing.status === "rejected") throw publishing.reason;
-    if (maintenance.status === "rejected") throw maintenance.reason;
   },
   fetch(request: Request, env: Env, ctx: { waitUntil(task: Promise<unknown>): void }) {
     return withDatabaseRequest(
@@ -38,7 +38,7 @@ export default {
           }),
         ),
       (task) => ctx.waitUntil(task),
-      env.HYPERDRIVE?.connectionString,
+      env.DB?.connectionString,
     );
   },
 };

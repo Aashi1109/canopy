@@ -189,13 +189,13 @@ a disposable PostgreSQL database with
 These tests create and remove temporary schemas and deliberately never fall back
 to `DATABASE_URL`.
 
-Assistant retention and provider-resource cleanup runs independently of Blog
-publication on the existing 30-minute Worker schedule. Set
+Assistant retention and provider-resource cleanup runs at 00:00 and 12:00 UTC daily,
+independently of Blog publication's 30-minute Worker schedule. Set
 `ASSISTANT_SCHEDULER_SECRET` to the same random bearer secret in the application
 and scheduler environment. Leave `ASSISTANT_MAINTENANCE_URL` empty to use the
 Worker's self binding, or set it to an HTTPS Docker endpoint ending exactly in
 `/api/internal/assistant/maintenance`. This uses a separate secret from
-`BLOG_SCHEDULER_SECRET`; both scheduled operations run even if the other fails.
+`BLOG_SCHEDULER_SECRET`; each cron trigger invokes only its corresponding operation.
 Assistant cleanup is invoked only through its independent maintenance endpoint;
 Blog publishing no longer invokes conversation cleanup.
 
@@ -384,12 +384,15 @@ The pnpm patch for OpenNext 1.20.6 enables the `workerd` package condition in it
 Node middleware bundle so PostgreSQL uses its Cloudflare socket adapter. Keep the
 patch until an adapter upgrade passes `tests/cloudflare-middleware-postgres.test.mjs`.
 
-The production `HYPERDRIVE` binding pools connections to the existing PostgreSQL database.
+Both Worker environments use the `DB` Hyperdrive binding. Each environment's
+configured Hyperdrive ID selects its database; the Worker reads `env.DB.connectionString`.
+Cloudflare resource names such as `smarttools-db-prod` and `smarttools-db-dev`
+do not appear in application code.
 Keep Hyperdrive query caching disabled so authentication and permission reads remain fresh.
 The binding alone configures database access during Worker requests; a duplicate
 `DATABASE_URL` secret is not required when Hyperdrive is present. Local migration commands
-still need a direct database connection. The dev Worker has no Hyperdrive binding
-and connects directly using `DATABASE_URL` from `.env`.
+still need a direct database connection. Local `pnpm run preview` supplies the dev
+binding's local connection from `DATABASE_URL` in `.env`.
 
 ### Configure once
 
@@ -407,8 +410,9 @@ and connects directly using `DATABASE_URL` from `.env`.
    - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`
      if enabling admin icon uploads.
    - `BLOG_SCHEDULER_SECRET` and `ASSISTANT_SCHEDULER_SECRET` — separate random bearer
-     secrets for the two internal jobs. The single 30-minute cron invokes both jobs
-     through the Worker's self binding; leave the optional external target URLs unset.
+     secrets for the two internal jobs. Separate cron triggers invoke blog publishing
+     every 30 minutes and assistant cleanup at 00:00 and 12:00 UTC through the Worker's
+     self binding; leave the optional external target URLs unset.
    - Any other integrations used from `.env.example`.
 4. If using Google login, register the callback URLs for the environments being tested:
    `https://smarttools.lol/api/auth/callback/google`,
@@ -465,14 +469,16 @@ using `.env`, without uploading a Worker. Both the browser build and local Worke
 use that localhost origin.
 
 `pnpm run deploy:preview` builds and deploys with Wrangler's `dev` environment.
-Put dev application settings and a remotely reachable `DATABASE_URL` in `.env`;
-the dev Worker connects directly, without Hyperdrive pooling. Dev has no scheduled
+Put dev application settings and the local preview's `DATABASE_URL` in `.env`;
+the deployed dev Worker uses its configured `DB` Hyperdrive binding. Dev has no scheduled
 cron triggers, and its self binding points to `smarttools-dev`.
 The build removes OpenNext's embedded dotenv fallbacks. Check login,
 account recovery, admin reads/writes,
 Paperwork export, and Media image/PDF processing before publishing. Also verify advanced
 template publication (which generates a PDF on the server) and AI streaming.
-Verify both scheduled jobs on production, where the 30-minute cron remains enabled.
+Verify both scheduled jobs on production: blog publishing every 30 minutes and
+assistant cleanup twice daily. The Worker's `scheduled()` handler selects the job
+using the triggering cron expression.
 Dev admin stays on the same Worker host at `/admin`; production admin uses
 `https://admin.smarttools.lol`.
 Before production cutover, retain the previous Worker version for rollback and snapshot

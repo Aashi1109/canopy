@@ -119,7 +119,11 @@ export function runCloudflare(
   for (const args of commands) {
     let childEnv = env;
     if (mode === "local" && args[0] === WRANGLER) {
-      childEnv = { ...env, CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: "true" };
+      childEnv = {
+        ...env,
+        CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: "true",
+        CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_DB: values.DATABASE_URL,
+      };
     } else if (workersBuild && args[0] === OPEN_NEXT) {
       // Better Auth initializes while Next collects routes. This disposable key
       // is only for the build process; the scrubber removes bundled fallbacks.

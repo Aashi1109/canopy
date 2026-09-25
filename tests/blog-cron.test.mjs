@@ -170,12 +170,13 @@ test("cron consumes successful responses and rejects unsafe, oversized or failed
   ).rejects.toThrow("Blog publishing request failed.");
 });
 
-test("deployment configuration schedules publishing twice per hour", async () => {
+test("deployment schedules publishing twice per hour and maintenance twice daily, with dev disabled", async () => {
   const config = JSON5.parse(await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"));
-  expect(config.triggers.crons).toEqual(["*/30 * * * *"]);
+  expect(config.triggers.crons).toEqual(["*/30 * * * *", "0 0,12 * * *"]);
+  expect(config.env.dev.triggers.crons).toEqual([]);
 });
 
-test("actual Worker schedule re-enters the fetch database wrapper through its self binding", async () => {
+test.each(["DB", undefined])("actual Worker schedule uses %s through its fetch database wrapper", async (binding) => {
   const maintenanceCounts = { files: 2, runs: 3, failed: 0 };
   const state = {
     wrapped: 0,
@@ -222,37 +223,53 @@ test("actual Worker schedule re-enters the fetch database wrapper through its se
     warn.mockImplementation((...args) => logs.push(args));
     const env = {
       BLOG_SCHEDULER_SECRET: secret,
-      ASSISTANT_SCHEDULER_SECRET: "test-assistant-secret",
-      HYPERDRIVE: { connectionString: "postgres://local/test-only" },
+      ...(binding ? { [binding]: { connectionString: "postgres://local/test-only" } } : {}),
       WORKER_SELF_REFERENCE: {
         fetch: (req) => worker.fetch(req, env, { waitUntil: (task) => waits.push(task) }),
       },
     };
-    await worker.scheduled({}, env);
+    await worker.scheduled({ cron: "*/30 * * * *" }, env);
     await Promise.all(waits);
-    expect(state.wrapped).toBe(2);
-    expect(state.dispatched).toBe(2);
-    expect(state.databaseUrl).toBe(env.HYPERDRIVE.connectionString);
-    expect(waits.length).toBe(2);
+    expect(state.wrapped).toBe(1);
+    expect(state.dispatched).toBe(1);
+    expect(state.databaseUrl).toBe(binding ? env[binding].connectionString : undefined);
+    expect(waits.length).toBe(1);
     expect(logs).toEqual([["Blog scheduled publishing has failed posts", counts]]);
-    expect(state.paths.sort()).toEqual(["/api/internal/assistant/maintenance", path]);
+    expect(state.paths).toEqual([path]);
+    expect(info).not.toHaveBeenCalled();
 
     state.paths.length = 0;
     state.publishStatus = 503;
-    await expect(worker.scheduled({}, env)).rejects.toThrow(/Blog publishing request returned HTTP 503/);
-    expect(state.paths.sort(), "publication failure must not prevent maintenance").toEqual([
-      "/api/internal/assistant/maintenance",
-      path,
-    ]);
+    await expect(worker.scheduled({ cron: "*/30 * * * *" }, env)).rejects.toThrow(
+      /Blog publishing request returned HTTP 503/,
+    );
+    expect(state.paths).toEqual([path]);
 
     state.paths.length = 0;
-    state.publishStatus = 200;
+    delete env.BLOG_SCHEDULER_SECRET;
+    env.ASSISTANT_SCHEDULER_SECRET = "test-assistant-secret";
+    await worker.scheduled({ cron: "0 0,12 * * *" }, env);
+    await Promise.all(waits);
+    expect(state.wrapped).toBe(3);
+    expect(state.dispatched).toBe(3);
+    expect(state.databaseUrl).toBe(binding ? env[binding].connectionString : undefined);
+    expect(state.paths).toEqual(["/api/internal/assistant/maintenance"]);
+    expect(info).toHaveBeenCalledExactlyOnceWith("Assistant maintenance completed", maintenanceCounts);
+    expect(logs).toHaveLength(1);
+
+    state.paths.length = 0;
     state.maintenanceStatus = 503;
-    await expect(worker.scheduled({}, env)).rejects.toThrow(/Assistant maintenance request returned HTTP 503/);
-    expect(state.paths.sort(), "maintenance failure must not prevent publication").toEqual([
-      "/api/internal/assistant/maintenance",
-      path,
-    ]);
+    await expect(worker.scheduled({ cron: "0 0,12 * * *" }, env)).rejects.toThrow(
+      /Assistant maintenance request returned HTTP 503/,
+    );
+    expect(state.paths).toEqual(["/api/internal/assistant/maintenance"]);
+
+    state.paths.length = 0;
+    delete env.ASSISTANT_SCHEDULER_SECRET;
+    await worker.scheduled({ cron: "0 * * * *" }, env);
+    expect(state.paths).toEqual([]);
+    expect(state.wrapped).toBe(4);
+    expect(state.dispatched).toBe(4);
   } finally {
     warn.mockRestore();
     info.mockRestore();
