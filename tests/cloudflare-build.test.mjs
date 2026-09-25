@@ -68,6 +68,8 @@ test("Cloudflare builds use the configured public origin and scrub bundled envir
       "build",
       "--config",
       "wrangler.jsonc",
+      "--env",
+      "",
       "--skipNextBuild=false",
     ],
     ["scripts/clear-cloudflare-build-env.mjs"],
@@ -96,6 +98,8 @@ test("deployment builds and deploys with the same origin after scrubbing", () =>
     "deploy",
     "--config",
     "wrangler.jsonc",
+    "--env",
+    "",
     "--env-file",
     ".env.prod",
     "--secrets-file",
@@ -142,6 +146,8 @@ test.each(["1", "true"])("Workers Builds (%s) deploys code while retaining exist
     "deploy",
     "--config",
     "wrangler.jsonc",
+    "--env",
+    "",
     "--keep-vars",
   ]);
   expect(deployment.env.BETTER_AUTH_SECRET).toBeUndefined();

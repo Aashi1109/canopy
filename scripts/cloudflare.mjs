@@ -66,7 +66,7 @@ export function runCloudflare(
   const dev = mode === "preview" || mode === "local";
   const workersBuild = !dev && ["1", "true"].includes(environment.WORKERS_CI);
   const selectedConfig = dev ? { ...config, ...config.env?.dev } : config;
-  const environmentArgs = dev ? ["--env", "dev"] : [];
+  const environmentArgs = ["--env", dev ? "dev" : ""];
   const origin = mode === "local" ? "http://localhost:8787" : selectedConfig.vars?.APP_URL;
   const envFile = dev ? ".env" : ".env.prod";
   let values;
@@ -114,7 +114,7 @@ export function runCloudflare(
     ]);
   } else if (workersBuild && mode === "deploy") {
     // Keep runtime settings already uploaded by a local deployment.
-    commands.push([WRANGLER, "deploy", "--config", "wrangler.jsonc", "--keep-vars"]);
+    commands.push([WRANGLER, "deploy", "--config", "wrangler.jsonc", ...environmentArgs, "--keep-vars"]);
   }
   for (const args of commands) {
     let childEnv = env;
