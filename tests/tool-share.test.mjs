@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { decodeToolShare, encodeToolShare, MAX_SHARE_URL_LENGTH } from "../lib/tool-framework/toolShare.ts";
 
@@ -156,7 +157,91 @@ test("settings-only tools accept only empty primary input", () => {
   expectInvalid(encodeToolShare(settingsOnly, { ...empty, input: { text: "hidden value" } }));
 });
 
-test.each(["password", "textarea", "slider", "preset", "color", "date", "position", "pages", "rows"])(
+test("multiline settings, colors and ordered duplicate query rows round-trip exactly", () => {
+  const fields = {
+    lines: { kind: "textarea", default: "" },
+    color: { kind: "color", default: "#fff" },
+    background: { kind: "color", default: "transparent", allowTransparent: true },
+    params: { kind: "rows", default: [] },
+  };
+  const expanded = { ...spec, settings: { fields } };
+  const original = {
+    ...state,
+    settings: {
+      lines: 'first\n"second" ✓',
+      color: "#AbC8",
+      background: "transparent",
+      params: [
+        { key: "tag", value: "a & b" },
+        { key: "tag", value: "✓" },
+        { key: "", value: "" },
+      ],
+    },
+  };
+  expect(decodeToolShare(expanded, encodeToolShare(expanded, original).hash)).toEqual({ state: original });
+  expect(
+    decodeToolShare(
+      expanded,
+      encodeToolShare(expanded, { ...original, settings: { ...original.settings, params: [] } }).hash,
+    ),
+  ).toEqual({ state: { ...original, settings: { ...original.settings, params: [] } } });
+});
+
+test.each(["red", "rgb(241 245 249 / 0.5)", "hsl(210 50% 40%)", " #AbC "])(
+  "color controls preserve %s exactly",
+  (color) => {
+    const expanded = { ...spec, settings: { fields: { color: { kind: "color", default: "#fff" } } } };
+    const original = { ...state, settings: { color } };
+    const encoded = encodeToolShare(expanded, original);
+    expect(encoded).toHaveProperty("hash");
+    expect(decodeToolShare(expanded, encoded.hash)).toEqual({ state: original });
+  },
+);
+
+test.each([
+  ["textarea", 3],
+  ["textarea", "x".repeat(MAX_SHARE_URL_LENGTH + 1)],
+  ["color", "url(https://example.com)"],
+  ["color", "#12"],
+  ["color", "rgb(256 0 0)"],
+  ["color", "transparent"],
+  ["rows", {}],
+  ["rows", [null]],
+  ["rows", [{ key: "a" }]],
+  ["rows", [{ key: "a", value: 1 }]],
+  ["rows", [{ key: "a", value: "b", hidden: true }]],
+])("invalid %s setting is rejected without dropping data: %j", (kind, value) => {
+  const expanded = { ...spec, settings: { fields: { value: { kind, default: "" } } } };
+  const invalid = { ...state, settings: { value } };
+  expectInvalid(encodeToolShare(expanded, invalid));
+  expectInvalid(decodeToolShare(expanded, hash(payload(invalid))));
+});
+
+test("rows reject sparse arrays, hidden properties, inherited values and accessors", () => {
+  const expanded = { ...spec, settings: { fields: { params: { kind: "rows", default: [] } } } };
+  const getter = Object.defineProperty({}, "key", {
+    enumerable: true,
+    get() {
+      throw new Error("must not read");
+    },
+  });
+  for (const params of [
+    new Array(1),
+    Object.assign([], { hidden: "value" }),
+    [Object.create({ key: "a", value: "b" })],
+    [getter],
+    Object.defineProperty([], "0", {
+      enumerable: true,
+      get() {
+        throw new Error("must not read");
+      },
+    }),
+    [JSON.parse('{"key":"a","value":"b","__proto__":{}}')],
+  ])
+    expectInvalid(encodeToolShare(expanded, { ...state, settings: { params } }));
+});
+
+test.each(["password", "slider", "preset", "date", "position", "pages"])(
   "unsupported %s settings disable sharing even when the value is empty",
   (kind) => {
     const unsafeSpec = { ...spec, settings: { fields: { unsafe: { kind, default: "" } } } };
@@ -231,4 +316,172 @@ describe("supported tools recreate the exact output", () => {
     });
     expect(await run(context(restored.state))).toEqual(await run(context(original)));
   });
+});
+
+// Each opt-in is exercised through its actual runner, including worker entries.
+const expandedTools = `
+base64-encoder base64-decoder binary-to-text text-to-binary hex-to-text text-to-hex
+unicode-encoder unicode-decoder url-encoder url-decoder html-encoder html-decoder
+md5-generator sha1-generator sha256-generator sha512-generator checksum-generator
+character-counter word-counter text-reverser whitespace-remover duplicate-line-remover
+duplicate-word-remover text-sorter text-diff-checker cron-builder url-query-parser
+url-query-builder utm-builder http-status-codes json-escape json-unescape json-validator
+json-formatter json-minifier json-key-extractor json-to-yaml json-to-xml xml-to-json
+json-to-csv json-to-typescript json-schema-generator csv-column-extractor
+csv-delimiter-converter csv-to-tsv tsv-to-csv rgb-to-hex hex-to-hsl color-converter
+border-radius-generator css-box-shadow gradient-generator palette-generator
+meta-tag-generator robots-txt-generator sitemap-generator qr-code-generator
+`
+  .trim()
+  .split(/\s+/);
+
+async function expectOutputRoundTrip(key, exampleOverride) {
+  const definition = (await import(`../tools/${key}/definition.ts`)).default;
+  const file = existsSync(new URL(`../tools/${key}/run.ts`, import.meta.url)) ? "run.ts" : "run.worker.ts";
+  const run = (await import(/* @vite-ignore */ `../tools/${key}/${file}`)).default;
+  const example = exampleOverride ?? definition.content?.examples?.[0] ?? { text: "" };
+  const settings = Object.fromEntries(
+    Object.entries(definition.settings.fields).map(([name, field]) => [name, field.default]),
+  );
+  const original = {
+    input: { text: example.text, ...(example.secondary !== undefined ? { secondary: example.secondary } : {}) },
+    settings: { ...settings, ...example.settings },
+  };
+  const encoded = encodeToolShare(definition, original);
+  expect(encoded).toHaveProperty("hash");
+  const restored = decodeToolShare(definition, encoded.hash);
+  expect(restored).toEqual({ state: original });
+  const context = (data) => ({
+    ...data,
+    input: { ...data.input, files: [] },
+    signal: new AbortController().signal,
+    progress: () => {},
+    writeArtifact: () => {
+      throw new Error("Small example unexpectedly wrote a stored artifact");
+    },
+  });
+  expect(await run(context(restored.state))).toEqual(await run(context(original)));
+}
+
+test.each(expandedTools)("%s example restores the same output", async (key) => {
+  await expectOutputRoundTrip(key);
+});
+
+test("shadow preview supports the transparent color accepted by its controls", async () => {
+  await expectOutputRoundTrip("css-box-shadow", {
+    text: "#00000080",
+    settings: { previewBackground: "transparent", previewObject: "transparent" },
+  });
+});
+
+test.each([
+  [
+    "url-query-builder",
+    {
+      text: "https://example.com/path?z=1#section",
+      secondary: "tag=one\ntag=two",
+      settings: {
+        parameters: [
+          { key: "q", value: "space & ✓" },
+          { key: "empty", value: "" },
+        ],
+        sortParameters: true,
+      },
+    },
+  ],
+  [
+    "gradient-generator",
+    {
+      text: "#fff",
+      secondary: "#000",
+      settings: {
+        type: "radial",
+        radialShape: "ellipse",
+        radialX: 25,
+        radialY: 75,
+        includeFallback: true,
+        stops: JSON.stringify([
+          { id: "a", color: "#F00", position: 0 },
+          { id: "b", color: "#00F8", position: 40 },
+          { id: "c", color: "#0000", position: 100 },
+        ]),
+      },
+    },
+  ],
+  [
+    "css-box-shadow",
+    {
+      text: "#00000080",
+      settings: {
+        previewBackground: "rgb(241 245 249 / 0.5)",
+        previewObject: "rebeccapurple",
+        showBrowserPrefixes: true,
+        layers: JSON.stringify([
+          { id: "a", color: "#00000080", x: -6, y: 8, blur: 20, spread: -4, inset: true, enabled: true },
+          { id: "b", color: "#f00", x: 0, y: 2, blur: 4, spread: 0, inset: false, enabled: false },
+        ]),
+      },
+    },
+  ],
+  [
+    "palette-generator",
+    {
+      text: "",
+      settings: {
+        count: 3,
+        variation: 3,
+        format: "svg",
+        colors: JSON.stringify([
+          { id: "a", color: "#FF0000", locked: true },
+          { id: "b", color: "#00FF00", locked: false },
+          { id: "c", color: "#0000FF", locked: true },
+        ]),
+      },
+    },
+  ],
+  [
+    "border-radius-generator",
+    {
+      text: "",
+      settings: {
+        elliptical: true,
+        linked: false,
+        topLeft: 35,
+        topRight: 70,
+        topLeftY: 20,
+        unit: "%",
+        width: 300,
+        height: 180,
+      },
+    },
+  ],
+  [
+    "robots-txt-generator",
+    {
+      text: "/private\n/admin",
+      settings: { allowPaths: "/public\n/docs", crawlDelay: 10, sitemap: "https://example.com/sitemap.xml" },
+    },
+  ],
+  [
+    "qr-code-generator",
+    {
+      text: "https://example.com/?q=✓",
+      settings: {
+        dark: "#123456",
+        light: "#fedcba",
+        size: 256,
+        margin: 2,
+        transparentBackground: true,
+        errorCorrection: "H",
+      },
+    },
+  ],
+  [
+    "json-formatter",
+    { text: '{"nested":[false,null],"n":1234567890123456789}', settings: { operation: "format", indentation: "tab" } },
+  ],
+  ["json-formatter", { text: '{ "nested": [false,null] }', settings: { operation: "minify" } }],
+  ["json-formatter", { text: '{ "nested": [false,null] }', settings: { operation: "validate" } }],
+])("%s complex settings and output round-trip", async (key, example) => {
+  await expectOutputRoundTrip(key, example);
 });

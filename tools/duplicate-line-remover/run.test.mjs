@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { parseSettings } from "../../lib/tool-framework/settings.ts";
 import definition from "./definition.ts";
 import { run } from "./run.ts";
@@ -26,4 +26,16 @@ test.each([
 
 test("duplicate-line-remover: empty text remains empty", async () => {
   expect((await execute()).text).toBe("");
+});
+
+test("duplicate-line-remover: case folding is unchanged in a Turkish locale", async () => {
+  const lower = String.prototype.toLocaleLowerCase;
+  const locale = vi.spyOn(String.prototype, "toLocaleLowerCase").mockImplementation(function (locales) {
+    return lower.call(this, locales ?? "tr");
+  });
+  try {
+    expect((await execute("I\ni\nı", { ci: true })).text).toBe("I\nı");
+  } finally {
+    locale.mockRestore();
+  }
 });

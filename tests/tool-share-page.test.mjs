@@ -5,6 +5,7 @@ import { button, click, field, fill, mountTool, setupReactTools } from "./helper
 import ToolPage from "../components/ToolPage.tsx";
 import slugSpec from "../tools/slug-generator/definition.ts";
 import contrastSpec from "../tools/contrast-checker/definition.ts";
+import { run as runSlug } from "../tools/slug-generator/run.ts";
 import { run as runContrast } from "../tools/contrast-checker/run.ts";
 import { decodeToolShare, encodeToolShare } from "../lib/tool-framework/toolShare.ts";
 
@@ -161,6 +162,7 @@ test("a shared manual tool restores its source and runs exactly once without cli
   expect(observed.slugRun.mock.calls[0][0].input.text).toBe("Café Menu\nAnother Title");
   expect(result()).toContain("cafe-menu");
   expect(result()).toContain("another-title");
+  expect(JSON.parse(result())).toEqual(runSlug({ input: { text: "Café Menu\nAnother Title" } }));
   expect(window.history.state).toEqual({ router: "retained" });
 });
 
@@ -172,6 +174,21 @@ test("StrictMode restores a manual share and executes it once across its repeate
   expect(observed.slugRun).toHaveBeenCalledTimes(1);
   expect(result()).toContain("strict-mode-title");
   expect(decodeToolShare(slugSpec, window.location.hash).state.input.text).toBe("Strict Mode Title");
+});
+
+test("editing before a restored manual run starts recovers sharing for the new input", async () => {
+  share(slugSpec, { input: { text: "Shared Before Edit" }, settings: {} });
+  await mount(slugSpec, "slug-generator");
+  expect(field("Source").value).toBe("Shared Before Edit");
+  expect(observed.slugRun).not.toHaveBeenCalled();
+  await fill(field("Source"), "Edited Before Restore Ran");
+  await click(button("Generate slugs"));
+  await settle();
+  await tick(300);
+  expect(observed.slugRun).toHaveBeenCalledTimes(1);
+  expect(observed.slugRun.mock.calls[0][0].input.text).toBe("Edited Before Restore Ran");
+  expect(result()).toContain("edited-before-restore-ran");
+  expect(decodeToolShare(slugSpec, window.location.hash).state.input.text).toBe("Edited Before Restore Ran");
 });
 
 test.each(["pending", "completed", "ready"])(

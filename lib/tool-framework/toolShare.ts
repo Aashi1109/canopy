@@ -1,5 +1,6 @@
 import type { FieldSpec } from "./settings";
 import type { ToolSpec } from "./spec";
+import { parseColor } from "../devtools/shared/color";
 
 export type ToolShareState = {
   readonly input: { readonly text: string; readonly secondary?: string };
@@ -34,6 +35,38 @@ function validSetting(field: FieldSpec, value: unknown): boolean {
   switch (field.kind) {
     case "text":
       return typeof value === "string" && value.length <= (field.maxLength ?? MAX_SHARE_URL_LENGTH);
+    case "textarea":
+      return typeof value === "string" && value.length <= MAX_SHARE_URL_LENGTH;
+    case "color":
+      if (typeof value !== "string" || value.length > MAX_SHARE_URL_LENGTH) return false;
+      if (value.trim().toLowerCase() === "transparent" && !field.allowTransparent) return false;
+      try {
+        parseColor(value);
+        return true;
+      } catch {
+        return false;
+      }
+    case "rows":
+      if (
+        !Array.isArray(value) ||
+        Object.getPrototypeOf(value) !== Array.prototype ||
+        value.length > MAX_SHARE_URL_LENGTH ||
+        Reflect.ownKeys(value).length !== value.length + 1
+      )
+        return false;
+      for (let index = 0; index < value.length; index++) {
+        const row: unknown = Object.getOwnPropertyDescriptor(value, index)?.value;
+        if (
+          !isPlainRecord(row) ||
+          !hasOnlyKeys(row, ["key", "value"]) ||
+          typeof row.key !== "string" ||
+          typeof row.value !== "string" ||
+          row.key.length > MAX_SHARE_URL_LENGTH ||
+          row.value.length > MAX_SHARE_URL_LENGTH
+        )
+          return false;
+      }
+      return true;
     case "toggle":
       return typeof value === "boolean";
     case "select":
@@ -60,7 +93,9 @@ function validateState(spec: ToolSpec, value: unknown): { state: ToolShareState 
     spec.sharing.version < 1 ||
     spec.input.kind === "files" ||
     (spec.input.kind === "fields" && spec.input.fields.some((field) => field.secret)) ||
-    Object.values(spec.settings.fields).some((field) => !["text", "number", "select", "toggle"].includes(field.kind))
+    Object.values(spec.settings.fields).some(
+      (field) => !["text", "textarea", "color", "rows", "number", "select", "toggle"].includes(field.kind),
+    )
   ) {
     return { error: UNSUPPORTED };
   }

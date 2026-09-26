@@ -4,6 +4,7 @@ import { beforeEach, afterEach, expect, test, vi } from "vitest";
 import { setupReactTools, mountTool } from "./helpers/react-tools.mjs";
 import { useToolShare } from "../lib/tool-framework/useToolShare.ts";
 import { decodeToolShare, encodeToolShare } from "../lib/tool-framework/toolShare.ts";
+import queryBuilderSpec from "../tools/url-query-builder/definition.ts";
 
 setupReactTools();
 const spec = {
@@ -88,9 +89,68 @@ test("restores complete URL state then runs a manual tool once after initializat
   expect(props.run).not.toHaveBeenCalled();
   props = { ...props, input: input("shared"), settings: shared.settings, lifecycle: "ready" };
   await view.rerender(React.createElement(Fixture, props));
+  await tick(0);
   expect(props.run).toHaveBeenCalledTimes(1);
   await view.rerender(React.createElement(Fixture, { ...props, lifecycle: "running" }));
   expect(props.run).toHaveBeenCalledTimes(1);
+});
+
+test("URL Query Builder restores rows and resumes 300ms sharing after editing a row", async () => {
+  const shared = {
+    input: { text: "https://example.com/search", secondary: "source=shared\ntag=existing" },
+    settings: {
+      parameters: [
+        { key: "tag", value: "café & tea" },
+        { key: "tag", value: "" },
+      ],
+      encodeValues: true,
+      skipEmptyRows: false,
+      sortParameters: true,
+    },
+  };
+  const encoded = encodeToolShare(queryBuilderSpec, shared);
+  expect(encoded).toHaveProperty("hash");
+  window.history.replaceState(window.history.state, "", encoded.hash);
+
+  let props = parameters({ spec: queryBuilderSpec, lifecycle: "empty", completed: null });
+  const view = await mountTool(React.createElement(Fixture, props));
+  expect(props.initialize).toHaveBeenCalledExactlyOnceWith(shared);
+  const restored = props.initialize.mock.calls[0][0];
+  props = {
+    ...props,
+    input: { ...restored.input, files: [] },
+    settings: restored.settings,
+    lifecycle: "ready",
+  };
+  await view.rerender(React.createElement(Fixture, props));
+  await tick(0);
+  expect(props.run).toHaveBeenCalledTimes(1);
+  props = { ...props, lifecycle: "completed", completed: { input: props.input, settings: props.settings } };
+  await view.rerender(React.createElement(Fixture, props));
+  await tick(0);
+  expect(latest.canCopy).toBe(true);
+  expect(decodeToolShare(queryBuilderSpec, window.location.hash)).toEqual({ state: shared });
+
+  const editedSettings = {
+    ...props.settings,
+    parameters: [{ key: "tag", value: "edited = value 🌏" }, props.settings.parameters[1]],
+  };
+  props = { ...props, settings: editedSettings, lifecycle: "ready" };
+  await view.rerender(React.createElement(Fixture, props));
+  expect(window.location.hash).toBe("");
+  expect(latest.canCopy).toBe(false);
+  expect(props.run).toHaveBeenCalledTimes(1);
+
+  props = { ...props, lifecycle: "completed", completed: { input: props.input, settings: props.settings } };
+  await view.rerender(React.createElement(Fixture, props));
+  await tick(299);
+  expect(window.location.hash).toBe("");
+  await tick(1);
+  expect(decodeToolShare(queryBuilderSpec, window.location.hash)).toEqual({
+    state: { input: shared.input, settings: editedSettings },
+  });
+  expect(latest.canCopy).toBe(true);
+  expect(props.onError).not.toHaveBeenCalled();
 });
 
 test("removes a stale URL when inputs change and clears it on reset", async () => {

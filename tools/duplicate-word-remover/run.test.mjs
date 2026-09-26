@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { parseSettings } from "../../lib/tool-framework/settings.ts";
 import definition from "./definition.ts";
 import { run } from "./run.ts";
@@ -20,4 +20,16 @@ test("duplicate-word-remover: case-insensitive duplicates preserve first spellin
 
 test("duplicate-word-remover: empty text remains empty", async () => {
   expect((await execute()).text).toBe("");
+});
+
+test("duplicate-word-remover: case folding is unchanged in a Turkish locale", async () => {
+  const lower = String.prototype.toLocaleLowerCase;
+  const locale = vi.spyOn(String.prototype, "toLocaleLowerCase").mockImplementation(function (locales) {
+    return lower.call(this, locales ?? "tr");
+  });
+  try {
+    expect((await execute("I i ı")).text).toBe("I ı");
+  } finally {
+    locale.mockRestore();
+  }
 });

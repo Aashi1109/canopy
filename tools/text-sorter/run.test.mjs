@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { parseSettings } from "../../lib/tool-framework/settings.ts";
 import definition from "./definition.ts";
 import { run } from "./run.ts";
@@ -26,4 +26,16 @@ test.each([
 
 test("text-sorter: empty text remains empty", async () => {
   expect((await execute()).text).toBe("");
+});
+
+test("text-sorter: English collation is preserved in a Swedish browser locale", async () => {
+  const compare = String.prototype.localeCompare;
+  const locale = vi.spyOn(String.prototype, "localeCompare").mockImplementation(function (other, locales, options) {
+    return compare.call(this, other, locales ?? "sv", options);
+  });
+  try {
+    expect((await execute("z\na\nä", { order: "asc", ci: true })).text).toBe("a\nä\nz");
+  } finally {
+    locale.mockRestore();
+  }
 });
