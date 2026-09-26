@@ -1,5 +1,7 @@
 import { fileURLToPath } from "node:url";
-import { defineConfig, type Plugin } from "vitest/config";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { configDefaults, defineConfig, type Plugin } from "vitest/config";
 
 // Root-relative "@/..." alias mirrors tsconfig paths so tests resolve app modules
 // the same way the app does.
@@ -32,11 +34,17 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["tests/**/*.test.mjs"],
+    maxWorkers: 1,
+    fileParallelism: false,
+    execArgv: ["--max-old-space-size=2048"],
+    include: ["tests/**/*.test.mjs", "tools/**/*.test.mjs"],
+    forceRerunTriggers: [...configDefaults.forceRerunTriggers, "**/pnpm-lock.yaml", "**/pnpm-workspace.yaml"],
     // Playwright specs run under their own runner; integration tests are opt-in.
     exclude: ["tests/e2e/**", "node_modules/**"],
     coverage: {
       provider: "v8",
+      reportsDirectory: path.join(tmpdir(), "canopy-tool-coverage"),
+      reportOnFailure: true,
     },
   },
 });

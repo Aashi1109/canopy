@@ -27,7 +27,8 @@ function jsonToTypeScript(value: unknown): string {
     if (current === null) return "null";
     if (Array.isArray(current)) {
       const types = [...new Set(current.map((item) => infer(item, `${name}Item`)))];
-      return `${types.length ? types.join(" | ") : "unknown"}[]`;
+      const itemType = types.length ? types.join(" | ") : "unknown";
+      return `${types.length > 1 ? `(${itemType})` : itemType}[]`;
     }
     if (!isRecord(current)) return typeof current;
 

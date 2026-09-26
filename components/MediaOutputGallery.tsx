@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Button,
-  FileChip,
   MediaPreview,
   Tooltip,
   TooltipContent,
@@ -11,6 +10,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/index.tsx";
 import { ArtifactDownloadButton, useFileDownload } from "@/components/ArtifactDownloadButton";
+import { WorkspaceSurface } from "@/components/Surfaces";
 import { MediaOutputCard } from "@/components/ui/components/MediaOutputCard.tsx";
 import { OrderableList } from "@/components/ui/components/OrderableList.tsx";
 import { workspaceFileId } from "@/components/FileInput";
@@ -96,14 +96,25 @@ function Thumbnail({ file, cover = false }: { file: ImageFile; cover?: boolean }
   );
 }
 
-function OutputCard({ file, onPreview }: { file: StoredToolArtifact; onPreview: () => void }) {
+function OutputCard({
+  file,
+  onPreview,
+  disabled,
+  primary,
+}: {
+  file: StoredToolArtifact;
+  onPreview: () => void;
+  disabled?: boolean;
+  primary?: boolean;
+}) {
   const { download, downloading, error } = useFileDownload(file);
   return (
     <MediaOutputCard
       name={file.name}
       metadata={metadata(file)}
       onPreview={onPreview}
-      onDownload={() => void download()}
+      onDownload={primary ? undefined : () => void download()}
+      disabled={disabled}
       downloading={downloading}
       error={error}
     >
@@ -171,20 +182,23 @@ function ImagePreviewDialog({
         if (!open) onClose();
       }}
       title={file.name}
-      titleContent={
-        !isArtifact(file) && onRemove ? (
-          <FileChip
-            file={file}
+      actions={
+        isArtifact(file) ? (
+          <ArtifactDownloadButton file={file} key={file.id} size="sm" disabled={disabled} />
+        ) : (
+          <Button
+            variant="secondary"
+            size="sm"
             disabled={disabled}
-            details={dimensions.width > 0 ? `${dimensions.width} × ${dimensions.height} pixels` : undefined}
-            onRemove={() => {
+            onClick={() => {
               onClose();
-              onRemove(file);
+              onRemove?.(file);
             }}
-          />
-        ) : undefined
+          >
+            Remove image
+          </Button>
+        )
       }
-      actions={isArtifact(file) ? <ArtifactDownloadButton file={file} key={file.id} size="sm" /> : undefined}
       description={`${isArtifact(file) ? "Generated" : "Source"} image · ${selected + 1} of ${files.length} · ${sizeLabel(file.size)}`}
       hint="Zoom to inspect · Drag to pan"
       viewportClassName="relative overflow-hidden bg-transparent"
@@ -314,28 +328,36 @@ function ImageGallery<T extends ImageFile>({
   disabled,
   actions,
   onReorder,
+  header,
+  primaryOutputId,
 }: {
   files: readonly T[];
   onRemove?: (file: File) => void;
   disabled?: boolean;
   actions?: ReactNode;
   onReorder?: (files: T[]) => void;
+  header?: "visible" | "sr-only";
+  primaryOutputId?: string;
 }) {
   const [selectedFile, setSelectedFile] = useState<T | null>(null);
   const selected = selectedFile ? files.indexOf(selectedFile) : -1;
   const input = Boolean(onRemove);
   const renderCard = (file: T) =>
     isArtifact(file) ? (
-      <OutputCard file={file} key={file.id} onPreview={() => setSelectedFile(file)} />
+      <OutputCard
+        file={file}
+        key={file.id}
+        onPreview={() => setSelectedFile(file)}
+        disabled={disabled}
+        primary={file.id === primaryOutputId}
+      />
     ) : (
       <MediaOutputCard
         key={workspaceFileId(file)}
         name={file.name}
-        nameContent={
-          onRemove ? <FileChip file={file} disabled={disabled} onRemove={() => onRemove(file)} /> : undefined
-        }
         metadata={metadata(file)}
         onPreview={() => setSelectedFile(file)}
+        onRemove={() => onRemove?.(file)}
         disabled={disabled}
       >
         <Thumbnail file={file} />
@@ -343,19 +365,28 @@ function ImageGallery<T extends ImageFile>({
     );
   const gridClassName = "grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] items-start gap-4 pr-2";
   return (
-    <div
-      className="flex min-h-0 flex-1 flex-col gap-5 p-4 sm:p-6 max-sm:[&_button]:!min-h-11 max-sm:[&_button]:!min-w-11 [@media(pointer:coarse)]:[&_button]:!min-h-11 [@media(pointer:coarse)]:[&_button]:!min-w-11"
+    <WorkspaceSurface
+      actions={actions}
+      header={header}
+      className="flex-1"
+      contentClassName="gap-4 p-4 sm:p-6 max-sm:[&_button]:!min-h-11 max-sm:[&_button]:!min-w-11 [@media(pointer:coarse)]:[&_button]:!min-h-11 [@media(pointer:coarse)]:[&_button]:!min-w-11"
       data-slot={input ? "media-input-gallery" : "media-output-gallery"}
+      meta={`${files.length} ${files.length === 1 ? "image" : "images"}`}
+      purpose={input ? "source" : "result"}
+      title={
+        header === "sr-only" ? (
+          input ? (
+            "Selected images"
+          ) : (
+            "Converted images"
+          )
+        ) : (
+          <span role="heading" aria-level={2}>
+            {input ? "Selected images" : "Converted images"}
+          </span>
+        )
+      }
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">{input ? "Selected images" : "Converted images"}</h2>
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="text-xs text-muted-foreground">
-            {files.length} {files.length === 1 ? "image" : "images"} · Preview or {input ? "remove" : "download"}
-          </p>
-          {actions}
-        </div>
-      </div>
       {onReorder && (
         <p className="text-xs text-muted-foreground">
           Drag handles to change image order. With a keyboard, press Space to pick up, arrow keys to move, and Space to
@@ -417,12 +448,22 @@ function ImageGallery<T extends ImageFile>({
           disabled={disabled}
         />
       )}
-    </div>
+    </WorkspaceSurface>
   );
 }
 
-export function MediaOutputGallery({ files }: { files: readonly StoredToolArtifact[] }) {
-  return <ImageGallery files={files} />;
+export function MediaOutputGallery({
+  files,
+  header,
+  disabled,
+  primaryOutputId,
+}: {
+  files: readonly StoredToolArtifact[];
+  header?: "visible" | "sr-only";
+  disabled?: boolean;
+  primaryOutputId?: string;
+}) {
+  return <ImageGallery files={files} header={header} disabled={disabled} primaryOutputId={primaryOutputId} />;
 }
 
 export function MediaInputGallery({

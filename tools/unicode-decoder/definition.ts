@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.unicode-decoder",
+  sharing: { version: 1 },
   app: "devtools",
   category: "encoding-decoding",
   keywords: ["unicode", "decode", "escape", "\\\\u", "codepoint", "javascript", "emoji"],
@@ -10,6 +11,7 @@ export default {
   layout: "stacked",
   input: {
     kind: "text",
+    language: "unicode",
     label: "Unicode escapes",
     placeholder: "Hello \\u{1F44B}",
   },

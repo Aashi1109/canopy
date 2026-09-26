@@ -411,13 +411,17 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     return match ? { column: Number(match[2]), line: Number(match[1]) } : null;
   }, [props.error]);
   const displayedTree = transformPreview?.input === props.input.text ? transformPreview : tree;
-  const workingOutput = viewerDraft?.code ?? displayedTree?.text ?? props.input.text;
+  const workingOutput = precisionWarning
+    ? props.input.text
+    : (viewerDraft?.code ?? displayedTree?.text ?? props.input.text);
   const workingTree = viewerDraft ? { text: workingOutput, value: viewerDraft.value } : null;
-  const formattedViewerValue = viewerDraft
-    ? prettyJson(viewerDraft.value)
-    : displayedTree
-      ? prettyJson(displayedTree.value)
-      : props.input.text;
+  const formattedViewerValue = precisionWarning
+    ? props.input.text
+    : viewerDraft
+      ? prettyJson(viewerDraft.value)
+      : displayedTree
+        ? prettyJson(displayedTree.value)
+        : props.input.text;
 
   const goToError = useCallback(() => {
     if (!errorLocation) return;
@@ -453,7 +457,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     () => ({
       canRedo: Boolean(viewerDraft?.future.length),
       canUndo: Boolean(viewerDraft?.past.length),
-      code: viewerDraft?.code ?? "",
+      code: precisionWarning ? props.input.text : (viewerDraft?.code ?? ""),
       onRedo: () => {
         setViewerDraft((current) => {
           if (!current || current.future.length === 0) return current;
@@ -479,6 +483,13 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
         });
       },
       onValueChange: (value) => {
+        if (precisionWarning) {
+          showJsonNotice(
+            "Edit blocked because it could change a high-precision number. Edit the source directly.",
+            "warning",
+          );
+          return;
+        }
         setViewerDraft((current) => {
           if (!current) return current;
           const code = prettyJson(value);
@@ -493,7 +504,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
         });
       },
     }),
-    [viewerDraft],
+    [precisionWarning, props.input.text, viewerDraft],
   );
 
   useEffect(() => {

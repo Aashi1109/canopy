@@ -1,0 +1,32 @@
+// @vitest-environment jsdom
+import { beforeEach, expect, test, vi } from "vitest";
+import definition from "./definition.ts";
+import { run } from "./run.ts";
+import { setupReactTools, fill, click, button, field, waitFor } from "../../tests/helpers/react-tools.mjs";
+import { mountWorkspace, choose, openSettings } from "../../tests/helpers/tool-workspace.mjs";
+
+vi.mock("@/components/content/CodeEditor", async () => ({
+  CodeEditor: (await import("../../tests/helpers/react-tools.mjs")).TextEditorBoundary,
+}));
+setupReactTools();
+let clipboard;
+beforeEach(() => {
+  clipboard = { writeText: vi.fn(async () => {}) };
+  vi.stubGlobal("navigator", Object.defineProperty(Object.create(navigator), "clipboard", { value: clipboard }));
+});
+
+test("editing source and settings changes the real result and exact copy", async () => {
+  const view = await mountWorkspace(definition, run);
+  const source = "<p>hello 😀</p><script>parent.injected = true</script>";
+  await fill(field(definition.input.label), source);
+  await openSettings();
+  await click(field("Show outlines"));
+  await click(button("Run test operation"));
+  await waitFor(() => expect(button("Copy all")).toBeTruthy());
+  await click(button("Copy all"));
+  expect(clipboard.writeText.mock.calls.at(-1)[0]).toContain("outline:1px solid");
+  expect(clipboard.writeText.mock.calls.at(-1)[0]).toContain(source);
+  const iframe = view.container.querySelector("iframe");
+  expect(iframe.getAttribute("sandbox")).toBe("");
+  expect(iframe.getAttribute("srcdoc")).toBe(clipboard.writeText.mock.calls.at(-1)[0]);
+});

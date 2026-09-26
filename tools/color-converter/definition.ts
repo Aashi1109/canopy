@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.color-converter",
+  sharing: { version: 1 },
   app: "devtools",
   category: "color-design-tools",
   name: "Color Converter",

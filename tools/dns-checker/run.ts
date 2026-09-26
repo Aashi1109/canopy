@@ -58,6 +58,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "Select one or more of those six record types.",
     );
   }
+  ctx.signal.throwIfAborted();
   const records = await Promise.all(
     types.map(async (type) => {
       let response: Response;
@@ -73,15 +74,17 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         }
         response = await fetch(`https://dns.google/resolve?${query.toString()}`, {
           headers: { accept: "application/dns-json" },
-          signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+          signal: AbortSignal.any([ctx.signal, AbortSignal.timeout(LOOKUP_TIMEOUT_MS)]),
         });
       } catch {
+        ctx.signal.throwIfAborted();
         throw new ToolError(
           "resolver-unreachable",
           "DNS Checker could not reach the public DNS service.",
           "Check your network connection and try again.",
         );
       }
+      ctx.signal.throwIfAborted();
       if (!response.ok) {
         throw new ToolError(
           "lookup-failed",

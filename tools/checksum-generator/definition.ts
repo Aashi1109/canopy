@@ -2,12 +2,15 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.checksum-generator",
+  sharing: { version: 1 },
   app: "devtools",
   category: "hashing-crypto",
   keywords: ["checksum", "md5", "sha1", "sha256", "sha512", "hash", "digest", "verify"],
   name: "Checksum Generator",
   description: "Generate MD5, SHA-1, SHA-256, and SHA-512 text checksums.",
   layout: "stacked",
+  resultView: { default: "preview" },
+  previewLayout: "table",
   input: {
     kind: "text",
     label: "Text input",

@@ -7,6 +7,11 @@ export default {
   keywords: ["curl", "axios", "convert", "http request", "javascript", "api client", "code generator"],
   name: "cURL to Axios",
   description: "Convert common cURL requests to Axios and surface flags that cannot be represented.",
+  layout: "stacked",
+  optionsPanel: {
+    title: "OUTPUT & RUNTIME",
+    note: "Forms, cookie jars, proxies, redirects, certificates, uploads, and unsupported shell syntax are not converted.",
+  },
   input: {
     kind: "text",
     language: "bash",
@@ -64,7 +69,7 @@ export default {
       "Check the result before running it: strip any credential that came along in a header, and confirm the method matches what you intended.",
     ],
     limitations: [
-      "A subset of flags is understood: `-X/--request`, `-H/--header`, `-d/--data/--data-raw/--data-binary`, and `-u/--user`. Anything else — `-F`, `--form`, `-b`, `--cookie`, `-k`, `--compressed`, `-o`, proxy and TLS flags — is ignored and reported below the result, not translated.",
+      "A subset of flags is understood: `-X/--request`, `-H/--header`, `-d/--data/--data-raw/--data-binary`, and `-u/--user`. Anything else — `-F`, `--form`, `-b`, `--cookie`, `-k`, `--compressed`, `-o`, proxy and TLS flags — is ignored and reported in a warning, not translated.",
       "As with curl, supplying a body promotes an unspecified method from GET to POST.",
       "A JSON body is parsed and embedded as an object; anything that is not valid JSON is passed through as a string. No `Content-Type` header is inferred either way.",
       "`-u user:pass` becomes a Base64 `Authorization: Basic` header, so the credential ends up in plain sight in the generated code. Replace it with an environment variable before committing.",

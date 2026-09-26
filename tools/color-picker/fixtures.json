@@ -2,26 +2,41 @@
   "cases": [
     {
       "input": {
-        "primary": "#3366ff",
+        "primary": "#000000",
         "secondary": ""
       },
-      "name": "definition example",
+      "name": "default all formats for black have exact zero-valued color coordinates",
       "settings": {},
       "expected": {
         "render": "key-value",
         "entries": [
-          { "label": "HEX", "value": "#3366FF" },
-          { "label": "RGB", "value": "rgb(51, 102, 255)" },
-          { "label": "HSL", "value": "hsl(225, 100%, 60%)" }
+          { "label": "HEX", "value": "#000000" },
+          { "label": "RGB", "value": "rgb(0, 0, 0)" },
+          { "label": "HSL", "value": "hsl(0, 0%, 0%)" },
+          { "label": "HSV / HSB", "value": "H: 0°, S: 0%, V: 0%" },
+          { "label": "HWB", "value": "hwb(0 0% 100%)" },
+          { "label": "CMYK", "value": "C: 0%, M: 0%, Y: 0%, K: 100%" },
+          { "label": "Lab", "value": "lab(0 0 0)" },
+          { "label": "LCH", "value": "lch(0 0 none)" },
+          { "label": "OKLab", "value": "oklab(0 0 0)" },
+          { "label": "OKLCH", "value": "oklch(0 0 none)" },
+          { "label": "XYZ D65", "value": "color(xyz-d65 0 0 0)" },
+          { "label": "XYZ D50", "value": "color(xyz-d50 0 0 0)" },
+          { "label": "sRGB", "value": "color(srgb 0 0 0)" },
+          { "label": "Linear sRGB", "value": "color(srgb-linear 0 0 0)" },
+          { "label": "Display P3", "value": "color(display-p3 0 0 0)" },
+          { "label": "A98 RGB", "value": "color(a98-rgb 0 0 0)" },
+          { "label": "ProPhoto RGB", "value": "color(prophoto-rgb 0 0 0)" },
+          { "label": "Rec.2020", "value": "color(rec2020 0 0 0)" }
         ]
       }
     },
     {
       "input": {
-        "primary": "#f0c8",
+        "primary": "#0000",
         "secondary": ""
       },
-      "name": "keeps shorthand with modern RGB and no HSL",
+      "name": "all formats preserve transparent black with shorthand, modern RGB, and no HSL",
       "settings": {
         "normalizeShorthand": false,
         "legacyRgbCommas": false,
@@ -31,8 +46,23 @@
       "expected": {
         "render": "key-value",
         "entries": [
-          { "label": "HEX", "value": "#F0C8" },
-          { "label": "RGB", "value": "rgb(255 0 204 / 0.533)" }
+          { "label": "HEX", "value": "#0000" },
+          { "label": "RGB", "value": "rgb(0 0 0 / 0)" },
+          { "label": "HSV / HSB", "value": "H: 0°, S: 0%, V: 0%, A: 0%" },
+          { "label": "HWB", "value": "hwb(0 0% 100% / 0)" },
+          { "label": "CMYK", "value": "C: 0%, M: 0%, Y: 0%, K: 100%, A: 0%" },
+          { "label": "Lab", "value": "lab(0 0 0 / 0)" },
+          { "label": "LCH", "value": "lch(0 0 none / 0)" },
+          { "label": "OKLab", "value": "oklab(0 0 0 / 0)" },
+          { "label": "OKLCH", "value": "oklch(0 0 none / 0)" },
+          { "label": "XYZ D65", "value": "color(xyz-d65 0 0 0 / 0)" },
+          { "label": "XYZ D50", "value": "color(xyz-d50 0 0 0 / 0)" },
+          { "label": "sRGB", "value": "color(srgb 0 0 0 / 0)" },
+          { "label": "Linear sRGB", "value": "color(srgb-linear 0 0 0 / 0)" },
+          { "label": "Display P3", "value": "color(display-p3 0 0 0 / 0)" },
+          { "label": "A98 RGB", "value": "color(a98-rgb 0 0 0 / 0)" },
+          { "label": "ProPhoto RGB", "value": "color(prophoto-rgb 0 0 0 / 0)" },
+          { "label": "Rec.2020", "value": "color(rec2020 0 0 0 / 0)" }
         ]
       }
     },
@@ -52,6 +82,30 @@
         "render": "key-value",
         "entries": [{ "label": "HEX", "value": "#3366FF" }]
       }
+    },
+    {
+      "input": { "primary": "#3366ff", "secondary": "" },
+      "name": "definition example in RGB",
+      "settings": { "outputFormat": "rgb" },
+      "expected": { "render": "key-value", "entries": [{ "label": "RGB", "value": "rgb(51, 102, 255)" }] }
+    },
+    {
+      "input": { "primary": "#3366ff", "secondary": "" },
+      "name": "definition example in HSL",
+      "settings": { "outputFormat": "hsl" },
+      "expected": { "render": "key-value", "entries": [{ "label": "HSL", "value": "hsl(225, 100%, 60%)" }] }
+    },
+    {
+      "input": { "primary": "#f0c8", "secondary": "" },
+      "name": "keeps colored shorthand and alpha when normalization is disabled",
+      "settings": { "normalizeShorthand": false, "outputFormat": "hex" },
+      "expected": { "render": "key-value", "entries": [{ "label": "HEX", "value": "#F0C8" }] }
+    },
+    {
+      "input": { "primary": "#f0c8", "secondary": "" },
+      "name": "colored alpha uses modern RGB syntax and three decimal places",
+      "settings": { "legacyRgbCommas": false, "includeHsl": false, "outputFormat": "rgb" },
+      "expected": { "render": "key-value", "entries": [{ "label": "RGB", "value": "rgb(255 0 204 / 0.533)" }] }
     }
   ]
 }

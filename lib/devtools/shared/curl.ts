@@ -10,10 +10,18 @@ export function shellTokens(command: string): string[] {
   let token = "";
   let quote = "";
   let escaped = false;
-  for (const character of command.trim()) {
+  for (let index = 0; index < command.length; index += 1) {
+    const character = command[index];
     if (escaped) {
-      token += character;
       escaped = false;
+      // A shell continuation joins lines; it must not become an argument or whitespace.
+      if (character === "\n") continue;
+      if (character === "\r" && command[index + 1] === "\n") {
+        index += 1;
+        continue;
+      }
+      if (quote === '"' && !['"', "\\", "$", "`"].includes(character)) token += "\\";
+      token += character;
     } else if (character === "\\" && quote !== "'") {
       escaped = true;
     } else if (quote) {

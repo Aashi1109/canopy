@@ -19,13 +19,37 @@ type SimpleXmlNode = {
   text: string;
 };
 
+function decodeXmlText(value: string): string {
+  const entities: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
+  return value.replace(/&([^;\s]+);/g, (_match, reference: string) => {
+    if (Object.hasOwn(entities, reference)) return entities[reference];
+    const numeric = /^#(?:x([\da-fA-F]+)|(\d+))$/.exec(reference);
+    const point = numeric ? Number.parseInt(numeric[1] ?? numeric[2], numeric[1] ? 16 : 10) : NaN;
+    if (
+      point === 0x9 ||
+      point === 0xa ||
+      point === 0xd ||
+      (point >= 0x20 && point <= 0xd7ff) ||
+      (point >= 0xe000 && point <= 0xfffd) ||
+      (point >= 0x10000 && point <= 0x10ffff)
+    )
+      return String.fromCodePoint(point);
+    throw new ToolError("xml-invalid-entity", "XML contains an unsupported entity or invalid character reference.");
+  });
+}
+
 function xmlToJson(input: string): unknown {
-  const tokens = input.match(/<!--[\s\S]*?-->|<\?[\s\S]*?\?>|<[^>]+>|[^<]+/g) ?? [];
+  const tokens =
+    input.match(/<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<\?[\s\S]*?\?>|<(?:[^>"']|"[^"]*"|'[^']*')+>|[^<]+/g) ?? [];
   const stack: SimpleXmlNode[] = [];
   let root: SimpleXmlNode | undefined;
 
   for (const token of tokens) {
     if (token.startsWith("<!--") || token.startsWith("<?")) continue;
+    if (token.startsWith("<![CDATA[")) {
+      if (stack.length) stack.at(-1)!.text += token.slice(9, -3);
+      continue;
+    }
     if (token.startsWith("</")) {
       const name = token.slice(2, -1).trim();
       const closed = stack.pop();
@@ -47,7 +71,7 @@ function xmlToJson(input: string): unknown {
       const attributes = Object.fromEntries(
         [...body.matchAll(/([^\s=]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)].map((match) => [
           match[1],
-          match[2] ?? match[3] ?? "",
+          decodeXmlText(match[2] ?? match[3] ?? ""),
         ]),
       );
       const node: SimpleXmlNode = { name, attributes, children: [], text: "" };
@@ -57,7 +81,7 @@ function xmlToJson(input: string): unknown {
       if (!selfClosing) stack.push(node);
       continue;
     }
-    if (stack.length) stack.at(-1)!.text += token;
+    if (stack.length) stack.at(-1)!.text += decodeXmlText(token);
   }
   if (!root || stack.length) {
     throw new ToolError(
@@ -70,12 +94,11 @@ function xmlToJson(input: string): unknown {
   function convert(node: SimpleXmlNode): unknown {
     const text = node.text.trim();
     if (!node.children.length && !Object.keys(node.attributes).length) return text;
-    const result: Record<string, unknown> = Object.fromEntries(
-      Object.entries(node.attributes).map(([key, value]) => [`@${key}`, value]),
-    );
+    const result: Record<string, unknown> = Object.create(null);
+    for (const [key, value] of Object.entries(node.attributes)) result[`@${key}`] = value;
     for (const child of node.children) {
       const childValue = convert(child);
-      if (!(child.name in result)) result[child.name] = childValue;
+      if (!Object.hasOwn(result, child.name)) result[child.name] = childValue;
       else if (Array.isArray(result[child.name])) (result[child.name] as unknown[]).push(childValue);
       else result[child.name] = [result[child.name], childValue];
     }

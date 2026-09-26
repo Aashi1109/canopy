@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/index.tsx";
+import { useEffect, useState } from "react";
+import { Button, ToolActionButton, toast } from "@/components/ui/index.tsx";
 import { Download } from "lucide-react";
 import { readArtifact, type StoredToolArtifact } from "@/lib/tool-framework/artifacts";
 
@@ -35,18 +35,38 @@ export function ArtifactDownloadButton({
   file,
   label = "Download",
   size,
+  variant = "button",
+  disabled = false,
 }: {
   file: StoredToolArtifact;
   label?: string;
   size?: React.ComponentProps<typeof Button>["size"];
+  variant?: "button" | "toolbar";
+  disabled?: boolean;
 }) {
   const { download, downloading, error } = useFileDownload(file);
+  useEffect(() => {
+    if (variant === "toolbar" && error) toast.error(error);
+  }, [variant, error]);
+  if (variant === "toolbar") {
+    return (
+      <ToolActionButton
+        action="download"
+        aria-label={`${error ? "Retry download" : label} ${file.name}`}
+        disabled={disabled || downloading}
+        loading={downloading}
+        onClick={() => void download()}
+      >
+        {downloading ? "Preparing…" : error ? "Retry download" : label}
+      </ToolActionButton>
+    );
+  }
   return (
     <div className="flex flex-col items-end gap-1">
       <Button
         size={size}
         aria-label={`${error ? "Retry download" : label} ${file.name}`}
-        disabled={downloading}
+        disabled={disabled || downloading}
         onClick={() => void download()}
       >
         <Download aria-hidden="true" />

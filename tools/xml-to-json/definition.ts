@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.xml-to-json",
+  sharing: { version: 1 },
   app: "devtools",
   category: "json-tools",
   keywords: ["xml", "json", "convert", "parse", "attributes", "soap", "rss"],
@@ -38,7 +39,7 @@ export default {
       "Copy the formatted JSON, or fix the reported error if the tags do not balance.",
     ],
     limitations: [
-      "This is a deliberately small parser, not a full XML processor. Namespaces are kept as literal prefixes, DTDs and entity declarations are skipped, and CDATA is not unwrapped.",
+      "This is a deliberately small parser, not a full XML processor. Namespaces are kept as literal prefixes. Predefined entities, numeric character references, and CDATA are supported; custom entities are not expanded.",
       "Whitespace-only text is trimmed away, so mixed content (text interleaved with child elements) loses its ordering.",
       "An element that appears once becomes an object; the same element appearing twice becomes an array. Consumers must handle both shapes.",
       "Numbers and booleans stay strings — XML has no types to infer them from.",

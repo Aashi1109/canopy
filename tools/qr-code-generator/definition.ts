@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.qr-code-generator",
+  sharing: { version: 1 },
   app: "devtools",
   category: "encoding-decoding",
   keywords: ["qr", "qr code", "barcode", "generator", "url", "wifi", "vcard", "png", "svg"],
@@ -10,6 +11,8 @@ export default {
   input: {
     kind: "text",
     label: "Content to encode",
+    language: "qr",
+    showLineNumbers: false,
     placeholder: "https://example.com",
   },
   settings: {

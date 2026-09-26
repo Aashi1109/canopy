@@ -77,6 +77,7 @@ function normalizeDomainRatingTarget(value: unknown): string {
 
 export const run: ToolRun<Settings> = async (ctx): Promise<DomainRatingResult> => {
   const target = normalizeDomainRatingTarget(ctx.input.text);
+  ctx.signal.throwIfAborted();
   const endpoint = new URL(AHREFS_DOMAIN_RATING_URL);
   endpoint.search = new URLSearchParams({ target, output: "json" }).toString();
   const headers: Record<string, string> = { Accept: "application/json" };
@@ -94,7 +95,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<DomainRatingResult> =
     ctx.signal.throwIfAborted();
     throw new ToolError("upstream-unreachable", "Domain Rating Checker could not reach Ahrefs. Try again.");
   }
-
+  ctx.signal.throwIfAborted();
   if (response.status === 401 || response.status === 403) {
     throw new ToolError("upstream-rejected", "Ahrefs rejected the request. Check the API key configuration.");
   }
@@ -108,9 +109,11 @@ export const run: ToolRun<Settings> = async (ctx): Promise<DomainRatingResult> =
   let payload: unknown;
   try {
     payload = await response.json();
-  } catch (e) {
+  } catch {
+    ctx.signal.throwIfAborted();
     throw new ToolError("upstream-invalid", `Ahrefs returned an invalid response.`);
   }
+  ctx.signal.throwIfAborted();
   if (!isRecord(payload) || !isRecord(payload.domain_rating)) {
     throw new ToolError("upstream-invalid", "Ahrefs returned an invalid response.");
   }

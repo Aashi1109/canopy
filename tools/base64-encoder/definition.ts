@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.base64-encoder",
+  sharing: { version: 1 },
   app: "devtools",
   category: "encoding-decoding",
   keywords: ["base64", "encode", "url safe", "base64url", "utf-8", "data uri"],

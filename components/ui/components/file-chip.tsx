@@ -14,7 +14,7 @@ export function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
 }
 
-/** Compact source-file identity and removal, shared by tool upload surfaces. */
+/** Source-file identity and removal for tool toolbar headers only. */
 export function FileChip({
   file,
   onRemove,

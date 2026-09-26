@@ -1,8 +1,6 @@
 /**
- * Moved verbatim from the `text-sorter` case in `lib/devtools/format-json.ts`
- * (arm at line 2380). `localeCompare` is still called with an `undefined`
- * locale, exactly as before, so the ordering matches the old implementation on
- * the same machine.
+ * Uses English collation so shared inputs keep their ordering when opened
+ * in a browser with a different default locale.
  */
 
 import type { ToolRun } from "../../lib/tool-framework/run.ts";
@@ -18,7 +16,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     render: "text",
     text: ctx.input.text
       .split(/\r\n|\r|\n/)
-      .sort((left, right) => left.localeCompare(right, undefined, { sensitivity }) * direction)
+      .sort((left, right) => left.localeCompare(right, "en", { sensitivity }) * direction)
       .join("\n"),
     downloadName: "sorted-text.txt",
   };

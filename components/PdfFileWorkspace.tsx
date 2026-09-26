@@ -2,22 +2,25 @@
 
 import {
   Alert,
-  AlertBanner,
   AlertDescription,
   AlertTitle,
   Button,
   Caption,
-  DownloadResult,
   FileChip,
   FileQueueItem,
   MediaPreview,
   Muted,
+  P,
   PdfViewer,
-  ProcessingStatus,
   ToolOptionsPanel,
   ToolActionButton,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  WorkspacePanelHeader,
 } from "@/components/ui/index.tsx";
-import { Check, FileText, Upload } from "lucide-react";
+import { Check, FileText, Upload, X } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import { ArtifactDownloadButton } from "@/components/ArtifactDownloadButton";
@@ -201,12 +204,39 @@ export function PdfFileWorkspace({
       Upload
     </ToolActionButton>
   );
+  const removeFileControl = (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            tabIndex={props.disabled ? 0 : undefined}
+            aria-label={props.disabled ? "Remove PDF — wait for processing to finish" : undefined}
+            className="rounded-lg focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <Button
+              aria-label={`Remove ${file?.name}`}
+              disabled={props.disabled}
+              onClick={() => {
+                if (props.disabled) return;
+                setExpanded(false);
+                props.onInputChange({ ...props.input, files: [] });
+              }}
+              size="icon-xs"
+              variant="outline"
+            >
+              <X aria-hidden="true" />
+            </Button>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{props.disabled ? "Wait for processing to finish" : "Remove PDF"}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
   const viewer = (fullScreen: boolean) => (
     <PdfViewer
       className="h-full min-h-0 w-full"
       currentPage={currentPage}
       fileName={file?.name ?? "Source PDF"}
-      fileNameContent={fileChip}
       fileSize={
         file
           ? `${(file.size / (file.size < 1_048_576 ? 1024 : 1_048_576)).toFixed(2)} ${file.size < 1_048_576 ? "KiB" : "MiB"}`
@@ -249,7 +279,26 @@ export function PdfFileWorkspace({
       pagePreviewDetail={
         getPageRotation ? "Original thumbnail · changes shown in main preview" : "Original PDF · unchanged"
       }
-      rightChildren={fileControls}
+      rightChildren={
+        <>
+          {removeFileControl}
+          {fullScreen ? (
+            <Button
+              disabled={props.disabled}
+              onClick={() => {
+                setExpanded(false);
+                fileInput.current?.click();
+              }}
+              size="sm"
+              variant="outline"
+            >
+              Replace PDF
+            </Button>
+          ) : (
+            fileControls
+          )}
+        </>
+      }
       renderPagePreview={(number) => {
         const page = pages[number - 1];
         return page ? (
@@ -264,6 +313,8 @@ export function PdfFileWorkspace({
   const primaryOutput =
     outputs.find((output) => output.mime === "application/zip") ?? (outputs.length === 1 ? outputs[0] : undefined);
   const pdfCount = outputs.filter((output) => output.mime === "application/pdf").length;
+  const canDownload = outputs.length > 0 && !props.running;
+  const outputReady = canDownload && !props.error && !cancelled;
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(20rem,32%)] lg:overflow-hidden">
@@ -298,10 +349,9 @@ export function PdfFileWorkspace({
               type="file"
             />
             {(inspectionError || !pages.length) && (
-              <div className="flex min-w-0 flex-wrap items-center gap-3 border-b border-border px-4 py-2">
-                <div className="min-w-0 flex-1">{fileChip}</div>
-                {fileControls}
-              </div>
+              <WorkspacePanelHeader aria-label="Source PDF" actions={fileControls}>
+                {fileChip}
+              </WorkspacePanelHeader>
             )}
             <WorkspaceSurface
               title="PDF preview"
@@ -375,45 +425,29 @@ export function PdfFileWorkspace({
             <AlertDescription>{plan.error}</AlertDescription>
           </Alert>
         )}
-        {!props.running && (!(primaryOutput && completionActions) || props.error || cancelled) && (
+        {(!(primaryOutput && completionActions) || props.running || props.error || cancelled) && (
           <Button
             className="w-full"
-            disabled={Boolean(reason) || props.primaryAction?.disabled}
+            disabled={props.running || Boolean(reason) || props.primaryAction?.disabled}
+            loading={props.running}
             onClick={props.primaryAction?.onRun}
           >
             {actionLabel}
           </Button>
         )}
-        {props.running && (
-          <ProcessingStatus
-            title={props.spec.labels.running}
-            detail={props.progress?.stage ?? "Preparing the document."}
-            action={
-              <Button
-                onClick={() => {
-                  setCancelled(true);
-                  props.primaryAction?.onCancel?.();
-                }}
-                variant="secondary"
-              >
-                Cancel
-              </Button>
-            }
-          />
-        )}
-        {primaryOutput ? (
-          <DownloadResult
-            variant={resultVariant}
-            className="min-w-0 [&>div:last-child]:shrink-0"
-            title="Your file is ready"
-            metadata={
-              <span className={resultVariant === "action" ? "block break-words" : "block truncate"}>
-                {primaryOutput.name} · {(primaryOutput.size / 1024).toFixed(1)} KiB
-              </span>
-            }
-            action={
+        <WorkspaceSurface
+          title="Processed output"
+          purpose="result"
+          variant="card"
+          className="shrink-0"
+          contentClassName="gap-3 px-4 pb-4 pt-2"
+          aria-busy={props.running}
+          actions={
+            primaryOutput ? (
               <ArtifactDownloadButton
                 file={primaryOutput}
+                disabled={!canDownload}
+                variant="toolbar"
                 label={
                   primaryOutput.mime === "application/zip"
                     ? "Download ZIP"
@@ -422,42 +456,87 @@ export function PdfFileWorkspace({
                       : undefined
                 }
               />
-            }
-          />
-        ) : outputs.length > 0 ? (
-          <AlertBanner title="Complete" variant="success">
-            {pdfCount} {pdfCount === 1 ? "PDF is" : "PDFs are"} ready to download. Your original is unchanged.
-          </AlertBanner>
-        ) : !reason && !props.result && plan.summary?.detail ? (
-          <AlertBanner title={plan.summary.title}>{plan.summary.detail}</AlertBanner>
-        ) : null}
-        {primaryOutput ? completionActions : secondaryActions}
-        {reason && !plan.error && <Muted role="status">{reason}</Muted>}
-        {cancelled && !props.running && (
-          <Muted role="status">Cancelled. Your PDF and settings are kept. Choose {actionLabel} to try again.</Muted>
-        )}
-        {props.error && (
-          <Alert variant="destructive">
-            <AlertTitle>Unable to {actionLabel.toLowerCase()}</AlertTitle>
-            <AlertDescription>{props.error} Check the settings and try again, or replace the PDF.</AlertDescription>
-          </Alert>
-        )}
-        {outputs.some((output) => output !== primaryOutput) && (
-          <section aria-label={`${props.spec.name} results`} className="grid min-w-0 gap-3 border-t border-border pt-4">
-            {outputs
-              .filter((output) => output !== primaryOutput)
-              .map((output) => (
-                <FileQueueItem
-                  className="flex-wrap"
-                  key={output.id}
-                  icon={<FileText aria-hidden="true" />}
-                  name={output.name}
-                  metadata={`${output.mime === "application/zip" ? "ZIP archive" : "PDF"} · ${(output.size / 1024).toFixed(1)} KiB`}
-                  action={<ArtifactDownloadButton file={output} />}
-                />
-              ))}
-          </section>
-        )}
+            ) : outputs.length === 0 ? (
+              <ToolActionButton action="download" disabled />
+            ) : undefined
+          }
+        >
+          <div className="flex min-h-24 flex-col justify-center gap-2" role={props.error ? "alert" : "status"}>
+            {props.running ? (
+              <>
+                <P>{props.spec.labels.running}</P>
+                <Muted>{props.progress?.stage ?? "Preparing the document."}</Muted>
+                {props.primaryAction?.onCancel && (
+                  <Button
+                    className="self-start"
+                    onClick={() => {
+                      setCancelled(true);
+                      props.primaryAction?.onCancel?.();
+                    }}
+                    variant="secondary"
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </>
+            ) : props.error ? (
+              <>
+                <P className="text-destructive">Unable to {actionLabel.toLowerCase()}</P>
+                <Muted>{props.error} Check the settings and try again, or replace the PDF.</Muted>
+              </>
+            ) : cancelled ? (
+              <>
+                <P>Processing cancelled</P>
+                <Muted>Your PDF and settings are kept. Choose {actionLabel} to try again.</Muted>
+              </>
+            ) : outputReady ? (
+              <>
+                <P>{pdfCount > 1 ? `${pdfCount} PDFs are ready to download.` : "Your file is ready to download."}</P>
+                {primaryOutput && (
+                  <Muted className="break-words">
+                    {primaryOutput.name} · {(primaryOutput.size / 1024).toFixed(1)} KiB
+                  </Muted>
+                )}
+                <Muted>Your original PDF is unchanged.</Muted>
+              </>
+            ) : !reason && plan.summary ? (
+              <>
+                <P>{plan.summary.title}</P>
+                <div className="text-sm text-muted-foreground">{plan.summary.detail}</div>
+                <Muted>Choose {actionLabel} to create the processed file.</Muted>
+              </>
+            ) : (
+              <Muted>{plan.error ? "Check your settings above." : reason} The processed file will appear here.</Muted>
+            )}
+            {canDownload && (props.error || cancelled) && (
+              <>
+                <Muted>Your previous output is still available to download.</Muted>
+                {primaryOutput && (
+                  <Muted className="break-words">
+                    {primaryOutput.name} · {(primaryOutput.size / 1024).toFixed(1)} KiB
+                  </Muted>
+                )}
+              </>
+            )}
+          </div>
+          {canDownload && outputs.some((output) => output !== primaryOutput) && (
+            <section aria-label={`${props.spec.name} results`} className="grid min-w-0 border-t border-border">
+              {outputs
+                .filter((output) => output !== primaryOutput)
+                .map((output) => (
+                  <FileQueueItem
+                    className="flex-wrap bg-transparent"
+                    key={output.id}
+                    icon={<FileText aria-hidden="true" />}
+                    name={output.name}
+                    metadata={`${output.mime === "application/zip" ? "ZIP archive" : "PDF"} · ${(output.size / 1024).toFixed(1)} KiB`}
+                    action={<ArtifactDownloadButton file={output} variant="toolbar" />}
+                  />
+                ))}
+            </section>
+          )}
+        </WorkspaceSurface>
+        {canDownload && primaryOutput ? completionActions : secondaryActions}
       </ToolOptionsPanel>
       <MediaPreview
         open={expanded}

@@ -14,6 +14,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({
   render: "text",
+  language: "unicode",
   text: Array.from(ctx.input.text, (character) => {
     const point = character.codePointAt(0)!;
     return point <= 0x7f

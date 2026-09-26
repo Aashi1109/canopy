@@ -4,6 +4,7 @@ import { cloneElement, isValidElement, useRef, type ComponentProps, type HTMLAtt
 import {
   WorkbenchPresentationProvider,
   WorkbenchFocusButton,
+  WorkbenchLayoutControl,
   WorkbenchViewControl,
   useWorkbenchFocus,
 } from "./workbench-presentation.tsx";
@@ -87,6 +88,7 @@ function Toast(props: ComponentProps<typeof Toaster>) {
 
 type WorkbenchShellProps = HTMLAttributes<HTMLElement> & {
   children: ReactNode;
+  layoutStorageKey?: string;
   options?: ReactNode;
   status?: ReactNode;
   statusMeta?: ReactNode;
@@ -96,9 +98,9 @@ type WorkbenchShellProps = HTMLAttributes<HTMLElement> & {
   variant?: "json" | "conversion" | "media" | "utility";
 };
 
-function WorkbenchShell(props: WorkbenchShellProps) {
+function WorkbenchShell({ layoutStorageKey, ...props }: WorkbenchShellProps) {
   return (
-    <WorkbenchPresentationProvider>
+    <WorkbenchPresentationProvider storageKey={layoutStorageKey}>
       <WorkbenchShellContent {...props} />
     </WorkbenchPresentationProvider>
   );
@@ -172,6 +174,7 @@ function WorkbenchShellContent({
             className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2"
           >
             {compactToolbarActions}
+            <WorkbenchLayoutControl />
             <WorkbenchFocusButton />
           </div>
         </div>

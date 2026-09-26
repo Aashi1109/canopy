@@ -37,11 +37,8 @@
     {
       "expected": {
         "render": "text",
-        "pattern": "^MX\\t\\d+\\t",
-        "length": {
-          "min": 5,
-          "max": 1000
-        }
+        "output": "MX\t300\t10 mail.example.com.",
+        "downloadName": "dns-records.txt"
       },
       "input": {
         "primary": "example.com",

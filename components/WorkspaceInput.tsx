@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/index.tsx";
 import { cn } from "@/components/ui/lib/utils.ts";
 import { Eye, EyeOff } from "lucide";
-import { FileText, Upload } from "lucide-react";
+import { FileText, Upload, X } from "lucide-react";
 import { MorphIcon } from "morphicons/react";
 import {
   type ReactNode,
@@ -58,6 +58,10 @@ interface InputSurfaceProps {
   onInputChange: WorkspaceProps["onInputChange"];
   onSubmit?: () => void;
   onSourceScroll?: (scroller: HTMLElement) => void;
+  renderContent?: (source: ReactNode) => ReactNode;
+  title?: string;
+  sourceClassName?: string;
+  sourceHeader?: ReactNode;
   sourceRef?: Ref<HTMLElement>;
   variant?: "card" | "panel";
 }
@@ -286,6 +290,10 @@ export function WorkspaceInputSurface({
   onInputChange,
   onSubmit,
   onSourceScroll,
+  renderContent,
+  title,
+  sourceClassName,
+  sourceHeader,
   sourceRef,
   variant,
 }: InputSurfaceProps) {
@@ -417,7 +425,45 @@ export function WorkspaceInputSurface({
         </>
       ) : null;
       const codeShaped = isCodeShaped(input.text) || isCodeShaped(inputSpec.placeholder ?? "");
-      const editorSurface = header || inputSpec.secondary ? inputSpec.surface : undefined;
+      const editorSurface = header || renderContent || inputSpec.secondary ? inputSpec.surface : undefined;
+      const source = (
+        <div
+          className={cn(
+            "grid min-h-0 min-w-0 flex-1 gap-1.5",
+            editorSurface === "card" && "grid-rows-[auto_minmax(0,1fr)]",
+            editorSurface === "card" && !renderContent && "px-4 pb-4",
+            editorSurface === "card" && !header && !renderContent && "pt-4",
+          )}
+        >
+          {sourceHeader ?? (
+            <FieldLabel
+              className={editorSurface === "card" ? "text-muted-foreground" : "sr-only"}
+              htmlFor={`${idPrefix}-primary`}
+            >
+              {inputSpec.label}
+            </FieldLabel>
+          )}
+          <SourceTextarea
+            aria-label={inputSpec.label}
+            className={cn("min-h-48 flex-1", sourceClassName)}
+            disabled={disabled}
+            id={`${idPrefix}-primary`}
+            highlightedValue={highlightedInput}
+            highlightMode={inputHighlightMode}
+            language={inputSpec.language}
+            showLineNumbers={inputSpec.showLineNumbers ?? variant !== "card"}
+            surface={editorSurface}
+            transparent={variant === "card"}
+            maxLength={inputSpec.maxLength}
+            onChange={(text) => onInputChange({ ...input, files: [], text })}
+            onScroll={onSourceScroll}
+            scrollRef={sourceRef}
+            placeholder={inputSpec.placeholder}
+            readOnly={largeFile}
+            value={input.text}
+          />
+        </div>
+      );
       return (
         <WorkspaceSurface
           actions={
@@ -426,8 +472,12 @@ export function WorkspaceInputSurface({
               {browseAction}
             </>
           }
-          className="h-full"
-          contentClassName="gap-4 bg-background"
+          className={cn(
+            "h-full",
+            renderContent &&
+              "[&_[data-slot=workspace-content]>div]:flex! [&_[data-slot=workspace-content]>div]:min-h-full [&_[data-slot=workspace-content]>div]:flex-col",
+          )}
+          contentClassName={cn("gap-4 bg-background", renderContent && "flex-1")}
           meta={
             selectedFile ? (
               <FileChip
@@ -447,43 +497,18 @@ export function WorkspaceInputSurface({
           }
           metaPosition={selectedFile ? "start" : "actions"}
           purpose="source"
-          title={inputSpec.label}
+          scroll={header || renderContent ? "content" : "none"}
+          title={title ?? inputSpec.label}
           variant={variant}
         >
-          {header}
-          <div
-            className={cn(
-              "grid min-h-0 flex-1 gap-1.5",
-              editorSurface === "card" && "grid-rows-[auto_minmax(0,1fr)] px-4 pb-4",
-              editorSurface === "card" && !header && "pt-4",
-            )}
-          >
-            <FieldLabel
-              className={editorSurface === "card" ? "text-muted-foreground" : "sr-only"}
-              htmlFor={`${idPrefix}-primary`}
-            >
-              {inputSpec.label}
-            </FieldLabel>
-            <SourceTextarea
-              aria-label={inputSpec.label}
-              className="min-h-48 flex-1"
-              disabled={disabled}
-              id={`${idPrefix}-primary`}
-              highlightedValue={highlightedInput}
-              highlightMode={inputHighlightMode}
-              language={inputSpec.language}
-              showLineNumbers={variant !== "card"}
-              surface={editorSurface}
-              transparent={variant === "card"}
-              maxLength={inputSpec.maxLength}
-              onChange={(text) => onInputChange({ ...input, files: [], text })}
-              onScroll={onSourceScroll}
-              scrollRef={sourceRef}
-              placeholder={inputSpec.placeholder}
-              readOnly={largeFile}
-              value={input.text}
-            />
-          </div>
+          {renderContent ? (
+            renderContent(source)
+          ) : (
+            <>
+              {header}
+              {source}
+            </>
+          )}
           {largeFile ? (
             <Muted className="px-4 pb-3 text-muted-foreground">
               Showing the first 256 KiB. The complete file stays read-only and is processed locally when you run the
@@ -727,10 +752,19 @@ export function WorkspaceInputSurface({
             getId={workspaceFileId}
             getMetadata={(file) => `${file.type || "Unknown type"} · ${file.size.toLocaleString()} bytes`}
             getName={(file) => file.name}
-            getFile={(file) => file}
             items={input.files}
             disabled={disabled}
-            onRemove={(file) => onInputChange({ ...input, files: input.files.filter((entry) => entry !== file) })}
+            renderAction={(file) => (
+              <Button
+                aria-label={`Remove ${file.name}`}
+                disabled={disabled}
+                onClick={() => onInputChange({ ...input, files: input.files.filter((entry) => entry !== file) })}
+                size="icon"
+                variant="outline"
+              >
+                <X aria-hidden="true" />
+              </Button>
+            )}
             title="Selected files"
           />
         </Stack>

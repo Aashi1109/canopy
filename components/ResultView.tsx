@@ -54,12 +54,14 @@ const MarkdownPreview = dynamic(
 export interface ResultViewProps {
   colorPreviews?: boolean;
   hideArtifacts?: boolean;
+  hideFileActions?: boolean;
   hideJsonHeader?: boolean;
   hideStats?: boolean;
   htmlPreview?: boolean;
   initialJsonView?: JsonResultView;
   jsonHeader?: ReactNode;
   language?: string;
+  showLineNumbers?: boolean;
   markdownPreview?: boolean;
   previewLayout?: "document" | "table";
   result: ToolResult;
@@ -68,11 +70,13 @@ export interface ResultViewProps {
 type ResultRendererOptions = Pick<
   ResultViewProps,
   | "colorPreviews"
+  | "hideFileActions"
   | "hideJsonHeader"
   | "htmlPreview"
   | "initialJsonView"
   | "jsonHeader"
   | "language"
+  | "showLineNumbers"
   | "markdownPreview"
   | "previewLayout"
 >;
@@ -344,6 +348,37 @@ function RenderFrame({ children }: { children: ReactNode }) {
   return <div className="flex min-h-0 flex-1 flex-col">{children}</div>;
 }
 
+function ImageResultPreview({ result }: { result: Extract<ToolRender, { render: "image" }> }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <RenderFrame>
+      {failed ? (
+        <ContentState
+          density="compact"
+          state="error"
+          title="Image preview unavailable"
+          description={
+            result.downloadName
+              ? "This image could not be displayed. You can still download the original file."
+              : "This image could not be displayed. Check the source file and try again."
+          }
+        />
+      ) : (
+        <div className="grid min-h-80 flex-1 place-items-center overflow-auto bg-muted/45 p-6">
+          <img
+            alt={result.alt}
+            className="max-h-full max-w-full object-contain"
+            height={result.height}
+            onError={() => setFailed(true)}
+            src={result.src}
+            width={result.width}
+          />
+        </div>
+      )}
+    </RenderFrame>
+  );
+}
+
 function TruncatedResultNotice() {
   return (
     <Muted className="shrink-0 px-4 py-2 text-muted-foreground">
@@ -473,6 +508,8 @@ function resultArtifact(result: ToolResult | null): ResultArtifact | null {
       };
     case "image":
       return {
+        copy: result.src.startsWith("data:image/") ? result.src : undefined,
+        copyLabel: "Copy image data URL",
         download: result.downloadName ? { href: result.src, mime: result.mime, name: result.downloadName } : undefined,
       };
     case "diff": {
@@ -494,6 +531,7 @@ function resultArtifact(result: ToolResult | null): ResultArtifact | null {
 
 function firstStoredArtifact(result: ToolResult | null): StoredToolArtifact | null {
   if (!result) return null;
+  if (result.render === "files" && result.files.length === 1) return result.files[0];
   const direct = result.artifacts?.find((artifact): artifact is StoredToolArtifact => artifact.storage !== "inline");
   if (direct) return direct;
   for (const section of result.sections ?? []) {
@@ -538,7 +576,7 @@ export function ResultActions({
 
   return (
     <>
-      {canCopy ? (
+      {canCopy && (!result || artifact?.copy !== undefined) ? (
         <CopyButton
           content={artifact?.copy ?? ""}
           disabled={artifact?.copy === undefined}
@@ -592,11 +630,11 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
             value={result.text}
             language={options.language}
             readOnly
-            showLineNumbers={false}
+            showLineNumbers={options.showLineNumbers ?? false}
           />
         ) : (
           <CodeBlock className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4">
-            {result.text}
+            {result.language ? <SyntaxHighlight code={result.text} language={result.language} /> : result.text}
           </CodeBlock>
         )}
         {result.truncated ? <TruncatedResultNotice /> : null}
@@ -619,7 +657,7 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
           value={result.code}
           language={result.language}
           readOnly
-          showLineNumbers={false}
+          showLineNumbers={options?.showLineNumbers ?? false}
         />
         {result.truncated ? <TruncatedResultNotice /> : null}
       </RenderFrame>
@@ -751,19 +789,7 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
         <SandboxedHtmlPreview html={htmlPreviewMarkup(result.html, options?.previewLayout)} />
       </RenderFrame>
     ),
-  image: (result) => (
-    <RenderFrame>
-      <div className="grid min-h-80 flex-1 place-items-center overflow-auto bg-muted/45 p-6">
-        <img
-          alt={result.alt}
-          className="max-h-full max-w-full object-contain"
-          height={result.height}
-          src={result.src}
-          width={result.width}
-        />
-      </div>
-    </RenderFrame>
-  ),
+  image: (result) => <ImageResultPreview key={result.src} result={result} />,
   diff: (result) => {
     return (
       <RenderFrame>
@@ -771,12 +797,12 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
       </RenderFrame>
     );
   },
-  files: (result) => (
+  files: (result, options) => (
     <div className="grid gap-3 p-4">
       {result.files.map((file) => {
         return (
           <DownloadResult
-            action={<ArtifactDownloadButton artifact={file} />}
+            action={options?.hideFileActions ? undefined : <ArtifactDownloadButton artifact={file} />}
             className="[&_p]:truncate"
             key={`${file.name}-${file.size}`}
             metadata={`${file.mime} · ${file.size.toLocaleString()} bytes`}
@@ -896,12 +922,14 @@ function CommonResultDetails({ hideArtifacts, hideStats, result }: ResultViewPro
 export function ResultView({
   colorPreviews,
   hideArtifacts,
+  hideFileActions,
   hideJsonHeader,
   hideStats,
   htmlPreview,
   initialJsonView,
   jsonHeader,
   language,
+  showLineNumbers,
   markdownPreview,
   previewLayout,
   result,
@@ -910,11 +938,13 @@ export function ResultView({
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       {renderPrimary(result, {
         colorPreviews,
+        hideFileActions,
         hideJsonHeader,
         htmlPreview,
         initialJsonView,
         jsonHeader,
         language,
+        showLineNumbers,
         markdownPreview,
         previewLayout,
       })}

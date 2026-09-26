@@ -17,23 +17,27 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 function curlAsFetch(command: string, settings: Settings): string {
   const request = parseCurl(command);
+  const typed = settings.outputLanguage === "typescript";
+  const responseType = typed ? ": Response" : "";
+  const dataType = typed ? ": unknown" : "";
   const init: Record<string, unknown> = {};
   if (request.method !== "GET") init.method = request.method;
   if (Object.keys(request.headers).length) init.headers = request.headers;
   if (request.body !== undefined) init.body = request.body;
-  const fetchLine = `const response = await fetch(${JSON.stringify(request.url)}, ${JSON.stringify(init, null, 2)});`;
+  const fetchLine = `const response${responseType} = await fetch(${JSON.stringify(request.url)}, ${JSON.stringify(init, null, 2)});`;
   const rawResponse = settings.responseHandling === "raw";
 
   if (settings.executionStyle === "async-function") {
     const body = rawResponse
       ? `${fetchLine}\nreturn response;`
       : `${fetchLine}\nif (!response.ok) throw new Error(\`HTTP \${response.status}\`);\nreturn response.json();`;
-    return `async function request() {\n${body.replaceAll("\n", "\n  ").replace(/^/, "  ")}\n}\n\nconst ${rawResponse ? "response" : "data"} = await request();`;
+    const returnType = typed ? `: Promise<${rawResponse ? "Response" : "unknown"}>` : "";
+    return `async function request()${returnType} {\n${body.replaceAll("\n", "\n  ").replace(/^/, "  ")}\n}\n\nconst ${rawResponse ? `response${responseType}` : `data${dataType}`} = await request();`;
   }
 
   return rawResponse
     ? fetchLine
-    : `${fetchLine}\nif (!response.ok) throw new Error(\`HTTP \${response.status}\`);\nconst data = await response.json();`;
+    : `${fetchLine}\nif (!response.ok) throw new Error(\`HTTP \${response.status}\`);\nconst data${dataType} = await response.json();`;
 }
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({

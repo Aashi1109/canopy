@@ -1,15 +1,3 @@
-/**
- * Moved verbatim from the `html-formatter` case in
- * `lib/devtools/format-json.ts`, together with its `formatHtml` helper — this
- * tool is that helper's only consumer, so it lives here rather than in
- * `lib/devtools/shared/`.
- *
- * The tokeniser, the void-tag set, and the indent bookkeeping are unchanged.
- * Nothing here escapes or rewrites the markup: the result is the same bytes
- * with newlines and indentation inserted, so untrusted input stays exactly as
- * untrusted as it arrived and the renderer remains responsible for sandboxing.
- */
-
 import type { ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
@@ -38,12 +26,21 @@ function formatHtml(input: string, settings: Settings): string {
     "track",
     "wbr",
   ]);
-  const tokens = input.replace(/>\s*</g, "><").match(/<!--[\s\S]*?-->|<![^>]*>|<[^>]+>|[^<]+/g) ?? [];
+  // Quoted attributes may contain angle brackets. Raw-text and whitespace-
+  // sensitive elements are opaque, so formatting cannot alter their contents.
+  const tokens =
+    input.match(
+      /<!--[\s\S]*?-->|<(script|style|pre|textarea)\b(?:[^"'<>]|"[^"]*"|'[^']*')*>[\s\S]*?<\/\1\s*>|<![^>]*>|<\/?[A-Za-z](?:[^"'<>]|"[^"]*"|'[^']*')*>|[^<]+|</gi,
+    ) ?? [];
   const lines: string[] = [];
   let indent = 0;
   for (const raw of tokens) {
     const token = raw.trim();
     if (!token) continue;
+    if (/^<(script|style|pre|textarea)\b/i.test(token) && /<\/[^>]+>$/.test(token)) {
+      lines.push(`${indentUnit.repeat(indent)}${token}`);
+      continue;
+    }
     const closing = /^<\//.test(token);
     if (closing) indent = Math.max(0, indent - 1);
     const leading = indentUnit.repeat(indent);

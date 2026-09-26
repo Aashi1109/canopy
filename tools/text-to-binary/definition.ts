@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.text-to-binary",
+  sharing: { version: 1 },
   app: "devtools",
   category: "encoding-decoding",
   keywords: ["binary", "text", "utf-8", "bytes", "encode", "bits", "base 2"],

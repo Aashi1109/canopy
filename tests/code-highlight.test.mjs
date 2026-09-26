@@ -106,6 +106,134 @@ test("delimited highlighting preserves empty and unfinished fields while editing
   }
 });
 
+test("Unicode highlighting colors complete escapes, including uppercase and surrogate pairs", () => {
+  const escapes = [String.raw`\u0041`, String.raw`\u{1f680}`, String.raw`\U00AF`, String.raw`\U{1F680}`];
+  const pair = String.raw`\uD83D\uDE80`;
+  const code = `Plain text ${escapes.join(" ")} ${pair}`;
+  const html = highlightCode(code, "unicode");
+
+  expect(codeLowlight.registered("unicode")).toBe(true);
+  for (const escape of [...escapes, String.raw`\uD83D`, String.raw`\uDE80`]) {
+    expect(html).toContain(`<span class="hljs-symbol">${escape}</span>`);
+  }
+  expect(html.startsWith("Plain text ")).toBe(true);
+  expect(textContent(html)).toBe(code);
+});
+
+test("Unicode highlighting leaves malformed, unfinished, and unrelated escapes uncolored", () => {
+  const code = String.raw`Plain text \u \u123 \uZZZZ \u{} \u{12 \u{1234567} \u{XYZ} \x41 \n \t &#65; %41`;
+  const html = highlightCode(code, "unicode");
+
+  expect(html).not.toMatch(/<span\b/);
+  expect(textContent(html)).toBe(code);
+  const auto = codeLowlight.highlightAuto(String.raw`\u0041 \u{1f680}`, { subset: ["unicode"] });
+  expect(auto.data.language).toBeUndefined();
+  expect(auto.children.some((node) => node.type === "element")).toBe(false);
+});
+
+test("Unicode highlighting preserves original text and safely escapes markup", () => {
+  const code = String.raw`<script title="A & B">'\u003C' \u{1F680} 🚀</script>`;
+  const html = highlightCode(code, "unicode");
+
+  expect(html).toContain('<span class="hljs-symbol">\\u003C</span>');
+  expect(html).toContain("&lt;script title=&quot;A &amp; B&quot;&gt;&#39;");
+  expect(html).not.toMatch(/<script\b/i);
+  expect(textContent(html)).toBe(code);
+});
+
+test("oversized Unicode output falls back to complete safely escaped text", () => {
+  const code = String.raw`\u0041`.padEnd(CODE_HIGHLIGHT_MAX_CHARS, " ");
+  expect(highlightCode(code, "unicode")).toContain('<span class="hljs-symbol">\\u0041</span>');
+
+  const oversized = `${code}<`;
+  const html = highlightCode(oversized, "unicode");
+  expect(html).not.toMatch(/<span\b/);
+  expect(textContent(html)).toBe(oversized);
+});
+
+test("URL-encoded highlighting colors mixed-case percent triplets and consecutive UTF-8 bytes", () => {
+  const code = "hello%20world%2Fpath%2f %F0%9F%9A%80";
+  const html = highlightCode(code, "url-encoded");
+
+  expect(codeLowlight.registered("url-encoded")).toBe(true);
+  for (const triplet of ["%20", "%2F", "%2f", "%F0", "%9F", "%9A", "%80"]) {
+    expect(html).toContain(`<span class="hljs-symbol">${triplet}</span>`);
+  }
+  expect(html.startsWith("hello")).toBe(true);
+  expect(textContent(html)).toBe(code);
+});
+
+test("URL-encoded highlighting leaves malformed percents and literal plus signs uncolored", () => {
+  const code = "plain+text % %2 %G0 %0G %% &value=one+two";
+  const html = highlightCode(code, "url-encoded");
+
+  expect(html).not.toMatch(/<span\b/);
+  expect(textContent(html)).toBe(code);
+  const auto = codeLowlight.highlightAuto("%20%2F%F0%9F%9A%80", { subset: ["url-encoded"] });
+  expect(auto.data.language).toBeUndefined();
+  expect(auto.children.some((node) => node.type === "element")).toBe(false);
+});
+
+test("URL-encoded highlighting preserves raw text and safely escapes markup", () => {
+  const code = "<script title=\"A & B\">'%3C%3e' + 🚀</script>";
+  const html = highlightCode(code, "url-encoded");
+
+  expect(html).toContain('<span class="hljs-symbol">%3C</span>');
+  expect(html).toContain("&lt;script title=&quot;A &amp; B&quot;&gt;&#39;");
+  expect(html).not.toMatch(/<script\b/i);
+  expect(textContent(html)).toBe(code);
+});
+
+test("oversized URL-encoded output falls back to complete safely escaped text", () => {
+  const code = "%20".padEnd(CODE_HIGHLIGHT_MAX_CHARS, " ");
+  expect(highlightCode(code, "url-encoded")).toContain('<span class="hljs-symbol">%20</span>');
+
+  const oversized = `${code}<`;
+  const html = highlightCode(oversized, "url-encoded");
+  expect(html).not.toMatch(/<span\b/);
+  expect(textContent(html)).toBe(oversized);
+});
+
+test("robots.txt highlights directives, values, and comments without consuming an empty directive's next line", () => {
+  const code =
+    "# Crawler rules\nuser-AGENT: *\nAllow: /public/ # Allowed content\nDisallow:\nSitemap: https://example.com/sitemap.xml\nCrawl-delay: 10\n";
+  const html = highlightCode(code, "robots");
+
+  expect(codeLowlight.registered("robots")).toBe(true);
+  for (const directive of ["user-AGENT", "Allow", "Disallow", "Sitemap", "Crawl-delay"]) {
+    expect(html).toMatch(new RegExp(`<span class="hljs-attr">[ \\t]*${directive}:?[ \\t]*<\\/span>`));
+  }
+  for (const value of ["*", "/public/", "https://example.com/sitemap.xml", "10"]) {
+    const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    expect(html).toMatch(new RegExp(`<span class="hljs-string">[ \\t]*${escaped}[ \\t]*<\\/span>`));
+  }
+  expect(html).toContain('<span class="hljs-comment"># Crawler rules</span>');
+  expect(html).toContain('<span class="hljs-comment"># Allowed content</span>');
+  expect(textContent(html)).toBe(code);
+});
+
+test("robots.txt highlighting preserves raw paths, whitespace, and safely escaped markup", () => {
+  const code = "User-agent: *\r\nDisallow: /<script>?q=\"A&B\"&name='🚀'\r\nAllow: /safe?q=1&next=2 # <img src=x>\r\n";
+  const html = highlightCode(code, "robots");
+
+  expect(html).toContain("/&lt;script&gt;?q=&quot;A&amp;B&quot;&amp;name=&#39;🚀&#39;");
+  expect(html).toContain("/safe?q=1&amp;next=2");
+  expect(html).toContain('<span class="hljs-comment"># &lt;img src=x&gt;');
+  expect(html).not.toMatch(/<(?:script|img)\b/i);
+  expect(textContent(html)).toBe(code);
+});
+
+test("robots.txt highlighting leaves unrelated text uncolored and does not affect autodetection", () => {
+  const code = "Plain text User-agent: Example\nUnrecognized: /path\n";
+  const html = highlightCode(code, "robots");
+
+  expect(html).not.toMatch(/<span\b/);
+  expect(textContent(html)).toBe(code);
+  const auto = codeLowlight.highlightAuto("User-agent: *\nDisallow: /private/", { subset: ["robots"] });
+  expect(auto.data.language).toBeUndefined();
+  expect(auto.children.some((node) => node.type === "element")).toBe(false);
+});
+
 test("the markdown helper retains autodetection and explicit plain-text handling", () => {
   const code = 'const value = "<safe>&";';
   for (const language of ["text", "plaintext", "txt", "mermaid"]) {

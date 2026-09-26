@@ -1,0 +1,27 @@
+// @vitest-environment jsdom
+import { beforeEach, expect, test, vi } from "vitest";
+import definition from "./definition.ts";
+import { run } from "./run.ts";
+import { setupReactTools, fill, click, button, field, waitFor } from "../../tests/helpers/react-tools.mjs";
+import { mountWorkspace, choose } from "../../tests/helpers/tool-workspace.mjs";
+
+vi.mock("@/components/content/CodeEditor", async () => ({
+  CodeEditor: (await import("../../tests/helpers/react-tools.mjs")).TextEditorBoundary,
+}));
+setupReactTools();
+let clipboard;
+beforeEach(() => {
+  clipboard = { writeText: vi.fn(async () => {}) };
+  vi.stubGlobal("navigator", Object.defineProperty(Object.create(navigator), "clipboard", { value: clipboard }));
+});
+
+test("editing source and settings changes the real result and exact copy", async () => {
+  const view = await mountWorkspace(definition, run);
+  const source = "// comment\nconst value = 1;";
+  await fill(field(definition.input.label), source);
+
+  await click(button("Run test operation"));
+  await waitFor(() => expect(button("Copy all")).toBeTruthy());
+  await click(button("Copy all"));
+  expect(clipboard.writeText).toHaveBeenLastCalledWith("const value=1;");
+});

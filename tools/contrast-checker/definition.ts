@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.contrast-checker",
+  sharing: { version: 1 },
   app: "devtools",
   category: "color-design-tools",
   name: "Contrast Checker",
@@ -13,6 +14,14 @@ export default {
       foreground: { kind: "text", label: "Text color", default: "#334155", maxLength: 200 },
       background: { kind: "text", label: "Background", default: "#FFFFFF", maxLength: 200 },
       canvas: { kind: "text", label: "Canvas behind transparency", default: "#FFFFFF", maxLength: 200 },
+      sample: { kind: "text", label: "Preview heading", default: "Good design is easy to read.", maxLength: 160 },
+      bodySample: {
+        kind: "text",
+        label: "Preview body text",
+        default:
+          "This is normal-size text. Check headings, descriptions, and everyday reading against the background you actually use.",
+        maxLength: 1000,
+      },
     },
   },
   trigger: { mode: "live", debounceMs: 100 },

@@ -330382,6 +330382,3163 @@
           "fontWeight": "normal"
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "y3bpGf",
+      "x": 103527,
+      "y": 5119,
+      "name": "Cron Expression Builder / Expression-first redesign",
+      "context": "Current selected revision: restore earlier expression-first left workspace and persistent right-hand Settings. Large live meaning and five directly editable cron fields lead. Syntax help supports input; output reuses ERY94 result header, code surface and actions. No custom result bar. Timezone and command label remain in right settings. Live updates; Copy expression exports five fields; Download includes description/notes. Preset preserves notes. Code is not changed by this design revision.",
+      "clip": true,
+      "width": 1366,
+      "fill": "$surface",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "O9dPs",
+          "type": "ref",
+          "ref": "y1y4Xy",
+          "name": "Shared SmartTools navigation",
+          "width": "fill_container",
+          "descendants": {
+            "X9GDo": {
+              "width": 230
+            },
+            "sN10s": {
+              "width": 220
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "UeVtB",
+          "name": "Cron task and supporting content",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            24,
+            48,
+            32,
+            48
+          ],
+          "children": [
+            {
+              "id": "Y6xbo",
+              "type": "ref",
+              "ref": "Q4Qwy",
+              "name": "Cron page heading",
+              "width": "fill_container",
+              "descendants": {
+                "ESWP8": {
+                  "content": "DATE & TIME"
+                },
+                "vV8dH": {
+                  "content": "Cron Expression Builder"
+                },
+                "S7al9Q": {
+                  "content": "Build a schedule, understand what it means, then take it to your scheduler."
+                },
+                "uHyCR": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "g55So",
+              "name": "Cron workspace — expression-first editor with persistent settings",
+              "clip": true,
+              "width": "fill_container",
+              "height": 560,
+              "fill": "$surface",
+              "cornerRadius": "$r-xl",
+              "stroke": "$border-strong",
+              "strokeWidth": 1,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "xl8VV",
+                  "name": "Expression editor and live result",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "T3e2Fu",
+                      "name": "Live editor heading",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "iwbSO",
+                          "name": "Editor label",
+                          "fill": "$fg-primary",
+                          "content": "Your schedule",
+                          "fontFamily": "$font-body",
+                          "fontSize": 16,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "i6j3a",
+                          "name": "Live validation state",
+                          "fill": "$success-text",
+                          "content": "✓  Valid expression · updates as you type",
+                          "fontFamily": "$font-body",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "fDcFm",
+                      "name": "Human-readable live schedule",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "X3juv",
+                          "name": "Plain English meaning",
+                          "fill": "$fg-primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "At 09:00, Monday through Friday.",
+                          "lineHeight": 1.2,
+                          "fontFamily": "$font-body",
+                          "fontSize": 28,
+                          "fontWeight": "550"
+                        },
+                        {
+                          "type": "text",
+                          "id": "NRdFT",
+                          "name": "Clock qualification",
+                          "fill": "$fg-secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Every week, in the timezone configured on your cron host.",
+                          "fontFamily": "$font-body",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "clh4n",
+                      "name": "Five cron fields — tab order follows expression",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "id": "v5XpU",
+                          "type": "ref",
+                          "ref": "KYa0C",
+                          "name": "Minute — editable cron field",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "descendants": {
+                            "gasMG": {
+                              "content": "Minute",
+                              "fontSize": 13,
+                              "fill": "$fg-primary"
+                            },
+                            "bT9Rx": {
+                              "height": 68,
+                              "justifyContent": "center",
+                              "stroke": "$control-border"
+                            },
+                            "yspKK": {
+                              "content": "0",
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 28
+                            },
+                            "c97Mm": {
+                              "content": "0–59",
+                              "fontSize": 12
+                            }
+                          }
+                        },
+                        {
+                          "id": "Zn5eC",
+                          "type": "ref",
+                          "ref": "KYa0C",
+                          "name": "Hour — editable cron field",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "descendants": {
+                            "gasMG": {
+                              "content": "Hour",
+                              "fontSize": 13,
+                              "fill": "$fg-primary"
+                            },
+                            "bT9Rx": {
+                              "height": 68,
+                              "justifyContent": "center",
+                              "stroke": "$control-border"
+                            },
+                            "yspKK": {
+                              "content": "9",
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 28
+                            },
+                            "c97Mm": {
+                              "content": "0–23",
+                              "fontSize": 12
+                            }
+                          }
+                        },
+                        {
+                          "id": "S520v",
+                          "type": "ref",
+                          "ref": "KYa0C",
+                          "name": "Day of month — editable cron field",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "descendants": {
+                            "gasMG": {
+                              "content": "Day of month",
+                              "fontSize": 13,
+                              "fill": "$fg-primary"
+                            },
+                            "bT9Rx": {
+                              "height": 68,
+                              "justifyContent": "center",
+                              "stroke": "$control-border"
+                            },
+                            "yspKK": {
+                              "content": "*",
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 28
+                            },
+                            "c97Mm": {
+                              "content": "1–31",
+                              "fontSize": 12
+                            }
+                          }
+                        },
+                        {
+                          "id": "QMa06",
+                          "type": "ref",
+                          "ref": "KYa0C",
+                          "name": "Month — editable cron field",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "descendants": {
+                            "gasMG": {
+                              "content": "Month",
+                              "fontSize": 13,
+                              "fill": "$fg-primary"
+                            },
+                            "bT9Rx": {
+                              "height": 68,
+                              "justifyContent": "center",
+                              "stroke": "$control-border"
+                            },
+                            "yspKK": {
+                              "content": "*",
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 28
+                            },
+                            "c97Mm": {
+                              "content": "1–12",
+                              "fontSize": 12
+                            }
+                          }
+                        },
+                        {
+                          "id": "rXclZ",
+                          "type": "ref",
+                          "ref": "KYa0C",
+                          "name": "Day of week — editable cron field",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "descendants": {
+                            "gasMG": {
+                              "content": "Day of week",
+                              "fontSize": 13,
+                              "fill": "$fg-primary"
+                            },
+                            "bT9Rx": {
+                              "height": 68,
+                              "justifyContent": "center",
+                              "stroke": "$control-border"
+                            },
+                            "yspKK": {
+                              "content": "1-5",
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 28
+                            },
+                            "c97Mm": {
+                              "content": "0–7 · Sun = 0 or 7",
+                              "fontSize": 12
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "P2Cnfd",
+                      "x": 24,
+                      "y": 266,
+                      "name": "Direct editing guidance",
+                      "enabled": false,
+                      "fill": "$fg-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": 900,
+                      "content": "Use * for every value. If both day fields are restricted, either matching day runs the job.",
+                      "fontFamily": "$font-body",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "iqXDq",
+                      "name": "Syntax help — shared accordion, expanded",
+                      "context": "Existing accordion trigger instance, reused from the Roles accordion, replaces the custom ghost-button row. Default closed; activate trigger to expand MSA4W inline, activate again to collapse. Preserve focus, input values and result. Reuse existing code Accordion / AccordionItem / AccordionTrigger / AccordionContent, not bespoke disclosure state or buttons. Per-field ranges remain visible. Keep right Settings and existing shared result unchanged. When both day fields are restricted, show the existing day-matching guidance P2Cnfd as contextual input guidance.",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "cU9ZL",
+                          "type": "ref",
+                          "ref": "gg4Pn",
+                          "name": "Syntax help — existing accordion trigger",
+                          "context": "Reuse the existing accordion pattern, as in Roles. Implementation must use Accordion, AccordionItem, AccordionTrigger and AccordionContent from components/ui/components/accordion.tsx; type=single, collapsible, default closed. Native keyboard and ARIA behavior; not a custom ghost-button disclosure.",
+                          "width": "fill_container",
+                          "height": 44,
+                          "padding": 0,
+                          "descendants": {
+                            "JjB9P": {
+                              "icon": "chevron-down"
+                            },
+                            "FDPT8": {
+                              "content": "Syntax help",
+                              "fontSize": 16
+                            },
+                            "dh0Rt": {
+                              "enabled": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "frame",
+                          "id": "BFCK6",
+                          "x": 0,
+                          "y": 0,
+                          "name": "Previous custom disclosure — superseded by shared accordion",
+                          "enabled": false,
+                          "width": 900,
+                          "gap": 16,
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "JdpxQ",
+                              "name": "Short input hint — conditional day matching warning",
+                              "fill": "$fg-secondary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Use * for every value.",
+                              "fontFamily": "$font-body",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "id": "M8LWY",
+                              "type": "ref",
+                              "ref": "TjqJu",
+                              "name": "Syntax help — collapsed disclosure",
+                              "context": "Button. Default aria-expanded=false, aria-controls=cron-syntax-help. Click, Enter or Space toggles examples immediately below; focus stays on the button. Label remains Syntax help; chevron reverses when open. Does not change any input, settings or result.",
+                              "descendants": {
+                                "DXbTG": {
+                                  "content": "Syntax help ▾"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "mLddO",
+                          "x": 0,
+                          "y": 0,
+                          "name": "Syntax heading",
+                          "enabled": false,
+                          "fill": "$fg-primary",
+                          "content": "A little syntax goes a long way",
+                          "fontFamily": "$font-body",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "MSA4W",
+                          "name": "Cron syntax reference — concrete minute examples",
+                          "context": "Read-only two-column reference, not presets. The heading anchors all four expressions to the Minute field; other cron fields still constrain the schedule. Reuse the shared syntax reference component for each item. No changes to schedule on clicking this informational content.",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "N3GA3",
+                              "name": "Minute field context",
+                              "fill": "$fg-secondary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "In the Minute field — other fields still apply",
+                              "lineHeight": 1.25,
+                              "fontFamily": "$font-body",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "YIPuQ",
+                              "name": "Every value and selected values",
+                              "width": "fill_container",
+                              "gap": 24,
+                              "children": [
+                                {
+                                  "id": "rCb9Q",
+                                  "type": "ref",
+                                  "ref": "E3asN",
+                                  "name": "* — Every minute",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "PD8m8": {
+                                      "content": "*"
+                                    },
+                                    "u3HKT": {
+                                      "content": "Every minute"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "TdeQt",
+                                  "type": "ref",
+                                  "ref": "E3asN",
+                                  "name": "1,15 — At minutes 1 and 15",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "PD8m8": {
+                                      "content": "1,15"
+                                    },
+                                    "u3HKT": {
+                                      "content": "At minutes 1 and 15"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "e2GkBr",
+                              "name": "Consecutive values and regular steps",
+                              "width": "fill_container",
+                              "gap": 24,
+                              "children": [
+                                {
+                                  "id": "fL2bV",
+                                  "type": "ref",
+                                  "ref": "E3asN",
+                                  "name": "1-5 — At minutes 1 through 5",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "PD8m8": {
+                                      "content": "1-5"
+                                    },
+                                    "u3HKT": {
+                                      "content": "At minutes 1 through 5"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "YFuJT",
+                                  "type": "ref",
+                                  "ref": "E3asN",
+                                  "name": "*/15 — At minutes 0, 15, 30 and 45",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "PD8m8": {
+                                      "content": "*/15"
+                                    },
+                                    "u3HKT": {
+                                      "content": "At minutes 0, 15, 30 and 45"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "E3L7dC",
+                      "x": 24,
+                      "y": 331,
+                      "name": "Component / Cron result — bounded expression with fixed artifact actions",
+                      "reusable": true,
+                      "enabled": false,
+                      "width": 900,
+                      "fill": "$surface-muted",
+                      "cornerRadius": "$r-md",
+                      "gap": 16,
+                      "padding": [
+                        16,
+                        18
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "W0mtw4",
+                          "name": "Exact generated expression",
+                          "clip": true,
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 5,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "E3YzTo",
+                              "name": "Output label",
+                              "fill": "$fg-secondary",
+                              "content": "CRON EXPRESSION",
+                              "fontFamily": "$font-caption",
+                              "fontSize": 11,
+                              "fontWeight": "600",
+                              "letterSpacing": 0.5
+                            },
+                            {
+                              "type": "text",
+                              "id": "dSfQs",
+                              "name": "Copyable code output",
+                              "fill": "$fg-primary",
+                              "content": "0 9 * * 1-5",
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 22,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ihtrM",
+                          "name": "Copy and download result",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "id": "TAiZQ",
+                              "type": "ref",
+                              "ref": "wm1rh",
+                              "name": "Copy expression — exact five fields only",
+                              "descendants": {
+                                "i2HLbt": {
+                                  "content": "Copy expression"
+                                }
+                              }
+                            },
+                            {
+                              "id": "XaWcO",
+                              "type": "ref",
+                              "ref": "o5XSq",
+                              "name": "Download complete schedule — cron-schedule.txt",
+                              "descendants": {
+                                "Y4AAX": {
+                                  "content": "Download .txt"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "CCsi9",
+                      "type": "ref",
+                      "ref": "ERY94",
+                      "name": "Shared result surface — unchanged result header and actions",
+                      "width": "fill_container",
+                      "height": "fit_content",
+                      "fill": "$surface",
+                      "gap": 0,
+                      "descendants": {
+                        "Nwxh6": {
+                          "enabled": false,
+                          "width": 900
+                        },
+                        "E9GEZ": {
+                          "content": "Build your schedule"
+                        },
+                        "EQRlx": {
+                          "content": "At 09:00, Monday through Friday. Changes update the result automatically."
+                        },
+                        "eG5jH/DXbTG": {
+                          "content": "Every 15 minutes"
+                        },
+                        "jpLl6": {
+                          "type": "frame",
+                          "id": "thPEO",
+                          "name": "Cron schedule fields — direct primary input",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "K5qyD",
+                              "name": "Five editable cron fields",
+                              "width": "fill_container",
+                              "gap": 12,
+                              "children": [
+                                {
+                                  "id": "VGUXZ",
+                                  "type": "ref",
+                                  "ref": "KYa0C",
+                                  "name": "Minute — editable cron field",
+                                  "width": "fill_container",
+                                  "gap": 8,
+                                  "descendants": {
+                                    "gasMG": {
+                                      "content": "Minute",
+                                      "fontSize": 13,
+                                      "fill": "$fg-primary"
+                                    },
+                                    "bT9Rx": {
+                                      "height": 68,
+                                      "justifyContent": "center",
+                                      "stroke": "$control-border"
+                                    },
+                                    "yspKK": {
+                                      "content": "0",
+                                      "fontFamily": "Geist Mono",
+                                      "fontSize": 28
+                                    },
+                                    "c97Mm": {
+                                      "content": "0–59",
+                                      "fontSize": 12
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "ejCsv",
+                                  "type": "ref",
+                                  "ref": "KYa0C",
+                                  "name": "Hour — editable cron field",
+                                  "width": "fill_container",
+                                  "gap": 8,
+                                  "descendants": {
+                                    "gasMG": {
+                                      "content": "Hour",
+                                      "fontSize": 13,
+                                      "fill": "$fg-primary"
+                                    },
+                                    "bT9Rx": {
+                                      "height": 68,
+                                      "justifyContent": "center",
+                                      "stroke": "$control-border"
+                                    },
+                                    "yspKK": {
+                                      "content": "9",
+                                      "fontFamily": "Geist Mono",
+                                      "fontSize": 28
+                                    },
+                                    "c97Mm": {
+                                      "content": "0–23",
+                                      "fontSize": 12
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "NCheX",
+                                  "type": "ref",
+                                  "ref": "KYa0C",
+                                  "name": "Day of month — editable cron field",
+                                  "width": "fill_container",
+                                  "gap": 8,
+                                  "descendants": {
+                                    "gasMG": {
+                                      "content": "Day of month",
+                                      "fontSize": 13,
+                                      "fill": "$fg-primary"
+                                    },
+                                    "bT9Rx": {
+                                      "height": 68,
+                                      "justifyContent": "center",
+                                      "stroke": "$control-border"
+                                    },
+                                    "yspKK": {
+                                      "content": "*",
+                                      "fontFamily": "Geist Mono",
+                                      "fontSize": 28
+                                    },
+                                    "c97Mm": {
+                                      "content": "1–31",
+                                      "fontSize": 12
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "xJ0bN",
+                                  "type": "ref",
+                                  "ref": "KYa0C",
+                                  "name": "Month — editable cron field",
+                                  "width": "fill_container",
+                                  "gap": 8,
+                                  "descendants": {
+                                    "gasMG": {
+                                      "content": "Month",
+                                      "fontSize": 13,
+                                      "fill": "$fg-primary"
+                                    },
+                                    "bT9Rx": {
+                                      "height": 68,
+                                      "justifyContent": "center",
+                                      "stroke": "$control-border"
+                                    },
+                                    "yspKK": {
+                                      "content": "*",
+                                      "fontFamily": "Geist Mono",
+                                      "fontSize": 28
+                                    },
+                                    "c97Mm": {
+                                      "content": "1–12",
+                                      "fontSize": 12
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "uGdQr",
+                                  "type": "ref",
+                                  "ref": "KYa0C",
+                                  "name": "Day of week — editable cron field",
+                                  "width": "fill_container",
+                                  "gap": 8,
+                                  "descendants": {
+                                    "gasMG": {
+                                      "content": "Day of week",
+                                      "fontSize": 13,
+                                      "fill": "$fg-primary"
+                                    },
+                                    "bT9Rx": {
+                                      "height": 68,
+                                      "justifyContent": "center",
+                                      "stroke": "$control-border"
+                                    },
+                                    "yspKK": {
+                                      "content": "1-5",
+                                      "fontFamily": "Geist Mono",
+                                      "fontSize": 28
+                                    },
+                                    "c97Mm": {
+                                      "content": "0–7 · Sun = 0 or 7",
+                                      "fontSize": 12
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "O17c3b": {
+                          "type": "frame",
+                          "id": "MNq6y",
+                          "name": "Schedule documentation — inline shared configuration row",
+                          "width": "fill_container",
+                          "gap": 24,
+                          "children": [
+                            {
+                              "id": "AJQsV",
+                              "type": "ref",
+                              "ref": "NcoS9",
+                              "name": "Intended timezone",
+                              "width": 260,
+                              "descendants": {
+                                "zthem": {
+                                  "content": "Intended timezone · notes only",
+                                  "fontSize": 13
+                                },
+                                "DSH6A": {
+                                  "height": 36
+                                },
+                                "JtSjO": {
+                                  "content": "UTC"
+                                }
+                              }
+                            },
+                            {
+                              "id": "Q2uxON",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Command label (optional)",
+                              "width": "fill_container",
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Command label (optional)",
+                                  "fontSize": 13
+                                },
+                                "yspKK": {
+                                  "content": "e.g. Weekday backup",
+                                  "fill": "$fg-secondary"
+                                },
+                                "c97Mm": {
+                                  "content": "Timezone and label document intent; they do not change the cron host.",
+                                  "fontSize": 12
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "pIB2P": {
+                          "enabled": false,
+                          "width": 1100
+                        },
+                        "t58yO": {
+                          "enabled": false,
+                          "width": 1100
+                        },
+                        "d8qnu8": {
+                          "enabled": true,
+                          "width": "fill_container"
+                        },
+                        "hUZ7y": {
+                          "enabled": false,
+                          "width": 1100
+                        },
+                        "kKoii": {
+                          "padding": 16,
+                          "gap": 12
+                        },
+                        "g3rFf": {
+                          "content": "Cron expression",
+                          "fontSize": 16
+                        },
+                        "GMWyn/i2HLbt": {
+                          "content": "Copy expression"
+                        },
+                        "JlMeN/Y4AAX": {
+                          "content": "Download .txt"
+                        },
+                        "RmLVJ": {
+                          "type": "frame",
+                          "id": "qlq54",
+                          "name": "Shared text result renderer — full copyable output",
+                          "context": "Use current ResultSurface + ResultView text renderer (CodeBlock), not a custom cron output card. Full result is selectable and wraps inside the existing scrollable result body. Copy and Download remain in the shared result header.",
+                          "width": "fill_container",
+                          "fill": "$surface-muted",
+                          "cornerRadius": "$r-md",
+                          "layout": "vertical",
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "abG5v",
+                              "name": "Cron result text — current text renderer",
+                              "fill": "$fg-primary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "0 9 * * 1-5",
+                              "lineHeight": 1.4,
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 20,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        "ZDQYQ": {
+                          "enabled": false,
+                          "width": 1100
+                        },
+                        "JfoGK": {
+                          "enabled": false,
+                          "width": 1100
+                        },
+                        "zF9LE": {
+                          "content": "3 keys generated · 32 random characters per key"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hoA3y",
+                  "name": "Documentation settings",
+                  "width": 308,
+                  "height": "fill_container",
+                  "fill": "$surface-muted",
+                  "stroke": "$border-subtle",
+                  "strokeWidth": {
+                    "left": 1
+                  },
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Qmxi6",
+                      "name": "Settings title",
+                      "fill": "$fg-primary",
+                      "content": "Settings",
+                      "fontFamily": "$font-body",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "id": "CXflR",
+                      "type": "ref",
+                      "ref": "NcoS9",
+                      "name": "Intended timezone — documentation only",
+                      "width": "fill_container",
+                      "descendants": {
+                        "zthem": {
+                          "content": "Intended timezone",
+                          "fontSize": 13,
+                          "fill": "$fg-primary"
+                        },
+                        "DSH6A": {
+                          "height": 40,
+                          "stroke": "$control-border"
+                        },
+                        "JtSjO": {
+                          "content": "UTC"
+                        }
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "lYArw",
+                      "name": "Timezone boundary",
+                      "fill": "$fg-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "For documentation only. This does not change the host timezone or add a timezone to the expression.",
+                      "lineHeight": 1.45,
+                      "fontFamily": "$font-body",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "id": "e6BB8",
+                      "type": "ref",
+                      "ref": "KYa0C",
+                      "name": "Optional command label",
+                      "width": "fill_container",
+                      "descendants": {
+                        "gasMG": {
+                          "content": "Command label (optional)",
+                          "fontSize": 13,
+                          "fill": "$fg-primary"
+                        },
+                        "bT9Rx": {
+                          "height": 40,
+                          "stroke": "$control-border"
+                        },
+                        "yspKK": {
+                          "content": "e.g. Weekday backup",
+                          "fill": "$fg-secondary"
+                        },
+                        "c97Mm": {
+                          "content": "Included in the downloaded schedule, not in the copied expression.",
+                          "fontSize": 12,
+                          "lineHeight": 1.4
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "rzJOZ",
+                      "name": "Example and recovery",
+                      "width": "fill_container",
+                      "stroke": "$border-strong",
+                      "strokeWidth": {
+                        "top": 1
+                      },
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": [
+                        16,
+                        0,
+                        0,
+                        0
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "zKMfO",
+                          "name": "Example title",
+                          "fill": "$fg-primary",
+                          "content": "Examples · keep your notes",
+                          "fontFamily": "$font-body",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "id": "j8IAbM",
+                          "type": "ref",
+                          "ref": "o5XSq",
+                          "name": "Load existing every 15 minutes example",
+                          "width": "fill_container",
+                          "descendants": {
+                            "Y4AAX": {
+                              "content": "Try every 15 minutes"
+                            }
+                          }
+                        },
+                        {
+                          "id": "T9oKE",
+                          "type": "ref",
+                          "ref": "o5XSq",
+                          "name": "Reset all fields to weekday 09:00 default",
+                          "width": "fill_container",
+                          "descendants": {
+                            "Y4AAX": {
+                              "content": "Reset to default"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "Dgmlv",
+                      "name": "Local runtime note",
+                      "fill": "$fg-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Processed in your browser.\nNothing is saved or scheduled.",
+                      "lineHeight": 1.5,
+                      "fontFamily": "$font-body",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "id": "mWlvf",
+                  "type": "ref",
+                  "ref": "ERY94",
+                  "name": "Cron builder — existing universal generator layout",
+                  "width": 1270,
+                  "enabled": false,
+                  "descendants": {
+                    "Nwxh6": {
+                      "width": "fill_container"
+                    },
+                    "E9GEZ": {
+                      "content": "Build your schedule"
+                    },
+                    "EQRlx": {
+                      "content": "At 09:00, Monday through Friday. Changes update the result automatically."
+                    },
+                    "eG5jH/DXbTG": {
+                      "content": "Every 15 minutes"
+                    },
+                    "jpLl6": {
+                      "type": "frame",
+                      "id": "t95vS",
+                      "name": "Cron schedule fields — direct primary input",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "pcJcy",
+                          "name": "Five editable cron fields",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "id": "w7F9pZ",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Minute — editable cron field",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Minute",
+                                  "fontSize": 13,
+                                  "fill": "$fg-primary"
+                                },
+                                "bT9Rx": {
+                                  "height": 68,
+                                  "justifyContent": "center",
+                                  "stroke": "$control-border"
+                                },
+                                "yspKK": {
+                                  "content": "0",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 28
+                                },
+                                "c97Mm": {
+                                  "content": "0–59",
+                                  "fontSize": 12
+                                }
+                              }
+                            },
+                            {
+                              "id": "PdTy8",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Hour — editable cron field",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Hour",
+                                  "fontSize": 13,
+                                  "fill": "$fg-primary"
+                                },
+                                "bT9Rx": {
+                                  "height": 68,
+                                  "justifyContent": "center",
+                                  "stroke": "$control-border"
+                                },
+                                "yspKK": {
+                                  "content": "9",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 28
+                                },
+                                "c97Mm": {
+                                  "content": "0–23",
+                                  "fontSize": 12
+                                }
+                              }
+                            },
+                            {
+                              "id": "W3Qc0l",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Day of month — editable cron field",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Day of month",
+                                  "fontSize": 13,
+                                  "fill": "$fg-primary"
+                                },
+                                "bT9Rx": {
+                                  "height": 68,
+                                  "justifyContent": "center",
+                                  "stroke": "$control-border"
+                                },
+                                "yspKK": {
+                                  "content": "*",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 28
+                                },
+                                "c97Mm": {
+                                  "content": "1–31",
+                                  "fontSize": 12
+                                }
+                              }
+                            },
+                            {
+                              "id": "DRaWn",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Month — editable cron field",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Month",
+                                  "fontSize": 13,
+                                  "fill": "$fg-primary"
+                                },
+                                "bT9Rx": {
+                                  "height": 68,
+                                  "justifyContent": "center",
+                                  "stroke": "$control-border"
+                                },
+                                "yspKK": {
+                                  "content": "*",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 28
+                                },
+                                "c97Mm": {
+                                  "content": "1–12",
+                                  "fontSize": 12
+                                }
+                              }
+                            },
+                            {
+                              "id": "nksLK",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Day of week — editable cron field",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Day of week",
+                                  "fontSize": 13,
+                                  "fill": "$fg-primary"
+                                },
+                                "bT9Rx": {
+                                  "height": 68,
+                                  "justifyContent": "center",
+                                  "stroke": "$control-border"
+                                },
+                                "yspKK": {
+                                  "content": "1-5",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 28
+                                },
+                                "c97Mm": {
+                                  "content": "0–7 · Sun = 0 or 7",
+                                  "fontSize": 12
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    "O17c3b": {
+                      "type": "frame",
+                      "id": "N79qMy",
+                      "name": "Schedule documentation — inline shared configuration row",
+                      "width": "fill_container",
+                      "gap": 24,
+                      "children": [
+                        {
+                          "id": "fbrCR",
+                          "type": "ref",
+                          "ref": "NcoS9",
+                          "name": "Intended timezone",
+                          "width": 260,
+                          "descendants": {
+                            "zthem": {
+                              "content": "Intended timezone · notes only",
+                              "fontSize": 13
+                            },
+                            "DSH6A": {
+                              "height": 36
+                            },
+                            "JtSjO": {
+                              "content": "UTC"
+                            }
+                          }
+                        },
+                        {
+                          "id": "TKTCG",
+                          "type": "ref",
+                          "ref": "KYa0C",
+                          "name": "Command label (optional)",
+                          "width": "fill_container",
+                          "descendants": {
+                            "gasMG": {
+                              "content": "Command label (optional)",
+                              "fontSize": 13
+                            },
+                            "yspKK": {
+                              "content": "e.g. Weekday backup",
+                              "fill": "$fg-secondary"
+                            },
+                            "c97Mm": {
+                              "content": "Timezone and label document intent; they do not change the cron host.",
+                              "fontSize": 12
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "pIB2P": {
+                      "enabled": false,
+                      "width": 1100
+                    },
+                    "t58yO": {
+                      "enabled": false,
+                      "width": 1100
+                    },
+                    "d8qnu8": {
+                      "enabled": true,
+                      "width": "fill_container"
+                    },
+                    "hUZ7y": {
+                      "enabled": false,
+                      "width": 1100
+                    },
+                    "g3rFf": {
+                      "content": "Cron expression"
+                    },
+                    "GMWyn/i2HLbt": {
+                      "content": "Copy"
+                    },
+                    "JlMeN/Y4AAX": {
+                      "content": "Download .txt"
+                    },
+                    "RmLVJ": {
+                      "type": "frame",
+                      "id": "DQJLs",
+                      "name": "Shared text result renderer — full copyable output",
+                      "context": "Use current ResultSurface + ResultView text renderer (CodeBlock), not a custom cron output card. Full result is selectable and wraps inside the existing scrollable result body. Copy and Download remain in the shared result header.",
+                      "width": "fill_container",
+                      "fill": "$surface-muted",
+                      "cornerRadius": "$r-md",
+                      "layout": "vertical",
+                      "padding": 16,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "q2FiUY",
+                          "name": "Cron result text — current text renderer",
+                          "fill": "$fg-primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "0 9 * * 1-5\nAt 09:00, Monday through Friday.",
+                          "lineHeight": 1.6,
+                          "fontFamily": "Geist Mono",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    "ZDQYQ": {
+                      "enabled": false,
+                      "width": 1100
+                    },
+                    "JfoGK": {
+                      "enabled": false,
+                      "width": 1100
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "eUsjo",
+              "type": "ref",
+              "ref": "urMUk",
+              "name": "Cron limitations, privacy and usage",
+              "width": "fill_container",
+              "descendants": {
+                "ApM7t": {
+                  "content": "Standard five-field cron"
+                },
+                "i6ohus": {
+                  "content": "Numeric fields only. No seconds, named days, Quartz syntax, or upcoming-run calculation."
+                },
+                "Nz3jq": {
+                  "content": "Local, not a scheduler"
+                },
+                "H4Jads": {
+                  "content": "Nothing is uploaded or saved. Copy the expression into a cron host to schedule a job."
+                },
+                "WotxF": {
+                  "content": "Edit, understand, copy"
+                },
+                "H4KSb": {
+                  "content": "Edit the five fields. Read the live description, then copy the expression or download your notes."
+                },
+                "N1diS": {
+                  "content": "Cron Parser"
+                },
+                "wuRvR": {
+                  "content": "Timestamp Converter"
+                },
+                "m8I2Tp": {
+                  "content": "Date Difference"
+                }
+              }
+            },
+            {
+              "type": "text",
+              "id": "qGHoS",
+              "x": 48,
+              "y": 961,
+              "name": "Cron day matching caveat",
+              "enabled": false,
+              "fill": "$warning-text",
+              "textGrowth": "fixed-width",
+              "width": 1200,
+              "content": "Watch the two day fields: when both are restricted, cron runs when either matches — not only when both match.",
+              "fontFamily": "$font-body",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "gouMs",
+      "x": 105567,
+      "y": 5119,
+      "name": "Cron Expression Builder / Laptop check · 1280 × 720 viewport",
+      "context": "1280×720 verification of the same existing generator layout. Expanded configuration above shared full-width ResultSurface. Live results, no separate Generate stage.",
+      "clip": true,
+      "width": 1280,
+      "fill": "$surface",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "N59RFu",
+          "type": "ref",
+          "ref": "y1y4Xy",
+          "name": "Shared SmartTools navigation",
+          "width": "fill_container",
+          "descendants": {
+            "X9GDo": {
+              "width": 230
+            },
+            "sN10s": {
+              "width": 220
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "fkEnC",
+          "name": "Cron task and supporting content",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            24,
+            40,
+            32,
+            40
+          ],
+          "children": [
+            {
+              "id": "fpOWs",
+              "type": "ref",
+              "ref": "Q4Qwy",
+              "name": "Cron page heading",
+              "width": "fill_container",
+              "descendants": {
+                "ESWP8": {
+                  "content": "DATE & TIME"
+                },
+                "vV8dH": {
+                  "content": "Cron Expression Builder"
+                },
+                "S7al9Q": {
+                  "content": "Build a schedule, understand what it means, then take it to your scheduler."
+                },
+                "uHyCR": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "nZ3Zk",
+              "name": "Cron workspace — direct editor and documentation settings",
+              "width": "fill_container",
+              "fill": "$surface",
+              "stroke": "$border-strong",
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "H75OW",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Expression editor and live result",
+                  "enabled": false,
+                  "width": 908,
+                  "height": 520,
+                  "layout": "vertical",
+                  "gap": 20,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "wkCkQ",
+                      "name": "Live editor heading",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "VcFQU",
+                          "name": "Editor label",
+                          "fill": "$fg-primary",
+                          "content": "Your schedule",
+                          "fontFamily": "$font-body",
+                          "fontSize": 16,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "hhmkh",
+                          "name": "Live validation state",
+                          "fill": "$success-text",
+                          "content": "✓  Valid expression · updates as you type",
+                          "fontFamily": "$font-body",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "mkk6c",
+                      "name": "Human-readable live schedule",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "xSRcB",
+                          "name": "Plain English meaning",
+                          "fill": "$fg-primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "At 09:00, Monday through Friday.",
+                          "lineHeight": 1.2,
+                          "fontFamily": "$font-body",
+                          "fontSize": 26,
+                          "fontWeight": "550"
+                        },
+                        {
+                          "type": "text",
+                          "id": "a5O56q",
+                          "name": "Clock qualification",
+                          "fill": "$fg-secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Every week, in the timezone configured on your cron host.",
+                          "fontFamily": "$font-body",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "hpwNV",
+                      "name": "Five cron fields — tab order follows expression",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "id": "Jjo6t",
+                          "type": "ref",
+                          "ref": "KYa0C",
+                          "name": "Minute — editable cron field",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "descendants": {
+                            "gasMG": {
+                              "content": "Minute",
+                              "fontSize": 13,
+                              "fill": "$fg-primary"
+                            },
+                            "bT9Rx": {
+                              "height": 68,
+                              "justifyContent": "center",
+                              "stroke": "$control-border"
+                            },
+                            "yspKK": {
+                              "content": "0",
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 28
+                            },
+                            "c97Mm": {
+                              "content": "0–59",
+                              "fontSize": 12
+                            }
+                          }
+                        },
+                        {
+                          "id": "BGz75",
+                          "type": "ref",
+                          "ref": "KYa0C",
+                          "name": "Hour — editable cron field",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "descendants": {
+                            "gasMG": {
+                              "content": "Hour",
+                              "fontSize": 13,
+                              "fill": "$fg-primary"
+                            },
+                            "bT9Rx": {
+                              "height": 68,
+                              "justifyContent": "center",
+                              "stroke": "$control-border"
+                            },
+                            "yspKK": {
+                              "content": "9",
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 28
+                            },
+                            "c97Mm": {
+                              "content": "0–23",
+                              "fontSize": 12
+                            }
+                          }
+                        },
+                        {
+                          "id": "SwIOl",
+                          "type": "ref",
+                          "ref": "KYa0C",
+                          "name": "Day of month — editable cron field",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "descendants": {
+                            "gasMG": {
+                              "content": "Day of month",
+                              "fontSize": 13,
+                              "fill": "$fg-primary"
+                            },
+                            "bT9Rx": {
+                              "height": 68,
+                              "justifyContent": "center",
+                              "stroke": "$control-border"
+                            },
+                            "yspKK": {
+                              "content": "*",
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 28
+                            },
+                            "c97Mm": {
+                              "content": "1–31",
+                              "fontSize": 12
+                            }
+                          }
+                        },
+                        {
+                          "id": "EN4uk",
+                          "type": "ref",
+                          "ref": "KYa0C",
+                          "name": "Month — editable cron field",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "descendants": {
+                            "gasMG": {
+                              "content": "Month",
+                              "fontSize": 13,
+                              "fill": "$fg-primary"
+                            },
+                            "bT9Rx": {
+                              "height": 68,
+                              "justifyContent": "center",
+                              "stroke": "$control-border"
+                            },
+                            "yspKK": {
+                              "content": "*",
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 28
+                            },
+                            "c97Mm": {
+                              "content": "1–12",
+                              "fontSize": 12
+                            }
+                          }
+                        },
+                        {
+                          "id": "Yjwcm",
+                          "type": "ref",
+                          "ref": "KYa0C",
+                          "name": "Day of week — editable cron field",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "descendants": {
+                            "gasMG": {
+                              "content": "Day of week",
+                              "fontSize": 13,
+                              "fill": "$fg-primary"
+                            },
+                            "bT9Rx": {
+                              "height": 68,
+                              "justifyContent": "center",
+                              "stroke": "$control-border"
+                            },
+                            "yspKK": {
+                              "content": "1-5",
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 28
+                            },
+                            "c97Mm": {
+                              "content": "0–7 · Sun = 0 or 7",
+                              "fontSize": 12
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "wRfQZ",
+                      "name": "Direct editing guidance",
+                      "fill": "$fg-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Use * for every value. If both day fields are restricted, either matching day runs the job.",
+                      "fontFamily": "$font-body",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "id": "Bl8y1",
+                      "type": "ref",
+                      "ref": "E3L7dC",
+                      "name": "Cron result — laptop instance",
+                      "width": "fill_container(860)"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "kU1V2",
+                      "name": "Inline syntax reference",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Fj44I",
+                          "name": "Syntax heading",
+                          "fill": "$fg-primary",
+                          "content": "A little syntax goes a long way",
+                          "fontFamily": "$font-body",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "U0DWJ2",
+                          "name": "Cron syntax examples",
+                          "width": "fill_container",
+                          "gap": 16,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "fSbdb",
+                              "name": "Syntax Every value",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 4,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "jpmZM",
+                                  "name": "Every value example",
+                                  "fill": "$fg-primary",
+                                  "content": "*",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 16,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "GYlEk",
+                                  "name": "Every value explanation",
+                                  "fill": "$fg-secondary",
+                                  "content": "Every value",
+                                  "fontFamily": "$font-body",
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "C34EN3",
+                              "name": "Syntax A list",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 4,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "I9CZjT",
+                                  "name": "A list example",
+                                  "fill": "$fg-primary",
+                                  "content": "1,15",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 16,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "O5w3KB",
+                                  "name": "A list explanation",
+                                  "fill": "$fg-secondary",
+                                  "content": "A list",
+                                  "fontFamily": "$font-body",
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "s2XWE",
+                              "name": "Syntax A range",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 4,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "En97x",
+                                  "name": "A range example",
+                                  "fill": "$fg-primary",
+                                  "content": "1-5",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 16,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "P3ksd9",
+                                  "name": "A range explanation",
+                                  "fill": "$fg-secondary",
+                                  "content": "A range",
+                                  "fontFamily": "$font-body",
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "oUDS2",
+                              "name": "Syntax Every 15 units",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 4,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "pq8aJ",
+                                  "name": "Every 15 units example",
+                                  "fill": "$fg-primary",
+                                  "content": "*/15",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 16,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "RcDvn",
+                                  "name": "Every 15 units explanation",
+                                  "fill": "$fg-secondary",
+                                  "content": "Every 15 units",
+                                  "fontFamily": "$font-body",
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "nWCZ9",
+                  "x": 0,
+                  "y": 1,
+                  "name": "Documentation settings",
+                  "enabled": false,
+                  "width": 292,
+                  "height": 520,
+                  "fill": "$surface-muted",
+                  "stroke": "$border-subtle",
+                  "strokeWidth": {
+                    "left": 1
+                  },
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "rqlvc",
+                      "name": "Settings title",
+                      "fill": "$fg-primary",
+                      "content": "Schedule notes",
+                      "fontFamily": "$font-body",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "id": "id2qe",
+                      "type": "ref",
+                      "ref": "NcoS9",
+                      "name": "Intended timezone — documentation only",
+                      "width": "fill_container",
+                      "descendants": {
+                        "zthem": {
+                          "content": "Intended timezone",
+                          "fontSize": 13,
+                          "fill": "$fg-primary"
+                        },
+                        "DSH6A": {
+                          "height": 40,
+                          "stroke": "$control-border"
+                        },
+                        "JtSjO": {
+                          "content": "UTC"
+                        }
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "HsPNG",
+                      "name": "Timezone boundary",
+                      "fill": "$fg-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "For documentation only. This does not change the host timezone or add a timezone to the expression.",
+                      "lineHeight": 1.45,
+                      "fontFamily": "$font-body",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "id": "wwTYV",
+                      "type": "ref",
+                      "ref": "KYa0C",
+                      "name": "Optional command label",
+                      "width": "fill_container",
+                      "descendants": {
+                        "gasMG": {
+                          "content": "Command label (optional)",
+                          "fontSize": 13,
+                          "fill": "$fg-primary"
+                        },
+                        "bT9Rx": {
+                          "height": 40,
+                          "stroke": "$control-border"
+                        },
+                        "yspKK": {
+                          "content": "e.g. Weekday backup",
+                          "fill": "$fg-secondary"
+                        },
+                        "c97Mm": {
+                          "content": "Included in the downloaded schedule, not in the copied expression.",
+                          "fontSize": 12,
+                          "lineHeight": 1.4
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "kuPh6",
+                      "name": "Example and recovery",
+                      "width": "fill_container",
+                      "stroke": "$border-strong",
+                      "strokeWidth": {
+                        "top": 1
+                      },
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": [
+                        16,
+                        0,
+                        0,
+                        0
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ElKHd",
+                          "name": "Example title",
+                          "fill": "$fg-primary",
+                          "content": "Examples · keep your notes",
+                          "fontFamily": "$font-body",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "id": "cZn9P",
+                          "type": "ref",
+                          "ref": "o5XSq",
+                          "name": "Load existing every 15 minutes example",
+                          "width": "fill_container",
+                          "descendants": {
+                            "Y4AAX": {
+                              "content": "Try every 15 minutes"
+                            }
+                          }
+                        },
+                        {
+                          "id": "BRIDi",
+                          "type": "ref",
+                          "ref": "o5XSq",
+                          "name": "Reset all fields to weekday 09:00 default",
+                          "width": "fill_container",
+                          "descendants": {
+                            "Y4AAX": {
+                              "content": "Reset to default"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "zoN0z",
+                      "name": "Local runtime note",
+                      "fill": "$fg-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Processed in your browser.\nNothing is saved or scheduled.",
+                      "lineHeight": 1.5,
+                      "fontFamily": "$font-body",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "id": "crCea",
+                  "type": "ref",
+                  "ref": "ERY94",
+                  "name": "Cron builder — shared generator layout · laptop",
+                  "width": 1200,
+                  "enabled": false,
+                  "descendants": {
+                    "Nwxh6": {
+                      "width": "fill_container"
+                    },
+                    "E9GEZ": {
+                      "content": "Build your schedule"
+                    },
+                    "EQRlx": {
+                      "content": "At 09:00, Monday through Friday. Changes update the result automatically."
+                    },
+                    "eG5jH/DXbTG": {
+                      "content": "Every 15 minutes"
+                    },
+                    "jpLl6": {
+                      "type": "frame",
+                      "id": "jeMPW",
+                      "name": "Cron schedule fields — direct primary input",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "N7H2Z",
+                          "name": "Five editable cron fields",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "id": "VHONw",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Minute — editable cron field",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Minute",
+                                  "fontSize": 13,
+                                  "fill": "$fg-primary"
+                                },
+                                "bT9Rx": {
+                                  "height": 68,
+                                  "justifyContent": "center",
+                                  "stroke": "$control-border"
+                                },
+                                "yspKK": {
+                                  "content": "0",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 28
+                                },
+                                "c97Mm": {
+                                  "content": "0–59",
+                                  "fontSize": 12
+                                }
+                              }
+                            },
+                            {
+                              "id": "BY42M",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Hour — editable cron field",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Hour",
+                                  "fontSize": 13,
+                                  "fill": "$fg-primary"
+                                },
+                                "bT9Rx": {
+                                  "height": 68,
+                                  "justifyContent": "center",
+                                  "stroke": "$control-border"
+                                },
+                                "yspKK": {
+                                  "content": "9",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 28
+                                },
+                                "c97Mm": {
+                                  "content": "0–23",
+                                  "fontSize": 12
+                                }
+                              }
+                            },
+                            {
+                              "id": "zkACz",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Day of month — editable cron field",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Day of month",
+                                  "fontSize": 13,
+                                  "fill": "$fg-primary"
+                                },
+                                "bT9Rx": {
+                                  "height": 68,
+                                  "justifyContent": "center",
+                                  "stroke": "$control-border"
+                                },
+                                "yspKK": {
+                                  "content": "*",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 28
+                                },
+                                "c97Mm": {
+                                  "content": "1–31",
+                                  "fontSize": 12
+                                }
+                              }
+                            },
+                            {
+                              "id": "VeZ60",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Month — editable cron field",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Month",
+                                  "fontSize": 13,
+                                  "fill": "$fg-primary"
+                                },
+                                "bT9Rx": {
+                                  "height": 68,
+                                  "justifyContent": "center",
+                                  "stroke": "$control-border"
+                                },
+                                "yspKK": {
+                                  "content": "*",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 28
+                                },
+                                "c97Mm": {
+                                  "content": "1–12",
+                                  "fontSize": 12
+                                }
+                              }
+                            },
+                            {
+                              "id": "R1ot8G",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Day of week — editable cron field",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Day of week",
+                                  "fontSize": 13,
+                                  "fill": "$fg-primary"
+                                },
+                                "bT9Rx": {
+                                  "height": 68,
+                                  "justifyContent": "center",
+                                  "stroke": "$control-border"
+                                },
+                                "yspKK": {
+                                  "content": "1-5",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 28
+                                },
+                                "c97Mm": {
+                                  "content": "0–7 · Sun = 0 or 7",
+                                  "fontSize": 12
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    "O17c3b": {
+                      "type": "frame",
+                      "id": "igAKz",
+                      "name": "Schedule documentation — inline shared configuration row",
+                      "width": "fill_container",
+                      "gap": 24,
+                      "children": [
+                        {
+                          "id": "LVtyU",
+                          "type": "ref",
+                          "ref": "NcoS9",
+                          "name": "Intended timezone",
+                          "width": 260,
+                          "descendants": {
+                            "zthem": {
+                              "content": "Intended timezone · notes only",
+                              "fontSize": 13
+                            },
+                            "DSH6A": {
+                              "height": 36
+                            },
+                            "JtSjO": {
+                              "content": "UTC"
+                            }
+                          }
+                        },
+                        {
+                          "id": "YH5oJ",
+                          "type": "ref",
+                          "ref": "KYa0C",
+                          "name": "Command label (optional)",
+                          "width": "fill_container",
+                          "descendants": {
+                            "gasMG": {
+                              "content": "Command label (optional)",
+                              "fontSize": 13
+                            },
+                            "yspKK": {
+                              "content": "e.g. Weekday backup",
+                              "fill": "$fg-secondary"
+                            },
+                            "c97Mm": {
+                              "content": "Timezone and label document intent; they do not change the cron host.",
+                              "fontSize": 12
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "pIB2P": {
+                      "enabled": false,
+                      "width": 1100
+                    },
+                    "t58yO": {
+                      "enabled": false,
+                      "width": 1100
+                    },
+                    "d8qnu8": {
+                      "enabled": true,
+                      "width": "fill_container"
+                    },
+                    "hUZ7y": {
+                      "enabled": false,
+                      "width": 1100
+                    },
+                    "g3rFf": {
+                      "content": "Cron expression"
+                    },
+                    "GMWyn/i2HLbt": {
+                      "content": "Copy"
+                    },
+                    "JlMeN/Y4AAX": {
+                      "content": "Download .txt"
+                    },
+                    "RmLVJ": {
+                      "type": "frame",
+                      "id": "TO5rK",
+                      "name": "Shared text result renderer — full copyable output",
+                      "context": "Use current ResultSurface + ResultView text renderer (CodeBlock), not a custom cron output card. Full result is selectable and wraps inside the existing scrollable result body. Copy and Download remain in the shared result header.",
+                      "width": "fill_container",
+                      "fill": "$surface-muted",
+                      "cornerRadius": "$r-md",
+                      "layout": "vertical",
+                      "padding": 16,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "D8arWd",
+                          "name": "Cron result text — current text renderer",
+                          "fill": "$fg-primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "0 9 * * 1-5\nAt 09:00, Monday through Friday.",
+                          "lineHeight": 1.6,
+                          "fontFamily": "Geist Mono",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    "ZDQYQ": {
+                      "enabled": false,
+                      "width": 1100
+                    },
+                    "JfoGK": {
+                      "enabled": false,
+                      "width": 1100
+                    }
+                  }
+                },
+                {
+                  "id": "V3fBy",
+                  "type": "ref",
+                  "ref": "ERY94",
+                  "name": "Cron builder — same shared layout at 1280px",
+                  "width": "fill_container",
+                  "height": "fit_content",
+                  "fill": "$surface",
+                  "descendants": {
+                    "Nwxh6": {
+                      "enabled": true,
+                      "width": "fill_container"
+                    },
+                    "E9GEZ": {
+                      "content": "Build your schedule"
+                    },
+                    "EQRlx": {
+                      "content": "At 09:00, Monday through Friday. Changes update the result automatically."
+                    },
+                    "eG5jH/DXbTG": {
+                      "content": "Every 15 minutes"
+                    },
+                    "jpLl6": {
+                      "type": "frame",
+                      "id": "qt8km",
+                      "name": "Cron schedule fields — direct primary input",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "JJQ7H",
+                          "name": "Five editable cron fields",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "id": "r9DRZ",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Minute — editable cron field",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Minute",
+                                  "fontSize": 13,
+                                  "fill": "$fg-primary"
+                                },
+                                "bT9Rx": {
+                                  "height": 68,
+                                  "justifyContent": "center",
+                                  "stroke": "$control-border"
+                                },
+                                "yspKK": {
+                                  "content": "0",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 28
+                                },
+                                "c97Mm": {
+                                  "content": "0–59",
+                                  "fontSize": 12
+                                }
+                              }
+                            },
+                            {
+                              "id": "W9MPPM",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Hour — editable cron field",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Hour",
+                                  "fontSize": 13,
+                                  "fill": "$fg-primary"
+                                },
+                                "bT9Rx": {
+                                  "height": 68,
+                                  "justifyContent": "center",
+                                  "stroke": "$control-border"
+                                },
+                                "yspKK": {
+                                  "content": "9",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 28
+                                },
+                                "c97Mm": {
+                                  "content": "0–23",
+                                  "fontSize": 12
+                                }
+                              }
+                            },
+                            {
+                              "id": "f39FO",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Day of month — editable cron field",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Day of month",
+                                  "fontSize": 13,
+                                  "fill": "$fg-primary"
+                                },
+                                "bT9Rx": {
+                                  "height": 68,
+                                  "justifyContent": "center",
+                                  "stroke": "$control-border"
+                                },
+                                "yspKK": {
+                                  "content": "*",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 28
+                                },
+                                "c97Mm": {
+                                  "content": "1–31",
+                                  "fontSize": 12
+                                }
+                              }
+                            },
+                            {
+                              "id": "Fpafs",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Month — editable cron field",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Month",
+                                  "fontSize": 13,
+                                  "fill": "$fg-primary"
+                                },
+                                "bT9Rx": {
+                                  "height": 68,
+                                  "justifyContent": "center",
+                                  "stroke": "$control-border"
+                                },
+                                "yspKK": {
+                                  "content": "*",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 28
+                                },
+                                "c97Mm": {
+                                  "content": "1–12",
+                                  "fontSize": 12
+                                }
+                              }
+                            },
+                            {
+                              "id": "kOUdl",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Day of week — editable cron field",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Day of week",
+                                  "fontSize": 13,
+                                  "fill": "$fg-primary"
+                                },
+                                "bT9Rx": {
+                                  "height": 68,
+                                  "justifyContent": "center",
+                                  "stroke": "$control-border"
+                                },
+                                "yspKK": {
+                                  "content": "1-5",
+                                  "fontFamily": "Geist Mono",
+                                  "fontSize": 28
+                                },
+                                "c97Mm": {
+                                  "content": "0–7 · Sun = 0 or 7",
+                                  "fontSize": 12
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    "O17c3b": {
+                      "type": "frame",
+                      "id": "OJ7Lq",
+                      "name": "Schedule documentation — inline shared configuration row",
+                      "width": "fill_container",
+                      "gap": 24,
+                      "children": [
+                        {
+                          "id": "Y5xqNY",
+                          "type": "ref",
+                          "ref": "NcoS9",
+                          "name": "Intended timezone",
+                          "width": 260,
+                          "descendants": {
+                            "zthem": {
+                              "content": "Intended timezone · notes only",
+                              "fontSize": 13
+                            },
+                            "DSH6A": {
+                              "height": 36
+                            },
+                            "JtSjO": {
+                              "content": "UTC"
+                            }
+                          }
+                        },
+                        {
+                          "id": "C7oeKA",
+                          "type": "ref",
+                          "ref": "KYa0C",
+                          "name": "Command label (optional)",
+                          "width": "fill_container",
+                          "descendants": {
+                            "gasMG": {
+                              "content": "Command label (optional)",
+                              "fontSize": 13
+                            },
+                            "yspKK": {
+                              "content": "e.g. Weekday backup",
+                              "fill": "$fg-secondary"
+                            },
+                            "c97Mm": {
+                              "content": "Timezone and label document intent; they do not change the cron host.",
+                              "fontSize": 12
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "pIB2P": {
+                      "enabled": false,
+                      "width": 1100
+                    },
+                    "t58yO": {
+                      "enabled": false,
+                      "width": 1100
+                    },
+                    "d8qnu8": {
+                      "enabled": true,
+                      "width": "fill_container"
+                    },
+                    "hUZ7y": {
+                      "enabled": false,
+                      "width": 1100
+                    },
+                    "g3rFf": {
+                      "content": "Cron expression"
+                    },
+                    "GMWyn/i2HLbt": {
+                      "content": "Copy expression"
+                    },
+                    "JlMeN/Y4AAX": {
+                      "content": "Download .txt"
+                    },
+                    "RmLVJ": {
+                      "type": "frame",
+                      "id": "r3PP3f",
+                      "name": "Shared text result renderer — full copyable output",
+                      "context": "Use current ResultSurface + ResultView text renderer (CodeBlock), not a custom cron output card. Full result is selectable and wraps inside the existing scrollable result body. Copy and Download remain in the shared result header.",
+                      "width": "fill_container",
+                      "fill": "$surface-muted",
+                      "cornerRadius": "$r-md",
+                      "layout": "vertical",
+                      "padding": 16,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "dUH8T",
+                          "name": "Cron result text — current text renderer",
+                          "fill": "$fg-primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "0 9 * * 1-5\nAt 09:00, Monday through Friday.",
+                          "lineHeight": 1.6,
+                          "fontFamily": "Geist Mono",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    "ZDQYQ": {
+                      "enabled": false,
+                      "width": 1100
+                    },
+                    "JfoGK": {
+                      "enabled": false,
+                      "width": 1100
+                    },
+                    "zF9LE": {
+                      "content": "3 keys generated · 32 random characters per key"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "Ndqgc",
+              "type": "ref",
+              "ref": "urMUk",
+              "name": "Cron limitations, privacy and usage",
+              "width": "fill_container",
+              "descendants": {
+                "ApM7t": {
+                  "content": "Standard five-field cron"
+                },
+                "i6ohus": {
+                  "content": "Numeric fields only. No seconds, named days, Quartz syntax, or upcoming-run calculation."
+                },
+                "Nz3jq": {
+                  "content": "Local, not a scheduler"
+                },
+                "H4Jads": {
+                  "content": "Nothing is uploaded or saved. Copy the expression into a cron host to schedule a job."
+                },
+                "WotxF": {
+                  "content": "Edit, understand, copy"
+                },
+                "H4KSb": {
+                  "content": "Edit the five fields. Read the live description, then copy the expression or download your notes."
+                },
+                "N1diS": {
+                  "content": "Cron Parser"
+                },
+                "wuRvR": {
+                  "content": "Timestamp Converter"
+                },
+                "m8I2Tp": {
+                  "content": "Date Difference"
+                }
+              }
+            },
+            {
+              "type": "text",
+              "id": "trmPI",
+              "x": 48,
+              "y": 961,
+              "name": "Cron day matching caveat",
+              "enabled": false,
+              "fill": "$warning-text",
+              "textGrowth": "fixed-width",
+              "width": 1200,
+              "content": "Watch the two day fields: when both are restricted, cron runs when either matches — not only when both match.",
+              "fontFamily": "$font-body",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "M0e4RB",
+      "x": 103527,
+      "y": 8019,
+      "name": "Cron Expression Builder / Inline states & implementation contract",
+      "width": 1366,
+      "fill": "$surface",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": 32,
+      "children": [
+        {
+          "type": "text",
+          "id": "DC7gQ",
+          "name": "Handoff heading",
+          "fill": "$fg-primary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Cron builder · inline states & developer handoff",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 24,
+          "fontWeight": "600"
+        },
+        {
+          "type": "text",
+          "id": "f46gM",
+          "x": 32,
+          "y": 92,
+          "name": "Long-result evidence header",
+          "enabled": false,
+          "fill": "$fg-primary",
+          "content": "Long-expression fixtures · same bounded result component at both desktop widths",
+          "fontFamily": "$font-body",
+          "fontSize": 17,
+          "fontWeight": "600"
+        },
+        {
+          "type": "frame",
+          "id": "qvMPc",
+          "x": 32,
+          "y": 138,
+          "name": "1366px screen · 906px result",
+          "enabled": false,
+          "width": 906,
+          "height": 110,
+          "fill": "$surface-muted",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "P8rvG",
+              "name": "1366px screen · 906px result label",
+              "fill": "$fg-secondary",
+              "content": "1366px screen · 906px result",
+              "fontFamily": "$font-body",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "id": "B1gs0l",
+              "type": "ref",
+              "ref": "E3L7dC",
+              "name": "Long expression — intentionally clipped scroll viewport",
+              "width": "fill_container",
+              "context": "Intentional horizontal content overflow inside selectable, keyboard-scrollable expression viewport. Full original text is retained for copy. Actions remain outside the viewport. The arrow label is shown only when overflow exists.",
+              "enabled": true,
+              "opacity": 1,
+              "descendants": {
+                "E3YzTo": {
+                  "content": "CRON EXPRESSION · SCROLL TO VIEW FULL EXPRESSION →"
+                },
+                "dSfQs": {
+                  "content": "0,5,10,15,20,25,30,35,40,45,50,55 0,6,12,18 1,5,10,15,20,25 * 1-5"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "a4Vib",
+          "x": 32,
+          "y": 272,
+          "name": "1280px screen · 860px result",
+          "enabled": false,
+          "width": 860,
+          "height": 110,
+          "fill": "$surface-muted",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "ZwjRX",
+              "name": "1280px screen · 860px result label",
+              "fill": "$fg-secondary",
+              "content": "1280px screen · 860px result",
+              "fontFamily": "$font-body",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "id": "PVWAm",
+              "type": "ref",
+              "ref": "E3L7dC",
+              "name": "Long expression — intentionally clipped scroll viewport",
+              "width": "fill_container",
+              "context": "Intentional horizontal content overflow inside selectable, keyboard-scrollable expression viewport. Full original text is retained for copy. Actions remain outside the viewport. The arrow label is shown only when overflow exists.",
+              "enabled": true,
+              "opacity": 1,
+              "descendants": {
+                "E3YzTo": {
+                  "content": "CRON EXPRESSION · SCROLL TO VIEW FULL EXPRESSION →"
+                },
+                "dSfQs": {
+                  "content": "0,5,10,15,20,25,30,35,40,45,50,55 0,6,12,18 1,5,10,15,20,25 * 1-5"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ue4yE",
+          "name": "Shared field states — no duplicate full-page flow",
+          "width": "fill_container",
+          "gap": 28,
+          "children": [
+            {
+              "type": "frame",
+              "id": "VH0Nq",
+              "name": "Focused minute state",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "EZWMD",
+                  "name": "Focused minute title",
+                  "fill": "$fg-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Focused minute",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "id": "z3qLKj",
+                  "type": "ref",
+                  "ref": "KYa0C",
+                  "name": "Focused minute input and inline guidance",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "descendants": {
+                    "gasMG": {
+                      "content": "Minute",
+                      "fontSize": 13
+                    },
+                    "bT9Rx": {
+                      "height": 68,
+                      "stroke": "$accent",
+                      "strokeWidth": 2
+                    },
+                    "yspKK": {
+                      "content": "*/15",
+                      "fontFamily": "Geist Mono",
+                      "fontSize": 28
+                    },
+                    "c97Mm": {
+                      "content": "Every 15 minutes. Steps start at 0.",
+                      "fontSize": 13,
+                      "fill": "$fg-secondary",
+                      "lineHeight": 1.4
+                    }
+                  }
+                },
+                {
+                  "type": "text",
+                  "id": "t0Ef6A",
+                  "name": "Focused minute status",
+                  "fill": "$fg-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Valid expression · live output updates after 160 ms.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "EBvzd",
+              "name": "Invalid minute state",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "w4WxUi",
+                  "name": "Invalid minute title",
+                  "fill": "$fg-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Invalid minute",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "id": "bd3OD",
+                  "type": "ref",
+                  "ref": "KYa0C",
+                  "name": "Invalid minute input and inline guidance",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "descendants": {
+                    "gasMG": {
+                      "content": "Minute",
+                      "fontSize": 13
+                    },
+                    "bT9Rx": {
+                      "height": 68,
+                      "stroke": "$danger",
+                      "strokeWidth": 2
+                    },
+                    "yspKK": {
+                      "content": "60",
+                      "fontFamily": "Geist Mono",
+                      "fontSize": 28
+                    },
+                    "c97Mm": {
+                      "content": "Use 0–59, *, a list, range, or */step.",
+                      "fontSize": 13,
+                      "fill": "$danger-text",
+                      "lineHeight": 1.4
+                    }
+                  }
+                },
+                {
+                  "type": "text",
+                  "id": "gwzdq",
+                  "name": "Invalid minute status",
+                  "fill": "$fg-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Needs attention · output and artifact actions unavailable until fixed.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Um1Fb",
+              "name": "Empty minute state",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "UNbZO",
+                  "name": "Empty minute title",
+                  "fill": "$fg-primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Empty minute",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "id": "tGrwr",
+                  "type": "ref",
+                  "ref": "KYa0C",
+                  "name": "Empty minute input and inline guidance",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "descendants": {
+                    "gasMG": {
+                      "content": "Minute",
+                      "fontSize": 13
+                    },
+                    "bT9Rx": {
+                      "height": 68,
+                      "stroke": "$danger",
+                      "strokeWidth": 2
+                    },
+                    "yspKK": {
+                      "content": "",
+                      "fontFamily": "Geist Mono",
+                      "fontSize": 28
+                    },
+                    "c97Mm": {
+                      "content": "Enter a minute value, or * for every minute.",
+                      "fontSize": 13,
+                      "fill": "$danger-text",
+                      "lineHeight": 1.4
+                    }
+                  }
+                },
+                {
+                  "type": "text",
+                  "id": "q7D15z",
+                  "name": "Empty minute status",
+                  "fill": "$fg-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Needs attention · output and artifact actions unavailable until fixed.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$font-body",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "yiggN",
+          "name": "Entry and live operation",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "LAYOUT & ENTRY  /  Use the existing ERY94 universal generator layout: expanded configuration above the full-width standard result surface. No custom cron result bar or right-side notes panel. Open with 0 9 * * 1-5, UTC and an empty label. Edit the five fields directly; update after 160 ms without Generate. Tab through the five fields, timezone and label, then the standard result-header actions.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 14,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "Bd38p",
+          "name": "Validation and recovery contract",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "VALIDATION  /  Keep attempted values visible. Associate inline errors with the affected input (aria-invalid + aria-describedby); use the helper line instead of an alert banner. While empty or invalid, replace the meaning with “Complete the highlighted fields to see your schedule”, hide the stale output and disable copy/download. On correction, restore the live result. Empty input is never treated as *. Announce settled validation politely, not on each keystroke.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 14,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "xXO5H",
+          "name": "Syntax and edge cases",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "GRAMMAR  /  Standard five fields only. Minute 0–59; hour 0–23; day 1–31; month 1–12; weekday 0–7 (0 and 7 are Sunday). Accept numeric lists, ascending ranges, * and */n, matching the existing parser. Reject names, seconds, ?, L and range-with-step syntax. Both restricted day fields use OR. Syntax validity is not proof that a calendar date occurs. Long values remain editable with horizontal caret scrolling, never silently truncated.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 14,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "E2Id5",
+          "name": "Artifact and settings contracts",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "SHARED OUTPUT LAYOUT  /  Reuse the existing full-width result surface, text renderer and header actions. Copy expression copies only the five-field line, preserving the previously designed behavior; Download .txt saves the expression, displayed description and optional timezone/label lines to cron-schedule.txt. No separate expression bar or duplicate artifact actions. UTC is implicit. Notes never change the host; the tool does not schedule jobs.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 14,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "a9RVm8",
+          "name": "Feedback, presets and reset",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "FEEDBACK & RECOVERY  /  Use shared result actions and their success/error toasts. Copy success: “Expression copied”. Copy failure preserves selectable result text for manual copying. Download failure offers Retry. “Every 15 minutes” changes only five schedule fields; preserve timezone and label. Reset restores defaults and announces the reset. Reload starts at defaults; nothing is saved.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 14,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "WIj65",
+          "name": "Implementation gaps — explicit scope",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "IMPLEMENTATION DELTAS  /  Reuse the current generator and result layout, not cron-specific output chrome. Keep live configuration above the standard result surface. Preserve the proposed expression-only copy via the existing result-actions extension point. The clearer human description is a proposed describeCron improvement; show and download the same description. Until implemented, use its existing parser summary consistently. Field-local validation and guidance stay by the inputs; examples preserve notes.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 14,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "Y4Rbx6",
+          "name": "Viewport and acceptance checklist",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "DESKTOP REVIEW  /  1366×768 and 1280×720 use the same shared component, not separate output patterns. Core fields, notes and result-header actions remain in the initial viewport. Supporting sections scroll below. Check component identity, bounds, contrast, spacing, input/result accuracy and feedback/recovery. Mobile and live keyboard/clipboard behavior remain implementation tests.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 14,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "ywZYA",
+          "name": "Long expression and in-flight behavior",
+          "fill": "$fg-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "LONG RESULTS & UPDATES  /  Use the existing text renderer: selectable output wraps inside a bounded scrollable content region; result-header actions stay visible. Copy expression retains exact expression bytes; Download retains exact complete result text. During debounce/validation, show the shared updating state and disable stale actions. Invalid input uses the shared result error state and field-local recovery; correction restores the live result.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 14,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "E3asN",
+      "x": 622,
+      "y": -35212,
+      "name": "Component / Syntax reference — expression and meaning",
+      "context": "Read-only syntax reference item: exact expression followed by a plain-language meaning. Not an interactive preset or badge. Used four times inside Cron syntax help. Code implementation uses existing SyntaxHighlight with language=\"cron\" and its safe plain-text fallback; ordinary explanation uses normal body typography.",
+      "reusable": true,
+      "width": 420,
+      "gap": 12,
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "PD8m8",
+          "name": "Expression",
+          "fill": "$fg-primary",
+          "textGrowth": "fixed-width",
+          "width": 56,
+          "content": "*",
+          "lineHeight": 1.4,
+          "fontFamily": "Geist Mono",
+          "fontSize": 15,
+          "fontWeight": "500"
+        },
+        {
+          "type": "text",
+          "id": "u3HKT",
+          "name": "Meaning",
+          "fill": "$fg-primary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Every value",
+          "lineHeight": 1.5,
+          "fontFamily": "$font-body",
+          "fontSize": 14,
+          "fontWeight": "normal"
+        }
+      ]
     }
   ],
   "variables": {

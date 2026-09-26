@@ -118,6 +118,48 @@ test("TSV preserves quoted tabs and escaped quotes across line boundaries", asyn
   expect(classesAt(code.indexOf("42"))).toMatch(/tok-number/);
 });
 
+test("Unicode highlighting recognizes escapes within otherwise plain text", async () => {
+  const escapes = ["\\u00e9", "\\u{1F44B}", "\\U0041", "\\uD83D", "\\uDC4B"];
+  const code = `Hello ${escapes.join(" ")}\n<script>café 😀</script>`;
+  const classesAt = await highlightsFor(code, "unicode");
+  for (const escape of escapes) {
+    const start = code.indexOf(escape);
+    for (let offset = start; offset < start + escape.length; offset++) {
+      expect(classesAt(offset), escape).toMatch(/tok-atom/);
+    }
+  }
+  for (const text of ["Hello", "<script>", "café", "😀"]) expect(classesAt(code.indexOf(text))).toBe("");
+  const state = EditorState.create({ doc: code, extensions: [await loadCodeEditorLanguage("unicode")] });
+  expect(state.doc.toString()).toBe(code);
+});
+
+test("Unicode highlighting leaves malformed and unrelated escapes plain", async () => {
+  const code = "\\n \\x41 \\u123 \\uXYZ1 \\u{} \\u{1f44b \\u{1234567}";
+  const classesAt = await highlightsFor(code, "unicode");
+  for (let offset = 0; offset < code.length; offset++) expect(classesAt(offset)).toBe("");
+});
+
+test("URL highlighting colors percent triplets without changing URL text", async () => {
+  const escapes = ["%20", "%2f", "%C3", "%A9", "%F0", "%9F", "%91", "%8B"];
+  const code = `https://example.com/caf%C3%A9?q=hello%20world%2f+${escapes.slice(4).join("")}\nplain <tag>`;
+  const classesAt = await highlightsFor(code, "url-encoded");
+  for (const escape of escapes) {
+    const start = code.indexOf(escape);
+    for (let offset = start; offset < start + escape.length; offset++) {
+      expect(classesAt(offset), escape).toMatch(/tok-atom/);
+    }
+  }
+  for (const text of ["https", "example", "+", "plain", "<tag>"]) expect(classesAt(code.indexOf(text))).toBe("");
+  const state = EditorState.create({ doc: code, extensions: [await loadCodeEditorLanguage("url-encoded")] });
+  expect(state.doc.toString()).toBe(code);
+});
+
+test("URL highlighting leaves incomplete and malformed percent sequences plain", async () => {
+  const code = "100% + %2 %GG %0z %u0041 %";
+  const classesAt = await highlightsFor(code, "url-encoded");
+  for (let offset = 0; offset < code.length; offset++) expect(classesAt(offset)).toBe("");
+});
+
 test("unknown languages preserve the source with a plain-text fallback", async () => {
   const code = '<unknown language="custom">{ untouched }</unknown>';
   const state = EditorState.create({ doc: code, extensions: [await loadCodeEditorLanguage("custom")] });

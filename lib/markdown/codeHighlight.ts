@@ -36,7 +36,32 @@ function delimitedGrammar(separator: "," | "\t"): LanguageFn {
   });
 }
 
-codeLowlight.register({ csv: delimitedGrammar(","), tsv: delimitedGrammar("\t") });
+codeLowlight.register({
+  csv: delimitedGrammar(","),
+  tsv: delimitedGrammar("\t"),
+  unicode: () => ({
+    disableAutodetect: true,
+    case_insensitive: true,
+    contains: [{ scope: "symbol", match: /\\u(?:\{[\da-f]{1,6}\}|[\da-f]{4})/i, relevance: 0 }],
+  }),
+  "url-encoded": () => ({
+    disableAutodetect: true,
+    case_insensitive: true,
+    contains: [{ scope: "symbol", match: /%[\da-f]{2}/i, relevance: 0 }],
+  }),
+  robots: () => ({
+    disableAutodetect: true,
+    case_insensitive: true,
+    contains: [
+      { scope: "comment", match: /#[^\r\n]*/, relevance: 0 },
+      {
+        match: [/^[ \t]*(?:User-agent|Allow|Disallow|Sitemap|Crawl-delay)/, /[ \t]*:[ \t]*/, /[^\r\n#]*/],
+        scope: { 1: "attr", 3: "string" },
+        relevance: 0,
+      },
+    ],
+  }),
+});
 
 export type CodeHighlightBudget = { remainingChars: number };
 

@@ -12,15 +12,16 @@ import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 function convertTextCase(value: string, target: string): string {
+  // Use locale-independent casing so recipients of a shared link get identical text.
   const parts = words(value);
-  const lower = parts.map((part) => part.toLocaleLowerCase());
-  const capitalize = (part: string) => (part ? part[0].toLocaleUpperCase() + part.slice(1).toLocaleLowerCase() : part);
+  const lower = parts.map((part) => part.toLowerCase());
+  const capitalize = (part: string) => (part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : part);
 
   switch (target) {
     case "upper":
-      return value.toLocaleUpperCase();
+      return value.toUpperCase();
     case "lower":
-      return value.toLocaleLowerCase();
+      return value.toLowerCase();
     case "title":
       return parts.map(capitalize).join(" ");
     case "sentence":
@@ -34,7 +35,7 @@ function convertTextCase(value: string, target: string): string {
     case "kebab":
       return lower.join("-");
     case "constant":
-      return lower.join("_").toLocaleUpperCase();
+      return lower.join("_").toUpperCase();
     default:
       throw new ToolError("unknown-case", "Choose a valid text case.");
   }

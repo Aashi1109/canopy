@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.json-schema-generator",
+  sharing: { version: 1 },
   app: "devtools",
   category: "json-tools",
   keywords: ["json schema", "schema", "infer", "validation", "draft", "contract", "sample data"],

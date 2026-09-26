@@ -18,6 +18,16 @@ export default {
   },
   settings: {
     fields: {
+      outputLanguage: {
+        kind: "select",
+        label: "Output language",
+        help: "TypeScript keeps parsed JSON typed as unknown until you validate its shape.",
+        default: "javascript",
+        choices: [
+          { label: "JavaScript", value: "javascript" },
+          { label: "TypeScript", value: "typescript" },
+        ],
+      },
       responseHandling: {
         kind: "select",
         label: "Response handling",

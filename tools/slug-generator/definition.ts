@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.slug-generator",
+  sharing: { version: 1 },
   app: "devtools",
   category: "text-tools",
   keywords: ["slug", "url", "permalink", "seo", "kebab case", "handle", "sanitize"],

@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.character-counter",
+  sharing: { version: 1 },
   app: "devtools",
   category: "text-tools",
   keywords: ["character count", "count", "length", "bytes", "utf-8", "words", "lines", "twitter limit"],

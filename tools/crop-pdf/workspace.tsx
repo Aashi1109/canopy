@@ -10,7 +10,7 @@ import { GeneratedPdfPreview } from "@/components/GeneratedPdfPreview";
 import { PdfFileWorkspace } from "@/components/PdfFileWorkspace";
 import type { PdfPageImage } from "@/components/PdfPagesSurface";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
-import { cropPlan } from "./plan";
+import { cropEditorPlan, cropPlan } from "./plan";
 
 const DIMENSIONS = [
   ["cropX", "Left", PanelLeft],
@@ -151,25 +151,33 @@ export default function CropPdfWorkspace(props: WorkspaceProps) {
       renderPageOverlay={(page, pages) => {
         if (!page.url) return null;
         try {
-          const { box, selected } = cropPlan(props.settings, pages);
+          const { box, bounds, selected } = cropEditorPlan(props.settings, pages);
           if (!selected.includes(page.pageNumber)) return null;
           return (
-            <CropFrame
-              handles="all"
-              box={box}
-              bounds={{ width: Math.floor(page.pageWidth), height: Math.floor(page.pageHeight) }}
-              disabled={props.disabled}
-              originBottomLeft
-              onChange={(next) => {
-                for (const [key, axis] of [
-                  ["cropX", "x"],
-                  ["cropY", "y"],
-                  ["cropWidth", "width"],
-                  ["cropHeight", "height"],
-                ] as const)
-                  if (next[axis] !== box[axis]) change(key, next[axis]);
+            <div
+              className="absolute bottom-0 left-0"
+              style={{
+                width: `${(bounds.width / page.pageWidth) * 100}%`,
+                height: `${(bounds.height / page.pageHeight) * 100}%`,
               }}
-            />
+            >
+              <CropFrame
+                handles="all"
+                box={box}
+                bounds={bounds}
+                disabled={props.disabled}
+                originBottomLeft
+                onChange={(next) => {
+                  for (const [key, axis] of [
+                    ["cropX", "x"],
+                    ["cropY", "y"],
+                    ["cropWidth", "width"],
+                    ["cropHeight", "height"],
+                  ] as const)
+                    if (next[axis] !== props.settings[key]) change(key, next[axis]);
+                }}
+              />
+            </div>
           );
         } catch {
           return null;

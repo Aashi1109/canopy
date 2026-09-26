@@ -228,14 +228,16 @@ function KeywordTagInput({ onChange, values }: { onChange: (values: string[]) =>
           key={keyword}
         >
           {keyword}
-          <button
+          <Button
             aria-label={`Remove ${keyword}`}
-            className="grid size-4 place-items-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="size-4 rounded-full text-muted-foreground"
             onClick={() => onChange(values.filter((value) => value !== keyword))}
+            size="icon-xs"
             type="button"
+            variant="ghost"
           >
             <X aria-hidden="true" className="size-3" />
-          </button>
+          </Button>
         </Caption>
       ))}
       <input
@@ -357,16 +359,18 @@ function CatalogForm({ inherited, stored, toolId }: Omit<ToolContentFormProps, "
 
 function DragHandle({ label, state }: { label: string; state: OrderableItemState }) {
   return (
-    <button
+    <Button
       aria-label={`Reorder ${label}`}
-      className="grid size-9 shrink-0 cursor-grab place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing"
+      className="cursor-grab rounded-md text-muted-foreground active:cursor-grabbing"
       ref={state.setActivatorNodeRef}
+      size="icon"
       type="button"
+      variant="ghost"
       {...state.attributes}
       {...state.listeners}
     >
       <GripVertical aria-hidden="true" className="size-4" />
-    </button>
+    </Button>
   );
 }
 

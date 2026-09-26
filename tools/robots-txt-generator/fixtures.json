@@ -11,7 +11,6 @@
         "sitemap": "https://example.com/sitemap.xml",
         "crawlDelay": 0,
         "userAgent": "*",
-        "newDirective": "disallow",
         "allowPaths": ""
       },
       "expected": {
@@ -25,17 +24,35 @@
         "primary": "/preview",
         "secondary": ""
       },
-      "name": "crawler-specific allow directives",
+      "name": "crawler-specific Disallow and Allow directives",
       "settings": {
         "allowAll": false,
         "sitemap": "",
         "crawlDelay": 5,
         "userAgent": "Googlebot",
-        "newDirective": "allow",
         "allowPaths": "/public\n/assets"
       },
       "expected": {
-        "output": "User-agent: Googlebot\nAllow: /preview\nAllow: /public\nAllow: /assets\nCrawl-delay: 5",
+        "output": "User-agent: Googlebot\nDisallow: /preview\nAllow: /public\nAllow: /assets\nCrawl-delay: 5",
+        "render": "text",
+        "downloadName": "robots.txt"
+      }
+    },
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "Allow-only paths",
+      "settings": {
+        "allowAll": false,
+        "sitemap": "",
+        "crawlDelay": 0,
+        "userAgent": "*",
+        "allowPaths": "/public\n/assets"
+      },
+      "expected": {
+        "output": "User-agent: *\nDisallow:\nAllow: /public\nAllow: /assets",
         "render": "text",
         "downloadName": "robots.txt"
       }

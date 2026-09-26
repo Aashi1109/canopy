@@ -34,11 +34,12 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-async function mount() {
+async function mount(initialSettings = {}) {
   function Fixture() {
-    const [settings, setSettings] = useState(
-      Object.fromEntries(Object.entries(definition.settings.fields).map(([key, field]) => [key, field.default])),
-    );
+    const [settings, setSettings] = useState({
+      ...Object.fromEntries(Object.entries(definition.settings.fields).map(([key, field]) => [key, field.default])),
+      ...initialSettings,
+    });
     currentSettings = settings;
     return React.createElement(ContrastWorkspace, {
       settings,
@@ -90,6 +91,8 @@ test("heading and body edits commit independently and survive a text-color chang
     ["Preview body text", "Custom body copy.\nA second line to compare."],
   ];
   for (const [label, value] of samples) await commit(label, value);
+  expect(currentSettings.sample).toBe(samples[0][1]);
+  expect(currentSettings.bodySample).toBe(samples[1][1]);
   const color = container.querySelector('input[aria-label="Choose text color visually"]');
   await fill(color, "#0f172a");
   expect(currentSettings.foreground.toLowerCase()).toBe("#0f172a");
@@ -97,6 +100,21 @@ test("heading and body edits commit independently and survive a text-color chang
     const field = await openEditor(label);
     expect(field.value).toBe(value);
     await press(field, "Escape");
+  }
+});
+
+test("restored preview settings appear in the preview and editable fields", async () => {
+  const sample = "A shared heading with café & color";
+  const bodySample = "The recipient sees this copy.\nIncluding its second line.";
+  await mount({ sample, bodySample });
+  expect(container.textContent).toContain(sample);
+  expect(container.textContent).toContain(bodySample);
+  for (const [label, value] of [
+    ["Preview heading", sample],
+    ["Preview body text", bodySample],
+  ]) {
+    expect((await openEditor(label)).value).toBe(value);
+    await press(editor(label), "Escape");
   }
 });
 

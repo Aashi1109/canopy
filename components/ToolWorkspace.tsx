@@ -1,7 +1,6 @@
 "use client";
 
 import { Overline, H3, Muted, Caption, Strong, ToolOptionsPanel } from "@/components/ui/index.tsx";
-import { Settings } from "lucide";
 import { ArrowDownToLine, FileSpreadsheet } from "lucide-react";
 import { type DragEvent, type ReactNode, type Ref, useEffect, useRef, useState } from "react";
 
@@ -10,7 +9,8 @@ import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
 import { textInputFileIssue } from "@/components/FileInput";
 import { ResultSurface, type ResultSurfaceProps } from "@/components/ResultSurface";
 import { SettingsPanel } from "@/components/SettingsPanel";
-import { SplitStack } from "@/components/Stacks";
+import { SettingsStack, SplitStack } from "@/components/Stacks";
+import { useWorkbenchPresentation } from "@/components/ui/components/workbench-presentation";
 import { WorkspaceInputSurface } from "@/components/WorkspaceInput";
 import type { ToolResult } from "@/lib/tool-framework/result";
 import type { ToolInputSpec, ToolLayout, ToolSpec } from "@/lib/tool-framework/spec";
@@ -39,6 +39,7 @@ export interface WorkspaceToolbarActions {
   readonly exampleLabel?: string;
   readonly exampleVariant?: "link" | "outline";
   readonly onExample?: () => void;
+  readonly onCancel?: () => void;
   readonly primaryActionLabel?: string;
   readonly statusMeta?: ReactNode;
 }
@@ -93,6 +94,7 @@ function InputResultWorkspace({
   input,
   inputSize,
   layout,
+  layoutSwitchable,
   minSize,
   result,
 }: {
@@ -100,20 +102,22 @@ function InputResultWorkspace({
   input: ReactNode;
   inputSize?: ToolSpec["inputSize"];
   layout: ToolLayout;
+  layoutSwitchable: boolean;
   minSize: number;
   result: ReactNode;
 }) {
   return (
     <SplitStack
       presentation
+      layoutSwitchable={layoutSwitchable}
       className={layout === "stacked" ? "h-full p-5" : "h-full"}
       defaultSize={inputSize?.default ?? defaultSize}
       minSize={inputSize?.min ?? minSize}
       maxSize={inputSize?.max}
       orientation={layout === "stacked" ? "vertical" : "horizontal"}
     >
-      {layout === "stacked" ? <div className="h-full pb-2.5">{input}</div> : input}
-      {layout === "stacked" ? <div className="h-full pt-2.5">{result}</div> : result}
+      <div className={layout === "stacked" ? "h-full pb-2.5" : "h-full"}>{input}</div>
+      <div className={layout === "stacked" ? "h-full pt-2.5" : "h-full"}>{result}</div>
     </SplitStack>
   );
 }
@@ -249,10 +253,17 @@ export function ToolWorkspace(
       inputFieldErrors?: Partial<Record<"text" | "secondary", string>>;
       onInputSubmit?: () => void;
       onSourceScroll?: (scroller: HTMLElement) => void;
+      renderInputContent?: (source: ReactNode) => ReactNode;
       renderInputSettings?: () => ReactNode;
+      renderSettings?: () => ReactNode;
+      resultHeaderActions?: ReactNode;
+      inputSurfaceTitle?: string;
+      sourceClassName?: string;
+      sourceHeader?: ReactNode;
       sourceRef?: Ref<HTMLElement>;
     },
 ) {
+  const presentation = useWorkbenchPresentation();
   if (props.spec.input.kind === "files") {
     if (props.spec.input.engine === "image" && props.spec.category === "image-conversion") {
       return <ImageConversionWorkspace {...props} />;
@@ -288,11 +299,17 @@ export function ToolWorkspace(
       values={props.settings}
     />
   ) : undefined;
-  const inputSplit = getInputSplitSizes(props.spec.input, 50, props.spec.layout === "stacked" ? 30 : 15);
-  const surfaceVariant = props.spec.input.kind !== "none" && props.spec.layout === "stacked" ? "card" : "panel";
+  const layoutSwitchable =
+    props.spec.input.kind === "text" ||
+    (props.spec.input.kind === "fields" &&
+      (props.spec.input.fields.length === 1 || props.spec.input.fields.every((field) => !field.multiline)));
+  const layout = (layoutSwitchable ? presentation?.layout : null) ?? props.spec.layout ?? "side-by-side";
+  const inputSplit = getInputSplitSizes(props.spec.input, 50, layout === "stacked" ? 30 : 15);
+  const surfaceVariant = props.spec.input.kind !== "none" && layout === "stacked" ? "card" : "panel";
   const result = (
     <ResultSurface
       error={props.error}
+      headerActions={props.resultHeaderActions}
       initialJsonView={props.initialJsonView}
       result={props.result}
       retainedResult={props.retainedResult}
@@ -325,11 +342,16 @@ export function ToolWorkspace(
             onInputChange={props.onInputChange}
             onSubmit={props.onInputSubmit}
             onSourceScroll={props.onSourceScroll}
+            renderContent={props.renderInputContent}
+            title={props.inputSurfaceTitle}
+            sourceClassName={props.sourceClassName}
+            sourceHeader={props.sourceHeader}
             sourceRef={props.sourceRef}
             variant={surfaceVariant}
           />
         }
-        layout={props.spec.layout ?? "side-by-side"}
+        layout={layout}
+        layoutSwitchable={layoutSwitchable}
         minSize={inputSplit.minSize}
         result={result}
       />
@@ -356,11 +378,8 @@ export function ToolWorkspace(
   }
 
   const workspace = (
-    <SplitStack
+    <SettingsStack
       className="h-full"
-      collapsedIcon={Settings}
-      collapseLabel="settings panel"
-      collapseSide="secondary"
       collapsible={hasSideSettings && !settingsOnly}
       defaultCollapsed={!settingsOnly ? "secondary" : undefined}
       defaultSize={75}
@@ -372,19 +391,23 @@ export function ToolWorkspace(
         title={props.spec.optionsPanel?.title ?? "SETTINGS"}
         variant="plain"
       >
-        <SettingsPanel
-          disabled={props.disabled}
-          layout={props.spec.optionsPanel?.layout}
-          onChange={props.onSettingChange}
-          pane={settingsOnly ? undefined : "side"}
-          spec={props.spec.settings}
-          values={props.settings}
-        />
+        {props.renderSettings ? (
+          props.renderSettings()
+        ) : (
+          <SettingsPanel
+            disabled={props.disabled}
+            layout={props.spec.optionsPanel?.layout}
+            onChange={props.onSettingChange}
+            pane={settingsOnly ? undefined : "side"}
+            spec={props.spec.settings}
+            values={props.settings}
+          />
+        )}
         {props.spec.optionsPanel?.note ? (
           <Muted className="text-muted-foreground">{props.spec.optionsPanel.note}</Muted>
         ) : null}
       </ToolOptionsPanel>
-    </SplitStack>
+    </SettingsStack>
   );
 
   return <TextFileDropTarget props={props}>{workspace}</TextFileDropTarget>;

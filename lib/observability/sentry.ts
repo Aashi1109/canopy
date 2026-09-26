@@ -1,8 +1,65 @@
 import publicConfig from "../config/public.ts";
-import { getActiveSpan, isEnabled, type ErrorEvent, type Options } from "@sentry/core";
+import {
+  getActiveSpan,
+  isEnabled,
+  type Breadcrumb,
+  type ErrorEvent,
+  type Options,
+  type SpanJSON,
+  type TransactionEvent,
+} from "@sentry/core";
 import { init, withServerActionInstrumentation } from "@sentry/nextjs";
 
+function redactSharedUrl(value: string): string {
+  // Shared state is percent-encoded, so its payload cannot contain literal whitespace.
+  return value.replace(/#share=[^\s]*/gi, "#share=[Filtered]");
+}
+
+function sanitizeUrlData(data: Record<string, unknown> | undefined): void {
+  if (!data) return;
+  // SDK URL attributes are flat strings; do not traverse arbitrary application data.
+  for (const [key, value] of Object.entries(data)) {
+    if (typeof value === "string") data[key] = redactSharedUrl(value);
+  }
+}
+
+function sanitizeBreadcrumb(breadcrumb: Breadcrumb): Breadcrumb | null {
+  // Console breadcrumbs can contain raw database errors, including parameters.
+  if (breadcrumb.category === "console") return null;
+  if (breadcrumb.message) breadcrumb.message = redactSharedUrl(breadcrumb.message);
+  sanitizeUrlData(breadcrumb.data);
+  return breadcrumb;
+}
+
+function sanitizeSpan(span: SpanJSON): SpanJSON {
+  if (span.description) span.description = redactSharedUrl(span.description);
+  sanitizeUrlData(span.data);
+  return span;
+}
+
+function sanitizeEventUrls<T extends ErrorEvent | TransactionEvent>(event: T): T {
+  if (event.request?.url) event.request.url = redactSharedUrl(event.request.url);
+  if (event.message) event.message = redactSharedUrl(event.message);
+  if (event.logentry?.message) event.logentry.message = redactSharedUrl(event.logentry.message);
+  if (event.transaction) event.transaction = redactSharedUrl(event.transaction);
+  sanitizeUrlData(event.contexts?.trace?.data);
+  sanitizeUrlData(event.sdkProcessingMetadata?.dynamicSamplingContext);
+  if (event.breadcrumbs) {
+    event.breadcrumbs = event.breadcrumbs.map(sanitizeBreadcrumb).filter((breadcrumb) => breadcrumb !== null);
+  }
+  for (const span of event.spans ?? []) sanitizeSpan(span);
+  for (const exception of event.exception?.values ?? []) {
+    if (exception.value) exception.value = redactSharedUrl(exception.value);
+    for (const frame of exception.stacktrace?.frames ?? []) {
+      if (frame.filename) frame.filename = redactSharedUrl(frame.filename);
+      if (frame.abs_path) frame.abs_path = redactSharedUrl(frame.abs_path);
+    }
+  }
+  return event;
+}
+
 export function sanitizeSentryError(event: ErrorEvent): ErrorEvent {
+  sanitizeEventUrls(event);
   for (const exception of event.exception?.values ?? []) {
     if (!exception.value) continue;
     // Drizzle embeds SQL and bound parameters in its error message.
@@ -32,9 +89,10 @@ export const sentryOptions = {
     stackFrameVariables: false,
     genAI: { inputs: false, outputs: false },
   },
-  // Console breadcrumbs can contain raw database errors, including parameters.
-  beforeBreadcrumb: (breadcrumb) => (breadcrumb.category === "console" ? null : breadcrumb),
+  beforeBreadcrumb: sanitizeBreadcrumb,
   beforeSend: sanitizeSentryError,
+  beforeSendTransaction: sanitizeEventUrls,
+  beforeSendSpan: sanitizeSpan,
 } satisfies Options;
 
 export function initializeSentry(): void {

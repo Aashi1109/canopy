@@ -18,7 +18,8 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => ({
     .split(/\r\n|\r|\n/)
     .map((line) =>
       words(line)
-        .map((word) => word.toLocaleLowerCase())
+        // Shared links must produce the same slug regardless of the browser locale.
+        .map((word) => word.toLowerCase())
         .join("-"),
     )
     .filter(Boolean)

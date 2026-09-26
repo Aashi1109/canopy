@@ -51,14 +51,14 @@ export default {
   },
   content: {
     howToUse: [
-      "Paste the stylesheet. Comments are removed, runs of whitespace collapse, and the spaces around `{`, `}`, `:`, `;`, `,`, `>`, `+`, and `~` are dropped.",
+      "Paste the stylesheet. Comments and redundant spacing are removed. Quoted strings and required spacing around + inside CSS functions are preserved.",
       "Minify, then copy the result into a `<style>` block or a `.css` file.",
       "Test the minified stylesheet in a browser before shipping it — see the limitations for the constructs this pass gets wrong.",
       "For a production build pipeline, use cssnano or Lightning CSS. This is for a quick one-off shrink.",
     ],
     limitations: [
       "This is a regex pass, not a CSS parser. Rule merging only combines adjacent flat rules with identical bodies, and colour normalization only shortens reducible HEX values.",
-      "It does not respect strings or `url()` values, so a comment-like or delimiter-like sequence inside a quoted string or a data URI can be corrupted. Data URIs are the most common casualty.",
+      "Quoted strings are preserved, but unquoted `url()` data containing comment markers or structural delimiters is not fully parsed. Quote complex data URIs before minifying.",
       "Preserved `/*! ... */` licence comments are stripped along with everything else.",
       "The final `;` before a `}` is removed, which is safe, but no other structural change is attempted.",
       "There is no source map output.",
@@ -66,7 +66,7 @@ export default {
     faq: [
       {
         q: "Will this break my stylesheet?",
-        a: "Usually not, but it can if you have quoted strings or `url()` data URIs containing `/*`, `{`, or `;`. Diff the output and test in a browser.",
+        a: "Quoted strings and CSS math spacing are preserved. Complex unquoted `url()` data remains a limitation; diff the output and test in a browser.",
       },
       {
         q: "Does it preserve licence comments?",

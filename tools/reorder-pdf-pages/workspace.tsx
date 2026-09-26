@@ -61,6 +61,7 @@ export default function ReorderPdfPagesWorkspace(props: WorkspaceProps) {
   return (
     <FileProcessorWorkspace
       {...props}
+      compactFileToolbar
       detail={({ disabled, inspecting, previews }) => (
         <PageOrder
           disabled={disabled}

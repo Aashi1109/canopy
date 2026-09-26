@@ -21,7 +21,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       .split(/(\s+)/u)
       .filter((part) => {
         if (/^\s+$/u.test(part)) return true;
-        const key = part.toLocaleLowerCase();
+        const key = part.toLowerCase();
         if (seen.has(key)) return false;
         seen.add(key);
         return true;

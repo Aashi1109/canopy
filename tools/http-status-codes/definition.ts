@@ -2,12 +2,14 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.http-status-codes",
+  sharing: { version: 1 },
   app: "devtools",
   slug: "http-status-codes",
   category: "jwt-api-tools",
   keywords: ["http", "status code", "404", "500", "reference", "lookup", "response"],
   name: "HTTP Status Code Lookup",
   description: "Look up common HTTP status codes by code or phrase.",
+  resultView: { default: "preview", previewLabel: "Details" },
   input: {
     kind: "fields",
     label: "Status Code or Phrase",
@@ -66,12 +68,12 @@ export default {
   content: {
     howToUse: [
       "Type a number (404), a partial number (40 matches the whole 4xx family listed here), or part of a phrase (gateway).",
-      'Results filter as you type and show every match as "<code> <reason phrase>".',
+      "Results filter as you type. Details explains each status and what to check; Raw keeps the code and reason phrase ready to copy.",
       "Use a shorter query when you want to broaden the result list.",
     ],
     limitations: [
       "This is a curated list of the codes that appear in everyday work, not the complete IANA registry. WebDAV, extension, and vendor-specific codes are not included.",
-      "Only the code and its reason phrase are shown — there is no description of when to use each one.",
+      "Explanations describe HTTP semantics. A status code alone cannot identify the exact cause in your application.",
       "Matching is a substring search over both the code and the phrase, so short queries match broadly.",
     ],
     faq: [

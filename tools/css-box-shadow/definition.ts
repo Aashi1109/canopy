@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.css-box-shadow",
+  sharing: { version: 1 },
   // `slugFromName("CSS Box Shadow Generator")` is "css-box-shadow-generator",
   // but the live indexed URL is /devtools/css-box-shadow and a slug is frozen
   // at first insert — so it is declared explicitly rather than derived.
@@ -28,8 +29,8 @@ export default {
   settings: {
     fields: {
       layers: { kind: "textarea", label: "Visual shadow layers", default: "", help: "Visual layer editor data." },
-      previewBackground: { kind: "color", label: "Preview background", default: "#f1f5f9" },
-      previewObject: { kind: "color", label: "Object color", default: "#ffffff" },
+      previewBackground: { kind: "color", label: "Preview background", default: "#f1f5f9", allowTransparent: true },
+      previewObject: { kind: "color", label: "Object color", default: "#ffffff", allowTransparent: true },
       x: {
         kind: "number",
         label: "X offset",

@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.json-to-typescript",
+  sharing: { version: 1 },
   app: "devtools",
   category: "json-tools",
   keywords: ["json", "typescript", "interface", "types", "codegen", "schema", "dto"],

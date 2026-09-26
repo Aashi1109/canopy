@@ -1,12 +1,11 @@
 "use client";
 
-import { Settings } from "lucide";
 import { Globe, Search } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 
 import { ResultSurface } from "@/components/ResultSurface";
 import { SettingsPanel } from "@/components/SettingsPanel";
-import { ScrollRegion, SplitStack, Stack } from "@/components/Stacks";
+import { ScrollRegion, SettingsStack, Stack } from "@/components/Stacks";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import {
   Button,
@@ -108,16 +107,7 @@ export default function DomainAgeWorkspace(props: WorkspaceProps) {
   }, [props.onToolbarActionsChange]);
 
   return (
-    <SplitStack
-      className="h-full"
-      collapsedIcon={Settings}
-      collapseLabel="settings panel"
-      collapseSide="secondary"
-      collapsible
-      defaultCollapsed="secondary"
-      defaultSize={75}
-      minSize={75}
-    >
+    <SettingsStack className="h-full" defaultCollapsed="secondary" defaultSize={75} minSize={75}>
       <Stack className="h-full">
         <form
           className="shrink-0 space-y-2 border-b border-border p-4"
@@ -206,6 +196,6 @@ export default function DomainAgeWorkspace(props: WorkspaceProps) {
           values={props.settings}
         />
       </ToolOptionsPanel>
-    </SplitStack>
+    </SettingsStack>
   );
 }

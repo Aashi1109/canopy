@@ -365,7 +365,7 @@ export default function OpenGraphWorkspace(props: WorkspaceProps) {
               </>
             ) : undefined
           }
-          className="h-full max-[64rem]:h-auto max-[64rem]:min-h-64 max-[64rem]:shrink-0 [&>[data-slot=workspace-header]]:flex-wrap [&>[data-slot=workspace-header]]:gap-y-2 [&>[data-slot=workspace-header]]:py-2"
+          className="h-full max-[64rem]:h-auto max-[64rem]:min-h-64 max-[64rem]:shrink-0"
           purpose="inspector"
           scroll="content"
           state={result && state === "ready" ? "ready" : "empty"}

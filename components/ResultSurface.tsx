@@ -1,11 +1,11 @@
 "use client";
 
-import { Upload } from "lucide-react";
+import { Code2, Eye, Upload } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
 import { getResultCount, ResultActions, ResultView, type ResultViewProps } from "@/components/ResultView";
 import { WorkspaceSurface } from "@/components/Surfaces";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/index.tsx";
+import { Button, ButtonGroup, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/index.tsx";
 import type { ToolResult } from "@/lib/tool-framework/result";
 import type { ToolSpec } from "@/lib/tool-framework/spec";
 
@@ -13,6 +13,8 @@ export interface ResultSurfaceProps {
   colorPreviews?: boolean;
   downloadMenu?: boolean;
   error?: string;
+  /** Tool controls that remain available before a result exists. */
+  headerActions?: ReactNode;
   initialJsonView?: ResultViewProps["initialJsonView"];
   result: ToolResult | null;
   /** Display-only snapshot while a replacement is prepared; never used for export actions. */
@@ -31,6 +33,7 @@ export function ResultSurface({
   colorPreviews = false,
   downloadMenu = false,
   error,
+  headerActions,
   initialJsonView,
   result,
   retainedResult,
@@ -81,11 +84,22 @@ export function ResultSurface({
       : result && "truncated" in result && result.truncated
         ? `${resultCount} SHOWN`
         : `${resultCount} ${result?.render === "table" ? "ROWS" : "READY"}`;
-  const cardJson = result?.render === "json-tree" && variant === "card";
+  const jsonActionsInHeader = result?.render === "json-tree" && (variant === "card" || hasPreview);
+  const fileActionsInHeader =
+    visibleResult?.render === "files" &&
+    visibleResult.files.length === 1 &&
+    Boolean(spec.capabilities?.download) &&
+    !downloadMenu &&
+    !renderResultActions;
   const hasResultActions =
-    result?.render !== "files" &&
-    Boolean(cardJson || (result?.render !== "json-tree" && (spec.capabilities?.copy || spec.capabilities?.download)));
-  const jsonHeader = result?.render === "json-tree" && !cardJson ? <span className="sr-only">{title}</span> : undefined;
+    fileActionsInHeader ||
+    (result?.render !== "files" &&
+      Boolean(
+        jsonActionsInHeader ||
+        (result?.render !== "json-tree" && (spec.capabilities?.copy || spec.capabilities?.download)),
+      ));
+  const jsonHeader =
+    result?.render === "json-tree" && !jsonActionsInHeader ? <span className="sr-only">{title}</span> : undefined;
   const content = visibleResult ? (
     renderPreview && resultView === "preview" ? (
       renderPreview(visibleResult)
@@ -95,12 +109,14 @@ export function ResultSurface({
       <ResultView
         colorPreviews={colorPreviews}
         hideArtifacts={downloadMenu}
-        hideJsonHeader={cardJson || showingJsonPreview}
+        hideFileActions={fileActionsInHeader}
+        hideJsonHeader={jsonActionsInHeader || showingJsonPreview}
         hideStats={spec.resultStats === "status-only"}
         htmlPreview={htmlTablePreview && resultView === "raw"}
         initialJsonView={showingJsonPreview ? "read-only" : initialJsonView}
         jsonHeader={jsonHeader}
         language={spec.outputLanguage}
+        showLineNumbers={spec.outputShowLineNumbers}
         markdownPreview={markdownPreview && resultView === "preview"}
         previewLayout={spec.previewLayout}
         result={
@@ -121,26 +137,38 @@ export function ResultSurface({
     >
       <WorkspaceSurface
         actions={
-          hasPreview || (result && renderResultActions) || hasResultActions ? (
+          headerActions || hasPreview || (result && renderResultActions) || hasResultActions ? (
             <>
+              {headerActions}
               {hasPreview ? (
-                <TabsList aria-label="Result view" variant="pills">
-                  {resultViews.map((view) => (
-                    <TabsTrigger key={view} value={view}>
-                      {view === "raw"
-                        ? "Raw"
-                        : (spec.resultView?.previewLabel ??
-                          (jsonPreview ? "Tree" : tablePreview && !htmlTablePreview ? "Table" : "Preview"))}
-                    </TabsTrigger>
-                  ))}
+                <TabsList asChild className="mr-2 gap-0 border-0 p-0">
+                  <ButtonGroup aria-label="Result view">
+                    {resultViews.map((view) => (
+                      <Button
+                        asChild
+                        key={view}
+                        variant="outline"
+                        size="sm"
+                        className="data-[state=active]:bg-accent data-[state=active]:text-primary"
+                      >
+                        <TabsTrigger value={view} className="flex-none after:hidden">
+                          {view === "raw" ? <Code2 aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                          {view === "raw"
+                            ? "Raw"
+                            : (spec.resultView?.previewLabel ??
+                              (jsonPreview ? "Tree" : tablePreview && !htmlTablePreview ? "Table" : "Preview"))}
+                        </TabsTrigger>
+                      </Button>
+                    ))}
+                  </ButtonGroup>
                 </TabsList>
               ) : null}
               {result && renderResultActions ? (
                 renderResultActions(result)
               ) : hasResultActions ? (
                 <ResultActions
-                  canCopy={cardJson || Boolean(spec.capabilities?.copy)}
-                  canDownload={cardJson || Boolean(spec.capabilities?.download)}
+                  canCopy={jsonActionsInHeader || Boolean(spec.capabilities?.copy)}
+                  canDownload={jsonActionsInHeader || Boolean(spec.capabilities?.download)}
                   downloadMenu={downloadMenu}
                   result={result}
                 />
@@ -158,7 +186,7 @@ export function ResultSurface({
             </span>
           ) : undefined
         }
-        metaPosition="start"
+        metaPosition={hasPreview && !updateStatus ? "actions" : "start"}
         purpose="result"
         state={state}
         stateDescription={error ?? (running ? spec.labels.running : spec.labels.empty)}
@@ -166,7 +194,7 @@ export function ResultSurface({
         stateTitle={error ? "Unable to create the result" : running ? spec.labels.running : "Result will appear here"}
         status={
           updateStatus ? undefined : state === "ready" ? (
-            variant === "card" ? undefined : (
+            variant === "card" || (hasPreview && resultCount === null) ? undefined : (
               <span className="text-foreground">{resultStatus}</span>
             )
           ) : state === "empty" ? (

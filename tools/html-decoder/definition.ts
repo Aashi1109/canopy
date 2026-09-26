@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.html-decoder",
+  sharing: { version: 1 },
   app: "devtools",
   category: "encoding-decoding",
   keywords: ["html", "decode", "entities", "unescape", "amp", "nbsp", "numeric"],
@@ -9,6 +10,7 @@ export default {
   description: "Decode named and numeric HTML entities.",
   layout: "stacked",
   outputLanguage: "html",
+  outputShowLineNumbers: true,
   input: {
     kind: "text",
     label: "Encoded entities",

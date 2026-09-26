@@ -12,12 +12,23 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const TOOLS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "tools");
 
-// domain-age-checker performs a live RDAP lookup. Stub only rdap.org so the
-// fixture runs deterministically offline; every other request passes through.
+// Network-backed fixtures use fixed provider replies, independent of DNS/RDAP
+// availability and changing public records. Every other request passes through.
 const realFetch = globalThis.fetch;
 beforeAll(() => {
   vi.stubGlobal("fetch", async (url, init) => {
     const href = typeof url === "string" ? url : (url?.url ?? String(url));
+    if (href.startsWith("https://dns.google/resolve?")) {
+      const query = new URL(href).searchParams;
+      expect(Object.fromEntries(query)).toEqual({ name: "example.com", type: "MX", rd: "1" });
+      return new Response(
+        JSON.stringify({
+          Status: 0,
+          Answer: [{ name: "example.com.", type: 15, TTL: 300, data: "10 mail.example.com." }],
+        }),
+        { status: 200, headers: { "content-type": "application/dns-json" } },
+      );
+    }
     if (href.includes("rdap.org/domain/")) {
       return new Response(JSON.stringify({ ldhName: "example.com", events: [], status: [], nameservers: [] }), {
         status: 200,

@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.html-encoder",
+  sharing: { version: 1 },
   app: "devtools",
   category: "encoding-decoding",
   keywords: ["html", "encode", "entities", "escape", "xss", "sanitize"],
@@ -11,6 +12,7 @@ export default {
   input: {
     kind: "text",
     language: "html",
+    showLineNumbers: true,
     label: "HTML or text",
     placeholder: '<button title="Save & close">Save</button>',
   },

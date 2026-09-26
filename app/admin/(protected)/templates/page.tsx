@@ -3,6 +3,7 @@ import { AdminListing } from "@/app/admin/(protected)/components/AdminListing";
 import { adminPageHref, paginateAdminItems } from "../lib/pagination";
 import { DOCUMENT_TYPES } from "@/lib/invoice-templates/index.ts";
 import {
+  Button,
   Caption,
   Text,
   EmptyState,
@@ -190,13 +191,14 @@ export default async function TemplatesPage({
                       </time>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link
-                        aria-label={`Edit details for ${template.name}`}
-                        className="inline-grid size-9 place-items-center rounded-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                        href={appHref(`/admin/templates/${template.id}/manage`)}
-                      >
-                        <Ellipsis aria-hidden="true" className="size-[18px]" />
-                      </Link>
+                      <Button asChild className="text-muted-foreground" size="icon" variant="ghost">
+                        <Link
+                          aria-label={`Edit details for ${template.name}`}
+                          href={appHref(`/admin/templates/${template.id}/manage`)}
+                        >
+                          <Ellipsis aria-hidden="true" className="size-[18px]" />
+                        </Link>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );

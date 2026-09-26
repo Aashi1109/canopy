@@ -2,6 +2,7 @@ import { HighlightStyle, StreamLanguage, syntaxHighlighting, syntaxTree } from "
 import type { Extension } from "@codemirror/state";
 import { Decoration, ViewPlugin, type EditorView, type ViewUpdate } from "@codemirror/view";
 import type { Tree } from "@lezer/common";
+import { Tag } from "@lezer/highlight";
 
 const loadedLanguages = new Map<string, Promise<Extension>>();
 
@@ -104,8 +105,207 @@ function createDelimitedLanguage(tabSeparated: boolean) {
   });
 }
 
+function createJwtLanguage(): Extension {
+  const parts = ["jwtHeader", "jwtPayload", "jwtSignature"];
+  const partTags = parts.map(() => Tag.define());
+  return [
+    StreamLanguage.define({
+      name: "jwt",
+      startState: () => ({ part: 0 }),
+      tokenTable: Object.fromEntries(parts.map((part, index) => [part, partTags[index]])),
+      token(stream, state) {
+        if (stream.eatSpace()) return null;
+        if (stream.eat(".")) {
+          state.part = Math.min(state.part + 1, parts.length);
+          return null;
+        }
+        if (stream.match(/^[A-Za-z0-9_-]+/)) return parts[state.part] ?? null;
+        stream.next();
+        return null;
+      },
+    }),
+    syntaxHighlighting(
+      HighlightStyle.define([
+        { tag: partTags[0], color: "var(--syntax-bracket-3)" },
+        { tag: partTags[1], color: "var(--syntax-bracket-2)" },
+        { tag: partTags[2], color: "var(--syntax-string)" },
+      ]),
+    ),
+  ];
+}
+
+function createUrlLanguage(): Extension {
+  return StreamLanguage.define({
+    name: "url",
+    startState: () => ({ part: "start" }),
+    token(stream, state) {
+      if (stream.sol()) state.part = "start";
+      if (stream.eatSpace()) return null;
+      if (state.part === "start") {
+        if (stream.match(/^[a-z][a-z\d+.-]*:/i)) {
+          state.part = "scheme";
+          return "keyword";
+        }
+        if (stream.match("//")) {
+          state.part = "host";
+          return "punctuation";
+        }
+        state.part = stream.peek() === "/" ? "path" : "key";
+        if (stream.eat("?")) return "punctuation";
+      }
+      if (state.part === "scheme") {
+        if (stream.match("//")) {
+          state.part = "host";
+          return "punctuation";
+        }
+        state.part = "path";
+      }
+      if (stream.match(/^%[\da-f]{2}/i)) return "atom";
+      if (state.part === "fragment") {
+        if (!stream.match(/^[^\s%]+/)) stream.next();
+        return "string";
+      }
+      if (stream.eat("#")) {
+        state.part = "fragment";
+        return "punctuation";
+      }
+      if (state.part === "host" || state.part === "path") {
+        if (stream.eat("?")) {
+          state.part = "key";
+          return "punctuation";
+        }
+        if (stream.eat("/")) {
+          state.part = "path";
+          return "punctuation";
+        }
+        if (!stream.match(/^[^\s/?#%]+/)) stream.next();
+        return state.part === "host" ? "link" : "string";
+      }
+      if (stream.eat("&")) {
+        state.part = "key";
+        return "punctuation";
+      }
+      if (state.part === "key" && stream.eat("=")) {
+        state.part = "value";
+        return "punctuation";
+      }
+      if (!stream.match(state.part === "key" ? /^[^\s&=#%]+/ : /^[^\s&#%]+/)) stream.next();
+      return state.part === "key" ? "keyword" : "string";
+    },
+  });
+}
+
+function createQrLanguage(): Extension {
+  return StreamLanguage.define({
+    name: "qr",
+    startState: () => ({ mode: "plain", part: "", vcard: false }),
+    token(stream, state) {
+      if (stream.sol()) {
+        const beginsVcard = /^\s*BEGIN:VCARD\s*$/i.test(stream.string);
+        state.mode =
+          state.vcard || beginsVcard
+            ? "vcard"
+            : /^\s*WIFI:/i.test(stream.string)
+              ? "wifi"
+              : /^\s*(?:[a-z][a-z\d+.-]*:\/\/|(?:https?|ftp|mailto|tel|sms|geo):)/i.test(stream.string)
+                ? "url"
+                : "plain";
+        state.part = state.mode === "vcard" ? (state.vcard && /^\s/.test(stream.string) ? "value" : "key") : "prefix";
+        if (beginsVcard) state.vcard = true;
+        if (/^END:VCARD\s*$/i.test(stream.string)) state.vcard = false;
+      }
+      if (state.mode === "plain") {
+        stream.skipToEnd();
+        return null;
+      }
+      if (state.mode === "url") {
+        if (stream.eatSpace()) {
+          if (state.part !== "prefix") state.mode = "plain";
+          return null;
+        }
+        if (state.part === "prefix" && stream.match(/^[a-z][a-z\d+.-]*:/i)) {
+          state.part = "host";
+          return "keyword";
+        }
+        if (state.part === "fragment" && stream.match(/^\S+/)) return "string";
+        if (state.part === "host" && stream.match("//")) return "punctuation";
+        if (stream.match(/^[/?&#=:]/)) {
+          const separator = stream.current();
+          if (separator === "/") state.part = "path";
+          if (separator === "?" || separator === "&") state.part = "key";
+          if (separator === "=") state.part = "value";
+          if (separator === "#") state.part = "fragment";
+          return "punctuation";
+        }
+        if (stream.match(/^[^\s/?&#=:]+/)) {
+          return state.part === "host" ? "link" : state.part === "key" ? "keyword" : "string";
+        }
+      } else if (state.mode === "wifi") {
+        if (state.part === "prefix") {
+          if (stream.eatSpace()) return null;
+          if (stream.match(/^WIFI:/i)) {
+            state.part = "key";
+            return "keyword";
+          }
+        }
+        if (stream.eat(";")) {
+          state.part = "key";
+          return "punctuation";
+        }
+        if (state.part === "value") {
+          if (!stream.match(/^(?:\\.|[^\\;])+/)) stream.next();
+          return "string";
+        }
+        if (stream.eat(":")) {
+          state.part = "value";
+          return "punctuation";
+        }
+        if (stream.match(/^[a-z][a-z\d_-]*/i)) return "keyword";
+      } else {
+        if (state.part === "value") {
+          stream.skipToEnd();
+          return "string";
+        }
+        if (stream.eatSpace()) return null;
+        if (stream.match(/^[;=:]/)) {
+          state.part = stream.current() === ":" ? "value" : stream.current() === "=" ? "parameterValue" : "key";
+          return "punctuation";
+        }
+        if (state.part === "parameterValue" && stream.match(/^(?:"(?:\\.|[^"\\])*"?|[^;:\s]+)/)) return "string";
+        if (stream.match(/^[a-z\d.-]+/i)) return "keyword";
+      }
+      stream.next();
+      return null;
+    },
+  });
+}
+
 async function importLanguage(language: string): Promise<Extension> {
   switch (language) {
+    case "url":
+      return createUrlLanguage();
+    case "url-encoded":
+      return StreamLanguage.define({
+        name: "url-encoded",
+        token(stream) {
+          if (stream.match(/^%[\da-f]{2}/i)) return "atom";
+          if (!stream.match(/^[^%]+/)) stream.next();
+          return null;
+        },
+      });
+    case "unicode":
+      return StreamLanguage.define({
+        name: "unicode",
+        token(stream) {
+          if (stream.match(/^\\u(?:\{[\da-f]{1,6}\}|[\da-f]{4})/i)) return "atom";
+          if (!stream.match(/^[^\\]+/)) stream.next();
+          return null;
+        },
+      });
+    case "jwt":
+      return createJwtLanguage();
+    case "qr":
+      return createQrLanguage();
     case "json":
       return (await import("@codemirror/lang-json")).json();
     case "js":

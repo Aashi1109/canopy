@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.duplicate-word-remover",
+  sharing: { version: 1 },
   app: "devtools",
   category: "text-tools",
   keywords: ["duplicate", "words", "remove", "dedupe", "unique", "text", "clean"],

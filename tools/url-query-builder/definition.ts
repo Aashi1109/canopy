@@ -2,12 +2,14 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.url-query-builder",
+  sharing: { version: 1 },
   app: "devtools",
   category: "jwt-api-tools",
   keywords: ["url", "query string", "querystring", "parameters", "encode", "builder", "search params"],
   name: "URL Query Builder",
   description: "Append key/value query rows to a base URL.",
-  layout: "stacked",
+  layout: "side-by-side",
+  inputSize: { default: 55, min: 35 },
   input: {
     kind: "fields",
     label: "Base URL and query rows",
@@ -31,11 +33,11 @@ export default {
       parameters: {
         kind: "rows",
         label: "Query parameters",
-        help: "Add key/value pairs alongside any rows entered above.",
+        help: "Add a key and value for each parameter. Repeat a key to include multiple values.",
         default: [],
         keyLabel: "Parameter key",
         valueLabel: "Value",
-        pane: "main",
+        pane: "input",
         span: "full",
       },
       encodeValues: {
@@ -62,14 +64,14 @@ export default {
   capabilities: { copy: true, download: true },
   workbenchMark: { text: "?+=" },
   labels: {
-    empty: "Provide a base URL and any key=value query rows to build the URL.",
+    empty: "Enter a base URL, then add any query parameters you need.",
     ready: "The URL is ready to copy or download.",
     running: "Building the URL…",
   },
   content: {
     howToUse: [
       "Put the absolute http or https base URL in the first field. Any query string already on it is kept.",
-      "List parameters as `key=value` lines or add key/value rows below. Values are trimmed and encoded by default; turn encoding off only when the destination expects raw values.",
+      "Add parameters in the key/value rows, or use Paste multiple to import key=value lines. Values are trimmed and encoded by default; turn encoding off only when the destination expects raw values.",
       "Repeat a key on several lines to send it more than once — `tag=dev` and `tag=web` produce `tag=dev&tag=web`.",
     ],
     limitations: [

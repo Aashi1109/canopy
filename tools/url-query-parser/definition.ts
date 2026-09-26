@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.url-query-parser",
+  sharing: { version: 1 },
   app: "devtools",
   category: "jwt-api-tools",
   keywords: ["url", "query string", "parameters", "parse", "json", "utm", "searchparams"],
@@ -18,6 +19,7 @@ export default {
       {
         channel: "text",
         label: "URL or query string",
+        language: "url",
         placeholder: "https://example.com/search?q=smart+tools&tag=web",
         required: true,
         multiline: true,

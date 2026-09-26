@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.hex-to-hsl",
+  sharing: { version: 1 },
   app: "devtools",
   category: "color-design-tools",
   keywords: ["hex", "hsl", "color", "convert", "css", "hue", "saturation"],

@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.duplicate-line-remover",
+  sharing: { version: 1 },
   app: "devtools",
   category: "text-tools",
   keywords: ["duplicate", "dedupe", "unique lines", "remove duplicates", "uniq", "list"],
@@ -46,7 +47,7 @@ export default {
     limitations: [
       "Comparison is exact on the whole line. Two entries differing by a trailing comma, a quote, or an internal double space are different lines.",
       "'Trim lines' also changes the output: kept lines are emitted trimmed, not in their original indentation.",
-      "Case folding uses the browser's locale rules, so a few locale-specific pairs (Turkish dotted/dotless i) fold differently than you may expect.",
+      "Case folding uses Unicode lowercase rules independent of browser locale, so shared links preserve the same lines. Turkish dotted and dotless i remain distinct.",
       "Line endings are normalised to `\\n`, and a blank line is an entry like any other — the first blank is kept, later ones are dropped.",
       "This does not sort. Use the Text Sorter if you want the result ordered.",
     ],

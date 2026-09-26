@@ -1,8 +1,6 @@
 /**
- * Moved verbatim from the `http-status-codes` case and `HTTP_STATUSES` in
- * `lib/devtools/format-json.ts`. The table has one consumer, so it stays in
- * this folder. The captured fixture was checked rather than assumed: a bare
- * code query returns the single "<code> <phrase>" line, not a description.
+ * Keeps the copyable code/phrase lines and exposes the same matches as
+ * structured rows for the tool's readable result preview.
  */
 
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
@@ -45,7 +43,7 @@ const HTTP_STATUSES: Readonly<Record<number, string>> = {
 };
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
-  const query = ctx.input.text.trim().toLocaleLowerCase();
+  const query = ctx.input.text.trim().toLowerCase();
   const category = ctx.settings.category ?? "all";
   const searchMode = ctx.settings.searchMode ?? "code-and-phrase";
   const matches = Object.entries(HTTP_STATUSES).filter(([code, phrase]) => {
@@ -53,19 +51,20 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     if (!query) return true;
     return (
       (searchMode !== "phrase-only" && code.includes(query)) ||
-      (searchMode !== "code-only" && phrase.toLocaleLowerCase().includes(query))
+      (searchMode !== "code-only" && phrase.toLowerCase().includes(query))
     );
   });
   if (!matches.length) {
     throw new ToolError(
       "no-match",
       "No matching HTTP status code was found.",
-      "Try a shorter query, or clear the box to browse every code.",
+      "Try a shorter query, select All categories, or change the search mode to Code + phrase.",
     );
   }
   return {
     render: "text",
     text: matches.map(([code, phrase]) => `${code} ${phrase}`).join("\n"),
+    tablePreview: { render: "table", columns: ["Code", "Reason phrase"], rows: matches },
   };
 };
 

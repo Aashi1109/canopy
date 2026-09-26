@@ -176,6 +176,16 @@ Five families, all loaded via `next/font/google` in `app/layout.tsx` (`display: 
 
 **Code editors:** use `CodeEditor` from `components/content/CodeEditor` for editable code and scrollable code results. It lazy-loads CodeMirror and the selected language, reuses incremental syntax trees, and renders visible content with rainbow structural brackets. Brackets in strings and comments retain their syntax color. Subtle indentation guides show nested code blocks, with the active block emphasized while the editor has focus. Guides use bounded visible-line work and stop before wrapped continuation text; CSV and TSV retain their plain tabular layout. The folding gutter collapses supported multiline blocks in editable and read-only editors; click the arrow or the folded ellipsis to expand. Native folding shortcuts remain available, and search reveals matches inside folded blocks. The editor fills a bounded flex/grid container; use `min-h-0` and an explicit parent height so long documents remain virtualized. Set an accessible name, preserve Tab navigation, and use `readOnly` for selectable output. Single-textarea workspaces use the full input panel without an inner card or duplicate label. Boxed editors are reserved for workspaces with additional input fields. `SourceTextarea` selects this editor when given a `language`; text tool definitions declare `input.language` (or each multiline field's `language`) and `outputLanguage`. JSON, XML/HTML, YAML, JavaScript/TypeScript, CSS, shell, SQL, Markdown, CSV, TSV, and Mermaid have language support. Every CodeEditor language shows a top-right icon-only **Wrap lines** toggle with an accessible pressed state. CSV and TSV inputs start with wrapping on and their outputs start off; all other languages start off for both inputs and outputs. The on state uses `bg-accent` (`#e8f0ff`) with `text-accent-foreground`; the off state uses the muted input-icon color. Tooltips read **Text wrapping on · Click to disable** or **Text wrapping off · Click to enable**. The display choice lasts only for that editor instance; regenerated results reset to wrapping off. Copy/download continue to use the original result regardless of wrapping. Static inline samples can still compose `CodeBlock` with `SyntaxHighlight`; its 65,536-character plain-text fallback does not limit the CodeMirror editors.
 
+Tool definitions can set `input.showLineNumbers` for the primary text input and `outputShowLineNumbers` for code results; omitted options preserve the workspace defaults (hidden for card inputs and code results).
+
+Use language `unicode` to highlight `\uXXXX` and `\u{...}` escapes within plain text. Both `CodeEditor` and `SyntaxHighlight` color the escape sequences without decoding them or coloring surrounding prose.
+
+Use language `url-encoded` for percent-encoded text. Both highlighters color `%HH` triplets, including consecutive UTF-8 bytes, while keeping ordinary URL text and literal `+` signs unchanged.
+
+Use `CodeEditor` language `url` for URLs and query strings. It distinguishes the address, parameter names, values, separators, and percent escapes without decoding or changing the text. URL inputs wrap by default and do not load autocomplete.
+
+Use language `robots` with `SyntaxHighlight` for robots.txt output. Directive names, values, and comments receive distinct colors while copy and download retain the original text.
+
 **Editor loading and suggestions:** the editing core loads independently of autocomplete. Language support waits until the page finishes loading and the browser is idle, because some language packages include completion code. Suggestions initialize only after a supported editable editor receives focus, through the same cancellable idle boundary. Read-only editors never activate suggestions. Loading failures leave text editable; late features preserve the document, cursor and undo history. Keep future completion providers behind this shared boundary. Mermaid uses the community `codemirror-lang-mermaid` grammar for supported diagram families, basic viewport-only coloring for additional types, and a separate deferred keyword/snippet provider. Ctrl+Space opens suggestions; automatic suggestions are disabled for documents above 100,000 characters, retaining manual completion.
 
 ```tsx
@@ -268,6 +278,8 @@ So headings and focus rings are correct without any class. Do not re-declare the
 
 `ResizableHandle` uses a thin divider with a 24px pointer target and an optional 3 × 24px rounded grip mark centered on the line. The neutral mark has no surrounding box, border, shadow, or halo. The divider gains a faint primary tint on hover and keyboard focus (20% opacity), slightly stronger during dragging (30%); the small grip carries the full accent. Handles without a grip use a neutral keyboard focus indicator. `SplitStack` enables the grip on expanded resizable workspaces, except where the centered collapse control already occupies that position. Keep panel `defaultSize` values stable while mounted; resize through the panel API instead so active gestures are not interrupted.
 
+Settings drawers must use `SettingsStack` from `components/Stacks.tsx` so their gear icon, accessible label, and collapse behavior stay consistent across tool families; use generic `SplitStack` for other pane relationships.
+
 ### Actions
 
 | Component          | Source             | Variants                                                                                                                                                                                                                                                                                                                                                 |
@@ -277,6 +289,8 @@ So headings and focus rings are correct without any class. Do not re-declare the
 | `ButtonGroup`      | `button-group.tsx` | `orientation: horizontal \| vertical`                                                                                                                                                                                                                                                                                                                    |
 | `CompactAction`    | `patterns.tsx`     | pre-bound `Button size="sm" variant="outline"` at 32px                                                                                                                                                                                                                                                                                                   |
 | `RemoveFileAction` | `patterns.tsx`     | pre-bound icon button, `aria-label="Remove file"`                                                                                                                                                                                                                                                                                                        |
+
+Neutral actions (`outline`, `secondary`, `ghost`, and `input-icon`) share the same hover and pressed colors: `accent` background with `accent-foreground` text and icons. This applies to media preview/remove controls, toolbar actions, and field icons. Keep these states in `Button`; do not override them in individual tools. Primary and destructive actions retain their semantic colors, and clickable content surfaces use `card-action`.
 
 ### Compact control scale
 
@@ -295,6 +309,8 @@ Selection marks are not their hit areas: checkbox primitives retain at least 24p
 Select menus inherit the owning `SelectTrigger` size through React context, including portalled content and the native-option adapter. Option minimum row height, text, horizontal inset, selected check, group labels, and scroll controls follow the same table; changing the trigger size updates its open menu without per-item props. Menu surface inset stays 4px. Rows may grow for wrapped labels, and selected text uses `accent-text` on `accent` for contrast. Open-state Pencil examples live in `DAGXr → OjgK0`.
 
 ### Forms
+
+`KeyValueFields` (`components/KeyValueFields.tsx`) is the controlled editor for repeated key/value inputs. Keep its Add action beside the compact group heading. Pairs share a row when the component is at least 24rem wide and stack below that width; column labels appear once on wider layouts and above every stacked input. Pass `rows`, `onChange`, and `label`; customize field labels, placeholders, add/remove labels, optional help, and per-row `errors`. Adding focuses the new key; removing focuses the next remaining key or the Add action after the final row. Errors are announced beside their row and associated with both fields. `SettingsPanel` rows and tool-owned parameter forms share this component. The Common fields showcase includes an interactive example.
 
 `CanvasHandle` (`components/canvas-handle.tsx`) is the shared point control for image crops and shape editors: a 16px primary dot with a 2px white border inside an invisible 44px hit area. `selected` adds the selection ring; native button props and refs pass through. Callers provide an accessible name, position, pointer and keyboard behavior, and any selection or slider semantics. Focus and disabled styles stay in the control.
 
@@ -403,15 +419,20 @@ The single `asChild` child must forward `className`, `style`, other DOM props, a
 | `WorkbenchShell`                                                          | `design-system-components.tsx` | `variant: json \| conversion \| media \| utility` (elevation only); req `toolbar`                                                                                         |
 | `JsonFormatterWorkbench` / `DataConversionWorkbench` / `UtilityWorkbench` | same                           | pre-bound `WorkbenchShell` variants                                                                                                                                       |
 | `ToolPageSystemControls`                                                  | same                           | all-optional slots: `children`, `preferences`, `actions`                                                                                                                  |
+| `WorkspacePanelHeader` | `WorkspacePanelHeader.tsx` | Shared 51px panel toolbar and bottom divider. `children` supplies the leading title, status, or `FileChip`; optional `meta` and `actions` sit at the end. Accepts native header attributes. |
 | `FileUploadZone`                                                          | `patterns.tsx`                 | req `title`; optional `description` for formats/limits and `hint` for browse/drop guidance; centered content, 240px minimum height (Pencil `oFvm5`); renders a `<button>` |
 | `FileQueueItem`                                                           | `patterns.tsx`                 | req `metadata`, `name`                                                                                                                                                    |
-| `FileChip` | `file-chip.tsx` | req `file` (name, size, type, lastModified), `onRemove`; optional `disabled`, `details`, `className`. Filename badge with cross; full metadata on hover and keyboard focus. Use at the existing source filename; keep Upload and Paste actions unchanged. |
+| `FileChip` | `file-chip.tsx` | req `file` (name, size, type, lastModified), `onRemove`; optional `disabled`, `details`, `className`. Filename badge with cross; full metadata on hover and keyboard focus. Use only in tool toolbar headers; cards, file queues, settings, and fullscreen previews retain plain filenames and separate remove actions. Keep Upload and Paste actions unchanged. |
 | `DownloadResult` / `RightPanelResult`                                     | `patterns.tsx`                 | req `metadata`, `title`                                                                                                                                                   |
 | `ToolOptionsPanel`                                                        | `patterns.tsx`                 | `variant: card \| plain`                                                                                                                                                  |
 | `HowItWorks`                                                              | `patterns.tsx`                 | req `steps[]` → numbered 3-col `<ol>`                                                                                                                                     |
 | `ToolSupportSections`                                                     | `patterns.tsx`                 | req string `action`, `result`, `source`                                                                                                                                   |
 
 `WorkbenchShell` force-downsizes descendant `[data-slot=button|input|select-trigger]` to 32px. Do not fight it with per-call size props — pass content and let the shell size it.
+
+`WorkspacePanelHeader` owns the fixed 51px height, horizontal padding, single-row layout, and bottom divider for secondary workbench toolbars. `WorkspaceSurface` uses it for `variant="panel"`; compact source-file rows use the same component with `FileChip` as their leading content. Keep descriptions and instructions below the toolbar, never inside its title row. Leading content truncates as space narrows and actions stay on one row. Card headers keep their separate card layout. The Actions section of `/admin/design-system` shows paired input/output headers with helper text below the input divider.
+
+Media file-processing and image-conversion workspaces keep both input and output mounted from the empty state through processing and completion, with options in the shared settings drawer so the two task surfaces retain useful width. Place the primary artifact's `ArtifactDownloadButton` with `variant="toolbar"` in the output header, leaving the body for the preview and progress; do not repeat the primary download in a footer card. Embedded `MediaOutputGallery` instances use `header="sr-only"`, `primaryOutputId` to omit the duplicated primary card download, and `disabled` while processing. Fullscreen previews and individual batch outputs retain their downloads. PDF editors with an options column retain a persistent processed-output section there, including recovery and individual-file downloads.
 
 #### Focus mode
 
@@ -443,13 +464,12 @@ Stateful, own external dependency. Treat as leaf components; do not clone.
 
 ### PDF file workspaces
 
-`components/FileProcessorWorkspace.tsx` keeps the input full-width until a result
-exists. `SplitStack.secondaryHidden` preserves the input while revealing the
-resizable output pane from the right (without animation under reduced motion).
-On mobile the output follows the input. Progress, cancellation, validation, and
-errors remain visible in the input area before a result is available.
-Single-PDF results use `GeneratedPdfPreview` in the output pane, with the file's
-download action beneath it and a full-screen preview available from Expand.
+`components/FileProcessorWorkspace.tsx` keeps the media input and output panes
+mounted before and after processing. The shared panel headers align their
+dividers; file-order guidance sits below the input toolbar. Progress,
+cancellation, and recovery appear with the output. Single-PDF results use
+`GeneratedPdfPreview` in the output pane, with the file's download action in the
+output toolbar and a full-screen preview available from Expand.
 
 `components/PdfFileWorkspace.tsx` supplies the shared Split PDF and Extract PDF
 Pages shell: centered intake, source `PdfViewer`, right-side settings, and the

@@ -10,9 +10,9 @@ import {
   Button,
   ContentState,
   FileQueueItem,
-  FileChip,
   FileUploadZone,
   StatusBadge,
+  WorkspacePanelHeader,
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -115,50 +115,57 @@ function WorkspaceSurface({
   );
   const workspaceHeader =
     header === "visible" ? (
-      <header
-        className={cn(
-          "@container flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1",
-          variant === "card" ? "min-h-10 px-4 pt-2" : "min-h-[46px] border-b border-border px-4 py-2",
-        )}
-        data-slot="workspace-header"
-      >
-        <div
-          className={cn(
-            "min-w-0",
-            metaPosition === "start" &&
-              "flex flex-1 flex-col items-start gap-1 py-1 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:gap-3 @min-[28rem]:py-0",
-          )}
+      variant === "panel" ? (
+        <WorkspacePanelHeader actions={actions} meta={metaPosition === "actions" ? meta : undefined}>
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center gap-2">
+              {heading}
+              {status != null ? (
+                <StatusBadge className="shrink-0" variant={state === "ready" ? "success" : "neutral"}>
+                  {status}
+                </StatusBadge>
+              ) : null}
+            </div>
+            {metaPosition === "start" && meta != null ? <div className="min-w-0 truncate">{meta}</div> : null}
+          </div>
+        </WorkspacePanelHeader>
+      ) : (
+        <header
+          className="@container flex min-h-10 shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 pt-2"
+          data-slot="workspace-header"
         >
-          <div className="min-w-0 max-w-full shrink-0">
-            {status !== undefined && status !== null ? (
-              <div className="flex min-w-0 items-center gap-2">
-                {heading}
-                {variant === "card" ? (
-                  status
-                ) : (
-                  <StatusBadge className="shrink-0" variant={state === "ready" ? "success" : "neutral"}>
-                    {status}
-                  </StatusBadge>
-                )}
-              </div>
-            ) : (
-              heading
+          <div
+            className={cn(
+              "min-w-0",
+              metaPosition === "start" &&
+                "flex flex-1 flex-col items-start gap-1 py-1 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:gap-3 @min-[28rem]:py-0",
             )}
-            {description ? <Muted className="mt-0.5 truncate text-muted-foreground">{description}</Muted> : null}
+          >
+            <div className="min-w-0 max-w-full shrink-0">
+              {status !== undefined && status !== null ? (
+                <div className="flex min-w-0 items-center gap-2">
+                  {heading}
+                  {status}
+                </div>
+              ) : (
+                heading
+              )}
+              {description ? <Muted className="mt-0.5 truncate text-muted-foreground">{description}</Muted> : null}
+            </div>
+            {metaPosition === "start" && meta != null ? (
+              <div className="flex min-w-0 max-w-full items-center">{meta}</div>
+            ) : null}
           </div>
-          {metaPosition === "start" && meta != null ? (
-            <div className="flex min-w-0 max-w-full items-center">{meta}</div>
+          {metaPosition === "actions" && meta !== undefined && meta !== null ? (
+            <div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center gap-x-3 gap-y-1">
+              <Caption className="min-w-0 truncate text-right text-muted-foreground">{meta}</Caption>
+              {actions ? <div className="flex max-w-full shrink-0 flex-wrap items-center gap-1">{actions}</div> : null}
+            </div>
+          ) : actions ? (
+            <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center gap-1">{actions}</div>
           ) : null}
-        </div>
-        {metaPosition === "actions" && meta !== undefined && meta !== null ? (
-          <div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center gap-x-3 gap-y-1">
-            <Caption className="min-w-0 truncate text-right text-muted-foreground">{meta}</Caption>
-            {actions ? <div className="flex max-w-full shrink-0 flex-wrap items-center gap-1">{actions}</div> : null}
-          </div>
-        ) : actions ? (
-          <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center gap-1">{actions}</div>
-        ) : null}
-      </header>
+        </header>
+      )
     ) : (
       <H2 className="sr-only" id={headingId}>
         {title}
@@ -179,6 +186,9 @@ function WorkspaceSurface({
       {...props}
     >
       {variant === "card" ? null : workspaceHeader}
+      {variant === "panel" && header === "visible" && description ? (
+        <Muted className="shrink-0 px-4 py-3 text-muted-foreground">{description}</Muted>
+      ) : null}
       <div
         className={cn(
           "flex min-h-0 min-w-0 flex-1 flex-col",
@@ -283,10 +293,8 @@ export type FileQueueSurfaceProps<Item> = Omit<WorkspaceSurfaceProps, "children"
   getId: (item: Item) => string;
   getMetadata: (item: Item) => ReactNode;
   getName: (item: Item) => ReactNode;
-  getFile?: (item: Item) => File;
   items: readonly Item[];
   onReorder?: (items: Item[]) => void;
-  onRemove?: (item: Item) => void;
   renderAction?: (item: Item) => ReactNode;
 };
 
@@ -297,10 +305,8 @@ function FileQueueSurface<Item>({
   getId,
   getMetadata,
   getName,
-  getFile,
   items,
   onReorder,
-  onRemove,
   renderAction,
   ...surfaceProps
 }: FileQueueSurfaceProps<Item>) {
@@ -321,17 +327,11 @@ function FileQueueSurface<Item>({
         </Button>
       ) : null}
       <FileQueueItem
-        action={getFile && onRemove ? undefined : renderAction?.(item)}
+        action={renderAction?.(item)}
         className="min-w-0 flex-1 border-b-0"
         icon={getIcon?.(item) ?? <FileIcon aria-hidden="true" />}
         metadata={getMetadata(item)}
-        name={
-          getFile && onRemove ? (
-            <FileChip file={getFile(item)} disabled={disabled} onRemove={() => onRemove(item)} />
-          ) : (
-            getName(item)
-          )
-        }
+        name={getName(item)}
       />
     </div>
   );

@@ -56,6 +56,7 @@ import {
   BackButton,
   Pagination,
   ToolActionButton,
+  WorkspacePanelHeader,
   Card,
   CardAction,
   CardContent,
@@ -99,6 +100,7 @@ import {
   InlineGuidance,
   InlineTextEditor,
   Input,
+  KeyValueFields,
   Label,
   MetricCard,
   MediaPreview,
@@ -293,6 +295,9 @@ export default function DesignSystemPage() {
   const [inlineDescription, setInlineDescription] = useState("Can view content without making changes.");
   const [suggestedPath, setSuggestedPath] = useState("users");
   const [exampleColor, setExampleColor] = useState("#3366FF80");
+  const [parameterRows, setParameterRows] = useState<readonly { key: string; value: string }[]>([
+    { key: "utm_id", value: "launch_2026" },
+  ]);
   const handbookSection = handbookSectionAtPage(handbookPage);
 
   return (
@@ -487,6 +492,30 @@ export default function DesignSystemPage() {
                 <ToolActionButton action="download" iconOnly aria-label="Download result" />
                 <ToolActionButton action="download">Download PDF</ToolActionButton>
               </div>
+            </Specimen>
+            <Separator />
+            <Specimen label="Workspace panel headers — aligned input and output">
+              <div className="grid overflow-hidden rounded-xl border border-border bg-card md:grid-cols-2">
+                <section
+                  aria-label="Input toolbar example"
+                  className="min-w-0 border-b border-border md:border-r md:border-b-0"
+                >
+                  <WorkspacePanelHeader actions={<ToolActionButton action="upload" />}>
+                    <Overline>Selected files</Overline>
+                  </WorkspacePanelHeader>
+                  <Muted className="px-4 py-3">Drag to reorder. Files are processed from top to bottom.</Muted>
+                </section>
+                <section aria-label="Output toolbar example" className="min-w-0">
+                  <WorkspacePanelHeader actions={<ToolActionButton action="download" />} meta="146.7 KiB">
+                    <Overline>Processed output</Overline>
+                  </WorkspacePanelHeader>
+                  <Text className="block px-4 py-3">merged.pdf</Text>
+                </section>
+              </div>
+              <Muted className="mt-3">
+                WorkspacePanelHeader owns the row height and divider. Put helper text below the toolbar so both panels
+                stay aligned.
+              </Muted>
             </Specimen>
             <Separator />
             <Specimen label="Back navigation">
@@ -707,6 +736,16 @@ export default function DesignSystemPage() {
               <Field htmlFor="showcase-message" label="Message">
                 <Textarea defaultValue="Thanks for your business." id="showcase-message" />
               </Field>
+              <KeyValueFields
+                addLabel="Add parameter"
+                help="Add a key and value for each parameter. Remove a row to omit it."
+                keyPlaceholder="e.g. utm_id"
+                label="Key/value fields"
+                onChange={setParameterRows}
+                rowLabel="parameter"
+                rows={parameterRows}
+                valuePlaceholder="e.g. launch_2026"
+              />
               <Field
                 htmlFor="showcase-autocomplete"
                 label="Path suggestions"
@@ -1499,21 +1538,10 @@ export default function DesignSystemPage() {
                     title="Add or upload images"
                   />
                   <FileQueueItem
+                    action={<CompactAction icon={<Trash2 />}>Remove</CompactAction>}
                     icon={<FileText />}
                     metadata="2400 × 1600 px · 3.8 MB"
-                    name={
-                      uploadedFileVisible ? (
-                        <FileChip
-                          file={{ name: "source-file.png", size: 3_800_000, type: "image/png", lastModified: 0 }}
-                          details="2400 × 1600 px"
-                          onRemove={() => setUploadedFileVisible(false)}
-                        />
-                      ) : (
-                        <ToolActionButton action="upload" onClick={() => setUploadedFileVisible(true)}>
-                          Restore sample file
-                        </ToolActionButton>
-                      )
-                    }
+                    name="source-file.png"
                   />
                   <ProcessingStatus
                     action={
@@ -1636,13 +1664,28 @@ export default function DesignSystemPage() {
 
             <div className="space-y-4">
               <SectionHeading
-                title="Tool focus mode"
-                description="Expand the same workspace, then switch Input / Split / Preview. Escape exits; draft and pane sizes are preserved."
+                title="Tool layout and focus mode"
+                description="Choose side-by-side or stacked panes, then expand the same workspace and switch Input / Split / Preview. Escape exits; drafts are preserved."
               />
               <WorkbenchShell
                 className="h-80"
                 workspaceTitle="Focus mode example"
-                toolbar={<Code aria-hidden="true" />}
+                toolbar={
+                  <>
+                    <Code aria-hidden="true" />
+                    {uploadedFileVisible ? (
+                      <FileChip
+                        file={{ name: "source-file.png", size: 3_800_000, type: "image/png", lastModified: 0 }}
+                        details="2400 × 1600 px"
+                        onRemove={() => setUploadedFileVisible(false)}
+                      />
+                    ) : (
+                      <ToolActionButton action="upload" onClick={() => setUploadedFileVisible(true)}>
+                        Restore sample file
+                      </ToolActionButton>
+                    )}
+                  </>
+                }
               >
                 <SplitStack presentation defaultSize={50}>
                   <div className="flex h-full flex-col gap-2 p-4">

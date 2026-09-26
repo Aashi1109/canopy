@@ -22,6 +22,8 @@ export type ToolVerdict = {
 export type ToolTextRender = {
   readonly render: "text";
   readonly text: string;
+  /** Optional syntax hint for lightweight highlighting of the displayed text. */
+  readonly language?: string;
   /** The displayed text is a bounded preview of a complete generated artifact. */
   readonly truncated?: boolean;
   /** Alternate structured view; copy and download retain the original text. */
@@ -184,6 +186,8 @@ export type ToolResultSection = {
 };
 
 export type ToolResultCommon = {
+  /** Transient completion feedback, shown once through the shared toast. */
+  readonly notification?: ToolVerdict;
   /** Headline numbers: size, count, duration. */
   readonly stats?: readonly ToolFact[];
   /** Pass/fail summary for validator-style tools. */

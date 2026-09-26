@@ -1,6 +1,7 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 export default {
   toolId: "devtools.palette-generator",
+  sharing: { version: 1 },
   app: "devtools",
   category: "color-design-tools",
   name: "Palette Generator",

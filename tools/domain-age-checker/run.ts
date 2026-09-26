@@ -29,20 +29,23 @@ const LOOKUP_TIMEOUT_MS = 10_000;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const domain = normalizeDomain(ctx.input.text);
+  ctx.signal.throwIfAborted();
 
   let response: Response;
   try {
     response = await fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`, {
       headers: { accept: "application/rdap+json, application/json" },
-      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+      signal: AbortSignal.any([ctx.signal, AbortSignal.timeout(LOOKUP_TIMEOUT_MS)]),
     });
   } catch {
+    ctx.signal.throwIfAborted();
     throw new ToolError(
       "rdap-unreachable",
       "Domain Age Checker could not reach the public RDAP service.",
       "Check your network connection and try again.",
     );
   }
+  ctx.signal.throwIfAborted();
   if (!response.ok) {
     throw new ToolError(
       "lookup-failed",
@@ -51,10 +54,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     );
   }
   const data: unknown = await response.json();
+  ctx.signal.throwIfAborted();
   if (!isRecord(data)) {
     throw new ToolError("rdap-invalid-response", "RDAP service returned an invalid response.");
   }
-  ctx.signal.throwIfAborted();
 
   const events = Array.isArray(data.events) ? data.events.filter(isRecord) : [];
   const event = (action: string): unknown =>

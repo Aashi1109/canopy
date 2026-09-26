@@ -8,9 +8,20 @@ import CodeEditorImpl from "../components/content/CodeEditorImpl.tsx";
 
 let container;
 let root;
+const rangeMeasurementDescriptors = Object.fromEntries(
+  ["getClientRects", "getBoundingClientRect"].map((name) => [
+    name,
+    Object.getOwnPropertyDescriptor(Range.prototype, name),
+  ]),
+);
 
 beforeEach(() => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  // jsdom has no layout; provide the same empty geometry as its Element APIs.
+  Object.defineProperties(Range.prototype, {
+    getClientRects: { configurable: true, value: () => [] },
+    getBoundingClientRect: { configurable: true, value: () => new DOMRect() },
+  });
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -19,6 +30,10 @@ beforeEach(() => {
 afterEach(async () => {
   await act(() => root.unmount());
   container.remove();
+  for (const [name, descriptor] of Object.entries(rangeMeasurementDescriptors)) {
+    if (descriptor) Object.defineProperty(Range.prototype, name, descriptor);
+    else delete Range.prototype[name];
+  }
   vi.unstubAllGlobals();
 });
 

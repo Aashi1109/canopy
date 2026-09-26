@@ -194,12 +194,9 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
         value={query}
       />
       {query ? (
-        <button
+        <Button
           aria-label="Clear search"
-          className={cn(
-            "grid size-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
-            mobile && "size-11",
-          )}
+          className="rounded-full text-muted-foreground"
           onClick={() => {
             setQuery("");
             setDebouncedQuery("");
@@ -208,10 +205,12 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
             setActiveIndex(0);
             inputRef.current?.focus();
           }}
+          size={mobile ? "icon-md" : "icon-xs"}
           type="button"
+          variant="ghost"
         >
           <X aria-hidden="true" className="size-[15px]" />
-        </button>
+        </Button>
       ) : !mobile ? (
         <kbd className="grid size-6 place-items-center rounded border border-border bg-muted font-caption text-[11px] font-semibold max-navigation:hidden">
           /

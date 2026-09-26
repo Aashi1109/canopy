@@ -1,5 +1,4 @@
 "use client";
-import { useState } from "react";
 import { ArrowDownUp } from "lucide-react";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import { ResultActions } from "@/components/ResultView";
@@ -21,9 +20,10 @@ export default function ContrastWorkspace(props: WorkspaceProps) {
   const foreground = String(props.settings.foreground ?? "#334155");
   const background = String(props.settings.background ?? "#FFFFFF");
   const canvas = String(props.settings.canvas ?? "#FFFFFF");
-  const [sample, setSample] = useState("Good design is easy to read.");
-  const [bodySample, setBodySample] = useState(
-    "This is normal-size text. Check headings, descriptions, and everyday reading against the background you actually use.",
+  const sample = String(props.settings.sample ?? "Good design is easy to read.");
+  const bodySample = String(
+    props.settings.bodySample ??
+      "This is normal-size text. Check headings, descriptions, and everyday reading against the background you actually use.",
   );
   let measured: ReturnType<typeof contrast> | undefined;
   let error = "";
@@ -76,7 +76,7 @@ export default function ContrastWorkspace(props: WorkspaceProps) {
                   <InlineTextEditor
                     label="Preview heading"
                     value={sample}
-                    onChange={setSample}
+                    onChange={(value) => update("sample", value)}
                     multiline
                     required
                     maxLength={160}
@@ -86,7 +86,7 @@ export default function ContrastWorkspace(props: WorkspaceProps) {
                   <InlineTextEditor
                     label="Preview body text"
                     value={bodySample}
-                    onChange={setBodySample}
+                    onChange={(value) => update("bodySample", value)}
                     multiline
                     required
                     maxLength={1000}

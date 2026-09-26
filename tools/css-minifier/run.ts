@@ -1,14 +1,8 @@
-/**
- * Moved verbatim from the `css-minifier` case in
- * `lib/devtools/format-json.ts` (arm at line 2704) — the same five replace
- * steps in the same order. `requireUtilityInput` is shared
- * (`lib/devtools/shared/options.ts`).
- */
-
 import type { ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 import { requireUtilityInput } from "../../lib/devtools/shared/options.ts";
+import { protectCssStrings } from "../../lib/devtools/shared/code.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
@@ -45,16 +39,27 @@ function mergeAdjacentRules(css: string): string {
 }
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
-  let text = requireUtilityInput(ctx.input.text, "CSS input")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/\s+/g, " ")
-    .replace(/\s*([{}:;,>+~])\s*/g, "$1")
+  const protectedSource = protectCssStrings(requireUtilityInput(ctx.input.text, "CSS input"));
+  const source = protectedSource.source.replace(/\s+/g, " ");
+  let position = 0;
+  let parentheses = 0;
+  let text = source
+    .replace(/\s*([{}:;,>+~])\s*/g, (match, punctuation: string, offset: number) => {
+      while (position < offset) {
+        if (source[position] === "(") parentheses += 1;
+        else if (source[position] === ")") parentheses = Math.max(0, parentheses - 1);
+        position += 1;
+      }
+      // CSS math requires whitespace around binary +. Selector combinators
+      // outside functions can still be compacted safely.
+      return punctuation === "+" && parentheses > 0 ? match : punctuation;
+    })
     .replace(/;}/g, "}")
     .trim();
   if (ctx.settings.normalizeColors ?? false) text = normalizeHexColors(text);
   if (ctx.settings.browserCompatibility === "legacy") text = convertAlphaHex(text);
   if (ctx.settings.mergeRules ?? false) text = mergeAdjacentRules(text);
-  return { render: "text", text, downloadName: "minified.css" };
+  return { render: "text", text: protectedSource.restore(text), downloadName: "minified.css" };
 };
 
 export default run;

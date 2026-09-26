@@ -69,9 +69,9 @@ export default {
     ],
     limitations: [
       "This is an indenter, not a parser. It does not validate the markup, repair mismatched tags, or rewrite attribute values.",
-      "Whitespace between tags is collapsed before indenting, which changes rendering wherever whitespace was significant — inline elements, <pre>, and <textarea> in particular.",
+      "Whitespace between ordinary tags is changed by indentation and can affect inline layout. Contents of <pre> and <textarea> are preserved exactly.",
       "Script and style bodies are treated as opaque text and are not reformatted.",
-      "Text content is emitted verbatim. Nothing is escaped or sanitised, so treat formatted untrusted markup as exactly as dangerous as the input.",
+      "Ordinary text runs have surrounding whitespace trimmed. Nothing is escaped or sanitised, so treat formatted untrusted markup as exactly as dangerous as the input.",
     ],
     faq: [
       {

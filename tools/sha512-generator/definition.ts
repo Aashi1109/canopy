@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.sha512-generator",
+  sharing: { version: 1 },
   app: "devtools",
   category: "hashing-crypto",
   keywords: ["sha512", "hash", "digest", "checksum", "sha-2", "hex"],

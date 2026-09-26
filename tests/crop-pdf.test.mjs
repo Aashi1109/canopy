@@ -1,5 +1,5 @@
 import { test, expect } from "vitest";
-import { cropPlan } from "../tools/crop-pdf/plan.ts";
+import { cropEditorPlan, cropPlan } from "../tools/crop-pdf/plan.ts";
 import { onPagesInspected, onSettingsChanged, validate } from "../tools/crop-pdf/hooks.ts";
 
 const pages = [
@@ -42,5 +42,60 @@ test("crop plan validates the exact selected page geometry", () => {
     { cropWidth: "x" },
   ]) {
     expect(() => cropPlan({ ...settings, ...update }, pages)).toThrow();
+  }
+});
+
+test("the crop editor uses the common bounds of exactly the selected pages", () => {
+  expect(cropEditorPlan(settings, pages)).toEqual({
+    selected: [1, 2],
+    bounds: { width: 400, height: 600 },
+    box: { x: 36, y: 36, width: 328, height: 528 },
+  });
+  expect(cropEditorPlan({ ...settings, pages: "1" }, pages).bounds).toEqual({ width: 595, height: 842 });
+  expect(cropEditorPlan({ ...settings, pages: "even" }, pages).bounds).toEqual({ width: 400, height: 600 });
+  expect(
+    cropEditorPlan(settings, [
+      { pageNumber: 1, pageWidth: 595.2756, pageHeight: 841.8898 },
+      { pageNumber: 2, pageWidth: 400.75, pageHeight: 600.25 },
+    ]).bounds,
+  ).toEqual({ width: 400, height: 600 });
+  expect(
+    cropEditorPlan(settings, [
+      { pageNumber: 1, pageWidth: 600, pageHeight: 400 },
+      { pageNumber: 2, pageWidth: 400, pageHeight: 600 },
+    ]).bounds,
+  ).toEqual({ width: 400, height: 400 });
+});
+
+test("out-of-bounds crop positions remain editable without weakening export validation", () => {
+  const outside = { ...settings, cropX: 999, cropY: 999, cropWidth: 100, cropHeight: 100 };
+  expect(() => cropPlan(outside, pages)).toThrow(/beyond page/);
+  const { box } = cropEditorPlan(outside, pages);
+  expect(box).toEqual({ x: 300, y: 500, width: 100, height: 100 });
+  expect(cropPlan({ ...outside, cropX: box.x, cropY: box.y }, pages).box).toEqual(box);
+});
+
+test("oversized crop dimensions recover to a whole-number box fitting every selected page", () => {
+  const outside = { ...settings, cropWidth: 1000, cropHeight: 1000 };
+  expect(() => cropPlan(outside, pages)).toThrow(/beyond page/);
+  const { box } = cropEditorPlan(outside, pages);
+  expect(box).toEqual({ x: 0, y: 0, width: 400, height: 600 });
+  expect(
+    cropPlan({ ...outside, cropX: box.x, cropY: box.y, cropWidth: box.width, cropHeight: box.height }, pages).box,
+  ).toEqual(box);
+});
+
+test("the crop editor still rejects malformed values and invalid page selections", () => {
+  for (const update of [
+    { cropX: -1 },
+    { cropY: Infinity },
+    { cropWidth: 0 },
+    { cropHeight: -1 },
+    { cropWidth: 1.5 },
+    { cropX: "" },
+    { pages: "" },
+    { pages: "3" },
+  ]) {
+    expect(() => cropEditorPlan({ ...settings, ...update }, pages)).toThrow();
   }
 });

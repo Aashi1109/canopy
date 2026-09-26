@@ -11,6 +11,7 @@ export default {
   input: {
     kind: "fields",
     label: "Two hashes to compare",
+    resizable: true,
     fields: [
       {
         channel: "text",
@@ -19,6 +20,7 @@ export default {
         required: true,
         secret: true,
         multiline: true,
+        surface: "card",
       },
       {
         channel: "secondary",
@@ -27,6 +29,7 @@ export default {
         required: true,
         secret: true,
         multiline: true,
+        surface: "card",
       },
     ],
   },

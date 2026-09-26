@@ -52,7 +52,11 @@ export function CodeEditor({ className, ...props }: CodeEditorProps) {
   const [wrapOverride, setWrapOverride] = useState<boolean | null>(null);
   const language = props.language.trim().toLowerCase();
   const delimited = language === "csv" || language === "tsv";
-  const wrapped = wrapOverride ?? (props.wrap ? props.wrap !== "off" : delimited && Boolean(props.onChange));
+  const wrapped =
+    wrapOverride ??
+    (props.wrap
+      ? props.wrap !== "off"
+      : language === "jwt" || language === "qr" || language === "url" || (delimited && Boolean(props.onChange)));
   return (
     <div className={cn("relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden", className)}>
       <div className="absolute top-1 right-2 z-10">

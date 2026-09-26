@@ -65,13 +65,18 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const matches: RegexMatch[] = [];
   let match: RegExpExecArray | null;
   const subject = ctx.input.secondary ?? "";
+  const unicode = flags.includes("u") || flags.includes("v");
   while ((match = expression.exec(subject)) && matches.length < MAX_MATCHES) {
     matches.push({
       index: match.index,
       match: match[0],
       groups: match.groups ? { ...match.groups } : null,
     });
-    if (!match[0]) expression.lastIndex += 1;
+    if (!match[0]) {
+      // Unicode matching must not resume inside a surrogate pair.
+      const codePoint = subject.codePointAt(expression.lastIndex);
+      expression.lastIndex += unicode && codePoint !== undefined && codePoint > 0xffff ? 2 : 1;
+    }
   }
   if (matches.length === MAX_MATCHES) {
     throw new ToolError(

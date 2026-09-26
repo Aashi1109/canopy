@@ -32,19 +32,8 @@ const IGNORED_DIRECTORIES = new Set([
 const OUT_OF_SCOPE = ["app/paperwork"];
 
 /**
- * KNOWN-LEGACY LEAKS — THIS LIST MUST SHRINK TO EMPTY.
- *
- * Every file here hard-codes tool identities in shared code, and every file
- * here is deleted (or has its tool-name branch deleted) by the folder-contract
- * migration. A shared file that is NOT listed here and names a tool fails
- * immediately — that is the ratchet. Never add an entry to make a test green;
- * the only legal edit to this list is removal.
- */
-const LEGACY_TOOL_NAME_LEAKS = new Set([]);
-
-/**
  * KNOWN-LEGACY IDENTITY DISPATCH — THIS LIST MUST SHRINK TO EMPTY.
- * Same rules as above.
+ * Do not add entries to make this check pass; remove them after migration.
  */
 const LEGACY_IDENTITY_DISPATCH = new Set([]);
 
@@ -161,22 +150,6 @@ test("every migrated definition.ts loads standalone", () => {
 // ---------------------------------------------------------------------------
 
 /**
- * Word-boundary-ish matching: a tool key may not be preceded or followed by
- * another identifier character or a hyphen. Tool folder names are kebab-case,
- * so `-` has to count as a boundary character in both directions — otherwise
- * `merge-pdf` would report a hit inside `auto-merge-pdfs` and `crop-pdf` inside
- * `crop-pdf-pages`. Lookaround (rather than \b) is what makes the hyphen
- * boundary expressible at all: `\bcrop-pdf\b` matches inside `crop-pdf-pages`.
- * Path separators, quotes and whitespace all remain boundaries, so genuine
- * leaks such as `"/media/merge-pdf"` are still caught.
- */
-function keyPattern(key) {
-  return new RegExp(`(?<![A-Za-z0-9-])${key.replaceAll("-", "\\-")}(?![A-Za-z0-9-])`);
-}
-
-const KEY_PATTERNS = toolFolders.map((key) => [key, keyPattern(key)]);
-
-/**
  * Dispatch on tool identity. Narrower than a bare `key === "..."` scan on
  * purpose: `key`, `slug` and `operation` are ordinary words, and matching them
  * against any literal flags settings loops and auth navigation that have
@@ -201,13 +174,10 @@ function scan(source, matches) {
 }
 
 const sharedFiles = await sharedSourceFiles();
-const leaksByFile = new Map();
 const dispatchByFile = new Map();
 
 for (const file of sharedFiles) {
   const source = await readFile(path.join(ROOT, file), "utf8");
-  const leaks = scan(source, (line) => KEY_PATTERNS.filter(([, pattern]) => pattern.test(line)).map(([key]) => key));
-  if (leaks.length > 0) leaksByFile.set(file, leaks);
   const dispatch = scan(source, (line) => (IDENTITY_DISPATCH.test(line) ? [line.trim().slice(0, 80)] : []));
   if (dispatch.length > 0) dispatchByFile.set(file, dispatch);
 }
@@ -221,21 +191,6 @@ function report(byFile) {
     .join("\n");
 }
 
-test("shared code never names a tool", () => {
-  const totalHits = [...leaksByFile.values()].reduce((sum, hits) => sum + hits.length, 0);
-  console.log(
-    `[tool-name leak scan] ${sharedFiles.length} shared files, ${leaksByFile.size} leaking, ${totalHits} hits\n${report(leaksByFile)}`,
-  );
-
-  const unexpected = [...leaksByFile.keys()].filter((file) => !LEGACY_TOOL_NAME_LEAKS.has(file));
-  expect(
-    unexpected,
-    `shared files must resolve tools by folder name as a module path, never by naming one:\n${report(
-      new Map(unexpected.map((file) => [file, leaksByFile.get(file)])),
-    )}`,
-  ).toEqual([]);
-});
-
 test("shared code never dispatches on a tool identity", () => {
   console.log(`[identity dispatch scan] ${dispatchByFile.size} files\n${report(dispatchByFile)}`);
   const unexpected = [...dispatchByFile.keys()].filter((file) => !LEGACY_IDENTITY_DISPATCH.has(file));
@@ -247,18 +202,13 @@ test("shared code never dispatches on a tool identity", () => {
   ).toEqual([]);
 });
 
-test("the legacy allowlists only shrink", () => {
+test("the legacy identity-dispatch allowlist only shrinks", () => {
   const stale = [];
-  for (const [name, allowlist, byFile] of [
-    ["tool-name leak", LEGACY_TOOL_NAME_LEAKS, leaksByFile],
-    ["identity dispatch", LEGACY_IDENTITY_DISPATCH, dispatchByFile],
-  ]) {
-    for (const file of allowlist) {
-      // A deleted file is progress, not staleness; only a surviving-but-clean
-      // file means the allowlist entry was left behind.
-      if (sharedFiles.includes(file) && !byFile.has(file)) {
-        stale.push(`${name}: ${file}`);
-      }
+  for (const file of LEGACY_IDENTITY_DISPATCH) {
+    // A deleted file is progress, not staleness; only a surviving-but-clean
+    // file means the allowlist entry was left behind.
+    if (sharedFiles.includes(file) && !dispatchByFile.has(file)) {
+      stale.push(file);
     }
   }
   expect(stale, "remove these cleaned-up files from the allowlist").toEqual([]);

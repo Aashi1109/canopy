@@ -108,6 +108,7 @@ function curlAsAxios(command: string, settings: Settings): string {
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const flags = unsupportedFlags(ctx.input.text);
+  const warning = `Unsupported cURL flags were ignored: ${flags.join(", ")}.`;
   const typed = ctx.settings.outputLanguage === "typescript";
   const extension = typed
     ? ctx.settings.moduleFormat === "esm"
@@ -124,18 +125,16 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     render: "text",
     text: curlAsAxios(ctx.input.text, ctx.settings),
     downloadName: `axios-request.${extension}`,
-    verdict: {
-      level: "ok",
-      label: "Result ready",
-      detail: flags.length
-        ? "The common request was converted with the warnings listed above."
-        : "The common request was converted. Review credentials and response handling before using it.",
-    },
     ...(flags.length
       ? {
+          notification: {
+            level: "warn" as const,
+            label: "Some cURL flags were not converted",
+            detail: warning,
+          },
           issues: [
             {
-              message: `Unsupported cURL flags were ignored: ${flags.join(", ")}.`,
+              message: warning,
               target: "input" as const,
             },
           ],

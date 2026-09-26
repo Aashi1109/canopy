@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.md5-generator",
+  sharing: { version: 1 },
   app: "devtools",
   category: "hashing-crypto",
   keywords: ["md5", "hash", "checksum", "digest", "legacy", "fingerprint", "etag"],

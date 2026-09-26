@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.csv-delimiter-converter",
+  sharing: { version: 1 },
   app: "devtools",
   category: "csv-data-tools",
   keywords: ["csv", "tsv", "delimiter", "separator", "semicolon", "pipe", "tab", "convert"],

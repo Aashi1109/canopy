@@ -5,7 +5,7 @@ import { type ReactNode, useCallback, useId, useRef, useState } from "react";
 import { DiffView, type DiffViewProps } from "@/components/DiffView";
 import { ResultActions } from "@/components/ResultView";
 import { SettingsPanel } from "@/components/SettingsPanel";
-import { SplitStack } from "@/components/Stacks";
+import { SettingsStack, SplitStack } from "@/components/Stacks";
 import { WorkspaceSurface } from "@/components/Surfaces";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import { SourceTextarea } from "@/components/WorkspaceInput";
@@ -139,15 +139,7 @@ export function DiffWorkspace({ editLabel, renderLine, settingsNote, ...props }:
   if (!Object.keys(props.spec.settings.fields).length) return comparison;
 
   return (
-    <SplitStack
-      className="h-full"
-      collapseLabel="settings panel"
-      collapseSide="secondary"
-      collapsible
-      defaultCollapsed="secondary"
-      defaultSize={75}
-      minSize={75}
-    >
+    <SettingsStack className="h-full" defaultCollapsed="secondary" defaultSize={75} minSize={75}>
       {comparison}
       <ToolOptionsPanel className="h-full overflow-y-auto bg-card p-[18px]" title="SETTINGS" variant="plain">
         <SettingsPanel
@@ -159,6 +151,6 @@ export function DiffWorkspace({ editLabel, renderLine, settingsNote, ...props }:
         />
         {settingsNote ? <Muted className="mt-3">{settingsNote}</Muted> : null}
       </ToolOptionsPanel>
-    </SplitStack>
+    </SettingsStack>
   );
 }

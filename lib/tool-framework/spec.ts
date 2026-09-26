@@ -17,6 +17,11 @@ export type { ToolApp };
 
 export type ToolSyntaxLanguage =
   | "json"
+  | "unicode"
+  | "url-encoded"
+  | "url"
+  | "jwt"
+  | "qr"
   | "xml"
   | "html"
   | "yaml"
@@ -55,7 +60,10 @@ export type ToolInputSpec =
   | {
       kind: "text";
       label: string;
+      /** Defaults to true. Optional text lets generators run from settings alone. */
+      required?: boolean;
       language?: ToolSyntaxLanguage;
+      showLineNumbers?: boolean;
       placeholder?: string;
       surface?: "card";
       maxLength?: number;
@@ -156,6 +164,8 @@ export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   readonly input: ToolInputSpec;
   /** Syntax of textual output; previews, tables, and validation messages retain their own renderers. */
   readonly outputLanguage?: ToolSyntaxLanguage;
+  /** Show a line-number gutter in the output code editor. Defaults to false. */
+  readonly outputShowLineNumbers?: boolean;
   /** Table-only previews opt into a bounded scroll area with sticky headers. */
   readonly previewLayout?: "document" | "table";
   /** Initial result tab and optional name for the structured preview. */
@@ -167,6 +177,8 @@ export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   readonly resultStats?: "cards" | "status-only";
   readonly settings: S;
   readonly trigger: ToolTrigger;
+  /** Opt in only when URL inputs reproduce the result; bump version when that contract changes. */
+  readonly sharing?: { readonly version: number };
   readonly capabilities?: ToolCapabilities;
   /** How the source and derived result share the main task surface. */
   readonly layout?: ToolLayout;

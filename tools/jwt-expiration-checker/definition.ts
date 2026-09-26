@@ -7,6 +7,7 @@ export default {
   keywords: ["jwt", "expiration", "exp", "nbf", "iat", "token", "claims"],
   name: "JWT Expiration Checker",
   description: "Inspect issued-at, not-before, and expiration claims.",
+  resultView: { default: "preview", previewLabel: "Summary" },
   layout: "stacked",
   input: {
     kind: "fields",
@@ -53,20 +54,20 @@ export default {
   },
   workbenchMark: { text: "JEX", tone: "contrast" },
   labels: {
-    empty: "Paste a JWT to check its validity window.",
-    ready: "JWT validity window is ready.",
+    empty: "Paste a JWT to inspect its expiration and time claims.",
+    ready: "JWT expiration check is ready.",
     running: "Checking JWT expiration…",
   },
   content: {
     howToUse: [
       "Paste the whole token, all three dot-separated parts. It is masked because a JWT is a bearer credential — anyone holding it can act as you until it expires.",
-      "Check. The result reports whether the token is Active, Expired, or Not active yet, plus the exp and iat timestamps in UTC.",
+      "Choose Check expiration. The summary explains the time-based status and shows expiration, not-before, and issued-at dates. Raw keeps the original report ready to copy.",
       "The verdict is computed against your device clock. A machine with a skewed clock will disagree with the server that issued the token.",
     ],
     limitations: [
       'The signature is not verified. This tool answers "is it still within its validity window", never "is it genuine" — a token with a forged payload reads the same as a real one.',
       "Only exp, nbf, and iat are inspected. Scopes, audience, and issuer are ignored.",
-      "Claims must be numeric NumericDate seconds, per the JWT spec. A string date is reported as not specified.",
+      "Time claims must be NumericDate numbers: seconds since the Unix epoch. Invalid types and dates outside the supported range are reported as errors.",
       "Nothing is uploaded, but the token still lands in this tab's memory — do not paste a production token on a shared machine.",
     ],
     faq: [

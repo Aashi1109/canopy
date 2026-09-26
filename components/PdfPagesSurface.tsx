@@ -195,12 +195,12 @@ export interface PdfPagesSurfaceProps {
 }
 
 const PAGE_CLASSES = "min-w-0 rounded-xl border border-border bg-background p-2";
-const THUMBNAIL_CLASSES = "mx-auto max-h-44 w-auto rounded-md border border-border bg-white object-contain";
+const THUMBNAIL_CLASSES = "mx-auto max-h-44 max-w-full w-auto rounded-md border border-border bg-white object-contain";
 const GRID_CLASSES = "grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(0,12rem))]";
 
 export function PageThumbnail({ page }: { page: PdfPageImage }): ReactElement {
   const requestThumbnails = useContext(PdfInspectionContext);
-  const targetRef = useRef<HTMLImageElement | HTMLDivElement>(null);
+  const targetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const target = targetRef.current;
@@ -236,27 +236,24 @@ export function PageThumbnail({ page }: { page: PdfPageImage }): ReactElement {
     };
   }, [page.pageNumber, page.url, requestThumbnails]);
 
-  return page.url ? (
-    <img
-      alt=""
-      draggable={false}
-      className={THUMBNAIL_CLASSES}
-      ref={(node) => {
-        targetRef.current = node;
-      }}
-      src={page.url}
-      style={{ aspectRatio: `${page.pageWidth} / ${page.pageHeight}` }}
-    />
-  ) : (
-    <div
-      aria-label={`Loading preview for page ${page.pageNumber}`}
-      className={`${THUMBNAIL_CLASSES} grid min-h-28 place-items-center text-muted-foreground`}
-      ref={(node) => {
-        targetRef.current = node;
-      }}
-      style={{ aspectRatio: `${page.pageWidth} / ${page.pageHeight}` }}
-    >
-      <Caption>Loading preview</Caption>
+  return (
+    <div className="flex h-44 w-full shrink-0 items-center justify-center" ref={targetRef}>
+      {page.url ? (
+        <img
+          alt=""
+          draggable={false}
+          className={THUMBNAIL_CLASSES}
+          src={page.url}
+          style={{ aspectRatio: `${page.pageWidth} / ${page.pageHeight}` }}
+        />
+      ) : (
+        <div
+          aria-label={`Loading preview for page ${page.pageNumber}`}
+          className="grid h-full w-full place-items-center text-muted-foreground"
+        >
+          <Caption>Loading preview</Caption>
+        </div>
+      )}
     </div>
   );
 }

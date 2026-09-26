@@ -23,6 +23,13 @@ function jsonToXml(value: unknown, name = "root", depth = 0): string {
   const indent = "  ".repeat(depth);
   if (value === null || value === undefined) return `${indent}<${tag}/>`;
   if (Array.isArray(value)) {
+    if (depth === 0) {
+      const children = value
+        .map((item) => jsonToXml(item, "item", 1))
+        .filter(Boolean)
+        .join("\n");
+      return children ? `<${tag}>\n${children}\n</${tag}>` : `<${tag}></${tag}>`;
+    }
     return value
       .map((item) => jsonToXml(item, tag, depth))
       .filter(Boolean)

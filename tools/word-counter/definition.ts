@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.word-counter",
+  sharing: { version: 1 },
   app: "devtools",
   category: "text-tools",
   keywords: ["word count", "character count", "sentences", "paragraphs", "reading time", "text statistics", "seo"],
@@ -73,7 +74,7 @@ export default {
       },
       {
         q: "Is my text sent anywhere?",
-        a: "No. Counting happens in this browser tab and nothing is uploaded or stored.",
+        a: "Counting happens in this browser tab without uploading the text. Share links include the text and settings in the URL, so anyone with the link can read them.",
       },
     ],
     examples: [

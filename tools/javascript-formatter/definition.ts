@@ -41,29 +41,28 @@ export default {
   content: {
     howToUse: [
       "Paste minified or badly indented JavaScript — a one-line bundle chunk is the typical case.",
-      "Format. Braces open a new two-space level, semicolons end a line, and runs of whitespace collapse to a single space.",
+      "Format. Braces open a new indentation level using your setting, and semicolons end a line. Existing line breaks are retained where they can affect JavaScript meaning.",
       "Use it to make an unfamiliar snippet readable enough to understand. For code you own, run Prettier or your editor's formatter instead — this is a reading aid, not a build step.",
       "String and template literals are tracked and left untouched, so a `;` or `{` inside a string does not trigger a line break.",
     ],
     limitations: [
-      "This is a character-level pass, not a parser. It has no idea what an expression is, so it cannot reflow long lines, align arguments, or normalize quotes.",
-      "Regex literals are not recognised. A regular expression containing a brace or a quote character can confuse the string tracking and mangle the output.",
-      "Comments are not treated specially — a `//` comment containing a brace will be reindented incorrectly.",
-      "Line breaks are driven by `{`, `}`, and `;` only, so `if (a) b(); else c();` stays on one line and a `for(;;)` header is split across three.",
-      "Unterminated strings are reported as an error rather than passed through.",
+      "JavaScript syntax is parsed to protect strings, templates, regular expressions, and comments. Formatting remains limited to indentation and line breaks; it does not reflow long lines, align arguments, or normalize quotes.",
+      "Template contents, including their interpolation expressions, are left unchanged.",
+      "Semicolons introduce line breaks even inside a `for(;;)` header. This changes presentation without changing the loop.",
+      "Invalid JavaScript, including unterminated strings, is reported as an error. TypeScript and JSX are not supported.",
     ],
     faq: [
       {
         q: "Is this a replacement for Prettier?",
-        a: "No. It has no parser and makes no formatting decisions beyond indentation. Use it to read someone else's minified code; use Prettier on your own.",
+        a: "No. It makes limited formatting decisions around indentation and line breaks. Use it to read someone else's minified code; use Prettier on your own.",
       },
       {
-        q: "Why did my regex get mangled?",
-        a: "Regex literals are not detected, so a `/.../ ` containing braces or quotes is misread as ordinary code. Reformat that section by hand.",
+        q: "Are regular expressions preserved?",
+        a: "Yes. The parser distinguishes regular expressions from division and preserves their contents, including braces, quotes, and spaces.",
       },
       {
         q: "Does it change what the code does?",
-        a: "It only inserts and removes whitespace, so ordinary code behaves identically. The regex and comment caveats above are the exceptions to check.",
+        a: "It preserves literal contents and existing statement boundaries while changing indentation. Review and test formatted code before using it in production.",
       },
     ],
     examples: [

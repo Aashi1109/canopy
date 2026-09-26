@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.border-radius-generator",
+  sharing: { version: 1 },
   app: "devtools",
   category: "color-design-tools",
   keywords: ["border radius", "css", "rounded corners", "generator", "shape", "design"],

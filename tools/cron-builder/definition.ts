@@ -7,6 +7,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
  */
 export default {
   toolId: "devtools.cron-builder",
+  sharing: { version: 1 },
   slug: "cron-builder",
   app: "devtools",
   category: "date-time-tools",

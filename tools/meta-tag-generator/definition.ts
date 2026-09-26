@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.meta-tag-generator",
+  sharing: { version: 1 },
   app: "devtools",
   category: "developer-generators",
   keywords: ["meta tags", "seo", "open graph", "og", "canonical", "description", "head"],

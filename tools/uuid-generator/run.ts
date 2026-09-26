@@ -1,43 +1,63 @@
-/**
- * Moved verbatim from the `uuid-generator` case in
- * `lib/devtools/format-json.ts` (line 2543) plus its single-consumer helper
- * `uuidV7` (line 3744). Only this tool builds a v7, so the helper stays here.
- *
- * v4 remains `crypto.randomUUID()` and v7 remains 16 cryptographically random
- * bytes with the first six overwritten by the millisecond timestamp and the
- * version/variant nibbles set — no reimplementation, no fallback to Math.random.
- */
-
+import { v1, v3, v4, v5, v6, v7, validate } from "uuid";
 import type { ToolRun } from "../../lib/tool-framework/run.ts";
+import { ToolError } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 import { getCrypto } from "../../lib/devtools/shared/crypto.ts";
-import { bytesToHex } from "../../lib/devtools/shared/encoding.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-function uuidV7(): string {
-  const bytes = getCrypto().getRandomValues(new Uint8Array(16));
-  let timestamp = Date.now();
-  for (let index = 5; index >= 0; index -= 1) {
-    bytes[index] = timestamp & 0xff;
-    timestamp = Math.floor(timestamp / 256);
-  }
-  bytes[6] = (bytes[6] & 0x0f) | 0x70;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = bytesToHex(bytes);
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
+  ctx.signal.throwIfAborted();
   const { version, count, hyphens, upper } = ctx.settings;
-  const values = Array.from({ length: count }, () => (version === "v7" ? uuidV7() : getCrypto().randomUUID())).map(
-    (value) => {
-      const withoutHyphens = hyphens ? value : value.replaceAll("-", "");
-      return upper ? withoutHyphens.toUpperCase() : withoutHyphens;
-    },
-  );
-  return { render: "list", items: values, downloadName: "uuids.txt" };
+  let values: string[];
+  if (version === "v3" || version === "v5") {
+    const { name, namespace, customNamespace } = ctx.settings;
+    if (!name) {
+      throw new ToolError(
+        "missing-name",
+        "Enter a name to generate this UUID.",
+        "Enter a name and choose its namespace.",
+      );
+    }
+    const namespaceId = (namespace === "custom" ? customNamespace : namespace).trim();
+    if (!validate(namespaceId)) {
+      throw new ToolError(
+        "invalid-namespace",
+        "Enter a valid namespace UUID.",
+        "Choose a preset namespace or enter a complete UUID with hyphens.",
+      );
+    }
+    values = [version === "v3" ? v3(name, namespaceId) : v5(name, namespaceId)];
+  } else {
+    const generate =
+      version === "v1"
+        ? () => v1()
+        : version === "v4"
+          ? () => v4()
+          : version === "v6"
+            ? () => v6()
+            : version === "v7"
+              ? () => v7()
+              : null;
+    if (!generate) {
+      throw new ToolError("unsupported-version", "Choose a supported UUID version.");
+    }
+    if (!Number.isInteger(count) || count < 1 || count > 100) {
+      throw new ToolError("invalid-count", "Enter a whole number from 1 to 100 for how many UUIDs to generate.");
+    }
+    getCrypto();
+    values = Array.from({ length: count }, () => {
+      ctx.signal.throwIfAborted();
+      return generate();
+    });
+  }
+  ctx.signal.throwIfAborted();
+  const items = values.map((value) => {
+    const formatted = hyphens ? value : value.replaceAll("-", "");
+    return upper ? formatted.toUpperCase() : formatted;
+  });
+  return { render: "list", items, downloadName: "uuids.txt" };
 };
 
 export default run;

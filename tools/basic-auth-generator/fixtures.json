@@ -7,7 +7,7 @@
       },
       "name": "definition example",
       "settings": {
-        "copyAsHeader": true
+        "format": "header"
       },
       "expected": {
         "output": "Authorization: Basic QWRhOnNlY3JldA==",
@@ -21,10 +21,52 @@
       },
       "name": "header value without name",
       "settings": {
-        "copyAsHeader": false
+        "format": "value"
       },
       "expected": {
         "output": "Basic QWRhOnNlY3JldA==",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "Ada",
+        "secondary": "secret"
+      },
+      "name": "raw Base64 credentials",
+      "settings": {
+        "format": "base64"
+      },
+      "expected": {
+        "output": "QWRhOnNlY3JldA==",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "Ada",
+        "secondary": "secret"
+      },
+      "name": "curl request example",
+      "settings": {
+        "format": "curl"
+      },
+      "expected": {
+        "output": "curl --header 'Authorization: Basic QWRhOnNlY3JldA==' 'https://example.com/api'",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "Ada",
+        "secondary": "secret"
+      },
+      "name": "fetch request example",
+      "settings": {
+        "format": "fetch"
+      },
+      "expected": {
+        "output": "await fetch(\"https://example.com/api\", {\n  headers: {\n    Authorization: \"Basic QWRhOnNlY3JldA==\",\n  },\n});",
         "render": "text"
       }
     }

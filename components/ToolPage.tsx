@@ -26,8 +26,17 @@
  * main thread even by mistake.
  */
 
-import { Button, Select } from "@/components/ui/index.tsx";
-import { Loader2, Undo2 } from "lucide-react";
+import {
+  Button,
+  Select,
+  Toaster,
+  toast,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/index.tsx";
+import { Link2, Loader2, Undo2 } from "lucide-react";
 import {
   createContext,
   lazy,
@@ -60,6 +69,8 @@ import type { SettingsOf, SettingsSpec } from "@/lib/tool-framework/settings";
 import type { ToolInputSpec, ToolSpec } from "@/lib/tool-framework/spec";
 import { isLargeTextFile } from "@/lib/tool-framework/textFileInput";
 import { useToolRun } from "@/lib/tool-framework/useToolRun";
+import { useToolShare } from "@/lib/tool-framework/useToolShare";
+import type { ToolShareState } from "@/lib/tool-framework/toolShare";
 import { cleanupArtifactJobWithRetry, sweepStaleArtifactJobsOnce } from "@/lib/tool-framework/artifacts";
 import { createToolRunFile, type ToolRunRequestInput } from "@/lib/tool-framework/workerProtocol";
 import { useToolRuntime } from "@/lib/tool-runtime/useToolRuntime";
@@ -142,13 +153,15 @@ function resolveWorkspace(key: string): ComponentType<WorkspaceProps> {
 // Input adapters.
 // ---------------------------------------------------------------------------
 
-function isEmptyInput(kind: ToolInputSpec["kind"], input: WorkspaceInputState): boolean {
-  switch (kind) {
+function isEmptyInput(spec: ToolInputSpec, input: WorkspaceInputState): boolean {
+  switch (spec.kind) {
     // Every value comes from the settings, so there is nothing to be empty of.
     case "none":
       return false;
     case "files":
       return input.files.length === 0;
+    case "text":
+      return spec.required !== false && input.text.trim() === "" && input.files.length === 0;
     default:
       return input.text.trim() === "" && input.files.length === 0;
   }
@@ -308,6 +321,9 @@ interface ToolChrome {
   readonly validationReason: string | null;
   readonly Workspace: ComponentType<WorkspaceProps>;
   readonly workspaceKey: number;
+  readonly shareInitialized: boolean;
+  readonly initializeSharing: (state: ToolShareState | null) => void;
+  readonly completedShare: { current: { input: WorkspaceInputState; settings: RuntimeSettings } | null };
 }
 
 const ToolChromeContext = createContext<ToolChrome | null>(null);
@@ -372,6 +388,25 @@ function ToolToolbar(): ReactElement {
     input: WorkspaceInputState;
     settings: RuntimeSettings;
   } | null>(null);
+  const initializeShare = useCallback(
+    (state: ToolShareState | null) => {
+      if (state || chrome.shareInitialized)
+        runtime.setInput({ ...state?.input, text: state?.input.text ?? "", files: [] });
+      chrome.initializeSharing(state);
+      setResetSnapshot(null);
+    },
+    [chrome.initializeSharing, chrome.shareInitialized, runtime.setInput],
+  );
+  const sharing = useToolShare({
+    spec: chrome.spec,
+    input: runtime.input,
+    settings: chrome.settings,
+    lifecycle: runtime.lifecycle,
+    completed: chrome.completedShare.current,
+    initialize: initializeShare,
+    run: runtime.run,
+    onError: (message) => toast.error("Share link unavailable", { description: message }),
+  });
 
   const loadExample = (index: number) => {
     const example = examples[index];
@@ -389,6 +424,7 @@ function ToolToolbar(): ReactElement {
   };
 
   const reset = () => {
+    sharing.clear();
     setResetSnapshot({ input: runtime.input, settings: chrome.settings });
     runtime.setInput({ files: [], text: "" });
     chrome.resetPageState();
@@ -443,6 +479,41 @@ function ToolToolbar(): ReactElement {
         </Select>
       ) : null}
       {chrome.toolbarActions?.afterExample}
+      {chrome.spec.sharing ? (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex" tabIndex={!sharing.canCopy ? 0 : undefined}>
+                <Button
+                  disabled={!sharing.canCopy}
+                  onClick={async () => {
+                    if (!sharing.url) return;
+                    try {
+                      await navigator.clipboard.writeText(sharing.url);
+                      toast.success("Share link copied", {
+                        description: "Anyone with the link can view these inputs and settings.",
+                      });
+                    } catch {
+                      toast.error("Could not copy the link", {
+                        description: "Copy the URL from your address bar instead.",
+                      });
+                    }
+                  }}
+                  size="xs"
+                  type="button"
+                  variant="outline"
+                >
+                  <Link2 aria-hidden="true" />
+                  Copy link
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              The URL updates after 300 ms and a successful result. It includes your inputs and settings.
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ) : null}
       <Button disabled={running || resetSnapshot !== null} onClick={reset} size="xs" type="button" variant="outline">
         Reset
       </Button>
@@ -456,7 +527,11 @@ function ToolToolbar(): ReactElement {
         <Button
           aria-busy={primaryAction.running || undefined}
           disabled={primaryAction.running && primaryAction.onCancel ? false : primaryAction.disabled}
-          onClick={primaryAction.running && primaryAction.onCancel ? primaryAction.onCancel : primaryAction.onRun}
+          onClick={
+            primaryAction.running && primaryAction.onCancel
+              ? (chrome.toolbarActions?.onCancel ?? primaryAction.onCancel)
+              : primaryAction.onRun
+          }
           size="xs"
           type="button"
         >
@@ -479,6 +554,17 @@ function ToolWorkspaceSlot(): ReactElement {
   const Workspace = chrome.Workspace;
   const running = runtime.lifecycle === "running";
   const previousResult = useRef(runtime.result);
+  const notifiedResult = useRef<ToolResult | null>(null);
+
+  useEffect(() => {
+    if (runtime.lifecycle !== "completed" || !runtime.result || notifiedResult.current === runtime.result) return;
+    notifiedResult.current = runtime.result;
+    const notification = runtime.result.notification;
+    if (!notification) return;
+    const notify =
+      notification.level === "error" ? toast.error : notification.level === "warn" ? toast.warning : toast.success;
+    notify(notification.label, { description: notification.detail });
+  }, [runtime.lifecycle, runtime.result]);
 
   useEffect(() => {
     const previous = previousResult.current;
@@ -586,7 +672,11 @@ export interface ToolPageProps {
   title: string;
 }
 
-export default function ToolPage({
+export default function ToolPage(props: ToolPageProps): ReactElement {
+  return <ToolPageState key={props.definitionKey} {...props} />;
+}
+
+function ToolPageState({
   account,
   category,
   definitionKey,
@@ -600,6 +690,8 @@ export default function ToolPage({
   const [validationReason, setValidationReason] = useState<string | null>(null);
   const [toolbarActions, setToolbarActions] = useState<WorkspaceToolbarActions | null>(null);
   const [workspaceKey, setWorkspaceKey] = useState(0);
+  const [shareInitialized, setShareInitialized] = useState(!spec.sharing);
+  const completedShare = useRef<{ input: WorkspaceInputState; settings: RuntimeSettings } | null>(null);
   const { cleanupArtifacts: cleanupWorkerArtifacts, progress, reset: resetWorker, run: runOnWorker } = useWorkerHost();
 
   useEffect(() => {
@@ -610,7 +702,21 @@ export default function ToolPage({
     setSettings((current) => (Object.is(current[key], value) ? current : { ...current, [key]: value }));
   }, []);
 
+  const initializeSharing = useCallback(
+    (state: ToolShareState | null) => {
+      if (state || shareInitialized) {
+        setSettings(state?.settings ?? defaultSettings(spec));
+        completedShare.current = null;
+        setValidationReason(null);
+        setWorkspaceKey((current) => current + 1);
+      }
+      setShareInitialized(true);
+    },
+    [shareInitialized, spec],
+  );
+
   const resetPageState = useCallback(() => {
+    completedShare.current = null;
     setSettings(defaultSettings(spec));
     setValidationReason(null);
     resetWorker();
@@ -623,6 +729,11 @@ export default function ToolPage({
       _runtimeSettings: ToolSettings,
       signal: AbortSignal,
     ): Promise<ToolExecutionOutcome<ToolResult>> => {
+      const complete = (outcome: ToolExecutionOutcome<ToolResult>) => {
+        signal.throwIfAborted();
+        if (spec.sharing) completedShare.current = { input, settings };
+        return outcome;
+      };
       const conversion = resolveImageConversion(spec, settings);
       const runKey = conversion.choices.length ? conversion.key : definitionKey;
       const run = await loadMainThreadRun(runKey);
@@ -630,10 +741,12 @@ export default function ToolPage({
       if (run) {
         // `parseSettings` treats this as `unknown` and coerces every declared
         // field, so the runtime's flat-scalar view is not the trust boundary.
-        return createExecute(conversion.spec, run)(
-          await toRunInput(input),
-          conversion.settings as ToolSettings,
-          signal,
+        return complete(
+          await createExecute(conversion.spec, run)(
+            await toRunInput(input),
+            conversion.settings as ToolSettings,
+            signal,
+          ),
         );
       }
 
@@ -648,14 +761,14 @@ export default function ToolPage({
           },
           signal,
         );
-        return toOutcome(result);
+        return complete(toOutcome(result));
       } catch (error: unknown) {
         // The worker reports a folder with no `run.worker` as an unknown tool;
         // that is the signal to fall through to the server host.
         if (!(error instanceof ToolError) || error.code !== "unknown-tool") throw error;
       }
 
-      return toOutcome(await runOnServer(runKey, input, conversion.settings, signal));
+      return complete(toOutcome(await runOnServer(runKey, input, conversion.settings, signal)));
     },
     [definitionKey, runOnWorker, settings, spec],
   );
@@ -668,7 +781,7 @@ export default function ToolPage({
       execute,
       initialInput: EMPTY_INPUT,
       initialSettings: RUNTIME_SETTINGS,
-      isEmpty: (input) => isEmptyInput(spec.input.kind, input),
+      isEmpty: (input) => !shareInitialized || isEmptyInput(spec.input, input),
       refreshOnSettingsChange: settings,
       shouldAutoRun: (input) => {
         const maxEditableBytes = spec.input.kind === "text" ? spec.input.acceptFiles?.maxEditableBytes : undefined;
@@ -677,7 +790,7 @@ export default function ToolPage({
       trigger: spec.trigger.mode,
       validate: () => NO_ISSUES,
     }),
-    [execute, settings, spec],
+    [execute, settings, shareInitialized, spec],
   );
 
   const Workspace = useMemo(() => resolveWorkspace(definitionKey), [definitionKey]);
@@ -696,6 +809,9 @@ export default function ToolPage({
       validationReason,
       Workspace,
       workspaceKey,
+      shareInitialized,
+      initializeSharing,
+      completedShare,
     }),
     [
       cleanupWorkerArtifacts,
@@ -708,11 +824,14 @@ export default function ToolPage({
       validationReason,
       Workspace,
       workspaceKey,
+      shareInitialized,
+      initializeSharing,
     ],
   );
 
   return (
     <ToolChromeContext.Provider value={chrome}>
+      <Toaster position="top-right" />
       <UniversalWorkbench
         account={account}
         category={category}

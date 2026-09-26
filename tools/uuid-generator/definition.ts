@@ -4,21 +4,50 @@ export default {
   toolId: "devtools.uuid-generator",
   app: "devtools",
   category: "hashing-crypto",
-  keywords: ["uuid", "guid", "uuid v4", "uuid v7", "identifier", "random id", "primary key"],
+  keywords: ["uuid", "guid", "uuid v1", "uuid v3", "uuid v4", "uuid v5", "uuid v6", "uuid v7", "identifier"],
   name: "UUID Generator",
-  description: "Generate random UUID v4 or time-ordered UUID v7 values.",
+  description: "Generate UUID v1, v3, v4, v5, v6, and v7 identifiers.",
   input: { kind: "none" },
   settings: {
     fields: {
       version: {
         kind: "select",
         label: "UUID version",
-        help: "v4 is fully random. v7 embeds a millisecond timestamp so values sort by creation time.",
+        help: "v3 and v5 use a namespace and name. The other versions generate new IDs.",
         default: "v4",
         choices: [
+          { label: "UUID v1 — timestamp", value: "v1" },
+          { label: "UUID v3 — name-based (MD5)", value: "v3" },
           { label: "UUID v4 — random", value: "v4" },
+          { label: "UUID v5 — name-based (SHA-1)", value: "v5" },
+          { label: "UUID v6 — reordered timestamp", value: "v6" },
           { label: "UUID v7 — time-ordered", value: "v7" },
         ],
+      },
+      namespace: {
+        kind: "select",
+        label: "Namespace",
+        help: "Names in different namespaces produce different UUIDs.",
+        default: "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+        choices: [
+          { label: "DNS", value: "6ba7b810-9dad-11d1-80b4-00c04fd430c8" },
+          { label: "URL", value: "6ba7b811-9dad-11d1-80b4-00c04fd430c8" },
+          { label: "OID", value: "6ba7b812-9dad-11d1-80b4-00c04fd430c8" },
+          { label: "X.500", value: "6ba7b814-9dad-11d1-80b4-00c04fd430c8" },
+          { label: "Custom", value: "custom" },
+        ],
+      },
+      customNamespace: {
+        kind: "text",
+        label: "Namespace UUID",
+        placeholder: "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+        default: "",
+      },
+      name: {
+        kind: "text",
+        label: "Name",
+        help: "One UUID per name. Case and whitespace are preserved.",
+        default: "example.com",
       },
       count: {
         kind: "number",
@@ -36,7 +65,7 @@ export default {
       upper: {
         kind: "toggle",
         label: "Uppercase",
-        help: "RFC 4122 specifies lowercase output; uppercase is for systems that expect it.",
+        help: "Use uppercase letters in the generated UUIDs.",
         default: false,
       },
     },
@@ -51,15 +80,16 @@ export default {
   },
   content: {
     howToUse: [
-      "Pick v4 for an identifier that reveals nothing, or v7 when you want database rows to insert in roughly chronological order.",
-      "Set how many you need — up to 100 per run — and toggle hyphens or uppercase to match the format your system expects.",
-      "Generate and copy. Values are produced with the browser's cryptographic random number generator and never leave this tab.",
+      "Choose v4 for random IDs or v7 for time-ordered IDs. v1 and v6 use a timestamp and a randomly generated node identifier.",
+      "For v3 or v5, select a namespace and enter a name. The same version, namespace, and exact name always produce the same UUID.",
+      "For v1, v4, v6, and v7, choose up to 100 IDs per run. Hyphens and uppercase apply to every version.",
+      "Generate, then copy or download. All values are computed in this browser tab.",
     ],
     limitations: [
-      "A UUID v7 embeds a Unix millisecond timestamp in its first six bytes, so it leaks roughly when it was created. Do not use v7 where that matters — use v4.",
-      "Neither version is a secret. A UUID is an identifier, not a token: do not use one as a password-reset link, an API key, or a bearer credential.",
-      "v7 values generated within the same millisecond are ordered only by their random tail, so they are time-ordered between milliseconds, not strictly monotonic within one.",
-      "Uppercase output is not canonical — RFC 4122 requires lowercase on output, though readers must accept both.",
+      "v2 requires legacy DCE Security identity data. v8 has an application-defined layout and no universal generation algorithm; neither is offered here.",
+      "v1, v6, and v7 include creation time. v1 and v6 use a random node identifier, not your device's MAC address.",
+      "UUIDs are identifiers, not secrets. Do not use them as passwords, API keys, or bearer credentials.",
+      "v3 and v5 are deterministic and return one UUID per name. Generating again with the same inputs intentionally returns the same value.",
       "Removing the hyphens produces a 32-character string that most UUID parsers still accept, but some strict ones do not.",
     ],
     faq: [
@@ -68,12 +98,20 @@ export default {
         a: "v7 if the value is a database primary key — time ordering keeps B-tree inserts local instead of scattering them. v4 anywhere the creation time must not be inferable.",
       },
       {
+        q: "Why are v2 and v8 missing?",
+        a: "v2 is a legacy DCE Security format. v8 reserves space for custom application formats, so it needs a specific scheme rather than a generic generator.",
+      },
+      {
+        q: "When should I use v3 or v5?",
+        a: "Use a name-based UUID when the same namespace and exact name should always map to the same identifier. Use the version required by the system you integrate with.",
+      },
+      {
         q: "Can two of these collide?",
-        a: "Not in practice. A v4 has 122 random bits; you would need to generate about a billion per second for 85 years to reach a 50% chance of one collision.",
+        a: "Accidental collisions are very unlikely for properly generated random UUIDs. v3 and v5 intentionally repeat when given the same namespace and name.",
       },
       {
         q: "Are these generated on a server?",
-        a: "No. They come from the Web Crypto API in this browser tab and are never transmitted.",
+        a: "No. Randomness and name-based hashing run locally in this browser tab; names and UUIDs are never transmitted.",
       },
       {
         q: "Is v7 a real standard?",

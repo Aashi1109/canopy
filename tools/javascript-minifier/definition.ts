@@ -35,14 +35,14 @@ export default {
   content: {
     howToUse: [
       "Paste the JavaScript you want shrunk — a small inline snippet or a single-file script.",
-      "Minify. Line and block comments are removed, runs of whitespace collapse to one space, and spacing around punctuators is dropped. String and template literal contents are left byte-for-byte intact.",
-      "Test the output before shipping it. This is a text-level pass, not a compiler.",
+      "Minify. Line and block comments are removed, and safe spacing around punctuation is reduced. Strings, template literals, and regular expressions are left byte-for-byte intact.",
+      "Test the output before shipping it. This tool compacts source without compiling or optimizing it.",
     ],
     limitations: [
-      "This is not a real minifier. There is no parser, no scope analysis, no identifier renaming, and no dead-code elimination — expect a fraction of the savings a build-step minifier gives you.",
-      "Automatic semicolon insertion is not modelled. Source that relies on newlines to terminate statements can break when those newlines collapse.",
-      "Regex literals are not distinguished from division, so a regex containing // or /* can be mangled.",
-      "An unterminated string or block comment is rejected rather than guessed at.",
+      "JavaScript syntax is parsed, but there is no scope analysis, identifier renaming, or dead-code elimination. Expect less compression than a build-step minifier.",
+      "Potentially significant line breaks are retained to preserve automatic semicolon insertion, so output may span multiple lines.",
+      "Template contents, including interpolation expressions and any comments inside them, are left unchanged.",
+      "Invalid JavaScript, including unterminated strings and comments, is rejected. TypeScript and JSX are not supported.",
     ],
     faq: [
       {
@@ -50,8 +50,8 @@ export default {
         a: "No. Use esbuild, terser, or swc there. This tool is for a quick one-off shrink of a snippet you can eyeball afterwards.",
       },
       {
-        q: "Why did my code break?",
-        a: "Most likely missing semicolons, or a regex literal the scanner read as division. Add explicit semicolons and re-run.",
+        q: "Why does the result still contain line breaks?",
+        a: "Some line breaks affect where JavaScript ends a statement, such as after return or before ++. They are kept instead of risking a change in meaning.",
       },
     ],
     examples: [

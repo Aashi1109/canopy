@@ -1,13 +1,9 @@
 /**
- * Moved verbatim from the `basic-auth-generator` case in
- * `lib/devtools/format-json.ts`: the same `username:password` join and the
- * same shared `encodeBase64`.
- *
- * The password is read once into the encoded header and appears nowhere else —
- * no log line, and no error message (the only error names the *username*).
+ * Generate equivalent HTTP Basic Auth representations locally. Credentials
+ * enter snippets only after Base64 encoding, never as raw shell or JS syntax.
  */
 
-import type { ToolRun } from "../../lib/tool-framework/run.ts";
+import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 import { encodeBase64 } from "../../lib/devtools/shared/encoding.ts";
@@ -16,12 +12,38 @@ import { requireUtilityInput } from "../../lib/devtools/shared/options.ts";
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
-  const encoded = encodeBase64(`${requireUtilityInput(ctx.input.text, "Username")}:${ctx.input.secondary ?? ""}`);
+  const username = ctx.input.text;
+  const password = ctx.input.secondary ?? "";
+  if (username.includes(":")) {
+    throw new ToolError("invalid-username", "Username cannot contain a colon (:).", "Use a username without a colon.");
+  }
+  if (/[\u0000-\u001f\u007f]/.test(username) || /[\u0000-\u001f\u007f]/.test(password)) {
+    throw new ToolError(
+      "invalid-credentials",
+      "Username and password cannot contain control characters.",
+      "Remove line breaks, tabs, and other control characters, then try again.",
+    );
+  }
+  requireUtilityInput(username, "Username");
+  const encoded = encodeBase64(`${username}:${password}`);
   const value = `Basic ${encoded}`;
-  return {
-    render: "text",
-    text: ctx.settings.copyAsHeader ? `Authorization: ${value}` : value,
-  };
+  const header = `Authorization: ${value}`;
+  switch (ctx.settings.format) {
+    case "value":
+      return { render: "text", language: "plaintext", text: value };
+    case "base64":
+      return { render: "text", language: "plaintext", text: encoded };
+    case "curl":
+      return { render: "text", language: "bash", text: `curl --header '${header}' 'https://example.com/api'` };
+    case "fetch":
+      return {
+        render: "text",
+        language: "javascript",
+        text: `await fetch("https://example.com/api", {\n  headers: {\n    Authorization: ${JSON.stringify(value)},\n  },\n});`,
+      };
+    default:
+      return { render: "text", language: "http", text: header };
+  }
 };
 
 export default run;

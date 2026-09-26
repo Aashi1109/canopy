@@ -175,7 +175,7 @@ function CategoryList({ categories }: { categories: readonly CategoryPreview[] }
         <div className="space-y-0.5" key={index}>
           {column.map((category) => (
             <a
-              className="group/category flex min-h-7 items-center gap-1.5 rounded-md px-1 py-0.5 no-underline outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              className="group/category flex min-h-7 items-center gap-1.5 rounded-md px-1 py-0.5 font-normal no-underline outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
               href={category.href}
               key={category.label}
               role="menuitem"

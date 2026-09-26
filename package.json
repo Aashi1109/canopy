@@ -22,9 +22,9 @@
     "lint": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run",
-    "test:affected": "vitest run --changed",
-    "test:watch": "vitest",
+    "test": "TZ=UTC node --max-old-space-size=768 node_modules/vitest/vitest.mjs run",
+    "test:affected": "TZ=UTC node --max-old-space-size=768 node_modules/vitest/vitest.mjs run --changed",
+    "test:watch": "TZ=UTC node --max-old-space-size=768 node_modules/vitest/vitest.mjs",
     "test:media": "vitest run --coverage --coverage.include='lib/tool-framework/media/**/*.{ts,mts,mjs}' --coverage.thresholds.lines=80 --coverage.thresholds.branches=80 tests/media-*.test.mjs",
     "test:integration": "CANOPY_INTEGRATION=1 vitest run tests/*integration.test.mjs",
     "test:e2e": "playwright test"
@@ -62,6 +62,7 @@
     "@jsquash/webp": "^1.5.0",
     "@lezer/common": "^1.5.2",
     "@lezer/highlight": "^1.2.3",
+    "@lezer/javascript": "1.5.5",
     "@opennextjs/cloudflare": "^1.20.6",
     "@pdfme/common": "6.1.11",
     "@pdfme/generator": "6.1.11",
@@ -117,6 +118,7 @@
     "resend": "6.17.2",
     "server-only": "^0.0.1",
     "tailwind-merge": "^3.6.0",
+    "uuid": "14.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

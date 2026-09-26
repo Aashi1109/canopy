@@ -1,16 +1,3 @@
-/**
- * Moved verbatim from the `checksum-generator` case in
- * `lib/devtools/format-json.ts` (line 2585): the same three Web Crypto digests
- * in parallel, the same `md5` package, and the same label padding.
- *
- * The padding is knowingly inconsistent — "MD5    " and "SHA-1  " are 7
- * characters while "SHA-256 " and "SHA-512 " are 8, so the hex columns are off
- * by one. It is preserved rather than fixed: this migration is a move, the
- * defect is cosmetic, and correcting it would mean editing a captured fixture
- * for no functional gain. Alignment belongs to a `key-value` render, not to
- * spaces baked into a string.
- */
-
 import md5 from "md5";
 
 import type { ToolRun } from "../../lib/tool-framework/run.ts";
@@ -25,9 +12,21 @@ export const run: ToolRun<Record<string, never>> = async (ctx): Promise<ToolResu
     digestText(primary, "SHA-512"),
   ]);
   ctx.signal.throwIfAborted();
+  const md5Checksum = md5(primary);
   return {
     render: "text",
-    text: `MD5    ${md5(primary)}\nSHA-1  ${sha1}\nSHA-256 ${sha256}\nSHA-512 ${sha512}`,
+    text: `MD5    ${md5Checksum}\nSHA-1  ${sha1}\nSHA-256 ${sha256}\nSHA-512 ${sha512}`,
+    tablePreview: {
+      render: "table",
+      columns: ["Algorithm", "Checksum"],
+      rows: [
+        ["MD5", md5Checksum],
+        ["SHA-1", sha1],
+        ["SHA-256", sha256],
+        ["SHA-512", sha512],
+      ],
+      showColumnDividers: true,
+    },
     downloadName: "checksums.txt",
   };
 };

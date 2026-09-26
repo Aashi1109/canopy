@@ -1,17 +1,20 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 /**
- * A pure generator: every value comes from `settings`, so `input.fields` is
- * empty and `run` reads no input channel. That mirrors the pre-migration
- * `generatorTool` shape exactly.
+ * Values stay in the existing settings contract for saved-link compatibility.
+ * The tool workspace presents campaign values as direct inputs and leaves
+ * only processing preferences in the settings panel.
  */
 export default {
   toolId: "devtools.utm-builder",
+  sharing: { version: 1 },
   app: "devtools",
   category: "jwt-api-tools",
   keywords: ["utm", "campaign", "url builder", "analytics", "tracking", "google analytics", "marketing"],
   name: "UTM Builder",
   description: "Build a URL with UTM campaign parameters.",
+  layout: "side-by-side",
+  inputSize: { default: 55, min: 35 },
   input: { kind: "none" },
   settings: {
     fields: {
@@ -20,42 +23,54 @@ export default {
         label: "Destination URL",
         help: "Must be an absolute http or https URL. Any existing query string is kept unless you replace it below.",
         default: "https://example.com",
-        pane: "main",
+        pane: "input",
         span: "full",
       },
       source: {
         kind: "text",
         label: "Campaign source",
-        help: "Where the traffic comes from: newsletter, google, partner-site.",
+        help: "Referrer, e.g. google or newsletter.",
         default: "newsletter",
-        pane: "main",
+        pane: "input",
       },
       medium: {
         kind: "text",
         label: "Campaign medium",
-        help: "How it arrives: email, cpc, social, referral.",
+        help: "Channel, e.g. email, social, or cpc.",
         default: "email",
-        pane: "main",
+        pane: "input",
       },
       campaign: {
         kind: "text",
         label: "Campaign name",
-        help: "The promotion this link belongs to.",
+        placeholder: "e.g. spring_launch",
         default: "launch",
-        pane: "main",
+        pane: "input",
+        span: "full",
       },
       term: {
         kind: "text",
-        label: "Campaign term",
-        help: "Paid-search keyword. Left out of the URL when blank.",
+        label: "Campaign term (optional)",
+        placeholder: "Paid-search keyword",
         default: "",
+        pane: "input",
       },
       content: {
         kind: "text",
-        label: "Campaign content",
-        help: "Distinguishes two links to the same destination in one message. Left out of the URL when blank.",
+        label: "Campaign content (optional)",
+        placeholder: "Link or creative, e.g. hero_cta",
         default: "",
-        pane: "main",
+        pane: "input",
+      },
+      parameters: {
+        kind: "rows",
+        label: "Additional parameters",
+        help: "Use full keys, e.g. utm_id or utm_source_platform.",
+        default: [],
+        keyLabel: "Parameter key",
+        valueLabel: "Parameter value",
+        pane: "input",
+        span: "full",
       },
       normalization: {
         kind: "select",
@@ -92,10 +107,11 @@ export default {
       "Paste the destination URL with its scheme. A bare domain is rejected — analytics links must be absolute.",
       "Fill in source, medium, and campaign. All three are required; the build fails rather than emitting a half-tagged link that reports as direct traffic.",
       "Add term or content only if you need them. Blank fields are omitted from the URL instead of being written as empty parameters.",
+      "Use Add parameter for extra UTM or custom tracking keys. Enter the full key and value; remove any row you no longer need.",
       "Choose lowercase normalization if your reports are being split by capitalisation, then build and copy the tagged URL.",
     ],
     limitations: [
-      "Only the five standard UTM parameters are supported. Vendor-specific tags such as gclid or mc_cid must be added by hand.",
+      "Additional parameters are included in the URL, but your analytics platform determines which keys appear in reports.",
       "Values are URL-encoded but not otherwise validated — a typo in a source name produces a valid URL that reports under the wrong name.",
       "Trailing and leading whitespace is trimmed from each value; internal spaces are preserved and percent-encoded.",
       "The tool does not shorten the URL, check that the destination resolves, or verify that your analytics property is receiving the parameters.",

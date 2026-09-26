@@ -1,5 +1,6 @@
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "./components/accordion.tsx";
 export { InlineTextEditor, type InlineTextEditorProps } from "./components/InlineTextEditor.tsx";
+export { KeyValueFields, type KeyValueFieldsProps } from "./components/KeyValueFields.tsx";
 import { Caption, Display, H1, H2, Large, Lead, Muted, Overline, P, Strong, Text } from "./components/typography.tsx";
 export {
   H1,
@@ -64,6 +65,7 @@ export {
 } from "./components/avatar.tsx";
 export { Badge, badgeVariants } from "./components/badge.tsx";
 export { FileChip } from "./components/file-chip.tsx";
+export { WorkspacePanelHeader } from "./components/WorkspacePanelHeader.tsx";
 export { Button, buttonVariants, ToolActionButton } from "./components/button.tsx";
 export { CanvasHandle } from "./components/canvas-handle.tsx";
 export { Pagination, type PaginationProps } from "./components/Pagination.tsx";

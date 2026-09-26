@@ -1,42 +1,59 @@
 /**
- * Moved verbatim from the `jwt-expiration-checker` case in
- * `lib/devtools/format-json.ts`.
- *
- * The token arrives as `input.text` with `secret: true` on its field, never as
- * a setting: a JWT is a bearer credential, and settings are persisted UI state.
- * It is decoded and discarded — no part of it is echoed into the result.
+ * Inspect unverified JWT timing claims locally. Raw output remains compatible;
+ * the structured summary adds a checked-at snapshot and the not-before claim.
+ * Decoded payload content is included only when explicitly requested.
  */
 
 import { decodeJwt } from "../../lib/devtools/shared/jwt.ts";
-import type { ToolRun } from "../../lib/tool-framework/run.ts";
-import type { ToolResult } from "../../lib/tool-framework/result.ts";
+import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
+import { isNumericDate, type JwtExpirationResult, type JwtExpirationSummary } from "./result.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-export const run: ToolRun<Settings> = (ctx): ToolResult => {
+export const run: ToolRun<Settings> = (ctx): JwtExpirationResult => {
   const { payload } = decodeJwt(ctx.input.text);
   const now = Date.now() / 1000;
-  const expiration = typeof payload.exp === "number" ? payload.exp : undefined;
-  const notBefore = typeof payload.nbf === "number" ? payload.nbf : undefined;
+  const claimDate = (claim: "exp" | "nbf" | "iat"): number | null => {
+    if (!Object.hasOwn(payload, claim)) return null;
+    const value = payload[claim];
+    if (!isNumericDate(value)) {
+      throw new ToolError(
+        "invalid-numeric-date",
+        `JWT ${claim} must be a finite NumericDate in seconds within the supported date range.`,
+        `Check the ${claim} claim in the token input. Use a JSON number of seconds since 1970-01-01 UTC, not a date string.`,
+      );
+    }
+    return value;
+  };
+  const expiration = claimDate("exp");
+  const notBefore = claimDate("nbf");
+  const issuedAt = claimDate("iat");
   const formatDate = (seconds: number) =>
     ctx.settings.useLocalTime === true
       ? new Date(seconds * 1000).toLocaleString()
       : new Date(seconds * 1000).toISOString();
-  const state =
-    expiration === undefined
-      ? "No expiration claim"
-      : expiration <= now
-        ? "Expired"
-        : notBefore !== undefined && notBefore > now
-          ? "Not active yet"
+  const state: JwtExpirationSummary["state"] =
+    expiration !== null && expiration <= now
+      ? "expired"
+      : notBefore !== null && notBefore > now
+        ? "not-active"
+        : expiration === null
+          ? "no-expiration"
           : ctx.settings.warnBeforeExpiry === true && expiration <= now + 300
-            ? "Expiring soon"
-            : "Active";
+            ? "expiring-soon"
+            : "active";
+  const stateLabels = {
+    active: "Active",
+    expired: "Expired",
+    "not-active": "Not active yet",
+    "expiring-soon": "Expiring soon",
+    "no-expiration": "No expiration claim",
+  };
   const lines = [
-    `Status: ${state}`,
-    expiration === undefined ? "Expires: not specified" : `Expires: ${formatDate(expiration)}`,
-    typeof payload.iat === "number" ? `Issued: ${formatDate(payload.iat)}` : "Issued: not specified",
+    `Status: ${stateLabels[state]}`,
+    expiration === null ? "Expires: not specified" : `Expires: ${formatDate(expiration)}`,
+    issuedAt === null ? "Issued: not specified" : `Issued: ${formatDate(issuedAt)}`,
   ];
   if (ctx.settings.decodePayload === true) {
     lines.push("Payload:", JSON.stringify(payload, null, 2));
@@ -44,6 +61,18 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   return {
     render: "text",
     text: lines.join("\n"),
+    jsonPreview: {
+      render: "json-tree",
+      value: {
+        state,
+        checkedAt: now,
+        expiresAt: expiration,
+        issuedAt,
+        notBefore,
+        useLocalTime: ctx.settings.useLocalTime === true,
+        ...(ctx.settings.decodePayload === true ? { payload } : {}),
+      },
+    },
   };
 };
 

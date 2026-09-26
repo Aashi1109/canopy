@@ -104,6 +104,9 @@ importers:
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3
+      '@lezer/javascript':
+        specifier: 1.5.5
+        version: 1.5.5
       '@opennextjs/cloudflare':
         specifier: ^1.20.6
         version: 1.20.6(patch_hash=298d6fd17f3c2b16b7a1730aa571cbf3521bbfb68dfe6279979a91f5ff817edd)(next@16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.61.1)(@types/node@26.1.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(wrangler@4.131.1(@types/node@26.1.1))
@@ -269,6 +272,9 @@ importers:
       tailwind-merge:
         specifier: ^3.6.0
         version: 3.6.0
+      uuid:
+        specifier: 14.0.1
+        version: 14.0.1
       zod:
         specifier: ^4.4.3
         version: 4.4.3

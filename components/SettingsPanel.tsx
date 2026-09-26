@@ -7,13 +7,14 @@ import {
   FieldLabel,
   Button,
   Input,
+  KeyValueFields,
   RadioGroup,
   RadioGroupItem,
   Select,
   Switch,
   Textarea,
 } from "@/components/ui/index.tsx";
-import { Plus, RotateCw, Trash2 } from "lucide-react";
+import { RotateCw } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useId } from "react";
 import type { FieldKind, FieldSpec, SettingRow, SettingsSpec, WatermarkPosition } from "@/lib/tool-framework/settings";
 import { cn } from "@/components/ui/lib/utils.ts";
@@ -477,79 +478,18 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
       </FieldFrame>
     );
   },
-  rows: (field, context) => {
-    const rows = rowsValue(context.value, field.default);
-    return (
-      <fieldset aria-describedby={field.help ? `${context.id}-help` : undefined} className="grid gap-3">
-        <FieldLegend>{field.label}</FieldLegend>
-        {rows.map((row, index) => {
-          const keyId = `${context.id}-${index}-key`;
-          const valueId = `${context.id}-${index}-value`;
-          return (
-            <div
-              className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-2"
-              key={`${context.id}-${index}`}
-            >
-              <div className="grid gap-1.5">
-                <FieldLabel htmlFor={keyId}>{field.keyLabel}</FieldLabel>
-                <Input
-                  disabled={context.disabled}
-                  id={keyId}
-                  onChange={(event) =>
-                    context.onChange(
-                      rows.map((entry, rowIndex) =>
-                        rowIndex === index ? { ...entry, key: event.currentTarget.value } : entry,
-                      ),
-                    )
-                  }
-                  value={row.key}
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <FieldLabel htmlFor={valueId}>{field.valueLabel}</FieldLabel>
-                <Input
-                  disabled={context.disabled}
-                  id={valueId}
-                  onChange={(event) =>
-                    context.onChange(
-                      rows.map((entry, rowIndex) =>
-                        rowIndex === index ? { ...entry, value: event.currentTarget.value } : entry,
-                      ),
-                    )
-                  }
-                  value={row.value}
-                />
-              </div>
-              <Button
-                aria-label={`Remove row ${index + 1}`}
-                disabled={context.disabled}
-                onClick={() => context.onChange(rows.filter((_, rowIndex) => rowIndex !== index))}
-                size="icon"
-                type="button"
-                variant="ghost"
-              >
-                <Trash2 aria-hidden="true" />
-              </Button>
-            </div>
-          );
-        })}
-        <Button
-          className="w-fit"
-          disabled={context.disabled}
-          onClick={() => context.onChange([...rows, { key: "", value: "" }])}
-          type="button"
-          variant="outline"
-        >
-          <Plus aria-hidden="true" /> Add row
-        </Button>
-        {field.help ? (
-          <FieldDescription className="text-muted-foreground" id={`${context.id}-help`}>
-            {field.help}
-          </FieldDescription>
-        ) : null}
-      </fieldset>
-    );
-  },
+  rows: (field, context) => (
+    <KeyValueFields
+      disabled={context.disabled}
+      help={field.help}
+      keyLabel={field.keyLabel}
+      label={field.label}
+      onChange={context.onChange}
+      onSubmit={context.onSubmit}
+      rows={rowsValue(context.value, field.default)}
+      valueLabel={field.valueLabel}
+    />
+  ),
 };
 
 export function SettingsPanel({

@@ -93,6 +93,34 @@ test("Sentry preserves actions and redirects, marks failures, and correlates chi
     expect(errors[0].exception.values[0].value).toBe("Database query failed");
     expect(errors[0].exception.values[0].stacktrace.frames.length > 0).toBeTruthy();
     expect(JSON.stringify(envelopes)).not.toMatch(/private action result|private failure|private-token|select secret/);
+
+    const initialUrl = `https://smarttools.lol/devtools/json-formatter#share=${encodeURIComponent(
+      JSON.stringify({ v: 1, input: "initial-private-input" }),
+    )}`;
+    const nextUrl = `https://smarttools.lol/devtools/json-formatter#share=${encodeURIComponent(
+      JSON.stringify({ v: 1, input: "edited-private-input" }),
+    )}`;
+    Sentry.addBreadcrumb({ category: "navigation", data: { from: initialUrl, to: nextUrl } });
+    Sentry.captureEvent({
+      message: "Shared tool failed to render",
+      // HttpContext attaches the initial browser URL to this field before beforeSend.
+      request: { url: initialUrl },
+      exception: { values: [{ type: "Error", value: `Unable to open ${nextUrl}` }] },
+    });
+    const pageSpan = startInactiveSpan({
+      name: "shared tool page",
+      op: "pageload",
+      attributes: { "url.full": initialUrl },
+    });
+    pageSpan.end();
+    await Sentry.flush(2000);
+    const updatedItems = envelopes.flatMap(([, entries]) => entries);
+    expect(updatedItems.some(([header, event]) => header.type === "event" && event.request?.url)).toBe(true);
+    expect(
+      updatedItems.some(([header, event]) => header.type === "transaction" && event.transaction === "shared tool page"),
+    ).toBe(true);
+    expect(JSON.stringify(envelopes)).toContain("/devtools/json-formatter");
+    expect(JSON.stringify(envelopes)).not.toMatch(/initial-private-input|edited-private-input|%7B/);
   } finally {
     await Sentry.close(2000);
   }
@@ -112,6 +140,53 @@ test("error sanitization preserves useful messages while removing connection cre
   expect(event.exception.values[2].value).toBe("Connection timed out");
   expect(JSON.stringify(event)).not.toMatch(/session-secret|redis-password|private-token|select token/);
   expect(sentryOptions.beforeBreadcrumb({ category: "console", message: "private SQL" })).toBe(null);
+});
+
+test("shared URL inputs are removed from error, navigation and trace telemetry without losing the route", () => {
+  const sharedUrl = `https://smarttools.lol/devtools/text-case-converter#share=${encodeURIComponent(
+    JSON.stringify({ v: 1, input: "Private input: don't collect me", settings: { mode: "upper" } }),
+  )}`;
+  const safeUrl = "https://smarttools.lol/devtools/text-case-converter#share=[Filtered]";
+  const event = {
+    request: { url: sharedUrl },
+    message: `Could not load ${sharedUrl}`,
+    logentry: { message: `Loading ${sharedUrl}` },
+    exception: {
+      values: [
+        {
+          value: `Unable to open ${sharedUrl} after navigation`,
+          stacktrace: { frames: [{ filename: sharedUrl, abs_path: sharedUrl, lineno: 12 }] },
+        },
+      ],
+    },
+    breadcrumbs: [{ category: "navigation", data: { from: sharedUrl, to: "/devtools/color-picker#preview" } }],
+    contexts: { trace: { data: { "url.full": sharedUrl, "http.status_code": 200 } } },
+  };
+  expect(sentryOptions.beforeSend(event)).toBe(event);
+  expect(event.request.url).toBe(safeUrl);
+  expect(event.exception.values[0].value).toBe(`Unable to open ${safeUrl} after navigation`);
+  expect(event.exception.values[0].stacktrace.frames[0]).toEqual({ filename: safeUrl, abs_path: safeUrl, lineno: 12 });
+  expect(event.breadcrumbs[0].data.to).toBe("/devtools/color-picker#preview");
+  expect(event.contexts.trace.data["http.status_code"]).toBe(200);
+  expect(JSON.stringify(event)).not.toMatch(/Private|collect|%7B/);
+
+  const breadcrumb = { category: "navigation", data: { from: sharedUrl, to: sharedUrl } };
+  expect(sentryOptions.beforeBreadcrumb(breadcrumb).data).toEqual({ from: safeUrl, to: safeUrl });
+  const span = { description: `GET ${sharedUrl}`, data: { "url.full": sharedUrl, "http.url": sharedUrl } };
+  expect(sentryOptions.beforeSendSpan(span)).toEqual({
+    description: `GET ${safeUrl}`,
+    data: { "url.full": safeUrl, "http.url": safeUrl },
+  });
+  const transaction = {
+    type: "transaction",
+    transaction: sharedUrl,
+    request: { url: sharedUrl },
+    contexts: { trace: { data: { "url.full": sharedUrl } } },
+    spans: [{ description: `GET ${sharedUrl}`, data: { "http.url": sharedUrl } }],
+  };
+  expect(sentryOptions.beforeSendTransaction(transaction)).toBe(transaction);
+  expect(transaction.transaction).toBe(safeUrl);
+  expect(JSON.stringify(transaction)).not.toMatch(/Private|collect|%7B/);
 });
 
 test("the local sign-in handoff never starts telemetry that could capture its ticket", () => {

@@ -1,16 +1,8 @@
-/**
- * Moved verbatim from the `css-formatter` case in
- * `lib/devtools/format-json.ts` (line 2698).
- *
- * `formatDelimitedCode` is imported from `lib/devtools/shared/code.ts` and
- * deliberately not inlined: the sibling `javascript-formatter` tool runs the
- * same routine with a different language argument.
- */
-
 import type { ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
-import { formatDelimitedCode } from "../../lib/devtools/shared/code.ts";
+import { formatDelimitedCode, protectCssStrings } from "../../lib/devtools/shared/code.ts";
+import { requireUtilityInput } from "../../lib/devtools/shared/options.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
@@ -31,23 +23,18 @@ function sortDeclarations(css: string): string {
     const keepFinalSemicolon = declarations.at(-1)?.trimEnd().endsWith(";") ?? false;
     declarations
       .map((line) => line.replace(/;\s*$/, ""))
-      .sort((left, right) => left.trimStart().localeCompare(right.trimStart(), "en", { sensitivity: "base" }))
+      .sort((left, right) =>
+        left
+          .slice(0, left.indexOf(":"))
+          .trim()
+          .localeCompare(right.slice(0, right.indexOf(":")).trim(), "en", { sensitivity: "base" }),
+      )
       .forEach((line, declarationIndex, sorted) => {
         const semicolon = declarationIndex < sorted.length - 1 || keepFinalSemicolon ? ";" : "";
         output.push(`${line}${semicolon}`);
       });
   }
   return output.join("\n");
-}
-
-function applyIndentation(css: string, indent: string): string {
-  return css
-    .split("\n")
-    .map((line) => {
-      const spaces = /^ */.exec(line)?.[0].length ?? 0;
-      return `${indent.repeat(Math.floor(spaces / 2))}${line.slice(spaces)}`;
-    })
-    .join("\n");
 }
 
 function wrapLines(css: string, width: number, indent: string): string {
@@ -59,9 +46,16 @@ function wrapLines(css: string, width: number, indent: string): string {
       let remaining = line;
       const leading = /^\s*/.exec(line)?.[0] ?? "";
       const continuation = `${leading}${indent}`;
+      if (
+        line
+          .trim()
+          .split(/\s+/)
+          .some((word) => word.length > width - continuation.length)
+      )
+        return [line];
       while (remaining.length > width) {
         const breakAt = remaining.lastIndexOf(" ", width);
-        if (breakAt <= leading.length) break;
+        if (breakAt <= (remaining.match(/^\s*/)?.[0].length ?? 0)) break;
         lines.push(remaining.slice(0, breakAt));
         remaining = `${continuation}${remaining.slice(breakAt + 1).trimStart()}`;
       }
@@ -72,13 +66,13 @@ function wrapLines(css: string, width: number, indent: string): string {
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const indent = ctx.settings.indentWidth === "4" ? "    " : ctx.settings.indentWidth === "tab" ? "\t" : "  ";
-  let text = formatDelimitedCode(ctx.input.text, "css");
+  const protectedSource = protectCssStrings(requireUtilityInput(ctx.input.text, "CSS input"));
+  let text = formatDelimitedCode(protectedSource.source, "css", indent);
   if (ctx.settings.propertyOrder === "alphabetical") text = sortDeclarations(text);
-  text = applyIndentation(text, indent);
   if (ctx.settings.printWidth !== "unlimited") {
     text = wrapLines(text, Number(ctx.settings.printWidth), indent);
   }
-  return { render: "text", text, downloadName: "formatted.css" };
+  return { render: "text", text: protectedSource.restore(text), downloadName: "formatted.css" };
 };
 
 export default run;

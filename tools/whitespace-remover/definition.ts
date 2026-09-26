@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.whitespace-remover",
+  sharing: { version: 1 },
   app: "devtools",
   category: "text-tools",
   keywords: ["whitespace", "trim", "spaces", "blank lines", "indentation", "clean text"],

@@ -13,6 +13,19 @@ import { isRecord } from "../../lib/devtools/shared/json.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
+function equalJsonValues(left: unknown, right: unknown): boolean {
+  if (left === right) return true;
+  if (Array.isArray(left) && Array.isArray(right)) {
+    return left.length === right.length && left.every((item, index) => equalJsonValues(item, right[index]));
+  }
+  if (!isRecord(left) || !isRecord(right)) return false;
+  const keys = Object.keys(left);
+  return (
+    keys.length === Object.keys(right).length &&
+    keys.every((key) => Object.hasOwn(right, key) && equalJsonValues(left[key], right[key]))
+  );
+}
+
 function validateJsonSchema(value: unknown, schema: unknown, path = "$"): string[] {
   if (!isRecord(schema)) return [`${path}: schema must be an object`];
   const errors: string[] = [];
@@ -20,21 +33,22 @@ function validateJsonSchema(value: unknown, schema: unknown, path = "$"): string
   const actual = jsonType(value);
   const matchesType =
     expected === undefined ||
-    expected === actual ||
-    (expected === "integer" && typeof value === "number" && Number.isInteger(value));
+    (Array.isArray(expected) ? expected : [expected]).some(
+      (type) => type === actual || (type === "integer" && typeof value === "number" && Number.isInteger(value)),
+    );
   if (!matchesType) return [`${path}: expected ${String(expected)}, received ${actual}`];
-  if (Array.isArray(schema.enum) && !schema.enum.some((item) => Object.is(item, value))) {
+  if (Array.isArray(schema.enum) && !schema.enum.some((item) => equalJsonValues(item, value))) {
     errors.push(`${path}: value is not in enum`);
   }
   if (isRecord(value)) {
     if (Array.isArray(schema.required)) {
       for (const key of schema.required) {
-        if (typeof key === "string" && !(key in value)) errors.push(`${path}.${key}: is required`);
+        if (typeof key === "string" && !Object.hasOwn(value, key)) errors.push(`${path}.${key}: is required`);
       }
     }
     if (isRecord(schema.properties)) {
       for (const [key, childSchema] of Object.entries(schema.properties)) {
-        if (key in value) errors.push(...validateJsonSchema(value[key], childSchema, `${path}.${key}`));
+        if (Object.hasOwn(value, key)) errors.push(...validateJsonSchema(value[key], childSchema, `${path}.${key}`));
       }
     }
   }
@@ -44,10 +58,11 @@ function validateJsonSchema(value: unknown, schema: unknown, path = "$"): string
     });
   }
   if (typeof value === "string") {
-    if (typeof schema.minLength === "number" && value.length < schema.minLength) {
+    const length = [...value].length;
+    if (typeof schema.minLength === "number" && length < schema.minLength) {
       errors.push(`${path}: must contain at least ${schema.minLength} characters`);
     }
-    if (typeof schema.maxLength === "number" && value.length > schema.maxLength) {
+    if (typeof schema.maxLength === "number" && length > schema.maxLength) {
       errors.push(`${path}: must contain at most ${schema.maxLength} characters`);
     }
     if (typeof schema.pattern === "string") {

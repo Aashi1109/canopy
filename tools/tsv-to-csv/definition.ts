@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.tsv-to-csv",
+  sharing: { version: 1 },
   app: "devtools",
   category: "csv-data-tools",
   keywords: ["tsv", "csv", "convert", "tab", "spreadsheet", "delimited"],

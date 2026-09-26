@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.gradient-generator",
+  sharing: { version: 1 },
   app: "devtools",
   category: "color-design-tools",
   keywords: ["gradient", "css", "linear-gradient", "radial-gradient", "color", "background", "design"],

@@ -39,6 +39,8 @@ function dateInput(value: string, time: string, timezone: Settings["timezone"], 
     input = `${withoutOffset}${/^\d{4}-\d{2}-\d{2}$/.test(withoutOffset) ? "T00:00:00Z" : "Z"}`;
   } else if (timezone === "local") {
     input = trimmed.replace(/(?:Z|[+-]\d{2}:\d{2})$/i, "");
+    // Date-only ISO strings otherwise parse as UTC, even in local-time mode.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(input)) input += "T00:00:00";
   }
   return parseDate(input, label);
 }

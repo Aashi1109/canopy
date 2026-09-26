@@ -1,13 +1,13 @@
 /**
- * Moved verbatim from the `utm-builder` case in `lib/devtools/format-json.ts`.
- * Same `safeUrl` guard, same replace-vs-merge handling of an existing query,
- * same trim/lowercase normalization, same required-parameter check.
+ * Preserves the original UTM generator's URL guard, merge/replace behavior,
+ * normalization, and required fields while supporting additional parameters.
  */
 
 import { safeUrl } from "../../lib/devtools/shared/url.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
+import { getParameterErrors } from "./parameters.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
@@ -27,7 +27,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     url.search = "";
   }
   const normalizeValue = (value: string) =>
-    ctx.settings.normalization === "lowercase" ? value.trim().toLocaleLowerCase() : value.trim();
+    ctx.settings.normalization === "lowercase" ? value.trim().toLowerCase() : value.trim();
 
   for (const [key, settingKey] of PARAMETERS) {
     const value = normalizeValue(ctx.settings[settingKey]);
@@ -41,6 +41,20 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         "Fill in campaign source, medium, and name — a partially tagged link reports as direct traffic.",
       );
     }
+  }
+
+  const extraRows = ctx.settings.parameters ?? [];
+  const parameterError = getParameterErrors(extraRows).find((error) => error !== "");
+  if (parameterError) {
+    throw new ToolError(
+      "invalid-extra-parameter",
+      parameterError,
+      "Edit or remove the extra parameter row, then build the URL again.",
+    );
+  }
+  for (const row of extraRows) {
+    const key = row.key.trim();
+    if (key) url.searchParams.set(key, normalizeValue(row.value));
   }
 
   return { render: "text", text: url.toString(), downloadName: "campaign-url.txt" };

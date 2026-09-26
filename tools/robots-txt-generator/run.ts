@@ -1,7 +1,6 @@
 /**
- * Moved verbatim from the `robots-txt-generator` case in
- * `lib/devtools/format-json.ts` (arm at line 2891), including the exact line
- * order, the `Disallow:`-when-empty rule, and the download name `robots.txt`.
+ * Generates independent Disallow and Allow lists, preserving the
+ * `Disallow:`-when-empty rule and the download name `robots.txt`.
  * `safeUrl` is shared (`lib/devtools/shared/url.ts`) and still rejects any
  * sitemap URL that is not absolute http or https.
  *
@@ -39,11 +38,10 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const crawlDelay = ctx.settings.crawlDelay;
   return {
     render: "text",
+    language: "robots",
     text: [
       `User-agent: ${ctx.settings.userAgent}`,
-      ...(allowAll || !paths.length
-        ? ["Disallow:"]
-        : paths.map((path) => `${ctx.settings.newDirective === "allow" ? "Allow" : "Disallow"}: ${path}`)),
+      ...(allowAll || !paths.length ? ["Disallow:"] : paths.map((path) => `Disallow: ${path}`)),
       ...allowPaths.map((path) => `Allow: ${path}`),
       ...(crawlDelay ? [`Crawl-delay: ${crawlDelay}`] : []),
       ...(sitemap ? [`Sitemap: ${sitemap}`] : []),

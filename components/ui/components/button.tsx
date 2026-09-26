@@ -13,14 +13,13 @@ const buttonVariants = cva(
         default: "bg-primary text-primary-foreground hover:bg-[#0052CC] active:bg-[#003D99]",
         strong: "bg-surface-ink text-white hover:bg-[#25272B]",
         destructive: "bg-destructive text-destructive-foreground hover:bg-[#C51F1F] focus-visible:ring-destructive",
-        outline: "border border-input bg-card text-foreground hover:bg-muted",
-        secondary: "border border-input bg-card text-foreground hover:bg-muted",
-        ghost:
-          "bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground hover:[&_svg]:text-current active:bg-accent active:text-accent-foreground active:[&_svg]:text-current",
+        outline: "border border-input bg-card text-foreground",
+        secondary: "border border-input bg-card text-foreground",
+        ghost: "bg-transparent text-foreground",
         "card-action":
           "bg-transparent text-foreground hover:bg-muted focus-visible:ring-inset focus-visible:ring-offset-0 aria-pressed:hover:bg-transparent",
         "input-icon":
-          "bg-transparent text-muted-foreground hover:text-foreground focus-visible:ring-inset focus-visible:ring-primary/30 focus-visible:ring-offset-0 disabled:bg-transparent",
+          "bg-transparent text-muted-foreground focus-visible:ring-inset focus-visible:ring-primary/30 focus-visible:ring-offset-0 disabled:bg-transparent",
         "danger-subtle": "border border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10",
         link: "text-primary underline-offset-4 hover:underline disabled:bg-transparent",
       },
@@ -38,6 +37,11 @@ const buttonVariants = cva(
       },
     },
     compoundVariants: [
+      {
+        variant: ["outline", "secondary", "ghost", "input-icon"],
+        className:
+          "hover:bg-accent hover:text-accent-foreground hover:[&_svg]:text-current active:bg-accent active:text-accent-foreground active:[&_svg]:text-current",
+      },
       { variant: "card-action", className: "rounded-none" },
       {
         variant: "ghost",

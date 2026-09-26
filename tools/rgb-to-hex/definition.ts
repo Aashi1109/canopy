@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.rgb-to-hex",
+  sharing: { version: 1 },
   app: "devtools",
   category: "color-design-tools",
   keywords: ["rgb", "rgba", "hex", "color", "convert", "css", "alpha"],

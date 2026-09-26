@@ -113,6 +113,23 @@ test("opt-in loads once; manual SPA views are deduplicated and payloads contain 
   expect(scripts.length).toBe(1);
 });
 
+test("shared URL inputs never enter GA4 configuration or events when a fragment changes", () => {
+  const { browser, scripts, events } = browserFixture("accepted");
+  browser.location.pathname = "/devtools/text-case-converter";
+  browser.location.hash = `#share=${encodeURIComponent(JSON.stringify({ v: 1, input: "private shared input" }))}`;
+  browser.location.href = `${browser.location.origin}${browser.location.pathname}${browser.location.hash}`;
+  const client = createAnalytics(browser, "G-TEST");
+  client.pageView();
+  scripts[0].onload();
+  browser.location.hash = `#share=${encodeURIComponent(JSON.stringify({ v: 1, input: "updated private input" }))}`;
+  browser.location.href = `${browser.location.origin}${browser.location.pathname}${browser.location.hash}`;
+  client.pageView();
+  client.track("tool_complete", "text-case-converter");
+  expect(events().filter(([, name]) => name === "page_view")).toHaveLength(1);
+  expect(events().at(-1)[2].page_location).toBe("https://smarttools.lol/devtools/[tool]");
+  expect(JSON.stringify(browser.dataLayer)).not.toMatch(/share=|private|%7B/);
+});
+
 test("private SPA navigation disables collection and returning resumes a single safe view", () => {
   const { browser, scripts, events } = browserFixture("accepted");
   const client = createAnalytics(browser, "G-TEST");

@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.text-diff-checker",
+  sharing: { version: 1 },
   app: "devtools",
   category: "text-tools",
   keywords: ["diff", "compare", "text", "changes", "lines", "difference", "review"],

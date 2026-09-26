@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.text-sorter",
+  sharing: { version: 1 },
   app: "devtools",
   category: "text-tools",
   keywords: ["sort", "lines", "alphabetical", "order", "ascending", "descending", "list"],
@@ -44,13 +45,13 @@ export default {
     howToUse: [
       "Paste your list, one item per line.",
       "Pick the direction and decide whether case should matter, then sort.",
-      "Sorting uses locale-aware comparison, so accented letters land next to their base letter rather than after `z`.",
+      "Sorting uses English collation, so accented letters land next to their base letter rather than after `z`.",
       "Every input line is kept — blank lines and duplicates are sorted, not removed.",
     ],
     limitations: [
       "This is a lexicographic sort, not a numeric one: `10` sorts before `9`. Pad numbers with leading zeros if you need numeric order.",
       "Blank lines are preserved and sort to the top; duplicates are preserved.",
-      "Comparison uses the browser's default locale, so the exact ordering of accented and non-Latin characters can differ between machines.",
+      "Comparison uses English collation regardless of browser locale, so shared links keep the same ordering. Other languages may have different alphabetical conventions.",
       "There is no sort-by-column or sort-by-field — the whole line is the key.",
     ],
     faq: [

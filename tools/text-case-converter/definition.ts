@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.text-case-converter",
+  sharing: { version: 1 },
   app: "devtools",
   category: "text-tools",
   keywords: ["case", "camelcase", "snake_case", "kebab-case", "uppercase", "title case", "convert"],

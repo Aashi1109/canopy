@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.url-decoder",
+  sharing: { version: 1 },
   app: "devtools",
   category: "encoding-decoding",
   keywords: ["url", "decode", "percent encoding", "uri", "query string", "unescape"],
@@ -10,6 +11,7 @@ export default {
   layout: "stacked",
   input: {
     kind: "text",
+    language: "url-encoded",
     label: "Encoded input",
     placeholder: "hello%20smart%20tools%3Factive%3Dtrue",
   },

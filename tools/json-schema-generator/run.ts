@@ -18,7 +18,7 @@ function inferJsonSchema(value: unknown): Record<string, unknown> {
   if (Array.isArray(value)) {
     const schemas = value.map(inferJsonSchema);
     const unique = [...new Map(schemas.map((schema) => [JSON.stringify(schema), schema])).values()];
-    return { type: "array", items: unique.length === 1 ? unique[0] : { anyOf: unique } };
+    return { type: "array", items: unique.length === 0 ? {} : unique.length === 1 ? unique[0] : { anyOf: unique } };
   }
   if (isRecord(value)) {
     return {

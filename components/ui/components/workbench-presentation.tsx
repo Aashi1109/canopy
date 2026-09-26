@@ -1,6 +1,6 @@
 "use client";
 
-import { Code, Columns2, Eye, Maximize2, Minimize2 } from "lucide-react";
+import { Code, Columns2, Eye, Maximize2, Minimize2, Rows2 } from "lucide-react";
 import {
   createContext,
   useCallback,
@@ -15,27 +15,54 @@ import {
   type RefObject,
 } from "react";
 import { Button } from "./button.tsx";
+import { ButtonGroup } from "./button-group.tsx";
 import { Tabs, TabsList, TabsTrigger } from "./tabs.tsx";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip.tsx";
 
 export type WorkbenchView = "input" | "split" | "preview";
+export type WorkbenchLayout = "side-by-side" | "stacked";
 
 type Presentation = {
   focused: boolean;
   setFocused: (focused: boolean) => void;
   view: WorkbenchView;
   setView: (view: WorkbenchView) => void;
+  layout: WorkbenchLayout | null;
+  setLayout: (layout: WorkbenchLayout) => void;
+  defaultLayout: WorkbenchLayout | undefined;
   hasPanes: boolean;
-  registerPanes: (id: string) => () => void;
+  registerPanes: (id: string, layout?: WorkbenchLayout) => () => void;
   narrow: boolean;
 };
 
 const PresentationContext = createContext<Presentation | null>(null);
 
-export function WorkbenchPresentationProvider({ children }: { children: ReactNode }) {
+export function WorkbenchPresentationProvider({ children, storageKey }: { children: ReactNode; storageKey?: string }) {
   const [focused, setFocused] = useState(false);
   const [view, setView] = useState<WorkbenchView>("split");
-  const [panes, setPanes] = useState<ReadonlySet<string>>(new Set());
+  const [layout, setLayoutState] = useState<WorkbenchLayout | null>(null);
+  const [panes, setPanes] = useState<ReadonlyMap<string, WorkbenchLayout | undefined>>(new Map());
   const [narrow, setNarrow] = useState(false);
+  useLayoutEffect(() => {
+    let saved: string | null = null;
+    try {
+      if (storageKey) saved = window.localStorage.getItem(storageKey);
+    } catch {
+      // Storage may be blocked; keep the tool's default layout.
+    }
+    setLayoutState(saved === "stacked" || saved === "side-by-side" ? saved : null);
+  }, [storageKey]);
+  const setLayout = useCallback(
+    (next: WorkbenchLayout) => {
+      setLayoutState(next);
+      try {
+        if (storageKey) window.localStorage.setItem(storageKey, next);
+      } catch {
+        // The selected layout still works when persistence is unavailable.
+      }
+    },
+    [storageKey],
+  );
   useEffect(() => {
     const query = matchMedia("(max-width: 64rem)");
     const update = () => setNarrow(query.matches);
@@ -43,18 +70,29 @@ export function WorkbenchPresentationProvider({ children }: { children: ReactNod
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
   }, []);
-  const registerPanes = useCallback((id: string) => {
-    setPanes((previous) => new Set(previous).add(id));
+  const registerPanes = useCallback((id: string, layout?: WorkbenchLayout) => {
+    setPanes((previous) => new Map(previous).set(id, layout));
     return () =>
       setPanes((previous) => {
-        const next = new Set(previous);
+        const next = new Map(previous);
         next.delete(id);
         return next;
       });
   }, []);
   const value = useMemo(
-    () => ({ focused, setFocused, view, setView, hasPanes: panes.size > 0, registerPanes, narrow }),
-    [focused, view, panes, registerPanes, narrow],
+    () => ({
+      focused,
+      setFocused,
+      view,
+      setView,
+      layout,
+      setLayout,
+      defaultLayout: Array.from(panes.values()).find((layout) => layout !== undefined),
+      hasPanes: panes.size > 0,
+      registerPanes,
+      narrow,
+    }),
+    [focused, view, layout, setLayout, panes, registerPanes, narrow],
   );
   return <PresentationContext.Provider value={value}>{children}</PresentationContext.Provider>;
 }
@@ -64,13 +102,13 @@ export function useWorkbenchPresentation() {
 }
 
 /** Only actual input/result pairs register; settings and two-input comparisons do not. */
-export function useWorkbenchPaneView(enabled: boolean) {
+export function useWorkbenchPaneView(enabled: boolean, defaultLayout?: WorkbenchLayout) {
   const context = useWorkbenchPresentation();
   const id = useId();
   const register = context?.registerPanes;
   useEffect(() => {
-    if (enabled && register) return register(id);
-  }, [enabled, id, register]);
+    if (enabled && register) return register(id, defaultLayout);
+  }, [enabled, id, register, defaultLayout]);
   if (!enabled || !context?.focused) return "split";
   return context.narrow && context.view === "split" ? "input" : context.view;
 }
@@ -98,6 +136,43 @@ export function WorkbenchViewControl() {
         </TabsTrigger>
       </TabsList>
     </Tabs>
+  );
+}
+
+export function WorkbenchLayoutControl() {
+  const context = useWorkbenchPresentation();
+  if (!context?.defaultLayout || context.narrow) return null;
+  const selected = context.layout ?? context.defaultLayout;
+  return (
+    <TooltipProvider>
+      <ButtonGroup aria-label="Workspace layout">
+        {(
+          [
+            { value: "stacked", label: "Stacked layout", icon: Rows2 },
+            { value: "side-by-side", label: "Side-by-side layout", icon: Columns2 },
+          ] as const
+        ).map(({ value, label, icon: Icon }) => (
+          <Tooltip key={value}>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label={label}
+                aria-pressed={selected === value}
+                className="aria-pressed:bg-accent aria-pressed:text-primary"
+                onClick={() => {
+                  context.setLayout(value);
+                  context.setView("split");
+                }}
+                size="icon-sm"
+                variant="outline"
+              >
+                <Icon aria-hidden="true" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+          </Tooltip>
+        ))}
+      </ButtonGroup>
+    </TooltipProvider>
   );
 }
 

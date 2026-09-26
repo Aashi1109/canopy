@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.sitemap-generator",
+  sharing: { version: 1 },
   app: "devtools",
   category: "developer-generators",
   keywords: ["sitemap", "xml", "seo", "urlset", "crawl", "urls", "generator"],

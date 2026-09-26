@@ -19,7 +19,7 @@ import {
   useWorkbenchPresentation,
   type WorkbenchView,
 } from "@/components/ui/components/workbench-presentation";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, SlidersHorizontal } from "lucide";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Settings, SlidersHorizontal } from "lucide";
 import { MorphIcon } from "morphicons/react";
 import { Children, type HTMLAttributes, type ReactNode, useEffect, useId, useRef, useState } from "react";
 
@@ -118,6 +118,8 @@ export type SplitStackProps = Omit<HTMLAttributes<HTMLDivElement>, "children" | 
   resizable?: boolean;
   /** Opt in only for the tool's actual input/preview pair, never its settings split. */
   presentation?: boolean;
+  /** Disable for custom input layouts whose surfaces cannot switch without remounting. */
+  layoutSwitchable?: boolean;
   /** Hides the secondary pane until content is available, preserving the primary workspace. */
   secondaryHidden?: boolean;
   storageKey?: string;
@@ -154,9 +156,10 @@ function SplitStack({
   maxSize = 80,
   minSize = 20,
   onSizeChange,
-  orientation = "horizontal",
+  orientation: defaultOrientation = "horizontal",
   resizable = true,
   presentation = false,
+  layoutSwitchable = true,
   secondaryHidden,
   storageKey,
   style,
@@ -164,7 +167,16 @@ function SplitStack({
 }: SplitStackProps) {
   const panes = Children.toArray(children);
   const presentationContext = useWorkbenchPresentation();
-  const focusView = useWorkbenchPaneView(presentation);
+  const focusView = useWorkbenchPaneView(
+    presentation,
+    layoutSwitchable ? (defaultOrientation === "vertical" ? "stacked" : "side-by-side") : undefined,
+  );
+  const orientation =
+    presentation && layoutSwitchable && presentationContext?.layout
+      ? presentationContext.layout === "stacked"
+        ? "vertical"
+        : "horizontal"
+      : defaultOrientation;
   const [mobileView, setMobileView] = useState<WorkbenchView>("input");
   const splitId = useId();
   const primaryPaneId = `${splitId}-primary`;
@@ -306,10 +318,7 @@ function SplitStack({
               type="button"
               variant="outline"
             >
-              <MorphIcon
-                icon={collapsed ? (collapsedIcon ?? SlidersHorizontal) : SlidersHorizontal}
-                reducedMotion="user"
-              />
+              <MorphIcon icon={collapsedIcon ?? SlidersHorizontal} reducedMotion="user" />
               {collapsedPanelLabel}
             </Button>
           </div>
@@ -496,6 +505,19 @@ function SplitStack({
   );
 }
 
+/** Settings drawers share their gear icon, accessible labels, and secondary-panel placement. */
+function SettingsStack(props: Omit<SplitStackProps, "collapsedIcon" | "collapseLabel" | "collapseSide">) {
+  return (
+    <SplitStack
+      collapsible
+      {...props}
+      collapsedIcon={Settings}
+      collapseLabel="settings panel"
+      collapseSide="secondary"
+    />
+  );
+}
+
 export type GridStackProps = HTMLAttributes<HTMLDivElement> & {
   columns?: number;
   gap?: StackGap;
@@ -576,4 +598,4 @@ function ScrollRegion({ accessibleName, children, className, tabIndex, ...props 
   );
 }
 
-export { GridStack, OverlayStack, ScrollRegion, SplitStack, Stack };
+export { GridStack, OverlayStack, ScrollRegion, SettingsStack, SplitStack, Stack };

@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.json-unescape",
+  sharing: { version: 1 },
   app: "devtools",
   category: "json-tools",
   keywords: ["json", "unescape", "decode", "escape sequence", "backslash", "stringified"],

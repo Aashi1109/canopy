@@ -2,6 +2,7 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
   toolId: "devtools.cron-parser",
+  sharing: { version: 1 },
   app: "devtools",
   slug: "cron-parser",
   category: "date-time-tools",

@@ -26,12 +26,23 @@ import CodeEditorImpl from "../components/content/CodeEditorImpl.tsx";
 
 let container;
 let root;
+const rangeMeasurementDescriptors = Object.fromEntries(
+  ["getClientRects", "getBoundingClientRect"].map((name) => [
+    name,
+    Object.getOwnPropertyDescriptor(Range.prototype, name),
+  ]),
+);
 
 const languageExtension = (name) => EditorView.contentAttributes.of({ "data-loaded-language": name });
 const completionExtension = EditorView.contentAttributes.of({ "data-loaded-completions": "true" });
 
 beforeEach(() => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  // jsdom has no layout; provide the same empty geometry as its Element APIs.
+  Object.defineProperties(Range.prototype, {
+    getClientRects: { configurable: true, value: () => [] },
+    getBoundingClientRect: { configurable: true, value: () => new DOMRect() },
+  });
   features.jobs.length = 0;
   features.language.mockReset().mockImplementation(async (name) => languageExtension(name));
   features.completion.mockReset().mockResolvedValue({ automatic: completionExtension, manual: completionExtension });
@@ -43,6 +54,10 @@ beforeEach(() => {
 afterEach(async () => {
   if (root) await act(() => root.unmount());
   container.remove();
+  for (const [name, descriptor] of Object.entries(rangeMeasurementDescriptors)) {
+    if (descriptor) Object.defineProperty(Range.prototype, name, descriptor);
+    else delete Range.prototype[name];
+  }
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });

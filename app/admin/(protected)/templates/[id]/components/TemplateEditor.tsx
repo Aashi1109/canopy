@@ -931,7 +931,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                         {...orderable.attributes}
                         {...orderable.listeners}
                         aria-label={`Reorder ${sectionLabels[section] ?? section}`}
-                        className="grid size-8 shrink-0 cursor-grab touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-40"
+                        className="cursor-grab touch-none rounded-md text-muted-foreground active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-40"
                         disabled={orderable.disabled}
                         ref={orderable.setActivatorNodeRef}
                         size="icon-sm"

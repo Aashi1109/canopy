@@ -247,6 +247,7 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
         workspaceId="tool-page-content"
       >
         <WorkbenchShell
+          layoutStorageKey={`canopy:workbench-layout:${definition.definitionKey}`}
           workspaceTitle={title}
           aria-busy={isBusy || undefined}
           className="max-[56rem]:[&_[data-slot=workbench-toolbar-actions]]:w-full max-[56rem]:[&_[data-slot=workbench-toolbar-actions]]:min-w-0 max-[56rem]:[&_[data-slot=workbench-toolbar-actions]]:shrink"

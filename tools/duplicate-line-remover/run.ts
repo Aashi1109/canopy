@@ -20,7 +20,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       .split(/\r\n|\r|\n/)
       .map((line) => (trim ? line.trim() : line))
       .filter((line) => {
-        const key = insensitive ? line.toLocaleLowerCase() : line;
+        const key = insensitive ? line.toLowerCase() : line;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;

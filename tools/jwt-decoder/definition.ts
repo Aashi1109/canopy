@@ -8,9 +8,12 @@ export default {
   name: "JWT Decoder",
   description: "Decode JWT header and payload without verifying the signature.",
   outputLanguage: "json",
+  resultView: { default: "preview" },
   input: {
     kind: "text",
     label: "JWT token",
+    language: "jwt",
+    showLineNumbers: false,
     placeholder: "eyJhbGciOiJub25lIn0.eyJzdWIiOiIxMjMifQ.",
   },
   settings: { fields: {} },

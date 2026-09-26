@@ -57,6 +57,7 @@ export default function DeletePdfPagesWorkspace(props: WorkspaceProps) {
   return (
     <FileProcessorWorkspace
       {...props}
+      compactFileToolbar
       detail={({ disabled, inspecting, previews }) => (
         <PagePicker
           disabled={disabled}

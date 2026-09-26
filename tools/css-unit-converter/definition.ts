@@ -7,6 +7,7 @@ const unitChoices = ["px", "rem", "em", "pt", "%", "vw", "vh", "vmin", "vmax"].m
 
 export default {
   toolId: "devtools.css-unit-converter",
+  sharing: { version: 1 },
   app: "devtools",
   category: "color-design-tools",
   keywords: ["css", "px", "rem", "em", "pt", "percent", "viewport", "unit", "convert"],
