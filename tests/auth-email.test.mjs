@@ -1,77 +1,123 @@
-import { afterAll, expect, test, vi } from "vitest";
-
-// vi.hoisted runs before the hoisted vi.mock factory so the fake Resend client
-// can record messages where the test can read them.
-const state = vi.hoisted(() => ({ sent: [], error: null }));
-
-vi.mock("resend", () => ({
-  Resend: class Resend {
-    emails = {
-      async send(message) {
-        state.sent.push(message);
-        return { error: state.error };
-      },
-    };
-  },
-}));
-
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { sendAuthEmail } from "@/lib/auth/email.ts";
 
-const originalEnv = Object.fromEntries(
-  ["RESEND_API_KEY", "ACCOUNTS_EMAIL", "AUTH_EMAIL_FROM"].map((key) => [key, process.env[key]]),
-);
-afterAll(() => {
-  for (const [key, value] of Object.entries(originalEnv)) {
-    if (value === undefined) delete process.env[key];
-    else process.env[key] = value;
-  }
+const accountId = "0123456789abcdef0123456789abcdef";
+const message = {
+  to: "recipient@example.com",
+  subject: "Verify your account",
+  heading: "Verify your account",
+  actionLabel: "Verify email",
+  actionUrl: "http://localhost:3000/api/auth/verify-email?token=test&callbackURL=%2F",
+};
+const delivered = {
+  success: true,
+  errors: [],
+  messages: [],
+  result: { delivered: [message.to], permanent_bounces: [], queued: [] },
+};
+
+beforeEach(() => {
+  vi.stubEnv("CLOUDFLARE_EMAIL_ACCOUNT_ID", ` ${accountId} `);
+  vi.stubEnv("CLOUDFLARE_EMAIL_API_TOKEN", " test-email-token ");
+  vi.stubEnv("ACCOUNTS_EMAIL", "  accounts@smarttools.lol  ");
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(delivered)));
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
-test("account email uses the shared address and rejects missing configuration or delivery failures", async () => {
-  const message = {
-    to: "recipient@example.com",
-    subject: "Verify your account",
-    heading: "Verify your account",
-    actionLabel: "Verify email",
-    actionUrl: "http://localhost:3000/api/auth/verify-email?token=test",
-  };
-  process.env.RESEND_API_KEY = "test-key";
-  process.env.AUTH_EMAIL_FROM = "Old Sender <old@example.com>";
-  process.env.ACCOUNTS_EMAIL = "  accounts@smarttools.lol  ";
+test("account email sends authenticated Cloudflare JSON with its shared sender and usable HTML and text", async () => {
   await sendAuthEmail(message);
-  expect(state.sent[0].from).toBe("SmartTools Accounts <accounts@smarttools.lol>");
-  expect(state.sent[0].to).toEqual([message.to]);
-  expect(state.sent[0].subject).toBe(message.subject);
-
-  for (const address of [undefined, "", "   "]) {
-    if (address === undefined) delete process.env.ACCOUNTS_EMAIL;
-    else process.env.ACCOUNTS_EMAIL = address;
-    await expect(sendAuthEmail(message)).rejects.toThrow(/ACCOUNTS_EMAIL/);
-  }
-  process.env.ACCOUNTS_EMAIL = "accounts@smarttools.lol";
-  delete process.env.RESEND_API_KEY;
-  await expect(sendAuthEmail(message)).rejects.toThrow(/RESEND_API_KEY/);
-  expect(state.sent.length).toBe(1);
-
-  process.env.RESEND_API_KEY = "test-key";
-  state.error = { message: "Domain not verified" };
-  await expect(sendAuthEmail(message)).rejects.toThrow(/Unable to send/);
-  expect(state.sent.length).toBe(2);
+  expect(fetch).toHaveBeenCalledTimes(1);
+  const [url, options] = fetch.mock.calls[0];
+  expect(url).toBe(`https://api.cloudflare.com/client/v4/accounts/${accountId}/email/sending/send`);
+  expect(options.method).toBe("POST");
+  expect(options.headers).toEqual({
+    Authorization: "Bearer test-email-token",
+    "Content-Type": "application/json",
+  });
+  expect(options.signal).toBeInstanceOf(AbortSignal);
+  const payload = JSON.parse(options.body);
+  expect(payload.from).toEqual({ address: "accounts@smarttools.lol", name: "SmartTools Accounts" });
+  expect(payload.to).toEqual([message.to]);
+  expect(payload.subject).toBe(message.subject);
+  expect(payload.html).toContain("This link expires automatically.");
+  expect(payload.html).toContain("token=test&amp;callbackURL=%2F");
+  expect(payload.text).toContain("This link expires automatically.");
+  expect(payload.text).toContain(`${message.actionLabel}: ${message.actionUrl}`);
 });
 
-test("account email supports escaped confirmation copy instead of expiring-link instructions", async () => {
-  process.env.RESEND_API_KEY = "test-key";
-  process.env.ACCOUNTS_EMAIL = "accounts@smarttools.lol";
-  state.error = null;
+test.each(["CLOUDFLARE_EMAIL_ACCOUNT_ID", "CLOUDFLARE_EMAIL_API_TOKEN", "ACCOUNTS_EMAIL"])(
+  "missing or blank %s stops before contacting the provider",
+  async (key) => {
+    for (const value of [undefined, "", "   "]) {
+      vi.stubEnv(key, value);
+      await expect(sendAuthEmail(message)).rejects.toThrow(key);
+    }
+    expect(fetch).not.toHaveBeenCalled();
+  },
+);
+
+test("queued mail and a normalized recipient address count as accepted delivery", async () => {
+  fetch.mockResolvedValueOnce(
+    Response.json({
+      ...delivered,
+      result: { delivered: [], permanent_bounces: [], queued: [message.to.toUpperCase()] },
+    }),
+  );
+  await expect(sendAuthEmail(message)).resolves.toBeUndefined();
+});
+
+test.each([
+  { success: false, errors: [{ message: "private provider detail" }], result: null },
+  null,
+  { success: true },
+  { success: true, result: null },
+  { success: true, result: { delivered: message.to, permanent_bounces: [], queued: [] } },
+  { ...delivered, result: { delivered: [], permanent_bounces: [], queued: [] } },
+  { ...delivered, result: { delivered: ["someone-else@example.com"], permanent_bounces: [], queued: [] } },
+  { ...delivered, result: { delivered: [], permanent_bounces: [message.to], queued: [] } },
+  { ...delivered, result: { ...delivered.result, permanent_bounces: [message.to] } },
+  { ...delivered, result: { ...delivered.result, suppressed_recipients: [message.to] } },
+])("unsuccessful, bounced, suppressed, or malformed responses fail safely: %j", async (body) => {
+  fetch.mockResolvedValueOnce(Response.json(body));
+  await expect(sendAuthEmail(message)).rejects.toThrow(/^Unable to send authentication email$/);
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+test.each([401, 403, 429, 500])("HTTP %s is a delivery failure even with a success body", async (status) => {
+  fetch.mockResolvedValueOnce(Response.json(delivered, { status }));
+  await expect(sendAuthEmail(message)).rejects.toThrow(/^Unable to send authentication email$/);
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+test("non-JSON, network, and timeout failures are sanitized and never retried", async () => {
+  fetch.mockResolvedValueOnce(new Response("private upstream detail"));
+  fetch.mockRejectedValueOnce(new Error("private network detail"));
+  fetch.mockRejectedValueOnce(new DOMException("private timeout detail", "TimeoutError"));
+  for (let index = 0; index < 3; index++) {
+    await expect(sendAuthEmail(message)).rejects.toThrow(/^Unable to send authentication email$/);
+    expect(fetch).toHaveBeenCalledTimes(index + 1);
+  }
+});
+
+test("confirmation copy is escaped in HTML and preserved in plain text", async () => {
   await sendAuthEmail({
-    to: "recipient@example.com",
+    ...message,
     subject: "Your password was changed",
-    heading: "Password changed",
+    heading: 'Password <changed> & "secured"',
     message: "Changed <safely> & successfully.",
-    actionLabel: "Secure your account",
-    actionUrl: "http://localhost:3000/auth?mode=forgot",
+    actionLabel: "Secure 'your' account",
+    actionUrl: 'http://localhost:3000/auth?mode=forgot&value="test"',
   });
-  const { html } = state.sent.at(-1);
-  expect(html).toMatch(/Changed &lt;safely&gt; &amp; successfully\./);
+  const { html, text } = JSON.parse(fetch.mock.calls[0][1].body);
+  expect(html).toContain("Password &lt;changed&gt; &amp; &quot;secured&quot;");
+  expect(html).toContain("Changed &lt;safely&gt; &amp; successfully.");
+  expect(html).toContain("Secure &#39;your&#39; account");
+  expect(html).toContain("mode=forgot&amp;value=&quot;test&quot;");
   expect(html).not.toMatch(/expires automatically|ignore this email/);
+  expect(text).toContain("Changed <safely> & successfully.");
+  expect(text).toContain('http://localhost:3000/auth?mode=forgot&value="test"');
+  expect(text).not.toMatch(/expires automatically|ignore this email/);
 });

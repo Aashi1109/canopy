@@ -16,7 +16,9 @@ if (!/^\d+$/.test(appPort)) {
 const e2eEnvironment = {
   APP_URL: "http://localhost:3000",
   BETTER_AUTH_SECRET: config.auth.secret ?? "e2e-only-secret-that-is-at-least-32-characters",
-  RESEND_API_KEY: "re_e2e_mock",
+  EMAIL_PROVIDER: "cloudflare",
+  CLOUDFLARE_EMAIL_ACCOUNT_ID: "0123456789abcdef0123456789abcdef",
+  CLOUDFLARE_EMAIL_API_TOKEN: "e2e-mock-token",
   ACCOUNTS_EMAIL: "accounts@example.test",
   GOOGLE_CLIENT_ID: "google-e2e-client",
   GOOGLE_CLIENT_SECRET: "google-e2e-secret",

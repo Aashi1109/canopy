@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, onTestFinished, test } from "vitest";
 import { randomUUID } from "node:crypto";
 
 const enabled = process.env.CANOPY_INTEGRATION === "1" && Boolean(process.env.DATABASE_URL);
@@ -14,21 +14,44 @@ test(
   {
     skip: enabled ? false : "set CANOPY_INTEGRATION=1 with a migrated disposable DATABASE_URL",
   },
-  async (context) => {
-    process.env.BETTER_AUTH_SECRET = "integration-only-secret-that-is-at-least-32-characters";
-    process.env.APP_URL = "http://localhost:3000";
-    process.env.RESEND_API_KEY = "re_test_integration";
-    process.env.ACCOUNTS_EMAIL = "accounts@example.test";
-    process.env.GOOGLE_CLIENT_ID = "google-integration-client";
-    process.env.GOOGLE_CLIENT_SECRET = "google-integration-secret";
-
+  async () => {
+    const environment = {
+      BETTER_AUTH_SECRET: "integration-only-secret-that-is-at-least-32-characters",
+      APP_URL: "http://localhost:3000",
+      EMAIL_PROVIDER: "cloudflare",
+      CLOUDFLARE_EMAIL_ACCOUNT_ID: "0123456789abcdef0123456789abcdef",
+      CLOUDFLARE_EMAIL_API_TOKEN: "integration-mock-token",
+      ACCOUNTS_EMAIL: "accounts@example.test",
+      GOOGLE_CLIENT_ID: "google-integration-client",
+      GOOGLE_CLIENT_SECRET: "google-integration-secret",
+    };
+    const originalEnv = Object.fromEntries(Object.keys(environment).map((key) => [key, process.env[key]]));
     const delivered = [];
     const nativeFetch = globalThis.fetch;
+    let closeDatabase;
+    onTestFinished(async () => {
+      globalThis.fetch = nativeFetch;
+      for (const [key, value] of Object.entries(originalEnv)) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+      await closeDatabase?.();
+    });
+    Object.assign(process.env, environment);
     globalThis.fetch = async (input, init) => {
       const url = input instanceof Request ? input.url : String(input);
-      if (url === "https://api.resend.com/emails") {
-        delivered.push(JSON.parse(String(init?.body ?? "{}")));
-        return Response.json({ id: randomUUID() });
+      if (
+        url ===
+        `https://api.cloudflare.com/client/v4/accounts/${environment.CLOUDFLARE_EMAIL_ACCOUNT_ID}/email/sending/send`
+      ) {
+        const message = JSON.parse(String(init?.body ?? "{}"));
+        delivered.push(message);
+        return Response.json({
+          success: true,
+          errors: [],
+          messages: [],
+          result: { delivered: message.to, permanent_bounces: [], queued: [] },
+        });
       }
       return nativeFetch(input, init);
     };
@@ -37,10 +60,7 @@ test(
       import(`../lib/auth/auth.ts?integration=${randomUUID()}`),
       import("../db/index.ts"),
     ]);
-    context.after(async () => {
-      globalThis.fetch = nativeFetch;
-      await sqlClient.end();
-    });
+    closeDatabase = () => sqlClient.end();
 
     const suffix = randomUUID();
     const email = `auth-${suffix}@example.test`;

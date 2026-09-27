@@ -2,6 +2,21 @@ import { test, expect, onTestFinished } from "vitest";
 import config from "../lib/config/config.ts";
 import publicConfig from "../lib/config/public.ts";
 
+test("email provider defaults to Cloudflare and reads overrides lazily", () => {
+  const previous = process.env;
+  onTestFinished(() => {
+    process.env = previous;
+  });
+  process.env = {};
+  expect(config.email.provider).toBe("cloudflare");
+  process.env.EMAIL_PROVIDER = "custom";
+  expect(config.email.provider).toBe("custom");
+  process.env = { EMAIL_PROVIDER: "cloudflare" };
+  expect(config.email.provider).toBe("cloudflare");
+  delete process.env.EMAIL_PROVIDER;
+  expect(config.email.provider).toBe("cloudflare");
+});
+
 test("database pool maximum defaults safely and reads valid environment overrides lazily", (t) => {
   const previous = process.env;
   onTestFinished(() => {
@@ -102,7 +117,8 @@ test("configuration stays lazy across environment loading, updates and replaceme
     ["BETTER_AUTH_SECRET", () => config.auth.secret],
     ["GOOGLE_CLIENT_ID", () => config.auth.googleClientId],
     ["GOOGLE_CLIENT_SECRET", () => config.auth.googleClientSecret],
-    ["RESEND_API_KEY", () => config.email.apiKey],
+    ["CLOUDFLARE_EMAIL_ACCOUNT_ID", () => config.email.accountId],
+    ["CLOUDFLARE_EMAIL_API_TOKEN", () => config.email.apiToken],
     ["ACCOUNTS_EMAIL", () => config.email.accountsEmail],
     ["SUPPORT_EMAIL", () => config.email.supportEmail],
     ["CLOUDINARY_CLOUD_NAME", () => config.cloudinary.cloudName],
@@ -166,6 +182,8 @@ test("public configuration exposes only browser-safe values", (t) => {
     BETTER_AUTH_SECRET: "private-auth-secret",
     CLOUDINARY_API_SECRET: "private-cloudinary-secret",
     SENTRY_AUTH_TOKEN: "private-sentry-token",
+    CLOUDFLARE_EMAIL_ACCOUNT_ID: "email-account",
+    CLOUDFLARE_EMAIL_API_TOKEN: "private-email-token",
   };
   expect(JSON.parse(JSON.stringify(publicConfig))).toEqual({
     environment: "production",

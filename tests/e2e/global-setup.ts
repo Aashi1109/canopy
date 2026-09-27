@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type { FullConfig } from "@playwright/test";
 import { E2E_ACCOUNTS, E2E_PASSWORD } from "./fixtures/accounts";
 
@@ -6,18 +5,28 @@ export default async function globalSetup(_config: FullConfig) {
   const nativeFetch = globalThis.fetch;
   globalThis.fetch = async (input, init) => {
     const url = input instanceof Request ? input.url : String(input);
-    if (url === "https://api.resend.com/emails") {
-      return Response.json({ id: randomUUID() });
+    if (
+      url ===
+      `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_EMAIL_ACCOUNT_ID}/email/sending/send`
+    ) {
+      const body = JSON.parse(String(init?.body ?? "{}"));
+      return Response.json({
+        success: true,
+        errors: [],
+        messages: [],
+        result: { delivered: body.to, permanent_bounces: [], queued: [] },
+      });
     }
     return nativeFetch(input, init);
   };
 
-  const [{ auth }, { db, sql, sqlClient }] = await Promise.all([
-    import("../../lib/auth/auth"),
-    import("../../db/index"),
-  ]);
-
+  let closeDatabase: (() => Promise<void>) | undefined;
   try {
+    const [{ auth }, { db, sql, sqlClient }] = await Promise.all([
+      import("../../lib/auth/auth"),
+      import("../../db/index"),
+    ]);
+    closeDatabase = () => sqlClient.end();
     for (const account of Object.values(E2E_ACCOUNTS)) {
       const [existing] = (
         await db.execute<{ id: string }>(sql`
@@ -80,6 +89,6 @@ export default async function globalSetup(_config: FullConfig) {
     `);
   } finally {
     globalThis.fetch = nativeFetch;
-    await sqlClient.end();
+    await closeDatabase?.();
   }
 }

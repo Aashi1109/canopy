@@ -39,7 +39,9 @@ const config = {
   },
   get email() {
     return {
-      apiKey: process.env.RESEND_API_KEY,
+      provider: process.env.EMAIL_PROVIDER ?? "cloudflare",
+      accountId: process.env.CLOUDFLARE_EMAIL_ACCOUNT_ID,
+      apiToken: process.env.CLOUDFLARE_EMAIL_API_TOKEN,
       accountsEmail: process.env.ACCOUNTS_EMAIL,
       supportEmail: process.env.SUPPORT_EMAIL,
     };

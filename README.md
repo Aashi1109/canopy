@@ -99,9 +99,46 @@ data, and console breadcrumbs are excluded. Session replay and profiling are not
 Verify after deploying by exercising a server action and API request, then checking
 their traces and child spans. Sampling means not every successful request appears.
 
-Google OAuth needs `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; verification, recovery, and deletion emails need `RESEND_API_KEY` and `ACCOUNTS_EMAIL`.
+Google OAuth needs `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Verification, recovery,
+and deletion emails use the Cloudflare Email Sending REST API from both Workers and Node deployments.
+`EMAIL_PROVIDER=cloudflare` selects the sender and is also the default when omitted.
+`lib/email/sender.ts` defines the shared `EmailSender` contract and `getEmailSender` factory;
+provider implementations live in `lib/email/senders/`. The Cloudflare class in
+`lib/email/senders/cloudflare.ts` owns the provider-specific request and reads its
+settings directly from `config.email` when instantiated, without constructor arguments.
+Providers implement the contract through type-only imports to avoid a runtime dependency cycle.
+The factory selects and instantiates the sender, so authentication consumers keep the same API.
+Cloudflare is the currently supported provider; adding another implementation requires
+registering it in the factory before selecting its type through configuration.
 
-Set `ACCOUNTS_EMAIL=accounts@smarttools.lol` for account-related emails sent through Resend and `SUPPORT_EMAIL=support@smarttools.lol` for contact links and the contact form. Apply these values to the deployed environment as well. The contact form opens the visitor's email app; support messages and replies are handled in Zoho.
+### Account email setup
+
+1. Enable Workers Paid on the sending account. [Email Sending is in public beta](https://developers.cloudflare.com/changelog/post/2026-04-16-email-sending-public-beta/).
+   The sender domain must use Cloudflare DNS.
+2. Follow [Cloudflare's send-email setup](https://developers.cloudflare.com/email-service/get-started/send-emails/):
+   open **Compute > Email Service > Email Sending > Onboard Domain**, select the
+   sender domain, and confirm its sending DNS records. Keep the existing Zoho root
+   MX records: outbound sending uses `cf-bounce` records, while incoming support mail
+   stays in Zoho. Review the domain's existing DMARC policy during onboarding;
+   [Email Sending and Email Routing have separate DNS records](https://developers.cloudflare.com/email-service/configuration/domains/).
+3. Create an API token scoped to that account with **Email Sending: Edit** permission.
+   Set `CLOUDFLARE_EMAIL_ACCOUNT_ID` to the sending account's ID and
+   `CLOUDFLARE_EMAIL_API_TOKEN` to that token. These are separate from Wrangler's
+   deployment credentials and `CLOUDFLARE_ACCOUNT_ID`.
+4. Set `ACCOUNTS_EMAIL=accounts@smarttools.lol` (or a sender on your onboarded domain)
+   and `SUPPORT_EMAIL=support@smarttools.lol`. The contact form opens the visitor's
+   email app; support messages and replies remain handled in Zoho.
+5. Put these settings in `.env.local` for Next.js development/Docker, `.env` for Worker
+   preview, `.env.prod` for local production deployment, and the runtime environment
+   of any Node deployment. Local Worker deployment uploads the email token as a secret
+   and the account ID as a plain-text variable. For Workers Builds, set the token as a
+   Worker runtime secret and the account ID and sender as runtime variables before
+   deploying; Build Variables do not provide email credentials to the deployed Worker.
+
+After deploying with the new settings, verify signup verification, password recovery,
+and deletion confirmation using a controlled account and check Email Sending activity.
+Remove the old Resend runtime secret and revoke its token after confirming delivery;
+omitting a secret from an environment file does not delete it from an existing Worker.
 
 ## Shared Assistant and content
 
@@ -405,7 +442,8 @@ binding's local connection from `DATABASE_URL` in `.env`.
    applicable values below; `pnpm run deploy` uploads runtime secrets with the Worker:
    - `DATABASE_URL` — only needed for Worker runtime when not using Hyperdrive.
    - `BETTER_AUTH_SECRET` — a persistent, random authentication secret.
-   - `RESEND_API_KEY` and `ACCOUNTS_EMAIL` — a verified account-email sender.
+   - `CLOUDFLARE_EMAIL_ACCOUNT_ID`, `CLOUDFLARE_EMAIL_API_TOKEN`, and `ACCOUNTS_EMAIL`
+     — the [onboarded account-email sender](#account-email-setup).
    - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` if enabling Google login.
    - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`
      if enabling admin icon uploads.
@@ -442,9 +480,11 @@ into browser JavaScript.
 
 Deployment reads runtime settings from the selected file (`.env.prod` for production,
 `.env` for dev) after the build succeeds. Known basic settings such as `CACHE_ENABLED`,
-`AI_ENABLED`, `AI_PROVIDER`, and `OPENAI_MODEL` become plain-text variables visible in
+`AI_ENABLED`, `AI_PROVIDER`, `OPENAI_MODEL`, and `CLOUDFLARE_EMAIL_ACCOUNT_ID` become plain-text variables visible in
 Cloudflare's dashboard. The allowlist is `PLAIN_VARIABLES` in `scripts/cloudflare.mjs`;
 credentials and unknown settings remain secrets, passed through a temporary secrets file.
+`CLOUDFLARE_EMAIL_API_TOKEN` is a runtime secret; the email account ID and token are
+the only application settings exempted from the `CLOUDFLARE_` build-only filter.
 Redeploy the relevant Worker to apply the split to existing bindings.
 Configured Wrangler variables and bindings,
 public/build-only values, and deployment credentials are excluded from that upload.

@@ -133,6 +133,8 @@ test.each(["1", "true"])("Workers Builds (%s) deploys code while retaining exist
     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "public-cloud",
     SENTRY_AUTH_TOKEN: "build-upload-token",
     BETTER_AUTH_SECRET: "must-not-upload",
+    CLOUDFLARE_EMAIL_ACCOUNT_ID: "runtime-email-account",
+    CLOUDFLARE_EMAIL_API_TOKEN: "runtime-email-token",
   });
   expect(status).toBe(0);
   expect(calls.loadedFile).toBeUndefined();
@@ -140,6 +142,8 @@ test.each(["1", "true"])("Workers Builds (%s) deploys code while retaining exist
   expect(calls[0].env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME).toBe("public-cloud");
   expect(calls[0].env.SENTRY_AUTH_TOKEN).toBe("build-upload-token");
   expect(calls.every(({ env }) => env.APP_URL === "https://canopy.example")).toBe(true);
+  expect(calls.every(({ env }) => env.CLOUDFLARE_EMAIL_ACCOUNT_ID === undefined)).toBe(true);
+  expect(calls.every(({ env }) => env.CLOUDFLARE_EMAIL_API_TOKEN === undefined)).toBe(true);
   const deployment = calls.at(-1);
   expect(deployment.args).toEqual([
     "node_modules/wrangler/bin/wrangler.js",
@@ -196,7 +200,11 @@ test("local preview serves the dev configuration without uploading code or secre
       },
     },
     [],
-    "DATABASE_URL=postgres://local/preview-test-only",
+    [
+      "DATABASE_URL=postgres://local/preview-test-only",
+      "CLOUDFLARE_EMAIL_ACCOUNT_ID=local-email-account",
+      "CLOUDFLARE_EMAIL_API_TOKEN=local-email-token",
+    ].join("\n"),
   );
   expect(calls).toHaveLength(3);
   expect(calls.loadedFile).toMatch(/\/\.env$/);
@@ -218,6 +226,8 @@ test("local preview serves the dev configuration without uploading code or secre
   ]);
   expect(calls.at(-1).env.CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV).toBe("true");
   expect(calls.at(-1).env.CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_DB).toBe("postgres://local/preview-test-only");
+  expect(calls.at(-1).env.CLOUDFLARE_EMAIL_ACCOUNT_ID).toBe("local-email-account");
+  expect(calls.at(-1).env.CLOUDFLARE_EMAIL_API_TOKEN).toBe("local-email-token");
   expect(calls.at(-1).secrets).toBeUndefined();
 });
 
@@ -327,6 +337,46 @@ test.each(["deploy", "preview"])(
     });
   },
 );
+
+test.each(["deploy", "preview"])("%s uploads Email Sending settings without exposing its token", (mode) => {
+  const { calls } = recordRun(
+    mode,
+    config,
+    [],
+    [
+      "CLOUDFLARE_EMAIL_ACCOUNT_ID=email-account",
+      "CLOUDFLARE_EMAIL_API_TOKEN=email-token",
+      "EMAIL_PROVIDER=cloudflare",
+      "CLOUDFLARE_ACCOUNT_ID=deployment-account",
+      "CLOUDFLARE_API_TOKEN=deployment-token",
+      "CLOUDFLARE_UNRELATED_SETTING=build-only",
+    ].join("\n"),
+    {
+      CLOUDFLARE_EMAIL_ACCOUNT_ID: "inherited-email-account",
+      CLOUDFLARE_EMAIL_API_TOKEN: "inherited-email-token",
+    },
+  );
+  const deployment = calls.at(-1);
+  expect(deployment.args.flatMap((arg, index) => (arg === "--var" ? [deployment.args[index + 1]] : []))).toEqual([
+    "CLOUDFLARE_EMAIL_ACCOUNT_ID:email-account",
+    "EMAIL_PROVIDER:cloudflare",
+  ]);
+  expect(deployment.secrets).toEqual({ CLOUDFLARE_EMAIL_API_TOKEN: "email-token" });
+  expect(deployment.env.CLOUDFLARE_ACCOUNT_ID).toBe("deployment-account");
+  expect(deployment.env.CLOUDFLARE_API_TOKEN).toBe("deployment-token");
+  expect(existsSync(deployment.args.at(-1))).toBe(false);
+});
+
+test("local deployment does not inherit email credentials absent from the selected file", () => {
+  const { calls } = recordRun("deploy", config, [], "", {
+    CLOUDFLARE_EMAIL_ACCOUNT_ID: "inherited-email-account",
+    CLOUDFLARE_EMAIL_API_TOKEN: "inherited-email-token",
+  });
+  expect(calls.every(({ env }) => env.CLOUDFLARE_EMAIL_ACCOUNT_ID === undefined)).toBe(true);
+  expect(calls.every(({ env }) => env.CLOUDFLARE_EMAIL_API_TOKEN === undefined)).toBe(true);
+  expect(calls.at(-1).secrets).toEqual({});
+  expect(calls.at(-1).args).not.toContain("--var");
+});
 
 test("runtime secrets cannot replace the DB resource binding", () => {
   const configured = {

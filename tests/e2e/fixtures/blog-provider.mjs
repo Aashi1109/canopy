@@ -134,7 +134,18 @@ function completed(body, id) {
 if (process.env.BLOG_AI_E2E_FIXTURE === "1")
   globalThis.fetch = async (input, init) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-    if (url.startsWith("https://api.resend.com/")) return json({ id: randomUUID() });
+    if (
+      url ===
+      `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_EMAIL_ACCOUNT_ID}/email/sending/send`
+    ) {
+      const body = JSON.parse(init?.body ?? "{}");
+      return json({
+        success: true,
+        errors: [],
+        messages: [],
+        result: { delivered: body.to, permanent_bounces: [], queued: [] },
+      });
+    }
     if (!url.startsWith("https://api.openai.com/")) return originalFetch(input, init);
     const method = init?.method ?? "GET";
     if (url.endsWith("/responses") && method === "POST") {

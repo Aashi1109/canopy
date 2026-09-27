@@ -12,10 +12,32 @@ const environment = {
   APP_URL: "http://localhost:3000",
   BETTER_AUTH_SECRET: "password-notification-test-secret-at-least-32-characters",
   ACCOUNTS_EMAIL: "accounts@smarttools.lol",
-  RESEND_API_KEY: "test-key",
+  EMAIL_PROVIDER: "cloudflare",
+  CLOUDFLARE_EMAIL_ACCOUNT_ID: "0123456789abcdef0123456789abcdef",
+  CLOUDFLARE_EMAIL_API_TOKEN: "test-token",
 };
 const originalEnv = Object.fromEntries(Object.keys(environment).map((key) => [key, process.env[key]]));
 Object.assign(process.env, environment);
+const nativeFetch = globalThis.fetch;
+globalThis.fetch = async (input, init) => {
+  const url = input instanceof Request ? input.url : String(input);
+  if (
+    url !==
+    `https://api.cloudflare.com/client/v4/accounts/${environment.CLOUDFLARE_EMAIL_ACCOUNT_ID}/email/sending/send`
+  ) {
+    return nativeFetch(input, init);
+  }
+  expect(init?.method).toBe("POST");
+  expect(new Headers(init?.headers).get("authorization")).toBe(`Bearer ${environment.CLOUDFLARE_EMAIL_API_TOKEN}`);
+  const message = JSON.parse(String(init?.body ?? "{}"));
+  state.sent.push(message);
+  return Response.json({
+    success: !state.fail,
+    errors: state.fail ? [{ code: 10000, message: "Simulated delivery failure" }] : [],
+    messages: [],
+    result: state.fail ? null : { delivered: message.to, permanent_bounces: [], queued: [] },
+  });
+};
 
 vi.mock("@/lib/authorization/index.ts", () => ({ assertCanDeleteUser: () => {} }));
 vi.mock("@/db/index.ts", () => ({
@@ -31,20 +53,9 @@ vi.mock("@/db/index.ts", () => ({
 }));
 vi.mock("better-auth/adapters/drizzle", () => ({ drizzleAdapter: () => globalThis.__passwordEmailTest.adapter }));
 vi.mock("@/lib/auth/cachedUserAdapter.ts", () => ({ cachedUserAdapter: (adapter) => adapter }));
-vi.mock("resend", () => ({
-  Resend: class Resend {
-    emails = {
-      async send(message) {
-        const state = globalThis.__passwordEmailTest;
-        state.sent.push(message);
-        return { error: state.fail ? { message: "Simulated delivery failure" } : null };
-      },
-    };
-  },
-}));
-
 const { auth } = await import("@/lib/auth/auth.ts");
 afterAll(() => {
+  globalThis.fetch = nativeFetch;
   for (const [key, value] of Object.entries(originalEnv)) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
@@ -73,7 +84,10 @@ async function signIn(password) {
 test("successful password changes and resets notify the account without breaking recovery on email failures", async () => {
   let password = "initial-password-123";
   await auth.api.signUpEmail({ body: { name: "Password Test", email, password }, headers });
-  const verification = actionUrl(state.sent.shift());
+  const verificationMessage = state.sent.shift();
+  expect(verificationMessage.subject).toBe("Verify your SmartTools email");
+  const verification = actionUrl(verificationMessage);
+  expect(verificationMessage.text).toContain(verification.href);
   await auth.api.verifyEmail({ query: { token: verification.searchParams.get("token") }, headers });
 
   for (const operation of ["change", "reset"]) {
@@ -83,7 +97,10 @@ test("successful password changes and resets notify the account without breaking
       let token;
       if (operation === "reset") {
         await auth.api.requestPasswordReset({ body: { email }, headers });
-        const url = actionUrl(state.sent.shift());
+        const resetMessage = state.sent.shift();
+        expect(resetMessage.subject).toBe("Reset your SmartTools password");
+        const url = actionUrl(resetMessage);
+        expect(resetMessage.text).toContain(url.href);
         token = url.pathname.split("/").at(-1);
         await expect(
           auth.api.resetPassword({ body: { token: "invalid-token", newPassword: password }, headers }),
@@ -127,15 +144,35 @@ test("successful password changes and resets notify the account without breaking
       expect(state.sent.length, `${operation} should attempt exactly one confirmation`).toBe(1);
       const message = state.sent.shift();
       expect(message.to).toEqual([email]);
-      expect(message.from).toBe("SmartTools Accounts <accounts@smarttools.lol>");
+      expect(message.from).toEqual({ address: "accounts@smarttools.lol", name: "SmartTools Accounts" });
       expect(message.subject).toMatch(/password.*changed/i);
       expect(message.html).toMatch(/reset your password/i);
       expect(message.html).not.toMatch(/link expires|ignore this email/i);
       expect(actionUrl(message).href).toBe(`${environment.APP_URL}/auth?mode=forgot`);
+      expect(message.text).toContain(`${environment.APP_URL}/auth?mode=forgot`);
       expect(!message.html.includes(password) && !message.html.includes(nextPassword)).toBeTruthy();
       await expect(auth.api.signInEmail({ body: { email, password }, headers })).rejects.toThrow();
       await signIn(nextPassword);
       password = nextPassword;
     }
+  }
+
+  const sessionHeaders = await signIn(password);
+  for (const deliveryFails of [true, false]) {
+    state.fail = deliveryFails;
+    // Better Auth handles verification-email failures in its background task wrapper.
+    expect(await auth.api.deleteUser({ body: {}, headers: sessionHeaders })).toEqual({
+      success: true,
+      message: "Verification email sent",
+    });
+    state.fail = false;
+    expect(state.sent.length).toBe(1);
+    const message = state.sent.shift();
+    expect(message.subject).toBe("Confirm SmartTools account deletion");
+    const url = actionUrl(message);
+    expect(url.pathname).toBe("/api/auth/delete-user/callback");
+    expect(url.searchParams.get("token")).toBeTruthy();
+    expect(message.text).toContain(url.href);
+    expect((await auth.api.getSession({ headers: sessionHeaders })).user.email).toBe(email);
   }
 });

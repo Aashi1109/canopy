@@ -14,12 +14,16 @@ const HOST_VARIABLE =
   /^(?:PATH|HOME|USER|LOGNAME|SHELL|TMPDIR|TMP|TEMP|SystemRoot|COMSPEC|USERPROFILE|APPDATA|LOCALAPPDATA|LANG|LC_.*|TERM|CI|FORCE_COLOR|NO_COLOR|HTTP_PROXY|HTTPS_PROXY|ALL_PROXY|NO_PROXY|NODE_EXTRA_CA_CERTS|NODE_USE_SYSTEM_CA|PNPM_HOME|(?:npm_config_|pnpm_config_|NPM_CONFIG_|COREPACK_).*|CLOUDFLARE_API_TOKEN|CLOUDFLARE_API_KEY|CLOUDFLARE_EMAIL|CLOUDFLARE_ACCOUNT_ID|CF_API_TOKEN|CF_API_KEY|CF_EMAIL|CF_ACCOUNT_ID|WRANGLER_CI_.*|WRANGLER_OUTPUT_FILE_.*|WORKERS_CI(?:_.*)?|WRANGLER_LOG.*|WRANGLER_SEND_METRICS)$/;
 const BUILD_VARIABLE =
   /^(?:APP_URL|CI|NODE_ENV|NEXTJS_ENV|SENTRY_ORG|SENTRY_PROJECT|SENTRY_AUTH_TOKEN)$|^(?:NEXT_PUBLIC_|NODE_|__NEXT_|OPEN_NEXT_|SKIP_|CLOUDFLARE_|CF_|WRANGLER_|PLAYWRIGHT_)/;
+// These application settings must reach the Worker, not the CI build environment.
+const EMAIL_RUNTIME_VARIABLES = new Set(["CLOUDFLARE_EMAIL_ACCOUNT_ID", "CLOUDFLARE_EMAIL_API_TOKEN"]);
 // Only known non-sensitive settings are visible; new or unknown values stay secret.
 const PLAIN_VARIABLES = new Set([
   "DATABASE_POOL_MAX",
   "CACHE_ENABLED",
   "AUTH_COOKIE_PREFIX",
   "GOOGLE_CLIENT_ID",
+  "EMAIL_PROVIDER",
+  "CLOUDFLARE_EMAIL_ACCOUNT_ID",
   "ACCOUNTS_EMAIL",
   "SUPPORT_EMAIL",
   "CLOUDINARY_CLOUD_NAME",
@@ -32,6 +36,10 @@ const PLAIN_VARIABLES = new Set([
   "VERCEL_ENV",
 ]);
 
+function isBuildVariable(key) {
+  return BUILD_VARIABLE.test(key) && !EMAIL_RUNTIME_VARIABLES.has(key);
+}
+
 function runtimeSettings(values, config) {
   const bindings = new Set(Object.keys(config.vars ?? {}));
   const visit = (value) => {
@@ -43,7 +51,7 @@ function runtimeSettings(values, config) {
   const vars = {};
   const secrets = {};
   for (const [key, value] of Object.entries(values)) {
-    if (bindings.has(key) || HOST_VARIABLE.test(key) || BUILD_VARIABLE.test(key)) continue;
+    if (bindings.has(key) || HOST_VARIABLE.test(key) || isBuildVariable(key)) continue;
     (PLAIN_VARIABLES.has(key) ? vars : secrets)[key] = value;
   }
   return { vars, secrets };
@@ -72,7 +80,7 @@ export function runCloudflare(
   let values;
   try {
     values = workersBuild
-      ? Object.fromEntries(Object.entries(environment).filter(([key]) => BUILD_VARIABLE.test(key)))
+      ? Object.fromEntries(Object.entries(environment).filter(([key]) => isBuildVariable(key)))
       : parseEnv(readFile(resolve(ROOT, envFile), "utf8"));
   } catch {
     throw new Error(`Unable to read ${envFile}. Create it before running this command.`);
