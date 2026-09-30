@@ -1,6 +1,6 @@
 import { getOptionalSession } from "@/lib/auth/session.ts";
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import ToolPage from "@/components/ToolPage";
 import { relatedTools, resolveToolPage } from "@/lib/tool-framework/catalog";
@@ -15,7 +15,11 @@ export const generateMetadata = toolMetadata("media");
 export default async function MediaToolPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const tool = await resolveToolPage("media", slug);
-  if (!tool) notFound();
+  if (!tool) {
+    const downloader = await resolveToolPage("downloaders", slug);
+    if (downloader) permanentRedirect(downloader.href);
+    notFound();
+  }
 
   const [related, session] = await Promise.all([relatedTools(tool.toolId), getOptionalSession(await headers())]);
 

@@ -4,6 +4,8 @@ import { eq, max } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema.ts";
 import { managedToolsTable, toolContentTable } from "./schema.ts";
+import { getPlatformServiceByDefinitionKey } from "../lib/downloaders/platformRegistry.ts";
+import { createDownloaderDefinition } from "../lib/tool-framework/downloaderDefinition.ts";
 
 type SeedToolApp = Extract<ToolApp, "devtools" | "media">;
 
@@ -13,6 +15,7 @@ interface SeedToolSpec {
   slug: string;
   name: string;
   description: string;
+  enabled: boolean;
 }
 
 interface LoadedToolDefinition {
@@ -41,7 +44,7 @@ function isSeedToolApp(value: unknown): value is SeedToolApp {
   return value === "devtools" || value === "media";
 }
 
-function parseToolDefinition(definitionKey: string, value: unknown): SeedToolSpec {
+function parseToolDefinition(definitionKey: string, value: unknown, enabled = true): SeedToolSpec {
   const location = `tools/${definitionKey}/definition.ts`;
   if (!isRecord(value)) {
     throw new Error(`✗ ${location}: default export must be an object literal.`);
@@ -86,6 +89,7 @@ function parseToolDefinition(definitionKey: string, value: unknown): SeedToolSpe
     slug,
     name: value.name,
     description: value.description,
+    enabled,
   };
 }
 
@@ -98,6 +102,14 @@ export async function loadManagedToolDefinitions(): Promise<ManagedToolSeedScan>
   let skipped = 0;
 
   for (const definitionKey of folders) {
+    const downloader = getPlatformServiceByDefinitionKey(definitionKey);
+    if (downloader) {
+      definitions.push({
+        definitionKey,
+        spec: parseToolDefinition(definitionKey, createDownloaderDefinition(downloader.descriptor), false),
+      });
+      continue;
+    }
     const definitionUrl = new URL(`${definitionKey}/definition.ts`, toolsDirectory);
     const source = await readFile(definitionUrl, "utf8");
     if (!/^\s*export\s+default\b/m.test(source)) {
@@ -156,7 +168,7 @@ export async function seedManagedTools(database: NodePgDatabase<typeof schema>):
       .where(eq(managedToolsTable.toolId, spec.toolId))
       .limit(1);
 
-    if (stored && stored.slug !== spec.slug) {
+    if (stored && stored.slug !== spec.slug && !getPlatformServiceByDefinitionKey(definitionKey)) {
       throw new Error(
         `✗ tools/${definitionKey}: definition declares slug "${spec.slug}" but the database\n` +
           `  has "${stored.slug}". Slugs are immutable once published. Revert the definition, or\n` +
@@ -176,7 +188,7 @@ export async function seedManagedTools(database: NodePgDatabase<typeof schema>):
           name: spec.name,
           description: spec.description,
           order,
-          enabled: true,
+          enabled: spec.enabled,
         })
         .onConflictDoNothing({ target: managedToolsTable.toolId });
     }

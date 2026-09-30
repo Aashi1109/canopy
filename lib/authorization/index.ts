@@ -46,6 +46,13 @@ export const PERMISSION_CATALOG = {
       archive: { description: "Archive tools so they are no longer available." },
     },
   },
+  downloaders: {
+    description: "Downloader usage limits.",
+    actions: {
+      view: { description: "View downloader limits." },
+      edit: { description: "Change downloader limits." },
+    },
+  },
   templates: {
     description: "Invoice template administration.",
     actions: {
@@ -102,6 +109,7 @@ export const PERMISSION_CATALOG = {
 export const ADMIN_ACCESS = freezeAccess({
   admin: { enter: true },
   tools: { view: true, edit: true, toggle: true, archive: true },
+  downloaders: { view: true, edit: true },
   templates: {
     view: true,
     create: true,

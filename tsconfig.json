@@ -6,5 +6,15 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
-  "exclude": [".next", ".open-next", ".wrangler", "node_modules"]
+  "exclude": [
+    ".next",
+    ".next-downloaders",
+    ".open-next",
+    ".wrangler",
+    "node_modules",
+    "lib/downloaders/worker.ts",
+    "lib/downloaders/cloudflareContainer.ts",
+    "lib/downloaders/storage.ts",
+    "lib/downloaders/localStorage.ts"
+  ]
 }

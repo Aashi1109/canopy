@@ -1,0 +1,50 @@
+# Production promotion must supply NODE_IMAGE by digest and record the resulting
+# linux/amd64 image digest. The development tag is deliberately not a lock claim.
+ARG NODE_IMAGE=node:24-bookworm-slim
+FROM ${NODE_IMAGE} AS cobalt-build
+ARG COBALT_REV=a636575b09de1fc55d9b8cd98cac88f5f2f16b42
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates git python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /build/cobalt
+RUN git init && git remote add origin https://github.com/imputnet/cobalt.git \
+    && git fetch --depth=1 origin "${COBALT_REV}" && git checkout --detach FETCH_HEAD \
+    && test "$(git rev-parse HEAD)" = "${COBALT_REV}"
+RUN corepack enable && corepack prepare pnpm@9.6.0 --activate \
+    && pnpm install --prod --frozen-lockfile \
+    && pnpm deploy --filter=@imput/cobalt-api --prod /opt/cobalt
+RUN mkdir -p /opt/downloader-notices \
+    && git archive --format=tar.gz --output=/opt/downloader-notices/cobalt-source.tar.gz HEAD \
+    && cp LICENSE /opt/downloader-notices/cobalt-LICENSE \
+    && printf '%s\n' "${COBALT_REV}" > /opt/downloader-notices/cobalt-revision.txt
+
+FROM ${NODE_IMAGE} AS runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates python3 python3-venv ffmpeg tini \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 10001 engine && useradd --uid 10001 --gid engine --no-create-home --shell /usr/sbin/nologin engine \
+    && python3 -m venv /opt/python
+ENV PATH="/opt/python/bin:${PATH}" \
+    PYTHONDONTWRITEBYTECODE=1
+# Upstream's pin extra locks the default dependency set, including EJS 0.8.0.
+RUN pip install --no-cache-dir 'yt-dlp[default,pin]==2026.8.19' \
+    && pip check
+COPY --from=cobalt-build /opt/cobalt /opt/cobalt
+COPY --from=cobalt-build /build/cobalt/.git /opt/cobalt/.git
+COPY --from=cobalt-build /opt/downloader-notices /opt/downloader-notices
+COPY lib/downloaders/container /opt/executor
+RUN python /opt/executor/cobalt_patch.py /opt/cobalt \
+    && cp /opt/executor/cobalt_patch.py /opt/downloader-notices/cobalt_patch.py \
+    && cp /opt/executor/cobalt_resolver.mjs /opt/downloader-notices/cobalt_resolver.mjs \
+    && ffmpeg -version > /opt/downloader-notices/ffmpeg-build.txt \
+    && ffmpeg -buildconf >> /opt/downloader-notices/ffmpeg-build.txt \
+    && pip freeze > /opt/downloader-notices/python-packages.txt \
+    && dpkg-query -W > /opt/downloader-notices/debian-packages.txt \
+    && node --version > /opt/downloader-notices/node-version.txt \
+    && python /opt/executor/image_check.py
+WORKDIR /opt/executor
+EXPOSE 8080
+# The trusted supervisor drops every native child to UID 10001. That UID cannot
+# read the root supervisor's environment, memory, or storage capabilities.
+USER root
+ENTRYPOINT ["/usr/bin/tini", "-s", "--"]
+CMD ["python", "/opt/executor/server.py"]

@@ -18,15 +18,15 @@ export function CatalogHero({ suite }: { suite: "media" | "devtools" }) {
           </Display>
           <Lead className="mt-4 text-[1.0625rem] leading-relaxed text-muted-foreground">
             {isMedia
-              ? "Edit images, organize PDFs, and make files smaller."
+              ? "Edit images, organize PDFs, and prepare files."
               : "Format, compare, convert, and inspect your data."}
             <br className="hidden lg:block" />{" "}
             {isMedia
-              ? "Everyday media tasks, handled in your browser."
+              ? "Choose a focused tool for your next media task."
               : "Everyday developer tasks, without the busywork."}
           </Lead>
           <Caption className="mt-3 block text-muted-foreground">
-            {isMedia ? "Your files stay on this device." : "Core tools process your content on this device."}
+            {isMedia ? "Your images and PDFs stay on your device." : "Core tools process your content on this device."}
           </Caption>
         </div>
         <Image

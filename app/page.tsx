@@ -20,9 +20,9 @@ import { headers } from "next/headers";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Online Developer, PDF & Image Tools | SmartTools",
+  title: "Online Developer, Media & Video Download Tools | SmartTools",
   openGraph: {
-    title: "Online Developer, PDF & Image Tools | SmartTools",
+    title: "Online Developer, Media & Video Download Tools | SmartTools",
   },
 };
 
@@ -43,10 +43,17 @@ const projects = [
   },
   {
     number: "03",
-    category: "Private media processing",
+    category: "Image and PDF tools",
     name: "Media Tools",
     description: "Convert, organize, edit, and compress images and PDFs entirely in your browser.",
     href: "/media",
+  },
+  {
+    number: "04",
+    category: "Public video downloads",
+    name: "Downloaders",
+    description: "Save supported public videos with permission. Video downloads use an online service.",
+    href: "/downloaders",
   },
 ] as const;
 
@@ -66,7 +73,7 @@ export default async function HomePage() {
       <main>
         <section className="overflow-hidden border-b border-border bg-card">
           <div className="mx-auto grid max-w-7xl lg:grid-cols-[minmax(0,1.08fr)_minmax(28rem,0.92fr)]">
-            <div className="flex min-h-[36rem] flex-col justify-center px-4 py-16 sm:px-6 sm:py-20 lg:min-h-[44rem] lg:border-r lg:border-border lg:px-8 lg:py-24">
+            <div className="flex min-h-[36rem] flex-col justify-start px-4 py-16 sm:px-6 sm:py-20 lg:self-start lg:border-r lg:border-border lg:px-8 lg:py-16">
               <Overline className="block mb-6 text-primary">Focused utilities for everyday work</Overline>
               <Display className="max-w-4xl">
                 Less time
@@ -78,8 +85,8 @@ export default async function HomePage() {
                 and done.
               </Display>
               <Muted className="mt-8 max-w-xl text-muted-foreground">
-                SmartTools brings image and PDF tools, business paperwork, and developer utilities into one clear place
-                to start.
+                SmartTools brings video downloaders, image and PDF tools, business paperwork, and developer utilities
+                into one clear place to start.
               </Muted>
               <div className="mt-9 flex flex-wrap gap-3">
                 <Button asChild className="h-auto min-h-12 rounded-none px-5 hover:bg-foreground">
@@ -99,6 +106,9 @@ export default async function HomePage() {
                 >
                   <a href={projects[2].href}>Open Media Tools</a>
                 </Button>
+                <Button asChild className="h-auto min-h-12 rounded-none px-5">
+                  <a href={projects[3].href}>Open Downloaders</a>
+                </Button>
               </div>
               <Caption className="block mt-6 text-muted-foreground">
                 Public tools are available without an account.
@@ -116,7 +126,7 @@ export default async function HomePage() {
                 {projects.map((project) => (
                   <li className="border-b border-border last:border-b-0" key={project.name}>
                     <TextLink
-                      className="no-underline group grid min-h-56 grid-cols-[5rem_minmax(0,1fr)] text-foreground outline-none transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:grid-cols-[6.5rem_minmax(0,1fr)]"
+                      className="no-underline group grid min-h-44 grid-cols-[5rem_minmax(0,1fr)] text-foreground outline-none transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:grid-cols-[6.5rem_minmax(0,1fr)]"
                       href={project.href}
                     >
                       <span

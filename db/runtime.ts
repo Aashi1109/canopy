@@ -174,3 +174,16 @@ export function withDatabaseRequest(
     }
   });
 }
+
+/** A short non-HTTP database phase; never wrap an engine/download wait in this scope. */
+export function withDatabaseOperation<T>(handler: () => Promise<T>, databaseUrl?: string): Promise<T> {
+  return requests.run({ databaseUrl }, async () => {
+    const request = requests.getStore()!;
+    try {
+      return await handler();
+    } finally {
+      request.closed = true;
+      await request.client?.end();
+    }
+  });
+}

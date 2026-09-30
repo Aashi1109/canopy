@@ -40,6 +40,8 @@ const mediaSecurityHeaders = [
 const workerIsolationHeaders = [{ key: "Cross-Origin-Embedder-Policy", value: "require-corp" }];
 
 const nextConfig: NextConfig = {
+  // Give the complete downloader dev stack its own cache/lock alongside plain next dev.
+  distDir: development && process.env.DOWNLOADERS_LOCAL === "true" ? ".next-downloaders" : ".next",
   // Only the public product URL is exposed; authentication secrets stay server-side.
   env: { APP_URL: config.appUrl },
   output: "standalone",

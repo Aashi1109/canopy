@@ -47,7 +47,6 @@ test("public tools use scoped server-resolved dynamic slugs", async () => {
   expect(devtoolsTool).toMatch(/resolveToolPage\(["']devtools["']/);
   expect(devtoolsTool).toMatch(/notFound\(\)/);
   expect(mediaCatalog).toMatch(/getTools\(["']media["']\)/);
-  expect(mediaCatalog).toMatch(/`\/media\/\$\{tool\.slug\}`/);
   expect(mediaTool).toMatch(/resolveToolPage\(["']media["']/);
   expect(mediaTool).toMatch(/notFound\(\)/);
   // Prerendering a slug would need a redeploy per admin toggle.

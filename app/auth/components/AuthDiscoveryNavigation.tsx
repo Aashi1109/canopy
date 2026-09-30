@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Code2,
   FileImage,
+  Download,
   FileText,
   LoaderCircle,
   ReceiptText,
@@ -48,17 +49,19 @@ const categoryMenus = {
   ],
 } as const;
 
-function ToolIcon({ app, name }: { app: ToolApp; name: string }) {
+function ToolIcon({ app, name }: { app: ToolApp | "downloaders"; name: string }) {
   const Icon =
-    app === "media"
-      ? FileImage
-      : app === "devtools"
-        ? name.toLowerCase().includes("csv")
-          ? Table2
-          : Braces
-        : name.toLowerCase().includes("receipt")
-          ? ReceiptText
-          : FileText;
+    app === "downloaders"
+      ? Download
+      : app === "media"
+        ? FileImage
+        : app === "devtools"
+          ? name.toLowerCase().includes("csv")
+            ? Table2
+            : Braces
+          : name.toLowerCase().includes("receipt")
+            ? ReceiptText
+            : FileText;
 
   return (
     <span aria-hidden="true" className="auth-search-result-icon">

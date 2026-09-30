@@ -2,10 +2,15 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, test } from "vitest";
 import { MobileNavigation } from "../components/ui/components/MobileNavigation.tsx";
+import { GlobalToolSearchProvider } from "../components/ui/components/GlobalToolSearch.tsx";
 import { ProductHeader } from "../components/ui/index.tsx";
 
+function renderNavigation(element) {
+  return renderToStaticMarkup(createElement(GlobalToolSearchProvider, null, element));
+}
+
 test("guest navigation exposes separate search and menu controls", () => {
-  const html = renderToStaticMarkup(createElement(MobileNavigation, { currentHref: "/media" }));
+  const html = renderNavigation(createElement(MobileNavigation, { currentHref: "/media" }));
   expect(html).toMatch(/aria-label="Search tools"/);
   expect(html).toMatch(/aria-label="Open navigation menu"/);
   expect((html.match(/<button\b/g) ?? []).length).toBe(2);
@@ -13,7 +18,7 @@ test("guest navigation exposes separate search and menu controls", () => {
 });
 
 test("signed-in navigation exposes one combined account/menu control, not an extra profile button", () => {
-  const html = renderToStaticMarkup(
+  const html = renderNavigation(
     createElement(MobileNavigation, {
       currentHref: "/devtools",
       account: { returnTo: "/devtools", user: { name: "Jordan Chen", isAdmin: true } },
@@ -27,7 +32,7 @@ test("signed-in navigation exposes one combined account/menu control, not an ext
 });
 
 test("auth navigation on the admin host sends home and suite links to the public site", () => {
-  const html = renderToStaticMarkup(
+  const html = renderNavigation(
     createElement(ProductHeader, {
       href: "/auth",
       name: "SmartTools",
@@ -41,12 +46,13 @@ test("auth navigation on the admin host sends home and suite links to the public
     "https://example.test/paperwork",
     "https://example.test/devtools",
     "https://example.test/media",
+    "https://example.test/downloaders",
     "https://example.test/blog",
   ]);
 });
 
 test("restricted headers can return home without exposing an account menu", () => {
-  const html = renderToStaticMarkup(
+  const html = renderNavigation(
     createElement(ProductHeader, {
       href: "https://example.test",
       publicSiteUrl: "https://example.test",

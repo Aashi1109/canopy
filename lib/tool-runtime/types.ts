@@ -106,7 +106,7 @@ export type ToolSelectSettingDefinition = {
 };
 
 export type ToolDefinition = {
-  app: "devtools" | "media";
+  app: "devtools" | "media" | "downloaders";
   capabilities: {
     cancel?: boolean;
     copy?: boolean;

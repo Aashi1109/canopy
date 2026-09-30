@@ -8,7 +8,7 @@
  * catalogue pages render today, so a category rename stays a one-line change.
  */
 
-export type ToolApp = "devtools" | "media";
+export type ToolApp = "devtools" | "media" | "downloaders";
 
 export type ToolCategory = {
   readonly label: string;
@@ -96,6 +96,11 @@ export const TOOL_CATEGORIES = {
     label: "Image Conversion",
     description: "Convert JPG, PNG, WebP, and HEIC images in your browser.",
     app: "media",
+  },
+  "video-downloaders": {
+    label: "Video Downloaders",
+    description: "Download supported public videos with permission using an online service.",
+    app: "downloaders",
   },
   "image-editing": {
     label: "Image Editing",

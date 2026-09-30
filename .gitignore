@@ -12,6 +12,7 @@ test-results/
 env.prod
 
 .next/
+.next-downloaders/
 .open-next/
 .wrangler/
 .dev.vars*

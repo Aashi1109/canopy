@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "smarttools",
+  "name": "canopy",
   "main": "worker.ts",
   "compatibility_date": "2026-09-15",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
@@ -36,9 +36,10 @@
     "binding": "ASSETS",
   },
   "services": [
+    { "binding": "DOWNLOADERS", "service": "canopy-downloaders" },
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "smarttools",
+      "service": "canopy",
     },
   ],
   "keep_vars": true,
@@ -60,11 +61,11 @@
   },
   "env": {
     "dev": {
-      "name": "smarttools-dev",
+      "name": "canopy-dev",
       "workers_dev": true,
       "routes": [],
       "vars": {
-        "APP_URL": "https://smarttools-dev.aashishpal50.workers.dev",
+        "APP_URL": "https://canopy-dev.aashishpal50.workers.dev",
       },
       "hyperdrive": [
         {
@@ -73,9 +74,10 @@
         },
       ],
       "services": [
+        { "binding": "DOWNLOADERS", "service": "canopy-downloaders-dev" },
         {
           "binding": "WORKER_SELF_REFERENCE",
-          "service": "smarttools-dev",
+          "service": "canopy-dev",
         },
       ],
       "triggers": {

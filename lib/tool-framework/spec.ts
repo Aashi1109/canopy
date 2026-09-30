@@ -8,8 +8,12 @@
  * Catalogue icons are absent for the same reason: they are uploaded data, not
  * code. `workbenchMark` is deliberately narrower: short text rendered only in
  * the tool's own workbench chrome.
+ *
+ * The registered downloader family additionally receives a safe job capability
+ * from its server-side descriptor projection, not an arbitrary execution host.
  */
 
+import type { PlatformId } from "../downloaders/contracts";
 import type { CategoryKey, ToolApp } from "./categories";
 import type { SettingsSpec } from "./settings";
 
@@ -177,6 +181,8 @@ export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   readonly resultStats?: "cards" | "status-only";
   readonly settings: S;
   readonly trigger: ToolTrigger;
+  /** Server-projected family capability; never imports a service or engine into the browser. */
+  readonly job?: { readonly kind: "download"; readonly platform: PlatformId; readonly platformName: string };
   /** Opt in only when URL inputs reproduce the result; bump version when that contract changes. */
   readonly sharing?: { readonly version: number };
   readonly capabilities?: ToolCapabilities;

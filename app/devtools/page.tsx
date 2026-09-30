@@ -1,14 +1,15 @@
 import { CatalogHero } from "@/components/canopy/CatalogHero";
 import { CatalogListing } from "@/components/canopy/CatalogListing";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
-import { ToolIcon } from "@/components/ToolIcon";
+import { CatalogToolCard as ToolCard } from "@/components/canopy/CatalogToolCard";
+import { FamilyToolSearch } from "@/components/ui/components/GlobalToolSearch";
 import {
   categoriesForApp,
   FEATURED_TOOL_IDS,
   resolveCategoryKey,
   TOOL_CATEGORIES,
 } from "@/lib/tool-framework/categories";
-import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
+import { getTools } from "@/lib/tool-framework/catalog";
 import { searchTools } from "@/lib/tool-catalog/index";
 import { getOptionalSession } from "@/lib/auth/session.ts";
 import {
@@ -23,7 +24,6 @@ import {
   AccountNavigation,
   AppContainer,
   Button,
-  CatalogCard,
   EmptyState,
   IconTile,
   Input,
@@ -39,24 +39,6 @@ const SECTION_HEADING_CLASS = "mb-8 items-end";
 
 function first(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value) ?? "";
-}
-
-function ToolCard({ tool }: { tool: CatalogTool }) {
-  return (
-    <CatalogCard
-      action={
-        <>
-          Open tool
-          <ArrowUpRight aria-hidden="true" className="size-4" />
-        </>
-      }
-      className="min-h-48 rounded-[1.25rem] p-5 shadow-none duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg [&>span:last-child]:inline-flex [&>span:last-child]:items-center [&>span:last-child]:gap-1.5"
-      description={tool.description}
-      href={`/devtools/${tool.slug}`}
-      icon={<ToolIcon icon={tool.icon} />}
-      title={tool.name}
-    />
-  );
 }
 
 export default async function HomePage({
@@ -90,29 +72,31 @@ export default async function HomePage({
   const showAllTools = !hasFilter && (first(params.view) === "all" || featuredTools.length === 0);
   const categoryLabel = category ? TOOL_CATEGORIES[category].label : "";
   const searchForm = (
-    <form
-      className="flex w-full items-center gap-2 rounded-2xl border border-input bg-card p-1.5 shadow-sm transition focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10"
-      method="get"
-      role="search"
-    >
-      <div className="relative min-w-0 flex-1">
-        <Search
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground"
-        />
-        <Input
-          aria-label="Search developer tools"
-          className="h-12 border-0 bg-transparent pl-11 shadow-none"
-          defaultValue={query}
-          name="q"
-          placeholder="Search JSON, CSV, JWT…"
-          type="search"
-        />
-      </div>
-      <Button className="h-12 rounded-xl px-5" type="submit">
-        Search
-      </Button>
-    </form>
+    <FamilyToolSearch family="devtools" initialQuery={query}>
+      <form
+        className="flex w-full items-center gap-2 rounded-2xl border border-input bg-card p-1.5 shadow-sm transition focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10"
+        method="get"
+        role="search"
+      >
+        <div className="relative min-w-0 flex-1">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            aria-label="Search developer tools"
+            className="h-12 border-0 bg-transparent pl-11 shadow-none"
+            defaultValue={query}
+            name="q"
+            placeholder="Search JSON, CSV, JWT…"
+            type="search"
+          />
+        </div>
+        <Button className="h-12 rounded-xl px-5" type="submit">
+          Search
+        </Button>
+      </form>
+    </FamilyToolSearch>
   );
 
   return (

@@ -739,10 +739,10 @@ export function CatalogCard({
   title: ReactNode;
 }) {
   return (
-    <div className="relative h-full">
+    <div className="relative h-full transition-transform duration-300 hover:-translate-y-1">
       <a
         className={cn(
-          "group flex h-full flex-col gap-4 rounded-xl border border-border bg-card p-6 text-card-foreground outline-none transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "group flex h-full flex-col gap-4 rounded-xl border border-border bg-card p-6 text-card-foreground outline-none transition-[border-color,box-shadow] hover:border-primary/40 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           className,
         )}
         {...props}
@@ -764,7 +764,7 @@ export function CatalogCard({
         <Caption className="-mt-2 text-muted-foreground">{description}</Caption>
         <Caption className="mt-auto text-primary group-hover:underline">{action}</Caption>
       </a>
-      <div className="absolute top-5 right-5">
+      <div className="absolute top-6 right-6 flex h-11 translate-y-px items-center">
         <SaveToolButton href={props.href} iconOnly />
       </div>
     </div>

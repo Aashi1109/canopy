@@ -95,6 +95,194 @@ function tool(name, overrides = {}) {
   return { name, description: "", keywords: [], category: "", ...overrides };
 }
 
+test("global search suggestions fall back to one public tool per available family with the search response contract", async () => {
+  state.failure = false;
+  const catalog = ["Zebra", "Alpha", "Markdown", "CSV", "Invoice"].map((name, index) => ({
+    app: "devtools",
+    category: "Text Tools",
+    description: `Work with ${name}`,
+    href: `/devtools/catalog-${index}`,
+    icon: { kind: "svg", svg: "<svg/>" },
+    keywords: ["text"],
+    name,
+    toolId: `devtools.catalog-${index}`,
+  }));
+  for (const tools of [catalog, catalog.slice(1), catalog.slice(0, 1), []]) {
+    state.tools = tools;
+    state.reads = 0;
+    const response = await GET(new Request("https://app.test/api/tools/search?suggestions=1&q=%20"));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      results: tools.slice(0, 1).map(({ category, description, href, icon, name, toolId }) => ({
+        category,
+        description,
+        href,
+        icon,
+        name,
+        toolId,
+      })),
+    });
+    expect(state.reads).toBe(1);
+  }
+});
+
+test.each([
+  [
+    undefined,
+    ["devtools.json-formatter", "media.merge-pdf", "paperwork.invoice-generator", "media.youtube-video-downloader"],
+  ],
+  ["devtools", ["devtools.json-formatter", "devtools.qr-code-generator", "devtools.json-editor"]],
+  ["media", ["media.merge-pdf", "media.resize-image", "media.compress-image"]],
+  ["paperwork", ["paperwork.invoice-generator", "paperwork.receipt-generator", "paperwork.expense-report"]],
+  [
+    "downloaders",
+    ["media.youtube-video-downloader", "media.instagram-video-downloader", "media.tiktok-video-downloader"],
+  ],
+])("search suggestions prefer curated tools for %s while keeping live catalog URLs", async (family, preferredIds) => {
+  const appFor = (toolId) => (toolId.endsWith("-video-downloader") ? "downloaders" : toolId.split(".")[0]);
+  state.tools = [
+    tool("Fallback", { app: family ?? "devtools", toolId: "devtools.fallback", href: "/custom/fallback" }),
+    ...[...preferredIds]
+      .reverse()
+      .map((toolId, index) =>
+        tool(`Live name ${index}`, { app: appFor(toolId), toolId, href: `/custom/live-${index}` }),
+      ),
+  ];
+  state.failure = false;
+  const url = `https://app.test/api/tools/search?suggestions=1${family ? `&family=${family}` : ""}`;
+  const response = await GET(new Request(url));
+  expect((await response.json()).results.map(({ toolId, href }) => ({ toolId, href }))).toEqual(
+    preferredIds.map((toolId) => ({ toolId, href: state.tools.find((entry) => entry.toolId === toolId).href })),
+  );
+
+  state.tools = state.tools.filter((entry) => entry.toolId !== preferredIds[0]);
+  const unavailable = await GET(new Request(url));
+  expect((await unavailable.json()).results.map((entry) => entry.toolId)).toEqual([
+    ...preferredIds.slice(1),
+    "devtools.fallback",
+  ]);
+});
+
+test("global suggestions include each available family once and skip missing families", async () => {
+  const families = ["paperwork", "devtools", "media", "downloaders"];
+  const tools = families.flatMap((app) =>
+    Array.from({ length: 4 }, (_, index) =>
+      tool(`Tool ${index}`, {
+        app,
+        toolId: app === "downloaders" ? `media.downloader-${index}` : `${app}.tool-${index}`,
+        href: `/${app}/tool-${index}`,
+      }),
+    ),
+  );
+  state.failure = false;
+  for (const availableFamilies of [families, families.filter((app) => app !== "media")]) {
+    state.tools = tools.filter((entry) => availableFamilies.includes(entry.app));
+    const response = await GET(new Request("https://app.test/api/tools/search?suggestions=1"));
+    expect((await response.json()).results.map((entry) => entry.toolId)).toEqual(
+      availableFamilies.map((app) => state.tools.find((entry) => entry.app === app).toolId),
+    );
+  }
+});
+
+test.each(["paperwork", "devtools", "media", "downloaders"])(
+  "search suggestions are limited to three tools within the %s family",
+  async (family) => {
+    state.tools = ["paperwork", "devtools", "media", "downloaders"].flatMap((app) =>
+      Array.from({ length: 4 }, (_, index) =>
+        tool(`Tool ${index}`, {
+          app,
+          toolId: app === "downloaders" ? `media.downloader-${index}` : `${app}.tool-${index}`,
+          href: `/${app}/tool-${index}`,
+        }),
+      ),
+    );
+    state.reads = 0;
+    state.failure = false;
+    const response = await GET(new Request(`https://app.test/api/tools/search?suggestions=1&family=${family}`));
+    expect((await response.json()).results.map((result) => result.toolId)).toEqual(
+      state.tools
+        .filter((entry) => entry.app === family)
+        .slice(0, 3)
+        .map((entry) => entry.toolId),
+    );
+    expect(state.reads).toBe(1);
+
+    const search = await GET(new Request(`https://app.test/api/tools/search?suggestions=1&q=tool&family=${family}`));
+    expect((await search.json()).results).toHaveLength(4);
+  },
+);
+
+test("suggestion requests preserve catalog errors", async () => {
+  state.failure = true;
+  try {
+    const response = await GET(new Request("https://app.test/api/tools/search?suggestions=1"));
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "Database unavailable" });
+  } finally {
+    state.failure = false;
+  }
+});
+
+test.each(["paperwork", "devtools", "media", "downloaders"])(
+  "search limits results to the %s family while preserving ranking",
+  async (family) => {
+    state.tools = ["paperwork", "devtools", "media", "downloaders"].flatMap((app) => [
+      tool("Format Text", { app, toolId: `${app}.format-text`, href: `/${app}/format-text` }),
+      tool("Format", {
+        app,
+        toolId: app === "downloaders" ? "media.video-downloader" : `${app}.format`,
+        href: `/${app}/format`,
+      }),
+    ]);
+    state.reads = 0;
+    state.failure = false;
+
+    const response = await GET(new Request(`https://app.test/api/tools/search?q=format&family=${family}`));
+    expect(response.status).toBe(200);
+    expect((await response.json()).results.map((result) => result.toolId)).toEqual(
+      state.tools
+        .filter((entry) => entry.app === family)
+        .reverse()
+        .map((entry) => entry.toolId),
+    );
+    expect(state.reads).toBe(1);
+
+    const missing = await GET(new Request(`https://app.test/api/tools/search?q=missing&family=${family}`));
+    expect(await missing.json()).toEqual({ results: [] });
+  },
+);
+
+test("empty queries with a valid family do not load the catalog", async () => {
+  state.reads = 0;
+  state.failure = true;
+  try {
+    for (const query of ["", "&q=", "&q=%20%20", "&suggestions=0"]) {
+      const response = await GET(new Request(`https://app.test/api/tools/search?family=media${query}`));
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ results: [] });
+    }
+    expect(state.reads).toBe(0);
+  } finally {
+    state.failure = false;
+  }
+});
+
+test.each(["", " ", "unknown", "MEDIA", "media,downloaders"])(
+  "search rejects invalid family %j without loading the catalog",
+  async (family) => {
+    state.reads = 0;
+    state.failure = false;
+    for (const query of ["", "&q=format", "&suggestions=1"]) {
+      const response = await GET(
+        new Request(`https://app.test/api/tools/search?family=${encodeURIComponent(family)}${query}`),
+      );
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: "Invalid tool family" });
+    }
+    expect(state.reads).toBe(0);
+  },
+);
+
 test("tool search ranks exact names, prefixes, name substrings, keywords, descriptions, then categories", () => {
   const tools = [
     tool("Category match", { category: "Web & Markup Tools" }),

@@ -62,6 +62,7 @@ test("system roles match the protected user and admin contracts", () => {
   expect(ADMIN_ACCESS).toEqual({
     admin: { enter: true },
     tools: { view: true, edit: true, toggle: true, archive: true },
+    downloaders: { view: true, edit: true },
     templates: {
       view: true,
       create: true,
@@ -98,6 +99,7 @@ test("every supported permission has resource and action help text", () => {
   expect(Object.keys(PERMISSION_CATALOG)).toEqual([
     "admin",
     "tools",
+    "downloaders",
     "templates",
     "blog",
     "features",
@@ -251,4 +253,11 @@ test("invalid role and admin counts fail closed", () => {
       activeAdminCount: 2,
     }),
   ).toThrow(/Admin counts must be non-negative integers/);
+});
+
+test("downloader editing requires both Admin entry and downloader view", () => {
+  expect(hasPermission(ADMIN_ACCESS, "downloaders", "edit")).toBe(true);
+  expect(hasPermission({ admin: { enter: true }, downloaders: { edit: true } }, "downloaders", "edit")).toBe(false);
+  expect(hasPermission({ downloaders: { view: true, edit: true } }, "downloaders", "edit")).toBe(false);
+  expect(hasPermission({ admin: { enter: true }, downloaders: { view: true } }, "downloaders", "edit")).toBe(false);
 });

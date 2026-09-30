@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { SavedToolsStore, STORAGE_KEY } from "../components/ui/lib/saved-tools.ts";
 
 const tools = ["devtools.json-formatter", "media.merge-pdf"].map((toolId) => ({
@@ -26,6 +26,37 @@ function setup({ userId = null, savedTools = [], failMerge = false } = {}) {
   };
   return { store: new SavedToolsStore(storage, request), account, storage, values, calls };
 }
+
+test("the public downloader catalog loads and its existing tool ID can be saved and restored", async () => {
+  const downloader = {
+    toolId: "media.youtube-video-downloader",
+    name: "YouTube Video Downloader",
+    href: "/downloaders/youtube-video-downloader",
+    category: "Video downloaders",
+  };
+  const fetcher = vi.spyOn(globalThis, "fetch").mockImplementation(
+    async () =>
+      new Response(JSON.stringify({ userId: null, savedTools: [], tools: [...tools, downloader] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+  );
+  try {
+    const { storage } = setup();
+    const store = new SavedToolsStore(storage);
+    await store.refresh();
+    expect(store.getSnapshot().status).toBe("ready");
+    expect(store.getSnapshot().tools).toContainEqual(downloader);
+    expect(await store.change(downloader.toolId, true)).toBe(true);
+    const reloaded = new SavedToolsStore(storage);
+    await reloaded.refresh();
+    expect(reloaded.getSnapshot().ids).toContain(downloader.toolId);
+    expect(await reloaded.change(downloader.toolId, false)).toBe(true);
+    expect(reloaded.getSnapshot().ids).not.toContain(downloader.toolId);
+  } finally {
+    fetcher.mockRestore();
+  }
+});
 
 test("guest save, deduplication, removal and reload use localStorage only", async () => {
   const { store, storage, calls } = setup();

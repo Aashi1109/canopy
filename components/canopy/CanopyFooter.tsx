@@ -27,6 +27,7 @@ const footerColumns = [
       { href: "/paperwork", label: "Paperwork" },
       { href: "/devtools", label: "DevTools" },
       { href: "/media", label: "Media" },
+      { href: "/downloaders", label: "Downloaders" },
     ],
   },
 ] as const;

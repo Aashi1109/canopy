@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     default: "PDF & Image Tools | SmartTools",
     template: "%s | SmartTools",
   },
-  description: "Private image and PDF tools that process files entirely in your browser.",
+  description: "Edit images and PDFs privately in your browser.",
 };
 
 export const viewport: Viewport = {

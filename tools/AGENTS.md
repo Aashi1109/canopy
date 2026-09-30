@@ -122,6 +122,22 @@ Until generated registries replace the bridge, register client tools explicitly
 in `tools/client-registry.ts` by `definitionKey`. The registry contains imports
 and lookup only—no routing, metadata, execution, or feature logic.
 
+## Registered Downloader Family
+
+Video downloaders are an explicit family exception to per-tool definitions and
+execution/workspace files. Each platform owns `service.ts`; the backend service
+registry validates and resolves its descriptor. The pure
+`lib/tool-framework/downloaderDefinition.ts` factory projects the browser-safe
+spec, and the existing database-backed catalog still owns publication and slugs.
+Registration alone must not publish a tool.
+
+All platforms use `app/downloaders/components/DownloaderWorkspace.tsx` and the shared
+`lib/tool-runtime/useDownloadJob.ts` controller. Do not add platform-specific
+`definition.ts`, `workspace.tsx`, polling hooks, or synchronous run wrappers.
+Services and engines stay outside browser bundles. Durable job/artifact endpoints
+are separate from the ordinary synchronous tool endpoint and browser artifact
+storage. Existing ordinary tools retain their current host conventions.
+
 ## Folder Responsibilities
 
 Use only the files the tool needs:

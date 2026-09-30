@@ -11,6 +11,7 @@ import {
   ChevronDown,
   ChevronRight,
   CodeXml,
+  Download,
   FileCode,
   FileOutput,
   Files,
@@ -56,6 +57,7 @@ export const SITE_NAVIGATION_ITEMS = [
   { href: "/paperwork", label: "Documents", icon: Files },
   { href: "/devtools", label: "Developer", icon: CodeXml },
   { href: "/media", label: "Media", icon: ImagePlay },
+  { href: "/downloaders", label: "Downloaders", icon: Download },
   { href: "/blog", label: "Blog", icon: BookOpen },
 ];
 
@@ -77,6 +79,7 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
   "pdf-optimization": Minimize2,
   "image-conversion": Images,
   "image-editing": ScanLine,
+  "video-downloaders": Download,
 };
 
 export function useSignOut(destination: string) {

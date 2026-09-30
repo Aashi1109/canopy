@@ -1,6 +1,7 @@
 import config from "@/lib/config/config.ts";
 import type { Metadata } from "next";
 import { SavedToolsProvider } from "@/components/ui/index.tsx";
+import { GlobalToolSearchProvider } from "@/components/ui/components/GlobalToolSearch";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@/components/analytics/Analytics";
 import { measurementId } from "@/lib/analytics/ga4";
@@ -57,7 +58,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased print:bg-white print:text-black">
         <SavedToolsProvider publicSiteUrl={config.appUrl}>
-          <Analytics measurementId={measurementId(config.analytics)}>{children}</Analytics>
+          <GlobalToolSearchProvider publicSiteUrl={config.appUrl}>
+            <Analytics measurementId={measurementId(config.analytics)}>{children}</Analytics>
+          </GlobalToolSearchProvider>
         </SavedToolsProvider>
         <SpeedInsights />
       </body>

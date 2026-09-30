@@ -1,0 +1,162 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "canopy-downloaders",
+  "main": "lib/downloaders/worker.ts",
+  "compatibility_date": "2026-09-15",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "limits": {
+    "cpu_ms": 30000,
+  },
+  "keep_vars": true,
+  "vars": {
+    "DOWNLOADERS_ENABLED": "true",
+    "DOWNLOADERS_POOL_SIZE": "2",
+    "DOWNLOADERS_YOUTUBE_INSPECTION": "true",
+    "DOWNLOADERS_INSTAGRAM_INSPECTION": "true",
+  },
+  "hyperdrive": [
+    {
+      "binding": "DB",
+      "id": "541347b1a70d402c83927d3e87ee5409",
+    },
+  ],
+  "ratelimits": [
+    {
+      "name": "DOWNLOAD_INSPECTION_RATE_LIMITER",
+      "namespace_id": "2026092801",
+      "simple": {
+        "limit": 20,
+        "period": 60,
+      },
+    },
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DOWNLOAD_CONTAINERS",
+        "class_name": "DownloaderContainer",
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["DownloaderContainer"],
+    },
+  ],
+  "containers": [
+    {
+      "class_name": "DownloaderContainer",
+      "image": "./Dockerfile.downloaders",
+      "instance_type": "standard-1",
+      "max_instances": 250,
+    },
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "DOWNLOAD_QUEUE",
+        "queue": "canopy-downloads-dev",
+      },
+    ],
+    "consumers": [
+      {
+        "queue": "canopy-downloads",
+        "max_batch_size": 1,
+        "max_batch_timeout": 1,
+        "max_retries": 3,
+        "max_concurrency": 250,
+      },
+    ],
+  },
+  "r2_buckets": [
+    {
+      "binding": "DOWNLOAD_FILES",
+      "bucket_name": "canopy-downloads-dev",
+    },
+  ],
+  "triggers": {
+    "crons": ["* * * * *"],
+  },
+  "observability": {
+    "enabled": true,
+    "redact_query_string": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": false,
+    },
+  },
+  "env": {
+    "dev": {
+      "name": "canopy-downloaders-dev",
+      "workers_dev": false,
+      "preview_urls": false,
+      "vars": {
+        "DOWNLOADERS_ENABLED": "true",
+        "DOWNLOADERS_POOL_SIZE": "2",
+        "DOWNLOADERS_YOUTUBE_INSPECTION": "true",
+        "DOWNLOADERS_INSTAGRAM_INSPECTION": "true",
+      },
+      "hyperdrive": [
+        {
+          "binding": "DB",
+          "id": "1aebf4d16f0b489b99de75318cdd610d",
+        },
+      ],
+      "ratelimits": [
+        {
+          "name": "DOWNLOAD_INSPECTION_RATE_LIMITER",
+          "namespace_id": "2026092802",
+          "simple": {
+            "limit": 20,
+            "period": 60,
+          },
+        },
+      ],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "DOWNLOAD_CONTAINERS",
+            "class_name": "DownloaderContainer",
+          },
+        ],
+      },
+      "containers": [
+        {
+          "class_name": "DownloaderContainer",
+          "image": "./Dockerfile.downloaders",
+          "instance_type": "standard-1",
+          "max_instances": 250,
+        },
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "DOWNLOAD_QUEUE",
+            "queue": "canopy-downloads-dev",
+          },
+        ],
+        "consumers": [
+          {
+            "queue": "canopy-downloads-dev",
+            "max_batch_size": 1,
+            "max_batch_timeout": 1,
+            "max_retries": 3,
+            "max_concurrency": 250,
+          },
+        ],
+      },
+      "r2_buckets": [
+        {
+          "binding": "DOWNLOAD_FILES",
+          "bucket_name": "canopy-downloads-dev",
+        },
+      ],
+      "triggers": {
+        "crons": ["* * * * *"],
+      },
+    },
+  },
+}

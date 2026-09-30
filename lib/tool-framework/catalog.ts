@@ -36,6 +36,8 @@ import {
 import { getEnabledTools, isToolAvailable, isValidToolSlug, mergeToolManifest } from "../tool-catalog/index.ts";
 import type { ToolApp as PublicToolApp } from "../tool-catalog/index.ts";
 
+import { getPlatformServiceByDefinitionKey } from "../downloaders/platformRegistry";
+import { createDownloaderDefinition } from "./downloaderDefinition";
 import { isCategoryKey, TOOL_CATEGORIES, type CategoryKey, type ToolApp } from "./categories";
 import { resolveContent } from "./content";
 import { resolveIcon, type ResolvedIcon } from "./icons";
@@ -72,7 +74,7 @@ export type CatalogTool = {
 
 /** Public discovery data shared by search and ecosystem navigation. */
 export type PublicTool = Pick<CatalogTool, "toolId" | "name" | "description" | "href" | "icon" | "keywords"> & {
-  readonly app: PublicToolApp;
+  readonly app: PublicToolApp | "downloaders";
   readonly category: string;
   readonly categoryKey: CategoryKey | null;
 };
@@ -104,6 +106,9 @@ function isToolSpec(value: unknown): value is ToolSpec {
  * lists it.
  */
 export async function loadSpec(definitionKey: string): Promise<ToolSpec | null> {
+  // One family-level UI projection, still looked up only for a database-owned tool ID.
+  const downloader = getPlatformServiceByDefinitionKey(definitionKey);
+  if (downloader) return createDownloaderDefinition(downloader.descriptor);
   try {
     const loaded: unknown = await import(`../../tools/${definitionKey}/definition`);
     const value =
@@ -126,13 +131,16 @@ async function buildTool(
   const spec = await loadSpec(definitionKey);
   if (!spec || spec.app !== row.app) return null;
 
+  // Durable tool IDs and stored ownership stay stable; public downloaders are a separate family.
+  const publicApp = spec.job?.kind === "download" ? "downloaders" : spec.app;
+
   // The admin-authored name/description are the live ones, so they, not the
   // shipped strings, are what the SEO fields fall back to.
   const resolved = resolveContent({ ...spec, name: row.name, description: row.description }, contentRow);
 
   return {
     toolId: row.toolId,
-    app: spec.app,
+    app: publicApp,
     slug: row.slug,
     definitionKey,
     name: row.name,
@@ -144,8 +152,8 @@ async function buildTool(
     seoDescription: resolved.seoDescription,
     content: resolved.content,
     icon: resolveIcon(row.toolId, row.name, row.iconUrl),
-    href: `/${spec.app}/${row.slug}`,
-    spec: { ...spec, content: resolved.content },
+    href: `/${publicApp}/${row.slug}`,
+    spec: { ...spec, app: publicApp, content: resolved.content },
   };
 }
 
@@ -214,7 +222,7 @@ const loadCatalog = cache(async () => {
   };
   return globalThis.navigator?.userAgent === "Cloudflare-Workers"
     ? load()
-    : catalogCache.remember("all", load, 24 * 60 * 60);
+    : catalogCache.remember("all:public-families", load, 24 * 60 * 60);
 });
 
 /** Every enabled, non-archived, slugged tool. Optionally narrowed to one app. */

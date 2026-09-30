@@ -402,10 +402,11 @@ separately from the web service.
 
 ## Cloudflare Workers
 
-`pnpm run deploy` publishes the production `smarttools` Worker at
+`pnpm run deploy` publishes the production `canopy` Worker at
 **https://smarttools.lol** and **https://admin.smarttools.lol**.
-`pnpm run deploy:preview` publishes the separate `smarttools-dev` Worker at
-**https://smarttools-dev.aashishpal50.workers.dev**. Both commands deploy to Cloudflare.
+`pnpm run deploy:preview` deploys the dev downloader Worker and its container,
+then rebuilds and deploys the `canopy-dev` app at
+**https://canopy-dev.aashishpal50.workers.dev**. Both commands deploy to Cloudflare.
 Cloudflare Access is not required; the application
 enforces its own login and admin permissions.
 Deployment uses OpenNext and Wrangler.
@@ -423,7 +424,7 @@ patch until an adapter upgrade passes `tests/cloudflare-middleware-postgres.test
 
 Both Worker environments use the `DB` Hyperdrive binding. Each environment's
 configured Hyperdrive ID selects its database; the Worker reads `env.DB.connectionString`.
-Cloudflare resource names such as `smarttools-db-prod` and `smarttools-db-dev`
+Cloudflare resource names such as `canopy-db-prod` and `canopy-db-dev`
 do not appear in application code.
 Keep Hyperdrive query caching disabled so authentication and permission reads remain fresh.
 The binding alone configures database access during Worker requests; a duplicate
@@ -432,6 +433,12 @@ still need a direct database connection. Local `pnpm run preview` supplies the d
 binding's local connection from `DATABASE_URL` in `.env`.
 
 ### Configure once
+
+Changing names in Wrangler does not rename existing remote Workers, Queues, or
+R2 buckets. Before deploying the renamed resources, provision or reference the
+intended buckets and queues, configure secrets on the new app and downloader
+Workers, and register the new dev OAuth callback below. Existing Hyperdrive IDs
+continue to identify the same resources regardless of their display names.
 
 1. Enable Workers Paid and configure the `smarttools.lol` Cloudflare DNS zone for
    production's `smarttools.lol` and `admin.smarttools.lol` custom domains.
@@ -455,7 +462,7 @@ binding's local connection from `DATABASE_URL` in `.env`.
 4. If using Google login, register the callback URLs for the environments being tested:
    `https://smarttools.lol/api/auth/callback/google`,
    `https://admin.smarttools.lol/api/auth/callback/google`, and
-   `https://smarttools-dev.aashishpal50.workers.dev/api/auth/callback/google`.
+   `https://canopy-dev.aashishpal50.workers.dev/api/auth/callback/google`.
 5. Point your local migration environment at the intended deployment database,
    then follow the [fresh-database migration sequence](#generic-assistant-migration)
    through `0007-generic-assistant` for first setup, or run `pnpm db:migrate <folder>`
@@ -472,13 +479,13 @@ settings. The commands do not create or edit either environment file.
 
 `APP_URL` comes from the selected configuration in `wrangler.jsonc`:
 `https://smarttools.lol` for production and
-`https://smarttools-dev.aashishpal50.workers.dev` for dev. It takes precedence over
+`https://canopy-dev.aashishpal50.workers.dev` for dev. It takes precedence over
 `APP_URL` in the selected environment file.
 If using Cloudinary icons, put `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` in the
 selected file for the build; runtime secrets cannot change values already compiled
 into browser JavaScript.
 
-Deployment reads runtime settings from the selected file (`.env.prod` for production,
+App deployment reads runtime settings from the selected file (`.env.prod` for production,
 `.env` for dev) after the build succeeds. Known basic settings such as `CACHE_ENABLED`,
 `AI_ENABLED`, `AI_PROVIDER`, `OPENAI_MODEL`, and `CLOUDFLARE_EMAIL_ACCOUNT_ID` become plain-text variables visible in
 Cloudflare's dashboard. The allowlist is `PLAIN_VARIABLES` in `scripts/cloudflare.mjs`;
@@ -498,7 +505,7 @@ pnpm exec vitest run tests/cloudflare-build.test.mjs tests/database-request.test
 pnpm lint
 # Optional local check, without uploading:
 pnpm run preview
-# Deploy the dev Worker:
+# Deploy the dev downloader backend/container, then rebuild and deploy the app:
 pnpm run deploy:preview
 # After checking the deployed dev Worker:
 pnpm run deploy
@@ -508,10 +515,27 @@ pnpm run deploy
 using `.env`, without uploading a Worker. Both the browser build and local Worker
 use that localhost origin.
 
-`pnpm run deploy:preview` builds and deploys with Wrangler's `dev` environment.
-Put dev application settings and the local preview's `DATABASE_URL` in `.env`;
-the deployed dev Worker uses its configured `DB` Hyperdrive binding. Dev has no scheduled
-cron triggers, and its self binding points to `smarttools-dev`.
+`pnpm run deploy:preview` performs both dev deployments in order: first
+`canopy-downloaders-dev` from `wrangler.downloaders.jsonc`, including its container
+image, then a fresh OpenNext build and deployment of `canopy-dev`. It stops at the
+first failure; it does not roll back an already completed backend deployment if
+the app build or deployment fails. Docker must be running for the container build.
+
+Put dev application and downloader settings in `.env`; only the backend's
+downloader settings are forwarded to the downloader Worker. App credentials,
+guest/network secrets and local downloader overrides are excluded from that
+backend upload. Configure the resources and settings in the
+[downloader deployment guide](docs/downloaders-backend.md#provision-and-deploy)
+before the first deployment. Downloads are enabled by default for all registered
+platforms with bounded capacity. The command validates downloader configuration,
+app identity secrets and R2 credentials before uploading either Worker. An explicit
+`DOWNLOADERS_ENABLED=false` pauses downloads. The command does not provision the
+R2 bucket or Queue, migrate the database, or change saved catalog settings.
+Production `pnpm run deploy` continues to deploy the app only.
+
+The deployed dev app uses its configured `DB` Hyperdrive binding; local preview
+uses `DATABASE_URL` from `.env`. The dev app has no scheduled cron triggers, and
+its self binding points to `canopy-dev`.
 The build removes OpenNext's embedded dotenv fallbacks. Check login,
 account recovery, admin reads/writes,
 Paperwork export, and Media image/PDF processing before publishing. Also verify advanced
@@ -531,7 +555,7 @@ stays in the browser; `public/_headers` preserves isolation headers on static
 Worker assets. The initial setup uses no R2 cache; add an OpenNext cache binding
 if introducing persistent ISR or server data caching.
 
-For Git deployments, connect the production branch to the `smarttools` Worker in
+For Git deployments, connect the production branch to the `canopy` Worker in
 Workers Builds and use the repository root. Under **Settings > Build**, configure:
 
 - Build variables: `NODE_VERSION=24.18.0` and `PNPM_VERSION=11.14.0`.

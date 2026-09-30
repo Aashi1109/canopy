@@ -20,6 +20,58 @@ const config = {
   ],
 };
 
+const downloaderConfig = {
+  name: "canopy-downloaders",
+  env: {
+    dev: {
+      name: "canopy-downloaders-dev",
+      vars: {
+        DOWNLOADERS_ENABLED: "true",
+        DOWNLOADERS_POOL_SIZE: "2",
+        DOWNLOADERS_YOUTUBE_INSPECTION: "true",
+        DOWNLOADERS_INSTAGRAM_INSPECTION: "true",
+      },
+      hyperdrive: [{ binding: "DB", id: "downloader-db" }],
+      r2_buckets: [{ binding: "DOWNLOAD_FILES", bucket_name: "canopy-downloads-dev" }],
+    },
+  },
+};
+
+const previewCredentials = {
+  DOWNLOADERS_CONTROL_SECRET: "fixture-control-secret-at-least-32-characters",
+  DOWNLOADERS_GUEST_SECRET: "fixture-guest-secret-at-least-32-characters",
+  DOWNLOADERS_NETWORK_SECRET: "fixture-network-secret-at-least-32-characters",
+  DOWNLOADERS_R2_ACCOUNT_ID: "a".repeat(32),
+  DOWNLOADERS_R2_BUCKET: "canopy-downloads-dev",
+  DOWNLOADERS_R2_ACCESS_KEY_ID: "fixture-storage-key",
+  DOWNLOADERS_R2_SECRET_ACCESS_KEY: "fixture-storage-secret",
+};
+
+function previewEnvironment(overrides = {}) {
+  return Object.entries({ ...previewCredentials, ...overrides })
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
+}
+
+function recordPreviewPreflight(fileContent, configuration = downloaderConfig) {
+  const calls = [];
+  let error;
+  try {
+    runCloudflare(["preview"], config, {
+      downloaderConfig: configuration,
+      environment: {},
+      readFile: () => fileContent,
+      execute(_command, args) {
+        calls.push(args);
+        return { status: 0 };
+      },
+    });
+  } catch (failure) {
+    error = failure;
+  }
+  return { calls, error };
+}
+
 function recordRun(
   mode,
   configuration = config,
@@ -43,10 +95,13 @@ function recordRun(
     ...environmentOverrides,
   };
   const status = runCloudflare(Array.isArray(mode) ? mode : [mode], configuration, {
+    downloaderConfig,
     environment,
     readFile(path) {
       calls.loadedFile = path;
-      return fileContent;
+      return (Array.isArray(mode) ? mode[0] : mode) === "preview"
+        ? `${previewEnvironment()}\n${fileContent}`
+        : fileContent;
     },
     execute(command, args, options) {
       const secretFile = args[args.indexOf("--secrets-file") + 1];
@@ -160,12 +215,33 @@ test.each(["1", "true"])("Workers Builds (%s) deploys code while retaining exist
   expect(deployment.secrets).toBeUndefined();
 });
 
-test("preview builds and remotely deploys the dev Worker using only .env", () => {
+test("preview deploys the downloader first, then rebuilds and deploys the dev app using only .env", () => {
   const { calls } = recordRun("preview");
-  expect(calls).toHaveLength(3);
-  expect(calls.every(({ env }) => env.APP_URL === "https://canopy-dev.example.workers.dev")).toBe(true);
+  expect(calls).toHaveLength(4);
+  expect(calls.slice(1).every(({ env }) => env.APP_URL === "https://canopy-dev.example.workers.dev")).toBe(true);
   expect(calls.loadedFile).toMatch(/\/\.env$/);
   expect(calls[0].args).toEqual([
+    "node_modules/wrangler/bin/wrangler.js",
+    "deploy",
+    "--config",
+    "wrangler.downloaders.jsonc",
+    "--env",
+    "dev",
+    "--env-file",
+    ".env",
+    "--var",
+    `DOWNLOADERS_R2_ACCOUNT_ID:${previewCredentials.DOWNLOADERS_R2_ACCOUNT_ID}`,
+    "--var",
+    "DOWNLOADERS_R2_BUCKET:canopy-downloads-dev",
+    "--secrets-file",
+    expect.any(String),
+  ]);
+  expect(calls[0].secrets).toEqual({
+    DOWNLOADERS_CONTROL_SECRET: previewCredentials.DOWNLOADERS_CONTROL_SECRET,
+    DOWNLOADERS_R2_ACCESS_KEY_ID: previewCredentials.DOWNLOADERS_R2_ACCESS_KEY_ID,
+    DOWNLOADERS_R2_SECRET_ACCESS_KEY: previewCredentials.DOWNLOADERS_R2_SECRET_ACCESS_KEY,
+  });
+  expect(calls[1].args).toEqual([
     "node_modules/@opennextjs/cloudflare/dist/cli/index.js",
     "build",
     "--config",
@@ -174,6 +250,7 @@ test("preview builds and remotely deploys the dev Worker using only .env", () =>
     "dev",
     "--skipNextBuild=false",
   ]);
+  expect(calls[2].args).toEqual(["scripts/clear-cloudflare-build-env.mjs"]);
   expect(calls.at(-1).args).toEqual([
     "node_modules/wrangler/bin/wrangler.js",
     "deploy",
@@ -186,8 +263,255 @@ test("preview builds and remotely deploys the dev Worker using only .env", () =>
     "--secrets-file",
     expect.any(String),
   ]);
-  expect(calls.at(-1).secrets).toEqual({ SYNTHETIC_RUNTIME_SECRET: "fixture-only" });
+  expect(calls.at(-1).secrets).toEqual({ ...previewCredentials, SYNTHETIC_RUNTIME_SECRET: "fixture-only" });
+  expect(existsSync(calls[0].args.at(-1))).toBe(false);
   expect(existsSync(calls.at(-1).args.at(-1))).toBe(false);
+});
+
+test("preview uploads only backend settings and scoped secrets to the downloader", () => {
+  const limits = JSON.stringify({
+    globalDailyJobs: 1000,
+    networkDailyJobs: 50,
+    globalQueued: 100,
+    platformActive: 4,
+    platformStartsPerMinute: 20,
+    globalDailyBytes: 1024 ** 3,
+    globalMonthlyBytes: 30 * 1024 ** 3,
+    globalDailyCostMicros: 1_000_000,
+    jobCostMicros: 1000,
+  });
+  const controlSecret = "fixture-control-secret-at-least-32-characters";
+  const { calls } = recordRun(
+    "preview",
+    config,
+    [],
+    [
+      "DOWNLOADERS_ENABLED=true",
+      "DOWNLOADERS_POOL_SIZE=4",
+      "DOWNLOADERS_YOUTUBE_INSPECTION=false",
+      "DOWNLOADERS_INSTAGRAM_INSPECTION=false",
+      "DOWNLOADERS_PLATFORMS=youtube,instagram",
+      `DOWNLOADERS_LIMITS=${limits}`,
+      `DOWNLOADERS_R2_ACCOUNT_ID=${previewCredentials.DOWNLOADERS_R2_ACCOUNT_ID}`,
+      "DOWNLOADERS_R2_BUCKET=canopy-downloads-dev",
+      `DOWNLOADERS_CONTROL_SECRET=${controlSecret}`,
+      "DOWNLOADERS_R2_ACCESS_KEY_ID=storage-key",
+      "DOWNLOADERS_R2_SECRET_ACCESS_KEY=storage-secret",
+      "DOWNLOADERS_LOCAL=true",
+      "DOWNLOADERS_LOCAL_ORIGIN=http://127.0.0.1:8788",
+      `DOWNLOADERS_GUEST_SECRET=${previewCredentials.DOWNLOADERS_GUEST_SECRET}`,
+      "DOWNLOADERS_GUEST_PREVIOUS_SECRET=app-previous-secret",
+      `DOWNLOADERS_NETWORK_SECRET=${previewCredentials.DOWNLOADERS_NETWORK_SECRET}`,
+      "DOWNLOADERS_CONFINEMENT_VERIFIED=true",
+      'DOWNLOADERS_EGRESS_HOSTS={"youtube":["youtube.com"]}',
+      "DOWNLOADERS_UNKNOWN=unknown-value",
+      "DB=must-not-replace-binding",
+      "DOWNLOAD_FILES=must-not-replace-bucket",
+      "BETTER_AUTH_SECRET=app-auth-secret",
+      "DATABASE_URL=postgres://app-only",
+      "CLOUDFLARE_API_TOKEN=deployment-token",
+      "CLOUDFLARE_EMAIL_API_TOKEN=app-email-secret",
+    ].join("\n"),
+  );
+  const backend = calls[0];
+  expect(backend.args.flatMap((arg, index) => (arg === "--var" ? [backend.args[index + 1]] : [])).sort()).toEqual([
+    "DOWNLOADERS_ENABLED:true",
+    "DOWNLOADERS_INSTAGRAM_INSPECTION:false",
+    `DOWNLOADERS_LIMITS:${limits}`,
+    "DOWNLOADERS_PLATFORMS:youtube,instagram",
+    "DOWNLOADERS_POOL_SIZE:4",
+    `DOWNLOADERS_R2_ACCOUNT_ID:${previewCredentials.DOWNLOADERS_R2_ACCOUNT_ID}`,
+    "DOWNLOADERS_R2_BUCKET:canopy-downloads-dev",
+    "DOWNLOADERS_YOUTUBE_INSPECTION:false",
+  ]);
+  expect(backend.secrets).toEqual({
+    DOWNLOADERS_CONTROL_SECRET: controlSecret,
+    DOWNLOADERS_R2_ACCESS_KEY_ID: "storage-key",
+    DOWNLOADERS_R2_SECRET_ACCESS_KEY: "storage-secret",
+  });
+  expect(backend.env.CLOUDFLARE_API_TOKEN).toBe("deployment-token");
+  expect(calls.at(-1).secrets).toMatchObject({
+    DOWNLOADERS_GUEST_SECRET: previewCredentials.DOWNLOADERS_GUEST_SECRET,
+    DOWNLOADERS_GUEST_PREVIOUS_SECRET: "app-previous-secret",
+    DOWNLOADERS_NETWORK_SECRET: previewCredentials.DOWNLOADERS_NETWORK_SECRET,
+    BETTER_AUTH_SECRET: "app-auth-secret",
+    DATABASE_URL: "postgres://app-only",
+    CLOUDFLARE_EMAIL_API_TOKEN: "app-email-secret",
+  });
+});
+
+test("preview keeps enabled defaults for blank non-secret configuration placeholders", () => {
+  const { calls, status } = recordRun(
+    "preview",
+    config,
+    [],
+    [
+      "DOWNLOADERS_ENABLED=",
+      "DOWNLOADERS_POOL_SIZE=",
+      "DOWNLOADERS_YOUTUBE_INSPECTION=",
+      "DOWNLOADERS_INSTAGRAM_INSPECTION=",
+      "DOWNLOADERS_PLATFORMS=",
+      "DOWNLOADERS_LIMITS=",
+    ].join("\n"),
+  );
+  expect(status).toBe(0);
+  expect(calls).toHaveLength(4);
+  const backendVars = calls[0].args.flatMap((arg, index) => (arg === "--var" ? [calls[0].args[index + 1]] : []));
+  expect(backendVars).toEqual([
+    `DOWNLOADERS_R2_ACCOUNT_ID:${previewCredentials.DOWNLOADERS_R2_ACCOUNT_ID}`,
+    "DOWNLOADERS_R2_BUCKET:canopy-downloads-dev",
+  ]);
+});
+
+test("enabled preview defaults accept all platform services with bounded runtime limits", () => {
+  const { calls, error } = recordPreviewPreflight(previewEnvironment());
+  expect(error).toBeUndefined();
+  expect(calls).toHaveLength(4);
+});
+
+test.each(Object.keys(previewCredentials))("preview rejects missing %s before any child command", (key) => {
+  const settings = { ...previewCredentials };
+  delete settings[key];
+  const { calls, error } = recordPreviewPreflight(
+    Object.entries(settings)
+      .map(([name, value]) => `${name}=${value}`)
+      .join("\n"),
+  );
+  expect(calls).toHaveLength(0);
+  expect(error).toBeInstanceOf(Error);
+  expect(error.message).toContain(key);
+  for (const value of Object.values(previewCredentials)) expect(error.message).not.toContain(value);
+});
+
+test.each([
+  ["DOWNLOADERS_CONTROL_SECRET", "control-too-short"],
+  ["DOWNLOADERS_GUEST_SECRET", "guest-too-short"],
+  ["DOWNLOADERS_NETWORK_SECRET", "network-too-short"],
+  ["DOWNLOADERS_R2_ACCESS_KEY_ID", ""],
+  ["DOWNLOADERS_R2_SECRET_ACCESS_KEY", '"   "'],
+  ["DOWNLOADERS_R2_ACCOUNT_ID", "malformed-account-id"],
+  ["DOWNLOADERS_R2_BUCKET", "wrong-development-bucket"],
+])("preview rejects invalid %s without exposing credentials", (key, value) => {
+  const { calls, error } = recordPreviewPreflight(previewEnvironment({ [key]: value }));
+  expect(calls).toHaveLength(0);
+  expect(error).toBeInstanceOf(Error);
+  expect(error.message).toContain(key);
+  if (value.trim()) expect(error.message).not.toContain(value);
+  for (const secret of Object.values(previewCredentials)) expect(error.message).not.toContain(secret);
+});
+
+test.each([
+  ["DOWNLOADERS_ENABLED", "yes"],
+  ["DOWNLOADERS_POOL_SIZE", "0"],
+  ["DOWNLOADERS_POOL_SIZE", "NaN"],
+  ["DOWNLOADERS_YOUTUBE_INSPECTION", "yes"],
+  ["DOWNLOADERS_INSTAGRAM_INSPECTION", "yes"],
+  ["DOWNLOADERS_PLATFORMS", "youtube,unsupported-service"],
+  ["DOWNLOADERS_LIMITS", "invalid-private-limit-setting"],
+  ["DOWNLOADERS_LIMITS", "{}"],
+])("preview validates runtime setting %s before deployment", (key, value) => {
+  const { calls, error } = recordPreviewPreflight(previewEnvironment({ [key]: value }));
+  expect(calls).toHaveLength(0);
+  expect(error).toBeInstanceOf(Error);
+  expect(error.message).toMatch(/Invalid downloader settings/);
+  expect(error.message).not.toContain(value);
+});
+
+test("preview validates settings already present in the selected downloader config", () => {
+  const invalidConfig = structuredClone(downloaderConfig);
+  invalidConfig.env.dev.vars.DOWNLOADERS_POOL_SIZE = "0";
+  const { calls, error } = recordPreviewPreflight(previewEnvironment(), invalidConfig);
+  expect(calls).toHaveLength(0);
+  expect(error).toBeInstanceOf(Error);
+  expect(error.message).toMatch(/Invalid downloader settings/);
+});
+
+test("nonblank .env settings take precedence over downloader configuration", () => {
+  const overriddenConfig = structuredClone(downloaderConfig);
+  overriddenConfig.env.dev.vars.DOWNLOADERS_POOL_SIZE = "0";
+  const { calls, error } = recordPreviewPreflight(previewEnvironment({ DOWNLOADERS_POOL_SIZE: "3" }), overriddenConfig);
+  expect(error).toBeUndefined();
+  expect(calls).toHaveLength(4);
+  expect(calls[0]).toContain("DOWNLOADERS_POOL_SIZE:3");
+});
+
+test("an explicitly disabled preview can deploy without downloader credentials", () => {
+  const { calls, error } = recordPreviewPreflight("DOWNLOADERS_ENABLED=false");
+  expect(error).toBeUndefined();
+  expect(calls).toHaveLength(4);
+  expect(calls[0]).toContain("DOWNLOADERS_ENABLED:false");
+});
+
+test("preview retains Docker tooling but excludes app-specific Cloudflare deployment target metadata", () => {
+  const { calls } = recordRun("preview", config, [], "", {
+    DOCKER_HOST: "unix:///fixture/docker.sock",
+    DOCKER_CONTEXT: "fixture-context",
+    WRANGLER_DOCKER_BIN: "/fixture/bin/docker",
+  });
+  const backend = calls[0];
+  expect(backend.env.DOCKER_HOST).toBe("unix:///fixture/docker.sock");
+  expect(backend.env.DOCKER_CONTEXT).toBe("fixture-context");
+  expect(backend.env.WRANGLER_DOCKER_BIN).toBe("/fixture/bin/docker");
+  expect(backend.env.CLOUDFLARE_API_TOKEN).toBe("deployment-only");
+  for (const key of [
+    "WRANGLER_CI_MATCH_TAG",
+    "WRANGLER_CI_OVERRIDE_NAME",
+    "WRANGLER_OUTPUT_FILE_PATH",
+    "WRANGLER_OUTPUT_FILE_DIRECTORY",
+  ]) {
+    expect(backend.env[key]).toBeUndefined();
+    expect(calls.at(-1).env[key]).toBeDefined();
+  }
+});
+
+test.each([
+  [[{ status: 7 }], 7, 1],
+  [[{ status: null, signal: "SIGTERM" }], 1, 1],
+  [[{ status: 0 }, { status: 2 }], 2, 2],
+  [[{ status: 0 }, { status: 0 }, { status: 3 }], 3, 3],
+  [[{ status: 0 }, { status: 0 }, { status: 0 }, { status: 4 }], 4, 4],
+])("preview stops after a failed stage and removes temporary secrets (%j)", (results, expectedStatus, count) => {
+  const { calls, status } = recordRun("preview", config, results);
+  expect(status).toBe(expectedStatus);
+  expect(calls).toHaveLength(count);
+  expect(calls[0].args).toContain("wrangler.downloaders.jsonc");
+  for (const call of calls.filter(({ args }) => args.includes("--secrets-file"))) {
+    expect(existsSync(call.args[call.args.indexOf("--secrets-file") + 1])).toBe(false);
+  }
+});
+
+test("a downloader process start failure stops before building and removes temporary secrets", () => {
+  const calls = [];
+  expect(() =>
+    runCloudflare(["preview"], config, {
+      downloaderConfig,
+      environment: {},
+      readFile: () => previewEnvironment(),
+      execute(_command, args) {
+        calls.push(args);
+        expect(existsSync(args[args.indexOf("--secrets-file") + 1])).toBe(true);
+        return { error: new Error("sensitive child detail") };
+      },
+    }),
+  ).toThrow("Unable to start the Cloudflare command.");
+  expect(calls).toHaveLength(1);
+  expect(calls[0]).toContain("wrangler.downloaders.jsonc");
+  expect(existsSync(calls[0][calls[0].indexOf("--secrets-file") + 1])).toBe(false);
+});
+
+test("preview requires downloader configuration before any child command", () => {
+  const calls = [];
+  expect(() =>
+    runCloudflare(["preview"], config, {
+      environment: {},
+      readFile: () => "",
+      execute(...args) {
+        calls.push(args);
+        return { status: 0 };
+      },
+    }),
+  ).toThrow("wrangler.downloaders.jsonc");
+  expect(calls).toHaveLength(0);
 });
 
 test("local preview serves the dev configuration without uploading code or secrets", () => {
@@ -233,10 +557,10 @@ test("local preview serves the dev configuration without uploading code or secre
 
 test("a workers.dev deployment needs no custom-domain routes", () => {
   const workerConfig = {
-    name: "smarttools",
+    name: "canopy",
     workers_dev: true,
     routes: [],
-    vars: { APP_URL: "https://smarttools.example.workers.dev" },
+    vars: { APP_URL: "https://canopy.example.workers.dev" },
   };
   const { calls, status } = recordRun("deploy", workerConfig);
   expect(status).toBe(0);
@@ -328,6 +652,7 @@ test.each(["deploy", "preview"])(
       "OPENAI_MODEL:example-model",
     ]);
     expect(deployment.secrets).toEqual({
+      ...(mode === "preview" ? previewCredentials : {}),
       DATABASE_URL: "postgres://user:password@db.example.test/app",
       REDIS_URL: "redis://user:password@cache.example.test",
       CLOUDINARY_URL: "cloudinary://key:secret@example",
@@ -361,7 +686,10 @@ test.each(["deploy", "preview"])("%s uploads Email Sending settings without expo
     "CLOUDFLARE_EMAIL_ACCOUNT_ID:email-account",
     "EMAIL_PROVIDER:cloudflare",
   ]);
-  expect(deployment.secrets).toEqual({ CLOUDFLARE_EMAIL_API_TOKEN: "email-token" });
+  expect(deployment.secrets).toEqual({
+    ...(mode === "preview" ? previewCredentials : {}),
+    CLOUDFLARE_EMAIL_API_TOKEN: "email-token",
+  });
   expect(deployment.env.CLOUDFLARE_ACCOUNT_ID).toBe("deployment-account");
   expect(deployment.env.CLOUDFLARE_API_TOKEN).toBe("deployment-token");
   expect(existsSync(deployment.args.at(-1))).toBe(false);

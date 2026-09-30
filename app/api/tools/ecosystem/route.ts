@@ -7,6 +7,7 @@ const ECOSYSTEMS = [
   { app: "paperwork", href: "/paperwork", id: "documents", label: "Documents" },
   { app: "devtools", href: "/devtools", id: "developer", label: "Developer" },
   { app: "media", href: "/media", id: "media", label: "Media" },
+  { app: "downloaders", href: "/downloaders", id: "downloaders", label: "Downloaders" },
 ] as const;
 
 export async function GET() {
@@ -25,7 +26,7 @@ export async function GET() {
             label: category.label,
           })),
         count: matchingTools.length,
-        tools: ecosystem.app === "paperwork" ? previews : previews.slice(0, 4),
+        tools: ecosystem.app === "paperwork" || ecosystem.app === "downloaders" ? previews : previews.slice(0, 4),
       };
     });
     return Response.json({ groups });

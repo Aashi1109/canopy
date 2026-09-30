@@ -75,7 +75,7 @@ export async function requestSavedTools(operation?: SavedMutation): Promise<Save
           typeof t.name === "string" &&
           typeof t.category === "string" &&
           typeof t.href === "string" &&
-          /^\/(devtools|media|paperwork)\/[a-z0-9-]+$/.test(t.href)
+          /^\/(devtools|media|paperwork|downloaders)\/[a-z0-9-]+$/.test(t.href)
         );
       }))
   )

@@ -2,6 +2,7 @@ import type { Access } from "../lib/authorization/index.ts";
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  bigint,
   check,
   customType,
   foreignKey,
@@ -648,5 +649,209 @@ export const assistantAttachmentsTable = pgTable(
       .where(sql`${table.status} = 'deleting'`),
     check("assistant_attachments_data_check", sql`jsonb_typeof(${table.data}) = 'object'`),
     check("assistant_attachments_status_check", sql`${table.status} IN ('processing','ready','failed','deleting')`),
+  ],
+);
+
+export const downloadPoliciesTable = pgTable(
+  "download_policies",
+  {
+    id: text("id").primaryKey(),
+    version: integer("version").notNull().default(1),
+    guestDaily: integer("guest_daily").notNull(),
+    guestActive: integer("guest_active").notNull(),
+    guestQueued: integer("guest_queued").notNull(),
+    accountDaily: integer("account_daily").notNull(),
+    accountActive: integer("account_active").notNull(),
+    accountQueued: integer("account_queued").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("download_policies_id_check", sql`${table.id}='default'`),
+    check("download_policies_version_check", sql`${table.version}>0`),
+    check("download_policies_guest_daily_check", sql`${table.guestDaily} BETWEEN 1 AND 1000000`),
+    check("download_policies_guest_active_check", sql`${table.guestActive} BETWEEN 1 AND 250`),
+    check("download_policies_guest_queued_check", sql`${table.guestQueued} BETWEEN 1 AND 10000`),
+    check("download_policies_account_daily_check", sql`${table.accountDaily} BETWEEN 1 AND 1000000`),
+    check("download_policies_account_active_check", sql`${table.accountActive} BETWEEN 1 AND 250`),
+    check("download_policies_account_queued_check", sql`${table.accountQueued} BETWEEN 1 AND 10000`),
+  ],
+);
+
+export const downloadJobsTable = pgTable(
+  "download_jobs",
+  {
+    id: text("id").primaryKey(),
+    ownerKind: text("owner_kind").notNull(),
+    ownerId: text("owner_id").notNull(),
+    requestId: text("request_id").notNull(),
+    inputHash: text("input_hash").notNull(),
+    platform: text("platform").notNull(),
+    sourceUrl: text("source_url"),
+    quality: text("quality").notNull(),
+    inspect: boolean("inspect").notNull().default(false),
+    inspection: jsonb("inspection"),
+    selectedFormat: text("selected_format"),
+    networkHash: text("network_hash").notNull(),
+    state: text("state").notNull(),
+    phase: text("phase"),
+    generation: integer("generation").notNull().default(0),
+    dispatchVersion: integer("dispatch_version").notNull().default(1),
+    dispatchDueAt: timestamp("dispatch_due_at", { withTimezone: true }),
+    nextEligibleAt: timestamp("next_eligible_at", { withTimezone: true }).notNull().defaultNow(),
+    queueExpiresAt: timestamp("queue_expires_at", { withTimezone: true }).notNull(),
+    admissionPolicyVersion: integer("admission_policy_version").notNull(),
+    budget: jsonb("budget").notNull(),
+    admissionDay: text("admission_day").notNull(),
+    admissionMonth: text("admission_month").notNull(),
+    workMs: bigint("work_ms", { mode: "number" }).notNull().default(0),
+    sourceBytes: bigint("source_bytes", { mode: "number" }).notNull().default(0),
+    costMicros: bigint("cost_micros", { mode: "number" }).notNull().default(0),
+    engineStarts: integer("engine_starts").notNull().default(0),
+    error: jsonb("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+  },
+  (table) => [
+    unique("download_jobs_owner_request_unique").on(table.ownerKind, table.ownerId, table.requestId),
+    index("download_jobs_owner_idx").on(table.ownerKind, table.ownerId, table.createdAt),
+    index("download_jobs_dispatch_idx")
+      .on(table.dispatchDueAt, table.nextEligibleAt)
+      .where(sql`${table.state}='queued'`),
+    index("download_jobs_expiry_idx")
+      .on(table.expiresAt)
+      .where(sql`${table.state}='succeeded'`),
+    index("download_jobs_ready_expiry_idx")
+      .on(table.expiresAt)
+      .where(sql`${table.state}='ready'`),
+    index("download_jobs_inspection_cache_idx")
+      .on(table.inputHash, table.updatedAt.desc())
+      .where(sql`${table.state}='ready' AND ${table.inspect}=true AND ${table.selectedFormat} IS NULL`),
+    check("download_jobs_owner_kind_check", sql`${table.ownerKind} IN ('guest','account')`),
+    check("download_jobs_quality_check", sql`${table.quality} IN ('720','1080')`),
+    check(
+      "download_jobs_state_check",
+      sql`${table.state} IN ('queued','running','ready','cancelling','succeeded','failed','cancelled','expired')`,
+    ),
+    check(
+      "download_jobs_inspection_check",
+      sql`${table.inspection} IS NULL OR (jsonb_typeof(${table.inspection})='object' AND octet_length(${table.inspection}::text)<=65536)`,
+    ),
+    check(
+      "download_jobs_selected_format_check",
+      sql`${table.selectedFormat} IS NULL OR (${table.inspect} AND ${table.selectedFormat} ~ '^[A-Za-z0-9._-]{1,80}([+][A-Za-z0-9._-]{1,80})?$')`,
+    ),
+    check(
+      "download_jobs_ready_check",
+      sql`${table.state}<>'ready' OR (${table.inspect} AND ${table.inspection} IS NOT NULL AND ${table.expiresAt} IS NOT NULL AND ${table.selectedFormat} IS NULL)`,
+    ),
+    check("download_jobs_generation_check", sql`${table.generation}>=0`),
+    check("download_jobs_dispatch_version_check", sql`${table.dispatchVersion}>0`),
+    check("download_jobs_work_ms_check", sql`${table.workMs}>=0`),
+    check("download_jobs_source_bytes_check", sql`${table.sourceBytes}>=0`),
+    check("download_jobs_cost_micros_check", sql`${table.costMicros}>=0`),
+    check("download_jobs_engine_starts_check", sql`${table.engineStarts}>=0`),
+  ],
+);
+
+export const downloadQuotaBucketsTable = pgTable(
+  "download_quota_buckets",
+  {
+    scope: text("scope").notNull(),
+    period: text("period").notNull(),
+    admitted: integer("admitted").notNull().default(0),
+    queued: integer("queued").notNull().default(0),
+    active: integer("active").notNull().default(0),
+    reservedBytes: bigint("reserved_bytes", { mode: "number" }).notNull().default(0),
+    reservedCostMicros: bigint("reserved_cost_micros", { mode: "number" }).notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.scope, table.period] }),
+    check("download_quota_buckets_admitted_check", sql`${table.admitted}>=0`),
+    check("download_quota_buckets_queued_check", sql`${table.queued}>=0`),
+    check("download_quota_buckets_active_check", sql`${table.active}>=0`),
+    check("download_quota_buckets_reserved_bytes_check", sql`${table.reservedBytes}>=0`),
+    check("download_quota_buckets_reserved_cost_micros_check", sql`${table.reservedCostMicros}>=0`),
+  ],
+);
+
+export const downloadSlotsTable = pgTable(
+  "download_slots",
+  {
+    id: text("id").primaryKey(),
+    generation: integer("generation").notNull().default(0),
+    state: text("state").notNull().default("idle"),
+    attemptId: text("attempt_id"),
+    leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("download_slots_generation_check", sql`${table.generation}>=0`),
+    check("download_slots_state_check", sql`${table.state} IN ('idle','busy','quarantined','draining')`),
+  ],
+);
+
+export const downloadAttemptsTable = pgTable(
+  "download_attempts",
+  {
+    id: text("id").primaryKey(),
+    jobId: text("job_id")
+      .notNull()
+      .references(() => downloadJobsTable.id),
+    generation: integer("generation").notNull(),
+    slotId: text("slot_id")
+      .notNull()
+      .references(() => downloadSlotsTable.id),
+    slotGeneration: integer("slot_generation").notNull(),
+    executionPolicyVersion: integer("execution_policy_version").notNull(),
+    phase: text("phase").notNull(),
+    deadline: timestamp("deadline", { withTimezone: true }).notNull(),
+    heartbeatAt: timestamp("heartbeat_at", { withTimezone: true }).notNull().defaultNow(),
+    stoppedAt: timestamp("stopped_at", { withTimezone: true }),
+    workMs: bigint("work_ms", { mode: "number" }).notNull().default(0),
+    sourceBytes: bigint("source_bytes", { mode: "number" }).notNull().default(0),
+    costMicros: bigint("cost_micros", { mode: "number" }).notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("download_attempts_job_generation_unique").on(table.jobId, table.generation),
+    uniqueIndex("download_attempts_live_slot_idx")
+      .on(table.slotId)
+      .where(sql`${table.stoppedAt} IS NULL`),
+    index("download_attempts_stale_idx")
+      .on(table.heartbeatAt)
+      .where(sql`${table.stoppedAt} IS NULL`),
+    check("download_attempts_work_ms_check", sql`${table.workMs}>=0`),
+    check("download_attempts_source_bytes_check", sql`${table.sourceBytes}>=0`),
+    check("download_attempts_cost_micros_check", sql`${table.costMicros}>=0`),
+  ],
+);
+
+export const downloadArtifactsTable = pgTable(
+  "download_artifacts",
+  {
+    id: text("id").primaryKey(),
+    jobId: text("job_id")
+      .notNull()
+      .references(() => downloadJobsTable.id),
+    attemptId: text("attempt_id")
+      .notNull()
+      .references(() => downloadAttemptsTable.id),
+    storageKey: text("storage_key").notNull().unique(),
+    filename: text("filename").notNull(),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: bigint("size_bytes", { mode: "number" }).notNull(),
+    etag: text("etag").notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("download_artifacts_job_idx").on(table.jobId),
+    index("download_artifacts_cleanup_idx")
+      .on(table.expiresAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+    check("download_artifacts_size_bytes_check", sql`${table.sizeBytes}>0`),
   ],
 );

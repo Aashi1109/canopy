@@ -89,6 +89,8 @@ function Toast(props: ComponentProps<typeof Toaster>) {
 type WorkbenchShellProps = HTMLAttributes<HTMLElement> & {
   children: ReactNode;
   layoutStorageKey?: string;
+  /** Preserve intrinsic 44px controls for URL/file intake workspaces. */
+  density?: "compact" | "comfortable";
   options?: ReactNode;
   status?: ReactNode;
   statusMeta?: ReactNode;
@@ -109,6 +111,7 @@ function WorkbenchShell({ layoutStorageKey, ...props }: WorkbenchShellProps) {
 function WorkbenchShellContent({
   children,
   className,
+  density = "compact",
   options,
   status,
   statusMeta,
@@ -138,9 +141,12 @@ function WorkbenchShellContent({
         data-variant={variant}
         className={cn(
           "flex h-[calc(100dvh-4.5rem)] min-h-0 w-full flex-col overflow-hidden rounded-xl border border-input bg-card",
-          "[&_[data-slot=button]:not([data-variant=card-action])]:h-8 [&_[data-slot=button]:not([data-variant=card-action])]:min-h-8 [&_[data-slot=button]:not([data-variant=card-action])]:gap-1.5 [&_[data-slot=button]:not([data-variant=card-action])]:px-2.5 [&_[data-slot=button][data-size^=icon]]:size-8 [&_[data-slot=button][data-size^=icon]]:px-0 [&_[data-slot=button]_svg:not([class*=size-])]:size-3.5",
-          "[&_[data-slot=input]:not([data-variant=expression])]:h-8 [&_[data-slot=input]:not([data-variant=expression])]:min-h-8 [&_[data-slot=input]:not([type=range]):not([data-leading-icon])]:pl-2.5 [&_[data-slot=input]:not([type=range]):not([data-suffix])]:pr-2.5",
-          "[&_[data-slot=select-trigger]]:h-8 [&_[data-slot=select-trigger]]:min-h-8 [&_[data-slot=select-trigger]]:px-2.5 [&_[data-slot=select-trigger]>svg]:size-3.5",
+          density === "compact" &&
+            "[&_[data-slot=button]:not([data-variant=card-action])]:h-8 [&_[data-slot=button]:not([data-variant=card-action])]:min-h-8 [&_[data-slot=button]:not([data-variant=card-action])]:gap-1.5 [&_[data-slot=button]:not([data-variant=card-action])]:px-2.5 [&_[data-slot=button][data-size^=icon]]:size-8 [&_[data-slot=button][data-size^=icon]]:px-0 [&_[data-slot=button]_svg:not([class*=size-])]:size-3.5",
+          density === "compact" &&
+            "[&_[data-slot=input]:not([data-variant=expression])]:h-8 [&_[data-slot=input]:not([data-variant=expression])]:min-h-8 [&_[data-slot=input]:not([type=range]):not([data-leading-icon])]:pl-2.5 [&_[data-slot=input]:not([type=range]):not([data-suffix])]:pr-2.5",
+          density === "compact" &&
+            "[&_[data-slot=select-trigger]]:h-8 [&_[data-slot=select-trigger]]:min-h-8 [&_[data-slot=select-trigger]]:px-2.5 [&_[data-slot=select-trigger]>svg]:size-3.5",
           "[&_[data-slot=workbench-status]_[role=status]>span.text-success]:text-foreground",
           variant === "media" ? "shadow-sm" : variant === "conversion" ? "shadow-md" : "shadow-lg",
           className,

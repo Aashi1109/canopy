@@ -19,6 +19,10 @@
  *   `tools/<key>/run.worker.ts` -> the one tool worker, through `useToolRun`
  *   `tools/<key>/run.server.ts` -> `POST /api/tools/<key>`
  *
+ * Registered downloaders are the one family exception: a server-projected
+ * `spec.job` capability selects their shared durable-job workspace before the
+ * ordinary hosts are initialized. No platform services enter this module.
+ *
  * The main-thread import template ends in the static suffix `/run`, so the
  * context module it creates contains `run.ts` and nothing else: neither
  * `run.worker` nor `run.server` matches `^\./.*\/run$`, so neither is reachable
@@ -661,7 +665,7 @@ function toWorkbenchDefinition(spec: ToolSpec, definitionKey: string): ToolDefin
 }
 
 export interface ToolPageProps {
-  account: { returnTo: string; user: { name: string; isAdmin?: boolean } | null };
+  account: { returnTo: string; user: { id?: string; name: string; isAdmin?: boolean } | null };
   category: string;
   /** The tool's folder under `tools/`. Never the public slug. */
   definitionKey: string;
@@ -672,7 +676,22 @@ export interface ToolPageProps {
   title: string;
 }
 
+const DownloaderWorkspace = lazy(() => import("@/app/downloaders/components/DownloaderWorkspace"));
+
 export default function ToolPage(props: ToolPageProps): ReactElement {
+  if (props.spec.job?.kind === "download") {
+    return (
+      <Suspense
+        fallback={
+          <div className="p-6 text-sm text-muted-foreground" role="status">
+            Opening downloader…
+          </div>
+        }
+      >
+        <DownloaderWorkspace key={props.definitionKey} {...props} />
+      </Suspense>
+    );
+  }
   return <ToolPageState key={props.definitionKey} {...props} />;
 }
 

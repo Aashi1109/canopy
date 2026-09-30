@@ -1,14 +1,26 @@
 "use client";
 
 import { SidebarNavItem } from "@/components/ui/index.tsx";
-import { appHref, subdomainHref } from "@/lib/routing/subdomains.ts";
-import { FileText, Newspaper, Flag, History, LayoutDashboard, Palette, ShieldCheck, Users, Wrench } from "lucide-react";
-import { useSelectedLayoutSegment } from "next/navigation";
+import { appHref, internalSubdomainPath, subdomainHref } from "@/lib/routing/subdomains.ts";
+import {
+  Download,
+  FileText,
+  Newspaper,
+  Flag,
+  History,
+  LayoutDashboard,
+  Palette,
+  ShieldCheck,
+  Users,
+  Wrench,
+} from "lucide-react";
+import { usePathname } from "next/navigation";
 
 const links = [
   { href: "/admin/tools", label: "Tools catalog", icon: Wrench },
   { href: "/admin/templates", label: "Templates", icon: FileText },
   { href: "/admin/features", label: "Feature flags", icon: Flag },
+  { href: "/admin/downloaders", label: "Downloader limits", icon: Download },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/roles", label: "Roles", icon: ShieldCheck },
   { href: "/admin/audit", label: "Audit history", icon: History },
@@ -17,12 +29,12 @@ const links = [
 ] as const;
 
 export function AdminNavigation() {
-  const segment = useSelectedLayoutSegment();
+  const pathname = internalSubdomainPath("admin", usePathname());
 
   return (
     <nav aria-label="Admin sections" className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
       <SidebarNavItem
-        active={segment === null}
+        active={pathname === "/admin" || pathname === "/admin/"}
         className="shrink-0"
         href={subdomainHref("admin")}
         icon={<LayoutDashboard aria-hidden="true" />}
@@ -31,7 +43,7 @@ export function AdminNavigation() {
       </SidebarNavItem>
       {links.map(({ href, icon: Icon, label }) => (
         <SidebarNavItem
-          active={href === `/admin/${segment}`}
+          active={pathname === href || pathname.startsWith(`${href}/`)}
           className="shrink-0"
           href={appHref(href)}
           icon={<Icon aria-hidden="true" />}

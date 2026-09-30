@@ -21,6 +21,7 @@ const FALLBACK_GROUPS: readonly Ecosystem[] = [
   { categories: [], count: 0, href: "/paperwork", id: "documents", label: "Documents", tools: [] },
   { categories: [], count: 0, href: "/devtools", id: "developer", label: "Developer", tools: [] },
   { categories: [], count: 0, href: "/media", id: "media", label: "Media", tools: [] },
+  { categories: [], count: 0, href: "/downloaders", id: "downloaders", label: "Downloaders", tools: [] },
 ];
 
 export function useEcosystemGroups(enabled = true) {
@@ -103,10 +104,15 @@ export function EcosystemTabFilters({
 }
 
 function EcosystemMenu({ group, onClose }: { group: Ecosystem; onClose: () => void }) {
-  const showsCategories = group.id !== "documents" && group.categories.length > 0;
+  const showsCategories = group.id !== "documents" && group.id !== "downloaders" && group.categories.length > 0;
 
   return (
-    <div className="absolute top-full left-1/2 z-50 -mt-2 w-[390px] max-w-[calc(100vw-2rem)] -translate-x-1/2 pt-2 xl:top-[36px] xl:left-0 xl:translate-x-0">
+    <div
+      className={cn(
+        "absolute top-full left-1/2 z-50 -mt-2 w-max min-w-[390px] max-w-[calc(100vw-2rem)] -translate-x-1/2 pt-2 xl:top-[36px] xl:translate-x-0",
+        group.id === "downloaders" ? "xl:right-0 xl:left-auto" : "xl:left-0",
+      )}
+    >
       {/* The transparent top padding connects the trigger and panel for pointer movement. */}
       <div
         className="overflow-hidden rounded-xl border border-border bg-card p-3 shadow-[0_16px_40px_rgb(17_18_20_/_14%)]"
@@ -117,9 +123,15 @@ function EcosystemMenu({ group, onClose }: { group: Ecosystem; onClose: () => vo
       >
         <div className="flex items-start justify-between pb-2">
           <div>
-            <Strong className="block text-foreground">{group.label} tools</Strong>
+            <Strong className="block text-foreground">
+              {group.id === "downloaders" ? group.label : `${group.label} tools`}
+            </Strong>
             <Caption className="mt-0.5 block text-muted-foreground">
-              {showsCategories ? "Choose a category to see every tool." : "Create, complete, and export paperwork."}
+              {showsCategories
+                ? "Choose a category to see every tool."
+                : group.id === "downloaders"
+                  ? "Choose your video platform."
+                  : "Create, complete, and export paperwork."}
             </Caption>
           </div>
           <span className="rounded-full bg-muted px-2 py-1 font-caption text-overline font-normal text-muted-foreground">
@@ -158,7 +170,7 @@ function ToolPreviewList({ tools }: { tools: readonly ToolPreview[] }) {
           role="menuitem"
         >
           <PreviewIcon icon={tool.icon} />
-          <Caption className="min-w-0 break-words text-foreground group-hover/preview:text-accent-foreground group-focus-visible/preview:text-accent-foreground">
+          <Caption className="min-w-0 truncate text-foreground group-hover/preview:text-accent-foreground group-focus-visible/preview:text-accent-foreground">
             {tool.name}
           </Caption>
         </a>

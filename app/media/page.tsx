@@ -1,8 +1,9 @@
 import { CatalogHero } from "@/components/canopy/CatalogHero";
 import { CatalogListing } from "@/components/canopy/CatalogListing";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
-import { ToolIcon } from "@/components/ToolIcon";
-import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
+import { CatalogToolCard as ToolCard } from "@/components/canopy/CatalogToolCard";
+import { FamilyToolSearch } from "@/components/ui/components/GlobalToolSearch";
+import { getTools } from "@/lib/tool-framework/catalog";
 import { searchTools } from "@/lib/tool-catalog/index";
 import { categoriesForApp, resolveCategoryKey, TOOL_CATEGORIES } from "@/lib/tool-framework/categories";
 import { getOptionalSession } from "@/lib/auth/session.ts";
@@ -17,7 +18,6 @@ import {
   AppContainer,
   Button,
   Card,
-  CatalogCard,
   EmptyState,
   IconTile,
   Input,
@@ -28,22 +28,10 @@ import {
 } from "@/components/ui/index.tsx";
 import { LayoutGrid, LockKeyhole, Search, ShieldCheck, Zap } from "lucide-react";
 import { headers } from "next/headers";
+import { permanentRedirect } from "next/navigation";
 
 function first(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value) ?? "";
-}
-
-function ToolCard({ tool }: { tool: CatalogTool }) {
-  return (
-    <CatalogCard
-      action="Open tool →"
-      description={tool.description}
-      href={`/media/${tool.slug}`}
-      icon={<ToolIcon icon={tool.icon} />}
-      status={<StatusBadge variant="success">Browser only</StatusBadge>}
-      title={tool.name}
-    />
-  );
 }
 
 export default async function HomePage({
@@ -55,6 +43,8 @@ export default async function HomePage({
   const params = await searchParams;
   const query = first(params.q).trim().slice(0, 80);
   const requestedCategory = first(params.category).slice(0, 80);
+  if (requestedCategory === "video-downloaders")
+    permanentRedirect(`/downloaders${query ? `?q=${encodeURIComponent(query)}` : ""}`);
   const category = resolveCategoryKey(requestedCategory, "media");
   const [tools, session] = await Promise.all([getTools("media"), getOptionalSession(requestHeaders)]);
   const categoryLabel = category ? TOOL_CATEGORIES[category].label : "";
@@ -75,29 +65,31 @@ export default async function HomePage({
         <CatalogHero suite="media" />
         <section aria-label="Find a media tool" className="bg-muted/50">
           <AppContainer className="py-6">
-            <form
-              className="mx-auto flex w-full max-w-2xl gap-2 rounded-2xl bg-card p-2 shadow-lg"
-              method="get"
-              role="search"
-            >
-              <div className="relative min-w-0 flex-1">
-                <Search
-                  aria-hidden="true"
-                  className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-muted-foreground"
-                />
-                <Input
-                  aria-label="Search media tools"
-                  className="border-0 pl-10 shadow-none focus-visible:ring-0"
-                  defaultValue={query}
-                  name="q"
-                  placeholder="Search image and PDF tools…"
-                  type="search"
-                />
-              </div>
-              <Button type="submit" variant="default">
-                Search
-              </Button>
-            </form>
+            <FamilyToolSearch family="media" initialQuery={query}>
+              <form
+                className="mx-auto flex w-full max-w-2xl gap-2 rounded-2xl bg-card p-2 shadow-lg"
+                method="get"
+                role="search"
+              >
+                <div className="relative min-w-0 flex-1">
+                  <Search
+                    aria-hidden="true"
+                    className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-muted-foreground"
+                  />
+                  <Input
+                    aria-label="Search media tools"
+                    className="border-0 pl-10 shadow-none focus-visible:ring-0"
+                    defaultValue={query}
+                    name="q"
+                    placeholder="Search image and PDF tools…"
+                    type="search"
+                  />
+                </div>
+                <Button type="submit" variant="default">
+                  Search
+                </Button>
+              </form>
+            </FamilyToolSearch>
           </AppContainer>
         </section>
 
@@ -105,9 +97,9 @@ export default async function HomePage({
           <AppContainer className="grid grid-cols-2 divide-x divide-y divide-border py-6 sm:grid-cols-4 sm:divide-y-0">
             {[
               [`${tools.length}`, "Enabled tools"],
-              ["100%", "On-device"],
-              ["1", "Shared worker runner"],
-              ["0", "File uploads"],
+              ["Local", "File processing"],
+              ["PDF", "Document tools"],
+              ["Images", "Conversion and editing"],
             ].map(([value, label]) => (
               <div className="px-4 py-3 text-center" key={label}>
                 <Metric className="block text-primary">{value}</Metric>
@@ -132,14 +124,18 @@ export default async function HomePage({
                   ? `Matching “${query}”${categoryLabel ? ` in ${categoryLabel}` : ""}.`
                   : category
                     ? `Enabled tools in ${categoryLabel}.`
-                    : "Choose one focused workflow. Every operation stays in this browser."
+                    : "Edit images and PDFs privately on your device."
               }
               title={query || category ? "Search results" : "All media tools"}
             />
             {filteredTools.length ? (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredTools.map((tool) => (
-                  <ToolCard key={tool.toolId} tool={tool} />
+                  <ToolCard
+                    key={tool.toolId}
+                    tool={tool}
+                    status={<StatusBadge variant="success">Browser only</StatusBadge>}
+                  />
                 ))}
               </div>
             ) : (
@@ -188,8 +184,8 @@ export default async function HomePage({
             {[
               {
                 icon: ShieldCheck,
-                title: "Processed locally",
-                description: "Files and previews never leave your device or enter application logs.",
+                title: "Images and PDFs stay local",
+                description: "Image and PDF tools process your files in this browser without uploading them.",
               },
               {
                 icon: Zap,
@@ -198,8 +194,8 @@ export default async function HomePage({
               },
               {
                 icon: LockKeyhole,
-                title: "No hidden storage",
-                description: "No server API, IndexedDB, local storage, or service worker keeps your files.",
+                title: "No file uploads",
+                description: "Your image and PDF files stay on your device while you work.",
               },
             ].map(({ description, icon: Icon, title }) => (
               <Card className="gap-0 rounded-2xl shadow-none" key={title} role="article">
