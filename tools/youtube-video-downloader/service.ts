@@ -16,6 +16,8 @@ export class YouTubeService extends PlatformService {
       "*.youtube.com",
       "youtu.be",
       "youtubei.googleapis.com",
+      "jnn-pa.googleapis.com",
+      "www.google.com",
       "*.googlevideo.com",
       "*.ytimg.com",
     ],

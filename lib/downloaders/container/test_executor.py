@@ -113,7 +113,7 @@ class SecurityTests(unittest.TestCase):
                     (Path(directory) / "engine-error.json").write_text(json.dumps({"code": code}))
                     raise Rejected("engine_failed", "The source could not be processed.")
                 attempt.command = fail
-                with self.assertRaises(Rejected) as failure:
+                with patch("adapters.start_youtube_token_provider"), self.assertRaises(Rejected) as failure:
                     run_ytdlp(attempt)
                 self.assertEqual(failure.exception.code, code if code == "source_challenge" else "engine_failed")
                 self.assertNotIn("upstream-text", str(failure.exception))
@@ -317,7 +317,7 @@ class LifecycleTests(unittest.TestCase):
             ("unclassified exception", "engine_failed", False),
         )
         for message, code, retryable in cases:
-            with self.subTest(code=code), tempfile.TemporaryDirectory() as directory, patch("sys.stdout", new_callable=io.StringIO) as output:
+            with self.subTest(code=code), tempfile.TemporaryDirectory() as directory, patch("sys.stdout", new_callable=io.StringIO) as output, patch("adapters.start_youtube_token_provider"):
                 def adapter(attempt):
                     def fail(*args):
                         (attempt.directory / "engine-error.json").write_text(json.dumps({"code": classify_failure(message + " https://secret.example/?token=private")}))

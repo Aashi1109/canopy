@@ -17,9 +17,34 @@ RUN mkdir -p /opt/downloader-notices \
     && cp LICENSE /opt/downloader-notices/cobalt-LICENSE \
     && printf '%s\n' "${COBALT_REV}" > /opt/downloader-notices/cobalt-revision.txt
 
+FROM ${NODE_IMAGE} AS bgutil-build
+ARG BGUTIL_REV=37169ee2656e08c5c2e5dc9df4c598c0cb4c88a8
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates git python3 make g++ pkg-config \
+    libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /build/bgutil
+RUN git init && git remote add origin https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git \
+    && git fetch --depth=1 origin "${BGUTIL_REV}" && git checkout --detach FETCH_HEAD \
+    && test "$(git rev-parse HEAD)" = "${BGUTIL_REV}"
+WORKDIR /build/bgutil/server
+# Upstream publishes an npm lockfile. Import its pinned resolutions into pnpm
+# before the frozen install, then retain only the compiled server and prod deps.
+RUN corepack enable && corepack prepare pnpm@9.6.0 --activate \
+    && pnpm import && pnpm install --frozen-lockfile \
+    && pnpm exec tsc && pnpm prune --prod \
+    && mkdir -p /opt/bgutil \
+    && cp -a build node_modules package.json /opt/bgutil/
+WORKDIR /build/bgutil
+RUN mkdir -p /opt/bgutil-notices \
+    && git archive --format=tar.gz --output=/opt/bgutil-notices/bgutil-source.tar.gz HEAD \
+    && cp LICENSE /opt/bgutil-notices/bgutil-LICENSE \
+    && printf '%s\n' "${BGUTIL_REV}" > /opt/bgutil-notices/bgutil-revision.txt
+
 FROM ${NODE_IMAGE} AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates python3 python3-venv ffmpeg tini \
+    libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libjpeg62-turbo libgif7 librsvg2-2 \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 engine && useradd --uid 10001 --gid engine --no-create-home --shell /usr/sbin/nologin engine \
     && python3 -m venv /opt/python
@@ -27,10 +52,13 @@ ENV PATH="/opt/python/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1
 # Upstream's pin extra locks the default dependency set, including EJS 0.8.0.
 RUN pip install --no-cache-dir 'yt-dlp[default,pin]==2026.8.19' \
+    && pip install --no-cache-dir --no-deps --target /opt/yt-dlp-plugins/bgutil 'bgutil-ytdlp-pot-provider==2.0.0' \
     && pip check
 COPY --from=cobalt-build /opt/cobalt /opt/cobalt
 COPY --from=cobalt-build /build/cobalt/.git /opt/cobalt/.git
 COPY --from=cobalt-build /opt/downloader-notices /opt/downloader-notices
+COPY --from=bgutil-build /opt/bgutil /opt/bgutil
+COPY --from=bgutil-build /opt/bgutil-notices /opt/downloader-notices
 COPY lib/downloaders/container /opt/executor
 RUN python /opt/executor/cobalt_patch.py /opt/cobalt \
     && cp /opt/executor/cobalt_patch.py /opt/downloader-notices/cobalt_patch.py \

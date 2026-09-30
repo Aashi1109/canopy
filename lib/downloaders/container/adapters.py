@@ -1,4 +1,5 @@
 """Private pinned-engine adapters; no retries, fallback, or source URL discovery."""
+import http.client
 import json
 import math
 import os
@@ -66,14 +67,53 @@ def log_ytdlp_timings(attempt):
         pass
 
 
+def start_youtube_token_provider(attempt):
+    """Run the image-owned HTTP provider under this attempt's existing limits."""
+    started = time.monotonic()
+    try:
+        process = attempt.spawn(["node", "/opt/bgutil/build/main.js", "--host", "127.0.0.1", "--port", "4416"])
+        until = min(attempt.deadline, started + 5)
+        while True:
+            attempt.checkpoint()
+            if process.poll() is not None:
+                reject("engine_failed", "The YouTube token provider could not start.")
+            remaining = until - time.monotonic()
+            if remaining <= 0:
+                reject("engine_failed", "The YouTube token provider did not become ready.")
+            connection = None
+            try:
+                connection = http.client.HTTPConnection("127.0.0.1", 4416, timeout=min(.25, remaining))
+                connection.request("GET", "/ping")
+                response = connection.getresponse()
+                raw = response.read(1025)
+                value = json.loads(raw) if response.status == 200 and len(raw) <= 1024 else None
+                if isinstance(value, dict) and value.get("version") == "2.0.0":
+                    attempt.checkpoint()
+                    if process.poll() is not None:
+                        reject("engine_failed", "The YouTube token provider stopped during startup.")
+                    return process
+            except (OSError, ValueError, http.client.HTTPException):
+                pass
+            finally:
+                if connection is not None:
+                    connection.close()
+            attempt.cancelled.wait(min(.05, remaining))
+    except OSError:
+        reject("engine_failed", "The YouTube token provider could not start.")
+    finally:
+        attempt.timing("youtube_token_provider_startup", (time.monotonic() - started) * 1000)
+
+
 def run_ytdlp(attempt):
     request = attempt.request["request"]
     started = time.monotonic()
-    config = {"request": request, "limits": attempt.request["limits"], "timingStartedAt": started}
-    config_path = attempt.directory / "engine-request.json"
-    config_path.write_text(json.dumps(config))
-    os.chmod(config_path, 0o644)
     try:
+        if "Youtube" in request["extractorKeys"]:
+            start_youtube_token_provider(attempt)
+        config = {"request": request, "limits": attempt.request["limits"], "timingStartedAt": time.monotonic()}
+        config_path = attempt.directory / "engine-request.json"
+        config_path.write_text(json.dumps(config))
+        os.chmod(config_path, 0o644)
         engine_command(attempt, [sys.executable, "-I", str(HERE / "ytdlp_runner.py"), str(config_path)], YTDLP_FAILURES)
     finally:
         log_ytdlp_timings(attempt)

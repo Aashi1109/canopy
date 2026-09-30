@@ -317,9 +317,13 @@ def run(config, timings):
         timings["yt_dlp_import"] = max(0, round((time.monotonic() - started) * 1000))
     setup_started = time.monotonic()
     request, limits = config["request"], config["limits"]
-    # The Python API otherwise loads operator plugins on first initialization.
-    state.plugin_dirs.value = []
+    # Generic plugin discovery stays disabled. YouTube loads only the shipped
+    # HTTP provider from an image-owned directory; never the script fallback.
+    youtube = "Youtube" in request["extractorKeys"]
+    state.plugin_dirs.value = ["/opt/yt-dlp-plugins"] if youtube else []
     state.all_plugins_loaded.value = True
+    if youtube:
+        import yt_dlp_plugins.extractor.getpot_bgutil_http  # noqa: F401
     quality = request["quality"]
     cap = f"[height<={quality}]/bv*[width<={quality}]"
     files, item_ids, expected = [], [], []
@@ -392,6 +396,12 @@ def run(config, timings):
         "writethumbnail": False, "writesubtitles": False,
         "writeautomaticsub": False, "writeinfojson": False,
     }
+    if youtube:
+        # Prefer token-backed streams while retaining the fast picker's VISIONOS formats.
+        options["extractor_args"] = {
+            "youtube": {"player_client": ["mweb", "visionos"]},
+            "youtubepot-bgutilhttp": {"base_url": ["http://127.0.0.1:4416"]},
+        }
     if request["sourceComposition"] == "verified-post":
         # Metadata-only extraction must tolerate missing dimensions/codecs.
         # Facts and limits are verified before selecting any actual download.

@@ -82,6 +82,39 @@ readback. Jobs allow 30-minute videos and at most ten minutes of cumulative
 inspection/download/validation work. Staging transfer capabilities last eleven
 minutes; public sealed-file links retain their five-minute cap.
 
+### YouTube proof-of-origin tokens
+
+The image includes matching `bgutil-ytdlp-pot-provider` plugin and Node server
+version `2.0.0`. Native YouTube inspection and downloading prefer yt-dlp's `mweb`
+client with automatically generated proof-of-origin tokens, then include
+`visionos` to preserve formats offered by the lightweight metadata adapter. Only the bundled
+HTTP provider plugin is loaded from `/opt/yt-dlp-plugins`; operator plugins,
+login cookies and external proxies remain disabled.
+
+Each YouTube attempt starts the provider at `127.0.0.1:4416` through the existing
+unprivileged process launcher. Its readiness check is bounded and failures are
+reported before extraction. The provider shares the attempt's deadline,
+cancellation and process-group cleanup. It is not exposed as a container port,
+does not receive supervisor secrets, and does not run for other platforms.
+Provider output is discarded because upstream diagnostics can contain tokens.
+Tokens are kept in memory for the attempt and are not shared between jobs.
+
+The YouTube service additionally allows the exact hosts `www.google.com` for
+the current BotGuard interpreter and `jnn-pa.googleapis.com` for attestation.
+Their requests use the existing outbound accounting and certificate checks.
+No broader Google host wildcard or network bypass is added. The lightweight
+Worker metadata path remains available; unsuccessful lookups fall back to
+native inspection, which uses this provider.
+
+No new environment variables or manually supplied tokens are required. Rebuild
+the downloader image through the existing preview deployment command. The
+provider's `/ping` checks installation, not YouTube access: a real hosted format
+lookup and selected download must still pass. PO tokens do not guarantee that
+YouTube accepts the deployment's outgoing IP.
+
+Upstream: [provider release and setup](https://github.com/Brainicism/bgutil-ytdlp-pot-provider/tree/2.0.0)
+and [yt-dlp PO-token guidance](https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide).
+
 X, Pinterest, Reddit and LinkedIn use `sourceComposition: "verified-post"`.
 The native wrappers read the original post before the pinned extractor filters
 its media, bind the source and media identities, and reject photos, mixed media,

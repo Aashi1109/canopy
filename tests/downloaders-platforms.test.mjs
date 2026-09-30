@@ -194,6 +194,23 @@ describe("platform outbound host policies", () => {
     );
   });
 
+  test("permits YouTube token attestation without opening unrelated Google APIs", () => {
+    const youtube = getPlatformService("youtube").descriptor.egressHosts;
+    expect(matchesEgressHost("jnn-pa.googleapis.com", youtube)).toBe(true);
+    expect(matchesEgressHost("www.google.com", youtube)).toBe(true);
+    for (const host of [
+      "storage.googleapis.com",
+      "jnn-pa.googleapis.com.unrelated.example",
+      "maps.google.com",
+      "www.google.com.unrelated.example",
+    ]) {
+      expect(matchesEgressHost(host, youtube)).toBe(false);
+    }
+    expect(matchesEgressHost("jnn-pa.googleapis.com", getPlatformService("instagram").descriptor.egressHosts)).toBe(
+      false,
+    );
+  });
+
   test.each([
     [],
     ["*"],

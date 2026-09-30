@@ -8,9 +8,9 @@ from pathlib import Path
 import tempfile
 import sys
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
-from adapters import engine_command, log_ytdlp_timings, run_ytdlp
+from adapters import engine_command, log_ytdlp_timings, run_ytdlp, start_youtube_token_provider
 from executor import Attempt, Supervisor
 from security import Rejected, attempt_key, validate_start
 from test_executor import request
@@ -44,7 +44,112 @@ def inspection():
     return inspection_result(source(), body["request"], body["limits"])
 
 
+class TokenProviderTests(unittest.TestCase):
+    def test_ready_provider_is_a_tracked_child_bound_to_loopback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            attempt = Attempt(request(), directory)
+            process = Mock()
+            process.poll.return_value = None
+            response = Mock(status=200)
+            response.read.return_value = b'{"version":"2.0.0","server_uptime":0.1}'
+            with patch.object(attempt, "spawn", return_value=process) as spawn, patch("adapters.http.client.HTTPConnection") as connect, patch.object(attempt, "timing") as timing:
+                connect.return_value.getresponse.return_value = response
+                self.assertIs(start_youtube_token_provider(attempt), process)
+                spawn.assert_called_once_with(["node", "/opt/bgutil/build/main.js", "--host", "127.0.0.1", "--port", "4416"])
+                self.assertEqual(connect.call_args.args, ("127.0.0.1", 4416))
+                self.assertLessEqual(connect.call_args.kwargs["timeout"], .25)
+                connect.return_value.request.assert_called_once_with("GET", "/ping")
+                connect.return_value.close.assert_called_once()
+                self.assertEqual(timing.call_args.args[0], "youtube_token_provider_startup")
+
+    def test_provider_exit_and_timeout_stop_before_extraction(self):
+        for exited in (True, False):
+            with self.subTest(exited=exited), tempfile.TemporaryDirectory() as directory:
+                attempt = Attempt(inspect_request(), directory)
+                process = Mock()
+                process.poll.return_value = 1 if exited else None
+                clock = [0]
+                def now():
+                    clock[0] += 1
+                    return clock[0]
+                with patch.object(attempt, "spawn", return_value=process), patch.object(attempt, "checkpoint"), patch.object(attempt, "command") as command, patch("adapters.http.client.HTTPConnection", side_effect=OSError("unreachable")), patch("adapters.time.monotonic", side_effect=now), patch.object(attempt, "timing"):
+                    with self.assertRaises(Rejected) as failure:
+                        run_ytdlp(attempt)
+                    self.assertEqual(failure.exception.code, "engine_failed")
+                    self.assertIn("YouTube token provider", failure.exception.message)
+                    command.assert_not_called()
+
+    def test_provider_wait_obeys_attempt_cancellation_and_deadline(self):
+        for code in ("cancelled", "deadline_exceeded"):
+            with self.subTest(code=code), tempfile.TemporaryDirectory() as directory:
+                attempt = Attempt(request(), directory)
+                process = Mock()
+                process.poll.return_value = None
+                if code == "cancelled":
+                    attempt.cancelled.set()
+                else:
+                    attempt.deadline = 0
+                with patch.object(attempt, "spawn", return_value=process), patch.object(attempt, "timing"):
+                    with self.assertRaises(Rejected) as failure:
+                        start_youtube_token_provider(attempt)
+                    self.assertEqual(failure.exception.code, code)
+
+    def test_invalid_ping_is_not_accepted_as_a_ready_provider(self):
+        for status, raw in ((500, b'{"version":"2.0.0"}'), (200, b"not json"),
+                            (200, b'{"version":"1.0.0"}'), (200, b'{}'), (200, b'[]'), (200, b" " * 1025)):
+            with self.subTest(status=status, raw=raw), tempfile.TemporaryDirectory() as directory:
+                attempt = Attempt(request(), directory)
+                process = Mock()
+                process.poll.return_value = None
+                response = Mock(status=status)
+                response.read.return_value = raw
+                with patch.object(attempt, "spawn", return_value=process), patch.object(attempt, "checkpoint", side_effect=[None, Rejected("cancelled", "Cancelled")]), patch("adapters.http.client.HTTPConnection") as connect, patch.object(attempt, "timing"):
+                    connect.return_value.getresponse.return_value = response
+                    with self.assertRaises(Rejected) as failure:
+                        start_youtube_token_provider(attempt)
+                    self.assertEqual(failure.exception.code, "cancelled")
+                    connect.return_value.close.assert_called_once()
+
+    def test_supervisor_stops_token_child_after_an_extractor_failure(self):
+        original_spawn = Attempt.spawn
+        processes = []
+        def spawn(attempt, command):
+            process = original_spawn(attempt, [sys.executable, "-c", "import time; time.sleep(30)"])
+            processes.append(process)
+            return process
+        response = Mock(status=200)
+        response.read.return_value = b'{"version":"2.0.0"}'
+        with tempfile.TemporaryDirectory() as directory, patch.object(Attempt, "spawn", spawn), patch("adapters.http.client.HTTPConnection") as connect, patch("adapters.engine_command", side_effect=Rejected("source_challenge", "Original YouTube reason")), patch("sys.stdout", new_callable=io.StringIO):
+            connect.return_value.getresponse.return_value = response
+            supervisor = Supervisor(run_ytdlp, enabled=True, root=directory)
+            body = inspect_request()
+            supervisor.start(body)
+            attempt = supervisor.get(attempt_key(body))
+            self.assertTrue(attempt.done.wait(3))
+            self.assertEqual(len(processes), 1)
+            self.assertIsNotNone(processes[0].poll())
+            self.assertTrue(attempt.stopped)
+            self.assertFalse(attempt.directory.exists())
+            self.assertEqual(attempt.error["message"], "Original YouTube reason")
+
+    def test_other_platforms_do_not_start_the_token_provider(self):
+        with tempfile.TemporaryDirectory() as directory:
+            body = inspect_request()
+            body["request"].update(extractorKeys=["Instagram"], platformId="instagram")
+            attempt = Attempt(body, directory)
+            receipt = {"complete": True, "files": [], "expected": [], "inspection": inspection(), "evidence": {}}
+            attempt.command = lambda *args: (Path(directory) / "engine-result.json").write_text(json.dumps(receipt))
+            with patch("adapters.start_youtube_token_provider") as provider:
+                self.assertEqual(run_ytdlp(attempt), ([], {}))
+                provider.assert_not_called()
+
+
 class FailureTests(unittest.TestCase):
+    def setUp(self):
+        provider = patch("adapters.start_youtube_token_provider")
+        self.provider = provider.start()
+        self.addCleanup(provider.stop)
+
     def test_invalid_error_records_cannot_replace_the_original_execution_failure(self):
         for kind in ("missing", "symlink", "fifo", "oversized", "array", "unknown", "invalid_message"):
             with self.subTest(kind=kind), tempfile.TemporaryDirectory() as directory:
@@ -189,6 +294,11 @@ class FailureTests(unittest.TestCase):
 
 
 class FormatTests(unittest.TestCase):
+    def setUp(self):
+        provider = patch("adapters.start_youtube_token_provider")
+        self.provider = provider.start()
+        self.addCleanup(provider.stop)
+
     def test_manifest_audio_with_unknown_codec_is_preserved_in_mp4_choices(self):
         body = request()
         info = source([video("hls-video", acodec="none", protocol="m3u8_native"),
@@ -269,7 +379,7 @@ class FormatTests(unittest.TestCase):
                 choices = candidate_formats(info, body["request"], body["limits"])
                 self.assertEqual([fmt["id"] for fmt in choices], ["v+original"])
 
-    @unittest.skipUnless(importlib.util.find_spec("yt_dlp"), "Pinned yt-dlp is installed in the executor image")
+    @unittest.skipUnless(importlib.util.find_spec("yt_dlp") and Path("/opt/yt-dlp-plugins/bgutil").is_dir(), "Pinned yt-dlp and token provider are installed in the executor image")
     def test_pinned_engine_inspects_without_download_and_reuses_extraction_for_exact_selection(self):
         import yt_dlp
         from yt_dlp.extractor.common import InfoExtractor
@@ -279,6 +389,12 @@ class FormatTests(unittest.TestCase):
         class YoutubeIE(InfoExtractor):
             _VALID_URL = r"https://www\.youtube\.com/watch\?v=(?P<id>[A-Za-z0-9_-]+)"
             def _real_extract(self, url):
+                self_options = self._downloader.params
+                if self_options["extractor_args"] != {
+                    "youtube": {"player_client": ["mweb", "visionos"]},
+                    "youtubepot-bgutilhttp": {"base_url": ["http://127.0.0.1:4416"]},
+                }:
+                    raise AssertionError("YouTube must request tokens using only the internal HTTP provider")
                 calls["extract"] += 1
                 return copy.deepcopy(fixture)
         def download(downloader, info):
