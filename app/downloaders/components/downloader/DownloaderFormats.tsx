@@ -8,20 +8,13 @@ import { formatFileSize } from "@/components/ui/components/file-chip";
 import { Input } from "@/components/ui/components/input";
 import { Label } from "@/components/ui/components/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/components/radio-group";
-import type { DownloadJob, DownloadInspection } from "@/lib/downloaders/contracts";
+import type { DownloadFormat, DownloadJob, DownloadInspection } from "@/lib/downloaders/contracts";
 import { DownloadAction } from "./DownloadAction";
 
-function codecLabel(codec: string) {
-  const name = /^(avc[13]|h264)/i.test(codec)
-    ? "H.264"
-    : /^(hev1|hvc1|hevc|h265)/i.test(codec)
-      ? "H.265"
-      : /^(av01|av1)/i.test(codec)
-        ? "AV1"
-        : /^vp0?9/i.test(codec)
-          ? "VP9"
-          : null;
-  return name ? `${name} (${codec})` : codec;
+function sizeLabel(format: DownloadFormat) {
+  return format.bytes === null
+    ? "Size unavailable"
+    : `${format.estimatedBytes ? "Estimated " : ""}${formatFileSize(format.bytes)}`;
 }
 
 function durationLabel(duration: number) {
@@ -59,6 +52,20 @@ export function DownloaderFormats({
     else if (!inspection.formats.some((format) => format.id === selected)) setSelected("");
   }, [pendingFormatId, job.selectedFormat, inspection.formats, selected]);
   const chosen = inspection.formats.find((format) => format.id === selected);
+  const choices = new Map<string, DownloadFormat>();
+  for (const format of inspection.formats) {
+    const key = JSON.stringify([
+      format.container,
+      format.width,
+      format.height,
+      format.fps,
+      sizeLabel(format),
+      format.hasAudio,
+    ]);
+    // Keep one choice for identical visible details, retaining an existing selection for retries.
+    if (!choices.has(key) || format.id === selected) choices.set(key, format);
+  }
+  const formats = [...choices.values()];
 
   return (
     <section aria-labelledby={`${id}-heading`} className="min-w-0 space-y-4">
@@ -74,8 +81,8 @@ export function DownloaderFormats({
             Choose your video format
           </h2>
           <p className="text-sm text-muted-foreground">
-            {inspection.formats.length} available {inspection.formats.length === 1 ? "format" : "formats"}. Choose one,
-            then prepare your download.
+            {formats.length} available {formats.length === 1 ? "format" : "formats"}. Choose one, then prepare your
+            download.
           </p>
         </div>
       </header>
@@ -107,52 +114,51 @@ export function DownloaderFormats({
             </p>
           )}
         </aside>
-        <div className="min-w-0 space-y-4 p-4">
+        <div className="flex min-h-0 min-w-0 flex-col">
           <RadioGroup
             aria-label="Available video formats"
             value={selected}
             onValueChange={setSelected}
             disabled={busy || !!pendingFormatId}
-            className="max-h-[min(36dvh,18rem)] gap-2 overflow-y-auto overscroll-contain p-0.5"
+            className="m-3 grid-cols-[repeat(auto-fit,minmax(min(100%,13rem),1fr))] content-start gap-2 overflow-y-auto overscroll-contain p-0.5 max-h-[min(44dvh,24rem)]"
           >
-            {inspection.formats.map((format, index) => (
+            {formats.map((format, index) => (
               <Label
                 key={format.id}
                 htmlFor={`${id}-format-${index}`}
-                className="flex min-w-0 cursor-pointer items-start gap-3 rounded-lg border border-border p-3 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
+                className="flex min-w-0 cursor-pointer items-start gap-2 rounded-md border border-border p-3 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
               >
                 <RadioGroupItem id={`${id}-format-${index}`} value={format.id} className="mt-0.5" />
                 <span className="min-w-0 space-y-1 [overflow-wrap:anywhere]">
                   <span className="block font-medium">
                     {Math.min(format.width, format.height)}p · {format.container.toUpperCase()}
-                    {format.fps ? ` · ${format.fps} fps` : ""}
                   </span>
-                  <span className="block text-sm font-normal text-muted-foreground">
-                    {format.width} × {format.height} pixels · {codecLabel(format.videoCodec)} ·{" "}
-                    {format.bytes === null
-                      ? "Size unavailable"
-                      : `${format.estimatedBytes ? "Estimated " : ""}${formatFileSize(format.bytes)}`}
-                  </span>
+                  <span className="block text-sm font-normal text-muted-foreground">{sizeLabel(format)}</span>
+                  {format.fps && (
+                    <span className="block text-sm font-normal text-muted-foreground">{format.fps} frames/sec</span>
+                  )}
                   {!format.hasAudio && <span className="block text-sm font-normal">No audio</span>}
                 </span>
               </Label>
             ))}
           </RadioGroup>
-          {pendingFormatId && (
-            <p role="status" className="text-sm text-muted-foreground">
-              {busy
-                ? "Starting your selected download…"
-                : "Your earlier selection was not confirmed. Retry the same format or check its status before choosing another."}
-            </p>
-          )}
-          <div className="flex flex-wrap items-center gap-3">
-            <DownloadAction onDownload={() => chosen && onSelect(chosen.id)} disabled={!chosen} busy={busy} />
-            {pendingFormatId && !busy && (
-              <Button variant="outline" size="md" onClick={onCheck} disabled={busy}>
-                Check status
-              </Button>
+          <div className="mt-auto shrink-0 space-y-3 border-t border-border bg-card p-3">
+            {pendingFormatId && (
+              <p role="status" className="text-sm text-muted-foreground">
+                {busy
+                  ? "Starting your selected download…"
+                  : "Your earlier selection was not confirmed. Retry the same format or check its status before choosing another."}
+              </p>
             )}
-            {!chosen && <p className="text-sm text-muted-foreground">Choose a format to continue.</p>}
+            <div className="flex flex-wrap items-center gap-3">
+              <DownloadAction onDownload={() => chosen && onSelect(chosen.id)} disabled={!chosen} busy={busy} />
+              {pendingFormatId && !busy && (
+                <Button variant="outline" size="md" onClick={onCheck} disabled={busy}>
+                  Check status
+                </Button>
+              )}
+              {!chosen && <p className="text-sm text-muted-foreground">Choose a format to continue.</p>}
+            </div>
           </div>
         </div>
       </Card>

@@ -193,10 +193,52 @@ def video_codec_matches(actual, expected):
     if not isinstance(actual, str) or not isinstance(expected, str):
         return False
     actual, expected = actual.lower(), expected.lower()
-    aliases = {"h264": "h264", "avc1": "h264", "avc3": "h264", "vp9": "vp9", "vp09": "vp9", "av1": "av1", "av01": "av1"}
+    aliases = {"h264": "h264", "avc1": "h264", "avc3": "h264", "vp9": "vp9", "vp09": "vp9", "av1": "av1", "av01": "av1",
+               "hevc": "hevc", "h265": "hevc", "hvc1": "hevc", "hev1": "hevc"}
     if expected in aliases:
         return aliases.get(actual.split(".", 1)[0], actual) == aliases[expected]
     return actual == expected
+
+
+def output_video_codec_matches(observed, expected):
+    """Check decoded stream facts after the adapter verified the source selection.
+
+    FFprobe does not reconstruct VP9/AV1/HEVC manifest codec strings. Their
+    profile and sample depth are observable independently; level and optional
+    signalling remain bound by the adapter's exact source-format comparison.
+    This must not replace the stricter cross-engine/source codec comparison.
+    """
+    actual = observed.get("videoCodec")
+    if video_codec_matches(actual, expected):
+        return True
+    if not isinstance(actual, str) or not isinstance(expected, str):
+        return False
+    actual, expected = actual.lower(), expected.lower()
+    if re.fullmatch(r"avc[13]\.[0-9a-f]{6}", actual) and re.fullmatch(r"avc[13]\.[0-9a-f]{6}", expected):
+        # MP4 remuxing can change the sample entry without changing AVC bytes.
+        return actual.split(".", 1)[1] == expected.split(".", 1)[1]
+    pixels = observed.get("pixelFormat")
+    profile = observed.get("profile")
+    if not isinstance(pixels, str) or not isinstance(profile, str):
+        return False
+    depth = re.fullmatch(r"(?:yuv[aj]?(?:420|422|444|440|411|410)p|gbrp|gray)(?:(8|9|10|12|14|16)(?:le|be)?)?", pixels)
+    if not depth:
+        return False
+    bit_depth = int(depth[1] or "8")
+    profile = profile.lower()
+    if actual == "vp9":
+        choice = re.fullmatch(r"vp09\.(0[0-3])\.\d{2}\.(08|10|12)(?:\.\d{2}\.\d{2}\.\d{2}\.\d{2}\.(?:00|01))?", expected)
+        return bool(choice and profile == f"profile {int(choice[1])}" and bit_depth == int(choice[2]))
+    if actual == "av1":
+        choice = re.fullmatch(r"av01\.([0-2])\.\d{2}[mh]\.(08|10|12)(?:\.[01]\.\d{3}\.\d{2}\.\d{2}\.\d{2}\.[01])?", expected)
+        profiles = {"main": 0, "high": 1, "professional": 2}
+        return bool(choice and profiles.get(profile) == int(choice[1]) and bit_depth == int(choice[2]))
+    if actual == "hevc":
+        choice = re.fullmatch(r"(?:hvc1|hev1)\.([1-3])\.[0-9a-f]+\.[lh]\d{1,3}(?:\.[0-9a-f]{1,2}){0,6}", expected)
+        profiles = {"main": 1, "main 10": 2, "main still picture": 3}
+        # Main 10 permits either 8- or 10-bit samples; Main/Still require 8-bit.
+        return bool(choice and profiles.get(profile) == int(choice[1]) and bit_depth in ((8, 10) if choice[1] == "2" else (8,)))
+    return False
 
 
 def probe(attempt, path, quality, *, decode=True):
@@ -240,7 +282,8 @@ def probe(attempt, path, quality, *, decode=True):
     if decode:
         attempt.command(["ffmpeg", "-nostdin", "-v", "error", "-xerror", "-err_detect", "explode", "-protocol_whitelist", "file,pipe", "-i", str(path), "-map", "0:v:0", "-map", "0:a?", "-f", "null", "-"])
     return {"name": "video." + extension, "mime": mime, "bytes": size, "width": width,
-            "height": height, "durationSeconds": duration, "hasAudio": any(s.get("codec_type") == "audio" for s in streams), "_video": properties}
+            "height": height, "durationSeconds": duration, "hasAudio": any(s.get("codec_type") == "audio" for s in streams),
+            "_video": {**properties, "profile": video.get("profile"), "pixelFormat": video.get("pix_fmt")}}
 
 
 def verify_expected_media(attempt, path, metadata):
@@ -259,7 +302,7 @@ def verify_expected_media(attempt, path, metadata):
     if expected.get("container") and metadata["mime"] != "video/" + expected["container"]:
         reject("format_unavailable", "The output does not match the selected file format.")
     observed = metadata.get("_video", {})
-    if "videoCodec" in expected and not video_codec_matches(observed.get("videoCodec"), expected["videoCodec"]):
+    if "videoCodec" in expected and not output_video_codec_matches(observed, expected["videoCodec"]):
         reject("format_unavailable", "The output does not match the selected video codec.")
     # Manifests commonly round 30000/1001 to 29.97 (or 30); this is the same rate.
     if expected.get("fps") is not None and (observed.get("fps") is None or not math.isclose(observed["fps"], expected["fps"], rel_tol=1e-3, abs_tol=0.01)):

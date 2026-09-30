@@ -59,9 +59,49 @@ class SecurityTests(unittest.TestCase):
         self.assertTrue(video_codec_matches("avc1.64002A", "AVC1.64002a"))
         self.assertTrue(video_codec_matches("avc1.640028", "h264"))
         self.assertTrue(video_codec_matches("vp9", "vp09"))
+        self.assertTrue(video_codec_matches("hevc", "hvc1"))
+        self.assertTrue(video_codec_matches("hevc", "hev1"))
         for actual, expected in (("h264", "avc1.640028"), ("avc1.4d401f", "avc1.640028"),
+                                 ("avc1.640028", "avc3.640028"), ("hevc", "hvc1.1.6.L93.B0"),
                                  ("vp9", "vp09.00.31.08"), ("av1", "av01.0.08M.08")):
             self.assertFalse(video_codec_matches(actual, expected))
+
+    def test_output_codec_verification_uses_observed_profile_and_bit_depth(self):
+        with tempfile.TemporaryDirectory() as directory:
+            attempt = Attempt(request(), directory)
+            path = Path(directory) / "media-1.mp4"
+            cases = [
+                ("vp9", "Profile 0", "yuv420p", "vp09.00.31.08.01.01.01.01.00", "vp09.01.31.08", "vp09.00.31.10"),
+                ("vp9", "Profile 2", "yuv420p10le", "vp09.02.31.10", "vp09.03.31.10", "vp09.02.31.12"),
+                ("av1", "Main", "yuv420p", "av01.0.08M.08", "av01.1.08M.08", "av01.0.08M.10"),
+                ("hevc", "Main", "yuv420p", "hvc1.1.6.L93.B0", "hvc1.2.4.L93.B0", None),
+                ("hevc", "Main 10", "yuv420p10le", "hev1.2.4.L93.B0", "hev1.1.6.L93.B0", None),
+            ]
+            for codec, profile, pixels, expected, wrong_profile, wrong_depth in cases:
+                with self.subTest(codec=codec, profile=profile):
+                    facts = {"durationSeconds": 1, "hasAudio": False,
+                             "_video": {"videoCodec": codec, "profile": profile, "pixelFormat": pixels}}
+                    attempt.expected_media[path.name] = {"videoCodec": expected}
+                    verify_expected_media(attempt, path, facts)
+                    for missing in ("profile", "pixelFormat"):
+                        incomplete = {**facts, "_video": {key: value for key, value in facts["_video"].items() if key != missing}}
+                        with self.assertRaisesRegex(Rejected, "selected video codec"):
+                            verify_expected_media(attempt, path, incomplete)
+                    with self.assertRaisesRegex(Rejected, "selected video codec"):
+                        verify_expected_media(attempt, path, {**facts, "_video": {**facts["_video"], "pixelFormat": "yuv420p16le"}})
+                    for invalid in (wrong_profile, wrong_depth, "avc1.640028", expected + ".invalid"):
+                        if invalid is None:
+                            continue
+                        attempt.expected_media[path.name] = {"videoCodec": invalid}
+                        with self.assertRaisesRegex(Rejected, "selected video codec"):
+                            verify_expected_media(attempt, path, facts)
+            attempt.expected_media[path.name] = {"videoCodec": "avc3.640028"}
+            verify_expected_media(attempt, path, {"durationSeconds": 1, "hasAudio": False,
+                                                  "_video": {"videoCodec": "avc1.640028"}})
+            for actual in ("h264", "avc1.4d401f", "avc1.640029"):
+                with self.assertRaisesRegex(Rejected, "selected video codec"):
+                    verify_expected_media(attempt, path, {"durationSeconds": 1, "hasAudio": False,
+                                                          "_video": {"videoCodec": actual}})
 
     def test_python_runner_keeps_isolation_arguments_and_limits_without_another_interpreter(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -596,6 +636,64 @@ class MediaTests(unittest.TestCase):
             authority = {**request()["stagingArtifacts"][0], "artifactId": f"mismatch-{index}"}
             with self.assertRaisesRegex(Rejected, "selected"):
                 upload_and_validate(self.attempt, self.path, authority, "720", lambda url: (Connection(), "/fixed"))
+
+    def verify_encoded_codec(self, encoder, options, expected, mismatches):
+        encoders = subprocess.check_output(["ffmpeg", "-hide_banner", "-encoders"], stderr=subprocess.DEVNULL, text=True)
+        if encoder not in encoders:
+            self.skipTest(f"FFmpeg encoder {encoder} is required")
+        subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-y", "-f", "lavfi", "-i", "color=size=96x160:rate=10",
+                        "-frames:v", "2", "-c:v", encoder, "-threads", "1", *options, str(self.path)],
+                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        facts = probe(self.attempt, self.path, "720", decode=False)
+        self.attempt.expected_media[self.path.name] = {"videoCodec": expected}
+        verify_expected_media(self.attempt, self.path, facts)
+        data = self.path.read_bytes()
+
+        class Response(io.BytesIO):
+            status = 200
+            def getheader(self, name): return '"codec-etag"'
+
+        class Connection:
+            def putrequest(self, *args): pass
+            def putheader(self, *args): pass
+            def endheaders(self): pass
+            def send(self, *args): pass
+            def request(self, *args, **kwargs): pass
+            def getresponse(self): return Response(data)
+            def close(self): pass
+
+        connector = lambda url: (Connection(), "/fixed")
+        receipt = upload_and_validate(self.attempt, self.path, request()["stagingArtifacts"][0], "720", connector)
+        self.assertNotIn("_video", receipt)
+        self.assertEqual(receipt["bytes"], len(data))
+        for index, codec in enumerate(mismatches):
+            self.attempt.expected_media[self.path.name] = {"videoCodec": codec}
+            with self.assertRaisesRegex(Rejected, "selected video codec"):
+                verify_expected_media(self.attempt, self.path, facts)
+            authority = {**request()["stagingArtifacts"][0], "artifactId": f"codec-mismatch-{index}"}
+            with self.assertRaisesRegex(Rejected, "selected video codec"):
+                upload_and_validate(self.attempt, self.path, authority, "720", connector)
+
+    def test_real_vp9_qualified_codec_passes_local_and_stored_verification(self):
+        self.verify_encoded_codec("libvpx-vp9", ["-deadline", "realtime", "-cpu-used", "8", "-pix_fmt", "yuv420p"],
+                                  "vp09.00.10.08", ["vp09.01.10.08", "vp09.00.10.10", "av01.0.00M.08"])
+
+    def test_real_ten_bit_vp9_preserves_profile_and_depth(self):
+        self.verify_encoded_codec("libvpx-vp9", ["-deadline", "realtime", "-cpu-used", "8", "-profile:v", "2", "-pix_fmt", "yuv420p10le"],
+                                  "vp09.02.10.10", ["vp09.03.10.10", "vp09.02.10.12", "avc1.640028"])
+
+    def test_real_av1_qualified_codec_passes_local_and_stored_verification(self):
+        self.verify_encoded_codec("libsvtav1", ["-preset", "12", "-svtav1-params", "lp=1", "-pix_fmt", "yuv420p"],
+                                  "av01.0.00M.08", ["av01.1.00M.08", "av01.0.00M.10", "vp09.00.10.08"])
+
+    def test_real_hevc_qualified_codec_passes_local_and_stored_verification(self):
+        self.verify_encoded_codec("libx265", ["-preset", "ultrafast", "-x265-params", "pools=1:frame-threads=1:log-level=error",
+                                              "-pix_fmt", "yuv420p", "-tag:v", "hvc1"],
+                                  "hvc1.1.6.L30.B0", ["hvc1.2.4.L30.B0", "avc1.640028"])
+
+    def test_real_avc3_manifest_alias_preserves_the_h264_profile(self):
+        self.verify_encoded_codec("libx264", ["-profile:v", "baseline", "-level:v", "3.0", "-pix_fmt", "yuv420p"],
+                                  "avc3.42c01e", ["avc3.640028", "avc3.42c01f", "vp09.00.10.08"])
 
     def test_supervisor_decodes_only_stored_bytes_and_never_publishes_a_failed_decode(self):
         for decode_fails in (False, True):
