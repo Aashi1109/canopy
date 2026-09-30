@@ -55,6 +55,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       data-scroll-behavior="smooth"
       lang="en"
     >
+      <head>
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5442003096820885"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased print:bg-white print:text-black">
         <SavedToolsProvider publicSiteUrl={config.appUrl}>
           <Analytics measurementId={measurementId(config.analytics)}>{children}</Analytics>
