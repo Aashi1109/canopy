@@ -66,7 +66,12 @@ async function workspace() {
       primaryAction: { label: "Crop PDF", onRun, disabled: false, running: false },
     });
   }
-  return { ...(await mountTool(React.createElement(Fixture))), settings: () => settings, onInputChange, onRun };
+  return {
+    ...(await mountTool(React.createElement(Fixture), { spec: definition })),
+    settings: () => settings,
+    onInputChange,
+    onRun,
+  };
 }
 
 const cropArea = () => document.querySelector('[role="application"][aria-label="Crop area"]');

@@ -1,0 +1,12 @@
+import { defineRouting } from "next-intl/routing";
+import { defaultLocale, locales } from "./config";
+
+export const routing = defineRouting({
+  locales,
+  defaultLocale,
+  localePrefix: "as-needed",
+  localeDetection: false,
+  localeCookie: false,
+  // Public translations are published per page; metadata owns available alternates.
+  alternateLinks: false,
+});

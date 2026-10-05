@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 import { GripVertical, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -35,6 +36,7 @@ const PRESETS = {
 };
 
 export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const [selectedId, setSelectedId] = useState("start");
   let stops: GradientStop[];
   try {
@@ -98,26 +100,24 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
   return (
     <DesignWorkspace
       compactOutput
-      title="Gradient preview"
-      controlTitle="Gradient"
+      title={toolText("workspace.gradient_preview_201b51")}
+      controlTitle={toolText("workspace.gradient")}
       previewActions={
         <Button disabled={props.disabled} onClick={reset} size="sm" variant="ghost">
           <RotateCcw />
-          Reset
+          {toolText("workspace.reset_daee76")}
         </Button>
       }
       preview={
         <div className="flex h-full min-h-0 flex-col gap-3 p-4">
           <div
-            aria-label="Live gradient preview"
+            aria-label={toolText("workspace.live_gradient_preview_59c765")}
             className="min-h-32 flex-1 rounded-lg border border-border"
             role="img"
             style={{ backgroundImage: preview || undefined }}
           />
           <Caption>
-            {preview
-              ? "Select a stop, then adjust its color and position."
-              : "Correct the selected color to restore the preview."}
+            {preview ? toolText("workspace.select_a_stop_796479") : toolText("workspace.correct_the_selected_d845b2")}
           </Caption>
           {!props.input.text && (
             <Button
@@ -126,7 +126,7 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
               onClick={() => preset(DEFAULT_STOPS)}
               variant="outline"
             >
-              Use these colors
+              {toolText("workspace.use_these_colors_ee98d2")}
             </Button>
           )}
         </div>
@@ -138,13 +138,13 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
           retainedResult={props.result}
           running={props.running}
           spec={props.spec}
-          title="CSS"
+          title={toolText("workspace.css_b581e4")}
         />
       }
       controls={
         <>
           <Field>
-            <FieldLabel htmlFor="gradient-preset">Preset</FieldLabel>
+            <FieldLabel htmlFor="gradient-preset">{toolText("workspace.preset_7252e7")}</FieldLabel>
             <Select
               disabled={props.disabled}
               id="gradient-preset"
@@ -155,31 +155,31 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
               value={currentPreset}
             >
               <option value="" disabled>
-                Custom
+                {toolText("workspace.custom_494ca7")}
               </option>
               {Object.keys(PRESETS).map((name) => (
                 <option key={name} value={name}>
-                  {name}
+                  {toolText(`workspace.presets.${name}`)}
                 </option>
               ))}
             </Select>
           </Field>
           <Field>
-            <FieldLabel htmlFor="gradient-type">Type</FieldLabel>
+            <FieldLabel htmlFor="gradient-type">{toolText("workspace.type_baaddf")}</FieldLabel>
             <Select
               disabled={props.disabled}
               id="gradient-type"
               value={type}
               onChange={(event) => setting("type", event.target.value)}
             >
-              <option value="linear">Linear</option>
-              <option value="radial">Radial</option>
+              <option value="linear">{toolText("workspace.linear_e6950b")}</option>
+              <option value="radial">{toolText("workspace.radial_02693d")}</option>
             </Select>
           </Field>
           {type === "linear" ? (
             <DesignRange
               disabled={props.disabled}
-              label="Angle"
+              label={toolText("workspace.angle_196803")}
               value={Number(props.settings.angle ?? 135)}
               min={0}
               max={360}
@@ -189,23 +189,23 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
           ) : (
             <>
               <Field>
-                <FieldLabel htmlFor="gradient-shape">Shape</FieldLabel>
+                <FieldLabel htmlFor="gradient-shape">{toolText("workspace.shape_e0e492")}</FieldLabel>
                 <Select
                   disabled={props.disabled}
                   id="gradient-shape"
                   value={String(props.settings.radialShape ?? "circle")}
                   onChange={(event) => setting("radialShape", event.target.value)}
                 >
-                  <option value="circle">Circle</option>
-                  <option value="ellipse">Ellipse</option>
+                  <option value="circle">{toolText("workspace.circle_b93d3b")}</option>
+                  <option value="ellipse">{toolText("workspace.ellipse_cb1ee8")}</option>
                 </Select>
               </Field>
               <Field aria-labelledby="gradient-center-label">
-                <FieldTitle id="gradient-center-label">Center</FieldTitle>
+                <FieldTitle id="gradient-center-label">{toolText("workspace.center_d94606")}</FieldTitle>
                 <div className="grid grid-cols-2 gap-2">
                   {(["X", "Y"] as const).map((axis) => (
                     <Input
-                      aria-label={`Center ${axis} value`}
+                      aria-label={toolText("workspace.centerValue", { axis })}
                       disabled={props.disabled}
                       key={axis}
                       leadingIcon={axis}
@@ -226,7 +226,7 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
             </>
           )}
           <div className="flex items-center justify-between gap-2">
-            <FieldLabel>Color stops · {stops.length}/12</FieldLabel>
+            <FieldLabel>{toolText("workspace.stopCount", { count: stops.length })}</FieldLabel>
             <Button
               disabled={props.disabled || stops.length >= 12}
               size="sm"
@@ -242,16 +242,16 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
               }}
             >
               <Plus />
-              Add
+              {toolText("workspace.add_9fd728")}
             </Button>
           </div>
           <OrderableList
             animateSelection
-            ariaLabel="Gradient stops"
+            ariaLabel={toolText("workspace.gradientStops")}
             className="flex flex-col gap-1"
             disabled={props.disabled}
             getId={(stop) => stop.id}
-            getLabel={(stop) => `Color stop at ${stop.position}%`}
+            getLabel={(stop) => toolText("workspace.colorStop", { position: stop.position })}
             items={stops}
             selectedId={selected.id}
             onReorder={(next) => {
@@ -263,7 +263,7 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
                 <Button
                   {...state.attributes}
                   {...state.listeners}
-                  aria-label={`Reorder color stop at ${stop.position}%`}
+                  aria-label={toolText("workspace.reorderStop", { position: stop.position })}
                   disabled={state.disabled}
                   ref={state.setActivatorNodeRef}
                   size="icon-sm"
@@ -284,12 +284,12 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
                   <span className="ml-auto shrink-0">{stop.position}%</span>
                   {selected.id === stop.id ? (
                     <Caption aria-hidden="true" className="shrink-0 text-primary">
-                      Editing
+                      {toolText("workspace.editing_fab453")}
                     </Caption>
                   ) : null}
                 </Button>
                 <Button
-                  aria-label={`Remove color stop at ${stop.position}%`}
+                  aria-label={toolText("workspace.removeStop", { position: stop.position })}
                   disabled={props.disabled || stops.length <= 2}
                   onClick={() => save(stops.filter((item) => item.id !== stop.id))}
                   size="icon-sm"
@@ -302,14 +302,14 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
           />
           <ColorControl
             disabled={props.disabled}
-            label="Selected stop color"
+            label={toolText("workspace.selected_stop_color_fa9570")}
             layout="inline"
             value={selected.color}
             onChange={(color) => update({ color })}
           />
           <DesignRange
             disabled={props.disabled}
-            label="Stop position"
+            label={toolText("workspace.stop_position_a2b6f9")}
             value={selected.position}
             min={0}
             max={100}
@@ -321,7 +321,7 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
             onClick={() => save([...stops].reverse().map((stop) => ({ ...stop, position: 100 - stop.position })))}
             variant="outline"
           >
-            Reverse gradient
+            {toolText("workspace.reverse_gradient_9d7833")}
           </Button>
           <Field orientation="horizontal">
             <Checkbox
@@ -330,9 +330,9 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
               id="gradient-fallback"
               onCheckedChange={(checked) => setting("includeFallback", checked === true)}
             />
-            <FieldLabel htmlFor="gradient-fallback">Include solid-color fallback</FieldLabel>
+            <FieldLabel htmlFor="gradient-fallback">{toolText("workspace.include_solid_color_c5bb47")}</FieldLabel>
           </Field>
-          <Caption>Drag handles or press Space, use arrow keys, and press Space again to reorder stops.</Caption>
+          <Caption>{toolText("workspace.drag_handles_or_6b416f")}</Caption>
         </>
       }
     />

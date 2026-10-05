@@ -1,6 +1,60 @@
+import { MEDIA_FILE_ERROR_MESSAGES, MEDIA_IMAGE_ERROR_MESSAGES } from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "progress.decodingImage": "Decoding image",
+    "progress.encodingImage": "Encoding image",
+    "progress.imageComplete": "Image complete",
+
+    "errors.invalidCropPoints": "Choose 3–12 distinct crop points inside the image without crossing the edges.",
+    "errors.cropPointCount": "Choose between 3 and 12 points.",
+    "errors.cropSelectionTooSmall": "This selection is too small for that many points. Choose fewer points.",
+
+    "readiness.heicUnsupported": "HEIC crop previews are not supported. Convert the image to JPEG or PNG first.",
+    "readiness.chooseCrop": "Add an image and choose a valid crop selection before processing.",
+    "readiness.validArea": "Enter a valid crop area before processing.",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_IMAGE_ERROR_MESSAGES,
+    "errors.canvasUnavailable": "Unable to create the crop. Please try again.",
+    "errors.noFiles": "Choose an image to crop.",
+    "workspace.drag_handles_to_74546a": "Drag handles to shape the crop · Drag inside to move it",
+    "workspace.arrow_keys_move_fa6c88": "Arrow keys move 1 px · Shift moves 10 px · Drag the corner to resize",
+    "workspace.freeform_point_count_727c6d": "Freeform point count",
+    "workspace.3_12_points_75dcdf": "3–12 points.",
+    "workspace.each_point_moves_734bd4": "Each point moves freely. Edges cannot cross or leave the image.",
+    "workspace.selected_point_dd18ca": " · selected point ",
+    "workspace.width_301994": "Width",
+    "workspace.height_bfe2ec": "Height",
+    "workspace.selection_bounds_ecb6b4": " · selection bounds",
+    "workspace.select_a_point_859887":
+      "Select a point to edit its X and Y. Width and height show the selection’s bounding box.",
+    "workspace.jpeg_fills_the_1dac4a":
+      "JPEG fills the area outside your selection with white. Choose PNG or WebP to keep it transparent.",
+    "workspace.pixels_outside_the_a58b49":
+      "Pixels outside the selection are transparent. This crops the shape; it does not straighten perspective.",
+    "workspace.reset_crop_994fee": "Reset crop",
+    "workspace.replace_the_image_4293b3": " Replace the image to try again.",
+    "workspace.loading_image_1a0c32": "Loading image…",
+    "workspace.cropPreview": "Crop preview",
+    "workspace.fewerPoints": "This selection is too small for that many points. Choose fewer points.",
+    "workspace.pointCount": "Choose between 3 and 12 points.",
+    "workspace.wholePixel": "Enter a whole-number pixel position.",
+    "workspace.pointOverlap": "Points cannot overlap or cross the opposite edge.",
+    "workspace.decodeFailed": "This image could not be decoded.",
+    "workspace.tooLarge": "Choose an image under 100 megapixels.",
+    "workspace.selectedPointAxis": "{axis} · selected point {number}",
+    "workspace.selectionWidth": "Width · selection bounds",
+    "workspace.selectionHeight": "Height · selection bounds",
+    "workspace.imageRecovery": "{error} Replace the image to continue.",
+    "workspace.sourceSelection": "Source image with freeform crop selection",
+    "workspace.cropSelection": "Crop selection",
+    "workspace.moveSelection": "Move entire crop selection",
+    "workspace.cropPoint": "Crop point {number}",
+    "workspace.pointInstructions":
+      "Point {number} selected · Arrow keys move 1 px · Shift moves 10 px · Esc cancels a drag",
+  },
   toolId: "media.crop-image",
   app: "media",
   category: "image-editing",

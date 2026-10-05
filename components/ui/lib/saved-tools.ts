@@ -1,5 +1,7 @@
+import { isLocale, type Locale } from "@/lib/i18n/config";
+
 export const STORAGE_KEY = "canopy.saved-tools.v1";
-export type SavedTool = { toolId: string; name: string; href: string; category: string };
+export type SavedTool = { toolId: string; name: string; href: string; category: string; locale?: Locale };
 export type SavedMutation = { userId: string; operation: "merge" | "save" | "remove"; toolIds: string[] };
 type SavedResponse = { userId: string | null; savedTools: string[]; tools?: SavedTool[] };
 type LocalBookmarks = { ids: string[]; imports: Record<string, string[]> };
@@ -45,13 +47,16 @@ function readLocal(storage: Storage): LocalBookmarks {
   return { ids: [...new Set(parsed.ids)], imports: { ...parsed.imports } as Record<string, string[]> };
 }
 
-export async function requestSavedTools(operation?: SavedMutation): Promise<SavedResponse> {
-  const response = await fetch("/api/user-preferences/saved-tools", {
-    method: operation ? "POST" : "GET",
-    credentials: "same-origin",
-    cache: "no-store",
-    ...(operation ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(operation) } : {}),
-  });
+export async function requestSavedTools(operation?: SavedMutation, locale = "en"): Promise<SavedResponse> {
+  const response = await fetch(
+    `/api/user-preferences/saved-tools${!operation && locale !== "en" ? `?locale=${encodeURIComponent(locale)}` : ""}`,
+    {
+      method: operation ? "POST" : "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+      ...(operation ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(operation) } : {}),
+    },
+  );
   if (!response.ok) throw new Error("Saved tools request failed");
   const data: unknown = await response.json();
   if (
@@ -74,6 +79,7 @@ export async function requestSavedTools(operation?: SavedMutation): Promise<Save
           isIds([t.toolId]) &&
           typeof t.name === "string" &&
           typeof t.category === "string" &&
+          (t.locale === undefined || isLocale(t.locale)) &&
           typeof t.href === "string" &&
           /^\/(devtools|media|paperwork)\/[a-z0-9-]+$/.test(t.href)
         );

@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { Code2, Eye, Upload } from "lucide-react";
 import { type ReactNode, useState } from "react";
@@ -42,9 +43,11 @@ export function ResultSurface({
   renderResultActions,
   running = false,
   spec,
-  title = "Result",
+  title,
   variant,
 }: ResultSurfaceProps) {
+  const t = useTranslations("Workbench");
+  const resolvedTitle = title ?? t("result");
   const [resultView, setResultView] = useState<"raw" | "preview">(spec.resultView?.default ?? "raw");
   const resultViews = spec.resultView?.default === "preview" ? ["preview", "raw"] : ["raw", "preview"];
   const visibleResult = result ?? retainedResult;
@@ -66,24 +69,25 @@ export function ResultSurface({
   const hasPreview = Boolean(
     (visibleResult && renderPreview) || structuredPreview || markdownPreview || htmlResultPreview,
   );
+  const showViewTabs = hasPreview && spec.resultView?.showTabs !== false;
   const retaining = !result && Boolean(retainedResult);
   const state = visibleResult ? "ready" : error ? "error" : running ? "loading" : "empty";
   const updateStatus = visibleResult
     ? error
-      ? "Update failed · Showing previous result"
+      ? t("updateFailed")
       : running
-        ? "Updating…"
+        ? t("updating")
         : retaining
-          ? "Preview out of date"
+          ? t("outdated")
           : null
     : null;
   const resultCount = getResultCount(result);
   const resultStatus =
     resultCount === null
-      ? "READY"
+      ? t("ready")
       : result && "truncated" in result && result.truncated
-        ? `${resultCount} SHOWN`
-        : `${resultCount} ${result?.render === "table" ? "ROWS" : "READY"}`;
+        ? t("shownCount", { count: resultCount })
+        : t(result?.render === "table" ? "rowsCount" : "readyCount", { count: resultCount });
   const jsonActionsInHeader = result?.render === "json-tree" && (variant === "card" || hasPreview);
   const fileActionsInHeader =
     visibleResult?.render === "files" &&
@@ -99,7 +103,9 @@ export function ResultSurface({
         (result?.render !== "json-tree" && (spec.capabilities?.copy || spec.capabilities?.download)),
       ));
   const jsonHeader =
-    result?.render === "json-tree" && !jsonActionsInHeader ? <span className="sr-only">{title}</span> : undefined;
+    result?.render === "json-tree" && !jsonActionsInHeader ? (
+      <span className="sr-only">{resolvedTitle}</span>
+    ) : undefined;
   const content = visibleResult ? (
     renderPreview && resultView === "preview" ? (
       renderPreview(visibleResult)
@@ -137,12 +143,12 @@ export function ResultSurface({
     >
       <WorkspaceSurface
         actions={
-          headerActions || hasPreview || (result && renderResultActions) || hasResultActions ? (
+          headerActions || showViewTabs || (result && renderResultActions) || hasResultActions ? (
             <>
               {headerActions}
-              {hasPreview ? (
+              {showViewTabs ? (
                 <TabsList asChild className="mr-2 gap-0 border-0 p-0">
-                  <ButtonGroup aria-label="Result view">
+                  <ButtonGroup aria-label={t("resultView")}>
                     {resultViews.map((view) => (
                       <Button
                         asChild
@@ -154,9 +160,9 @@ export function ResultSurface({
                         <TabsTrigger value={view} className="flex-none after:hidden">
                           {view === "raw" ? <Code2 aria-hidden="true" /> : <Eye aria-hidden="true" />}
                           {view === "raw"
-                            ? "Raw"
+                            ? t("raw")
                             : (spec.resultView?.previewLabel ??
-                              (jsonPreview ? "Tree" : tablePreview && !htmlTablePreview ? "Table" : "Preview"))}
+                              t(jsonPreview ? "tree" : tablePreview && !htmlTablePreview ? "table" : "preview"))}
                         </TabsTrigger>
                       </Button>
                     ))}
@@ -191,7 +197,7 @@ export function ResultSurface({
         state={state}
         stateDescription={error ?? (running ? spec.labels.running : spec.labels.empty)}
         stateIcon={running ? <Upload aria-hidden="true" className="animate-pulse" /> : undefined}
-        stateTitle={error ? "Unable to create the result" : running ? spec.labels.running : "Result will appear here"}
+        stateTitle={error ? t("resultFailed") : running ? spec.labels.running : t("resultEmpty")}
         status={
           updateStatus ? undefined : state === "ready" ? (
             variant === "card" || (hasPreview && resultCount === null) ? undefined : (
@@ -199,14 +205,14 @@ export function ResultSurface({
             )
           ) : state === "empty" ? (
             variant === "card" ? undefined : (
-              <span>0 GENERATED</span>
+              <span>{t("generatedCount", { count: 0 })}</span>
             )
           ) : undefined
         }
-        title={title}
+        title={resolvedTitle}
         variant={variant}
       >
-        {hasPreview
+        {showViewTabs
           ? resultViews.map((view) => (
               <TabsContent className="min-h-0 flex-col data-[state=active]:flex" key={view} value={view}>
                 {content}

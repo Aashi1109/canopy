@@ -1,6 +1,25 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "find.required": "Find text is required.",
+    "find.requiredRecovery": "Enter the text or pattern you want to replace.",
+    "find.regexError": "Find pattern is not a valid regular expression.",
+    "find.regexRecovery": "Patterns compile in Unicode mode; remove any redundant backslash escapes.",
+    "find.hiddenMatches": "[{count, number} more matches not expanded]",
+    "find.emptyMatch": "empty match",
+    "find.delete": "delete",
+    "find.invalidPattern": "Invalid regular expression",
+    "find.noMatches": "No matches",
+    "find.truncatedPreview": "{count, number} matches · First {shown, number} expanded · Focus to edit",
+    "find.inlinePreview": "{count, plural, one {# inline preview} other {# inline previews}} · Focus to edit",
+    "find.enterPattern": "Enter the text or pattern to find.",
+    "find.validPattern": "Enter a valid regular expression in Find.",
+    "find.noSourceMatches": "No matches were found in the source text.",
+    "find.applyCount": "{count, plural, one {Apply # replacement} other {Apply # replacements}}",
+    "find.apply": "Apply replacements",
+    "find.previewHint": "Matches preview inline before you apply replacements.",
+  },
   toolId: "devtools.find-and-replace",
   app: "devtools",
   category: "text-tools",

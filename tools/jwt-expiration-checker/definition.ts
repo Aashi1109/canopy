@@ -1,6 +1,52 @@
+import { ENCODING_EXECUTION_MESSAGES, JWT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...ENCODING_EXECUTION_MESSAGES,
+    ...JWT_EXECUTION_MESSAGES,
+    "execution.errors.numericDate":
+      "JWT {claim} must be a finite NumericDate in seconds within the supported date range.",
+    "execution.recovery.numericDate":
+      "Check the {claim} claim in the token input. Use a JSON number of seconds since 1970-01-01 UTC, not a date string.",
+    "summary.region": "JWT expiration summary",
+    "summary.notSpecified": "Not specified",
+    "summary.noRestriction": "No restriction specified",
+    "summary.localTime": "Local time · {timezone}",
+    "summary.checked":
+      "Checked {time} using your device clock, with no clock-skew allowance. Run Check expiration again to refresh.",
+    "details.status.active.label": "Not expired",
+    "details.status.active.title": "Within its time window",
+    "details.status.active.description":
+      "At the last check, the expiration time was in the future and any not-before restriction had passed.",
+    "details.status.expired.label": "Expired",
+    "details.status.expired.title": "Token has expired",
+    "details.status.expired.description":
+      "The expiration time has passed. Obtain a new token through your application''s sign-in or refresh flow.",
+    "details.status.not-active.label": "Not active yet",
+    "details.status.not-active.title": "Not active yet",
+    "details.status.not-active.description":
+      "The not-before time is still in the future. The token must not be accepted before that time.",
+    "details.status.expiring-soon.label": "Expiring soon",
+    "details.status.expiring-soon.title": "Expiration is near",
+    "details.status.expiring-soon.description":
+      "At the last check, this token had five minutes or less remaining. Use your application''s refresh flow if needed.",
+    "details.status.no-expiration.label": "No exp claim",
+    "details.status.no-expiration.title": "No expiration specified",
+    "details.status.no-expiration.description":
+      "This payload has no exp claim, so its expiration cannot be determined. This does not mean the token will remain accepted indefinitely.",
+    "workspace.expires_at_b613b9": "Expires at",
+    "workspace.not_valid_before_03d76d": "Not valid before",
+    "workspace.issued_at_f91a82": "Issued at",
+    "workspace.expiration_status_4108ab": "Expiration status",
+    "workspace.token_timestamps_1a99b0": "Token timestamps",
+    "workspace.utc_7e5f76": "UTC",
+    "workspace.signature_not_verified_9d24d5":
+      "Signature not verified. Time claims alone do not establish that a token is valid or trusted.",
+    "workspace.decoded_payload_76534c": "Decoded payload",
+    "workspace.unverified_claims_749f74": "Unverified claims",
+    "workspace.copy_payload_json_d88b52": "Copy payload JSON",
+  },
   toolId: "devtools.jwt-expiration-checker",
   app: "devtools",
   category: "jwt-api-tools",

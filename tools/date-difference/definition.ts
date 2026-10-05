@@ -1,6 +1,17 @@
+import { DATE_EXECUTION_MESSAGES, INPUT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...DATE_EXECUTION_MESSAGES,
+    ...INPUT_EXECUTION_MESSAGES,
+    "execution.errors.time-invalid":
+      "{endpoint, select, start {Start time} end {End time} other {Time}} must use 24-hour HH:MM or HH:MM:SS format.",
+    "execution.recovery.time-invalid":
+      "Enter {endpoint, select, start {start time} end {end time} other {time}} from 00:00 through 23:59:59.",
+    "execution.exactDuration": "{days} days ({hours} hours)",
+    "execution.duration": "{days} days",
+  },
   toolId: "devtools.date-difference",
   app: "devtools",
   // `slugFromName("Date Difference Calculator")` is "date-difference-calculator",

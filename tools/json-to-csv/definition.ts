@@ -1,6 +1,18 @@
+import { JSON_TO_CSV_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
+import { CSV_EXECUTION_MESSAGES } from "../../lib/devtools/shared/csv-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...JSON_TO_CSV_EXECUTION_MESSAGES,
+    "execution.recovery.conversion": "Check the JSON shape, syntax, and selected options, then try again.",
+    "execution.rows": "Rows",
+    "execution.columns": "Columns",
+    "execution.repaired": "Repaired",
+    "execution.yes": "Yes",
+    "csv.errors.invalidDelimiter": CSV_EXECUTION_MESSAGES["csv.errors.invalidDelimiter"],
+    "csv.recovery.delimiter": CSV_EXECUTION_MESSAGES["csv.recovery.delimiter"],
+  },
   toolId: "devtools.json-to-csv",
   sharing: { version: 1 },
   app: "devtools",

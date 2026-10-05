@@ -1,6 +1,15 @@
+import { DATE_EXECUTION_MESSAGES, INPUT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...DATE_EXECUTION_MESSAGES,
+    ...INPUT_EXECUTION_MESSAGES,
+    "errors.batch-invalid-date": '"{input}": Timestamp or date is not a valid date or timestamp.',
+    "errors.batch-conversion": '"{input}": Conversion failed.',
+    "errors.invalid-date": "Timestamp or date is not a valid date or timestamp.",
+  },
+
   toolId: "devtools.timestamp-converter",
   app: "devtools",
   category: "date-time-tools",

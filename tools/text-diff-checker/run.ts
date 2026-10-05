@@ -19,7 +19,9 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       render: "diff",
       lines,
       leftLabel: "Original text",
+      leftLabelMessage: { key: "textDiff.original" },
       rightLabel: "Changed text",
+      rightLabelMessage: { key: "textDiff.changedText" },
     },
     verdict: {
       level: "ok",
@@ -27,7 +29,10 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         added || removed
           ? `${added} ${added === 1 ? "line" : "lines"} added · ${removed} ${removed === 1 ? "line" : "lines"} removed`
           : "No differences",
+      labelMessage:
+        added || removed ? { key: "textDiff.changed", values: { added, removed } } : { key: "textDiff.identical" },
       detail: "Comparing changed text against original text. Whitespace is significant; line endings are normalized.",
+      detailMessage: { key: "textDiff.comparison" },
     },
   };
 };

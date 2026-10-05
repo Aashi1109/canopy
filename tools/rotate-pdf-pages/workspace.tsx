@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Button, Caption, FieldLabel, Input, Select } from "@/components/ui/index.tsx";
 import { RotateCcw, RotateCw, FlipVertical2 } from "lucide-react";
 import { useId, useState } from "react";
@@ -10,19 +12,24 @@ import type { PdfPageImage } from "@/components/PdfPagesSurface";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import { parsePageSelection } from "@/lib/tool-framework/settings";
 
-function rotationPlan(settings: WorkspaceProps["settings"], count: number) {
+function rotationPlan(settings: WorkspaceProps["settings"], count: number, t: ReturnType<typeof useTranslations>) {
   const raw = settings.rotateSelectedOnly === false ? "all" : settings.pages;
   const expression = Array.isArray(raw) ? raw.join(",") : String(raw ?? "all");
-  const parsed = parsePageSelection(expression, count);
+  let parsed: ReturnType<typeof parsePageSelection>;
+  try {
+    parsed = parsePageSelection(expression, count);
+  } catch {
+    throw new Error(t("workspace.choosePages", { count }));
+  }
   const selected = parsed === "all" ? Array.from({ length: count }, (_, index) => index + 1) : parsed;
-  if (!selected.length) throw new Error(`Choose pages from 1 to ${count}.`);
+  if (!selected.length) throw new Error(t("workspace.choosePages", { count }));
   const turn = settings.degrees === "180" ? 180 : settings.degrees === "270" ? 270 : 90;
   return { selected, turn } as const;
 }
 
-function getPlan(settings: WorkspaceProps["settings"], count: number) {
-  const { selected, turn } = rotationPlan(settings, count);
-  return { title: `${selected.length} of ${count} pages · ${turn}° clockwise`, detail: null };
+function getPlan(settings: WorkspaceProps["settings"], count: number, t: ReturnType<typeof useTranslations>) {
+  const { selected, turn } = rotationPlan(settings, count, t);
+  return { title: t("workspace.planTitle", { selected: selected.length, count, degrees: turn }), detail: null };
 }
 
 function RotationSettings({
@@ -34,6 +41,7 @@ function RotationSettings({
   pages: readonly PdfPageImage[];
   completed: boolean;
 }) {
+  const t = useTranslations("Tool.runtime");
   const id = useId();
   const expression = Array.isArray(props.settings.pages)
     ? props.settings.pages.join(",")
@@ -47,23 +55,27 @@ function RotationSettings({
   let summary = "";
   let rangeError = "";
   try {
-    const { selected } = rotationPlan(props.settings, pages.length);
+    const { selected } = rotationPlan(props.settings, pages.length, t);
     if (pages.length)
-      summary = `${selected.length} of ${pages.length} pages ${completed ? "rotated" : "will rotate"}. ${pages.length - selected.length} unchanged.`;
+      summary = t("workspace.summary", {
+        selected: selected.length,
+        count: pages.length,
+        state: completed ? "completed" : "pending",
+        unchanged: pages.length - selected.length,
+      });
   } catch (error) {
-    if (pages.length && mode === "custom")
-      rangeError = error instanceof Error ? error.message : "Enter valid page numbers.";
+    if (pages.length && mode === "custom") rangeError = t("workspace.validPages");
   }
   return (
     <>
       <div className="grid gap-2">
-        <FieldLabel>Rotation</FieldLabel>
-        <div className="grid grid-cols-3 gap-2" role="group" aria-label="Rotation angle">
+        <FieldLabel>{t("workspace.rotation")}</FieldLabel>
+        <div className="grid grid-cols-3 gap-2" role="group" aria-label={t("workspace.rotationAngle")}>
           {(
             [
-              ["90", "90° right", RotateCw],
-              ["180", "180°", FlipVertical2],
-              ["270", "90° left", RotateCcw],
+              ["90", t("workspace.right"), RotateCw],
+              ["180", t("workspace.halfTurn"), FlipVertical2],
+              ["270", t("workspace.left"), RotateCcw],
             ] as const
           ).map(([value, label, Icon]) => (
             <Button
@@ -78,10 +90,10 @@ function RotationSettings({
             </Button>
           ))}
         </div>
-        <Caption>Added to the current orientation. Preview updates immediately.</Caption>
+        <Caption>{t("workspace.addedToTheCurrentOrientationPreviewUpdates")}</Caption>
       </div>
       <div className="grid gap-2">
-        <FieldLabel htmlFor={`${id}-scope`}>Apply to</FieldLabel>
+        <FieldLabel htmlFor={`${id}-scope`}>{t("workspace.applyTo")}</FieldLabel>
         <Select
           id={`${id}-scope`}
           value={mode}
@@ -91,22 +103,22 @@ function RotationSettings({
             props.onSettingChange("pages", event.target.value === "custom" ? "" : event.target.value);
           }}
         >
-          <option value="all">All pages</option>
-          <option value="odd">Odd pages</option>
-          <option value="even">Even pages</option>
-          <option value="custom">Custom pages</option>
+          <option value="all">{t("workspace.allPages")}</option>
+          <option value="odd">{t("workspace.oddPages")}</option>
+          <option value="even">{t("workspace.evenPages")}</option>
+          <option value="custom">{t("workspace.customPages")}</option>
         </Select>
       </div>
       {mode === "custom" && (
         <div className="grid gap-2">
-          <FieldLabel htmlFor={`${id}-range`}>Page range</FieldLabel>
+          <FieldLabel htmlFor={`${id}-range`}>{t("workspace.pageRange")}</FieldLabel>
           <Input
             id={`${id}-range`}
             value={expression}
             aria-invalid={Boolean(rangeError)}
             aria-describedby={rangeError ? `${id}-error` : undefined}
             disabled={props.disabled}
-            placeholder="e.g. 1, 3-5"
+            placeholder={t("workspace.rangeExample")}
             onChange={(event) => props.onSettingChange("pages", event.target.value)}
           />
           {rangeError && (
@@ -122,6 +134,7 @@ function RotationSettings({
 }
 
 export default function RotatePdfPagesWorkspace(props: WorkspaceProps) {
+  const t = useTranslations("Tool.runtime");
   const [dismissed, setDismissed] = useState<WorkspaceProps["result"]>(null);
   const completed = props.result && props.result !== dismissed;
   const output =
@@ -132,11 +145,11 @@ export default function RotatePdfPagesWorkspace(props: WorkspaceProps) {
     <PdfFileWorkspace
       {...props}
       definitionKey="rotate-pdf-pages"
-      optionsTitle="Rotate pages"
-      getPlan={getPlan}
+      optionsTitle={t("workspace.rotatePages")}
+      getPlan={(settings, count) => getPlan(settings, count, t)}
       getPageRotation={(page, pages) => {
         try {
-          const { selected, turn } = rotationPlan(props.settings, pages.length);
+          const { selected, turn } = rotationPlan(props.settings, pages.length, t);
           return selected.includes(page.pageNumber) ? turn : 0;
         } catch {
           return 0;
@@ -149,21 +162,21 @@ export default function RotatePdfPagesWorkspace(props: WorkspaceProps) {
           completed={Boolean(completed && !props.running && !props.error)}
         />
       )}
-      secondaryActions={<Caption>Your original stays unchanged. Page order and quality are preserved.</Caption>}
+      secondaryActions={<Caption>{t("workspace.yourOriginalStaysUnchangedPageOrderAnd")}</Caption>}
       completedPreview={
         output ? <GeneratedPdfPreview fill file={output} definitionKey="rotate-pdf-pages" /> : undefined
       }
       completionActions={
         <div className="grid grid-cols-2 gap-2">
           <Button className="w-full" variant="outline" onClick={() => setDismissed(props.result)}>
-            Edit rotation
+            {t("workspace.editRotation")}
           </Button>
           <Button
             className="w-full"
             variant="outline"
             onClick={() => props.onInputChange({ ...props.input, files: [] })}
           >
-            Rotate another PDF
+            {t("workspace.rotateAnotherPdf")}
           </Button>
         </div>
       }

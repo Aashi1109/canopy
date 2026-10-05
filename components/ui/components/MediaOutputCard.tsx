@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import type { ReactNode } from "react";
 import { Download, Maximize2, X } from "lucide-react";
@@ -34,7 +35,12 @@ export function MediaOutputCard({
   error,
   className,
 }: MediaOutputCardProps) {
-  const actionLabel = onRemove ? `Remove ${name}` : error ? `Retry download of ${name}` : `Download ${name}`;
+  const t = useTranslations("Workbench");
+  const actionLabel = onRemove
+    ? t("removeFile", { name })
+    : error
+      ? t("mediaNamedRetryDownload", { name })
+      : t("mediaNamedDownload", { name });
   return (
     <TooltipProvider>
       <article
@@ -45,7 +51,7 @@ export function MediaOutputCard({
           <Button
             variant="card-action"
             onClick={onPreview}
-            aria-label={`Preview ${name}`}
+            aria-label={t("mediaNamedPreview", { name })}
             className="aspect-square h-auto w-full overflow-hidden rounded-lg bg-muted p-0"
           >
             {children}
@@ -58,12 +64,12 @@ export function MediaOutputCard({
                   size="icon-xs"
                   className="rounded-md border-0"
                   onClick={onPreview}
-                  aria-label={`Preview ${name}`}
+                  aria-label={t("mediaNamedPreview", { name })}
                 >
                   <Maximize2 aria-hidden="true" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Preview {name}</TooltipContent>
+              <TooltipContent>{t("mediaNamedPreview", { name })}</TooltipContent>
             </Tooltip>
             {(onRemove || onDownload) && (
               <Tooltip>
@@ -72,7 +78,7 @@ export function MediaOutputCard({
                     tabIndex={disabled || downloading ? 0 : undefined}
                     aria-label={
                       disabled || downloading
-                        ? `${actionLabel} — ${downloading ? "preparing download" : "unavailable while processing"}`
+                        ? t("mediaActionUnavailable", { action: actionLabel, downloading: downloading ? "yes" : "no" })
                         : undefined
                     }
                     className="rounded-md focus-visible:outline-2 focus-visible:outline-ring"
@@ -91,7 +97,7 @@ export function MediaOutputCard({
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {downloading ? "Preparing download…" : disabled ? "Wait for processing to finish" : actionLabel}
+                  {downloading ? t("preparingDownload") : disabled ? t("mediaWaitProcessing") : actionLabel}
                 </TooltipContent>
               </Tooltip>
             )}
@@ -103,7 +109,7 @@ export function MediaOutputCard({
         </div>
         {error && (
           <p role="alert" className="px-1 pb-1 text-xs text-destructive">
-            {error} Use Download to retry.
+            {t("mediaRetryDownloadHint", { error })}
           </p>
         )}
       </article>

@@ -26,6 +26,7 @@ export const run: ToolRun<Settings> = ({ settings }) => {
     tablePreview: {
       render: "table",
       columns: ["Name", "Color"],
+      columnMessages: [{ key: "palette.name" }, { key: "palette.color" }],
       rows: colors.map((color, index) => [`color-${index + 1}`, color.color]),
     },
   };

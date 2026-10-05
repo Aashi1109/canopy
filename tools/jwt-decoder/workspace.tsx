@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 import { SyntaxHighlight } from "@/components/content/SyntaxHighlight";
 import { CopyButton, ResultView } from "@/components/ResultView";
@@ -8,27 +9,27 @@ import { CodeBlock, Muted, Tabs, TabsContent, TabsList, TabsTrigger } from "@/co
 import type { ToolResult } from "@/lib/tool-framework/result";
 
 const HEADER_CLAIMS: Record<string, string> = {
-  alg: "Signing algorithm",
-  typ: "Token type",
-  cty: "Content type",
-  kid: "Key ID",
-  jku: "Key set URL",
-  jwk: "Public key",
-  x5u: "Certificate URL",
-  x5c: "Certificate chain",
-  x5t: "Certificate thumbprint",
-  "x5t#S256": "SHA-256 certificate thumbprint",
-  crit: "Critical header parameters",
+  alg: "details.header_claims.alg",
+  typ: "details.header_claims.typ",
+  cty: "details.header_claims.cty",
+  kid: "details.header_claims.kid",
+  jku: "details.header_claims.jku",
+  jwk: "details.header_claims.jwk",
+  x5u: "details.header_claims.x5u",
+  x5c: "details.header_claims.x5c",
+  x5t: "details.header_claims.x5t",
+  "x5t#S256": "details.header_claims.x5t#S256",
+  crit: "details.header_claims.crit",
 };
 
 const PAYLOAD_CLAIMS: Record<string, string> = {
-  iss: "Issuer",
-  sub: "Subject",
-  aud: "Audience",
-  exp: "Expiration time",
-  nbf: "Not valid before",
-  iat: "Issued at",
-  jti: "Token ID",
+  iss: "details.payload_claims.iss",
+  sub: "details.payload_claims.sub",
+  aud: "details.payload_claims.aud",
+  exp: "details.payload_claims.exp",
+  nbf: "details.payload_claims.nbf",
+  iat: "details.payload_claims.iat",
+  jti: "details.payload_claims.jti",
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -44,13 +45,15 @@ function DecodedSection({
   value: Record<string, unknown>;
   timestamps: Record<string, unknown>;
 }) {
+  const toolText = useToolTranslations("Tool.runtime");
   const json = JSON.stringify(value, null, 2);
+  const section = toolText(name === "Header" ? "claims.header" : "claims.payload");
   const descriptions = name === "Header" ? HEADER_CLAIMS : PAYLOAD_CLAIMS;
 
   return (
     <Tabs defaultValue="json" className="gap-0">
       <WorkspaceSurface
-        aria-label={`Decoded ${name.toLowerCase()}`}
+        aria-label={toolText("claims.decoded", { section })}
         className="[&>[data-slot=workspace-header]]:py-0 [&>[data-slot=workspace-header]>div:last-child]:self-stretch"
         purpose="preview"
         title={
@@ -59,23 +62,24 @@ function DecodedSection({
               aria-hidden="true"
               className={`size-2 shrink-0 rounded-full ${name === "Header" ? "bg-[var(--syntax-bracket-3)]" : "bg-[var(--syntax-bracket-2)]"}`}
             />
-            <span>
-              <span className="sr-only">Decoded </span>
-              {name.toLowerCase()}
-            </span>
+            <span>{section}</span>
           </span>
         }
         actions={
           <>
-            <TabsList aria-label={`${name} view`} variant="line" className="mr-2 items-stretch self-stretch border-0">
+            <TabsList
+              aria-label={toolText("claims.view", { section })}
+              variant="line"
+              className="mr-2 items-stretch self-stretch border-0"
+            >
               <TabsTrigger value="json" className="px-2 py-1.5">
-                JSON
+                {toolText("workspace.json_db1a21")}
               </TabsTrigger>
               <TabsTrigger value="claims" className="px-2 py-1.5">
-                Claims
+                {toolText("workspace.claims_1c85c1")}
               </TabsTrigger>
             </TabsList>
-            <CopyButton content={json} iconOnly label={`Copy ${name.toLowerCase()} JSON`} />
+            <CopyButton content={json} iconOnly label={toolText("claims.copy", { section })} />
           </>
         }
       >
@@ -96,21 +100,27 @@ function DecodedSection({
                     <CodeBlock className="whitespace-pre-wrap break-all">
                       <SyntaxHighlight code={JSON.stringify(key)} language="json" />
                     </CodeBlock>
-                    <Muted>{Object.hasOwn(descriptions, key) ? descriptions[key] : "Custom claim"}</Muted>
+                    <Muted>
+                      {Object.hasOwn(descriptions, key)
+                        ? toolText(descriptions[key]!)
+                        : toolText("workspace.custom_claim_4407f1")}
+                    </Muted>
                   </dt>
                   <dd className="min-w-0 space-y-1">
                     <CodeBlock className="whitespace-pre-wrap break-words">
                       <SyntaxHighlight code={JSON.stringify(claim, null, 2)} language="json" />
                     </CodeBlock>
                     {name === "Payload" && Object.hasOwn(timestamps, key) && typeof timestamps[key] === "string" ? (
-                      <Muted className="break-words">{timestamps[key]} (UTC)</Muted>
+                      <Muted className="break-words">
+                        {toolText("claims.timestamp", { timestamp: String(timestamps[key]) })}
+                      </Muted>
                     ) : null}
                   </dd>
                 </div>
               ))}
             </dl>
           ) : (
-            <Muted className="py-2">No claims.</Muted>
+            <Muted className="py-2">{toolText("workspace.no_claims_96fbdb")}</Muted>
           )}
         </TabsContent>
       </WorkspaceSurface>
@@ -119,6 +129,7 @@ function DecodedSection({
 }
 
 function JwtPreview({ result }: { result: ToolResult }) {
+  const toolText = useToolTranslations("Tool.runtime");
   let decoded: unknown;
   try {
     decoded = result.render === "text" ? JSON.parse(result.text) : null;
@@ -137,20 +148,22 @@ function JwtPreview({ result }: { result: ToolResult }) {
   const timestamps = isObject(decoded.timestamps) ? decoded.timestamps : {};
   return (
     <div className="min-h-0 min-w-0 flex-1 divide-y divide-border overflow-auto">
-      <Muted className="px-4 py-2">Decoded only · Signature not verified</Muted>
+      <Muted className="px-4 py-2">{toolText("workspace.decoded_only_signature_0cb155")}</Muted>
       <DecodedSection name="Header" value={decoded.header} timestamps={timestamps} />
       <DecodedSection name="Payload" value={decoded.payload} timestamps={timestamps} />
       <WorkspaceSurface
-        aria-label="Signature"
+        aria-label={toolText("workspace.signature_f1a73e")}
         purpose="preview"
         title={
           <span className="flex items-center gap-2">
             <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-[var(--syntax-string)]" />
-            Signature
+            {toolText("workspace.signature_f1a73e")}
           </span>
         }
         actions={
-          decoded.signature ? <CopyButton content={decoded.signature} iconOnly label="Copy signature" /> : undefined
+          decoded.signature ? (
+            <CopyButton content={decoded.signature} iconOnly label={toolText("workspace.copy_signature_cac3d2")} />
+          ) : undefined
         }
       >
         {decoded.signature ? (
@@ -159,7 +172,9 @@ function JwtPreview({ result }: { result: ToolResult }) {
           </CodeBlock>
         ) : (
           <Muted className="px-4 py-3">
-            {decoded.header.alg === "none" ? "Unsigned token (alg: none)." : "No signature provided."}
+            {decoded.header.alg === "none"
+              ? toolText("workspace.unsigned_token_alg_17bafd")
+              : toolText("workspace.no_signature_provided_b37ec5")}
           </Muted>
         )}
       </WorkspaceSurface>

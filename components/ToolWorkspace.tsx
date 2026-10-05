@@ -47,6 +47,7 @@ export interface WorkspaceToolbarActions {
 export interface WorkspaceProps {
   disabled?: boolean;
   error?: string;
+  errorLocation?: { line: number; column: number };
   input: WorkspaceInputState;
   lifecycle: ToolLifecycle;
   onInputChange: (input: WorkspaceInputState) => void;
@@ -81,12 +82,7 @@ function getInputSplitSizes(inputSpec: ToolInputSpec, defaultSize: number, minSi
 }
 
 function stackedResultTitle(spec: ToolSpec) {
-  if (spec.labels.result) return spec.labels.result;
-  return (
-    spec.labels.ready
-      .replace(/^The\s+/i, "")
-      .replace(/\s+(?:is|are)\s+(?:ready.*|valid|current|up to date)\.?$/i, "") || "Result"
-  );
+  return spec.labels.result ?? "Result";
 }
 
 function InputResultWorkspace({

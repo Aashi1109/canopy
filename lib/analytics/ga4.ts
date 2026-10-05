@@ -1,3 +1,5 @@
+import { unlocalizedPathname } from "@/lib/i18n/config";
+
 export const CONSENT_KEY = "smarttools.analytics-consent.v1";
 export type AnalyticsConsent = "accepted" | "declined" | null;
 export type ToolEvent = "tool_start" | "tool_complete" | "tool_error" | "result_download" | "result_copy";
@@ -22,7 +24,7 @@ export function measurementId(env: {
 
 // Never send arbitrary route segments (document IDs, emails, or pasted text).
 export function publicPath(pathname: string): string | null {
-  const path = pathname.split(/[?#]/, 1)[0].replace(/\/$/, "") || "/";
+  const path = unlocalizedPathname(pathname.split(/[?#]/, 1)[0].replace(/\/$/, "") || "/");
   if (
     ["/", "/privacy", "/contact", "/media", "/devtools", "/paperwork", "/paperwork/about", "/paperwork/terms"].includes(
       path,

@@ -38,6 +38,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "invalid-flags",
       "Regex flags are invalid.",
       "Use any combination of d g i m s u v y, each at most once.",
+      { messageRef: { key: "errors.invalid-flags" }, recoveryMessage: { key: "recovery.invalid-flags" } },
     );
   }
   if (flags.includes("u") && flags.includes("v")) {
@@ -45,6 +46,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "conflicting-flags",
       "Regex flags u and v cannot be combined.",
       "Keep either u or v, not both.",
+      { messageRef: { key: "errors.conflicting-flags" }, recoveryMessage: { key: "recovery.conflicting-flags" } },
     );
   }
 
@@ -59,6 +61,16 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "invalid-pattern",
       `Regex pattern is invalid: ${error instanceof Error ? error.message : "unknown error"}`,
       "Enter the pattern body without the surrounding slashes.",
+      {
+        ...(error instanceof ToolError ? error.details : undefined),
+        messageRef:
+          error instanceof ToolError && error.details?.messageRef
+            ? error.details.messageRef
+            : error instanceof Error
+              ? { key: "errors.invalid-pattern", values: { detail: error.message } }
+              : { key: "errors.invalid-pattern-unknown" },
+        recoveryMessage: { key: "recovery.invalid-pattern" },
+      },
     );
   }
 
@@ -83,6 +95,10 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "too-many-matches",
       "Regex produced too many matches; narrow the pattern.",
       `Anchor the pattern or make it more specific — the result is capped at ${MAX_MATCHES.toLocaleString("en-US")} matches.`,
+      {
+        messageRef: { key: "errors.too-many-matches" },
+        recoveryMessage: { key: "recovery.too-many-matches", values: { count: MAX_MATCHES } },
+      },
     );
   }
 

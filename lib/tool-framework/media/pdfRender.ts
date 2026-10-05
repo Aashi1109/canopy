@@ -122,6 +122,10 @@ async function openPdfDocument(file: ToolRunFile, signal: AbortSignal) {
       "file-read-failed",
       "The PDF could not be read from this device.",
       "Choose the file again and keep it available until processing finishes.",
+      {
+        messageRef: { key: "media.pdf.fileReadFailed" },
+        recoveryMessage: { key: "media.recovery.pdf.fileReadFailed" },
+      },
     );
     rejectRangeRead(error);
     range.abort();
@@ -212,7 +216,9 @@ export async function forEachRenderedPdfPage(
       const width = Math.max(1, Math.ceil(viewport.width));
       const height = Math.max(1, Math.ceil(viewport.height));
       if (width * height > MAX_RENDERED_PIXELS) {
-        throw new ToolError("too-many-pixels", "A rendered PDF page exceeds 100 megapixels.");
+        throw new ToolError("too-many-pixels", "A rendered PDF page exceeds 100 megapixels.", undefined, {
+          messageRef: { key: "media.pdf.tooManyPixels" },
+        });
       }
       const canvas = new OffscreenCanvas(width, height);
       const context = context2d(canvas);
@@ -220,7 +226,12 @@ export async function forEachRenderedPdfPage(
         context.fillStyle = "#ffffff";
         context.fillRect(0, 0, width, height);
       }
-      progress?.({ completed: index, total: pages.length, stage: "Rendering PDF page" });
+      progress?.({
+        completed: index,
+        total: pages.length,
+        stage: "Rendering PDF page",
+        stageMessage: { key: "media.progress.renderingPdfPage" },
+      });
       Object.assign(globalThis, { window: renderScheduler });
       try {
         await opened.read(
@@ -256,7 +267,9 @@ export async function forEachRenderedPdfPage(
     return { pageCount: document.numPages };
   } catch (error) {
     if (isPasswordError(error)) {
-      throw new ToolError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.");
+      throw new ToolError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.", undefined, {
+        messageRef: { key: "media.pdf.encryptedPdf" },
+      });
     }
     throw error;
   } finally {
@@ -282,13 +295,15 @@ export async function openPdfInspectionSession(
 ): Promise<PdfInspectionSession> {
   await validatePdfInput(file);
   const selection = validatePdfSelection([{ size: file.size }]);
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
   let opened: Awaited<ReturnType<typeof openPdfDocument>>;
   try {
     opened = await openPdfDocument(file, signal);
   } catch (error) {
     if (isPasswordError(error)) {
-      throw new ToolError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.");
+      throw new ToolError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.", undefined, {
+        messageRef: { key: "media.pdf.encryptedPdf" },
+      });
     }
     throw error;
   }
@@ -310,7 +325,9 @@ export async function openPdfInspectionSession(
       renderWidth !== undefined &&
       (!Number.isInteger(renderWidth) || renderWidth < 1 || renderWidth > PDF_PREVIEW_MAX_WIDTH)
     ) {
-      throw new ToolError("invalid-preview-size", "The requested PDF preview size is invalid.");
+      throw new ToolError("invalid-preview-size", "The requested PDF preview size is invalid.", undefined, {
+        messageRef: { key: "media.pdf.invalidPreviewSize" },
+      });
     }
     const unique = [...new Set(pageNumbers)];
     if (
@@ -318,7 +335,9 @@ export async function openPdfInspectionSession(
         (pageNumber) => !Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > opened.document.numPages,
       )
     ) {
-      throw new ToolError("invalid-page-selection", "A requested PDF preview page does not exist.");
+      throw new ToolError("invalid-page-selection", "A requested PDF preview page does not exist.", undefined, {
+        messageRef: { key: "media.pdf.invalidPageSelection" },
+      });
     }
     const thumbnails: PdfPageThumbnail[] = [];
     for (const pageNumber of unique) {
@@ -407,7 +426,9 @@ export async function openPdfInspectionSession(
   } catch (error) {
     await opened.close().catch(() => undefined);
     if (isPasswordError(error)) {
-      throw new ToolError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.");
+      throw new ToolError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.", undefined, {
+        messageRef: { key: "media.pdf.encryptedPdf" },
+      });
     }
     throw error;
   }

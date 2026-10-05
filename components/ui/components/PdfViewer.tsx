@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations, useFormatter } from "next-intl";
 import { Caption, H3, Muted, P } from "./typography.tsx";
 
 import { ChevronDown, Maximize2, Minus, Plus, Search } from "lucide-react";
@@ -77,11 +78,13 @@ export function PdfViewer({
   pageCount,
   pages,
   pagePreviewDelayMs = 120,
-  pagePreviewDetail = "A4 → Letter · fit content",
+  pagePreviewDetail,
   renderPagePreview,
   rightChildren,
   zoom,
 }: PdfViewerProps) {
+  const t = useTranslations("Workbench");
+  const format = useFormatter();
   const resolvedPageCount = Math.max(1, Number.isFinite(pageCount) ? Math.round(pageCount) : 1);
   const resolvedCurrentPage = normalizePage(currentPage, resolvedPageCount);
   const [internalZoom, setInternalZoom] = React.useState(100);
@@ -102,9 +105,9 @@ export function PdfViewer({
     () =>
       Array.from({ length: resolvedPageCount }, (_, index) => {
         const page = index + 1;
-        return { id: `page-${page}`, title: `Page ${page}` };
+        return { id: `page-${page}`, title: t("mediaPageNumber", { page }) };
       }),
-    [resolvedPageCount],
+    [resolvedPageCount, t],
   );
 
   React.useLayoutEffect(() => {
@@ -245,20 +248,20 @@ export function PdfViewer({
       >
         <div className="flex h-full w-max max-w-[35cqw] flex-col gap-3.5 border-r border-border p-3 sm:p-4.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <H3 className="text-foreground">Outline</H3>
+            <H3 className="text-foreground">{t("mediaOutline")}</H3>
             <Caption className="shrink-0 rounded-full border border-border bg-card px-2.5 py-1 text-muted-foreground">
-              {resolvedPageCount} {resolvedPageCount === 1 ? "page" : "pages"}
+              {t("mediaPageCount", { count: resolvedPageCount })}
             </Caption>
           </div>
 
           <label className="flex h-8 items-center gap-2 rounded-lg border border-border bg-card px-2.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
             <Search aria-hidden="true" className="size-3.5 text-muted-foreground" />
-            <span className="sr-only">Search document outline</span>
+            <span className="sr-only">{t("mediaSearchOutline")}</span>
             <input
-              aria-label="Search document outline"
+              aria-label={t("mediaSearchOutline")}
               className="min-w-0 flex-1 bg-transparent text-[11px] text-foreground outline-none placeholder:text-muted-foreground"
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Find a section"
+              placeholder={t("mediaFindSection")}
               ref={outlineSearch}
               type="search"
               value={query}
@@ -266,7 +269,7 @@ export function PdfViewer({
           </label>
 
           <div
-            aria-label="Document outline"
+            aria-label={t("mediaDocumentOutline")}
             className={cn("min-h-0 flex-1 overflow-y-auto", !visibleOutline.length && "flex flex-col")}
             onKeyDown={handleOutlineKeyDown}
             role="listbox"
@@ -302,13 +305,18 @@ export function PdfViewer({
                       <span className="truncate">{item.title}</span>
                     </span>
                     <Caption className={cn("", selected ? "text-primary" : "text-muted-foreground")}>
-                      {item.page}
+                      {format.number(item.page)}
                     </Caption>
                   </button>
                 );
               })
             ) : (
-              <ContentState density="compact" state="no-results" headingLevel="h3" title="No matching sections." />
+              <ContentState
+                density="compact"
+                state="no-results"
+                headingLevel="h3"
+                title={t("mediaNoMatchingSections")}
+              />
             )}
           </div>
         </div>
@@ -319,7 +327,7 @@ export function PdfViewer({
           <Button
             aria-controls={outlineId}
             aria-expanded={outlineOpen}
-            aria-label={outlineOpen ? "Hide outline" : "Show outline"}
+            aria-label={outlineOpen ? t("mediaHideOutline") : t("mediaShowOutline")}
             onClick={() => setOutlineOpen((open) => !open)}
             ref={outlineToggle}
             size="icon-sm"
@@ -331,17 +339,17 @@ export function PdfViewer({
           <div className="min-w-0 basis-40 flex-1">
             {fileNameContent ?? <P className="truncate text-foreground">{fileName}</P>}
             <Muted className="truncate text-muted-foreground">
-              {currentSection && currentSection.title !== `Page ${resolvedCurrentPage}`
+              {currentSection && currentSection.title !== t("mediaPageNumber", { page: resolvedCurrentPage })
                 ? `${currentSection.title} · `
                 : ""}
-              Page {resolvedCurrentPage} of {resolvedPageCount}
+              {t("mediaPagePosition", { page: resolvedCurrentPage, count: resolvedPageCount })}
               {fileSize ? ` · ${fileSize}` : null}
             </Muted>
           </div>
 
-          <div className="flex items-center gap-1" aria-label="Page jump">
+          <div className="flex items-center gap-1" aria-label={t("mediaPageJump")}>
             <input
-              aria-label="Current page"
+              aria-label={t("mediaCurrentPage")}
               className="h-6 w-7 appearance-none rounded border border-border bg-transparent text-center font-caption text-[10px] font-semibold text-foreground outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 max-sm:size-11 [@media(pointer:coarse)]:size-11 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               inputMode="numeric"
               max={resolvedPageCount}
@@ -358,12 +366,12 @@ export function PdfViewer({
               type="number"
               value={pageDraft}
             />
-            <span className="font-caption text-[9px] text-muted-foreground">/ {resolvedPageCount}</span>
+            <span className="font-caption text-[9px] text-muted-foreground">/ {format.number(resolvedPageCount)}</span>
           </div>
 
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
             <Button
-              aria-label="Zoom out"
+              aria-label={t("zoomOut")}
               className="size-[30px]"
               disabled={resolvedZoom <= MIN_ZOOM}
               onClick={() => updateZoom(resolvedZoom - ZOOM_STEP)}
@@ -373,13 +381,13 @@ export function PdfViewer({
               <Minus />
             </Button>
             <output
-              aria-label="Zoom level"
+              aria-label={t("mediaZoomLevel")}
               className="grid h-[30px] w-12 place-items-center rounded-lg border border-border bg-muted font-caption text-[10px] font-semibold text-foreground"
             >
-              {resolvedZoom}%
+              {format.number(resolvedZoom)}%
             </output>
             <Button
-              aria-label="Zoom in"
+              aria-label={t("zoomIn")}
               className="size-[30px]"
               disabled={resolvedZoom >= MAX_ZOOM}
               onClick={() => updateZoom(resolvedZoom + ZOOM_STEP)}
@@ -389,7 +397,7 @@ export function PdfViewer({
               <Plus />
             </Button>
             <Button
-              aria-label={onExpand ? "Expand preview" : "Fit page"}
+              aria-label={onExpand ? t("mediaExpandPreview") : t("mediaFitPage")}
               className="size-[30px]"
               onClick={() => (onExpand ? onExpand() : onFitPage ? onFitPage() : updateZoom(100))}
               size="icon-xs"
@@ -413,7 +421,7 @@ export function PdfViewer({
               currentIndex={resolvedCurrentPage - 1}
               density="compact"
               hoverLengthMultiplier={2.5}
-              label="Page scrubber"
+              label={t("mediaPageScrubber")}
               onSelect={(_, index) => selectPage(index + 1)}
               previewCardClassName="rounded-lg border-transparent bg-surface-ink p-2.5 text-on-ink shadow-[0_5px_14px_#00000022]"
               previewCardGap={12}
@@ -439,9 +447,9 @@ export function PdfViewer({
                       )}
                     </div>
                     <P className="truncate text-on-ink">
-                      Page {page} · {sectionAtPage(page)?.title ?? "Document"}
+                      {t("mediaPageSection", { page, section: sectionAtPage(page)?.title ?? t("mediaDocument") })}
                     </P>
-                    <P className="truncate text-on-ink-muted">{pagePreviewDetail}</P>
+                    <P className="truncate text-on-ink-muted">{pagePreviewDetail ?? t("mediaFitPreview")}</P>
                   </div>
                 );
               }}
@@ -452,7 +460,7 @@ export function PdfViewer({
 
           {pages ? (
             <div
-              aria-label="PDF pages"
+              aria-label={t("mediaPdfPages")}
               className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain"
               onScroll={syncVisiblePage}
               ref={pageViewport}

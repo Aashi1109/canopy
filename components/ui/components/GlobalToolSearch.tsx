@@ -1,4 +1,6 @@
 "use client";
+import { useLocale, useTranslations } from "next-intl";
+import type { Locale } from "@/lib/i18n/config";
 import { Muted, Small, Strong } from "./typography.tsx";
 import { LoaderCircle, Search, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
@@ -21,9 +23,11 @@ type SearchState = "idle" | "loading" | "ready" | "error";
 type MobileSearch = { open: boolean; onOpenChange: (open: boolean) => void; top: number; availableHeight: number };
 
 // Reserve space for the logo, page/account actions, menu, and header padding.
-const CENTERED_SEARCH_WIDTH_CLASS = "compact:max-navigation:w-[clamp(11rem,calc(100vw-26rem),24rem)]";
+const CENTERED_SEARCH_WIDTH_CLASS = "compact:max-navigation:w-[clamp(11rem,calc(100vw-31rem),24rem)]";
 
 export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSearch; publicSiteUrl?: string } = {}) {
+  const t = useTranslations("Search");
+  const locale = useLocale() as Locale;
   const [desktopOpen, setDesktopOpen] = useState(false);
   const isMobileSearch = Boolean(mobile);
   const isOpen = mobile ? mobile.open : desktopOpen;
@@ -135,7 +139,9 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
     const controller = new AbortController();
     setState("loading");
     setResults([]);
-    fetch(`/api/tools/search?q=${encodeURIComponent(normalized)}`, { signal: controller.signal })
+    fetch(`/api/tools/search?q=${encodeURIComponent(normalized)}&locale=${encodeURIComponent(locale)}`, {
+      signal: controller.signal,
+    })
       .then(async (response) => {
         if (!response.ok) throw new Error("Search request failed");
         return response.json() as Promise<{ results: SearchResult[] }>;
@@ -154,7 +160,7 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
         }
       });
     return () => controller.abort();
-  }, [debouncedQuery, isOpen, retry, query]);
+  }, [debouncedQuery, isOpen, retry, query, locale]);
 
   const field = (
     <div
@@ -178,7 +184,7 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
         aria-haspopup="listbox"
         aria-activedescendant={selectedIndex >= 0 ? optionId(selectedIndex) : undefined}
         aria-describedby={query.trim() ? hintsId : undefined}
-        aria-label="Search all SmartTools"
+        aria-label={t("label")}
         role="combobox"
         autoComplete="off"
         className={cn(
@@ -189,13 +195,13 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
           setQuery(event.currentTarget.value);
           setActiveIndex(0);
         }}
-        placeholder="Search 150+ tools"
+        placeholder={t("placeholder")}
         ref={inputRef}
         value={query}
       />
       {query ? (
         <Button
-          aria-label="Clear search"
+          aria-label={t("clear")}
           className="rounded-full text-muted-foreground"
           onClick={() => {
             setQuery("");
@@ -228,14 +234,10 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
       )}
       style={mobile ? { maxHeight: `min(320px, 50dvh, ${Math.max(60, mobile.availableHeight - 70)}px)` } : undefined}
       role="region"
-      aria-label="Tool search results"
+      aria-label={t("resultsLabel")}
     >
       <div role="status" className="sr-only">
-        {loading
-          ? "Searching tools"
-          : state === "error"
-            ? "Search is temporarily unavailable"
-            : `${results.length} results`}
+        {loading ? t("searching") : state === "error" ? t("unavailable") : t("resultCount", { count: results.length })}
       </div>
       <div ref={scrollRef} className="min-h-0 overflow-y-auto overscroll-contain">
         {loading ? (
@@ -245,19 +247,19 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
             <SearchSkeleton />
           </>
         ) : state === "error" ? (
-          <SearchMessage title="Search is temporarily unavailable">
+          <SearchMessage title={t("unavailable")}>
             <Button variant="outline" onClick={() => setRetry((value) => value + 1)}>
-              Retry search
+              {t("retry")}
             </Button>
           </SearchMessage>
         ) : current && state === "ready" && !results.length ? (
-          <SearchMessage title={`No tools match “${debouncedQuery.trim()}”`} />
+          <SearchMessage title={t("noMatches", { query: debouncedQuery.trim() })} />
         ) : visibleResults.length ? (
           <Muted className="border-b border-border px-3 py-2 text-muted-foreground">
-            {results.length} {results.length === 1 ? "result" : "results"} for “{debouncedQuery.trim()}”
+            {t("queryResults", { count: results.length, query: debouncedQuery.trim() })}
           </Muted>
         ) : null}
-        <div ref={listRef} id={resultsId} role="listbox" aria-label="Matching tools" aria-busy={loading}>
+        <div ref={listRef} id={resultsId} role="listbox" aria-label={t("matching")} aria-busy={loading}>
           {visibleResults.map((result, index) => (
             <a
               id={optionId(index)}
@@ -286,21 +288,21 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
       </div>
       <div
         id={hintsId}
-        aria-label="Search keyboard shortcuts"
+        aria-label={t("shortcuts")}
         className="flex shrink-0 flex-wrap items-center gap-3 border-t border-border px-3 py-2 text-xs text-muted-foreground [&>span]:inline-flex [&>span]:items-center [&>span]:gap-1 [&_kbd]:rounded-sm [&_kbd]:border [&_kbd]:border-border [&_kbd]:bg-muted [&_kbd]:px-1 [&_kbd]:py-0.5 [&_kbd]:font-sans [&_kbd]:text-[11px] [&_kbd]:font-medium"
       >
         {visibleResults.length ? (
           <>
             <span>
-              <kbd>↑ ↓</kbd> Move
+              <kbd>↑ ↓</kbd> {t("move")}
             </span>
             <span>
-              <kbd>↵</kbd> Open
+              <kbd>↵</kbd> {t("open")}
             </span>
           </>
         ) : null}
         <span>
-          <kbd>Esc</kbd> Close
+          <kbd>Esc</kbd> {t("close")}
         </span>
       </div>
     </div>
@@ -312,7 +314,7 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
         mobile
           ? "compact:hidden"
           : cn(
-              "relative hidden w-[220px] compact:block compact:max-navigation:col-start-2 compact:max-navigation:row-start-1 compact:max-navigation:justify-self-center xl:w-[250px]",
+              "relative hidden min-w-0 w-[220px] compact:block compact:max-navigation:col-start-2 compact:max-navigation:row-start-1 compact:max-navigation:justify-self-center xl:w-[250px]",
               CENTERED_SEARCH_WIDTH_CLASS,
             )
       }
@@ -321,7 +323,7 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
     >
       {mobile ? (
         <button
-          aria-label="Search tools"
+          aria-label={t("searchTools")}
           aria-expanded={isOpen}
           aria-controls={isOpen && query.trim() ? resultsId : undefined}
           className={cn(
@@ -346,8 +348,8 @@ export function GlobalToolSearch({ mobile, publicSiteUrl }: { mobile?: MobileSea
           type="button"
         >
           <Search aria-hidden="true" className="size-[17px]" />
-          <span>Search 150+ tools</span>
-          <kbd className="ml-auto grid size-6 place-items-center rounded border border-border bg-card font-caption text-[11px] font-semibold max-navigation:hidden">
+          <span className="min-w-0 truncate">{t("placeholder")}</span>
+          <kbd className="ms-auto grid size-6 place-items-center rounded border border-border bg-card font-caption text-[11px] font-semibold max-navigation:hidden">
             /
           </kbd>
         </button>
@@ -382,13 +384,14 @@ function ToolIcon({ icon }: { icon: SearchResult["icon"] }) {
   );
 }
 function SearchMessage({ title, children }: { title: string; children?: ReactNode }) {
+  const t = useTranslations("Search");
   return (
     <ContentState
       density="compact"
       state={children ? "error" : "no-results"}
       headingLevel="h3"
       title={title}
-      description={children ? "Your query is safe. Try again." : "Check spelling or try another search."}
+      description={t(children ? "retryDescription" : "emptyDescription")}
       action={children}
     />
   );

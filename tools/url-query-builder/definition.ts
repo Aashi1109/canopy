@@ -1,3 +1,4 @@
+import { INPUT_EXECUTION_MESSAGES, URL_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
@@ -67,6 +68,35 @@ export default {
     empty: "Enter a base URL, then add any query parameters you need.",
     ready: "The URL is ready to copy or download.",
     running: "Building the URL…",
+  },
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+    ...URL_EXECUTION_MESSAGES,
+    "errors.invalid-query-row": "Each query row must use key=value format.",
+    "recovery.invalid-query-row": "Give every non-blank line a key, an equals sign, and a value.",
+
+    "workspace.queryParameters": "Query parameters",
+    "workspace.addParameter": "Add parameter",
+    "workspace.add": "Add",
+    "workspace.pasteMultiple": "Paste multiple",
+    "workspace.parametersToPaste": "Parameters to paste",
+    "workspace.cancel": "Cancel",
+    "workspace.key": "Key",
+    "workspace.value": "Value",
+    "workspace.lineNeedsParameter": "Each line needs a parameter key followed by = and its value.",
+    "workspace.emptyImport": "Enter at least one key=value line.",
+    "workspace.invalidImport": "Each line needs a parameter key followed by = and its value. For example: tag=dev.",
+    "workspace.correctImport":
+      "Correct the pasted lines, or clear them to discard this import. Your other parameter rows will be kept.",
+    "workspace.addImportHelp": "One key=value pair per line. These will be added to the rows below.",
+    "workspace.applyParameters": "Apply parameters",
+    "workspace.addParameters": "Add parameters",
+    "workspace.parameterKey": "Parameter key {number, number}",
+    "workspace.parameterValue": "Value {number, number}",
+    "workspace.removeParameter": "Remove parameter {number, number}",
+    "workspace.keyExample": "e.g. tag",
+    "workspace.valueExample": "e.g. dev",
+    "workspace.urlDetails": "URL details",
   },
   content: {
     howToUse: [

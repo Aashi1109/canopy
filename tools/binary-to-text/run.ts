@@ -14,6 +14,10 @@ export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => {
       "invalid-binary",
       "Binary input must contain eight-bit bytes separated by spaces.",
       "Group the bits into bytes of exactly eight 0s and 1s, separated by whitespace.",
+      {
+        messageRef: { key: "execution.errors.invalid-binary" },
+        recoveryMessage: { key: "execution.recovery.invalid-binary" },
+      },
     );
   }
   try {
@@ -29,6 +33,10 @@ export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => {
       "invalid-utf8",
       "Binary input does not contain valid UTF-8 text.",
       "Check that every byte of each multi-byte character is present and in order.",
+      {
+        messageRef: { key: "execution.errors.invalid-utf8" },
+        recoveryMessage: { key: "execution.recovery.invalid-utf8" },
+      },
     );
   }
 };

@@ -1,5 +1,4 @@
 export { textInputFileIssue, validateFileSelection } from "@/lib/tool-framework/fileSelection";
-import { validateFileSelection } from "@/lib/tool-framework/fileSelection";
 
 const FILE_IDS = new WeakMap<File, string>();
 

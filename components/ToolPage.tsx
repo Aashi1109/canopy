@@ -37,6 +37,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/index.tsx";
 import { Link2, Loader2, Undo2 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import type { Locale } from "@/lib/i18n/config";
 import {
   createContext,
   lazy,
@@ -63,8 +65,14 @@ import {
   type WorkspaceToolbarActions,
 } from "@/components/ToolWorkspace";
 import { createExecute } from "@/lib/tool-framework/host";
-import type { ToolResult } from "@/lib/tool-framework/result";
-import { ToolError, type ToolRun, type ToolRunInput } from "@/lib/tool-framework/run";
+import { translateToolResult, type ToolResult } from "@/lib/tool-framework/result";
+import {
+  ToolError,
+  parseToolErrorDetails,
+  translateToolError,
+  type ToolRun,
+  type ToolRunInput,
+} from "@/lib/tool-framework/run";
 import type { SettingsOf, SettingsSpec } from "@/lib/tool-framework/settings";
 import type { ToolInputSpec, ToolSpec } from "@/lib/tool-framework/spec";
 import { isLargeTextFile } from "@/lib/tool-framework/textFileInput";
@@ -210,6 +218,7 @@ function useWorkerHost() {
           state.error?.code ?? "processing-failed",
           state.error?.message ?? "This tool could not finish.",
           state.error?.recovery,
+          state.error?.details,
         ),
       );
       return;
@@ -276,6 +285,7 @@ function readServerResult(payload: unknown): ToolResult {
     typeof code === "string" ? code : "processing-failed",
     typeof message === "string" ? message : "This tool could not finish.",
     typeof recovery === "string" ? recovery : undefined,
+    parseToolErrorDetails(readExport(error, "details")),
   );
 }
 
@@ -309,6 +319,7 @@ async function runOnServer(
 // ---------------------------------------------------------------------------
 
 interface ToolChrome {
+  readonly errorLocation?: { line: number; column: number };
   readonly cleanupWorkerArtifacts: () => void;
   readonly onSettingChange: (key: string, value: unknown) => void;
   readonly onValidationChange: (reason: string | null) => void;
@@ -339,6 +350,7 @@ function useRuntime() {
 }
 
 function usePrimaryAction(): WorkspaceProps["primaryAction"] {
+  const t = useTranslations("Workbench");
   const chrome = useToolChrome();
   const runtime = useRuntime();
   const running = runtime.lifecycle === "running";
@@ -357,7 +369,7 @@ function usePrimaryAction(): WorkspaceProps["primaryAction"] {
               chrome.validationReason !== null ||
               runtime.lifecycle === "empty" ||
               runtime.lifecycle === "invalid",
-            label: chrome.spec.trigger.mode === "manual" ? chrome.spec.trigger.actionLabel : "Run",
+            label: chrome.spec.trigger.mode === "manual" ? chrome.spec.trigger.actionLabel : t("run"),
             onCancel: runtime.cancelRun,
             onRun: runtime.run,
             running,
@@ -365,6 +377,7 @@ function usePrimaryAction(): WorkspaceProps["primaryAction"] {
         : null,
     [
       chrome.spec.trigger,
+      t,
       chrome.validationReason,
       hasPrimaryAction,
       running,
@@ -376,12 +389,13 @@ function usePrimaryAction(): WorkspaceProps["primaryAction"] {
 }
 
 function ToolToolbar(): ReactElement {
+  const t = useTranslations("Workbench");
   const chrome = useToolChrome();
   const runtime = useRuntime();
   const primaryAction = usePrimaryAction();
   const examples = chrome.spec.content.examples ?? [];
   const exampleIcon = chrome.toolbarActions?.exampleIcon;
-  const exampleLabel = chrome.toolbarActions?.exampleLabel ?? "Example";
+  const exampleLabel = chrome.toolbarActions?.exampleLabel ?? t("example");
   const exampleVariant = chrome.toolbarActions?.exampleVariant ?? "link";
   const running = runtime.lifecycle === "running";
   const [resetSnapshot, setResetSnapshot] = useState<{
@@ -405,7 +419,7 @@ function ToolToolbar(): ReactElement {
     completed: chrome.completedShare.current,
     initialize: initializeShare,
     run: runtime.run,
-    onError: (message) => toast.error("Share link unavailable", { description: message }),
+    onError: () => toast.error(t("shareUnavailable"), { description: t("shareUnavailableHint") }),
   });
 
   const loadExample = (index: number) => {
@@ -456,7 +470,7 @@ function ToolToolbar(): ReactElement {
         </Button>
       ) : examples.length > 1 ? (
         <Select
-          aria-label="Choose an example"
+          aria-label={t("example")}
           className={
             exampleVariant === "outline"
               ? "w-auto"
@@ -490,12 +504,12 @@ function ToolToolbar(): ReactElement {
                     if (!sharing.url) return;
                     try {
                       await navigator.clipboard.writeText(sharing.url);
-                      toast.success("Share link copied", {
-                        description: "Anyone with the link can view these inputs and settings.",
+                      toast.success(t("shareCopied"), {
+                        description: t("shareVisibility"),
                       });
                     } catch {
-                      toast.error("Could not copy the link", {
-                        description: "Copy the URL from your address bar instead.",
+                      toast.error(t("shareCopyFailed"), {
+                        description: t("shareCopyHint"),
                       });
                     }
                   }}
@@ -504,23 +518,21 @@ function ToolToolbar(): ReactElement {
                   variant="outline"
                 >
                   <Link2 aria-hidden="true" />
-                  Copy link
+                  {t("copyLink")}
                 </Button>
               </span>
             </TooltipTrigger>
-            <TooltipContent>
-              The URL updates after 300 ms and a successful result. It includes your inputs and settings.
-            </TooltipContent>
+            <TooltipContent>{t("shareHint")}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       ) : null}
       <Button disabled={running || resetSnapshot !== null} onClick={reset} size="xs" type="button" variant="outline">
-        Reset
+        {t("reset")}
       </Button>
       {resetSnapshot ? (
         <Button disabled={running} onClick={undoReset} size="xs" type="button" variant="ghost">
           <Undo2 aria-hidden="true" />
-          Undo reset
+          {t("undo")}
         </Button>
       ) : null}
       {primaryAction && !chrome.toolbarActions?.primaryActionInWorkspace ? (
@@ -539,7 +551,7 @@ function ToolToolbar(): ReactElement {
             <Loader2 aria-hidden="true" className="size-4 animate-spin" />
           ) : null}
           {primaryAction.running && primaryAction.onCancel
-            ? "Cancel"
+            ? t("cancel")
             : (chrome.toolbarActions?.primaryActionLabel ?? primaryAction.label)}
         </Button>
       ) : null}
@@ -555,6 +567,18 @@ function ToolWorkspaceSlot(): ReactElement {
   const running = runtime.lifecycle === "running";
   const previousResult = useRef(runtime.result);
   const notifiedResult = useRef<ToolResult | null>(null);
+  const dirty =
+    runtime.input.text !== "" ||
+    Boolean(runtime.input.secondary) ||
+    runtime.input.files.length > 0 ||
+    Object.entries(chrome.spec.settings.fields).some(
+      ([key, field]) => JSON.stringify(chrome.settings[key]) !== JSON.stringify(field.default),
+    );
+
+  useEffect(() => {
+    const workspace = document.getElementById("tool-workspace");
+    if (workspace) workspace.dataset.languageSwitchState = running ? "running" : dirty ? "dirty" : "clean";
+  }, [dirty, running]);
 
   useEffect(() => {
     if (runtime.lifecycle !== "completed" || !runtime.result || notifiedResult.current === runtime.result) return;
@@ -585,6 +609,7 @@ function ToolWorkspaceSlot(): ReactElement {
         key={chrome.workspaceKey}
         disabled={chrome.spec.trigger.mode !== "live" && running && runtime.result === null}
         error={runtime.error || undefined}
+        errorLocation={runtime.error ? chrome.errorLocation : undefined}
         input={runtime.input}
         lifecycle={runtime.lifecycle}
         onInputChange={runtime.setInput}
@@ -661,6 +686,7 @@ function toWorkbenchDefinition(spec: ToolSpec, definitionKey: string): ToolDefin
 }
 
 export interface ToolPageProps {
+  availableLocales?: readonly Locale[];
   account: { returnTo: string; user: { name: string; isAdmin?: boolean } | null };
   category: string;
   /** The tool's folder under `tools/`. Never the public slug. */
@@ -673,7 +699,11 @@ export interface ToolPageProps {
 }
 
 export default function ToolPage(props: ToolPageProps): ReactElement {
-  return <ToolPageState key={props.definitionKey} {...props} />;
+  return (
+    <div data-tool-locales={JSON.stringify(props.availableLocales ?? ["en"])}>
+      <ToolPageState key={props.definitionKey} {...props} />
+    </div>
+  );
 }
 
 function ToolPageState({
@@ -686,6 +716,9 @@ function ToolPageState({
   spec,
   title,
 }: ToolPageProps): ReactElement {
+  const t = useTranslations("Tool.runtime");
+  const framework = useTranslations("Workbench");
+  const [errorLocation, setErrorLocation] = useState<{ line: number; column: number }>();
   const [settings, setSettings] = useState<RuntimeSettings>(() => defaultSettings(spec));
   const [validationReason, setValidationReason] = useState<string | null>(null);
   const [toolbarActions, setToolbarActions] = useState<WorkspaceToolbarActions | null>(null);
@@ -729,48 +762,66 @@ function ToolPageState({
       _runtimeSettings: ToolSettings,
       signal: AbortSignal,
     ): Promise<ToolExecutionOutcome<ToolResult>> => {
-      const complete = (outcome: ToolExecutionOutcome<ToolResult>) => {
-        signal.throwIfAborted();
-        if (spec.sharing) completedShare.current = { input, settings };
-        return outcome;
-      };
-      const conversion = resolveImageConversion(spec, settings);
-      const runKey = conversion.choices.length ? conversion.key : definitionKey;
-      const run = await loadMainThreadRun(runKey);
-      signal.throwIfAborted();
-      if (run) {
-        // `parseSettings` treats this as `unknown` and coerces every declared
-        // field, so the runtime's flat-scalar view is not the trust boundary.
-        return complete(
-          await createExecute(conversion.spec, run)(
-            await toRunInput(input),
-            conversion.settings as ToolSettings,
-            signal,
-          ),
-        );
-      }
-
+      setErrorLocation(undefined);
       try {
-        const result = await runOnWorker(
-          {
-            files: toWorkerFiles(input.files),
-            key: runKey,
-            secondary: input.secondary,
-            settings: conversion.settings,
-            text: input.text,
-          },
-          signal,
-        );
-        return complete(toOutcome(result));
-      } catch (error: unknown) {
-        // The worker reports a folder with no `run.worker` as an unknown tool;
-        // that is the signal to fall through to the server host.
-        if (!(error instanceof ToolError) || error.code !== "unknown-tool") throw error;
-      }
+        const complete = (outcome: ToolExecutionOutcome<ToolResult>) => {
+          signal.throwIfAborted();
+          if (spec.sharing) completedShare.current = { input, settings };
+          const result = translateToolResult(outcome.result, (message, fallback) =>
+            t.has(message.key) ? t(message.key, message.values) : fallback,
+          );
+          return { ...outcome, result, facts: result.stats ?? outcome.facts };
+        };
+        const conversion = resolveImageConversion(spec, settings);
+        const runKey = conversion.choices.length ? conversion.key : definitionKey;
+        const run = await loadMainThreadRun(runKey);
+        signal.throwIfAborted();
+        if (run) {
+          // `parseSettings` treats this as `unknown` and coerces every declared
+          // field, so the runtime's flat-scalar view is not the trust boundary.
+          return complete(
+            await createExecute(conversion.spec, run)(
+              await toRunInput(input),
+              conversion.settings as ToolSettings,
+              signal,
+            ),
+          );
+        }
 
-      return complete(toOutcome(await runOnServer(runKey, input, conversion.settings, signal)));
+        try {
+          const result = await runOnWorker(
+            {
+              files: toWorkerFiles(input.files),
+              key: runKey,
+              secondary: input.secondary,
+              settings: conversion.settings,
+              text: input.text,
+            },
+            signal,
+          );
+          return complete(toOutcome(result));
+        } catch (error: unknown) {
+          // The worker reports a folder with no `run.worker` as an unknown tool;
+          // that is the signal to fall through to the server host.
+          if (!(error instanceof ToolError) || error.code !== "unknown-tool") throw error;
+        }
+
+        return complete(toOutcome(await runOnServer(runKey, input, conversion.settings, signal)));
+      } catch (error) {
+        if (signal.aborted) throw error;
+        if (error instanceof ToolError) {
+          const { line, column } = error.details ?? {};
+          if (typeof line === "number" && typeof column === "number") setErrorLocation({ line, column });
+          throw translateToolError(
+            error,
+            (message) => (t.has(message.key) ? t(message.key, message.values) : undefined),
+            (message) => (framework.has(message.key) ? framework(message.key, message.values) : undefined),
+          );
+        }
+        throw error;
+      }
     },
-    [definitionKey, runOnWorker, settings, spec],
+    [definitionKey, runOnWorker, settings, spec, t, framework],
   );
 
   // Memoised on purpose: `useToolRuntime` keys its effects on the whole spec, so
@@ -797,10 +848,14 @@ function ToolPageState({
 
   const chrome = useMemo<ToolChrome>(
     () => ({
+      errorLocation,
       cleanupWorkerArtifacts,
       onSettingChange,
       onValidationChange: setValidationReason,
-      progress,
+      progress:
+        progress?.stageMessage && t.has(progress.stageMessage.key)
+          ? { ...progress, stage: t(progress.stageMessage.key, progress.stageMessage.values) }
+          : progress,
       resetPageState,
       settings,
       spec,
@@ -814,6 +869,8 @@ function ToolPageState({
       completedShare,
     }),
     [
+      errorLocation,
+      t,
       cleanupWorkerArtifacts,
       onSettingChange,
       progress,
@@ -835,6 +892,7 @@ function ToolPageState({
       <UniversalWorkbench
         account={account}
         category={category}
+        categoryKey={spec.category}
         content={spec.content}
         definition={toWorkbenchDefinition(spec, definitionKey)}
         description={description}

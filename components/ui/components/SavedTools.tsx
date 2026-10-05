@@ -1,14 +1,25 @@
 "use client";
+import { useLocale, useTranslations } from "next-intl";
+import { localizeHref, unlocalizedPathname, type Locale } from "@/lib/i18n/config";
 
 import { ArrowRight, Bookmark, Braces, Files, LoaderCircle, X } from "lucide-react";
 import { Dialog, Popover } from "radix-ui";
-import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { Button } from "./button.tsx";
 import { ContentState } from "./ContentState.tsx";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip.tsx";
 import { cn } from "../lib/utils.ts";
 import { matchBreakpoint } from "../lib/breakpoints.ts";
-import { SavedToolsStore, STORAGE_KEY, type SavedTool } from "../lib/saved-tools.ts";
+import { SavedToolsStore, requestSavedTools, STORAGE_KEY, type SavedTool } from "../lib/saved-tools.ts";
 
 const ACTIVE_SAVE_BUTTON_CLASS_NAME =
   "border-primary/25 bg-accent text-primary ring-1 ring-inset ring-primary/25 hover:bg-primary/15 hover:text-primary active:bg-primary/20 active:text-primary";
@@ -22,13 +33,20 @@ type SavedContextValue = {
 const SavedContext = createContext<SavedContextValue | null>(null);
 
 export function SavedToolsProvider({ children, publicSiteUrl }: { children: ReactNode; publicSiteUrl?: string }) {
-  const siteHref = (path: string) => (publicSiteUrl ? new URL(path, publicSiteUrl).href : path);
-  const [store] = useState(
+  const t = useTranslations("Saved");
+  const locale = useLocale() as Locale;
+  const siteHref = (path: string, toolLocale: Locale = locale) =>
+    publicSiteUrl ? new URL(localizeHref(path, toolLocale), publicSiteUrl).href : localizeHref(path, toolLocale);
+  const store = useMemo(
     () =>
-      new SavedToolsStore({
-        getItem: (key) => window.localStorage.getItem(key),
-        setItem: (key, value) => window.localStorage.setItem(key, value),
-      }),
+      new SavedToolsStore(
+        {
+          getItem: (key) => window.localStorage.getItem(key),
+          setItem: (key, value) => window.localStorage.setItem(key, value),
+        },
+        (operation) => requestSavedTools(operation, locale),
+      ),
+    [locale],
   );
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
   const [open, setOpen] = useState(false);
@@ -78,7 +96,7 @@ export function SavedToolsProvider({ children, publicSiteUrl }: { children: Reac
     }
     trigger.current = element;
     anchorRect.current = element.getBoundingClientRect();
-    setCurrentHref(window.location.pathname);
+    setCurrentHref(unlocalizedPathname(window.location.pathname));
     setRemoved(null);
     setNotice("");
     setOpen(true);
@@ -95,16 +113,16 @@ export function SavedToolsProvider({ children, publicSiteUrl }: { children: Reac
     const tool = state.tools.find((candidate) => candidate.toolId === id);
     return tool ? [tool] : [];
   });
-  const currentTool = state.tools.find((tool) => tool.href === currentHref);
+  const currentTool = state.tools.find((tool) => unlocalizedPathname(tool.href) === currentHref);
   const body = (
     <TooltipProvider>
       <div className="flex h-11 items-center gap-2 px-2">
-        <span className="text-base font-semibold">Saved tools</span>
+        <span className="text-base font-semibold">{t("title")}</span>
         {state.status === "ready" ? <span className="text-sm text-muted-foreground">{saved.length}</span> : null}
         <Button
           ref={closeButton}
-          aria-label="Close Saved"
-          className="ml-auto text-muted-foreground"
+          aria-label={t("close")}
+          className="ms-auto text-muted-foreground"
           onClick={() => setOpen(false)}
           size="icon"
           variant="ghost"
@@ -118,20 +136,20 @@ export function SavedToolsProvider({ children, publicSiteUrl }: { children: Reac
             density="compact"
             state="error"
             headingLevel="h3"
-            title="Couldn’t load saved tools"
-            description={state.error}
+            title={t("loadFailed")}
+            description={t("syncError")}
             announcement="polite"
             action={
               <Button onClick={() => void store.refresh()} size="sm" variant="outline">
-                Try again
+                {t("retry")}
               </Button>
             }
           />
         ) : (
           <div role="alert" className="mx-2 my-2 rounded-lg bg-destructive/10 p-3 text-sm">
-            <p>{state.error}</p>
+            <p>{t("changeError")}</p>
             <Button onClick={() => void store.refresh()} size="sm" variant="outline" className="mt-2">
-              Try again
+              {t("retry")}
             </Button>
           </div>
         )
@@ -139,7 +157,7 @@ export function SavedToolsProvider({ children, publicSiteUrl }: { children: Reac
       {state.status === "loading" ? (
         <p role="status" className="flex items-center gap-2 px-2 py-6 text-sm text-muted-foreground">
           <LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
-          Loading saved tools…
+          {t("loading")}
         </p>
       ) : null}
       {state.status === "ready" ? (
@@ -150,13 +168,13 @@ export function SavedToolsProvider({ children, publicSiteUrl }: { children: Reac
             </div>
           ) : null}
           {saved.length ? (
-            <div className="max-h-[min(384px,45dvh)] overflow-y-auto overscroll-contain" aria-label="Saved tools list">
+            <div className="max-h-[min(384px,45dvh)] overflow-y-auto overscroll-contain" aria-label={t("listLabel")}>
               {saved.map((tool) => {
                 const Icon = tool.href.startsWith("/devtools/") ? Braces : Files;
                 return (
                   <div key={tool.toolId} className="flex min-h-16 items-center gap-1 rounded-lg px-1">
                     <a
-                      href={siteHref(tool.href)}
+                      href={siteHref(tool.href, tool.locale)}
                       onClick={() => setOpen(false)}
                       className="group/saved-tool flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-3 no-underline outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     >
@@ -176,7 +194,7 @@ export function SavedToolsProvider({ children, publicSiteUrl }: { children: Reac
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          aria-label={`Remove ${tool.name} from Saved`}
+                          aria-label={t("removeLabel", { name: tool.name })}
                           aria-pressed
                           disabled={state.pending}
                           size="icon"
@@ -185,7 +203,7 @@ export function SavedToolsProvider({ children, publicSiteUrl }: { children: Reac
                           onClick={async () => {
                             if (await store.change(tool.toolId, false)) {
                               setRemoved(tool);
-                              setNotice(`${tool.name} removed from Saved.`);
+                              setNotice(t("removed", { name: tool.name }));
                               closeButton.current?.focus();
                             }
                           }}
@@ -193,17 +211,21 @@ export function SavedToolsProvider({ children, publicSiteUrl }: { children: Reac
                           <Bookmark aria-hidden="true" className="size-[18px] fill-current" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Remove from Saved</TooltipContent>
+                      <TooltipContent>{t("remove")}</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button asChild size="icon" variant="ghost" className="text-primary">
-                          <a aria-label={`Open ${tool.name}`} href={siteHref(tool.href)} onClick={() => setOpen(false)}>
+                          <a
+                            aria-label={t("open", { name: tool.name })}
+                            href={siteHref(tool.href, tool.locale)}
+                            onClick={() => setOpen(false)}
+                          >
                             <ArrowRight aria-hidden="true" className="size-[18px]" />
                           </a>
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Open {tool.name}</TooltipContent>
+                      <TooltipContent>{t("open", { name: tool.name })}</TooltipContent>
                     </Tooltip>
                   </div>
                 );
@@ -213,12 +235,12 @@ export function SavedToolsProvider({ children, publicSiteUrl }: { children: Reac
             <ContentState
               density="compact"
               headingLevel="h3"
-              title="Your tools, one click away."
-              description="Choose Save on a tool to keep a shortcut here."
+              title={t("emptyTitle")}
+              description={t("emptyDescription")}
               action={
                 <Button asChild variant="outline" size="sm">
                   <a href={siteHref("/")} onClick={() => setOpen(false)}>
-                    Browse tools
+                    {t("browse")}
                   </a>
                 </Button>
               }
@@ -226,19 +248,19 @@ export function SavedToolsProvider({ children, publicSiteUrl }: { children: Reac
           )}
           {removed ? (
             <div className="mx-2 my-2 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-accent px-3 py-2 text-sm">
-              <span>{removed.name} removed.</span>
+              <span>{t("removed", { name: removed.name })}</span>
               <Button
                 variant="ghost"
                 size="sm"
                 disabled={state.pending}
                 onClick={async () => {
                   if (await store.change(removed.toolId, true)) {
-                    setNotice(`${removed.name} restored.`);
+                    setNotice(t("restored", { name: removed.name }));
                     setRemoved(null);
                   }
                 }}
               >
-                Undo
+                {t("undo")}
               </Button>
             </div>
           ) : null}
@@ -256,7 +278,7 @@ export function SavedToolsProvider({ children, publicSiteUrl }: { children: Reac
         <Popover.Anchor virtualRef={virtualAnchor} />
         <Popover.Portal>
           <Popover.Content
-            aria-label="Saved tools"
+            aria-label={t("title")}
             align="end"
             side="bottom"
             sideOffset={8}
@@ -275,8 +297,8 @@ export function SavedToolsProvider({ children, publicSiteUrl }: { children: Reac
             onCloseAutoFocus={restoreFocus}
             className="fixed inset-x-0 bottom-0 z-[80] max-h-[85dvh] overflow-y-auto rounded-t-2xl border border-border bg-card p-3 pb-[max(16px,env(safe-area-inset-bottom))] text-foreground shadow-lg outline-none"
           >
-            <Dialog.Title className="sr-only">Saved tools</Dialog.Title>
-            <Dialog.Description className="sr-only">Open a saved tool or remove its bookmark.</Dialog.Description>
+            <Dialog.Title className="sr-only">{t("title")}</Dialog.Title>
+            <Dialog.Description className="sr-only">{t("description")}</Dialog.Description>
             {mobile ? body : null}
           </Dialog.Content>
         </Dialog.Portal>
@@ -294,6 +316,7 @@ export function SavedToolsTrigger({
   menu?: boolean;
   onActivate?: () => void;
 }) {
+  const t = useTranslations("Saved");
   const saved = useContext(SavedContext);
   return (
     <Button
@@ -309,7 +332,7 @@ export function SavedToolsTrigger({
       }}
     >
       <Bookmark aria-hidden="true" className="size-4 text-muted-foreground" />
-      {menu ? "Saved tools" : "Saved"}
+      {t(menu ? "title" : "short")}
     </Button>
   );
 }
@@ -323,12 +346,16 @@ export function SaveToolButton({
   iconOnly?: boolean;
   className?: string;
 }) {
+  const t = useTranslations("Saved");
   const saved = useContext(SavedContext);
   const [message, setMessage] = useState("");
-  const tool = saved?.state.tools.find((item) => item.href === href);
+  const [failed, setFailed] = useState(false);
+  const tool = saved?.state.tools.find(
+    (item) => unlocalizedPathname(item.href) === (href ? unlocalizedPathname(href) : href),
+  );
   if (!saved || !tool) return null;
   const active = saved.state.ids.includes(tool.toolId);
-  const label = `${active ? "Remove" : "Save"} ${tool.name}${active ? " from Saved" : ""}`;
+  const label = t(active ? "removeLabel" : "saveLabel", { name: tool.name });
   const control = (
     <Button
       aria-label={label}
@@ -339,15 +366,12 @@ export function SaveToolButton({
       className={cn(active && ACTIVE_SAVE_BUTTON_CLASS_NAME, className)}
       onClick={async () => {
         const success = await saved.store.change(tool.toolId, !active);
-        setMessage(
-          success
-            ? `${tool.name} ${active ? "removed from Saved" : "saved"}.`
-            : "Couldn’t save this change. Open Saved to retry.",
-        );
+        setFailed(!success);
+        setMessage(success ? t(active ? "removed" : "saved", { name: tool.name }) : t("saveFailed"));
       }}
     >
       <Bookmark aria-hidden="true" className={active ? "fill-current" : undefined} />
-      {!iconOnly && (active ? "Saved" : "Save tool")}
+      {!iconOnly && t(active ? "short" : "save")}
     </Button>
   );
   return (
@@ -358,10 +382,7 @@ export function SaveToolButton({
           <TooltipContent>{label}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      <span
-        role="status"
-        className={message.startsWith("Couldn’t") ? "mt-1 max-w-48 text-xs text-destructive" : "sr-only"}
-      >
+      <span role="status" className={failed ? "mt-1 max-w-48 text-xs text-destructive" : "sr-only"}>
         {message}
       </span>
     </span>

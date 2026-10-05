@@ -40,12 +40,15 @@ function outputFormat(value: string): OutputImageFormat {
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const selection = validateImageSelection(ctx.input.files.map((file) => ({ size: file.size })));
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
 
   const ordered: readonly ToolRunFile[] = ctx.input.items
     ? ctx.input.items.map((item) => {
         const file = ctx.input.files.find((candidate) => candidate.id === item.id);
-        if (!file) throw new ToolError("invalid-order", "The selected image order is invalid.");
+        if (!file)
+          throw new ToolError("invalid-order", "The selected image order is invalid.", undefined, {
+            messageRef: { key: "errors.invalidOrder" },
+          });
         return file;
       })
     : ctx.input.files;
@@ -55,7 +58,12 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const background = ctx.settings.background;
   const dimensions: { height: number; width: number }[] = [];
   for (let index = 0; index < ordered.length; index += 1) {
-    ctx.progress({ completed: index, total, stage: "Reading image dimensions" });
+    ctx.progress({
+      completed: index,
+      total,
+      stage: "Reading image dimensions",
+      stageMessage: { key: "progress.readingImageDimensions" },
+    });
     const decoded = await decodeImage(ordered[index], ALLOWED);
     dimensions.push({ width: decoded.image.width, height: decoded.image.height });
   }
@@ -84,7 +92,12 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   let offset = 0;
   for (let index = 0; index < ordered.length; index += 1) {
     ctx.signal.throwIfAborted();
-    ctx.progress({ completed: index, total, stage: "Compositing image" });
+    ctx.progress({
+      completed: index,
+      total,
+      stage: "Compositing image",
+      stageMessage: { key: "progress.compositingImage" },
+    });
     const image = (await decodeImage(ordered[index], ALLOWED)).image;
     const placed =
       ctx.settings.layout === "grid" && ctx.settings.cellSizing !== "centered"
@@ -122,7 +135,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     mime: mimeFor(format),
     source: new Uint8Array(buffer),
   });
-  ctx.progress({ completed: total, total, stage: "Image complete" });
+  ctx.progress({ completed: total, total, stage: "Image complete", stageMessage: { key: "progress.imageComplete" } });
 
   return {
     render: "files",

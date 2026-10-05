@@ -1,6 +1,12 @@
+import { CSV_EXECUTION_MESSAGES } from "../../lib/devtools/shared/csv-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CSV_EXECUTION_MESSAGES,
+    "csv.errors.sortColumnMissing": "Sort column was not found.",
+    "csv.recovery.sortColumn": "Use the exact header text, or the one-based column number.",
+  },
   toolId: "devtools.csv-sorter",
   app: "devtools",
   category: "csv-data-tools",

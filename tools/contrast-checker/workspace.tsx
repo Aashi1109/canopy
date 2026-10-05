@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 import { ArrowDownUp } from "lucide-react";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import { ResultActions } from "@/components/ResultView";
@@ -17,6 +18,7 @@ import { contrast, suggestForeground, CONTRAST_CHECKS } from "./model";
 import type { ToolResult } from "@/lib/tool-framework/result";
 
 export default function ContrastWorkspace(props: WorkspaceProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const foreground = String(props.settings.foreground ?? "#334155");
   const background = String(props.settings.background ?? "#FFFFFF");
   const canvas = String(props.settings.canvas ?? "#FFFFFF");
@@ -30,7 +32,10 @@ export default function ContrastWorkspace(props: WorkspaceProps) {
   try {
     measured = contrast(foreground, background, canvas);
   } catch (cause) {
-    error = cause instanceof Error ? cause.message : "Check your colors.";
+    error =
+      cause instanceof Error && "code" in cause && cause.code === "canvas"
+        ? toolText("workspace.opaqueCanvas")
+        : toolText("workspace.invalidColor");
   }
   const update = (key: string, value: string) => props.onSettingChange(key, value);
   const report: ToolResult | null =
@@ -43,8 +48,8 @@ export default function ContrastWorkspace(props: WorkspaceProps) {
       : null;
   return (
     <DesignWorkspace
-      title="Text contrast"
-      controlTitle="Color pair"
+      title={toolText("workspace.text_contrast_8cdead")}
+      controlTitle={toolText("workspace.colorPair")}
       previewActions={
         <ResultActions
           result={report}
@@ -62,10 +67,12 @@ export default function ContrastWorkspace(props: WorkspaceProps) {
                     {measured.ratio.toFixed(2)}
                     <span className="text-lg text-muted-foreground"> : 1</span>
                   </span>
-                  <p className="mt-1 text-xs text-muted-foreground">WCAG 2 contrast ratio</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{toolText("workspace.wcag_2_contrast_2df30a")}</p>
                 </div>
                 <Badge variant={measured.ratio >= 4.5 ? "default" : "secondary"}>
-                  {measured.ratio >= 4.5 ? "AA normal text passes" : "AA normal text fails"}
+                  {measured.ratio >= 4.5
+                    ? toolText("workspace.aa_normal_text_feedfb")
+                    : toolText("workspace.aa_normal_text_155fc3")}
                 </Badge>
               </div>
               <div
@@ -74,7 +81,7 @@ export default function ContrastWorkspace(props: WorkspaceProps) {
               >
                 <p className="text-2xl font-semibold leading-snug">
                   <InlineTextEditor
-                    label="Preview heading"
+                    label={toolText("workspace.preview_heading_4a0861")}
                     value={sample}
                     onChange={(value) => update("sample", value)}
                     multiline
@@ -84,7 +91,7 @@ export default function ContrastWorkspace(props: WorkspaceProps) {
                 </p>
                 <p className="mt-4 max-w-xl text-base leading-relaxed">
                   <InlineTextEditor
-                    label="Preview body text"
+                    label={toolText("workspace.preview_body_text_46356b")}
                     value={bodySample}
                     onChange={(value) => update("bodySample", value)}
                     multiline
@@ -93,28 +100,35 @@ export default function ContrastWorkspace(props: WorkspaceProps) {
                   />
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-x-5 gap-y-3" aria-label="Contrast checks">
+              <div
+                className="grid grid-cols-2 gap-x-5 gap-y-3"
+                aria-label={toolText("workspace.contrast_checks_06afb9")}
+              >
                 {CONTRAST_CHECKS.map((check) => (
                   <div
-                    key={check.label}
+                    key={toolText(`workspace.checks.${CONTRAST_CHECKS.indexOf(check)}`)}
                     className="flex flex-wrap justify-between gap-x-3 gap-y-1 border-b border-border pb-3 text-sm"
                   >
                     <div>
-                      {check.label}
-                      <span className="block text-xs text-muted-foreground">Minimum {check.minimum}:1</span>
+                      {toolText(`workspace.checks.${CONTRAST_CHECKS.indexOf(check)}`)}
+                      <span className="block text-xs text-muted-foreground">
+                        {toolText("workspace.minimumRatio", { value: check.minimum })}
+                      </span>
                     </div>
                     <span
                       className={
                         measured.ratio >= check.minimum ? "font-medium text-success" : "font-medium text-destructive"
                       }
                     >
-                      {measured.ratio >= check.minimum ? "Pass" : "Fail"}
+                      {measured.ratio >= check.minimum
+                        ? toolText("workspace.pass_ebdf8c")
+                        : toolText("workspace.fail_09230b")}
                     </span>
                   </div>
                 ))}
               </div>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Large text: 24px or larger; bold text: 18.67px or larger. Pass/fail uses the full precision ratio.
+                {toolText("workspace.large_text_24px_61dfed")}
               </p>
             </>
           ) : (
@@ -129,7 +143,7 @@ export default function ContrastWorkspace(props: WorkspaceProps) {
           <div className="flex flex-col gap-2">
             <ColorControl
               layout="inline"
-              label="Text color"
+              label={toolText("workspace.text_color_4a69d0")}
               value={foreground}
               onChange={(value) => update("foreground", value)}
             />
@@ -140,7 +154,7 @@ export default function ContrastWorkspace(props: WorkspaceProps) {
                     variant="outline"
                     size="icon-sm"
                     className="self-center"
-                    aria-label="Swap text and background"
+                    aria-label={toolText("workspace.swap_text_and_ead1c1")}
                     onClick={() => {
                       update("foreground", background);
                       update("background", foreground);
@@ -149,12 +163,12 @@ export default function ContrastWorkspace(props: WorkspaceProps) {
                     <ArrowDownUp aria-hidden="true" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Swap text and background</TooltipContent>
+                <TooltipContent>{toolText("workspace.swap_text_and_ead1c1")}</TooltipContent>
               </Tooltip>
             </TooltipProvider>
             <ColorControl
               layout="inline"
-              label="Background color"
+              label={toolText("workspace.background_color_3e314d")}
               value={background}
               onChange={(value) => update("background", value)}
             />
@@ -164,19 +178,17 @@ export default function ContrastWorkspace(props: WorkspaceProps) {
               variant="outline"
               onClick={() => update("foreground", suggestForeground(foreground, background, canvas))}
             >
-              Find a passing text color
+              {toolText("workspace.find_a_passing_0f1b5c")}
             </Button>
           ) : null}
           <div>
             <ColorControl
               layout="inline"
-              label="Canvas behind transparency"
+              label={toolText("workspace.canvas_behind_transparency_1dcdfd")}
               value={canvas}
               onChange={(value) => update("canvas", value)}
             />
-            <p className="mt-2 text-xs text-muted-foreground">
-              Use an opaque color. Transparent layers are composited over this surface.
-            </p>
+            <p className="mt-2 text-xs text-muted-foreground">{toolText("workspace.use_an_opaque_e39511")}</p>
           </div>
         </>
       }

@@ -46,7 +46,9 @@ function createTablePreview(columns: string[]) {
 function resolveColumns(header: readonly string[], selection: string): number[] {
   const requested = selection.trim();
   if (!requested) {
-    throw new ToolError("column-required", "Enter at least one column name or number.");
+    throw new ToolError("column-required", "Enter at least one column name or number.", undefined, {
+      messageRef: { key: "csv.errors.columnRequired" },
+    });
   }
 
   // Preserve exact names containing commas and the existing numeric-position behavior.
@@ -62,6 +64,10 @@ function resolveColumns(header: readonly string[], selection: string): number[] 
       "invalid-column-selection",
       "Enter a name or number for every selected column, separated by commas.",
       'Wrap header names containing commas in double quotes, for example: "last,name",2.',
+      {
+        messageRef: { key: "csv.errors.columnSelection" },
+        recoveryMessage: { key: "csv.recovery.columnSelection" },
+      },
     );
   }
 
@@ -73,6 +79,13 @@ function resolveColumns(header: readonly string[], selection: string): number[] 
         "column-not-found",
         isPosition ? `Column number ${selector} is out of range.` : `Column ${JSON.stringify(selector)} was not found.`,
         `Use an exact header name, or a one-based column number from 1 to ${header.length}.`,
+        {
+          messageRef: {
+            key: isPosition ? "csv.errors.columnNumberMissing" : "csv.errors.columnNameMissing",
+            values: { column: isPosition ? selector : JSON.stringify(selector) },
+          },
+          recoveryMessage: { key: "csv.recovery.columnRange", values: { count: header.length } },
+        },
       );
     }
     return column;
@@ -105,7 +118,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         },
         previewRows: 0,
       });
-      if (!parsed.rowCount) throw new ToolError("empty-table", "Delimited input has no rows.");
+      if (!parsed.rowCount)
+        throw new ToolError("empty-table", "Delimited input has no rows.", undefined, {
+          messageRef: { key: "csv.errors.emptyTable" },
+        });
       const artifact = await sink.finish();
       const rowCount = parsed.rowCount - 1;
       return {
@@ -114,8 +130,8 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         truncated: sink.previewTruncated,
         tablePreview: preview?.result,
         stats: [
-          { label: "Rows", value: String(rowCount) },
-          { label: "Columns", value: String(columns.length) },
+          { label: "Rows", labelMessage: { key: "csv.rows" }, value: String(rowCount) },
+          { label: "Columns", labelMessage: { key: "csv.columns" }, value: String(columns.length) },
         ],
         artifacts: [artifact],
       };
@@ -136,8 +152,8 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     downloadName: "extracted-columns.csv",
     tablePreview: preview.result,
     stats: [
-      { label: "Rows", value: String(selectedRows.length) },
-      { label: "Columns", value: String(columns.length) },
+      { label: "Rows", labelMessage: { key: "csv.rows" }, value: String(selectedRows.length) },
+      { label: "Columns", labelMessage: { key: "csv.columns" }, value: String(columns.length) },
     ],
   };
 };

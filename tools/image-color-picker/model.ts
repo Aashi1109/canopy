@@ -3,9 +3,13 @@ import { ToolError } from "../../lib/tool-framework/run.ts";
 
 export function validateImageFile(file: { type: string; size: number }) {
   if (!["image/png", "image/jpeg", "image/webp", "image/gif"].includes(file.type))
-    throw new ToolError("unsupported-image", "Choose a PNG, JPEG, WebP, or GIF image.");
+    throw new ToolError("unsupported-image", "Choose a PNG, JPEG, WebP, or GIF image.", undefined, {
+      messageRef: { key: "image.unsupported" },
+    });
   if (file.size <= 0 || file.size > 20 * 1024 * 1024)
-    throw new ToolError("image-size", "Choose a nonempty image smaller than 20 MB.");
+    throw new ToolError("image-size", "Choose a nonempty image smaller than 20 MB.", undefined, {
+      messageRef: { key: "image.size" },
+    });
 }
 
 export function pixelCoordinates(
@@ -24,14 +28,17 @@ export function pixelCoordinates(
 
 export function pixelColorValues(canvas: HTMLCanvasElement, x: number, y: number) {
   const context = canvas.getContext("2d");
-  if (!context) throw new ToolError("canvas-unavailable", "Image sampling is unavailable in this browser.");
+  if (!context)
+    throw new ToolError("canvas-unavailable", "Image sampling is unavailable in this browser.", undefined, {
+      messageRef: { key: "image.canvas" },
+    });
   const rgba = context.getImageData(x, y, 1, 1).data;
   const color = { red: rgba[0], green: rgba[1], blue: rgba[2], alpha: rgba[3] / 255 };
   const hex = rgbToHex(color);
   return {
     hex,
     entries: [
-      { label: "Pixel", value: `${x}, ${y}` },
+      { label: "Pixel", labelMessage: { key: "image.pixelLabel" }, value: `${x}, ${y}` },
       { label: "HEX", value: hex },
       {
         label: "RGB",
@@ -85,23 +92,36 @@ export async function decodeImage(file: File, signal?: AbortSignal): Promise<Dec
       try {
         bitmap = await createImageBitmap(file);
       } catch {
-        throw new ToolError("image-decode", "This image could not be read. Try another image or export it as PNG.");
+        throw new ToolError(
+          "image-decode",
+          "This image could not be read. Try another image or export it as PNG.",
+          undefined,
+          { messageRef: { key: "image.decode" } },
+        );
       }
       try {
         if (bitmap.width * bitmap.height > 24_000_000 || !bitmap.width || !bitmap.height)
-          throw new ToolError("image-dimensions", "Choose an image with no more than 24 million pixels.");
+          throw new ToolError("image-dimensions", "Choose an image with no more than 24 million pixels.", undefined, {
+            messageRef: { key: "image.dimensions" },
+          });
         const canvas = document.createElement("canvas");
         canvas.width = bitmap.width;
         canvas.height = bitmap.height;
         const context = canvas.getContext("2d", { willReadFrequently: true });
-        if (!context) throw new ToolError("canvas-unavailable", "Image sampling is unavailable in this browser.");
+        if (!context)
+          throw new ToolError("canvas-unavailable", "Image sampling is unavailable in this browser.", undefined, {
+            messageRef: { key: "image.canvas" },
+          });
         context.drawImage(bitmap, 0, 0);
         const thumb = document.createElement("canvas");
         const scale = Math.min(1, 256 / Math.max(bitmap.width, bitmap.height));
         thumb.width = Math.max(1, Math.round(bitmap.width * scale));
         thumb.height = Math.max(1, Math.round(bitmap.height * scale));
         const thumbContext = thumb.getContext("2d", { willReadFrequently: true });
-        if (!thumbContext) throw new ToolError("canvas-unavailable", "Image sampling is unavailable in this browser.");
+        if (!thumbContext)
+          throw new ToolError("canvas-unavailable", "Image sampling is unavailable in this browser.", undefined, {
+            messageRef: { key: "image.canvas" },
+          });
         thumbContext.drawImage(bitmap, 0, 0, thumb.width, thumb.height);
         return {
           canvas,

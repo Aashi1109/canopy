@@ -24,7 +24,17 @@
  */
 
 import { cache } from "react";
-import { catalogCache } from "./catalogCache.ts";
+import { getPaperworkToolMessages } from "../paperwork/toolMessages.ts";
+import { defaultLocale, localizeHref, type Locale } from "../i18n/config.ts";
+import { getCommonMessages } from "../i18n/messages.ts";
+import {
+  applyToolMessages,
+  extractToolMessages,
+  resolveToolTranslation,
+  formatToolMessage,
+  escapeToolText,
+  type ToolMessages,
+} from "./translations.ts";
 
 import {
   db,
@@ -36,7 +46,7 @@ import {
 import { getEnabledTools, isToolAvailable, isValidToolSlug, mergeToolManifest } from "../tool-catalog/index.ts";
 import type { ToolApp as PublicToolApp } from "../tool-catalog/index.ts";
 
-import { isCategoryKey, TOOL_CATEGORIES, type CategoryKey, type ToolApp } from "./categories";
+import { isCategoryKey, type CategoryKey, type ToolApp } from "./categories";
 import { resolveContent } from "./content";
 import { resolveIcon, type ResolvedIcon } from "./icons";
 import type { ToolContent, ToolSpec } from "./spec";
@@ -51,6 +61,9 @@ type ManagedToolRow = typeof managedToolsTable.$inferSelect;
 
 /** One fully resolved tool: shipped declaration + admin-authored overrides. */
 export type CatalogTool = {
+  readonly locale: Locale;
+  readonly availableLocales: readonly Locale[];
+  readonly messages: ToolMessages;
   readonly toolId: string;
   readonly app: ToolApp;
   /** Public URL segment. Admin-owned, and not the folder name. */
@@ -72,6 +85,8 @@ export type CatalogTool = {
 
 /** Public discovery data shared by search and ecosystem navigation. */
 export type PublicTool = Pick<CatalogTool, "toolId" | "name" | "description" | "href" | "icon" | "keywords"> & {
+  readonly locale: Locale;
+  readonly availableLocales: readonly Locale[];
   readonly app: PublicToolApp;
   readonly category: string;
   readonly categoryKey: CategoryKey | null;
@@ -119,6 +134,7 @@ export async function loadSpec(definitionKey: string): Promise<ToolSpec | null> 
 async function buildTool(
   row: ManagedToolRow & { slug: string },
   contentRow: ToolContentRow | null,
+  requestedLocale: Locale,
 ): Promise<CatalogTool | null> {
   const definitionKey = definitionKeyOf(row.toolId);
   if (!definitionKey) return null;
@@ -129,31 +145,45 @@ async function buildTool(
   // The admin-authored name/description are the live ones, so they, not the
   // shipped strings, are what the SEO fields fall back to.
   const resolved = resolveContent({ ...spec, name: row.name, description: row.description }, contentRow);
+  const sourceSpec = {
+    ...spec,
+    name: row.name,
+    description: row.description,
+    category: resolved.category,
+    keywords: resolved.keywords,
+    content: resolved.content,
+  };
+  const required = extractToolMessages(sourceSpec, resolved);
+  const requested = resolveToolTranslation(row.translations, requestedLocale, required);
+  const translation = requested ?? resolveToolTranslation(row.translations, defaultLocale, required);
+  if (!translation) return null;
+  const locale = requested ? requestedLocale : defaultLocale;
+  const localizedSpec = applyToolMessages(sourceSpec, translation.messages, locale);
 
   return {
+    locale,
+    availableLocales: translation.availableLocales,
+    messages: translation.messages,
     toolId: row.toolId,
     app: spec.app,
     slug: row.slug,
     definitionKey,
-    name: row.name,
-    description: row.description,
+    name: localizedSpec.name,
+    description: localizedSpec.description,
     order: row.order,
     category: resolved.category,
-    keywords: resolved.keywords,
-    seoTitle: resolved.seoTitle,
-    seoDescription: resolved.seoDescription,
-    content: resolved.content,
+    keywords: localizedSpec.keywords,
+    seoTitle: formatToolMessage(locale, translation.messages.seoTitle!),
+    seoDescription: formatToolMessage(locale, translation.messages.seoDescription!),
+    content: localizedSpec.content,
     icon: resolveIcon(row.toolId, row.name, row.iconUrl),
-    href: `/${spec.app}/${row.slug}`,
-    spec: { ...spec, content: resolved.content },
+    href: localizeHref(`/${spec.app}/${row.slug}`, locale),
+    spec: { ...localizedSpec, messages: undefined },
   };
 }
 
-/**
- * Node reuses resolved snapshots for 24 hours, with invalidation after local edits.
- * Workers keep only React's per-request cache: an edit cannot invalidate other isolates.
- */
-const loadCatalog = cache(async () => {
+/** Share queries within a request while making publication visible across app instances. */
+const loadCatalog = cache(async (locale: Locale = defaultLocale) => {
   if (!isDatabaseConfigured()) return { tools: [], paperworkTools: [], publicTools: [] };
 
   const load = async () => {
@@ -165,14 +195,36 @@ const loadCatalog = cache(async () => {
       rows
         .filter(isToolAvailable)
         .filter((row) => row.app !== "paperwork" && isValidToolSlug(row.app, row.slug))
-        .map((row) => buildTool(row, contentByToolId.get(row.toolId) ?? null)),
+        .map((row) => buildTool(row, contentByToolId.get(row.toolId) ?? null, locale)),
     );
     const tools = built
       .filter((tool): tool is CatalogTool => tool !== null)
       .sort((left, right) => (left.app === right.app ? left.order - right.order : left.app.localeCompare(right.app)));
 
     // Paperwork's route implementations predate tools/*; preserve its existing manifest merge rules.
-    const paperworkRows = rows.filter((row) => row.app === "paperwork");
+    const paperworkRows = rows
+      .filter((row) => row.app === "paperwork")
+      .flatMap((row) => {
+        const required = {
+          name: escapeToolText(row.name),
+          description: escapeToolText(row.description),
+          ...getPaperworkToolMessages(definitionKeyOf(row.toolId) ?? row.toolId),
+        };
+        const requested = resolveToolTranslation(row.translations, locale, required);
+        const translation = requested ?? resolveToolTranslation(row.translations, defaultLocale, required);
+        if (!translation) return [];
+        const resolvedLocale = requested ? locale : defaultLocale;
+        return [
+          {
+            ...row,
+            name: formatToolMessage(resolvedLocale, translation.messages.name!),
+            description: formatToolMessage(resolvedLocale, translation.messages.description!),
+            locale: resolvedLocale,
+            availableLocales: translation.availableLocales,
+            messages: translation.messages,
+          },
+        ];
+      });
     const paperworkTools = getEnabledTools(
       mergeToolManifest(
         paperworkRows,
@@ -185,7 +237,16 @@ const loadCatalog = cache(async () => {
         })),
       ),
       "paperwork",
-    );
+    ).map((tool) => {
+      const translation = paperworkRows.find((row) => row.toolId === tool.id)!;
+      return {
+        ...tool,
+        locale: translation.locale,
+        availableLocales: translation.availableLocales,
+        messages: translation.messages,
+        href: localizeHref(`/paperwork/${tool.slug}`, translation.locale),
+      };
+    });
     const publicTools: PublicTool[] = [
       ...tools.map((tool) => ({
         toolId: tool.toolId,
@@ -195,37 +256,46 @@ const loadCatalog = cache(async () => {
         href: tool.href,
         icon: tool.icon,
         keywords: tool.keywords,
-        category: TOOL_CATEGORIES[tool.category].label,
+        category: getCommonMessages(locale).Categories[tool.category],
         categoryKey: tool.category,
+        locale: tool.locale,
+        availableLocales: tool.availableLocales,
       })),
       ...paperworkTools.map((tool) => ({
         toolId: tool.toolId,
         app: tool.app,
         name: tool.name,
         description: tool.description,
-        href: `/paperwork/${tool.slug}`,
+        href: tool.href,
         icon: resolveIcon(tool.toolId, tool.name, tool.iconUrl),
         keywords: tool.keywords ?? [],
-        category: "Documents",
+        category: getCommonMessages(locale).Common.documents,
         categoryKey: null,
+        locale: tool.locale,
+        availableLocales: tool.availableLocales,
       })),
     ];
     return { tools, paperworkTools, publicTools };
   };
-  return globalThis.navigator?.userAgent === "Cloudflare-Workers"
-    ? load()
-    : catalogCache.remember("all", load, 24 * 60 * 60);
+  // Request-only caching makes admin publication visible on every app instance.
+  return load();
 });
 
 /** Every enabled, non-archived, slugged tool. Optionally narrowed to one app. */
-export const getTools = cache(async (app?: ToolApp): Promise<readonly CatalogTool[]> => {
-  const { tools } = await loadCatalog();
-  return app ? tools.filter((tool) => tool.app === app) : tools;
-});
+export const getTools = cache(
+  async (app?: ToolApp, locale: Locale = defaultLocale): Promise<readonly CatalogTool[]> => {
+    const { tools } = await loadCatalog(locale);
+    return app ? tools.filter((tool) => tool.app === app) : tools;
+  },
+);
 
-export const getPaperworkTools = cache(async () => (await loadCatalog()).paperworkTools);
+export const getPaperworkTools = cache(
+  async (locale: Locale = defaultLocale) => (await loadCatalog(locale)).paperworkTools,
+);
 
-export const getPublicTools = cache(async (): Promise<readonly PublicTool[]> => (await loadCatalog()).publicTools);
+export const getPublicTools = cache(
+  async (locale: Locale = defaultLocale): Promise<readonly PublicTool[]> => (await loadCatalog(locale)).publicTools,
+);
 
 /**
  * Resolves a public URL to a tool.
@@ -233,27 +303,33 @@ export const getPublicTools = cache(async (): Promise<readonly PublicTool[]> => 
  * An ambiguous slug resolves to nothing rather than to an arbitrary winner —
  * the same guard `findAvailableToolBySlug` applies, for the same reason.
  */
-export const resolveToolPage = cache(async (app: ToolApp, slug: string): Promise<CatalogTool | null> => {
-  const matches = (await loadCatalog()).tools.filter((tool) => tool.app === app && tool.slug === slug);
-  return matches.length === 1 ? matches[0] : null;
-});
+export const resolveToolPage = cache(
+  async (app: ToolApp, slug: string, locale: Locale = defaultLocale): Promise<CatalogTool | null> => {
+    const matches = (await loadCatalog(locale)).tools.filter(
+      (tool) => tool.app === app && tool.slug === slug && tool.locale === locale,
+    );
+    return matches.length === 1 ? matches[0] : null;
+  },
+);
 
 /**
  * Curated related tools, falling back to the rest of the same category.
  */
-export const relatedTools = cache(async (toolId: string): Promise<readonly CatalogTool[]> => {
-  const { tools } = await loadCatalog();
-  const tool = tools.find((candidate) => candidate.toolId === toolId);
-  if (!tool) return [];
+export const relatedTools = cache(
+  async (toolId: string, locale: Locale = defaultLocale): Promise<readonly CatalogTool[]> => {
+    const { tools } = await loadCatalog(locale);
+    const tool = tools.find((candidate) => candidate.toolId === toolId);
+    if (!tool) return [];
 
-  const curated = (tool.content.relatedToolIds ?? [])
-    .filter((id) => id !== toolId)
-    .flatMap((id) => tools.filter((candidate) => candidate.toolId === id));
+    const curated = (tool.content.relatedToolIds ?? [])
+      .filter((id) => id !== toolId)
+      .flatMap((id) => tools.filter((candidate) => candidate.toolId === id));
 
-  const seen = new Set(curated.map((candidate) => candidate.toolId));
-  const sameCategory = tools.filter(
-    (candidate) => candidate.toolId !== toolId && candidate.category === tool.category && !seen.has(candidate.toolId),
-  );
+    const seen = new Set(curated.map((candidate) => candidate.toolId));
+    const sameCategory = tools.filter(
+      (candidate) => candidate.toolId !== toolId && candidate.category === tool.category && !seen.has(candidate.toolId),
+    );
 
-  return [...curated, ...sameCategory].slice(0, RELATED_LIMIT);
-});
+    return [...curated, ...sameCategory].slice(0, RELATED_LIMIT);
+  },
+);

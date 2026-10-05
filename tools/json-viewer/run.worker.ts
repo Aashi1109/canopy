@@ -42,6 +42,26 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       `json-${result.error.kind}`,
       result.error.message,
       "Fix the reported line, or run Repair & clean to drop the broken parts.",
+      {
+        line: result.error.line,
+        column: result.error.column,
+        messageRef: {
+          key: `errors.json-${result.error.kind}`,
+          values:
+            result.error.kind === "too-large"
+              ? { limit: 2_000_000 }
+              : result.error.line && result.error.column
+                ? { line: result.error.line, column: result.error.column }
+                : undefined,
+        },
+        recoveryMessage: { key: "execution.recovery.json" },
+        values:
+          result.error.kind === "too-large"
+            ? { limit: 2_000_000 }
+            : result.error.line && result.error.column
+              ? { line: result.error.line, column: result.error.column }
+              : undefined,
+      },
     );
   }
   return {

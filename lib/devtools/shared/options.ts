@@ -2,6 +2,7 @@
 // Verbatim extraction from lib/devtools/format-json.ts (region 4).
 
 import { ToolError } from "../../tool-framework/run.ts";
+import type { ToolMessage } from "../../tool-runtime/types.ts";
 
 export function stringOption(options: Record<string, string | number | boolean>, key: string): string {
   return String(options[key] ?? "");
@@ -15,9 +16,12 @@ export function booleanOption(options: Record<string, string | number | boolean>
   return options[key] === true;
 }
 
-export function requireUtilityInput(value: string, label: string): string {
+export function requireUtilityInput(value: string, label: string, messageRef?: ToolMessage): string {
   if (!value.trim()) {
-    throw new ToolError("input-required", `${label} is required.`, "Enter a value and try again.");
+    throw new ToolError("input-required", `${label} is required.`, "Enter a value and try again.", {
+      messageRef: messageRef ?? { key: "sharedInput.required" },
+      recoveryMessage: { key: "sharedInput.recovery" },
+    });
   }
   return value;
 }

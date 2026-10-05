@@ -1,3 +1,4 @@
+import { ToolError } from "../../lib/tool-framework/run.ts";
 export interface CropPoint {
   readonly x: number;
   readonly y: number;
@@ -43,9 +44,10 @@ export function parseCropPoints(raw: unknown, size?: ImageSize): readonly CropPo
   try {
     value = typeof raw === "string" ? JSON.parse(raw) : raw;
   } catch {
-    throw new Error(message);
+    throw new ToolError("invalid-crop", message, undefined, { messageRef: { key: "errors.invalidCropPoints" } });
   }
-  if (!Array.isArray(value) || value.length < 3 || value.length > 12) throw new Error(message);
+  if (!Array.isArray(value) || value.length < 3 || value.length > 12)
+    throw new ToolError("invalid-crop", message, undefined, { messageRef: { key: "errors.invalidCropPoints" } });
   const points: CropPoint[] = value.map((p: unknown) => {
     if (
       typeof p !== "object" ||
@@ -60,15 +62,16 @@ export function parseCropPoints(raw: unknown, size?: ImageSize): readonly CropPo
       p.y < 0 ||
       (size && (p.x > size.width || p.y > size.height))
     )
-      throw new Error(message);
+      throw new ToolError("invalid-crop", message, undefined, { messageRef: { key: "errors.invalidCropPoints" } });
     return { x: p.x, y: p.y };
   });
-  if (new Set(points.map((p) => `${p.x},${p.y}`)).size !== points.length) throw new Error(message);
+  if (new Set(points.map((p) => `${p.x},${p.y}`)).size !== points.length)
+    throw new ToolError("invalid-crop", message, undefined, { messageRef: { key: "errors.invalidCropPoints" } });
   for (let i = 0; i < points.length; i++)
     for (let j = i + 1; j < points.length; j++) {
       if (j === i + 1 || (i === 0 && j === points.length - 1)) continue;
       if (intersects(points[i], points[(i + 1) % points.length], points[j], points[(j + 1) % points.length]))
-        throw new Error(message);
+        throw new ToolError("invalid-crop", message, undefined, { messageRef: { key: "errors.invalidCropPoints" } });
     }
   const area =
     Math.abs(
@@ -77,13 +80,17 @@ export function parseCropPoints(raw: unknown, size?: ImageSize): readonly CropPo
         return sum + p.x * q.y - q.x * p.y;
       }, 0),
     ) / 2;
-  if (area < 1) throw new Error(message);
+  if (area < 1)
+    throw new ToolError("invalid-crop", message, undefined, { messageRef: { key: "errors.invalidCropPoints" } });
   return points;
 }
 
 /** Add along the longest usable edge; remove the least area-changing vertex. */
 export function resizeCropPoints(points: readonly CropPoint[], count: number, size: ImageSize): readonly CropPoint[] {
-  if (!Number.isInteger(count) || count < 3 || count > 12) throw new Error("Choose between 3 and 12 points.");
+  if (!Number.isInteger(count) || count < 3 || count > 12)
+    throw new ToolError("invalid-crop", "Choose between 3 and 12 points.", undefined, {
+      messageRef: { key: "errors.cropPointCount" },
+    });
   let next = parseCropPoints(points, size);
   while (next.length !== count) {
     const adding = next.length < count;
@@ -109,7 +116,13 @@ export function resizeCropPoints(points: readonly CropPoint[], count: number, si
         return false;
       }
     });
-    if (!valid) throw new Error("This selection is too small for that many points. Choose fewer points.");
+    if (!valid)
+      throw new ToolError(
+        "invalid-crop",
+        "This selection is too small for that many points. Choose fewer points.",
+        undefined,
+        { messageRef: { key: "errors.cropSelectionTooSmall" } },
+      );
     next = valid.points;
   }
   return next;

@@ -1,4 +1,6 @@
 "use client";
+import { useLocale, useTranslations } from "next-intl";
+import { localizeHref, unlocalizedPathname, type Locale } from "@/lib/i18n/config";
 
 import { Button, H2, Muted } from "@/components/ui/index.tsx";
 import Link from "next/link";
@@ -14,7 +16,18 @@ const AnalyticsContext = createContext<{
 } | null>(null);
 
 export function Analytics({ measurementId, children }: { measurementId: string | null; children: ReactNode }) {
+  const t = useTranslations("Analytics");
+  const locale = useLocale() as Locale;
   const pathname = usePathname();
+  const isPrivacyPage = unlocalizedPathname(pathname) === "/privacy";
+  const privacyLink = (chunks: ReactNode) => (
+    <Link
+      className="rounded-sm text-primary underline underline-offset-4 hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      href={localizeHref("/privacy#analytics", locale)}
+    >
+      {chunks}
+    </Link>
+  );
   const [consent, setConsent] = useState<AnalyticsConsent>(null);
   const [ready, setReady] = useState(false);
   const [saved, setSaved] = useState(true);
@@ -45,54 +58,35 @@ export function Analytics({ measurementId, children }: { measurementId: string |
   return (
     <AnalyticsContext.Provider value={{ enabled: Boolean(measurementId), consent, choose, saved }}>
       <div role="status" className="sr-only">
-        {ready && measurementId && pathname !== "/privacy" && consent
-          ? `Analytics ${consent === "accepted" ? "allowed" : "declined"}. Change your choice in Privacy settings.`
+        {ready && measurementId && !isPrivacyPage && consent
+          ? t(consent === "accepted" ? "acceptedNotice" : "declinedNotice")
           : ""}
       </div>
       {children}
-      {measurementId && ready && consent === null && publicPath(pathname) && pathname !== "/privacy" ? (
+      {measurementId && ready && consent === null && publicPath(pathname) && !isPrivacyPage ? (
         <section
-          aria-label="Optional analytics"
+          aria-label={t("optional")}
           className="sticky bottom-0 z-50 border-t border-border bg-card px-6 py-4 print:hidden"
         >
           <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-2xl">
-              <H2 className="text-base">Help improve SmartTools?</H2>
-              <Muted className="mt-1">
-                With your permission, Google Analytics uses cookies to measure visits and tool actions. We never send
-                your files or document content. Change your choice in{" "}
-                <Link
-                  className="rounded-sm text-primary underline underline-offset-4 hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  href="/privacy#analytics"
-                >
-                  Privacy settings
-                </Link>
-                .
-              </Muted>
+              <H2 className="text-base">{t("promptTitle")}</H2>
+              <Muted className="mt-1">{t.rich("promptDescription", { privacy: privacyLink })}</Muted>
             </div>
             <div className="flex flex-wrap gap-3">
               <Button variant="outline" onClick={() => choose("declined")}>
-                Decline analytics
+                {t("decline")}
               </Button>
               <Button variant="outline" onClick={() => choose("accepted")}>
-                Allow analytics
+                {t("allow")}
               </Button>
             </div>
           </div>
         </section>
       ) : null}
-      {!saved && pathname !== "/privacy" && publicPath(pathname) ? (
+      {!saved && !isPrivacyPage && publicPath(pathname) ? (
         <div role="status" className="sticky bottom-0 z-50 border-t border-border bg-card px-6 py-4 print:hidden">
-          <Muted>
-            Your browser could not save this preference. Your choice applies in this tab until you reload. Change it in{" "}
-            <Link
-              className="rounded-sm text-primary underline underline-offset-4 hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              href="/privacy#analytics"
-            >
-              Privacy settings
-            </Link>
-            .
-          </Muted>
+          <Muted>{t.rich("saveFailedLink", { privacy: privacyLink })}</Muted>
         </div>
       ) : null}
     </AnalyticsContext.Provider>
@@ -100,54 +94,47 @@ export function Analytics({ measurementId, children }: { measurementId: string |
 }
 
 export function AnalyticsPreferences() {
+  const t = useTranslations("Analytics");
   const analytics = useContext(AnalyticsContext);
   return (
     <section id="analytics" className="flex scroll-mt-8 flex-col gap-3">
-      <H2>Analytics preferences</H2>
-      <Muted>
-        Optional Google Analytics helps us understand page visits and tool actions. Google receives cookie identifiers,
-        browser/device information, and a privacy-filtered page address. We do not send uploaded files, document
-        contents, account details, query strings, or advertising data. Analytics is off until you allow it; private
-        account and admin pages are excluded.
-      </Muted>
+      <H2>{t("preferencesTitle")}</H2>
+      <Muted>{t("preferencesDescription")}</Muted>
       <Muted role="status">
         {!analytics?.enabled
-          ? "Analytics is not enabled on this deployment."
+          ? t("unavailable")
           : analytics.consent === "accepted"
-            ? "Analytics is allowed. You can withdraw permission below."
+            ? t("accepted")
             : analytics.consent === "declined"
-              ? "Analytics is declined."
-              : "Analytics is off. Choose whether to allow it."}
+              ? t("declined")
+              : t("off")}
       </Muted>
       {analytics?.enabled ? (
         <div className="flex flex-wrap gap-3">
           {analytics.consent !== "declined" ? (
             <Button variant="outline" onClick={() => analytics.choose("declined")}>
-              {analytics.consent === "accepted" ? "Withdraw analytics consent" : "Decline analytics"}
+              {analytics.consent === "accepted" ? t("withdraw") : t("decline")}
             </Button>
           ) : null}
           {analytics.consent !== "accepted" ? (
             <Button variant="outline" onClick={() => analytics.choose("accepted")}>
-              Allow analytics
+              {t("allow")}
             </Button>
           ) : null}
         </div>
       ) : null}
-      {analytics && !analytics.saved ? (
-        <Muted role="status">
-          Your browser could not save this preference. Your choice applies in this tab until you reload.
-        </Muted>
-      ) : null}
+      {analytics && !analytics.saved ? <Muted role="status">{t("saveFailed")}</Muted> : null}
       <Muted>
-        Withdrawing stops future collection and removes this site's analytics cookies; it does not erase data already
-        sent.{" "}
-        <a
-          className="rounded-sm text-primary underline underline-offset-4 hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          href="https://policies.google.com/privacy"
-        >
-          Google Privacy Policy
-        </a>
-        .
+        {t.rich("withdrawal", {
+          policy: (chunks) => (
+            <a
+              className="rounded-sm text-primary underline underline-offset-4 hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              href="https://policies.google.com/privacy"
+            >
+              {chunks}
+            </a>
+          ),
+        })}
       </Muted>
     </section>
   );

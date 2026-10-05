@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 /**
  * The page-thumbnail surface, shared by every tool whose spec declares
  * `input.inspect`.
@@ -199,6 +201,7 @@ const THUMBNAIL_CLASSES = "mx-auto max-h-44 max-w-full w-auto rounded-md border 
 const GRID_CLASSES = "grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(0,12rem))]";
 
 export function PageThumbnail({ page }: { page: PdfPageImage }): ReactElement {
+  const t = useTranslations("Workbench");
   const requestThumbnails = useContext(PdfInspectionContext);
   const targetRef = useRef<HTMLDivElement>(null);
 
@@ -248,10 +251,10 @@ export function PageThumbnail({ page }: { page: PdfPageImage }): ReactElement {
         />
       ) : (
         <div
-          aria-label={`Loading preview for page ${page.pageNumber}`}
+          aria-label={t("mediaLoadingPagePreview", { page: page.pageNumber })}
           className="grid h-full w-full place-items-center text-muted-foreground"
         >
-          <Caption>Loading preview</Caption>
+          <Caption>{t("mediaLoadingPreview")}</Caption>
         </div>
       )}
     </div>
@@ -269,6 +272,7 @@ export function PdfPagesSurface({
   selected,
   title,
 }: PdfPagesSurfaceProps): ReactElement {
+  const t = useTranslations("Workbench");
   const requestThumbnails = useContext(PdfInspectionContext);
   const [previewPage, setPreviewPage] = useState<number | null>(null);
   const previewIndex = pages.findIndex((page) => page.pageNumber === previewPage);
@@ -280,12 +284,8 @@ export function PdfPagesSurface({
       purpose="preview"
       scroll="content"
       state={inspecting ? "loading" : pages.length > 0 ? "ready" : "empty"}
-      stateDescription={
-        inspecting
-          ? "Rendering small previews in this browser. The document is not uploaded."
-          : "Add a document to work with its pages."
-      }
-      stateTitle={inspecting ? "Preparing page previews" : "No pages yet"}
+      stateDescription={inspecting ? t("mediaLocalPreviewHint") : t("mediaAddDocument")}
+      stateTitle={inspecting ? t("mediaPreparingPages") : t("mediaNoPages")}
       title={title}
     >
       {onOrderChange ? (
@@ -295,7 +295,7 @@ export function PdfPagesSurface({
           disabled={disabled || pages.length < 2}
           dragSurface="card"
           getId={(page) => String(page.pageNumber)}
-          getLabel={(page) => `Page ${page.pageNumber}`}
+          getLabel={(page) => t("mediaPageNumber", { page: page.pageNumber })}
           items={pages}
           layout="grid"
           onReorder={(next) => onOrderChange(next.map(({ pageNumber }) => pageNumber))}
@@ -308,7 +308,7 @@ export function PdfPagesSurface({
               <Button
                 {...orderable.attributes}
                 {...orderable.listeners}
-                aria-label={`Drag page ${page.pageNumber} to reorder`}
+                aria-label={t("mediaDragPage", { page: page.pageNumber })}
                 className="absolute left-2 top-2 z-10 size-8 cursor-grab touch-none text-muted-foreground active:cursor-grabbing disabled:cursor-not-allowed"
                 disabled={orderable.disabled}
                 ref={orderable.setActivatorNodeRef}
@@ -321,7 +321,7 @@ export function PdfPagesSurface({
                 <GripVertical aria-hidden="true" className="size-4" />
               </Button>
               <Button
-                aria-label={`Preview page ${page.pageNumber}`}
+                aria-label={t("mediaPreviewPage", { page: page.pageNumber })}
                 className="h-auto w-full cursor-grab touch-pan-y select-none flex-col gap-0 rounded-xl p-2 pt-12 active:cursor-grabbing"
                 disabled={disabled}
                 onClick={() => setPreviewPage(page.pageNumber)}
@@ -330,7 +330,7 @@ export function PdfPagesSurface({
               >
                 <PageThumbnail page={page} />
                 <Caption className="mt-2 block text-center">
-                  <Strong>Page {page.pageNumber}</Strong>
+                  <Strong>{t("mediaPageNumber", { page: page.pageNumber })}</Strong>
                 </Caption>
               </Button>
             </div>
@@ -348,7 +348,7 @@ export function PdfPagesSurface({
               >
                 {onToggle ? (
                   <button
-                    aria-label={`${isSelected ? "Deselect" : "Select"} page ${page.pageNumber}`}
+                    aria-label={t("mediaTogglePage", { selected: isSelected ? "yes" : "no", page: page.pageNumber })}
                     aria-pressed={isSelected}
                     className="w-full rounded-lg p-1 text-center outline-none transition enabled:hover:bg-accent enabled:hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                     data-selected={isSelected}
@@ -359,8 +359,7 @@ export function PdfPagesSurface({
                     <PageThumbnail page={page} />
                     <Caption className="mt-2 block">
                       <Strong>
-                        Page {page.pageNumber}
-                        {isSelected ? " · Selected" : ""}
+                        {t("mediaPageSelection", { page: page.pageNumber, selected: isSelected ? "yes" : "no" })}
                       </Strong>
                     </Caption>
                   </button>
@@ -368,7 +367,7 @@ export function PdfPagesSurface({
                   <>
                     <PageThumbnail page={page} />
                     <Caption className="mt-2 block text-center">
-                      <Strong>Page {page.pageNumber}</Strong>
+                      <Strong>{t("mediaPageNumber", { page: page.pageNumber })}</Strong>
                     </Caption>
                   </>
                 )}
@@ -391,19 +390,19 @@ export function PdfPagesSurface({
           onOpenChange={(open) => {
             if (!open) setPreviewPage(null);
           }}
-          title={`Page ${previewPage}`}
-          description={`Source PDF · Position ${previewIndex + 1} of ${pages.length}`}
+          title={t("mediaPageNumber", { page: previewPage ?? 1 })}
+          description={t("mediaSourcePosition", { position: previewIndex + 1, count: pages.length })}
           viewportClassName="bg-card p-0 text-foreground sm:p-0"
         >
           <PdfViewer
             className="h-full w-full min-w-0"
             currentPage={previewIndex + 1}
-            fileName={`Page ${previewPage}`}
+            fileName={t("mediaPageNumber", { page: previewPage ?? 1 })}
             fit="page"
             onPageChange={(position) => setPreviewPage(pages[position - 1]?.pageNumber ?? null)}
             outline={pages.map((page, index) => ({
               id: `page-${page.pageNumber}`,
-              title: `Page ${page.pageNumber}`,
+              title: t("mediaPageNumber", { page: page.pageNumber }),
               page: index + 1,
             }))}
             pageCount={pages.length}
@@ -431,6 +430,7 @@ export function PdfPreviewPage({
   active: boolean;
   alt?: string;
 }) {
+  const t = useTranslations("Workbench");
   const element = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const node = element.current;
@@ -466,9 +466,13 @@ export function PdfPreviewPage({
   return (
     <div className="absolute inset-0" ref={element}>
       {page.url ? (
-        <img alt={alt ?? `PDF page ${page.pageNumber}`} className="h-full w-full object-contain" src={page.url} />
+        <img
+          alt={alt ?? t("mediaPdfPage", { page: page.pageNumber })}
+          className="h-full w-full object-contain"
+          src={page.url}
+        />
       ) : (
-        <Muted role="status">Rendering page {page.pageNumber}…</Muted>
+        <Muted role="status">{t("mediaRenderingPageNumber", { page: page.pageNumber })}</Muted>
       )}
     </div>
   );

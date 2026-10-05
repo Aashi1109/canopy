@@ -1,6 +1,16 @@
+import { INPUT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+    "export.copyFailed": "Could not copy the HTML. Try again.",
+    "export.downloadFailed": "Could not download the HTML. Try again.",
+    "workspace.html_copied_f641d9": "HTML copied.",
+    "workspace.preparing_5d1fa3": "Preparing…",
+    "workspace.copy_e21f93": "Copy",
+    "workspace.download_d6eafe": "Download",
+  },
   toolId: "devtools.markdown-previewer",
   app: "devtools",
   category: "web-markup-tools",

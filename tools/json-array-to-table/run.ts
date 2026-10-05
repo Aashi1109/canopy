@@ -21,11 +21,15 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "shape",
       "JSON input must be an array of objects.",
       "Wrap a single object in [] or point the tool at the list inside your response.",
+      { messageRef: { key: "execution.errors.shape" }, recoveryMessage: { key: "execution.recovery.shape" } },
     );
   }
   const rows = value.map((row) => flattenRecord(row));
   const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))];
-  if (!columns.length) throw new ToolError("empty-columns", "JSON array objects need at least one field.");
+  if (!columns.length)
+    throw new ToolError("empty-columns", "JSON array objects need at least one field.", undefined, {
+      messageRef: { key: "execution.errors.empty-columns" },
+    });
   const tableRows = rows.map((row) => columns.map((column) => String(row[column] ?? "")));
   return {
     render: "html",

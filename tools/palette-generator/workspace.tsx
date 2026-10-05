@@ -1,4 +1,7 @@
 "use client";
+
+import { useLocale, useTranslations } from "next-intl";
+import { isLocale, localizeHref } from "@/lib/i18n/config";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CircleCheck, GripVertical, LockKeyhole, LockKeyholeOpen } from "lucide-react";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
@@ -24,14 +27,17 @@ import { generatePalette, HARMONIES, paletteForSettings, type PaletteColor } fro
 import { parseColor, rgbToHex } from "@/lib/devtools/shared/color";
 
 export default function PaletteWorkspace(props: WorkspaceProps) {
+  const t = useTranslations("Tool.runtime");
+  const locale = useLocale();
   const [selectedId, setSelectedId] = useState("color-1");
   const { palette, error } = useMemo(() => {
     try {
       return { palette: paletteForSettings(props.settings, true), error: "" };
     } catch (cause) {
-      return { palette: [], error: cause instanceof Error ? cause.message : "Check your colors." };
+      const key = `errors.${cause instanceof Error && "code" in cause ? cause.code : ""}`;
+      return { palette: [], error: t.has(key) ? t(key) : t("workspace.checkColors") };
     }
-  }, [props.settings]);
+  }, [props.settings, t]);
   const selected = palette.find((item) => item.id === selectedId) ?? palette[0];
   const seed = String(props.settings.seed ?? "#3366FF");
   const harmony = String(props.settings.harmony ?? "analogous");
@@ -61,29 +67,30 @@ export default function PaletteWorkspace(props: WorkspaceProps) {
             generate(seed, harmony, count, variation + 1);
           }}
         >
-          Generate variation
+          {t("workspace.generateVariation")}
         </Button>
       ),
     });
     return () => props.onToolbarActionsChange?.(null);
-  }, [count, error, generate, harmony, props.disabled, props.onToolbarActionsChange, seed, update, variation]);
+  }, [count, error, generate, harmony, props.disabled, props.onToolbarActionsChange, seed, update, variation, t]);
   return (
     <DesignWorkspace
-      title={<span className="text-sm font-normal normal-case tracking-normal">Your palette</span>}
+      title={<span className="text-sm font-normal normal-case tracking-normal">{t("workspace.yourPalette")}</span>}
       workspaceClassName="[&>section>header]:py-3"
-      controlTitle="Build a palette"
+      controlTitle={t("workspace.buildAPalette")}
       compactOutput
       previewMeta={
         <span className="text-xs text-muted-foreground">
-          {palette.length} colors · {palette.filter((color) => color.locked).length} locked
+          {t("workspace.paletteCount", {
+            count: palette.length,
+            locked: palette.filter((color) => color.locked).length,
+          })}
         </span>
       }
       preview={
-        <ScrollRegion accessibleName="Palette swatches" className="h-full">
+        <ScrollRegion accessibleName={t("workspace.paletteSwatches")} className="h-full">
           <div className="@container flex min-h-full flex-col px-4 pt-4">
-            <p className="mb-3 text-xs text-muted-foreground">
-              Select a color to edit · Click HEX to copy · Lock colors to keep them
-            </p>
+            <p className="mb-3 text-xs text-muted-foreground">{t("workspace.selectAColorToEditClickHex")}</p>
             {error ? (
               <p className="text-sm text-destructive" role="status">
                 {error}
@@ -91,7 +98,7 @@ export default function PaletteWorkspace(props: WorkspaceProps) {
             ) : (
               <TooltipProvider>
                 <OrderableList
-                  ariaLabel="Palette colors"
+                  ariaLabel={t("workspace.paletteColors")}
                   className="grid grid-cols-2 gap-y-3 overflow-hidden rounded-sm @min-[640px]:grid-flow-col @min-[640px]:auto-cols-fr @min-[640px]:grid-cols-none [&>li]:min-w-0"
                   layout="grid"
                   dragSurface="card"
@@ -126,7 +133,7 @@ export default function PaletteWorkspace(props: WorkspaceProps) {
                                 style={{ height: 136, padding: 0, color: foreground }}
                                 onMouseDown={(event) => state.listeners?.onMouseDown?.(event)}
                                 onTouchStart={(event) => state.listeners?.onTouchStart?.(event)}
-                                aria-label={`Edit ${item.color}`}
+                                aria-label={t("workspace.editColor", { color: item.color })}
                                 aria-pressed={selected?.id === item.id}
                                 onClick={() => {
                                   if (!state.isDragging) setSelectedId(item.id);
@@ -148,19 +155,23 @@ export default function PaletteWorkspace(props: WorkspaceProps) {
                                 </span>
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Click to edit. Drag to reorder, or use the handle below.</TooltipContent>
+                            <TooltipContent>{t("workspace.clickToEditDragToReorderOr")}</TooltipContent>
                           </Tooltip>
                         </div>
                         <div className="flex h-9 min-w-0 items-center justify-center">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span className="inline-flex text-xs font-medium text-foreground [&_button]:font-mono [&_button]:text-xs [&_button]:font-medium [&_button]:text-foreground [&_span]:text-foreground!">
-                                <CopyButton disabled={!valid} content={label} label={`Copy ${label}`}>
-                                  {valid ? <SyntaxHighlight code={label} language="css" /> : "Invalid"}
+                                <CopyButton
+                                  disabled={!valid}
+                                  content={label}
+                                  label={t("workspace.copyColor", { color: label })}
+                                >
+                                  {valid ? <SyntaxHighlight code={label} language="css" /> : t("workspace.invalid")}
                                 </CopyButton>
                               </span>
                             </TooltipTrigger>
-                            <TooltipContent>Copy {label}</TooltipContent>
+                            <TooltipContent>{t("workspace.copyColor", { color: label })}</TooltipContent>
                           </Tooltip>
                         </div>
                         <div className="flex justify-center gap-1 pb-1.5">
@@ -169,7 +180,7 @@ export default function PaletteWorkspace(props: WorkspaceProps) {
                               <Button
                                 variant="ghost"
                                 size="icon-sm"
-                                aria-label={`Reorder ${item.color}`}
+                                aria-label={t("workspace.reorderColor", { color: item.color })}
                                 ref={state.setActivatorNodeRef}
                                 {...state.attributes}
                                 {...state.listeners}
@@ -177,7 +188,7 @@ export default function PaletteWorkspace(props: WorkspaceProps) {
                                 <GripVertical className="text-muted-foreground" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Drag to reorder, or press Space, arrow keys, then Space.</TooltipContent>
+                            <TooltipContent>{t("workspace.dragToReorderOrPressSpaceArrow")}</TooltipContent>
                           </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -185,7 +196,10 @@ export default function PaletteWorkspace(props: WorkspaceProps) {
                                 variant="ghost"
                                 size="icon-sm"
                                 className="text-muted-foreground aria-pressed:bg-accent aria-pressed:text-primary"
-                                aria-label={`${item.locked ? "Unlock" : "Lock"} ${item.color}`}
+                                aria-label={t("workspace.lockColor", {
+                                  action: item.locked ? "unlock" : "lock",
+                                  color: item.color,
+                                })}
                                 aria-pressed={item.locked}
                                 onClick={() =>
                                   save(
@@ -199,7 +213,7 @@ export default function PaletteWorkspace(props: WorkspaceProps) {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              {item.locked ? "Unlock color" : "Keep this color when generating"}
+                              {item.locked ? t("workspace.unlockColor") : t("workspace.keepColor")}
                             </TooltipContent>
                           </Tooltip>
                         </div>
@@ -212,11 +226,13 @@ export default function PaletteWorkspace(props: WorkspaceProps) {
             <div className="flex flex-wrap items-center justify-between gap-2 py-1 text-xs text-muted-foreground">
               <span>
                 {selected
-                  ? `${String(palette.indexOf(selected) + 1).padStart(2, "0")} selected · Edit in the right panel`
-                  : "Select a color to edit"}
+                  ? t("workspace.selectedHint", { number: String(palette.indexOf(selected) + 1).padStart(2, "0") })
+                  : t("workspace.selectColor")}
               </span>
               <Button asChild variant="link" size="xs">
-                <a href="/devtools/contrast-checker">Check contrast ↗</a>
+                <a href={localizeHref("/devtools/contrast-checker", isLocale(locale) ? locale : "en")}>
+                  {t("workspace.checkContrast")}
+                </a>
               </Button>
             </div>
           </div>
@@ -231,14 +247,14 @@ export default function PaletteWorkspace(props: WorkspaceProps) {
           retainedResult={props.result ? { ...props.result, artifacts: undefined } : null}
           error={props.error}
           running={props.running}
-          title="Export palette"
+          title={t("workspace.exportPalette")}
         />
       }
       controls={
         <>
           <ColorControl
             layout="inline"
-            label="Starting color"
+            label={t("workspace.startingColor")}
             value={seed}
             onChange={(value) => {
               update("seed", value);
@@ -246,7 +262,7 @@ export default function PaletteWorkspace(props: WorkspaceProps) {
             }}
           />
           <div className="grid grid-cols-[minmax(0,1fr)_5.5rem] gap-3">
-            <Field htmlFor="palette-harmony" label="Harmony">
+            <Field htmlFor="palette-harmony" label={t("workspace.harmony")}>
               <Select
                 value={harmony}
                 onChange={(event) => {
@@ -256,12 +272,12 @@ export default function PaletteWorkspace(props: WorkspaceProps) {
               >
                 {HARMONIES.map((value) => (
                   <option key={value} value={value}>
-                    {value[0].toUpperCase() + value.slice(1)}
+                    {t(`workspace.harmonyValue.${value}`)}
                   </option>
                 ))}
               </Select>
             </Field>
-            <Field htmlFor="palette-count" label="Colors">
+            <Field htmlFor="palette-count" label={t("workspace.colors2")}>
               <Input
                 type="number"
                 min={minimumCount}
@@ -278,15 +294,13 @@ export default function PaletteWorkspace(props: WorkspaceProps) {
             </Field>
           </div>
           {minimumCount > 2 ? (
-            <p className="text-xs text-muted-foreground">
-              Unlock later swatches to use fewer than {minimumCount} colors.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("workspace.minimumCount", { count: minimumCount })}</p>
           ) : null}
           {selected ? (
             <div className="border-t border-border pt-4">
               <ColorControl
                 layout="inline"
-                label={`Selected color · ${palette.indexOf(selected) + 1}`}
+                label={t("workspace.selectedColor", { number: palette.indexOf(selected) + 1 })}
                 value={selected.color}
                 onChange={(value) =>
                   save(palette.map((color) => (color.id === selected.id ? { ...color, color: value } : color)))
@@ -294,14 +308,14 @@ export default function PaletteWorkspace(props: WorkspaceProps) {
               />
             </div>
           ) : null}
-          <Field htmlFor="palette-export-format" label="Export format">
+          <Field htmlFor="palette-export-format" label={t("workspace.exportFormat")}>
             <Select
               value={String(props.settings.format ?? "css")}
               onChange={(event) => update("format", event.target.value)}
             >
-              <option value="css">CSS variables</option>
-              <option value="json">JSON</option>
-              <option value="svg">SVG swatches</option>
+              <option value="css">{t("workspace.cssVariables")}</option>
+              <option value="json">{t("workspace.json")}</option>
+              <option value="svg">{t("workspace.svgSwatches")}</option>
             </Select>
           </Field>
         </>

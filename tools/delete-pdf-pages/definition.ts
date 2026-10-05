@@ -1,3 +1,4 @@
+import { MEDIA_FILE_ERROR_MESSAGES, MEDIA_PDF_ERROR_MESSAGES } from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 /**
@@ -8,6 +9,18 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
  * string can express. `run.worker.ts` parses it with `parsePageSelection`.
  */
 export default {
+  messages: {
+    "progress.deletingPdfPage": "Deleting PDF page",
+
+    "readiness.choosePages": "Choose at least one page to delete.",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_PDF_ERROR_MESSAGES,
+    "errors.noFiles": "Choose a PDF to delete pages from.",
+    "errors.emptyDocument": "At least one PDF page must remain.",
+    "workspace.selected_pages_are_84d337": "Selected pages are removed. At least one page must remain.",
+    "workspace.pages_to_delete_570cdf": "Pages to delete",
+  },
   toolId: "media.delete-pdf-pages",
   app: "media",
   category: "pdf-organization",

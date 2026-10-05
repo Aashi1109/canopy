@@ -172,6 +172,8 @@ export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   readonly resultView?: {
     readonly default: "raw" | "preview";
     readonly previewLabel?: string;
+    /** Hide view tabs when the tool uses only its default result view. */
+    readonly showTabs?: boolean;
   };
   /** Keep result facts in the status bar without duplicating them as cards. */
   readonly resultStats?: "cards" | "status-only";
@@ -193,6 +195,8 @@ export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   readonly workbenchMark?: ToolWorkbenchMark;
   readonly labels: ToolLabels;
   readonly content: ToolContent;
+  /** Bootstrap-only ICU text for custom workspaces/results; live values belong to the tool's DB record. */
+  readonly messages?: Readonly<Record<string, string>>;
 };
 
 /**

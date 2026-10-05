@@ -1,6 +1,27 @@
+import {
+  CRYPTO_EXECUTION_MESSAGES,
+  ENCODING_EXECUTION_MESSAGES,
+  INPUT_EXECUTION_MESSAGES,
+} from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CRYPTO_EXECUTION_MESSAGES,
+    ...ENCODING_EXECUTION_MESSAGES,
+    ...INPUT_EXECUTION_MESSAGES,
+    "execution.errors.diagram-invalid": "Mermaid diagram is invalid: {diagnostic}",
+    "execution.errors.render-failed": "Mermaid diagram is invalid: render failed",
+    "execution.recovery.diagram-invalid":
+      "Check the first line declares a diagram type, and quote labels that contain brackets or punctuation.",
+    "execution.errors.diagram-too-large": "Mermaid diagram code is too large.",
+    "execution.recovery.diagram-too-large":
+      "Split the diagram into smaller ones — anything this size is unreadable anyway.",
+    "execution.errors.dom-required": "Mermaid diagram rendering requires a browser.",
+    "execution.recovery.dom-required":
+      "Open this tool in a browser tab; Mermaid measures rendered text to lay out the diagram.",
+    "workspace.copy_svg_fde90b": "Copy SVG",
+  },
   toolId: "devtools.diagram-generator",
   app: "devtools",
   category: "diagram-tools",

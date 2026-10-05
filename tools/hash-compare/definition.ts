@@ -1,6 +1,10 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "result.match": "Match",
+    "result.noMatch": "No match",
+  },
   toolId: "devtools.hash-compare",
   app: "devtools",
   category: "hashing-crypto",

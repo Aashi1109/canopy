@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Alert, AlertDescription, AlertTitle, Button, Caption, FieldLabel, Input } from "@/components/ui/index.tsx";
 import { useEffect, useId, useState } from "react";
 import { validateFileSelection } from "@/components/FileInput";
@@ -10,15 +12,15 @@ import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import { parsePageRange, validateImageSelection } from "@/lib/tool-framework/media/validation";
 import { parsePageSelection } from "@/lib/tool-framework/settings";
 
-function selectedPages(value: unknown, pageCount: number): number[] {
+function selectedPages(value: unknown, pageCount: number, t: ReturnType<typeof useTranslations>): number[] {
   const expression = (Array.isArray(value) ? value.join(",") : String(value ?? "all")).trim().toLowerCase();
   if (expression === "odd" || expression === "even") {
     const pages = parsePageSelection(expression, pageCount) as number[];
-    if (!pages.length) throw new Error("No pages match this selection. Choose pages in your PDF.");
+    if (!pages.length) throw new Error(t("workspace.noPages"));
     return pages;
   }
   const result = parsePageRange(expression, pageCount);
-  if (!result.ok) throw new Error(result.message);
+  if (!result.ok) throw new Error(t("workspace.validPages", { count: pageCount }));
   return result.pages;
 }
 
@@ -31,6 +33,7 @@ function PlacementPreview({
   page: PdfPageImage;
   settings: WorkspaceProps["settings"];
 }) {
+  const t = useTranslations("Tool.runtime");
   const [vertical, horizontal] = String(settings.position ?? "bottom-center").split("-");
   const placement = {
     left: horizontal === "left" ? "14%" : horizontal === "right" ? "86%" : "50%",
@@ -42,7 +45,7 @@ function PlacementPreview({
   return settings.watermarkKind === "image" ? (
     imageUrl && (
       <img
-        alt="Approximate watermark"
+        alt={t("workspace.approximateWatermark")}
         className="pointer-events-none absolute h-auto"
         src={imageUrl}
         style={{ ...placement, width: `${Math.max(1, Math.min(100, size))}%` }}
@@ -59,6 +62,7 @@ function PlacementPreview({
 }
 
 export default function WatermarkPdfWorkspace(props: WorkspaceProps) {
+  const t = useTranslations("Tool.runtime");
   const document = props.input.files.find((file) => file.type === "application/pdf" || /\.pdf$/i.test(file.name));
   const watermark = props.input.files.find((file) => file !== document);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -82,7 +86,7 @@ export default function WatermarkPdfWorkspace(props: WorkspaceProps) {
     input: {
       ...inputSpec,
       accept: "application/pdf",
-      label: "PDF document",
+      label: t("workspace.pdfDocument"),
       multiple: false,
       maxFiles: 1,
     },
@@ -99,25 +103,24 @@ export default function WatermarkPdfWorkspace(props: WorkspaceProps) {
       input={{ ...props.input, files: document ? [document] : [] }}
       onInputChange={(input) => updateFiles([...input.files, ...(watermark ? [watermark] : [])])}
       definitionKey="watermark-pdf"
-      optionsTitle="Watermark settings"
+      optionsTitle={t("workspace.watermarkSettings")}
       getPlan={(settings, pageCount) => {
-        const pages = selectedPages(settings.pages, pageCount);
+        const pages = selectedPages(settings.pages, pageCount, t);
         if (settings.watermarkKind === "image") {
-          if (!watermark) throw new Error("Choose a JPG or PNG watermark image.");
+          if (!watermark) throw new Error(t("workspace.chooseImage"));
           const image = validateImageSelection([{ size: watermark.size }]);
           if (!image.ok) throw new Error(image.message);
-        } else if (!String(settings.watermarkText ?? "").trim()) throw new Error("Enter watermark text.");
+        } else if (!String(settings.watermarkText ?? "").trim()) throw new Error(t("workspace.enterText"));
         return {
-          title: `${pages.length} ${pages.length === 1 ? "page will" : "pages will"} receive a watermark`,
-          detail:
-            "Placement is approximate. Apply the watermark and check the downloaded PDF. Your original stays unchanged.",
+          title: t("workspace.planTitle", { count: pages.length }),
+          detail: t("workspace.planDetail"),
         };
       }}
       pageClassName="rounded-lg border-0 [container-type:inline-size]"
       renderPageOverlay={(page, pages) => {
         let selection: number[];
         try {
-          selection = selectedPages(props.settings.pages, pages.length);
+          selection = selectedPages(props.settings.pages, pages.length, t);
         } catch {
           selection = [];
         }
@@ -153,7 +156,7 @@ export default function WatermarkPdfWorkspace(props: WorkspaceProps) {
           {props.settings.watermarkKind === "image" && (
             <div className="grid gap-2">
               <FieldLabel htmlFor={imageInputId}>
-                {watermark ? "Replace watermark image" : "Watermark image"}
+                {watermark ? t("workspace.replaceImage") : t("workspace.watermarkImage")}
               </FieldLabel>
               <Input
                 accept="image/jpeg,image/png"
@@ -178,9 +181,7 @@ export default function WatermarkPdfWorkspace(props: WorkspaceProps) {
                   updateFiles([...(document ? [document] : []), image]);
                 }}
               />
-              <Caption className="text-muted-foreground">
-                JPG or PNG · 25 MiB max · PDF and image combined: 50 MiB max
-              </Caption>
+              <Caption className="text-muted-foreground">{t("workspace.jpgOrPng25MibMaxPdf")}</Caption>
               {watermark && (
                 <div className="flex min-w-0 items-center gap-2">
                   <Caption className="min-w-0 flex-1 break-all">{watermark.name}</Caption>
@@ -190,7 +191,7 @@ export default function WatermarkPdfWorkspace(props: WorkspaceProps) {
                     size="sm"
                     variant="outline"
                   >
-                    Remove image
+                    {t("workspace.removeImage")}
                   </Button>
                 </div>
               )}
@@ -198,7 +199,7 @@ export default function WatermarkPdfWorkspace(props: WorkspaceProps) {
           )}
           {inputIssue && (
             <Alert variant="destructive">
-              <AlertTitle>File not added</AlertTitle>
+              <AlertTitle>{t("workspace.fileNotAdded")}</AlertTitle>
               <AlertDescription>{inputIssue}</AlertDescription>
             </Alert>
           )}

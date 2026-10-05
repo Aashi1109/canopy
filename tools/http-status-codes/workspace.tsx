@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 import { CopyButton, ResultView } from "@/components/ResultView";
 import { ScrollRegion, Stack } from "@/components/Stacks";
@@ -7,177 +8,180 @@ import { Display, H2, H3, Muted, P, StatusBadge, TextLink } from "@/components/u
 import type { ToolResult } from "@/lib/tool-framework/result";
 
 const CATEGORIES = {
-  "1": { label: "1xx · Informational", variant: "neutral" },
-  "2": { label: "2xx · Success", variant: "success" },
-  "3": { label: "3xx · Redirection", variant: "info" },
-  "4": { label: "4xx · Client error", variant: "warning" },
-  "5": { label: "5xx · Server error", variant: "danger" },
+  "1": { label: "details.categories.1.label", variant: "neutral" },
+  "2": { label: "details.categories.2.label", variant: "success" },
+  "3": { label: "details.categories.3.label", variant: "info" },
+  "4": { label: "details.categories.4.label", variant: "warning" },
+  "5": { label: "details.categories.5.label", variant: "danger" },
 } as const;
 
 // Original summaries of RFC 9110, with rate limiting defined in RFC 6585.
 const STATUS_DETAILS: Record<string, { meaning: string; next: string; section: string }> = {
   "100": {
-    meaning: "The server has received the request headers and the client can continue sending the body.",
-    next: "Continue the request and wait for the final response before treating the operation as complete.",
+    meaning: "details.status_details.100.meaning",
+    next: "details.status_details.100.next",
     section: "15.2.1",
   },
   "101": {
-    meaning: "The server agrees to switch to the protocol requested by the client.",
-    next: "Check the Upgrade header and continue using the agreed protocol.",
+    meaning: "details.status_details.101.meaning",
+    next: "details.status_details.101.next",
     section: "15.2.2",
   },
   "200": {
-    meaning: "The request succeeded. The response content depends on the request method.",
-    next: "Read the response body and Content-Type for the returned data.",
+    meaning: "details.status_details.200.meaning",
+    next: "details.status_details.200.next",
     section: "15.3.1",
   },
   "201": {
-    meaning: "The request succeeded and created one or more resources.",
-    next: "Check the Location header or response body for the newly created resource.",
+    meaning: "details.status_details.201.meaning",
+    next: "details.status_details.201.next",
     section: "15.3.2",
   },
   "202": {
-    meaning: "The server accepted the request for processing, but processing is not complete.",
-    next: "Follow the API's status or polling instructions. Acceptance does not guarantee eventual success.",
+    meaning: "details.status_details.202.meaning",
+    next: "details.status_details.202.next",
     section: "15.3.3",
   },
   "204": {
-    meaning: "The request succeeded and the server has no response content to send.",
-    next: "Treat the operation as successful without attempting to parse a response body.",
+    meaning: "details.status_details.204.meaning",
+    next: "details.status_details.204.next",
     section: "15.3.5",
   },
   "206": {
-    meaning: "The server returned the requested portion of a resource in response to a range request.",
-    next: "Use the Content-Range header or multipart boundaries to place each returned segment correctly.",
+    meaning: "details.status_details.206.meaning",
+    next: "details.status_details.206.next",
     section: "15.3.7",
   },
   "301": {
-    meaning: "The resource has moved permanently to a new URL.",
-    next: "Check Location and update stored links. Clients may change POST to GET; use 308 when the method must be preserved.",
+    meaning: "details.status_details.301.meaning",
+    next: "details.status_details.301.next",
     section: "15.4.2",
   },
   "302": {
-    meaning: "The resource is temporarily available at another URL.",
-    next: "Check Location and keep the original URL for future requests. Use 307 when the method must be preserved.",
+    meaning: "details.status_details.302.meaning",
+    next: "details.status_details.302.next",
     section: "15.4.3",
   },
   "304": {
-    meaning: "A conditional GET or HEAD request found that the cached representation is still valid.",
-    next: "Reuse the cached response body and update its metadata from the returned headers.",
+    meaning: "details.status_details.304.meaning",
+    next: "details.status_details.304.next",
     section: "15.4.5",
   },
   "307": {
-    meaning: "The resource is temporarily at another URL, and a redirect must preserve the request method.",
-    next: "Check Location and repeat the request with the same method and body when following the redirect.",
+    meaning: "details.status_details.307.meaning",
+    next: "details.status_details.307.next",
     section: "15.4.8",
   },
   "308": {
-    meaning: "The resource has moved permanently, and a redirect must preserve the request method.",
-    next: "Update stored links using Location and preserve the method and body when following the redirect.",
+    meaning: "details.status_details.308.meaning",
+    next: "details.status_details.308.next",
     section: "15.4.9",
   },
   "400": {
-    meaning: "The server cannot process the request because it considers part of the request invalid.",
-    next: "Check the URL, headers, body format, and any validation details in the response.",
+    meaning: "details.status_details.400.meaning",
+    next: "details.status_details.400.next",
     section: "15.5.1",
   },
   "401": {
-    meaning: "The request lacks valid authentication credentials for this resource.",
-    next: "Check WWW-Authenticate, then provide or refresh the credentials required by that authentication scheme.",
+    meaning: "details.status_details.401.meaning",
+    next: "details.status_details.401.next",
     section: "15.5.2",
   },
   "403": {
-    meaning: "The server understood the request but refuses to fulfil it.",
-    next: "Check permissions and server policy. Repeating the same credentials usually will not resolve the refusal.",
+    meaning: "details.status_details.403.meaning",
+    next: "details.status_details.403.next",
     section: "15.5.4",
   },
   "404": {
-    meaning: "The server could not find the requested resource, or is unwilling to disclose that it exists.",
-    next: "Check the URL, route, and resource ID. A 404 alone does not tell you whether the resource is permanently gone.",
+    meaning: "details.status_details.404.meaning",
+    next: "details.status_details.404.next",
     section: "15.5.5",
   },
   "405": {
-    meaning: "The resource does not support the HTTP method used for this request.",
-    next: "Check the Allow response header and use a supported method.",
+    meaning: "details.status_details.405.meaning",
+    next: "details.status_details.405.next",
     section: "15.5.6",
   },
   "408": {
-    meaning: "The server timed out while waiting to receive the complete request.",
-    next: "Check the connection and upload time. Retry on a new connection if repeating the operation is safe.",
+    meaning: "details.status_details.408.meaning",
+    next: "details.status_details.408.next",
     section: "15.5.9",
   },
   "409": {
-    meaning: "The request conflicts with the current state of the resource.",
-    next: "Read the conflict details, refresh the resource state, and resolve the conflict before retrying.",
+    meaning: "details.status_details.409.meaning",
+    next: "details.status_details.409.next",
     section: "15.5.10",
   },
   "410": {
-    meaning: "The resource is no longer available, and the server expects this condition to be permanent.",
-    next: "Remove or update the old link and look for a replacement resource.",
+    meaning: "details.status_details.410.meaning",
+    next: "details.status_details.410.next",
     section: "15.5.11",
   },
   "413": {
-    meaning: "The request content is larger than the server is willing or able to process.",
-    next: "Reduce the payload or upload size. If Retry-After is present, the limit may be temporary.",
+    meaning: "details.status_details.413.meaning",
+    next: "details.status_details.413.next",
     section: "15.5.14",
   },
   "415": {
-    meaning: "The server does not support the request content's format or encoding for this operation.",
-    next: "Check Content-Type, Content-Encoding, and the actual body against the API's supported formats.",
+    meaning: "details.status_details.415.meaning",
+    next: "details.status_details.415.next",
     section: "15.5.16",
   },
   "418": {
-    meaning: "Historically known as I'm a Teapot. Current HTTP semantics reserve this code as unused.",
-    next: "Check the application's documentation; this code has no standard production HTTP meaning.",
+    meaning: "details.status_details.418.meaning",
+    next: "details.status_details.418.next",
     section: "15.5.19",
   },
   "422": {
-    meaning: "The server understands the content type and syntax but cannot process the supplied instructions.",
-    next: "Check the response's validation details and correct the values or business rules in the request.",
+    meaning: "details.status_details.422.meaning",
+    next: "details.status_details.422.next",
     section: "15.5.21",
   },
   "429": {
-    meaning: "Too many requests were sent within the server's rate-limit window.",
-    next: "Respect Retry-After when supplied, slow down requests, and retry with backoff.",
+    meaning: "details.status_details.429.meaning",
+    next: "details.status_details.429.next",
     section: "6585-4",
   },
   "500": {
-    meaning: "An unexpected server condition prevented the request from being completed.",
-    next: "Check server logs and request IDs. Retry only when repeating the operation is safe.",
+    meaning: "details.status_details.500.meaning",
+    next: "details.status_details.500.next",
     section: "15.6.1",
   },
   "501": {
-    meaning: "The server does not support the functionality needed to fulfil the request.",
-    next: "Check whether the server implements the requested method or feature.",
+    meaning: "details.status_details.501.meaning",
+    next: "details.status_details.501.next",
     section: "15.6.2",
   },
   "502": {
-    meaning: "A gateway or proxy received an invalid response from an upstream server.",
-    next: "Check the upstream service, its connection, and the gateway or proxy logs.",
+    meaning: "details.status_details.502.meaning",
+    next: "details.status_details.502.next",
     section: "15.6.3",
   },
   "503": {
-    meaning: "The server is temporarily unable to handle the request, often because of overload or maintenance.",
-    next: "Check service health and respect Retry-After when present. Retry with backoff when safe.",
+    meaning: "details.status_details.503.meaning",
+    next: "details.status_details.503.next",
     section: "15.6.4",
   },
   "504": {
-    meaning: "A gateway or proxy did not receive a timely response from an upstream server.",
-    next: "Check upstream response times and gateway timeouts before safely retrying.",
+    meaning: "details.status_details.504.meaning",
+    next: "details.status_details.504.next",
     section: "15.6.5",
   },
 };
 
 function StatusDetails({ result }: { result: ToolResult }) {
+  const toolText = useToolTranslations("Tool.runtime");
   const rows = "tablePreview" in result ? result.tablePreview?.rows : undefined;
   if (!rows?.length) return <ResultView result={result} />;
   const single = rows.length === 1;
 
   return (
-    <ScrollRegion accessibleName="HTTP status details" className="min-h-0 flex-1">
+    <ScrollRegion accessibleName={toolText("status.region")} className="min-h-0 flex-1">
       <div className="@container">
         {!single ? (
-          <Muted className="border-b border-border px-5 py-3">{rows.length} matching status codes</Muted>
+          <Muted className="border-b border-border px-5 py-3">
+            {toolText("status.matches", { count: rows.length })}
+          </Muted>
         ) : null}
         <div className="divide-y divide-border">
           {rows.map(([code, phrase]) => {
@@ -198,21 +202,25 @@ function StatusDetails({ result }: { result: ToolResult }) {
                     )}
                     <div className="space-y-2">
                       {single ? <H2>{phrase}</H2> : <H3>{phrase}</H3>}
-                      {category ? <StatusBadge variant={category.variant}>{category.label}</StatusBadge> : null}
+                      {category ? (
+                        <StatusBadge variant={category.variant}>{toolText(category.label)}</StatusBadge>
+                      ) : null}
                     </div>
                   </Stack>
-                  {!single ? <CopyButton content={`${code} ${phrase}`} iconOnly label={`Copy ${code}`} /> : null}
+                  {!single ? (
+                    <CopyButton content={`${code} ${phrase}`} iconOnly label={toolText("status.copy", { code })} />
+                  ) : null}
                 </Stack>
                 {detail ? (
                   <>
                     <div className="max-w-3xl space-y-2">
-                      {single ? <H3>What it means</H3> : null}
-                      <P>{detail.meaning}</P>
+                      {single ? <H3>{toolText("workspace.what_it_means_eed88f")}</H3> : null}
+                      <P>{toolText(detail.meaning)}</P>
                     </div>
                     {single ? (
                       <div className="max-w-3xl space-y-2 border-t border-border pt-5">
-                        <H3>What to check</H3>
-                        <P>{detail.next}</P>
+                        <H3>{toolText("workspace.what_to_check_5d4b90")}</H3>
+                        <P>{toolText(detail.next)}</P>
                       </div>
                     ) : null}
                     {single ? (
@@ -225,7 +233,7 @@ function StatusDetails({ result }: { result: ToolResult }) {
                         rel="noreferrer"
                         target="_blank"
                       >
-                        Read the HTTP specification
+                        {toolText("workspace.read_the_http_8b901a")}
                       </TextLink>
                     ) : null}
                   </>

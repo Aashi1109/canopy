@@ -19,6 +19,7 @@ export const run: ToolRun<Record<string, never>> = async (ctx): Promise<ToolResu
     tablePreview: {
       render: "table",
       columns: ["Algorithm", "Checksum"],
+      columnMessages: [{ key: "execution.algorithm" }, { key: "execution.checksum" }],
       rows: [
         ["MD5", md5Checksum],
         ["SHA-1", sha1],

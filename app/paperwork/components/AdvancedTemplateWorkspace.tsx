@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
 
 import type {
@@ -56,23 +57,171 @@ interface AdvancedTemplateWorkspaceProps<TDraft> {
   templates: readonly DocumentTemplate[];
 }
 
-const SELECT_OPTIONS: Readonly<Record<string, readonly (string | { label: string; value: string })[]>> = {
-  "invoice:discountType": ["none", "percent", "fixed"],
+const SELECT_OPTIONS: Readonly<Record<string, readonly { messageKey: string; value: string }[]>> = {
+  "invoice:discountType": [
+    {
+      messageKey: "shared.advanced.options.noDiscount",
+      value: "none",
+    },
+    {
+      messageKey: "shared.advanced.options.percentage",
+      value: "percent",
+    },
+    {
+      messageKey: "shared.advanced.options.fixedAmount",
+      value: "fixed",
+    },
+  ],
   "mileage-log:rateMode": [
-    { label: "IRS standard rate", value: "irs-standard" },
-    { label: "Custom rate", value: "custom" },
+    {
+      messageKey: "shared.advanced.options.irsStandardRate",
+      value: "irs-standard",
+    },
+    {
+      messageKey: "shared.advanced.options.customRate",
+      value: "custom",
+    },
   ],
   "quarterly-tax-estimator:filingStatus": [
-    { label: "Single", value: "single" },
-    { label: "Married filing jointly", value: "married_joint" },
-    { label: "Married filing separately", value: "married_separate" },
-    { label: "Head of household", value: "head_household" },
+    {
+      messageKey: "shared.advanced.options.single",
+      value: "single",
+    },
+    {
+      messageKey: "shared.advanced.options.marriedFilingJointly",
+      value: "married_joint",
+    },
+    {
+      messageKey: "shared.advanced.options.marriedFilingSeparately",
+      value: "married_separate",
+    },
+    {
+      messageKey: "shared.advanced.options.headOfHousehold",
+      value: "head_household",
+    },
   ],
-  "w9-request:requestStatus": ["Not Requested", "Requested", "Received", "Needs Review", "Not Applicable"],
-  "1099-nec-tracker:filingStatus": ["Review required", "Ready for preparer", "Filed externally"],
-  "expense-report:expenseRows.category": ["Travel", "Lodging", "Meals", "Software", "Office supplies", "Other"],
-  "1099-nec-tracker:paymentRows.paymentMethod": ["Cash", "Check", "ACH", "PayPal", "Venmo", "Zelle", "Card", "Other"],
-  "1099-nec-tracker:paymentRows.category": ["Services", "Rent", "Legal", "Repairs", "Commissions", "Other"],
+  "w9-request:requestStatus": [
+    {
+      messageKey: "shared.advanced.options.notRequested",
+      value: "Not Requested",
+    },
+    {
+      messageKey: "shared.advanced.options.requested",
+      value: "Requested",
+    },
+    {
+      messageKey: "shared.advanced.options.received",
+      value: "Received",
+    },
+    {
+      messageKey: "shared.advanced.options.needsReview",
+      value: "Needs Review",
+    },
+    {
+      messageKey: "shared.advanced.options.notApplicable",
+      value: "Not Applicable",
+    },
+  ],
+  "1099-nec-tracker:filingStatus": [
+    {
+      messageKey: "shared.advanced.options.reviewRequired",
+      value: "Review required",
+    },
+    {
+      messageKey: "shared.advanced.options.readyForPreparer",
+      value: "Ready for preparer",
+    },
+    {
+      messageKey: "shared.advanced.options.filedExternally",
+      value: "Filed externally",
+    },
+  ],
+  "expense-report:expenseRows.category": [
+    {
+      messageKey: "shared.advanced.options.travel",
+      value: "Travel",
+    },
+    {
+      messageKey: "shared.advanced.options.lodging",
+      value: "Lodging",
+    },
+    {
+      messageKey: "shared.advanced.options.meals",
+      value: "Meals",
+    },
+    {
+      messageKey: "shared.advanced.options.software",
+      value: "Software",
+    },
+    {
+      messageKey: "shared.advanced.options.officeSupplies",
+      value: "Office supplies",
+    },
+    {
+      messageKey: "shared.advanced.options.other",
+      value: "Other",
+    },
+  ],
+  "1099-nec-tracker:paymentRows.paymentMethod": [
+    {
+      messageKey: "shared.advanced.options.cash",
+      value: "Cash",
+    },
+    {
+      messageKey: "shared.advanced.options.check",
+      value: "Check",
+    },
+    {
+      messageKey: "shared.advanced.options.ach",
+      value: "ACH",
+    },
+    {
+      messageKey: "shared.advanced.options.paypal",
+      value: "PayPal",
+    },
+    {
+      messageKey: "shared.advanced.options.venmo",
+      value: "Venmo",
+    },
+    {
+      messageKey: "shared.advanced.options.zelle",
+      value: "Zelle",
+    },
+    {
+      messageKey: "shared.advanced.options.card",
+      value: "Card",
+    },
+    {
+      messageKey: "shared.advanced.options.other",
+      value: "Other",
+    },
+  ],
+  "1099-nec-tracker:paymentRows.category": [
+    {
+      messageKey: "shared.advanced.options.services",
+      value: "Services",
+    },
+    {
+      messageKey: "shared.advanced.options.rent",
+      value: "Rent",
+    },
+    {
+      messageKey: "shared.advanced.options.legal",
+      value: "Legal",
+    },
+    {
+      messageKey: "shared.advanced.options.repairs",
+      value: "Repairs",
+    },
+    {
+      messageKey: "shared.advanced.options.commissions",
+      value: "Commissions",
+    },
+    {
+      messageKey: "shared.advanced.options.other",
+      value: "Other",
+    },
+  ],
 };
 
 function customStorageKey(templateId: string) {
@@ -167,10 +316,14 @@ function inputType(control: string) {
   return "text";
 }
 
-function fieldOptions(entry: FormEntry | RepeaterColumn, fallbackKey?: string) {
-  const options =
-    ("options" in entry ? entry.options : undefined) ?? (fallbackKey ? SELECT_OPTIONS[fallbackKey] : undefined);
-  return (options ?? []).map((option) => (typeof option === "string" ? { label: option, value: option } : option));
+function fieldOptions(entry: FormEntry | RepeaterColumn, translate: (key: string) => string, fallbackKey?: string) {
+  const authored = "options" in entry ? entry.options : undefined;
+  if (authored)
+    return authored.map((option) => (typeof option === "string" ? { label: option, value: option } : option));
+  return (fallbackKey ? (SELECT_OPTIONS[fallbackKey] ?? []) : []).map((option) => ({
+    label: translate(option.messageKey),
+    value: option.value,
+  }));
 }
 
 function fieldControl(entry: Exclude<FormEntry, RepeaterEntry>, definition?: DocumentFieldDefinition) {
@@ -203,6 +356,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
   onTrackClick,
   templates,
 }: AdvancedTemplateWorkspaceProps<TDraft>) {
+  const t = useTranslations("Tool.runtime");
   const availableTemplates = useMemo(
     () =>
       templates.filter(
@@ -220,6 +374,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
   const [customValues, setCustomValues] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState(false);
+  const [hasEdits, setHasEdits] = useState(false);
   const loadedCustomTemplateRef = useRef("");
   const rejectsFullTin = adapter.documentType === "w9-request" || adapter.documentType === "1099-nec-tracker";
 
@@ -264,10 +419,11 @@ export default function AdvancedTemplateWorkspace<TDraft>({
   }
 
   function writeEntry(entry: FormEntry, value: unknown) {
+    setHasEdits(true);
     if (rejectsFullTin && containsFullTin(value)) {
       setErrors((current) => ({
         ...current,
-        [entry.key]: "Full TIN, SSN, and EIN values are not accepted.",
+        [entry.key]: t("shared.advanced.fullTinRejected"),
       }));
       return;
     }
@@ -280,23 +436,23 @@ export default function AdvancedTemplateWorkspace<TDraft>({
   }
 
   function validate() {
-    const next = adapter.validate(draft, selectedTemplate.config.form);
+    const next = adapter.validate(draft, selectedTemplate.config.form, t);
     for (const section of selectedTemplate.config.form.sections) {
       for (const entry of section.entries) {
         if (!entry.enabled) continue;
         const value = readEntry(entry);
         if (rejectsFullTin && containsFullTin(value)) {
-          next[entry.key] = "Full TIN, SSN, and EIN values are not accepted.";
+          next[entry.key] = t("shared.advanced.fullTinRejected");
         }
         const fieldDefinition = entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
         const control = entry.kind === "repeater" ? "repeater" : fieldControl(entry, fieldDefinition);
         if (entry.required && (control === "checkbox" ? value !== true : isEmpty(value))) {
-          next[entry.key] = `${entry.label} is required.`;
+          next[entry.key] = t("shared.advanced.fieldRequired", { field: entry.label });
         }
         const columns = entry.kind === "repeater" ? entry.columns : fieldDefinition?.repeaterColumns;
         const rows = columns ? rowValue(value, entry.kind === "repeater" ? (entry.minRows ?? 0) : 0) : [];
         if (entry.kind === "repeater" && rows.length < (entry.minRows ?? 0)) {
-          next[entry.key] = `${entry.label} needs at least ${entry.minRows} rows.`;
+          next[entry.key] = t("shared.advanced.minimumRows", { field: entry.label, count: entry.minRows ?? 0 });
         }
         if (
           columns?.some(
@@ -305,7 +461,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
               rows.some((row) => (column.control === "checkbox" ? row[column.key] !== true : isEmpty(row[column.key]))),
           )
         ) {
-          next[entry.key] = `${entry.label} has an incomplete required column.`;
+          next[entry.key] = t("shared.advanced.incompleteColumn", { field: entry.label });
         }
       }
     }
@@ -335,8 +491,8 @@ export default function AdvancedTemplateWorkspace<TDraft>({
         ...current,
         _document:
           error instanceof Error && error.message === "Allow pop-ups to open the PDF preview."
-            ? error.message
-            : "The PDF could not be generated. Please try again.",
+            ? t("shared.advanced.allowPopups")
+            : t("shared.advanced.pdfFailed"),
       }));
     } finally {
       setIsGenerating(false);
@@ -347,7 +503,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
     const definition = entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
     const control = fieldControl(entry, definition);
     const id = `advanced-field-${entry.key.replaceAll(".", "-")}`;
-    const options = fieldOptions(entry, `${adapter.documentType}:${entry.key}`);
+    const options = fieldOptions(entry, t, `${adapter.documentType}:${entry.key}`);
 
     if (control === "checkbox") {
       return (
@@ -380,7 +536,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
           required={entry.required}
           value={String(value ?? "")}
         >
-          <option value="">Select…</option>
+          <option value="">{t("shared.advanced.select")}</option>
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -415,7 +571,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
     return (
       <div className="grid gap-3">
         <OrderableList
-          ariaLabel={`${entry.label} rows`}
+          ariaLabel={t("shared.advanced.rowsLabel", { field: entry.label })}
           className="grid gap-3"
           getId={(row) => row.id}
           getLabel={(_row) => entry.label}
@@ -427,7 +583,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                 <Button
                   {...state.attributes}
                   {...state.listeners}
-                  aria-label={`Reorder ${entry.label} row`}
+                  aria-label={t("shared.advanced.reorderRow", { field: entry.label })}
                   className="size-9 touch-none text-muted-foreground"
                   ref={state.setActivatorNodeRef}
                   size="icon"
@@ -437,7 +593,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                   <GripVertical aria-hidden="true" size={16} />
                 </Button>
                 <Button
-                  aria-label={`Remove ${entry.label} row`}
+                  aria-label={t("shared.advanced.removeRow", { field: entry.label })}
                   disabled={rows.length <= minRows}
                   onClick={() => updateRows(rows.filter((item) => item.id !== row.id))}
                   size="icon"
@@ -451,7 +607,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                 {columns.map((column) => {
                   const id = `${entry.key}-${row.id}-${column.key}`;
                   const value = row[column.key];
-                  const options = fieldOptions(column, `${adapter.documentType}:${entry.key}.${column.key}`);
+                  const options = fieldOptions(column, t, `${adapter.documentType}:${entry.key}.${column.key}`);
                   return (
                     <div className="grid gap-1" key={column.key}>
                       <Label htmlFor={id}>{column.label}</Label>
@@ -472,7 +628,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                           }
                           value={String(value ?? "")}
                         >
-                          <option value="">Select…</option>
+                          <option value="">{t("shared.advanced.select")}</option>
                           {options.map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
@@ -533,20 +689,26 @@ export default function AdvancedTemplateWorkspace<TDraft>({
           variant="secondary"
         >
           <Plus aria-hidden="true" size={15} />
-          Add row
+          {t("shared.advanced.addRow")}
         </Button>
       </div>
     );
   }
 
   return (
-    <Card className="grid gap-6 p-5 print:hidden">
+    <Card
+      className="grid gap-6 p-5 print:hidden"
+      data-language-switch-state={isGenerating ? "running" : hasEdits ? "dirty" : "clean"}
+    >
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="grid min-w-64 gap-1">
-          <Label htmlFor="advanced-published-template">Published template</Label>
+          <Label htmlFor="advanced-published-template">{t("shared.advanced.publishedTemplate")}</Label>
           <Select
             id="advanced-published-template"
-            onChange={(event) => setSelectedTemplateId(event.target.value)}
+            onChange={(event) => {
+              setHasEdits(true);
+              setSelectedTemplateId(event.target.value);
+            }}
             value={selectedTemplate.id}
           >
             {availableTemplates.map((template) => (
@@ -559,6 +721,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={() => {
+              setHasEdits(true);
               onDraftChange(adapter.getSampleDraft());
               const samples = templateCustomSampleValues(selectedTemplate);
               setCustomValues(rejectsFullTin ? withoutFullTinValues(samples) : samples);
@@ -569,7 +732,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
             variant="secondary"
           >
             <RefreshCw aria-hidden="true" size={15} />
-            Load sample
+            {t("shared.advanced.loadSample")}
           </Button>
           <Button
             disabled={isGenerating}
@@ -579,7 +742,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
             variant="secondary"
           >
             <Printer aria-hidden="true" size={15} />
-            Print PDF
+            {t("shared.advanced.printPdf")}
           </Button>
           <ToolActionButton
             action="download"
@@ -587,7 +750,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
             onClick={() => void generate("download")}
             type="button"
           >
-            Download PDF
+            {t("shared.advanced.downloadPdf")}
           </ToolActionButton>
         </div>
       </div>
@@ -606,7 +769,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
               <section className="grid gap-4" key={section.id}>
                 <div className="flex items-center gap-2 border-b border-border pb-2">
                   <H3>{section.label}</H3>
-                  <StatusBadge>{entries.length} fields</StatusBadge>
+                  <StatusBadge>{t("shared.advanced.fieldCount", { count: entries.length })}</StatusBadge>
                 </div>
                 {entries.map((entry) => {
                   const fieldDefinition = entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;

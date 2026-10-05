@@ -28,6 +28,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         "invalid-query-row",
         "Each query row must use key=value format.",
         "Give every non-blank line a key, an equals sign, and a value.",
+        { messageRef: { key: "errors.invalid-query-row" }, recoveryMessage: { key: "recovery.invalid-query-row" } },
       );
     }
     rows.push({ key, value });

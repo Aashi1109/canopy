@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import React, { act } from "react";
+import { NextIntlClientProvider } from "next-intl";
+import { getCommonMessages } from "../lib/i18n/messages.ts";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { GlobalToolSearch } from "../components/ui/components/GlobalToolSearch.tsx";
@@ -56,7 +58,15 @@ afterEach(async () => {
 });
 
 async function open(props = {}) {
-  await act(() => root.render(React.createElement(GlobalToolSearch, props)));
+  await act(() =>
+    root.render(
+      React.createElement(
+        NextIntlClientProvider,
+        { locale: "en", messages: getCommonMessages("en"), timeZone: "UTC" },
+        React.createElement(GlobalToolSearch, props),
+      ),
+    ),
+  );
   await act(() => container.querySelector("button").click());
   expect(document.activeElement).toBe(input());
 }

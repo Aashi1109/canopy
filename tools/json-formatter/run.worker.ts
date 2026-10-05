@@ -41,6 +41,12 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     return {
       render: "text",
       text: `Valid JSON\nRoot type: ${jsonRootType(validated.render === "code" ? validated.code : ctx.input.text)}`,
+      verdict: {
+        level: "ok",
+        label: "Valid JSON",
+        labelMessage: { key: "jsonExecution.valid" },
+      },
+      stats: validated.stats,
     };
   }
 
@@ -71,8 +77,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         verdict: {
           level: "ok",
           label: "Exact numbers preserved",
+          labelMessage: { key: "json.exactNumbers" },
           detail:
             "Shown as code because a tree view would change some numeric values. Copy and download keep the original numbers.",
+          detailMessage: { key: "json.exactNumbersDetail" },
         },
       };
     }

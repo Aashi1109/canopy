@@ -23,14 +23,17 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files[0];
-  if (!input) throw new ToolError("no-files", "Choose a PDF to reorder.");
+  if (!input)
+    throw new ToolError("no-files", "Choose a PDF to reorder.", undefined, { messageRef: { key: "errors.noFiles" } });
   const selection = validatePdfSelection([{ size: input.size }]);
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
   await validatePdfInput(input);
 
   const order = ctx.settings.pages;
   if (typeof order === "string") {
-    throw new ToolError("incomplete-order", "Include every PDF page exactly once in the new order.");
+    throw new ToolError("incomplete-order", "Include every PDF page exactly once in the new order.", undefined, {
+      messageRef: { key: "errors.incompleteOrder" },
+    });
   }
 
   const { PDFDocument } = await import("pdf-lib");
@@ -39,12 +42,16 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   enforcePageLimit(input, count, false);
   const pages = checkedPages(order, count, false);
   if (pages.length !== count || new Set(pages).size !== count) {
-    throw new ToolError("incomplete-order", "Include every PDF page exactly once in the new order.");
+    throw new ToolError("incomplete-order", "Include every PDF page exactly once in the new order.", undefined, {
+      messageRef: { key: "errors.incompleteOrder" },
+    });
   }
   ctx.signal.throwIfAborted();
 
   const output = await PDFDocument.create();
-  await addCopiedPagesWithProgress(output, source, pages, "Reordering PDF page", ctx.progress);
+  await addCopiedPagesWithProgress(output, source, pages, "Reordering PDF page", ctx.progress, {
+    key: "progress.reorderingPdfPage",
+  });
 
   const file = await ctx.writeArtifact({
     name: createOutputFilename(input.name, "pdf", "reordered"),

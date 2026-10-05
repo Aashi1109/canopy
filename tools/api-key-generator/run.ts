@@ -25,6 +25,10 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "invalid-prefix",
       "Prefix may contain only letters, numbers, underscores, and hyphens.",
       "Use something short such as sk or pk_live, up to 32 characters.",
+      {
+        messageRef: { key: "execution.errors.invalid-prefix" },
+        recoveryMessage: { key: "execution.recovery.invalid-prefix" },
+      },
     );
   }
   const qualifiedPrefix =

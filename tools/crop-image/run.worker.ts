@@ -34,7 +34,9 @@ function cropFreeform(image: ImageData, raw: unknown): ImageData {
     const sourceContext = source.getContext("2d");
     const context = canvas.getContext("2d");
     if (!sourceContext || !context)
-      throw new ToolError("canvas-unavailable", "Unable to create the crop. Please try again.");
+      throw new ToolError("canvas-unavailable", "Unable to create the crop. Please try again.", undefined, {
+        messageRef: { key: "errors.canvasUnavailable" },
+      });
     sourceContext.putImageData(image, 0, 0);
     context.beginPath();
     points.forEach((point, index) => {
@@ -62,9 +64,10 @@ function outputFormat(requested: string): "original" | OutputImageFormat {
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files[0];
-  if (!input) throw new ToolError("no-files", "Choose an image to crop.");
+  if (!input)
+    throw new ToolError("no-files", "Choose an image to crop.", undefined, { messageRef: { key: "errors.noFiles" } });
 
-  ctx.progress({ completed: 0, total: 1, stage: "Decoding image" });
+  ctx.progress({ completed: 0, total: 1, stage: "Decoding image", stageMessage: { key: "progress.decodingImage" } });
   const { image, kind } = await decodeImage(input, ACCEPTED);
   ctx.signal.throwIfAborted();
 
@@ -80,7 +83,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         });
   ctx.signal.throwIfAborted();
 
-  ctx.progress({ completed: 0, total: 1, stage: "Encoding image" });
+  ctx.progress({ completed: 0, total: 1, stage: "Encoding image", stageMessage: { key: "progress.encodingImage" } });
   const buffer = await encodeImage(cropped, format, ctx.settings.quality / 100);
   ctx.signal.throwIfAborted();
   const output = await ctx.writeArtifact({
@@ -88,7 +91,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     mime: mimeFor(format),
     source: new Uint8Array(buffer),
   });
-  ctx.progress({ completed: 1, total: 1, stage: "Image complete" });
+  ctx.progress({ completed: 1, total: 1, stage: "Image complete", stageMessage: { key: "progress.imageComplete" } });
 
   return {
     render: "files",

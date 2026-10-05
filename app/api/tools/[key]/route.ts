@@ -55,6 +55,7 @@ function toFailure(error: unknown): NextResponse {
           code: error.code,
           message: error.message,
           recovery: error.recovery,
+          ...(error.details ? { details: error.details } : {}),
         },
       },
       { status: error.code === "unknown-tool" ? 404 : 400 },

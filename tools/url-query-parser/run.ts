@@ -8,13 +8,17 @@
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
-import { requireUtilityInput } from "../../lib/devtools/shared/options.ts";
 import { createTablePreview } from "../../lib/devtools/shared/table-preview.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
-  const input = requireUtilityInput(ctx.input.text, "URL or query string").trim();
+  const input = ctx.input.text.trim();
+  if (!input)
+    throw new ToolError("input-required", "URL or query string is required.", "Enter a value and try again.", {
+      messageRef: { key: "errors.inputRequired" },
+      recoveryMessage: { key: "errors.enterValue" },
+    });
   const isUrl = !input.startsWith("?") && (input.includes("?") || /^[a-z][a-z\d+.-]*:/i.test(input));
   let entries: [string, string][];
   try {
@@ -36,6 +40,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "query-invalid",
       "URL or query string is invalid.",
       "Paste a complete URL, or just the part after the ? on its own.",
+      { messageRef: { key: "errors.queryInvalid" }, recoveryMessage: { key: "errors.queryRecovery" } },
     );
   }
   type ParsedValue = string | number;
@@ -57,12 +62,16 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   return {
     render: "text",
     text: JSON.stringify(value, null, 2),
-    tablePreview: preview.result,
+    tablePreview: preview.result
+      ? { ...preview.result, columnMessages: [{ key: "result.parameter" }, { key: "result.value" }] }
+      : undefined,
     verdict:
       Object.keys(value).length === 0
         ? {
             level: "ok",
             label: "No query parameters to display",
+            labelMessage: { key: "result.empty" },
+            detailMessage: { key: entries.length ? "result.emptyValues" : "result.noParameters" },
             detail: entries.length
               ? "All parameter values are blank. Turn on Keep empty values to include them."
               : "This input has no query parameters. Raw contains an empty JSON object.",

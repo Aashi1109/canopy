@@ -25,9 +25,12 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files[0];
-  if (!input) throw new ToolError("no-files", "Choose a PDF to delete pages from.");
+  if (!input)
+    throw new ToolError("no-files", "Choose a PDF to delete pages from.", undefined, {
+      messageRef: { key: "errors.noFiles" },
+    });
   const selection = validatePdfSelection([{ size: input.size }]);
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
   await validatePdfInput(input);
 
   const pdf = await loadPdf(input);
@@ -37,7 +40,9 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const requested = parsePageSelection(ctx.settings.pages, count);
   const pages = checkedPages(requested === "all" ? Array.from({ length: count }, (_, i) => i + 1) : requested, count);
   if (pages.length >= count) {
-    throw new ToolError("empty-document", "At least one PDF page must remain.");
+    throw new ToolError("empty-document", "At least one PDF page must remain.", undefined, {
+      messageRef: { key: "errors.emptyDocument" },
+    });
   }
   ctx.signal.throwIfAborted();
 
@@ -53,6 +58,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       ctx.signal.throwIfAborted();
       pdf.removePage(index);
     },
+    { key: "progress.deletingPdfPage" },
   );
 
   const output = await ctx.writeArtifact({

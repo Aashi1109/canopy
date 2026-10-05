@@ -33,32 +33,44 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  */
 function normalizeDomainRatingTarget(value: unknown): string {
   if (typeof value !== "string") {
-    throw new ToolError("invalid-target", "Enter a domain or HTTP(S) URL.");
+    throw new ToolError("invalid-target", "Enter a domain or HTTP(S) URL.", undefined, {
+      messageRef: { key: "errors.targetRequired" },
+    });
   }
 
   const input = value.trim();
   if (!input) {
-    throw new ToolError("invalid-target", "Enter a domain or HTTP(S) URL.");
+    throw new ToolError("invalid-target", "Enter a domain or HTTP(S) URL.", undefined, {
+      messageRef: { key: "errors.targetRequired" },
+    });
   }
   if (input.length > MAX_DOMAIN_RATING_TARGET_LENGTH) {
-    throw new ToolError("invalid-target", "Domain or URL must be 2,048 characters or fewer.");
+    throw new ToolError("invalid-target", "Domain or URL must be 2,048 characters or fewer.", undefined, {
+      messageRef: { key: "errors.targetTooLong", values: { limit: MAX_DOMAIN_RATING_TARGET_LENGTH } },
+    });
   }
 
   const hasScheme = /^[a-z][a-z\d+.-]*:/i.test(input);
   const hasHttpScheme = /^https?:\/\//i.test(input);
   if ((hasScheme && !hasHttpScheme) || (!hasHttpScheme && /[/?#]/.test(input))) {
-    throw new ToolError("invalid-target", "Enter a valid domain or HTTP(S) URL.");
+    throw new ToolError("invalid-target", "Enter a valid domain or HTTP(S) URL.", undefined, {
+      messageRef: { key: "errors.targetInvalid" },
+    });
   }
 
   let parsed: URL;
   try {
     parsed = new URL(hasHttpScheme ? input : `https://${input}`);
   } catch {
-    throw new ToolError("invalid-target", "Enter a valid domain or HTTP(S) URL.");
+    throw new ToolError("invalid-target", "Enter a valid domain or HTTP(S) URL.", undefined, {
+      messageRef: { key: "errors.targetInvalid" },
+    });
   }
 
   if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) {
-    throw new ToolError("invalid-target", "Enter a valid domain or HTTP(S) URL.");
+    throw new ToolError("invalid-target", "Enter a valid domain or HTTP(S) URL.", undefined, {
+      messageRef: { key: "errors.targetInvalid" },
+    });
   }
 
   const domain = parsed.hostname.toLowerCase().replace(/\.$/, "");
@@ -69,7 +81,9 @@ function normalizeDomainRatingTarget(value: unknown): string {
     isIP(domain) === 0 &&
     labels.every((label) => label.length <= 63 && /^[a-z\d](?:[a-z\d-]*[a-z\d])?$/i.test(label));
   if (!validDomain) {
-    throw new ToolError("invalid-target", "Enter a valid public domain.");
+    throw new ToolError("invalid-target", "Enter a valid public domain.", undefined, {
+      messageRef: { key: "errors.publicDomainRequired" },
+    });
   }
 
   return domain;
@@ -93,17 +107,28 @@ export const run: ToolRun<Settings> = async (ctx): Promise<DomainRatingResult> =
     });
   } catch {
     ctx.signal.throwIfAborted();
-    throw new ToolError("upstream-unreachable", "Domain Rating Checker could not reach Ahrefs. Try again.");
+    throw new ToolError("upstream-unreachable", "Domain Rating Checker could not reach Ahrefs. Try again.", undefined, {
+      messageRef: { key: "errors.upstreamUnreachable" },
+    });
   }
   ctx.signal.throwIfAborted();
   if (response.status === 401 || response.status === 403) {
-    throw new ToolError("upstream-rejected", "Ahrefs rejected the request. Check the API key configuration.");
+    throw new ToolError(
+      "upstream-rejected",
+      "Ahrefs rejected the request. Check the API key configuration.",
+      undefined,
+      { messageRef: { key: "errors.upstreamRejected" } },
+    );
   }
   if (response.status === 429) {
-    throw new ToolError("upstream-rate-limited", "Ahrefs rate limit reached. Try again later.");
+    throw new ToolError("upstream-rate-limited", "Ahrefs rate limit reached. Try again later.", undefined, {
+      messageRef: { key: "errors.upstreamRateLimited" },
+    });
   }
   if (!response.ok) {
-    throw new ToolError("upstream-failed", `Ahrefs lookup failed (${response.status}).`);
+    throw new ToolError("upstream-failed", `Ahrefs lookup failed (${response.status}).`, undefined, {
+      messageRef: { key: "errors.upstreamFailed", values: { status: response.status } },
+    });
   }
 
   let payload: unknown;
@@ -111,11 +136,15 @@ export const run: ToolRun<Settings> = async (ctx): Promise<DomainRatingResult> =
     payload = await response.json();
   } catch {
     ctx.signal.throwIfAborted();
-    throw new ToolError("upstream-invalid", `Ahrefs returned an invalid response.`);
+    throw new ToolError("upstream-invalid", "Ahrefs returned an invalid response.", undefined, {
+      messageRef: { key: "errors.upstreamInvalid" },
+    });
   }
   ctx.signal.throwIfAborted();
   if (!isRecord(payload) || !isRecord(payload.domain_rating)) {
-    throw new ToolError("upstream-invalid", "Ahrefs returned an invalid response.");
+    throw new ToolError("upstream-invalid", "Ahrefs returned an invalid response.", undefined, {
+      messageRef: { key: "errors.upstreamInvalid" },
+    });
   }
   const rating = payload.domain_rating.domain_rating;
   const license = payload.domain_rating.license;
@@ -131,7 +160,9 @@ export const run: ToolRun<Settings> = async (ctx): Promise<DomainRatingResult> =
     (warning !== null && typeof warning !== "string") ||
     (typeof warning === "string" && warning.length > 2_000)
   ) {
-    throw new ToolError("upstream-invalid", "Ahrefs returned an invalid response.");
+    throw new ToolError("upstream-invalid", "Ahrefs returned an invalid response.", undefined, {
+      messageRef: { key: "errors.upstreamInvalid" },
+    });
   }
 
   return {

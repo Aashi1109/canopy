@@ -35,11 +35,20 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "hash-invalid",
       "Bcrypt hash is invalid.",
       "Paste the whole stored hash, including the $2b$ prefix and cost.",
+      {
+        messageRef: { key: "execution.errors.hash-invalid" },
+        recoveryMessage: { key: "execution.recovery.hash-invalid" },
+      },
     );
   }
   return {
     render: "text",
     text: matched ? "Match" : "No match",
+    verdict: {
+      level: matched ? "ok" : "warn",
+      label: matched ? "Match" : "No match",
+      labelMessage: { key: matched ? "execution.match" : "execution.noMatch" },
+    },
   };
 };
 

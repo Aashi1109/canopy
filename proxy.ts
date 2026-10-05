@@ -9,6 +9,11 @@ import {
   isSharedSubdomainPath,
 } from "./lib/routing/subdomains.ts";
 import appConfig from "./lib/config/config.ts";
+import createIntlMiddleware from "next-intl/middleware";
+import { routing } from "./lib/i18n/routing";
+import { isPublicPagePath } from "./lib/i18n/config";
+
+const localizePublicRequest = createIntlMiddleware(routing);
 
 async function checkAccountAccess(request: NextRequest, redirectOrigin: string): Promise<NextResponse | null> {
   const { pathname } = request.nextUrl;
@@ -102,6 +107,18 @@ export async function proxy(request: NextRequest) {
     const destination = request.nextUrl.clone();
     destination.pathname = internalSubdomainPath(subdomain.name, pathname);
     return finish(NextResponse.rewrite(destination));
+  }
+  if (!subdomain && isPublicPagePath(pathname)) {
+    const response = localizePublicRequest(request);
+    const location = response.headers.get("location");
+    if (location) {
+      // Next may normalize an IP/local URL to its internal hostname. Locale
+      // normalization is same-origin and must retain the explicit public Host.
+      const destination = new URL(location);
+      destination.host = host;
+      response.headers.set("location", destination.toString());
+    }
+    return response;
   }
   return finish(NextResponse.next());
 }

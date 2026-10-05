@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import {
   Strong,
@@ -44,11 +45,17 @@ import { SyntaxHighlight } from "@/components/content/SyntaxHighlight";
 import { SandboxedHtmlPreview } from "@/components/SandboxedHtmlPreview";
 import { GeneratedList } from "@/components/Surfaces";
 import type { ToolArtifact, ToolRender, ToolRenderKind, ToolResult } from "@/lib/tool-framework/result";
+import type { ToolMessage } from "@/lib/tool-runtime/types";
 import { readArtifact, type StoredToolArtifact } from "@/lib/tool-framework/artifacts";
 
 const MarkdownPreview = dynamic(
   () => import("@/components/content/MarkdownPreview").then((module) => module.MarkdownPreview),
-  { loading: () => <Muted role="status">Loading preview…</Muted> },
+  {
+    loading: function LoadingPreview() {
+      const t = useTranslations("Workbench");
+      return <Muted role="status">{t("loadingPreview")}</Muted>;
+    },
+  },
 );
 
 export interface ResultViewProps {
@@ -84,9 +91,18 @@ type ResultRendererOptions = Pick<
 type ResultRendererRegistry = {
   [Kind in ToolRenderKind]: (
     result: Extract<ToolRender, { render: Kind }>,
-    options?: ResultRendererOptions,
+    options: ResultRendererOptions & { t: ReturnType<typeof useTranslations>; message: MessageFormatter },
   ) => ReactNode;
 };
+
+type MessageFormatter = (reference: ToolMessage | undefined, fallback: string) => string;
+function useResultMessage(): MessageFormatter {
+  const t = useTranslations();
+  return (reference, fallback) => {
+    const key = reference ? `Tool.runtime.${reference.key}` : undefined;
+    return key && t.has(key) ? t(key, reference?.values) : fallback;
+  };
+}
 
 interface DownloadButtonProps {
   content?: BlobPart;
@@ -127,15 +143,8 @@ function saveUrl(href: string, name: string, toolKey?: string) {
   trackToolEvent("result_download", toolKey);
 }
 
-function DownloadButton({
-  content,
-  disabled = false,
-  href,
-  label = "Download",
-  iconOnly = false,
-  mime,
-  name,
-}: DownloadButtonProps) {
+function DownloadButton({ content, disabled = false, href, label, iconOnly = false, mime, name }: DownloadButtonProps) {
+  const t = useTranslations("Workbench");
   const toolKey = useAnalyticsToolKey();
   return (
     <ToolActionButton
@@ -151,20 +160,21 @@ function DownloadButton({
       }
       type="button"
     >
-      {label}
+      {label ?? t("download")}
     </ToolActionButton>
   );
 }
 
 function ArtifactDownloadButton({
   artifact,
-  label = "Download file",
+  label,
   iconOnly = false,
 }: {
   artifact: StoredToolArtifact;
   iconOnly?: boolean;
   label?: string;
 }) {
+  const t = useTranslations("Workbench");
   const toolKey = useAnalyticsToolKey();
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState("");
@@ -178,7 +188,7 @@ function ArtifactDownloadButton({
       saveUrl(url, artifact.name, toolKey);
       window.setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch (error) {
-      setFailure(error instanceof Error ? error.message : "The generated file is unavailable. Run the tool again.");
+      setFailure(t("fileUnavailable"));
     } finally {
       setPending(false);
     }
@@ -192,7 +202,7 @@ function ArtifactDownloadButton({
         onClick={() => void download()}
         type="button"
       >
-        {pending ? "Preparing…" : failure ? "Try download again" : label}
+        {pending ? t("preparing") : failure ? t("retryDownload") : (label ?? t("downloadFile"))}
       </ToolActionButton>
       {failure ? (
         <Caption className="text-destructive" role="alert">
@@ -214,6 +224,7 @@ export type DownloadableArtifact =
     };
 
 export function ArtifactDownloadMenu({ artifacts }: { artifacts?: readonly DownloadableArtifact[] }) {
+  const t = useTranslations("Workbench");
   const toolKey = useAnalyticsToolKey();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -248,8 +259,8 @@ export function ArtifactDownloadMenu({ artifacts }: { artifacts?: readonly Downl
       }
     } catch (error) {
       if (!currentArtifacts.current?.includes(artifact)) return;
-      toast.error("Unable to download file", {
-        description: error instanceof Error ? error.message : "The generated file is unavailable. Run the tool again.",
+      toast.error(t("downloadFailed"), {
+        description: t("fileUnavailable"),
       });
     } finally {
       pendingRef.current = false;
@@ -264,13 +275,13 @@ export function ArtifactDownloadMenu({ artifacts }: { artifacts?: readonly Downl
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
               <ToolActionButton action="download" disabled={pending || !artifacts?.length} iconOnly>
-                {pending ? "Preparing download…" : "Download format"}
+                {t(pending ? "preparingDownload" : "downloadFormat")}
               </ToolActionButton>
             </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent>Choose a download format</TooltipContent>
+          <TooltipContent>{t("chooseDownloadFormat")}</TooltipContent>
         </Tooltip>
-        <DropdownMenuContent align="end" aria-label="Download format">
+        <DropdownMenuContent align="end" aria-label={t("downloadFormat")}>
           {artifacts?.map((artifact, index) => (
             <DropdownMenuItem
               key={`${artifact.name}-${index}`}
@@ -286,7 +297,8 @@ export function ArtifactDownloadMenu({ artifacts }: { artifacts?: readonly Downl
   );
 }
 
-export function CopyButton({ children, content, disabled = false, iconOnly = false, label = "Copy" }: CopyButtonProps) {
+export function CopyButton({ children, content, disabled = false, iconOnly = false, label }: CopyButtonProps) {
+  const t = useTranslations("Workbench");
   const toolKey = useAnalyticsToolKey();
   const [feedback, setFeedback] = useState<{
     content: string;
@@ -323,7 +335,7 @@ export function CopyButton({ children, content, disabled = false, iconOnly = fal
   }
 
   const status = feedback?.content === content ? feedback.status : "idle";
-  const statusLabel = status === "copied" ? "Copied" : status === "failed" ? "Copy failed — try again" : label;
+  const statusLabel = status === "copied" ? t("copied") : status === "failed" ? t("copyFailed") : (label ?? t("copy"));
   const StatusIcon = status === "copied" ? Check : status === "failed" ? AlertTriangle : Copy;
 
   return (
@@ -349,6 +361,7 @@ function RenderFrame({ children }: { children: ReactNode }) {
 }
 
 function ImageResultPreview({ result }: { result: Extract<ToolRender, { render: "image" }> }) {
+  const t = useTranslations("Workbench");
   const [failed, setFailed] = useState(false);
   return (
     <RenderFrame>
@@ -356,12 +369,8 @@ function ImageResultPreview({ result }: { result: Extract<ToolRender, { render: 
         <ContentState
           density="compact"
           state="error"
-          title="Image preview unavailable"
-          description={
-            result.downloadName
-              ? "This image could not be displayed. You can still download the original file."
-              : "This image could not be displayed. Check the source file and try again."
-          }
+          title={t("imageUnavailable")}
+          description={result.downloadName ? t("imageDownloadHint") : t("imageRetryHint")}
         />
       ) : (
         <div className="grid min-h-80 flex-1 place-items-center overflow-auto bg-muted/45 p-6">
@@ -380,11 +389,8 @@ function ImageResultPreview({ result }: { result: Extract<ToolRender, { render: 
 }
 
 function TruncatedResultNotice() {
-  return (
-    <Muted className="shrink-0 px-4 py-2 text-muted-foreground">
-      Showing a preview. Download the complete file for all rows.
-    </Muted>
-  );
+  const t = useTranslations("Workbench");
+  return <Muted className="shrink-0 px-4 py-2 text-muted-foreground">{t("previewNotice")}</Muted>;
 }
 
 function htmlPreviewMarkup(html: string, layout?: ResultViewProps["previewLayout"]) {
@@ -436,14 +442,14 @@ type ResultArtifact = {
   };
 };
 
-function resultArtifact(result: ToolResult | null): ResultArtifact | null {
+function resultArtifact(result: ToolResult | null, t: ReturnType<typeof useTranslations>): ResultArtifact | null {
   if (!result) return null;
 
   switch (result.render) {
     case "text":
       return {
         copy: result.text,
-        copyLabel: result.truncated ? "Copy preview" : undefined,
+        copyLabel: result.truncated ? t("copyPreview") : undefined,
         download: result.downloadName
           ? { content: result.text, mime: "text/plain;charset=utf-8", name: result.downloadName }
           : undefined,
@@ -451,7 +457,7 @@ function resultArtifact(result: ToolResult | null): ResultArtifact | null {
     case "code":
       return {
         copy: result.code,
-        copyLabel: result.truncated ? "Copy preview" : undefined,
+        copyLabel: result.truncated ? t("copyPreview") : undefined,
         download: result.downloadName
           ? { content: result.code, mime: "text/plain;charset=utf-8", name: result.downloadName }
           : undefined,
@@ -467,11 +473,11 @@ function resultArtifact(result: ToolResult | null): ResultArtifact | null {
       const content = [result.columns, ...result.rows].map((row) => row.map(csvCell).join(",")).join("\n");
       return {
         copy: content,
-        copyLabel: result.truncated ? "Copy shown rows" : undefined,
+        copyLabel: result.truncated ? t("copyRows") : undefined,
         download: result.downloadName
           ? {
               content,
-              label: result.truncated ? "Download shown rows" : undefined,
+              label: result.truncated ? t("downloadRows") : undefined,
               mime: "text/csv;charset=utf-8",
               name: result.downloadName,
             }
@@ -486,7 +492,7 @@ function resultArtifact(result: ToolResult | null): ResultArtifact | null {
       const content = result.items.join("\n");
       return {
         copy: content,
-        copyLabel: result.truncated ? "Copy shown items" : undefined,
+        copyLabel: result.truncated ? t("copyItems") : undefined,
         download: result.downloadName
           ? { content, mime: "text/plain;charset=utf-8", name: result.downloadName }
           : undefined,
@@ -509,7 +515,7 @@ function resultArtifact(result: ToolResult | null): ResultArtifact | null {
     case "image":
       return {
         copy: result.src.startsWith("data:image/") ? result.src : undefined,
-        copyLabel: "Copy image data URL",
+        copyLabel: t("copyImageUrl"),
         download: result.downloadName ? { href: result.src, mime: result.mime, name: result.downloadName } : undefined,
       };
     case "diff": {
@@ -569,7 +575,8 @@ export function ResultActions({
   downloadMenu?: boolean;
   result: ToolResult | null;
 }) {
-  const artifact = resultArtifact(result);
+  const t = useTranslations("Workbench");
+  const artifact = resultArtifact(result, t);
   const storedArtifact = firstStoredArtifact(result);
   const download = artifact?.download;
   const extension = download?.name.match(/\.[^.]+$/)?.[0];
@@ -581,7 +588,7 @@ export function ResultActions({
           content={artifact?.copy ?? ""}
           disabled={artifact?.copy === undefined}
           iconOnly
-          label={artifact?.copyLabel ?? "Copy all"}
+          label={artifact?.copyLabel ?? t("copyAll")}
         />
       ) : null}
       {canDownload ? (
@@ -595,7 +602,7 @@ export function ResultActions({
             content={download?.content}
             disabled={!download}
             href={download?.href}
-            label={download?.label ?? (extension ? `Download ${extension}` : "Download")}
+            label={download?.label ?? (extension ? t("downloadExtension", { extension }) : t("download"))}
             mime={download?.mime ?? "application/octet-stream"}
             name={download?.name ?? "result"}
           />
@@ -624,7 +631,7 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
       <RenderFrame>
         {options?.language ? (
           <CodeEditor
-            aria-label="Result code"
+            aria-label={options.t("resultCode")}
             className="min-h-0 flex-1"
             colorPreviews={options.colorPreviews}
             value={result.text}
@@ -651,7 +658,7 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
     ) : (
       <RenderFrame>
         <CodeEditor
-          aria-label="Result code"
+          aria-label={options.t("resultCode")}
           className="min-h-0 flex-1"
           colorPreviews={options?.colorPreviews}
           value={result.code}
@@ -681,9 +688,7 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
     return result.truncated ? (
       <RenderFrame>
         {tree}
-        <Muted className="shrink-0 px-4 py-2 text-muted-foreground">
-          Showing part of the result. Download the complete file for all data.
-        </Muted>
+        <Muted className="shrink-0 px-4 py-2 text-muted-foreground">{options.t("partialResult")}</Muted>
       </RenderFrame>
     ) : (
       tree
@@ -695,16 +700,14 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
         <ContentState
           density="compact"
           state="empty"
-          title="No columns to display"
-          description="The result contains no fields to show as a table."
+          title={options.t("noColumns")}
+          description={options.t("noColumnsDescription")}
         />
       );
     }
     const tableLayout = options?.previewLayout === "table";
     const truncationNotice = result.truncated ? (
-      <Muted className="shrink-0 border-t border-border p-3 text-muted-foreground">
-        Only part of the result is shown.
-      </Muted>
+      <Muted className="shrink-0 border-t border-border p-3 text-muted-foreground">{options.t("partialTable")}</Muted>
     ) : null;
     return (
       <RenderFrame>
@@ -714,7 +717,7 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
               <TableRow>
                 {result.columns.map((column, index) => (
                   <TableHead className="whitespace-pre" key={`${index}-${column}`}>
-                    {column}
+                    {options.message(result.columnMessages?.[index], column)}
                   </TableHead>
                 ))}
               </TableRow>
@@ -724,7 +727,7 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
                 <TableRow key={rowIndex}>
                   {result.columns.map((_, columnIndex) => (
                     <TableCell className="whitespace-pre" key={columnIndex}>
-                      {row[columnIndex] ?? ""}
+                      {options.message(result.rowMessages?.[rowIndex]?.[columnIndex], row[columnIndex] ?? "")}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -737,7 +740,7 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
       </RenderFrame>
     );
   },
-  "key-value": (result) => {
+  "key-value": (result, options) => {
     return (
       <RenderFrame>
         <dl className="min-h-0 flex-1 divide-y divide-border overflow-auto">
@@ -748,25 +751,34 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
             >
               <dt>
                 <Text>
-                  <Strong>{entry.label}</Strong>
+                  <Strong>{options.message(entry.labelMessage, entry.label)}</Strong>
                 </Text>
               </dt>
               <dd className="break-words text-muted-foreground">
-                <InlineCode>{entry.value}</InlineCode>
+                {entry.valueMessage ? (
+                  <Text>{options.message(entry.valueMessage, entry.value)}</Text>
+                ) : (
+                  <InlineCode>{entry.value}</InlineCode>
+                )}
               </dd>
-              <CopyButton content={entry.value} iconOnly label={`Copy ${entry.label}`} />
+              <CopyButton
+                content={entry.value}
+                iconOnly
+                label={options.t("copyValue", { label: options.message(entry.labelMessage, entry.label) })}
+              />
             </div>
           ))}
         </dl>
       </RenderFrame>
     );
   },
-  list: (result) => {
+  list: (result, options) => {
     const items = result.items.map((value, index) => ({
       description: result.labels?.[index],
       id: `${index}-${value}`,
       label: String(index + 1).padStart(2, "0"),
       value,
+      displayValue: options.message(result.itemMessages?.[index], value),
     }));
     return (
       <RenderFrame>
@@ -774,16 +786,18 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
           getDescription={(item) => item.description}
           getId={(item) => item.id}
           getLabel={(item) => item.label}
-          getValue={(item) => item.value}
+          getValue={(item) => item.displayValue}
           items={items}
-          renderAction={(item, index) => <CopyButton content={item.value} iconOnly label={`Copy item ${index + 1}`} />}
+          renderAction={(item, index) => (
+            <CopyButton content={item.value} iconOnly label={options.t("copyItem", { count: index + 1 })} />
+          )}
         />
       </RenderFrame>
     );
   },
   html: (result, options) =>
     result.tablePreview && !options?.htmlPreview ? (
-      RESULT_RENDERERS.table(result.tablePreview)
+      RESULT_RENDERERS.table(result.tablePreview, options)
     ) : (
       <RenderFrame>
         <SandboxedHtmlPreview html={htmlPreviewMarkup(result.html, options?.previewLayout)} />
@@ -805,35 +819,42 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
             action={options?.hideFileActions ? undefined : <ArtifactDownloadButton artifact={file} />}
             className="[&_p]:truncate"
             key={`${file.name}-${file.size}`}
-            metadata={`${file.mime} · ${file.size.toLocaleString()} bytes`}
+            metadata={`${file.mime} · ${options.t("bytes", { count: file.size })}`}
             title={file.name}
           />
         );
       })}
       {result.inputBytes !== undefined || result.outputBytes !== undefined ? (
         <Muted className="text-muted-foreground">
-          {result.inputBytes !== undefined ? `Input: ${result.inputBytes.toLocaleString()} bytes` : null}
+          {result.inputBytes !== undefined ? options.t("inputBytes", { count: result.inputBytes }) : null}
           {result.inputBytes !== undefined && result.outputBytes !== undefined ? " · " : null}
-          {result.outputBytes !== undefined ? `Output: ${result.outputBytes.toLocaleString()} bytes` : null}
+          {result.outputBytes !== undefined ? options.t("outputBytes", { count: result.outputBytes }) : null}
         </Muted>
       ) : null}
     </div>
   ),
-  none: () => (
+  none: (_result, options) => (
     <ContentState
       density="compact"
       state="complete"
-      title="Action completed"
-      description="This action did not produce a displayable result."
+      title={options.t("completed")}
+      description={options.t("completedDescription")}
     />
   ),
 };
 
-function renderPrimary(result: ToolRender, options?: ResultRendererOptions): ReactNode {
-  return RESULT_RENDERERS[result.render](result as never, options);
+function renderPrimary(
+  result: ToolRender,
+  t: ReturnType<typeof useTranslations>,
+  message: MessageFormatter,
+  options?: ResultRendererOptions,
+): ReactNode {
+  return RESULT_RENDERERS[result.render](result as never, { ...options, t, message });
 }
 
 function CommonResultDetails({ hideArtifacts, hideStats, result }: ResultViewProps) {
+  const t = useTranslations("Workbench");
+  const message = useResultMessage();
   const hasDetails = Boolean(
     (!hideStats && result.stats?.length) ||
     result.verdict ||
@@ -849,13 +870,17 @@ function CommonResultDetails({ hideArtifacts, hideStats, result }: ResultViewPro
       {generatedFileSections?.map((section) => (
         <section key={section.title}>
           <SectionHeading title={section.title} />
-          {renderPrimary(section.body)}
+          {renderPrimary(section.body, t, message)}
         </section>
       ))}
       {!hideStats && result.stats?.length ? (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
           {result.stats.map((stat) => (
-            <MetricCard key={`${stat.label}-${stat.value}`} label={stat.label} value={stat.value} />
+            <MetricCard
+              key={`${stat.label}-${stat.value}`}
+              label={message(stat.labelMessage, stat.label)}
+              value={message(stat.valueMessage, stat.value)}
+            />
           ))}
         </div>
       ) : null}
@@ -867,7 +892,7 @@ function CommonResultDetails({ hideArtifacts, hideStats, result }: ResultViewPro
                 result.verdict.level === "ok" ? "success" : result.verdict.level === "error" ? "danger" : "warning"
               }
             >
-              {result.verdict.level === "ok" ? "OK" : result.verdict.level === "error" ? "Error" : "Warning"}
+              {t(result.verdict.level === "ok" ? "ok" : result.verdict.level === "error" ? "error" : "warning")}
             </StatusBadge>
           }
           title={result.verdict.label}
@@ -877,14 +902,14 @@ function CommonResultDetails({ hideArtifacts, hideStats, result }: ResultViewPro
         </AlertBanner>
       ) : null}
       {result.issues?.length ? (
-        <AlertBanner title="Issues" variant="warning">
+        <AlertBanner title={t("issues")} variant="warning">
           <List className="list-disc space-y-1 pl-4">
             {result.issues.map((issue, index) => (
               <li key={`${index}-${issue.message}`}>
                 {issue.target ? `${issue.target[0].toUpperCase()}${issue.target.slice(1)}: ` : null}
                 {issue.message}
                 {issue.line !== undefined
-                  ? ` (line ${issue.line}${issue.column !== undefined ? `, column ${issue.column}` : ""})`
+                  ? ` ${t(issue.column !== undefined ? "lineColumn" : "line", { line: issue.line, column: issue.column ?? 0 })}`
                   : ""}
               </li>
             ))}
@@ -893,7 +918,7 @@ function CommonResultDetails({ hideArtifacts, hideStats, result }: ResultViewPro
       ) : null}
       {!hideArtifacts && result.artifacts?.length ? (
         <div className="flex flex-wrap items-center gap-2">
-          <Text>Downloads</Text>
+          <Text>{t("downloads")}</Text>
           {result.artifacts.map((artifact) =>
             artifact.storage === "inline" ? (
               <DownloadButton
@@ -912,7 +937,7 @@ function CommonResultDetails({ hideArtifacts, hideStats, result }: ResultViewPro
       {otherSections?.map((section) => (
         <section key={section.title}>
           <SectionHeading title={section.title} />
-          {renderPrimary(section.body)}
+          {renderPrimary(section.body, t, message)}
         </section>
       ))}
     </div>
@@ -934,9 +959,11 @@ export function ResultView({
   previewLayout,
   result,
 }: ResultViewProps) {
+  const t = useTranslations("Workbench");
+  const message = useResultMessage();
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      {renderPrimary(result, {
+      {renderPrimary(result, t, message, {
         colorPreviews,
         hideFileActions,
         hideJsonHeader,

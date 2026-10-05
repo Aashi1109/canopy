@@ -8,13 +8,17 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const settings = ctx.settings;
   const unit = settings.unit ?? "px";
   if (!["px", "%", "rem"].includes(unit))
-    throw new ToolError("invalid-unit", "Choose px, % or rem for the radius unit.");
+    throw new ToolError("invalid-unit", "Choose px, % or rem for the radius unit.", undefined, {
+      messageRef: { key: "execution.errors.invalid-unit" },
+    });
   const corners = [settings.topLeft, settings.topRight, settings.bottomRight, settings.bottomLeft];
   const vertical = settings.elliptical
     ? [settings.topLeftY, settings.topRightY, settings.bottomRightY, settings.bottomLeftY]
     : corners;
   if ([...corners, ...vertical].some((value) => !Number.isFinite(value) || value < 0)) {
-    throw new ToolError("invalid-radius", "Corner radii must be finite, non-negative numbers.");
+    throw new ToolError("invalid-radius", "Corner radii must be finite, non-negative numbers.", undefined, {
+      messageRef: { key: "execution.errors.invalid-radius" },
+    });
   }
   function shorthand(values: number[]) {
     const [a, b, c, d] = values;

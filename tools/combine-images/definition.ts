@@ -1,6 +1,16 @@
+import { MEDIA_FILE_ERROR_MESSAGES, MEDIA_IMAGE_ERROR_MESSAGES } from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "progress.readingImageDimensions": "Reading image dimensions",
+    "progress.compositingImage": "Compositing image",
+    "progress.imageComplete": "Image complete",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_IMAGE_ERROR_MESSAGES,
+    "errors.invalidOrder": "The selected image order is invalid.",
+  },
   toolId: "media.combine-images",
   app: "media",
   category: "image-editing",

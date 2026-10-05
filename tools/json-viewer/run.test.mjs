@@ -18,3 +18,14 @@ test("retains nested data and formatted artifact text", async () => {
 test("does not apply a repair strategy implicitly", async () => {
   await expect(execute(viewer, '{"broken":}', { repairMode: "null" })).rejects.toMatchObject({ code: "json-syntax" });
 });
+
+test("syntax errors expose coordinates for translated recovery controls", async () => {
+  await expect(execute(viewer, '{\n  "missing":\n}')).rejects.toMatchObject({
+    code: "json-syntax",
+    details: {
+      line: expect.any(Number),
+      column: expect.any(Number),
+      values: { line: expect.any(Number), column: expect.any(Number) },
+    },
+  });
+});

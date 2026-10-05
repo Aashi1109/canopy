@@ -1,6 +1,64 @@
+import { INPUT_EXECUTION_MESSAGES, JSON_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+    ...JSON_EXECUTION_MESSAGES,
+    "schema.objectRequired": "{path}: schema must be an object",
+    "schema.typeMismatch": "{path}: expected {expected}, received {actual}",
+    "schema.enumMismatch": "{path}: value is not in enum",
+    "schema.required": "{path}: is required",
+    "schema.minimumLength": "{path}: must contain at least {count, number} characters",
+    "schema.maximumLength": "{path}: must contain at most {count, number} characters",
+    "schema.patternMismatch": "{path}: does not match pattern",
+    "schema.invalidPattern": "{path}: schema pattern is invalid",
+    "schema.invalid": "Invalid",
+    "schema.valid": "Valid against schema",
+    "schema.problemCount": "{count, plural, one {# problem} other {# problems}}",
+    "report.passedTitle": "All supported checks passed",
+    "report.failedTitle": "JSON does not match the schema",
+    "report.emptyTitle": "No supported checks to run",
+    "report.passedDescription":
+      "Your data meets the rules checked below. Copy the validation result, or edit either input and validate again.",
+    "report.failedDescription": "Fix the problems below in your data or schema, then validate again.",
+    "report.emptyDescription":
+      "Add a supported rule, such as type or required, to check your data. Parsing successfully alone does not confirm a schema match.",
+    "report.partial":
+      "{count, plural, one {# unsupported keyword was skipped.} other {# unsupported keywords were skipped.}} See validation scope below.",
+    "report.passed": "Checks passed",
+    "report.failed": "Checks failed",
+    "report.values": "Values visited",
+    "report.valuesHelp":
+      "Includes the root and nested values reached through properties and items. Each value may have several checks.",
+    "report.checks": "Checks performed",
+    "report.rule": "Rule",
+    "report.passedColumn": "Passed",
+    "report.failedColumn": "Failed",
+    "report.problems": "Problems to fix",
+    "report.pathHelp": "Each path points to a value in your data. $ is the root; [0] is the first array item.",
+    "report.document": "Document root: {type}",
+    "report.schema": "Schema: {title}",
+    "report.scope": "Validation scope",
+    "report.scopeDescription":
+      "This tool checks a subset of JSON Schema. A pass applies only to the checks performed, not full compliance with a JSON Schema draft.",
+    "report.ignored": "Rules not evaluated",
+    "report.ignoredDescription": "These schema keywords are not supported and did not affect this result: {keywords}.",
+    "report.dialect": "Declared draft: {dialect}",
+    "report.type": "Value types",
+    "report.enum": "Allowed values",
+    "report.required": "Required fields",
+    "report.minLength": "Minimum text length",
+    "report.maxLength": "Maximum text length",
+    "report.pattern": "Text patterns",
+    "report.schemaRule": "Schema structure",
+    "report.root.object": "Object",
+    "report.root.array": "Array",
+    "report.root.string": "String",
+    "report.root.number": "Number",
+    "report.root.boolean": "Boolean",
+    "report.root.null": "Null",
+  },
   toolId: "devtools.json-schema-validator",
   app: "devtools",
   category: "json-tools",
@@ -36,6 +94,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Validate against schema" },
   capabilities: { copy: true },
+  resultView: { default: "preview", previewLabel: "Report" },
   workbenchMark: { text: "JSV", tone: "contrast" },
   labels: {
     empty: "Paste JSON data and a schema to validate it.",
@@ -46,11 +105,11 @@ export default {
     howToUse: [
       "Paste the JSON document you want to check into the data field.",
       "Paste the JSON Schema into the schema field. Both must be strictly valid JSON — this tool does not repair either side.",
-      "Validate. A pass returns a single line; a failure lists one problem per line, each prefixed with the JSON path that caused it.",
+      "Validate to see checks performed, passed and failed rules, and problems with their JSON paths. Use Raw or Copy to get the original plain-text result.",
     ],
     limitations: [
       "A useful subset of JSON Schema is supported: type (including integer), enum, required, properties, items, minLength, maxLength, and pattern.",
-      "Composition keywords ($ref, allOf, anyOf, oneOf, not), numeric bounds, and format assertions are not evaluated and are silently ignored.",
+      "Composition keywords ($ref, allOf, anyOf, oneOf, not), numeric bounds, and format assertions are not evaluated. Unsupported keywords are listed in the report.",
       'Because unsupported keywords are ignored, a "Valid against schema" result means "nothing checked here failed", not full draft compliance.',
     ],
     faq: [

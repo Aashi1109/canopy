@@ -32,7 +32,9 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   return {
     render: "text",
     text: matched ? "Match" : "No match",
-    verdict: matched ? { level: "ok", label: "Match" } : { level: "error", label: "No match" },
+    verdict: matched
+      ? { level: "ok", label: "Match", labelMessage: { key: "result.match" } }
+      : { level: "error", label: "No match", labelMessage: { key: "result.noMatch" } },
   };
 };
 

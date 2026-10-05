@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { Blob as NodeBlob, File as NodeFile } from "node:buffer";
 import React, { act } from "react";
+import { createTranslator } from "next-intl";
+import { getCommonMessages } from "../lib/i18n/messages.ts";
 import { beforeEach, expect, test, vi } from "vitest";
 import { ImageConversionWorkspace } from "../app/media/components/ImageConversionWorkspace.tsx";
 import pngJpg from "../tools/png-to-jpg/definition.ts";
@@ -44,7 +46,7 @@ function artifact(name, mime = "image/jpeg") {
 function result(files) {
   return { render: "files", files };
 }
-async function mountWorkspace(overrides = {}) {
+async function mountWorkspace(overrides = {}, i18n = {}) {
   const onInputChange = vi.fn();
   const onSettingChange = vi.fn();
   const onToolbarActionsChange = vi.fn();
@@ -65,7 +67,7 @@ async function mountWorkspace(overrides = {}) {
     ...overrides,
   };
   const element = () => React.createElement(ImageConversionWorkspace, props);
-  const view = await mountTool(element());
+  const view = await mountTool(element(), { spec: props.spec, ...i18n });
   return {
     ...view,
     onInputChange,
@@ -208,5 +210,50 @@ test("Paste appends supported clipboard images and ignores stale clipboard resul
   await act(async () =>
     resolve([{ types: ["image/png"], getType: async () => new Blob(["stale"], { type: "image/png" }) }]),
   );
+  expect(view.onInputChange).not.toHaveBeenCalled();
+});
+
+test("choosing the current format preserves database-edited source labels", async () => {
+  const spec = {
+    ...pngJpg,
+    trigger: { mode: "manual", actionLabel: "Create edited JPG" },
+    settings: {
+      ...pngJpg.settings,
+      fields: {
+        ...pngJpg.settings.fields,
+        quality: { ...pngJpg.settings.fields.quality, label: "Saved quality label" },
+      },
+    },
+  };
+  const view = await mountWorkspace({
+    spec,
+    settings: { quality: 80, background: "#ffffff", imageOutputFormat: "jpg" },
+  });
+  expect(view.onToolbarActionsChange.mock.lastCall[0].primaryActionLabel).toBe("Create edited JPG");
+  expect(field("Saved quality label", view.container)).toBeTruthy();
+  expect(view.container.textContent).toContain("Download the converted JPG file here.");
+});
+
+test("alternate conversion uses the current tool's localized messages and stable setting keys", async () => {
+  const view = await mountWorkspace(
+    { settings: { quality: 80, background: "#ffffff", imageOutputFormat: "webp" } },
+    {
+      locale: "hi",
+      messages: {
+        "runtime.conversion.action": "{format} में बदलें",
+        "runtime.conversion.running": "इमेज {format} में बदल रही हैं…",
+        "runtime.conversion.qualityLabel": "गुणवत्ता",
+        "runtime.conversion.qualityHelp": "{format, select, jpg {JPG गुणवत्ता चुनें।} other {WebP गुणवत्ता चुनें।}}",
+      },
+    },
+  );
+  expect(view.onToolbarActionsChange.mock.lastCall[0].primaryActionLabel).toBe("WebP में बदलें");
+  expect(view.container.textContent).toContain("WebP गुणवत्ता चुनें।");
+  const t = createTranslator({ locale: "hi", namespace: "Workbench", messages: getCommonMessages("hi") });
+  await click(button(t("restorePanel", { panel: t("settingsPanel") }), view.container));
+  await fill(field("गुणवत्ता", view.container), "70");
+  expect(view.onSettingChange).toHaveBeenLastCalledWith("conversion.webp.quality", 70);
+  await view.update({ running: true });
+  expect(view.container.textContent).toContain("इमेज WebP में बदल रही हैं…");
   expect(view.onInputChange).not.toHaveBeenCalled();
 });

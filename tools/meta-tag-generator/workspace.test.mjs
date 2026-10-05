@@ -43,7 +43,7 @@ function Fixture({ disabled = false }) {
 test("meta workspace edits actual inputs, exposes readonly generated markup, and copies exact content", async () => {
   const writeText = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
-  await mountTool(React.createElement(Fixture));
+  await mountTool(React.createElement(Fixture), { spec: definition });
   await fill(field(/^Page title/), "A & B");
   await fill(field(/^Meta description/), "A private description");
   const output = field("Generated meta tags");
@@ -55,7 +55,7 @@ test("meta workspace edits actual inputs, exposes readonly generated markup, and
 });
 
 test("meta workspace optional toggles update generated tags and invalid canonical URLs recover", async () => {
-  const { container } = await mountTool(React.createElement(Fixture));
+  const { container } = await mountTool(React.createElement(Fixture), { spec: definition });
   await click(button("Restore settings panel"));
   const toggle = (label) =>
     [...document.querySelectorAll('[role="switch"]')].find(
@@ -73,7 +73,7 @@ test("meta workspace optional toggles update generated tags and invalid canonica
 });
 
 test("meta workspace disables editable inputs when the host disables it", async () => {
-  await mountTool(React.createElement(Fixture, { disabled: true }));
+  await mountTool(React.createElement(Fixture, { disabled: true }), { spec: definition });
   for (const label of [/^Page title/, /^Meta description/, "Author", "Keywords", "Canonical URL"])
     assert.equal(field(label).disabled, true);
 });

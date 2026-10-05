@@ -46,6 +46,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "live" },
   labels: {
+    result: "Result",
     empty: "Paste input to begin.",
     ready: "Ready.",
     running: "Working…",
@@ -67,3 +68,6 @@ await writeFile(path.join(dir, "definition.ts"), definition);
 await writeFile(path.join(dir, runFile), run);
 
 console.log(`Created tools/${key}/{definition.ts,${runFile}}`);
+console.log(
+  "Seed the tool and its English translations before enabling it. Edit and publish languages in Admin → Tools → Translations.",
+);

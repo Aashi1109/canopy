@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getPublicTools } from "@/lib/tool-framework/catalog";
 import { changeSavedTools, getSavedTools } from "@/lib/user-preferences/savedTools";
 import { isSameOriginRequest } from "@/lib/routing/requestOrigin.ts";
+import { defaultLocale, isLocale, unlocalizedPathname, type Locale } from "@/lib/i18n/config";
 
 const headers = { "Cache-Control": "private, no-store" };
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers });
@@ -23,16 +24,24 @@ const mutation = z
   .strict()
   .refine((value) => value.operation === "merge" || value.toolIds.length === 1);
 
-async function bookmarkCatalog() {
-  return (await getPublicTools()).map(({ toolId, name, href, category }) => ({ toolId, name, href, category }));
+async function bookmarkCatalog(locale: Locale = defaultLocale) {
+  return (await getPublicTools(locale)).map(({ toolId, name, href, category, locale: toolLocale }) => ({
+    toolId,
+    name,
+    href: unlocalizedPathname(href),
+    category,
+    locale: toolLocale,
+  }));
 }
 
 export async function GET(request: Request) {
+  const locale = new URL(request.url).searchParams.get("locale") ?? defaultLocale;
+  if (!isLocale(locale)) return json({ error: "Unsupported locale" }, 400);
   try {
     const session = await getSession(request.headers);
     if (session && session.user.status !== "active")
       return json({ error: "This account cannot access saved tools." }, 403);
-    const tools = await bookmarkCatalog();
+    const tools = await bookmarkCatalog(locale);
     return json({
       userId: session?.user.id ?? null,
       savedTools: session ? await getSavedTools(session.user.id) : [],

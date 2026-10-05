@@ -1,32 +1,27 @@
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { AppContainer, Caption, Display, Lead, Overline } from "@/components/ui/index.tsx";
 
 export function CatalogHero({ suite }: { suite: "media" | "devtools" }) {
+  const t = useTranslations("Catalog");
   const isMedia = suite === "media";
   return (
     <section className="bg-muted/50">
       <AppContainer className="grid items-center gap-6 px-6 py-8 sm:px-8 md:grid-cols-2 md:gap-8 lg:px-16">
-        <div className="min-w-0 text-left max-md:text-center">
-          <Overline className="block text-primary">{isMedia ? "Media" : "Developer tools"}</Overline>
-          <Display
-            className={`mt-3 text-[2.5rem] leading-[1.05] tracking-tight lg:text-[3.25rem] ${isMedia ? "" : "max-md:whitespace-nowrap max-md:text-[clamp(1rem,4.8vw,2rem)]"}`}
-          >
-            {isMedia ? "Your files." : "Your workflow."}{" "}
+        <div className="min-w-0 text-start max-md:text-center">
+          <Overline className="block text-primary">{t(isMedia ? "mediaOverline" : "developerOverline")}</Overline>
+          <Display className="mt-3 text-[2.5rem] leading-[1.05] tracking-tight lg:text-[3.25rem]">
+            {t(isMedia ? "mediaTitle" : "developerTitle")}{" "}
             <span className={`mt-3 block text-primary ${isMedia ? "" : "max-md:mt-0 max-md:inline"}`}>
-              On your terms.
+              {t("onYourTerms")}
             </span>
           </Display>
           <Lead className="mt-4 text-[1.0625rem] leading-relaxed text-muted-foreground">
-            {isMedia
-              ? "Edit images, organize PDFs, and make files smaller."
-              : "Format, compare, convert, and inspect your data."}
-            <br className="hidden lg:block" />{" "}
-            {isMedia
-              ? "Everyday media tasks, handled in your browser."
-              : "Everyday developer tasks, without the busywork."}
+            {t(isMedia ? "mediaDescription" : "developerDescription")}
+            <br className="hidden lg:block" /> {t(isMedia ? "mediaSupport" : "developerSupport")}
           </Lead>
           <Caption className="mt-3 block text-muted-foreground">
-            {isMedia ? "Your files stay on this device." : "Core tools process your content on this device."}
+            {t(isMedia ? "mediaPrivacy" : "developerPrivacy")}
           </Caption>
         </div>
         <Image

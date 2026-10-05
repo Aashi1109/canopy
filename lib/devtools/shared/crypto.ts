@@ -6,14 +6,18 @@ import { bytesToHex } from "./encoding.ts";
 
 export function getCrypto(): Crypto {
   if (!globalThis.crypto) {
-    throw new ToolError("crypto-unavailable", "Secure browser cryptography is unavailable.");
+    throw new ToolError("crypto-unavailable", "Secure browser cryptography is unavailable.", undefined, {
+      messageRef: { key: "sharedCrypto.unavailable" },
+    });
   }
   return globalThis.crypto;
 }
 
 export function secureRandomInt(maxExclusive: number): number {
   if (!Number.isSafeInteger(maxExclusive) || maxExclusive <= 0 || maxExclusive > 0x1_0000_0000) {
-    throw new ToolError("invalid-random-range", "Random range is too large.");
+    throw new ToolError("invalid-random-range", "Random range is too large.", undefined, {
+      messageRef: { key: "sharedCrypto.range" },
+    });
   }
   const limit = Math.floor(0x1_0000_0000 / maxExclusive) * maxExclusive;
   const values = new Uint32Array(1);
@@ -23,7 +27,10 @@ export function secureRandomInt(maxExclusive: number): number {
 }
 
 export function randomString(length: number, alphabet: string): string {
-  if (!alphabet) throw new ToolError("missing-character-group", "Choose at least one character group.");
+  if (!alphabet)
+    throw new ToolError("missing-character-group", "Choose at least one character group.", undefined, {
+      messageRef: { key: "sharedCrypto.alphabet" },
+    });
   return Array.from({ length }, () => alphabet[secureRandomInt(alphabet.length)]).join("");
 }
 

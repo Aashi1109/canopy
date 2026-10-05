@@ -32,5 +32,10 @@ test.each(["remove", "null"])("%s repair changes both artifact and preview consi
   const result = await execute(toCsv, '[{"name":"Ada","broken":}]', { repairMode, delimiter: "," });
   expect(result.tablePreview.columns).toEqual(repairMode === "null" ? ["name", "broken"] : ["name"]);
   expect(result.text).toBe(repairMode === "null" ? "name,broken\nAda," : "name\nAda");
-  expect(result.stats).toContainEqual({ label: "Repaired", value: "Yes" });
+  expect(result.stats).toContainEqual({
+    label: "Repaired",
+    labelMessage: { key: "execution.repaired" },
+    value: "Yes",
+    valueMessage: { key: "execution.yes" },
+  });
 });

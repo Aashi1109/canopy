@@ -1,3 +1,5 @@
+import type { ToolMessage } from "../../tool-runtime/types.ts";
+import type { ToolErrorDetails } from "../run.ts";
 import type { PDFContentStream as PDFContentStreamType, PDFDocument, PDFOperator, PDFPage } from "pdf-lib";
 import { MEDIA_LIMITS } from "./validation.ts";
 
@@ -16,7 +18,11 @@ type PdfClipApi = Pick<
 export class PdfPreflightError extends Error {
   readonly code: string;
 
-  constructor(code: string, message: string) {
+  constructor(
+    code: string,
+    message: string,
+    readonly details?: ToolErrorDetails,
+  ) {
     super(message);
     this.code = code;
   }
@@ -62,12 +68,15 @@ export function wrapPageContentsWithClip(document: PDFDocument, page: PDFPage, b
 
 export function assertStructuralPdfInspection({ isEncrypted, pageCount }: { isEncrypted: boolean; pageCount: number }) {
   if (isEncrypted) {
-    throw new PdfPreflightError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.");
+    throw new PdfPreflightError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.", {
+      messageRef: { key: "media.pdf.encryptedPdf" },
+    });
   }
   if (pageCount > MEDIA_LIMITS.pdfs.maxStructuralPages) {
     throw new PdfPreflightError(
       "too-many-pages",
       `Structural PDF jobs support at most ${MEDIA_LIMITS.pdfs.maxStructuralPages} pages.`,
+      { messageRef: { key: "media.pdf.tooManyPages", values: { limit: MEDIA_LIMITS.pdfs.maxStructuralPages } } },
     );
   }
 }
@@ -85,9 +94,13 @@ export async function inspectPdfBeforeStructuralRewrite(data: ArrayBuffer) {
   } catch (error) {
     if (error instanceof PdfPreflightError) throw error;
     if (error instanceof Error && /password|encrypted|encryption/i.test(`${error.name} ${error.message}`)) {
-      throw new PdfPreflightError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.");
+      throw new PdfPreflightError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.", {
+        messageRef: { key: "media.pdf.encryptedPdf" },
+      });
     }
-    throw new PdfPreflightError("malformed-pdf", "The PDF is malformed or unsupported.");
+    throw new PdfPreflightError("malformed-pdf", "The PDF is malformed or unsupported.", {
+      messageRef: { key: "media.pdf.malformedPdf" },
+    });
   }
 }
 
@@ -95,13 +108,14 @@ export async function processStructuralPages<T>(
   pages: readonly T[],
   pageNumber: (page: T) => number,
   stage: string,
-  report: (current: number, completed: number, total: number, stage: string) => void,
+  report: (current: number, completed: number, total: number, stage: string, stageMessage?: ToolMessage) => void,
   process: (page: T, index: number) => void | Promise<void>,
+  stageMessage?: ToolMessage,
 ) {
   for (let index = 0; index < pages.length; index += 1) {
     const current = pageNumber(pages[index]);
-    report(current, index, pages.length, stage);
+    report(current, index, pages.length, stage, stageMessage);
     await process(pages[index], index);
-    report(current, index + 1, pages.length, "Page complete");
+    report(current, index + 1, pages.length, "Page complete", { key: "media.progress.pageComplete" });
   }
 }

@@ -1,3 +1,4 @@
+import { MEDIA_FILE_ERROR_MESSAGES, MEDIA_PDF_ERROR_MESSAGES } from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
@@ -65,6 +66,22 @@ export default {
     empty: "Drop one PDF (up to 50 MiB) to split by page, interval, or range.",
     ready: "Your split PDFs are ready to download.",
     running: "Splitting PDF…",
+  },
+  messages: {
+    "progress.creatingSplitPdf": "Creating split PDF",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_PDF_ERROR_MESSAGES,
+    "errors.noFiles": "Choose a PDF to split.",
+    "errors.emptyRange": "Choose at least one page range.",
+    "errors.invalidInterval": "Pages per file must be a positive whole number.",
+    "workspace.splitSettings": "Split settings",
+    "workspace.planTitle": "{count, plural, one {# PDF will be created} other {# PDFs will be created}}",
+    "workspace.plannedParts": "Planned PDF parts",
+    "workspace.part": "Part {part}: {count, plural, one {page} other {pages}} {pages}",
+    "workspace.invalidInterval": "Pages per file must be a positive whole number.",
+    "workspace.invalidRange":
+      "Enter valid page groups using page numbers from 1 to {count, number}. Separate groups with semicolons.",
   },
   content: {
     howToUse: [

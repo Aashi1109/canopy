@@ -91,7 +91,7 @@ export function testJsonStreamValidation(run, name, settings) {
     test("validates beyond the editor preview and reports the complete input size", async () => {
       const ctx = context(original, settings);
       const result = await run(ctx);
-      expect(result.stats).toEqual([
+      expect(result.stats).toMatchObject([
         { label: "Status", value: "Valid JSON" },
         { label: "Root type", value: "object" },
         { label: "Input", value: `${ctx.input.files[0].size.toLocaleString("en-US")} bytes` },

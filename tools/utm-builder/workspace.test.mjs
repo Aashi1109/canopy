@@ -275,7 +275,7 @@ test("UTM invalid extra rows hide a retained result and disable its copy and dow
     onSettingChange: vi.fn(),
     onValidationChange: vi.fn(),
   };
-  const view = await mountTool(createElement(Workspace, props));
+  const view = await mountTool(createElement(Workspace, props), { spec: definition });
   assert.equal(button("Copy all").disabled, true);
   assert.equal(button(/^Download/).disabled, true);
   assert.ok(!view.container.textContent.includes(previous.text), "A retained URL is not presented as current");

@@ -17,10 +17,10 @@ test("pre-run validation accepts freeform geometry and preserves rectangle valid
     cropHeight: 0,
   };
   expect(validate(settings, [])).toBe(null);
-  expect(validate({ ...settings, cropPoints: "" }, [])).toMatch(/valid crop selection/);
-  expect(validate({ ...settings, cropMode: "rectangle" }, [])).toMatch(/valid crop area/);
+  expect(validate({ ...settings, cropPoints: "" }, []).message).toMatch(/valid crop selection/);
+  expect(validate({ ...settings, cropMode: "rectangle" }, []).message).toMatch(/valid crop area/);
   expect(validate({ ...settings, cropMode: "rectangle", cropWidth: 10, cropHeight: 20 }, [])).toBe(null);
-  expect(validate(settings, [{ name: "source.heic", mime: "image/heic" }])).toMatch(/HEIC/);
+  expect(validate(settings, [{ name: "source.heic", mime: "image/heic" }]).message).toMatch(/HEIC/);
 });
 
 const size = { width: 100, height: 80 };

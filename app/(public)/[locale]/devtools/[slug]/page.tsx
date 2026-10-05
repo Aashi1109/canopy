@@ -1,0 +1,53 @@
+import { NextIntlClientProvider } from "next-intl";
+import { isLocale } from "@/lib/i18n/config";
+import { getCommonMessages } from "@/lib/i18n/messages";
+import { toolMessageTree } from "@/lib/tool-framework/translations";
+import { getOptionalSession } from "@/lib/auth/session.ts";
+import { headers } from "next/headers";
+import { notFound } from "next/navigation";
+
+import ToolPage from "@/components/ToolPage";
+import { relatedTools, resolveToolPage } from "@/lib/tool-framework/catalog";
+import { toolMetadata } from "@/lib/tool-framework/metadata";
+
+// Deliberately no `generateStaticParams`: slugs and enablement live in
+// `managed_tools` and an admin toggles them at runtime, so prerendering would
+// need a redeploy per admin change.
+export const generateMetadata = toolMetadata("devtools");
+
+export default async function DevtoolsToolPage({ params }: { params: Promise<{ slug: string; locale: string }> }) {
+  const { slug, locale } = await params;
+  if (!isLocale(locale)) notFound();
+  const tool = await resolveToolPage("devtools", slug, locale);
+  if (!tool) notFound();
+
+  const [related, session] = await Promise.all([
+    relatedTools(tool.toolId, locale),
+    getOptionalSession(await headers()),
+  ]);
+
+  return (
+    <NextIntlClientProvider
+      locale={locale}
+      messages={{ ...getCommonMessages(locale), Tool: toolMessageTree(tool.messages) }}
+    >
+      <ToolPage
+        availableLocales={tool.availableLocales}
+        account={{
+          returnTo: tool.href,
+          user: session?.user ?? null,
+        }}
+        category={getCommonMessages(locale).Categories[tool.category]}
+        definitionKey={tool.definitionKey}
+        description={tool.description}
+        icon={tool.icon}
+        relatedTools={related.map((candidate) => ({
+          href: candidate.href,
+          label: candidate.name,
+        }))}
+        spec={tool.spec}
+        title={tool.name}
+      />
+    </NextIntlClientProvider>
+  );
+}

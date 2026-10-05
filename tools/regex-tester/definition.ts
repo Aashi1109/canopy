@@ -1,6 +1,21 @@
+import { INPUT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+    "errors.invalid-pattern": "Regex pattern is invalid: {detail}",
+    "errors.invalid-pattern-unknown": "Regex pattern is invalid: unknown error",
+    "recovery.invalid-pattern": "Enter the pattern body without the surrounding slashes.",
+    "errors.too-many-matches": "Regex produced too many matches; narrow the pattern.",
+    "recovery.too-many-matches":
+      "Anchor the pattern or make it more specific — the result is capped at {count, number} matches.",
+    "errors.invalid-flags": "Regex flags are invalid.",
+    "recovery.invalid-flags": "Use any combination of d g i m s u v y, each at most once.",
+    "errors.conflicting-flags": "Regex flags u and v cannot be combined.",
+    "recovery.conflicting-flags": "Keep either u or v, not both.",
+  },
+
   toolId: "devtools.regex-tester",
   app: "devtools",
   category: "developer-generators",

@@ -1,5 +1,7 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
+
 import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
 
 /**
@@ -7,7 +9,7 @@ import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import type { DocumentTemplate } from "@/lib/invoice-templates/index.ts";
 import {
   FieldDescription,
@@ -76,6 +78,8 @@ export default function QuarterlyTaxEstimatorPage({
   onTrackClick: (item: string) => void;
   templates?: readonly DocumentTemplate[];
 }) {
+  const t = useTranslations("Tool.runtime");
+  const format = useFormatter();
   const [draft, setDraft] = useState<QuarterlyTaxDraft>(() =>
     normalizeQuarterlyTaxDraft(DataBridge.get(DataBridgeKeys.TAX_DRAFT, DEFAULT_QUARTERLY_TAX_DRAFT)),
   );
@@ -134,21 +138,30 @@ export default function QuarterlyTaxEstimatorPage({
     window.print();
   };
 
+  const initialDraft = useRef(JSON.stringify(draft));
+  const hasEdits = JSON.stringify(draft) !== initialDraft.current;
+
   return (
-    <div className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="tax-estimator-wrapper">
+    <div
+      className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      id="tax-estimator-wrapper"
+      data-language-switch-state={hasEdits ? "dirty" : "clean"}
+    >
       <ToolPageHeader
         actions={
           hasImportedExpenses ? (
             <StatusBadge className="gap-1.5" variant="success">
               <CheckCircle className="size-4" />
-              <span>Pulled ${draft.businessExpenses} from active expenses / mileage</span>
+              <span>
+                {t("tax.pulledValueFromActiveExpensesMileage", { value1: format.number(draft.businessExpenses) })}
+              </span>
             </StatusBadge>
           ) : undefined
         }
         className="print:hidden"
-        description="IRS self-employment Schedule SE projection and estimated federal bracket analysis."
-        eyebrow={<StatusBadge variant="success">Form 1040-ES Estimator</StatusBadge>}
-        title="Quarterly Tax Estimator"
+        description={t("tax.irsSelfEmploymentScheduleSeProjectionAndEstimated")}
+        eyebrow={<StatusBadge variant="success">{t("tax.form1040EsEstimator")}</StatusBadge>}
+        title={t("tax.quarterlyTaxEstimator")}
       />
 
       <AdvancedTemplateWorkspace
@@ -160,8 +173,8 @@ export default function QuarterlyTaxEstimatorPage({
       />
 
       {"error" in results && (
-        <AlertBanner title="Tax rules need attention" variant="warning">
-          {results.error}
+        <AlertBanner title={t("tax.taxRulesNeedAttention")} variant="warning">
+          {t(results.errorMessage.key, results.errorMessage.values)}
         </AlertBanner>
       )}
 
@@ -170,13 +183,15 @@ export default function QuarterlyTaxEstimatorPage({
         {/* INPUT PARAMETERS CARD COLUMN */}
         <div className="lg:col-span-6 space-y-6 print:hidden">
           <Card className="space-y-5">
-            <H3 className="text-slate-500 border-b border-slate-100 pb-2">1. Contractor Operating Figures</H3>
+            <H3 className="text-slate-500 border-b border-slate-100 pb-2">
+              {t("tax.label1ContractorOperatingFigures")}
+            </H3>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="tax-year">
-                    Tax year
+                    {t("tax.taxYear")}
                   </Label>
                   <Select
                     id="tax-year"
@@ -188,7 +203,7 @@ export default function QuarterlyTaxEstimatorPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="tax-filing-status">
-                    Filing status
+                    {t("tax.filingStatus")}
                   </Label>
                   <Select
                     id="tax-filing-status"
@@ -197,7 +212,7 @@ export default function QuarterlyTaxEstimatorPage({
                   >
                     {FILING_STATUSES.map((status) => (
                       <option key={status.id} value={status.id}>
-                        {status.label}
+                        {t(`tax.filing.${status.id}`)}
                       </option>
                     ))}
                   </Select>
@@ -206,7 +221,7 @@ export default function QuarterlyTaxEstimatorPage({
 
               <div>
                 <Label className="block text-slate-400 mb-1" htmlFor="tax-gross-revenue">
-                  Estimated Gross Contractor Income ($) *
+                  {t("tax.estimatedGrossContractorIncome")}
                 </Label>
                 <Input
                   aria-describedby="tax-gross-revenue-description"
@@ -217,13 +232,13 @@ export default function QuarterlyTaxEstimatorPage({
                   onChange={(event) => setDraft({ ...draft, grossRevenue: Math.max(0, Number(event.target.value)) })}
                 />
                 <FieldDescription className="text-slate-400 block mt-1" id="tax-gross-revenue-description">
-                  Total annual 1099 payouts you expect before deductions.
+                  {t("tax.totalAnnual1099PayoutsYouExpectBeforeDeductions")}
                 </FieldDescription>
               </div>
 
               <div className="relative">
                 <Label className="block text-slate-400 mb-1" htmlFor="tax-business-expenses">
-                  Business Deductible Expenses ($)
+                  {t("tax.businessDeductibleExpenses")}
                 </Label>
                 <div className="flex gap-2">
                   <Input
@@ -243,14 +258,14 @@ export default function QuarterlyTaxEstimatorPage({
                   />
                 </div>
                 <FieldDescription className="text-slate-400 block mt-1" id="tax-business-expenses-description">
-                  Operating expense totals, date-based mileage deductions, and gear.
+                  {t("tax.operatingExpenseTotalsDateBasedMileageDeductionsAnd")}
                 </FieldDescription>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="tax-w2-wages">
-                    Existing W-2 wages ($)
+                    {t("tax.existingW2Wages")}
                   </Label>
                   <Input
                     type="number"
@@ -262,7 +277,7 @@ export default function QuarterlyTaxEstimatorPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="tax-state-rate">
-                    State Tax rate (%)
+                    {t("tax.stateTaxRate")}
                   </Label>
                   <Input
                     type="number"
@@ -276,7 +291,7 @@ export default function QuarterlyTaxEstimatorPage({
 
               <div>
                 <Label className="block text-slate-400 mb-1" htmlFor="tax-other-income">
-                  Other income ($)
+                  {t("tax.otherIncome")}
                 </Label>
                 <Input
                   type="number"
@@ -290,13 +305,13 @@ export default function QuarterlyTaxEstimatorPage({
               <div className="grid grid-cols-2 gap-4">
                 {(
                   [
-                    ["aboveLineDeductions", "Above-line deductions"],
-                    ["itemizedDeductions", "Itemized deductions"],
-                    ["taxCredits", "Tax credits"],
-                    ["federalWithholding", "Federal withholding"],
-                    ["estimatedPaymentsMade", "Estimated payments made"],
-                    ["priorYearTaxLiability", "Prior-year tax liability"],
-                    ["priorYearAdjustedGrossIncome", "Prior-year AGI"],
+                    ["aboveLineDeductions", t("tax.fields.aboveLineDeductions")],
+                    ["itemizedDeductions", t("tax.fields.itemizedDeductions")],
+                    ["taxCredits", t("tax.fields.taxCredits")],
+                    ["federalWithholding", t("tax.fields.federalWithholding")],
+                    ["estimatedPaymentsMade", t("tax.fields.estimatedPaymentsMade")],
+                    ["priorYearTaxLiability", t("tax.fields.priorYearTaxLiability")],
+                    ["priorYearAdjustedGrossIncome", t("tax.fields.priorYearAdjustedGrossIncome")],
                   ] as const
                 ).map(([field, label]) => (
                   <div key={field}>
@@ -316,11 +331,8 @@ export default function QuarterlyTaxEstimatorPage({
             </div>
           </Card>
 
-          <AlertBanner title="Estimated Tax Safe Harbor Rules">
-            <P>
-              The federal schedule compares 90% of current-year liability with the applicable prior-year safe harbor,
-              then subtracts withholding and payments already made.
-            </P>
+          <AlertBanner title={t("tax.estimatedTaxSafeHarborRules")}>
+            <P>{t("tax.theFederalScheduleCompares90OfCurrentYear")}</P>
           </AlertBanner>
         </div>
 
@@ -330,31 +342,31 @@ export default function QuarterlyTaxEstimatorPage({
             <>
               <Card className="space-y-6 print:hidden">
                 <div className="text-center pb-4 border-b">
-                  <Overline className="text-slate-400">Suggested federal Q1/Q2/Q3/Q4 payment</Overline>
+                  <Overline className="text-slate-400">{t("tax.suggestedFederalQ1Q2Q3Q4Payment")}</Overline>
                   <div className="text-slate-900 mt-1">
                     <Metric>
                       $
-                      {results.quarterlyPayment.toLocaleString("en-US", {
+                      {format.number(results.quarterlyPayment, {
                         maximumFractionDigits: 0,
                       })}
                     </Metric>
-                    <Overline className="text-slate-400 block mt-1">Four Scheduled Installments</Overline>
+                    <Overline className="text-slate-400 block mt-1">{t("tax.fourScheduledInstallments")}</Overline>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   {[
-                    ["Estimated net profit", results.netSelfEmploymentProfit],
-                    ["Self-employment tax", results.selfEmploymentTax],
-                    ["Deduction used", results.deductionValue],
-                    ["Federal income tax", results.federalIncomeTax],
-                    ["Separate state estimate", results.estimatedStateTax],
-                    ["Required annual federal payment", results.requiredAnnualPayment],
+                    [t("tax.results.netSelfEmploymentProfit"), results.netSelfEmploymentProfit],
+                    [t("tax.results.selfEmploymentTax"), results.selfEmploymentTax],
+                    [t("tax.results.deductionValue"), results.deductionValue],
+                    [t("tax.results.federalIncomeTax"), results.federalIncomeTax],
+                    [t("tax.results.estimatedStateTax"), results.estimatedStateTax],
+                    [t("tax.results.requiredAnnualPayment"), results.requiredAnnualPayment],
                   ].map(([label, value]) => (
                     <div key={String(label)}>
                       <Overline className="text-slate-400 block">{label}</Overline>
                       <Text className="text-slate-900">
-                        ${Number(value).toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                        ${format.number(Number(value), { maximumFractionDigits: 0 })}
                       </Text>
                     </div>
                   ))}
@@ -362,21 +374,24 @@ export default function QuarterlyTaxEstimatorPage({
 
                 <div>
                   <div className="flex justify-between text-slate-400 pb-1">
-                    <Text>Federal progressive estimate</Text>
-                    <Text className="text-blue-600">Effective rate: {effectiveTaxRate.toFixed(1)}%</Text>
+                    <Text>{t("tax.federalProgressiveEstimate")}</Text>
+                    <Text className="text-blue-600">
+                      {t("tax.effectiveRateValue", {
+                        value1: format.number(effectiveTaxRate, { maximumFractionDigits: 1 }),
+                      })}
+                    </Text>
                   </div>
                   <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
                     <div className="bg-indigo-600 h-full" style={{ width: `${Math.min(100, effectiveTaxRate)}%` }} />
                   </div>
                   <Caption className="block text-slate-400 mt-1.5">
-                    Calculation pack {results.calculationVersion}. State tax stays separate from the federal installment
-                    schedule.
+                    {t("tax.calculationPackValueStateTaxStaysSeparateFrom", { value1: results.calculationVersion })}
                   </Caption>
                 </div>
 
                 <Button onClick={handlePrint} className="w-full" type="button" variant="strong">
                   <Printer className="size-4" />
-                  <span>Print Estimate Summary</span>
+                  <span>{t("tax.printEstimateSummary")}</span>
                 </Button>
               </Card>
 
@@ -384,7 +399,7 @@ export default function QuarterlyTaxEstimatorPage({
                 className="relative group border border-slate-200 shadow-xl rounded-2xl overflow-hidden"
                 id="tax-estimate-print"
               >
-                <div className="p-8 bg-white min-h-[750px] font-sans text-slate-800" id="receipt-print-area">
+                <div className="p-8 bg-white min-h-[750px] font-sans text-slate-800" id="receipt-print-area" dir="ltr">
                   <div className="border-b-2 border-slate-900 pb-4 mb-6">
                     <span className="text-[10px] font-black text-slate-400 block uppercase font-mono">
                       SMARTTOOLS ESTIMATE SUMMARY

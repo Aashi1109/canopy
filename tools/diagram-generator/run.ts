@@ -27,6 +27,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "diagram-too-large",
       "Mermaid diagram code is too large.",
       "Split the diagram into smaller ones — anything this size is unreadable anyway.",
+      {
+        messageRef: { key: "execution.errors.diagram-too-large" },
+        recoveryMessage: { key: "execution.recovery.diagram-too-large" },
+      },
     );
   }
   if (typeof document === "undefined") {
@@ -34,6 +38,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "dom-required",
       "Mermaid diagram rendering requires a browser.",
       "Open this tool in a browser tab; Mermaid measures rendered text to lay out the diagram.",
+      {
+        messageRef: { key: "execution.errors.dom-required" },
+        recoveryMessage: { key: "execution.recovery.dom-required" },
+      },
     );
   }
 
@@ -50,6 +58,13 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "diagram-invalid",
       `Mermaid diagram is invalid: ${error instanceof Error ? error.message : "render failed"}`,
       "Check the first line declares a diagram type, and quote labels that contain brackets or punctuation.",
+      {
+        messageRef:
+          error instanceof Error
+            ? { key: "execution.errors.diagram-invalid", values: { diagnostic: error.message } }
+            : { key: "execution.errors.render-failed" },
+        recoveryMessage: { key: "execution.recovery.diagram-invalid" },
+      },
     );
   }
   ctx.signal.throwIfAborted();

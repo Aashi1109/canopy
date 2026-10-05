@@ -1,6 +1,11 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "execution.errors.invalid-escape": "Escaped string is not valid JSON string content.",
+    "execution.recovery.invalid-escape":
+      'Paste only what sits between the quotes, and escape any inner quote as \\" and any backslash as \\\\.',
+  },
   toolId: "devtools.json-unescape",
   sharing: { version: 1 },
   app: "devtools",

@@ -1,6 +1,13 @@
+import { MEDIA_FILE_ERROR_MESSAGES, MEDIA_PDF_ERROR_MESSAGES } from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "progress.extractingPdfPage": "Extracting PDF page",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_PDF_ERROR_MESSAGES,
+  },
   toolId: "media.extract-pdf-pages",
   app: "media",
   category: "pdf-organization",

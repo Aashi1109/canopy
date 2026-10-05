@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { type ReactNode, useCallback, useId, useRef, useState } from "react";
 
 import { DiffView, type DiffViewProps } from "@/components/DiffView";
@@ -27,6 +28,7 @@ type DiffWorkspaceProps = WorkspaceProps & {
 };
 
 export function DiffWorkspace({ editLabel, renderLine, settingsNote, ...props }: DiffWorkspaceProps) {
+  const t = useTranslations("Workbench");
   const inputId = useId();
   const focusInputOnMount = useRef(false);
   const attachPrimaryEditor = useCallback((editor: CodeEditorHandle | null) => {
@@ -55,24 +57,22 @@ export function DiffWorkspace({ editLabel, renderLine, settingsNote, ...props }:
         actions={
           <ToolActionButton
             action="paste"
-            aria-label={`Paste into ${field.label}`}
+            aria-label={t("pasteInto", { label: field.label })}
             disabled={props.disabled}
             onClick={async () => {
               try {
                 change(await navigator.clipboard.readText());
               } catch {
-                toast.error(`Paste failed. Use your keyboard to paste into ${field.label}.`);
+                toast.error(t("pasteKeyboard", { label: field.label }));
               }
             }}
             type="button"
           >
-            Paste
+            {t("paste")}
           </ToolActionButton>
         }
         className="h-full"
-        description={
-          channel === "text" ? "Original · baseline" : `Changed · compared with ${inputSpec.fields[0].label}`
-        }
+        description={channel === "text" ? t("diffOriginal") : t("diffChanged", { label: inputSpec.fields[0].label })}
         purpose="editor"
         title={field.label}
       >
@@ -122,10 +122,10 @@ export function DiffWorkspace({ editLabel, renderLine, settingsNote, ...props }:
         </>
       }
       className="h-full"
-      meta={<span role="status">{output?.verdict?.label ?? "Comparison ready"}</span>}
+      meta={<span role="status">{output?.verdict?.label ?? t("comparisonReady")}</span>}
       metaPosition="start"
       purpose="result"
-      title="Comparison"
+      title={t("comparison")}
     >
       <DiffView layout="split" renderLine={renderLine} result={result} />
     </WorkspaceSurface>
@@ -141,7 +141,7 @@ export function DiffWorkspace({ editLabel, renderLine, settingsNote, ...props }:
   return (
     <SettingsStack className="h-full" defaultCollapsed="secondary" defaultSize={75} minSize={75}>
       {comparison}
-      <ToolOptionsPanel className="h-full overflow-y-auto bg-card p-[18px]" title="SETTINGS" variant="plain">
+      <ToolOptionsPanel className="h-full overflow-y-auto bg-card p-[18px]" title={t("options")} variant="plain">
         <SettingsPanel
           disabled={props.disabled}
           onChange={props.onSettingChange}

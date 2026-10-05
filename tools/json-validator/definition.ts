@@ -1,6 +1,13 @@
+import { INPUT_EXECUTION_MESSAGES, JSON_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+    ...JSON_EXECUTION_MESSAGES,
+    "execution.valid": "Valid JSON",
+    "execution.rootType": "Root type: {type}",
+  },
   toolId: "devtools.json-validator",
   sharing: { version: 1 },
   app: "devtools",

@@ -18,6 +18,10 @@ function hexToBytes(value: string): Uint8Array {
       "invalid-hex",
       "Hex input must contain complete hexadecimal bytes.",
       "Use an even number of hex digits; whitespace, colons, hyphens, underscores and 0x prefixes are stripped for you.",
+      {
+        messageRef: { key: "execution.errors.invalid-hex" },
+        recoveryMessage: { key: "execution.recovery.invalid-hex" },
+      },
     );
   }
   return Uint8Array.from(normalized.match(/.{2}/g)!, (byte) => Number.parseInt(byte, 16));
@@ -36,6 +40,10 @@ export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => {
       "invalid-utf8",
       "Hex input does not contain valid UTF-8 text.",
       "These bytes are not UTF-8 text — check for Latin-1 content or a truncated multi-byte character.",
+      {
+        messageRef: { key: "execution.errors.invalid-utf8" },
+        recoveryMessage: { key: "execution.recovery.invalid-utf8" },
+      },
     );
   }
 };

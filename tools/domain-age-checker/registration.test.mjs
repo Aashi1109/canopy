@@ -2,6 +2,9 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { run } from "./run.ts";
 import { createDomainSummary } from "./preview.ts";
+import definition from "./definition.ts";
+import { createTranslator } from "next-intl";
+import { extractToolMessages, toolMessageTree } from "../../lib/tool-framework/translations.ts";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -211,5 +214,29 @@ test("malformed records and unexpected fields cannot become objects or code in t
   });
   expect(summary.domain).toBe("Domain not reported");
   expect(summary.statuses).toHaveLength(1);
+  expect(summary.nameservers).toEqual(["NS1.EXAMPLE.COM"]);
+});
+
+test("domain summary localizes explanatory text and dates without changing registry data", () => {
+  const messages = toolMessageTree({
+    ...extractToolMessages(definition),
+    "runtime.workspace.summary.ageYears": "{years, plural, one {# an} other {# ans}}",
+    "runtime.workspace.summary.registered": "Enregistré",
+  });
+  const translate = createTranslator({ locale: "fr", messages, namespace: "runtime" });
+  const summary = createDomainSummary(
+    JSON.stringify({
+      domain: "EXAMPLE.COM",
+      registered: "2020-02-20T12:00:00Z",
+      nameservers: ["NS1.EXAMPLE.COM"],
+    }),
+    Date.parse("2021-02-20T12:00:00Z"),
+    translate,
+    "fr",
+  );
+  expect(summary.age).toBe("1 an");
+  expect(summary.dates[0].label).toBe("Enregistré");
+  expect(summary.dates[0].value).toContain("février");
+  expect(summary.domain).toBe("EXAMPLE.COM");
   expect(summary.nameservers).toEqual(["NS1.EXAMPLE.COM"]);
 });

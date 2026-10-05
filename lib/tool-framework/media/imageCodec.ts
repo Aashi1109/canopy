@@ -52,9 +52,11 @@ export async function decodeImage(file: ToolRunFile, allowed: readonly Decodable
   const data = await readToolFile(file);
   const bytes = new Uint8Array(data);
   const signature = validateMediaSignature(bytes, file.mime, allowed);
-  if (!signature.ok) throw new ToolError(signature.code, signature.message);
+  if (!signature.ok) throw new ToolError(signature.code, signature.message, undefined, signature.details);
   if (signature.kind === "pdf") {
-    throw new ToolError("unsupported-type", "Choose a supported image file.");
+    throw new ToolError("unsupported-type", "Choose a supported image file.", undefined, {
+      messageRef: { key: "media.image.unsupportedType" },
+    });
   }
   let image: ImageData;
   if (signature.kind === "jpeg") {
@@ -73,7 +75,9 @@ export async function decodeImage(file: ToolRunFile, allowed: readonly Decodable
       type: "bitmap",
     });
     if (!(bitmap instanceof ImageBitmap)) {
-      throw new ToolError("image-sequence", "Multi-image HEIC sequences are not supported.");
+      throw new ToolError("image-sequence", "Multi-image HEIC sequences are not supported.", undefined, {
+        messageRef: { key: "media.image.imageSequence" },
+      });
     }
     const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
     context2d(canvas).drawImage(bitmap, 0, 0);
@@ -83,7 +87,7 @@ export async function decodeImage(file: ToolRunFile, allowed: readonly Decodable
     canvas.height = 1;
   }
   const dimensions = validateDecodedImageDimensions(image.width, image.height);
-  if (!dimensions.ok) throw new ToolError(dimensions.code, dimensions.message);
+  if (!dimensions.ok) throw new ToolError(dimensions.code, dimensions.message, undefined, dimensions.details);
   return { image, kind: signature.kind };
 }
 
@@ -255,7 +259,10 @@ export function imageFromCanvas(canvas: OffscreenCanvas): ImageData {
 
 export function context2d(canvas: OffscreenCanvas): OffscreenCanvasRenderingContext2D {
   const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context) throw new ToolError("canvas-unavailable", "This browser cannot create an image canvas.");
+  if (!context)
+    throw new ToolError("canvas-unavailable", "This browser cannot create an image canvas.", undefined, {
+      messageRef: { key: "media.image.canvasUnavailable" },
+    });
   return context;
 }
 
@@ -280,7 +287,7 @@ export function mimeFor(format: OutputImageFormat): string {
 
 export function assertCanvasSize(width: number, height: number): void {
   const result = validateDecodedImageDimensions(Math.round(width), Math.round(height));
-  if (!result.ok) throw new ToolError(result.code, result.message);
+  if (!result.ok) throw new ToolError(result.code, result.message, undefined, result.details);
 }
 
 export function safeColor(value: string): string {

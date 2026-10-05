@@ -1,3 +1,6 @@
+import { useLocale, useTranslations } from "next-intl";
+import { localizeHref, type Locale } from "@/lib/i18n/config";
+import { LanguageSelector } from "@/components/canopy/LanguageSelector";
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "./components/accordion.tsx";
 export { InlineTextEditor, type InlineTextEditorProps } from "./components/InlineTextEditor.tsx";
 export { KeyValueFields, type KeyValueFieldsProps } from "./components/KeyValueFields.tsx";
@@ -261,9 +264,11 @@ export function ProductHeader({
   name: string;
   subtitle?: string;
 }) {
+  const t = useTranslations("Common");
+  const locale = useLocale() as Locale;
   return (
     <ScrollAwareHeader
-      aria-label="SmartTools navigation"
+      aria-label={t("navigation")}
       className={cn("border-b border-border bg-card print:hidden", className)}
       data-product-name={name}
     >
@@ -276,17 +281,17 @@ export function ProductHeader({
         )}
       >
         <a
-          aria-label="SmartTools home"
+          aria-label={t("home")}
           className="flex w-fit shrink-0 items-center gap-2 rounded-lg text-foreground no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 compact:col-start-1 compact:row-start-1"
-          href={publicSiteUrl ? new URL("/", publicSiteUrl).href : "/"}
+          href={publicSiteUrl ? new URL(localizeHref("/", locale), publicSiteUrl).href : localizeHref("/", locale)}
         >
           <SmartToolsLogoMark className={cn("shrink-0", compact ? "size-10" : "size-10 xl:size-12")} />
-          <span className={cn("flex flex-col gap-0.5", !minimal && "navigation:max-xl:hidden")}>
+          <span className={cn("flex flex-col gap-0.5", !minimal && "navigation:max-2xl:hidden")}>
             <Strong className="">
               Smart<span className="text-primary">Tools</span>
             </Strong>
             <Caption className={cn("text-muted-foreground", subtitle === undefined && "hidden xl:block")}>
-              {subtitle ?? "small tools, thoughtfully made"}
+              {subtitle ?? t("tagline")}
             </Caption>
           </span>
         </a>
@@ -296,6 +301,7 @@ export function ProductHeader({
         {!minimal ? <EcosystemTabFilters currentHref={href} publicSiteUrl={publicSiteUrl} /> : null}
 
         <div className="flex shrink-0 items-center gap-2 compact:col-start-3 compact:row-start-1 compact:justify-self-end">
+          <LanguageSelector />
           <div
             className={cn(
               "shrink-0 items-center gap-2",
@@ -356,7 +362,7 @@ export function ToolPageShell({
   productHref,
   productName,
   skipHref = "#tool-workspace",
-  skipLabel = "Skip to tool workspace",
+  skipLabel,
   showIntro = true,
   showCategoryInBreadcrumb = true,
   systemControls,
@@ -364,13 +370,15 @@ export function ToolPageShell({
   workspaceClassName,
   workspaceId = "tool-workspace",
 }: ToolPageShellProps) {
+  const t = useTranslations("Common");
+  const locale = useLocale() as Locale;
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <a
         className="fixed top-3 left-3 z-[100] -translate-y-[180%] rounded-lg bg-primary px-3.5 py-2.5 font-bold text-primary-foreground shadow-sm focus:translate-y-0"
         href={skipHref}
       >
-        {skipLabel}
+        {skipLabel ?? t("skipWorkspace")}
       </a>
 
       <ProductHeader
@@ -378,21 +386,21 @@ export function ToolPageShell({
         account={account}
         className="sticky top-0 z-50 border-border bg-card"
         compact
-        href={productHref}
+        href={localizeHref(productHref, locale)}
         name={productName}
       />
 
       <main className="flex-1 bg-card">
         <section className="bg-card">
           <AppContainer className="max-w-[1440px] px-4 pt-4 sm:px-6 lg:px-10">
-            <nav aria-label="Breadcrumb" className="flex min-h-8 items-center justify-between gap-3">
+            <nav aria-label={t("breadcrumb")} className="flex min-h-8 items-center justify-between gap-3">
               <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 font-caption text-xs font-normal text-muted-foreground">
                 <li>
                   <a
                     className="rounded-sm px-1.5 outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    href={`${productHref}?view=all`}
+                    href={localizeHref(`${productHref}?view=all`, locale)}
                   >
-                    All tools
+                    {t("allTools")}
                   </a>
                 </li>
                 <li aria-hidden="true" className="text-input">
@@ -401,7 +409,7 @@ export function ToolPageShell({
                 <li>
                   <a
                     className="rounded-sm outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    href={productHref}
+                    href={localizeHref(productHref, locale)}
                   >
                     {productName}
                   </a>
@@ -414,7 +422,7 @@ export function ToolPageShell({
                     <li>
                       <a
                         className="rounded-sm outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        href={categoryHref}
+                        href={localizeHref(categoryHref, locale)}
                       >
                         {category}
                       </a>

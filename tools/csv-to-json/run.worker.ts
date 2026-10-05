@@ -64,10 +64,14 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
           if (useHeaders && rowNumber === 1) {
             headers = row.map((header) => header.trim());
             if (headers.some((header) => !header)) {
-              throw new ToolError("empty-header", "Every CSV column needs a header.");
+              throw new ToolError("empty-header", "Every CSV column needs a header.", undefined, {
+                messageRef: { key: "csv.errors.emptyHeader" },
+              });
             }
             if (new Set(headers).size !== headers.length) {
-              throw new ToolError("duplicate-header", "CSV headers must be unique.");
+              throw new ToolError("duplicate-header", "CSV headers must be unique.", undefined, {
+                messageRef: { key: "csv.errors.duplicateHeader" },
+              });
             }
             return;
           }
@@ -84,7 +88,9 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         previewRows: 0,
       });
       if (parsed.rowCount === 0) {
-        throw new ToolError("empty", "Paste CSV to convert it to JSON.");
+        throw new ToolError("empty", "Paste CSV to convert it to JSON.", undefined, {
+          messageRef: { key: "csv.errors.emptyJsonSource" },
+        });
       }
       await sink.write(`${outputRows > 0 ? "\n" : ""}]`);
       const artifact = await sink.finish();
@@ -96,12 +102,13 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         truncated: sink.previewTruncated,
         jsonPreview: preview.result(),
         stats: [
-          { label: "Rows", value: String(outputRows) },
-          { label: "Columns", value: String(columnCount) },
+          { label: "Rows", labelMessage: { key: "csv.rows" }, value: String(outputRows) },
+          { label: "Columns", labelMessage: { key: "csv.columns" }, value: String(columnCount) },
         ],
         sections: [
           {
             title: sink.previewTruncated ? "Complete JSON file" : "Download",
+            titleMessage: { key: sink.previewTruncated ? "csv.completeJsonFile" : "csv.download" },
             body: { render: "files", files: [artifact], outputBytes: artifact.size },
           },
         ],
@@ -123,6 +130,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         result.error.kind,
         result.error.message,
         "Check the delimiter, header row, quotes, and field counts, then try again.",
+        {
+          messageRef: result.error.messageRef,
+          recoveryMessage: { key: "csv.recovery.jsonStructure" },
+        },
       );
     }
 
@@ -139,15 +150,19 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     }
   } else {
     if (!ctx.input.text.trim()) {
-      throw new ToolError("empty", "Paste CSV to convert it to JSON.");
+      throw new ToolError("empty", "Paste CSV to convert it to JSON.", undefined, {
+        messageRef: { key: "csv.errors.emptyJsonSource" },
+      });
     }
     if (ctx.input.text.length > 2_000_000) {
-      throw new ToolError("too-large", "CSV must be 2,000,000 characters or fewer.");
+      throw new ToolError("too-large", "CSV must be 2,000,000 characters or fewer.", undefined, {
+        messageRef: { key: "csv.errors.inputTooLarge", values: { limit: 2_000_000 } },
+      });
     }
 
     const parsed = parseDelimitedRows(ctx.input.text, delimiter);
     if (!parsed.ok) {
-      throw new ToolError("syntax", parsed.message);
+      throw new ToolError("syntax", parsed.message, undefined, { messageRef: parsed.messageRef });
     }
 
     columnCount = parsed.rows[0]?.length ?? 0;
@@ -156,6 +171,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         "shape",
         "Every CSV row must have the same number of fields.",
         "Check the delimiter, quotes, and field counts, then try again.",
+        {
+          messageRef: { key: "csv.errors.rowWidth" },
+          recoveryMessage: { key: "csv.recovery.structure" },
+        },
       );
     }
 
@@ -175,8 +194,8 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     jsonPreview: preview.result(),
     downloadName: "data.json",
     stats: [
-      { label: "Rows", value: String(rowCount) },
-      { label: "Columns", value: String(columnCount) },
+      { label: "Rows", labelMessage: { key: "csv.rows" }, value: String(rowCount) },
+      { label: "Columns", labelMessage: { key: "csv.columns" }, value: String(columnCount) },
     ],
   };
 };

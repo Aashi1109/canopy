@@ -28,7 +28,16 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 const LOOKUP_TIMEOUT_MS = 10_000;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
-  const domain = normalizeDomain(ctx.input.text);
+  let domain: string;
+  try {
+    domain = normalizeDomain(ctx.input.text);
+  } catch (error) {
+    if (!(error instanceof ToolError)) throw error;
+    throw new ToolError(error.code, error.message, error.recovery, {
+      messageRef: { key: `errors.${error.code}` },
+      ...(error.recovery ? { recoveryMessage: { key: "errors.enterValue" } } : {}),
+    });
+  }
   ctx.signal.throwIfAborted();
 
   let response: Response;
@@ -43,6 +52,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "rdap-unreachable",
       "Domain Age Checker could not reach the public RDAP service.",
       "Check your network connection and try again.",
+      { messageRef: { key: "errors.rdapUnreachable" }, recoveryMessage: { key: "errors.checkNetwork" } },
     );
   }
   ctx.signal.throwIfAborted();
@@ -51,12 +61,26 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "lookup-failed",
       `RDAP lookup failed (${response.status}).`,
       "Many country-code TLDs publish no RDAP endpoint. Try a gTLD such as .com.",
+      {
+        messageRef: { key: "errors.lookupFailed", values: { status: response.status } },
+        recoveryMessage: { key: "errors.trySupportedTld" },
+      },
     );
   }
-  const data: unknown = await response.json();
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch {
+    ctx.signal.throwIfAborted();
+    throw new ToolError("rdap-invalid-response", "RDAP service returned an invalid response.", undefined, {
+      messageRef: { key: "errors.rdapInvalidResponse" },
+    });
+  }
   ctx.signal.throwIfAborted();
   if (!isRecord(data)) {
-    throw new ToolError("rdap-invalid-response", "RDAP service returned an invalid response.");
+    throw new ToolError("rdap-invalid-response", "RDAP service returned an invalid response.", undefined, {
+      messageRef: { key: "errors.rdapInvalidResponse" },
+    });
   }
 
   const events = Array.isArray(data.events) ? data.events.filter(isRecord) : [];

@@ -1,6 +1,19 @@
+import {
+  CURL_EXECUTION_MESSAGES,
+  ENCODING_EXECUTION_MESSAGES,
+  INPUT_EXECUTION_MESSAGES,
+} from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CURL_EXECUTION_MESSAGES,
+    ...ENCODING_EXECUTION_MESSAGES,
+    ...INPUT_EXECUTION_MESSAGES,
+    "workspace.output_language_bf3bcc": "Output language",
+    "workspace.javascript_b27ad0": "JavaScript",
+    "workspace.typescript_ed0504": "TypeScript",
+  },
   toolId: "devtools.curl-to-fetch",
   app: "devtools",
   category: "jwt-api-tools",

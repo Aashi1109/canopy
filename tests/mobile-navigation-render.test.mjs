@@ -1,6 +1,16 @@
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import { expect, test } from "vitest";
+import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
+import { NextIntlClientProvider } from "next-intl";
+import { getCommonMessages } from "../lib/i18n/messages.ts";
+import { expect, test, vi } from "vitest";
+
+vi.mock("next/navigation", () => ({ usePathname: () => "/auth" }));
+vi.mock("../lib/i18n/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
+
+const renderToStaticMarkup = (node) =>
+  renderMarkup(
+    createElement(NextIntlClientProvider, { locale: "en", messages: getCommonMessages("en"), timeZone: "UTC" }, node),
+  );
 import { MobileNavigation } from "../components/ui/components/MobileNavigation.tsx";
 import { ProductHeader } from "../components/ui/index.tsx";
 

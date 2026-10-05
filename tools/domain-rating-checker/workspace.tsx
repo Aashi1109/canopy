@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 import { Globe, Search } from "lucide-react";
 import { useEffect, useId, useState } from "react";
@@ -25,6 +26,7 @@ import type { ToolResult } from "@/lib/tool-framework/result";
 import { readDomainRating } from "./result";
 
 function RatingAttribution({ license }: { license?: string }) {
+  const toolText = useToolTranslations("Tool.runtime");
   let licenseHref: string | undefined;
   try {
     const href = safeLink(license);
@@ -36,11 +38,11 @@ function RatingAttribution({ license }: { license?: string }) {
   return (
     <Muted className="flex flex-wrap gap-x-4 gap-y-1">
       <TextLink href="https://ahrefs.com/" target="_blank" rel="noopener noreferrer">
-        Domain Rating by Ahrefs
+        {toolText("workspace.domain_rating_by_e9910f")}
       </TextLink>
       {licenseHref ? (
         <TextLink href={licenseHref} target="_blank" rel="noopener noreferrer">
-          License
+          {toolText("workspace.license_c011d6")}
         </TextLink>
       ) : null}
     </Muted>
@@ -62,37 +64,32 @@ function RatingRaw({ result }: { result: ToolResult }) {
 }
 
 function RatingSummary({ result }: { result: ToolResult }) {
+  const toolText = useToolTranslations("Tool.runtime");
   const rating = readDomainRating(result);
   if (!rating) return <RatingRaw result={result} />;
 
   return (
-    <ScrollRegion accessibleName="Domain rating summary" className="min-h-0 flex-1">
+    <ScrollRegion accessibleName={toolText("workspace.ratingSummary")} className="min-h-0 flex-1">
       <div className="space-y-5 p-4">
         <H3 className="break-all">{rating.target}</H3>
         <div className="flex flex-wrap items-start gap-x-8 gap-y-5">
           <div className="space-y-3">
             <div className="flex items-baseline gap-2">
               <Metric className="text-primary">{rating.score}</Metric>
-              <Muted>out of 100</Muted>
+              <Muted>{toolText("workspace.out_of_100_8a6be0")}</Muted>
             </div>
             <RatingAttribution license={rating.license} />
           </div>
           <div className="min-w-0 max-w-prose flex-1 basis-64 space-y-2">
-            <H4>Backlink strength</H4>
-            <P>
-              Ahrefs measures the strength of links from other websites to this domain. Higher scores mean a stronger
-              backlink profile.
-            </P>
-            <Muted>
-              The scale is logarithmic: gaining points gets harder as the score rises. Compare similar websites; this
-              score does not measure traffic or guarantee search rankings.
-            </Muted>
+            <H4>{toolText("workspace.backlink_strength_f1978c")}</H4>
+            <P>{toolText("workspace.ahrefs_measures_the_1768cd")}</P>
+            <Muted>{toolText("workspace.the_scale_is_e0ac57")}</Muted>
           </div>
         </div>
         {rating.warning ? (
           <div className="space-y-1 border-t border-border pt-4">
             <P>
-              <Strong>Note from Ahrefs</Strong>
+              <Strong>{toolText("workspace.note_from_ahrefs_eb9a4f")}</Strong>
             </P>
             <P className="whitespace-pre-wrap [overflow-wrap:anywhere]">{rating.warning}</P>
           </div>
@@ -103,11 +100,12 @@ function RatingSummary({ result }: { result: ToolResult }) {
 }
 
 export default function DomainRatingWorkspace(props: WorkspaceProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const inputId = useId();
   const [touched, setTouched] = useState(false);
   const running = Boolean(props.running || props.primaryAction?.running);
   const empty = !props.input.text.trim();
-  const visibleError = touched && empty ? "Enter a domain or HTTP(S) URL." : null;
+  const visibleError = touched && empty ? toolText("workspace.enterDomain") : null;
 
   useEffect(() => {
     props.onToolbarActionsChange?.({ primaryActionInWorkspace: true });
@@ -128,7 +126,7 @@ export default function DomainRatingWorkspace(props: WorkspaceProps) {
         }}
       >
         <FieldLabel htmlFor={inputId} required>
-          Public domain
+          {toolText("workspace.public_domain_8c3ff6")}
         </FieldLabel>
         <div className="flex min-w-0 items-center gap-2 max-sm:flex-wrap">
           <Input
@@ -161,7 +159,7 @@ export default function DomainRatingWorkspace(props: WorkspaceProps) {
               type="button"
               variant="outline"
             >
-              Cancel
+              {toolText("workspace.cancel_19766e")}
             </Button>
           ) : (
             <Button
@@ -170,7 +168,9 @@ export default function DomainRatingWorkspace(props: WorkspaceProps) {
               type="submit"
             >
               <Search aria-hidden="true" />
-              {running ? "Checking domain…" : (props.primaryAction?.label ?? "Check domain rating")}
+              {running
+                ? toolText("workspace.checking_domain_89c2b4")
+                : (props.primaryAction?.label ?? toolText("workspace.checkRating"))}
             </Button>
           )}
         </div>
@@ -184,7 +184,7 @@ export default function DomainRatingWorkspace(props: WorkspaceProps) {
           result={props.result}
           running={running}
           spec={props.spec}
-          title="Domain rating"
+          title={toolText("workspace.domain_rating_a0f6a4")}
           variant="card"
         />
       </div>

@@ -9,14 +9,16 @@
  */
 
 import type { StoredToolArtifact } from "./artifacts";
-import type { ToolArtifact, ToolFact, ToolValidationIssue } from "@/lib/tool-runtime/types";
+import type { ToolArtifact, ToolFact, ToolValidationIssue, ToolMessage } from "@/lib/tool-runtime/types";
 
 export type { ToolArtifact, ToolFact, ToolValidationIssue };
 
 export type ToolVerdict = {
   readonly level: "ok" | "warn" | "error";
   readonly label: string;
+  readonly labelMessage?: ToolMessage;
   readonly detail?: string;
+  readonly detailMessage?: ToolMessage;
 };
 
 export type ToolTextRender = {
@@ -63,7 +65,9 @@ export type ToolJsonTreeRender = {
 export type ToolTableRender = {
   readonly render: "table";
   readonly columns: readonly string[];
+  readonly columnMessages?: readonly (ToolMessage | undefined)[];
   readonly rows: readonly (readonly string[])[];
+  readonly rowMessages?: readonly (readonly (ToolMessage | undefined)[])[];
   readonly showColumnDividers?: boolean;
   readonly truncated?: boolean;
   readonly downloadName?: string;
@@ -78,6 +82,7 @@ export type ToolListRender = {
   readonly render: "list";
   /** Independent values, each individually copyable. */
   readonly items: readonly string[];
+  readonly itemMessages?: readonly (ToolMessage | undefined)[];
   /** Optional caption per item, shown as secondary text. */
   readonly labels?: readonly string[];
   readonly downloadName?: string;
@@ -101,6 +106,7 @@ export type ToolImageRender = {
   readonly src: string;
   readonly mime: string;
   readonly alt: string;
+  readonly altMessage?: ToolMessage;
   readonly width?: number;
   readonly height?: number;
   readonly downloadName?: string;
@@ -115,7 +121,9 @@ export type ToolDiffRender = {
   readonly render: "diff";
   readonly lines: readonly ToolDiffLine[];
   readonly leftLabel?: string;
+  readonly leftLabelMessage?: ToolMessage;
   readonly rightLabel?: string;
+  readonly rightLabelMessage?: ToolMessage;
   readonly downloadName?: string;
 };
 
@@ -158,7 +166,9 @@ export type ToolLinkPreviewRender = {
     readonly level: "ok" | "warn" | "error";
     readonly property: string;
     readonly label: string;
+    readonly labelMessage?: ToolMessage;
     readonly detail: string;
+    readonly detailMessage?: ToolMessage;
   }[];
   readonly downloadName?: string;
 };
@@ -182,6 +192,7 @@ export type ToolRenderKind = ToolRender["render"];
 /** A secondary block shown beside the primary render. */
 export type ToolResultSection = {
   readonly title: string;
+  readonly titleMessage?: ToolMessage;
   readonly body: ToolRender;
 };
 
@@ -200,3 +211,45 @@ export type ToolResultCommon = {
 };
 
 export type ToolResult = ToolRender & ToolResultCommon;
+
+/** Localize presentation metadata only; generated text, data and artifact bytes remain unchanged. */
+export function translateToolResult(
+  result: ToolResult,
+  translate: (message: ToolMessage, fallback: string) => string,
+): ToolResult {
+  const presentation = (value: ToolRender): ToolRender => {
+    if (value.render === "image" && value.altMessage) return { ...value, alt: translate(value.altMessage, value.alt) };
+    if (value.render === "diff")
+      return {
+        ...value,
+        leftLabel: value.leftLabelMessage ? translate(value.leftLabelMessage, value.leftLabel ?? "") : value.leftLabel,
+        rightLabel: value.rightLabelMessage
+          ? translate(value.rightLabelMessage, value.rightLabel ?? "")
+          : value.rightLabel,
+      };
+    if (value.render === "text" && value.diffPreview)
+      return { ...value, diffPreview: presentation(value.diffPreview) as ToolDiffRender };
+    return value;
+  };
+  const verdict = (value: ToolVerdict | undefined): ToolVerdict | undefined =>
+    value && {
+      ...value,
+      label: value.labelMessage ? translate(value.labelMessage, value.label) : value.label,
+      detail: value.detailMessage ? translate(value.detailMessage, value.detail ?? "") : value.detail,
+    };
+  return {
+    ...result,
+    ...presentation(result),
+    verdict: verdict(result.verdict),
+    notification: verdict(result.notification),
+    issues: result.issues?.map((issue) => ({
+      ...issue,
+      message: issue.messageRef ? translate(issue.messageRef, issue.message) : issue.message,
+    })),
+    sections: result.sections?.map((section) => ({
+      ...section,
+      title: section.titleMessage ? translate(section.titleMessage, section.title) : section.title,
+      body: presentation(section.body),
+    })),
+  };
+}

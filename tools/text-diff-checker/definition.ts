@@ -1,3 +1,4 @@
+import { DIFF_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
@@ -36,6 +37,18 @@ export default {
     empty: "Provide the original and changed text to compare them.",
     ready: "Line-by-line comparison is ready.",
     running: "Comparing text line by line…",
+  },
+  messages: {
+    ...DIFF_EXECUTION_MESSAGES,
+    "textDiff.changed":
+      "{added, plural, one {# line} other {# lines}} added · {removed, plural, one {# line} other {# lines}} removed",
+    "textDiff.identical": "No differences",
+    "textDiff.comparison":
+      "Comparing changed text against original text. Whitespace is significant; line endings are normalized.",
+    "textDiff.original": "Original text",
+    "textDiff.changedText": "Changed text",
+
+    "workspace.editText": "Edit text",
   },
   content: {
     howToUse: [

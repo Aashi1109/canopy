@@ -1,6 +1,16 @@
+import {
+  CRYPTO_EXECUTION_MESSAGES,
+  ENCODING_EXECUTION_MESSAGES,
+} from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CRYPTO_EXECUTION_MESSAGES,
+    ...ENCODING_EXECUTION_MESSAGES,
+    "execution.algorithm": "Algorithm",
+    "execution.checksum": "Checksum",
+  },
   toolId: "devtools.checksum-generator",
   sharing: { version: 1 },
   app: "devtools",

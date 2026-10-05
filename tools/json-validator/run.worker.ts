@@ -10,7 +10,17 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   if (isLargeJsonRun(ctx)) return validateStreamingJsonRun(ctx);
   await validateStreamingJsonRun(ctx);
   const value = parseStrictJson(ctx.input.text, "JSON input");
-  return { render: "text", text: `Valid JSON\nRoot type: ${jsonType(value)}` };
+  return {
+    render: "text",
+    text: `Valid JSON\nRoot type: ${jsonType(value)}`,
+    verdict: {
+      level: "ok",
+      label: "Valid JSON",
+      labelMessage: { key: "execution.valid" },
+      detail: `Root type: ${jsonType(value)}`,
+      detailMessage: { key: "execution.rootType", values: { type: jsonType(value) } },
+    },
+  };
 };
 
 export default run;

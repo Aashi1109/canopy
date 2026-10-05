@@ -27,6 +27,8 @@ export function parseWebsiteUrl(value: string): URL {
     throw new ToolError(
       "invalid-url",
       "Enter a valid public website URL or domain, such as slack.com. Credentials and custom ports are not supported.",
+      undefined,
+      { messageRef: { key: "errors.invalid-url" } },
     );
   }
 }

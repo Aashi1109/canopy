@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { ColorSwatch } from "@/components/ui/index.tsx";
@@ -22,6 +23,7 @@ export function ImageSamplingCanvas({
   disabled: boolean;
   onSample: (x: number, y: number) => void;
 }) {
+  const t = useTranslations("Tool.runtime");
   const regionRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -146,7 +148,7 @@ export function ImageSamplingCanvas({
       <ColorSwatch
         className="pointer-events-none absolute inset-0 rounded-none border-0"
         color="transparent"
-        label="Transparency background"
+        label={t("image.transparency")}
       />
       <div className="absolute inset-0 overflow-auto" onScroll={() => setLens(null)} ref={scrollRef}>
         <div
@@ -156,7 +158,7 @@ export function ImageSamplingCanvas({
           <div className="relative shrink-0" style={{ width, height }}>
             <canvas
               aria-disabled={disabled}
-              aria-label="Image color picker. Click or drag to select a pixel. Arrow keys move one pixel; hold Shift to move ten."
+              aria-label={t("image.pickerHelp")}
               className="block touch-none cursor-crosshair outline-none focus-visible:ring-2 focus-visible:ring-primary"
               onKeyDown={(event) => {
                 if (disabled) return;

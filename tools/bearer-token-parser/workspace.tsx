@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 import { SyntaxHighlight } from "@/components/content/SyntaxHighlight";
 import { CopyButton, ResultView } from "@/components/ResultView";
@@ -34,25 +35,30 @@ const CLAIM_LABELS: Record<string, string> = {
 };
 
 function Claims({ name, value }: { name: "Header" | "Payload"; value: Record<string, unknown> }) {
+  const toolText = useToolTranslations("Tool.runtime");
   return (
     <WorkspaceSurface
-      aria-label={`Decoded ${name.toLowerCase()}`}
+      aria-label={toolText(`workspace.decoded.${name}`)}
       purpose="preview"
-      title={name}
-      description={name === "Header" ? "Algorithm and token metadata" : "Claims supplied by the token"}
+      title={toolText(`workspace.parts.${name}`)}
+      description={
+        name === "Header"
+          ? toolText("workspace.algorithm_and_token_b36ea4")
+          : toolText("workspace.claims_supplied_by_6cc4c4")
+      }
       actions={
-        <CopyButton content={JSON.stringify(value, null, 2)} iconOnly label={`Copy ${name.toLowerCase()} JSON`} />
+        <CopyButton content={JSON.stringify(value, null, 2)} iconOnly label={toolText(`workspace.copyJson.${name}`)} />
       }
     >
       {Object.keys(value).length ? (
-        <Table aria-label={`${name} claims`} className="table-fixed">
+        <Table aria-label={toolText(`workspace.claimsLabel.${name}`)} className="table-fixed">
           <TableHeader>
             <TableRow>
               <TableHead scope="col" className="w-[45%] py-2">
-                Field
+                {toolText("workspace.field_f45fc1")}
               </TableHead>
               <TableHead scope="col" className="py-2">
-                Value
+                {toolText("workspace.value_8e3795")}
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -62,7 +68,7 @@ function Claims({ name, value }: { name: "Header" | "Payload"; value: Record<str
                 <TableHead scope="row" className="py-2 align-top font-normal whitespace-normal break-words">
                   <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
                     <code className="min-w-0 font-mono text-code text-foreground">{key}</code>
-                    {Object.hasOwn(CLAIM_LABELS, key) ? <Muted>{CLAIM_LABELS[key]}</Muted> : null}
+                    {Object.hasOwn(CLAIM_LABELS, key) ? <Muted>{toolText(`workspace.claims.${key}`)}</Muted> : null}
                   </div>
                 </TableHead>
                 <TableCell className="py-2 align-top whitespace-normal break-words">
@@ -79,13 +85,14 @@ function Claims({ name, value }: { name: "Header" | "Payload"; value: Record<str
           </TableBody>
         </Table>
       ) : (
-        <Muted className="px-4 py-3">No claims.</Muted>
+        <Muted className="px-4 py-3">{toolText("workspace.no_claims_96fbdb")}</Muted>
       )}
     </WorkspaceSurface>
   );
 }
 
 function TokenPreview({ result }: { result: ToolResult }) {
+  const toolText = useToolTranslations("Tool.runtime");
   const decoded = result.render === "json-tree" && isRecord(result.value) ? result.value : null;
   const token =
     decoded?.token ??
@@ -97,23 +104,27 @@ function TokenPreview({ result }: { result: ToolResult }) {
   }
 
   return (
-    <ScrollRegion accessibleName="Token preview" className="flex-1">
+    <ScrollRegion accessibleName={toolText("workspace.tokenPreview")} className="flex-1">
       <Stack className="@container" gap="none">
         <div className="space-y-1 border-b border-border bg-card px-4 py-3">
-          <Strong>{decoded ? "JWT decoded" : "Token extracted"}</Strong>
+          <Strong>
+            {decoded ? toolText("workspace.jwt_decoded_0d82e9") : toolText("workspace.token_extracted_27065a")}
+          </Strong>
           <Muted>
-            {decoded ? "Header and payload decoded. Signature not verified." : "Token content has not been decoded."}
+            {decoded ? toolText("workspace.header_and_payload_fa6f01") : toolText("workspace.token_content_has_4b4a3c")}
           </Muted>
         </div>
         <WorkspaceSurface
-          aria-label="Extracted token"
+          aria-label={toolText("workspace.extracted_token_5ea203")}
           purpose="preview"
-          title="Extracted token"
-          meta={length ? `${length} characters` : undefined}
+          title={toolText("workspace.extracted_token_5ea203")}
+          meta={length ? toolText("workspace.characterCount", { count: Number(length) }) : undefined}
           actions={
             <>
-              {length ? <CopyButton content={length} iconOnly label="Copy length" /> : null}
-              <CopyButton content={token} iconOnly label="Copy token" />
+              {length ? (
+                <CopyButton content={length} iconOnly label={toolText("workspace.copy_length_fe45ee")} />
+              ) : null}
+              <CopyButton content={token} iconOnly label={toolText("workspace.copy_token_d35b4e")} />
             </>
           }
         >

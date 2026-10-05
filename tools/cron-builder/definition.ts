@@ -1,3 +1,5 @@
+import { DATE_EXECUTION_MESSAGES, INPUT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
+import { CRON_MESSAGES } from "../../lib/devtools/shared/cron-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 /**
@@ -6,6 +8,29 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
  * name is the live indexed URL and must not move.
  */
 export default {
+  messages: {
+    ...DATE_EXECUTION_MESSAGES,
+    ...INPUT_EXECUTION_MESSAGES,
+    ...CRON_MESSAGES,
+    "workspace.edit_cron_schedule_7fdbcb": "Edit cron schedule",
+    "workspace.in_the_timezone_f954eb": "In the timezone configured on your cron host.",
+    "workspace.syntax_help_d0ddb5": "Syntax help",
+    "workspace.in_the_minute_830478": "In the Minute field — other fields still apply",
+    "workspace.enterField": "Enter {field}, or * for every value.",
+    "workspace.fieldSyntax":
+      "{field} contains unsupported syntax. Use *, */step, numbers, ascending ranges, or comma-separated lists.",
+    "workspace.completeFields": "Complete the highlighted fields to see your schedule.",
+    "workspace.everyMinute": "Every minute.",
+    "workspace.everyMinutes": "Every {count, plural, one {minute} other {# minutes}}.",
+    "workspace.weekdayTime": "At {time}, Monday through Friday.",
+    "workspace.dailyTime": "At {time}, every day.",
+    "workspace.weekdayRange": "0–7 · Sun = 0 or 7",
+    "workspace.syntax.0": "Every minute",
+    "workspace.syntax.1": "At minutes 1 and 15",
+    "workspace.syntax.2": "At minutes 1 through 5",
+    "workspace.syntax.3": "At minutes 0, 15, 30 and 45",
+    "workspace.settings": "SETTINGS",
+  },
   toolId: "devtools.cron-builder",
   sharing: { version: 1 },
   slug: "cron-builder",

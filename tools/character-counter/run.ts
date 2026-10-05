@@ -30,6 +30,22 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   return {
     render: "text",
     text: lines.join("\n"),
+    tablePreview: {
+      render: "table",
+      columns: ["Metric", "Count"],
+      columnMessages: [{ key: "execution.metric" }, { key: "execution.count" }],
+      rows: [
+        ["Characters", limit280 ? `${countedCharacters} / 280` : String(countedCharacters)],
+        ...(limit280 ? [["Remaining", String(280 - countedCharacters)]] : []),
+        ["Characters without spaces", String(metrics.charactersWithoutSpaces)],
+        ["Words", String(metrics.words)],
+        ["Lines", String(metrics.lines)],
+        ["UTF-8 bytes", String(metrics.bytes)],
+      ],
+      rowMessages: ["characters", ...(limit280 ? ["remaining"] : []), "withoutSpaces", "words", "lines", "bytes"].map(
+        (key) => [{ key: `execution.${key}` }, undefined],
+      ),
+    },
   };
 };
 

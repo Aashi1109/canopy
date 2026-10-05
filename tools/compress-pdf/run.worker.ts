@@ -49,16 +49,18 @@ function colorMode(value: string): PdfColorMode {
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files[0];
-  if (!input) throw new ToolError("no-files", "Choose a PDF to compress.");
+  if (!input)
+    throw new ToolError("no-files", "Choose a PDF to compress.", undefined, { messageRef: { key: "errors.noFiles" } });
   if (ctx.settings.mode === "strong" && input.size > STRONG_MAX_INPUT_BYTES) {
     throw new ToolError(
       "file-too-large",
       "Strong Compression supports PDFs up to 50 MiB.",
       "Choose Preserve Document for PDFs up to 100 MiB, or use a smaller file.",
+      { messageRef: { key: "errors.fileTooLarge" }, recoveryMessage: { key: "recovery.fileTooLarge" } },
     );
   }
   const selection = validatePdfSelection([{ size: input.size }]);
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
   await validatePdfInput(input);
 
   const bytes =
@@ -86,20 +88,25 @@ async function preserveCompress(
 ): Promise<Uint8Array> {
   try {
     const data = await readToolFile(input);
-    progress({ completed: 0, total: 1, stage: "Inspecting PDF" });
+    progress({ completed: 0, total: 1, stage: "Inspecting PDF", stageMessage: { key: "progress.inspectingPdf" } });
     await inspectPdfBeforeStructuralRewrite(data);
-    progress({ completed: 0, total: 1, stage: "Loading qpdf" });
+    progress({ completed: 0, total: 1, stage: "Loading qpdf", stageMessage: { key: "progress.loadingQpdf" } });
     const buffer = await preservePdfWithQpdf(data, {
       // Only used to name a file inside qpdf's virtual filesystem, so any
       // unique token that survives its own sanitisation is correct here.
       jobId: crypto.randomUUID(),
       removeMetadata: settings.removeMetadata,
     });
-    progress({ completed: 1, total: 1, stage: "Compression complete" });
+    progress({
+      completed: 1,
+      total: 1,
+      stage: "Compression complete",
+      stageMessage: { key: "progress.compressionComplete" },
+    });
     return new Uint8Array(buffer);
   } catch (error) {
     if (error instanceof PdfPreflightError || error instanceof QpdfAdapterError) {
-      throw new ToolError(error.code, error.message);
+      throw new ToolError(error.code, error.message, undefined, error.details);
     }
     throw error;
   }
@@ -112,7 +119,9 @@ async function strongCompress(
   progress: (progress: ToolRunProgress) => void,
 ): Promise<Uint8Array> {
   if (settings.confirmed !== true) {
-    throw new ToolError("confirmation-required", "Confirm Strong Compression before processing.");
+    throw new ToolError("confirmation-required", "Confirm Strong Compression before processing.", undefined, {
+      messageRef: { key: "errors.confirmationRequired" },
+    });
   }
   const { PDFDocument } = await import("pdf-lib");
   const preset = STRONG_PRESETS[strongPreset(settings.strongPreset)];
@@ -127,7 +136,12 @@ async function strongCompress(
       color: colorMode(settings.color),
     },
     async (renderedPage, index, total) => {
-      progress({ completed: index, total, stage: "Rebuilding flattened page" });
+      progress({
+        completed: index,
+        total,
+        stage: "Rebuilding flattened page",
+        stageMessage: { key: "progress.rebuildingFlattenedPage" },
+      });
       const jpeg = await encodeCanvas(renderedPage.canvas, "jpg", preset.quality);
       const embedded = await output.embedJpg(jpeg);
       const page = output.addPage([renderedPage.pointWidth, renderedPage.pointHeight]);
@@ -137,7 +151,7 @@ async function strongCompress(
         width: renderedPage.pointWidth,
         height: renderedPage.pointHeight,
       });
-      progress({ completed: index + 1, total, stage: "Page complete" });
+      progress({ completed: index + 1, total, stage: "Page complete", stageMessage: { key: "progress.pageComplete" } });
     },
   );
   return output.save();

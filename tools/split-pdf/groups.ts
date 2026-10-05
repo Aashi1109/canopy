@@ -12,7 +12,9 @@ export function splitPageGroups(
   if (settings.mode === "interval") {
     const interval = settings.interval;
     if (!Number.isInteger(interval) || interval < 1) {
-      throw new ToolError("invalid-interval", "Pages per file must be a positive whole number.");
+      throw new ToolError("invalid-interval", "Pages per file must be a positive whole number.", undefined, {
+        messageRef: { key: "errors.invalidInterval" },
+      });
     }
     return Array.from({ length: Math.ceil(pageCount / interval) }, (_, index) =>
       Array.from(
@@ -23,7 +25,7 @@ export function splitPageGroups(
   }
   return settings.ranges.split(";").map((range) => {
     const result = parsePageRange(range, pageCount);
-    if (!result.ok) throw new ToolError(result.code, result.message);
+    if (!result.ok) throw new ToolError(result.code, result.message, undefined, result.details);
     return result.pages;
   });
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import {
   Button,
   ResizableHandle,
@@ -165,6 +167,7 @@ function SplitStack({
   style,
   ...props
 }: SplitStackProps) {
+  const t = useTranslations("Workbench");
   const panes = Children.toArray(children);
   const presentationContext = useWorkbenchPresentation();
   const focusView = useWorkbenchPaneView(
@@ -267,7 +270,9 @@ function SplitStack({
     }
   }
 
-  const collapsedPanelLabel = `${collapsed ? "Restore" : "Collapse"} ${collapseLabel ?? `${collapseSide} panel`}`;
+  const collapsedPanelLabel = t(collapsed ? "restorePanel" : "collapsePanel", {
+    panel: collapseLabel ?? t(collapseSide === "primary" ? "primaryPanel" : "secondaryPanel"),
+  });
   const collapseIcon =
     collapsed && (collapsedIcon || collapseControlPosition !== "center")
       ? (collapsedIcon ?? SlidersHorizontal)
@@ -301,8 +306,8 @@ function SplitStack({
           <SegmentedControl
             className="shrink-0 items-center border-b border-border p-2"
             items={[
-              { label: "Input", value: "input" },
-              { label: "Preview", value: "preview" },
+              { label: t("input"), value: "input" },
+              { label: t("preview"), value: "preview" },
             ]}
             onValueChange={(next) => setMobileView(next as WorkbenchView)}
             value={mobileView}
@@ -448,7 +453,7 @@ function SplitStack({
           {panes[0]}
         </ResizablePanel>
         <ResizableHandle
-          aria-label={orientation === "horizontal" ? "Resize workspace panels" : "Resize workspace regions"}
+          aria-label={t(orientation === "horizontal" ? "resizePanels" : "resizeRegions")}
           className={cn("z-20", (secondaryHidden || inputHidden || previewHidden) && "hidden")}
           disabled={!resizable || secondaryHidden || inputHidden || previewHidden}
           withHandle={resizable && !collapsed && (!collapsible || collapseControlPosition !== "center")}
@@ -507,12 +512,13 @@ function SplitStack({
 
 /** Settings drawers share their gear icon, accessible labels, and secondary-panel placement. */
 function SettingsStack(props: Omit<SplitStackProps, "collapsedIcon" | "collapseLabel" | "collapseSide">) {
+  const t = useTranslations("Workbench");
   return (
     <SplitStack
       collapsible
       {...props}
       collapsedIcon={Settings}
-      collapseLabel="settings panel"
+      collapseLabel={t("settingsPanel")}
       collapseSide="secondary"
     />
   );

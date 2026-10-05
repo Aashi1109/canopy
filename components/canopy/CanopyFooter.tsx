@@ -1,4 +1,6 @@
 import { ProductFooter, SmartToolsLogoMark } from "@/components/ui/index.tsx";
+import { useLocale, useTranslations } from "next-intl";
+import { localizeHref, type Locale } from "@/lib/i18n/config";
 
 /**
  * Suite and company navigation only — no tool is named here.
@@ -10,44 +12,47 @@ import { ProductFooter, SmartToolsLogoMark } from "@/components/ui/index.tsx";
  * lands. It is deliberately empty today, so the column simply does not render
  * — the same treatment the devtools catalogue page gives its featured section.
  */
-const footerColumns = [
-  {
-    title: "Company",
-    links: [
-      { href: "/", label: "Home" },
-      { href: "/blog", label: "Blog" },
-      { href: "/contact", label: "Contact" },
-      { href: "/privacy", label: "Privacy" },
-      { href: "/auth", label: "Sign in" },
-    ],
-  },
-  {
-    title: "Tool suites",
-    links: [
-      { href: "/paperwork", label: "Paperwork" },
-      { href: "/devtools", label: "DevTools" },
-      { href: "/media", label: "Media" },
-    ],
-  },
-] as const;
-
 export function CanopyFooter({ publicOrigin }: { publicOrigin?: string } = {}) {
-  const columns = publicOrigin
-    ? footerColumns.map((column) => ({
-        ...column,
-        links: column.links.map((link) => ({
-          ...link,
-          href: link.href === "/auth" ? link.href : new URL(link.href, publicOrigin).href,
-        })),
-      }))
-    : footerColumns;
+  const t = useTranslations("Common");
+  const footer = useTranslations("Footer");
+  const locale = useLocale() as Locale;
+  const footerColumns = [
+    {
+      title: t("company"),
+      links: [
+        { href: "/", label: t("home") },
+        { href: "/blog", label: t("blog") },
+        { href: "/contact", label: t("contact") },
+        { href: "/privacy", label: t("privacy") },
+        { href: "/auth", label: t("signIn") },
+      ],
+    },
+    {
+      title: t("toolSuites"),
+      links: [
+        { href: "/paperwork", label: t("documents") },
+        { href: "/devtools", label: t("developer") },
+        { href: "/media", label: t("media") },
+      ],
+    },
+  ];
+  const columns = footerColumns.map((column) => ({
+    ...column,
+    links: column.links.map((link) => ({
+      ...link,
+      href:
+        publicOrigin && link.href !== "/auth"
+          ? new URL(localizeHref(link.href, locale), publicOrigin).href
+          : localizeHref(link.href, locale),
+    })),
+  }));
   return (
     <ProductFooter
       brand="SmartTools"
       brandMark={<SmartToolsLogoMark aria-hidden="true" mode="dark" />}
       columns={columns}
-      copyright={`© ${new Date().getFullYear()} SmartTools. All rights reserved.`}
-      description="Practical browser tools for documents, developer workflows, media, and everyday tasks."
+      copyright={footer("copyright", { year: new Date().getFullYear() })}
+      description={footer("description")}
     />
   );
 }

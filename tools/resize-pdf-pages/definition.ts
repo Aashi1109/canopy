@@ -1,3 +1,4 @@
+import { MEDIA_FILE_ERROR_MESSAGES, MEDIA_PDF_ERROR_MESSAGES } from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
@@ -95,6 +96,18 @@ export default {
     empty: "Drop one PDF (up to 50 MiB) to resize its pages.",
     ready: "Your resized PDF is ready to download.",
     running: "Resizing PDF pages…",
+  },
+  messages: {
+    "progress.resizingPdfPage": "Resizing PDF page",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_PDF_ERROR_MESSAGES,
+    "workspace.resizeSettings": "Resize settings",
+    "workspace.choosePages": "Choose pages from 1 to {count, number}, or enter all.",
+    "workspace.validDimensions": "Enter valid page dimensions.",
+    "workspace.validMargin": "Use a margin from 0 to less than {maximum, number} pt so content fits on the page.",
+    "workspace.planTitle": "{count, plural, one {# page will be resized} other {# pages will be resized}}",
+    "workspace.planDetail": "A new PDF will be created with these settings. Your original stays unchanged.",
   },
   content: {
     howToUse: [

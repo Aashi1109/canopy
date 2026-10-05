@@ -18,6 +18,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         "missing-name",
         "Enter a name to generate this UUID.",
         "Enter a name and choose its namespace.",
+        { messageRef: { key: "errors.missing-name" }, recoveryMessage: { key: "recovery.missing-name" } },
       );
     }
     const namespaceId = (namespace === "custom" ? customNamespace : namespace).trim();
@@ -26,6 +27,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         "invalid-namespace",
         "Enter a valid namespace UUID.",
         "Choose a preset namespace or enter a complete UUID with hyphens.",
+        { messageRef: { key: "errors.invalid-namespace" }, recoveryMessage: { key: "recovery.invalid-namespace" } },
       );
     }
     values = [version === "v3" ? v3(name, namespaceId) : v5(name, namespaceId)];
@@ -41,10 +43,17 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
               ? () => v7()
               : null;
     if (!generate) {
-      throw new ToolError("unsupported-version", "Choose a supported UUID version.");
+      throw new ToolError("unsupported-version", "Choose a supported UUID version.", undefined, {
+        messageRef: { key: "errors.unsupported-version" },
+      });
     }
     if (!Number.isInteger(count) || count < 1 || count > 100) {
-      throw new ToolError("invalid-count", "Enter a whole number from 1 to 100 for how many UUIDs to generate.");
+      throw new ToolError(
+        "invalid-count",
+        "Enter a whole number from 1 to 100 for how many UUIDs to generate.",
+        undefined,
+        { messageRef: { key: "errors.invalid-count" } },
+      );
     }
     getCrypto();
     values = Array.from({ length: count }, () => {

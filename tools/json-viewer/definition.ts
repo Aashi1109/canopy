@@ -1,9 +1,10 @@
+import { JSON_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 /**
  * `maxLength` is the literal 2,000,000 rather than an import of
  * `MAX_JSON_INPUT_CHARS`: this file must load under a plain `fs` walk with no
- * bundler, so it carries type-only imports and nothing else.
+ * bundler, so its value imports remain lightweight, seedable message dictionaries.
  */
 export default {
   toolId: "devtools.json-viewer",
@@ -57,6 +58,80 @@ export default {
     empty: "Paste JSON or load an example to begin.",
     ready: "Interactive tree ready · split view.",
     running: "Parsing JSON…",
+  },
+  messages: {
+    ...JSON_EXECUTION_MESSAGES,
+    "execution.recovery.json": "Fix the reported line, or run Repair & clean to drop the broken parts.",
+    "errors.json-empty": "Paste JSON to inspect it.",
+    "errors.json-too-large": "JSON must be {limit, number} characters or fewer. Upload a file to use large-file mode.",
+    "errors.json-syntax":
+      "JSON is invalid near line {line, number}, column {column, number}. Check for a missing comma, quote, or bracket.",
+    "errors.json-encoding":
+      "The file is not valid UTF-8 near line {line, number}, column {column, number}. Save it as UTF-8 and upload it again.",
+    dismiss: "Dismiss",
+    goToErrorLabel: "Go to JSON error at line {line, number}, column {column, number}",
+    goToError: "Go to line {line, number}, column {column, number}",
+    copyPreviewLabel: "Copy JSON preview",
+    copyInputLabel: "Copy JSON input",
+    previewCopied: "JSON preview copied.",
+    inputCopied: "JSON input copied.",
+    copyInputFailed: "Copy failed. Select the input and copy it manually.",
+    copyPreview: "Copy preview",
+    copy: "Copy",
+    largeFileMode: "Large-file mode",
+    treeUnavailable: "JSON tree unavailable",
+    parsing: "Parsing JSON…",
+    treePlaceholder: "Interactive tree will appear here",
+    treeDescription: "Paste JSON to inspect its structure.",
+    copyValueFailed: "Copy failed. Select the value and copy it manually.",
+    undo: "Undo",
+    undone: "Last change undone.",
+    precisionEditBlocked: "Edit blocked because it could change a high-precision number. Edit the source directly.",
+    inputCleared: "Input cleared.",
+    precisionRepairBlocked: "Repair blocked because it could change a high-precision number.",
+    repairCancelled: "Repair cancelled. Input was not changed.",
+    alreadyValid: "JSON was already valid; formatting was applied.",
+    brokenExampleLoaded: "Broken example loaded. Choose a repair strategy, then run Repair & clean.",
+    example: "Example",
+    sampleLoaded: "Sample loaded.",
+    precisionWarning:
+      "High-precision number: previews may round it; copy and download preserve the exact source. Transform actions are blocked.",
+    processingCompleteFile: "Processing the complete JSON file",
+    readyToProcess: "Ready to process",
+    processingDescription: "The file stays local while the worker reads it incrementally.",
+    largeFileDescription:
+      "Validate every byte, or generate a formatted or minified download without loading the full file into the editor.",
+    inputTitle: "JSON input",
+    beautifyLabel: "Beautify JSON code",
+    minifyLabel: "Minify JSON code",
+    brokenExample: "Broken example",
+    repairStrategy: "Repair strategy",
+    previewMeta: "Read-only · bounded preview",
+    largeResultTitle: "Large JSON result",
+    upload: "Upload",
+    validate: "Validate",
+    beautify: "Beautify",
+    minify: "Minify",
+    repair: "Repair & clean",
+    repairHeading: "REPAIR",
+    removeBroken: "Remove broken",
+    setNull: "Set to null",
+    clear: "Clear",
+    errorBeyondPreview: "Error is beyond the loaded preview",
+    validationFailed: "JSON validation failed",
+    errorBeyondPreviewDescription: "The reported location is beyond the loaded preview.",
+    fileUnreadable: "{name} could not be read.",
+    inputBytes: "{count, plural, one {# byte} other {# bytes}}",
+    valueCopied: "{label} copied.",
+    repairConfirmation:
+      "Repair will remove {count, plural, one {# broken path} other {# broken paths}} ({paths}). Continue?",
+    repairCompleted:
+      "JSON repaired with the “{strategy, select, null {Set broken values to null} other {Remove broken properties}}” strategy.",
+    precisionTransformBlocked:
+      "{mode, select, minify {Minify} other {Beautify}} blocked because it could change a high-precision number.",
+    repairEmpty: "Paste JSON to repair it.",
+    repairTooLarge: "JSON must be {limit, number} characters or fewer.",
+    repairFailed: "JSON could not be repaired safely.",
   },
   content: {
     howToUse: [

@@ -82,7 +82,7 @@ async function workspace(tool, options = {}) {
     });
   }
   return {
-    ...(await mountTool(React.createElement(Fixture))),
+    ...(await mountTool(React.createElement(Fixture), { spec: tool.spec })),
     onRun,
     onCancel,
     onToolbarActionsChange,

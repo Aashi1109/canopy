@@ -2,6 +2,8 @@
 import { Blob as NodeBlob } from "node:buffer";
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
+import { NextIntlClientProvider } from "next-intl";
+import { getCommonMessages } from "../lib/i18n/messages.ts";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 import { ArtifactDownloadMenu } from "../components/ResultView.tsx";
@@ -78,7 +80,15 @@ function pendingContent() {
 }
 
 async function render(artifacts) {
-  await act(() => root.render(React.createElement(ArtifactDownloadMenu, { artifacts })));
+  await act(() =>
+    root.render(
+      React.createElement(
+        NextIntlClientProvider,
+        { locale: "en", messages: getCommonMessages("en") },
+        React.createElement(ArtifactDownloadMenu, { artifacts }),
+      ),
+    ),
+  );
 }
 
 async function openMenu() {
@@ -178,7 +188,9 @@ test("failed conversion reports an error and allows the same format to be retrie
 
   expect(downloads).toEqual([]);
   expect(errors).toHaveBeenCalledTimes(1);
-  expect(JSON.stringify(errors.mock.calls[0])).toMatch(/Canvas is unavailable/);
+  expect(errors).toHaveBeenCalledWith("Unable to download file", {
+    description: "The generated file is unavailable. Run the tool again.",
+  });
   expect(trigger().disabled).toBe(false);
 
   await openMenu();

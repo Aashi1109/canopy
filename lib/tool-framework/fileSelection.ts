@@ -1,6 +1,11 @@
 import { PLATFORM_MAX_BYTES } from "./limits.ts";
 import type { ToolInputSpec } from "./spec.ts";
 
+export type FileIssueFormatter = (
+  key: "fileType" | "fileTooLarge" | "fileLimit" | "fileTotalLimit",
+  values: Record<string, string | number>,
+) => string;
+
 export interface FileSelectionResult {
   files: readonly File[];
   issue: string;
@@ -22,13 +27,17 @@ export function acceptsFile(file: File, accept: string): boolean {
 export function textInputFileIssue(
   file: File,
   spec: { readonly accept: string; readonly maxBytes: number },
+  formatIssue?: FileIssueFormatter,
 ): string | null {
   if (!acceptsFile(file, spec.accept)) {
-    return `${file.name} is not an accepted file type.`;
+    return formatIssue?.("fileType", { name: file.name }) ?? `${file.name} is not an accepted file type.`;
   }
   const maxBytes = Math.min(spec.maxBytes, PLATFORM_MAX_BYTES);
   if (file.size > maxBytes) {
-    return `${file.name} exceeds the ${maxBytes.toLocaleString()} byte limit.`;
+    return (
+      formatIssue?.("fileTooLarge", { name: file.name, maxBytes }) ??
+      `${file.name} exceeds the ${maxBytes.toLocaleString()} byte limit.`
+    );
   }
   return null;
 }
@@ -37,6 +46,7 @@ export function validateFileSelection(
   current: readonly File[],
   incoming: readonly File[],
   inputSpec: Extract<ToolInputSpec, { kind: "files" }>,
+  formatIssue?: FileIssueFormatter,
 ): FileSelectionResult {
   const accepted: File[] = [];
   const issues: string[] = [];
@@ -44,9 +54,12 @@ export function validateFileSelection(
   const maxTotalBytes = Math.min(inputSpec.maxTotalBytes ?? PLATFORM_MAX_BYTES, PLATFORM_MAX_BYTES);
   for (const file of incoming) {
     if (!acceptsFile(file, inputSpec.accept)) {
-      issues.push(`${file.name} is not an accepted file type.`);
+      issues.push(formatIssue?.("fileType", { name: file.name }) ?? `${file.name} is not an accepted file type.`);
     } else if (file.size > maxBytes) {
-      issues.push(`${file.name} exceeds the ${maxBytes.toLocaleString()} byte limit.`);
+      issues.push(
+        formatIssue?.("fileTooLarge", { name: file.name, maxBytes }) ??
+          `${file.name} exceeds the ${maxBytes.toLocaleString()} byte limit.`,
+      );
     } else {
       accepted.push(file);
     }
@@ -54,13 +67,18 @@ export function validateFileSelection(
   const combined = inputSpec.multiple ? [...current, ...accepted] : accepted.slice(0, 1);
   const limit = inputSpec.maxFiles ?? combined.length;
   if (combined.length > limit) {
-    issues.push(`Only ${limit} ${limit === 1 ? "file" : "files"} can be added.`);
+    issues.push(
+      formatIssue?.("fileLimit", { count: limit }) ?? `Only ${limit} ${limit === 1 ? "file" : "files"} can be added.`,
+    );
   }
   const files: File[] = [];
   let totalBytes = 0;
   for (const file of combined.slice(0, limit)) {
     if (file.size > maxTotalBytes - totalBytes) {
-      issues.push(`Selected files must total ${maxTotalBytes.toLocaleString()} bytes or less.`);
+      issues.push(
+        formatIssue?.("fileTotalLimit", { maxBytes: maxTotalBytes }) ??
+          `Selected files must total ${maxTotalBytes.toLocaleString()} bytes or less.`,
+      );
       continue;
     }
     files.push(file);

@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DesignWorkspace } from "@/app/devtools/components/color-design/DesignWorkspace";
@@ -20,6 +21,7 @@ import { decodeImage, pixelColorValues } from "./model";
 import { ImageSamplingCanvas } from "./ImageSamplingCanvas";
 
 export default function ImageColorPickerWorkspace(props: WorkspaceProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const fileInput = useRef<HTMLInputElement>(null);
   const [decoded, setDecoded] = useState<{ file: File; canvas: HTMLCanvasElement } | null>(null);
   const [zoom, setZoom] = useState<"fit" | "actual">("fit");
@@ -67,19 +69,17 @@ export default function ImageColorPickerWorkspace(props: WorkspaceProps) {
   }
   const currentResult = props.running || props.error ? null : props.result;
   const selected = useMemo(() => (image ? pixelColorValues(image, x, y) : undefined), [image, x, y]);
-  const palette = image
-    ? props.result?.sections?.find((section) => section.title === "Approximate palette")?.body
-    : undefined;
+  const palette = image ? props.result?.sections?.find((section) => section.body.render === "table")?.body : undefined;
   const selectedHex = selected?.hex;
 
   return (
     <DesignWorkspace
-      title="Image"
-      controlTitle="Pick a pixel"
+      title={toolText("workspace.image_1aa4cb")}
+      controlTitle={toolText("image.controlTitle")}
       previewMeta={file ? <FileChip file={file} disabled={props.disabled} onRemove={clearImage} /> : undefined}
       previewActions={
         <ToolActionButton action="upload" disabled={props.disabled} onClick={() => fileInput.current?.click()}>
-          Upload
+          {toolText("workspace.upload_865e89")}
         </ToolActionButton>
       }
       preview={
@@ -108,11 +108,11 @@ export default function ImageColorPickerWorkspace(props: WorkspaceProps) {
           {!file ? (
             <FileUploadZone
               className="min-h-40 flex-1"
-              description="PNG · JPEG · WebP · GIF · up to 20 MB"
+              description={toolText("workspace.png_jpeg_webp_601a79")}
               disabled={props.disabled}
-              hint="Click to choose, or drop an image. Nothing is uploaded."
+              hint={toolText("image.uploadHint")}
               onClick={() => fileInput.current?.click()}
-              title="Pick colors from an image"
+              title={toolText("workspace.pick_colors_from_8c65bb")}
             />
           ) : (
             <>
@@ -130,10 +130,10 @@ export default function ImageColorPickerWorkspace(props: WorkspaceProps) {
               )}
               <Caption className="mt-2" aria-live="polite">
                 {dimensions.width
-                  ? `${dimensions.width} × ${dimensions.height} pixels · Selected ${x}, ${y}`
+                  ? toolText("image.selection", { ...dimensions, x, y })
                   : props.error
-                    ? "Upload another image to try again."
-                    : "Reading the image…"}
+                    ? toolText("workspace.upload_another_image_2549e7")
+                    : toolText("workspace.reading_the_image_9a0944")}
               </Caption>
             </>
           )}
@@ -141,12 +141,9 @@ export default function ImageColorPickerWorkspace(props: WorkspaceProps) {
       }
       controls={
         <>
-          <Caption>
-            Click or drag across the image to pick a pixel. The magnifier shows nearby pixels. Arrow keys move one
-            pixel; hold Shift to move ten.
-          </Caption>
+          <Caption>{toolText("workspace.click_or_drag_945c3c")}</Caption>
           <div className="grid grid-cols-2 gap-3">
-            <Field htmlFor="image-pixel-x" label="X (from left)">
+            <Field htmlFor="image-pixel-x" label={toolText("workspace.x_from_left_595135")}>
               <Input
                 disabled={props.disabled || !dimensions.width}
                 id="image-pixel-x"
@@ -161,7 +158,7 @@ export default function ImageColorPickerWorkspace(props: WorkspaceProps) {
                 }}
               />
             </Field>
-            <Field htmlFor="image-pixel-y" label="Y (from top)">
+            <Field htmlFor="image-pixel-y" label={toolText("workspace.y_from_top_a5588e")}>
               <Input
                 disabled={props.disabled || !dimensions.height}
                 id="image-pixel-y"
@@ -177,18 +174,18 @@ export default function ImageColorPickerWorkspace(props: WorkspaceProps) {
               />
             </Field>
           </div>
-          <Field htmlFor="image-zoom" label="Image view">
+          <Field htmlFor="image-zoom" label={toolText("workspace.image_view_d40257")}>
             <Select
               disabled={props.disabled || !dimensions.width}
               id="image-zoom"
               value={zoom}
               onChange={(event) => setZoom(event.target.value === "actual" ? "actual" : "fit")}
             >
-              <option value="fit">Fit image</option>
-              <option value="actual">Actual pixels (100%)</option>
+              <option value="fit">{toolText("workspace.fit_image_294736")}</option>
+              <option value="actual">{toolText("workspace.actual_pixels_100_715803")}</option>
             </Select>
           </Field>
-          <Field htmlFor="image-palette-count" label="Palette colors">
+          <Field htmlFor="image-palette-count" label={toolText("workspace.palette_colors_d752a8")}>
             <Input
               disabled={props.disabled || !file}
               id="image-palette-count"
@@ -203,12 +200,9 @@ export default function ImageColorPickerWorkspace(props: WorkspaceProps) {
               }}
             />
           </Field>
-          <Caption>
-            Pixel coordinates start at zero. Animated files use the first frame. Palette shares are approximate and
-            exclude transparent pixels.
-          </Caption>
+          <Caption>{toolText("workspace.pixel_coordinates_start_a0be66")}</Caption>
           <Button disabled={props.disabled || !file} onClick={clearImage} variant="outline">
-            Clear image
+            {toolText("workspace.clear_image_20231a")}
           </Button>
         </>
       }
@@ -219,7 +213,7 @@ export default function ImageColorPickerWorkspace(props: WorkspaceProps) {
           retainedResult={props.result}
           running={props.running}
           spec={props.spec}
-          title="Pixel and palette"
+          title={toolText("workspace.pixel_and_palette_bbec59")}
           renderResult={() => (
             <div className="grid min-w-0 gap-4 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
               <div className="min-w-0">
@@ -227,13 +221,20 @@ export default function ImageColorPickerWorkspace(props: WorkspaceProps) {
                   <ColorSwatch
                     className="mb-2 h-9"
                     color={String(selectedHex)}
-                    label={`Selected pixel ${selectedHex}`}
+                    label={toolText("image.selectedPixel", { hex: selectedHex })}
                   />
                 )}
-                {selected && <ColorValueList entries={selected.entries} />}
+                {selected && (
+                  <ColorValueList
+                    entries={selected.entries.map((entry) => ({
+                      ...entry,
+                      label: entry.labelMessage ? toolText(entry.labelMessage.key) : entry.label,
+                    }))}
+                  />
+                )}
               </div>
               <div className="min-w-0">
-                <Caption>Approximate dominant palette</Caption>
+                <Caption>{toolText("workspace.approximate_dominant_palette_a73fe0")}</Caption>
                 <div className="mt-2 grid grid-cols-3 gap-2">
                   {palette?.render === "table" &&
                     palette.rows.map(([hex, share]) => (
@@ -246,7 +247,7 @@ export default function ImageColorPickerWorkspace(props: WorkspaceProps) {
                     ))}
                 </div>
                 {palette?.render === "table" && !palette.rows.length && (
-                  <Caption>This image is fully transparent; it has no visible palette.</Caption>
+                  <Caption>{toolText("workspace.this_image_is_65cf49")}</Caption>
                 )}
               </div>
             </div>

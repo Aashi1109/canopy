@@ -1,6 +1,21 @@
+import {
+  CRYPTO_EXECUTION_MESSAGES,
+  ENCODING_EXECUTION_MESSAGES,
+} from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CRYPTO_EXECUTION_MESSAGES,
+    ...ENCODING_EXECUTION_MESSAGES,
+    "errors.missing-name": "Enter a name to generate this UUID.",
+    "recovery.missing-name": "Enter a name and choose its namespace.",
+    "errors.invalid-namespace": "Enter a valid namespace UUID.",
+    "recovery.invalid-namespace": "Choose a preset namespace or enter a complete UUID with hyphens.",
+    "errors.unsupported-version": "Choose a supported UUID version.",
+    "errors.invalid-count": "Enter a whole number from 1 to 100 for how many UUIDs to generate.",
+  },
+
   toolId: "devtools.uuid-generator",
   app: "devtools",
   category: "hashing-crypto",

@@ -111,7 +111,12 @@ test("timestamp batches keep successful lines and identify original invalid line
     "-1 → ISO: 1969-12-31T23:59:59.000Z · UTC: Wed, 31 Dec 1969 23:59:59 GMT · Unix seconds: -1 · Unix milliseconds: -1000",
   ]);
   assert.deepEqual(result.issues, [
-    { line: 3, target: "input", message: '"not-a-date": Timestamp or date is not a valid date or timestamp.' },
+    {
+      line: 3,
+      target: "input",
+      message: '"not-a-date": Timestamp or date is not a valid date or timestamp.',
+      messageRef: { key: "errors.batch-invalid-date", values: { input: "not-a-date" } },
+    },
   ]);
   const invalid = timestamp(context(timestampDefinition, "bad\ninvalid"));
   assert.deepEqual(invalid.items, []);

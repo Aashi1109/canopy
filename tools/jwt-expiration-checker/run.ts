@@ -22,6 +22,10 @@ export const run: ToolRun<Settings> = (ctx): JwtExpirationResult => {
         "invalid-numeric-date",
         `JWT ${claim} must be a finite NumericDate in seconds within the supported date range.`,
         `Check the ${claim} claim in the token input. Use a JSON number of seconds since 1970-01-01 UTC, not a date string.`,
+        {
+          messageRef: { key: "execution.errors.numericDate", values: { claim } },
+          recoveryMessage: { key: "execution.recovery.numericDate", values: { claim } },
+        },
       );
     }
     return value;

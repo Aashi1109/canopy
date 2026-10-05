@@ -1,6 +1,12 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "execution.errors.crypto-unavailable": "Secure browser cryptography is unavailable.",
+    "execution.recovery.crypto-unavailable": "Open this tool over HTTPS in a modern browser.",
+    "execution.errors.secret-required": "Secret key is required.",
+    "execution.recovery.secret-required": "Enter the shared secret used by the verifying system.",
+  },
   toolId: "devtools.hmac-generator",
   app: "devtools",
   category: "hashing-crypto",

@@ -241,6 +241,7 @@ function toFailureMessage(error: unknown, jobId: string): ToolWorkerResponse {
       code: error.code,
       message: error.message,
       recovery: error.recovery,
+      ...(error.details ? { details: error.details } : {}),
     };
   }
   if (error instanceof ArtifactStorageError) {

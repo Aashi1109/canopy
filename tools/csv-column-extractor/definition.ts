@@ -1,6 +1,16 @@
+import { CSV_EXECUTION_MESSAGES } from "../../lib/devtools/shared/csv-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CSV_EXECUTION_MESSAGES,
+    "csv.errors.columnRequired": "Enter at least one column name or number.",
+    "csv.errors.columnSelection": "Enter a name or number for every selected column, separated by commas.",
+    "csv.recovery.columnSelection": 'Wrap header names containing commas in double quotes, for example: "last,name",2.',
+    "csv.errors.columnNumberMissing": "Column number {column} is out of range.",
+    "csv.errors.columnNameMissing": "Column {column} was not found.",
+    "csv.recovery.columnRange": "Use an exact header name, or a one-based column number from 1 to {count}.",
+  },
   toolId: "devtools.csv-column-extractor",
   sharing: { version: 1 },
   app: "devtools",

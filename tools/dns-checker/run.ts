@@ -56,6 +56,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "record-type-unsupported",
       "DNS record types may only include A, AAAA, MX, TXT, NS, and CNAME.",
       "Select one or more of those six record types.",
+      { messageRef: { key: "dns.errors.recordType" }, recoveryMessage: { key: "dns.recovery.recordType" } },
     );
   }
   ctx.signal.throwIfAborted();
@@ -82,6 +83,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
           "resolver-unreachable",
           "DNS Checker could not reach the public DNS service.",
           "Check your network connection and try again.",
+          { messageRef: { key: "dns.errors.unreachable" }, recoveryMessage: { key: "dns.recovery.network" } },
         );
       }
       ctx.signal.throwIfAborted();
@@ -90,11 +92,17 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
           "lookup-failed",
           `DNS lookup failed (${response.status}).`,
           "The public resolver rejected the query. Try again in a moment.",
+          {
+            messageRef: { key: "dns.errors.lookup", values: { status: response.status } },
+            recoveryMessage: { key: "dns.recovery.lookup" },
+          },
         );
       }
       const data: unknown = await response.json();
       if (!isRecord(data)) {
-        throw new ToolError("resolver-invalid-response", "DNS service returned an invalid response.");
+        throw new ToolError("resolver-invalid-response", "DNS service returned an invalid response.", undefined, {
+          messageRef: { key: "dns.errors.response" },
+        });
       }
       return [type, data] as const;
     }),
@@ -117,6 +125,18 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   let hasWarning = false;
   let failedLookups = 0;
   let notFoundLookups = 0;
+  const statusMessages: ({ key: string; values?: Record<string, string | number> } | undefined)[][] = [];
+  function statusRow(
+    type: string,
+    status: string,
+    detail: string,
+    statusKey: string,
+    detailKey: string,
+    values?: Record<string, string | number>,
+  ) {
+    statusMessages.push([undefined, { key: `dns.status.${statusKey}` }, { key: `dns.details.${detailKey}`, values }]);
+    return [type, status, detail];
+  }
   const statusRows = records.map(([type, data]) => {
     const answers = Array.isArray(data.Answer) ? data.Answer : [];
     let invalidAnswers = data.Answer !== undefined && !Array.isArray(data.Answer);
@@ -154,53 +174,69 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     if (status === 3) {
       hasWarning = true;
       notFoundLookups += 1;
-      return [
+      return statusRow(
         type,
         "Domain not found",
         "The resolver reports that this name does not exist (DNS status 3, NXDOMAIN). Check the spelling.",
-      ];
+        "notFound",
+        "notFound",
+      );
     }
     if (status !== null && status !== 0) {
       hasWarning = true;
       failedLookups += 1;
       const reason =
         status === 2 ? "could not complete the lookup" : status === 5 ? "refused the lookup" : "returned an error";
-      return [
+      return statusRow(
         type,
         "Resolver failed",
         `The resolver ${reason} (DNS status ${status}). Try again; this does not mean the domain has no records.`,
-      ];
+        "failed",
+        "failed",
+        { status },
+      );
     }
     if (status === null || (invalidAnswers && answerCount === 0)) {
       hasWarning = true;
       failedLookups += 1;
-      return [
+      return statusRow(
         type,
         "Invalid response",
         "The resolver response could not be read reliably. Try again or inspect the raw response.",
-      ];
+        "invalid",
+        "invalid",
+      );
     }
     if (data.TC === true || invalidAnswers) {
       hasWarning = true;
-      return [
+      return statusRow(
         type,
         "Incomplete response",
         data.TC === true
           ? `The resolver truncated its response; ${answerCount} readable answers are shown. Try again or inspect the raw response.`
           : `${answerCount} readable answers are shown; invalid answer entries were skipped. Try again or inspect the raw response.`,
-      ];
+        "incomplete",
+        data.TC === true ? "truncated" : "skipped",
+        { count: answerCount },
+      );
     }
     return answerCount
-      ? [
+      ? statusRow(
           type,
           "Records returned",
           `${answerCount} answer${answerCount === 1 ? "" : "s"} returned. Aliases may appear under their actual record type.`,
-        ]
-      : [
+          "returned",
+          "returned",
+          { count: answerCount },
+        )
+      : statusRow(
           type,
           "No records",
           `The resolver returned no ${type} answers. This alone does not indicate a problem with the domain.`,
-        ];
+          "none",
+          "none",
+          { type },
+        );
   });
 
   const recordCount = `${seen.size} DNS record${seen.size === 1 ? "" : "s"}`;
@@ -210,24 +246,32 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       ? {
           level: "warn",
           label: `Domain not found: ${domain}`,
+          labelMessage: { key: "dns.verdict.notFound", values: { domain } },
           detail: "The public resolver could not find this name. Check the domain spelling and try again.",
+          detailMessage: { key: "dns.verdict.notFoundDetail" },
         }
       : hasWarning
         ? {
             level: lookupFailed ? "error" : "warn",
             label: `DNS lookup ${lookupFailed ? "failed" : "warning"} for ${domain}`,
+            labelMessage: { key: lookupFailed ? "dns.verdict.failed" : "dns.verdict.warning", values: { domain } },
             detail: `${recordCount} returned. Some lookups were unsuccessful or incomplete; see the affected rows before relying on these results.`,
+            detailMessage: { key: "dns.verdict.warningDetail", values: { count: seen.size } },
           }
         : seen.size
           ? {
               level: "ok",
               label: `${recordCount} found for ${domain}`,
+              labelMessage: { key: "dns.verdict.found", values: { count: seen.size, domain } },
               detail: `Queried ${types.join(", ")}. Repeated answers are shown once.`,
+              detailMessage: { key: "dns.verdict.foundDetail", values: { types: types.join(", ") } },
             }
           : {
               level: "ok",
               label: `No DNS records found for ${domain}`,
+              labelMessage: { key: "dns.verdict.none", values: { domain } },
               detail: `The resolver returned no answers for ${types.join(", ")}. Try another record type or verify the domain name.`,
+              detailMessage: { key: "dns.verdict.noneDetail", values: { types: types.join(", ") } },
             };
   const raw = ctx.settings.recordView === "raw";
 
@@ -239,10 +283,27 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         ? rows.join("\n")
         : "NO_RECORDS\t—\tNo matching DNS records",
     downloadName: raw ? "dns-records.json" : "dns-records.txt",
-    tablePreview: preview.result,
+    tablePreview: preview.result
+      ? {
+          ...preview.result,
+          columnMessages: ["type", "name", "value", ...(includeTtl ? ["ttlSeconds"] : [])].map((key) => ({
+            key: `dns.${key}`,
+          })),
+        }
+      : undefined,
     verdict,
     sections: [
-      { title: "Lookup status", body: { render: "table", columns: ["Type", "Status", "Details"], rows: statusRows } },
+      {
+        title: "Lookup status",
+        titleMessage: { key: "dns.lookupStatus" },
+        body: {
+          render: "table",
+          columns: ["Type", "Status", "Details"],
+          columnMessages: ["type", "columnStatus", "columnDetails"].map((key) => ({ key: `dns.${key}` })),
+          rows: statusRows,
+          rowMessages: statusMessages,
+        },
+      },
     ],
   };
 };

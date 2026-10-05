@@ -37,7 +37,9 @@ function convertTextCase(value: string, target: string): string {
     case "constant":
       return lower.join("_").toUpperCase();
     default:
-      throw new ToolError("unknown-case", "Choose a valid text case.");
+      throw new ToolError("unknown-case", "Choose a valid text case.", undefined, {
+        messageRef: { key: "errors.unknown-case" },
+      });
   }
 }
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
+
 import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
 
 /**
@@ -7,7 +9,7 @@ import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import type { DocumentTemplate } from "@/lib/invoice-templates/index.ts";
 import {
   FieldError,
@@ -268,6 +270,8 @@ export default function ExpenseReportPage({
   onTrackClick: (item: string) => void;
   templates?: readonly DocumentTemplate[];
 }) {
+  const t = useTranslations("Tool.runtime");
+  const format = useFormatter();
   const [data, setData] = useState<ExpenseReportDraft>(() => {
     return normalizeExpenseReportDraft(DataBridge.get(DataBridgeKeys.EXPENSE_DRAFT, DEFAULT_EXPENSE_REPORT_DRAFT));
   });
@@ -338,7 +342,7 @@ export default function ExpenseReportPage({
     });
     setShowImportConfirm(false);
     onTrackClick("import_mileage_completed");
-    alert(`Successfully imported ${mapped.length} trips from your active Mileage Log draft!`);
+    alert(t("expense.successfullyImportedValueTripsFromYourActiveMileage", { value1: mapped.length }));
   };
 
   const handleLoadSample = () => {
@@ -347,7 +351,7 @@ export default function ExpenseReportPage({
   };
 
   const handleClearDraft = () => {
-    if (confirm("Are you sure you want to clear this expense board?")) {
+    if (confirm(t("expense.areYouSureYouWantToClearThis"))) {
       setData(DEFAULT_EXPENSE_REPORT_DRAFT);
       onTrackClick("expense_draft_cleared");
     }
@@ -472,7 +476,7 @@ export default function ExpenseReportPage({
   const validateReport = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!data.submitter.name.trim()) {
-      newErrors["submitter.name"] = "Submitter Legal Name is required before downloading reports.";
+      newErrors["submitter.name"] = t("expense.submitterLegalNameIsRequiredBeforeDownloadingReports");
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -488,8 +492,15 @@ export default function ExpenseReportPage({
     }
   };
 
+  const initialDraft = useRef(JSON.stringify(data));
+  const hasEdits = JSON.stringify(data) !== initialDraft.current;
+
   return (
-    <div className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="expense-report-wrapper">
+    <div
+      className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      id="expense-report-wrapper"
+      data-language-switch-state={hasEdits ? "dirty" : "clean"}
+    >
       {/* 1. Page Header banner */}
       <ToolPageHeader
         actions={
@@ -497,12 +508,12 @@ export default function ExpenseReportPage({
             {importAvailable && (
               <Button onClick={() => setShowImportConfirm(true)} size="sm" type="button" variant="outline">
                 <Plus className="size-3.5" />
-                <span>Import Mileage Logs</span>
+                <span>{t("expense.importMileageLogs")}</span>
               </Button>
             )}
             <Button onClick={handleLoadSample} size="sm" type="button" variant="secondary">
               <RefreshCw className="size-3.5" />
-              <span>Load Sample</span>
+              <span>{t("expense.loadSample")}</span>
             </Button>
             <Button
               className="text-destructive hover:bg-destructive/10 hover:text-destructive"
@@ -511,14 +522,14 @@ export default function ExpenseReportPage({
               type="button"
               variant="ghost"
             >
-              Clear Board
+              {t("expense.clearBoard")}
             </Button>
           </>
         }
         className="print:hidden"
-        description="Categorize corporate purchases, reconcile item logs, and formulate reimbursable parameters."
-        eyebrow={<StatusBadge variant="info">Corporate Reimbursement Track</StatusBadge>}
-        title="Expense Report Generator"
+        description={t("expense.categorizeCorporatePurchasesReconcileItemLogsAndFormulate")}
+        eyebrow={<StatusBadge variant="info">{t("expense.corporateReimbursementTrack")}</StatusBadge>}
+        title={t("expense.expenseReportGenerator")}
       />
 
       <AdvancedTemplateWorkspace
@@ -537,18 +548,15 @@ export default function ExpenseReportPage({
               <div className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
                 <MapPin className="w-5 h-5" />
               </div>
-              <H4 className="text-slate-900">Import Mileage Log Entries?</H4>
+              <H4 className="text-slate-900">{t("expense.importMileageLogEntries")}</H4>
             </div>
-            <P className="text-slate-600">
-              This routine reads your active Mileage Log draft values and safely appends them as mileage item rows
-              inside this expense report board. No data will be overwritten.
-            </P>
+            <P className="text-slate-600">{t("expense.thisRoutineReadsYourActiveMileageLogDraft")}</P>
             <div className="flex justify-end gap-2 pt-2">
               <Button onClick={() => setShowImportConfirm(false)} size="sm" type="button" variant="secondary">
-                Cancel
+                {t("expense.cancel")}
               </Button>
               <Button onClick={handleImportMileage} size="sm" type="button">
-                Yes, Append Mileage Rows
+                {t("expense.yesAppendMileageRows")}
               </Button>
             </div>
           </Card>
@@ -564,10 +572,10 @@ export default function ExpenseReportPage({
       >
         <TabsList className="grid w-full grid-cols-2 border border-slate-200/50" variant="segmented">
           <TabsTrigger className="whitespace-normal py-1.5" value="edit">
-            1. Edit items
+            {t("expense.label1EditItems")}
           </TabsTrigger>
           <TabsTrigger className="whitespace-normal py-1.5" value="preview">
-            2. PDF / Print View
+            {t("expense.label2PdfPrintView")}
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -579,11 +587,13 @@ export default function ExpenseReportPage({
           <Card className="space-y-6 rounded-2xl p-6 shadow-sm">
             {/* Report Metadata segment */}
             <div>
-              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">1. Report Configuration</H3>
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
+                {t("expense.label1ReportConfiguration")}
+              </H3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
                   <Label className="block text-slate-400 mb-1" htmlFor="expense-report-title">
-                    Report Title / Purpose *
+                    {t("expense.reportTitlePurpose")}
                   </Label>
                   <Input
                     type="text"
@@ -595,7 +605,7 @@ export default function ExpenseReportPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="expense-report-number">
-                    Report Number *
+                    {t("expense.reportNumber")}
                   </Label>
                   <Input
                     type="text"
@@ -606,7 +616,7 @@ export default function ExpenseReportPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="expense-report-date">
-                    Report issue Date *
+                    {t("expense.reportIssueDate")}
                   </Label>
                   <Input
                     type="date"
@@ -617,7 +627,7 @@ export default function ExpenseReportPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="expense-period-start">
-                    Period Start
+                    {t("expense.periodStart")}
                   </Label>
                   <Input
                     type="date"
@@ -628,7 +638,7 @@ export default function ExpenseReportPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="expense-period-end">
-                    Period End
+                    {t("expense.periodEnd")}
                   </Label>
                   <Input
                     type="date"
@@ -643,17 +653,17 @@ export default function ExpenseReportPage({
             {/* Submitter Info Grid */}
             <div>
               <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
-                2. Submitter (Employee / Contractor)
+                {t("expense.label2SubmitterEmployeeContractor")}
               </H3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="expense-submitter-name">
-                    Legal Name *
+                    {t("expense.legalName")}
                   </Label>
                   <Input
                     aria-errormessage={errors["submitter.name"] ? "expense-submitter-name-error" : undefined}
                     type="text"
-                    placeholder="e.g. Alex Mercer"
+                    placeholder={t("expense.eGAlexMercer")}
                     aria-invalid={Boolean(errors["submitter.name"])}
                     className={` ${errors["submitter.name"] ? "bg-destructive/5" : ""}`}
                     id="expense-submitter-name"
@@ -671,11 +681,11 @@ export default function ExpenseReportPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="expense-submitter-email">
-                    Email Coordinates
+                    {t("expense.emailCoordinates")}
                   </Label>
                   <Input
                     type="email"
-                    placeholder="alex@brand.com"
+                    placeholder={t("expense.alexBrandCom")}
                     id="expense-submitter-email"
                     value={data.submitter.email}
                     onChange={(e) => setData({ ...data, submitter: { ...data.submitter, email: e.target.value } })}
@@ -683,11 +693,11 @@ export default function ExpenseReportPage({
                 </div>
                 <div className="md:col-span-2">
                   <Label className="block text-slate-400 mb-1" htmlFor="expense-department">
-                    Corporate Department / Team
+                    {t("expense.corporateDepartmentTeam")}
                   </Label>
                   <Input
                     type="text"
-                    placeholder="e.g. Client Solutions Group"
+                    placeholder={t("expense.eGClientSolutionsGroup")}
                     id="expense-department"
                     value={data.department}
                     onChange={(e) => setData({ ...data, department: e.target.value })}
@@ -699,16 +709,16 @@ export default function ExpenseReportPage({
             {/* Parent Association or Target Client Coordinates */}
             <div>
               <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
-                3. Reimbursement entity (Company / Client)
+                {t("expense.label3ReimbursementEntityCompanyClient")}
               </H3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="expense-client-name">
-                    Company / client Name *
+                    {t("expense.companyClientName")}
                   </Label>
                   <Input
                     type="text"
-                    placeholder="e.g. Acme Retail Corp"
+                    placeholder={t("expense.eGAcmeRetailCorp")}
                     id="expense-client-name"
                     value={data.client.name}
                     onChange={(e) => setData({ ...data, client: { ...data.client, name: e.target.value } })}
@@ -716,11 +726,11 @@ export default function ExpenseReportPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="expense-client-contact">
-                    Point of Contact
+                    {t("expense.pointOfContact")}
                   </Label>
                   <Input
                     type="text"
-                    placeholder="Sarah Jenkins"
+                    placeholder={t("expense.sarahJenkins")}
                     id="expense-client-contact"
                     value={data.client.contact}
                     onChange={(e) => setData({ ...data, client: { ...data.client, contact: e.target.value } })}
@@ -732,10 +742,10 @@ export default function ExpenseReportPage({
             {/* Expense Itemization table */}
             <div>
               <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4">
-                <H3 className="text-slate-500">4. Purchase Itemization</H3>
+                <H3 className="text-slate-500">{t("expense.label4PurchaseItemization")}</H3>
                 <Button onClick={handleAddExpenseRow} size="sm" type="button">
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Add Purchase</span>
+                  <span>{t("expense.addPurchase")}</span>
                 </Button>
               </div>
 
@@ -746,7 +756,7 @@ export default function ExpenseReportPage({
                     className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl space-y-3 relative"
                   >
                     <Button
-                      aria-label={`Remove expense from ${row.merchant || `row ${index + 1}`}`}
+                      aria-label={t("expense.removeExpenseFromValue", { value1: row.merchant || `row ${index + 1}` })}
                       className="absolute right-2 top-2 text-slate-400 hover:text-rose-600"
                       onClick={() => handleRemoveExpenseRow(row.id)}
                       size="icon-xs"
@@ -759,7 +769,7 @@ export default function ExpenseReportPage({
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div>
                         <Label className="block text-slate-400 mb-0.5" htmlFor={`expense-row-${row.id}-date`}>
-                          Date *
+                          {t("expense.date")}
                         </Label>
                         <Input
                           type="date"
@@ -770,11 +780,11 @@ export default function ExpenseReportPage({
                       </div>
                       <div>
                         <Label className="block text-slate-400 mb-0.5" htmlFor={`expense-row-${row.id}-merchant`}>
-                          Merchant / Vendor *
+                          {t("expense.merchantVendor")}
                         </Label>
                         <Input
                           type="text"
-                          placeholder="Amazon, Shell etc"
+                          placeholder={t("expense.amazonShellEtc")}
                           id={`expense-row-${row.id}-merchant`}
                           value={row.merchant}
                           onChange={(e) => handleExpenseRowChange(row.id, "merchant", e.target.value)}
@@ -782,27 +792,27 @@ export default function ExpenseReportPage({
                       </div>
                       <div>
                         <Label className="block text-slate-400 mb-0.5" htmlFor={`expense-row-${row.id}-category`}>
-                          expense Category
+                          {t("expense.expenseCategory")}
                         </Label>
                         <Select
                           id={`expense-row-${row.id}-category`}
                           value={row.category}
                           onChange={(e) => handleExpenseRowChange(row.id, "category", e.target.value)}
                         >
-                          <option value="Meals">Meals / Dinner</option>
-                          <option value="Travel">Flights / Travel</option>
-                          <option value="Lodging">Lodging / Hotel</option>
-                          <option value="Office supplies">office Supplies</option>
-                          <option value="Software">software Subscription</option>
-                          <option value="Equipment">Hardware &amp; Gear</option>
-                          <option value="Phone/internet">Phone / Wifi</option>
-                          <option value="Client materials">Client Materials</option>
-                          <option value="Other">Other Expenses</option>
+                          <option value="Meals">{t("expense.mealsDinner")}</option>
+                          <option value="Travel">{t("expense.flightsTravel")}</option>
+                          <option value="Lodging">{t("expense.lodgingHotel")}</option>
+                          <option value="Office supplies">{t("expense.officeSupplies")}</option>
+                          <option value="Software">{t("expense.softwareSubscription")}</option>
+                          <option value="Equipment">{t("expense.hardwareGear")}</option>
+                          <option value="Phone/internet">{t("expense.phoneWifi")}</option>
+                          <option value="Client materials">{t("expense.clientMaterials")}</option>
+                          <option value="Other">{t("expense.otherExpenses")}</option>
                         </Select>
                       </div>
                       <div>
                         <Label className="block text-slate-500 mb-0.5" htmlFor={`expense-row-${row.id}-amount`}>
-                          Purchase Amount ($) *
+                          {t("expense.purchaseAmount")}
                         </Label>
                         <Input
                           type="number"
@@ -817,7 +827,7 @@ export default function ExpenseReportPage({
                     <div className="grid grid-cols-3 gap-3">
                       <div>
                         <Label className="block text-slate-400 mb-0.5" htmlFor={`expense-row-${row.id}-tax`}>
-                          Tax ($)
+                          {t("expense.tax")}
                         </Label>
                         <Input
                           type="number"
@@ -830,7 +840,7 @@ export default function ExpenseReportPage({
                       </div>
                       <div>
                         <Label className="block text-slate-400 mb-0.5" htmlFor={`expense-row-${row.id}-tip`}>
-                          Tip ($)
+                          {t("expense.tip")}
                         </Label>
                         <Input
                           type="number"
@@ -842,9 +852,11 @@ export default function ExpenseReportPage({
                         />
                       </div>
                       <div>
-                        <Overline className="block text-slate-400 mb-0.5">Line total</Overline>
+                        <Overline className="block text-slate-400 mb-0.5">{t("expense.lineTotal")}</Overline>
                         <output className="flex min-h-10 items-center text-slate-900">
-                          <Strong>${getExpenseLineTotal(row).toFixed(2)}</Strong>
+                          <Strong>
+                            {format.number(getExpenseLineTotal(row), { style: "currency", currency: "USD" })}
+                          </Strong>
                         </output>
                       </div>
                     </div>
@@ -852,9 +864,9 @@ export default function ExpenseReportPage({
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-1">
                       <div className="md:col-span-6">
                         <Input
-                          aria-label={`Expense ${index + 1} notes`}
+                          aria-label={t("expense.expenseValueNotes", { value1: index + 1 })}
                           type="text"
-                          placeholder="Additional detailed notes..."
+                          placeholder={t("expense.additionalDetailedNotes")}
                           value={row.description}
                           onChange={(e) => handleExpenseRowChange(row.id, "description", e.target.value)}
                         />
@@ -863,7 +875,7 @@ export default function ExpenseReportPage({
                         <Checkbox
                           checked={row.reimbursable}
                           className="min-h-0 items-center gap-1.5 [&_[data-slot=checkbox]]:size-3.5"
-                          label="Reimbursable"
+                          label={t("expense.reimbursable")}
                           onCheckedChange={(checked) =>
                             handleExpenseRowChange(row.id, "reimbursable", checked === true)
                           }
@@ -871,13 +883,13 @@ export default function ExpenseReportPage({
                         <Checkbox
                           checked={row.billable}
                           className="min-h-0 items-center gap-1.5 [&_[data-slot=checkbox]]:size-3.5"
-                          label="Bill Client"
+                          label={t("expense.billClient")}
                           onCheckedChange={(checked) => handleExpenseRowChange(row.id, "billable", checked === true)}
                         />
                         <Checkbox
                           checked={row.receiptAttached}
                           className="min-h-0 items-center gap-1.5 [&_[data-slot=checkbox]]:size-3.5"
-                          label="Receipt File"
+                          label={t("expense.receiptFile")}
                           onCheckedChange={(checked) =>
                             handleExpenseRowChange(row.id, "receiptAttached", checked === true)
                           }
@@ -889,13 +901,17 @@ export default function ExpenseReportPage({
                       <div className="bg-white/80 border border-dashed border-slate-200 px-3 py-1.5 rounded-lg text-slate-500 flex items-center justify-between">
                         <Text className="flex items-center gap-1">
                           <Paperclip className="w-3 h-3 text-slate-400" />
-                          <Text>Receipt reference: {row.receiptName || "purchase_receipt_reference.jpg"}</Text>
+                          <Text>
+                            {t("expense.receiptReference", {
+                              name: row.receiptName || t("expense.purchaseReceiptReferenceJpg"),
+                            })}
+                          </Text>
                         </Text>
                         <Input
-                          aria-label={`Receipt label for expense ${index + 1}`}
+                          aria-label={t("expense.receiptLabelForExpenseValue", { value1: index + 1 })}
                           type="text"
                           required
-                          placeholder="Edit label"
+                          placeholder={t("expense.editLabel")}
                           className="h-8 max-w-32"
                           value={row.receiptName || ""}
                           onChange={(e) => handleExpenseRowChange(row.id, "receiptName", e.target.value)}
@@ -911,18 +927,18 @@ export default function ExpenseReportPage({
             <div>
               <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4">
                 <div className="flex items-center gap-1.5">
-                  <H3 className="text-slate-500">5. Driven Mileage Rows</H3>
-                  <StatusBadge variant="neutral">Per-row rate</StatusBadge>
+                  <H3 className="text-slate-500">{t("expense.label5DrivenMileageRows")}</H3>
+                  <StatusBadge variant="neutral">{t("expense.perRowRate")}</StatusBadge>
                 </div>
                 <Button onClick={handleAddMileageRow} size="sm" type="button">
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Add Mileage</span>
+                  <span>{t("expense.addMileage")}</span>
                 </Button>
               </div>
 
               {data.mileageRows.length === 0 ? (
                 <div className="text-center py-6 bg-slate-50 border border-dashed rounded-xl text-slate-400">
-                  <Text>No mileage records registered. Reconcile trip logs using Phase 2 mileage sheet.</Text>
+                  <Text>{t("expense.noMileageRecordsRegisteredReconcileTripLogsUsing")}</Text>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -932,7 +948,7 @@ export default function ExpenseReportPage({
                       className="bg-slate-50/60 border rounded-lg p-3 relative flex flex-col md:flex-row gap-3"
                     >
                       <Button
-                        aria-label="Remove mileage row"
+                        aria-label={t("expense.removeMileageRow")}
                         className="absolute right-2 top-2 text-slate-400 hover:text-rose-600"
                         onClick={() => handleRemoveMileageRow(mRow.id)}
                         size="icon-xs"
@@ -945,7 +961,7 @@ export default function ExpenseReportPage({
                       <div className="grow grid grid-cols-2 md:grid-cols-5 gap-2">
                         <div>
                           <Label className="block text-slate-400" htmlFor={`expense-mileage-${mRow.id}-date`}>
-                            Date
+                            {t("expense.date2")}
                           </Label>
                           <Input
                             type="date"
@@ -956,11 +972,11 @@ export default function ExpenseReportPage({
                         </div>
                         <div className="col-span-2">
                           <Label className="block text-slate-400" htmlFor={`expense-mileage-${mRow.id}-purpose`}>
-                            Trip Purpose
+                            {t("expense.tripPurpose")}
                           </Label>
                           <Input
                             type="text"
-                            placeholder="e.g. Travel to CLT Airport terminal"
+                            placeholder={t("expense.eGTravelToCltAirportTerminal")}
                             id={`expense-mileage-${mRow.id}-purpose`}
                             value={mRow.purpose}
                             onChange={(e) => handleMileageRowChange(mRow.id, "purpose", e.target.value)}
@@ -968,7 +984,7 @@ export default function ExpenseReportPage({
                         </div>
                         <div>
                           <Label className="block text-slate-400" htmlFor={`expense-mileage-${mRow.id}-miles`}>
-                            Driven Miles
+                            {t("expense.drivenMiles")}
                           </Label>
                           <Input
                             type="number"
@@ -980,7 +996,7 @@ export default function ExpenseReportPage({
                         </div>
                         <div>
                           <Label className="block text-slate-400" htmlFor={`expense-mileage-${mRow.id}-rate`}>
-                            Rate / mile
+                            {t("expense.rateMile")}
                           </Label>
                           <Input
                             type="number"
@@ -1000,10 +1016,12 @@ export default function ExpenseReportPage({
 
             {/* Float Adjustment advance */}
             <div>
-              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">6. Corporate Advance Received</H3>
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
+                {t("expense.label6CorporateAdvanceReceived")}
+              </H3>
               <div className="max-w-xs">
                 <Label className="block text-slate-400 mb-1" htmlFor="expense-advance">
-                  Pre-Paid Advance ($)
+                  {t("expense.prePaidAdvance")}
                 </Label>
                 <Input
                   type="number"
@@ -1017,9 +1035,8 @@ export default function ExpenseReportPage({
           </Card>
 
           {/* Compliance Info Banner */}
-          <AlertBanner title="Reimbursement Policy Warning" variant="info">
-            This document structures operating write-offs under IRS general business expense rules. Keep files of actual
-            payment receipts secure in local storage directories.
+          <AlertBanner title={t("expense.reimbursementPolicyWarning")} variant="info">
+            {t("expense.thisDocumentStructuresOperatingWriteOffsUnderIrs")}
           </AlertBanner>
         </div>
 
@@ -1029,24 +1046,24 @@ export default function ExpenseReportPage({
         >
           <Card className="space-y-3 rounded-2xl p-4 shadow-sm print:hidden">
             <div className="flex items-center justify-between text-slate-500 border-b border-slate-100 pb-2">
-              <Text>REPORT ACTIONS PANEL</Text>
-              <StatusBadge variant="info">Ready to Print</StatusBadge>
+              <Text>{t("expense.reportActionsPanel")}</Text>
+              <StatusBadge variant="info">{t("expense.readyToPrint")}</StatusBadge>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <Button className="w-full" onClick={handlePrint} type="button">
                 <Printer className="w-4 h-4" />
-                <span>Download PDF</span>
+                <span>{t("expense.downloadPdf")}</span>
               </Button>
               <ToolActionButton action="download" onClick={handleExportCSV} type="button">
-                <span>Export CSV</span>
+                <span>{t("expense.exportCsv")}</span>
               </ToolActionButton>
             </div>
           </Card>
 
           {/* Simulated Printed Letter Sheet Page */}
           <div className="relative group transition-all duration-200 border border-slate-200 shadow-2xl rounded-2xl">
-            <div className="p-8 bg-white min-h-[750px] font-sans text-slate-800" id="receipt-print-area">
+            <div className="p-8 bg-white min-h-[750px] font-sans text-slate-800" id="receipt-print-area" dir="ltr">
               <div className="flex justify-between items-start border-b border-slate-200 pb-4 mb-6">
                 <div>
                   <span className="text-[10px] font-black text-blue-600 block uppercase tracking-wider">
@@ -1253,33 +1270,24 @@ export default function ExpenseReportPage({
         className="mt-16 border-t border-slate-200/80 pt-12 max-w-4xl mx-auto space-y-6 print:hidden"
         id="expense-seo-faq"
       >
-        <H3 className="text-slate-900 text-center">Frequently Answered Corporate Questions</H3>
+        <H3 className="text-slate-900 text-center">{t("expense.frequentlyAnsweredCorporateQuestions")}</H3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-slate-600">
           <div className="space-y-1">
-            <H4 className="text-slate-900">How do I export my expenses summary for tax write-offs later?</H4>
-            <P>
-              Simply click the "Export CSV" option to serialize all itemization metrics into standard xls sheets, or
-              copy summaries into tax planner cards.
-            </P>
+            <H4 className="text-slate-900">{t("expense.howDoIExportMyExpensesSummaryFor")}</H4>
+            <P>{t("expense.simplyClickTheExportCsvOptionToSerialize")}</P>
           </div>
           <div className="space-y-1">
-            <H4 className="text-slate-900">How does Pre-Paid Advance calculation behave?</H4>
-            <P>
-              If your corporate office already wired cash for travel flights, keying the advance will deduct it clearly
-              from final balances due.
-            </P>
+            <H4 className="text-slate-900">{t("expense.howDoesPrePaidAdvanceCalculationBehave")}</H4>
+            <P>{t("expense.ifYourCorporateOfficeAlreadyWiredCashFor")}</P>
           </div>
           <div className="space-y-1">
-            <H4 className="text-slate-900">Are receipts files uploaded onto any cloud database?</H4>
-            <P>No, absolutely none. Your assets remain local under immediate browser memory.</P>
+            <H4 className="text-slate-900">{t("expense.areReceiptsFilesUploadedOntoAnyCloudDatabase")}</H4>
+            <P>{t("expense.noAbsolutelyNoneYourAssetsRemainLocalUnder")}</P>
           </div>
           <div className="space-y-1">
-            <H4 className="text-slate-900">Is this software compliant with IRS publication guidelines?</H4>
-            <P>
-              It helps contractors itemize operational metrics clearly. Since it represents an organizer, always consult
-              certified bookkeepers.
-            </P>
+            <H4 className="text-slate-900">{t("expense.isThisSoftwareCompliantWithIrsPublicationGuidelines")}</H4>
+            <P>{t("expense.itHelpsContractorsItemizeOperationalMetricsClearlySince")}</P>
           </div>
         </div>
       </div>

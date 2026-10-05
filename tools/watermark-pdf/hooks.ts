@@ -26,7 +26,9 @@ function isPdf(file: ToolRunFile): boolean {
  */
 export const validate: ToolValidate<Settings> = (settings, files) => {
   if (settings.watermarkKind !== "image") return null;
-  return files.some((file) => !isPdf(file)) ? null : "Choose a JPG or PNG watermark image.";
+  return files.some((file) => !isPdf(file))
+    ? null
+    : { message: "Choose a JPG or PNG watermark image.", messageRef: { key: "readiness.chooseWatermark" } };
 };
 
 /** Replaces the `watermark-pdf` arm of `applyPdfInspection` (`MediaWorkbench.tsx:726-731`). */

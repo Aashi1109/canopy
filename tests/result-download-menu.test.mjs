@@ -2,6 +2,8 @@
 import { Blob as NodeBlob } from "node:buffer";
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
+import { NextIntlClientProvider } from "next-intl";
+import { getCommonMessages } from "../lib/i18n/messages.ts";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { ResultActions } from "../components/ResultView.tsx";
 import { run } from "../tools/palette-generator/run.ts";
@@ -54,7 +56,13 @@ const palette = () =>
 
 async function render(result, downloadMenu = true) {
   await act(() =>
-    root.render(React.createElement(ResultActions, { canCopy: true, canDownload: true, downloadMenu, result })),
+    root.render(
+      React.createElement(
+        NextIntlClientProvider,
+        { locale: "en", messages: getCommonMessages("en") },
+        React.createElement(ResultActions, { canCopy: true, canDownload: true, downloadMenu, result }),
+      ),
+    ),
   );
 }
 

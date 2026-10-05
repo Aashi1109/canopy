@@ -1,6 +1,28 @@
+import {
+  DIFF_EXECUTION_MESSAGES,
+  INPUT_EXECUTION_MESSAGES,
+  JSON_EXECUTION_MESSAGES,
+} from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "execution.errors.comparisonTooDeepSide": "{side}: This JSON is nested too deeply to compare safely.",
+    ...DIFF_EXECUTION_MESSAGES,
+    ...INPUT_EXECUTION_MESSAGES,
+    ...JSON_EXECUTION_MESSAGES,
+    "execution.changed":
+      "{added, plural, one {# line added} other {# lines added}} · {removed, plural, one {# line removed} other {# lines removed}}",
+    "execution.identical": "No differences",
+    "execution.comparison": "Comparing JSON B against JSON A. Formatting and object key order are ignored.",
+    "execution.original": "JSON A · Original",
+    "execution.changedSide": "JSON B · Changed",
+    "execution.errors.comparison-too-deep": "This JSON is nested too deeply to compare safely.",
+    "execution.recovery.comparison-too-deep": "Compare smaller nested sections.",
+    "comparison.edit": "Edit JSON",
+    "comparison.note":
+      "JSON A is the baseline. Red lines are removed; green lines are added in JSON B. Whitespace and object-key order are ignored.",
+  },
   toolId: "devtools.json-diff",
   app: "devtools",
   category: "json-tools",

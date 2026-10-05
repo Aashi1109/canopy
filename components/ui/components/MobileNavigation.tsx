@@ -1,4 +1,6 @@
 "use client";
+import { useLocale, useTranslations } from "next-intl";
+import { localizeHref, type Locale } from "@/lib/i18n/config";
 
 import { subdomainHref } from "../../../lib/routing/subdomains.ts";
 import { ArrowLeft, LogOut, Menu, Shield, UserRound, X } from "lucide-react";
@@ -24,6 +26,8 @@ export function MobileNavigation({
   currentHref: string;
   showSearch?: boolean;
 }) {
+  const t = useTranslations("Common");
+  const locale = useLocale() as Locale;
   const [panel, setPanel] = useState<"menu" | "search" | null>(null);
   const [position, setPosition] = useState({ top: 72, availableHeight: 600 });
   const root = useRef<HTMLDivElement>(null);
@@ -32,10 +36,11 @@ export function MobileNavigation({
   const menuId = useId();
   const user = account?.user;
   const returnTo = account?.returnTo ?? currentHref;
-  const target = `${user ? "/auth/profile" : "/auth"}?${new URLSearchParams({ returnTo })}`;
-  const siteHref = (path: string) => (publicSiteUrl ? new URL(path, publicSiteUrl).href : path);
+  const target = `${user ? "/auth/profile" : "/auth"}?${new URLSearchParams({ returnTo: localizeHref(returnTo, locale) })}`;
+  const siteHref = (path: string) =>
+    publicSiteUrl ? new URL(localizeHref(path, locale), publicSiteUrl).href : localizeHref(path, locale);
   const { pending, error, signOut } = useSignOut(account?.restricted ? "/auth" : siteHref("/"));
-  const name = user?.name.trim() || "Account";
+  const name = user?.name.trim() || t("account");
   const initials = name
     .split(/\s+/)
     .slice(0, 2)
@@ -110,13 +115,7 @@ export function MobileNavigation({
         ref={toggle}
         data-mobile-menu-toggle
         type="button"
-        aria-label={
-          panel === "menu"
-            ? "Close navigation menu"
-            : user
-              ? `Open navigation and account menu for ${name}`
-              : "Open navigation menu"
-        }
+        aria-label={panel === "menu" ? t("closeMenu") : user ? t("openNavigationAccount", { name }) : t("openMenu")}
         aria-expanded={panel === "menu"}
         aria-controls={panel === "menu" ? menuId : undefined}
         className={cn(
@@ -163,10 +162,10 @@ export function MobileNavigation({
                     } as CSSProperties
                   }
                 >
-                  <p className="text-xl font-semibold">Explore SmartTools</p>
-                  <p className="mt-1 text-sm text-muted-foreground">Find a tool. Get something done.</p>
-                  <nav aria-label="Site navigation menu" className="mt-3">
-                    {SITE_NAVIGATION_ITEMS.map(({ href, label, icon: Icon }) => (
+                  <p className="text-xl font-semibold">{t("explore")}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{t("exploreDescription")}</p>
+                  <nav aria-label={t("navigation")} className="mt-3">
+                    {SITE_NAVIGATION_ITEMS.map(({ href, messageKey, icon: Icon }) => (
                       <a
                         key={href}
                         href={siteHref(href)}
@@ -175,14 +174,14 @@ export function MobileNavigation({
                         onClick={() => setPanel(null)}
                       >
                         <Icon aria-hidden="true" className="size-[18px] text-muted-foreground" />
-                        {label}
+                        {t(messageKey)}
                       </a>
                     ))}
                   </nav>
                   <div className="mt-2 space-y-3 border-t border-border pt-2">
                     <SavedToolsTrigger menu className={linkClass} onActivate={() => setPanel(null)} />
                     {user ? (
-                      <div role="group" aria-label="Account" className="space-y-1 rounded-xl bg-muted p-2">
+                      <div role="group" aria-label={t("account")} className="space-y-1 rounded-xl bg-muted p-2">
                         <div className="flex min-w-0 items-center gap-3 px-1 pt-2 pb-3">
                           <span
                             aria-hidden="true"
@@ -195,7 +194,7 @@ export function MobileNavigation({
                         {!account?.restricted ? (
                           <a href={target} className={linkClass} onClick={() => setPanel(null)}>
                             <UserRound aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
-                            My profile
+                            {t("profile")}
                           </a>
                         ) : null}
                         {!account?.restricted && user.isAdmin ? (
@@ -209,7 +208,7 @@ export function MobileNavigation({
                             ) : (
                               <Shield aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
                             )}
-                            {account?.isAdminPage ? "Back to product" : "Admin page"}
+                            {t(account?.isAdminPage ? "backToProduct" : "admin")}
                           </a>
                         ) : null}
                         <div className="border-t border-border pt-1">
@@ -223,7 +222,7 @@ export function MobileNavigation({
                             )}
                           >
                             <LogOut aria-hidden="true" className="size-[18px] shrink-0" />
-                            <span role="status">{pending ? "Signing out…" : "Sign out"}</span>
+                            <span role="status">{t(pending ? "signingOut" : "signOut")}</span>
                           </button>
                         </div>
                         {error ? (
@@ -238,7 +237,7 @@ export function MobileNavigation({
                         className="flex min-h-12 items-center justify-center rounded-lg bg-primary px-4 font-semibold text-primary-foreground no-underline focus-visible:ring-2 focus-visible:ring-ring"
                         onClick={() => setPanel(null)}
                       >
-                        Sign in
+                        {t("signIn")}
                       </a>
                     ) : null}
                   </div>

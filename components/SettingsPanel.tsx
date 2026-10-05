@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import {
   FieldDescription,
@@ -32,6 +33,7 @@ export interface SettingsPanelProps {
 }
 
 interface FieldRenderContext {
+  t: ReturnType<typeof useTranslations>;
   disabled: boolean;
   id: string;
   onChange: (value: unknown) => void;
@@ -95,16 +97,16 @@ function rowsValue(value: unknown, fallback: readonly SettingRow[]): readonly Se
   return rows;
 }
 
-const POSITIONS: readonly { label: string; value: WatermarkPosition }[] = [
-  { label: "Top left", value: "top-left" },
-  { label: "Top center", value: "top-center" },
-  { label: "Top right", value: "top-right" },
-  { label: "Middle left", value: "middle-left" },
-  { label: "Middle center", value: "middle-center" },
-  { label: "Middle right", value: "middle-right" },
-  { label: "Bottom left", value: "bottom-left" },
-  { label: "Bottom center", value: "bottom-center" },
-  { label: "Bottom right", value: "bottom-right" },
+const POSITIONS: readonly { value: WatermarkPosition }[] = [
+  { value: "top-left" },
+  { value: "top-center" },
+  { value: "top-right" },
+  { value: "middle-left" },
+  { value: "middle-center" },
+  { value: "middle-right" },
+  { value: "bottom-left" },
+  { value: "bottom-center" },
+  { value: "bottom-right" },
 ];
 
 function movePosition(event: KeyboardEvent<HTMLButtonElement>, index: number, onChange: (value: unknown) => void) {
@@ -337,7 +339,7 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
           />
           <div className="min-w-0 flex-1">
             <FieldLabel className="sr-only" htmlFor={`${context.id}-value`}>
-              {field.label} value
+              {context.t("fieldValue", { label: field.label })}
             </FieldLabel>
             <Input
               disabled={context.disabled}
@@ -353,7 +355,7 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
               type="button"
               variant="outline"
             >
-              Transparent
+              {context.t("transparent")}
             </Button>
           ) : null}
         </div>
@@ -381,12 +383,13 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
           aria-describedby={field.help ? `${context.id}-help` : undefined}
           aria-label={field.label}
           className="flex min-w-0 max-w-full flex-nowrap gap-1.5 overflow-x-auto p-1"
+          dir="ltr"
           role="radiogroup"
         >
           {POSITIONS.map((position, index) => (
             <Button
               aria-checked={position.value === value}
-              aria-label={position.label}
+              aria-label={context.t(position.value)}
               className="shrink-0 aria-checked:border-primary aria-checked:bg-accent aria-checked:text-primary"
               size="icon"
               disabled={context.disabled}
@@ -411,7 +414,7 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
           ))}
         </div>
         <Caption className="text-muted-foreground">
-          {POSITIONS.find((position) => position.value === value)?.label}
+          {context.t(POSITIONS.find((position) => position.value === value)?.value ?? "middle-center")}
         </Caption>
         {field.help ? (
           <FieldDescription className="text-muted-foreground" id={`${context.id}-help`}>
@@ -445,14 +448,14 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
               }
               value={mode}
             >
-              <option value="all">All pages</option>
-              <option value="odd">Odd pages</option>
-              <option value="even">Even pages</option>
-              <option value="custom">Custom ranges</option>
+              <option value="all">{context.t("allPages")}</option>
+              <option value="odd">{context.t("oddPages")}</option>
+              <option value="even">{context.t("evenPages")}</option>
+              <option value="custom">{context.t("customRanges")}</option>
             </Select>
           </FieldFrame>
           {mode === "custom" && (
-            <FieldFrame id={`${context.id}-ranges`} label="Page ranges">
+            <FieldFrame id={`${context.id}-ranges`} label={context.t("pageRanges")}>
               <Input
                 disabled={context.disabled}
                 id={`${context.id}-ranges`}
@@ -472,7 +475,7 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
           disabled={context.disabled}
           id={context.id}
           onChange={(event) => context.onChange(event.currentTarget.value)}
-          placeholder="1,3,5-9, odd, even, or all"
+          placeholder={context.t("pageExpression")}
           value={value}
         />
       </FieldFrame>
@@ -502,6 +505,7 @@ export function SettingsPanel({
   spec,
   values,
 }: SettingsPanelProps) {
+  const t = useTranslations("Workbench");
   const idPrefix = useId();
   return (
     <div
@@ -514,6 +518,7 @@ export function SettingsPanel({
         if (pane && (field.pane ?? "side") !== pane) return null;
         if (field.visibleWhen && values[field.visibleWhen.key] !== field.visibleWhen.equals) return null;
         const context: FieldRenderContext = {
+          t,
           disabled,
           id: `${idPrefix}-${key}`,
           onChange: (value) => onChange(key, value),

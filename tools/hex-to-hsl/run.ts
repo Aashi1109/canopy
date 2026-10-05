@@ -1,6 +1,6 @@
 /** Precise HSL conversion with optional whole percentages and CSS syntax choices. */
 
-import type { ToolRun } from "../../lib/tool-framework/run.ts";
+import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 import { parseHexColor, rgbToHsl } from "../../lib/devtools/shared/color.ts";
@@ -38,6 +38,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         line: line.line,
         message: `"${line.input}": ${error instanceof Error ? error.message : String(error)}`,
         target: "input",
+        messageRef: error instanceof ToolError ? error.details?.messageRef : undefined,
       });
     }
   }

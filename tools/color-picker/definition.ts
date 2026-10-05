@@ -1,6 +1,23 @@
+import { COLOR_MESSAGES } from "../../lib/devtools/shared/color-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...COLOR_MESSAGES,
+    "workspace.choose_a_color_ad8a9c": "Choose a color",
+    "workspace.default_blue_9cee9a": "Default blue",
+    "workspace.choose_a_color_b1c3a1": "Choose a color to preview it",
+    "workspace.hex_rgb_hsl_9febbf": "HEX, RGB, HSL or color name",
+    "workspace.copy_a_color_6f656b": "Copy a color format",
+    "workspace.colorAndOutput": "Color and output",
+    "workspace.selectedColor": "Selected color {hex}",
+    "workspace.channels.Hue": "Hue",
+    "workspace.channels.Saturation": "Saturation",
+    "workspace.channels.Lightness": "Lightness",
+    "workspace.degrees": "{value} degrees",
+    "workspace.percent": "{value}%",
+    "workspace.channelValue": "{label} value",
+  },
   toolId: "devtools.color-picker",
   app: "devtools",
   category: "color-design-tools",

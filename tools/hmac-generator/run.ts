@@ -20,6 +20,10 @@ function getCrypto(): Crypto {
       "crypto-unavailable",
       "Secure browser cryptography is unavailable.",
       "Open this tool over HTTPS in a modern browser.",
+      {
+        messageRef: { key: "execution.errors.crypto-unavailable" },
+        recoveryMessage: { key: "execution.recovery.crypto-unavailable" },
+      },
     );
   }
   return globalThis.crypto;
@@ -35,6 +39,10 @@ async function hmacText(value: string, key: string, algorithm: string): Promise<
       "secret-required",
       "Secret key is required.",
       "Enter the shared secret used by the verifying system.",
+      {
+        messageRef: { key: "execution.errors.secret-required" },
+        recoveryMessage: { key: "execution.recovery.secret-required" },
+      },
     );
   }
   const hash = algorithm === "sha1" ? "SHA-1" : algorithm === "sha512" ? "SHA-512" : "SHA-256";

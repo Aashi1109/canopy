@@ -1,6 +1,13 @@
+import { INPUT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+    "errors.invalid-escape": "URL input contains an invalid percent escape.",
+    "recovery.invalid-escape": "Check for a stray % or an escape that is not followed by two hex digits.",
+  },
+
   toolId: "devtools.url-decoder",
   sharing: { version: 1 },
   app: "devtools",

@@ -29,9 +29,10 @@ function quarter(value: string): 90 | 180 | 270 {
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files?.[0];
-  if (!input) throw new ToolError("no-files", "Choose a PDF to rotate.");
+  if (!input)
+    throw new ToolError("no-files", "Choose a PDF to rotate.", undefined, { messageRef: { key: "errors.noFiles" } });
   const selection = validatePdfSelection([{ size: input.size }]);
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
   await validatePdfInput(input);
 
   const { degrees } = await import("pdf-lib");
@@ -53,6 +54,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       const page = pdf.getPage(index);
       page.setRotation(degrees((page.getRotation().angle + turn) % 360));
     },
+    { key: "progress.rotatingPdfPage" },
   );
 
   const output = await ctx.writeArtifact({

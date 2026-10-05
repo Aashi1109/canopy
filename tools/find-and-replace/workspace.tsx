@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Strong, CodeBlock, Muted } from "@/components/ui/index.tsx";
 import { ArrowRight } from "lucide-react";
 import { Fragment, useEffect, useMemo } from "react";
@@ -10,6 +11,7 @@ import { ToolWorkspace, type WorkspaceProps } from "@/components/ToolWorkspace";
 import { buildReplacementPreview, type ReplacementPreview } from "./preview";
 
 function PreviewText({ preview }: { preview: ReplacementPreview }) {
+  const t = useTranslations("Tool.runtime");
   return preview.parts.map((part, index) => {
     if (part.kind === "text") {
       return <Fragment key={index}>{part.text}</Fragment>;
@@ -17,7 +19,7 @@ function PreviewText({ preview }: { preview: ReplacementPreview }) {
     if (part.kind === "unpreviewed") {
       return (
         <span className="rounded-sm border border-dashed border-border bg-muted px-1 text-muted-foreground" key={index}>
-          {`[${part.hiddenMatchCount} more matches not expanded] ${part.text}`}
+          {t("find.hiddenMatches", { count: part.hiddenMatchCount })} {part.text}
         </span>
       );
     }
@@ -28,11 +30,11 @@ function PreviewText({ preview }: { preview: ReplacementPreview }) {
           className="rounded-sm bg-destructive/10 px-1 text-foreground line-through decoration-destructive/70"
           data-preview-role="found"
         >
-          {part.found || "empty match"}
+          {part.found || t("find.emptyMatch")}
         </Strong>
         <ArrowRight aria-hidden="true" className="relative top-0.5 inline size-3 shrink-0 text-muted-foreground" />
         <Strong className="rounded-sm bg-success/10 px-1 text-foreground" data-preview-role="replacement">
-          {part.replacement || "delete"}
+          {part.replacement || t("find.delete")}
         </Strong>
       </span>
     );
@@ -57,16 +59,17 @@ function AppliedResultText({ preview }: { preview: ReplacementPreview }) {
   });
 }
 
-function previewMeta(preview: ReplacementPreview): string {
-  if (preview.invalidPattern) return "Invalid regular expression";
-  if (preview.count === 0) return "No matches";
+function previewMeta(preview: ReplacementPreview, t: ReturnType<typeof useTranslations>): string {
+  if (preview.invalidPattern) return t("find.invalidPattern");
+  if (preview.count === 0) return t("find.noMatches");
   if (preview.truncated) {
-    return `${preview.count} matches · First ${preview.previewedCount} expanded · Focus to edit`;
+    return t("find.truncatedPreview", { count: preview.count, shown: preview.previewedCount });
   }
-  return `${preview.count} inline ${preview.count === 1 ? "preview" : "previews"} · Focus to edit`;
+  return t("find.inlinePreview", { count: preview.count });
 }
 
 export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
+  const t = useTranslations("Tool.runtime");
   const inputSpec = props.spec.input;
   const find = typeof props.settings.find === "string" ? props.settings.find : "";
   const replace = typeof props.settings.replace === "string" ? props.settings.replace : "";
@@ -84,11 +87,11 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
   const validationReason = !props.input.text.trim()
     ? null
     : !find
-      ? "Enter the text or pattern to find."
+      ? t("find.enterPattern")
       : preview.invalidPattern
-        ? "Enter a valid regular expression in Find."
+        ? t("find.validPattern")
         : preview.count === 0
-          ? "No matches were found in the source text."
+          ? t("find.noSourceMatches")
           : null;
 
   useEffect(() => {
@@ -96,10 +99,7 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
     return () => props.onValidationChange?.(null);
   }, [props.onValidationChange, validationReason]);
 
-  const actionLabel =
-    preview.count > 0
-      ? `Apply ${preview.count} ${preview.count === 1 ? "replacement" : "replacements"}`
-      : "Apply replacements";
+  const actionLabel = preview.count > 0 ? t("find.applyCount", { count: preview.count }) : t("find.apply");
 
   useEffect(() => {
     props.onToolbarActionsChange?.({ primaryActionLabel: actionLabel });
@@ -139,8 +139,7 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
             }
             role={validationReason && (preview.invalidPattern || !find) ? "alert" : "status"}
           >
-            {validationReason ??
-              (preview.count > 0 ? previewMeta(preview) : "Matches preview inline before you apply replacements.")}
+            {validationReason ?? (preview.count > 0 ? previewMeta(preview, t) : t("find.previewHint"))}
           </Muted>
         </div>
       )}

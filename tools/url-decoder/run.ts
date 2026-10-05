@@ -25,6 +25,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "invalid-escape",
       "URL input contains an invalid percent escape.",
       "Check for a stray % or an escape that is not followed by two hex digits.",
+      { messageRef: { key: "errors.invalid-escape" }, recoveryMessage: { key: "recovery.invalid-escape" } },
     );
   }
 };

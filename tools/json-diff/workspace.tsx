@@ -1,16 +1,18 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { DiffWorkspace } from "@/components/DiffWorkspace";
 import { highlightJson } from "@/components/JsonResultRenderer";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 
 export default function JsonDiffWorkspace(props: WorkspaceProps) {
+  const t = useTranslations("Tool.runtime");
   return (
     <DiffWorkspace
       {...props}
-      editLabel="Edit JSON"
+      editLabel={t("comparison.edit")}
       renderLine={highlightJson}
-      settingsNote="JSON A is the baseline. Red lines are removed; green lines are added in JSON B. Whitespace and object-key order are ignored."
+      settingsNote={t("comparison.note")}
     />
   );
 }

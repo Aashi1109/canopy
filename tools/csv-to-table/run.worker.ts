@@ -1,4 +1,4 @@
-import type { ToolRun } from "../../lib/tool-framework/run.ts";
+import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import { CSV_PREVIEW_BYTES, CSV_PREVIEW_ROWS } from "../../lib/tool-framework/limits.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
@@ -67,7 +67,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         },
         previewRows: 0,
       });
-      if (parsed.rowCount === 0) throw new Error("Delimited input has no rows.");
+      if (parsed.rowCount === 0)
+        throw new ToolError("empty-table", "Delimited input has no rows.", undefined, {
+          messageRef: { key: "csv.errors.emptyTable" },
+        });
       await sink.write("</tbody></table>");
       const artifact = await sink.finish();
       return {
@@ -77,12 +80,13 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         truncated: sink.previewTruncated,
         tablePreview: preview?.result,
         stats: [
-          { label: "Rows", value: String(Math.max(0, parsed.rowCount - 1)) },
-          { label: "Columns", value: String(parsed.columnCount) },
+          { label: "Rows", labelMessage: { key: "csv.rows" }, value: String(Math.max(0, parsed.rowCount - 1)) },
+          { label: "Columns", labelMessage: { key: "csv.columns" }, value: String(parsed.columnCount) },
         ],
         sections: [
           {
             title: sink.previewTruncated ? "Complete HTML table" : "Download",
+            titleMessage: { key: sink.previewTruncated ? "csv.completeHtmlTable" : "csv.download" },
             body: { render: "files", files: [artifact], outputBytes: artifact.size },
           },
         ],

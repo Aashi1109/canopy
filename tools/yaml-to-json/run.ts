@@ -26,6 +26,16 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "yaml-invalid",
       `YAML is invalid: ${error instanceof Error ? error.message : "unknown error"}`,
       "Check the indentation — YAML does not allow tab characters for indentation.",
+      {
+        ...(error instanceof ToolError ? error.details : undefined),
+        messageRef:
+          error instanceof ToolError && error.details?.messageRef
+            ? error.details.messageRef
+            : error instanceof Error
+              ? { key: "errors.yaml-invalid", values: { detail: error.message } }
+              : { key: "errors.yaml-invalid-unknown" },
+        recoveryMessage: { key: "recovery.yaml-invalid" },
+      },
     );
   }
 };

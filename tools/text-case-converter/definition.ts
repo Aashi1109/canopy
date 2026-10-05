@@ -1,6 +1,8 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: { "errors.unknown-case": "Choose a valid text case." },
+
   toolId: "devtools.text-case-converter",
   sharing: { version: 1 },
   app: "devtools",

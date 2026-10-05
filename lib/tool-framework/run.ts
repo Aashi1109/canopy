@@ -10,6 +10,7 @@
 
 import type { ArtifactWriteInput, StoredToolArtifact } from "./artifacts";
 import type { ToolResult } from "./result";
+import type { ToolMessage } from "../tool-runtime/types";
 
 export type ToolRunFile = {
   readonly id: string;
@@ -30,6 +31,7 @@ export type ToolRunProgress = {
   readonly completed: number;
   readonly total: number;
   readonly stage: string;
+  readonly stageMessage?: ToolMessage;
 };
 
 export type ToolRunInput = {
@@ -69,7 +71,10 @@ export type ToolPagePreview = {
  * shown to the user. Must be pure and cheap — no DOM, no I/O, and safe to call
  * on every keystroke, because the workspace re-runs it on every settings edit.
  */
-export type ToolValidate<S = never> = (settings: S, files: readonly ToolRunFile[]) => string | null;
+export type ToolValidate<S = never> = (
+  settings: S,
+  files: readonly ToolRunFile[],
+) => string | { readonly message: string; readonly messageRef: ToolMessage } | null;
 
 /**
  * Optional seed applied after PDF page inspection completes, exported from
@@ -107,15 +112,92 @@ export type ToolHooks<S = never> = {
   readonly onSettingsChanged?: ToolSettingsChanged<S>;
 };
 
+export type ToolErrorDetails = {
+  readonly line?: number;
+  readonly column?: number;
+  readonly values?: Readonly<Record<string, string | number>>;
+  readonly messageRef?: ToolMessage;
+  readonly recoveryMessage?: ToolMessage;
+};
+
+export function parseToolMessage(value: unknown): ToolMessage | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const message = value as Record<string, unknown>;
+  if (
+    typeof message.key !== "string" ||
+    message.key.length > 200 ||
+    !/^[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*$/.test(message.key)
+  )
+    return undefined;
+  if (message.key.split(".").some((key) => ["__proto__", "prototype", "constructor"].includes(key))) return undefined;
+  if (message.values === undefined) return { key: message.key };
+  const details = parseToolErrorDetails({ values: message.values });
+  return details?.values ? { key: message.key, values: { ...details.values } } : undefined;
+}
+
+/** Only plain presentation data may cross the execution boundary. */
+export function parseToolErrorDetails(value: unknown): ToolErrorDetails | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const details = value as Record<string, unknown>;
+  const result: {
+    line?: number;
+    column?: number;
+    values?: Record<string, string | number>;
+    messageRef?: ToolMessage;
+    recoveryMessage?: ToolMessage;
+  } = {};
+  for (const key of ["line", "column"] as const) {
+    const coordinate = details[key];
+    if (coordinate === undefined) continue;
+    if (typeof coordinate !== "number" || !Number.isSafeInteger(coordinate) || coordinate < 1) return undefined;
+    result[key] = coordinate;
+  }
+  if (details.values !== undefined) {
+    if (!details.values || typeof details.values !== "object" || Array.isArray(details.values)) return undefined;
+    const values: Record<string, string | number> = Object.create(null);
+    for (const [key, item] of Object.entries(details.values)) {
+      if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(key)) return undefined;
+      if (typeof item !== "string" && (typeof item !== "number" || !Number.isFinite(item))) return undefined;
+      values[key] = item;
+    }
+    result.values = values;
+  }
+  for (const key of ["messageRef", "recoveryMessage"] as const) {
+    if (details[key] === undefined) continue;
+    const message = parseToolMessage(details[key]);
+    if (!message) return undefined;
+    result[key] = message;
+  }
+  return result;
+}
+
 /** Carries a stable code and a user-facing recovery hint alongside the message. */
 export class ToolError extends Error {
   readonly code: string;
   readonly recovery?: string;
+  readonly details?: ToolErrorDetails;
 
-  constructor(code: string, message: string, recovery?: string) {
+  constructor(code: string, message: string, recovery?: string, details?: ToolErrorDetails) {
     super(message);
     this.name = "ToolError";
     this.code = code;
     this.recovery = recovery;
+    this.details = parseToolErrorDetails(details);
   }
+}
+
+/** Resolve presentation text without changing error identity or diagnostic coordinates. */
+export function translateToolError(
+  error: ToolError,
+  toolMessage: (message: ToolMessage) => string | undefined,
+  frameworkMessage: (message: ToolMessage) => string | undefined,
+): ToolError {
+  const reference = error.details?.messageRef ?? { key: `errors.${error.code}`, values: error.details?.values };
+  const message =
+    toolMessage(reference) ?? frameworkMessage({ key: `runtime_${error.code}`, values: error.details?.values });
+  const recovery = error.details?.recoveryMessage
+    ? toolMessage(error.details.recoveryMessage)
+    : frameworkMessage({ key: `runtime_${error.code}_recovery` });
+  if (message === undefined && recovery === undefined) return error;
+  return new ToolError(error.code, message ?? error.message, recovery ?? error.recovery, error.details);
 }

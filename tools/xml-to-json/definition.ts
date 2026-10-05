@@ -1,6 +1,18 @@
+import { INPUT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+    "errors.xml-invalid-entity": "XML contains an unsupported entity or invalid character reference.",
+    "errors.xml-unbalanced": "XML closing tags do not match.",
+    "recovery.xml-unbalanced": "Check that every opening tag has a matching closing tag in the same order.",
+    "errors.xml-invalid-tag": "XML contains an invalid tag.",
+    "errors.xml-multiple-roots": "XML must have one root element.",
+    "errors.xml-incomplete": "XML is incomplete or empty.",
+    "recovery.xml-incomplete": "Paste the whole document, including its closing root tag.",
+  },
+
   toolId: "devtools.xml-to-json",
   sharing: { version: 1 },
   app: "devtools",

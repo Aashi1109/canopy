@@ -1,3 +1,4 @@
+import type { ToolErrorDetails } from "../run.ts";
 type QpdfModule = {
   FS: {
     readFile(path: string): Uint8Array;
@@ -15,7 +16,11 @@ export type PreservePdfOptions = {
 export class QpdfAdapterError extends Error {
   readonly code: "qpdf-failed" | "qpdf-unavailable";
 
-  constructor(code: "qpdf-failed" | "qpdf-unavailable", message: string) {
+  constructor(
+    code: "qpdf-failed" | "qpdf-unavailable",
+    message: string,
+    readonly details?: ToolErrorDetails,
+  ) {
     super(message);
     this.code = code;
   }
@@ -28,7 +33,9 @@ export async function preservePdfWithQpdf(input: ArrayBuffer, options: PreserveP
   const qpdf = await getQpdfModule();
   const safeJobId = options.jobId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
   if (!safeJobId) {
-    throw new QpdfAdapterError("qpdf-failed", "The qpdf job identifier is invalid.");
+    throw new QpdfAdapterError("qpdf-failed", "The qpdf job identifier is invalid.", {
+      messageRef: { key: "media.pdf.qpdfFailed" },
+    });
   }
   const inputPath = `/input-${safeJobId}.pdf`;
   const outputPath = `/output-${safeJobId}.pdf`;
@@ -42,6 +49,7 @@ export async function preservePdfWithQpdf(input: ArrayBuffer, options: PreserveP
       throw new QpdfAdapterError(
         "qpdf-failed",
         "qpdf could not rewrite this document. The original file was not changed.",
+        { messageRef: { key: "media.pdf.qpdfFailed2" } },
       );
     }
     const output = new Uint8Array(qpdf.FS.readFile(outputPath));
@@ -53,6 +61,7 @@ export async function preservePdfWithQpdf(input: ArrayBuffer, options: PreserveP
     throw new QpdfAdapterError(
       "qpdf-failed",
       "qpdf could not rewrite this document. The original file was not changed.",
+      { messageRef: { key: "media.pdf.qpdfFailed2" } },
     );
   } finally {
     unlinkIfPresent(qpdf, inputPath);
@@ -77,6 +86,7 @@ function assertQpdfEnvironment() {
     throw new QpdfAdapterError(
       "qpdf-unavailable",
       "Preserve Document compression requires a cross-origin-isolated browser. No fallback was applied.",
+      { messageRef: { key: "media.pdf.qpdfUnavailable" } },
     );
   }
 }
@@ -90,6 +100,7 @@ async function getQpdfModule() {
     throw new QpdfAdapterError(
       "qpdf-unavailable",
       "Preserve Document compression is unavailable in this browser. No fallback was applied.",
+      { messageRef: { key: "media.pdf.qpdfUnavailable2" } },
     );
   }
 }

@@ -58,6 +58,7 @@ const contentDocSchema = z.object({
         label: z.string(),
         text: z.string(),
         secondary: z.string().optional(),
+        settings: z.record(z.string(), z.unknown()).optional(),
       }),
     )
     .optional(),

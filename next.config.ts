@@ -4,6 +4,11 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs/config";
 import withSerwistInit from "@serwist/next";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
+import createNextIntlPlugin from "next-intl/plugin";
+import { locales, localizeHref } from "./lib/i18n/config";
+
+const withNextIntl = createNextIntlPlugin("./lib/i18n/request.ts");
 
 const appRoot = fileURLToPath(new URL(".", import.meta.url));
 const browserEmptyModule = fileURLToPath(new URL("./lib/paperwork/browserEmptyModule.ts", import.meta.url));
@@ -52,6 +57,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   experimental: {
+    globalNotFound: true,
     serverActions: {
       bodySizeLimit: "6mb",
     },
@@ -99,6 +105,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/media/:path*", headers: mediaSecurityHeaders },
+      { source: `/:locale(${locales.join("|")})/media/:path*`, headers: mediaSecurityHeaders },
       {
         source: "/_next/static/chunks/:path*",
         headers: workerIsolationHeaders,
@@ -115,12 +122,27 @@ const withSerwist = withSerwistInit({
   swDest: "public/sw.js",
   // Cloudflare consumes _headers as deployment metadata; it is not a served asset.
   globPublicPatterns: ["**/!(_headers)"],
+  // Dynamic locale routes are not part of the static asset manifest. Cache
+  // each public fallback with this build's asset revision so updates replace
+  // HTML that references an older set of chunks.
+  manifestTransforms: [
+    async (entries) => {
+      const revision = createHash("sha256").update(JSON.stringify(entries)).digest("hex");
+      return {
+        manifest: [
+          ...entries,
+          ...locales.map((locale) => ({ url: localizeHref("/offline", locale), revision, size: 0 })),
+        ],
+        warnings: [],
+      };
+    },
+  ],
   cacheOnNavigation: true,
   reloadOnOnline: true,
   disable: development,
 });
 
-export default withSentryConfig(withSerwist(nextConfig), {
+export default withSentryConfig(withSerwist(withNextIntl(nextConfig)), {
   org: config.sentry.org,
   project: config.sentry.project,
   authToken: config.sentry.authToken,

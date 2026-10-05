@@ -8,24 +8,28 @@ test("icon selection supports replacement, failed-upload retry, and reset", asyn
     .getByRole("link", { name: /^Edit / })
     .first()
     .click();
-  await page.getByRole("link", { name: "Icon & activation" }).click();
+  await page
+    .getByRole("navigation", { name: "Tool configuration sections" })
+    .getByRole("link", { name: "Overview", exact: true })
+    .click();
   test.skip(
     await page.getByText("Icon uploads are disabled", { exact: true }).isVisible(),
     "Requires configured icon uploads.",
   );
 
   const input = page.getByLabel("Choose an icon", { exact: true });
-  const dropzone = page.getByText("Choose a replacement icon", { exact: true });
+  const chooseIcon = page.getByRole("button", { name: "Choose icon", exact: true });
   const upload = page.getByRole("button", { name: "Upload", exact: true });
   const png = Buffer.from(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=",
     "base64",
   );
 
-  await expect(dropzone).toBeVisible();
+  await page.getByRole("group", { name: "Tool icon preview", exact: true }).hover();
+  await expect(chooseIcon).toBeVisible();
   await expect(upload).toHaveCount(0);
   await input.setInputFiles({ name: "first.png", mimeType: "image/png", buffer: png });
-  await expect(dropzone).toHaveCount(0);
+  await expect(chooseIcon).toHaveCount(0);
   await expect(page.getByAltText("Selected icon preview")).toBeVisible();
   await expect(upload).toBeEnabled();
 
@@ -43,11 +47,11 @@ test("icon selection supports replacement, failed-upload retry, and reset", asyn
     await expect(page.getByText("The icon must be 1 MB or smaller.", { exact: true })).toBeVisible();
     await expect(upload).toBeEnabled();
     await expect(page.getByText("too-large.png", { exact: true })).toBeVisible();
-    await expect(dropzone).toHaveCount(0);
+    await expect(chooseIcon).toHaveCount(0);
   }
 
   await page.getByRole("button", { name: "Reset", exact: true }).click();
-  await expect(dropzone).toBeVisible();
+  await expect(chooseIcon).toBeVisible();
   await expect(upload).toHaveCount(0);
   await expect(page.getByAltText("Selected icon preview")).toHaveCount(0);
   await expect(input).toHaveValue("");

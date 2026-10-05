@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useId } from "react";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { Stack } from "@/components/Stacks";
@@ -8,6 +10,7 @@ import { SourceTextarea } from "@/components/WorkspaceInput";
 import { FieldDescription, FieldLabel, Select, Switch } from "@/components/ui/index.tsx";
 
 export default function RobotsTxtWorkspace(props: WorkspaceProps) {
+  const t = useTranslations("Tool.runtime");
   const id = useId();
   const fields = props.spec.settings.fields;
   const allowAll = props.settings.allowAll === true;
@@ -26,7 +29,7 @@ export default function RobotsTxtWorkspace(props: WorkspaceProps) {
   return (
     <ToolWorkspace
       {...props}
-      inputSurfaceTitle="Crawler rules"
+      inputSurfaceTitle={t("workspace.crawlerRules")}
       sourceClassName="min-h-24"
       renderInputContent={(source) => (
         <Stack className="@container grow shrink-0 p-4" gap="md">
@@ -50,7 +53,7 @@ export default function RobotsTxtWorkspace(props: WorkspaceProps) {
             {source}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <FieldDescription id={`${id}-disallow-paths-help`}>
-                {allowAll ? "Disallow paths are ignored while Allow all is on." : "One path per line, starting with /."}
+                {allowAll ? t("workspace.disallowIgnored") : t("workspace.onePath")}
               </FieldDescription>
               <div className="flex items-center gap-2">
                 <FieldLabel htmlFor={`${id}-allow-all`}>{fields.allowAll.label}</FieldLabel>
@@ -78,7 +81,9 @@ export default function RobotsTxtWorkspace(props: WorkspaceProps) {
               surface="card"
               value={typeof props.settings.allowPaths === "string" ? props.settings.allowPaths : ""}
             />
-            <FieldDescription id={`${id}-allow-paths-help`}>One path per line, starting with /.</FieldDescription>
+            <FieldDescription id={`${id}-allow-paths-help`}>
+              {t("workspace.onePathPerLineStartingWith")}
+            </FieldDescription>
           </div>
           <div className="shrink-0 space-y-2 border-t border-border pt-4">
             <SettingsPanel
@@ -87,12 +92,12 @@ export default function RobotsTxtWorkspace(props: WorkspaceProps) {
               layout="grid"
               spec={{
                 fields: {
-                  sitemap: { ...fields.sitemap, help: "Optional http or https URL." },
-                  crawlDelay: { ...fields.crawlDelay, help: "Seconds; 0 = off." },
+                  sitemap: { ...fields.sitemap, help: t("workspace.sitemapHelp") },
+                  crawlDelay: { ...fields.crawlDelay, help: t("workspace.delayHelp") },
                 },
               }}
             />
-            <FieldDescription>Googlebot ignores crawl delay.</FieldDescription>
+            <FieldDescription>{t("workspace.googlebotIgnoresCrawlDelay")}</FieldDescription>
           </div>
         </Stack>
       )}

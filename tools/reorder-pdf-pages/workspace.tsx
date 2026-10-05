@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 /**
  * Drag-to-reorder page thumbnails.
  *
@@ -44,15 +46,16 @@ interface PageOrderProps {
 }
 
 function PageOrder({ disabled, inspecting, onSettingChange, previews, value }: PageOrderProps) {
+  const t = useTranslations("Tool.runtime");
   const images = usePdfPageImages(previews);
   return (
     <PdfPagesSurface
-      description="Drag any page card to reorder. Click to preview; on touch, hold to drag."
+      description={t("workspace.dragAnyPageCardToReorderClick")}
       disabled={disabled}
       inspecting={inspecting}
       onOrderChange={(pageNumbers) => onSettingChange(PAGES, [...pageNumbers])}
       pages={orderedPages(value, images)}
-      title="Page order"
+      title={t("workspace.pageOrder")}
     />
   );
 }

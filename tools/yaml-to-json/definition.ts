@@ -1,6 +1,14 @@
+import { INPUT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+    "errors.yaml-invalid": "YAML is invalid: {detail}",
+    "errors.yaml-invalid-unknown": "YAML is invalid: unknown error",
+    "recovery.yaml-invalid": "Check the indentation — YAML does not allow tab characters for indentation.",
+  },
+
   toolId: "devtools.yaml-to-json",
   app: "devtools",
   category: "json-tools",

@@ -1,6 +1,14 @@
+import { INPUT_EXECUTION_MESSAGES, URL_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+    ...URL_EXECUTION_MESSAGES,
+    "errors.too-many-urls": "Sitemap cannot exceed 50,000 URLs.",
+    "recovery.too-many-urls": "Split the list across several sitemaps and publish a sitemap index.",
+  },
+
   toolId: "devtools.sitemap-generator",
   sharing: { version: 1 },
   app: "devtools",

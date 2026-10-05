@@ -47,7 +47,7 @@ function workspaceProps(overrides = {}) {
 test("conversion errors notify once per failure and dismiss when the command recovers", async () => {
   const error = "cURL command needs an absolute http or https URL.";
   const props = workspaceProps({ error, lifecycle: "failed" });
-  const view = await mountTool(React.createElement(Workspace, props));
+  const view = await mountTool(React.createElement(Workspace, props), { spec: definition });
   assert.equal(notifications.error.mock.calls.length, 1);
   assert.equal(notifications.error.mock.calls[0][0], "Unable to convert");
   assert.equal(notifications.error.mock.calls[0][1].description, error);
@@ -74,6 +74,7 @@ test("conversion errors notify once per failure and dismiss when the command rec
 test("a different conversion failure replaces the previous notification", async () => {
   const view = await mountTool(
     React.createElement(Workspace, workspaceProps({ error: "Missing URL", lifecycle: "failed" })),
+    { spec: definition },
   );
   await view.rerender(React.createElement(Workspace, workspaceProps({ error: "Unclosed quote", lifecycle: "failed" })));
   assert.equal(notifications.error.mock.calls.length, 2);
@@ -119,7 +120,7 @@ test("input and output options regenerate readonly Axios code and keep exact cop
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function () {
     downloads.push({ name: this.download, href: this.href });
   });
-  const { container } = await mountTool(React.createElement(Fixture));
+  const { container } = await mountTool(React.createElement(Fixture), { spec: definition });
   const text = "curl -X POST https://example.com/orders -H 'Content-Type: application/json' --data '{\"count\":2}'";
   await fill(field("cURL command", container), text);
   assert.equal(field("cURL command", container).value, text);
@@ -152,6 +153,7 @@ test("copy and download stay unavailable before conversion produces output", asy
       Workspace,
       workspaceProps({ input: { text: "", files: [] }, lifecycle: "empty", onSettingChange }),
     ),
+    { spec: definition },
   );
   assert.equal(button("Copy all", container).disabled, true);
   assert.equal(button("Download", container).disabled, true);
@@ -167,6 +169,7 @@ test("conversion warnings keep the generated code copyable without duplicating i
   const result = run({ input: { text }, settings: initialSettings });
   const { container } = await mountTool(
     React.createElement(Workspace, workspaceProps({ input: { text, files: [] }, result, lifecycle: "completed" })),
+    { spec: definition },
   );
   assert.equal(result.notification.level, "warn");
   assert.equal(container.textContent.includes(result.notification.detail), false);

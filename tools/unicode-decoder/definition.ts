@@ -1,6 +1,8 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: { "errors.out-of-range": "Unicode code point is out of range." },
+
   toolId: "devtools.unicode-decoder",
   sharing: { version: 1 },
   app: "devtools",

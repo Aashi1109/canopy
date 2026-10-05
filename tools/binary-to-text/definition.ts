@@ -1,6 +1,13 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "execution.errors.invalid-binary": "Binary input must contain eight-bit bytes separated by spaces.",
+    "execution.recovery.invalid-binary":
+      "Group the bits into bytes of exactly eight 0s and 1s, separated by whitespace.",
+    "execution.errors.invalid-utf8": "Binary input does not contain valid UTF-8 text.",
+    "execution.recovery.invalid-utf8": "Check that every byte of each multi-byte character is present and in order.",
+  },
   toolId: "devtools.binary-to-text",
   sharing: { version: 1 },
   app: "devtools",

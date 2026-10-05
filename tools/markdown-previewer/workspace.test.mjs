@@ -124,7 +124,7 @@ test("clearing source removes retained preview and prevents copying the stale do
     onInputChange() {},
     onSettingChange() {},
   };
-  const view = await mountTool(React.createElement(Workspace, props));
+  const view = await mountTool(React.createElement(Workspace, props), { spec: definition });
   expect(button("Copy")).toBeTruthy();
   await view.rerender(
     React.createElement(Workspace, { ...props, result: null, input: { text: "", files: [] }, lifecycle: "idle" }),

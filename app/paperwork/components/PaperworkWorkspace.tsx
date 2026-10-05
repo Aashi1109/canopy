@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef, type ReactNode } from "react";
 import { FileText } from "lucide-react";
 import {
@@ -19,6 +20,7 @@ export function PaperworkWorkspace({ children, title }: { children: ReactNode; t
 }
 
 function Frame({ children, title }: { children: ReactNode; title: string }) {
+  const t = useTranslations("Tool.runtime");
   const ref = useRef<HTMLElement>(null);
   const { focused, placeholderHeight } = useWorkbenchFocus(ref);
   return (
@@ -26,7 +28,7 @@ function Frame({ children, title }: { children: ReactNode; title: string }) {
       <section
         ref={ref}
         data-focus-mode={focused}
-        aria-label={`${title} workspace`}
+        aria-label={t("shared.workspace.title", { title })}
         className={cn(focused && "fixed inset-0 z-40 flex h-dvh flex-col bg-card print:static print:h-auto")}
       >
         <div

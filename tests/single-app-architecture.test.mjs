@@ -19,20 +19,20 @@ test("the repository root is the only Next.js application", async () => {
   expect(typeof packageJson.dependencies.next).toBe("string");
   expect(await exists("apps")).toBe(false);
   expect(await exists("src")).toBe(false);
-  expect(await exists("app/layout.tsx")).toBe(true);
+  expect(await exists("app/(public)/[locale]/layout.tsx")).toBe(true);
 });
 
 test("each product area owns a real pathname segment", async () => {
   const routes = [
-    "app/page.tsx",
+    "app/(public)/[locale]/page.tsx",
     "app/admin/(protected)/layout.tsx",
     "app/admin/(protected)/tools/page.tsx",
     "app/admin/denied/page.tsx",
     "app/auth/page.tsx",
     "app/auth/profile/page.tsx",
-    "app/devtools/[slug]/page.tsx",
-    "app/media/[slug]/page.tsx",
-    "app/paperwork/[slug]/page.tsx",
+    "app/(public)/[locale]/devtools/[slug]/page.tsx",
+    "app/(public)/[locale]/media/[slug]/page.tsx",
+    "app/(public)/[locale]/paperwork/[slug]/page.tsx",
   ];
 
   for (const route of routes) {

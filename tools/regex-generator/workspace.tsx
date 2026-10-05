@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useId, useMemo } from "react";
 
 import { ResultView } from "@/components/ResultView";
@@ -21,6 +23,7 @@ const TOKEN_COLORS: Record<RegexOutputToken["kind"], string> = {
 };
 
 export default function RegexWorkspace(props: WorkspaceProps) {
+  const t = useTranslations("Tool.runtime");
   const outputId = useId();
   const output = props.result?.render === "text" ? props.result.text : "";
   const tokens = useMemo(() => highlightRegexOutput(output), [output]);
@@ -32,7 +35,7 @@ export default function RegexWorkspace(props: WorkspaceProps) {
         result.render === "text" ? (
           <>
             <FieldLabel className="sr-only" htmlFor={outputId}>
-              Generated regular expression
+              {t("workspace.generatedRegularExpression")}
             </FieldLabel>
             <SourceTextarea
               className="min-h-0 flex-1"

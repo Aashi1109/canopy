@@ -1,6 +1,15 @@
+import { CSV_EXECUTION_MESSAGES } from "../../lib/devtools/shared/csv-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CSV_EXECUTION_MESSAGES,
+    "csv.valid": "Valid CSV",
+    "csv.validDetail":
+      "{columns, plural, one {# column} other {# columns}} · {rows, plural, one {# data row} other {# data rows}}",
+    "csv.errors.emptyHeader": "Every CSV column needs a header.",
+    "csv.errors.duplicateHeader": "CSV headers must be unique.",
+  },
   toolId: "devtools.csv-validator",
   app: "devtools",
   category: "csv-data-tools",

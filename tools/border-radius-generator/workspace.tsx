@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 import { useCallback, useRef, useState, type PointerEvent } from "react";
 import { createLucideIcon } from "lucide-react";
@@ -46,6 +47,7 @@ type Handle = {
 };
 
 export default function BorderRadiusWorkspace(props: WorkspaceProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const shapeRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
     key: string;
@@ -87,21 +89,35 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
   const cssOrder = ["topLeft", "topRight", "bottomRight", "bottomLeft"];
   const previewRadius = `${cssOrder.map((key) => `${number(key, 16) * pixelsPerUnit(false)}px`).join(" ")} / ${cssOrder.map((key) => `${number(elliptical ? `${key}Y` : key, 16) * pixelsPerUnit(true)}px`).join(" ")}`;
   const handles: Handle[] = [
-    { key: "topLeft", corner: "topLeft", edge: "top", label: "Top X", vertical: false, reverse: false },
+    {
+      key: "topLeft",
+      corner: "topLeft",
+      edge: "top",
+      label: toolText("workspace.top_x_cf1733"),
+      vertical: false,
+      reverse: false,
+    },
     {
       key: elliptical ? "topRightY" : "topRight",
       corner: "topRight",
       edge: "right",
-      label: "Right Y",
+      label: toolText("workspace.right_y_e765bf"),
       vertical: true,
       reverse: false,
     },
-    { key: "bottomRight", corner: "bottomRight", edge: "bottom", label: "Bottom X", vertical: false, reverse: true },
+    {
+      key: "bottomRight",
+      corner: "bottomRight",
+      edge: "bottom",
+      label: toolText("workspace.bottom_x_637c61"),
+      vertical: false,
+      reverse: true,
+    },
     {
       key: elliptical ? "bottomLeftY" : "bottomLeft",
       corner: "bottomLeft",
       edge: "left",
-      label: "Left Y",
+      label: toolText("workspace.left_y_795adc"),
       vertical: true,
       reverse: true,
     },
@@ -234,18 +250,20 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
     <DesignWorkspace
       compactOutput
       workspaceClassName="min-h-[40rem] grid-rows-[minmax(30rem,2fr)_minmax(10rem,1fr)] sm:min-h-[32rem] sm:grid-rows-[minmax(22rem,2fr)_minmax(10rem,1fr)]"
-      title="Shape and corners"
-      controlTitle="Shape settings"
+      title={toolText("workspace.shape_and_corners_2b0984")}
+      controlTitle={toolText("workspace.shapeSettings")}
       previewActions={
         <span className="text-xs text-muted-foreground">
-          {width} × {height}px{scale < 0.99 ? " · scaled to fit" : ""}
-          {unit === "rem" ? ` · 1rem = ${number("rootFontSize", 16)}px` : ""}
+          {toolText("workspace.previewSize", { width, height, scaled: scale < 0.99 ? "yes" : "no" })}
+          {unit === "rem" ? toolText("workspace.remSize", { size: number("rootFontSize", 16) }) : ""}
         </span>
       }
       preview={
         <div className="flex h-full min-h-0 flex-col gap-2 p-3">
           <div className="flex justify-between gap-3">
-            {CORNERS.slice(0, 2).map(([key, label, rotation]) => cornerControl(key, label, rotation))}
+            {CORNERS.slice(0, 2).map(([key, label, rotation]) =>
+              cornerControl(key, toolText(`workspace.corners.${key}`), rotation),
+            )}
           </div>
           <div className="relative grid min-h-20 flex-1 place-items-center overflow-hidden" ref={measurePreview}>
             <div
@@ -255,7 +273,7 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
             >
               <div
                 role="img"
-                aria-label="Border radius shape preview"
+                aria-label={toolText("workspace.border_radius_shape_c67c65")}
                 className="absolute left-0 top-0 origin-top-left bg-primary"
                 style={{ width, height, borderRadius: previewRadius, transform: `scale(${scale})` }}
               />
@@ -270,7 +288,7 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
                       <TooltipTrigger asChild>
                         <CanvasHandle
                           role="slider"
-                          aria-label={`${label} handle`}
+                          aria-label={toolText("workspace.handle", { label })}
                           aria-describedby="radius-handle-help"
                           aria-valuemin={0}
                           aria-valuemax={Math.max(value, handleMaximum(handle))}
@@ -367,17 +385,18 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
             </div>
           </div>
           <div className="flex justify-between gap-3">
-            {CORNERS.slice(2).map(([key, label, rotation]) => cornerControl(key, label, rotation))}
+            {CORNERS.slice(2).map(([key, label, rotation]) =>
+              cornerControl(key, toolText(`workspace.corners.${key}`), rotation),
+            )}
           </div>
           <p id="radius-handle-help" className="text-xs text-muted-foreground">
-            Drag top and bottom handles horizontally, and side handles vertically. Use arrow keys for fine adjustments.
-            {linked ? " Corners are linked." : ""}
+            {toolText("workspace.drag_top_and_63e92f")} {linked ? toolText("workspace.corners_are_linked_2885d3") : ""}
           </p>
         </div>
       }
       controls={
         <>
-          <ButtonGroup aria-label="Shape presets">
+          <ButtonGroup aria-label={toolText("workspace.shape_presets_15e854")}>
             {(["card", "pill", "circle"] as const).map((name) => (
               <Button
                 disabled={props.disabled}
@@ -387,15 +406,15 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
                 size="sm"
                 onClick={() => preset(name)}
               >
-                {name[0].toUpperCase() + name.slice(1)}
+                {toolText(`workspace.presets.${name}`)}
               </Button>
             ))}
           </ButtonGroup>
           <Checkbox
             disabled={props.disabled}
             checked={linked}
-            label="Link corners"
-            description="Editing one corner updates the others."
+            label={toolText("workspace.link_corners_600c06")}
+            description={toolText("workspace.editing_one_corner_111ee0")}
             onCheckedChange={(checked) => {
               props.onSettingChange("linked", Boolean(checked));
               if (checked)
@@ -403,7 +422,7 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
                   patch({ [key]: number("topLeft", 16), [`${key}Y`]: number("topLeftY", 16) });
             }}
           />
-          <Field htmlFor="radius-unit" label="Radius unit">
+          <Field htmlFor="radius-unit" label={toolText("workspace.radius_unit_1d87eb")}>
             <Select
               disabled={props.disabled}
               value={unit}
@@ -417,25 +436,23 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
             </Select>
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            {dimension("width", "Preview width", 280)}
-            {dimension("height", "Preview height", 200)}
+            {dimension("width", toolText("workspace.previewWidth"), 280)}
+            {dimension("height", toolText("workspace.previewHeight"), 200)}
           </div>
-          {unit === "rem" ? dimension("rootFontSize", "Root font size", 16, 1, 100) : null}
+          {unit === "rem" ? dimension("rootFontSize", toolText("workspace.rootFontSize"), 16, 1, 100) : null}
           <Checkbox
             disabled={props.disabled}
             checked={elliptical}
-            label="Elliptical corners"
-            description="Set horizontal (X) and vertical (Y) radii separately."
+            label={toolText("workspace.elliptical_corners_c4479b")}
+            description={toolText("workspace.set_horizontal_x_a032a1")}
             onCheckedChange={(checked) => {
               props.onSettingChange("elliptical", Boolean(checked));
               if (checked) for (const [key] of CORNERS) props.onSettingChange(`${key}Y`, number(key, 16));
             }}
           />
-          <p className="text-xs leading-5 text-muted-foreground">
-            Percentages use the shape’s width for X and height for Y. Preview dimensions are not included in the CSS.
-          </p>
+          <p className="text-xs leading-5 text-muted-foreground">{toolText("workspace.percentages_use_the_33904e")}</p>
           <Button className="self-start" disabled={props.disabled} variant="outline" onClick={() => preset("card")}>
-            Reset shape
+            {toolText("workspace.reset_shape_5076ba")}
           </Button>
         </>
       }
@@ -446,7 +463,7 @@ export default function BorderRadiusWorkspace(props: WorkspaceProps) {
           retainedResult={props.result}
           running={props.running}
           spec={props.spec}
-          title="Border radius CSS"
+          title={toolText("workspace.border_radius_css_4af283")}
         />
       }
     />

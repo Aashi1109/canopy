@@ -1,6 +1,15 @@
 import { expect, test } from "vitest";
 import { CONSENT_KEY, createAnalytics, measurementId, publicPath } from "../lib/analytics/ga4.ts";
 
+test("localized public routes retain privacy filtering and private routes stay excluded", () => {
+  expect(publicPath("/hi/media/compress-image?secret=input")).toBe("/media/[tool]");
+  expect(publicPath("/ar/privacy")).toBe("/privacy");
+  expect(publicPath("/pt-BR")).toBe("/");
+  for (const path of ["/hi/admin", "/fr/auth/profile", "/de/account/history", "/unsupported/media/compress-image"]) {
+    expect(publicPath(path)).toBeNull();
+  }
+});
+
 function browserFixture(saved, storageBlocked = false) {
   const scripts = [];
   const cookies = [];

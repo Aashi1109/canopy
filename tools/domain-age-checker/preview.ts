@@ -1,4 +1,10 @@
 import { isRecord } from "../../lib/devtools/shared/json.ts";
+import { formatToolMessage } from "../../lib/tool-framework/translations.ts";
+import definition from "./definition.ts";
+
+type SummaryText = (key: string, values?: Record<string, string | number>) => string;
+const englishText: SummaryText = (key, values) =>
+  formatToolMessage("en", (definition.messages as Record<string, string>)[key] ?? key, values);
 
 export type DomainSummary = {
   domain: string;
@@ -10,15 +16,6 @@ export type DomainSummary = {
 };
 
 const DAY_MS = 86_400_000;
-const DATE_FORMAT = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  timeZone: "UTC",
-  hourCycle: "h23",
-});
 
 function parseDate(value: unknown): Date | null {
   if (typeof value !== "string") return null;
@@ -44,7 +41,7 @@ function parseDate(value: unknown): Date | null {
   return Number.isFinite(date.getTime()) ? date : null;
 }
 
-function formatAge(registered: Date, now: number): string {
+function formatAge(registered: Date, now: number, text: SummaryText): string {
   const currentYear = new Date(now).getUTCFullYear();
   let years = currentYear - registered.getUTCFullYear();
   const anniversary = new Date(registered);
@@ -57,101 +54,91 @@ function formatAge(registered: Date, now: number): string {
     if (anniversary.getUTCMonth() !== registered.getUTCMonth()) anniversary.setUTCDate(0);
   }
   const days = Math.floor((now - anniversary.getTime()) / DAY_MS);
-  const parts = [
-    years > 0 ? `${years} year${years === 1 ? "" : "s"}` : "",
-    days > 0 ? `${days} day${days === 1 ? "" : "s"}` : "",
-  ].filter(Boolean);
-  return parts.length ? `${parts.join(", ")} old` : "Less than a day old";
+  if (years > 0 && days > 0) return text("workspace.summary.ageYearsDays", { years, days });
+  if (years > 0) return text("workspace.summary.ageYears", { years });
+  if (days > 0) return text("workspace.summary.ageDays", { days });
+  return text("workspace.summary.ageUnderDay");
 }
 
-const STATUS_EXPLANATIONS: Record<string, DomainSummary["statuses"][number]> = {
-  ok: {
-    label: "No restrictions reported",
-    detail:
-      "The registry reports no pending operations or restrictions. This does not confirm that the website is working.",
-  },
-  active: {
-    label: "No restrictions reported",
-    detail:
-      "The registry reports no pending operations or restrictions. This does not confirm that the website is working.",
-  },
-  inactive: {
-    label: "Not connected to DNS",
-    detail:
-      "No name servers are linked to this registration. The domain is not set up to direct visitors to a website.",
-  },
-  redemptionperiod: {
-    label: "Recovery period",
-    detail:
-      "The registration was deleted and may still be recoverable. Contact the registrar promptly about restoring it.",
-  },
-  pendingdelete: {
-    label: "Deletion requested",
-    detail: "The registry reports a deletion process. Contact the registrar promptly to check recovery options.",
-  },
-  pendingrestore: {
-    label: "Restoration pending",
-    detail:
-      "A request to restore the domain is being processed. Contact the registrar to check whether more information is needed.",
-  },
-  pendingcreate: {
-    label: "Registration pending",
-    detail: "The registry is processing a request to register this domain.",
-  },
-  pendingrenew: { label: "Renewal pending", detail: "The registry is processing a renewal request." },
-  pendingtransfer: {
-    label: "Transfer pending",
-    detail: "A request to move the domain to another registrar is being processed.",
-  },
-  pendingupdate: { label: "Changes pending", detail: "The registry is processing changes to this registration." },
-  addperiod: {
-    label: "Registration grace period",
-    detail: "The domain is in a short grace period after registration. Contact the registrar for the applicable terms.",
-  },
-  autorenewperiod: {
-    label: "Automatic renewal grace period",
-    detail:
-      "The registry automatically renewed the domain and a grace period applies. Confirm renewal and billing with the registrar.",
-  },
-  renewperiod: {
-    label: "Renewal grace period",
-    detail: "The domain is in a grace period after renewal. Contact the registrar for the applicable terms.",
-  },
-  transferperiod: {
-    label: "Transfer grace period",
-    detail: "The domain is in a grace period after moving to another registrar.",
-  },
-};
+function statusExplanations(text: SummaryText): Record<string, DomainSummary["statuses"][number]> {
+  return {
+    ok: {
+      label: text("workspace.summary.status1"),
+      detail: text("workspace.summary.status2"),
+    },
+    active: {
+      label: text("workspace.summary.status1"),
+      detail: text("workspace.summary.status2"),
+    },
+    inactive: {
+      label: text("workspace.summary.status3"),
+      detail: text("workspace.summary.status4"),
+    },
+    redemptionperiod: {
+      label: text("workspace.summary.status5"),
+      detail: text("workspace.summary.status6"),
+    },
+    pendingdelete: {
+      label: text("workspace.summary.status7"),
+      detail: text("workspace.summary.status8"),
+    },
+    pendingrestore: {
+      label: text("workspace.summary.status9"),
+      detail: text("workspace.summary.status10"),
+    },
+    pendingcreate: {
+      label: text("workspace.summary.status11"),
+      detail: text("workspace.summary.status12"),
+    },
+    pendingrenew: { label: text("workspace.summary.status13"), detail: text("workspace.summary.status14") },
+    pendingtransfer: {
+      label: text("workspace.summary.status15"),
+      detail: text("workspace.summary.status16"),
+    },
+    pendingupdate: { label: text("workspace.summary.status17"), detail: text("workspace.summary.status18") },
+    addperiod: {
+      label: text("workspace.summary.status19"),
+      detail: text("workspace.summary.status20"),
+    },
+    autorenewperiod: {
+      label: text("workspace.summary.status21"),
+      detail: text("workspace.summary.status22"),
+    },
+    renewperiod: {
+      label: text("workspace.summary.status23"),
+      detail: text("workspace.summary.status24"),
+    },
+    transferperiod: {
+      label: text("workspace.summary.status25"),
+      detail: text("workspace.summary.status26"),
+    },
+  };
+}
 
-function explainStatus(status: string): DomainSummary["statuses"][number] {
+function explainStatus(status: string, text: SummaryText): DomainSummary["statuses"][number] {
+  const explanations = statusExplanations(text);
   const key = status.toLowerCase().replace(/[\s_-]/g, "");
-  if (Object.hasOwn(STATUS_EXPLANATIONS, key)) return STATUS_EXPLANATIONS[key];
+  if (Object.hasOwn(explanations, key)) return explanations[key];
   const restriction = /^(client|server)(transfer|delete|update|renew)prohibited$/.exec(key);
   if (restriction) {
     const owner = restriction[1] === "client" ? "registrar" : "registry";
     const operation = restriction[2];
     const labels: Record<string, string> = {
-      transfer: "Transfer locked",
-      delete: "Deletion locked",
-      update: "Changes locked",
-      renew: "Renewal blocked",
+      transfer: text("workspace.summary.locked.transfer"),
+      delete: text("workspace.summary.locked.delete"),
+      update: text("workspace.summary.locked.update"),
+      renew: text("workspace.summary.locked.renew"),
     };
-    const actions: Record<string, string> = {
-      transfer: "moving this domain to another registrar",
-      delete: "deleting this registration",
-      update: "changing this registration",
-      renew: "renewing this registration",
-    };
+
     return {
       label: labels[operation],
-      detail: `The ${owner} has blocked ${actions[operation]}. Contact your registrar if you need to do this.`,
+      detail: text(`workspace.summary.restriction.${owner}.${operation}`),
     };
   }
   if (key === "clienthold" || key === "serverhold") {
     return {
-      label: "DNS suspended",
-      detail:
-        "The domain is on hold and will not resolve through DNS, the system that connects domain names to websites. Contact the registrar for help.",
+      label: text("workspace.summary.dnsSuspended"),
+      detail: text("workspace.summary.dnsSuspendedDetail"),
     };
   }
   const readable = status
@@ -160,12 +147,25 @@ function explainStatus(status: string): DomainSummary["statuses"][number] {
     .toLowerCase();
   return {
     label: readable.charAt(0).toUpperCase() + readable.slice(1),
-    detail:
-      "The registry reported an additional status. Ask the registrar what it means; its exact value is available in Raw.",
+    detail: text("workspace.summary.additionalStatus"),
   };
 }
 
-export function createDomainSummary(rawJson: string, now = Date.now()): DomainSummary {
+export function createDomainSummary(
+  rawJson: string,
+  now = Date.now(),
+  text: SummaryText = englishText,
+  locale = "en-GB",
+): DomainSummary {
+  const dateFormat = new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "UTC",
+    hourCycle: "h23",
+  });
   let record: Record<string, unknown> = {};
   let readableRecord = false;
   try {
@@ -180,40 +180,38 @@ export function createDomainSummary(rawJson: string, now = Date.now()): DomainSu
   if (!Number.isFinite(new Date(now).getTime())) now = Date.now();
 
   const registered = parseDate(record.registered);
-  let age = "Age unavailable";
-  let ageDetail = "The registry did not provide a usable registration date.";
-  if (!readableRecord) ageDetail = "The registration record could not be read. Try the lookup again.";
-  else if (!Object.hasOwn(record, "registered"))
-    ageDetail = "The registration date is hidden. Turn on Show registration date to see the domain age.";
-  else if (registered && registered.getTime() > now)
-    ageDetail = "The registry reports a registration date in the future. Check the record with the registrar.";
+  let age = text("workspace.summary.ageUnavailable");
+  let ageDetail = text("workspace.summary.ageUnreported");
+  if (!readableRecord) ageDetail = text("workspace.summary.unreadable");
+  else if (!Object.hasOwn(record, "registered")) ageDetail = text("workspace.summary.hiddenDate");
+  else if (registered && registered.getTime() > now) ageDetail = text("workspace.summary.futureDate");
   else if (registered) {
-    age = formatAge(registered, now);
-    ageDetail = `Based on the current registration as of ${DATE_FORMAT.format(now)} UTC. A domain's age can reset if it is deleted and registered again.`;
+    age = formatAge(registered, now, text);
+    ageDetail = text("workspace.summary.ageBasis", { date: dateFormat.format(now) });
   }
 
   const dates: DomainSummary["dates"][number][] = [];
   for (const [key, label] of [
-    ["registered", "Registered"],
-    ["expires", "Reported expiry"],
-    ["updated", "Last record update"],
+    ["registered", text("workspace.summary.registered")],
+    ["expires", text("workspace.summary.expires")],
+    ["updated", text("workspace.summary.updated")],
   ] as const) {
     if (!Object.hasOwn(record, key)) continue;
     const date = parseDate(record[key]);
     const value = date
-      ? `${DATE_FORMAT.format(date)} UTC`
+      ? `${dateFormat.format(date)} UTC`
       : record[key] == null || record[key] === ""
-        ? "Not reported"
-        : "Date unavailable";
+        ? text("workspace.summary.notReported")
+        : text("workspace.summary.dateUnavailable");
     let detail: string | undefined;
     if (date && key === "expires") {
       const remainingDays = Math.floor((date.getTime() - now) / DAY_MS);
       detail =
         date.getTime() <= now
-          ? "The reported expiry date has passed. Check renewal or recovery with the registrar; this does not mean the domain is available."
+          ? text("workspace.summary.expired")
           : remainingDays === 0
-            ? "The reported expiry is within the next 24 hours. Confirm the renewal deadline with your registrar."
-            : `${remainingDays} complete day${remainingDays === 1 ? "" : "s"} until the reported expiry. Confirm the renewal deadline with your registrar.`;
+            ? text("workspace.summary.expiresSoon")
+            : text("workspace.summary.daysUntilExpiry", { days: remainingDays });
     }
     dates.push({ label, value, ...(detail ? { detail } : {}) });
   }
@@ -227,8 +225,8 @@ export function createDomainSummary(rawJson: string, now = Date.now()): DomainSu
     ...new Map(statusValues.map((status) => [status.toLowerCase().replace(/[\s_-]/g, ""), status])).values(),
   ];
   const statuses = uniqueStatuses.length
-    ? uniqueStatuses.map(explainStatus)
-    : [{ label: "Not reported", detail: "The registry did not provide domain status information." }];
+    ? uniqueStatuses.map((status) => explainStatus(status, text))
+    : [{ label: text("workspace.summary.notReported"), detail: text("workspace.summary.noStatus") }];
   const nameservers = Array.isArray(record.nameservers)
     ? [
         ...new Set(
@@ -240,7 +238,10 @@ export function createDomainSummary(rawJson: string, now = Date.now()): DomainSu
     : [];
 
   return {
-    domain: typeof record.domain === "string" && record.domain.trim() ? record.domain.trim() : "Domain not reported",
+    domain:
+      typeof record.domain === "string" && record.domain.trim()
+        ? record.domain.trim()
+        : text("workspace.summary.noDomain"),
     age,
     ageDetail,
     dates,

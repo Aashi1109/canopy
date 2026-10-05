@@ -62,7 +62,7 @@ export async function mountWorkspace(
       }),
     );
   }
-  return mountTool(React.createElement(Fixture));
+  return mountTool(React.createElement(Fixture), { spec });
 }
 
 export async function openSettings(scope = document) {

@@ -97,6 +97,28 @@ Code owns executable and security-sensitive behaviour. Database data must never
 select a React component, import path, runner, renderer, capability, schema,
 processing default, or executable expression.
 
+### Public translations
+
+Store authored translations on the existing `managed_tools.translations` JSONB
+record. The public resolver returns only a complete, published locale and sends
+only that tool's selected messages to its client provider. English definitions
+are bootstrap contracts, not the live source of translated display text.
+
+Definition labels, options, page copy and SEO fields are extracted automatically.
+For custom UI, declare bootstrap messages in `definition.messages`, then use
+`useTranslations("Tool.runtime")` in the workspace. Use native ICU `{name}` and
+plural messages; keep complete sentences together. Execution adapters can return
+`labelMessage`, `detailMessage`, `titleMessage`, or structured `ToolError` details
+so the shared host formats display metadata after execution. Never translate
+identifiers, enum values, source code, user data, or artifact bytes, and never
+branch on a translated label.
+
+When adding or changing message keys, run the English translation backfill before
+deploying the adapter. It preserves existing edits, removes retired source keys,
+and drafts incompatible translations. Admin's existing translation editor picks
+up the current contract automatically; no per-tool editor or locale files are
+needed. See `db/migration/0003-tool-translations/README.md` for rollout commands.
+
 ## Identity and Resolution
 
 Keep these separate:

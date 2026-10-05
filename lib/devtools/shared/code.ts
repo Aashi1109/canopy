@@ -15,14 +15,20 @@ export function protectCssStrings(input: string): { source: string; restore: (te
       while (index < input.length && input[index] !== character) {
         index += input[index] === "\\" ? 2 : 1;
       }
-      if (index >= input.length) throw new ToolError("invalid-source", "Source contains an unfinished string.");
+      if (index >= input.length)
+        throw new ToolError("invalid-source", "Source contains an unfinished string.", undefined, {
+          messageRef: { key: "sharedCode.string" },
+        });
       const value = input.slice(start, ++index);
       let stringIndex = strings.indexOf(value);
       if (stringIndex < 0) stringIndex = strings.push(value) - 1;
       source += `${prefix}${stringIndex}__`;
     } else if (character === "/" && input[index + 1] === "*") {
       const end = input.indexOf("*/", index + 2);
-      if (end < 0) throw new ToolError("invalid-source", "Source contains an unfinished comment.");
+      if (end < 0)
+        throw new ToolError("invalid-source", "Source contains an unfinished comment.", undefined, {
+          messageRef: { key: "sharedCode.comment" },
+        });
       index = end + 2;
     } else {
       source += character;
@@ -53,12 +59,20 @@ export function tokenizeJavaScript(input: string, minifying = false): JavaScript
             "unterminated",
             "Source contains an unfinished string, regex, or comment.",
             "Close the open string or block comment and try again.",
+            {
+              messageRef: { key: "sharedCode.unterminated" },
+              recoveryMessage: { key: "sharedCode.close" },
+            },
           );
         }
         throw new ToolError(
           "invalid-source",
           "Source contains invalid JavaScript syntax.",
           "Correct the JavaScript syntax and try again.",
+          {
+            messageRef: { key: "sharedCode.syntax" },
+            recoveryMessage: { key: "sharedCode.correct" },
+          },
         );
       }
       if (node.from < protectedUntil || node.from === node.to) return;

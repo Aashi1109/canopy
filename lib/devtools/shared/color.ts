@@ -21,18 +21,31 @@ saddlebrown:8b4513 salmon:fa8072 sandybrown:f4a460 seagreen:2e8b57 seashell:fff5
     .map((entry) => entry.split(":")),
 );
 
+const CHANNEL_LABELS = {
+  alpha: "Alpha",
+  rgbPercentage: "RGB percentage",
+  rgbChannel: "RGB channel",
+  hue: "Hue",
+  hslPercentage: "HSL percentage",
+  saturation: "Saturation",
+  lightness: "Lightness",
+} as const;
 const NUMBER = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
 
-function numeric(value: string, label: string): number {
+function numeric(value: string, channel: keyof typeof CHANNEL_LABELS): number {
   if (!NUMBER.test(value) || !Number.isFinite(Number(value))) {
-    throw new ToolError("syntax", `${label} must be a finite number.`);
+    throw new ToolError("syntax", `${CHANNEL_LABELS[channel]} must be a finite number.`, undefined, {
+      messageRef: { key: "color.finiteChannel", values: { channel } },
+    });
   }
   return Number(value);
 }
 
-function bounded(value: number, min: number, max: number, label: string): number {
+function bounded(value: number, min: number, max: number, channel: keyof typeof CHANNEL_LABELS): number {
   if (!Number.isFinite(value) || value < min || value > max) {
-    throw new ToolError("range", `${label} must be ${min}–${max}.`);
+    throw new ToolError("range", `${CHANNEL_LABELS[channel]} must be ${min}–${max}.`, undefined, {
+      messageRef: { key: "color.channelRange", values: { channel, min, max } },
+    });
   }
   return value;
 }
@@ -40,10 +53,10 @@ function bounded(value: number, min: number, max: number, label: string): number
 function parseAlpha(value: string | undefined): number {
   if (value === undefined) return 1;
   return bounded(
-    value.endsWith("%") ? numeric(value.slice(0, -1), "Alpha") / 100 : numeric(value, "Alpha"),
+    value.endsWith("%") ? numeric(value.slice(0, -1), "alpha") / 100 : numeric(value, "alpha"),
     0,
     1,
-    "Alpha",
+    "alpha",
   );
 }
 
@@ -59,6 +72,7 @@ export function parseColor(input: string): RgbColor {
       "syntax",
       "Enter HEX, rgb(), hsl(), or a CSS color name.",
       "Use a standalone color; variables and relative colors need stylesheet context.",
+      { messageRef: { key: "color.syntax" }, recoveryMessage: { key: "color.standaloneRecovery" } },
     );
   }
   const legacy = match[2].includes(",");
@@ -67,7 +81,12 @@ export function parseColor(input: string): RgbColor {
   if (legacy) {
     const parts = match[2].split(",").map((part) => part.trim());
     if (match[2].includes("/") || (parts.length !== 3 && parts.length !== 4)) {
-      throw new ToolError("syntax", "Use three comma-separated channels and optional alpha, or spaces with / alpha.");
+      throw new ToolError(
+        "syntax",
+        "Use three comma-separated channels and optional alpha, or spaces with / alpha.",
+        undefined,
+        { messageRef: { key: "color.commaChannels" } },
+      );
     }
     channels = parts.slice(0, 3);
     alpha = parts[3];
@@ -76,7 +95,9 @@ export function parseColor(input: string): RgbColor {
     channels = parts[0].trim().split(/\s+/);
     alpha = parts[1]?.trim();
     if (parts.length > 2 || channels.length !== 3 || alpha === "") {
-      throw new ToolError("syntax", "Use three space-separated channels and optional / alpha.");
+      throw new ToolError("syntax", "Use three space-separated channels and optional / alpha.", undefined, {
+        messageRef: { key: "color.spaceChannels" },
+      });
     }
   }
   const opacity = parseAlpha(alpha);
@@ -86,43 +107,54 @@ export function parseColor(input: string): RgbColor {
       channels.some((channel) => channel.endsWith("%")) &&
       !channels.every((channel) => channel.endsWith("%"))
     ) {
-      throw new ToolError("syntax", "Comma-separated RGB channels must all use numbers or all use percentages.");
+      throw new ToolError(
+        "syntax",
+        "Comma-separated RGB channels must all use numbers or all use percentages.",
+        undefined,
+        { messageRef: { key: "color.consistentChannels" } },
+      );
     }
     const values = channels.map((channel) =>
       channel.endsWith("%")
-        ? (bounded(numeric(channel.slice(0, -1), "RGB percentage"), 0, 100, "RGB percentage") * 255) / 100
-        : bounded(numeric(channel, "RGB channel"), 0, 255, "RGB channel"),
+        ? (bounded(numeric(channel.slice(0, -1), "rgbPercentage"), 0, 100, "rgbPercentage") * 255) / 100
+        : bounded(numeric(channel, "rgbChannel"), 0, 255, "rgbChannel"),
     );
     return { red: values[0], green: values[1], blue: values[2], alpha: opacity };
   }
   const hueMatch = /^(.+?)(deg|grad|rad|turn)?$/.exec(channels[0]);
   const hue =
-    numeric(hueMatch?.[1] ?? "", "Hue") *
+    numeric(hueMatch?.[1] ?? "", "hue") *
     ({ deg: 1, grad: 0.9, rad: 180 / Math.PI, turn: 360 }[hueMatch?.[2] ?? "deg"] ?? 1);
   const percentages = channels.slice(1).map((channel) => {
-    if (!channel.endsWith("%")) throw new ToolError("syntax", "HSL saturation and lightness need a % suffix.");
-    return bounded(numeric(channel.slice(0, -1), "HSL percentage"), 0, 100, "HSL percentage");
+    if (!channel.endsWith("%"))
+      throw new ToolError("syntax", "HSL saturation and lightness need a % suffix.", undefined, {
+        messageRef: { key: "color.hslSuffix" },
+      });
+    return bounded(numeric(channel.slice(0, -1), "hslPercentage"), 0, 100, "hslPercentage");
   });
   return hslToRgb(hue, percentages[0], percentages[1], opacity);
 }
 
 export function hslToRgb(hue: number, saturation: number, lightness: number, alpha = 1): RgbColor {
-  if (!Number.isFinite(hue)) throw new ToolError("range", "Hue must be a finite number.");
-  const s = bounded(saturation, 0, 100, "Saturation") / 100;
-  const l = bounded(lightness, 0, 100, "Lightness") / 100;
+  if (!Number.isFinite(hue))
+    throw new ToolError("range", "Hue must be a finite number.", undefined, { messageRef: { key: "color.finiteHue" } });
+  const s = bounded(saturation, 0, 100, "saturation") / 100;
+  const l = bounded(lightness, 0, 100, "lightness") / 100;
   const h = ((hue % 360) + 360) % 360;
   const amplitude = s * Math.min(l, 1 - l);
   const channel = (offset: number) => {
     const position = (offset + h / 30) % 12;
     return 255 * (l - amplitude * Math.max(-1, Math.min(position - 3, 9 - position, 1)));
   };
-  return { red: channel(0), green: channel(8), blue: channel(4), alpha: bounded(alpha, 0, 1, "Alpha") };
+  return { red: channel(0), green: channel(8), blue: channel(4), alpha: bounded(alpha, 0, 1, "alpha") };
 }
 
 export function parseHexColor(input: string): RgbColor {
   const value = input.trim().replace(/^#/, "");
   if (![3, 4, 6, 8].includes(value.length) || !/^[\da-f]+$/i.test(value)) {
-    throw new ToolError("invalid-hex-color", "HEX color must use #RGB, #RGBA, #RRGGBB, or #RRGGBBAA.");
+    throw new ToolError("invalid-hex-color", "HEX color must use #RGB, #RGBA, #RRGGBB, or #RRGGBBAA.", undefined, {
+      messageRef: { key: "color.hexFormat" },
+    });
   }
   const expanded = value.length <= 4 ? [...value].map((character) => character.repeat(2)).join("") : value;
   return {

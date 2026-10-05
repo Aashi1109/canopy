@@ -24,9 +24,10 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files[0];
-  if (!input) throw new ToolError("no-files", "Choose a PDF to crop.");
+  if (!input)
+    throw new ToolError("no-files", "Choose a PDF to crop.", undefined, { messageRef: { key: "errors.noFiles" } });
   const selection = validatePdfSelection([{ size: input.size }]);
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
   await validatePdfInput(input);
 
   const pdf = await loadPdf(input);
@@ -45,10 +46,13 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       const width = ctx.settings.cropWidth || page.getWidth() - x;
       const height = ctx.settings.cropHeight || page.getHeight() - y;
       if (width <= 0 || height <= 0 || x + width > page.getWidth() || y + height > page.getHeight()) {
-        throw new ToolError("invalid-crop", "The crop box must stay within every selected page.");
+        throw new ToolError("invalid-crop", "The crop box must stay within every selected page.", undefined, {
+          messageRef: { key: "errors.invalidCrop" },
+        });
       }
       page.setCropBox(x, y, width, height);
     },
+    { key: "progress.croppingPdfPage" },
   );
 
   const output = await ctx.writeArtifact({

@@ -5,7 +5,7 @@
 
 import { safeUrl } from "../../lib/devtools/shared/url.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
-import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
+import { ToolError, type ToolErrorDetails, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 import { getParameterErrors } from "./parameters.ts";
 
@@ -39,17 +39,29 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         "parameter-required",
         `${required} is required.`,
         "Fill in campaign source, medium, and name — a partially tagged link reports as direct traffic.",
+        {
+          messageRef: { key: "errors.parameter-required", values: { parameter: required } },
+          recoveryMessage: { key: "recovery.parameter-required" },
+        },
       );
     }
   }
 
   const extraRows = ctx.settings.parameters ?? [];
-  const parameterError = getParameterErrors(extraRows).find((error) => error !== "");
+  let parameterMessage: ToolErrorDetails["messageRef"];
+  const parameterError = getParameterErrors(extraRows, (issue) => {
+    parameterMessage ??= {
+      key: `errors.extra-${issue.code}`,
+      ...(issue.code === "standard" ? { values: { parameter: issue.key } } : {}),
+    };
+    return undefined;
+  }).find((error) => error !== "");
   if (parameterError) {
     throw new ToolError(
       "invalid-extra-parameter",
       parameterError,
       "Edit or remove the extra parameter row, then build the URL again.",
+      { messageRef: parameterMessage, recoveryMessage: { key: "recovery.invalid-extra-parameter" } },
     );
   }
   for (const row of extraRows) {

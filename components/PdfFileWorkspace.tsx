@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { ToolError, translateToolError } from "@/lib/tool-framework/run";
+
 import {
   Alert,
   AlertDescription,
@@ -43,9 +46,10 @@ export function PdfPageSelectionOverlay({
   disabled?: boolean;
   onToggle: () => void;
 }) {
+  const t = useTranslations("Workbench");
   return (
     <Button
-      aria-label={`${selected ? "Deselect" : "Select"} page ${pageNumber}`}
+      aria-label={t("mediaTogglePage", { selected: selected ? "yes" : "no", page: pageNumber })}
       aria-pressed={selected}
       className={`absolute inset-0 h-full w-full cursor-pointer touch-pan-y rounded-lg p-0 hover:bg-transparent ${selected ? "border-2 border-primary" : "border border-border hover:border-primary/50"}`}
       disabled={disabled}
@@ -94,7 +98,9 @@ export function PdfFileWorkspace({
   completionActions?: ReactNode;
   secondaryActions?: ReactNode;
 }) {
-  const actionLabel = props.primaryAction?.label ?? "Run";
+  const t = useTranslations("Workbench");
+  const toolText = useTranslations("Tool.runtime");
+  const actionLabel = props.primaryAction?.label ?? t("run");
   const file = props.input.files[0];
   const inputSpec = props.spec.input;
   const { inspect, previews, requestThumbnails, reset, state } = useToolRun();
@@ -124,10 +130,10 @@ export function PdfFileWorkspace({
           thumbnailWidth: 1200,
         });
       } catch {
-        setInspectionFailure("This file could not be opened as a PDF.");
+        setInspectionFailure(t("mediaFilePdfOpenFailed"));
       }
     }
-  }, [file, attempt, definitionKey, inspect, reset]);
+  }, [file, attempt, definitionKey, inspect, reset, t]);
 
   useEffect(() => {
     setCancelled(false);
@@ -143,18 +149,35 @@ export function PdfFileWorkspace({
     } catch (error) {
       return {
         summary: null,
-        error: error instanceof Error ? error.message : "Check your settings.",
+        error:
+          error instanceof ToolError
+            ? translateToolError(
+                error,
+                (message) => (toolText.has(message.key) ? toolText(message.key, message.values) : undefined),
+                (message) => (t.has(message.key) ? t(message.key, message.values) : undefined),
+              ).message
+            : error instanceof Error
+              ? error.message
+              : t("mediaSettingsHint"),
       };
     }
-  }, [getPlan, pages, props.settings]);
+  }, [getPlan, pages, props.settings, t, toolText]);
 
-  const inspectionError = inspectionFailure || state.error?.message;
+  const inspectionError =
+    inspectionFailure ||
+    (state.error
+      ? translateToolError(
+          new ToolError(state.error.code, state.error.message, state.error.recovery, state.error.details),
+          (message) => (toolText.has(message.key) ? toolText(message.key, message.values) : undefined),
+          (message) => (t.has(message.key) ? t(message.key, message.values) : undefined),
+        ).message
+      : undefined);
   const reason = !file
-    ? "Add a PDF to begin."
+    ? t("mediaAddPdf")
     : inspectionError
-      ? "Replace the PDF or retry opening it."
+      ? t("mediaReplacePdfHint")
       : !pages.length
-        ? "Opening your PDF…"
+        ? t("mediaOpeningYourPdf")
         : plan.error || null;
   useEffect(() => {
     props.onValidationChange?.(reason);
@@ -163,20 +186,20 @@ export function PdfFileWorkspace({
     props.onToolbarActionsChange?.({
       primaryActionInWorkspace: true,
       statusMeta: file
-        ? `${file.name} · ${inspectionError ? "Unable to open PDF" : pages.length ? `${pages.length} pages` : "Opening PDF"}`
-        : "Add one PDF to begin",
+        ? `${file.name} · ${inspectionError ? t("mediaOpenPdfFailed") : pages.length ? t("mediaPageCount", { count: pages.length }) : t("mediaOpeningPdfShort")}`
+        : t("mediaAddOnePdf"),
     });
     return () => props.onToolbarActionsChange?.(null);
-  }, [file, pages.length, inspectionError, props.onToolbarActionsChange]);
+  }, [file, pages.length, inspectionError, props.onToolbarActionsChange, t]);
 
   if (inputSpec.kind !== "files") return null;
   const addFiles = (files: File[]) => {
     if (props.disabled) return;
     if (files.length !== 1) {
-      setInputIssue("Add one PDF at a time.");
+      setInputIssue(t("mediaOnePdfOnly"));
       return;
     }
-    const selection = validateFileSelection([], files, inputSpec);
+    const selection = validateFileSelection([], files, inputSpec, (key, values) => t(key, values));
     setInputIssue(selection.issue);
     if (selection.files.length) props.onInputChange({ ...props.input, files: selection.files });
   };
@@ -184,7 +207,7 @@ export function PdfFileWorkspace({
     <FileChip
       file={file}
       disabled={props.disabled}
-      details={pages.length ? `${pages.length} ${pages.length === 1 ? "page" : "pages"}` : undefined}
+      details={pages.length ? t("mediaPageCount", { count: pages.length }) : undefined}
       onRemove={() => {
         if (props.disabled) return;
         setExpanded(false);
@@ -201,7 +224,7 @@ export function PdfFileWorkspace({
         fileInput.current?.click();
       }}
     >
-      Upload
+      {t("upload")}
     </ToolActionButton>
   );
   const removeFileControl = (
@@ -210,11 +233,11 @@ export function PdfFileWorkspace({
         <TooltipTrigger asChild>
           <span
             tabIndex={props.disabled ? 0 : undefined}
-            aria-label={props.disabled ? "Remove PDF — wait for processing to finish" : undefined}
+            aria-label={props.disabled ? t("mediaRemovePdfWait") : undefined}
             className="rounded-lg focus-visible:outline-2 focus-visible:outline-ring"
           >
             <Button
-              aria-label={`Remove ${file?.name}`}
+              aria-label={t("removeFile", { name: file?.name ?? "" })}
               disabled={props.disabled}
               onClick={() => {
                 if (props.disabled) return;
@@ -228,7 +251,7 @@ export function PdfFileWorkspace({
             </Button>
           </span>
         </TooltipTrigger>
-        <TooltipContent>{props.disabled ? "Wait for processing to finish" : "Remove PDF"}</TooltipContent>
+        <TooltipContent>{props.disabled ? t("mediaWaitProcessing") : t("mediaRemovePdf")}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
@@ -236,7 +259,7 @@ export function PdfFileWorkspace({
     <PdfViewer
       className="h-full min-h-0 w-full"
       currentPage={currentPage}
-      fileName={file?.name ?? "Source PDF"}
+      fileName={file?.name ?? t("mediaSourcePdf")}
       fileSize={
         file
           ? `${(file.size / (file.size < 1_048_576 ? 1024 : 1_048_576)).toFixed(2)} ${file.size < 1_048_576 ? "KiB" : "MiB"}`
@@ -247,7 +270,7 @@ export function PdfFileWorkspace({
       onPageChange={setCurrentPage}
       outline={pages.map((page) => ({
         id: `page-${page.pageNumber}`,
-        title: `Page ${page.pageNumber}`,
+        title: t("mediaPageNumber", { page: page.pageNumber }),
         page: page.pageNumber,
       }))}
       pageCount={pages.length}
@@ -276,9 +299,7 @@ export function PdfFileWorkspace({
           ),
         };
       })}
-      pagePreviewDetail={
-        getPageRotation ? "Original thumbnail · changes shown in main preview" : "Original PDF · unchanged"
-      }
+      pagePreviewDetail={getPageRotation ? t("mediaOriginalThumbnail") : t("mediaOriginalPdfUnchanged")}
       rightChildren={
         <>
           {removeFileControl}
@@ -292,7 +313,7 @@ export function PdfFileWorkspace({
               size="sm"
               variant="outline"
             >
-              Replace PDF
+              {t("mediaReplacePdf")}
             </Button>
           ) : (
             fileControls
@@ -330,7 +351,7 @@ export function PdfFileWorkspace({
       >
         {file ? (
           <WorkspaceSurface
-            title="Source PDF"
+            title={t("mediaSourcePdf")}
             header="sr-only"
             className="h-[28rem] flex-none lg:h-auto lg:flex-1"
             contentClassName="gap-0"
@@ -349,26 +370,24 @@ export function PdfFileWorkspace({
               type="file"
             />
             {(inspectionError || !pages.length) && (
-              <WorkspacePanelHeader aria-label="Source PDF" actions={fileControls}>
+              <WorkspacePanelHeader aria-label={t("mediaSourcePdf")} actions={fileControls}>
                 {fileChip}
               </WorkspacePanelHeader>
             )}
             <WorkspaceSurface
-              title="PDF preview"
+              title={t("mediaPdfPreview")}
               header="sr-only"
               className="min-h-0 flex-1"
               scroll="none"
               contentClassName="gap-0"
               state={inspectionError ? "error" : pages.length ? "ready" : "loading"}
-              stateTitle={inspectionError ? "Unable to open PDF" : "Opening your PDF…"}
-              stateDescription={
-                inspectionError ? `${inspectionError} Try another PDF, or retry opening this file.` : undefined
-              }
+              stateTitle={inspectionError ? t("mediaOpenPdfFailed") : t("mediaOpeningYourPdf")}
+              stateDescription={inspectionError ? t("mediaPdfRetryError", { error: inspectionError }) : undefined}
               stateAction={
                 inspectionError ? (
                   <div className="flex flex-wrap justify-center gap-2">
                     <Button onClick={() => setAttempt((value) => value + 1)} variant="outline">
-                      Retry preview
+                      {t("mediaRetryPreview")}
                     </Button>
                   </div>
                 ) : undefined
@@ -382,24 +401,24 @@ export function PdfFileWorkspace({
             accept={inputSpec.accept}
             className="min-h-72 flex-1"
             disabled={props.disabled}
-            intakeDescription={`PDF · 1 file · ${(inputSpec.maxBytes ?? 52_428_800) / 1_048_576} MiB max · up to 500 pages`}
+            intakeDescription={t("mediaPdfLimits", { limit: (inputSpec.maxBytes ?? 52_428_800) / 1_048_576 })}
             intakeIcon={<Upload aria-hidden="true" />}
-            intakeHint="Click to browse, or drop a PDF here"
+            intakeHint={t("mediaClickToBrowseOrDropAPdf")}
             intakeTitle={inputSpec.label}
             maxFiles={Number.MAX_SAFE_INTEGER}
             onFiles={addFiles}
-            title="Source PDF"
+            title={t("mediaSourcePdf")}
           />
         )}
         {inputIssue && (
           <Alert className="mx-4 mb-3 w-auto" variant="destructive">
-            <AlertTitle>PDF not added</AlertTitle>
+            <AlertTitle>{t("mediaPdfNotAdded")}</AlertTitle>
             <AlertDescription>{inputIssue}</AlertDescription>
           </Alert>
         )}
         {!file && (
           <Caption className="shrink-0 px-4 pb-4 text-muted-foreground">
-            Password-protected PDFs are not supported. Remove the password before adding your file.
+            {t("mediaPasswordProtectedPdfsAreNotSupportedRemove")}
           </Caption>
         )}
       </div>
@@ -421,7 +440,7 @@ export function PdfFileWorkspace({
         )}
         {plan.error && (
           <Alert variant="destructive">
-            <AlertTitle>Check your settings</AlertTitle>
+            <AlertTitle>{t("mediaCheckYourSettings")}</AlertTitle>
             <AlertDescription>{plan.error}</AlertDescription>
           </Alert>
         )}
@@ -436,7 +455,7 @@ export function PdfFileWorkspace({
           </Button>
         )}
         <WorkspaceSurface
-          title="Processed output"
+          title={t("mediaProcessedOutput")}
           purpose="result"
           variant="card"
           className="shrink-0"
@@ -450,9 +469,9 @@ export function PdfFileWorkspace({
                 variant="toolbar"
                 label={
                   primaryOutput.mime === "application/zip"
-                    ? "Download ZIP"
+                    ? t("mediaDownloadZip")
                     : resultVariant === "action" && primaryOutput.mime === "application/pdf"
-                      ? "Download PDF"
+                      ? t("mediaDownloadPdf")
                       : undefined
                 }
               />
@@ -465,7 +484,7 @@ export function PdfFileWorkspace({
             {props.running ? (
               <>
                 <P>{props.spec.labels.running}</P>
-                <Muted>{props.progress?.stage ?? "Preparing the document."}</Muted>
+                <Muted>{props.progress?.stage ?? t("mediaPreparingDocument")}</Muted>
                 {props.primaryAction?.onCancel && (
                   <Button
                     className="self-start"
@@ -475,42 +494,42 @@ export function PdfFileWorkspace({
                     }}
                     variant="secondary"
                   >
-                    Cancel
+                    {t("cancel")}
                   </Button>
                 )}
               </>
             ) : props.error ? (
               <>
-                <P className="text-destructive">Unable to {actionLabel.toLowerCase()}</P>
-                <Muted>{props.error} Check the settings and try again, or replace the PDF.</Muted>
+                <P className="text-destructive">{t("mediaActionFailed", { action: actionLabel })}</P>
+                <Muted>{t("mediaPdfActionRetry", { error: props.error })}</Muted>
               </>
             ) : cancelled ? (
               <>
-                <P>Processing cancelled</P>
-                <Muted>Your PDF and settings are kept. Choose {actionLabel} to try again.</Muted>
+                <P>{t("mediaProcessingCancelled")}</P>
+                <Muted>{t("mediaPdfKeptRetry", { action: actionLabel })}</Muted>
               </>
             ) : outputReady ? (
               <>
-                <P>{pdfCount > 1 ? `${pdfCount} PDFs are ready to download.` : "Your file is ready to download."}</P>
+                <P>{pdfCount > 1 ? t("mediaPdfsReady", { count: pdfCount }) : t("mediaDownloadReady")}</P>
                 {primaryOutput && (
                   <Muted className="break-words">
                     {primaryOutput.name} · {(primaryOutput.size / 1024).toFixed(1)} KiB
                   </Muted>
                 )}
-                <Muted>Your original PDF is unchanged.</Muted>
+                <Muted>{t("mediaYourOriginalPdfIsUnchanged")}</Muted>
               </>
             ) : !reason && plan.summary ? (
               <>
                 <P>{plan.summary.title}</P>
                 <div className="text-sm text-muted-foreground">{plan.summary.detail}</div>
-                <Muted>Choose {actionLabel} to create the processed file.</Muted>
+                <Muted>{t("mediaCreateProcessed", { action: actionLabel })}</Muted>
               </>
             ) : (
-              <Muted>{plan.error ? "Check your settings above." : reason} The processed file will appear here.</Muted>
+              <Muted>{t("mediaProcessedHint", { reason: plan.error ? t("mediaCheckAbove") : (reason ?? "") })}</Muted>
             )}
             {canDownload && (props.error || cancelled) && (
               <>
-                <Muted>Your previous output is still available to download.</Muted>
+                <Muted>{t("mediaYourPreviousOutputIsStillAvailableTo")}</Muted>
                 {primaryOutput && (
                   <Muted className="break-words">
                     {primaryOutput.name} · {(primaryOutput.size / 1024).toFixed(1)} KiB
@@ -520,7 +539,10 @@ export function PdfFileWorkspace({
             )}
           </div>
           {canDownload && outputs.some((output) => output !== primaryOutput) && (
-            <section aria-label={`${props.spec.name} results`} className="grid min-w-0 border-t border-border">
+            <section
+              aria-label={t("mediaNamedResults", { name: props.spec.name })}
+              className="grid min-w-0 border-t border-border"
+            >
               {outputs
                 .filter((output) => output !== primaryOutput)
                 .map((output) => (
@@ -529,7 +551,7 @@ export function PdfFileWorkspace({
                     key={output.id}
                     icon={<FileText aria-hidden="true" />}
                     name={output.name}
-                    metadata={`${output.mime === "application/zip" ? "ZIP archive" : "PDF"} · ${(output.size / 1024).toFixed(1)} KiB`}
+                    metadata={`${output.mime === "application/zip" ? t("mediaZipArchive") : "PDF"} · ${(output.size / 1024).toFixed(1)} KiB`}
                     action={<ArtifactDownloadButton file={output} variant="toolbar" />}
                   />
                 ))}
@@ -541,8 +563,8 @@ export function PdfFileWorkspace({
       <MediaPreview
         open={expanded}
         onOpenChange={setExpanded}
-        title={file?.name ?? "Source PDF"}
-        description={`Original PDF · Page ${currentPage} of ${pages.length}`}
+        title={file?.name ?? t("mediaSourcePdf")}
+        description={t("mediaOriginalPdfPosition", { page: currentPage, count: pages.length })}
         viewportClassName="bg-card p-0 text-foreground sm:p-0"
       >
         {viewer(true)}

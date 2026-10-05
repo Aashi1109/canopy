@@ -21,7 +21,7 @@ test("inspection and page selection keep crop defaults within fractional page bo
   expect(onPagesInspected(previews)).toEqual({ pages: "all", cropWidth: 595, cropHeight: 841 });
   const box = { pages: "all", cropX: 10, cropY: 10, cropWidth: 595, cropHeight: 841 };
   expect(onSettingsChanged(box, previews)).toEqual({ cropWidth: 585, cropHeight: 831 });
-  expect(validate({ ...box, cropX: 0.5 })).toMatch(/whole-number/);
+  expect(validate({ ...box, cropX: 0.5 }).message).toMatch(/whole-number/);
   expect(validate(box)).toBe(null);
 });
 

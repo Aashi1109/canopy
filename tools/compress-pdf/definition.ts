@@ -1,6 +1,31 @@
+import { MEDIA_FILE_ERROR_MESSAGES, MEDIA_PDF_ERROR_MESSAGES } from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "workspace.options": "Compression settings",
+    "workspace.strongLimit":
+      "Strong Compression supports up to 200 pages and 50 MiB. Use Preserve Document for this PDF.",
+    "workspace.pagesCompressed": "{count, plural, one {# page will be compressed} other {# pages will be compressed}}",
+    "workspace.strongWarning":
+      "Pages become images. Selectable text, links, forms, and accessibility information will be lost.",
+    "workspace.preserved":
+      "Document content is preserved. The resulting file may not be smaller if it is already optimized.",
+    "progress.inspectingPdf": "Inspecting PDF",
+    "progress.loadingQpdf": "Loading qpdf",
+    "progress.compressionComplete": "Compression complete",
+    "progress.rebuildingFlattenedPage": "Rebuilding flattened page",
+    "progress.pageComplete": "Page complete",
+
+    "readiness.confirmContentLoss": "Confirm the document-content loss before using Strong Compression.",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_PDF_ERROR_MESSAGES,
+    "errors.noFiles": "Choose a PDF to compress.",
+    "errors.fileTooLarge": "Strong Compression supports PDFs up to 50 MiB.",
+    "recovery.fileTooLarge": "Choose Preserve Document for PDFs up to 100 MiB, or use a smaller file.",
+    "errors.confirmationRequired": "Confirm Strong Compression before processing.",
+  },
   toolId: "media.compress-pdf",
   app: "media",
   category: "pdf-optimization",

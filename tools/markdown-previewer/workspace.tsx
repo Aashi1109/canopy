@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -24,6 +25,7 @@ function MarkdownExportActions({
   settings: WorkspaceProps["settings"];
   client: ReturnType<typeof createMarkdownHighlightClient>;
 }) {
+  const toolText = useToolTranslations("Tool.runtime");
   const [pending, setPending] = useState<"copy" | "download" | null>(null);
   const active = useRef(true);
   const prepared = useRef<Promise<string> | undefined>(undefined);
@@ -57,7 +59,7 @@ function MarkdownExportActions({
         }
         if (active.current) {
           trackToolEvent("result_copy", toolKey);
-          toast.success("HTML copied.");
+          toast.success(toolText("workspace.html_copied_f641d9"));
         }
       } else {
         const html = await checkedContent;
@@ -66,7 +68,7 @@ function MarkdownExportActions({
     } catch (error) {
       prepared.current = undefined;
       if (active.current && !(error instanceof DOMException && error.name === "AbortError")) {
-        toast.error(`Could not ${action} the HTML. Try again.`);
+        toast.error(toolText(action === "copy" ? "export.copyFailed" : "export.downloadFailed"));
       }
     } finally {
       if (active.current) setPending(null);
@@ -81,7 +83,7 @@ function MarkdownExportActions({
         loading={pending === "copy"}
         onClick={() => void exportDocument("copy")}
       >
-        {pending === "copy" ? "Preparing…" : "Copy"}
+        {pending === "copy" ? toolText("workspace.preparing_5d1fa3") : toolText("workspace.copy_e21f93")}
       </ToolActionButton>
       <ToolActionButton
         action="download"
@@ -89,7 +91,7 @@ function MarkdownExportActions({
         loading={pending === "download"}
         onClick={() => void exportDocument("download")}
       >
-        {pending === "download" ? "Preparing…" : "Download"}
+        {pending === "download" ? toolText("workspace.preparing_5d1fa3") : toolText("workspace.download_d6eafe")}
       </ToolActionButton>
     </>
   );

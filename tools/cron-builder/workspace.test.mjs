@@ -40,7 +40,7 @@ function Fixture({ disabled = false }) {
 test("cron builder edits the schedule and copies the actual expression and description", async () => {
   const writeText = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
-  const { container } = await mountTool(React.createElement(Fixture));
+  const { container } = await mountTool(React.createElement(Fixture), { spec: definition });
   assert.equal(field("Minute").value, "0");
   await fill(field("Hour"), "14");
   await fill(field("Minute"), "30");
@@ -51,7 +51,7 @@ test("cron builder edits the schedule and copies the actual expression and descr
 });
 
 test("cron builder exposes a field error for invalid minutes and recovers after correction", async () => {
-  const { container } = await mountTool(React.createElement(Fixture));
+  const { container } = await mountTool(React.createElement(Fixture), { spec: definition });
   const minute = field("Minute");
   await fill(minute, "60");
   assert.equal(minute.getAttribute("aria-invalid"), "true");
@@ -68,7 +68,7 @@ test("cron builder exposes a field error for invalid minutes and recovers after 
 });
 
 test("cron builder opens syntax help and disables all schedule inputs while unavailable", async () => {
-  const view = await mountTool(React.createElement(Fixture));
+  const view = await mountTool(React.createElement(Fixture), { spec: definition });
   await click(button("Syntax help"));
   assert.ok(view.container.textContent.includes("At minutes 0, 15, 30 and 45"));
   await view.rerender(React.createElement(Fixture, { disabled: true }));

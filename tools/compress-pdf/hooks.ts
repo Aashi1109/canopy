@@ -20,5 +20,8 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
  */
 export const validate: ToolValidate<Settings> = (settings) =>
   settings.mode === "strong" && settings.confirmed !== true
-    ? "Confirm the document-content loss before using Strong Compression."
+    ? {
+        message: "Confirm the document-content loss before using Strong Compression.",
+        messageRef: { key: "readiness.confirmContentLoss" },
+      }
     : null;

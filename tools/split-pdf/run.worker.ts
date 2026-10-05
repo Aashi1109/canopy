@@ -27,9 +27,10 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files?.[0];
-  if (!input) throw new ToolError("no-files", "Choose a PDF to split.");
+  if (!input)
+    throw new ToolError("no-files", "Choose a PDF to split.", undefined, { messageRef: { key: "errors.noFiles" } });
   const selection = validatePdfSelection(ctx.input.files.map((file) => ({ size: file.size })));
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
   for (const file of ctx.input.files) await validatePdfInput(file);
 
   const { PDFDocument } = await import("pdf-lib");
@@ -37,14 +38,19 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const count = source.getPageCount();
   enforcePageLimit(input, count, false);
   const groups = splitPageGroups(ctx.settings, count);
-  if (!groups.length) throw new ToolError("empty-range", "Choose at least one page range.");
+  if (!groups.length)
+    throw new ToolError("empty-range", "Choose at least one page range.", undefined, {
+      messageRef: { key: "errors.emptyRange" },
+    });
 
   const outputs: StoredToolArtifact[] = [];
   for (let index = 0; index < groups.length; index += 1) {
     ctx.signal.throwIfAborted();
     const pages = checkedPages(groups[index], count);
     const document = await PDFDocument.create();
-    await addCopiedPagesWithProgress(document, source, pages, "Creating split PDF", ctx.progress);
+    await addCopiedPagesWithProgress(document, source, pages, "Creating split PDF", ctx.progress, {
+      key: "progress.creatingSplitPdf",
+    });
     outputs.push(
       await ctx.writeArtifact({
         name: createOutputFilename(input.name, "pdf", `part-${String(index + 1).padStart(2, "0")}`),

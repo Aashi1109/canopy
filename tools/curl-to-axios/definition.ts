@@ -1,6 +1,29 @@
+import {
+  CURL_EXECUTION_MESSAGES,
+  ENCODING_EXECUTION_MESSAGES,
+  INPUT_EXECUTION_MESSAGES,
+} from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CURL_EXECUTION_MESSAGES,
+    ...ENCODING_EXECUTION_MESSAGES,
+    ...INPUT_EXECUTION_MESSAGES,
+    "curl.flagsNotConverted": "Some cURL flags were not converted",
+    "curl.unsupportedFlags": "Unsupported cURL flags were ignored: {flags}.",
+    "workspace.unable_to_convert_54606f": "Unable to convert",
+    "workspace.output_language_bf3bcc": "Output language",
+    "workspace.javascript_b27ad0": "JavaScript",
+    "workspace.typescript_ed0504": "TypeScript",
+    "workspace.module_format_ba8e98": "Module format",
+    "workspace.no_import_18a0da": "No import",
+    "workspace.es_module_import_9044c4": "ES module import",
+    "workspace.commonjs_require_190f0a": "CommonJS require",
+    "workspace.request_style_71ed43": "Request style",
+    "workspace.loadExample": "Load example",
+    "workspace.aliases": "Aliases",
+  },
   toolId: "devtools.curl-to-axios",
   app: "devtools",
   category: "jwt-api-tools",

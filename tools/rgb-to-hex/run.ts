@@ -9,7 +9,9 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 function parseRgbColor(input: string): RgbColor {
   if (!/^rgba?\(/i.test(input.trim()))
-    throw new ToolError("syntax", "Enter rgb() or rgba(), using commas or spaces with / alpha.");
+    throw new ToolError("syntax", "Enter rgb() or rgba(), using commas or spaces with / alpha.", undefined, {
+      messageRef: { key: "rgb.functionRequired" },
+    });
   return parseColor(input);
 }
 
@@ -43,6 +45,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         line: line.line,
         message: `"${line.input}": ${error.message}`,
         target: "input",
+        messageRef: error instanceof ToolError ? error.details?.messageRef : undefined,
       });
     }
   }

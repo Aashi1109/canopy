@@ -1,6 +1,17 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "errors.inputRequired": "URL or query string is required.",
+    "errors.enterValue": "Enter a value and try again.",
+    "errors.queryInvalid": "URL or query string is invalid.",
+    "errors.queryRecovery": "Paste a complete URL, or just the part after the ? on its own.",
+    "result.parameter": "Parameter",
+    "result.value": "Value",
+    "result.empty": "No query parameters to display",
+    "result.emptyValues": "All parameter values are blank. Turn on Keep empty values to include them.",
+    "result.noParameters": "This input has no query parameters. Raw contains an empty JSON object.",
+  },
   toolId: "devtools.url-query-parser",
   sharing: { version: 1 },
   app: "devtools",

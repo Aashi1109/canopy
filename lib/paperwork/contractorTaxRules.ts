@@ -4,6 +4,14 @@ export const W9_REQUEST_DISCLAIMER =
 export const NEC_INTERNAL_REPORT_DISCLAIMER =
   "This is an internal tracking report, not a fileable Form 1099-NEC or Copy A. Do not submit it to the IRS.";
 
+export const W9_REQUEST_DISCLAIMER_MESSAGE = { key: "w9.requestDisclaimer" } as const;
+export const NEC_INTERNAL_REPORT_DISCLAIMER_MESSAGE = { key: "nec.reportDisclaimer" } as const;
+
+type ContractorIssueMessage = {
+  key: string;
+  values: Record<string, string | number>;
+};
+
 export interface RecipientAnnualAdjustment {
   vendorId: string;
   cashTips: number;
@@ -37,7 +45,9 @@ export interface W9RequestInput {
 
 export function get1099ReportingRule(
   year: number,
-): { supported: true; year: number; threshold: number } | { supported: false; year: number; error: string } {
+):
+  | { supported: true; year: number; threshold: number }
+  | { supported: false; year: number; error: string; errorMessage: ContractorIssueMessage } {
   if (year <= 2025) {
     return { supported: true, year, threshold: 600 };
   }
@@ -48,6 +58,7 @@ export function get1099ReportingRule(
     supported: false,
     year,
     error: `1099-NEC rules update required for ${year}.`,
+    errorMessage: { key: "nec.validation.rulesUpdateRequired", values: { year } },
   };
 }
 
@@ -89,9 +100,12 @@ export function calculateNecSummary(draft: NecRuleDraft, knownVendorIds: readonl
     ...new Set(draft.payments.map((payment) => payment.vendorId).filter((vendorId) => !knownVendors.has(vendorId))),
   ];
   const rule = get1099ReportingRule(draft.reportingYear);
-  const issues = missingVendorIds.map((vendorId) => `Payment references missing vendor "${vendorId}".`);
+  const issueEntries: Array<{ text: string; message: ContractorIssueMessage }> = missingVendorIds.map((vendorId) => ({
+    text: `Payment references missing vendor "${vendorId}".`,
+    message: { key: "nec.validation.missingVendor", values: { vendorId } },
+  }));
   if ("error" in rule) {
-    issues.unshift(rule.error);
+    issueEntries.unshift({ text: rule.error, message: rule.errorMessage });
   }
 
   const boxTotals = draft.recipientAdjustments.reduce(
@@ -113,7 +127,8 @@ export function calculateNecSummary(draft: NecRuleDraft, knownVendorIds: readonl
 
   return {
     rule,
-    issues,
+    issues: issueEntries.map((issue) => issue.text),
+    issueMessages: issueEntries.map((issue) => issue.message),
     missingVendorIds,
     vendorTotals,
     totalPayments,

@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 import { useEffect, useId } from "react";
 
@@ -13,6 +14,7 @@ const REQUEST_STYLES = [
 ] as const;
 
 export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const languageId = useId();
   const moduleId = useId();
   const moduleFormat = typeof props.settings.moduleFormat === "string" ? props.settings.moduleFormat : "none";
@@ -20,15 +22,15 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
   const requestStyle = typeof props.settings.requestStyle === "string" ? props.settings.requestStyle : "config";
 
   useEffect(() => {
-    props.onToolbarActionsChange?.({ exampleLabel: "Load example" });
+    props.onToolbarActionsChange?.({ exampleLabel: toolText("workspace.loadExample") });
     return () => props.onToolbarActionsChange?.(null);
-  }, [props.onToolbarActionsChange]);
+  }, [props.onToolbarActionsChange, toolText]);
 
   useEffect(() => {
     if (!props.error) return;
-    const notification = toast.error("Unable to convert", { description: props.error });
+    const notification = toast.error(toolText("workspace.unable_to_convert_54606f"), { description: props.error });
     return () => toast.dismiss(notification);
-  }, [props.error]);
+  }, [props.error, toolText]);
 
   return (
     <ToolWorkspace
@@ -38,7 +40,7 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
       resultHeaderActions={
         <>
           <FieldLabel className="sr-only" htmlFor={languageId}>
-            Output language
+            {toolText("workspace.output_language_bf3bcc")}
           </FieldLabel>
           <Select
             className="w-36"
@@ -48,8 +50,8 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
             size="xs"
             value={outputLanguage}
           >
-            <option value="javascript">JavaScript</option>
-            <option value="typescript">TypeScript</option>
+            <option value="javascript">{toolText("workspace.javascript_b27ad0")}</option>
+            <option value="typescript">{toolText("workspace.typescript_ed0504")}</option>
           </Select>
         </>
       }
@@ -60,21 +62,25 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
       renderSettings={() => (
         <>
           <div className="grid gap-1.5">
-            <FieldLabel htmlFor={moduleId}>Module format</FieldLabel>
+            <FieldLabel htmlFor={moduleId}>{toolText("workspace.module_format_ba8e98")}</FieldLabel>
             <Select
               disabled={props.disabled}
               id={moduleId}
               onChange={(event) => props.onSettingChange("moduleFormat", event.currentTarget.value)}
               value={moduleFormat}
             >
-              <option value="none">No import</option>
-              <option value="esm">ES module import</option>
-              <option value="commonjs">CommonJS require</option>
+              <option value="none">{toolText("workspace.no_import_18a0da")}</option>
+              <option value="esm">{toolText("workspace.es_module_import_9044c4")}</option>
+              <option value="commonjs">{toolText("workspace.commonjs_require_190f0a")}</option>
             </Select>
           </div>
           <SegmentedControl
-            aria-label="Request style"
-            items={REQUEST_STYLES.map((item) => ({ ...item, disabled: props.disabled }))}
+            aria-label={toolText("workspace.request_style_71ed43")}
+            items={REQUEST_STYLES.map((item) => ({
+              ...item,
+              label: item.value === "alias" ? toolText("workspace.aliases") : item.label,
+              disabled: props.disabled,
+            }))}
             onValueChange={(value) => props.onSettingChange("requestStyle", value)}
             size="field"
             value={requestStyle}

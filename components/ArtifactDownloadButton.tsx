@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useEffect, useState } from "react";
 import { Button, ToolActionButton, toast } from "@/components/ui/index.tsx";
@@ -6,6 +7,7 @@ import { Download } from "lucide-react";
 import { readArtifact, type StoredToolArtifact } from "@/lib/tool-framework/artifacts";
 
 export function useFileDownload(file: StoredToolArtifact) {
+  const t = useTranslations("Workbench");
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string>();
   async function download() {
@@ -23,7 +25,7 @@ export function useFileDownload(file: StoredToolArtifact) {
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
-      setError("Download unavailable. Retry, or convert the source again.");
+      setError(t("mediaArtifactDownloadFailed"));
     } finally {
       setDownloading(false);
     }
@@ -33,7 +35,7 @@ export function useFileDownload(file: StoredToolArtifact) {
 
 export function ArtifactDownloadButton({
   file,
-  label = "Download",
+  label: labelProp,
   size,
   variant = "button",
   disabled = false,
@@ -44,6 +46,8 @@ export function ArtifactDownloadButton({
   variant?: "button" | "toolbar";
   disabled?: boolean;
 }) {
+  const t = useTranslations("Workbench");
+  const label = labelProp ?? t("download");
   const { download, downloading, error } = useFileDownload(file);
   useEffect(() => {
     if (variant === "toolbar" && error) toast.error(error);
@@ -52,12 +56,12 @@ export function ArtifactDownloadButton({
     return (
       <ToolActionButton
         action="download"
-        aria-label={`${error ? "Retry download" : label} ${file.name}`}
+        aria-label={t("mediaFileAction", { action: error ? t("mediaRetryDownloadAction") : label, name: file.name })}
         disabled={disabled || downloading}
         loading={downloading}
         onClick={() => void download()}
       >
-        {downloading ? "Preparing…" : error ? "Retry download" : label}
+        {downloading ? t("preparing") : error ? t("mediaRetryDownloadAction") : label}
       </ToolActionButton>
     );
   }
@@ -65,12 +69,12 @@ export function ArtifactDownloadButton({
     <div className="flex flex-col items-end gap-1">
       <Button
         size={size}
-        aria-label={`${error ? "Retry download" : label} ${file.name}`}
+        aria-label={t("mediaFileAction", { action: error ? t("mediaRetryDownloadAction") : label, name: file.name })}
         disabled={disabled || downloading}
         onClick={() => void download()}
       >
         <Download aria-hidden="true" />
-        {downloading ? "Preparing…" : error ? "Retry download" : label}
+        {downloading ? t("preparing") : error ? t("mediaRetryDownloadAction") : label}
       </Button>
       {error && (
         <p className="max-w-48 text-sm text-destructive" role="alert">

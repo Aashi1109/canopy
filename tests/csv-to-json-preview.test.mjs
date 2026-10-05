@@ -54,8 +54,8 @@ for (const streaming of [false, true]) {
     );
     expect(streaming ? result.sections[0].body.files[0].name : result.downloadName).toBe("data.json");
     expect(result.stats).toEqual([
-      { label: "Rows", value: "2" },
-      { label: "Columns", value: "2" },
+      { label: "Rows", labelMessage: { key: "csv.rows" }, value: "2" },
+      { label: "Columns", labelMessage: { key: "csv.columns" }, value: "2" },
     ]);
   });
 

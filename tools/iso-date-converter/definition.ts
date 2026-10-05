@@ -1,6 +1,19 @@
+import { DATE_EXECUTION_MESSAGES, INPUT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...DATE_EXECUTION_MESSAGES,
+    ...INPUT_EXECUTION_MESSAGES,
+    "execution.format": "Format",
+    "execution.value": "Value",
+    "execution.displayUtc": "Display (UTC)",
+    "execution.local": "Local",
+    "execution.withUtc":
+      "ISO: {iso}\nUTC: {utc}\n{display, select, utc {Display (UTC)} local {Local} other {Local}}: {readable}\nUnix: {unix}",
+    "execution.withoutUtc":
+      "ISO: {iso}\n{display, select, utc {Display (UTC)} local {Local} other {Local}}: {readable}\nUnix: {unix}",
+  },
   toolId: "devtools.iso-date-converter",
   app: "devtools",
   category: "date-time-tools",

@@ -1,6 +1,14 @@
+import { INPUT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+    "execution.match": "Match",
+    "execution.noMatch": "No match",
+    "execution.errors.hash-invalid": "Bcrypt hash is invalid.",
+    "execution.recovery.hash-invalid": "Paste the whole stored hash, including the $2b$ prefix and cost.",
+  },
   toolId: "devtools.bcrypt-compare",
   app: "devtools",
   category: "hashing-crypto",
