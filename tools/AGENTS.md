@@ -116,8 +116,11 @@ branch on a translated label.
 When adding or changing message keys, run the English translation backfill before
 deploying the adapter. It preserves existing edits, removes retired source keys,
 and drafts incompatible translations. Admin's existing translation editor picks
-up the current contract automatically; no per-tool editor or locale files are
-needed. See `db/migration/0003-tool-translations/README.md` for rollout commands.
+up the current contract automatically; no per-tool editor is needed. Each tool's
+`translations.json` is an exported snapshot for review and database migration,
+not a runtime dictionary. Refresh snapshots explicitly after database edits;
+normal seeding must not overwrite authored translations from these files. See
+`db/migration/0003-tool-translations/README.md` for rollout commands.
 
 ## Identity and Resolution
 

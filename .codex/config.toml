@@ -8,3 +8,15 @@ config_file = "agents/ui-validator.toml"
 [agents.end_user_validator]
 description = "Pencil .pen UI designs only: read-only end-user flow validation covering operation fit, novice feasibility, feedback, recovery, and complete handoff. Never use for application code changes or browser validation."
 config_file = "agents/end-user-validator.toml"
+
+[agents.canopy_content_mapper]
+description = "Read-only evidence mapper for a Canopy tool: effective content, behavior, locales, routes, and metadata. Run before shared SEO and translation reviews."
+config_file = "agents/canopy-content-mapper.toml"
+
+[agents.translation_validator]
+description = "Read-only translation and proposal validator: coverage, factual and linguistic accuracy, ICU/runtime safety, and rendering evidence. Does not do SEO."
+config_file = "agents/translation-validator.toml"
+
+[agents.seo_auditor]
+description = "Read-only SEO reviewer: locale search intent, useful content, keywords, metadata, technical SEO, and rechecking proposed copy. Does not certify translations."
+config_file = "agents/seo-auditor.toml"

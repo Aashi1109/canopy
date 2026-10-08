@@ -10,6 +10,7 @@
     "dev": "pnpm run prepare:vendor && next dev -p 3000",
     "db:migrate": "node db/scripts/migrate.mjs",
     "db:seed": "node scripts/seed.mjs",
+    "db:translations": "node db/scripts/tool-translations.mjs",
     "tool:new": "node scripts/new-tool.mjs",
     "admin:promote": "node db/scripts/promote-admin.mjs",
     "build": "pnpm run prepare:vendor && tsc --noEmit && next build --webpack",
