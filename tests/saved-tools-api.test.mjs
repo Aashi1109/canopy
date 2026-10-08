@@ -2,7 +2,19 @@ import { afterAll, beforeEach, expect, test, vi } from "vitest";
 
 const previousAppUrl = process.env.APP_URL;
 const state = vi.hoisted(() => {
-  const shared = { session: null, ids: [], calls: [], failure: false, captured: [] };
+  const shared = {
+    session: null,
+    ids: [],
+    calls: [],
+    failure: false,
+    captured: [],
+    adminLoads: 0,
+    catalogReads: 0,
+    sessionGate: undefined,
+    catalogGate: undefined,
+    savedGate: undefined,
+    catalogStarted: undefined,
+  };
   globalThis.__savedToolsApiTest = shared;
   return shared;
 });
@@ -11,36 +23,46 @@ vi.mock("@sentry/core", () => ({
   captureException: (error) => state.captured.push(error),
 }));
 vi.mock("@/lib/auth/session.ts", () => ({
-  getSession: async () => state.session,
+  getSession: async (_headers, options) => {
+    await state.sessionGate;
+    if (state.session && options?.includeAdmin !== false) state.adminLoads++;
+    return state.session;
+  },
 }));
 vi.mock("@/lib/tool-framework/catalog", () => ({
-  getPublicTools: async () => [
-    {
-      toolId: "devtools.json-formatter",
-      name: "JSON Formatter",
-      href: "/devtools/json-formatter",
-      category: "JSON",
-      keywords: ["json"],
-    },
-    {
-      toolId: "paperwork.invoice-generator",
-      name: "Invoice Generator",
-      href: "/paperwork/invoice-generator",
-      category: "Documents",
-      keywords: ["billing"],
-    },
-    {
-      toolId: "media.crop-image",
-      name: "Crop Image",
-      href: "/media/crop-image",
-      category: "Image Editing",
-      keywords: ["crop"],
-    },
-  ],
+  getPublicTools: async () => {
+    state.catalogReads++;
+    state.catalogStarted?.resolve();
+    await state.catalogGate;
+    return [
+      {
+        toolId: "devtools.json-formatter",
+        name: "JSON Formatter",
+        href: "/devtools/json-formatter",
+        category: "JSON",
+        keywords: ["json"],
+      },
+      {
+        toolId: "paperwork.invoice-generator",
+        name: "Invoice Generator",
+        href: "/paperwork/invoice-generator",
+        category: "Documents",
+        keywords: ["billing"],
+      },
+      {
+        toolId: "media.crop-image",
+        name: "Crop Image",
+        href: "/media/crop-image",
+        category: "Image Editing",
+        keywords: ["crop"],
+      },
+    ];
+  },
 }));
 vi.mock("@/lib/user-preferences/savedTools", () => ({
   getSavedTools: async (userId) => {
     state.calls.push(userId);
+    await state.savedGate;
     return state.ids;
   },
   changeSavedTools: async (userId, operation, ids) => {
@@ -74,6 +96,12 @@ beforeEach(() => {
   state.calls = [];
   state.failure = false;
   state.captured = [];
+  state.adminLoads = 0;
+  state.catalogReads = 0;
+  state.sessionGate = undefined;
+  state.catalogGate = undefined;
+  state.savedGate = undefined;
+  state.catalogStarted = undefined;
 });
 
 test("guest GET returns catalog without querying private preferences", async () => {
@@ -109,6 +137,65 @@ test("authenticated GET reads each account's current private preferences", async
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   }
   expect(state.calls).toEqual(["a", "b", "a"]);
+});
+
+test("saved tools reads and writes do not hydrate unrelated admin permissions", async () => {
+  state.session = { user: { id: "a", status: "active" } };
+  expect((await GET(new Request("https://app.test/api/user-preferences/saved-tools"))).status).toBe(200);
+  expect(state.adminLoads).toBe(0);
+  expect((await POST(request({ userId: "a", operation: "save", toolIds: ["devtools.json-formatter"] }))).status).toBe(
+    200,
+  );
+  expect(state.adminLoads).toBe(0);
+});
+
+test("authenticated GET loads catalog and private preferences concurrently after session validation", async () => {
+  state.session = { user: { id: "a", status: "active" } };
+  state.ids = ["media.crop-image"];
+  const session = Promise.withResolvers();
+  const catalog = Promise.withResolvers();
+  const saved = Promise.withResolvers();
+  state.sessionGate = session.promise;
+  state.catalogGate = catalog.promise;
+  state.savedGate = saved.promise;
+  state.catalogStarted = Promise.withResolvers();
+  let settled = false;
+  const pending = GET(new Request("https://app.test/api/user-preferences/saved-tools")).then((response) => {
+    settled = true;
+    return response;
+  });
+  try {
+    await Promise.resolve();
+    expect(state.catalogReads).toBe(0);
+    expect(state.calls, "private data waits for session validation").toEqual([]);
+    session.resolve();
+    await state.catalogStarted.promise;
+    expect(state.calls, "preference loading starts before the catalog resolves").toEqual(["a"]);
+    catalog.resolve();
+    await Promise.resolve();
+    expect(settled, "the response still waits for private preferences").toBe(false);
+    saved.resolve();
+    const response = await pending;
+    const data = await response.json();
+    expect(data.userId).toBe("a");
+    expect(data.savedTools).toEqual(["media.crop-image"]);
+    expect(data.tools.length).toBe(3);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+  } finally {
+    session.resolve();
+    catalog.resolve();
+    saved.resolve();
+    await pending;
+  }
+});
+
+test("suspended GET cannot start catalog or private preference reads", async () => {
+  state.session = { user: { id: "a", status: "suspended" } };
+  const response = await GET(new Request("https://app.test/api/user-preferences/saved-tools"));
+  expect(response.status).toBe(403);
+  expect(state.catalogReads).toBe(0);
+  expect(state.calls).toEqual([]);
+  expect(response.headers.get("cache-control")).toBe("private, no-store");
 });
 
 test("writes require auth and reject cross-origin callers", async () => {

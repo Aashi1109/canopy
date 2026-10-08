@@ -101,15 +101,20 @@ test("Node database consumers reuse a bounded pool through queries, transactions
   process.env.DATABASE_URL = "postgres://localhost/test";
   process.env.DATABASE_POOL_MAX = "4";
   try {
+    const separateRuntime = await import("@/db/runtime.ts?separate-bundle");
+    const separateDb = separateRuntime.createDatabase({});
     const ids = await Promise.all([
       query(),
       query(otherDb),
+      query(separateDb),
       sqlClient.query("select 1").then((r) => r.rows[0].clientId),
+      separateRuntime.sqlClient.query("select 1").then((r) => r.rows[0].clientId),
     ]);
-    expect(new Set(ids).size, "concurrent consumers share one pool").toBe(1);
+    expect(new Set(ids).size, "concurrent consumers in separate server bundles share one pool").toBe(1);
     expect(clients.length).toBe(1);
     const client = clients[0];
     expect(db.$client).toBe(otherDb.$client);
+    expect(db.$client).toBe(separateDb.$client);
     expect(client.url).toBe(process.env.DATABASE_URL);
     expect(client.options.max).toBe(4);
     expect(client.options.idleTimeoutMillis).toBe(20_000);
@@ -162,6 +167,32 @@ test("Node database consumers reuse a bounded pool through queries, transactions
     expect(await query(), "database method overrides remain supported").toBe("replacement");
     db.execute = execute;
     expect(await query()).toBe(ids[0]);
+
+    process.env.DATABASE_URL = "postgres://localhost/reconfigured";
+    const reloadedRuntime = await import("@/db/runtime.ts?env-reload");
+    const reloadedDb = reloadedRuntime.createDatabase({});
+    const afterUrlChange = await Promise.all([query(), query(separateDb), query(reloadedDb)]);
+    expect(new Set(afterUrlChange).size, "old and reloaded database wrappers use the same replacement pool").toBe(1);
+    expect(afterUrlChange[0]).not.toBe(ids[0]);
+    expect(clients.length).toBe(2);
+    expect(clients[0].closed, "a replaced pool is closed").toBe(true);
+    expect(clients[1].url).toBe("postgres://localhost/reconfigured");
+    expect(db.$client).toBe(reloadedDb.$client);
+
+    process.env.DATABASE_POOL_MAX = "2";
+    expect(await query()).not.toBe(afterUrlChange[0]);
+    expect(clients.length).toBe(3);
+    expect(clients[1].closed).toBe(true);
+    expect(clients[2].options.max).toBe(2);
+    expect(await query(separateDb)).toBe(clients[2].id);
+    expect(clients.length, "unchanged connection settings keep reusing the pool").toBe(3);
+
+    vi.spyOn(clients[2], "end").mockRejectedValueOnce(new Error("private connection detail"));
+    const warnings = vi.spyOn(console, "error").mockImplementation(() => {});
+    process.env.DATABASE_POOL_MAX = "3";
+    expect(await query(), "a failed old-pool close does not prevent replacement queries").toBe(4);
+    expect(warnings.mock.calls).toEqual([["Replaced database pool failed to close."]]);
+    warnings.mockRestore();
   } finally {
     await sqlClient.end();
     if (originalUrl === undefined) delete process.env.DATABASE_URL;

@@ -5,6 +5,10 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { ResultSurface } from "../components/ResultSurface.tsx";
 
+vi.mock("../components/content/SyntaxHighlight.tsx", () => {
+  throw new Error("The optional highlighting chunk could not be downloaded.");
+});
+
 const IMAGE_URL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 const spec = {
   capabilities: { copy: true, download: true },
@@ -138,4 +142,23 @@ test("retained file results cannot download a stale output", async () => {
   expect(buttons().every((item) => item.disabled)).toBe(true);
   for (const action of buttons()) await act(() => action.click());
   expect(downloads).toEqual([]);
+});
+
+test("a failed highlighting download preserves exact code, copy, download, and subsequent results", async () => {
+  const code = '<script>const value = "<safe>&";</script>\n  // keep indentation';
+  await render({ render: "text", text: code, language: "html", downloadName: "result.html" });
+  expect(container.querySelector("pre")?.textContent).toBe(code);
+  expect(container.querySelector("script")).toBeNull();
+
+  await act(() => button("Copy all").click());
+  expect(writeText).toHaveBeenCalledExactlyOnceWith(code);
+  await act(() => button("Download .html").click());
+  expect(downloads).toEqual([{ name: "result.html", href: "blob:test-1" }]);
+  expect(await blobs[0].text()).toBe(code);
+
+  const replacement = 'const next = "still usable";';
+  await render({ render: "text", text: replacement, language: "javascript", downloadName: "next.js" });
+  expect(container.querySelector("pre")?.textContent).toBe(replacement);
+  await act(() => button("Copy all").click());
+  expect(writeText).toHaveBeenLastCalledWith(replacement);
 });

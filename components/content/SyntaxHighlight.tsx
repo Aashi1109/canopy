@@ -2,7 +2,7 @@
 
 import { memo, useMemo } from "react";
 
-import { highlightJson } from "@/components/JsonResultRenderer";
+import { highlightJson } from "@/components/content/jsonHighlight";
 import { CODE_HIGHLIGHT_MAX_CHARS, codeLowlight, highlightCode } from "@/lib/markdown/codeHighlight";
 import styles from "./codeHighlight.module.css";
 

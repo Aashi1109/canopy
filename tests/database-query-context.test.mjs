@@ -10,10 +10,16 @@ vi.mock("@sentry/core", () => {
   return { startInactiveSpan };
 });
 
-test("queued pool queries and checkouts retain the caller's trace context", async () => {
+test("queued pool queries retain caller context and finish during configuration reloads", async (t) => {
   const { default: pg } = await vi.importActual("pg");
+  const originalUrl = process.env.DATABASE_URL;
+  t.onTestFinished(() => {
+    if (originalUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = originalUrl;
+  });
   const context = new AsyncLocalStorage();
   const spans = [];
+  const pools = [];
   class Client extends EventEmitter {
     _queryable = true;
     _ending = false;
@@ -39,6 +45,7 @@ test("queued pool queries and checkouts retain the caller's trace context", asyn
     constructor(options) {
       // Force contention independently of the production pool size.
       super({ ...options, max: 1, Client });
+      pools.push(this);
     }
   }
   globalThis.__contextPg = { ...pg, Pool };
@@ -103,6 +110,20 @@ test("queued pool queries and checkouts retain the caller's trace context", asyn
     );
     holder.release();
     await checkout;
+
+    const active = await sqlClient.connect();
+    const previousPool = pools[0];
+    const queued = context.run("queued-before-reload", () => sqlClient.query("queued-before-reload"));
+    expect(previousPool.waitingCount).toBe(1);
+    process.env.DATABASE_URL = "postgres://localhost/reloaded-context-test";
+    expect((await sqlClient.query("after-reload")).rows[0].text).toBe("after-reload");
+    expect(pools.length).toBe(2);
+    expect(previousPool.ending, "queued requests keep their old pool available").toBe(false);
+    expect((await active.query("active-before-reload")).rows[0].text).toBe("active-before-reload");
+    active.release();
+    expect((await queued).rows[0].text).toBe("queued-before-reload");
+    expect(spans.at(-1), "queued requests retain their context across reloads").toBe("queued-before-reload");
+    await vi.waitFor(() => expect(previousPool.ended, "the replaced pool closes after draining").toBe(true));
   } finally {
     await sqlClient.end();
   }

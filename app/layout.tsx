@@ -21,6 +21,7 @@ const geist = Geist({
 
 const geistMono = Geist_Mono({
   display: "swap",
+  preload: false,
   subsets: ["latin"],
   variable: "--font-geist-mono",
 });
@@ -33,6 +34,7 @@ const funnelSans = Funnel_Sans({
 
 const caveat = Caveat({
   display: "swap",
+  preload: false,
   subsets: ["latin"],
   variable: "--font-caveat",
 });

@@ -29,13 +29,16 @@ async function bookmarkCatalog() {
 
 export async function GET(request: Request) {
   try {
-    const session = await getSession(request.headers);
+    const session = await getSession(request.headers, { includeAdmin: false });
     if (session && session.user.status !== "active")
       return json({ error: "This account cannot access saved tools." }, 403);
-    const tools = await bookmarkCatalog();
+    const [tools, savedTools] = await Promise.all([
+      bookmarkCatalog(),
+      session ? getSavedTools(session.user.id) : Promise.resolve([]),
+    ]);
     return json({
       userId: session?.user.id ?? null,
-      savedTools: session ? await getSavedTools(session.user.id) : [],
+      savedTools,
       tools,
     });
   } catch (error) {
@@ -49,7 +52,7 @@ export async function POST(request: Request) {
   if (!request.headers.get("content-type")?.startsWith("application/json"))
     return json({ error: "Expected JSON." }, 415);
   try {
-    const session = await getSession(request.headers);
+    const session = await getSession(request.headers, { includeAdmin: false });
     if (!session) return json({ error: "Your session ended. Sign in again to change account bookmarks." }, 401);
     if (session.user.status !== "active") return json({ error: "This account cannot change saved tools." }, 403);
     let body: unknown;

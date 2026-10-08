@@ -33,18 +33,34 @@ import {
 } from "@/components/ui/index.tsx";
 import { AlertTriangle, Check, Copy } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
 
 import { trackToolEvent } from "@/lib/analytics/ga4";
 import { useAnalyticsToolKey } from "@/lib/tool-runtime/useToolRuntime";
 import { DiffView } from "@/components/DiffView";
-import { JsonResultRenderer, type JsonResultView } from "@/components/JsonResultRenderer";
+import type { JsonResultView } from "@/components/JsonResultRenderer";
 import { CodeEditor } from "@/components/content/CodeEditor";
-import { SyntaxHighlight } from "@/components/content/SyntaxHighlight";
 import { SandboxedHtmlPreview } from "@/components/SandboxedHtmlPreview";
 import { GeneratedList } from "@/components/Surfaces";
 import type { ToolArtifact, ToolRender, ToolRenderKind, ToolResult } from "@/lib/tool-framework/result";
 import { readArtifact, type StoredToolArtifact } from "@/lib/tool-framework/artifacts";
+
+const JsonResultRenderer = dynamic(
+  () => import("@/components/JsonResultRenderer").then((module) => module.JsonResultRenderer),
+  {
+    loading: () => (
+      <Muted className="p-4" role="status">
+        Loading JSON result…
+      </Muted>
+    ),
+  },
+);
+const SyntaxHighlight = lazy<ComponentType<{ code: string; language: string }>>(() =>
+  import("@/components/content/SyntaxHighlight")
+    .then((module) => ({ default: module.SyntaxHighlight }))
+    // Coloring is optional; a failed chunk must not hide a usable result.
+    .catch(() => ({ default: ({ code }: { code: string; language: string }) => <>{code}</> })),
+);
 
 const MarkdownPreview = dynamic(
   () => import("@/components/content/MarkdownPreview").then((module) => module.MarkdownPreview),
@@ -612,7 +628,9 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
         <Strong>{result.metadata.title || result.resolvedUrl}</Strong>
         <Text>{result.metadata.description}</Text>
         <CodeBlock className="whitespace-pre-wrap break-words">
-          <SyntaxHighlight code={result.tags} language="html" />
+          <Suspense fallback={result.tags}>
+            <SyntaxHighlight code={result.tags} language="html" />
+          </Suspense>
         </CodeBlock>
       </div>
     </RenderFrame>
@@ -634,7 +652,13 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
           />
         ) : (
           <CodeBlock className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4">
-            {result.language ? <SyntaxHighlight code={result.text} language={result.language} /> : result.text}
+            {result.language ? (
+              <Suspense fallback={result.text}>
+                <SyntaxHighlight code={result.text} language={result.language} />
+              </Suspense>
+            ) : (
+              result.text
+            )}
           </CodeBlock>
         )}
         {result.truncated ? <TruncatedResultNotice /> : null}

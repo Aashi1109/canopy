@@ -2,10 +2,9 @@
 
 import { Overline, H3, Muted, Caption, Strong, ToolOptionsPanel } from "@/components/ui/index.tsx";
 import { ArrowDownToLine, FileSpreadsheet } from "lucide-react";
+import dynamic from "next/dynamic";
 import { type DragEvent, type ReactNode, type Ref, useEffect, useRef, useState } from "react";
 
-import { ImageConversionWorkspace } from "@/app/media/components/ImageConversionWorkspace";
-import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
 import { textInputFileIssue } from "@/components/FileInput";
 import { ResultSurface, type ResultSurfaceProps } from "@/components/ResultSurface";
 import { SettingsPanel } from "@/components/SettingsPanel";
@@ -16,6 +15,27 @@ import type { ToolResult } from "@/lib/tool-framework/result";
 import type { ToolInputSpec, ToolLayout, ToolSpec } from "@/lib/tool-framework/spec";
 import { readTextFileForEditor } from "@/lib/tool-framework/textFileInput";
 import type { ToolLifecycle } from "@/lib/tool-runtime/types";
+
+const ImageConversionWorkspace = dynamic(
+  () => import("@/app/media/components/ImageConversionWorkspace").then((module) => module.ImageConversionWorkspace),
+  {
+    loading: () => (
+      <Muted className="p-4" role="status">
+        Loading image workspace…
+      </Muted>
+    ),
+  },
+);
+const FileProcessorWorkspace = dynamic(
+  () => import("@/components/FileProcessorWorkspace").then((module) => module.FileProcessorWorkspace),
+  {
+    loading: () => (
+      <Muted className="p-4" role="status">
+        Loading file workspace…
+      </Muted>
+    ),
+  },
+);
 
 export interface WorkspaceInputState {
   readonly files: readonly File[];

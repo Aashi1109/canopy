@@ -1,7 +1,7 @@
 "use client";
 
 import { DiffWorkspace } from "@/components/DiffWorkspace";
-import { highlightJson } from "@/components/JsonResultRenderer";
+import { highlightJson } from "@/components/content/jsonHighlight";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 
 export default function JsonDiffWorkspace(props: WorkspaceProps) {

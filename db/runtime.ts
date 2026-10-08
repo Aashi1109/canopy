@@ -5,7 +5,11 @@ import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import pg from "pg";
 
 type SqlClient = pg.Pool;
-let nodeClient: SqlClient | undefined;
+type PoolState = { client: SqlClient; connectionString: string; max: number };
+// Next can evaluate this module in several server bundles and during hot reloads.
+// Share connections only while their effective configuration still matches.
+const poolKey = Symbol.for("canopy.database-runtime");
+const runtime = globalThis as typeof globalThis & { [poolKey]?: PoolState };
 
 export function isDatabaseConfigured(): boolean {
   return Boolean(config.databaseUrl);
@@ -72,11 +76,14 @@ function observeQueries(client: pg.PoolClient): void {
 }
 
 function getSqlClient(): SqlClient {
-  if (nodeClient) return nodeClient;
+  const connectionString = config.databaseUrl || "";
+  const max = config.databasePoolMax;
+  const existing = runtime[poolKey];
+  if (existing?.connectionString === connectionString && existing.max === max) return existing.client;
   const client = new pg.Pool({
-    connectionString: config.databaseUrl ?? "postgres://127.0.0.1:1/canopy_unconfigured",
+    connectionString,
     // Each container process owns one pool; keep its connections bounded.
-    max: config.databasePoolMax,
+    max,
     idleTimeoutMillis: 20_000,
     connectionTimeoutMillis: 10_000,
   });
@@ -91,7 +98,19 @@ function getSqlClient(): SqlClient {
   client.on("error", (error: NodeJS.ErrnoException) => {
     console.error("Idle database connection failed", { code: error.code });
   });
-  nodeClient = client;
+  runtime[poolKey] = { client, connectionString, max };
+  if (existing) {
+    const retire = () => {
+      // pg.end() drains active clients but abandons queued checkouts. Let those
+      // start first; this only runs when configuration changes during a reload.
+      if (existing.client.waitingCount > 0) {
+        setTimeout(retire, 10).unref();
+        return;
+      }
+      void existing.client.end().catch(() => console.error("Replaced database pool failed to close."));
+    };
+    retire();
+  }
   return client;
 }
 
@@ -107,7 +126,9 @@ export function createDatabase<T extends Record<string, unknown>>(schema: T) {
   type Database = NodePgDatabase<T> & { $client: SqlClient };
   let database: Database | undefined;
   const getDatabase = () => {
-    return (database ??= drizzle(getSqlClient(), { schema }));
+    const client = getSqlClient();
+    if (database?.$client !== client) database = drizzle(client, { schema });
+    return database;
   };
   return new Proxy({} as Database, {
     get(_target, key) {

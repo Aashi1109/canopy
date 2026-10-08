@@ -23,18 +23,46 @@ const FALLBACK_GROUPS: readonly Ecosystem[] = [
   { categories: [], count: 0, href: "/media", id: "media", label: "Media", tools: [] },
 ];
 
+// Public navigation data only. Share concurrent menu loads without retaining
+// failures or keeping catalog changes hidden for more than a minute.
+let cachedGroups: { value: readonly Ecosystem[]; expiresAt: number } | undefined;
+let pendingGroups: Promise<readonly Ecosystem[]> | undefined;
+
+function loadEcosystemGroups(): Promise<readonly Ecosystem[]> {
+  if (cachedGroups && cachedGroups.expiresAt > Date.now()) return Promise.resolve(cachedGroups.value);
+  if (!pendingGroups) {
+    pendingGroups = fetch("/api/tools/ecosystem")
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Unable to load categories");
+        return response.json() as Promise<{ groups: Ecosystem[] }>;
+      })
+      .then(({ groups }) => {
+        cachedGroups = { value: groups, expiresAt: Date.now() + 60_000 };
+        return groups;
+      })
+      .finally(() => {
+        pendingGroups = undefined;
+      });
+  }
+  return pendingGroups;
+}
+
 export function useEcosystemGroups(enabled = true) {
   const [groups, setGroups] = useState<readonly Ecosystem[]>(FALLBACK_GROUPS);
 
   useEffect(() => {
     if (!enabled) return;
-    fetch("/api/tools/ecosystem")
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Unable to load categories");
-        return response.json() as Promise<{ groups: Ecosystem[] }>;
+    let active = true;
+    loadEcosystemGroups()
+      .then((nextGroups) => {
+        if (active) setGroups(nextGroups);
       })
-      .then(({ groups: nextGroups }) => setGroups(nextGroups))
-      .catch(() => setGroups(FALLBACK_GROUPS));
+      .catch(() => {
+        if (active) setGroups(FALLBACK_GROUPS);
+      });
+    return () => {
+      active = false;
+    };
   }, [enabled]);
 
   return groups;
@@ -50,13 +78,13 @@ export function EcosystemTabFilters({
   publicSiteUrl?: string;
 }) {
   const siteHref = (path: string) => (publicSiteUrl ? new URL(path, publicSiteUrl).href : path);
-  const groups = useEcosystemGroups().map((group) => ({
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const groups = useEcosystemGroups(activeId !== null).map((group) => ({
     ...group,
     href: siteHref(group.href),
     categories: group.categories.map((category) => ({ ...category, href: siteHref(category.href) })),
     tools: group.tools.map((tool) => ({ ...tool, href: siteHref(tool.href) })),
   }));
-  const [activeId, setActiveId] = useState<string | null>(null);
 
   return (
     <nav
