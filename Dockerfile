@@ -8,13 +8,40 @@ RUN npm install --global pnpm@11.14.0
 WORKDIR /app
 
 FROM base AS dependencies
-COPY . .
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --store-dir /pnpm/store --frozen-lockfile
 
 FROM dependencies AS builder
+COPY . .
+# Next webpack needs more heap during compilation than the default ~2 GiB.
+# This setting stays in the builder and does not increase the runtime heap.
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 ARG APP_URL
-RUN test -n "$APP_URL" && mkdir -p public && pnpm build
+# Only public values belong in image build arguments. Runtime secrets are supplied
+# by the deployment platform when the container starts.
+ARG CANOPY_PUBLIC_BUILD_ENV={}
+RUN test -n "$APP_URL" && mkdir -p public
+RUN node --input-type=module <<'NODE'
+import { spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
+const publicValues = JSON.parse(process.env.CANOPY_PUBLIC_BUILD_ENV);
+if (!publicValues || Array.isArray(publicValues) || Object.entries(publicValues).some(([key, value]) => !/^NEXT_PUBLIC_[A-Z0-9_]+$/.test(key) || typeof value !== "string")) {
+  throw new Error("Only NEXT_PUBLIC_ string values may be passed to the image build.");
+}
+const result = spawnSync("pnpm", ["build"], {
+  stdio: "inherit",
+  env: {
+    ...process.env,
+    ...publicValues,
+    // Better Auth initializes during route collection. Never bake the live key
+    // into image metadata or build arguments; this key only lives in this process.
+    BETTER_AUTH_SECRET: randomBytes(32).toString("hex"),
+  },
+});
+if (result.error) throw new Error("Unable to start the application build.");
+process.exit(result.status ?? 1);
+NODE
 
 FROM node:${NODE_VERSION} AS runner
 ENV NODE_ENV=production
@@ -29,6 +56,12 @@ WORKDIR /app
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+# Runtime settings are read at startup. A new public revision ensures Wrangler
+# replaces running containers even when only Worker secrets/variables changed.
+# Keep this after COPY so changing the revision reuses the application build.
+ARG CANOPY_DEPLOYMENT_REVISION=local
+LABEL org.opencontainers.image.revision="${CANOPY_DEPLOYMENT_REVISION}"
 
 USER nextjs
 EXPOSE 3000

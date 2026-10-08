@@ -27,7 +27,7 @@ pnpm --pm-on-fail=ignore lint
 The database suites require an explicitly supplied **disposable** PostgreSQL URL; they create and remove their own random schemas and never load application environment files:
 
 ```sh
-BLOG_TEST_DATABASE_URL='postgres://localhost/smarttools_blog_test' pnpm --pm-on-fail=ignore exec node --test tests/blog-*.integration.test.mjs
+BLOG_TEST_DATABASE_URL='postgres://localhost/canopy_blog_test' pnpm --pm-on-fail=ignore exec node --test tests/blog-*.integration.test.mjs
 ```
 
 The fallback flag uses the available pnpm installation when the pinned package-manager download is unavailable. Production migration, secrets, and cron deployment remain operator steps. This implementation session could not execute PostgreSQL integration tests because the sandbox denied PostgreSQL shared-memory and socket access; mocked database-boundary tests do not establish real locking or migration behavior.

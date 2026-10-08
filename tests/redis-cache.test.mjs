@@ -290,18 +290,9 @@ test("Redis connections are lazy, shared, recoverable, and bounded", async (t) =
   process.env.REDIS_URL = "redis://cache.example.test:6379";
   expect(clients.length, "invalid connection settings never open a socket").toBe(5);
 
-  const navigator = Object.getOwnPropertyDescriptor(globalThis, "navigator");
-  Object.defineProperty(globalThis, "navigator", { configurable: true, value: { userAgent: "Cloudflare-Workers" } });
-  t.onTestFinished(() => {
-    if (navigator) Object.defineProperty(globalThis, "navigator", navigator);
-    else delete globalThis.navigator;
-  });
   await Promise.all([cache.get("all"), cache.get("all")]);
-  expect(clients.length, "Workers never share sockets across requests").toBe(7);
-  expect(
-    clients.slice(-2).every((client) => !client.isOpen),
-    "Worker sockets close after commands",
-  ).toBeTruthy();
+  expect(clients.length, "recovery creates one shared persistent connection").toBe(6);
+  expect(clients.at(-1).isOpen, "the connection stays open for later requests").toBe(true);
 });
 
 test("disabled cache reads load fresh while writes and authorization invalidation remain active", async (t) => {

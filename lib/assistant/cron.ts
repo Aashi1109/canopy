@@ -69,7 +69,7 @@ export async function runAssistantMaintenanceCron(
   try {
     target = env.ASSISTANT_MAINTENANCE_URL
       ? new URL(env.ASSISTANT_MAINTENANCE_URL)
-      : new URL(MAINTENANCE_PATH, new URL(env.APP_URL ?? "https://smarttools.internal").origin);
+      : new URL(MAINTENANCE_PATH, new URL(env.APP_URL ?? "https://canopy.internal").origin);
   } catch {
     throw new Error("Invalid assistant scheduler configuration.");
   }

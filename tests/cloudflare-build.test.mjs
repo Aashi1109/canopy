@@ -1,434 +1,359 @@
+import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { expect, test } from "vitest";
+import test from "node:test";
 import { runCloudflare } from "../scripts/cloudflare.mjs";
 
+const container = { name: "canopy", class_name: "CanopyContainer", image: "./Dockerfile", max_instances: 1 };
 const config = {
+  name: "canopy",
+  main: "worker.ts",
   vars: { APP_URL: "https://canopy.example" },
+  containers: [container],
+  durable_objects: { bindings: [{ name: "CANOPY_CONTAINER", class_name: "CanopyContainer" }] },
+  services: [{ binding: "WORKER_SELF_REFERENCE", service: "canopy" }],
+  routes: [{ pattern: "canopy.example", custom_domain: true }],
   env: {
     dev: {
       name: "canopy-dev",
       vars: { APP_URL: "https://canopy-dev.example.workers.dev" },
+      containers: [{ ...container, name: "canopy-dev" }],
+      durable_objects: { bindings: [{ name: "CANOPY_CONTAINER", class_name: "CanopyContainer" }] },
       routes: [],
-      hyperdrive: [],
       services: [{ binding: "WORKER_SELF_REFERENCE", service: "canopy-dev" }],
       triggers: { crons: [] },
     },
   },
-  routes: [
-    { pattern: "canopy.example", custom_domain: true },
-    { pattern: "admin.canopy.example", custom_domain: true },
-  ],
 };
 
 function recordRun(
   mode,
-  configuration = config,
-  results = [],
-  fileContent = "SYNTHETIC_RUNTIME_SECRET=fixture-only",
-  environmentOverrides = {},
+  { configuration = config, results = [], contents = "SYNTHETIC_RUNTIME_SECRET=fixture-only", environment = {} } = {},
 ) {
   const calls = [];
-  const environment = {
-    APP_URL: "https://stale.example",
-    SKIP_NEXT_APP_BUILD: "true",
-    INHERITED_APP_SECRET: "must-not-leak",
-    PATH: "/fixture/bin",
-    HOME: "/fixture/home",
-    CLOUDFLARE_API_TOKEN: "deployment-only",
-    WRANGLER_CI_MATCH_TAG: "expected-worker-tag",
-    WRANGLER_CI_OVERRIDE_NAME: "canopy",
-    WRANGLER_OUTPUT_FILE_PATH: "/fixture/deployment.json",
-    WRANGLER_OUTPUT_FILE_DIRECTORY: "/fixture",
-    WORKERS_CI_BRANCH: "production",
-    ...environmentOverrides,
-  };
+  const files = [];
   const status = runCloudflare(Array.isArray(mode) ? mode : [mode], configuration, {
-    environment,
+    environment: {
+      APP_URL: "https://stale.example",
+      INHERITED_APP_SECRET: "must-not-leak",
+      PATH: "/fixture/bin",
+      HOME: "/fixture/home",
+      DOCKER_HOST: "unix:///fixture/docker.sock",
+      CLOUDFLARE_API_TOKEN: "deployment-only",
+      WRANGLER_CI_MATCH_TAG: "expected-worker-tag",
+      WRANGLER_CI_OVERRIDE_NAME: ["preview", "local"].includes(Array.isArray(mode) ? mode[0] : mode)
+        ? configuration.env?.dev?.name
+        : configuration.name,
+      WRANGLER_OUTPUT_FILE_PATH: "/fixture/deployment.json",
+      WRANGLER_OUTPUT_FILE_DIRECTORY: "/fixture",
+      WORKERS_CI_BRANCH: "production",
+      ...environment,
+    },
     readFile(path) {
-      calls.loadedFile = path;
-      return fileContent;
+      files.push(path);
+      return contents;
     },
     execute(command, args, options) {
-      const secretFile = args[args.indexOf("--secrets-file") + 1];
-      const secrets = args.includes("--secrets-file") ? JSON.parse(readFileSync(secretFile, "utf8")) : undefined;
-      if (secrets) expect(statSync(secretFile).mode & 0o777).toBe(0o600);
-      calls.push({ command, args, ...options, secrets });
+      const configPath = args.includes("--config") ? args[args.indexOf("--config") + 1] : undefined;
+      const secretsPath = args.includes("--secrets-file") ? args[args.indexOf("--secrets-file") + 1] : undefined;
+      if (secretsPath) assert.equal(statSync(secretsPath).mode & 0o777, 0o600);
+      const emptyEnvFile = args[args.indexOf("--env-file") + 1];
+      assert.ok(!emptyEnvFile.startsWith(options.cwd));
+      assert.equal(readFileSync(emptyEnvFile, "utf8"), "");
+      calls.push({
+        command,
+        args,
+        ...options,
+        configPath,
+        secretsPath,
+        configuration: configPath ? JSON.parse(readFileSync(configPath, "utf8")) : undefined,
+        secrets: secretsPath ? JSON.parse(readFileSync(secretsPath, "utf8")) : undefined,
+      });
       return results.shift() ?? { status: 0 };
     },
   });
-  return { calls, environment, status };
+  return { calls, files, status };
 }
 
-test("Cloudflare builds use the configured public origin and scrub bundled environment fallbacks", () => {
-  const { calls, environment, status } = recordRun("build");
-  expect(status).toBe(0);
-  expect(calls.map(({ args }) => args)).toEqual([
-    [
-      "node_modules/@opennextjs/cloudflare/dist/cli/index.js",
-      "build",
-      "--config",
-      "wrangler.jsonc",
-      "--env",
-      "",
-      "--skipNextBuild=false",
-    ],
-    ["scripts/clear-cloudflare-build-env.mjs"],
-  ]);
-  for (const call of calls) {
-    expect(call.env.APP_URL).toBe("https://canopy.example");
-    expect(call.env.SYNTHETIC_RUNTIME_SECRET).toBe("fixture-only");
-    expect(call.env.CLOUDFLARE_ENV).toBe("");
-    expect(call.env.INHERITED_APP_SECRET).toBeUndefined();
-    expect(call.env.__NEXT_PROCESSED_ENV).toBe("true");
-    expect(call.env.PATH).toBe("/fixture/bin");
-  }
-  expect(environment.APP_URL).toBe("https://stale.example");
-  expect(calls.loadedFile).toMatch(/env\.prod$/);
-});
+const target = (call, mode) => (["preview", "local"].includes(mode) ? call.configuration.env.dev : call.configuration);
+const vars = (call) => call.args.flatMap((arg, index) => (arg === "--var" ? [call.args[index + 1]] : []));
 
-test("deployment builds and deploys with the same origin after scrubbing", () => {
-  const { calls, status } = recordRun("deploy", {
-    ...config,
-    vars: { APP_URL: "https://canopy.example" },
-  });
-  expect(status).toBe(0);
-  expect(calls).toHaveLength(3);
-  expect(calls.at(-1).args).toEqual([
-    "node_modules/wrangler/bin/wrangler.js",
-    "deploy",
-    "--config",
-    "wrangler.jsonc",
-    "--env",
-    "",
-    "--env-file",
-    ".env.prod",
-    "--secrets-file",
-    expect.any(String),
-  ]);
-  const secretPath = calls.at(-1).args.at(-1);
-  expect(existsSync(secretPath)).toBe(false);
-  expect(calls.at(-1).secrets).toEqual({ SYNTHETIC_RUNTIME_SECRET: "fixture-only" });
-  expect(calls.every(({ env }) => env.APP_URL === "https://canopy.example")).toBe(true);
-  // The prior Next output could be a preview with localhost in browser bundles.
-  expect(calls[0].args).toContain("--skipNextBuild=false");
-});
-
-test("Workers Builds target checks reach Wrangler without becoming Worker settings", () => {
-  const { calls } = recordRun("deploy");
-  const deployment = calls.at(-1);
-  expect(deployment.env.WRANGLER_CI_MATCH_TAG).toBe("expected-worker-tag");
-  expect(deployment.env.WRANGLER_CI_OVERRIDE_NAME).toBe("canopy");
-  expect(deployment.env.WRANGLER_OUTPUT_FILE_PATH).toBe("/fixture/deployment.json");
-  expect(deployment.env.WRANGLER_OUTPUT_FILE_DIRECTORY).toBe("/fixture");
-  expect(deployment.env.WORKERS_CI_BRANCH).toBe("production");
-  expect(deployment.env.CLOUDFLARE_API_TOKEN).toBe("deployment-only");
-  expect(deployment.env.INHERITED_APP_SECRET).toBeUndefined();
-  expect(deployment.secrets).toEqual({ SYNTHETIC_RUNTIME_SECRET: "fixture-only" });
-  expect(deployment.args).not.toContain("--var");
-});
-
-test.each(["1", "true"])("Workers Builds (%s) deploys code while retaining existing runtime settings", (workersCi) => {
-  const { calls, status } = recordRun("deploy", config, [], "must not read dotenv", {
-    WORKERS_CI: workersCi,
-    NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "public-cloud",
-    SENTRY_AUTH_TOKEN: "build-upload-token",
-    BETTER_AUTH_SECRET: "must-not-upload",
-    CLOUDFLARE_EMAIL_ACCOUNT_ID: "runtime-email-account",
-    CLOUDFLARE_EMAIL_API_TOKEN: "runtime-email-token",
-  });
-  expect(status).toBe(0);
-  expect(calls.loadedFile).toBeUndefined();
-  expect(calls).toHaveLength(3);
-  expect(calls[0].env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME).toBe("public-cloud");
-  expect(calls[0].env.SENTRY_AUTH_TOKEN).toBe("build-upload-token");
-  expect(calls.every(({ env }) => env.APP_URL === "https://canopy.example")).toBe(true);
-  expect(calls.every(({ env }) => env.CLOUDFLARE_EMAIL_ACCOUNT_ID === undefined)).toBe(true);
-  expect(calls.every(({ env }) => env.CLOUDFLARE_EMAIL_API_TOKEN === undefined)).toBe(true);
-  const deployment = calls.at(-1);
-  expect(deployment.args).toEqual([
-    "node_modules/wrangler/bin/wrangler.js",
-    "deploy",
-    "--config",
-    "wrangler.jsonc",
-    "--env",
-    "",
-    "--keep-vars",
-  ]);
-  expect(deployment.env.BETTER_AUTH_SECRET).toBeUndefined();
-  expect(deployment.env.INHERITED_APP_SECRET).toBeUndefined();
-  expect(deployment.env.WRANGLER_CI_MATCH_TAG).toBe("expected-worker-tag");
-  expect(deployment.secrets).toBeUndefined();
-});
-
-test("preview builds and remotely deploys the dev Worker using only .env", () => {
-  const { calls } = recordRun("preview");
-  expect(calls).toHaveLength(3);
-  expect(calls.every(({ env }) => env.APP_URL === "https://canopy-dev.example.workers.dev")).toBe(true);
-  expect(calls.loadedFile).toMatch(/\/\.env$/);
-  expect(calls[0].args).toEqual([
-    "node_modules/@opennextjs/cloudflare/dist/cli/index.js",
-    "build",
-    "--config",
-    "wrangler.jsonc",
-    "--env",
-    "dev",
-    "--skipNextBuild=false",
-  ]);
-  expect(calls.at(-1).args).toEqual([
-    "node_modules/wrangler/bin/wrangler.js",
-    "deploy",
-    "--config",
-    "wrangler.jsonc",
-    "--env",
-    "dev",
-    "--env-file",
-    ".env",
-    "--secrets-file",
-    expect.any(String),
-  ]);
-  expect(calls.at(-1).secrets).toEqual({ SYNTHETIC_RUNTIME_SECRET: "fixture-only" });
-  expect(existsSync(calls.at(-1).args.at(-1))).toBe(false);
-});
-
-test("local preview serves the dev configuration without uploading code or secrets", () => {
-  const { calls } = recordRun(
-    "local",
-    {
-      ...config,
-      env: {
-        dev: { ...config.env.dev, hyperdrive: [{ binding: "DB", id: "fake" }] },
-      },
-    },
-    [],
-    [
-      "DATABASE_URL=postgres://local/preview-test-only",
-      "CLOUDFLARE_EMAIL_ACCOUNT_ID=local-email-account",
-      "CLOUDFLARE_EMAIL_API_TOKEN=local-email-token",
-    ].join("\n"),
-  );
-  expect(calls).toHaveLength(3);
-  expect(calls.loadedFile).toMatch(/\/\.env$/);
-  expect(calls.every(({ env }) => env.APP_URL === "http://localhost:8787")).toBe(true);
-  expect(calls[0].args).toContain("dev");
-  expect(calls.at(-1).args).toEqual([
-    "node_modules/wrangler/bin/wrangler.js",
-    "dev",
-    "--config",
-    "wrangler.jsonc",
-    "--env",
-    "dev",
-    "--env-file",
-    ".env",
-    "--port",
-    "8787",
-    "--var",
-    "APP_URL:http://localhost:8787",
-  ]);
-  expect(calls.at(-1).env.CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV).toBe("true");
-  expect(calls.at(-1).env.CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_DB).toBe("postgres://local/preview-test-only");
-  expect(calls.at(-1).env.CLOUDFLARE_EMAIL_ACCOUNT_ID).toBe("local-email-account");
-  expect(calls.at(-1).env.CLOUDFLARE_EMAIL_API_TOKEN).toBe("local-email-token");
-  expect(calls.at(-1).secrets).toBeUndefined();
-});
-
-test("a workers.dev deployment needs no custom-domain routes", () => {
-  const workerConfig = {
-    name: "smarttools",
-    workers_dev: true,
-    routes: [],
-    vars: { APP_URL: "https://smarttools.example.workers.dev" },
+test("application env files cannot replace the invoking shell's Docker connection", () => {
+  const dockerSettings = {
+    DOCKER_HOST: "unix:///active/docker.sock",
+    DOCKER_CONTEXT: "active-context",
+    DOCKER_CONFIG: "/active/docker-config",
+    DOCKER_CERT_PATH: "/active/docker-certs",
+    DOCKER_TLS_VERIFY: "1",
+    DOCKER_TLS: "1",
+    DOCKER_API_VERSION: "1.49",
+    BUILDX_BUILDER: "active-builder",
+    BUILDX_CONFIG: "/active/buildx-config",
+    WRANGLER_DOCKER_BIN: "/active/bin/docker",
   };
-  const { calls, status } = recordRun("deploy", workerConfig);
-  expect(status).toBe(0);
-  expect(calls.every(({ env }) => env.APP_URL === workerConfig.vars.APP_URL)).toBe(true);
+  const contents = Object.keys(dockerSettings)
+    .map((key) => `${key}=stale-file-value`)
+    .join("\n");
+  for (const mode of ["build", "preview", "deploy", "local"]) {
+    const explicit = recordRun(mode, { contents, environment: dockerSettings }).calls[0];
+    for (const [key, value] of Object.entries(dockerSettings)) assert.equal(explicit.env[key], value);
+    const unsetSettings = Object.fromEntries(Object.keys(dockerSettings).map((key) => [key, undefined]));
+    const defaults = recordRun(mode, { contents, environment: unsetSettings }).calls[0];
+    for (const key of Object.keys(dockerSettings)) assert.equal(defaults.env[key], undefined);
+    if (defaults.secrets) assert.deepEqual(defaults.secrets, {});
+  }
 });
 
-test("failed builds or environment scrubbing stop before deployment", () => {
-  const buildFailure = recordRun("deploy", config, [{ status: 2 }]);
-  expect(buildFailure.status).toBe(2);
-  expect(buildFailure.calls).toHaveLength(1);
-  const scrubFailure = recordRun("deploy", config, [{ status: 0 }, { status: 3 }]);
-  expect(scrubFailure.status).toBe(3);
-  expect(scrubFailure.calls).toHaveLength(2);
+test("build makes a local linux/amd64 image and checks the Worker without uploading", () => {
+  const { calls, files, status } = recordRun("build");
+  assert.equal(status, 0);
+  assert.equal(calls.length, 1);
+  assert.ok(calls[0].args.includes("--dry-run"));
+  assert.equal(calls[0].secrets, undefined);
+  assert.match(files[0], /\/\.env\.prod$/);
+  assert.equal(calls[0].configuration.vars.APP_URL, "https://canopy.example");
+  assert.equal(calls[0].configuration.containers[0].image_vars.APP_URL, "https://canopy.example");
+  assert.equal(existsSync(calls[0].configPath), false);
 });
 
-test("interrupted child commands fail without deploying", () => {
-  const { calls, status } = recordRun("deploy", config, [{ status: null, signal: "SIGTERM" }]);
-  expect(status).toBe(1);
-  expect(calls).toHaveLength(1);
-});
-
-test("unknown commands and spawn failures report only fixed safe messages", () => {
-  expect(() => recordRun("unknown")).toThrow("Use build, local, preview, or deploy.");
-  expect(() => recordRun("deploy", config, [{ error: new Error("sensitive child detail") }])).toThrow(
-    "Unable to start the Cloudflare command.",
-  );
-});
-
-test.each([["--dry-run"], ["--env", "staging"]])("unsupported CLI options stop before any command", (...args) => {
-  expect(() => recordRun(["deploy", ...args])).toThrow(
-    "Cloudflare scripts do not accept extra arguments. Configure deployment settings in wrangler.jsonc.",
-  );
-});
-
-test("an inherited named environment cannot deploy a different configuration", () => {
-  expect(() =>
-    runCloudflare(["deploy"], config, {
-      environment: { CLOUDFLARE_ENV: "staging" },
-      execute() {
-        throw new Error("A child command must not run.");
-      },
-    }),
-  ).toThrow("Unset CLOUDFLARE_ENV: these scripts target the top-level wrangler.jsonc configuration.");
-});
-
-test("selected file values override the shell and preserve quoted multiline secrets", () => {
-  const { calls } = recordRun(
-    "deploy",
-    config,
-    [],
-    'CLOUDFLARE_API_TOKEN=file-token\nNEXT_PUBLIC_SENTRY_DSN=public-dsn\nSENTRY_AUTH_TOKEN=upload-only\nBETTER_AUTH_SECRET="first line\nsecond line"\nAPP_URL=https://canopy.example\n',
-  );
-  expect(calls[0].env.CLOUDFLARE_API_TOKEN).toBe("file-token");
-  expect(calls[0].env.NEXT_PUBLIC_SENTRY_DSN).toBe("public-dsn");
-  expect(calls.at(-1).secrets).toEqual({ BETTER_AUTH_SECRET: "first line\nsecond line" });
-});
-
-test.each(["deploy", "preview"])(
-  "%s exposes basic settings while keeping credentials and unknown settings secret",
-  (mode) => {
-    const { calls } = recordRun(
-      mode,
-      config,
-      [],
-      [
-        "CACHE_ENABLED=false",
-        "DATABASE_POOL_MAX=5",
-        "AI_ENABLED=true",
-        "AI_PROVIDER=openai",
-        "OPENAI_MODEL=example-model",
-        'ACCOUNTS_EMAIL="SmartTools <accounts@example.test>"',
-        "GOOGLE_CLIENT_ID=example-client-id",
-        "DATABASE_URL=postgres://user:password@db.example.test/app",
-        "REDIS_URL=redis://user:password@cache.example.test",
-        "CLOUDINARY_URL=cloudinary://key:secret@example",
-        "GOOGLE_CLIENT_SECRET=example-secret",
-        "OPENAI_API_KEY=example-key",
-        "CUSTOM_SETTING=unknown-sensitive-value",
-      ].join("\n"),
-    );
-    const deployment = calls.at(-1);
-    expect(deployment.args.flatMap((arg, index) => (arg === "--var" ? [deployment.args[index + 1]] : []))).toEqual([
-      "ACCOUNTS_EMAIL:SmartTools <accounts@example.test>",
-      "AI_ENABLED:true",
-      "AI_PROVIDER:openai",
-      "CACHE_ENABLED:false",
-      "DATABASE_POOL_MAX:5",
-      "GOOGLE_CLIENT_ID:example-client-id",
-      "OPENAI_MODEL:example-model",
-    ]);
-    expect(deployment.secrets).toEqual({
-      DATABASE_URL: "postgres://user:password@db.example.test/app",
-      REDIS_URL: "redis://user:password@cache.example.test",
-      CLOUDINARY_URL: "cloudinary://key:secret@example",
-      GOOGLE_CLIENT_SECRET: "example-secret",
-      OPENAI_API_KEY: "example-key",
-      CUSTOM_SETTING: "unknown-sensitive-value",
+for (const mode of ["deploy", "preview", "local"]) {
+  test(`${mode} builds for the correct origin and keeps temporary configuration outside the image`, () => {
+    const before = structuredClone(config);
+    const { calls, files, status } = recordRun(mode, {
+      contents:
+        "APP_URL=https://ignored.example\nNEXT_PUBLIC_SENTRY_DSN=public-dsn\nBETTER_AUTH_SECRET=live-key\nSENTRY_AUTH_TOKEN=upload-token",
     });
-  },
-);
+    assert.equal(status, 0);
+    assert.equal(calls.length, 1);
+    const call = calls[0];
+    const expectedName = mode === "deploy" ? "canopy" : "canopy-dev";
+    assert.equal(target(call, mode).name, expectedName);
+    assert.equal(target(call, mode).containers[0].name, expectedName);
+    assert.equal(target(call, mode).services[0].service, expectedName);
+    const expectedOrigin =
+      mode === "local"
+        ? "http://localhost:8787"
+        : mode === "preview"
+          ? "https://canopy-dev.example.workers.dev"
+          : "https://canopy.example";
+    assert.deepEqual(target(call, mode).containers[0].image_vars, {
+      APP_URL: expectedOrigin,
+      CANOPY_PUBLIC_BUILD_ENV: '{"NEXT_PUBLIC_SENTRY_DSN":"public-dsn"}',
+      CANOPY_DEPLOYMENT_REVISION: target(call, mode).containers[0].image_vars.CANOPY_DEPLOYMENT_REVISION,
+    });
+    assert.equal(target(call, mode).vars.APP_URL, expectedOrigin);
+    assert.ok(call.configuration.main.endsWith("/canopy/worker.ts"));
+    assert.equal(call.args[2], call.configuration.main);
+    for (const section of [call.configuration, ...Object.values(call.configuration.env)]) {
+      assert.ok(section.containers[0].image.endsWith("/canopy/Dockerfile"));
+    }
+    assert.ok(call.args[call.args.indexOf("--tsconfig") + 1].endsWith("/canopy/tsconfig.json"));
+    assert.ok(target(call, mode).containers[0].image.endsWith("/canopy/Dockerfile"));
+    assert.ok(target(call, mode).containers[0].image_build_context.endsWith("/canopy"));
+    assert.ok(!call.configPath.startsWith(call.cwd));
+    assert.equal(existsSync(call.configPath), false);
+    assert.equal(call.env.INHERITED_APP_SECRET, undefined);
+    assert.equal(call.env.BETTER_AUTH_SECRET, mode === "local" ? "live-key" : undefined);
+    assert.equal(call.env.SENTRY_AUTH_TOKEN, undefined);
+    assert.equal(call.env.DOCKER_HOST, "unix:///fixture/docker.sock");
+    assert.equal(call.env.APP_URL, expectedOrigin);
+    assert.equal(call.args[call.args.indexOf("--env") + 1], mode === "deploy" ? "" : "dev");
+    assert.match(files[0], mode === "deploy" ? /\/\.env\.prod$/ : /\/\.env$/);
+    assert.deepEqual(config, before);
+    if (mode === "local") {
+      assert.equal(call.args[1], "dev");
+      assert.equal(call.env.CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV, "true");
+      assert.deepEqual(vars(call), ["APP_URL:http://localhost:8787"]);
+      assert.deepEqual(target(call, mode).secrets.required, ["BETTER_AUTH_SECRET"]);
+      assert.equal(call.secrets, undefined);
+    } else {
+      assert.equal(call.args[1], "deploy");
+      assert.deepEqual(call.secrets, { BETTER_AUTH_SECRET: "live-key" });
+      assert.equal(call.env.CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV, "false");
+      assert.equal(existsSync(call.secretsPath), false);
+    }
+  });
+}
 
-test.each(["deploy", "preview"])("%s uploads Email Sending settings without exposing its token", (mode) => {
-  const { calls } = recordRun(
-    mode,
-    config,
-    [],
-    [
+for (const workersCi of ["1", "true"]) {
+  test(`Workers Builds (${workersCi}) retains deployed runtime settings and excludes build secrets`, () => {
+    const { calls, files } = recordRun("deploy", {
+      environment: {
+        WORKERS_CI: workersCi,
+        NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "public-cloud",
+        SENTRY_AUTH_TOKEN: "must-not-bake",
+        BETTER_AUTH_SECRET: "must-not-upload",
+        CLOUDFLARE_EMAIL_API_TOKEN: "must-not-upload",
+      },
+    });
+    const call = calls[0];
+    assert.equal(files.length, 0);
+    assert.equal(calls.length, 1);
+    assert.ok(call.args.includes("--keep-vars"));
+    assert.equal(call.secrets, undefined);
+    assert.deepEqual(call.configuration.containers[0].image_vars, {
+      APP_URL: "https://canopy.example",
+      CANOPY_PUBLIC_BUILD_ENV: '{"NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME":"public-cloud"}',
+      CANOPY_DEPLOYMENT_REVISION: call.configuration.containers[0].image_vars.CANOPY_DEPLOYMENT_REVISION,
+    });
+    for (const key of ["SENTRY_AUTH_TOKEN", "BETTER_AUTH_SECRET", "CLOUDFLARE_EMAIL_API_TOKEN"])
+      assert.equal(call.env[key], undefined);
+    assert.equal(call.env.WRANGLER_CI_MATCH_TAG, "expected-worker-tag");
+    assert.equal(call.env.WRANGLER_CI_OVERRIDE_NAME, "canopy");
+    assert.equal(call.env.WRANGLER_OUTPUT_FILE_PATH, "/fixture/deployment.json");
+    assert.equal(call.env.WRANGLER_OUTPUT_FILE_DIRECTORY, "/fixture");
+    assert.equal(call.env.CLOUDFLARE_API_TOKEN, "deployment-only");
+  });
+}
+
+test("every deployment changes the public image revision so running containers receive new runtime settings", () => {
+  const first = recordRun("deploy", { contents: "BETTER_AUTH_SECRET=first-runtime-value" }).calls[0];
+  const second = recordRun("deploy", { contents: "BETTER_AUTH_SECRET=second-runtime-value" }).calls[0];
+  const firstArgs = first.configuration.containers[0].image_vars;
+  const secondArgs = second.configuration.containers[0].image_vars;
+  assert.match(
+    firstArgs.CANOPY_DEPLOYMENT_REVISION,
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+  );
+  assert.notEqual(firstArgs.CANOPY_DEPLOYMENT_REVISION, secondArgs.CANOPY_DEPLOYMENT_REVISION);
+  assert.deepEqual(Object.keys(firstArgs).sort(), ["APP_URL", "CANOPY_DEPLOYMENT_REVISION", "CANOPY_PUBLIC_BUILD_ENV"]);
+  assert.equal(JSON.stringify(firstArgs).includes("first-runtime-value"), false);
+  assert.equal(JSON.stringify(secondArgs).includes("second-runtime-value"), false);
+});
+
+test("local runtime secrets preserve literal values and exclude deployment credentials from bindings", () => {
+  const secret = "line one\nline two $HOME `literal`";
+  const { calls } = recordRun("local", {
+    contents: `BETTER_AUTH_SECRET="${secret}"\nCACHE_ENABLED=true\nCLOUDFLARE_API_TOKEN=deployment-only`,
+  });
+  const call = calls[0];
+  assert.equal(call.env.BETTER_AUTH_SECRET, secret);
+  assert.equal(call.configuration.env.dev.vars.CACHE_ENABLED, "true");
+  assert.deepEqual(call.configuration.env.dev.secrets.required, ["BETTER_AUTH_SECRET"]);
+  assert.equal(call.configuration.env.dev.vars.CLOUDFLARE_API_TOKEN, undefined);
+  assert.equal(JSON.stringify(call.configuration).includes(secret), false);
+});
+
+test("runtime settings remain plain or secret without replacing configured bindings", () => {
+  const { calls } = recordRun("deploy", {
+    contents: [
+      "CACHE_ENABLED=false",
+      "DATABASE_POOL_MAX=5",
+      "AI_ENABLED=true",
+      "OPENAI_MODEL=model",
+      "DATABASE_URL=postgres://user:password@db.example/app",
+      "REDIS_URL=redis://secret@redis.example",
+      'BETTER_AUTH_SECRET="first line\nsecond line"',
       "CLOUDFLARE_EMAIL_ACCOUNT_ID=email-account",
       "CLOUDFLARE_EMAIL_API_TOKEN=email-token",
-      "EMAIL_PROVIDER=cloudflare",
-      "CLOUDFLARE_ACCOUNT_ID=deployment-account",
-      "CLOUDFLARE_API_TOKEN=deployment-token",
-      "CLOUDFLARE_UNRELATED_SETTING=build-only",
+      "CLOUDFLARE_API_TOKEN=file-token",
+      "CUSTOM_SETTING=unknown-secret",
+      "CANOPY_CONTAINER=bad",
+      "WORKER_SELF_REFERENCE=bad",
     ].join("\n"),
-    {
-      CLOUDFLARE_EMAIL_ACCOUNT_ID: "inherited-email-account",
-      CLOUDFLARE_EMAIL_API_TOKEN: "inherited-email-token",
-    },
-  );
-  const deployment = calls.at(-1);
-  expect(deployment.args.flatMap((arg, index) => (arg === "--var" ? [deployment.args[index + 1]] : []))).toEqual([
-    "CLOUDFLARE_EMAIL_ACCOUNT_ID:email-account",
-    "EMAIL_PROVIDER:cloudflare",
-  ]);
-  expect(deployment.secrets).toEqual({ CLOUDFLARE_EMAIL_API_TOKEN: "email-token" });
-  expect(deployment.env.CLOUDFLARE_ACCOUNT_ID).toBe("deployment-account");
-  expect(deployment.env.CLOUDFLARE_API_TOKEN).toBe("deployment-token");
-  expect(existsSync(deployment.args.at(-1))).toBe(false);
-});
-
-test("local deployment does not inherit email credentials absent from the selected file", () => {
-  const { calls } = recordRun("deploy", config, [], "", {
-    CLOUDFLARE_EMAIL_ACCOUNT_ID: "inherited-email-account",
-    CLOUDFLARE_EMAIL_API_TOKEN: "inherited-email-token",
   });
-  expect(calls.every(({ env }) => env.CLOUDFLARE_EMAIL_ACCOUNT_ID === undefined)).toBe(true);
-  expect(calls.every(({ env }) => env.CLOUDFLARE_EMAIL_API_TOKEN === undefined)).toBe(true);
-  expect(calls.at(-1).secrets).toEqual({});
-  expect(calls.at(-1).args).not.toContain("--var");
+  const call = calls[0];
+  assert.deepEqual(vars(call), [
+    "AI_ENABLED:true",
+    "CACHE_ENABLED:false",
+    "CLOUDFLARE_EMAIL_ACCOUNT_ID:email-account",
+    "DATABASE_POOL_MAX:5",
+    "OPENAI_MODEL:model",
+  ]);
+  assert.deepEqual(call.secrets, {
+    DATABASE_URL: "postgres://user:password@db.example/app",
+    REDIS_URL: "redis://secret@redis.example",
+    BETTER_AUTH_SECRET: "first line\nsecond line",
+    CLOUDFLARE_EMAIL_API_TOKEN: "email-token",
+    CUSTOM_SETTING: "unknown-secret",
+  });
+  assert.equal(call.env.CLOUDFLARE_API_TOKEN, "file-token");
+  assert.equal(call.env.CLOUDFLARE_EMAIL_API_TOKEN, undefined);
 });
 
-test("runtime secrets cannot replace the DB resource binding", () => {
-  const configured = {
-    ...config,
-    services: [{ binding: "WORKER_SELF_REFERENCE", service: "self" }],
-    hyperdrive: [{ binding: "DB", id: "fake" }],
-    assets: { binding: "ASSETS" },
-  };
-  const { calls } = recordRun(
-    "deploy",
-    configured,
-    [],
-    "DB=bad\nASSETS=bad\nWORKER_SELF_REFERENCE=bad\nREDIS_URL=redis://example.test",
-  );
-  expect(calls.at(-1).secrets).toEqual({ REDIS_URL: "redis://example.test" });
+test("public build arguments preserve special characters without shell interpolation", () => {
+  const value = "public-$HOME-$(example)-`example`-with-'quotes'";
+  const { calls } = recordRun("build", { contents: `NEXT_PUBLIC_EXAMPLE="${value}"\nSENTRY_AUTH_TOKEN=secret` });
+  const argument = calls[0].configuration.containers[0].image_vars.CANOPY_PUBLIC_BUILD_ENV;
+  assert.deepEqual(JSON.parse(argument), { NEXT_PUBLIC_EXAMPLE: value });
+  assert.equal(calls[0].shell, undefined);
+  assert.equal(calls[0].env.SENTRY_AUTH_TOKEN, undefined);
 });
 
-test("a missing selected file stops before building and does not expose filesystem error details", () => {
-  for (const mode of ["build", "deploy", "preview"]) {
-    const calls = [];
-    expect(() =>
-      runCloudflare([mode], config, {
-        environment: {},
-        readFile() {
-          throw new Error("private error detail");
-        },
-        execute(...args) {
-          calls.push(args);
-        },
-      }),
-    ).toThrow(mode === "preview" ? "Unable to read .env." : "Unable to read .env.prod.");
-    expect(calls).toHaveLength(0);
+test("failure or interruption stops subsequent commands and removes generated files", () => {
+  for (const result of [{ status: 2 }, { status: null, signal: "SIGTERM" }]) {
+    const build = recordRun("build", { results: [result] });
+    assert.equal(build.status, result.status ?? 1);
+    assert.equal(build.calls.length, 1);
+    const deploy = recordRun("deploy", { results: [result] });
+    assert.equal(deploy.status, result.status ?? 1);
+    assert.equal(existsSync(deploy.calls[0].configPath), false);
+    assert.equal(existsSync(deploy.calls[0].secretsPath), false);
   }
 });
 
-test("named environments in the file stop deployment", () => {
-  expect(() => recordRun("deploy", config, [], "CLOUDFLARE_ENV=staging")).toThrow("Unset CLOUDFLARE_ENV");
-});
-
-test("temporary runtime secrets are removed when deployment fails", () => {
-  const { calls, status } = recordRun("deploy", config, [{ status: 0 }, { status: 0 }, { status: 2 }]);
-  expect(status).toBe(2);
-  expect(existsSync(calls.at(-1).args.at(-1))).toBe(false);
-});
-
-test("deployment uses the configured origin without requiring custom domains or matching env file values", () => {
-  const { calls, status } = recordRun(
-    "deploy",
-    { vars: { APP_URL: "https://canopy.example" } },
-    [],
-    "APP_URL=https://old.example",
+test("spawn failures use a fixed safe error and clean up secrets", () => {
+  let secretsPath;
+  let configPath;
+  assert.throws(
+    () =>
+      runCloudflare(["deploy"], config, {
+        environment: {},
+        readFile: () => "BETTER_AUTH_SECRET=fixture-only",
+        execute(_command, args) {
+          secretsPath = args[args.indexOf("--secrets-file") + 1];
+          configPath = args[args.indexOf("--config") + 1];
+          return { error: new Error("private child detail") };
+        },
+      }),
+    /Unable to start the Cloudflare command/,
   );
-  expect(status).toBe(0);
-  expect(calls.every(({ env }) => env.APP_URL === "https://canopy.example")).toBe(true);
+  assert.equal(existsSync(secretsPath), false);
+  assert.equal(existsSync(configPath), false);
+});
+
+test("a stale CI Worker override cannot redirect deployment to an old infrastructure name", () => {
+  for (const mode of ["build", "preview", "deploy", "local"]) {
+    assert.throws(
+      () => recordRun(mode, { environment: { WRANGLER_CI_OVERRIDE_NAME: "legacy-worker" } }),
+      /Cloudflare CI targets a different Worker/,
+    );
+    assert.throws(
+      () => recordRun(mode, { contents: "WRANGLER_CI_OVERRIDE_NAME=legacy-worker" }),
+      /Cloudflare CI targets a different Worker/,
+    );
+  }
+});
+
+test("invalid mode, extra arguments and inherited environment fail safely", () => {
+  assert.throws(() => recordRun("unknown"), /Use build, local, preview, or deploy/);
+  for (const args of [["--dry-run"], ["--env", "staging"]]) {
+    assert.throws(() => recordRun(["deploy", ...args]), /do not accept extra arguments/);
+  }
+  assert.throws(() => recordRun("deploy", { environment: { CLOUDFLARE_ENV: "staging" } }), /Unset CLOUDFLARE_ENV/);
+  assert.throws(() => recordRun("deploy", { contents: "CLOUDFLARE_ENV=staging" }), /Unset CLOUDFLARE_ENV/);
+  assert.throws(() => recordRun("deploy", { configuration: { ...config, vars: {} } }), /Set APP_URL/);
+  assert.throws(
+    () => recordRun("deploy", { configuration: { ...config, containers: [] } }),
+    /Configure the application container/,
+  );
+});
+
+test("a missing selected file stops before commands without exposing filesystem details", () => {
+  for (const mode of ["build", "deploy", "preview", "local"]) {
+    let executed = false;
+    assert.throws(
+      () =>
+        runCloudflare([mode], config, {
+          environment: {},
+          readFile() {
+            throw new Error("private filesystem detail");
+          },
+          execute() {
+            executed = true;
+          },
+        }),
+      mode === "preview" || mode === "local" ? /Unable to read \.env\./ : /Unable to read \.env\.prod\./,
+    );
+    assert.equal(executed, false);
+  }
 });

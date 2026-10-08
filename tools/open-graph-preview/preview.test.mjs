@@ -1,4 +1,4 @@
-import { expect, onTestFinished, test, vi } from "vitest";
+import { expect, onTestFinished, test } from "vitest";
 import { Readable } from "node:stream";
 import { gzipSync } from "node:zlib";
 import https from "node:https";
@@ -146,6 +146,7 @@ test("Node transport pins the connection without replacing Host or TLS hostname"
     };
     expect(options.agent).toBe(false);
     expect(options.headers.Cookie).toBe(undefined);
+    expect(options.headers.Authorization).toBe(undefined);
     return request;
   };
   syncBuiltinESMExports();
@@ -157,7 +158,7 @@ test("Node transport pins the connection without replacing Host or TLS hostname"
   expect(result.bytes.toString()).toBe("<title>Connected</title>");
 });
 
-test("DNS adapters accept Workers CNAME records alongside IP answers without bypassing private-IP checks", async () => {
+test("DNS adapters validate both address families and support sites with only IPv6 records", async () => {
   const original4 = dns.resolve4;
   const original6 = dns.resolve6;
   onTestFinished(() => {
@@ -165,18 +166,27 @@ test("DNS adapters accept Workers CNAME records alongside IP answers without byp
     dns.resolve6 = original6;
     syncBuiltinESMExports();
   });
-  dns.resolve4 = async () => ["cdn.example.com.", publicAddress.address];
-  dns.resolve6 = async () => ["cdn.example.com."];
+  const publicIpv6 = { address: "2606:4700:4700::1111", family: 6 };
+  dns.resolve4 = async () => [publicAddress.address];
+  dns.resolve6 = async () => [publicIpv6.address];
   syncBuiltinESMExports();
-  const network = transport([response()]);
+  const network = transport([response(), response()]);
   await fetchPublicResource("https://example.com", "html", new AbortController().signal, { request: network.request });
   expect(network.calls[0].address).toEqual(publicAddress);
-  dns.resolve4 = async () => ["cdn.example.com.", "127.0.0.1"];
+  dns.resolve6 = async () => [publicIpv6.address, "::1"];
   syncBuiltinESMExports();
   await expect(
     fetchPublicResource("https://example.com", "html", new AbortController().signal, { request: network.request }),
   ).rejects.toMatchObject({ code: "private-address" });
   expect(network.calls.length).toBe(1);
+
+  dns.resolve4 = async () => {
+    throw Object.assign(new Error("No IPv4 records"), { code: "ENODATA" });
+  };
+  dns.resolve6 = async () => [publicIpv6.address];
+  syncBuiltinESMExports();
+  await fetchPublicResource("https://example.com", "html", new AbortController().signal, { request: network.request });
+  expect(network.calls[1].address).toEqual(publicIpv6);
 });
 
 test("redirects are independently validated and bounded", async () => {
@@ -334,26 +344,4 @@ test("private, SVG and mislabeled images do not trigger unsafe browser requests 
     expect(result.checks.some((check) => check.property === "image:fetch" && check.level === "warn")).toBeTruthy();
     expect(network.calls.length).toBe(imageResponse ? 2 : 1);
   }
-});
-
-test("Cloudflare uses its public-only native fetch without cookies or automatic redirects", async () => {
-  const navigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, "navigator");
-  Object.defineProperty(globalThis, "navigator", { value: { userAgent: "Cloudflare-Workers" }, configurable: true });
-  onTestFinished(() => Object.defineProperty(globalThis, "navigator", navigatorDescriptor));
-  const calls = [];
-  const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (url, options) => {
-    calls.push({ url: url.href, options });
-    return new Response("<title>Decoded response</title>", {
-      headers: { "content-type": "text/html", "content-encoding": "gzip" },
-    });
-  });
-  const result = await fetchPublicResource("https://example.com", "html", new AbortController().signal, {
-    resolve: async () => [publicAddress],
-  });
-  expect(result.bytes.toString()).toMatch(/Decoded response/);
-  expect(calls[0].options.redirect).toBe("manual");
-  expect(calls[0].options.credentials).toBe("omit");
-  expect(calls[0].options.headers.Cookie).toBe(undefined);
-  expect(calls[0].options.headers.Authorization).toBe(undefined);
-  fetchSpy.mockRestore();
 });

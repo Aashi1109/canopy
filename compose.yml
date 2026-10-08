@@ -1,4 +1,4 @@
-name: smarttools
+name: canopy
 
 services:
   web:

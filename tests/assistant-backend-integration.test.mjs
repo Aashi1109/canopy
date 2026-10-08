@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { test, vi } from "vitest";
 
@@ -9,6 +11,20 @@ import { test, vi } from "vitest";
 const state = vi.hoisted(() => ({ http: { actor: "owner", services: new Map() } }));
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/db/index.ts", async (importOriginal) => ({
+  ...(await importOriginal()),
+  db: new Proxy(
+    {},
+    {
+      get(_target, key) {
+        const database = state.databases?.getStore() ?? state.database;
+        if (!database) throw new Error("Disposable Assistant database is not initialized");
+        const value = Reflect.get(database, key);
+        return typeof value === "function" ? value.bind(database) : value;
+      },
+    },
+  ),
+}));
 vi.mock("@/lib/auth/session.ts", () => ({
   AuthServiceError: class AuthServiceError extends Error {},
   async getSession() {
@@ -47,13 +63,16 @@ test.skipIf(!url)(
       OPENAI_API_KEY: "fixture-only",
     });
     const pool = new pg.Pool({ connectionString: target.toString(), max: 5 });
+    const databaseSchema = await import("../db/schema.ts");
+    state.database = drizzle(pool, { schema: databaseSchema });
+    state.databases = new AsyncLocalStorage();
     const http = state.http;
-    let sqlClient;
     let AIClient;
     let original;
     t.onTestFinished(async () => {
-      if (sqlClient) await sqlClient.end();
       await pool.end();
+      state.database = undefined;
+      state.databases = undefined;
       if (AIClient && original) Object.assign(AIClient.prototype, original);
       for (const [key, value] of Object.entries(previous)) {
         if (value === undefined) delete process.env[key];
@@ -74,8 +93,6 @@ test.skipIf(!url)(
       `CREATE TABLE fixture_resources(id text NOT NULL,integration_key text NOT NULL,owner_id text NOT NULL,PRIMARY KEY(id,integration_key)); CREATE TABLE fixture_completions(run_id text PRIMARY KEY,integration_key text NOT NULL)`,
     );
     ({ AIClient } = await import("../lib/ai/client.ts"));
-    ({ sqlClient } = await import("../db/index.ts"));
-    const { withDatabaseRequest } = await import("../db/runtime.ts");
     const { createAssistantService } = await import("../lib/assistant/service.ts");
     const { AssistantError } = await import("../lib/assistant/validation.ts");
     const { sql } = await import("../db/index.ts");
@@ -408,20 +425,11 @@ test.skipIf(!url)(
         "options",
         `-c search_path=${schema} -c lock_timeout=${lockTimeout} -c statement_timeout=5000`,
       );
-      const cleanup = [];
-      let value;
+      const scopedPool = new pg.Pool({ connectionString: connection.toString(), max: 5 });
       try {
-        await withDatabaseRequest(
-          async () => {
-            value = await operation();
-            return new Response(null, { status: 204 });
-          },
-          (task) => cleanup.push(task),
-          connection.toString(),
-        );
-        return value;
+        return await state.databases.run(drizzle(scopedPool, { schema: databaseSchema }), operation);
       } finally {
-        await Promise.allSettled(cleanup);
+        await scopedPool.end();
       }
     };
     const readThread = await alpha.createThread("owner", null, {});

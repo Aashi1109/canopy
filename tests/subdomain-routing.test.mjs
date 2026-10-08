@@ -77,7 +77,7 @@ test("IPs and hosted preview domains keep same-host admin routes", async () => {
     "http://[::1]:3000",
     "https://192.168.1.10:3000",
     "https://canopy-preview.vercel.app",
-    "https://smarttools.aashishpal50.workers.dev",
+    "https://canopy-dev.aashishpal50.workers.dev",
   ]) {
     process.env.APP_URL = appUrl;
     expect(getSubdomainOrigin("admin"), appUrl).toBe(null);

@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { randomBytes } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -7,13 +7,13 @@ import { fileURLToPath } from "node:url";
 import { parseEnv } from "node:util";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
-const OPEN_NEXT = "node_modules/@opennextjs/cloudflare/dist/cli/index.js";
 const WRANGLER = "node_modules/wrangler/bin/wrangler.js";
 // Preserve host tooling and Cloudflare authentication, never inherited app settings.
 const HOST_VARIABLE =
-  /^(?:PATH|HOME|USER|LOGNAME|SHELL|TMPDIR|TMP|TEMP|SystemRoot|COMSPEC|USERPROFILE|APPDATA|LOCALAPPDATA|LANG|LC_.*|TERM|CI|FORCE_COLOR|NO_COLOR|HTTP_PROXY|HTTPS_PROXY|ALL_PROXY|NO_PROXY|NODE_EXTRA_CA_CERTS|NODE_USE_SYSTEM_CA|PNPM_HOME|(?:npm_config_|pnpm_config_|NPM_CONFIG_|COREPACK_).*|CLOUDFLARE_API_TOKEN|CLOUDFLARE_API_KEY|CLOUDFLARE_EMAIL|CLOUDFLARE_ACCOUNT_ID|CF_API_TOKEN|CF_API_KEY|CF_EMAIL|CF_ACCOUNT_ID|WRANGLER_CI_.*|WRANGLER_OUTPUT_FILE_.*|WORKERS_CI(?:_.*)?|WRANGLER_LOG.*|WRANGLER_SEND_METRICS)$/;
+  /^(?:PATH|HOME|USER|LOGNAME|SHELL|TMPDIR|TMP|TEMP|SystemRoot|COMSPEC|USERPROFILE|APPDATA|LOCALAPPDATA|LANG|LC_.*|TERM|CI|FORCE_COLOR|NO_COLOR|HTTP_PROXY|HTTPS_PROXY|ALL_PROXY|NO_PROXY|NODE_EXTRA_CA_CERTS|NODE_USE_SYSTEM_CA|PNPM_HOME|DOCKER_HOST|DOCKER_CONTEXT|DOCKER_CONFIG|DOCKER_CERT_PATH|DOCKER_TLS_VERIFY|BUILDX_BUILDER|XDG_RUNTIME_DIR|(?:npm_config_|pnpm_config_|NPM_CONFIG_|COREPACK_).*|CLOUDFLARE_API_TOKEN|CLOUDFLARE_API_KEY|CLOUDFLARE_EMAIL|CLOUDFLARE_ACCOUNT_ID|CF_API_TOKEN|CF_API_KEY|CF_EMAIL|CF_ACCOUNT_ID|WRANGLER_CI_.*|WRANGLER_OUTPUT_FILE_.*|WORKERS_CI(?:_.*)?|WRANGLER_LOG.*|WRANGLER_SEND_METRICS|WRANGLER_DOCKER_BIN)$/;
+const DOCKER_VARIABLE = /^(?:DOCKER_|BUILDX_|WRANGLER_DOCKER_BIN$)/;
 const BUILD_VARIABLE =
-  /^(?:APP_URL|CI|NODE_ENV|NEXTJS_ENV|SENTRY_ORG|SENTRY_PROJECT|SENTRY_AUTH_TOKEN)$|^(?:NEXT_PUBLIC_|NODE_|__NEXT_|OPEN_NEXT_|SKIP_|CLOUDFLARE_|CF_|WRANGLER_|PLAYWRIGHT_)/;
+  /^(?:APP_URL|CI|NODE_ENV|NEXTJS_ENV|SENTRY_ORG|SENTRY_PROJECT|SENTRY_AUTH_TOKEN)$|^(?:NEXT_PUBLIC_|NODE_|__NEXT_|SKIP_|CLOUDFLARE_|CF_|WRANGLER_|PLAYWRIGHT_)/;
 // These application settings must reach the Worker, not the CI build environment.
 const EMAIL_RUNTIME_VARIABLES = new Set(["CLOUDFLARE_EMAIL_ACCOUNT_ID", "CLOUDFLARE_EMAIL_API_TOKEN"]);
 // Only known non-sensitive settings are visible; new or unknown values stay secret.
@@ -45,13 +45,14 @@ function runtimeSettings(values, config) {
   const visit = (value) => {
     if (!value || typeof value !== "object") return;
     if (typeof value.binding === "string") bindings.add(value.binding);
+    if (typeof value.name === "string" && typeof value.class_name === "string") bindings.add(value.name);
     for (const child of Object.values(value)) visit(child);
   };
   visit(config);
   const vars = {};
   const secrets = {};
   for (const [key, value] of Object.entries(values)) {
-    if (bindings.has(key) || HOST_VARIABLE.test(key) || isBuildVariable(key)) continue;
+    if (bindings.has(key) || HOST_VARIABLE.test(key) || DOCKER_VARIABLE.test(key) || isBuildVariable(key)) continue;
     (PLAIN_VARIABLES.has(key) ? vars : secrets)[key] = value;
   }
   return { vars, secrets };
@@ -88,90 +89,129 @@ export function runCloudflare(
   if (values.CLOUDFLARE_ENV) {
     throw new Error("Unset CLOUDFLARE_ENV: these scripts target the top-level wrangler.jsonc configuration.");
   }
+  if (typeof origin !== "string" || !/^https?:\/\//.test(origin)) {
+    throw new Error("Set APP_URL to the public origin in wrangler.jsonc.");
+  }
+  if (!selectedConfig.containers?.length) {
+    throw new Error("Configure the application container in wrangler.jsonc.");
+  }
+  const publicValues = Object.fromEntries(
+    Object.entries(values).filter(([key]) => /^NEXT_PUBLIC_[A-Z0-9_]+$/.test(key)),
+  );
+  const imageVars = {
+    APP_URL: origin,
+    CANOPY_PUBLIC_BUILD_ENV: JSON.stringify(publicValues),
+    // A fresh image revision makes env-only deploys roll running containers too.
+    CANOPY_DEPLOYMENT_REVISION: randomUUID(),
+  };
+  // Wrangler receives host tooling credentials only; Docker receives public build
+  // arguments only. Runtime secrets travel separately and never enter the image.
   const env = {
-    ...Object.fromEntries(Object.entries(environment).filter(([key]) => HOST_VARIABLE.test(key))),
-    ...values,
+    // App dotenv files can contain stale Docker sockets. Use the invoking shell's
+    // Docker overrides, or leave them unset so Docker uses its active context.
+    ...Object.fromEntries(
+      Object.entries({ ...environment, ...values })
+        .filter(([key]) => HOST_VARIABLE.test(key) || DOCKER_VARIABLE.test(key))
+        .map(([key, value]) => [key, DOCKER_VARIABLE.test(key) ? environment[key] : value])
+        .filter(([, value]) => value !== undefined),
+    ),
     APP_URL: origin,
     CLOUDFLARE_ENV: "",
-    NODE_ENV: "production",
-    NEXTJS_ENV: "production",
-    // Next's loader must not fill omitted settings from .env.local or other defaults.
-    // Covered against the installed @next/env implementation by an integration test.
-    __NEXT_PROCESSED_ENV: "true",
-    CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: "false",
-    OPEN_NEXT_DEPLOY: "true",
+    CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: mode === "local" ? "true" : "false",
   };
-  // Never reuse a prior preview's Next output, even if SKIP_NEXT_APP_BUILD is set.
-  const commands = [
-    [OPEN_NEXT, "build", "--config", "wrangler.jsonc", ...environmentArgs, "--skipNextBuild=false"],
-    ["scripts/clear-cloudflare-build-env.mjs"],
-  ];
-  if (mode === "local") {
-    commands.push([
-      WRANGLER,
-      "dev",
+  // Wrangler otherwise replaces the configured name with a stale Workers Builds
+  // association, which can target the old Worker after an infrastructure rename.
+  if (env.WRANGLER_CI_OVERRIDE_NAME && env.WRANGLER_CI_OVERRIDE_NAME !== selectedConfig.name) {
+    throw new Error(
+      "Cloudflare CI targets a different Worker. Connect the build to the Worker named in wrangler.jsonc.",
+    );
+  }
+  const directory = mkdtempSync(join(tmpdir(), "canopy-container-deploy-"));
+  try {
+    // Keep generated configuration and runtime secrets outside the Docker context.
+    // Absolute paths preserve repository resolution from this temporary location.
+    const generatedConfig = structuredClone(config);
+    generatedConfig.main = resolve(ROOT, config.main ?? "worker.ts");
+    // Wrangler normalizes config tsconfig relative to cwd but resolves it from
+    // the config's project root. A positional entry and CLI tsconfig keep both
+    // rooted in the repository when the generated config lives in /tmp.
+    delete generatedConfig.tsconfig;
+    // Wrangler validates top-level containers even when a named environment is
+    // selected, so relocate every Dockerfile reference before writing the file.
+    for (const section of [generatedConfig, ...Object.values(generatedConfig.env ?? {})]) {
+      if (section.containers) {
+        section.containers = section.containers.map((container) => ({
+          ...container,
+          image: resolve(ROOT, container.image),
+          image_build_context: resolve(ROOT, container.image_build_context ?? "."),
+        }));
+      }
+    }
+    const target = dev ? generatedConfig.env.dev : generatedConfig;
+    target.vars = { ...selectedConfig.vars, APP_URL: origin };
+    target.containers = target.containers.map((container) => ({ ...container, image_vars: imageVars }));
+    if (mode === "local") {
+      const { vars, secrets } = runtimeSettings(values, selectedConfig);
+      target.vars = { ...target.vars, ...vars };
+      target.secrets = { ...target.secrets, required: Object.keys(secrets) };
+      Object.assign(env, secrets);
+    }
+    const configFile = join(directory, "wrangler.json");
+    writeFileSync(configFile, JSON.stringify(generatedConfig), { mode: 0o600 });
+    // Wrangler's CLI loads .env/.env.local even when dev-var loading is off.
+    // Select an empty file in every mode. Local runtime secrets are passed via
+    // process.env and explicitly declared above, without loading host overrides.
+    const emptyEnvFile = join(directory, "empty.env");
+    writeFileSync(emptyEnvFile, "", { mode: 0o600 });
+    const wranglerArgs = [
+      generatedConfig.main,
+      "--tsconfig",
+      resolve(ROOT, config.tsconfig ?? "tsconfig.json"),
       "--config",
-      "wrangler.jsonc",
+      configFile,
       ...environmentArgs,
       "--env-file",
-      envFile,
-      "--port",
-      "8787",
-      "--var",
-      `APP_URL:${origin}`,
-    ]);
-  } else if (workersBuild && mode === "deploy") {
-    // Keep runtime settings already uploaded by a local deployment.
-    commands.push([WRANGLER, "deploy", "--config", "wrangler.jsonc", ...environmentArgs, "--keep-vars"]);
-  }
-  for (const args of commands) {
-    let childEnv = env;
-    if (mode === "local" && args[0] === WRANGLER) {
-      childEnv = {
-        ...env,
-        CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: "true",
-        CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_DB: values.DATABASE_URL,
-      };
-    } else if (workersBuild && args[0] === OPEN_NEXT) {
-      // Better Auth initializes while Next collects routes. This disposable key
-      // is only for the build process; the scrubber removes bundled fallbacks.
-      childEnv = { ...env, BETTER_AUTH_SECRET: randomBytes(32).toString("hex") };
-    }
-    const result = execute(process.execPath, args, { cwd: ROOT, env: childEnv, stdio: "inherit" });
-    if (result.error) throw new Error("Unable to start the Cloudflare command.");
-    if (result.status !== 0) return result.status ?? 1;
-  }
-  if (!workersBuild && (mode === "deploy" || mode === "preview")) {
-    const { vars, secrets } = runtimeSettings(values, selectedConfig);
-    const directory = mkdtempSync(join(tmpdir(), "canopy-worker-secrets-"));
-    try {
+      emptyEnvFile,
+    ];
+    const commands = [];
+    if (mode === "build") {
+      commands.push([
+        process.execPath,
+        [WRANGLER, "deploy", ...wranglerArgs, "--dry-run", "--outdir", join(directory, "bundle")],
+      ]);
+    } else if (mode === "local") {
+      commands.push([
+        process.execPath,
+        [WRANGLER, "dev", ...wranglerArgs, "--port", "8787", "--var", `APP_URL:${origin}`],
+      ]);
+    } else if (workersBuild) {
+      // CI has no runtime secrets; retain the values from the prior deployment.
+      commands.push([process.execPath, [WRANGLER, "deploy", ...wranglerArgs, "--keep-vars"]]);
+    } else {
+      const { vars, secrets } = runtimeSettings(values, selectedConfig);
       const secretsFile = join(directory, "secrets.json");
       writeFileSync(secretsFile, JSON.stringify(secrets), { mode: 0o600 });
-      // OpenNext's deploy helper reloads default env files. This app has no remote
-      // OpenNext cache to populate, so deploy the scrubbed bundle with Wrangler.
-      const result = execute(
+      commands.push([
         process.execPath,
         [
           WRANGLER,
           "deploy",
-          "--config",
-          "wrangler.jsonc",
-          ...environmentArgs,
-          "--env-file",
-          envFile,
+          ...wranglerArgs,
           ...Object.entries(vars).flatMap(([key, value]) => ["--var", `${key}:${value}`]),
           "--secrets-file",
           secretsFile,
         ],
-        { cwd: ROOT, env, stdio: "inherit" },
-      );
-      if (result.error) throw new Error("Unable to start the Cloudflare command.");
-      return result.status ?? 1;
-    } finally {
-      rmSync(directory, { recursive: true, force: true });
+      ]);
     }
+    for (const [command, commandArgs] of commands) {
+      const result = execute(command, commandArgs, { cwd: ROOT, env, stdio: "inherit" });
+      if (result.error) throw new Error("Unable to start the Cloudflare command.");
+      if (result.status !== 0) return result.status ?? 1;
+    }
+    return 0;
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
   }
-  return 0;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

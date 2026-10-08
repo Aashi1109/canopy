@@ -75,11 +75,7 @@ const transport: Transport = {
     const addresses = await Promise.allSettled([resolve4(hostname), resolve6(hostname)]);
     return addresses.flatMap((result, index) =>
       result.status === "fulfilled"
-        ? result.value
-            // Workers' DNS shim includes CNAME strings in address answers.
-            // Keep actual address records; all of them still pass the public-IP gate.
-            .filter((address) => isIP(address) === (index === 0 ? 4 : 6))
-            .map((address) => ({ address, family: index === 0 ? (4 as const) : (6 as const) }))
+        ? result.value.map((address) => ({ address, family: index === 0 ? (4 as const) : (6 as const) }))
         : [],
     );
   },
@@ -89,31 +85,6 @@ const transport: Transport = {
       Accept: "text/html,application/xhtml+xml,image/*",
       "Accept-Encoding": "gzip, deflate, br",
     };
-    if (globalThis.navigator?.userAgent === "Cloudflare-Workers") {
-      // Workers' native global fetch filters resolved IPs at connection time
-      // using workerd's public-only network capability. Its node:http shim
-      // ignores lookup, so use native fetch with manually validated redirects.
-      // global_fetch_strictly_public also prevents same-zone origin bypasses.
-      const response = await fetch(url, {
-        method: "GET",
-        headers,
-        signal,
-        redirect: "manual",
-        credentials: "omit",
-        cache: "no-store",
-      });
-      const responseHeaders = new Headers(response.headers);
-      // fetch exposes decoded bytes; decoding again would corrupt the stream.
-      responseHeaders.delete("content-encoding");
-      responseHeaders.delete("content-length");
-      return {
-        status: response.status,
-        headers: responseHeaders,
-        body: response.body
-          ? Readable.fromWeb(response.body as import("node:stream/web").ReadableStream)
-          : Readable.from([]),
-      };
-    }
     return new Promise((resolve, reject) => {
       const request = (url.protocol === "https:" ? httpsRequest : httpRequest)(
         url,

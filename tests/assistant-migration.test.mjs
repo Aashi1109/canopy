@@ -1,10 +1,25 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { test, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+const fixture = vi.hoisted(() => ({ database: undefined }));
+vi.mock("@/db/index.ts", async (importOriginal) => ({
+  ...(await importOriginal()),
+  db: new Proxy(
+    {},
+    {
+      get(_target, key) {
+        if (!fixture.database) throw new Error("Disposable Assistant database is not initialized");
+        const value = Reflect.get(fixture.database, key);
+        return typeof value === "function" ? value.bind(fixture.database) : value;
+      },
+    },
+  ),
+}));
 
 // Never fall back to the application's configured DATABASE_URL.
 const url = process.env.ASSISTANT_TEST_DATABASE_URL;
@@ -351,9 +366,9 @@ test.skipIf(!url)(
 test.skipIf(!url)(
   "Assistant retention erases stale thread settings while preserving usage and cleanup retries",
   async () => {
-    const [{ cleanupAssistant }, { withDatabaseRequest }, { AIClient }] = await Promise.all([
+    const [{ cleanupAssistant }, databaseSchema, { AIClient }] = await Promise.all([
       import("../lib/assistant/maintenance.ts"),
-      import("../db/runtime.ts"),
+      import("../db/schema.ts"),
       import("../lib/ai/client.ts"),
     ]);
     const originalDelete = AIClient.prototype.deleteResponse;
@@ -364,7 +379,8 @@ test.skipIf(!url)(
       if (failProviderDeletion) throw new Error("Provider cleanup needs retry");
     };
     try {
-      await withDatabase(async (client, schema) => {
+      await withDatabase(async (client) => {
+        fixture.database = drizzle(client, { schema: databaseSchema });
         await client.query(migration);
         await client.query(`
           INSERT INTO assistant_threads(id,integration_key,owner_id,title,settings,updated_at) VALUES
@@ -375,23 +391,7 @@ test.skipIf(!url)(
             VALUES ('retained-run','retained','fixture','owner','retained-request','custom_action','conversational','openai','fixture-model','opaque-response','completed','{"clientRequestId":"retained-request","operation":"custom_action","message":"Private sent text"}','{"text":"Private answer","proposals":[],"citations":[]}','{"handles":["opaque-response"]}','{"totalTokens":42}',now()-interval '40 days',now()-interval '31 days',now()-interval '31 days',now()-interval '1 day');
         `);
         const before = (await client.query("SELECT id,settings,updated_at FROM assistant_threads ORDER BY id")).rows;
-        const target = new URL(url);
-        target.searchParams.set("options", `-c search_path=${schema}`);
-        const cleanup = async () => {
-          const background = [];
-          let counts;
-          await withDatabaseRequest(
-            async () => {
-              counts = await cleanupAssistant();
-              return new Response(null, { status: 204 });
-            },
-            (task) => background.push(task),
-            target.href,
-          );
-          await Promise.all(background);
-          return counts;
-        };
-        const first = await cleanup();
+        const first = await cleanupAssistant();
         assert.equal(first.failed, 1);
         assert.deepEqual(deletedResponses, ["opaque-response"]);
         const after = (await client.query("SELECT id,settings,updated_at FROM assistant_threads ORDER BY id")).rows;
@@ -419,7 +419,7 @@ test.skipIf(!url)(
         assert.equal(pending.response, null);
 
         failProviderDeletion = false;
-        const second = await cleanup();
+        const second = await cleanupAssistant();
         assert.equal(second.failed, 0);
         assert.equal(second.runs, 1);
         assert.deepEqual(deletedResponses, ["opaque-response", "opaque-response"]);
@@ -438,6 +438,7 @@ test.skipIf(!url)(
         );
       });
     } finally {
+      fixture.database = undefined;
       AIClient.prototype.deleteResponse = originalDelete;
     }
   },

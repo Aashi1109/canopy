@@ -85,13 +85,9 @@ async function command(args: string[]): Promise<unknown> {
     // Observability must never prevent a cache command from running.
   }
   let status = "success";
-  // Workers cannot reuse sockets across requests. Keep their commands self-contained.
-  // ponytail: one connection per Worker command; add request-scoped reuse if latency warrants it.
-  const transient = globalThis.navigator?.userAgent === "Cloudflare-Workers";
-  let current: ReturnType<typeof connectRedis> | undefined;
   let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    current = transient ? connectRedis() : connection?.client.isOpen ? connection : (connection = connectRedis());
+    const current = connection?.client.isOpen ? connection : (connection = connectRedis());
     const { client, ready } = current;
     return await Promise.race([
       ready.then(() => client.sendCommand(args)),
@@ -108,7 +104,6 @@ async function command(args: string[]): Promise<unknown> {
     throw new Error("Redis cache unavailable");
   } finally {
     clearTimeout(timeout);
-    if (transient && current?.client.isOpen) current.client.destroy();
     try {
       span?.setStatus({ code: status === "error" ? 2 : 1 });
       span?.end();

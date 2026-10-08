@@ -1,7 +1,0 @@
-/_next/static/*
-  Cache-Control: public, max-age=31536000, immutable
-  Cross-Origin-Embedder-Policy: require-corp
-
-/media/vendor/*
-  Cross-Origin-Embedder-Policy: require-corp
-  Cross-Origin-Resource-Policy: same-origin

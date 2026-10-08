@@ -70,7 +70,7 @@ export async function runBlogPublishCron(
   try {
     target = env.BLOG_PUBLISH_URL
       ? new URL(env.BLOG_PUBLISH_URL)
-      : new URL(PUBLISH_PATH, new URL(env.APP_URL ?? "https://smarttools.internal").origin);
+      : new URL(PUBLISH_PATH, new URL(env.APP_URL ?? "https://canopy.internal").origin);
   } catch {
     throw new Error("Invalid blog scheduler configuration.");
   }

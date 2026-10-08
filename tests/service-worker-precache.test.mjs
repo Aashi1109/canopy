@@ -11,10 +11,10 @@ vi.mock("@sentry/nextjs/config", () => ({ withSentryConfig: (config) => config }
 
 const { default: nextConfig } = await import("../next.config.ts");
 
-test("public precaching excludes Cloudflare headers metadata and preserves browser assets", () => {
+test("public precaching preserves browser assets in the container build", () => {
   const directory = mkdtempSync(join(tmpdir(), "canopy-precache-"));
   try {
-    for (const asset of ["_headers", "favicon.ico", "media/vendor/qpdf/qpdf.wasm", "assets/_headers.txt"]) {
+    for (const asset of ["favicon.ico", "media/vendor/qpdf/qpdf.wasm", "assets/help.txt"]) {
       const path = join(directory, "public", asset);
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, "fixture");
@@ -36,7 +36,7 @@ test("public precaching excludes Cloudflare headers metadata and preserves brows
     );
     const entries = compilation.plugins.flatMap((plugin) => plugin.config?.additionalPrecacheEntries ?? []);
     expect(entries.map(({ url }) => url).sort()).toEqual([
-      "/assets/_headers.txt",
+      "/assets/help.txt",
       "/favicon.ico",
       "/media/vendor/qpdf/qpdf.wasm",
     ]);

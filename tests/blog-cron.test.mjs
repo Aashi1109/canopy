@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import JSON5 from "next/dist/compiled/json5/index.js";
-import { expect, test, vi } from "vitest";
+import { expect, test } from "vitest";
 import { handleBlogPublishRequest, runBlogPublishCron } from "@/lib/blog/cron.ts";
 
 const secret = "test-blog-scheduler-secret-for-tests";
@@ -174,108 +174,4 @@ test("deployment schedules publishing twice per hour and maintenance twice daily
   const config = JSON5.parse(await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"));
   expect(config.triggers.crons).toEqual(["*/30 * * * *", "0 0,12 * * *"]);
   expect(config.env.dev.triggers.crons).toEqual([]);
-});
-
-test.each(["DB", undefined])("actual Worker schedule uses %s through its fetch database wrapper", async (binding) => {
-  const maintenanceCounts = { files: 2, runs: 3, failed: 0 };
-  const state = {
-    wrapped: 0,
-    dispatched: 0,
-    databaseUrl: null,
-    counts,
-    maintenanceCounts,
-    paths: [],
-    publishStatus: 200,
-    maintenanceStatus: 200,
-  };
-  globalThis.__blogCronWorkerTest = state;
-  vi.resetModules();
-  vi.doMock("@/db/runtime.ts", () => ({
-    async withDatabaseRequest(handler, waitUntil, databaseUrl) {
-      const state = globalThis.__blogCronWorkerTest;
-      state.wrapped++;
-      state.databaseUrl = databaseUrl;
-      return handler(waitUntil);
-    },
-  }));
-  vi.doMock("@/.open-next/worker.js", () => ({
-    default: {
-      async fetch(request, env, ctx) {
-        const state = globalThis.__blogCronWorkerTest;
-        if (!state.wrapped) throw new Error("Database wrapper was bypassed");
-        state.dispatched++;
-        ctx.waitUntil(Promise.resolve());
-        const path = new URL(request.url).pathname;
-        state.paths.push(path);
-        const maintenance = path === "/api/internal/assistant/maintenance";
-        return Response.json(maintenance ? state.maintenanceCounts : state.counts, {
-          status: maintenance ? state.maintenanceStatus : state.publishStatus,
-        });
-      },
-    },
-  }));
-  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-  const info = vi.spyOn(console, "info").mockImplementation(() => {});
-  try {
-    const { default: worker } = await import("@/worker.ts");
-    const waits = [];
-    const logs = [];
-    warn.mockImplementation((...args) => logs.push(args));
-    const env = {
-      BLOG_SCHEDULER_SECRET: secret,
-      ...(binding ? { [binding]: { connectionString: "postgres://local/test-only" } } : {}),
-      WORKER_SELF_REFERENCE: {
-        fetch: (req) => worker.fetch(req, env, { waitUntil: (task) => waits.push(task) }),
-      },
-    };
-    await worker.scheduled({ cron: "*/30 * * * *" }, env);
-    await Promise.all(waits);
-    expect(state.wrapped).toBe(1);
-    expect(state.dispatched).toBe(1);
-    expect(state.databaseUrl).toBe(binding ? env[binding].connectionString : undefined);
-    expect(waits.length).toBe(1);
-    expect(logs).toEqual([["Blog scheduled publishing has failed posts", counts]]);
-    expect(state.paths).toEqual([path]);
-    expect(info).not.toHaveBeenCalled();
-
-    state.paths.length = 0;
-    state.publishStatus = 503;
-    await expect(worker.scheduled({ cron: "*/30 * * * *" }, env)).rejects.toThrow(
-      /Blog publishing request returned HTTP 503/,
-    );
-    expect(state.paths).toEqual([path]);
-
-    state.paths.length = 0;
-    delete env.BLOG_SCHEDULER_SECRET;
-    env.ASSISTANT_SCHEDULER_SECRET = "test-assistant-secret";
-    await worker.scheduled({ cron: "0 0,12 * * *" }, env);
-    await Promise.all(waits);
-    expect(state.wrapped).toBe(3);
-    expect(state.dispatched).toBe(3);
-    expect(state.databaseUrl).toBe(binding ? env[binding].connectionString : undefined);
-    expect(state.paths).toEqual(["/api/internal/assistant/maintenance"]);
-    expect(info).toHaveBeenCalledExactlyOnceWith("Assistant maintenance completed", maintenanceCounts);
-    expect(logs).toHaveLength(1);
-
-    state.paths.length = 0;
-    state.maintenanceStatus = 503;
-    await expect(worker.scheduled({ cron: "0 0,12 * * *" }, env)).rejects.toThrow(
-      /Assistant maintenance request returned HTTP 503/,
-    );
-    expect(state.paths).toEqual(["/api/internal/assistant/maintenance"]);
-
-    state.paths.length = 0;
-    delete env.ASSISTANT_SCHEDULER_SECRET;
-    await worker.scheduled({ cron: "0 * * * *" }, env);
-    expect(state.paths).toEqual([]);
-    expect(state.wrapped).toBe(4);
-    expect(state.dispatched).toBe(4);
-  } finally {
-    warn.mockRestore();
-    info.mockRestore();
-    vi.doUnmock("@/db/runtime.ts");
-    vi.doUnmock("@/.open-next/worker.js");
-    vi.resetModules();
-    delete globalThis.__blogCronWorkerTest;
-  }
 });

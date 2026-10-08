@@ -149,10 +149,7 @@ async function buildTool(
   };
 }
 
-/**
- * Node reuses resolved snapshots for 24 hours, with invalidation after local edits.
- * Workers keep only React's per-request cache: an edit cannot invalidate other isolates.
- */
+/** Reuse resolved snapshots for 24 hours, with invalidation after local edits. */
 const loadCatalog = cache(async () => {
   if (!isDatabaseConfigured()) return { tools: [], paperworkTools: [], publicTools: [] };
 
@@ -212,9 +209,7 @@ const loadCatalog = cache(async () => {
     ];
     return { tools, paperworkTools, publicTools };
   };
-  return globalThis.navigator?.userAgent === "Cloudflare-Workers"
-    ? load()
-    : catalogCache.remember("all", load, 24 * 60 * 60);
+  return catalogCache.remember("all", load, 24 * 60 * 60);
 });
 
 /** Every enabled, non-archived, slugged tool. Optionally narrowed to one app. */

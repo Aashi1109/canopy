@@ -22,7 +22,7 @@ async function checkAccountAccess(request: NextRequest, redirectOrigin: string):
 
   let session;
   try {
-    // Keep async database dependencies out of OpenNext's middleware module loading.
+    // Load database dependencies only when an authenticated request needs them.
     const { auth } = await import("./lib/auth/index.ts");
     session = await auth.api.getSession({
       headers: request.headers,
