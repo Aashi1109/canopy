@@ -344,6 +344,7 @@ test("signature validation rejects MIME mismatches and unsupported animation", (
     ok: false,
     code: "mime-mismatch",
     message: "The file contents do not match its reported type.",
+    details: { messageRef: { key: "media.validateMediaSignature.mimeMismatch" } },
   });
   expect(validateMediaSignature(Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]), "image/jpeg", ["png"]).code).toBe(
     "unsupported-type",

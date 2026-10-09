@@ -1,4 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
+import { useLocale } from "next-intl";
+import { localizeHref, type Locale } from "@/lib/i18n/config";
 import { Avatar, AvatarFallback, Caption, H3, Overline, P, TextLink } from "@/components/ui/index.tsx";
 import type { listPublishedBlogPosts } from "@/lib/blog/queries";
 
@@ -11,6 +13,7 @@ export function BlogByline({
   post: Pick<Post, "authorName" | "firstPublishedAt">;
   showAvatar?: boolean;
 }) {
+  const locale = useLocale();
   const metadata = (
     <Caption className="block font-sans text-xs leading-normal text-muted-foreground">
       {post.authorName}
@@ -19,7 +22,7 @@ export function BlogByline({
           {" "}
           ·{" "}
           <time dateTime={post.firstPublishedAt.toISOString()}>
-            {new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(post.firstPublishedAt)}
+            {new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(post.firstPublishedAt)}
           </time>
         </>
       )}
@@ -54,11 +57,12 @@ export function BlogTeaser({
   coverDelivery?: { src: string; srcSet: string };
   number?: number;
 }) {
+  const locale = useLocale() as Locale;
   if (variant === "related") {
     return (
       <article className="min-w-0 h-full">
         <TextLink
-          href={`/blog/${post.slug}`}
+          href={localizeHref(`/blog/${post.slug}`, locale)}
           aria-label={post.title}
           className="group flex h-full min-w-0 flex-col gap-4 rounded-sm text-foreground no-underline hover:no-underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
         >
@@ -67,7 +71,7 @@ export function BlogTeaser({
             className="flex items-center justify-between border-b border-input pb-3 text-accent-text"
           >
             <span className="font-caption text-[32px] font-normal leading-none">{String(number).padStart(2, "0")}</span>
-            <ArrowUpRight className="size-5 shrink-0" />
+            <ArrowUpRight className="size-5 shrink-0 rtl:-scale-x-100" />
           </div>
           <div className="space-y-2.5">
             <Overline className="block break-words font-sans text-xs font-semibold leading-normal tracking-normal text-accent-text">
@@ -101,7 +105,10 @@ export function BlogTeaser({
         />
       )}
       <Overline className="block font-sans text-xs font-normal leading-normal tracking-normal text-accent-text">
-        <TextLink className="no-underline" href={`/blog?category=${encodeURIComponent(post.category.slug)}`}>
+        <TextLink
+          className="no-underline"
+          href={localizeHref(`/blog?category=${encodeURIComponent(post.category.slug)}`, locale)}
+        >
           {post.category.label}
         </TextLink>
       </Overline>
@@ -109,7 +116,10 @@ export function BlogTeaser({
         <H3
           className={`font-sans text-[25px] leading-[1.2] ${variant === "list" ? "lg:text-[23px] lg:leading-[1.25]" : ""}`}
         >
-          <TextLink className="break-words text-foreground no-underline hover:underline" href={`/blog/${post.slug}`}>
+          <TextLink
+            className="break-words text-foreground no-underline hover:underline"
+            href={localizeHref(`/blog/${post.slug}`, locale)}
+          >
             {post.title}
           </TextLink>
         </H3>

@@ -77,3 +77,22 @@ test("invoice validation rejects unusable line items", () => {
   invoice.lineItems = [];
   expect(Object.keys(validateInvoiceData(invoice))).toEqual(["lineItems"]);
 });
+
+test("translated invoice validation keeps stable field paths and named error reasons", () => {
+  const invoice = validInvoice();
+  invoice.business.name = "";
+  invoice.invoice.dueDate = "2026-07-21";
+  invoice.lineItems[0].quantity = -1;
+  const seen = [];
+  const errors = validateInvoiceData(invoice, (key) => {
+    seen.push(key);
+    return `translated:${key}`;
+  });
+  expect(errors).toEqual({
+    "business.name": "translated:businessName",
+    "invoice.dueDate": "translated:dueDateOrder",
+    "lineItems[0].quantity": "translated:itemQuantity",
+  });
+  expect(seen).toEqual(["businessName", "dueDateOrder", "itemQuantity"]);
+  expect(validateInvoiceData(invoice)["invoice.dueDate"]).toBe("Due date must be on or after the invoice date.");
+});

@@ -1,3 +1,4 @@
+import { MEDIA_FILE_ERROR_MESSAGES, MEDIA_PDF_ERROR_MESSAGES } from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
@@ -34,6 +35,17 @@ export default {
     empty: "Add a PDF to reorder its pages.",
     ready: "Page order is ready.",
     running: "Reordering pages…",
+  },
+  messages: {
+    "progress.reorderingPdfPage": "Reordering PDF page",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_PDF_ERROR_MESSAGES,
+    "errors.noFiles": "Choose a PDF to reorder.",
+    "errors.incompleteOrder": "Include every PDF page exactly once in the new order.",
+    "workspace.dragAnyPageCardToReorderClick":
+      "Drag any page card to reorder. Click to preview; on touch, hold to drag.",
+    "workspace.pageOrder": "Page order",
   },
   content: {
     howToUse: [

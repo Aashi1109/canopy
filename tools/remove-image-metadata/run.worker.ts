@@ -31,7 +31,7 @@ const ALLOWED: readonly DecodableImageKind[] = ["jpeg", "png", "webp", "heic"];
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const selection = validateImageSelection(ctx.input.files.map((file) => ({ size: file.size })));
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
 
   const total = ctx.input.files.length;
   const files = await writeArtifactBatch(
@@ -43,18 +43,33 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     async (write) => {
       for (let index = 0; index < total; index += 1) {
         ctx.signal.throwIfAborted();
-        ctx.progress({ completed: index, total, stage: "Decoding image" });
+        ctx.progress({
+          completed: index,
+          total,
+          stage: "Decoding image",
+          stageMessage: { key: "progress.decodingImage" },
+        });
         const input = ctx.input.files[index];
         const { image, kind } = await decodeImage(input, ALLOWED);
         const format = resolveOutputFormat("original", kind);
-        ctx.progress({ completed: index, total, stage: "Encoding image" });
+        ctx.progress({
+          completed: index,
+          total,
+          stage: "Encoding image",
+          stageMessage: { key: "progress.encodingImage" },
+        });
         const buffer = await encodeImage(image, format, 0.8, "#ffffff", 6);
         await write({
           name: createOutputFilename(input.name, extensionFor(format), "metadata-removed"),
           mime: mimeFor(format),
           source: new Uint8Array(buffer),
         });
-        ctx.progress({ completed: index + 1, total, stage: "Image complete" });
+        ctx.progress({
+          completed: index + 1,
+          total,
+          stage: "Image complete",
+          stageMessage: { key: "progress.imageComplete" },
+        });
       }
     },
   );

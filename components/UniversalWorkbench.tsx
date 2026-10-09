@@ -1,6 +1,8 @@
 "use client";
 
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
+import { useLocale, useTranslations } from "next-intl";
+import { defaultLocale, isLocale, localizeHref } from "@/lib/i18n/config";
 import {
   InlineCode,
   Overline,
@@ -39,7 +41,7 @@ import {
 import { type ComponentType, type ReactNode, useEffect, useState, useSyncExternalStore } from "react";
 
 import { ToolRuntimeProvider, useToolRuntime } from "@/lib/tool-runtime/useToolRuntime";
-import { resolveCategoryKey } from "@/lib/tool-framework/categories";
+import type { CategoryKey } from "@/lib/tool-framework/categories";
 import type { ToolContent, ToolWorkbenchMark } from "@/lib/tool-framework/spec";
 import type {
   ToolLifecycle,
@@ -53,6 +55,7 @@ type UniversalWorkbenchProps<Input, Settings extends ToolSettings, Result> = Omi
   ToolPageComponentProps,
   "definitionKey"
 > & {
+  categoryKey: CategoryKey;
   content: ToolContent;
   definition: ToolDefinition;
   runtimeSpec: ToolRuntimeSpec<Input, Settings, Result>;
@@ -87,6 +90,7 @@ function useIsOnline(): boolean {
 // Shown for tools flagged `capabilities.network` while the browser is offline:
 // they call a live service and cannot run without a connection.
 function OfflineNoticeDialog({ toolName }: { toolName: string }) {
+  const t = useTranslations("Workbench");
   const isOnline = useIsOnline();
   const [dismissed, setDismissed] = useState(false);
 
@@ -103,14 +107,11 @@ function OfflineNoticeDialog({ toolName }: { toolName: string }) {
     >
       <AlertDialogContent className="max-w-md" data-testid="tool-offline-overlay">
         <AlertDialogHeader>
-          <AlertDialogTitle>Internet connection required</AlertDialogTitle>
-          <AlertDialogDescription>
-            {toolName} uses a live online service, so it can&apos;t run offline. Reconnect and try again — the rest of
-            your tools keep working without a connection.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{t("offlineTitle")}</AlertDialogTitle>
+          <AlertDialogDescription>{t("offlineDescription", { name: toolName })}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogAction onClick={() => setDismissed(true)}>Got it</AlertDialogAction>
+          <AlertDialogAction onClick={() => setDismissed(true)}>{t("gotIt")}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -132,6 +133,7 @@ function ConfirmationDialog({
   onConfirm: () => void;
   title: string;
 }) {
+  const t = useTranslations("Workbench");
   return (
     <AlertDialog open>
       <AlertDialogContent
@@ -156,7 +158,7 @@ function ConfirmationDialog({
           </List>
         ) : null}
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel onClick={onCancel}>{t("cancel")}</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm}>{confirmLabel}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -167,6 +169,7 @@ function ConfirmationDialog({
 function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
   account,
   category,
+  categoryKey,
   content,
   definition,
   description,
@@ -180,10 +183,23 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
   workbenchMark,
   Workspace,
 }: Omit<UniversalWorkbenchProps<Input, Settings, Result>, "runtimeSpec">) {
+  const t = useTranslations("Workbench");
+  const common = useTranslations("Common");
+  const messages = useTranslations();
+  const requestedLocale = useLocale();
+  const locale = isLocale(requestedLocale) ? requestedLocale : defaultLocale;
   const runtime = useToolRuntime<Input, Settings, Result>();
   const workbenchMarkText = workbenchMark?.text.trim();
   const isBusy = runtime.lifecycle === "running";
-  const factSummary = runtime.facts.map((fact) => `${fact.label}: ${fact.value}`).join(" · ");
+  const factSummary = runtime.facts
+    .map((fact) => {
+      const labelKey = fact.labelMessage ? `Tool.runtime.${fact.labelMessage.key}` : undefined;
+      const valueKey = fact.valueMessage ? `Tool.runtime.${fact.valueMessage.key}` : undefined;
+      const label = labelKey && messages.has(labelKey) ? messages(labelKey, fact.labelMessage?.values) : fact.label;
+      const value = valueKey && messages.has(valueKey) ? messages(valueKey, fact.valueMessage?.values) : fact.value;
+      return `${label}: ${value}`;
+    })
+    .join(" · ");
   const status =
     runtime.lifecycle === "running"
       ? definition.labels.running
@@ -193,25 +209,28 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
           runtime.error ||
           runtime.issues[0]?.message ||
           validationReason ||
-          lifecycleLabel(definition, runtime.lifecycle);
+          lifecycleLabel(definition, runtime.lifecycle, t);
   const isMedia = definition.app === "media";
   const usesNetwork = Boolean(definition.capabilities.network);
-  const productHref = isMedia ? "/media" : "/devtools";
-  const productName = isMedia ? "Media tools" : "Developer tools";
-  const privacyBadge = usesNetwork ? "USES ONLINE SERVICE" : isMedia ? "PRIVATE FILE PROCESSING" : "PRIVATE IN BROWSER";
+  const productHref = localizeHref(isMedia ? "/media" : "/devtools", locale);
+  const productName = common(isMedia ? "media" : "developer");
+  const privacyBadge = t(usesNetwork ? "onlineService" : isMedia ? "privateFiles" : "privateBrowser");
   const PrivacyIcon = usesNetwork ? Globe2 : LockKeyhole;
-  const capabilityBadge = definition.labels.primaryAction?.toUpperCase() ?? (isMedia ? "FILE TOOL" : "BROWSER TOOL");
+  const capabilityBadge = definition.labels.primaryAction?.toUpperCase() ?? t(isMedia ? "fileTool" : "browserTool");
   const supportItems = [
     ...(content.limitations?.length
       ? [
           {
             icon: AlertTriangle,
-            eyebrow: "Limitations",
+            eyebrow: t("limitations"),
+            warning: true,
             items: content.limitations,
           },
         ]
       : []),
-    ...(content.howToUse.length ? [{ icon: ListChecks, eyebrow: "How to use", items: content.howToUse }] : []),
+    ...(content.howToUse.length
+      ? [{ icon: ListChecks, eyebrow: t("howToUse"), items: content.howToUse, warning: false }]
+      : []),
   ];
 
   return (
@@ -231,16 +250,16 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
         }
         breadcrumbCurrent={title}
         category={category}
-        categoryHref={`${productHref}?category=${encodeURIComponent(resolveCategoryKey(category, definition.app))}`}
+        categoryHref={`${productHref}?category=${encodeURIComponent(categoryKey)}`}
         description={description}
-        eyebrow={isMedia ? "MEDIA TOOL" : "DEVELOPER TOOL"}
+        eyebrow={t(isMedia ? "mediaTool" : "developerTool")}
         footer={<CanopyFooter />}
         account={account}
         headerActions={<AccountNavigation {...account} />}
         productHref={productHref}
         productName={productName}
         skipHref="#tool-workspace"
-        skipLabel="Skip to tool workspace"
+        skipLabel={common("skipWorkspace")}
         showCategoryInBreadcrumb
         title={title}
         workspaceClassName="pb-4"
@@ -282,7 +301,7 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
                       variant="ghost"
                     >
                       <Undo2 aria-hidden="true" className="size-3.5" />
-                      Undo
+                      {t("undo")}
                     </Button>
                   ) : null}
                 </Strong>
@@ -309,7 +328,7 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
           }
           toolbarActions={
             <div
-              aria-label={`${title} actions`}
+              aria-label={t("toolActions", { name: title })}
               className="flex min-w-0 items-center gap-2 [&_button]:min-w-0 [&_button[data-size=default]]:!h-11 [&_button[data-size=default]]:!gap-2 [&_button[data-size=default]]:!px-4 [&_button[data-size=default]_svg]:!size-[18px] [&_button[data-variant=default]:enabled]:!bg-primary [&_button[data-variant=default]:enabled]:!text-primary-foreground [&_button[data-variant=default]:enabled:hover]:!bg-primary/90 max-[56rem]:w-full max-[56rem]:flex-wrap max-[56rem]:justify-end max-[24rem]:[&_button]:max-w-full max-[24rem]:[&_button]:overflow-hidden max-[24rem]:[&_button_svg]:hidden"
               data-testid="tool-action-toolbar"
               role="toolbar"
@@ -320,7 +339,7 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
           variant={isMedia ? "media" : "utility"}
         >
           <section
-            aria-label={`${title} workspace`}
+            aria-label={t("toolWorkspace", { name: title })}
             className="relative h-full min-h-0 min-w-0 overflow-hidden"
             data-testid="tool-workspace-content"
           >
@@ -345,7 +364,7 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
           data-testid="tool-support"
         >
           <Overline className="text-primary" id="before-you-continue-heading">
-            Before you continue
+            {t("beforeContinue")}
           </Overline>
           <div
             className={`mt-3 grid gap-3 max-[52rem]:grid-cols-1 ${supportItems.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
@@ -355,10 +374,7 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
               return (
                 <article className="rounded-lg border border-border bg-muted/55 px-4 py-3" key={item.eyebrow}>
                   <Overline className="flex items-center gap-2">
-                    <Icon
-                      aria-hidden="true"
-                      className={`size-4 ${item.eyebrow === "Limitations" ? "text-amber-700" : "text-primary"}`}
-                    />
+                    <Icon aria-hidden="true" className={`size-4 ${item.warning ? "text-amber-700" : "text-primary"}`} />
                     {item.eyebrow}
                   </Overline>
                   <List className="mt-1.5 list-disc space-y-1 pl-4 text-muted-foreground">
@@ -375,15 +391,13 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
             <div>
               <Overline className="flex items-center gap-2">
                 <ArrowLeftRight aria-hidden="true" className="size-4 text-primary" />
-                Related tools
+                {t("relatedTools")}
               </Overline>
-              <H2 className="mt-1">Continue with a related tool</H2>
-              <Muted className="mt-1 text-muted-foreground">
-                Continue with a focused tool that matches your next step.
-              </Muted>
+              <H2 className="mt-1">{t("continueRelated")}</H2>
+              <Muted className="mt-1 text-muted-foreground">{t("relatedDescription")}</Muted>
             </div>
             <nav
-              aria-label={`Related ${category} tools`}
+              aria-label={t("relatedCategory", { category })}
               className="flex shrink-0 flex-wrap justify-end gap-2 max-[52rem]:justify-start"
             >
               {relatedTools.map((tool) => (
@@ -402,20 +416,22 @@ function WorkbenchFrame<Input, Settings extends ToolSettings, Result>({
   );
 }
 
-function lifecycleLabel(definition: ToolDefinition, lifecycle: ToolLifecycle) {
+function lifecycleLabel(definition: ToolDefinition, lifecycle: ToolLifecycle, t: ReturnType<typeof useTranslations>) {
   switch (lifecycle) {
     case "empty":
-      return "Ready for input.";
+      return t("readyInput");
     case "running":
       return definition.labels.running;
     case "ready":
-      return `Ready to ${(definition.labels.primaryAction ?? "run the tool").replace(/^./, (character) => character.toLowerCase())}.`;
+      return definition.labels.primaryAction
+        ? t("readyAction", { action: definition.labels.primaryAction })
+        : t("readyRun");
     case "completed":
       return definition.labels.ready;
     case "invalid":
-      return "Input needs attention.";
+      return t("inputAttention");
     case "failed":
-      return "Action failed.";
+      return t("actionFailed");
   }
 }
 

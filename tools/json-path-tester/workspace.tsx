@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 import { useId, useMemo } from "react";
 import { ToolWorkspace, type WorkspaceProps } from "@/components/ToolWorkspace";
@@ -7,6 +8,7 @@ import { parseUtilityJson } from "@/lib/devtools/shared/json-input";
 import { getJsonPathSuggestions } from "./json-path";
 
 export default function JsonPathTesterWorkspace(props: WorkspaceProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const id = useId();
   const path = typeof props.settings.path === "string" ? props.settings.path : "";
   const repairMode = typeof props.settings.repairMode === "string" ? props.settings.repairMode : "remove";
@@ -26,7 +28,7 @@ export default function JsonPathTesterWorkspace(props: WorkspaceProps) {
       renderInputSettings={() => (
         <div className="grid shrink-0 gap-1.5 px-4 pt-4">
           <FieldLabel className="text-muted-foreground" htmlFor={id}>
-            JSONPath
+            {toolText("workspace.jsonpath_b049fd")}
           </FieldLabel>
           <AutocompleteInput
             aria-describedby={`${id}-help`}
@@ -61,8 +63,8 @@ export default function JsonPathTesterWorkspace(props: WorkspaceProps) {
           />
           <FieldDescription className="text-muted-foreground" id={`${id}-help`}>
             {props.input.text.trim() && !document
-              ? "Fix the JSON to see suggestions. The $ root prefix is optional."
-              : "Suggestions come from your JSON. The $ root prefix is optional."}
+              ? toolText("workspace.fix_the_json_fcfea9")
+              : toolText("workspace.suggestions_come_from_e5e304")}
           </FieldDescription>
         </div>
       )}

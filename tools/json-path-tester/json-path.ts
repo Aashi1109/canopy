@@ -87,6 +87,10 @@ export function resolveJsonPath(value: unknown, path: string): unknown {
       "path-required",
       "Enter a JSON path.",
       "Choose a suggested key, enter a path such as users[0].name, or use $ for the whole document.",
+      {
+        messageRef: { key: "execution.errors.path-required" },
+        recoveryMessage: { key: "execution.recovery.path-required" },
+      },
     );
   }
   if (parsed.rest) {
@@ -94,6 +98,10 @@ export function resolveJsonPath(value: unknown, path: string): unknown {
       "path-unsupported",
       "JSONPath contains unsupported syntax.",
       "Use .key, [0], ['key'], and * only — filters and recursive descent are not supported.",
+      {
+        messageRef: { key: "execution.errors.path-unsupported" },
+        recoveryMessage: { key: "execution.recovery.path-unsupported" },
+      },
     );
   }
   const matches = walk(value, parsed.segments, { remaining: Infinity, matches: Infinity });
@@ -102,6 +110,10 @@ export function resolveJsonPath(value: unknown, path: string): unknown {
       "path-no-match",
       "JSONPath did not match any value.",
       "Check each segment against the document — one of them selects nothing.",
+      {
+        messageRef: { key: "execution.errors.path-no-match" },
+        recoveryMessage: { key: "execution.recovery.path-no-match" },
+      },
     );
   }
   return matches.length === 1 ? matches[0] : matches;

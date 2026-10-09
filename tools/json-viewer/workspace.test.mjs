@@ -14,6 +14,26 @@ vi.mock("@/components/FileProcessorWorkspace", () => ({ FileProcessorWorkspace: 
 vi.mock("@/app/media/components/ImageConversionWorkspace", () => ({ ImageConversionWorkspace: () => null }));
 setupReactTools();
 
+test("translated controls and structured error navigation leave JSON source untouched", async () => {
+  const source = '{\n  "missing":\n}';
+  const view = await mountWorkspace(ViewerWorkspace, viewerDefinition, viewJson, {
+    text: source,
+    locale: "hi",
+    messages: {
+      "runtime.repair": "सुधारें",
+      "runtime.goToError": "पंक्ति {line, number}, स्तंभ {column, number} पर जाएँ",
+      "runtime.goToErrorLabel": "पंक्ति {line, number}, स्तंभ {column, number} पर जाएँ",
+      "runtime.errors.json-syntax": "पंक्ति {line, number}, स्तंभ {column, number} में JSON त्रुटि है।",
+    },
+  });
+  expect(button("सुधारें")).toBeTruthy();
+  expect(view.state.error).toContain("JSON त्रुटि");
+  expect(view.state.error).not.toContain("line");
+  expect(button(/पंक्ति .*स्तंभ .*पर जाएँ/)).toBeTruthy();
+  expect(view.state.errorLocation.line).toBeGreaterThan(0);
+  expect(view.state.input.text).toBe(source);
+});
+
 test("JSON viewer edits result values with undo/redo while preserving the source", async () => {
   const source = '{"name":"Ada","active":false}';
   const view = await mountWorkspace(ViewerWorkspace, viewerDefinition, viewJson, { text: source });

@@ -37,7 +37,7 @@ const BACKGROUND = "#ffffff";
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const selection = validateImageSelection(ctx.input.files.map((file) => ({ size: file.size })));
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
 
   const axis = ctx.settings.axis as "horizontal" | "vertical";
   const quality = ctx.settings.quality / 100;
@@ -52,7 +52,12 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     async (write) => {
       for (let index = 0; index < total; index += 1) {
         ctx.signal.throwIfAborted();
-        ctx.progress({ completed: index, total, stage: "Decoding image" });
+        ctx.progress({
+          completed: index,
+          total,
+          stage: "Decoding image",
+          stageMessage: { key: "progress.decodingImage" },
+        });
         const input = ctx.input.files[index];
         const { image, kind } = await decodeImage(input, ALLOWED);
         const format: OutputImageFormat = resolveOutputFormat(
@@ -60,14 +65,24 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
           kind,
         );
         const flipped = flipImage(image, axis);
-        ctx.progress({ completed: index, total, stage: "Encoding image" });
+        ctx.progress({
+          completed: index,
+          total,
+          stage: "Encoding image",
+          stageMessage: { key: "progress.encodingImage" },
+        });
         const buffer = await encodeImage(flipped, format, quality, BACKGROUND);
         await write({
           name: createOutputFilename(input.name, extensionFor(format), "flipped"),
           mime: mimeFor(format),
           source: new Uint8Array(buffer),
         });
-        ctx.progress({ completed: index + 1, total, stage: "Image complete" });
+        ctx.progress({
+          completed: index + 1,
+          total,
+          stage: "Image complete",
+          stageMessage: { key: "progress.imageComplete" },
+        });
       }
     },
   );

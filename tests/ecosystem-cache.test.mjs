@@ -1,5 +1,6 @@
 import { expect, test, vi } from "vitest";
 import { TOOL_CATEGORIES } from "../lib/tool-framework/categories.ts";
+import { getCommonMessages } from "../lib/i18n/messages.ts";
 
 const state = vi.hoisted(() => ({ tools: [], failure: false }));
 globalThis.__ecosystemCacheTest = state;
@@ -63,4 +64,26 @@ test("ecosystem groups use the public catalog, preserve previews and counts, and
   state.failure = false;
   state.tools = tools;
   expect(await (await GET()).json()).toEqual({ groups });
+});
+
+test("ecosystem labels follow the requested locale and reject unknown locales", async () => {
+  state.failure = false;
+  state.tools = [
+    {
+      app: "devtools",
+      categoryKey: "text-tools",
+      href: "/devtools/example",
+      name: "English-only tool",
+      toolId: "devtools.example",
+    },
+  ];
+  const response = await GET(new Request("https://app.test/api/tools/ecosystem?locale=hi"));
+  const { groups } = await response.json();
+  expect(groups[1].label).toBe(getCommonMessages("hi").Common.developer);
+  expect(groups[1].categories.find((category) => category.href.endsWith("category=text-tools")).label).toBe(
+    getCommonMessages("hi").Categories["text-tools"],
+  );
+  expect(groups[1].href).toBe("/hi/devtools");
+  expect(groups[1].tools[0].href).toBe("/devtools/example");
+  expect((await GET(new Request("https://app.test/api/tools/ecosystem?locale=xx"))).status).toBe(400);
 });

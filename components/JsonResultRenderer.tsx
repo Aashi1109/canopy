@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { type KeyboardEvent, type ReactElement, type ReactNode, useEffect, useId, useMemo, useState } from "react";
 import { CodeEditor } from "@/components/content/CodeEditor";
 import {
@@ -13,6 +15,7 @@ import {
   FieldDescription,
   Button,
   ToolActionButton,
+  WorkspacePanelHeader,
   ButtonGroup,
   Input,
   OrderableList,
@@ -245,12 +248,15 @@ function JsonScalarEditor({
   type: string;
   value: unknown;
 }) {
+  const t = useTranslations("Workbench");
   const [draft, setDraft] = useState(String(value ?? ""));
 
   useEffect(() => setDraft(String(value ?? "")), [value]);
 
   if (type === "boolean") {
-    return <Switch aria-label={`Set ${label}`} checked={Boolean(value)} onCheckedChange={onChange} size="xs" />;
+    return (
+      <Switch aria-label={t("jsonSetLabel", { label })} checked={Boolean(value)} onCheckedChange={onChange} size="xs" />
+    );
   }
   if (type === "null") {
     return <span className="text-violet-700 dark:text-violet-400">null</span>;
@@ -268,7 +274,7 @@ function JsonScalarEditor({
 
   return (
     <Input
-      aria-label={`Edit ${label}`}
+      aria-label={t("jsonEditLabel", { label })}
       aria-invalid={type === "number" && (!draft.trim() || !Number.isFinite(Number(draft)))}
       code
       className={`min-w-0 max-w-[300px] flex-1 rounded-sm bg-muted shadow-none ${
@@ -280,7 +286,7 @@ function JsonScalarEditor({
         const next = event.target.value;
         setDraft(next);
         onErrorChange(
-          type === "number" && (!next.trim() || !Number.isFinite(Number(next))) ? "Enter a valid number." : null,
+          type === "number" && (!next.trim() || !Number.isFinite(Number(next))) ? t("jsonValidNumber") : null,
         );
       }}
       onKeyDown={(event) => {
@@ -317,6 +323,7 @@ function JsonNodeActionPopover({
   triggerText?: string;
   value: unknown;
 }) {
+  const t = useTranslations("Workbench");
   const id = useId().replaceAll(":", "");
   const currentIsContainer = value !== null && typeof value === "object";
   const parentPath = action === "add" && currentIsContainer ? path : path.slice(0, -1);
@@ -342,22 +349,24 @@ function JsonNodeActionPopover({
   const keyError =
     (action === "add" || action === "edit-key") && objectParent
       ? keyIsBlank
-        ? "Property key is required."
+        ? t("jsonKeyRequired")
         : Object.hasOwn(parentValue as Record<string, unknown>, propertyKey) &&
             (action !== "edit-key" || propertyKey !== currentKey)
-          ? "That property already exists."
+          ? t("jsonKeyExists")
           : null
       : null;
   const valueError =
     action === "add" && nextType === "number" && (!draft.trim() || !Number.isFinite(Number(draft)))
-      ? "Enter a valid number."
+      ? t("jsonValidNumber")
       : null;
   const sameType = action === "change-type" && nextType === jsonValueType(value);
   const sameKey = action === "edit-key" && propertyKey === currentKey;
   const ActionIcon = action === "add" ? Plus : action === "edit-key" ? PencilLine : Replace;
-  const addActionLabel = arrayParent ? "Add item" : "Add property";
-  const triggerLabel = action === "add" ? addActionLabel : action === "edit-key" ? "Edit key" : "Change type";
-  const heading = action === "add" ? addActionLabel : action === "edit-key" ? "Edit object key" : "Change value type";
+  const addActionLabel = arrayParent ? t("jsonAddItem") : t("jsonAddProperty");
+  const triggerLabel =
+    action === "add" ? addActionLabel : action === "edit-key" ? t("jsonEditKey") : t("jsonChangeType");
+  const heading =
+    action === "add" ? addActionLabel : action === "edit-key" ? t("jsonEditObjectKey") : t("jsonChangeValueType");
   const objectPath = `root.${pathLabel(path)}`;
   const keyAvailable = action === "edit-key" && !keyError && !sameKey;
 
@@ -396,10 +405,10 @@ function JsonNodeActionPopover({
             variant="ghost"
             aria-label={
               action === "add"
-                ? `Add near ${label}`
+                ? t("jsonAddNear", { label })
                 : action === "edit-key"
-                  ? `Edit ${label} key`
-                  : `Change ${label} type`
+                  ? t("jsonEditLabelKey", { label })
+                  : t("jsonChangeLabelType", { label })
             }
             className={
               triggerText
@@ -430,7 +439,7 @@ function JsonNodeActionPopover({
             </div>
             <PopoverPrimitive.Close asChild>
               <button
-                aria-label="Close"
+                aria-label={t("jsonClose")}
                 className="flex size-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 type="button"
               >
@@ -440,31 +449,31 @@ function JsonNodeActionPopover({
           </div>
           <Muted className="mt-2 text-muted-foreground">
             {action === "add"
-              ? `Add ${arrayParent ? "an item" : "a property"} to ${pathLabel(parentPath)} without changing the source input.`
+              ? t("jsonAddDescription", { kind: arrayParent ? "item" : "property", path: pathLabel(parentPath) })
               : action === "edit-key"
-                ? `Rename ${objectPath} without changing its value, type, or position.`
-                : `Update ${pathLabel(path)} without changing its key or position.`}
+                ? t("jsonRenameDescription", { path: objectPath })
+                : t("jsonChangeDescription", { path: pathLabel(path) })}
           </Muted>
 
           <div className="mt-3 flex flex-col gap-2">
             {action === "add" ? (
               <>
                 <div className="grid gap-1">
-                  <FieldLabel htmlFor={`${id}-parent`}>Parent path</FieldLabel>
+                  <FieldLabel htmlFor={`${id}-parent`}>{t("jsonParentPath")}</FieldLabel>
                   <Input code id={`${id}-parent`} readOnly size="xs" value={pathLabel(parentPath)} />
                 </div>
                 {arrayParent ? (
                   <div className="grid gap-1">
-                    <FieldLabel htmlFor={`${id}-position`}>Insert position</FieldLabel>
+                    <FieldLabel htmlFor={`${id}-position`}>{t("jsonInsertPosition")}</FieldLabel>
                     <Select onValueChange={(next) => setInsertIndex(Number(next))} value={String(insertIndex)}>
                       <SelectTrigger id={`${id}-position`} size="xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="0">At beginning</SelectItem>
+                        <SelectItem value="0">{t("jsonAtBeginning")}</SelectItem>
                         {parentItems.map((_, index) => (
                           <SelectItem key={index} value={String(index + 1)}>
-                            After item {index}
+                            {t("jsonAfterItem", { index })}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -473,7 +482,7 @@ function JsonNodeActionPopover({
                 ) : (
                   <div className="grid gap-1">
                     <FieldLabel className={`${keyError ? "text-destructive" : ""}`} htmlFor={`${id}-key`}>
-                      Property key
+                      {t("jsonPropertyKey")}
                     </FieldLabel>
                     <Input
                       aria-invalid={Boolean(keyError)}
@@ -489,13 +498,13 @@ function JsonNodeActionPopover({
             ) : action === "edit-key" ? (
               <>
                 <div className="grid gap-1">
-                  <FieldLabel htmlFor={`${id}-current-key`}>Current key</FieldLabel>
+                  <FieldLabel htmlFor={`${id}-current-key`}>{t("jsonCurrentKey")}</FieldLabel>
                   <Input code id={`${id}-current-key`} readOnly size="xs" value={currentKey} />
-                  <FieldDescription>Object path: {objectPath}</FieldDescription>
+                  <FieldDescription>{t("jsonObjectPath", { path: objectPath })}</FieldDescription>
                 </div>
                 <div className="grid gap-1">
                   <FieldLabel className={`${keyError ? "text-destructive" : ""}`} htmlFor={`${id}-new-key`}>
-                    New key
+                    {t("jsonNewKey")}
                   </FieldLabel>
                   <Input
                     aria-invalid={Boolean(keyError)}
@@ -512,20 +521,20 @@ function JsonNodeActionPopover({
                     value={propertyKey}
                   />
                   <Muted className={`${keyError ? "text-destructive" : "text-muted-foreground"}`}>
-                    {keyError ?? "Keys must be unique within this object."}
+                    {keyError ?? t("jsonUniqueKeys")}
                   </Muted>
                 </div>
               </>
             ) : (
               <div className="grid gap-1">
-                <FieldLabel htmlFor={`${id}-existing`}>Existing value</FieldLabel>
+                <FieldLabel htmlFor={`${id}-existing`}>{t("jsonExistingValue")}</FieldLabel>
                 <Input code id={`${id}-existing`} readOnly size="xs" value={JSON.stringify(value) ?? String(value)} />
               </div>
             )}
 
             {action !== "edit-key" ? (
               <div className="grid gap-1">
-                <FieldLabel htmlFor={`${id}-type`}>{action === "add" ? "JSON type" : "New JSON type"}</FieldLabel>
+                <FieldLabel htmlFor={`${id}-type`}>{action === "add" ? t("jsonType") : t("jsonNewType")}</FieldLabel>
                 <Select onValueChange={(next) => setNextType(next as JsonValueType)} value={nextType}>
                   <SelectTrigger id={`${id}-type`} size="xs">
                     <SelectValue />
@@ -543,7 +552,7 @@ function JsonNodeActionPopover({
 
             {action === "add" && (nextType === "string" || nextType === "number") ? (
               <div className="grid gap-1">
-                <FieldLabel htmlFor={`${id}-value`}>Initial value</FieldLabel>
+                <FieldLabel htmlFor={`${id}-value`}>{t("jsonInitialValue")}</FieldLabel>
                 <Input
                   aria-invalid={Boolean(valueError)}
                   id={`${id}-value`}
@@ -556,7 +565,7 @@ function JsonNodeActionPopover({
               </div>
             ) : action === "add" && nextType === "boolean" ? (
               <div className="grid gap-1">
-                <FieldLabel htmlFor={`${id}-value`}>Initial value</FieldLabel>
+                <FieldLabel htmlFor={`${id}-value`}>{t("jsonInitialValue")}</FieldLabel>
                 <Select onValueChange={setDraft} value={draft || "false"}>
                   <SelectTrigger id={`${id}-value`} size="xs">
                     <SelectValue />
@@ -572,17 +581,17 @@ function JsonNodeActionPopover({
             {action === "change-type" ? (
               <div className="flex gap-2 rounded-lg border border-border bg-muted/60 p-2.5 text-muted-foreground">
                 <CircleAlert aria-hidden="true" className="mt-px size-3.5 shrink-0" />
-                <Caption>Compatible values convert automatically. Object and Array create an empty container.</Caption>
+                <Caption>{t("jsonCompatibleValuesConvertAutomaticallyObjectAnd")}</Caption>
               </div>
             ) : action === "edit-key" && keyAvailable ? (
               <div className="flex gap-2 rounded-lg bg-success-soft p-2.5 text-foreground">
                 <CircleCheck aria-hidden="true" className="mt-px size-3.5 shrink-0 text-success" />
                 <div>
                   <P>
-                    <Strong>Key is available</Strong>
+                    <Strong>{t("jsonKeyIsAvailable")}</Strong>
                   </P>
                   <Muted className="mt-0.5 text-muted-foreground">
-                    The value and <span>{jsonValueType(value)}</span> type stay unchanged.
+                    {t("jsonUnchangedType", { type: jsonValueType(value) })}
                   </Muted>
                 </div>
               </div>
@@ -592,7 +601,7 @@ function JsonNodeActionPopover({
           <div className="mt-4 flex justify-end gap-2">
             <PopoverPrimitive.Close asChild>
               <Button size="xs" type="button" variant="outline">
-                Cancel
+                {t("jsonCancel")}
               </Button>
             </PopoverPrimitive.Close>
             <Button
@@ -608,7 +617,7 @@ function JsonNodeActionPopover({
               type="button"
             >
               {action === "edit-key" ? <Check aria-hidden="true" /> : <ActionIcon aria-hidden="true" />}
-              {action === "add" ? addActionLabel : action === "edit-key" ? "Rename key" : "Change type"}
+              {action === "add" ? addActionLabel : action === "edit-key" ? t("jsonRenameKey") : t("jsonChangeType")}
             </Button>
           </div>
         </PopoverPrimitive.Content>
@@ -634,6 +643,7 @@ function JsonTreeActions({
   rootValue: unknown;
   value: unknown;
 }) {
+  const t = useTranslations("Workbench");
   return (
     <div className="ml-auto flex shrink-0 items-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100">
       {typeof path.at(-1) === "string" ? (
@@ -654,9 +664,9 @@ function JsonTreeActions({
         rootValue={rootValue}
         value={value}
       />
-      <JsonTooltip label="Duplicate">
+      <JsonTooltip label={t("jsonDuplicate")}>
         <button
-          aria-label={`Duplicate ${label}`}
+          aria-label={t("jsonDuplicateLabel", { label })}
           className="flex size-6 items-center justify-center text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           onClick={(event) => {
             event.stopPropagation();
@@ -675,9 +685,9 @@ function JsonTreeActions({
         rootValue={rootValue}
         value={value}
       />
-      <JsonTooltip label="Delete">
+      <JsonTooltip label={t("jsonDelete")}>
         <button
-          aria-label={`Delete ${label}`}
+          aria-label={t("jsonDeleteLabel", { label })}
           className="flex size-6 items-center justify-center text-muted-foreground hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           onClick={(event) => {
             event.stopPropagation();
@@ -868,6 +878,7 @@ function JsonTreeNode({
   value: unknown;
   visiblePaths?: ReadonlySet<string>;
 }) {
+  const t = useTranslations("Workbench");
   const entries =
     value !== null && typeof value === "object"
       ? Array.isArray(value)
@@ -897,7 +908,7 @@ function JsonTreeNode({
   const isSelected = Boolean(selectedPath && pathsEqual(path, selectedPath));
   const isSearchMatch = Boolean(searchMatchPaths?.has(pathKey(path)));
   const isCurrentSearchMatch = Boolean(currentSearchPath && pathsEqual(path, currentSearchPath));
-  const copyLabel = isRoot ? "Root node" : `${label} node`;
+  const copyLabel = isRoot ? t("jsonRootNode") : t("jsonLabelNode", { label });
   const descendantQuery = query && displayedLabel.toLocaleLowerCase().includes(query) ? "" : query;
   const matchingEntries =
     entries?.filter(([key, child]) => {
@@ -975,7 +986,7 @@ function JsonTreeNode({
       <button
         {...dragState.attributes}
         {...dragState.listeners}
-        aria-label={`Reorder ${treeItemLabel}`}
+        aria-label={t("jsonReorderLabel", { label: treeItemLabel })}
         className="flex size-6 shrink-0 cursor-grab items-center justify-center text-input hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:cursor-grabbing"
         disabled={dragState.disabled}
         onClick={(event) => event.stopPropagation()}
@@ -990,7 +1001,7 @@ function JsonTreeNode({
         className="size-[13px] shrink-0 text-input group-hover:text-primary group-focus-within:text-primary"
       />
     ) : null;
-  const copyButtonLabel = `Copy ${isRoot ? "root" : label} value`;
+  const copyButtonLabel = t("jsonCopyNode", { label: isRoot ? "root" : label });
   const copyButton = showNodeCopyActions ? (
     <JsonTooltip label={copyButtonLabel}>
       <ToolActionButton
@@ -1086,8 +1097,8 @@ function JsonTreeNode({
   }
 
   const countLabel = Array.isArray(value)
-    ? `[${entries.length} item${entries.length === 1 ? "" : "s"}]`
-    : `{${entries.length} key${entries.length === 1 ? "" : "s"}}`;
+    ? t("jsonItemCount", { count: entries.length })
+    : t("jsonKeyCount", { count: entries.length });
 
   return (
     <div className={`${JSON_TREE_TYPOGRAPHY} w-full min-w-0 text-foreground`}>
@@ -1106,7 +1117,7 @@ function JsonTreeNode({
         {dragHandle}
         <button
           aria-expanded={open}
-          aria-label={`${open ? "Collapse" : "Expand"} ${isRoot ? "root" : label}`}
+          aria-label={t("jsonToggleNode", { action: open ? "collapse" : "expand", label: isRoot ? "root" : label })}
           className="relative flex size-3.5 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground before:absolute before:-inset-[5px] before:content-[''] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-40"
           disabled={!canExpand}
           onClick={(event) => {
@@ -1143,7 +1154,7 @@ function JsonTreeNode({
         <div className="mt-0.5 flex w-full flex-col gap-0.5" role="group">
           {editMode === "tree" && editor && matchingEntries ? (
             <OrderableList
-              ariaLabel={`Items in ${treeItemLabel}`}
+              ariaLabel={t("jsonItemsIn", { label: treeItemLabel })}
               className="flex w-full min-w-0 flex-col gap-0.5"
               disabled={reorderDisabled}
               getId={([key]) => pathKey([...path, Array.isArray(value) ? Number(key) : key])}
@@ -1219,7 +1230,7 @@ function JsonTreeNode({
               label="root"
               path={path}
               rootValue={rootValue}
-              triggerText={Array.isArray(value) ? "Add root item" : "Add root property"}
+              triggerText={Array.isArray(value) ? t("jsonAddRootItem") : t("jsonAddRootProperty")}
               value={value}
             />
           ) : isRoot && onAddRootProperty ? (
@@ -1231,7 +1242,7 @@ function JsonTreeNode({
               type="button"
             >
               <Plus aria-hidden="true" className="size-3.5" />
-              Add root property
+              {t("jsonAddRootProperty")}
             </Button>
           ) : null}
         </div>
@@ -1251,7 +1262,7 @@ export function JsonResultRenderer({
   header = "visible",
   headerActions,
   headerStart,
-  label = "JSON result",
+  label: labelProp,
   maxVisibleEntries,
   onSearchMatchIndexChange,
   onSearchQueryChange,
@@ -1291,6 +1302,8 @@ export function JsonResultRenderer({
   view?: JsonResultView;
   views?: readonly JsonResultView[];
 }) {
+  const t = useTranslations("Workbench");
+  const label = labelProp ?? t("jsonResult");
   const resultId = useId().replaceAll(":", "");
   const initialCode = formattedValue ?? JSON.stringify(value, null, 2) ?? String(value);
   const [internalView, setInternalView] = useState<JsonResultView>(defaultView);
@@ -1457,206 +1470,219 @@ export function JsonResultRenderer({
         data-testid="json-result-renderer"
       >
         {header === "visible" ? (
-          <header className="flex min-h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-[14px] max-[42rem]:flex-col max-[42rem]:items-stretch max-[42rem]:gap-0 max-[42rem]:pb-2">
-            {headerStart ?? (
-              <Select onValueChange={(nextView) => activateView(nextView as JsonResultView)} value={view}>
-                <SelectTrigger
-                  aria-label="JSON result view"
-                  className="w-[132px] shrink-0"
-                  id={`${resultId}-view-select`}
-                  size="xs"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {views.map((nextView) => (
-                    <SelectItem key={nextView} value={nextView}>
-                      {nextView === "read-only" ? "View" : nextView[0].toUpperCase() + nextView.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+          <WorkspacePanelHeader className="max-[42rem]:h-auto max-[42rem]:min-h-[51px] max-[42rem]:pb-2">
+            <div className="flex min-w-0 items-center justify-between gap-3 max-[42rem]:flex-col max-[42rem]:items-stretch max-[42rem]:gap-0">
+              {headerStart ?? (
+                <Select onValueChange={(nextView) => activateView(nextView as JsonResultView)} value={view}>
+                  <SelectTrigger
+                    aria-label={t("jsonResultView")}
+                    className="w-[132px] shrink-0"
+                    id={`${resultId}-view-select`}
+                    size="xs"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {views.map((nextView) => (
+                      <SelectItem key={nextView} value={nextView}>
+                        {t(
+                          nextView === "read-only"
+                            ? "jsonView"
+                            : nextView === "code"
+                              ? "jsonCode"
+                              : nextView === "form"
+                                ? "jsonForm"
+                                : "jsonTree",
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
-            <div
-              className={`flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3 max-[42rem]:w-full ${
-                isStructuredView
-                  ? "max-[42rem]:grid max-[42rem]:grid-cols-[minmax(0,1fr)_auto_auto]"
-                  : "max-[42rem]:justify-end"
-              }`}
-            >
-              {persistentSearch ? (
-                <div
-                  className="flex h-8 w-[218px] min-w-0 shrink items-center gap-[7px] rounded-lg border border-border bg-muted px-[9px] focus-within:border-primary max-[42rem]:w-auto max-[42rem]:flex-1"
-                  data-testid="json-search-control"
-                >
-                  <Search aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
-                  <Input
-                    aria-label="Search JSON result"
-                    autoFocus={!persistentSearch}
-                    size="sm"
-                    className="h-full min-w-0 flex-1 appearance-none border-0 bg-transparent !p-0 shadow-none focus-visible:ring-0 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
-                    onChange={(event) => {
-                      updateSearchQuery(event.target.value);
-                      updateSearchMatchIndex(0);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
-                      event.preventDefault();
-                      moveSearchMatch(event.shiftKey ? -1 : 1);
-                    }}
-                    placeholder="Search keys or values"
-                    type="search"
-                    value={query}
-                  />
-                  {normalizedQuery ? (
-                    <div className="ml-auto flex shrink-0 items-center gap-1">
-                      <Caption aria-live="polite" className="shrink-0 text-foreground">
-                        {`${activeSearchCount ? resolvedSearchMatchIndex + 1 : 0}/${activeSearchCount}`}
-                      </Caption>
-                      <div className="flex shrink-0 items-center">
-                        <JsonTooltip label="Previous match (Shift+Enter)">
-                          <button
-                            aria-label="Previous JSON search match"
-                            className="flex size-6 shrink-0 items-center justify-center p-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-40"
-                            disabled={activeSearchCount === 0}
-                            onClick={() => moveSearchMatch(-1)}
-                            type="button"
-                          >
-                            <ChevronUp aria-hidden="true" className="size-3.5" />
-                          </button>
-                        </JsonTooltip>
-                        <JsonTooltip label="Next match (Enter)">
-                          <button
-                            aria-label="Next JSON search match"
-                            className="flex size-6 shrink-0 items-center justify-center p-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-40"
-                            disabled={activeSearchCount === 0}
-                            onClick={() => moveSearchMatch(1)}
-                            type="button"
-                          >
-                            <ChevronDown aria-hidden="true" className="size-3.5" />
-                          </button>
-                        </JsonTooltip>
+              <div
+                className={`flex min-w-0 flex-1 items-center justify-end gap-3 max-[42rem]:w-full max-[42rem]:flex-wrap ${
+                  isStructuredView
+                    ? "max-[42rem]:grid max-[42rem]:grid-cols-[minmax(0,1fr)_auto_auto]"
+                    : "max-[42rem]:justify-end"
+                }`}
+              >
+                {persistentSearch ? (
+                  <div
+                    className="flex h-8 w-[218px] min-w-0 shrink items-center gap-[7px] rounded-lg border border-border bg-muted px-[9px] focus-within:border-primary max-[42rem]:w-auto max-[42rem]:flex-1"
+                    data-testid="json-search-control"
+                  >
+                    <Search aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
+                    <Input
+                      aria-label={t("jsonSearchJsonResult")}
+                      autoFocus={!persistentSearch}
+                      size="sm"
+                      className="h-full min-w-0 flex-1 appearance-none border-0 bg-transparent !p-0 shadow-none focus-visible:ring-0 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
+                      onChange={(event) => {
+                        updateSearchQuery(event.target.value);
+                        updateSearchMatchIndex(0);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+                        event.preventDefault();
+                        moveSearchMatch(event.shiftKey ? -1 : 1);
+                      }}
+                      placeholder={t("jsonSearchKeysOrValues")}
+                      type="search"
+                      value={query}
+                    />
+                    {normalizedQuery ? (
+                      <div className="ml-auto flex shrink-0 items-center gap-1">
+                        <Caption aria-live="polite" className="shrink-0 text-foreground">
+                          {t("jsonSearchPosition", {
+                            index: activeSearchCount ? resolvedSearchMatchIndex + 1 : 0,
+                            count: activeSearchCount,
+                          })}
+                        </Caption>
+                        <div className="flex shrink-0 items-center">
+                          <JsonTooltip label={t("jsonPreviousMatchShiftEnter")}>
+                            <button
+                              aria-label={t("jsonPreviousJsonSearchMatch")}
+                              className="flex size-6 shrink-0 items-center justify-center p-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-40"
+                              disabled={activeSearchCount === 0}
+                              onClick={() => moveSearchMatch(-1)}
+                              type="button"
+                            >
+                              <ChevronUp aria-hidden="true" className="size-3.5" />
+                            </button>
+                          </JsonTooltip>
+                          <JsonTooltip label={t("jsonNextMatchEnter")}>
+                            <button
+                              aria-label={t("jsonNextJsonSearchMatch")}
+                              className="flex size-6 shrink-0 items-center justify-center p-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-40"
+                              disabled={activeSearchCount === 0}
+                              onClick={() => moveSearchMatch(1)}
+                              type="button"
+                            >
+                              <ChevronDown aria-hidden="true" className="size-3.5" />
+                            </button>
+                          </JsonTooltip>
+                        </div>
                       </div>
-                    </div>
-                  ) : null}
-                </div>
-              ) : isStructuredView && searchOpen ? (
-                <div className="relative flex min-w-0 items-center gap-1 max-[42rem]:flex-1">
-                  <Input
-                    aria-label="Search JSON result"
-                    autoFocus
-                    className="h-11 w-[210px] appearance-none max-[42rem]:w-full [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
-                    onChange={(event) => updateSearchQuery(event.target.value)}
-                    placeholder="Search keys or values"
-                    type="search"
-                    value={query}
+                    ) : null}
+                  </div>
+                ) : isStructuredView && searchOpen ? (
+                  <div className="relative flex min-w-0 items-center gap-1 max-[42rem]:flex-1">
+                    <Input
+                      aria-label={t("jsonSearchJsonResult")}
+                      autoFocus
+                      className="h-11 w-[210px] appearance-none max-[42rem]:w-full [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
+                      onChange={(event) => updateSearchQuery(event.target.value)}
+                      placeholder={t("jsonSearchKeysOrValues")}
+                      type="search"
+                      value={query}
+                    />
+                    <Button
+                      aria-label={t("jsonCloseJsonSearch")}
+                      className="size-11"
+                      onClick={() => {
+                        updateSearchQuery("");
+                        setSearchOpen(false);
+                      }}
+                      size="icon"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <X aria-hidden="true" className="size-4" />
+                    </Button>
+                  </div>
+                ) : isStructuredView ? (
+                  <JsonTooltip label={t("jsonSearchJsonResult")}>
+                    <Button
+                      aria-label={t("jsonSearchJsonResult")}
+                      className="size-11 shrink-0"
+                      onClick={() => setSearchOpen(true)}
+                      size="icon"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Search aria-hidden="true" className="size-4" />
+                    </Button>
+                  </JsonTooltip>
+                ) : null}
+                {isStructuredView ? (
+                  <ButtonGroup aria-label={t("jsonTreeExpansionControls")} className="shrink-0">
+                    <JsonTooltip label={t("jsonExpandAll")}>
+                      <Button
+                        aria-label={t("jsonExpandAllJsonNodes")}
+                        onClick={() => setAll(true)}
+                        size="icon-xs"
+                        type="button"
+                        variant="outline"
+                      >
+                        <ChevronsDown aria-hidden="true" />
+                      </Button>
+                    </JsonTooltip>
+                    <JsonTooltip label={t("jsonCollapseAll")}>
+                      <Button
+                        aria-label={t("jsonCollapseAllJsonNodes")}
+                        onClick={() => setAll(false)}
+                        size="icon-xs"
+                        type="button"
+                        variant="outline"
+                      >
+                        <ChevronsUp aria-hidden="true" />
+                      </Button>
+                    </JsonTooltip>
+                  </ButtonGroup>
+                ) : null}
+                {isStructuredView && view !== "read-only" ? (
+                  <ButtonGroup aria-label={t("jsonEditHistory")} className="shrink-0">
+                    <JsonTooltip label={t("jsonUndo")}>
+                      <Button
+                        aria-label={t("jsonUndoJsonEdit")}
+                        disabled={!resolvedEditor.canUndo}
+                        onClick={resolvedEditor.onUndo}
+                        size="icon-xs"
+                        type="button"
+                        variant="outline"
+                      >
+                        <Undo2 aria-hidden="true" />
+                      </Button>
+                    </JsonTooltip>
+                    <JsonTooltip label={t("jsonRedo")}>
+                      <Button
+                        aria-label={t("jsonRedoJsonEdit")}
+                        disabled={!resolvedEditor.canRedo}
+                        onClick={resolvedEditor.onRedo}
+                        size="icon-xs"
+                        type="button"
+                        variant="outline"
+                      >
+                        <Redo2 aria-hidden="true" />
+                      </Button>
+                    </JsonTooltip>
+                  </ButtonGroup>
+                ) : null}
+                {headerActions}
+                <JsonTooltip label={t("jsonCopyJsonResult")}>
+                  <ToolActionButton
+                    action="copy"
+                    iconOnly
+                    aria-label={t("jsonCopyJsonResult")}
+                    className="shrink-0 text-muted-foreground max-[42rem]:col-start-2 max-[42rem]:row-start-2"
+                    onClick={() => void copyValue(artifact, t("jsonResult"))}
+                    type="button"
                   />
-                  <Button
-                    aria-label="Close JSON search"
-                    className="size-11"
-                    onClick={() => {
-                      updateSearchQuery("");
-                      setSearchOpen(false);
-                    }}
-                    size="icon"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <X aria-hidden="true" className="size-4" />
-                  </Button>
-                </div>
-              ) : isStructuredView ? (
-                <JsonTooltip label="Search JSON result">
-                  <Button
-                    aria-label="Search JSON result"
-                    className="size-11 shrink-0"
-                    onClick={() => setSearchOpen(true)}
-                    size="icon"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Search aria-hidden="true" className="size-4" />
-                  </Button>
                 </JsonTooltip>
-              ) : null}
-              {isStructuredView ? (
-                <ButtonGroup aria-label="Tree expansion controls" className="shrink-0">
-                  <JsonTooltip label="Expand all">
-                    <Button
-                      aria-label="Expand all JSON nodes"
-                      onClick={() => setAll(true)}
-                      size="icon-xs"
-                      type="button"
-                      variant="outline"
-                    >
-                      <ChevronsDown aria-hidden="true" />
-                    </Button>
-                  </JsonTooltip>
-                  <JsonTooltip label="Collapse all">
-                    <Button
-                      aria-label="Collapse all JSON nodes"
-                      onClick={() => setAll(false)}
-                      size="icon-xs"
-                      type="button"
-                      variant="outline"
-                    >
-                      <ChevronsUp aria-hidden="true" />
-                    </Button>
-                  </JsonTooltip>
-                </ButtonGroup>
-              ) : null}
-              {isStructuredView && view !== "read-only" ? (
-                <ButtonGroup aria-label="JSON edit history" className="shrink-0">
-                  <JsonTooltip label="Undo">
-                    <Button
-                      aria-label="Undo JSON edit"
-                      disabled={!resolvedEditor.canUndo}
-                      onClick={resolvedEditor.onUndo}
-                      size="icon-xs"
-                      type="button"
-                      variant="outline"
-                    >
-                      <Undo2 aria-hidden="true" />
-                    </Button>
-                  </JsonTooltip>
-                  <JsonTooltip label="Redo">
-                    <Button
-                      aria-label="Redo JSON edit"
-                      disabled={!resolvedEditor.canRedo}
-                      onClick={resolvedEditor.onRedo}
-                      size="icon-xs"
-                      type="button"
-                      variant="outline"
-                    >
-                      <Redo2 aria-hidden="true" />
-                    </Button>
-                  </JsonTooltip>
-                </ButtonGroup>
-              ) : null}
-              {headerActions}
-              <JsonTooltip label="Copy JSON result">
-                <ToolActionButton
-                  action="copy"
-                  iconOnly
-                  aria-label="Copy JSON result"
-                  className="shrink-0 text-muted-foreground max-[42rem]:col-start-2 max-[42rem]:row-start-2"
-                  onClick={() => void copyValue(artifact, "JSON result")}
-                  type="button"
-                />
-              </JsonTooltip>
-              <JsonTooltip label="Download JSON result">
-                <ToolActionButton
-                  action="download"
-                  iconOnly
-                  aria-label="Download JSON result"
-                  className="shrink-0 text-muted-foreground max-[42rem]:col-start-3 max-[42rem]:row-start-2"
-                  onClick={downloadValue}
-                  type="button"
-                />
-              </JsonTooltip>
+                <JsonTooltip label={t("jsonDownloadJsonResult")}>
+                  <ToolActionButton
+                    action="download"
+                    iconOnly
+                    aria-label={t("jsonDownloadJsonResult")}
+                    className="shrink-0 text-muted-foreground max-[42rem]:col-start-3 max-[42rem]:row-start-2"
+                    onClick={downloadValue}
+                    type="button"
+                  />
+                </JsonTooltip>
+              </div>
             </div>
-          </header>
+          </WorkspacePanelHeader>
         ) : null}
 
         {isStructuredView ? (
@@ -1671,16 +1697,16 @@ export function JsonResultRenderer({
               <div className="p-1.5 pb-4">
                 {normalizedQuery && !nodeMatches("root", resolvedValue, normalizedQuery) ? (
                   <Muted className="p-4 text-center text-muted-foreground" role="status">
-                    No keys or values match “{query}”.
+                    {t("jsonNoKeysOrValuesMatch", { query })}
                   </Muted>
                 ) : (
                   <div
                     aria-label={
                       view === "read-only"
-                        ? "Read-only JSON values"
+                        ? t("jsonReadOnlyValues")
                         : view === "form"
-                          ? "JSON value editor"
-                          : "JSON tree editor"
+                          ? t("jsonValueEditor")
+                          : t("jsonTreeEditor")
                     }
                     className="w-full min-w-0"
                     role="tree"
@@ -1705,7 +1731,7 @@ export function JsonResultRenderer({
                     />
                     {treeView?.truncated ? (
                       <Muted className="px-2 py-3 text-muted-foreground" role="status">
-                        Showing the first {treeView.limit.toLocaleString()} nodes. Search to narrow the tree.
+                        {t("jsonVisibleNodes", { count: treeView.limit })}
                       </Muted>
                     ) : null}
                   </div>
@@ -1717,14 +1743,14 @@ export function JsonResultRenderer({
         ) : view === "code" ? (
           <div
             className="min-h-0 flex-1 bg-muted/20"
-            aria-label={headerStart ? "JSON result" : undefined}
+            aria-label={headerStart ? t("jsonResult") : undefined}
             aria-labelledby={headerStart ? undefined : `${resultId}-view-select`}
             id={`${resultId}-${view}`}
             role="tabpanel"
           >
             <CodeEditor
               activeMatch={persistentSearch ? currentFormattedMatch : undefined}
-              aria-label="JSON result code"
+              aria-label={t("jsonResultCode")}
               className="h-full min-h-0"
               language="json"
               readOnly

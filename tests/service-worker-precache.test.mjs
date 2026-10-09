@@ -21,6 +21,7 @@ test("public precaching preserves browser assets in the container build", () => 
     }
     const compilation = nextConfig.webpack(
       {
+        context: process.cwd(),
         resolve: { alias: {} },
         plugins: [],
         output: { path: join(directory, ".next"), publicPath: "/_next/" },

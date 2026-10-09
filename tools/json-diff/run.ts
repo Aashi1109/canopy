@@ -14,6 +14,10 @@ function formatJson(value: unknown, indent = ""): string {
       "comparison-too-deep",
       "This JSON is nested too deeply to compare safely.",
       "Compare smaller nested sections.",
+      {
+        messageRef: { key: "execution.errors.comparison-too-deep" },
+        recoveryMessage: { key: "execution.recovery.comparison-too-deep" },
+      },
     );
   }
   const nextIndent = `${indent}  `;
@@ -35,12 +39,19 @@ function formatJson(value: unknown, indent = ""): string {
   return JSON.stringify(value) ?? "null";
 }
 
-function parseSide(input: string, settings: Settings, label: string): string {
+function parseSide(input: string, settings: Settings, label: "JSON A" | "JSON B"): string {
   try {
-    return formatJson(parseUtilityJson(input, { repairMode: settings.repairMode }, label));
+    return formatJson(
+      parseUtilityJson(input, { repairMode: settings.repairMode }, label, label === "JSON A" ? "left" : "right"),
+    );
   } catch (error) {
     if (error instanceof ToolError && !error.message.startsWith(label)) {
-      throw new ToolError(error.code, `${label}: ${error.message}`, error.recovery);
+      throw new ToolError(error.code, `${label}: ${error.message}`, error.recovery, {
+        ...error.details,
+        ...(error.code === "comparison-too-deep"
+          ? { messageRef: { key: "execution.errors.comparisonTooDeepSide", values: { side: label } } }
+          : {}),
+      });
     }
     throw error;
   }
@@ -57,7 +68,9 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     render: "diff",
     lines,
     leftLabel: "JSON A · Original",
+    leftLabelMessage: { key: "execution.original" },
     rightLabel: "JSON B · Changed",
+    rightLabelMessage: { key: "execution.changedSide" },
     downloadName: "json-diff.txt",
     verdict: {
       level: "ok",
@@ -65,7 +78,10 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         added || removed
           ? `${added} ${added === 1 ? "line" : "lines"} added · ${removed} ${removed === 1 ? "line" : "lines"} removed`
           : "No differences",
+      labelMessage:
+        added || removed ? { key: "execution.changed", values: { added, removed } } : { key: "execution.identical" },
       detail: "Comparing JSON B against JSON A. Formatting and object key order are ignored.",
+      detailMessage: { key: "execution.comparison" },
     },
   };
 };

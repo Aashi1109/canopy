@@ -1,6 +1,14 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "execution.errors.invalid-hex": "Hex input must contain complete hexadecimal bytes.",
+    "execution.recovery.invalid-hex":
+      "Use an even number of hex digits; whitespace, colons, hyphens, underscores and 0x prefixes are stripped for you.",
+    "execution.errors.invalid-utf8": "Hex input does not contain valid UTF-8 text.",
+    "execution.recovery.invalid-utf8":
+      "These bytes are not UTF-8 text — check for Latin-1 content or a truncated multi-byte character.",
+  },
   toolId: "devtools.hex-to-text",
   sharing: { version: 1 },
   app: "devtools",

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { motion, useMotionValue, useTransform, type MotionValue } from "motion/react";
 
 import { cn } from "../lib/utils.ts";
@@ -109,9 +110,10 @@ export function ChapterScrubber({
   previewDelayMs = 0,
   renderPreview,
   showPreviewCard = true,
-  label = "Chapters",
+  label,
   className,
 }: ChapterScrubberProps) {
+  const t = useTranslations("Workbench");
   const containerRef = React.useRef<HTMLDivElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
   const cardRef = React.useRef<HTMLButtonElement>(null);
@@ -381,7 +383,7 @@ export function ChapterScrubber({
     >
       <div
         aria-activedescendant={engaged && chapters[activeIndex] ? optionId(activeIndex) : undefined}
-        aria-label={label}
+        aria-label={label ?? t("chapters")}
         aria-orientation="vertical"
         className="flex w-full flex-col"
         onPointerMove={handlePointerMove}
@@ -447,7 +449,7 @@ export function ChapterScrubber({
 
       {showPreviewCard && previewCardReady && chapters[activeIndex] ? (
         <motion.button
-          aria-label={`Go to ${chapters[activeIndex].title}`}
+          aria-label={t("goToChapter", { title: chapters[activeIndex].title })}
           className={cn(
             "absolute z-10 cursor-pointer rounded-xl border border-border bg-popover px-4 py-3.5 text-left text-popover-foreground shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
             resolvedSide === "right" ? "origin-left" : "origin-right",

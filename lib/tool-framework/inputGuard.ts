@@ -45,6 +45,7 @@ export function assertRunnableText(
       "input-too-large",
       `Input must be ${limit.toLocaleString("en-US")} characters or fewer.`,
       "Shorten the input, or split it into smaller batches.",
+      { values: { limit } },
     );
   }
 }

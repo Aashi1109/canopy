@@ -1,4 +1,6 @@
 import config from "@/lib/config/config.ts";
+import { useLocale, useTranslations } from "next-intl";
+import { localizeHref, type Locale } from "@/lib/i18n/config";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import "katex/dist/katex.min.css";
 import {
@@ -40,6 +42,8 @@ type Props = {
 
 /** Live posts and saved previews deliberately share the same responsive renderer. */
 export function BlogArticle({ document, publication }: Props) {
+  const t = useTranslations("Blog");
+  const locale = useLocale() as Locale;
   const content = renderBlogDocument(document, {
     cloudName: config.cloudinary.cloudName?.trim(),
   });
@@ -51,7 +55,7 @@ export function BlogArticle({ document, publication }: Props) {
   const url = publication ? blogCanonicalUrl(publication.slug) : null;
   const tags = publication?.tags ?? [];
   const relatedToolLinks = publication?.relatedToolLinks ?? [];
-  const date = (value: Date) => new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(value);
+  const date = (value: Date) => new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(value);
   return (
     <article className={styles.article}>
       <BlogPageContainer>
@@ -62,30 +66,34 @@ export function BlogArticle({ document, publication }: Props) {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button asChild variant="ghost" size="icon-sm" className="text-primary">
-                      <a href="/blog" aria-label="All stories">
-                        <ArrowLeft aria-hidden="true" />
+                      <a href={localizeHref("/blog", locale)} aria-label={t("allStories")}>
+                        <ArrowLeft aria-hidden="true" className="rtl:rotate-180" />
                       </a>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>All stories</TooltipContent>
+                  <TooltipContent>{t("allStories")}</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             )}
-            <Overline className={`${styles.category} ml-auto min-w-0 break-words text-right`}>
+            <Overline className={`${styles.category} ms-auto min-w-0 break-words text-end`}>
               {publication ? (
                 <TextLink
                   className="no-underline"
-                  href={`/blog?category=${encodeURIComponent(publication.categorySlug)}`}
+                  href={localizeHref(`/blog?category=${encodeURIComponent(publication.categorySlug)}`, locale)}
                 >
                   {document.category?.label}
                 </TextLink>
               ) : (
-                (document.category?.label ?? "Uncategorized")
+                (document.category?.label ?? t("uncategorized"))
               )}
             </Overline>
           </div>
-          <H1 className={styles.title}>{document.title}</H1>
-          <P className={styles.excerpt}>{document.excerpt}</P>
+          <H1 dir="auto" className={styles.title}>
+            {document.title}
+          </H1>
+          <P dir="auto" className={styles.excerpt}>
+            {document.excerpt}
+          </P>
           <div className={styles.byline}>
             <Avatar className="size-10 shrink-0">
               <AvatarFallback className="bg-accent text-primary">
@@ -97,7 +105,9 @@ export function BlogArticle({ document, publication }: Props) {
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <P className={styles.author}>{document.authorName}</P>
+              <P dir="auto" className={styles.author}>
+                {document.authorName}
+              </P>
               <Caption className={styles.date}>
                 {publication?.firstPublishedAt && (
                   <>
@@ -107,7 +117,7 @@ export function BlogArticle({ document, publication }: Props) {
                     ·{" "}
                   </>
                 )}
-                {content.readingMinutes} min read
+                {t("readingTime", { count: content.readingMinutes })}
               </Caption>
             </div>
             {url && <CopyBlogLink url={url} title={document.title} />}
@@ -116,7 +126,7 @@ export function BlogArticle({ document, publication }: Props) {
             publication.firstPublishedAt &&
             publication.publishedUpdatedAt.getTime() !== publication.firstPublishedAt.getTime() && (
               <Caption className="text-muted-foreground">
-                Updated{" "}
+                {t("updated")}{" "}
                 <time dateTime={publication.publishedUpdatedAt.toISOString()}>
                   {date(publication.publishedUpdatedAt)}
                 </time>
@@ -138,13 +148,13 @@ export function BlogArticle({ document, publication }: Props) {
         )}
         <div className={styles.readingLayout}>
           {content.headings.length > 0 && (
-            <nav aria-label="On this page" className={styles.contents}>
-              <Overline className={styles.contentsLabel}>In this guide</Overline>
+            <nav aria-label={t("onPage")} className={styles.contents}>
+              <Overline className={styles.contentsLabel}>{t("inGuide")}</Overline>
               <ul>
                 {content.headings.map((heading) => (
-                  <li key={heading.id} className={heading.level > 2 ? "pl-3" : ""}>
+                  <li key={heading.id} className={heading.level > 2 ? "ps-3" : ""}>
                     <TextLink href={`#${heading.id}`} className={`${styles.contentsLink} no-underline hover:underline`}>
-                      {heading.text || "Untitled section"}
+                      {heading.text || t("untitledSection")}
                     </TextLink>
                   </li>
                 ))}
@@ -152,16 +162,18 @@ export function BlogArticle({ document, publication }: Props) {
             </nav>
           )}
           <div className={styles.main}>
-            <RichContent showToaster html={html} />
+            <div dir="auto">
+              <RichContent showToaster html={html} />
+            </div>
             {relatedToolLinks.length > 0 && (
               <Card className={styles.toolHandoff}>
-                <H2 className="font-sans text-[26px] leading-[1.6]">Put the guide to work.</H2>
-                <P className="text-muted-foreground">Open the tools mentioned in this story.</P>
+                <H2 className="font-sans text-[26px] leading-[1.6]">{t("useGuide")}</H2>
+                <P className="text-muted-foreground">{t("openTools")}</P>
                 <div className="flex flex-wrap gap-3">
                   {relatedToolLinks.map((tool) => (
-                    <Button asChild key={tool.id} className="max-w-full whitespace-normal text-left">
-                      <a href={tool.href}>
-                        {tool.name} <ArrowRight aria-hidden="true" />
+                    <Button asChild key={tool.id} className="max-w-full whitespace-normal text-start">
+                      <a href={localizeHref(tool.href, locale)}>
+                        {tool.name} <ArrowRight aria-hidden="true" className="rtl:rotate-180" />
                       </a>
                     </Button>
                   ))}
@@ -169,10 +181,10 @@ export function BlogArticle({ document, publication }: Props) {
               </Card>
             )}
             {tags.length > 0 && (
-              <nav aria-label="Article tags" className="my-6 flex flex-wrap gap-3">
+              <nav aria-label={t("articleTags")} className="my-6 flex flex-wrap gap-3">
                 {tags.map((tag) => (
                   <Button asChild key={tag.id} variant="outline" size="sm" className="max-w-full whitespace-normal">
-                    <a href={`/blog?tag=${encodeURIComponent(tag.slug)}`}>{tag.label}</a>
+                    <a href={localizeHref(`/blog?tag=${encodeURIComponent(tag.slug)}`, locale)}>{tag.label}</a>
                   </Button>
                 ))}
               </nav>

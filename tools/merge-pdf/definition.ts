@@ -1,6 +1,15 @@
+import { MEDIA_FILE_ERROR_MESSAGES, MEDIA_PDF_ERROR_MESSAGES } from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "progress.copyingPdfPages": "Copying PDF pages",
+    "progress.copyingPdfPage": "Copying PDF page",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_PDF_ERROR_MESSAGES,
+    "errors.invalidOrder": "The selected PDF order is invalid.",
+  },
   toolId: "media.merge-pdf",
   app: "media",
   category: "pdf-organization",

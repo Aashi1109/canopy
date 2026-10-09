@@ -6,10 +6,14 @@ export type ToolLifecycle = "empty" | "ready" | "invalid" | "running" | "failed"
 export type ToolSettingValue = string | number | boolean;
 export type ToolSettings = Record<string, ToolSettingValue>;
 
+/** Presentation-only reference to an ICU message in this tool's DB record. */
+export type ToolMessage = { key: string; values?: Record<string, string | number> };
+
 export type ToolValidationIssue = {
   column?: number;
   line?: number;
   message: string;
+  messageRef?: ToolMessage;
   target?: "input" | "settings" | "workspace";
   targetId?: string;
 };
@@ -25,7 +29,9 @@ export type ToolArtifact =
 
 export type ToolFact = {
   label: string;
+  labelMessage?: ToolMessage;
   value: string;
+  valueMessage?: ToolMessage;
 };
 
 export type ToolExecutionOutcome<Result> = {

@@ -2,6 +2,7 @@ import { test, expect, vi, afterEach, onTestFinished } from "vitest";
 import redis from "redis";
 import { Cache, closeRedis } from "../lib/cache/index.ts";
 import { catalogCache } from "../lib/tool-framework/catalogCache.ts";
+import jsonFormatterSpec from "../tools/json-formatter/definition.ts";
 
 import { ADMIN_ACCESS } from "../lib/authorization/index.ts";
 import {
@@ -39,6 +40,7 @@ import {
   updateFeature,
   updateInvoiceTemplate,
   updateManagedTool,
+  toolTranslationSource,
 } from "../lib/admin/adminMutations.ts";
 
 afterEach(() => {
@@ -640,8 +642,11 @@ test("stored tools toggle, and archiving disables them", async () => {
     enabled: true,
     archived: false,
   };
+  stored.translations = {
+    en: { status: "published", messages: toolTranslationSource(jsonFormatterSpec, stored, null) },
+  };
   await withFakeDatabase(
-    [permissionRows({ tools: { toggle: true } }), [{ ...stored, enabled: false }]],
+    [permissionRows({ tools: { toggle: true } }), [{ ...stored, enabled: false }], []],
     async (state) => {
       await setManagedToolEnabled("actor", stored.toolId, true);
       const write = state.inserts.find(({ table }) => table === managedToolsTable);

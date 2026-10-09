@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
 
 /**
@@ -7,7 +9,7 @@ import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import type { AdvancedDocumentTemplate, DocumentTemplate } from "@/lib/invoice-templates/index.ts";
 import {
   FieldError,
@@ -73,6 +75,7 @@ export default function ReceiptGeneratorPage({
   onTrackClick: (item: string) => void;
   templates?: readonly DocumentTemplate[];
 }) {
+  const t = useTranslations("Tool.runtime");
   const advancedTemplates = templates.filter(
     (template): template is AdvancedDocumentTemplate =>
       template.documentType === "receipt" && template.layoutFamily === "advanced",
@@ -168,7 +171,7 @@ export default function ReceiptGeneratorPage({
     setData(mapped);
     setShowImportConfirm(false);
     onTrackClick("import_invoice_completed");
-    alert("Draft invoice values imported successfully!");
+    alert(t("receipt.draftInvoiceValuesImportedSuccessfully"));
   };
 
   const handleLoadSample = () => {
@@ -178,7 +181,7 @@ export default function ReceiptGeneratorPage({
   };
 
   const handleClearDraft = () => {
-    if (confirm("Are you sure you want to clear current receipt entries?")) {
+    if (confirm(t("receipt.areYouSureYouWantToClearCurrent"))) {
       setData(DEFAULT_RECEIPT_DATA);
       setErrors({});
       onTrackClick("receipt_draft_cleared");
@@ -233,7 +236,7 @@ export default function ReceiptGeneratorPage({
   const validateReceipt = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!data.business.name.trim()) {
-      newErrors["business.name"] = "Seller / Provider Name is required to generate receipts.";
+      newErrors["business.name"] = t("receipt.sellerProviderNameIsRequiredToGenerateReceipts");
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -259,7 +262,7 @@ export default function ReceiptGeneratorPage({
         });
       } catch (error) {
         console.error("Failed to generate the receipt PDF", error);
-        setPdfError("The PDF could not be generated. Please try again.");
+        setPdfError(t("receipt.thePdfCouldNotBeGeneratedPleaseTry"));
       } finally {
         setPdfAction(false);
       }
@@ -281,8 +284,15 @@ export default function ReceiptGeneratorPage({
     onTrackClick?.("receipt_copy_summary_clicked");
   };
 
+  const initialDraft = useRef(JSON.stringify(data));
+  const hasEdits = JSON.stringify(data) !== initialDraft.current;
+
   return (
-    <div className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="receipt-generator-wrapper">
+    <div
+      className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      id="receipt-generator-wrapper"
+      data-language-switch-state={pdfAction ? "running" : hasEdits ? "dirty" : "clean"}
+    >
       {/* 1. Header Banner */}
       <ToolPageHeader
         actions={
@@ -290,12 +300,12 @@ export default function ReceiptGeneratorPage({
             {importAvailable && (
               <Button onClick={() => setShowImportConfirm(true)} size="sm" type="button" variant="outline">
                 <RefreshCw className="size-3.5" />
-                <span>Import Invoice Draft</span>
+                <span>{t("receipt.importInvoiceDraft")}</span>
               </Button>
             )}
             <Button onClick={handleLoadSample} size="sm" type="button" variant="secondary">
               <RefreshCw className="size-3.5" />
-              <span>Sample Demo</span>
+              <span>{t("receipt.sampleDemo")}</span>
             </Button>
             <Button
               className="text-destructive hover:bg-destructive/10 hover:text-destructive"
@@ -304,20 +314,20 @@ export default function ReceiptGeneratorPage({
               type="button"
               variant="ghost"
             >
-              Clear Fields
+              {t("receipt.clearFields")}
             </Button>
           </>
         }
         className="print:hidden"
-        description="Formulate payment records for your small business. Zero tracking, secure local downloads only."
-        eyebrow={<StatusBadge variant="success">Legitimate Records Tool</StatusBadge>}
-        title="Receipt Generator"
+        description={t("receipt.formulatePaymentRecordsForYourSmallBusinessZero")}
+        eyebrow={<StatusBadge variant="success">{t("receipt.legitimateRecordsTool")}</StatusBadge>}
+        title={t("receipt.receiptGenerator")}
       />
 
       {advancedTemplates.length ? (
         <Card className="mb-6 grid gap-2 p-4 print:hidden">
           <Label className="text-muted-foreground" htmlFor="receipt-template-mode">
-            Receipt template
+            {t("receipt.receiptTemplate")}
           </Label>
           <Select
             id="receipt-template-mode"
@@ -327,7 +337,7 @@ export default function ReceiptGeneratorPage({
             }}
             value={selectedAdvancedTemplateId}
           >
-            <option value="">Use a built-in receipt layout</option>
+            <option value="">{t("receipt.useABuiltInReceiptLayout")}</option>
             {advancedTemplates.map((advancedTemplate) => (
               <option key={advancedTemplate.id} value={advancedTemplate.id}>
                 {advancedTemplate.name}
@@ -355,18 +365,15 @@ export default function ReceiptGeneratorPage({
               <IconTile className="rounded-full border border-blue-100 bg-blue-50 text-blue-600" size="sm">
                 <RefreshCw className="w-5 h-5 animate-spin-reverse" />
               </IconTile>
-              <H4 className="text-slate-900">Import Active Invoice Draft?</H4>
+              <H4 className="text-slate-900">{t("receipt.importActiveInvoiceDraft")}</H4>
             </div>
-            <P className="text-slate-600">
-              This action transfers your business details, client details, line items, and totals from the active
-              invoice draft into your receipt maker. Any existing unsaved receipt data will be updated.
-            </P>
+            <P className="text-slate-600">{t("receipt.thisActionTransfersYourBusinessDetailsClientDetails")}</P>
             <div className="flex justify-end gap-2 pt-2">
               <Button onClick={() => setShowImportConfirm(false)} size="sm" type="button" variant="secondary">
-                Keep Blank
+                {t("receipt.keepBlank")}
               </Button>
               <Button onClick={handleImportInvoice} size="sm" type="button">
-                Yes, Populate From Invoice
+                {t("receipt.yesPopulateFromInvoice")}
               </Button>
             </div>
           </Card>
@@ -382,10 +389,10 @@ export default function ReceiptGeneratorPage({
       >
         <TabsList className="grid w-full grid-cols-2 border border-slate-200/50" variant="segmented">
           <TabsTrigger className="whitespace-normal py-2" value="edit">
-            1. Edit Fields
+            {t("receipt.label1EditFields")}
           </TabsTrigger>
           <TabsTrigger className="whitespace-normal py-2" value="preview">
-            2. Live Design Preview
+            {t("receipt.label2LiveDesignPreview")}
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -400,17 +407,19 @@ export default function ReceiptGeneratorPage({
           <Card className="space-y-6 rounded-2xl p-6 shadow-sm">
             {/* Business (Seller) Segment */}
             <div>
-              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">1. Seller / Provider Info</H3>
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
+                {t("receipt.label1SellerProviderInfo")}
+              </H3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-name">
-                    Company / Seller Name *
+                    {t("receipt.companySellerName")}
                   </Label>
                   <Input
                     aria-errormessage={errors["business.name"] ? "receipt-seller-name-error" : undefined}
                     type="text"
                     required
-                    placeholder="e.g. Blue Ridge Web Studio"
+                    placeholder={t("receipt.eGBlueRidgeWebStudio")}
                     aria-invalid={Boolean(errors["business.name"])}
                     className={` ${errors["business.name"] ? "bg-destructive/5" : ""}`}
                     id="receipt-seller-name"
@@ -428,11 +437,11 @@ export default function ReceiptGeneratorPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-tax-id">
-                    Tax ID / EIN (Optional)
+                    {t("receipt.taxIdEinOptional")}
                   </Label>
                   <Input
                     type="text"
-                    placeholder="e.g. 12-3456789"
+                    placeholder={t("receipt.eG123456789")}
                     id="receipt-seller-tax-id"
                     value={data.business.taxId || ""}
                     onChange={(e) => setData({ ...data, business: { ...data.business, taxId: e.target.value } })}
@@ -440,11 +449,11 @@ export default function ReceiptGeneratorPage({
                 </div>
                 <div className="md:col-span-2">
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-address">
-                    Address Location
+                    {t("receipt.addressLocation")}
                   </Label>
                   <Input
                     type="text"
-                    placeholder="e.g. 404 Ridge Point Lane"
+                    placeholder={t("receipt.eG404RidgePointLane")}
                     className="mb-2"
                     id="receipt-seller-address"
                     value={data.business.addressLine1}
@@ -457,23 +466,23 @@ export default function ReceiptGeneratorPage({
                   />
                   <div className="grid grid-cols-3 gap-2">
                     <Input
-                      aria-label="Seller city"
+                      aria-label={t("receipt.sellerCity")}
                       type="text"
-                      placeholder="City"
+                      placeholder={t("receipt.city")}
                       value={data.business.city}
                       onChange={(e) => setData({ ...data, business: { ...data.business, city: e.target.value } })}
                     />
                     <Input
-                      aria-label="Seller state"
+                      aria-label={t("receipt.sellerState")}
                       type="text"
-                      placeholder="State"
+                      placeholder={t("receipt.state")}
                       value={data.business.state}
                       onChange={(e) => setData({ ...data, business: { ...data.business, state: e.target.value } })}
                     />
                     <Input
-                      aria-label="Seller ZIP code"
+                      aria-label={t("receipt.sellerZipCode")}
                       type="text"
-                      placeholder="Zip Code"
+                      placeholder={t("receipt.zipCode")}
                       value={data.business.zipCode}
                       onChange={(e) =>
                         setData({
@@ -486,11 +495,11 @@ export default function ReceiptGeneratorPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-email">
-                    Sender Email
+                    {t("receipt.senderEmail")}
                   </Label>
                   <Input
                     type="email"
-                    placeholder="e.g. info@domain.com"
+                    placeholder={t("receipt.eGInfoDomainCom")}
                     id="receipt-seller-email"
                     value={data.business.email}
                     onChange={(e) => setData({ ...data, business: { ...data.business, email: e.target.value } })}
@@ -498,7 +507,7 @@ export default function ReceiptGeneratorPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-phone">
-                    Support Phone
+                    {t("receipt.supportPhone")}
                   </Label>
                   <Input
                     type="text"
@@ -513,17 +522,19 @@ export default function ReceiptGeneratorPage({
 
             {/* Customer (Payer) Segment */}
             <div>
-              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">2. Payer / Client Info</H3>
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
+                {t("receipt.label2PayerClientInfo")}
+              </H3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-client-name">
-                    Client Name *
+                    {t("receipt.clientName")}
                   </Label>
                   <Input
                     aria-errormessage={errors["customer.name"] ? "receipt-client-name-error" : undefined}
                     type="text"
                     required
-                    placeholder="e.g. Sarah Jenkins"
+                    placeholder={t("receipt.eGSarahJenkins")}
                     aria-invalid={Boolean(errors["customer.name"])}
                     className={` ${errors["customer.name"] ? "bg-destructive/5" : ""}`}
                     id="receipt-client-name"
@@ -541,11 +552,11 @@ export default function ReceiptGeneratorPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-client-company">
-                    Company / Association
+                    {t("receipt.companyAssociation")}
                   </Label>
                   <Input
                     type="text"
-                    placeholder="e.g. Acme Corp"
+                    placeholder={t("receipt.eGAcmeCorp")}
                     id="receipt-client-company"
                     value={data.customer.company}
                     onChange={(e) => setData({ ...data, customer: { ...data.customer, company: e.target.value } })}
@@ -553,11 +564,11 @@ export default function ReceiptGeneratorPage({
                 </div>
                 <div className="md:col-span-2">
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-client-address">
-                    Billing Street Address
+                    {t("receipt.billingStreetAddress")}
                   </Label>
                   <Input
                     type="text"
-                    placeholder="822 Broad Street"
+                    placeholder={t("receipt.label822BroadStreet")}
                     className="mb-2"
                     id="receipt-client-address"
                     value={data.customer.addressLine1}
@@ -570,23 +581,23 @@ export default function ReceiptGeneratorPage({
                   />
                   <div className="grid grid-cols-3 gap-2">
                     <Input
-                      aria-label="Client city"
+                      aria-label={t("receipt.clientCity")}
                       type="text"
-                      placeholder="City"
+                      placeholder={t("receipt.city")}
                       value={data.customer.city}
                       onChange={(e) => setData({ ...data, customer: { ...data.customer, city: e.target.value } })}
                     />
                     <Input
-                      aria-label="Client state"
+                      aria-label={t("receipt.clientState")}
                       type="text"
-                      placeholder="State"
+                      placeholder={t("receipt.state")}
                       value={data.customer.state}
                       onChange={(e) => setData({ ...data, customer: { ...data.customer, state: e.target.value } })}
                     />
                     <Input
-                      aria-label="Client ZIP code"
+                      aria-label={t("receipt.clientZipCode")}
                       type="text"
-                      placeholder="Zip Code"
+                      placeholder={t("receipt.zipCode")}
                       value={data.customer.zipCode}
                       onChange={(e) =>
                         setData({
@@ -602,11 +613,13 @@ export default function ReceiptGeneratorPage({
 
             {/* Receipt Details Segment */}
             <div>
-              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">3. Receipt Coordinates</H3>
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
+                {t("receipt.label3ReceiptCoordinates")}
+              </H3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-number">
-                    Receipt Number *
+                    {t("receipt.receiptNumber")}
                   </Label>
                   <Input
                     type="text"
@@ -617,7 +630,7 @@ export default function ReceiptGeneratorPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-date">
-                    Receipt Date *
+                    {t("receipt.receiptDate")}
                   </Label>
                   <Input
                     type="date"
@@ -628,28 +641,28 @@ export default function ReceiptGeneratorPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-category">
-                    Receipt Category
+                    {t("receipt.receiptCategory")}
                   </Label>
                   <Select
                     id="receipt-category"
                     value={data.receiptType}
                     onChange={(e) => setData({ ...data, receiptType: e.target.value as any })}
                   >
-                    <option value="Service">Service Receipt</option>
-                    <option value="Product">Product Receipt</option>
-                    <option value="Rent">Rent Statement</option>
-                    <option value="Contractor">Subcontractor Receipt</option>
-                    <option value="Deposit">Deposit Confirmed</option>
-                    <option value="Refund">Refund statement</option>
+                    <option value="Service">{t("receipt.serviceReceipt")}</option>
+                    <option value="Product">{t("receipt.productReceipt")}</option>
+                    <option value="Rent">{t("receipt.rentStatement")}</option>
+                    <option value="Contractor">{t("receipt.subcontractorReceipt")}</option>
+                    <option value="Deposit">{t("receipt.depositConfirmed")}</option>
+                    <option value="Refund">{t("receipt.refundStatement")}</option>
                   </Select>
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-related-invoice">
-                    Related Invoice #
+                    {t("receipt.relatedInvoice")}
                   </Label>
                   <Input
                     type="text"
-                    placeholder="e.g. INV-2026-001"
+                    placeholder={t("receipt.eGInv2026001")}
                     id="receipt-related-invoice"
                     value={data.relatedInvoiceNumber}
                     onChange={(e) => setData({ ...data, relatedInvoiceNumber: e.target.value })}
@@ -657,11 +670,11 @@ export default function ReceiptGeneratorPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-transaction-id">
-                    Transaction/Ref ID
+                    {t("receipt.transactionRefId")}
                   </Label>
                   <Input
                     type="text"
-                    placeholder="e.g. TXN-99812A"
+                    placeholder={t("receipt.eGTxn99812a")}
                     id="receipt-transaction-id"
                     value={data.transactionId}
                     onChange={(e) => setData({ ...data, transactionId: e.target.value })}
@@ -669,16 +682,16 @@ export default function ReceiptGeneratorPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-payment-status">
-                    Payment Status
+                    {t("receipt.paymentStatus")}
                   </Label>
                   <Select
                     id="receipt-payment-status"
                     value={data.paymentStatus}
                     onChange={(e) => setData({ ...data, paymentStatus: e.target.value as any })}
                   >
-                    <option value="Paid">Fully Paid</option>
-                    <option value="Partially Paid">Partially Refunded</option>
-                    <option value="Refunded">Fully Refunded</option>
+                    <option value="Paid">{t("receipt.fullyPaid")}</option>
+                    <option value="Partially Paid">{t("receipt.partiallyRefunded")}</option>
+                    <option value="Refunded">{t("receipt.fullyRefunded")}</option>
                   </Select>
                 </div>
               </div>
@@ -687,10 +700,10 @@ export default function ReceiptGeneratorPage({
             {/* Line Items Grid Rows */}
             <div>
               <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4">
-                <H3 className="text-slate-500">4. Items &amp; Services Paid</H3>
+                <H3 className="text-slate-500">{t("receipt.label4ItemsServicesPaid")}</H3>
                 <Button onClick={handleAddItem} size="sm" type="button">
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Add Line</span>
+                  <span>{t("receipt.addLine")}</span>
                 </Button>
               </div>
 
@@ -702,11 +715,11 @@ export default function ReceiptGeneratorPage({
                   >
                     <div className="grow">
                       <Label className="block text-slate-400 mb-0.5" htmlFor={`receipt-item-${item.id}-description`}>
-                        Description *
+                        {t("receipt.description")}
                       </Label>
                       <Input
                         type="text"
-                        placeholder="e.g. Strategic Development Consultation"
+                        placeholder={t("receipt.eGStrategicDevelopmentConsultation")}
                         id={`receipt-item-${item.id}-description`}
                         value={item.description}
                         onChange={(e) => handleItemChange(item.id, "description", e.target.value)}
@@ -715,7 +728,7 @@ export default function ReceiptGeneratorPage({
                     <div className="grid grid-cols-3 gap-2 w-full md:w-auto shrink-0 md:max-w-xs">
                       <div>
                         <Label className="block text-slate-400 mb-0.5" htmlFor={`receipt-item-${item.id}-quantity`}>
-                          Qty
+                          {t("receipt.qty")}
                         </Label>
                         <Input
                           type="number"
@@ -728,7 +741,7 @@ export default function ReceiptGeneratorPage({
                       </div>
                       <div>
                         <Label className="block text-slate-400 mb-0.5" htmlFor={`receipt-item-${item.id}-rate`}>
-                          Rate ($)
+                          {t("receipt.rate")}
                         </Label>
                         <Input
                           type="number"
@@ -739,9 +752,9 @@ export default function ReceiptGeneratorPage({
                         />
                       </div>
                       <div className="flex flex-col items-center justify-center pt-2">
-                        <Overline className="text-slate-400 mb-0.5">Tax</Overline>
+                        <Overline className="text-slate-400 mb-0.5">{t("receipt.tax")}</Overline>
                         <CheckboxControl
-                          aria-label={`Taxable receipt item ${idx + 1}`}
+                          aria-label={t("receipt.taxableReceiptItemValue", { value1: idx + 1 })}
                           className="size-4 rounded border-input accent-primary"
                           checked={item.taxable}
                           onCheckedChange={(checked) => handleItemChange(item.id, "taxable", checked === true)}
@@ -750,7 +763,7 @@ export default function ReceiptGeneratorPage({
                     </div>
                     {data.lineItems.length > 1 && (
                       <Button
-                        aria-label={`Remove receipt item ${idx + 1}`}
+                        aria-label={t("receipt.removeReceiptItemValue", { value1: idx + 1 })}
                         className="absolute right-2 top-2 text-slate-400 hover:text-red-600 md:relative md:top-auto md:right-auto md:self-end"
                         onClick={() => handleRemoveItem(item.id)}
                         size="icon-sm"
@@ -768,27 +781,27 @@ export default function ReceiptGeneratorPage({
             {/* Calculations & payment settings */}
             <div>
               <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
-                5. Total Adjustments &amp; Paid Route
+                {t("receipt.label5TotalAdjustmentsPaidRoute")}
               </H3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-discount-type">
-                    Discount Type
+                    {t("receipt.discountType")}
                   </Label>
                   <Select
                     id="receipt-discount-type"
                     value={data.discountType}
                     onChange={(e) => setData({ ...data, discountType: e.target.value as any, discountValue: 0 })}
                   >
-                    <option value="none">No Discount</option>
-                    <option value="percent">Percentage (%)</option>
-                    <option value="fixed">Fixed Amount ($)</option>
+                    <option value="none">{t("receipt.noDiscount")}</option>
+                    <option value="percent">{t("receipt.percentage")}</option>
+                    <option value="fixed">{t("receipt.fixedAmount")}</option>
                   </Select>
                 </div>
                 {data.discountType !== "none" && (
                   <div>
                     <Label className="block text-slate-400 mb-1" htmlFor="receipt-discount-value">
-                      {data.discountType === "percent" ? "Percentage Off (%)" : "Amount Deducted ($)"}
+                      {data.discountType === "percent" ? t("receipt.percentageOff") : t("receipt.amountDeducted")}
                     </Label>
                     <Input
                       type="number"
@@ -800,7 +813,7 @@ export default function ReceiptGeneratorPage({
                 )}
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-tax-rate">
-                    Sales Tax rate (%)
+                    {t("receipt.salesTaxRate")}
                   </Label>
                   <Input
                     type="number"
@@ -813,7 +826,7 @@ export default function ReceiptGeneratorPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-tax-label">
-                    sales tax Label
+                    {t("receipt.salesTaxLabel")}
                   </Label>
                   <Input
                     type="text"
@@ -827,7 +840,7 @@ export default function ReceiptGeneratorPage({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-tip">
-                    Tip / Gratuity ($)
+                    {t("receipt.tipGratuity")}
                   </Label>
                   <Input
                     type="number"
@@ -839,7 +852,7 @@ export default function ReceiptGeneratorPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-additional-fee">
-                    Additional Fee ($)
+                    {t("receipt.additionalFee")}
                   </Label>
                   <Input
                     type="number"
@@ -851,30 +864,30 @@ export default function ReceiptGeneratorPage({
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-payment-method">
-                    Payment Method
+                    {t("receipt.paymentMethod")}
                   </Label>
                   <Select
                     id="receipt-payment-method"
                     value={data.paymentMethod}
                     onChange={(e) => setData({ ...data, paymentMethod: e.target.value })}
                   >
-                    <option value="Card">Credit/Debit Card</option>
-                    <option value="Cash">Cash Handover</option>
-                    <option value="Check">Business Check</option>
-                    <option value="Zelle">Zelle Transfer</option>
-                    <option value="Venmo">Venmo App</option>
-                    <option value="PayPal">PayPal Balance</option>
-                    <option value="Bank Transfer">Bank Wire ACH</option>
-                    <option value="Other">Other Mode</option>
+                    <option value="Card">{t("receipt.creditDebitCard")}</option>
+                    <option value="Cash">{t("receipt.cashHandover")}</option>
+                    <option value="Check">{t("receipt.businessCheck")}</option>
+                    <option value="Zelle">{t("receipt.zelleTransfer")}</option>
+                    <option value="Venmo">{t("receipt.venmoApp")}</option>
+                    <option value="PayPal">{t("receipt.paypalBalance")}</option>
+                    <option value="Bank Transfer">{t("receipt.bankWireAch")}</option>
+                    <option value="Other">{t("receipt.otherMode")}</option>
                   </Select>
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-received-by">
-                    Received By
+                    {t("receipt.receivedBy")}
                   </Label>
                   <Input
                     type="text"
-                    placeholder="Staff/Agent Name"
+                    placeholder={t("receipt.staffAgentName")}
                     id="receipt-received-by"
                     value={data.receivedBy}
                     onChange={(e) => setData({ ...data, receivedBy: e.target.value })}
@@ -885,24 +898,26 @@ export default function ReceiptGeneratorPage({
 
             {/* Custom Notes terms */}
             <div>
-              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">6. Custom Footnotes</H3>
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
+                {t("receipt.label6CustomFootnotes")}
+              </H3>
               <div className="space-y-4">
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-notes">
-                    Memo / Internal Notes
+                    {t("receipt.memoInternalNotes")}
                   </Label>
                   <Textarea
                     rows={2}
                     className="min-h-20"
                     id="receipt-notes"
-                    placeholder="Details about project sign-offs, milestones compliance or policy notes."
+                    placeholder={t("receipt.detailsAboutProjectSignOffsMilestonesComplianceOr")}
                     value={data.notes}
                     onChange={(e) => setData({ ...data, notes: e.target.value })}
                   />
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="receipt-thank-you">
-                    Thank-You Sign-off Message
+                    {t("receipt.thankYouSignOffMessage")}
                   </Label>
                   <Input
                     type="text"
@@ -916,10 +931,8 @@ export default function ReceiptGeneratorPage({
           </Card>
 
           {/* Core Safe usage and policy disclaimer to satisfy policy constraint */}
-          <AlertBanner title="Official Legal Compliance Note" variant="success">
-            This receipt generator is explicitly designed for documented payments between registered freelancers,
-            business entities, and clients. Keep copies of bank clearance references and avoid creating visual brand
-            replication layout sheets.
+          <AlertBanner title={t("receipt.officialLegalComplianceNote")} variant="success">
+            {t("receipt.thisReceiptGeneratorIsExplicitlyDesignedForDocumented")}
           </AlertBanner>
         </div>
 
@@ -929,18 +942,20 @@ export default function ReceiptGeneratorPage({
         >
           <Card className="space-y-3 rounded-2xl p-4 shadow-sm print:hidden">
             <div className="flex items-center justify-between text-slate-500 border-b border-slate-100 pb-2">
-              <Text>RECEIPT VISUAL LAYOUT</Text>
-              <StatusBadge variant="success">{selectedAdvancedTemplate?.name ?? "Built-in layout"}</StatusBadge>
+              <Text>{t("receipt.receiptVisualLayout")}</Text>
+              <StatusBadge variant="success">
+                {selectedAdvancedTemplate?.name ?? t("receipt.builtInLayout")}
+              </StatusBadge>
             </div>
 
             {/* Design preset layout options */}
             <div className="grid grid-cols-5 gap-1 pt-1">
               {[
-                { key: "classic", label: "Classic" },
-                { key: "modern", label: "Modern" },
-                { key: "compact", label: "Compact" },
-                { key: "rent", label: "Rent" },
-                { key: "contractor", label: "contractor" },
+                { key: "classic", label: t("receipt.themes.classic") },
+                { key: "modern", label: t("receipt.themes.modern") },
+                { key: "compact", label: t("receipt.themes.compact") },
+                { key: "rent", label: t("receipt.themes.rent") },
+                { key: "contractor", label: t("receipt.themes.contractor") },
               ].map((themeOpt) => (
                 <Button
                   key={themeOpt.key}
@@ -962,7 +977,7 @@ export default function ReceiptGeneratorPage({
             {advancedTemplates.length ? (
               <div>
                 <Label className="mb-1 block text-slate-500" htmlFor="receipt-published-template">
-                  Published custom template
+                  {t("receipt.publishedCustomTemplate")}
                 </Label>
                 <Select
                   id="receipt-published-template"
@@ -972,7 +987,7 @@ export default function ReceiptGeneratorPage({
                   }}
                   value={selectedAdvancedTemplateId}
                 >
-                  <option value="">Use a built-in layout</option>
+                  <option value="">{t("receipt.useABuiltInLayout")}</option>
                   {advancedTemplates.map((template) => (
                     <option key={template.id} value={template.id}>
                       {template.name}
@@ -991,7 +1006,11 @@ export default function ReceiptGeneratorPage({
                 type="button"
               >
                 <span>
-                  {pdfAction ? "Generating…" : selectedAdvancedTemplate ? "Download PDF" : "Print / Save PDF"}
+                  {pdfAction
+                    ? t("receipt.generating")
+                    : selectedAdvancedTemplate
+                      ? t("receipt.downloadPdf")
+                      : t("receipt.printSavePdf")}
                 </span>
               </ToolActionButton>
               <ToolActionButton
@@ -1000,7 +1019,7 @@ export default function ReceiptGeneratorPage({
                 onClick={handleCopySummary}
                 type="button"
               >
-                <span>{copied ? "Copied!" : "Copy Summary"}</span>
+                <span>{copied ? t("receipt.copied") : t("receipt.copySummary")}</span>
               </ToolActionButton>
             </div>
             {pdfError ? (
@@ -1010,8 +1029,8 @@ export default function ReceiptGeneratorPage({
             ) : null}
             <P className="text-slate-500 text-center">
               {selectedAdvancedTemplate
-                ? "The downloaded PDF uses your published custom layout and current receipt data."
-                : "Print outputs generate vector-scalable standard Letter size paper versions immediately."}
+                ? t("receipt.theDownloadedPdfUsesYourPublishedCustomLayout")
+                : t("receipt.printOutputsGenerateVectorScalableStandardLetterSize")}
             </P>
           </Card>
 
@@ -1028,6 +1047,7 @@ export default function ReceiptGeneratorPage({
               <div
                 className={`p-8 bg-white min-h-[750px] font-sans text-slate-800 ${selectedTheme === "compact" ? "max-w-md mx-auto" : ""}`}
                 id="receipt-print-area"
+                dir="ltr"
               >
                 {/* Receipt Header Style layout matching selected theme */}
                 <div className="flex justify-between items-start border-b border-slate-200 pb-5 mb-6">
@@ -1244,36 +1264,24 @@ export default function ReceiptGeneratorPage({
         className="mt-16 border-t border-slate-200/80 pt-12 space-y-6 max-w-4xl mx-auto print:hidden"
         id="receipt-seo-section"
       >
-        <H3 className="text-slate-900 text-center">Frequently Answered Inquiries (FAQ)</H3>
+        <H3 className="text-slate-900 text-center">{t("receipt.frequentlyAnsweredInquiriesFaq")}</H3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-slate-600">
           <div className="space-y-1">
-            <H4 className="text-slate-900">Are standard receipts created here totally free?</H4>
-            <P>
-              Yes, absolutely! Unlike cloud suites, SmartTools Paperwork does not request payment details or impose
-              draft limits. You can issue PDF documents free forever.
-            </P>
+            <H4 className="text-slate-900">{t("receipt.areStandardReceiptsCreatedHereTotallyFree")}</H4>
+            <P>{t("receipt.yesAbsolutelyUnlikeCloudSuitesSmarttoolsPaperworkDoes")}</P>
           </div>
           <div className="space-y-1">
-            <H4 className="text-slate-900">Can I convert a paid invoice directly into a receipt?</H4>
-            <P>
-              Certainly! Using our smart local data bridge, click "Import Invoice Draft" to pull previous project line
-              items and seller setups instantly.
-            </P>
+            <H4 className="text-slate-900">{t("receipt.canIConvertAPaidInvoiceDirectlyInto")}</H4>
+            <P>{t("receipt.certainlyUsingOurSmartLocalDataBridgeClick")}</P>
           </div>
           <div className="space-y-1">
-            <H4 className="text-slate-900">Is my customer's privacy preserved securely?</H4>
-            <P>
-              100% yes. Your inputs never float to backup cloud vaults. Everything processes offline in your sandbox
-              browser.
-            </P>
+            <H4 className="text-slate-900">{t("receipt.isMyCustomerSPrivacyPreservedSecurely")}</H4>
+            <P>{t("receipt.label100YesYourInputsNeverFloatToBackup")}</P>
           </div>
           <div className="space-y-1">
-            <H4 className="text-slate-900">Under what conditions should I use this receipt tool?</H4>
-            <P>
-              Only for genuine settled transactions from your own contracting business block. Keep legal compliance
-              folders secure.
-            </P>
+            <H4 className="text-slate-900">{t("receipt.underWhatConditionsShouldIUseThisReceipt")}</H4>
+            <P>{t("receipt.onlyForGenuineSettledTransactionsFromYourOwn")}</P>
           </div>
         </div>
       </div>

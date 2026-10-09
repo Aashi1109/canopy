@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import * as React from "react";
 import { Dialog } from "radix-ui";
@@ -42,6 +43,7 @@ export function MediaPreview({
   className,
   viewportClassName,
 }: MediaPreviewProps) {
+  const t = useTranslations("Workbench");
   const returnFocusRef = React.useRef<HTMLElement | null>(null);
   const descriptionId = React.useId();
   const hasDescription = description !== undefined && description !== null;
@@ -99,7 +101,7 @@ export function MediaPreview({
               {actions}
               <Dialog.Close asChild>
                 <Button variant="secondary" size="sm">
-                  Exit preview
+                  {t("mediaExitPreview")}
                   <kbd aria-hidden="true" className="hidden text-xs font-normal text-muted-foreground sm:inline">
                     Esc
                   </kbd>

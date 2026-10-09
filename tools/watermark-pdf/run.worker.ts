@@ -58,9 +58,10 @@ function partitionInputs(files: readonly ToolRunFile[]): Partitioned {
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const { document, watermark } = partitionInputs(ctx.input.files);
-  if (!document) throw new ToolError("no-files", "Choose a PDF to watermark.");
+  if (!document)
+    throw new ToolError("no-files", "Choose a PDF to watermark.", undefined, { messageRef: { key: "errors.noFiles" } });
   const selection = validatePdfSelection([{ size: document.size }]);
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
   await validatePdfInput(document);
 
   const { StandardFonts, degrees, rgb } = await import("pdf-lib");
@@ -72,7 +73,9 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   if (ctx.settings.watermarkKind === "text") {
     const text = ctx.settings.watermarkText;
     if (!text.trim()) {
-      throw new ToolError("empty-watermark", "Enter watermark text.");
+      throw new ToolError("empty-watermark", "Enter watermark text.", undefined, {
+        messageRef: { key: "errors.emptyWatermark" },
+      });
     }
     const font = await pdf.embedFont(StandardFonts.Helvetica);
     try {
@@ -81,6 +84,8 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       throw new ToolError(
         "unsupported-text",
         "This text cannot be encoded by the standard PDF font. Use an image watermark for this text.",
+        undefined,
+        { messageRef: { key: "errors.unsupportedText" } },
       );
     }
     selected.forEach((index) => {
@@ -99,14 +104,16 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     });
   } else {
     if (!watermark) {
-      throw new ToolError("missing-watermark", "Choose a watermark image.");
+      throw new ToolError("missing-watermark", "Choose a watermark image.", undefined, {
+        messageRef: { key: "errors.missingWatermark" },
+      });
     }
     const watermarkBytes = await readToolFile(watermark, ctx.signal);
     const signature = validateMediaSignature(new Uint8Array(watermarkBytes), watermark.mime, ["jpeg", "png"]);
-    if (!signature.ok) throw new ToolError(signature.code, signature.message);
+    if (!signature.ok) throw new ToolError(signature.code, signature.message, undefined, signature.details);
     const watermarkSelection = validateImageSelection([{ size: watermark.size }]);
     if (!watermarkSelection.ok) {
-      throw new ToolError(watermarkSelection.code, watermarkSelection.message);
+      throw new ToolError(watermarkSelection.code, watermarkSelection.message, undefined, watermarkSelection.details);
     }
     const decoded =
       signature.kind === "jpeg"
@@ -117,7 +124,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
           })
         : await (await import("@jsquash/png")).decode(watermarkBytes);
     const dimensions = validateDecodedImageDimensions(decoded.width, decoded.height);
-    if (!dimensions.ok) throw new ToolError(dimensions.code, dimensions.message);
+    if (!dimensions.ok) throw new ToolError(dimensions.code, dimensions.message, undefined, dimensions.details);
     const orientedJpeg = signature.kind === "jpeg" && readExifOrientation(new Uint8Array(watermarkBytes)) !== 1;
     const embeddedBytes = orientedJpeg
       ? await (await import("@jsquash/jpeg")).encode(decoded, { quality: 92 })
@@ -139,7 +146,12 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     });
   }
 
-  ctx.progress({ completed: selected.length, total: selected.length, stage: "Saving PDF" });
+  ctx.progress({
+    completed: selected.length,
+    total: selected.length,
+    stage: "Saving PDF",
+    stageMessage: { key: "progress.savingPdf" },
+  });
   const output = await ctx.writeArtifact({
     name: createOutputFilename(document.name, "pdf", "watermarked"),
     mime: "application/pdf",

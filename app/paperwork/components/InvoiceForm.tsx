@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useTranslations } from "next-intl";
 import React, { useState } from "react";
 import {
   Building,
@@ -46,6 +47,7 @@ interface InvoiceFormProps {
 }
 
 export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps) {
+  const t = useTranslations("Tool.runtime");
   const [showOptionalBiz, setShowOptionalBiz] = useState(false);
   const [showOptionalClient, setShowOptionalClient] = useState(false);
 
@@ -142,7 +144,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
     if (!file) return;
 
     if (file.size > 1.5 * 1024 * 1024) {
-      alert("Please upload a logo image smaller than 1.5MB to ensure safe offline browser state storage.");
+      alert(t("invoice.form.logoTooLarge"));
       return;
     }
 
@@ -250,7 +252,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
         <CardHeader className="gap-0">
           <H3 className="flex items-center gap-2">
             <Building aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-            Your Business (Seller)
+            {t("invoice.form.yourBusinessSeller")}
           </H3>
         </CardHeader>
 
@@ -261,7 +263,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
               <div className="group relative flex h-16 w-24 items-center justify-center overflow-hidden rounded-lg border border-border bg-card">
                 <img
                   src={data.business.logo}
-                  alt="Business Logo Preview"
+                  alt={t("invoice.form.businessLogoPreview")}
                   className="max-h-full max-w-full object-contain"
                   referrerPolicy="no-referrer"
                 />
@@ -271,21 +273,20 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   className="absolute inset-0 h-full w-full rounded-none bg-destructive/90 text-destructive-foreground opacity-0 transition-opacity hover:bg-destructive/90 group-hover:opacity-100 focus-visible:opacity-100"
                   variant="destructive"
                 >
-                  Delete Logo
+                  {t("invoice.form.deleteLogo")}
                 </Button>
               </div>
             ) : (
               <Label className="group flex h-16 w-24 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-input bg-background transition-colors hover:border-primary">
                 <Upload aria-hidden="true" className="size-5 text-muted-foreground group-hover:text-primary" />
-                <Caption className="mt-1 text-muted-foreground">Add Logo</Caption>
+                <Caption className="mt-1 text-muted-foreground">{t("invoice.form.addLogo")}</Caption>
                 <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
               </Label>
             )}
             <div className="space-y-1 text-center sm:text-left">
-              <Caption className="text-foreground">Company Logo Accent</Caption>
+              <Caption className="text-foreground">{t("invoice.form.companyLogoAccent")}</Caption>
               <Muted className="max-w-sm text-muted-foreground">
-                Optional. Recommended: horizontal layout (.png, .jpg), max file size 1.5MB. Renders client-side for
-                absolute security.
+                {t("invoice.form.optionalRecommendedHorizontalLayoutPngJpgMax")}
               </Muted>
             </div>
           </div>
@@ -296,42 +297,42 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
               className="md:col-span-2"
               error={errors["business.name"]}
               htmlFor="biz-name"
-              label="Business Name"
+              label={t("invoice.form.businessName")}
               required
             >
               <Input
                 aria-invalid={Boolean(errors["business.name"])}
                 id="biz-name"
                 type="text"
-                placeholder="e.g. Blue Ridge Web Studio"
+                placeholder={t("invoice.form.eGBlueRidgeWebStudio")}
                 value={data.business.name || ""}
                 onChange={(e) => updateBusiness({ name: e.target.value })}
               />
             </Field>
 
             {/* Address fields */}
-            <Field className="md:col-span-2" htmlFor="biz-addr-1" label="Address Line 1">
+            <Field className="md:col-span-2" htmlFor="biz-addr-1" label={t("invoice.form.addressLine1")}>
               <Input
                 id="biz-addr-1"
                 type="text"
-                placeholder="42 Wall St"
+                placeholder={t("invoice.form.text42WallSt")}
                 value={data.business.addressLine1 || ""}
                 onChange={(e) => updateBusiness({ addressLine1: e.target.value })}
               />
             </Field>
 
-            <Field htmlFor="biz-city" label="City">
+            <Field htmlFor="biz-city" label={t("invoice.form.city")}>
               <Input
                 id="biz-city"
                 type="text"
-                placeholder="Asheville"
+                placeholder={t("invoice.form.asheville")}
                 value={data.business.city || ""}
                 onChange={(e) => updateBusiness({ city: e.target.value })}
               />
             </Field>
 
             <div className="grid grid-cols-2 gap-2">
-              <Field htmlFor="biz-state" label="State">
+              <Field htmlFor="biz-state" label={t("invoice.form.state")}>
                 <Input
                   id="biz-state"
                   type="text"
@@ -340,7 +341,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   onChange={(e) => updateBusiness({ state: e.target.value })}
                 />
               </Field>
-              <Field htmlFor="biz-zip" label="ZIP Code">
+              <Field htmlFor="biz-zip" label={t("invoice.form.zipCode")}>
                 <Input
                   id="biz-zip"
                   type="text"
@@ -361,7 +362,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
               size="sm"
               variant="ghost"
             >
-              <span>{showOptionalBiz ? "Hide" : "Show"} optional business fields</span>
+              <span>
+                {showOptionalBiz ? t("invoice.form.hideBusinessFields") : t("invoice.form.showBusinessFields")}
+              </span>
               <Caption className="rounded-sm border border-border bg-muted px-1.5 text-muted-foreground">
                 {showOptionalBiz ? "-" : "+"}
               </Caption>
@@ -369,27 +372,27 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
             {showOptionalBiz && (
               <div className="mt-4 grid grid-cols-1 gap-4 rounded-lg border border-border bg-muted/40 p-4 md:grid-cols-2">
-                <Field htmlFor="biz-contact" label="Contact Name">
+                <Field htmlFor="biz-contact" label={t("invoice.form.contactName")}>
                   <Input
                     id="biz-contact"
                     type="text"
-                    placeholder="Sarah Jenkins"
+                    placeholder={t("invoice.form.sarahJenkins")}
                     value={data.business.contactName || ""}
                     onChange={(e) => updateBusiness({ contactName: e.target.value })}
                   />
                 </Field>
 
-                <Field htmlFor="biz-taxid" label="Tax ID / EIN">
+                <Field htmlFor="biz-taxid" label={t("invoice.form.taxIdEin")}>
                   <Input
                     id="biz-taxid"
                     type="text"
-                    placeholder="Employer Identification Number"
+                    placeholder={t("invoice.form.employerIdentificationNumber")}
                     value={data.business.taxId || ""}
                     onChange={(e) => updateBusiness({ taxId: e.target.value })}
                   />
                 </Field>
 
-                <Field error={errors["business.email"]} htmlFor="biz-email" label="Email Address">
+                <Field error={errors["business.email"]} htmlFor="biz-email" label={t("invoice.form.emailAddress")}>
                   <Input
                     aria-invalid={Boolean(errors["business.email"])}
                     id="biz-email"
@@ -400,7 +403,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   />
                 </Field>
 
-                <Field htmlFor="biz-phone" label="Phone Number">
+                <Field htmlFor="biz-phone" label={t("invoice.form.phoneNumber")}>
                   <Input
                     id="biz-phone"
                     type="text"
@@ -410,7 +413,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   />
                 </Field>
 
-                <Field className="md:col-span-2" htmlFor="biz-web" label="Website URL">
+                <Field className="md:col-span-2" htmlFor="biz-web" label={t("invoice.form.websiteUrl")}>
                   <Input
                     id="biz-web"
                     type="text"
@@ -420,11 +423,15 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   />
                 </Field>
 
-                <Field className="md:col-span-2" htmlFor="biz-addr-2" label="Address Line 2 (Suite, Floor etc.)">
+                <Field
+                  className="md:col-span-2"
+                  htmlFor="biz-addr-2"
+                  label={t("invoice.form.addressLine2SuiteFloorEtc")}
+                >
                   <Input
                     id="biz-addr-2"
                     type="text"
-                    placeholder="Suite 400"
+                    placeholder={t("invoice.form.suite400")}
                     value={data.business.addressLine2 || ""}
                     onChange={(e) => updateBusiness({ addressLine2: e.target.value })}
                   />
@@ -440,7 +447,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
         <CardHeader className="gap-0">
           <H3 className="flex items-center gap-2">
             <User aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-            Bill To (Client)
+            {t("invoice.form.billToClient")}
           </H3>
         </CardHeader>
 
@@ -450,42 +457,42 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
               className="md:col-span-2"
               error={errors["client.name"]}
               htmlFor="client-name"
-              label="Client Name / Company"
+              label={t("invoice.form.clientNameCompany")}
               required
             >
               <Input
                 aria-invalid={Boolean(errors["client.name"])}
                 id="client-name"
                 type="text"
-                placeholder="e.g. Acme Home Services or John Smith"
+                placeholder={t("invoice.form.eGAcmeHomeServicesOrJohn")}
                 value={data.client.name || ""}
                 onChange={(e) => updateClient({ name: e.target.value })}
               />
             </Field>
 
             {/* Address fields */}
-            <Field className="md:col-span-2" htmlFor="client-addr-1" label="Client Address Line 1">
+            <Field className="md:col-span-2" htmlFor="client-addr-1" label={t("invoice.form.clientAddressLine1")}>
               <Input
                 id="client-addr-1"
                 type="text"
-                placeholder="100 Pine Street"
+                placeholder={t("invoice.form.text100PineStreet")}
                 value={data.client.addressLine1 || ""}
                 onChange={(e) => updateClient({ addressLine1: e.target.value })}
               />
             </Field>
 
-            <Field htmlFor="client-city" label="City">
+            <Field htmlFor="client-city" label={t("invoice.form.city")}>
               <Input
                 id="client-city"
                 type="text"
-                placeholder="San Francisco"
+                placeholder={t("invoice.form.sanFrancisco")}
                 value={data.client.city || ""}
                 onChange={(e) => updateClient({ city: e.target.value })}
               />
             </Field>
 
             <div className="grid grid-cols-2 gap-2">
-              <Field htmlFor="client-state" label="State">
+              <Field htmlFor="client-state" label={t("invoice.form.state")}>
                 <Input
                   id="client-state"
                   type="text"
@@ -494,7 +501,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   onChange={(e) => updateClient({ state: e.target.value })}
                 />
               </Field>
-              <Field htmlFor="client-zip" label="ZIP Code">
+              <Field htmlFor="client-zip" label={t("invoice.form.zipCode")}>
                 <Input
                   id="client-zip"
                   type="text"
@@ -515,7 +522,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
               size="sm"
               variant="ghost"
             >
-              <span>{showOptionalClient ? "Hide" : "Show"} optional client fields</span>
+              <span>
+                {showOptionalClient ? t("invoice.form.hideClientFields") : t("invoice.form.showClientFields")}
+              </span>
               <Caption className="rounded-sm border border-border bg-muted px-1.5 text-muted-foreground">
                 {showOptionalClient ? "-" : "+"}
               </Caption>
@@ -523,17 +532,17 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
             {showOptionalClient && (
               <div className="mt-4 grid grid-cols-1 gap-4 rounded-lg border border-border bg-muted/40 p-4 md:grid-cols-2">
-                <Field htmlFor="client-company" label="Client Company">
+                <Field htmlFor="client-company" label={t("invoice.form.clientCompany")}>
                   <Input
                     id="client-company"
                     type="text"
-                    placeholder="Acme Corporates Inc."
+                    placeholder={t("invoice.form.acmeCorporatesInc")}
                     value={data.client.company || ""}
                     onChange={(e) => updateClient({ company: e.target.value })}
                   />
                 </Field>
 
-                <Field error={errors["client.email"]} htmlFor="client-email" label="Client Email">
+                <Field error={errors["client.email"]} htmlFor="client-email" label={t("invoice.form.clientEmail")}>
                   <Input
                     aria-invalid={Boolean(errors["client.email"])}
                     id="client-email"
@@ -544,7 +553,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   />
                 </Field>
 
-                <Field htmlFor="client-phone" label="Client Phone">
+                <Field htmlFor="client-phone" label={t("invoice.form.clientPhone")}>
                   <Input
                     id="client-phone"
                     type="text"
@@ -554,11 +563,11 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   />
                 </Field>
 
-                <Field htmlFor="client-addr-2" label="Client Address Line 2">
+                <Field htmlFor="client-addr-2" label={t("invoice.form.clientAddressLine2")}>
                   <Input
                     id="client-addr-2"
                     type="text"
-                    placeholder="Floor 12"
+                    placeholder={t("invoice.form.floor12")}
                     value={data.client.addressLine2 || ""}
                     onChange={(e) => updateClient({ addressLine2: e.target.value })}
                   />
@@ -574,12 +583,17 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
         <CardHeader className="gap-0">
           <H3 className="flex items-center gap-2">
             <Calendar aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-            Invoice Metadata
+            {t("invoice.form.invoiceMetadata")}
           </H3>
         </CardHeader>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Field error={errors["invoice.invoiceNumber"]} htmlFor="inv-num" label="Invoice Number" required>
+          <Field
+            error={errors["invoice.invoiceNumber"]}
+            htmlFor="inv-num"
+            label={t("invoice.form.invoiceNumber")}
+            required
+          >
             <Input
               aria-invalid={Boolean(errors["invoice.invoiceNumber"])}
               id="inv-num"
@@ -590,22 +604,27 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
             />
           </Field>
 
-          <Field htmlFor="inv-terms" label="Payment Terms">
+          <Field htmlFor="inv-terms" label={t("invoice.form.paymentTerms")}>
             <Select
               id="inv-terms"
               value={data.invoice.paymentTerms || "Net 30"}
               onChange={(e) => updateInvoiceMeta({ paymentTerms: e.target.value })}
             >
-              <option value="Due on Receipt">Due on Receipt</option>
-              <option value="Net 7">Net 7 (7 Days)</option>
-              <option value="Net 15">Net 15 (15 Days)</option>
-              <option value="Net 30">Net 30 (30 Days)</option>
-              <option value="Net 45">Net 45 (45 Days)</option>
-              <option value="Custom">Custom Terms (Select Date Manually)</option>
+              <option value="Due on Receipt">{t("invoice.form.dueOnReceipt")}</option>
+              <option value="Net 7">{t("invoice.form.net77Days")}</option>
+              <option value="Net 15">{t("invoice.form.net1515Days")}</option>
+              <option value="Net 30">{t("invoice.form.net3030Days")}</option>
+              <option value="Net 45">{t("invoice.form.net4545Days")}</option>
+              <option value="Custom">{t("invoice.form.customTermsSelectDateManually")}</option>
             </Select>
           </Field>
 
-          <Field error={errors["invoice.invoiceDate"]} htmlFor="inv-date-issue" label="Invoice Date" required>
+          <Field
+            error={errors["invoice.invoiceDate"]}
+            htmlFor="inv-date-issue"
+            label={t("invoice.form.invoiceDate")}
+            required
+          >
             <Input
               aria-invalid={Boolean(errors["invoice.invoiceDate"])}
               id="inv-date-issue"
@@ -616,10 +635,10 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
           </Field>
 
           <Field
-            description={data.invoice.paymentTerms !== "Custom" ? "Calculated automatically based on terms" : undefined}
+            description={data.invoice.paymentTerms !== "Custom" ? t("invoice.form.dueDateAutomatic") : undefined}
             error={errors["invoice.dueDate"]}
             htmlFor="inv-date-due"
-            label="Due Date"
+            label={t("invoice.form.dueDate")}
             required
           >
             <Input
@@ -634,21 +653,21 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
           {/* Optional sub-fields PO / Project */}
           <div className="mt-1 grid grid-cols-1 gap-4 border-t border-border pt-4 md:col-span-2 md:grid-cols-2">
-            <Field htmlFor="inv-project" label="Project Name (Optional)">
+            <Field htmlFor="inv-project" label={t("invoice.form.projectNameOptional")}>
               <Input
                 id="inv-project"
                 type="text"
-                placeholder="e.g. Q2 System Migration"
+                placeholder={t("invoice.form.eGQ2SystemMigration")}
                 value={data.invoice.projectName || ""}
                 onChange={(e) => updateInvoiceMeta({ projectName: e.target.value })}
               />
             </Field>
 
-            <Field htmlFor="inv-po" label="Purchase Order (PO) Number (Optional)">
+            <Field htmlFor="inv-po" label={t("invoice.form.purchaseOrderPoNumberOptional")}>
               <Input
                 id="inv-po"
                 type="text"
-                placeholder="e.g. PO-8874-AC"
+                placeholder={t("invoice.form.eGPo8874Ac")}
                 value={data.invoice.poNumber || ""}
                 onChange={(e) => updateInvoiceMeta({ poNumber: e.target.value })}
               />
@@ -662,12 +681,12 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
         <CardHeader className="gap-0">
           <H3 className="flex items-center gap-2">
             <Layers aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-            Line Items Table
+            {t("invoice.form.lineItemsTable")}
           </H3>
           <CardAction>
             <Button onClick={addLineItem} size="sm" type="button" variant="secondary">
               <Plus aria-hidden="true" className="size-4" />
-              Add row
+              {t("invoice.form.addRow")}
             </Button>
           </CardAction>
         </CardHeader>
@@ -680,24 +699,24 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
           <div className="hidden grid-cols-12 gap-3 border-b border-border pb-2 text-muted-foreground md:grid">
             <div className="col-span-6">
               <Overline>
-                Description <span className="text-destructive">*</span>
+                {t("invoice.form.description")} <span className="text-destructive">*</span>
               </Overline>
             </div>
             <div className="col-span-2 text-center">
               <Overline>
-                Qty <span className="text-destructive">*</span>
+                {t("invoice.form.qty")} <span className="text-destructive">*</span>
               </Overline>
             </div>
             <div className="col-span-2 text-center">
               <Overline>
-                Unit Price ($) <span className="text-destructive">*</span>
+                {t("invoice.form.unitPrice")} <span className="text-destructive">*</span>
               </Overline>
             </div>
             <div className="col-span-1 text-center">
-              <Overline>Tax</Overline>
+              <Overline>{t("invoice.form.tax")}</Overline>
             </div>
             <div className="col-span-1 text-right">
-              <Overline>Actions</Overline>
+              <Overline>{t("invoice.form.actions")}</Overline>
             </div>
           </div>
 
@@ -723,7 +742,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   {/* Item Description */}
                   <div className="col-span-1 md:col-span-6">
                     <Label className="block pb-1 text-muted-foreground md:sr-only" htmlFor={descriptionId}>
-                      Description <span className="text-destructive">*</span>
+                      {t("invoice.form.description")} <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       aria-errormessage={
@@ -733,7 +752,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                       className="h-9"
                       id={descriptionId}
                       type="text"
-                      placeholder="e.g. Website maintenance / Performance testing"
+                      placeholder={t("invoice.form.eGWebsiteMaintenancePerformanceTesting")}
                       value={item.description || ""}
                       onChange={(e) => handleLineItemChange(item.id, "description", e.target.value)}
                     />
@@ -747,7 +766,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   {/* Quantity */}
                   <div className="col-span-1 md:col-span-2">
                     <Label className="block pb-1 text-muted-foreground md:sr-only" htmlFor={quantityId}>
-                      Quantity <span className="text-destructive">*</span>
+                      {t("invoice.form.quantity")} <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       aria-errormessage={errors[`lineItems[${index}].quantity`] ? `${quantityId}-error` : undefined}
@@ -771,7 +790,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   {/* Unit price */}
                   <div className="col-span-1 md:col-span-2">
                     <Label className="block pb-1 text-muted-foreground md:sr-only" htmlFor={unitPriceId}>
-                      Unit Price ($) <span className="text-destructive">*</span>
+                      {t("invoice.form.unitPrice")} <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       aria-errormessage={errors[`lineItems[${index}].unitPrice`] ? `${unitPriceId}-error` : undefined}
@@ -794,9 +813,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
                   {/* Taxable boolean Checkbox */}
                   <div className="col-span-1 flex items-center justify-between border-t border-border py-1 md:col-span-1 md:justify-center md:border-0">
-                    <Caption className="block text-muted-foreground md:hidden">Taxable:</Caption>
+                    <Caption className="block text-muted-foreground md:hidden">{t("invoice.form.taxable")}</Caption>
                     <CheckboxControl
-                      aria-label={`Taxable line item ${index + 1}`}
+                      aria-label={t("invoice.form.taxableItem", { number: index + 1 })}
                       checked={item.taxable || false}
                       onCheckedChange={(checked) => handleLineItemChange(item.id, "taxable", checked === true)}
                       id={`line-item-taxable-${item.id}`}
@@ -807,9 +826,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   {/* Duplicate & deletion actions */}
                   <div className="col-span-1 flex items-center justify-end gap-1 border-t border-border pt-2.5 md:col-span-1 md:border-0 md:pt-0">
                     <Button
-                      aria-label="Duplicate row"
+                      aria-label={t("invoice.form.duplicateRow")}
                       type="button"
-                      title="Duplicate row"
+                      title={t("invoice.form.duplicateRow")}
                       onClick={() => duplicateLineItem(item)}
                       size="icon"
                       variant="secondary"
@@ -817,9 +836,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                       <Copy aria-hidden="true" className="size-4" />
                     </Button>
                     <Button
-                      aria-label="Delete row"
+                      aria-label={t("invoice.form.deleteRow")}
                       type="button"
-                      title="Delete row"
+                      title={t("invoice.form.deleteRow")}
                       onClick={() => removeLineItem(item.id)}
                       size="icon"
                       variant="danger-subtle"
@@ -839,21 +858,21 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
         <CardHeader className="gap-0">
           <H3 className="flex items-center gap-2">
             <FileSpreadsheet aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-            Discounts, Taxes &amp; Fees
+            {t("invoice.form.discountsTaxesFees")}
           </H3>
         </CardHeader>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Discount Trigger type */}
-          <Field htmlFor="disc-type" label="Discount Type">
+          <Field htmlFor="disc-type" label={t("invoice.form.discountType")}>
             <Select
               id="disc-type"
               value={data.totalsConfig.discountType || "none"}
               onChange={(e) => updateTotalsConfig({ discountType: e.target.value as any })}
             >
-              <option value="none">No Discount</option>
-              <option value="percent">Percentage (%)</option>
-              <option value="fixed">Fixed Flat Dollar ($)</option>
+              <option value="none">{t("invoice.form.noDiscount")}</option>
+              <option value="percent">{t("invoice.form.percentage")}</option>
+              <option value="fixed">{t("invoice.form.fixedFlatDollar")}</option>
             </Select>
           </Field>
 
@@ -861,7 +880,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
           {data.totalsConfig.discountType !== "none" && (
             <Field
               htmlFor="disc-val"
-              label={`Discount Value ${data.totalsConfig.discountType === "percent" ? "(%)" : "($)"}`}
+              label={t("invoice.form.discountValue", {
+                unit: data.totalsConfig.discountType === "percent" ? "(%)" : "($)",
+              })}
             >
               <Input
                 id="disc-val"
@@ -884,17 +905,17 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
           )}
 
           {/* Tax rate description */}
-          <Field htmlFor="tax-lbl" label="Sales Tax Label">
+          <Field htmlFor="tax-lbl" label={t("invoice.form.salesTaxLabel")}>
             <Input
               id="tax-lbl"
               type="text"
-              placeholder="Sales Tax"
+              placeholder={t("invoice.form.salesTax")}
               value={data.totalsConfig.taxLabel || ""}
               onChange={(e) => updateTotalsConfig({ taxLabel: e.target.value })}
             />
           </Field>
 
-          <Field htmlFor="tax-rt" label="Sales Tax Rate (%)">
+          <Field htmlFor="tax-rt" label={t("invoice.form.salesTaxRate")}>
             <Input
               id="tax-rt"
               type="number"
@@ -912,7 +933,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
           </Field>
 
           {/* Shipping fee & amount pre-paid */}
-          <Field htmlFor="shipping-fee" label="Shipping / Handling Fee ($)">
+          <Field htmlFor="shipping-fee" label={t("invoice.form.shippingHandlingFee")}>
             <Input
               id="shipping-fee"
               type="number"
@@ -932,7 +953,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
             />
           </Field>
 
-          <Field htmlFor="amt-paid" label="Amount Paid already ($) (for Partial Payments)">
+          <Field htmlFor="amt-paid" label={t("invoice.form.amountPaidAlreadyForPartialPayments")}>
             <Input
               id="amt-paid"
               type="number"
@@ -959,22 +980,22 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
         <CardHeader className="gap-0">
           <H3 className="flex items-center gap-2">
             <CheckCircle2 aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-            Payment Methods &amp; Instructions
+            {t("invoice.form.paymentMethodsInstructions")}
           </H3>
         </CardHeader>
 
         <div className="space-y-4">
           <div>
-            <Text className="mb-2 block text-foreground">Accepted Payment Options</Text>
+            <Text className="mb-2 block text-foreground">{t("invoice.form.acceptedPaymentOptions")}</Text>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {[
-                { id: "bank", label: "Bank Transfer" },
-                { id: "check", label: "Check" },
-                { id: "paypal", label: "PayPal" },
-                { id: "venmo", label: "Venmo" },
-                { id: "zelle", label: "Zelle" },
-                { id: "card", label: "Credit Card" },
-                { id: "cash", label: "Cash" },
+                { id: "bank", label: t("invoice.form.bankTransfer") },
+                { id: "check", label: t("invoice.form.check") },
+                { id: "paypal", label: t("invoice.form.paypal") },
+                { id: "venmo", label: t("invoice.form.venmo") },
+                { id: "zelle", label: t("invoice.form.zelle") },
+                { id: "card", label: t("invoice.form.creditCard") },
+                { id: "cash", label: t("invoice.form.cash") },
               ].map((m) => {
                 const checked = (data.payment.methods || []).includes(m.id);
                 return (
@@ -999,11 +1020,11 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
             </div>
           </div>
 
-          <Field htmlFor="pay-inst" label="Payment Instructions Text (Displays on PDF)">
+          <Field htmlFor="pay-inst" label={t("invoice.form.paymentInstructionsTextDisplaysOnPdf")}>
             <Textarea
               id="pay-inst"
               rows={3}
-              placeholder="Direct bank wire details, PayPal ID emails, or instructions for paper check delivery address..."
+              placeholder={t("invoice.form.directBankWireDetailsPaypalIdEmails")}
               value={data.payment.instructions || ""}
               onChange={(e) => updatePaymentInfo({ instructions: e.target.value })}
             />
@@ -1016,7 +1037,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
         <CardHeader className="gap-0">
           <H3 className="flex items-center gap-2">
             <PlusCircle aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-            Terms, Notes &amp; Late Fees
+            {t("invoice.form.termsNotesLateFees")}
           </H3>
         </CardHeader>
 
@@ -1024,10 +1045,10 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
           <div>
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <Label className="text-foreground" htmlFor="notes-textarea">
-                Notes / Scope of Work Details
+                {t("invoice.form.notesScopeOfWorkDetails")}
               </Label>
               <div className="flex items-center gap-1">
-                <Caption className="text-muted-foreground">Quick insert:</Caption>
+                <Caption className="text-muted-foreground">{t("invoice.form.quickInsert")}</Caption>
               </div>
             </div>
 
@@ -1051,17 +1072,17 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
             <Textarea
               id="notes-textarea"
               rows={3}
-              placeholder="Add personal updates, detail delivery receipts, or custom descriptions..."
+              placeholder={t("invoice.form.addPersonalUpdatesDetailDeliveryReceiptsOr")}
               value={data.notes.notes || ""}
               onChange={(e) => updateNotesTerms({ notes: e.target.value })}
             />
           </div>
 
-          <Field htmlFor="terms-textarea" label="Terms &amp; Business Agreements">
+          <Field htmlFor="terms-textarea" label={t("invoice.form.termsBusinessAgreements")}>
             <Textarea
               id="terms-textarea"
               rows={3}
-              placeholder="e.g. Terms Net 30 default agreement terms. All payments are due by dates assigned."
+              placeholder={t("invoice.form.eGTermsNet30DefaultAgreement")}
               value={data.notes.terms || ""}
               onChange={(e) => updateNotesTerms({ terms: e.target.value })}
             />

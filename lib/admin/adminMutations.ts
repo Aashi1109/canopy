@@ -1,4 +1,5 @@
 import config from "../config/config.ts";
+import { getPaperworkToolMessages } from "../paperwork/toolMessages.ts";
 import { withUserCacheInvalidation } from "./index.ts";
 import {
   assertCanDeleteRole,
@@ -53,8 +54,24 @@ import { z } from "zod";
 import { Cache, CACHE_NAMESPACES } from "../cache/index.ts";
 import { catalogCache } from "../tool-framework/catalogCache.ts";
 import { isCategoryKey, TOOL_CATEGORIES, type CategoryKey } from "../tool-framework/categories.ts";
-import { TOOL_CONTENT_DOC_VERSION } from "../tool-framework/content.ts";
+import {
+  hasDraftToolContent,
+  resolveContent,
+  TOOL_CONTENT_DOC_VERSION,
+  type ToolContentRow,
+} from "../tool-framework/content.ts";
 import { uploadToolIcon } from "../tool-framework/cloudinary.ts";
+import { definitionKeyOf, loadSpec } from "../tool-framework/catalog.ts";
+import {
+  applyToolMessages,
+  escapeToolText,
+  extractToolMessages,
+  formatToolMessage,
+  validateToolTranslation,
+  type ToolTranslations,
+} from "../tool-framework/translations.ts";
+import { isLocale } from "../i18n/config.ts";
+import type { ToolSpec } from "../tool-framework/spec.ts";
 
 async function invalidateAfterCommit<T>(namespace: string, result: T): Promise<T> {
   if (namespace === CACHE_NAMESPACES.CATALOG) catalogCache.clear();
@@ -244,7 +261,8 @@ async function getToolForUpdate(transaction: Transaction, toolId: string): Promi
 
 async function saveTool(
   transaction: Transaction,
-  tool: Pick<ToolRow, "toolId" | "app" | "slug" | "name" | "description" | "order" | "enabled" | "archived">,
+  tool: Pick<ToolRow, "toolId" | "app" | "slug" | "name" | "description" | "order" | "enabled" | "archived"> &
+    Partial<Pick<ToolRow, "translations">>,
 ): Promise<ToolRow> {
   const now = new Date();
   const [saved] = await transaction
@@ -259,11 +277,195 @@ async function saveTool(
         order: tool.order,
         enabled: tool.enabled,
         archived: tool.archived,
+        ...(tool.translations ? { translations: tool.translations } : {}),
         updatedAt: now,
       },
     })
     .returning();
   return saved;
+}
+
+/** Existing content controls remain the owner of source structure and ordering. */
+export function toolTranslationSource(
+  spec: ToolSpec | null,
+  tool: Pick<ToolRow, "name" | "description"> & Partial<Pick<ToolRow, "app" | "toolId">>,
+  content: ToolContentRow | null,
+): Record<string, string> {
+  if (!spec)
+    return {
+      name: escapeToolText(tool.name),
+      description: escapeToolText(tool.description),
+      ...(tool.app === "paperwork" && tool.toolId
+        ? getPaperworkToolMessages(definitionKeyOf(tool.toolId) ?? tool.toolId)
+        : {}),
+    };
+  const resolved = resolveContent({ ...spec, name: tool.name, description: tool.description }, content);
+  return extractToolMessages(
+    { ...spec, name: tool.name, description: tool.description, keywords: resolved.keywords, content: resolved.content },
+    { seoTitle: resolved.seoTitle, seoDescription: resolved.seoDescription },
+  );
+}
+
+function replaceEnglishMessages(translations: ToolTranslations, messages: Record<string, string>): ToolTranslations {
+  const previous = translations.en?.messages ?? {};
+  const changed = JSON.stringify(Object.entries(previous).sort()) !== JSON.stringify(Object.entries(messages).sort());
+  return Object.fromEntries([
+    ...Object.entries(translations)
+      .filter(([locale]) => locale !== "en")
+      .map(([locale, entry]) => [locale, changed ? { ...entry, status: "draft" as const } : entry]),
+    ["en", { status: translations.en?.status ?? "published", messages }],
+  ]);
+}
+
+function synchronizeEnglishSource(
+  translations: ToolTranslations,
+  before: Record<string, string>,
+  after: Record<string, string>,
+): ToolTranslations {
+  const messages = { ...translations.en?.messages };
+  for (const key of new Set([...Object.keys(before), ...Object.keys(after)])) {
+    if (before[key] === after[key]) continue;
+    if (after[key] === undefined) delete messages[key];
+    else messages[key] = after[key];
+  }
+  return replaceEnglishMessages(translations, messages);
+}
+
+async function syncContentEnglish(
+  transaction: Transaction,
+  tool: ToolRow,
+  previous: ToolContentRow | null,
+  next: ToolContentRow | null,
+): Promise<void> {
+  if (!tool.translations?.en) return;
+  const key = definitionKeyOf(tool.toolId);
+  const spec = key ? await loadSpec(key) : null;
+  const before = toolTranslationSource(spec, tool, previous);
+  const after = toolTranslationSource(spec, tool, next);
+  await transaction
+    .update(managedToolsTable)
+    .set({
+      translations: synchronizeEnglishSource(tool.translations, before, after),
+      updatedAt: new Date(),
+    })
+    .where(eq(managedToolsTable.toolId, tool.toolId));
+}
+
+export class ToolTranslationValidationError extends Error {
+  constructor(readonly issues: readonly { key: string; message: string }[]) {
+    super(`Translation needs attention: ${issues[0]?.message ?? "invalid messages"}`);
+  }
+}
+
+export async function saveToolTranslation(
+  actorUserId: string,
+  toolId: string,
+  input: { locale: string; status: "draft" | "published"; messages: Record<string, string>; updatedAt: string },
+): Promise<{ updatedAt: string; status: "draft" | "published"; sourceChanged: boolean }> {
+  return db
+    .transaction(async (transaction) => {
+      await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
+      if (!isRecord(input) || !isLocale(input.locale) || !["draft", "published"].includes(input.status)) {
+        throw new Error("Translation language or status is invalid.");
+      }
+      const current = await getToolForUpdate(transaction, toolId);
+      if (typeof input.updatedAt !== "string" || current.updatedAt.toISOString() !== input.updatedAt) {
+        throw new Error("This tool changed after you opened it. Reload the page before saving again.");
+      }
+      if (input.status === "published" || current.translations?.[input.locale]?.status === "published") {
+        await requireTransactionPermission(transaction, actorUserId, "tools", "toggle");
+      }
+      if (input.locale === "en" && current.enabled && input.status !== "published") {
+        throw new Error("English must remain published while the tool is enabled.");
+      }
+      let englishMessages = current.translations?.en?.messages;
+      const key = definitionKeyOf(toolId);
+      const spec = key ? await loadSpec(key) : null;
+      let contentRow: ToolContentRow | null = null;
+      if (spec || !englishMessages) {
+        const [content] = await transaction
+          .select()
+          .from(toolContentTable)
+          .where(eq(toolContentTable.toolId, toolId))
+          .limit(1)
+          .for("update");
+        contentRow = content ?? null;
+      }
+      const required = toolTranslationSource(spec, current, contentRow);
+      englishMessages =
+        input.locale === "en"
+          ? required
+          : Object.fromEntries(
+              Object.entries(required).map(([key, source]) => [key, englishMessages?.[key] ?? source]),
+            );
+      const issues = validateToolTranslation(input.locale, input.messages, englishMessages, {
+        publish: input.status === "published",
+      });
+      if (issues.length) throw new ToolTranslationValidationError(issues);
+      const messages = Object.fromEntries(Object.entries(input.messages).filter(([, value]) => value.trim()));
+      const sourceChanged =
+        input.locale === "en" &&
+        JSON.stringify(Object.entries(current.translations?.en?.messages ?? {}).sort()) !==
+          JSON.stringify(Object.entries(messages).sort());
+      let translations: ToolTranslations = {
+        ...current.translations,
+        en: current.translations?.en ?? { status: "published", messages: englishMessages },
+        [input.locale]: { status: input.status, messages },
+      };
+      if (input.locale === "en") {
+        translations = replaceEnglishMessages(
+          { ...translations, en: current.translations?.en ?? { status: "published", messages: {} } },
+          messages,
+        );
+        translations.en = { status: input.status, messages };
+      }
+      const now = new Date(Math.max(Date.now(), current.updatedAt.getTime() + 1));
+      await transaction
+        .update(managedToolsTable)
+        .set({
+          translations,
+          ...(input.locale === "en"
+            ? {
+                name: messages.name ? formatToolMessage("en", messages.name) : current.name,
+                description: messages.description ? formatToolMessage("en", messages.description) : current.description,
+              }
+            : {}),
+          updatedAt: now,
+        })
+        .where(eq(managedToolsTable.toolId, toolId));
+      // An authored content draft has its own publication workflow. The runtime
+      // reads English from translations, so mirroring must not consume that draft.
+      if (input.locale === "en" && spec && !hasDraftToolContent(contentRow)) {
+        const resolved = resolveContent({ ...spec, name: current.name, description: current.description }, contentRow);
+        const translated = applyToolMessages(
+          { ...spec, keywords: resolved.keywords, content: resolved.content },
+          messages,
+          "en",
+        );
+        const values = {
+          keywords: [...translated.keywords],
+          seoTitle: messages.seoTitle ? formatToolMessage("en", messages.seoTitle) : resolved.seoTitle,
+          seoDescription: messages.seoDescription
+            ? formatToolMessage("en", messages.seoDescription)
+            : resolved.seoDescription,
+          contentDoc: { version: TOOL_CONTENT_DOC_VERSION, ...translated.content },
+          docVersion: TOOL_CONTENT_DOC_VERSION,
+          publishedAt: input.status === "published" ? now : null,
+          updatedAt: now,
+        };
+        await transaction
+          .insert(toolContentTable)
+          .values({ toolId, ...values })
+          .onConflictDoUpdate({ target: toolContentTable.toolId, set: values });
+      }
+      await writeAudit(transaction, actorUserId, "tool.translation-edit", "tool", toolId, {
+        locale: input.locale,
+        status: input.status,
+        messageCount: Object.keys(messages).length,
+      });
+      return { updatedAt: now.toISOString(), status: input.status, sourceChanged };
+    })
+    .then((result) => invalidateAfterCommit(CACHE_NAMESPACES.CATALOG, result));
 }
 
 /**
@@ -372,6 +574,15 @@ export async function createManagedTool(actorUserId: string, input: ManagedToolD
           order,
           enabled: false,
           archived: false,
+          translations: {
+            en: {
+              status: "published",
+              messages: {
+                name: escapeToolText(name),
+                description: escapeToolText(description),
+              },
+            },
+          },
         })
         .returning();
 
@@ -416,6 +627,23 @@ export async function updateManagedTool(actorUserId: string, toolId: string, inp
         ? requiredText(input.description, "Tool description")
         : current.description;
 
+      let translations = current.translations;
+      if (translations?.en && (name !== current.name || description !== current.description)) {
+        const key = definitionKeyOf(toolId);
+        const spec = key ? await loadSpec(key) : null;
+        const [content] = await transaction
+          .select()
+          .from(toolContentTable)
+          .where(eq(toolContentTable.toolId, toolId))
+          .limit(1)
+          .for("update");
+        translations = synchronizeEnglishSource(
+          translations,
+          toolTranslationSource(spec, current, content ?? null),
+          toolTranslationSource(spec, { ...current, name, description }, content ?? null),
+        );
+      }
+
       if (slug !== null) {
         const [duplicate] = await transaction
           .select({ toolId: managedToolsTable.toolId })
@@ -440,6 +668,7 @@ export async function updateManagedTool(actorUserId: string, toolId: string, inp
         order: current.order,
         enabled: current.enabled,
         archived: current.archived,
+        ...(translations ? { translations } : {}),
       };
       const saved = await saveTool(transaction, next);
       await writeAudit(transaction, actorUserId, "tool.edit", "tool", toolId, {
@@ -506,6 +735,29 @@ export async function setManagedToolEnabled(actorUserId: string, toolId: string,
       if (enabled && current.archived) {
         throw new Error("An archived tool cannot be enabled.");
       }
+      if (enabled) {
+        const english = current.translations?.en;
+        if (english?.status !== "published") {
+          throw new Error("Publish English translations before enabling the tool.");
+        }
+        const key = definitionKeyOf(toolId);
+        const spec = key ? await loadSpec(key) : null;
+        const [content] = spec
+          ? await transaction
+              .select()
+              .from(toolContentTable)
+              .where(eq(toolContentTable.toolId, toolId))
+              .limit(1)
+              .for("update")
+          : [];
+        const issues = validateToolTranslation(
+          "en",
+          english.messages,
+          toolTranslationSource(spec, current, content ?? null),
+          { publish: true },
+        );
+        if (issues.length) throw new ToolTranslationValidationError(issues);
+      }
 
       const saved = await saveTool(transaction, { ...current, enabled });
       await writeAudit(transaction, actorUserId, "tool.toggle", "tool", toolId, {
@@ -571,6 +823,7 @@ export type ToolContentDocEdit = {
     readonly label: string;
     readonly text: string;
     readonly secondary?: string;
+    readonly settings?: Readonly<Record<string, unknown>>;
   }[];
   readonly relatedToolIds?: readonly string[];
 };
@@ -615,6 +868,7 @@ const contentDocEditSchema = z.object({
         label: boundedText(120),
         text: boundedText(4_000),
         secondary: boundedText(4_000).optional(),
+        settings: z.record(z.string(), z.unknown()).optional(),
       }),
     )
     .max(20)
@@ -716,6 +970,17 @@ export async function updateToolContent(actorUserId: string, toolId: string, inp
         updatedAt: new Date(),
       };
 
+      let previousContent: ToolContentRow | null = null;
+      if (current.translations?.en) {
+        const [previous] = await transaction
+          .select()
+          .from(toolContentTable)
+          .where(eq(toolContentTable.toolId, toolId))
+          .limit(1)
+          .for("update");
+        previousContent = previous ?? null;
+      }
+
       // `tool_content.tool_id` references `managed_tools`, so the parent row has
       // to exist before the child row can.
       await saveTool(transaction, current);
@@ -723,6 +988,13 @@ export async function updateToolContent(actorUserId: string, toolId: string, inp
         .insert(toolContentTable)
         .values({ toolId, ...values })
         .onConflictDoUpdate({ target: toolContentTable.toolId, set: values });
+      if (current.translations?.en) {
+        await syncContentEnglish(transaction, current, previousContent, {
+          toolId,
+          publishedAt: previousContent?.publishedAt ?? null,
+          ...values,
+        });
+      }
 
       await writeAudit(transaction, actorUserId, "tool.content-edit", "tool", toolId, {
         overrides: CONTENT_FIELDS.filter((field) => values[field] !== null),
@@ -740,15 +1012,20 @@ export async function setToolContentPublished(actorUserId: string, toolId: strin
     .transaction(async (transaction) => {
       await requireTransactionPermission(transaction, actorUserId, "tools", "toggle");
       assertBoolean(published, "Tool content published state");
-      await getToolForUpdate(transaction, toolId);
+      const current = await getToolForUpdate(transaction, toolId);
 
       const [stored] = await transaction
-        .select({ toolId: toolContentTable.toolId })
+        .select()
         .from(toolContentTable)
         .where(eq(toolContentTable.toolId, toolId))
         .limit(1)
         .for("update");
       if (!stored) throw new Error("Save tool content before publishing it.");
+
+      await syncContentEnglish(transaction, current, stored, {
+        ...stored,
+        publishedAt: published ? new Date() : null,
+      });
 
       await transaction
         .update(toolContentTable)

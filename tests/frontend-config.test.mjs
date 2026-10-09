@@ -83,7 +83,7 @@ test("Tailwind and the shared theme are imported once at the root layout", async
     })),
   );
   const rootStyles = stylesheets.find(({ path }) => path === "globals.css");
-  const layout = await readText("app/layout.tsx");
+  const layout = await readText("components/i18n/DocumentRoot.tsx");
   const theme = await readText("components/ui/theme.css");
 
   expect(rootStyles).toBeTruthy();
@@ -97,7 +97,7 @@ test("Tailwind and the shared theme are imported once at the root layout", async
       0,
     ),
   ).toBe(1);
-  expect(layout).toMatch(/import ["']\.\/globals\.css["']/);
+  expect(layout).toMatch(/import ["']@\/app\/globals\.css["']/);
   expect(layout).toMatch(/\bGeist_Mono\b/);
   expect(layout).toMatch(/variable:\s*["']--font-geist-mono["']/);
   expect(layout).toMatch(/\bgeistMono\.variable\b/);
@@ -107,7 +107,7 @@ test("Tailwind and the shared theme are imported once at the root layout", async
 test("frontend navigation and browser tests use one origin with scoped paths", async () => {
   const [environment, platformPage, authPage, adminTools, devtoolsPage, playwright] = await Promise.all([
     readText(".env.example"),
-    readText("app/page.tsx"),
+    readText("app/(public)/[locale]/page.tsx"),
     readText("app/auth/page.tsx"),
     readText("app/admin/(protected)/tools/components/ToolList.tsx"),
     // Category labels moved out of the catalogue page into the one registry —

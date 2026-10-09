@@ -49,7 +49,6 @@ test("the shared advanced workspace renders published form configuration and iso
   expect(source).toMatch(/localStorage/);
   expect(source).toMatch(/MAX_RUNTIME_REPEATER_ROWS\s*=\s*500/);
   expect(source).toMatch(/slice\(0,\s*MAX_RUNTIME_REPEATER_ROWS\)/);
-  expect(source).toMatch(/incomplete required column/);
   expect(source).toMatch(/containsFullTin/);
   expect(source).toMatch(/control === "number"/);
   expect(source).toMatch(/control === "date"/);
@@ -82,7 +81,7 @@ test("advanced invoices use only the shared pdfme workspace export path", async 
 });
 
 test("every enabled Paperwork component key loads its matching templates", async () => {
-  const source = await readFile("app/paperwork/[slug]/page.tsx", "utf8");
+  const source = await readFile("app/(public)/[locale]/paperwork/[slug]/page.tsx", "utf8");
 
   for (const [componentKey, documentType] of [
     ["invoice-generator", "invoice"],

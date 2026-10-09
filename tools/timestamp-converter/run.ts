@@ -43,7 +43,9 @@ function inputDate(input: string, unit: Settings["inputUnit"]): Date {
   const value = Number(input);
   const date = new Date(unit === "seconds" ? value * 1000 : value);
   if (Number.isNaN(date.getTime())) {
-    throw new ToolError("invalid-date", "Timestamp or date is not a valid date or timestamp.");
+    throw new ToolError("invalid-date", "Timestamp or date is not a valid date or timestamp.", undefined, {
+      messageRef: { key: "errors.invalid-date" },
+    });
   }
   return date;
 }
@@ -98,6 +100,12 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       issues.push({
         line: input.line,
         message: `"${input.input}": ${error instanceof Error ? error.message : "Conversion failed."}`,
+        messageRef:
+          error instanceof ToolError && error.code === "invalid-date"
+            ? { key: "errors.batch-invalid-date", values: { input: input.input } }
+            : error instanceof ToolError && error.details?.messageRef
+              ? error.details.messageRef
+              : { key: "errors.batch-conversion", values: { input: input.input } },
         target: "input",
       });
     }

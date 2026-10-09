@@ -59,12 +59,18 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "no-match",
       "No matching HTTP status code was found.",
       "Try a shorter query, select All categories, or change the search mode to Code + phrase.",
+      { messageRef: { key: "execution.errors.no-match" }, recoveryMessage: { key: "execution.recovery.no-match" } },
     );
   }
   return {
     render: "text",
     text: matches.map(([code, phrase]) => `${code} ${phrase}`).join("\n"),
-    tablePreview: { render: "table", columns: ["Code", "Reason phrase"], rows: matches },
+    tablePreview: {
+      render: "table",
+      columns: ["Code", "Reason phrase"],
+      columnMessages: [{ key: "execution.code" }, { key: "execution.reasonPhrase" }],
+      rows: matches,
+    },
   };
 };
 

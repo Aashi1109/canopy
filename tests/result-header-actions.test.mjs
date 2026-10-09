@@ -2,6 +2,8 @@
 import { Blob as NodeBlob, File as NodeFile } from "node:buffer";
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
+import { NextIntlClientProvider } from "next-intl";
+import { getCommonMessages } from "../lib/i18n/messages.ts";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { ResultSurface } from "../components/ResultSurface.tsx";
 
@@ -54,7 +56,15 @@ afterEach(async () => {
 });
 
 async function render(result, props = {}) {
-  await act(() => root.render(React.createElement(ResultSurface, { result, spec, variant: "card", ...props })));
+  await act(() =>
+    root.render(
+      React.createElement(
+        NextIntlClientProvider,
+        { locale: "en", messages: getCommonMessages("en") },
+        React.createElement(ResultSurface, { result, spec, variant: "card", ...props }),
+      ),
+    ),
+  );
 }
 
 const buttons = () => [...container.querySelectorAll("button")];

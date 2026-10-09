@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useTranslations } from "next-intl";
 import type { DocumentTemplate } from "@/lib/invoice-templates/index.ts";
 import {
   Caption,
@@ -32,9 +33,10 @@ export default function TemplateSelector({
   templates,
   onSelect,
 }: TemplateSelectorProps) {
+  const t = useTranslations("Tool.runtime");
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
-  const label = documentLabel ?? templates[0]?.documentType.replaceAll("-", " ") ?? "document";
+  const label = documentLabel ?? t(`shared.templates.documentTypes.${templates[0]?.documentType ?? "document"}`);
 
   const categories = useMemo(() => {
     const list = new Set<string>();
@@ -55,9 +57,11 @@ export default function TemplateSelector({
   return (
     <SectionCard className="print:hidden" id="template-selector-container">
       <SectionHeading
-        action={<StatusBadge variant="info">{templates.length} published styles</StatusBadge>}
-        description="Dynamic structure scales immediately based on layout. No lost draft."
-        title={`Select ${label} template`}
+        action={
+          <StatusBadge variant="info">{t("shared.templates.styleCount", { count: templates.length })}</StatusBadge>
+        }
+        description={t("shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout")}
+        title={t("shared.templates.selectTemplate", { document: label })}
       />
 
       <div className="flex flex-col gap-3 md:flex-row">
@@ -67,10 +71,10 @@ export default function TemplateSelector({
             className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
           />
           <Input
-            aria-label={`Search ${label} templates`}
+            aria-label={t("shared.templates.searchTemplates", { document: label })}
             className="pl-9"
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search layout names or attributes..."
+            placeholder={t("shared.templates.searchLayoutNamesOrAttributes")}
             type="text"
             value={search}
           />
@@ -78,13 +82,15 @@ export default function TemplateSelector({
 
         <div className="md:hidden">
           <Select
-            aria-label={`Filter ${label} templates by category`}
+            aria-label={t("shared.templates.filterTemplates", { document: label })}
             onChange={(event) => setActiveCategory(event.target.value)}
             value={activeCategory}
           >
             {categories.map((category) => (
               <option key={category} value={category}>
-                Category: {category.toUpperCase()}
+                {t("shared.templates.categoryLabel", {
+                  category: category === "all" ? t("shared.templates.allDesigns") : category.toUpperCase(),
+                })}
               </option>
             ))}
           </Select>
@@ -102,7 +108,7 @@ export default function TemplateSelector({
                 type="button"
                 variant={isActive ? "default" : "secondary"}
               >
-                {category === "all" ? "All Designs" : category.toUpperCase()}
+                {category === "all" ? t("shared.templates.allDesigns") : category.toUpperCase()}
               </Button>
             );
           })}
@@ -133,7 +139,7 @@ export default function TemplateSelector({
                     {template.isDefault && (
                       <StatusBadge className="gap-1" variant="warning">
                         <Sparkles aria-hidden="true" className="size-3" />
-                        Default
+                        {t("shared.templates.default")}
                       </StatusBadge>
                     )}
                   </span>
@@ -144,15 +150,15 @@ export default function TemplateSelector({
                 </span>
 
                 <Caption className="flex items-center justify-between gap-2 border-t border-border pt-3 text-muted-foreground group-hover:text-accent-foreground">
-                  <span>Layout: {template.layoutFamily}</span>
+                  <span>{t("shared.templates.layoutLabel", { layout: template.layoutFamily })}</span>
                   {isSelected ? (
                     <span className="inline-flex items-center gap-1 text-primary">
                       <Check aria-hidden="true" className="size-4" />
-                      Active
+                      {t("shared.templates.active")}
                     </span>
                   ) : (
                     <span className="text-foreground group-hover:text-accent-foreground opacity-0 transition-opacity group-hover:opacity-100">
-                      Use style
+                      {t("shared.templates.useStyle")}
                     </span>
                   )}
                 </Caption>
@@ -161,7 +167,10 @@ export default function TemplateSelector({
           })}
         </div>
       ) : (
-        <EmptyState description="Try another search or category." title="No matching published invoice themes" />
+        <EmptyState
+          description={t("shared.templates.tryAnotherSearchOrCategory")}
+          title={t("shared.templates.noMatchingPublishedInvoiceThemes")}
+        />
       )}
     </SectionCard>
   );

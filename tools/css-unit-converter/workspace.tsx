@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 import { ArrowLeftRight } from "lucide-react";
 
@@ -21,6 +22,7 @@ import {
 const UNITS = ["px", "rem", "em", "pt", "%", "vw", "vh", "vmin", "vmax"];
 
 export default function CssUnitConverterWorkspace(props: WorkspaceProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const from = String(props.settings.from ?? "px");
   const to = String(props.settings.to ?? "rem");
   const used = new Set([
@@ -69,12 +71,12 @@ export default function CssUnitConverterWorkspace(props: WorkspaceProps) {
     <DesignWorkspace
       compactInput
       workspaceClassName="min-h-[33rem] grid-rows-[20rem_minmax(13rem,1fr)]"
-      title="Convert CSS values"
-      controlTitle="Conversion context"
+      title={toolText("workspace.convert_css_values_50a491")}
+      controlTitle={toolText("workspace.conversionContext")}
       preview={
         <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-3">
           <div className="flex items-end gap-3">
-            <Field className="flex-1" htmlFor="unit-from" label="From">
+            <Field className="flex-1" htmlFor="unit-from" label={toolText("workspace.from_218197")}>
               <Select
                 disabled={props.disabled}
                 value={from}
@@ -91,7 +93,7 @@ export default function CssUnitConverterWorkspace(props: WorkspaceProps) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    aria-label="Swap units"
+                    aria-label={toolText("workspace.swap_units_8104cc")}
                     disabled={props.disabled}
                     variant="outline"
                     size="icon-sm"
@@ -100,10 +102,10 @@ export default function CssUnitConverterWorkspace(props: WorkspaceProps) {
                     <ArrowLeftRight aria-hidden="true" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Swap units</TooltipContent>
+                <TooltipContent>{toolText("workspace.swap_units_8104cc")}</TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <Field className="flex-1" htmlFor="unit-to" label="To">
+            <Field className="flex-1" htmlFor="unit-to" label={toolText("workspace.to_f4b06e")}>
               <Select
                 disabled={props.disabled}
                 value={to}
@@ -119,9 +121,9 @@ export default function CssUnitConverterWorkspace(props: WorkspaceProps) {
           </div>
           <Field
             htmlFor="unit-values"
-            label="Values"
+            label={toolText("workspace.values_53b09e")}
             error={props.error}
-            description={props.error ? undefined : "One value per line. A unit suffix overrides From for that value."}
+            description={props.error ? undefined : toolText("workspace.one_value_per_dc46f4")}
           >
             <Textarea
               className="h-32 min-h-32 field-sizing-fixed py-2"
@@ -136,62 +138,64 @@ export default function CssUnitConverterWorkspace(props: WorkspaceProps) {
       }
       controls={
         <>
-          {used.has("rem") ? numeric("base", "Root font size", 16, "rem is relative to the root element.") : null}
+          {used.has("rem")
+            ? numeric("base", toolText("workspace.rootFontSize"), 16, toolText("workspace.remReference"))
+            : null}
           {used.has("em") ? (
             <>
-              <Field htmlFor="unit-em-context" label="em reference">
+              <Field htmlFor="unit-em-context" label={toolText("workspace.em_reference_bef2dc")}>
                 <Select
                   disabled={props.disabled}
                   value={emContext}
                   onChange={(event) => props.onSettingChange("emContext", event.target.value)}
                 >
-                  <option value="element">Element (spacing and sizes)</option>
-                  <option value="parent">Parent (font-size)</option>
+                  <option value="element">{toolText("workspace.element_spacing_and_c30723")}</option>
+                  <option value="parent">{toolText("workspace.parent_font_size_c13498")}</option>
                 </Select>
               </Field>
               {emContext === "element"
                 ? numeric(
                     "elementFontSize",
-                    "Element font size",
+                    toolText("workspace.elementFontSize"),
                     16,
-                    "Use the element’s computed font size for em lengths.",
+                    toolText("workspace.elementReference"),
                   )
                 : null}
             </>
           ) : null}
           {used.has("%") ? (
             <>
-              <Field htmlFor="unit-percentage-reference" label="Percentage reference">
+              <Field htmlFor="unit-percentage-reference" label={toolText("workspace.percentage_reference_14b5c0")}>
                 <Select
                   disabled={props.disabled}
                   value={percentageReference}
                   onChange={(event) => props.onSettingChange("percentageReference", event.target.value)}
                 >
-                  <option value="parent-font">Parent font size</option>
-                  <option value="length">Explicit reference length</option>
+                  <option value="parent-font">{toolText("workspace.parent_font_size_d6ad58")}</option>
+                  <option value="length">{toolText("workspace.explicit_reference_length_f7beb3")}</option>
                 </Select>
               </Field>
               {percentageReference === "length"
                 ? numeric(
                     "percentageBase",
-                    "100% reference length",
+                    toolText("workspace.referenceLength"),
                     100,
-                    "Supply the actual reference for the CSS property, such as the containing block width.",
+                    toolText("workspace.actualReference"),
                     100000,
                   )
                 : null}
             </>
           ) : null}
           {parentUsed
-            ? numeric("parentFontSize", "Parent font size", 16, "Reference for font-size in em or percent.")
+            ? numeric("parentFontSize", toolText("workspace.parentFontSize"), 16, toolText("workspace.parentReference"))
             : null}
           {viewportUsed ? (
             <div className="grid grid-cols-2 gap-3">
-              {numeric("viewportWidth", "Viewport width", 1366, undefined, 100000, 1)}
-              {numeric("viewportHeight", "Viewport height", 768, undefined, 100000, 1)}
+              {numeric("viewportWidth", toolText("workspace.viewportWidth"), 1366, undefined, 100000, 1)}
+              {numeric("viewportHeight", toolText("workspace.viewportHeight"), 768, undefined, 100000, 1)}
             </div>
           ) : null}
-          <Field htmlFor="unit-precision" label="Decimal places">
+          <Field htmlFor="unit-precision" label={toolText("workspace.decimal_places_004a34")}>
             <Input
               disabled={props.disabled}
               min={0}
@@ -209,13 +213,12 @@ export default function CssUnitConverterWorkspace(props: WorkspaceProps) {
           </Field>
           <Checkbox
             disabled={props.disabled}
-            label="Include calculation"
+            label={toolText("workspace.include_calculation_a40841")}
             checked={props.settings.includeFormula === true}
             onCheckedChange={(checked) => props.onSettingChange("includeFormula", Boolean(checked))}
           />
           <p className="text-xs leading-5 text-muted-foreground">
-            Percentages depend on the CSS property. Viewport units use the dimensions you supply. Negative values may
-            not be allowed by your target property.
+            {toolText("workspace.percentages_depend_on_683f68")}
           </p>
         </>
       }
@@ -226,7 +229,7 @@ export default function CssUnitConverterWorkspace(props: WorkspaceProps) {
           retainedResult={props.result}
           running={props.running}
           spec={props.spec}
-          title="Converted values"
+          title={toolText("workspace.converted_values_b10d04")}
         />
       }
     />

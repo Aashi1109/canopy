@@ -34,23 +34,34 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "bounds-not-integers",
       "Min and max must be integers.",
       "Remove any decimal part from the range.",
+      { messageRef: { key: "errors.bounds-not-integers" }, recoveryMessage: { key: "recovery.bounds-not-integers" } },
     );
   }
   if (min > max) {
-    throw new ToolError("bounds-inverted", "Min cannot be greater than max.", "Swap the two values.");
+    throw new ToolError("bounds-inverted", "Min cannot be greater than max.", "Swap the two values.", {
+      messageRef: { key: "errors.bounds-inverted" },
+      recoveryMessage: { key: "recovery.bounds-inverted" },
+    });
   }
   const places = wholeNumbers ? 0 : Number(decimalPlaces);
   const scale = 10 ** places;
   const scaledMin = min * scale;
   const span = (max - min) * scale + 1;
   if (!Number.isSafeInteger(scaledMin) || !Number.isSafeInteger(span) || span > 0x1_0000_0000) {
-    throw new ToolError("invalid-random-range", "Random range is too large.", "Reduce the range or decimal places.");
+    throw new ToolError("invalid-random-range", "Random range is too large.", "Reduce the range or decimal places.", {
+      messageRef: { key: "errors.invalid-random-range" },
+      recoveryMessage: { key: "recovery.invalid-random-range" },
+    });
   }
   if (uniqueValues && count > span) {
     throw new ToolError(
       "not-enough-unique-values",
       "The range does not contain enough unique values.",
       "Reduce the count or widen the range.",
+      {
+        messageRef: { key: "errors.not-enough-unique-values" },
+        recoveryMessage: { key: "recovery.not-enough-unique-values" },
+      },
     );
   }
 

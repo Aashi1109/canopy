@@ -17,6 +17,7 @@ test("previews one row per occurrence in source order and keeps the exact JSON o
   expect(result.tablePreview).toEqual({
     render: "table",
     columns: ["Parameter", "Value"],
+    columnMessages: [{ key: "result.parameter" }, { key: "result.value" }],
     rows: [
       ["tag", "dev"],
       ["q", "smart tools"],

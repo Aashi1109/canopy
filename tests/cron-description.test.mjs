@@ -90,3 +90,84 @@ test("invalid expressions fail instead of receiving a plausible explanation", ()
     assert.throws(() => describeCronSchedule(expression), { code: "invalid-cron" }, expression);
   }
 });
+
+test("localized schedules use native messages and locale-aware lists while retaining cron field values", async () => {
+  const { createTranslator } = await import("use-intl/core");
+  const { CRON_MESSAGES } = await import("../lib/devtools/shared/cron-messages.ts");
+  const { toolMessageTree } = await import("../lib/tool-framework/translations.ts");
+  const translate = createTranslator({
+    locale: "fr",
+    messages: toolMessageTree({
+      ...CRON_MESSAGES,
+      "cron.range": "{start} à {end}",
+      "cron.timing.at": "À {times}",
+      "cron.descriptionMonths": "{timing}, {calendar}, de {months}.",
+      "cron.field.weekday": "Jour de la semaine",
+    }),
+  });
+  const schedule = describeCronSchedule("0 9 * 1-3 1,3,5", { translate, locale: "fr" });
+  assert.equal(schedule.description, "À 09:00, lundi, mercredi et vendredi, de janvier à mars.");
+  assert.equal(schedule.fields[4].label, "Jour de la semaine");
+  assert.equal(schedule.fields[4].description, "Lundi, mercredi et vendredi.");
+  assert.deepEqual(
+    schedule.fields.map((field) => field.value),
+    ["0", "9", "*", "1-3", "1,3,5"],
+  );
+  assert.equal(describeCron("0 9 * 1-3 1,3,5"), "At 09:00, Monday, Wednesday, and Friday, in January through March.");
+});
+
+test("English native messages preserve every cron explanation branch", async () => {
+  const { createTranslator } = await import("use-intl/core");
+  const { CRON_MESSAGES } = await import("../lib/devtools/shared/cron-messages.ts");
+  const { toolMessageTree } = await import("../lib/tool-framework/translations.ts");
+  const translate = createTranslator({
+    locale: "en",
+    messages: toolMessageTree(CRON_MESSAGES),
+    onError: (error) => {
+      throw error;
+    },
+  });
+  for (const expression of [
+    "* * * * *",
+    "* 9 * * *",
+    "15 */2 * * *",
+    "0,30 9,17 * * *",
+    "*/15 * * * *",
+    "*/15 9 * * *",
+    "0 * * * *",
+    "1 * * * *",
+    "10-15 9-17 * 1-3 1,3,5",
+    "*/35 * 1,15 * 5",
+    "0 */23 * * *",
+    "0 9 */2 * 1",
+    "0 9 31 2 7",
+    "0 9 1-31 * 1",
+    "0 9 */1 * */1",
+    "0 9 1 * *",
+  ]) {
+    assert.deepEqual(
+      describeCronSchedule(expression, { translate, locale: "en" }),
+      describeCronSchedule(expression),
+      expression,
+    );
+  }
+});
+
+test("cron validation supplies explicit localizable field descriptors without changing errors", () => {
+  for (const [expression, key, field] of [
+    ["60 * * * *", "cron.error.range", "minute"],
+    ["0 */0 * * *", "cron.error.step", "hour"],
+    ["0 9 * JAN *", "cron.error.syntax", "month"],
+    ["0 9 * * 5-1", "cron.error.ascending", "weekday"],
+  ]) {
+    assert.throws(
+      () => describeCronSchedule(expression),
+      (error) => {
+        assert.equal(error.code, "invalid-cron");
+        assert.equal(error.details.messageRef.key, key);
+        assert.equal(error.details.messageRef.values.field, field);
+        return true;
+      },
+    );
+  }
+});

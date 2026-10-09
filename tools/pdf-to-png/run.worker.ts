@@ -25,8 +25,8 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files[0];
-  const selection = validatePdfSelection([{ size: input.size }]);
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  const selection = validatePdfSelection(input ? [{ size: input.size }] : []);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
   await validatePdfInput(input);
 
   const batchState: { current: ArtifactBatchWriter | null } = { current: null };
@@ -46,14 +46,24 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
           count: total,
           retainEntries: true,
         });
-        ctx.progress({ completed: index, total, stage: "Encoding page" });
+        ctx.progress({
+          completed: index,
+          total,
+          stage: "Encoding page",
+          stageMessage: { key: "progress.encodingPage" },
+        });
         const buffer = await encodeCanvas(page.canvas, "png", 1);
         await batchState.current.add({
           name: createPageOutputFilename(input.name, page.pageNumber, page.pageCount, "png"),
           mime: "image/png",
           source: new Uint8Array(buffer),
         });
-        ctx.progress({ completed: index + 1, total, stage: "Page complete" });
+        ctx.progress({
+          completed: index + 1,
+          total,
+          stage: "Page complete",
+          stageMessage: { key: "progress.pageComplete" },
+        });
       },
     );
   } catch (error) {
@@ -61,12 +71,20 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     throw error;
   }
   const batch = batchState.current;
-  if (!batch) throw new ToolError("empty-range", "Choose at least one PDF page.");
+  if (!batch)
+    throw new ToolError("empty-range", "Choose at least one PDF page.", undefined, {
+      messageRef: { key: "errors.emptyRange" },
+    });
   let files: Awaited<ReturnType<ArtifactBatchWriter["finish"]>>;
   try {
-    ctx.progress({ completed: 0, total: 1, stage: "Packaging images" });
+    ctx.progress({
+      completed: 0,
+      total: 1,
+      stage: "Packaging images",
+      stageMessage: { key: "progress.packagingImages" },
+    });
     files = await batch.finish();
-    ctx.progress({ completed: 1, total: 1, stage: "Images ready" });
+    ctx.progress({ completed: 1, total: 1, stage: "Images ready", stageMessage: { key: "progress.imagesReady" } });
   } catch (error) {
     await batch.abort(error);
     throw error;

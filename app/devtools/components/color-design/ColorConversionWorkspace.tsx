@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useId } from "react";
 
 import { ResultSurface } from "@/components/ResultSurface";
@@ -30,8 +31,9 @@ export default function ColorConversionWorkspace({
   outputFunction,
   ...props
 }: WorkspaceProps & { inputFormat?: "hex" | "rgb" | "any"; outputFunction?: "rgb" | "hsl" }) {
+  const t = useTranslations("Workbench");
   const id = useId();
-  const label = inputFormat === "hex" ? "HEX colors" : inputFormat === "rgb" ? "RGB colors" : "Colors";
+  const label = t(inputFormat === "hex" ? "hexColors" : inputFormat === "rgb" ? "rgbColors" : "colors");
   const example =
     inputFormat === "rgb" ? "rgb(51 102 255 / 50%)" : inputFormat === "hex" ? "#3366ff80" : "rebeccapurple";
   const lines = props.input.text
@@ -48,7 +50,7 @@ export default function ColorConversionWorkspace({
       <div className="min-h-0 overflow-y-auto">
         {result.render === "list" ? (
           <p className="px-4 py-2 text-xs text-muted-foreground" role="status">
-            {items.length} converted · {result.issues?.length ?? 0} invalid. Copy all includes successful values only.
+            {t("colorsConverted", { count: items.length, invalid: result.issues?.length ?? 0 })}
           </p>
         ) : null}
         {items.map((value, index) => {
@@ -70,7 +72,7 @@ export default function ColorConversionWorkspace({
               <CopyButton
                 disabled={Boolean(props.running || props.error)}
                 content={value}
-                label={`Copy color ${index + 1}`}
+                label={t("copyColor", { count: index + 1 })}
                 iconOnly
               />
             </div>
@@ -81,18 +83,21 @@ export default function ColorConversionWorkspace({
   };
   return (
     <DesignWorkspace
-      title="Source colors"
-      controlTitle="Output options"
+      title={t("sourceColors")}
+      controlTitle={t("outputOptions")}
       preview={
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
           <Field
             error={
               props.error ??
               (props.result?.issues?.length ? (
-                <ul aria-label="Invalid colors">
+                <ul aria-label={t("invalidColors")}>
                   {props.result.issues.map((issue, index) => (
                     <li key={index}>
-                      Color {lines.findIndex(({ line }) => line === issue.line) + 1}: {issue.message}
+                      {t("colorIssue", {
+                        count: lines.findIndex(({ line }) => line === issue.line) + 1,
+                        message: issue.message,
+                      })}
                     </li>
                   ))}
                 </ul>
@@ -100,7 +105,7 @@ export default function ColorConversionWorkspace({
             }
             htmlFor={`${id}-source`}
             label={label}
-            description="Press Enter to add a color, or paste one per line. Click a circle to pick a color; click its value to edit."
+            description={t("colorInputHint")}
           >
             <ColorChipInput
               inputFormat={inputFormat}
@@ -119,7 +124,7 @@ export default function ColorConversionWorkspace({
               size="sm"
               variant="outline"
             >
-              Try a color
+              {t("tryColor")}
             </Button>
           ) : null}
         </div>
@@ -144,7 +149,7 @@ export default function ColorConversionWorkspace({
                 content={content}
                 disabled={!content}
                 iconOnly
-                label={result.render === "list" ? "Copy all successful values" : "Copy result"}
+                label={t(result.render === "list" ? "copySuccessful" : "copyResult")}
               />
             );
           }}
@@ -152,7 +157,7 @@ export default function ColorConversionWorkspace({
           retainedResult={props.result}
           running={props.running}
           spec={props.spec}
-          title="Converted colors"
+          title={t("convertedColors")}
         />
       }
     />

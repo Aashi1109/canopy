@@ -1,4 +1,6 @@
 "use client";
+import { useLocale, useTranslations } from "next-intl";
+import { localizeHref, type Locale } from "@/lib/i18n/config";
 import { subdomainHref } from "../../../lib/routing/subdomains.ts";
 import { Caption, P } from "./typography.tsx";
 
@@ -52,11 +54,11 @@ const itemClassName =
   "flex min-h-10 cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4";
 
 export const SITE_NAVIGATION_ITEMS = [
-  { href: "/", label: "All tools", icon: LayoutGrid },
-  { href: "/paperwork", label: "Documents", icon: Files },
-  { href: "/devtools", label: "Developer", icon: CodeXml },
-  { href: "/media", label: "Media", icon: ImagePlay },
-  { href: "/blog", label: "Blog", icon: BookOpen },
+  { href: "/", label: "All tools", messageKey: "allTools", icon: LayoutGrid },
+  { href: "/paperwork", label: "Documents", messageKey: "documents", icon: Files },
+  { href: "/devtools", label: "Developer", messageKey: "developer", icon: CodeXml },
+  { href: "/media", label: "Media", messageKey: "media", icon: ImagePlay },
+  { href: "/blog", label: "Blog", messageKey: "blog", icon: BookOpen },
 ];
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
@@ -80,6 +82,7 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
 };
 
 export function useSignOut(destination: string) {
+  const t = useTranslations("Common");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -96,7 +99,7 @@ export function useSignOut(destination: string) {
       if (!response.ok) throw new Error("Sign out failed");
       window.location.assign(destination);
     } catch {
-      setError("Couldn’t log out. Please try again.");
+      setError(t("signOutFailed"));
       setPending(false);
     }
   }
@@ -130,12 +133,15 @@ export function AccountNavigation({
   showSignIn = true,
   user,
 }: AccountNavigationProps) {
+  const t = useTranslations("Common");
+  const locale = useLocale() as Locale;
   const [open, setOpen] = useState(false);
   const groups = useEcosystemGroups(open && !restricted);
-  const siteHref = (path: string) => (publicSiteUrl ? new URL(path, publicSiteUrl).href : path);
+  const siteHref = (path: string) =>
+    publicSiteUrl ? new URL(localizeHref(path, locale), publicSiteUrl).href : localizeHref(path, locale);
   const { pending, error, signOut } = useSignOut(restricted ? "/auth" : siteHref("/"));
-  const target = `${user ? "/auth/profile" : "/auth"}?${new URLSearchParams({ returnTo })}`;
-  const accountName = user?.name.trim() || "Account";
+  const target = `${user ? "/auth/profile" : "/auth"}?${new URLSearchParams({ returnTo: localizeHref(returnTo, locale) })}`;
+  const accountName = user?.name.trim() || t("account");
   const initials = accountName
     .split(/\s+/)
     .slice(0, 2)
@@ -145,14 +151,13 @@ export function AccountNavigation({
   if (!user && !showSignIn) return null;
 
   return (
-    <nav aria-label="Account" className={cn("flex items-center", className)}>
+    <nav aria-label={t("account")} className={cn("flex items-center", className)}>
       {user ? (
         <DropdownMenu.Root open={open} onOpenChange={setOpen}>
           <DropdownMenu.Trigger asChild>
             <Button
-              aria-label={`Open account menu for ${accountName}`}
-              className="group h-10 max-w-32 gap-2 rounded-full border border-border bg-muted py-1 pr-2.5 pl-1 text-foreground hover:border-primary/40 hover:bg-accent compact:max-w-48"
-              title={accountName}
+              aria-label={t("openAccount", { name: accountName })}
+              className="group h-10 max-w-32 gap-2 rounded-full border border-border bg-muted py-1 pe-2.5 ps-1 text-foreground hover:border-primary/40 hover:bg-accent compact:max-w-48"
               variant="ghost"
             >
               <Caption
@@ -177,8 +182,9 @@ export function AccountNavigation({
             >
               {!restricted ? (
                 <DropdownMenu.Group className="[@media(width>1024px)]:hidden">
-                  {SITE_NAVIGATION_ITEMS.map(({ href, label, icon: Icon }) => {
-                    const group = groups.find((group) => group.href === href);
+                  {SITE_NAVIGATION_ITEMS.map(({ href, messageKey, icon: Icon }) => {
+                    const label = t(messageKey);
+                    const group = groups.find((group) => group.id === messageKey);
                     if (!group)
                       return (
                         <DropdownMenu.Item asChild className={itemClassName} key={href}>
@@ -207,7 +213,7 @@ export function AccountNavigation({
                         >
                           <Icon aria-hidden="true" />
                           {label}
-                          <ChevronRight aria-hidden="true" className="ml-auto" />
+                          <ChevronRight aria-hidden="true" className="ms-auto" />
                         </DropdownMenu.SubTrigger>
                         <DropdownMenu.Portal>
                           <DropdownMenu.SubContent
@@ -218,13 +224,21 @@ export function AccountNavigation({
                             <DropdownMenu.Item asChild className={itemClassName}>
                               <a href={siteHref(href)}>
                                 <Icon aria-hidden="true" />
-                                All {label.toLowerCase()} tools
+                                {t("allGroupTools", { group: label })}
                               </a>
                             </DropdownMenu.Item>
                             {links.length ? <DropdownMenu.Separator className="my-1 h-px bg-border" /> : null}
                             {links.map((link) => (
                               <DropdownMenu.Item asChild className={itemClassName} key={link.href}>
-                                <a href={siteHref(link.href)}>
+                                <a
+                                  href={
+                                    "icon" in link
+                                      ? publicSiteUrl
+                                        ? new URL(link.href, publicSiteUrl).href
+                                        : link.href
+                                      : siteHref(link.href)
+                                  }
+                                >
                                   {"icon" in link ? (
                                     <PreviewIcon icon={link.icon} />
                                   ) : (
@@ -246,7 +260,7 @@ export function AccountNavigation({
                 <DropdownMenu.Item asChild className={itemClassName}>
                   <a href={isAdminPage ? siteHref("/") : subdomainHref("admin")}>
                     {isAdminPage ? <ArrowLeft aria-hidden="true" /> : <Shield aria-hidden="true" />}
-                    {isAdminPage ? "Back to product" : "Admin page"}
+                    {t(isAdminPage ? "backToProduct" : "admin")}
                   </a>
                 </DropdownMenu.Item>
               ) : null}
@@ -254,13 +268,13 @@ export function AccountNavigation({
                 <DropdownMenu.Item asChild className={itemClassName}>
                   <a href={target}>
                     <UserRound aria-hidden="true" />
-                    My profile
+                    {t("profile")}
                   </a>
                 </DropdownMenu.Item>
               ) : null}
               {!restricted ? <DropdownMenu.Separator className="my-1 h-px bg-border" /> : null}
               <DropdownMenu.Item
-                aria-label={pending ? "Logging out…" : "Log out"}
+                aria-label={t(pending ? "signingOut" : "signOut")}
                 className={cn(itemClassName, "text-destructive")}
                 disabled={pending}
                 onSelect={(event) => {
@@ -269,7 +283,7 @@ export function AccountNavigation({
                 }}
               >
                 <LogOut aria-hidden="true" />
-                <span role="status">{pending ? "Logging out…" : "Log out"}</span>
+                <span role="status">{t(pending ? "signingOut" : "signOut")}</span>
               </DropdownMenu.Item>
               {error ? (
                 <P className="px-3 py-2 text-destructive" role="alert">
@@ -284,7 +298,7 @@ export function AccountNavigation({
           className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground no-underline outline-none transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           href={target}
         >
-          Sign in
+          {t("signIn")}
         </a>
       )}
     </nav>

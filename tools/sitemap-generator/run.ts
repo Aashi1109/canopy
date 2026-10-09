@@ -24,6 +24,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "too-many-urls",
       "Sitemap cannot exceed 50,000 URLs.",
       "Split the list across several sitemaps and publish a sitemap index.",
+      { messageRef: { key: "errors.too-many-urls" }, recoveryMessage: { key: "recovery.too-many-urls" } },
     );
   }
   const urls = [...new Set(lines)].map((value) => safeUrl(value, "Sitemap URL").toString());

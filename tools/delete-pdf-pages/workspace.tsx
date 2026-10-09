@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 /**
  * Per-page selection on the thumbnails.
@@ -25,6 +26,7 @@ interface PagePickerProps {
 }
 
 function PagePicker({ disabled, inspecting, onSettingChange, previews, value }: PagePickerProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const images = usePdfPageImages(previews);
   const selected = selectedPageNumbers(value, images);
   // Deleting every page would leave no document, so the last unselected page
@@ -37,7 +39,7 @@ function PagePicker({ disabled, inspecting, onSettingChange, previews, value }: 
 
   return (
     <PdfPagesSurface
-      description="Selected pages are removed. At least one page must remain."
+      description={toolText("workspace.selected_pages_are_84d337")}
       disabled={disabled}
       inspecting={inspecting}
       lockedPages={locked}
@@ -48,7 +50,7 @@ function PagePicker({ disabled, inspecting, onSettingChange, previews, value }: 
       }}
       pages={images}
       selected={selected}
-      title="Pages to delete"
+      title={toolText("workspace.pages_to_delete_570cdf")}
     />
   );
 }

@@ -1,6 +1,15 @@
+import { ENCODING_EXECUTION_MESSAGES, INPUT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...ENCODING_EXECUTION_MESSAGES,
+    ...INPUT_EXECUTION_MESSAGES,
+    "execution.gifDecoded": "GIF decoded · {width} × {height} px",
+    "execution.fileDecoded": "File decoded",
+    "execution.downloadToOpen": "Preview unavailable. Download to open.",
+    "execution.decodedImage": "Decoded Base64 image",
+  },
   toolId: "devtools.base64-decoder",
   sharing: { version: 1 },
   app: "devtools",

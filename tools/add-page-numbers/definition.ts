@@ -1,6 +1,16 @@
+import { MEDIA_FILE_ERROR_MESSAGES, MEDIA_PDF_ERROR_MESSAGES } from "../../lib/tool-framework/mediaErrorMessages.ts";
+import { COLOR_MESSAGES } from "../../lib/devtools/shared/color-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "progress.numberingPdfPage": "Numbering PDF page",
+    "progress.pageComplete": "Page complete",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_PDF_ERROR_MESSAGES,
+    ...COLOR_MESSAGES,
+  },
   toolId: "media.add-page-numbers",
   app: "media",
   category: "pdf-optimization",

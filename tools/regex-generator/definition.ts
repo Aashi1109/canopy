@@ -81,6 +81,12 @@ export default {
     ready: "Pattern is ready.",
     running: "Generating…",
   },
+  messages: {
+    "errors.preset-invalid": "Regex preset is invalid.",
+    "recovery.preset-invalid": "Choose one of the listed presets.",
+
+    "workspace.generatedRegularExpression": "Generated regular expression",
+  },
   content: {
     howToUse: [
       "Pick the thing you want to match. The pattern itself is the same for every language.",

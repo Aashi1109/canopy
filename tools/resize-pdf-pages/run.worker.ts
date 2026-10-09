@@ -44,7 +44,7 @@ function fitMode(value: string): FitMode {
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const selection = validatePdfSelection(ctx.input.files.map((file) => ({ size: file.size })));
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
   for (const file of ctx.input.files) await validatePdfInput(file);
 
   const pdfLib = await import("pdf-lib");
@@ -98,6 +98,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         wrapPageContentsWithClip(pdf, page, inner, pdfLib);
       }
     },
+    { key: "progress.resizingPdfPage" },
   );
   const resized = await ctx.writeArtifact({
     name: createOutputFilename(input.name, "pdf", "resized"),

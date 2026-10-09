@@ -1,6 +1,9 @@
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, vi } from "vitest";
+import { NextIntlClientProvider } from "next-intl";
+import { getCommonMessages } from "../../lib/i18n/messages.ts";
+import { extractToolMessages, toolMessageTree } from "../../lib/tool-framework/translations.ts";
 
 const mounted = new Set();
 
@@ -42,14 +45,22 @@ export function setupReactTools() {
   });
 }
 
-export async function mountTool(element) {
+export async function mountTool(element, { spec, locale = "en", messages = {} } = {}) {
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
+  const dictionary = {
+    ...getCommonMessages(locale),
+    ...(spec ? { Tool: toolMessageTree({ ...extractToolMessages(spec), ...messages }) } : {}),
+  };
   const view = {
     container,
     async rerender(next) {
-      await act(async () => root.render(next));
+      await act(async () =>
+        root.render(
+          React.createElement(NextIntlClientProvider, { locale, messages: dictionary, timeZone: "UTC" }, next),
+        ),
+      );
     },
     async unmount() {
       if (!mounted.delete(view)) return;

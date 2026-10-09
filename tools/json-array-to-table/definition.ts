@@ -1,12 +1,21 @@
+import { INPUT_EXECUTION_MESSAGES, JSON_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+    ...JSON_EXECUTION_MESSAGES,
+    "execution.errors.shape": "JSON input must be an array of objects.",
+    "execution.recovery.shape": "Wrap a single object in [] or point the tool at the list inside your response.",
+    "execution.errors.empty-columns": "JSON array objects need at least one field.",
+  },
   toolId: "devtools.json-array-to-table",
   app: "devtools",
   category: "json-tools",
   keywords: ["json", "array", "table", "html", "flatten", "objects", "grid"],
   name: "JSON Array to Table",
   description: "Render an array of JSON objects as an HTML table.",
+  resultView: { default: "preview", showTabs: false },
   input: {
     kind: "text",
     language: "json",

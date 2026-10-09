@@ -86,6 +86,8 @@ export function parseMetadata(
     {
       property: "og:title",
       level: ogTitle ? "ok" : title ? "warn" : "error",
+      labelMessage: { key: ogTitle ? "checks.titleFound" : title ? "checks.usingTitle" : "checks.noTitle" },
+      detailMessage: ogTitle ? undefined : { key: title ? "checks.addTitle" : "checks.addAnyTitle" },
       label: ogTitle ? "Open Graph title found" : title ? "Using the page title" : "No title found",
       detail:
         ogTitle ||
@@ -94,6 +96,10 @@ export function parseMetadata(
     {
       property: "og:description",
       level: ogDescription ? "ok" : "warn",
+      labelMessage: { key: ogDescription ? "checks.descriptionFound" : "checks.descriptionMissing" },
+      detailMessage: ogDescription
+        ? undefined
+        : { key: value("description") ? "checks.usingDescription" : "checks.addDescription" },
       label: ogDescription ? "Open Graph description found" : "Open Graph description missing",
       detail:
         ogDescription ||
@@ -104,11 +110,15 @@ export function parseMetadata(
     {
       property: "og:image",
       level: ogImage ? "ok" : "error",
+      labelMessage: { key: ogImage ? "checks.imageFound" : "checks.imageMissing" },
+      detailMessage: ogImage ? undefined : { key: "checks.addImage" },
       label: ogImage ? "Open Graph image found" : "Usable Open Graph image missing",
       detail: ogImage?.url ?? "Add an HTTP(S) og:image URL that social crawlers can access.",
     },
     {
       property: "og:url",
+      labelMessage: { key: value("og:url") && webUrl(value("og:url"), base) ? "checks.urlFound" : "checks.urlMissing" },
+      detailMessage: value("og:url") ? undefined : { key: "checks.usingUrl" },
       level: webUrl(value("og:url"), base) ? "ok" : "warn",
       label:
         value("og:url") && webUrl(value("og:url"), base) ? "Open Graph URL found" : "Open Graph URL missing or invalid",
@@ -116,12 +126,20 @@ export function parseMetadata(
     },
     {
       property: "og:type",
+      labelMessage: { key: value("og:type") ? "checks.typeFound" : "checks.typeMissing" },
+      detailMessage: value("og:type") ? undefined : { key: "checks.addType" },
       level: value("og:type") ? "ok" : "warn",
       label: value("og:type") ? "Open Graph type found" : "Open Graph type missing",
       detail: value("og:type") || 'Add og:type, usually "website" or "article".',
     },
     {
       property: "twitter:card",
+      labelMessage: {
+        key: ["summary", "summary_large_image"].includes(value("twitter:card"))
+          ? "checks.cardFound"
+          : "checks.cardMissing",
+      },
+      detailMessage: value("twitter:card") ? undefined : { key: "checks.addCard" },
       level: ["summary", "summary_large_image"].includes(value("twitter:card")) ? "ok" : "warn",
       label: ["summary", "summary_large_image"].includes(value("twitter:card"))
         ? "X card type found"
@@ -135,6 +153,8 @@ export function parseMetadata(
         property,
         level: "warn",
         label: `Duplicate ${property} tags`,
+        labelMessage: { key: "checks.duplicateTags", values: { property } },
+        detailMessage: { key: "checks.duplicateValues", values: { count: entries.length } },
         detail: `Found ${entries.length} values. This preview uses the first nonempty value; platforms may choose differently.`,
       });
   }
@@ -143,6 +163,8 @@ export function parseMetadata(
       property: "og:image:dimensions",
       level: "warn",
       label: "Image dimensions not declared",
+      labelMessage: { key: "checks.dimensionsMissing" },
+      detailMessage: { key: "checks.addDimensions" },
       detail:
         "Add og:image:width and og:image:height. Declared dimensions are not a measurement of the downloaded image.",
     });

@@ -28,9 +28,14 @@ export const validate: ToolValidate<Settings> = (settings) => {
   if (
     [settings.cropX, settings.cropY, settings.cropWidth, settings.cropHeight].some((value) => !Number.isInteger(value))
   ) {
-    return "Enter whole-number points for Left, Bottom, Width, and Height.";
+    return {
+      message: "Enter whole-number points for Left, Bottom, Width, and Height.",
+      messageRef: { key: "readiness.wholeNumbers" },
+    };
   }
-  return settings.cropWidth <= 0 || settings.cropHeight <= 0 ? "Width and Height must be greater than zero." : null;
+  return settings.cropWidth <= 0 || settings.cropHeight <= 0
+    ? { message: "Width and Height must be greater than zero.", messageRef: { key: "readiness.positiveDimensions" } }
+    : null;
 };
 
 /**

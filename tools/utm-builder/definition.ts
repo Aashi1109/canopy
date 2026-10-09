@@ -1,3 +1,4 @@
+import { INPUT_EXECUTION_MESSAGES, URL_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 /**
@@ -101,6 +102,29 @@ export default {
     empty: "Complete the destination and required campaign fields.",
     ready: "Campaign URL is ready.",
     running: "Building campaign URL…",
+  },
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+    ...URL_EXECUTION_MESSAGES,
+    "errors.parameter-required": "{parameter} is required.",
+    "recovery.parameter-required":
+      "Fill in campaign source, medium, and name — a partially tagged link reports as direct traffic.",
+    "errors.extra-missing": "Enter both a key and value, or remove this row.",
+    "errors.extra-duplicate": "This key is already used in another extra parameter. Keep one row per key.",
+    "errors.extra-standard":
+      "Use the {parameter, select, utm_source {Campaign source} utm_medium {Campaign medium} utm_campaign {Campaign name} utm_term {Campaign term} utm_content {Campaign content} other {campaign}} field instead of an extra {parameter} parameter.",
+    "recovery.invalid-extra-parameter": "Edit or remove the extra parameter row, then build the URL again.",
+
+    "workspace.campaignDetails": "Campaign details",
+    "workspace.addParameter": "Add parameter",
+    "workspace.parameterKey": "Parameter key",
+    "workspace.keyExample": "e.g. utm_id",
+    "workspace.parameter": "parameter",
+    "workspace.parameterValue": "Parameter value",
+    "workspace.valueExample": "e.g. spring_2026",
+    "workspace.missingParameter": "Enter both a key and value, or remove this row.",
+    "workspace.duplicateParameter": "This key is already used in another extra parameter. Keep one row per key.",
+    "workspace.standardParameter": "Use the {field} field instead of an extra {key} parameter.",
   },
   content: {
     howToUse: [

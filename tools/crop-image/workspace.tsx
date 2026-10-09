@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 /** Crop selections are stored in source pixels and shared with the worker. */
 
@@ -85,6 +86,7 @@ interface CropPreviewProps {
 }
 
 function CropPreview({ disabled, file, onSettingChange, settings, onImageLoad }: CropPreviewProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const url = useImageUrl(file);
   const [size, setSize] = useState<Size>(NO_SIZE);
   const aspect = typeof settings[ASPECT] === "string" ? settings[ASPECT] : FREE;
@@ -122,12 +124,12 @@ function CropPreview({ disabled, file, onSettingChange, settings, onImageLoad }:
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <Muted className="shrink-0 px-4 py-2">Drag handles to shape the crop · Drag inside to move it</Muted>
+      <Muted className="shrink-0 px-4 py-2">{toolText("workspace.drag_handles_to_74546a")}</Muted>
       <div className="flex min-h-0 flex-1 items-start justify-center overflow-auto p-6">
         {url ? (
           <div className="relative inline-block max-w-full shrink-0 overflow-hidden touch-none select-none">
             <img
-              alt="Crop preview"
+              alt={toolText("workspace.cropPreview")}
               className="block max-h-[520px] max-w-full object-contain outline outline-1 outline-black/10 dark:outline-white/10"
               draggable={false}
               onLoad={(event) => {
@@ -152,13 +154,14 @@ function CropPreview({ disabled, file, onSettingChange, settings, onImageLoad }:
         ) : null}
       </div>
       <Muted className="shrink-0 border-t border-border px-4 py-2">
-        Arrow keys move 1 px · Shift moves 10 px · Drag the corner to resize
+        {toolText("workspace.arrow_keys_move_fa6c88")}
       </Muted>
     </div>
   );
 }
 
 function CropEditor(props: WorkspaceProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const { onSettingChange: change, settings } = props;
   const file = props.input.files[0];
   const url = useImageUrl(file);
@@ -182,10 +185,10 @@ function CropEditor(props: WorkspaceProps) {
       try {
         writePoints(resizeCropPoints(fullImagePoints(size), pointCount, size));
       } catch (error) {
-        setPointIssue(error instanceof Error ? error.message : "Choose fewer points.");
+        setPointIssue(toolText("workspace.fewerPoints"));
       }
     }
-  }, [size, settings.cropPoints, pointCount, writePoints]);
+  }, [size, settings.cropPoints, pointCount, writePoints, toolText]);
   const onSettingChange = useCallback(
     (key: string, value: unknown) => {
       if ((key === CROP_KEYS.width || key === CROP_KEYS.height) && settings[ASPECT] !== FREE) change(ASPECT, FREE);
@@ -210,7 +213,7 @@ function CropEditor(props: WorkspaceProps) {
       try {
         writePoints(resizeCropPoints(fullImagePoints(size), pointCount, size));
       } catch (error) {
-        setPointIssue(error instanceof Error ? error.message : "Choose fewer points.");
+        setPointIssue(toolText("workspace.fewerPoints"));
       }
     } else {
       change("cropX", 0);
@@ -243,7 +246,9 @@ function CropEditor(props: WorkspaceProps) {
             />
             {freeform ? (
               <div className="grid gap-1.5">
-                <FieldLabel htmlFor={`${fieldId}-count`}>Freeform point count</FieldLabel>
+                <FieldLabel htmlFor={`${fieldId}-count`}>
+                  {toolText("workspace.freeform_point_count_727c6d")}
+                </FieldLabel>
                 <Input
                   id={`${fieldId}-count`}
                   type="number"
@@ -263,7 +268,7 @@ function CropEditor(props: WorkspaceProps) {
                     setCountDraft(event.currentTarget.value);
                     const value = event.currentTarget.valueAsNumber;
                     if (!Number.isInteger(value) || value < 3 || value > 12) {
-                      setPointIssue("Choose between 3 and 12 points.");
+                      setPointIssue(toolText("workspace.pointCount"));
                       return;
                     }
                     try {
@@ -274,22 +279,22 @@ function CropEditor(props: WorkspaceProps) {
                       setSelected(0);
                       setPointIssue("");
                     } catch (error) {
-                      setPointIssue(error instanceof Error ? error.message : "Choose fewer points.");
+                      setPointIssue(toolText("workspace.fewerPoints"));
                     }
                   }}
                 />
-                <Muted id={`${fieldId}-count-help`}>3–12 points.</Muted>
+                <Muted id={`${fieldId}-count-help`}>{toolText("workspace.3_12_points_75dcdf")}</Muted>
               </div>
             ) : null}
           </div>
           {freeform ? (
             <>
-              <Muted>Each point moves freely. Edges cannot cross or leave the image.</Muted>
+              <Muted>{toolText("workspace.each_point_moves_734bd4")}</Muted>
               <div className="grid grid-cols-2 gap-4">
                 {(["x", "y"] as const).map((axis) => (
                   <div className="grid gap-2" key={axis}>
                     <FieldLabel htmlFor={`${fieldId}-${axis}`}>
-                      {axis.toUpperCase()} · selected point {selected + 1}
+                      {toolText("workspace.selectedPointAxis", { axis: axis.toUpperCase(), number: selected + 1 })}
                     </FieldLabel>
                     <Input
                       id={`${fieldId}-${axis}`}
@@ -305,12 +310,12 @@ function CropEditor(props: WorkspaceProps) {
                       onChange={(event) => {
                         const value = event.currentTarget.valueAsNumber;
                         if (!Number.isSafeInteger(value) || !points[selected]) {
-                          setPointIssue("Enter a whole-number pixel position.");
+                          setPointIssue(toolText("workspace.wholePixel"));
                           return;
                         }
                         const next = moveCropPoint(points, selected, { ...points[selected], [axis]: value }, size);
                         if (next === points) {
-                          setPointIssue("Points cannot overlap or cross the opposite edge.");
+                          setPointIssue(toolText("workspace.pointOverlap"));
                           return;
                         }
                         setPointIssue("");
@@ -322,7 +327,7 @@ function CropEditor(props: WorkspaceProps) {
                 {(["width", "height"] as const).map((axis) => (
                   <div className="grid gap-2" key={axis}>
                     <FieldLabel htmlFor={`${fieldId}-${axis}`}>
-                      {axis === "width" ? "Width" : "Height"} · selection bounds
+                      {toolText(axis === "width" ? "workspace.selectionWidth" : "workspace.selectionHeight")}
                     </FieldLabel>
                     <Input id={`${fieldId}-${axis}`} suffix="px" readOnly value={bounds[axis]} />
                   </div>
@@ -333,7 +338,7 @@ function CropEditor(props: WorkspaceProps) {
                   {pointIssue}
                 </Muted>
               ) : null}
-              <Muted>Select a point to edit its X and Y. Width and height show the selection’s bounding box.</Muted>
+              <Muted>{toolText("workspace.select_a_point_859887")}</Muted>
             </>
           ) : (
             <SettingsPanel
@@ -358,12 +363,12 @@ function CropEditor(props: WorkspaceProps) {
           {freeform ? (
             <Muted>
               {settings.outputFormat === "jpeg" || (settings.outputFormat === "original" && file?.type === "image/jpeg")
-                ? "JPEG fills the area outside your selection with white. Choose PNG or WebP to keep it transparent."
-                : "Pixels outside the selection are transparent. This crops the shape; it does not straighten perspective."}
+                ? toolText("workspace.jpeg_fills_the_1dac4a")
+                : toolText("workspace.pixels_outside_the_a58b49")}
             </Muted>
           ) : null}
           <Button disabled={props.disabled || !file || !size.width} onClick={resetCrop} variant="outline">
-            Reset crop
+            {toolText("workspace.reset_crop_994fee")}
           </Button>
         </>
       )}
@@ -371,7 +376,7 @@ function CropEditor(props: WorkspaceProps) {
         freeform ? (
           imageError ? (
             <div role="alert" className="p-4">
-              <Muted>{imageError} Replace the image to try again.</Muted>
+              <Muted>{toolText("workspace.imageRecovery", { error: imageError })}</Muted>
             </div>
           ) : url ? (
             <FreeformPreview
@@ -380,7 +385,7 @@ function CropEditor(props: WorkspaceProps) {
               size={size}
               selected={selected}
               disabled={disabled}
-              onInvalidMove={() => setPointIssue("Points cannot overlap or cross the opposite edge.")}
+              onInvalidMove={() => setPointIssue(toolText("workspace.pointOverlap"))}
               onSelect={(index) => {
                 setSelected(index);
                 setPointIssue("");
@@ -390,13 +395,13 @@ function CropEditor(props: WorkspaceProps) {
                 writePoints(next);
               }}
               onError={() => {
-                setImageError("This image could not be decoded.");
+                setImageError(toolText("workspace.decodeFailed"));
                 change("cropPoints", "");
                 setSize(NO_SIZE);
               }}
               onLoad={(next) => {
                 if (!next.width || !next.height || next.width * next.height > 100_000_000) {
-                  setImageError("Choose an image under 100 megapixels.");
+                  setImageError(toolText("workspace.tooLarge"));
                   change("cropPoints", "");
                   setSize(NO_SIZE);
                   return;
@@ -405,7 +410,7 @@ function CropEditor(props: WorkspaceProps) {
               }}
             />
           ) : (
-            <Muted>Loading image…</Muted>
+            <Muted>{toolText("workspace.loading_image_1a0c32")}</Muted>
           )
         ) : (
           <CropPreview

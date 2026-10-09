@@ -34,7 +34,12 @@ function decodeXmlText(value: string): string {
       (point >= 0x10000 && point <= 0x10ffff)
     )
       return String.fromCodePoint(point);
-    throw new ToolError("xml-invalid-entity", "XML contains an unsupported entity or invalid character reference.");
+    throw new ToolError(
+      "xml-invalid-entity",
+      "XML contains an unsupported entity or invalid character reference.",
+      undefined,
+      { messageRef: { key: "errors.xml-invalid-entity" } },
+    );
   });
 }
 
@@ -58,6 +63,7 @@ function xmlToJson(input: string): unknown {
           "xml-unbalanced",
           "XML closing tags do not match.",
           "Check that every opening tag has a matching closing tag in the same order.",
+          { messageRef: { key: "errors.xml-unbalanced" }, recoveryMessage: { key: "recovery.xml-unbalanced" } },
         );
       }
       continue;
@@ -67,7 +73,10 @@ function xmlToJson(input: string): unknown {
       const selfClosing = /\/\s*>$/.test(token);
       const body = token.slice(1, selfClosing ? token.lastIndexOf("/") : -1).trim();
       const name = body.match(/^[^\s/>]+/)?.[0];
-      if (!name) throw new ToolError("xml-invalid-tag", "XML contains an invalid tag.");
+      if (!name)
+        throw new ToolError("xml-invalid-tag", "XML contains an invalid tag.", undefined, {
+          messageRef: { key: "errors.xml-invalid-tag" },
+        });
       const attributes = Object.fromEntries(
         [...body.matchAll(/([^\s=]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)].map((match) => [
           match[1],
@@ -76,7 +85,10 @@ function xmlToJson(input: string): unknown {
       );
       const node: SimpleXmlNode = { name, attributes, children: [], text: "" };
       if (stack.length) stack.at(-1)!.children.push(node);
-      else if (root) throw new ToolError("xml-multiple-roots", "XML must have one root element.");
+      else if (root)
+        throw new ToolError("xml-multiple-roots", "XML must have one root element.", undefined, {
+          messageRef: { key: "errors.xml-multiple-roots" },
+        });
       else root = node;
       if (!selfClosing) stack.push(node);
       continue;
@@ -88,6 +100,7 @@ function xmlToJson(input: string): unknown {
       "xml-incomplete",
       "XML is incomplete or empty.",
       "Paste the whole document, including its closing root tag.",
+      { messageRef: { key: "errors.xml-incomplete" }, recoveryMessage: { key: "recovery.xml-incomplete" } },
     );
   }
 

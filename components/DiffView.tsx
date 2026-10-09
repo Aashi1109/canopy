@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import { typographyStyles, Caption } from "@/components/ui/index.tsx";
@@ -53,6 +56,7 @@ function SplitCell({
   label: string;
   renderLine?: DiffViewProps["renderLine"];
 }) {
+  const t = useTranslations("Workbench");
   return (
     <div
       aria-hidden={line ? undefined : true}
@@ -68,10 +72,7 @@ function SplitCell({
     >
       {line ? (
         <>
-          <span className="sr-only">
-            {label}, line {line.number},{" "}
-            {line.kind === "added" ? "added" : line.kind === "removed" ? "removed" : "unchanged"}:
-          </span>
+          <span className="sr-only">{t("diffLine", { label, count: line.number, kind: line.kind })}</span>
           <span
             aria-hidden="true"
             className="w-12 shrink-0 select-none pr-2 text-right tabular-nums text-muted-foreground"
@@ -94,13 +95,14 @@ function SplitCell({
 }
 
 export function DiffView({ result, layout = "unified", header = "visible", renderLine }: DiffViewProps) {
+  const t = useTranslations("Workbench");
   if (layout === "split") {
-    const leftLabel = result.leftLabel ?? "Before";
-    const rightLabel = result.rightLabel ?? "After";
+    const leftLabel = result.leftLabel ?? t("before");
+    const rightLabel = result.rightLabel ?? t("after");
 
     return (
       <div
-        aria-label="Side-by-side comparison"
+        aria-label={t("sideBySide")}
         className={`${typographyStyles.codeBlock} min-h-0 min-w-0 flex-1 overflow-auto whitespace-normal outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring`}
         role="region"
         tabIndex={0}
@@ -127,8 +129,8 @@ export function DiffView({ result, layout = "unified", header = "visible", rende
     <div className={`${typographyStyles.codeBlock} min-h-0 flex-1 overflow-auto whitespace-normal`}>
       {header === "visible" && (result.leftLabel || result.rightLabel) ? (
         <div className="grid grid-cols-2 border-b border-border bg-muted/50 px-4 py-2">
-          <Caption>{result.leftLabel ?? "Before"}</Caption>
-          <Caption>{result.rightLabel ?? "After"}</Caption>
+          <Caption>{result.leftLabel ?? t("before")}</Caption>
+          <Caption>{result.rightLabel ?? t("after")}</Caption>
         </div>
       ) : null}
       {result.lines.map((line, index) => (
@@ -142,9 +144,7 @@ export function DiffView({ result, layout = "unified", header = "visible", rende
           }
           key={`${index}-${line.text}`}
         >
-          <span className="sr-only">
-            {line.kind === "added" ? "Added: " : line.kind === "removed" ? "Removed: " : "Unchanged: "}
-          </span>
+          <span className="sr-only">{t("diffKind", { kind: line.kind })}</span>
           <span
             aria-hidden="true"
             className={`inline-block w-8 select-none text-center ${line.kind === "added" ? "text-success" : line.kind === "removed" ? "text-destructive" : "text-muted-foreground"}`}

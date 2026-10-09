@@ -2,6 +2,7 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from "serwist";
 import { NetworkOnly, Serwist } from "serwist";
+import { defaultLocale, isLocale, locales, localizeHref } from "@/lib/i18n/config";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -24,17 +25,21 @@ const networkOnly: RuntimeCaching = {
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
+  // Fallback documents and static assets are public, even when installed by a
+  // signed-in browser. Never precache an account-specific response.
+  precacheOptions: { fetchOptions: { credentials: "omit" } },
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: [networkOnly, ...defaultCache],
   fallbacks: {
-    entries: [
-      {
-        url: "/offline",
-        matcher: ({ request }) => request.destination === "document",
+    entries: locales.map((locale) => ({
+      url: localizeHref("/offline", locale),
+      matcher: ({ request }) => {
+        const prefix = new URL(request.url).pathname.split("/")[1];
+        return request.destination === "document" && (isLocale(prefix) ? prefix : defaultLocale) === locale;
       },
-    ],
+    })),
   },
 });
 

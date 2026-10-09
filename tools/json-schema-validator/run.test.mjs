@@ -27,7 +27,7 @@ test("reports each nested failure with its data path", async () => {
   expect(result.text).toBe(
     "Invalid\n- $.missing: is required\n- $.ids[1]: expected integer, received number\n- $.state: value is not in enum",
   );
-  expect(result.verdict).toEqual({ level: "error", label: "Invalid", detail: "3 problems" });
+  expect(result.verdict).toMatchObject({ level: "error", label: "Invalid", detail: "3 problems" });
 });
 test.each([
   ["ab", { minLength: 3 }, "at least 3"],

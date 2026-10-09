@@ -1,6 +1,8 @@
 allowBuilds:
   "@google/genai": true
+  "@parcel/watcher": false
   "@sentry/cli": true
+  "@swc/core": false
   core-js: false
   esbuild: true
   protobufjs: true

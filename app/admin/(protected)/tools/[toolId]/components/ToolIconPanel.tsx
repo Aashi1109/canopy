@@ -1,8 +1,28 @@
 "use client";
 
-import { H3, Label, Caption, Muted, Text, AlertBanner, Button, Input } from "@/components/ui/index.tsx";
+import {
+  H3,
+  Caption,
+  Muted,
+  Button,
+  Input,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  toast,
+} from "@/components/ui/index.tsx";
 import { ImagePlus, RotateCcw, Trash2, Upload } from "lucide-react";
-import { useActionState, useEffect, useId, useRef, useState, type ChangeEvent, type ReactElement } from "react";
+import {
+  useActionState,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ComponentProps,
+  type ReactElement,
+} from "react";
 import { ToolIcon } from "../../../../../../components/ToolIcon";
 import { removeToolIconAction, uploadToolIconAction, type ToolContentActionState } from "../../actions";
 
@@ -15,24 +35,41 @@ export interface ToolIconPanelProps {
   readonly uploadsEnabled: boolean;
 }
 
+function IconAction({ label, ...props }: ComponentProps<typeof Button> & { label: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          aria-label={label}
+          className="border-border bg-card shadow-sm"
+          size="icon-xs"
+          variant="secondary"
+          {...props}
+        />
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function ToolIconPanel({ iconUrl, name, toolId, uploadsEnabled }: ToolIconPanelProps): ReactElement {
   const inputId = useId();
+  const toastId = `${inputId}-feedback`;
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [state, setState] = useState<ToolContentActionState>(IDLE);
   const [, uploadAction, isUploading] = useActionState(async (previous: ToolContentActionState, data: FormData) => {
     // React resets file inputs after a form action; retain the file for retries.
     if (selectedFile) data.set("icon", selectedFile);
     const next = await uploadToolIconAction(previous, data);
     if (next.status === "success") resetSelection();
-    setState(next);
+    showFeedback(next);
     return next;
   }, IDLE);
   const [, removeAction, isRemoving] = useActionState(async (previous: ToolContentActionState, data: FormData) => {
     const next = await removeToolIconAction(previous, data);
     if (next.status === "success") resetSelection();
-    setState(next);
+    showFeedback(next);
     return next;
   }, IDLE);
   const busy = isUploading || isRemoving;
@@ -44,120 +81,114 @@ export function ToolIconPanel({ iconUrl, name, toolId, uploadsEnabled }: ToolIco
     [previewUrl],
   );
 
+  function showFeedback(result: ToolContentActionState): void {
+    if (result.status === "success") toast.success(result.message, { id: toastId });
+    if (result.status === "error") toast.error(result.message, { id: toastId });
+  }
+
   function preview(event: ChangeEvent<HTMLInputElement>): void {
     const file = event.target.files?.[0];
     if (!file) return;
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
-    setState(IDLE);
+    toast.dismiss(toastId);
   }
 
   function resetSelection(): void {
     setSelectedFile(null);
     setPreviewUrl(null);
     if (inputRef.current) inputRef.current.value = "";
-    setState(IDLE);
+    toast.dismiss(toastId);
   }
 
   return (
-    <section className="grid gap-5">
-      <div>
-        <H3>Tool icon</H3>
-        <Muted className="mt-1 text-muted-foreground">
-          Upload a square source. The catalog generates its display sizes automatically.
-        </Muted>
-      </div>
+    <section aria-labelledby={`${inputId}-heading`} className="grid gap-3">
+      <H3 className="text-base" id={`${inputId}-heading`}>
+        Tool icon
+      </H3>
 
-      {state.status !== "idle" ? (
-        <AlertBanner variant={state.status === "success" ? "success" : "error"}>{state.message}</AlertBanner>
-      ) : null}
-
-      <div className="grid gap-5 sm:grid-cols-[150px_minmax(0,1fr)]">
-        <div className="grid content-start gap-2">
-          <span className="grid aspect-square w-full place-items-center overflow-hidden rounded-xl border border-border bg-muted">
-            {previewUrl ? (
-              // This blob URL is local-only and exists solely for the selected-file preview.
-              // eslint-disable-next-line @next/next/no-img-element
-              <img alt="Selected icon preview" className="size-full object-cover" src={previewUrl} />
-            ) : (
-              <ToolIcon name={name} iconUrl={iconUrl} size={72} toolId={toolId} />
-            )}
-          </span>
-          <Caption className="block break-all text-center text-muted-foreground">
-            {selectedFile?.name ?? (iconUrl ? "Uploaded icon" : "Generated identicon")}
-          </Caption>
+      <TooltipProvider>
+        <div
+          aria-label="Tool icon preview"
+          className="group relative grid size-44 place-items-center overflow-hidden rounded-xl border border-border bg-muted"
+          role="group"
+        >
+          {previewUrl ? (
+            // This blob URL is local-only and exists solely for the selected-file preview.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img alt="Selected icon preview" className="size-full object-contain" src={previewUrl} />
+          ) : (
+            <ToolIcon name={name} iconUrl={iconUrl} size={128} toolId={toolId} />
+          )}
+          {uploadsEnabled || iconUrl ? (
+            <div
+              className={`absolute top-2 right-2 flex items-center gap-1 transition-opacity motion-reduce:transition-none ${
+                selectedFile || busy
+                  ? ""
+                  : "[@media(hover:hover)_and_(pointer:fine)]:pointer-events-none [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
+              }`}
+            >
+              {uploadsEnabled ? (
+                <form action={uploadAction} className="flex gap-1">
+                  <input name="toolId" type="hidden" value={toolId} />
+                  <Input
+                    accept="image/png,image/jpeg,image/webp"
+                    aria-describedby={`${inputId}-guidance`}
+                    aria-label="Choose an icon"
+                    className="sr-only"
+                    disabled={busy}
+                    id={inputId}
+                    name="icon"
+                    onChange={preview}
+                    ref={inputRef}
+                    required={!selectedFile}
+                    tabIndex={-1}
+                    type="file"
+                  />
+                  <IconAction
+                    aria-describedby={`${inputId}-guidance`}
+                    disabled={busy}
+                    label={selectedFile ? "Choose another" : "Choose icon"}
+                    onClick={() => inputRef.current?.click()}
+                    type="button"
+                  >
+                    <ImagePlus aria-hidden="true" />
+                  </IconAction>
+                  {selectedFile ? (
+                    <>
+                      <IconAction disabled={busy} label="Upload" loading={isUploading} type="submit">
+                        <Upload aria-hidden="true" />
+                      </IconAction>
+                      <IconAction disabled={busy} label="Reset" onClick={resetSelection} type="button">
+                        <RotateCcw aria-hidden="true" />
+                      </IconAction>
+                    </>
+                  ) : null}
+                </form>
+              ) : null}
+              {iconUrl && !selectedFile ? (
+                <form action={removeAction}>
+                  <input name="toolId" type="hidden" value={toolId} />
+                  <IconAction disabled={busy} label="Remove uploaded icon" loading={isRemoving} type="submit">
+                    <Trash2 aria-hidden="true" />
+                  </IconAction>
+                </form>
+              ) : null}
+            </div>
+          ) : null}
         </div>
+      </TooltipProvider>
 
-        {uploadsEnabled ? (
-          <form action={uploadAction} className="grid content-start gap-4">
-            <input name="toolId" type="hidden" value={toolId} />
-            <Input
-              accept="image/png,image/jpeg,image/webp"
-              aria-label="Choose an icon"
-              className="peer sr-only"
-              disabled={busy}
-              id={inputId}
-              name="icon"
-              onChange={preview}
-              ref={inputRef}
-              required={!selectedFile}
-              tabIndex={selectedFile ? -1 : 0}
-              type="file"
-            />
-            {selectedFile ? (
-              <div className="flex flex-wrap gap-2">
-                <Button disabled={busy} onClick={resetSelection} size="sm" type="button" variant="secondary">
-                  <RotateCcw aria-hidden="true" />
-                  Reset
-                </Button>
-                <Button disabled={busy} loading={isUploading} size="sm" type="submit">
-                  <Upload aria-hidden="true" />
-                  {isUploading ? "Uploading…" : "Upload"}
-                </Button>
-                <Button
-                  disabled={busy}
-                  onClick={() => inputRef.current?.click()}
-                  size="sm"
-                  type="button"
-                  variant="secondary"
-                >
-                  <ImagePlus aria-hidden="true" />
-                  Choose another
-                </Button>
-              </div>
-            ) : (
-              <Label
-                className="group grid min-h-32 cursor-pointer place-items-center rounded-xl border border-dashed border-input bg-muted/40 p-5 text-center outline-none transition-colors hover:border-primary/45 hover:bg-accent hover:text-accent-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-ring"
-                htmlFor={inputId}
-              >
-                <span>
-                  <span className="mx-auto grid size-9 place-items-center rounded-lg bg-card text-primary">
-                    <ImagePlus aria-hidden="true" className="size-4" />
-                  </span>
-                  <Text className="mt-2 block">Choose a replacement icon</Text>
-                  <Caption className="mt-1 block text-muted-foreground group-hover:text-accent-foreground">
-                    PNG, JPG, or WebP · square recommended · 1 MB maximum
-                  </Caption>
-                </span>
-              </Label>
-            )}
-          </form>
-        ) : (
-          <AlertBanner title="Icon uploads are disabled" variant="warning">
-            Configure Cloudinary credentials to enable uploads. Existing icons and generated identicons still render.
-          </AlertBanner>
-        )}
-      </div>
+      {selectedFile ? <Caption className="break-all text-muted-foreground">{selectedFile.name}</Caption> : null}
 
-      {iconUrl ? (
-        <form action={removeAction} className="border-t border-border pt-4">
-          <input name="toolId" type="hidden" value={toolId} />
-          <Button disabled={busy} loading={isRemoving} size="sm" type="submit" variant="danger-subtle">
-            <Trash2 aria-hidden="true" />
-            Remove uploaded icon
-          </Button>
-        </form>
-      ) : null}
+      {uploadsEnabled ? (
+        <Muted id={`${inputId}-guidance`}>PNG, JPG, or WebP · up to 1 MB.</Muted>
+      ) : (
+        <Muted id={`${inputId}-guidance`}>
+          <span className="block font-medium text-foreground">Icon uploads are disabled</span>
+          Configure Cloudinary credentials to enable uploads.
+        </Muted>
+      )}
     </section>
   );
 }

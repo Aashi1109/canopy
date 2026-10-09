@@ -10,6 +10,7 @@ const state = vi.hoisted(() => {
     captured: [],
     adminLoads: 0,
     catalogReads: 0,
+    catalogLocales: [],
     sessionGate: undefined,
     catalogGate: undefined,
     savedGate: undefined,
@@ -30,16 +31,18 @@ vi.mock("@/lib/auth/session.ts", () => ({
   },
 }));
 vi.mock("@/lib/tool-framework/catalog", () => ({
-  getPublicTools: async () => {
+  getPublicTools: async (locale) => {
     state.catalogReads++;
+    state.catalogLocales.push(locale);
     state.catalogStarted?.resolve();
     await state.catalogGate;
     return [
       {
         toolId: "devtools.json-formatter",
-        name: "JSON Formatter",
-        href: "/devtools/json-formatter",
+        name: locale === "hi" ? "JSON फ़ॉर्मैटर" : "JSON Formatter",
+        href: locale === "hi" ? "/hi/devtools/json-formatter" : "/devtools/json-formatter",
         category: "JSON",
+        locale,
         keywords: ["json"],
       },
       {
@@ -47,6 +50,7 @@ vi.mock("@/lib/tool-framework/catalog", () => ({
         name: "Invoice Generator",
         href: "/paperwork/invoice-generator",
         category: "Documents",
+        locale,
         keywords: ["billing"],
       },
       {
@@ -54,6 +58,7 @@ vi.mock("@/lib/tool-framework/catalog", () => ({
         name: "Crop Image",
         href: "/media/crop-image",
         category: "Image Editing",
+        locale,
         keywords: ["crop"],
       },
     ];
@@ -98,6 +103,7 @@ beforeEach(() => {
   state.captured = [];
   state.adminLoads = 0;
   state.catalogReads = 0;
+  state.catalogLocales = [];
   state.sessionGate = undefined;
   state.catalogGate = undefined;
   state.savedGate = undefined;
@@ -109,17 +115,56 @@ test("guest GET returns catalog without querying private preferences", async () 
   const data = await response.json();
   expect(data.userId).toBe(null);
   expect(data.tools).toEqual([
-    { toolId: "devtools.json-formatter", name: "JSON Formatter", href: "/devtools/json-formatter", category: "JSON" },
+    {
+      toolId: "devtools.json-formatter",
+      name: "JSON Formatter",
+      href: "/devtools/json-formatter",
+      category: "JSON",
+      locale: "en",
+    },
     {
       toolId: "paperwork.invoice-generator",
       name: "Invoice Generator",
       href: "/paperwork/invoice-generator",
       category: "Documents",
+      locale: "en",
     },
-    { toolId: "media.crop-image", name: "Crop Image", href: "/media/crop-image", category: "Image Editing" },
+    {
+      toolId: "media.crop-image",
+      name: "Crop Image",
+      href: "/media/crop-image",
+      category: "Image Editing",
+      locale: "en",
+    },
   ]);
   expect(state.calls).toEqual([]);
+  expect(state.catalogLocales).toEqual(["en"]);
   expect(response.headers.get("cache-control")).toBe("private, no-store");
+});
+
+test("GET returns localized tool names while preserving stable saved-tool paths and IDs", async () => {
+  state.session = { user: { id: "a", status: "active" } };
+  state.ids = ["devtools.json-formatter"];
+  const response = await GET(new Request("https://app.test/api/user-preferences/saved-tools?locale=hi"));
+  const data = await response.json();
+  expect(response.status).toBe(200);
+  expect(data.savedTools).toEqual(["devtools.json-formatter"]);
+  expect(data.tools[0]).toEqual({
+    toolId: "devtools.json-formatter",
+    name: "JSON फ़ॉर्मैटर",
+    href: "/devtools/json-formatter",
+    category: "JSON",
+    locale: "hi",
+  });
+  expect(state.catalogLocales).toEqual(["hi"]);
+});
+
+test("GET rejects unsupported locales before reading catalog or private preferences", async () => {
+  state.session = { user: { id: "a", status: "active" } };
+  const response = await GET(new Request("https://app.test/api/user-preferences/saved-tools?locale=unknown"));
+  expect(response.status).toBe(400);
+  expect(state.catalogReads).toBe(0);
+  expect(state.calls).toEqual([]);
 });
 
 test("authenticated GET reads each account's current private preferences", async () => {
@@ -160,7 +205,7 @@ test("authenticated GET loads catalog and private preferences concurrently after
   state.savedGate = saved.promise;
   state.catalogStarted = Promise.withResolvers();
   let settled = false;
-  const pending = GET(new Request("https://app.test/api/user-preferences/saved-tools")).then((response) => {
+  const pending = GET(new Request("https://app.test/api/user-preferences/saved-tools?locale=hi")).then((response) => {
     settled = true;
     return response;
   });
@@ -170,6 +215,7 @@ test("authenticated GET loads catalog and private preferences concurrently after
     expect(state.calls, "private data waits for session validation").toEqual([]);
     session.resolve();
     await state.catalogStarted.promise;
+    expect(state.catalogLocales).toEqual(["hi"]);
     expect(state.calls, "preference loading starts before the catalog resolves").toEqual(["a"]);
     catalog.resolve();
     await Promise.resolve();

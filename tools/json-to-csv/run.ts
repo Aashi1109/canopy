@@ -20,6 +20,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       result.error.kind,
       result.error.message,
       "Check the JSON shape, syntax, and selected options, then try again.",
+      { messageRef: result.error.messageRef, recoveryMessage: { key: "execution.recovery.conversion" } },
     );
   }
 
@@ -40,9 +41,18 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       truncated: result.rows.length > previewRowLimit,
     },
     stats: [
-      { label: "Rows", value: String(result.rowCount) },
-      { label: "Columns", value: String(result.columns.length) },
-      ...(result.repaired ? [{ label: "Repaired", value: "Yes" }] : []),
+      { label: "Rows", labelMessage: { key: "execution.rows" }, value: String(result.rowCount) },
+      { label: "Columns", labelMessage: { key: "execution.columns" }, value: String(result.columns.length) },
+      ...(result.repaired
+        ? [
+            {
+              label: "Repaired",
+              labelMessage: { key: "execution.repaired" },
+              value: "Yes",
+              valueMessage: { key: "execution.yes" },
+            },
+          ]
+        : []),
     ],
   };
 };

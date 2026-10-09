@@ -1,6 +1,17 @@
+import { CSV_EXECUTION_MESSAGES } from "../../lib/devtools/shared/csv-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CSV_EXECUTION_MESSAGES,
+    "csv.matchedRows": "Matched rows",
+    "csv.scannedRows": "Scanned rows",
+    "csv.completeFilteredFile": "Complete filtered file",
+    "csv.errors.filterRequired": "Filter text is required.",
+    "csv.recovery.filterRequired": "Enter the text a row must contain to be kept.",
+    "csv.errors.filterColumnMissing": "Filter column was not found.",
+    "csv.recovery.filterColumn": "Use a header name from the first row, or a 1-based column number.",
+  },
   toolId: "devtools.csv-filter",
   app: "devtools",
   category: "csv-data-tools",

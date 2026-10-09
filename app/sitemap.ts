@@ -2,6 +2,7 @@ import config from "@/lib/config/config.ts";
 import { getPublicTools } from "@/lib/tool-framework/catalog";
 import { getBlogSitemapEntries } from "@/lib/blog/queries";
 import type { MetadataRoute } from "next";
+import { localizeHref } from "@/lib/i18n/config";
 
 // Deliberately no `generateStaticParams` companion anywhere: slugs and
 // enablement live in `managed_tools`, so use the runtime public catalog cache
@@ -27,11 +28,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // ponytail: one sitemap holds 50,000 URLs; split into sitemap files before
   // reaching this total. Keep the established tool URLs ahead of blog entries.
-  const entries: MetadataRoute.Sitemap = tools.slice(0, 50000).map((tool) => ({
-    url: new URL(tool.href, base).toString(),
-    changeFrequency: "weekly",
-    priority: 0.7,
-  }));
+  const entries: MetadataRoute.Sitemap = tools
+    .flatMap((tool) =>
+      tool.availableLocales.map((locale) => ({
+        url: new URL(localizeHref(tool.href, locale), base).toString(),
+        alternates: {
+          languages: Object.fromEntries(
+            tool.availableLocales.map((language) => [
+              language,
+              new URL(localizeHref(tool.href, language), base).toString(),
+            ]),
+          ),
+        },
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+      })),
+    )
+    .slice(0, 50000);
   try {
     const posts = await getBlogSitemapEntries(50000 - entries.length);
     entries.push(

@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { ToolError, translateToolError } from "@/lib/tool-framework/run";
+
 import {
   Muted,
   Alert,
@@ -91,6 +94,7 @@ async function downloadStoredFile(
 type StoredOutputFile = Extract<NonNullable<WorkspaceProps["result"]>, { render: "files" }>["files"][number];
 
 function StoredFileResult({ file, disabled }: { readonly file: StoredOutputFile; disabled?: boolean }): ReactElement {
+  const t = useTranslations("Workbench");
   const [downloadFailed, setDownloadFailed] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const download = async () => {
@@ -118,25 +122,22 @@ function StoredFileResult({ file, disabled }: { readonly file: StoredOutputFile;
           >
             <Download aria-hidden="true" />
             {downloadFailed
-              ? "Retry download"
+              ? t("retryDownload")
               : downloading
-                ? "Preparing…"
+                ? t("preparing")
                 : file.mime === "application/zip"
-                  ? "Download ZIP"
-                  : "Download file"}
+                  ? t("mediaDownloadZip")
+                  : t("downloadFile")}
           </Button>
         }
         className="min-w-0 flex-wrap [&_p]:truncate [&>div:nth-child(2)]:basis-40"
         metadata={`${file.name} · ${formatFileSize(file.size)}`}
-        title="Your file is ready"
+        title={t("mediaYourFileIsReady")}
       />
       {downloadFailed ? (
         <Alert variant="destructive">
-          <AlertTitle>Download unavailable</AlertTitle>
-          <AlertDescription>
-            The browser could not reopen this stored output. Retry the download, or run the tool again if the file was
-            cleared from browser storage.
-          </AlertDescription>
+          <AlertTitle>{t("mediaDownloadUnavailable")}</AlertTitle>
+          <AlertDescription>{t("mediaTheBrowserCouldNotReopenThisStored")}</AlertDescription>
         </Alert>
       ) : null}
     </div>
@@ -177,6 +178,8 @@ function useInspectedPages(
   readonly previews: readonly ToolPagePreview[];
   readonly requestThumbnails: (pageNumbers: readonly number[], renderWidth?: number) => void;
 } {
+  const t = useTranslations("Workbench");
+  const toolText = useTranslations("Tool.runtime");
   const { closeInspection, inspect, previews, requestThumbnails, reset, state } = useToolRun();
   const key = spec.input.kind === "files" && spec.input.inspect === true ? (spec.toolId.split(".")[1] ?? "") : "";
   const file = runFiles[0];
@@ -205,17 +208,27 @@ function useInspectedPages(
       });
     } catch (error) {
       reset();
-      setFailure(error instanceof Error ? error.message : "This PDF could not be opened.");
+      setFailure(error instanceof Error ? error.message : t("mediaPdfOpenFailed"));
     }
     // `file` is read through `fileKey`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closeInspection, key, fileKey, inspect, reset, suspended, attempt]);
+  }, [closeInspection, key, fileKey, inspect, reset, suspended, attempt, t]);
 
   // This hook owns the only job this `useToolRun` ever starts, so a running
   // job here is always the inspection.
   return {
     inspecting: state.status === "running",
-    error: inspectedKey === fileKey ? failure || state.error?.message : undefined,
+    error:
+      inspectedKey === fileKey
+        ? failure ||
+          (state.error
+            ? translateToolError(
+                new ToolError(state.error.code, state.error.message, state.error.recovery, state.error.details),
+                (message) => (toolText.has(message.key) ? toolText(message.key, message.values) : undefined),
+                (message) => (t.has(message.key) ? t(message.key, message.values) : undefined),
+              ).message
+            : undefined)
+        : undefined,
     retry,
     previews: inspectedKey === fileKey ? previews : NO_PREVIEWS,
     requestThumbnails,
@@ -235,6 +248,7 @@ function SourcePdfPreview({
   error?: string;
   onRetry: () => void;
 }) {
+  const t = useTranslations("Workbench");
   const pages = usePdfPageImages(previews);
   const [currentPage, setCurrentPage] = useState(1);
   const [expanded, setExpanded] = useState(false);
@@ -248,7 +262,7 @@ function SourcePdfPreview({
       onPageChange={setCurrentPage}
       outline={pages.map((page) => ({
         id: `page-${page.pageNumber}`,
-        title: `Page ${page.pageNumber}`,
+        title: t("mediaPageNumber", { page: page.pageNumber }),
         page: page.pageNumber,
       }))}
       pageCount={pages.length}
@@ -259,7 +273,7 @@ function SourcePdfPreview({
         content: (
           <PdfPreviewPage
             active={fullScreen || !expanded}
-            alt={`Source PDF page ${page.pageNumber}`}
+            alt={t("mediaSourcePdfPage", { page: page.pageNumber })}
             page={page}
             requestThumbnails={requestThumbnails}
           />
@@ -278,20 +292,20 @@ function SourcePdfPreview({
       stateAction={
         error ? (
           <Button onClick={onRetry} variant="outline">
-            Retry preview
+            {t("mediaRetryPreview")}
           </Button>
         ) : undefined
       }
-      stateDescription={error ? `${error} Retry the preview or upload a different PDF.` : undefined}
-      stateTitle={error ? "Preview unavailable" : "Opening PDF…"}
-      title="Source PDF preview"
+      stateDescription={error ? t("mediaPreviewRetryUpload", { error }) : undefined}
+      stateTitle={error ? t("mediaPreviewUnavailable") : t("mediaOpeningPdf")}
+      title={t("mediaSourcePdfPreview")}
     >
       {viewer(false)}
       <MediaPreview
         open={expanded}
         onOpenChange={setExpanded}
         title={file.name}
-        description={`Source PDF · Page ${currentPage} of ${pages.length}`}
+        description={t("mediaSourcePdfPosition", { page: currentPage, count: pages.length })}
         viewportClassName="bg-card p-0 text-foreground sm:p-0"
       >
         {viewer(true)}
@@ -391,6 +405,7 @@ export interface FileProcessorWorkspaceProps extends WorkspaceProps {
 }
 
 export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
+  const t = useTranslations("Workbench");
   const outputId = useId();
   const persistentOutput = props.spec.app === "media";
   const hooks = useToolHooks(props.spec.toolId);
@@ -455,7 +470,10 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
     : undefined;
   const currentItem = progress ? Math.min(Math.max(progress.completed + 1, 1), progress.total) : undefined;
 
-  const reason = hooks.validate?.(parseSettings(props.spec.settings, props.settings), runFiles) ?? null;
+  const issue = hooks.validate?.(parseSettings(props.spec.settings, props.settings), runFiles) ?? null;
+  const toolText = useTranslations("Tool.runtime");
+  const reason =
+    typeof issue === "string" ? issue : issue ? toolText(issue.messageRef.key, issue.messageRef.values) : null;
   const onValidationChange = props.onValidationChange;
 
   useEffect(() => {
@@ -496,14 +514,14 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
 
   const addFiles = (files: File[]) => {
     if (!fileInputSpec || props.disabled) return;
-    const selection = validateFileSelection(props.input.files, files, fileInputSpec);
+    const selection = validateFileSelection(props.input.files, files, fileInputSpec, (key, values) => t(key, values));
     setInputIssue(selection.issue);
     props.onInputChange({ ...props.input, files: selection.files });
   };
   const pasteImages = async () => {
     if (!canPasteImages || props.disabled || props.running || pastePending) return;
     if (typeof navigator.clipboard?.read !== "function") {
-      toast.error("Clipboard access is unavailable. Paste with Ctrl+V / ⌘V in the image area, or use Upload.");
+      toast.error(t("mediaClipboardUnavailable"));
       return;
     }
     const request = ++pasteRequest.current;
@@ -522,13 +540,13 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
       if (request !== pasteRequest.current) return;
       const files = images.filter((file): file is File => file !== null);
       if (files.length === 0) {
-        toast.error("No image found in the clipboard. Copy an image, then try Paste again, or use Upload.");
+        toast.error(t("mediaClipboardEmpty"));
         return;
       }
       addFiles(files);
     } catch {
       if (request === pasteRequest.current) {
-        toast.error("Could not read the clipboard. Paste with Ctrl+V / ⌘V in the image area, or use Upload.");
+        toast.error(t("mediaClipboardReadFailed"));
       }
     } finally {
       setPastePending(false);
@@ -556,11 +574,11 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           loading={pastePending}
           onClick={() => void pasteImages()}
         >
-          {pastePending ? "Pasting…" : "Paste"}
+          {pastePending ? t("pasting") : t("paste")}
         </ToolActionButton>
       )}
       <ToolActionButton action="upload" disabled={props.disabled} onClick={() => fileInputRef.current?.click()}>
-        Upload
+        {t("upload")}
       </ToolActionButton>
     </>
   );
@@ -606,11 +624,11 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           maxFiles={Number.MAX_SAFE_INTEGER}
           multiple={fileInputSpec.multiple}
           onFiles={addFiles}
-          title="Input files"
+          title={t("mediaInputFiles")}
         />
       ) : (props.compactFileToolbar || hasSourcePdfPreview) && props.input.files.length === 1 ? (
         <WorkspacePanelHeader
-          aria-label={fileInputSpec.engine === "pdf" ? "Source PDF" : "Source image"}
+          aria-label={fileInputSpec.engine === "pdf" ? t("mediaSourcePdf") : t("mediaSourceImage")}
           actions={fileActions}
         >
           <FileChip
@@ -625,7 +643,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
         </WorkspacePanelHeader>
       ) : fileInputSpec.engine === "image" && !props.detail ? (
         <WorkspaceSurface
-          title="Image selection"
+          title={t("mediaImageSelection")}
           header="sr-only"
           className="min-h-0 flex-1"
           contentClassName="gap-0"
@@ -650,7 +668,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
         <FileQueueSurface
           actions={fileActions}
           className="min-h-0 flex-1"
-          description={props.orderFiles ? "Drag to reorder. Files are processed from top to bottom." : undefined}
+          description={props.orderFiles ? t("mediaFileOrderHint") : undefined}
           disabled={props.disabled}
           getIcon={(file) => <FileThumbnail file={file} />}
           getId={workspaceFileId}
@@ -660,7 +678,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           onReorder={props.orderFiles ? (files) => props.onInputChange({ ...props.input, files }) : undefined}
           renderAction={(file) => (
             <Button
-              aria-label={`Remove ${file.name}`}
+              aria-label={t("removeFile", { name: file.name })}
               disabled={props.disabled}
               onClick={() => {
                 if (props.disabled) return;
@@ -676,12 +694,12 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
               <X aria-hidden="true" />
             </Button>
           )}
-          title="Selected files"
+          title={t("selectedFiles")}
         />
       )}
       {inputIssue ? (
         <Alert className="m-3" variant="destructive">
-          <AlertTitle>Some files were not added</AlertTitle>
+          <AlertTitle>{t("filesNotAdded")}</AlertTitle>
           <AlertDescription>{inputIssue}</AlertDescription>
         </Alert>
       ) : null}
@@ -721,7 +739,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
   const validationAlert =
     reason && !hasEmptyFileQueue ? (
       <Alert className="m-3" variant="destructive">
-        <AlertTitle>This tool cannot run yet</AlertTitle>
+        <AlertTitle>{t("mediaThisToolCannotRunYet")}</AlertTitle>
         <AlertDescription>{reason}</AlertDescription>
       </Alert>
     ) : null;
@@ -765,28 +783,37 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
     <ProcessingStatus
       aria-label={
         progress && currentItem !== undefined
-          ? `Processing ${progressPercent} percent. Working on item ${currentItem} of ${progress.total}. ${progress.stage}`
-          : `${props.spec.labels.running}. Progress is not available.`
+          ? t("mediaProcessingProgress", {
+              percent: progressPercent ?? 0,
+              item: currentItem,
+              count: progress.total,
+              stage: progress.stage,
+            })
+          : t("mediaProgressUnavailable", { action: props.spec.labels.running })
       }
       action={
         <Button onClick={cancel} type="button" variant="secondary">
-          Cancel
+          {t("cancel")}
         </Button>
       }
       detail={
         progress && currentItem !== undefined
-          ? `Working on item ${currentItem} of ${progress.total} · ${progress.stage}`
-          : "Preparing the first item."
+          ? t("mediaProcessingItem", { item: currentItem, count: progress.total, stage: progress.stage })
+          : t("mediaPreparingFirst")
       }
       progress={progressPercent}
-      title={progressPercent === undefined ? props.spec.labels.running : `Processing · ${progressPercent}%`}
+      title={
+        progressPercent === undefined
+          ? props.spec.labels.running
+          : t("mediaProcessingPercent", { percent: progressPercent ?? 0 })
+      }
     />
   );
   const settingsSurface = (
     <ToolOptionsPanel
-      aria-label="Options"
+      aria-label={t("options")}
       className="h-full overflow-y-auto bg-card p-[22px] max-sm:[&_[data-slot=button]]:!min-h-11 [@media(pointer:coarse)]:[&_[data-slot=button]]:!min-h-11"
-      title="Options"
+      title={t("options")}
       variant="plain"
     >
       {props.renderOptions ? (
@@ -811,7 +838,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
             disabled={props.disabled || props.primaryAction?.disabled}
             onClick={props.primaryAction?.onRun}
           >
-            {props.primaryAction?.label ?? "Run"}
+            {props.primaryAction?.label ?? t("run")}
           </Button>
         ))}
     </ToolOptionsPanel>
@@ -824,12 +851,12 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
             key={primaryOutput.id}
             file={primaryOutput}
             disabled={props.running}
-            label={primaryOutput.mime === "application/zip" ? "Download ZIP" : "Download"}
+            label={primaryOutput.mime === "application/zip" ? t("mediaDownloadZip") : t("download")}
             variant="toolbar"
           />
         ) : (
           <ToolActionButton action="download" disabled>
-            Download
+            {t("download")}
           </ToolActionButton>
         )
       }
@@ -840,23 +867,23 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           : `overflow-y-auto [&>*]:shrink-0 ${resultPreview ? "gap-0" : "gap-4 p-4"} ${!props.result ? "justify-center" : ""}`
       }
       purpose="result"
-      meta={props.running ? "Processing…" : primaryOutput ? formatFileSize(primaryOutput.size) : undefined}
+      meta={props.running ? t("processing") : primaryOutput ? formatFileSize(primaryOutput.size) : undefined}
       id={outputId}
       state={props.error && !props.result ? "error" : "ready"}
-      stateDescription={props.error ? `${props.error} Check your input and try again.` : undefined}
-      stateTitle="Unable to create the result"
+      stateDescription={props.error ? t("mediaInputRetryError", { error: props.error }) : undefined}
+      stateTitle={t("resultFailed")}
       scroll="none"
-      title="Processed output"
+      title={t("mediaProcessedOutput")}
     >
       {props.running ? <div className="shrink-0 p-4">{processingStatus}</div> : null}
       {props.result && props.error ? (
         <Muted className="shrink-0 px-4 pt-4" role="status">
-          The update failed. Your previous output is still available. Check the settings and try again.
+          {t("mediaTheUpdateFailedYourPreviousOutputIs")}
         </Muted>
       ) : null}
       {props.result && wasCancelled && !props.running ? (
         <Muted className="shrink-0 px-4 pt-4" role="status">
-          Update cancelled. Your previous output is still available. Run again when ready.
+          {t("mediaUpdateCancelledYourPreviousOutputIsStill")}
         </Muted>
       ) : null}
       {hasPdfPreview && resultPreview ? <div className="min-h-0 flex-1">{resultPreview}</div> : resultPreview}
@@ -867,7 +894,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           ))}
           {primaryOutput && !resultPreview ? (
             <div className="min-w-0" role="status">
-              <p className="font-semibold">Your file is ready</p>
+              <p className="font-semibold">{t("mediaYourFileIsReady")}</p>
               <Muted className="break-all">
                 {primaryOutput.name} · {formatFileSize(primaryOutput.size)}
               </Muted>
@@ -876,16 +903,16 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
         </div>
       ) : props.result && props.result.render !== "files" ? (
         <>
-          <DownloadResult metadata={props.spec.labels.ready} title="Processing complete" />
+          <DownloadResult metadata={props.spec.labels.ready} title={t("mediaProcessingComplete")} />
           <ResultView result={props.result} />
         </>
       ) : !props.result && !props.running ? (
         <ContentState
           state={wasCancelled ? "cancelled" : "waiting"}
           className="rounded-none border-0 bg-transparent"
-          description={wasCancelled ? "Your input files are unchanged. Run again when ready." : props.spec.labels.empty}
+          description={wasCancelled ? t("mediaInputUnchanged") : props.spec.labels.empty}
           icon={<FileText aria-hidden="true" />}
-          title={wasCancelled ? "Processing cancelled" : "Result will appear here"}
+          title={wasCancelled ? t("mediaProcessingCancelled") : t("resultEmpty")}
         />
       ) : null}
     </WorkspaceSurface>
@@ -929,13 +956,16 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           ) : null}
           {!persistentOutput && !props.result && props.error ? (
             <Alert className="m-3 shrink-0" variant="destructive">
-              <AlertTitle>Unable to create the result</AlertTitle>
-              <AlertDescription>{props.error} Check your input and try again.</AlertDescription>
+              <AlertTitle>{t("resultFailed")}</AlertTitle>
+              <AlertDescription>
+                {props.error}
+                {t("mediaCheckYourInputAndTryAgain")}
+              </AlertDescription>
             </Alert>
           ) : null}
           {!persistentOutput && !props.result && wasCancelled && !props.running ? (
             <Muted className="shrink-0 p-4" role="status">
-              Processing cancelled. Your input files are unchanged. Run again when ready.
+              {t("mediaProcessingCancelledYourInputFilesAreUnchanged")}
             </Muted>
           ) : null}
         </Stack>

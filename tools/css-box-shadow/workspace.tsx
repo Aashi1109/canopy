@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 import { GripVertical, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -41,6 +42,7 @@ const LENGTHS = [
 ] as const;
 
 export default function BoxShadowWorkspace(props: WorkspaceProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const [selectedId, setSelectedId] = useState(DEFAULT_LAYER.id);
   let layers: ShadowLayer[];
   try {
@@ -105,12 +107,12 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
   return (
     <DesignWorkspace
       compactOutput
-      title="Shadow preview"
-      controlTitle="Shadow layers"
+      title={toolText("workspace.shadow_preview_ea1c1a")}
+      controlTitle={toolText("workspace.shadowLayers")}
       previewActions={
         <Button disabled={props.disabled} onClick={reset} size="sm" variant="ghost">
           <RotateCcw />
-          Reset
+          {toolText("workspace.reset_daee76")}
         </Button>
       }
       preview={
@@ -120,7 +122,7 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
             style={{ backgroundColor: safeColor(props.settings.previewBackground, "#f1f5f9") }}
           >
             <div
-              aria-label="Object with the generated box shadow"
+              aria-label={toolText("workspace.object_with_the_1ac233")}
               className="h-28 w-44 shrink-0 rounded-xl"
               role="img"
               style={{ backgroundColor: safeColor(props.settings.previewObject, "#ffffff"), boxShadow: preview }}
@@ -129,7 +131,7 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
           {!props.input.text && (
             <div className="flex flex-wrap items-center justify-between gap-2 p-3">
               <Button disabled={props.disabled} onClick={() => preset([DEFAULT_LAYER])} size="sm" variant="outline">
-                Use this shadow
+                {toolText("workspace.use_this_shadow_2aebea")}
               </Button>
             </div>
           )}
@@ -142,13 +144,13 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
           retainedResult={props.result}
           running={props.running}
           spec={props.spec}
-          title="CSS"
+          title={toolText("workspace.css_b581e4")}
         />
       }
       controls={
         <>
           <Field>
-            <FieldLabel htmlFor="shadow-preset">Preset</FieldLabel>
+            <FieldLabel htmlFor="shadow-preset">{toolText("workspace.preset_7252e7")}</FieldLabel>
             <Select
               disabled={props.disabled}
               id="shadow-preset"
@@ -158,16 +160,16 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
                 if (next) preset(next);
               }}
             >
-              <option value="">Choose a starting point</option>
+              <option value="">{toolText("workspace.choose_a_starting_a136fd")}</option>
               {Object.keys(PRESETS).map((name) => (
                 <option key={name} value={name}>
-                  {name}
+                  {toolText(`workspace.presets.${name}`)}
                 </option>
               ))}
             </Select>
           </Field>
           <div className="flex items-center justify-between gap-2">
-            <FieldLabel>Layers · {layers.length}/12</FieldLabel>
+            <FieldLabel>{toolText("workspace.layerCount", { count: layers.length })}</FieldLabel>
             <Button
               disabled={props.disabled || layers.length >= 12}
               onClick={() => {
@@ -179,16 +181,16 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
               variant="outline"
             >
               <Plus />
-              Add
+              {toolText("workspace.add_9fd728")}
             </Button>
           </div>
           <OrderableList
             animateSelection
-            ariaLabel="Shadow layers"
+            ariaLabel={toolText("workspace.shadowLayers")}
             className="flex flex-col gap-1"
             disabled={props.disabled}
             getId={(layer) => layer.id}
-            getLabel={(layer) => `Shadow layer ${layers.indexOf(layer) + 1}`}
+            getLabel={(layer) => toolText("workspace.shadowLayer", { number: layers.indexOf(layer) + 1 })}
             items={layers}
             selectedId={selected.id}
             onReorder={save}
@@ -197,7 +199,7 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
                 <Button
                   {...state.attributes}
                   {...state.listeners}
-                  aria-label={`Reorder shadow layer ${layers.indexOf(layer) + 1}`}
+                  aria-label={toolText("workspace.reorderLayer", { number: layers.indexOf(layer) + 1 })}
                   disabled={state.disabled}
                   ref={state.setActivatorNodeRef}
                   size="icon-sm"
@@ -206,7 +208,7 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
                   <GripVertical />
                 </Button>
                 <Checkbox
-                  aria-label={`Enable shadow layer ${layers.indexOf(layer) + 1}`}
+                  aria-label={toolText("workspace.enableLayer", { number: layers.indexOf(layer) + 1 })}
                   checked={layer.enabled}
                   disabled={props.disabled}
                   onCheckedChange={(checked) =>
@@ -214,7 +216,7 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
                   }
                 />
                 <Button
-                  aria-label={`Edit shadow layer ${layers.indexOf(layer) + 1}`}
+                  aria-label={toolText("workspace.editLayer", { number: layers.indexOf(layer) + 1 })}
                   aria-pressed={selected.id === layer.id}
                   className="min-w-0 flex-1 justify-start"
                   disabled={props.disabled}
@@ -224,17 +226,19 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
                 >
                   <ColorSwatch className="size-5 shrink-0" color={layer.color} />
                   <span className="min-w-0 truncate">
-                    Layer {layers.indexOf(layer) + 1}
-                    {layer.inset ? " · inset" : ""}
+                    {toolText("workspace.layerName", {
+                      number: layers.indexOf(layer) + 1,
+                      inset: layer.inset ? "yes" : "no",
+                    })}
                   </span>
                   {selected.id === layer.id ? (
                     <Caption aria-hidden="true" className="ml-auto shrink-0 text-primary">
-                      Editing
+                      {toolText("workspace.editing_fab453")}
                     </Caption>
                   ) : null}
                 </Button>
                 <Button
-                  aria-label={`Remove shadow layer ${layers.indexOf(layer) + 1}`}
+                  aria-label={toolText("workspace.removeLayer", { number: layers.indexOf(layer) + 1 })}
                   disabled={props.disabled || layers.length <= 1}
                   onClick={() => save(layers.filter((item) => item.id !== layer.id))}
                   size="icon-sm"
@@ -247,17 +251,17 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
           />
           <ColorControl
             disabled={props.disabled}
-            label="Selected shadow color"
+            label={toolText("workspace.selected_shadow_color_fee0dd")}
             layout="inline"
             value={selected.color}
             onChange={(color) => update({ color })}
           />
           <Field aria-labelledby="shadow-offset-label">
-            <FieldTitle id="shadow-offset-label">Offset</FieldTitle>
+            <FieldTitle id="shadow-offset-label">{toolText("workspace.offset_b1a1e8")}</FieldTitle>
             <div className="grid grid-cols-2 gap-2">
               {(["x", "y"] as const).map((key) => (
                 <Input
-                  aria-label={`${key === "x" ? "Horizontal" : "Vertical"} offset value`}
+                  aria-label={toolText(key === "x" ? "workspace.horizontalOffset" : "workspace.verticalOffset")}
                   disabled={props.disabled}
                   key={key}
                   leadingIcon={key.toUpperCase()}
@@ -278,7 +282,7 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
           <div className="grid grid-cols-2 gap-2">
             {LENGTHS.map(({ key, label, min, max }) => (
               <Field key={key}>
-                <FieldLabel htmlFor={`shadow-${key}`}>{label}</FieldLabel>
+                <FieldLabel htmlFor={`shadow-${key}`}>{toolText(`workspace.lengths.${key}`)}</FieldLabel>
                 <Input
                   disabled={props.disabled}
                   id={`shadow-${key}`}
@@ -304,22 +308,22 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
               id="shadow-inset"
               onCheckedChange={(checked) => update({ inset: checked === true })}
             />
-            <FieldLabel htmlFor="shadow-inset">Inset shadow</FieldLabel>
+            <FieldLabel htmlFor="shadow-inset">{toolText("workspace.inset_shadow_3baaef")}</FieldLabel>
           </Field>
           <Accordion type="multiple">
             <AccordionItem value="preview-colors">
-              <AccordionTrigger>Preview colors</AccordionTrigger>
+              <AccordionTrigger>{toolText("workspace.preview_colors_710006")}</AccordionTrigger>
               <AccordionContent className="flex flex-col gap-5">
                 <ColorControl
                   disabled={props.disabled}
-                  label="Background"
+                  label={toolText("workspace.background_ea2b8a")}
                   layout="inline"
                   value={String(props.settings.previewBackground ?? "#f1f5f9")}
                   onChange={(value) => setting("previewBackground", value)}
                 />
                 <ColorControl
                   disabled={props.disabled}
-                  label="Object"
+                  label={toolText("workspace.object_62a6da")}
                   layout="inline"
                   value={String(props.settings.previewObject ?? "#ffffff")}
                   onChange={(value) => setting("previewObject", value)}
@@ -327,10 +331,10 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="advanced-layers">
-              <AccordionTrigger>Advanced CSS layers</AccordionTrigger>
+              <AccordionTrigger>{toolText("workspace.advanced_css_layers_291360")}</AccordionTrigger>
               <AccordionContent className="flex flex-col gap-4">
                 <Field>
-                  <FieldLabel htmlFor="shadow-extra">Additional layers</FieldLabel>
+                  <FieldLabel htmlFor="shadow-extra">{toolText("workspace.additional_layers_3940c3")}</FieldLabel>
                   <Textarea
                     disabled={props.disabled}
                     id="shadow-extra"
@@ -338,10 +342,7 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
                     value={String(props.settings.additionalLayers ?? "")}
                     onChange={(event) => setting("additionalLayers", event.target.value)}
                   />
-                  <Caption>
-                    One shadow per line. Use two to four pixel lengths, optional inset, and HEX or comma-separated
-                    rgb()/rgba().
-                  </Caption>
+                  <Caption>{toolText("workspace.one_shadow_per_987f6b")}</Caption>
                 </Field>
                 <Field orientation="horizontal">
                   <Checkbox
@@ -350,7 +351,7 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
                     id="shadow-link"
                     onCheckedChange={(checked) => setting("linkOpacity", checked === true)}
                   />
-                  <FieldLabel htmlFor="shadow-link">Use first enabled layer opacity for extra rgba() layers</FieldLabel>
+                  <FieldLabel htmlFor="shadow-link">{toolText("workspace.use_first_enabled_318bdf")}</FieldLabel>
                 </Field>
                 <Field orientation="horizontal">
                   <Checkbox
@@ -359,12 +360,14 @@ export default function BoxShadowWorkspace(props: WorkspaceProps) {
                     id="shadow-prefixes"
                     onCheckedChange={(checked) => setting("showBrowserPrefixes", checked === true)}
                   />
-                  <FieldLabel htmlFor="shadow-prefixes">Include WebKit prefix</FieldLabel>
+                  <FieldLabel htmlFor="shadow-prefixes">
+                    {toolText("workspace.include_webkit_prefix_f1ba8a")}
+                  </FieldLabel>
                 </Field>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-          <Caption>Drag handles or press Space, use arrow keys, and press Space again to reorder layers.</Caption>
+          <Caption>{toolText("workspace.drag_handles_or_a9f0bc")}</Caption>
         </>
       }
     />

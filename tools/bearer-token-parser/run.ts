@@ -23,6 +23,10 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "authorization-header-required",
       "Authorization header must start with Bearer.",
       "Paste the whole Authorization header or choose Raw token.",
+      {
+        messageRef: { key: "execution.errors.authorization-header-required" },
+        recoveryMessage: { key: "execution.recovery.authorization-header-required" },
+      },
     );
   }
   const token = inputFormat === "raw" ? input : input.replace(/^Bearer\s+/i, "");
@@ -31,6 +35,10 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "token-required",
       "Bearer token is required.",
       "Paste the token itself, not just the Bearer prefix.",
+      {
+        messageRef: { key: "execution.errors.token-required" },
+        recoveryMessage: { key: "execution.recovery.token-required" },
+      },
     );
   }
   const displayedToken = ctx.settings.maskRawToken === true ? "••••••••" : token;
@@ -50,8 +58,8 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   return {
     render: "key-value",
     entries: [
-      { label: "Token", value: displayedToken },
-      { label: "Length", value: String(token.length) },
+      { label: "Token", labelMessage: { key: "execution.token" }, value: displayedToken },
+      { label: "Length", labelMessage: { key: "execution.length" }, value: String(token.length) },
     ],
   };
 };

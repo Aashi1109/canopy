@@ -23,7 +23,15 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const delimiter = utilityDelimiter(ctx.settings.delimiter);
   const query = ctx.settings.query.toLocaleLowerCase();
   if (!query) {
-    throw new ToolError("filter-required", "Filter text is required.", "Enter the text a row must contain to be kept.");
+    throw new ToolError(
+      "filter-required",
+      "Filter text is required.",
+      "Enter the text a row must contain to be kept.",
+      {
+        messageRef: { key: "csv.errors.filterRequired" },
+        recoveryMessage: { key: "csv.recovery.filterRequired" },
+      },
+    );
   }
   const requested = ctx.settings.column.trim();
   if (isLargeCsvRun(ctx)) {
@@ -47,6 +55,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
                 "column-not-found",
                 "Filter column was not found.",
                 "Use a header name from the first row, or a 1-based column number.",
+                {
+                  messageRef: { key: "csv.errors.filterColumnMissing" },
+                  recoveryMessage: { key: "csv.recovery.filterColumn" },
+                },
               );
             }
           }
@@ -69,12 +81,17 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         truncated: sink.previewTruncated,
         tablePreview: preview?.result,
         stats: [
-          { label: "Matched rows", value: String(kept) },
-          { label: "Scanned rows", value: String(Math.max(0, parsed.rowCount - 1)) },
+          { label: "Matched rows", labelMessage: { key: "csv.matchedRows" }, value: String(kept) },
+          {
+            label: "Scanned rows",
+            labelMessage: { key: "csv.scannedRows" },
+            value: String(Math.max(0, parsed.rowCount - 1)),
+          },
         ],
         sections: [
           {
             title: sink.previewTruncated ? "Complete filtered file" : "Download",
+            titleMessage: { key: sink.previewTruncated ? "csv.completeFilteredFile" : "csv.download" },
             body: { render: "files", files: [artifact], outputBytes: artifact.size },
           },
         ],
@@ -91,6 +108,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "column-not-found",
       "Filter column was not found.",
       "Use a header name from the first row, or a 1-based column number.",
+      {
+        messageRef: { key: "csv.errors.filterColumnMissing" },
+        recoveryMessage: { key: "csv.recovery.filterColumn" },
+      },
     );
   }
   const filtered = rows.filter((row) =>

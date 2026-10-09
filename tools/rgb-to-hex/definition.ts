@@ -1,6 +1,11 @@
+import { COLOR_MESSAGES } from "../../lib/devtools/shared/color-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...COLOR_MESSAGES,
+    "rgb.functionRequired": "Enter rgb() or rgba(), using commas or spaces with / alpha.",
+  },
   toolId: "devtools.rgb-to-hex",
   sharing: { version: 1 },
   app: "devtools",

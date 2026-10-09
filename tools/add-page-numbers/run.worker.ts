@@ -24,7 +24,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const selection = validatePdfSelection(ctx.input.files.map((file) => ({ size: file.size })));
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
   for (const file of ctx.input.files) await validatePdfInput(file);
 
   const { StandardFonts, rgb } = await import("pdf-lib");
@@ -45,14 +45,24 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
           ? `${number} / ${ctx.settings.start + total - 1}`
           : String(number);
     const width = font.widthOfTextAtSize(value, ctx.settings.fontSize);
-    ctx.progress({ completed: index, total, stage: "Numbering PDF page" });
+    ctx.progress({
+      completed: index,
+      total,
+      stage: "Numbering PDF page",
+      stageMessage: { key: "progress.numberingPdfPage" },
+    });
     page.drawText(value, {
       ...positionedBox(page, width, ctx.settings.fontSize, ctx.settings.position),
       color,
       font,
       size: ctx.settings.fontSize,
     });
-    ctx.progress({ completed: index + 1, total, stage: "Page complete" });
+    ctx.progress({
+      completed: index + 1,
+      total,
+      stage: "Page complete",
+      stageMessage: { key: "progress.pageComplete" },
+    });
   });
   const numbered = await ctx.writeArtifact({
     name: createOutputFilename(input.name, "pdf", "numbered"),

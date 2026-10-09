@@ -148,6 +148,30 @@ test("extra UTM keys accept safely encoded text and ordinary object-property nam
   for (const row of parameters) expect(url.searchParams.get(row.key)).toBe(row.value);
 });
 
+test("extra parameter validation can localize feedback without changing which rows are invalid", () => {
+  const rows = [
+    { key: "missing", value: "" },
+    { key: "UTM_SOURCE", value: "source" },
+    { key: "id", value: "one" },
+    { key: "ID", value: "two" },
+    { key: "valid", value: "value" },
+  ];
+  const issues = [];
+  const errors = getParameterErrors(rows, (issue) => {
+    issues.push(issue);
+    return `translated:${issue.code}`;
+  });
+  expect(errors).toEqual([
+    "translated:missing",
+    "translated:standard",
+    "translated:duplicate",
+    "translated:duplicate",
+    "",
+  ]);
+  expect(issues[1]).toEqual({ code: "standard", key: "utm_source", field: "Campaign source" });
+  expect(getParameterErrors(rows).map(Boolean)).toEqual(errors.map(Boolean));
+});
+
 test("legacy UTM settings without extra parameters retain their previous result", () => {
   const ctx = context();
   const { parameters, ...legacySettings } = ctx.settings;

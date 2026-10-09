@@ -1,6 +1,13 @@
+import { CSV_EXECUTION_MESSAGES } from "../../lib/devtools/shared/csv-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CSV_EXECUTION_MESSAGES,
+    "csv.errors.sameDelimiter": "Choose different source and target delimiters.",
+    "csv.recovery.sameDelimiter":
+      "Pick a target delimiter that differs from the source, or use the CSV Formatter to normalise quoting in place.",
+  },
   toolId: "devtools.csv-delimiter-converter",
   sharing: { version: 1 },
   app: "devtools",

@@ -1,9 +1,15 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, expect, test, vi } from "vitest";
+import { NextIntlClientProvider } from "next-intl";
 import { createBlogDocument, BlogValidationError } from "../lib/blog/document.ts";
+import { getCommonMessages } from "../lib/i18n/messages.ts";
+import { getBlogMessages } from "../lib/i18n/blogMessages.ts";
+import { locales } from "../lib/i18n/config.ts";
+import { createTranslator } from "use-intl/core";
 
 const state = {
+  locale: "en",
   calls: [],
   post: null,
   posts: { items: [], nextCursor: null },
@@ -57,14 +63,29 @@ vi.mock("@/lib/blog/queries", () => {
     },
   };
 });
-vi.mock("next/navigation", () => ({
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...(await importOriginal()),
   notFound: () => {
     throw new Error("TEST_NOT_FOUND");
   },
 }));
 
-const listing = await import("../app/blog/page.tsx");
-const article = await import("../app/blog/[slug]/page.tsx");
+vi.mock("next-intl/server", async () => {
+  const { createTranslator } = await import("use-intl/core");
+  const { getBlogMessages } = await import("../lib/i18n/blogMessages.ts");
+  return {
+    getLocale: async () => globalThis.__publicBlogTest.locale,
+    getTranslations: async (namespace) =>
+      createTranslator({
+        locale: globalThis.__publicBlogTest.locale,
+        messages: getBlogMessages(globalThis.__publicBlogTest.locale),
+        namespace,
+      }),
+  };
+});
+
+const listing = await import("../app/(public)/[locale]/blog/page.tsx");
+const article = await import("../app/(public)/[locale]/blog/[slug]/page.tsx");
 const { BlogArticle } = await import("../components/blog/BlogArticle.tsx");
 const { BlogStories: InteractiveStories } = await import("../app/blog/components/BlogStories.tsx?interaction");
 const { loadMoreBlogPosts } = await import("../app/blog/actions.ts");
@@ -76,7 +97,32 @@ afterAll(() => {
   delete globalThis.__publicBlogTest;
 });
 
+function renderMarkup(element) {
+  return renderToStaticMarkup(
+    createElement(
+      NextIntlClientProvider,
+      {
+        locale: state.locale,
+        messages: { ...getCommonMessages(state.locale), ...getBlogMessages(state.locale) },
+        timeZone: "UTC",
+      },
+      element,
+    ),
+  );
+}
+
+function renderStories(props) {
+  let tree;
+  function StoriesHarness() {
+    tree = InteractiveStories(props);
+    return null;
+  }
+  renderMarkup(createElement(StoriesHarness));
+  return tree;
+}
+
 function reset() {
+  state.locale = "en";
   state.calls = [];
   state.error = null;
   state.relatedError = null;
@@ -117,7 +163,7 @@ test("public listing renders published summaries and keeps filters in next and c
   reset();
   state.posts = { items: [summary(published())], nextCursor: "next-page" };
   state.categories = { items: [{ id: "cat", name: "Guides", slug: "guides" }], nextCursor: null };
-  const html = renderToStaticMarkup(
+  const html = renderMarkup(
     await listing.default({
       searchParams: Promise.resolve({
         search: "PDF & docs",
@@ -148,7 +194,7 @@ test("empty blog has recovery and categories beyond the first page remain reacha
     })),
     nextCursor: "more-topics",
   };
-  const html = renderToStaticMarkup(await listing.default({ searchParams: Promise.resolve({}) }));
+  const html = renderMarkup(await listing.default({ searchParams: Promise.resolve({}) }));
   expect(html).toMatch(/Stories are on the way/);
   expect(html).toMatch(/href="\/"[^>]*>Explore tools/);
   expect(html).toMatch(/categoryCursor=more-topics/);
@@ -171,7 +217,7 @@ test("article renders safe live content, heading destinations, tools, tags, meta
   reset();
   state.post = published();
   state.posts = { items: [summary(state.post)], nextCursor: null };
-  const html = renderToStaticMarkup(await article.default({ params: Promise.resolve({ slug: "live-story" }) }));
+  const html = renderMarkup(await article.default({ params: Promise.resolve({ slug: "live-story" }) }));
   expect(html).toMatch(/href="#heading-1"/);
   expect(html).toMatch(/<h2 id="heading-1">First steps<\/h2>/);
   expect(html).toMatch(/&lt;script&gt;unsafe\(\)&lt;\/script&gt;/);
@@ -190,7 +236,8 @@ test("article renders safe live content, heading destinations, tools, tags, meta
 });
 
 test("private preview shares safe article presentation without public share links or publication metadata", () => {
-  const html = renderToStaticMarkup(createElement(BlogArticle, { document: published().document }));
+  reset();
+  const html = renderMarkup(createElement(BlogArticle, { document: published().document }));
   expect(html).toMatch(/href="#heading-1"/);
   expect(html).toMatch(/<h2 id="heading-1">First steps<\/h2>/);
   expect(html).not.toMatch(/Copy link|application\/ld\+json|dateTime=|href="\/blog\//);
@@ -200,7 +247,7 @@ test("a failure loading optional related stories does not hide the published art
   reset();
   state.post = published();
   state.relatedError = new Error("Related query unavailable");
-  const html = renderToStaticMarkup(await article.default({ params: Promise.resolve({ slug: "live-story" }) }));
+  const html = renderMarkup(await article.default({ params: Promise.resolve({ slug: "live-story" }) }));
   expect(html).toMatch(/<h2 id="heading-1">First steps<\/h2>/);
   expect(html).not.toMatch(/Related query unavailable/);
 });
@@ -235,7 +282,7 @@ test("load-more preserves loaded stories on failure, retries the same cursor, an
   };
   const render = () => {
     state.hookIndex = 0;
-    return InteractiveStories(props);
+    return renderStories(props);
   };
   function findNext(element) {
     if (!element || typeof element !== "object") return undefined;
@@ -259,17 +306,17 @@ test("load-more preserves loaded stories on failure, retries the same cursor, an
   click(findNext(render()));
   click(findNext(render()));
   expect(state.calls.length, "a pending read cannot be submitted twice").toBe(1);
-  expect(renderToStaticMarkup(render())).toMatch(/aria-busy="true"/);
+  expect(renderMarkup(render())).toMatch(/aria-busy="true"/);
   resolveRead({ items: [first, second, second], nextCursor: "page-3" });
   await new Promise(setImmediate);
   state.pendingRead = null;
-  let html = renderToStaticMarkup(render());
+  let html = renderMarkup(render());
   expect((html.match(/href="\/blog\/second-story"/g) ?? []).length).toBe(1);
   expect(html).toMatch(/1 more story loaded/);
   state.error = new Error("postgres://private-password");
   click(findNext(render()));
   await new Promise(setImmediate);
-  html = renderToStaticMarkup(render());
+  html = renderMarkup(render());
   expect(html).toMatch(/href="\/blog\/second-story"/);
   expect(html).toMatch(/Try loading more/);
   expect(html).not.toMatch(/private-password/);
@@ -279,7 +326,7 @@ test("load-more preserves loaded stories on failure, retries the same cursor, an
   click(findNext(render()));
   await new Promise(setImmediate);
   expect(findNext(render())).toBe(undefined);
-  expect(renderToStaticMarkup(render())).toMatch(/You’re up to date/);
+  expect(renderMarkup(render())).toMatch(/You’re up to date/);
   expect(state.calls.map(([, input]) => input.cursor)).toEqual(["page-2", "page-3", "page-3"]);
   expect(state.calls.every(([, input]) => input.category === "guides" && input.search === "PDF")).toBeTruthy();
 });
@@ -320,7 +367,7 @@ test("load-more excludes taxonomy pagination fields from the real strict public 
     topics: null,
   };
   state.hookIndex = 0;
-  const tree = InteractiveStories(props);
+  const tree = renderStories(props);
   function visit(element) {
     if (!element || typeof element !== "object") return undefined;
     if (element.type === "a" && element.props.rel === "next") return element;
@@ -353,3 +400,61 @@ test("load-more excludes taxonomy pagination fields from the real strict public 
     db.select = original;
   }
 });
+
+test("French blog navigation keeps the locale, filters and authored content while canonical links stay English", async () => {
+  reset();
+  state.locale = "fr";
+  state.post = published();
+  state.posts = { items: [summary(state.post)], nextCursor: "next-page" };
+  state.categories = { items: [{ id: "cat", name: "Guides", slug: "guides" }], nextCursor: null };
+  const html = renderMarkup(
+    await listing.default({
+      searchParams: Promise.resolve({ search: "PDF & docs", category: "guides", tag: "pdf" }),
+    }),
+  );
+  expect(html).toContain('action="/fr/blog"');
+  expect(html).toContain('href="/fr/blog/live-story"');
+  expect(html).toContain('href="/fr/blog?category=guides&amp;tag=pdf">Effacer la recherche');
+  expect(html).toContain('href="/fr/blog?search=PDF+%26+docs&amp;category=guides&amp;tag=pdf&amp;cursor=next-page"');
+  expect(html).toContain("Published summary");
+  expect(html).toContain("16 sept. 2026");
+  const listingMetadata = await listing.generateMetadata({ searchParams: Promise.resolve({}) });
+  expect(listingMetadata.title).toBe("Blog SmartTools — Moins de corvées. Plus de savoir-faire.");
+  expect(listingMetadata.alternates).toEqual({
+    canonical: "/blog",
+    types: { "application/rss+xml": "/blog/feed.xml" },
+  });
+
+  state.hookValues = [];
+  state.hookIndex = 0;
+  const articleHtml = renderMarkup(await article.default({ params: Promise.resolve({ slug: "live-story" }) }));
+  expect(articleHtml).toContain('href="/fr/blog?tag=pdf"');
+  expect(articleHtml).toContain('href="/fr/media/pdf-tool"');
+  expect(articleHtml).toContain('aria-label="Partager l’article"');
+  expect(articleHtml).toContain("Published summary");
+  expect(articleHtml).toContain('<h2 id="heading-1">First steps</h2>');
+  const structuredData = JSON.parse(articleHtml.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)[1]);
+  const metadata = await article.generateMetadata({ params: Promise.resolve({ slug: "live-story" }) });
+  expect(new URL(structuredData.mainEntityOfPage).pathname).toBe("/blog/live-story");
+  expect(new URL(metadata.alternates.canonical).pathname).toBe("/blog/live-story");
+  expect(metadata.alternates.languages).toBeUndefined();
+  expect(metadata.title).toBe(state.post.document.title);
+});
+
+for (const locale of locales) {
+  test(`${locale} blog messages format every message and plural branch without ICU errors`, () => {
+    const errors = [];
+    const messages = getBlogMessages(locale);
+    const t = createTranslator({ locale, messages, namespace: "Blog", onError: (error) => errors.push(error) });
+    for (const count of [0, 1, 2, 3, 5, 11, 21, 1.5]) {
+      for (const more of ["yes", "no"]) {
+        for (const key of Object.keys(getBlogMessages("en").Blog)) {
+          expect(t(key, { count, more, query: "PDF", category: "Guides", topic: "Guides", tag: "pdf" })).not.toBe(
+            `Blog.${key}`,
+          );
+        }
+      }
+    }
+    expect(errors).toEqual([]);
+  });
+}

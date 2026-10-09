@@ -130,11 +130,14 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
           notification: {
             level: "warn" as const,
             label: "Some cURL flags were not converted",
+            labelMessage: { key: "curl.flagsNotConverted" },
             detail: warning,
+            detailMessage: { key: "curl.unsupportedFlags", values: { flags: flags.join(", ") } },
           },
           issues: [
             {
               message: warning,
+              messageRef: { key: "curl.unsupportedFlags", values: { flags: flags.join(", ") } },
               target: "input" as const,
             },
           ],

@@ -34,7 +34,9 @@ export function shellTokens(command: string): string[] {
     } else token += character;
   }
   if (escaped || quote) {
-    throw new ToolError("invalid-curl", "cURL command contains an unfinished quote or escape.");
+    throw new ToolError("invalid-curl", "cURL command contains an unfinished quote or escape.", undefined, {
+      messageRef: { key: "sharedCurl.quote" },
+    });
   }
   if (token) tokens.push(token);
   return tokens;
@@ -48,7 +50,9 @@ export function parseCurl(command: string): {
 } {
   const tokens = shellTokens(requireUtilityInput(command, "cURL command"));
   if (tokens[0]?.toLowerCase() !== "curl") {
-    throw new ToolError("invalid-curl", "Command must start with curl.");
+    throw new ToolError("invalid-curl", "Command must start with curl.", undefined, {
+      messageRef: { key: "sharedCurl.start" },
+    });
   }
   let method = "GET";
   let url = "";
@@ -61,7 +65,9 @@ export function parseCurl(command: string): {
       const header = tokens[++index] ?? "";
       const separator = header.indexOf(":");
       if (separator < 1) {
-        throw new ToolError("invalid-curl-header", "Every cURL header needs a name and value.");
+        throw new ToolError("invalid-curl-header", "Every cURL header needs a name and value.", undefined, {
+          messageRef: { key: "sharedCurl.header" },
+        });
       }
       headers[header.slice(0, separator).trim()] = header.slice(separator + 1).trim();
     } else if (["-d", "--data", "--data-raw", "--data-binary"].includes(token)) {
@@ -75,8 +81,13 @@ export function parseCurl(command: string): {
   try {
     url = new URL(url).toString();
   } catch {
-    throw new ToolError("invalid-url", "cURL command needs an absolute http or https URL.");
+    throw new ToolError("invalid-url", "cURL command needs an absolute http or https URL.", undefined, {
+      messageRef: { key: "sharedCurl.absolute" },
+    });
   }
-  if (!/^https?:/i.test(url)) throw new ToolError("invalid-url", "cURL URL must use http or https.");
+  if (!/^https?:/i.test(url))
+    throw new ToolError("invalid-url", "cURL URL must use http or https.", undefined, {
+      messageRef: { key: "sharedCurl.protocol" },
+    });
   return { url, method: method || "GET", headers, ...(body !== undefined ? { body } : {}) };
 }

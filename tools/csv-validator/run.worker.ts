@@ -12,14 +12,29 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const rows = parsed ? parsed.preview : parseUtilityTable(ctx.input.text, delimiter);
   const headers = (rows[0] ?? []).map((header) => header.trim());
   if (headers.some((header) => !header)) {
-    throw new ToolError("empty-header", "Every CSV column needs a header.");
+    throw new ToolError("empty-header", "Every CSV column needs a header.", undefined, {
+      messageRef: { key: "csv.errors.emptyHeader" },
+    });
   }
   if (new Set(headers).size !== headers.length) {
-    throw new ToolError("duplicate-header", "CSV headers must be unique.");
+    throw new ToolError("duplicate-header", "CSV headers must be unique.", undefined, {
+      messageRef: { key: "csv.errors.duplicateHeader" },
+    });
   }
+  const dataRows = (parsed?.rowCount ?? rows.length) - 1;
   return {
     render: "text",
-    text: `Valid CSV\nColumns: ${headers.length}\nData rows: ${(parsed?.rowCount ?? rows.length) - 1}`,
+    text: `Valid CSV\nColumns: ${headers.length}\nData rows: ${dataRows}`,
+    verdict: {
+      level: "ok",
+      label: "Valid CSV",
+      labelMessage: { key: "csv.valid" },
+      detail: `${headers.length} column${headers.length === 1 ? "" : "s"} · ${dataRows} data row${dataRows === 1 ? "" : "s"}`,
+      detailMessage: {
+        key: "csv.validDetail",
+        values: { columns: headers.length, rows: dataRows },
+      },
+    },
   };
 };
 

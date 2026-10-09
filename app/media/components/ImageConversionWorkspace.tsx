@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -38,6 +40,8 @@ function sizeLabel(bytes: number) {
 
 /** Shared operation surface for image-to-image conversions, driven by the tool's own contract. */
 export function ImageConversionWorkspace(props: WorkspaceProps) {
+  const t = useTranslations("Workbench");
+  const toolText = useTranslations("Tool.runtime");
   const outputFormatId = useId();
   const fileInput = useRef<HTMLInputElement>(null);
   const pasteRequest = useRef(0);
@@ -51,8 +55,17 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
   const hasFiles = props.input.files.length > 0;
   const conversion = resolveImageConversion(props.spec, props.settings);
   const activeSpec = conversion.spec;
-  const actionLabel = activeSpec.trigger.mode === "manual" ? activeSpec.trigger.actionLabel : "Convert images";
-  const outputFormat = actionLabel.replace(/^Convert to /, "");
+  const alternateTarget = activeSpec.toolId !== props.spec.toolId;
+  const formatName = conversion.target === "webp" ? "WebP" : conversion.target.toUpperCase();
+  const actionLabel = alternateTarget
+    ? toolText("conversion.action", { format: formatName })
+    : activeSpec.trigger.mode === "manual"
+      ? activeSpec.trigger.actionLabel
+      : t("mediaConvertImages");
+  const runningLabel = alternateTarget
+    ? toolText("conversion.running", { format: formatName })
+    : activeSpec.labels.running;
+  const outputFormat = conversion.target.toUpperCase();
   const outputImages = useMemo(
     () => (props.result?.render === "files" ? props.result.files.filter((file) => file.mime.startsWith("image/")) : []),
     [props.result],
@@ -67,13 +80,28 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
     () => ({
       ...activeSpec.settings,
       fields: Object.fromEntries(
-        Object.entries(activeSpec.settings.fields).map(([key, field]) => [
-          key,
-          field.kind === "slider" ? { ...field, kind: "number", step: field.step ?? 1 } : field,
-        ]),
+        Object.entries(activeSpec.settings.fields).map(([key, field]) => {
+          const adapted =
+            field.kind === "slider" ? { ...field, kind: "number" as const, step: field.step ?? 1 } : field;
+          return [
+            key,
+            {
+              ...adapted,
+              ...(alternateTarget && key === "quality"
+                ? {
+                    label: toolText("conversion.qualityLabel"),
+                    help: toolText("conversion.qualityHelp", { format: conversion.target }),
+                  }
+                : {}),
+              ...(alternateTarget && key === "background"
+                ? { label: toolText("conversion.backgroundLabel"), help: toolText("conversion.backgroundHelp") }
+                : {}),
+            },
+          ];
+        }),
       ),
     }),
-    [activeSpec.settings],
+    [activeSpec.settings, alternateTarget, conversion.target, toolText],
   );
   let settingsIssue = "";
   for (const [key, field] of Object.entries(settingsSpec.fields)) {
@@ -86,15 +114,15 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
         (field.min !== undefined && value < field.min) ||
         (field.max !== undefined && value > field.max)
       ) {
-        settingsIssue = `${field.label} must be between ${field.min ?? 0} and ${field.max ?? 100}.`;
+        settingsIssue = t("mediaNumberRange", { label: field.label, min: field.min ?? 0, max: field.max ?? 100 });
         break;
       }
     } else if (field.kind === "color" && (typeof raw !== "string" || !/^#[0-9a-f]{6}$/i.test(raw))) {
-      settingsIssue = `${field.label} must use #RRGGBB, for example #FFFFFF.`;
+      settingsIssue = t("mediaHexColor", { label: field.label });
       break;
     }
   }
-  const reason = settingsIssue || (!hasFiles ? "Add at least one image to begin." : null);
+  const reason = settingsIssue || (!hasFiles ? t("mediaAddImage") : null);
   useEffect(() => {
     props.onValidationChange?.(reason);
   }, [reason, props.onValidationChange]);
@@ -126,7 +154,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
   if (inputSpec.kind !== "files") return null;
   const addFiles = (files: File[]) => {
     if (disabled || files.length === 0) return;
-    const selection = validateFileSelection(props.input.files, files, inputSpec);
+    const selection = validateFileSelection(props.input.files, files, inputSpec, (key, values) => t(key, values));
     setInputIssue(selection.issue);
     if (selection.files.length !== props.input.files.length)
       props.onInputChange({ ...props.input, files: selection.files });
@@ -134,7 +162,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
   const pasteImages = async () => {
     if (disabled || pastePending) return;
     if (typeof navigator.clipboard?.read !== "function") {
-      toast.error("Clipboard access is unavailable. Paste with Ctrl+V / ⌘V in the image area, or use Upload.");
+      toast.error(t("mediaClipboardUnavailable"));
       return;
     }
     const request = ++pasteRequest.current;
@@ -153,13 +181,12 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
       if (request !== pasteRequest.current) return;
       const files = images.filter((file): file is File => file !== null);
       if (!files.length) {
-        toast.error("No image found in the clipboard. Copy an image, then try Paste again, or use Upload.");
+        toast.error(t("mediaClipboardEmpty"));
         return;
       }
       addFiles(files);
     } catch {
-      if (request === pasteRequest.current)
-        toast.error("Could not read the clipboard. Paste with Ctrl+V / ⌘V in the image area, or use Upload.");
+      if (request === pasteRequest.current) toast.error(t("mediaClipboardReadFailed"));
     } finally {
       setPastePending(false);
     }
@@ -196,10 +223,10 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
         loading={pastePending}
         onClick={() => void pasteImages()}
       >
-        {pastePending ? "Pasting…" : "Paste"}
+        {pastePending ? t("pasting") : t("paste")}
       </ToolActionButton>
       <ToolActionButton action="upload" disabled={disabled} onClick={() => fileInput.current?.click()}>
-        Upload
+        {t("upload")}
       </ToolActionButton>
     </>
   );
@@ -234,7 +261,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
         >
           {hasFiles ? (
             <WorkspaceSurface
-              title="Image selection"
+              title={t("mediaImageSelection")}
               header="sr-only"
               purpose="source"
               className="min-h-0 flex-1"
@@ -264,41 +291,41 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
               intakeTitle={inputSpec.label}
               intakeDescription={inputSpec.dropzoneDescription}
               onFiles={addFiles}
-              title="Selected images"
-              intakeHint="Click to browse, or drag and drop images here"
+              title={t("mediaSelectedImages")}
+              intakeHint={t("mediaClickToBrowseOrDragAndDrop")}
             />
           )}
           {inputIssue && (
             <Alert className="m-4 w-auto shrink-0" variant="destructive">
-              <AlertTitle>Some files were not added</AlertTitle>
-              <AlertDescription>{inputIssue} Choose supported images within the limits and try again.</AlertDescription>
+              <AlertTitle>{t("filesNotAdded")}</AlertTitle>
+              <AlertDescription>{t("mediaImageSelectionRetry", { error: inputIssue })}</AlertDescription>
             </Alert>
           )}
           {!hasFiles && (
             <Caption className="flex shrink-0 items-center justify-center gap-2 px-4 pb-4 text-muted-foreground">
               <ShieldCheck aria-hidden="true" className="size-4 shrink-0" />
-              Files stay on this device. Nothing is uploaded.
+              {t("mediaFilesStayOnThisDeviceNothingIs")}
             </Caption>
           )}
         </div>
         <WorkspaceSurface
-          title="Processed output"
+          title={t("mediaProcessedOutput")}
           purpose="result"
           className="h-full max-[64rem]:h-[32rem]"
           contentClassName="gap-0 overflow-hidden"
-          meta={running ? "Processing…" : primaryOutput ? sizeLabel(primaryOutput.size) : undefined}
+          meta={running ? t("processing") : primaryOutput ? sizeLabel(primaryOutput.size) : undefined}
           actions={
             primaryOutput ? (
               <ArtifactDownloadButton
                 file={primaryOutput}
                 key={primaryOutput.id}
                 disabled={running}
-                label={primaryOutput.mime === "application/zip" ? "Download ZIP" : "Download"}
+                label={primaryOutput.mime === "application/zip" ? t("mediaDownloadZip") : t("download")}
                 variant="toolbar"
               />
             ) : (
               <ToolActionButton action="download" disabled>
-                Download
+                {t("download")}
               </ToolActionButton>
             )
           }
@@ -306,19 +333,23 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
           {running && (
             <div className="shrink-0 p-4">
               <ProcessingStatus
-                title={activeSpec.labels.running}
+                title={runningLabel}
                 progress={progress}
                 detail={
                   props.progress
-                    ? `${props.progress.stage} · ${Math.min(props.progress.completed, props.progress.total)} of ${props.progress.total} complete`
+                    ? t("mediaCompleteProgress", {
+                        stage: props.progress.stage,
+                        completed: Math.min(props.progress.completed, props.progress.total),
+                        count: props.progress.total,
+                      })
                     : completed
-                      ? "Updating your images…"
-                      : "Preparing your images…"
+                      ? t("mediaUpdatingImages")
+                      : t("mediaPreparingImages")
                 }
                 action={
                   props.primaryAction?.onCancel ? (
                     <Button variant="secondary" onClick={cancelConversion}>
-                      Cancel
+                      {t("cancel")}
                     </Button>
                   ) : undefined
                 }
@@ -328,15 +359,16 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
           {!running && (props.error || cancelled) && (
             <div className="shrink-0 space-y-2 p-4" role="status">
               <Muted className={props.error ? "text-destructive" : undefined}>
-                {props.error || "Conversion cancelled."}{" "}
-                {completed ? "Your previous output is still available." : "Your images and settings are kept."} Check
-                your settings and retry.
+                {t("mediaConversionRetry", {
+                  error: props.error || t("mediaConversionCancelled"),
+                  completed: completed ? "yes" : "no",
+                })}
               </Muted>
               <Button
                 disabled={disabled || Boolean(reason) || props.primaryAction?.disabled}
                 onClick={props.primaryAction?.onRun}
               >
-                Retry conversion
+                {t("mediaRetryConversion")}
               </Button>
             </div>
           )}
@@ -353,15 +385,15 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
                 <div className="min-w-0 flex-1">
                   <Muted role="status">
                     {running
-                      ? "Updating converted images."
-                      : `${outputImages.length} ${outputImages.length === 1 ? "image converted" : "images converted"} to ${completedFormat}.`}
+                      ? t("mediaUpdatingConverted")
+                      : t("mediaImagesConverted", { count: outputImages.length, format: completedFormat ?? "" })}
                   </Muted>
                   <Caption className="text-muted-foreground">
-                    Changing settings updates the output. Your originals are unchanged.
+                    {t("mediaChangingSettingsUpdatesTheOutputYourOriginals")}
                   </Caption>
                 </div>
                 <Button variant="outline" disabled={disabled} onClick={convertMore}>
-                  Convert more
+                  {t("mediaConvertMore")}
                 </Button>
               </div>
             </>
@@ -369,15 +401,19 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
             <ContentState
               state="waiting"
               className="min-h-0 flex-1 rounded-none border-0 bg-transparent"
-              title="Converted images will appear here"
-              description={`Add images, then choose ${actionLabel}. ${hasFiles && props.input.files.length > 1 ? "Download the results as a ZIP or individually." : `Download the converted ${outputFormat} file here.`}`}
+              title={t("mediaConvertedImagesWillAppearHere")}
+              description={t("mediaConvertInstructions", {
+                action: actionLabel,
+                multiple: hasFiles && props.input.files.length > 1 ? "yes" : "no",
+                format: outputFormat,
+              })}
             />
           ) : null}
         </WorkspaceSurface>
       </SplitStack>
       <ToolOptionsPanel
-        title="Options"
-        aria-label="Conversion settings"
+        title={t("options")}
+        aria-label={t("mediaConversionSettings")}
         variant="plain"
         className="h-full overflow-y-auto p-[22px]"
       >
@@ -389,10 +425,10 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
             onChange={(key, value) => props.onSettingChange(conversion.settingKey(key), value)}
           />
         ) : (
-          <Muted>PNG is lossless. No quality settings are needed.</Muted>
+          <Muted>{t("mediaPngIsLosslessNoQualitySettingsAre")}</Muted>
         )}
         <div className="grid gap-2">
-          <FieldLabel htmlFor={outputFormatId}>Output format</FieldLabel>
+          <FieldLabel htmlFor={outputFormatId}>{t("mediaOutputFormat")}</FieldLabel>
           <Select
             id={outputFormatId}
             aria-describedby={`${outputFormatId}-help`}
@@ -419,10 +455,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
             ))}
           </Select>
           <Caption id={`${outputFormatId}-help`} className="text-muted-foreground">
-            {conversion.source === "heic"
-              ? "HEIC to WebP is not supported."
-              : `${conversion.source.toUpperCase()} output is unavailable: your sources are already ${conversion.source.toUpperCase()}.`}{" "}
-            Switching keeps your images.
+            {t("mediaFormatSwitchHint", { source: conversion.source, format: conversion.source.toUpperCase() })}
           </Caption>
         </div>
         {settingsIssue && (
@@ -430,9 +463,7 @@ export function ImageConversionWorkspace(props: WorkspaceProps) {
             {settingsIssue}
           </Muted>
         )}
-        <Caption className="text-muted-foreground">
-          Original pixel dimensions are preserved. Metadata is removed.
-        </Caption>
+        <Caption className="text-muted-foreground">{t("mediaOriginalPixelDimensionsArePreservedMetadataIs")}</Caption>
       </ToolOptionsPanel>
     </SettingsStack>
   );

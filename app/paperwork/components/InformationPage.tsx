@@ -11,6 +11,8 @@ import {
 import { ArrowLeft } from "lucide-react";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
+import { getLocale, getTranslations } from "next-intl/server";
+import { isLocale, localizeHref } from "@/lib/i18n/config";
 
 export default async function InformationPage({
   children,
@@ -25,13 +27,17 @@ export default async function InformationPage({
 }) {
   const requestHeaders = await headers();
   const session = await getOptionalSession(requestHeaders);
+  const requestedLocale = await getLocale();
+  const locale = isLocale(requestedLocale) ? requestedLocale : "en";
+  const t = await getTranslations("About");
+  const paperworkHref = localizeHref("/paperwork", locale);
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <ProductHeader
-        account={{ returnTo: "/paperwork", user: session?.user ?? null }}
-        actions={<AccountNavigation returnTo="/paperwork" user={session?.user ?? null} />}
-        href="/paperwork"
+        account={{ returnTo: paperworkHref, user: session?.user ?? null }}
+        actions={<AccountNavigation returnTo={paperworkHref} user={session?.user ?? null} />}
+        href={paperworkHref}
         name="Paperwork"
       />
       <main className="grow py-12 sm:py-16">
@@ -41,9 +47,9 @@ export default async function InformationPage({
             className="mb-8 px-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
             variant="ghost"
           >
-            <a href="/paperwork">
-              <ArrowLeft aria-hidden="true" className="size-4" />
-              Back to Paperwork tools
+            <a href={paperworkHref}>
+              <ArrowLeft aria-hidden="true" className="size-4 rtl:rotate-180" />
+              {t("back")}
             </a>
           </Button>
           <ToolPageHeader className="max-w-3xl" description={description} eyebrow={eyebrow} title={title} />

@@ -18,6 +18,7 @@
 // Extension-qualified so this module loads under plain `node --test`, which is
 // how its job-state reducer is covered. The type-only imports below are erased.
 import { sanitizeFileName } from "./media/validation.ts";
+import { parseToolErrorDetails, parseToolMessage, type ToolErrorDetails } from "./run.ts";
 import {
   PDF_PREVIEW_CACHE_PIXELS,
   PDF_PREVIEW_MAX_PIXELS,
@@ -124,6 +125,7 @@ export type ToolWorkerFailure = {
   readonly code: string;
   readonly message: string;
   readonly recovery?: string;
+  readonly details?: ToolErrorDetails;
 };
 
 /**
@@ -177,6 +179,7 @@ export type ToolJobError = {
   readonly code: string;
   readonly message: string;
   readonly recovery?: string;
+  readonly details?: ToolErrorDetails;
 };
 
 export type ToolJobState = {
@@ -337,10 +340,20 @@ export function isToolWorkerResponse(value: unknown): value is ToolWorkerRespons
   if (value.type === "canceled") return true;
   if (value.type === "inspection-closed") return true;
   if (value.type === "progress") {
-    return typeof value.completed === "number" && typeof value.total === "number" && typeof value.stage === "string";
+    return (
+      typeof value.completed === "number" &&
+      typeof value.total === "number" &&
+      typeof value.stage === "string" &&
+      (value.stageMessage === undefined || parseToolMessage(value.stageMessage) !== undefined)
+    );
   }
   if (value.type === "failure") {
-    return typeof value.code === "string" && typeof value.message === "string" && isOptionalString(value.recovery);
+    return (
+      typeof value.code === "string" &&
+      typeof value.message === "string" &&
+      isOptionalString(value.recovery) &&
+      (value.details === undefined || parseToolErrorDetails(value.details) !== undefined)
+    );
   }
   if (value.type === "inspected") {
     return typeof value.pageCount === "number" && Array.isArray(value.previews) && value.previews.every(isPagePreview);
@@ -384,8 +397,8 @@ export function reduceWorkerJobState(state: ToolJobState, message: ToolWorkerRes
     message.type === "failure" && state.status === "completed" && state.pageCount > 0 && state.result === null;
   if (state.status !== "running" && !inspectionFailure) return state;
   if (message.type === "progress") {
-    const { completed, total, stage } = message;
-    return { ...state, progress: { completed, total, stage } };
+    const { completed, total, stage, stageMessage } = message;
+    return { ...state, progress: { completed, total, stage, ...(stageMessage ? { stageMessage } : {}) } };
   }
   if (message.type === "failure") {
     return {
@@ -396,6 +409,7 @@ export function reduceWorkerJobState(state: ToolJobState, message: ToolWorkerRes
         code: message.code,
         message: message.message,
         recovery: message.recovery,
+        ...(message.details ? { details: parseToolErrorDetails(message.details) } : {}),
       },
     };
   }

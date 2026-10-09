@@ -228,3 +228,19 @@ test("resolveContentMap tolerates an empty row set", () => {
   const specs = [makeSpec()];
   expect(resolveContentMap(specs, [])).toEqual(new Map([["devtools.fixture-alpha", resolveContent(specs[0], null)]]));
 });
+
+test("published examples retain settings as well as literal inputs", () => {
+  const example = {
+    label: "Configured example",
+    text: "#2563eb",
+    secondary: "#7c3aed",
+    settings: { angle: 135, stops: "", palette: ["#2563eb", "#7c3aed"], enabled: true },
+  };
+  const resolved = resolveContent(
+    makeSpec(),
+    makeRow({
+      contentDoc: { version: TOOL_CONTENT_DOC_VERSION, howToUse: ["Load an example"], examples: [example] },
+    }),
+  );
+  expect(resolved.content.examples).toEqual([example]);
+});

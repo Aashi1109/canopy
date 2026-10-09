@@ -1,6 +1,19 @@
+import { CSV_EXECUTION_MESSAGES } from "../../lib/devtools/shared/csv-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CSV_EXECUTION_MESSAGES,
+    "csv.completeJsonFile": "Complete JSON file",
+    "csv.errors.emptyJsonSource": "Paste CSV to convert it to JSON.",
+    "csv.errors.inputTooLarge": "CSV must be {limit, number} characters or fewer.",
+    "csv.errors.invalidCsvDelimiter": "Choose a valid CSV delimiter.",
+    "csv.errors.emptyHeader": "Every CSV column needs a header.",
+    "csv.errors.duplicateHeader": "CSV headers must be unique.",
+    "csv.errors.headerWidth": "Every CSV row must have the same number of fields as the header.",
+    "csv.errors.rowWidth": "Every CSV row must have the same number of fields.",
+    "csv.recovery.jsonStructure": "Check the delimiter, header row, quotes, and field counts, then try again.",
+  },
   toolId: "devtools.csv-to-json",
   app: "devtools",
   category: "csv-data-tools",

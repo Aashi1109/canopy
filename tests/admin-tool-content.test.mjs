@@ -435,3 +435,32 @@ test("removing an icon clears the URL and falls back to the identicon", async ()
   // fallback a removal lands on is this generated SVG.
   expect(renderIdenticon(TOOL_ID, "Some Tool")).toMatch(/<svg/);
 });
+
+test("saving configured examples preserves their settings through content resolution", async () => {
+  const example = {
+    label: "Two colours",
+    text: "#2563eb",
+    secondary: "#7c3aed",
+    settings: { angle: 135, stops: "", enabled: true },
+  };
+  await withFakeDatabase(
+    [permissionRows({ tools: { view: true, edit: true } }), TOOL_ROW, TOOL_ROSTER],
+    async (state) => {
+      await updateToolContent("actor", TOOL_ID, {
+        ...EMPTY_EDIT,
+        contentDoc: { howToUse: ["Load the example"], examples: [example] },
+      });
+      const values = state.inserts.find((write) => write.table === toolContentTable).values;
+      expect(values.contentDoc.examples).toEqual([example]);
+      const spec = {
+        toolId: TOOL_ID,
+        category: CATEGORY,
+        keywords: [],
+        name: "Tool",
+        description: "Description",
+        content: { howToUse: ["Fallback"] },
+      };
+      expect(resolveContent(spec, { ...values, publishedAt: new Date() }).content.examples).toEqual([example]);
+    },
+  );
+});

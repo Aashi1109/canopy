@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 import { Button, Caption, FieldLabel, Input, Select } from "@/components/ui/index.tsx";
 import { MoveHorizontal, MoveVertical, PanelBottom, PanelLeft } from "lucide-react";
@@ -19,9 +20,14 @@ const DIMENSIONS = [
   ["cropHeight", "Height", MoveVertical],
 ] as const;
 
-function getPlan(settings: WorkspaceProps["settings"], count: number, pages: readonly PdfPageImage[]) {
+function getPlan(
+  settings: WorkspaceProps["settings"],
+  count: number,
+  pages: readonly PdfPageImage[],
+  text: (key: string, values: Record<string, number>) => string,
+) {
   const { selected } = cropPlan(settings, pages);
-  return { title: `${selected.length} of ${count} pages selected`, detail: null };
+  return { title: text("workspace.pagesSelected", { selected: selected.length, count }), detail: null };
 }
 
 function CropSettings({
@@ -33,6 +39,7 @@ function CropSettings({
   props: WorkspaceProps;
   completed: boolean;
 }) {
+  const toolText = useToolTranslations("Tool.runtime");
   const id = useId();
   const seeded = useRef(false);
   useEffect(() => {
@@ -55,14 +62,18 @@ function CropSettings({
   let summary = "";
   try {
     const { selected } = cropPlan(props.settings, pages);
-    summary = `${selected.length} of ${pages.length} pages ${completed ? "cropped" : "selected"}. ${pages.length - selected.length} unchanged.`;
+    summary = toolText(completed ? "workspace.pagesCroppedSummary" : "workspace.pagesSelectedSummary", {
+      selected: selected.length,
+      count: pages.length,
+      unchanged: pages.length - selected.length,
+    });
   } catch {
     /* The shared action area displays validation. */
   }
   return (
     <>
       <div className="grid gap-1.5">
-        <FieldLabel htmlFor={`${id}-pages`}>Apply crop to</FieldLabel>
+        <FieldLabel htmlFor={`${id}-pages`}>{toolText("workspace.apply_crop_to_968ae0")}</FieldLabel>
         <Select
           id={`${id}-pages`}
           disabled={props.disabled}
@@ -71,15 +82,15 @@ function CropSettings({
             props.onSettingChange("pages", event.target.value === "custom" ? "" : event.target.value)
           }
         >
-          <option value="all">All pages</option>
-          <option value="odd">Odd pages</option>
-          <option value="even">Even pages</option>
-          <option value="custom">Custom pages</option>
+          <option value="all">{toolText("workspace.all_pages_903542")}</option>
+          <option value="odd">{toolText("workspace.odd_pages_e31c32")}</option>
+          <option value="even">{toolText("workspace.even_pages_bd5d2d")}</option>
+          <option value="custom">{toolText("workspace.custom_pages_ffe911")}</option>
         </Select>
       </div>
       {mode === "custom" && (
         <div className="grid gap-1.5">
-          <FieldLabel htmlFor={`${id}-range`}>Page range</FieldLabel>
+          <FieldLabel htmlFor={`${id}-range`}>{toolText("workspace.page_range_6578bb")}</FieldLabel>
           <Input
             id={`${id}-range`}
             disabled={props.disabled}
@@ -90,11 +101,11 @@ function CropSettings({
         </div>
       )}
       {summary && <Caption role="status">{summary}</Caption>}
-      <FieldLabel>Crop box · PDF points</FieldLabel>
+      <FieldLabel>{toolText("workspace.crop_box_pdf_4d9949")}</FieldLabel>
       <div className="grid grid-cols-2 gap-3">
         {DIMENSIONS.map(([key, label, Icon]) => (
           <div className="grid gap-1.5" key={key}>
-            <FieldLabel htmlFor={`${id}-${key}`}>{label}</FieldLabel>
+            <FieldLabel htmlFor={`${id}-${key}`}>{toolText(`workspace.dimensions.${key}`)}</FieldLabel>
             <Input
               id={`${id}-${key}`}
               aria-describedby={`${id}-units`}
@@ -112,14 +123,13 @@ function CropSettings({
           </div>
         ))}
       </div>
-      <Caption id={`${id}-units`}>
-        Use whole-number points. Bottom is measured upward from the page edge. 72 pt = 1 inch.
-      </Caption>
+      <Caption id={`${id}-units`}>{toolText("workspace.use_whole_number_cc79b4")}</Caption>
     </>
   );
 }
 
 export default function CropPdfWorkspace(props: WorkspaceProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const [dismissedResult, setDismissedResult] = useState<WorkspaceProps["result"]>(null);
   const completed = Boolean(props.result && props.result !== dismissedResult);
   const output =
@@ -137,9 +147,11 @@ export default function CropPdfWorkspace(props: WorkspaceProps) {
       onInputChange={inputChange}
       onSettingChange={change}
       definitionKey="crop-pdf"
-      optionsTitle="Crop settings"
-      getPlan={getPlan}
-      primaryAction={props.primaryAction ? { ...props.primaryAction, label: "Crop PDF" } : null}
+      optionsTitle={toolText("workspace.cropSettings")}
+      getPlan={(settings, count, pages) => getPlan(settings, count, pages, toolText)}
+      primaryAction={
+        props.primaryAction ? { ...props.primaryAction, label: toolText("workspace.crop_pdf_dc4bdb") } : null
+      }
       renderOptions={(pages) => (
         <CropSettings
           key={props.input.files[0] ? workspaceFileId(props.input.files[0]) : "empty"}
@@ -185,19 +197,17 @@ export default function CropPdfWorkspace(props: WorkspaceProps) {
       }}
       secondaryActions={
         <div className="flex flex-wrap gap-2">
-          <Caption>
-            Drag to move. Drag an edge or corner to resize. Arrow keys move by 1 pt; Shift moves by 10 pt.
-          </Caption>
+          <Caption>{toolText("workspace.drag_to_move_22b33b")}</Caption>
         </div>
       }
       completedPreview={output ? <GeneratedPdfPreview fill file={output} definitionKey="crop-pdf" /> : undefined}
       completionActions={
         <div className="grid w-full grid-cols-2 gap-2">
           <Button className="w-full" variant="outline" onClick={edit}>
-            Edit crop
+            {toolText("workspace.edit_crop_d614bb")}
           </Button>
           <Button className="w-full" variant="outline" onClick={() => inputChange({ ...props.input, files: [] })}>
-            Crop another PDF
+            {toolText("workspace.crop_another_pdf_2a6923")}
           </Button>
         </div>
       }

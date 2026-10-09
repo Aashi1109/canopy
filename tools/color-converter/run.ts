@@ -35,7 +35,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       labels.push(input);
     } catch (error) {
       if (!(error instanceof ToolError)) throw error;
-      issues.push({ line, message: error.message, target: "input" });
+      issues.push({ line, message: error.message, target: "input", messageRef: error.details?.messageRef });
     }
   }
   return { render: "list", items, labels, ...(issues.length ? { issues } : {}) };

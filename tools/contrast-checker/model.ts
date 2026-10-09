@@ -25,7 +25,10 @@ function displayedColor(color: RgbColor) {
 
 export function contrast(foreground: string, background: string, canvas = "white") {
   const base = parseColor(canvas);
-  if (base.alpha !== 1) throw new ToolError("canvas", "Canvas color must be opaque to measure transparency.");
+  if (base.alpha !== 1)
+    throw new ToolError("canvas", "Canvas color must be opaque to measure transparency.", undefined, {
+      messageRef: { key: "contrast.canvasOpaque" },
+    });
   const back = composite(parseColor(background), base);
   const front = composite(parseColor(foreground), back);
   const a = luminance(front),

@@ -1,3 +1,4 @@
+import { MEDIA_FILE_ERROR_MESSAGES, MEDIA_PDF_ERROR_MESSAGES } from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
@@ -52,6 +53,37 @@ export default {
     empty: "Add a PDF to rotate pages.",
     ready: "Rotation settings are ready.",
     running: "Rotating pages…",
+  },
+  messages: {
+    "progress.rotatingPdfPage": "Rotating PDF page",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_PDF_ERROR_MESSAGES,
+    "errors.noFiles": "Choose a PDF to rotate.",
+    "workspace.rotation": "Rotation",
+    "workspace.rotationAngle": "Rotation angle",
+    "workspace.addedToTheCurrentOrientationPreviewUpdates":
+      "Added to the current orientation. Preview updates immediately.",
+    "workspace.applyTo": "Apply to",
+    "workspace.allPages": "All pages",
+    "workspace.oddPages": "Odd pages",
+    "workspace.evenPages": "Even pages",
+    "workspace.customPages": "Custom pages",
+    "workspace.pageRange": "Page range",
+    "workspace.rotatePages": "Rotate pages",
+    "workspace.yourOriginalStaysUnchangedPageOrderAnd":
+      "Your original stays unchanged. Page order and quality are preserved.",
+    "workspace.editRotation": "Edit rotation",
+    "workspace.rotateAnotherPdf": "Rotate another PDF",
+    "workspace.choosePages": "Choose pages from 1 to {count, number}.",
+    "workspace.planTitle": "{selected, number} of {count, number} pages · {degrees, number}° clockwise",
+    "workspace.summary":
+      "{selected, number} of {count, number} pages {state, select, completed {rotated} other {will rotate}}. {unchanged, number} unchanged.",
+    "workspace.validPages": "Enter valid page numbers.",
+    "workspace.right": "90° right",
+    "workspace.halfTurn": "180°",
+    "workspace.left": "90° left",
+    "workspace.rangeExample": "e.g. 1, 3-5",
   },
   content: {
     howToUse: [

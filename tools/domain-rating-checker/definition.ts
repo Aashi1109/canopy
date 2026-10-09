@@ -1,6 +1,33 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "errors.targetRequired": "Enter a domain or HTTP(S) URL.",
+    "errors.targetTooLong": "Domain or URL must be {limit, number} characters or fewer.",
+    "errors.targetInvalid": "Enter a valid domain or HTTP(S) URL.",
+    "errors.publicDomainRequired": "Enter a valid public domain.",
+    "errors.upstreamUnreachable": "Domain Rating Checker could not reach Ahrefs. Try again.",
+    "errors.upstreamRejected": "Ahrefs rejected the request. Check the API key configuration.",
+    "errors.upstreamRateLimited": "Ahrefs rate limit reached. Try again later.",
+    "errors.upstreamFailed": "Ahrefs lookup failed ({status}).",
+    "errors.upstreamInvalid": "Ahrefs returned an invalid response.",
+    "workspace.domain_rating_by_e9910f": "Domain Rating by Ahrefs",
+    "workspace.license_c011d6": "License",
+    "workspace.out_of_100_8a6be0": "out of 100",
+    "workspace.backlink_strength_f1978c": "Backlink strength",
+    "workspace.ahrefs_measures_the_1768cd":
+      "Ahrefs measures the strength of links from other websites to this domain. Higher scores mean a stronger backlink profile.",
+    "workspace.the_scale_is_e0ac57":
+      "The scale is logarithmic: gaining points gets harder as the score rises. Compare similar websites; this score does not measure traffic or guarantee search rankings.",
+    "workspace.note_from_ahrefs_eb9a4f": "Note from Ahrefs",
+    "workspace.public_domain_8c3ff6": "Public domain",
+    "workspace.cancel_19766e": "Cancel",
+    "workspace.checking_domain_89c2b4": "Checking domain…",
+    "workspace.domain_rating_a0f6a4": "Domain rating",
+    "workspace.ratingSummary": "Domain rating summary",
+    "workspace.enterDomain": "Enter a domain or HTTP(S) URL.",
+    "workspace.checkRating": "Check domain rating",
+  },
   toolId: "devtools.domain-rating-checker",
   app: "devtools",
   category: "seo-domain-tools",

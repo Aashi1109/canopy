@@ -1,6 +1,8 @@
+import { COLOR_MESSAGES } from "../../lib/devtools/shared/color-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: { ...COLOR_MESSAGES },
   toolId: "devtools.color-converter",
   sharing: { version: 1 },
   app: "devtools",

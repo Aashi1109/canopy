@@ -34,7 +34,10 @@ function isHeic(file: { readonly mime: string; readonly name: string }): boolean
 export const validate: ToolValidate<Settings> = (settings, files) => {
   for (const file of files) {
     if (isHeic(file)) {
-      return "HEIC crop previews are not supported. Convert the image to JPEG or PNG first.";
+      return {
+        message: "HEIC crop previews are not supported. Convert the image to JPEG or PNG first.",
+        messageRef: { key: "readiness.heicUnsupported" },
+      };
     }
   }
   if (settings.cropMode === "freeform") {
@@ -42,8 +45,13 @@ export const validate: ToolValidate<Settings> = (settings, files) => {
       parseCropPoints(settings.cropPoints);
       return null;
     } catch {
-      return "Add an image and choose a valid crop selection before processing.";
+      return {
+        message: "Add an image and choose a valid crop selection before processing.",
+        messageRef: { key: "readiness.chooseCrop" },
+      };
     }
   }
-  return settings.cropWidth <= 0 || settings.cropHeight <= 0 ? "Enter a valid crop area before processing." : null;
+  return settings.cropWidth <= 0 || settings.cropHeight <= 0
+    ? { message: "Enter a valid crop area before processing.", messageRef: { key: "readiness.validArea" } }
+    : null;
 };

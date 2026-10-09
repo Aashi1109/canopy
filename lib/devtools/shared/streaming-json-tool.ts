@@ -36,6 +36,7 @@ function inputProgress(ctx: ToolRunContext<unknown>) {
           completed,
           total,
           stage: "Processing JSON",
+          stageMessage: { key: "jsonExecution.processing" },
         })
     : undefined;
 }
@@ -47,6 +48,19 @@ function throwJsonError(
     `json-${error.kind}`,
     `${error.message} Near line ${error.line}, column ${error.column}.`,
     "Check the reported line for a missing comma, quote, or bracket.",
+    {
+      line: error.line,
+      column: error.column,
+      values: { line: error.line, column: error.column },
+      messageRef:
+        error.kind === "empty"
+          ? { key: "jsonExecution.empty" }
+          : {
+              key: error.kind === "encoding" ? "jsonExecution.encoding" : "jsonExecution.syntax",
+              values: { line: error.line, column: error.column },
+            },
+      recoveryMessage: { key: "jsonExecution.recovery" },
+    },
   );
 }
 
@@ -64,9 +78,24 @@ export async function validateStreamingJsonRun(ctx: ToolRunContext<unknown>): Pr
     language: "json",
     truncated: result.previewTruncated,
     stats: [
-      { label: "Status", value: "Valid JSON" },
-      { label: "Root type", value: result.rootType },
-      { label: "Input", value: `${result.inputBytes.toLocaleString("en-US")} bytes` },
+      {
+        label: "Status",
+        labelMessage: { key: "jsonExecution.status" },
+        value: "Valid JSON",
+        valueMessage: { key: "jsonExecution.valid" },
+      },
+      {
+        label: "Root type",
+        labelMessage: { key: "jsonExecution.rootType" },
+        value: result.rootType,
+        valueMessage: { key: "jsonExecution.rootValue", values: { type: result.rootType } },
+      },
+      {
+        label: "Input",
+        labelMessage: { key: "jsonExecution.input" },
+        value: `${result.inputBytes.toLocaleString("en-US")} bytes`,
+        valueMessage: { key: "jsonExecution.bytes", values: { count: result.inputBytes } },
+      },
     ],
   };
 }
@@ -105,12 +134,23 @@ export async function transformLargeJsonRun(
     language: "json",
     truncated: result.previewTruncated,
     stats: [
-      { label: "Input", value: `${result.inputBytes.toLocaleString("en-US")} bytes` },
-      { label: "Output", value: `${artifact.size.toLocaleString("en-US")} bytes` },
+      {
+        label: "Input",
+        labelMessage: { key: "jsonExecution.input" },
+        value: `${result.inputBytes.toLocaleString("en-US")} bytes`,
+        valueMessage: { key: "jsonExecution.bytes", values: { count: result.inputBytes } },
+      },
+      {
+        label: "Output",
+        labelMessage: { key: "jsonExecution.output" },
+        value: `${artifact.size.toLocaleString("en-US")} bytes`,
+        valueMessage: { key: "jsonExecution.bytes", values: { count: artifact.size } },
+      },
     ],
     sections: [
       {
         title: result.previewTruncated ? "Complete generated file" : "Download",
+        titleMessage: { key: result.previewTruncated ? "jsonExecution.completeFile" : "jsonExecution.download" },
         body: {
           render: "files",
           files: [artifact],

@@ -1,6 +1,22 @@
+import { INPUT_EXECUTION_MESSAGES, JSON_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+    ...JSON_EXECUTION_MESSAGES,
+    "execution.errors.path-required": "Enter a JSON path.",
+    "execution.recovery.path-required":
+      "Choose a suggested key, enter a path such as users[0].name, or use $ for the whole document.",
+    "execution.errors.path-unsupported": "JSONPath contains unsupported syntax.",
+    "execution.recovery.path-unsupported":
+      "Use .key, [0], [''key''], and * only — filters and recursive descent are not supported.",
+    "execution.errors.path-no-match": "JSONPath did not match any value.",
+    "execution.recovery.path-no-match": "Check each segment against the document — one of them selects nothing.",
+    "workspace.jsonpath_b049fd": "JSONPath",
+    "workspace.fix_the_json_fcfea9": "Fix the JSON to see suggestions. The $ root prefix is optional.",
+    "workspace.suggestions_come_from_e5e304": "Suggestions come from your JSON. The $ root prefix is optional.",
+  },
   toolId: "devtools.json-path-tester",
   app: "devtools",
   category: "json-tools",

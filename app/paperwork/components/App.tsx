@@ -1,6 +1,8 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type ComponentType, type FormEvent, type ReactNode } from "react";
+import { localizeHref, type Locale } from "@/lib/i18n/config";
 import {
   CheckCircle2,
   CircleX,
@@ -134,16 +136,22 @@ function defaultTemplate(templates: readonly DocumentTemplate[]) {
 }
 
 export default function App({
+  availableLocales = ["en"],
   account,
   componentKey,
   templates,
   tools,
 }: {
+  availableLocales?: readonly Locale[];
   account: AccountNavigationProps;
   componentKey: string;
   templates: readonly DocumentTemplate[];
-  tools: readonly ResolvedTool[];
+  tools: readonly (ResolvedTool & { href?: string })[];
 }) {
+  const t = useTranslations("Tool.runtime");
+  const locale = useLocale() as Locale;
+  const currentTool = tools.find((tool) => tool.componentKey === componentKey);
+  const [edited, setEdited] = useState(false);
   const isInvoice = componentKey === "invoice-generator";
   const isReceipt = componentKey === "receipt-generator";
   const ToolComponent = TOOL_COMPONENTS[componentKey];
@@ -212,12 +220,12 @@ export default function App({
           Array.isArray(parsed.lineItems)
         ) {
           setInvoiceData(parsed as InvoiceData);
-          showToast("Previous invoice draft restored from this browser.");
+          showToast(t("shared.app.draftRestored"));
         }
       }
     } catch (error) {
       console.error("Failed to restore the local invoice draft", error);
-      showToast("The saved draft could not be restored. Start with a new invoice.", "error");
+      showToast(t("shared.app.restoreFailed"), "error");
     }
   }, [isInvoice]);
 
@@ -231,19 +239,19 @@ export default function App({
       } catch (error) {
         console.error("Failed to save the local invoice draft", error);
         setSaveStatus("saved");
-        showToast("This draft could not be saved in your browser.", "error");
+        showToast(t("shared.app.saveFailed"), "error");
       }
     }, 400);
     return () => window.clearTimeout(timer);
   }, [invoiceData, isInvoice]);
 
   function validateInvoice() {
-    const nextErrors = validateInvoiceData(invoiceData);
+    const nextErrors = validateInvoiceData(invoiceData, (key) => t(`invoice.validation.${key}`));
     setErrors(nextErrors);
     const errorCount = Object.keys(nextErrors).length;
     if (errorCount) {
       setActiveMobileTab("edit");
-      showToast(`Review ${errorCount} highlighted ${errorCount === 1 ? "field" : "fields"} before exporting.`, "error");
+      showToast(t("shared.app.reviewFields", { count: errorCount }), "error");
       window.requestAnimationFrame(() => {
         formSectionRef.current?.scrollIntoView({ behavior: "smooth" });
       });
@@ -258,8 +266,8 @@ export default function App({
 
     const printWindow = action === "print" ? window.open("about:blank", "_blank") : null;
     if (action === "print" && !printWindow) {
-      setPdfError("Allow pop-ups to open the printable PDF.");
-      showToast("Your browser blocked the printable PDF. Allow pop-ups and try again.", "error");
+      setPdfError(t("shared.app.allowPrintablePopups"));
+      showToast(t("shared.app.printBlocked"), "error");
       return;
     }
     if (printWindow) printWindow.opener = null;
@@ -280,7 +288,7 @@ export default function App({
       if (action === "print" && printWindow) {
         printWindow.location.href = url;
         trackEvent("invoice_print_clicked");
-        showToast("Printable invoice opened in a new tab.");
+        showToast(t("shared.app.printOpened"));
       } else {
         const link = document.createElement("a");
         link.href = url;
@@ -289,31 +297,33 @@ export default function App({
         link.click();
         link.remove();
         trackEvent("invoice_pdf_downloaded");
-        showToast("Invoice PDF downloaded.");
+        showToast(t("shared.app.downloaded"));
       }
 
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (error) {
       printWindow?.close();
       console.error("Failed to generate the invoice PDF", error);
-      setPdfError("The PDF could not be generated. Please try again.");
-      showToast("The PDF could not be generated. Please try again.", "error");
+      setPdfError(t("shared.app.pdfFailed"));
+      showToast(t("shared.app.pdfFailed"), "error");
     } finally {
       setPdfAction(null);
     }
   }
 
   function loadSampleInvoice() {
+    setEdited(true);
     setInvoiceData(getSampleInvoice());
     setErrors({});
     setPdfError("");
     setActiveDialog(null);
     setActiveMobileTab("edit");
     trackEvent("sample_invoice_loaded");
-    showToast("Sample invoice loaded. Replace the example details with your own.");
+    showToast(t("shared.app.sampleLoaded"));
   }
 
   function clearInvoice() {
+    setEdited(true);
     try {
       localStorage.removeItem("paperwork_kit_invoice_draft");
     } catch (error) {
@@ -326,7 +336,7 @@ export default function App({
     setActiveDialog(null);
     setActiveMobileTab("edit");
     trackEvent("invoice_draft_cleared");
-    showToast("Invoice draft cleared from this browser.");
+    showToast(t("shared.app.draftCleared"));
   }
 
   function handleTrackClick(eventName: string) {
@@ -350,14 +360,14 @@ export default function App({
       );
     } catch (error) {
       console.error("Failed to save Paperwork Pro interest", error);
-      setWaitlistError("Your browser could not save this email. Check storage permissions and try again.");
+      setWaitlistError(t("shared.app.waitlistSaveFailed"));
       return;
     }
 
     setActiveDialog(null);
     setWaitlistEmail("");
     trackEvent("upgrade_waitlist_interest_saved");
-    showToast("Paperwork Pro interest saved in this browser.");
+    showToast(t("shared.app.interestSaved"));
   }
 
   function showMobileTab(tab: "edit" | "preview") {
@@ -371,6 +381,9 @@ export default function App({
     <div
       className="flex min-h-screen flex-col bg-background text-foreground selection:bg-foreground selection:text-primary-foreground"
       id="app-root"
+      data-tool-locales={JSON.stringify(availableLocales)}
+      data-language-switch-state={pdfAction ? "running" : edited ? "dirty" : "clean"}
+      onInputCapture={() => setEdited(true)}
     >
       <ProductHeader
         account={account}
@@ -380,16 +393,16 @@ export default function App({
               <>
                 <Caption className="hidden items-center gap-1 text-muted-foreground 2xl:flex">
                   <Clock className="h-3.5 w-3.5" />
-                  {saveStatus === "saving" ? "Saving…" : "Draft saved in browser"}
+                  {saveStatus === "saving" ? t("shared.app.saving") : t("shared.app.draftSaved")}
                 </Caption>
                 <Button
-                  aria-label="Clear invoice draft"
+                  aria-label={t("shared.app.clearInvoiceDraft")}
                   onClick={() => setActiveDialog("clear")}
                   size="sm"
                   variant="danger-subtle"
                 >
                   <Trash2 aria-hidden="true" className="size-3.5" />
-                  <span className="hidden 2xl:inline">Clear</span>
+                  <span className="hidden 2xl:inline">{t("shared.app.clear")}</span>
                 </Button>
               </>
             ) : null}
@@ -397,19 +410,17 @@ export default function App({
           </div>
         }
         className="sticky top-2 z-40 mx-2 rounded-full border shadow-sm"
-        href="/"
+        href={localizeHref("/", locale)}
         name="SmartTools"
       />
 
       <main className={isInvoice ? "grow pb-20 lg:pb-0" : "grow"}>
         {isReceipt ? (
-          <PaperworkWorkspace title="Receipt Generator">
+          <PaperworkWorkspace title={currentTool?.name ?? t("shared.app.receiptGenerator")}>
             <ReceiptGeneratorPage onTrackClick={handleTrackClick} templates={templates} />
           </PaperworkWorkspace>
         ) : ToolComponent ? (
-          <PaperworkWorkspace
-            title={tools.find((tool) => tool.componentKey === componentKey)?.name ?? "Document workspace"}
-          >
+          <PaperworkWorkspace title={currentTool?.name ?? t("shared.app.documentWorkspace")}>
             <ToolComponent onTrackClick={handleTrackClick} templates={templates} />
           </PaperworkWorkspace>
         ) : isInvoice ? (
@@ -418,7 +429,7 @@ export default function App({
               actions={
                 <>
                   <Button onClick={() => formSectionRef.current?.scrollIntoView({ behavior: "smooth" })} size="lg">
-                    Start invoice
+                    {t("shared.app.startInvoice")}
                   </Button>
                   <Button
                     className="compact:hidden"
@@ -427,12 +438,12 @@ export default function App({
                     variant="danger-subtle"
                   >
                     <Trash2 aria-hidden="true" className="size-4" />
-                    Clear invoice draft
+                    {t("shared.app.clearInvoiceDraft")}
                   </Button>
                   {selectedTemplate.layoutFamily !== "advanced" ? (
                     <Button onClick={() => setActiveDialog("sample")} size="lg" variant="secondary">
                       <RefreshCw className="mr-1 inline h-4 w-4" />
-                      Load sample
+                      {t("shared.app.loadSample")}
                     </Button>
                   ) : null}
                 </>
@@ -440,23 +451,22 @@ export default function App({
               align="center"
               className="border-b border-border bg-card print:hidden"
               compact
-              description="Create, preview, and download a professional PDF invoice. No signup required; drafts stay in this browser."
-              eyebrow="US-focused small business toolkit"
-              title="Free Invoice Generator for Contractors & Small Businesses"
+              description={currentTool?.description ?? t("shared.app.createPreviewAndDownloadAProfessionalPdf")}
+              eyebrow={t("shared.app.usFocusedSmallBusinessToolkit")}
+              title={currentTool?.name ?? t("shared.app.freeInvoiceGeneratorForContractorsSmallBusinesses")}
             />
 
-            <PaperworkWorkspace title="Invoice Generator">
+            <PaperworkWorkspace title={currentTool?.name ?? t("shared.app.invoiceGenerator")}>
               <div id="invoice-generator" ref={formSectionRef}>
-                <H2 className="sr-only">Invoice workspace</H2>
+                <H2 className="sr-only">{t("shared.app.invoiceWorkspace")}</H2>
                 <AppContainer className="py-8">
                   {Object.keys(errors).length ? (
                     <AlertBanner
                       className="mb-6 print:hidden"
-                      title={`${Object.keys(errors).length} invoice ${Object.keys(errors).length === 1 ? "field needs" : "fields need"} attention`}
+                      title={t("shared.app.fieldAttention", { count: Object.keys(errors).length })}
                       variant="warning"
                     >
-                      Review the highlighted seller, client, invoice, line-item, and date details. Correct them before
-                      downloading or printing the PDF.
+                      {t("shared.app.reviewTheHighlightedSellerClientInvoiceLine")}
                     </AlertBanner>
                   ) : null}
 
@@ -468,7 +478,7 @@ export default function App({
                       value={activeMobileTab}
                     >
                       <TabsList
-                        aria-label="Invoice workspace view"
+                        aria-label={t("shared.app.invoiceWorkspaceView")}
                         className="grid w-full grid-cols-2 border border-border"
                         variant="segmented"
                       >
@@ -479,7 +489,7 @@ export default function App({
                           value="edit"
                         >
                           <PenLine aria-hidden="true" className="size-4" />
-                          Edit details
+                          {t("shared.app.editDetails")}
                         </TabsTrigger>
                         <TabsTrigger
                           aria-controls="preview-panel"
@@ -488,7 +498,7 @@ export default function App({
                           value="preview"
                         >
                           <Eye aria-hidden="true" className="size-4" />
-                          Live preview
+                          {t("shared.app.livePreview")}
                         </TabsTrigger>
                       </TabsList>
                     </Tabs>
@@ -501,27 +511,28 @@ export default function App({
                           <div className="flex min-w-0 items-center gap-3">
                             <Grid aria-hidden="true" className="size-5 shrink-0 text-primary" />
                             <div className="min-w-0">
-                              <H3>Invoice theme: {selectedTemplate.name}</H3>
+                              <H3>{t("shared.app.selectedTheme", { name: selectedTemplate.name })}</H3>
                               <Muted className="text-muted-foreground">
-                                Published templates are managed centrally.
+                                {t("shared.app.publishedTemplatesAreManagedCentrally")}
                               </Muted>
                             </div>
                           </div>
                           <Button onClick={() => setShowTemplates((shown) => !shown)} size="sm">
-                            {showTemplates ? "Hide themes" : "Change theme"}
+                            {showTemplates ? t("shared.app.hideThemes") : t("shared.app.changeTheme")}
                           </Button>
                         </div>
                         {showTemplates ? (
                           <div className="mt-4">
                             <TemplateSelector
-                              documentLabel="invoice"
+                              documentLabel={t("shared.app.invoice")}
                               onSelect={(nextTemplate) => {
+                                setEdited(true);
                                 setSelectedTemplate(nextTemplate);
                                 setInvoiceData((current) => ({
                                   ...current,
                                   template: nextTemplate.slug,
                                 }));
-                                showToast(`Invoice theme changed to ${nextTemplate.name}.`);
+                                showToast(t("shared.app.themeChanged", { name: nextTemplate.name }));
                               }}
                               selectedTemplateId={selectedTemplate.id}
                               templates={templates}
@@ -532,7 +543,10 @@ export default function App({
                       <AdvancedTemplateWorkspace
                         adapter={invoiceAdapter}
                         draft={invoiceData}
-                        onDraftChange={setInvoiceData}
+                        onDraftChange={(nextDraft) => {
+                          setEdited(true);
+                          setInvoiceData(nextDraft);
+                        }}
                         onTrackClick={handleTrackClick}
                         templates={[selectedTemplate]}
                       />
@@ -552,26 +566,27 @@ export default function App({
                             <div className="flex min-w-0 items-center gap-3">
                               <Grid aria-hidden="true" className="size-5 shrink-0 text-primary" />
                               <div className="min-w-0">
-                                <H3>Invoice theme: {selectedTemplate.name}</H3>
+                                <H3>{t("shared.app.selectedTheme", { name: selectedTemplate.name })}</H3>
                                 <Muted className="text-muted-foreground">
-                                  Published templates are managed centrally.
+                                  {t("shared.app.publishedTemplatesAreManagedCentrally")}
                                 </Muted>
                               </div>
                             </div>
                             <Button onClick={() => setShowTemplates((shown) => !shown)} size="sm">
-                              {showTemplates ? "Hide themes" : "Change theme"}
+                              {showTemplates ? t("shared.app.hideThemes") : t("shared.app.changeTheme")}
                             </Button>
                           </div>
                           {showTemplates ? (
                             <div className="mt-4">
                               <TemplateSelector
                                 onSelect={(template) => {
+                                  setEdited(true);
                                   setSelectedTemplate(template);
                                   setInvoiceData((current) => ({
                                     ...current,
                                     template: template.slug,
                                   }));
-                                  showToast(`Invoice theme changed to ${template.name}.`);
+                                  showToast(t("shared.app.themeChanged", { name: template.name }));
                                 }}
                                 selectedTemplateId={selectedTemplate.id}
                                 templates={templates}
@@ -579,7 +594,14 @@ export default function App({
                             </div>
                           ) : null}
                         </Card>
-                        <InvoiceForm data={invoiceData} errors={errors} onChange={setInvoiceData} />
+                        <InvoiceForm
+                          data={invoiceData}
+                          errors={errors}
+                          onChange={(nextDraft) => {
+                            setEdited(true);
+                            setInvoiceData(nextDraft);
+                          }}
+                        />
                       </div>
                       <div
                         aria-labelledby="mobile-preview-tab"
@@ -591,8 +613,8 @@ export default function App({
                       >
                         <Card className="space-y-3 p-4 print:hidden">
                           <div className="flex items-center justify-between border-b border-border pb-2 text-muted-foreground">
-                            <Text>PDF ACTIONS</Text>
-                            <StatusBadge variant="success">Ready to export</StatusBadge>
+                            <Text>{t("shared.app.pdfActions")}</Text>
+                            <StatusBadge variant="success">{t("shared.app.readyToExport")}</StatusBadge>
                           </div>
                           <div className="grid grid-cols-2 gap-3">
                             <ToolActionButton
@@ -600,7 +622,7 @@ export default function App({
                               disabled={pdfAction !== null}
                               onClick={() => void generateInvoicePdf("download")}
                             >
-                              {pdfAction === "download" ? "Generating…" : "Download PDF"}
+                              {pdfAction === "download" ? t("shared.app.generating") : t("shared.app.downloadPdf")}
                             </ToolActionButton>
                             <Button
                               disabled={pdfAction !== null}
@@ -608,7 +630,7 @@ export default function App({
                               variant="secondary"
                             >
                               <Printer className="mr-1 inline h-4 w-4" />
-                              {pdfAction === "print" ? "Opening…" : "Print PDF"}
+                              {pdfAction === "print" ? t("shared.app.opening") : t("shared.app.printPdf")}
                             </Button>
                           </div>
                           {pdfError ? (
@@ -617,7 +639,7 @@ export default function App({
                             </P>
                           ) : null}
                           <Muted className="text-center text-muted-foreground">
-                            Download saves a PDF. Print opens the same PDF in a new tab; allow pop-ups if prompted.
+                            {t("shared.app.downloadSavesAPdfPrintOpensThe")}
                           </Muted>
                         </Card>
                         <Card className="overflow-hidden p-0 shadow-xl">
@@ -659,14 +681,14 @@ export default function App({
             ) : (
               <PenLine aria-hidden="true" className="size-4" />
             )}
-            {activeMobileTab === "edit" ? "Preview invoice" : "Edit invoice"}
+            {activeMobileTab === "edit" ? t("shared.app.previewInvoice") : t("shared.app.editInvoice")}
           </Button>
           <ToolActionButton
             action="download"
             disabled={pdfAction !== null}
             onClick={() => void generateInvoicePdf("download")}
           >
-            {pdfAction === "download" ? "Generating…" : "Download PDF"}
+            {pdfAction === "download" ? t("shared.app.generating") : t("shared.app.downloadPdf")}
           </ToolActionButton>
         </div>
       ) : null}
@@ -699,18 +721,15 @@ export default function App({
             <div className="grid size-10 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary">
               <RefreshCw aria-hidden="true" className="size-5" />
             </div>
-            <H2 id="sample-dialog-title">Load sample invoice?</H2>
+            <H2 id="sample-dialog-title">{t("shared.app.loadSampleInvoice")}</H2>
           </div>
-          <Muted className="text-muted-foreground">
-            This replaces every current invoice field with fictional example data. Download anything you need before
-            continuing.
-          </Muted>
+          <Muted className="text-muted-foreground">{t("shared.app.thisReplacesEveryCurrentInvoiceFieldWith")}</Muted>
           <div className="flex flex-wrap justify-end gap-2">
             <Button onClick={() => setActiveDialog(null)} variant="secondary">
-              Keep editing
+              {t("shared.app.keepEditing")}
             </Button>
             <Button onClick={loadSampleInvoice} variant="strong">
-              Load sample invoice
+              {t("shared.app.loadSampleInvoice2")}
             </Button>
           </div>
         </div>
@@ -722,17 +741,15 @@ export default function App({
             <div className="grid size-10 shrink-0 place-items-center rounded-full border border-destructive/20 bg-destructive/10 text-destructive">
               <Trash2 aria-hidden="true" className="size-5" />
             </div>
-            <H2 id="clear-dialog-title">Clear this invoice draft?</H2>
+            <H2 id="clear-dialog-title">{t("shared.app.clearThisInvoiceDraft")}</H2>
           </div>
-          <Muted className="text-muted-foreground">
-            This permanently removes the current invoice from this browser. There is no undo.
-          </Muted>
+          <Muted className="text-muted-foreground">{t("shared.app.thisPermanentlyRemovesTheCurrentInvoiceFrom")}</Muted>
           <div className="flex flex-wrap justify-end gap-2">
             <Button onClick={() => setActiveDialog(null)} variant="secondary">
-              Keep invoice
+              {t("shared.app.keepInvoice")}
             </Button>
             <Button onClick={clearInvoice} variant="destructive">
-              Clear invoice draft
+              {t("shared.app.clearInvoiceDraft")}
             </Button>
           </div>
         </div>
@@ -745,7 +762,7 @@ export default function App({
       >
         <div className="relative space-y-6 p-6 sm:p-8">
           <Button
-            aria-label="Close waitlist dialog"
+            aria-label={t("shared.app.closeWaitlistDialog")}
             className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
             onClick={() => setActiveDialog(null)}
             size="icon"
@@ -758,19 +775,16 @@ export default function App({
             <div className="grid size-11 place-items-center rounded-xl bg-foreground text-background shadow-sm">
               <Sparkles aria-hidden="true" className="size-5" />
             </div>
-            <P className="text-primary">Paperwork Pro early access</P>
-            <H2 id="upgrade-dialog-title">Join the Paperwork Pro waitlist</H2>
-            <Muted className="text-muted-foreground">
-              Save your interest locally for upcoming cloud backups, client delivery, and status tracking. No email is
-              sent from this preview.
-            </Muted>
+            <P className="text-primary">{t("shared.app.paperworkProEarlyAccess")}</P>
+            <H2 id="upgrade-dialog-title">{t("shared.app.joinThePaperworkProWaitlist")}</H2>
+            <Muted className="text-muted-foreground">{t("shared.app.saveYourInterestLocallyForUpcomingCloud")}</Muted>
           </div>
           <form className="space-y-4" onSubmit={joinWaitlist}>
             <Field
-              description="Stored only in this browser until remote enrollment is available."
+              description={t("shared.app.storedOnlyInThisBrowserUntilRemote")}
               error={waitlistError || undefined}
               htmlFor="waitlist-email"
-              label="Email address"
+              label={t("shared.app.emailAddress")}
               required
             >
               <Input
@@ -785,10 +799,10 @@ export default function App({
             </Field>
             <div className="flex flex-wrap justify-end gap-2">
               <Button onClick={() => setActiveDialog(null)} variant="secondary">
-                Not now
+                {t("shared.app.notNow")}
               </Button>
               <Button type="submit" variant="strong">
-                Join waiting list
+                {t("shared.app.joinWaitingList")}
               </Button>
             </div>
           </form>

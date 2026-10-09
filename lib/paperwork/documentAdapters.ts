@@ -56,13 +56,19 @@ import {
 } from "./quarterlyTaxRules";
 import { DataBridge, DataBridgeKeys } from "./shared/dataBridge";
 
+export type PaperworkValidationTranslator = (key: string, values?: Record<string, string | number>) => string;
+
+function validationMessage(translate: PaperworkValidationTranslator | undefined, key: string, english: string) {
+  return translate ? translate(key) : english;
+}
+
 export interface DocumentAdapter<TDraft> {
   documentType: DocumentType;
   getInitialDraft(): TDraft;
   getSampleDraft(): TDraft;
   readField(draft: TDraft, key: string): unknown;
   writeField(draft: TDraft, key: string, value: unknown): TDraft;
-  validate(draft: TDraft, form: TemplateFormConfig): Record<string, string>;
+  validate(draft: TDraft, form: TemplateFormConfig, translate?: PaperworkValidationTranslator): Record<string, string>;
   toPdfInputs(
     draft: TDraft,
     template: AdvancedDocumentTemplate,
@@ -231,8 +237,8 @@ export const invoiceAdapter: DocumentAdapter<InvoiceData> = {
   getSampleDraft: getSampleInvoice,
   readField: readInvoiceField,
   writeField: writeInvoiceField,
-  validate(draft) {
-    const source = validateInvoiceData(draft);
+  validate(draft, _form, translate) {
+    const source = validateInvoiceData(draft, translate ? (key) => translate(`invoice.validation.${key}`) : undefined);
     const keys: Record<string, string> = {
       "business.name": "businessName",
       "business.email": "businessEmail",
@@ -338,13 +344,21 @@ export const receiptAdapter: DocumentAdapter<ReceiptData> = {
   },
   readField: readReceiptField,
   writeField: writeReceiptField,
-  validate(draft) {
+  validate(draft, _form, translate) {
     const errors: Record<string, string> = {};
     if (!draft.business.name.trim()) {
-      errors.businessName = "Seller or provider name is required.";
+      errors.businessName = validationMessage(
+        translate,
+        "shared.validation.sellerNameRequired",
+        "Seller or provider name is required.",
+      );
     }
     if (!draft.lineItems.length) {
-      errors.lineItems = "Add at least one receipt item.";
+      errors.lineItems = validationMessage(
+        translate,
+        "shared.validation.receiptItemRequired",
+        "Add at least one receipt item.",
+      );
     }
     return errors;
   },
@@ -467,16 +481,28 @@ export const expenseReportAdapter: DocumentAdapter<ExpenseReportDraft> = {
   },
   readField: readExpenseField,
   writeField: writeExpenseField,
-  validate(draft) {
+  validate(draft, _form, translate) {
     const errors: Record<string, string> = {};
     if (!draft.reportNumber.trim()) {
-      errors.reportNumber = "Report number is required.";
+      errors.reportNumber = validationMessage(
+        translate,
+        "shared.validation.reportNumberRequired",
+        "Report number is required.",
+      );
     }
     if (!draft.submitter.name.trim()) {
-      errors.submitterName = "Submitter name is required.";
+      errors.submitterName = validationMessage(
+        translate,
+        "shared.validation.submitterNameRequired",
+        "Submitter name is required.",
+      );
     }
     if (!draft.expenses.length) {
-      errors.expenseRows = "Add at least one expense.";
+      errors.expenseRows = validationMessage(
+        translate,
+        "shared.validation.expenseRequired",
+        "Add at least one expense.",
+      );
     }
     return errors;
   },
@@ -574,14 +600,26 @@ export const mileageLogAdapter: DocumentAdapter<MileageLogDraft> = {
   },
   readField: readMileageField,
   writeField: writeMileageField,
-  validate(draft) {
+  validate(draft, _form, translate) {
     const summary = calculateMileageSummary(draft);
     const errors: Record<string, string> = {};
     if (!draft.vehicleModel.trim()) {
-      errors.vehicleDescription = "Vehicle description is required.";
+      errors.vehicleDescription = validationMessage(
+        translate,
+        "shared.validation.vehicleRequired",
+        "Vehicle description is required.",
+      );
     }
-    if (!draft.trips.length) errors.trips = "Add at least one business trip.";
-    if (summary.errors.length) errors.taxYear = summary.errors.join(" ");
+    if (!draft.trips.length)
+      errors.trips = validationMessage(
+        translate,
+        "shared.validation.businessTripRequired",
+        "Add at least one business trip.",
+      );
+    if (summary.errors.length)
+      errors.taxYear = translate
+        ? summary.errorMessages.map(({ key, values }) => translate(key, values)).join(" ")
+        : summary.errors.join(" ");
     return errors;
   },
   toPdfInputs(draft, template, customValues) {
@@ -653,10 +691,11 @@ export const quarterlyTaxAdapter: DocumentAdapter<QuarterlyTaxDraft> = {
     const path = QUARTERLY_TAX_PATHS[key];
     return path ? writePath(draft, path, value) : draft;
   },
-  validate(draft) {
+  validate(draft, _form, translate) {
     const result = calculateQuarterlyTax(draft);
     const errors: Record<string, string> = {};
-    if ("error" in result) errors.taxYear = result.error;
+    if ("error" in result)
+      errors.taxYear = translate ? translate(result.errorMessage.key, result.errorMessage.values) : result.error;
     return errors;
   },
   toPdfInputs(draft, template, customValues) {
@@ -722,20 +761,33 @@ export const w9RequestAdapter: DocumentAdapter<W9RequestDraft> = {
   },
   readField: readW9Field,
   writeField: writeW9Field,
-  validate(draft) {
+  validate(draft, _form, translate) {
     const errors: Record<string, string> = {};
     const vendor = draft.vendors[0];
     if (!draft.requesterName.trim()) {
-      errors.requesterName = "Requester name is required.";
+      errors.requesterName = validationMessage(
+        translate,
+        "shared.validation.requesterNameRequired",
+        "Requester name is required.",
+      );
     }
     if (!vendor?.legalName.trim()) {
-      errors.contractorName = "Contractor legal name is required.";
+      errors.contractorName = validationMessage(
+        translate,
+        "shared.validation.contractorNameRequired",
+        "Contractor legal name is required.",
+      );
     }
     if (!vendor?.email.trim()) {
-      errors.contractorEmail = "Contractor email is required.";
+      errors.contractorEmail = validationMessage(
+        translate,
+        "shared.validation.contractorEmailRequired",
+        "Contractor email is required.",
+      );
     }
     const rule = get1099ReportingRule(draft.reportingYear);
-    if ("error" in rule) errors.reportingYear = rule.error;
+    if ("error" in rule)
+      errors.reportingYear = translate ? translate(rule.errorMessage.key, rule.errorMessage.values) : rule.error;
     return errors;
   },
   toPdfInputs(draft, template, customValues) {
@@ -865,16 +917,24 @@ export const nec1099Adapter: DocumentAdapter<NecTrackerDraft> = {
   },
   readField: readNecField,
   writeField: writeNecField,
-  validate(draft) {
+  validate(draft, _form, translate) {
     const summary = calculateNecSummary(
       draft,
       necVendors().map(({ id }) => id),
     );
     const errors: Record<string, string> = {};
-    if (!draft.payerName.trim()) errors.payerName = "Payer name is required.";
-    if (!draft.payments.length) errors.paymentRows = "Add at least one payment.";
+    if (!draft.payerName.trim())
+      errors.payerName = validationMessage(translate, "shared.validation.payerNameRequired", "Payer name is required.");
+    if (!draft.payments.length)
+      errors.paymentRows = validationMessage(
+        translate,
+        "shared.validation.paymentRequired",
+        "Add at least one payment.",
+      );
     if (summary.issues.length) {
-      errors.paymentRows = summary.issues.join(" ");
+      errors.paymentRows = translate
+        ? summary.issueMessages.map(({ key, values }) => translate(key, values)).join(" ")
+        : summary.issues.join(" ");
     }
     return errors;
   },

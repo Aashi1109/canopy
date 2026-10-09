@@ -1,6 +1,22 @@
+import {
+  MEDIA_FILE_ERROR_MESSAGES,
+  MEDIA_IMAGE_ERROR_MESSAGES,
+  MEDIA_PDF_ERROR_MESSAGES,
+} from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "progress.addingImageToPdf": "Adding image to PDF",
+    "progress.pageComplete": "Page complete",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_IMAGE_ERROR_MESSAGES,
+    ...MEDIA_PDF_ERROR_MESSAGES,
+    "errors.totalTooLarge": "Images selected for one PDF must total 50 MiB or less.",
+    "recovery.totalTooLarge": "Remove images or create more than one PDF.",
+    "errors.invalidOrder": "The selected image order is invalid.",
+  },
   toolId: "media.image-to-pdf",
   app: "media",
   category: "pdf-conversion",

@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 import { ChevronDown } from "lucide-react";
 import { useEffect, useId, useState } from "react";
@@ -36,22 +37,35 @@ const RECORD_DESCRIPTIONS = {
 } as const;
 
 function DnsResultPreview({ result, domain }: { result: ToolResult; domain: string }) {
+  const toolText = useToolTranslations("Tool.runtime");
   const records = "tablePreview" in result ? result.tablePreview : undefined;
-  const lookupStatus = result.sections?.find((section) => section.title === "Lookup status")?.body;
+  const lookupStatus = result.sections?.find(
+    (section) => section.titleMessage?.key === "dns.lookupStatus" || section.title === "Lookup status",
+  )?.body;
   const statuses = lookupStatus?.render === "table" ? lookupStatus.rows : [];
   const showTtl = records?.columns.includes("TTL (seconds)");
   const types = [...new Set([...statuses.map(([type]) => type), ...(records?.rows.map(([type]) => type) ?? [])])];
   const rows = types.flatMap((type) => {
-    const answers: { type: string; name?: string; value?: string; ttl?: string; status?: string; detail?: string }[] = (
-      records?.rows ?? []
-    )
+    const answers: {
+      type: string;
+      name?: string;
+      value?: string;
+      ttl?: string;
+      status?: string;
+      statusLabel?: string;
+      detail?: string;
+    }[] = (records?.rows ?? [])
       .filter(([recordType]) => recordType === type)
       .map(([, name, value, ttl]) => ({ type, name, value, ttl }));
-    const lookup = statuses.find(([queriedType]) => queriedType === type);
+    const lookupIndex = statuses.findIndex(([queriedType]) => queriedType === type);
+    const lookup = statuses[lookupIndex];
+    const messages = lookupStatus?.render === "table" ? lookupStatus.rowMessages?.[lookupIndex] : undefined;
     if (lookup) {
-      const [, status, detail] = lookup;
+      const [, status, rawDetail] = lookup;
+      const detail = messages?.[2] ? toolText(messages[2].key, messages[2].values) : rawDetail;
+      const statusLabel = messages?.[1] ? toolText(messages[1].key, messages[1].values) : undefined;
       if (status !== "Records returned") {
-        answers.push({ type, status: status === "No records" ? `No ${type} records found` : status, detail });
+        answers.push({ type, status, statusLabel, detail });
       } else if (!answers.length && !records?.truncated) {
         answers.push({ type, status: "Other record type returned", detail });
       }
@@ -61,63 +75,73 @@ function DnsResultPreview({ result, domain }: { result: ToolResult; domain: stri
 
   return (
     <ScrollRegion
-      accessibleName="DNS result records"
+      accessibleName={toolText("workspace.resultRecords")}
       className="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:overflow-x-auto! [&_[data-slot=scroll-area-viewport]>div]:block! [&_[data-slot=table-container]]:overflow-visible"
     >
       <div className="space-y-2 p-4">
-        <H3>{result.verdict?.label ?? "DNS lookup complete"}</H3>
+        <H3>{result.verdict?.label ?? toolText("workspace.lookupComplete")}</H3>
         {result.verdict?.detail ? <Muted>{result.verdict.detail}</Muted> : null}
       </div>
       {rows.length ? (
-        <Table className="w-full min-w-[36rem] table-fixed" aria-label="DNS records" tabIndex={0}>
+        <Table
+          className="w-full min-w-[36rem] table-fixed"
+          aria-label={toolText("workspace.dns_records_00ce58")}
+          tabIndex={0}
+        >
           <TableHeader>
             <TableRow>
-              <TableHead className="w-16">Type</TableHead>
-              <TableHead className="w-36">Explanation</TableHead>
-              <TableHead>Record value</TableHead>
-              {showTtl ? <TableHead className="w-24">Cache time</TableHead> : null}
+              <TableHead className="w-16">{toolText("workspace.type_baaddf")}</TableHead>
+              <TableHead className="w-36">{toolText("workspace.explanation_16ee46")}</TableHead>
+              <TableHead>{toolText("workspace.record_value_f7b42a")}</TableHead>
+              {showTtl ? <TableHead className="w-24">{toolText("workspace.cache_time_72f91b")}</TableHead> : null}
               <TableHead className="w-24">
-                <span className="sr-only">Copy value</span>
+                <span className="sr-only">{toolText("workspace.copy_value_c019c0")}</span>
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map(({ type, name, value, ttl, status, detail }, index) => (
+            {rows.map(({ type, name, value, ttl, status, statusLabel, detail }, index) => (
               <TableRow key={index}>
                 <TableCell className="align-top">{type}</TableCell>
                 <TableCell className="align-top whitespace-normal">
-                  {RECORD_DESCRIPTIONS[type as keyof typeof RECORD_DESCRIPTIONS] ?? "DNS record"}
+                  {Object.hasOwn(RECORD_DESCRIPTIONS, type)
+                    ? toolText(`workspace.records.${type}`)
+                    : toolText("workspace.dnsRecord")}
                 </TableCell>
                 <TableCell className="align-top whitespace-normal">
                   {status ? (
                     <>
-                      <span>{status}</span>
-                      {status !== `No ${type} records found` ? <Muted className="mt-1">{detail}</Muted> : null}
+                      <span>
+                        {status === "No records"
+                          ? toolText("workspace.noRecords", { type })
+                          : (statusLabel ?? toolText(`workspace.status.${status}`))}
+                      </span>
+                      {status !== "No records" ? <Muted className="mt-1">{detail}</Muted> : null}
                     </>
                   ) : value === "" || (type === "TXT" && value === '""') ? (
-                    <Muted>Empty value</Muted>
+                    <Muted>{toolText("workspace.empty_value_19ad22")}</Muted>
                   ) : (
                     <span className="whitespace-pre-wrap break-all">{value}</span>
                   )}
                   {name && name.toLowerCase().replace(/\.$/, "") !== domain ? (
-                    <Muted className="mt-1 break-all">For {name}</Muted>
+                    <Muted className="mt-1 break-all">{toolText("workspace.forName", { name })}</Muted>
                   ) : null}
                   {type === "MX" && value !== undefined ? (
                     <Muted className="mt-1">
                       {/^0\s+\.$/.test(value.trim())
-                        ? "This domain declares that it does not accept email."
-                        : "The first number is priority; lower numbers are preferred."}
+                        ? toolText("workspace.this_domain_declares_30129b")
+                        : toolText("workspace.the_first_number_5715af")}
                     </Muted>
                   ) : null}
                 </TableCell>
                 {showTtl ? (
                   <TableCell className="align-top whitespace-normal">
-                    {value === undefined ? "—" : ttl === "—" ? "Not supplied" : `${ttl} s`}
+                    {value === undefined ? "—" : ttl === "—" ? toolText("workspace.not_supplied_8b427d") : `${ttl} s`}
                   </TableCell>
                 ) : null}
                 <TableCell className="align-top">
                   {value !== undefined ? (
-                    <CopyButton content={value} iconOnly label={`Copy ${type} record value`} />
+                    <CopyButton content={value} iconOnly label={toolText("workspace.copyRecord", { type })} />
                   ) : null}
                 </TableCell>
               </TableRow>
@@ -126,21 +150,18 @@ function DnsResultPreview({ result, domain }: { result: ToolResult; domain: stri
         </Table>
       ) : null}
       <div className="space-y-2 p-4">
-        {records?.truncated ? (
-          <Muted>Showing part of the records. Download the complete output for all answers.</Muted>
-        ) : null}
+        {records?.truncated ? <Muted>{toolText("workspace.showing_part_of_3b2915")}</Muted> : null}
         {statuses.some(([, status]) => status === "No records") ? (
-          <Muted>A missing record type does not by itself indicate a problem with the domain.</Muted>
+          <Muted>{toolText("workspace.a_missing_record_20741a")}</Muted>
         ) : null}
-        {showTtl && records?.rows.length ? (
-          <Muted>TTL is the resolver’s remaining cache time in seconds, not the age of the record.</Muted>
-        ) : null}
+        {showTtl && records?.rows.length ? <Muted>{toolText("workspace.ttl_is_the_3d47e3")}</Muted> : null}
       </div>
     </ScrollRegion>
   );
 }
 
 export default function DnsCheckerWorkspace(props: WorkspaceProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const id = useId();
   const [submitted, setSubmitted] = useState(false);
   const disabled = Boolean(props.disabled || props.running || props.primaryAction?.running);
@@ -150,16 +171,16 @@ export default function DnsCheckerWorkspace(props: WorkspaceProps) {
     .filter(Boolean);
   const selected = DNS_RECORD_TYPES.filter((type) => types.includes(type));
   const typesError = !types.length
-    ? "Select at least one record type."
+    ? toolText("workspace.selectType")
     : types.some((type) => !DNS_RECORD_TYPES.some((allowed) => allowed === type))
-      ? "Choose record types from the list."
+      ? toolText("workspace.chooseTypes")
       : null;
   let domainError: string | null = null;
   let domain = "";
   try {
     domain = normalizeDomain(props.input.text).toLowerCase().replace(/\.$/, "");
   } catch (error) {
-    domainError = error instanceof Error ? error.message : "Enter a valid domain name.";
+    domainError = toolText(props.input.text.trim() ? "workspace.invalidDomain" : "workspace.domainRequired");
   }
   const validationReason = domainError ?? typesError;
   const visibleDomainError = submitted || props.input.text.trim() ? domainError : null;
@@ -187,29 +208,29 @@ export default function DnsCheckerWorkspace(props: WorkspaceProps) {
       }}
       renderInputSettings={() => (
         <div className="grid shrink-0 gap-1.5">
-          <FieldLabel htmlFor={id}>Record types</FieldLabel>
+          <FieldLabel htmlFor={id}>{toolText("workspace.record_types_2e5209")}</FieldLabel>
           <Popover.Root>
             <Popover.Trigger
               aria-describedby={`${id}-selection ${id}-help`}
               aria-invalid={Boolean(typesError)}
-              aria-label="Record types"
+              aria-label={toolText("workspace.record_types_2e5209")}
               className={selectTriggerVariants()}
               disabled={disabled}
               id={id}
             >
               <span data-slot="select-value" id={`${id}-selection`}>
                 {selected.length === DNS_RECORD_TYPES.length
-                  ? "All record types"
+                  ? toolText("workspace.all_record_types_da2d85")
                   : selected.length
                     ? selected.join(", ")
-                    : "Select record types"}
+                    : toolText("workspace.select_record_types_d54710")}
               </span>
               <ChevronDown aria-hidden="true" className="size-[15px] shrink-0" />
             </Popover.Trigger>
             <Popover.Portal>
               <Popover.Content
                 align="start"
-                aria-label="Choose record types"
+                aria-label={toolText("workspace.choose_record_types_7a9946")}
                 className="z-50 grid w-72 max-w-[calc(100vw-32px)] gap-2 rounded-lg border border-input bg-popover p-3 text-popover-foreground shadow-md"
                 sideOffset={4}
               >
@@ -218,7 +239,7 @@ export default function DnsCheckerWorkspace(props: WorkspaceProps) {
                     aria-describedby={`${id}-${type}-help`}
                     aria-label={type}
                     checked={selected.includes(type)}
-                    description={<span id={`${id}-${type}-help`}>{RECORD_DESCRIPTIONS[type]}</span>}
+                    description={<span id={`${id}-${type}-help`}>{toolText(`workspace.records.${type}`)}</span>}
                     disabled={disabled}
                     key={type}
                     label={type}
@@ -238,9 +259,7 @@ export default function DnsCheckerWorkspace(props: WorkspaceProps) {
           {typesError ? (
             <FieldError id={`${id}-help`}>{typesError}</FieldError>
           ) : (
-            <FieldDescription id={`${id}-help`}>
-              Choose one or more types. Press Enter in Domain name to check.
-            </FieldDescription>
+            <FieldDescription id={`${id}-help`}>{toolText("workspace.choose_one_or_0d5d48")}</FieldDescription>
           )}
         </div>
       )}

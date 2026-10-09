@@ -1,6 +1,8 @@
 import { test, expect } from "vitest";
 import { textInputFileIssue, validateFileSelection } from "../lib/tool-framework/fileSelection.ts";
 import { PLATFORM_MAX_BYTES } from "../lib/tool-framework/limits.ts";
+import { createTranslator } from "next-intl";
+import { getCommonMessages } from "../lib/i18n/messages.ts";
 
 const filesSpec = {
   kind: "files",
@@ -43,4 +45,18 @@ test("the browser selection boundary clamps oversized declarations to 100 MiB", 
       maxBytes: PLATFORM_MAX_BYTES * 2,
     }) ?? "",
   ).toMatch(new RegExp(PLATFORM_MAX_BYTES.toLocaleString()));
+});
+
+test("localized file errors preserve selection limits and filenames", () => {
+  const t = createTranslator({ locale: "hi", messages: getCommonMessages("hi"), namespace: "Workbench" });
+  const current = new File([new Uint8Array(60)], "current.png", { type: "image/png" });
+  const overflow = new File([new Uint8Array(41)], "overflow.png", { type: "image/png" });
+  const result = validateFileSelection([current], [overflow], filesSpec, t);
+  expect(result.files).toEqual([current]);
+  expect(result.issue).toBe(t("fileTotalLimit", { maxBytes: 100 }));
+  const unsupported = new File(["hello"], "कच्चा.txt", { type: "text/plain" });
+  expect(textInputFileIssue(unsupported, { accept: "image/png", maxBytes: 75 }, t)).toBe(
+    t("fileType", { name: "कच्चा.txt" }),
+  );
+  expect(textInputFileIssue(unsupported, { accept: "image/png", maxBytes: 75 }, t)).toContain("कच्चा.txt");
 });

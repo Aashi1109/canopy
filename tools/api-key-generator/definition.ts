@@ -1,6 +1,16 @@
+import {
+  CRYPTO_EXECUTION_MESSAGES,
+  ENCODING_EXECUTION_MESSAGES,
+} from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CRYPTO_EXECUTION_MESSAGES,
+    ...ENCODING_EXECUTION_MESSAGES,
+    "execution.errors.invalid-prefix": "Prefix may contain only letters, numbers, underscores, and hyphens.",
+    "execution.recovery.invalid-prefix": "Use something short such as sk or pk_live, up to 32 characters.",
+  },
   toolId: "devtools.api-key-generator",
   app: "devtools",
   category: "developer-generators",

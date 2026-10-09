@@ -1,6 +1,8 @@
+import type { ToolErrorDetails } from "../run.ts";
 export type MediaKind = "pdf" | "jpeg" | "png" | "webp" | "heic";
 
-export type RuleResult<T extends object = object> = ({ ok: true } & T) | { ok: false; code: string; message: string };
+export type RuleResult<T extends object = object> =
+  ({ ok: true } & T) | { ok: false; code: string; message: string; details: ToolErrorDetails };
 
 const MIB = 1024 * 1024;
 
@@ -64,47 +66,73 @@ export function validateMediaSignature(
 ): RuleResult<{ kind: MediaKind; mime: string }> {
   const kind = detectMediaKind(bytes);
   if (!kind) {
-    return failure("invalid-signature", "The file does not have a supported signature.");
+    return failure("invalid-signature", "The file does not have a supported signature.", {
+      messageRef: { key: "media.validateMediaSignature.invalidSignature" },
+    });
   }
   if (!allowedKinds.includes(kind)) {
-    return failure("unsupported-type", "This file type is not supported by this tool.");
+    return failure("unsupported-type", "This file type is not supported by this tool.", {
+      messageRef: { key: "media.validateMediaSignature.unsupportedType" },
+    });
   }
 
   const normalizedMime = declaredMime.trim().toLowerCase();
   if (!GENERIC_MIMES.has(normalizedMime) && !ACCEPTED_MIMES[kind].includes(normalizedMime)) {
-    return failure("mime-mismatch", "The file contents do not match its reported type.");
+    return failure("mime-mismatch", "The file contents do not match its reported type.", {
+      messageRef: { key: "media.validateMediaSignature.mimeMismatch" },
+    });
   }
   if (kind === "webp" && isAnimatedWebp(bytes)) {
-    return failure("animated-image", "Animated WebP files are not supported. Choose a static image.");
+    return failure("animated-image", "Animated WebP files are not supported. Choose a static image.", {
+      messageRef: { key: "media.validateMediaSignature.animatedImage" },
+    });
   }
   if (kind === "heic" && readFtypBrands(bytes).some((brand) => HEIC_SEQUENCE_BRANDS.has(brand))) {
-    return failure("image-sequence", "Multi-image HEIC sequences are not supported. Choose a single image.");
+    return failure("image-sequence", "Multi-image HEIC sequences are not supported. Choose a single image.", {
+      messageRef: { key: "media.validateMediaSignature.imageSequence" },
+    });
   }
   return { ok: true, kind, mime: MIME_BY_KIND[kind] };
 }
 
 export function validateImageSelection(files: readonly { size: number }[]): RuleResult {
-  if (files.length === 0) return failure("no-files", "Choose at least one image.");
+  if (files.length === 0)
+    return failure("no-files", "Choose at least one image.", {
+      messageRef: { key: "media.validateImageSelection.noFiles" },
+    });
   if (files.length > MEDIA_LIMITS.images.maxFiles) {
-    return failure("too-many-files", `Choose no more than ${MEDIA_LIMITS.images.maxFiles} images.`);
+    return failure("too-many-files", `Choose no more than ${MEDIA_LIMITS.images.maxFiles} images.`, {
+      messageRef: { key: "media.validateImageSelection.tooManyFiles", values: { limit: MEDIA_LIMITS.images.maxFiles } },
+    });
   }
   const sizes = validSizes(files);
-  if (!sizes) return failure("invalid-size", "A selected file has an invalid size.");
+  if (!sizes)
+    return failure("invalid-size", "A selected file has an invalid size.", {
+      messageRef: { key: "media.validateImageSelection.invalidSize" },
+    });
   if (sizes.some((size) => size > MEDIA_LIMITS.images.maxFileBytes)) {
-    return failure("file-too-large", "Each image must be 25 MiB or smaller.");
+    return failure("file-too-large", "Each image must be 25 MiB or smaller.", {
+      messageRef: { key: "media.validateImageSelection.fileTooLarge" },
+    });
   }
   if (sum(sizes) > MEDIA_LIMITS.images.maxTotalBytes) {
-    return failure("total-too-large", "The selected images must total 100 MiB or less.");
+    return failure("total-too-large", "The selected images must total 100 MiB or less.", {
+      messageRef: { key: "media.validateImageSelection.totalTooLarge" },
+    });
   }
   return { ok: true };
 }
 
 export function validateDecodedImageDimensions(width: number, height: number): RuleResult {
   if (!isPositiveInteger(width) || !isPositiveInteger(height)) {
-    return failure("invalid-dimensions", "The image dimensions are invalid.");
+    return failure("invalid-dimensions", "The image dimensions are invalid.", {
+      messageRef: { key: "media.validateDecodedImageDimensions.invalidDimensions" },
+    });
   }
   if (width * height > MEDIA_LIMITS.images.maxPixels) {
-    return failure("too-many-pixels", "The decoded image must be 100 megapixels or less.");
+    return failure("too-many-pixels", "The decoded image must be 100 megapixels or less.", {
+      messageRef: { key: "media.validateDecodedImageDimensions.tooManyPixels" },
+    });
   }
   return { ok: true };
 }
@@ -113,27 +141,46 @@ export function validatePdfSelection(
   files: readonly { size: number }[],
   options: { merge?: boolean; pageCount?: number; raster?: boolean } = {},
 ): RuleResult {
-  if (files.length === 0) return failure("no-files", "Choose at least one PDF.");
+  if (files.length === 0)
+    return failure("no-files", "Choose at least one PDF.", {
+      messageRef: { key: "media.validatePdfSelection.noFiles" },
+    });
   const sizes = validSizes(files);
-  if (!sizes) return failure("invalid-size", "A selected file has an invalid size.");
+  if (!sizes)
+    return failure("invalid-size", "A selected file has an invalid size.", {
+      messageRef: { key: "media.validatePdfSelection.invalidSize" },
+    });
   if (sizes.some((size) => size > MEDIA_LIMITS.pdfs.maxFileBytes)) {
-    return failure("file-too-large", "Each PDF must be 100 MiB or smaller.");
+    return failure("file-too-large", "Each PDF must be 100 MiB or smaller.", {
+      messageRef: { key: "media.validatePdfSelection.fileTooLarge" },
+    });
   }
   if (options.merge) {
     if (files.length > MEDIA_LIMITS.pdfs.maxMergeFiles) {
-      return failure("too-many-files", `Merge no more than ${MEDIA_LIMITS.pdfs.maxMergeFiles} PDFs at once.`);
+      return failure("too-many-files", `Merge no more than ${MEDIA_LIMITS.pdfs.maxMergeFiles} PDFs at once.`, {
+        messageRef: {
+          key: "media.validatePdfSelection.tooManyFiles",
+          values: { limit: MEDIA_LIMITS.pdfs.maxMergeFiles },
+        },
+      });
     }
     if (sum(sizes) > MEDIA_LIMITS.pdfs.maxMergeTotalBytes) {
-      return failure("total-too-large", "PDFs selected for merging must total 50 MiB or less.");
+      return failure("total-too-large", "PDFs selected for merging must total 50 MiB or less.", {
+        messageRef: { key: "media.validatePdfSelection.totalTooLarge" },
+      });
     }
   }
   if (options.pageCount !== undefined) {
     if (!isPositiveInteger(options.pageCount)) {
-      return failure("invalid-page-count", "The PDF page count is invalid.");
+      return failure("invalid-page-count", "The PDF page count is invalid.", {
+        messageRef: { key: "media.validatePdfSelection.invalidPageCount" },
+      });
     }
     const limit = options.raster ? MEDIA_LIMITS.pdfs.maxRasterPages : MEDIA_LIMITS.pdfs.maxStructuralPages;
     if (options.pageCount > limit) {
-      return failure("too-many-pages", `This operation supports at most ${limit} pages.`);
+      return failure("too-many-pages", `This operation supports at most ${limit} pages.`, {
+        messageRef: { key: "media.validatePdfSelection.tooManyPages", values: { limit: limit } },
+      });
     }
   }
   return { ok: true };
@@ -144,7 +191,10 @@ export function parsePageRange(input: string, pageCount: number): RuleResult<{ p
     throw new RangeError("Page count must be a positive integer.");
   }
   const normalized = input.trim().toLowerCase();
-  if (!normalized) return failure("empty-range", "Enter one or more page numbers.");
+  if (!normalized)
+    return failure("empty-range", "Enter one or more page numbers.", {
+      messageRef: { key: "media.parsePageRange.emptyRange" },
+    });
   if (normalized === "all") {
     return { ok: true, pages: Array.from({ length: pageCount }, (_, index) => index + 1) };
   }
@@ -153,20 +203,32 @@ export function parsePageRange(input: string, pageCount: number): RuleResult<{ p
   const seen = new Set<number>();
   for (const rawPart of normalized.split(",")) {
     const part = rawPart.trim();
-    if (!part) return failure("invalid-range", "Use page numbers such as 1-3,5,8.");
+    if (!part)
+      return failure("invalid-range", "Use page numbers such as 1-3,5,8.", {
+        messageRef: { key: "media.parsePageRange.invalidRange" },
+      });
     const match = /^(\d+)(?:\s*-\s*(\d+))?$/.exec(part);
-    if (!match) return failure("invalid-range", "Use page numbers such as 1-3,5,8.");
+    if (!match)
+      return failure("invalid-range", "Use page numbers such as 1-3,5,8.", {
+        messageRef: { key: "media.parsePageRange.invalidRange" },
+      });
     const start = Number(match[1]);
     const end = match[2] === undefined ? start : Number(match[2]);
     if (start > end) {
-      return failure("reversed-range", "Page ranges must run from lower to higher pages.");
+      return failure("reversed-range", "Page ranges must run from lower to higher pages.", {
+        messageRef: { key: "media.parsePageRange.reversedRange" },
+      });
     }
     if (start < 1 || end > pageCount) {
-      return failure("page-out-of-range", `Choose pages between 1 and ${pageCount}.`);
+      return failure("page-out-of-range", `Choose pages between 1 and ${pageCount}.`, {
+        messageRef: { key: "media.parsePageRange.pageOutOfRange", values: { count: pageCount } },
+      });
     }
     for (let page = start; page <= end; page += 1) {
       if (seen.has(page)) {
-        return failure("duplicate-page", `Page ${page} is selected more than once.`);
+        return failure("duplicate-page", `Page ${page} is selected more than once.`, {
+          messageRef: { key: "media.parsePageRange.duplicatePage", values: { page: page } },
+        });
       }
       seen.add(page);
       pages.push(page);
@@ -315,6 +377,6 @@ function isPositiveInteger(value: number) {
   return Number.isSafeInteger(value) && value > 0;
 }
 
-function failure(code: string, message: string) {
-  return { ok: false as const, code, message };
+function failure(code: string, message: string, details: ToolErrorDetails) {
+  return { ok: false as const, code, message, details };
 }

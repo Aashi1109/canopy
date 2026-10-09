@@ -8,7 +8,7 @@
  * source offset in the ISO value.
  */
 
-import type { ToolRun } from "../../lib/tool-framework/run.ts";
+import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 import { parseDate } from "../../lib/devtools/shared/datetime.ts";
@@ -37,33 +37,68 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     const locale = ctx.settings.locale === "en-GB" ? "en-GB" : LOCAL_FORMAT_LOCALE;
     const displayInUtc = ctx.settings.displayTimezone === "utc";
     const readable = displayInUtc ? date.toLocaleString(locale, { timeZone: "UTC" }) : date.toLocaleString(locale);
-    const output = [
-      `ISO: ${ctx.settings.preserveOffset === true ? isoWithSourceOffset(date, input) : date.toISOString()}`,
-    ];
-    if (ctx.settings.showUtc !== false) output.push(`UTC: ${date.toUTCString()}`);
-    output.push(
-      `${displayInUtc ? "Display (UTC)" : "Local"}: ${readable}`,
-      `Unix: ${Math.floor(date.getTime() / 1000)}`,
-    );
-    return output.join("\n");
+    const iso = ctx.settings.preserveOffset === true ? isoWithSourceOffset(date, input) : date.toISOString();
+    const utc = date.toUTCString();
+    const unix = String(Math.floor(date.getTime() / 1000));
+    const output = [`ISO: ${iso}`];
+    if (ctx.settings.showUtc !== false) output.push(`UTC: ${utc}`);
+    output.push(`${displayInUtc ? "Display (UTC)" : "Local"}: ${readable}`, `Unix: ${unix}`);
+    return {
+      text: output.join("\n"),
+      message: {
+        key: ctx.settings.showUtc !== false ? "execution.withUtc" : "execution.withoutUtc",
+        values: {
+          iso,
+          ...(ctx.settings.showUtc !== false ? { utc } : {}),
+          readable,
+          unix,
+          display: displayInUtc ? "utc" : "local",
+        },
+      },
+      preview: {
+        render: "table" as const,
+        columns: ["Format", "Value"],
+        columnMessages: [{ key: "execution.format" }, { key: "execution.value" }],
+        rows: [
+          ["ISO", iso],
+          ...(ctx.settings.showUtc !== false ? [["UTC", utc]] : []),
+          [displayInUtc ? "Display (UTC)" : "Local", readable],
+          ["Unix", unix],
+        ],
+        rowMessages: [
+          undefined,
+          ...(ctx.settings.showUtc !== false ? [undefined] : []),
+          { key: displayInUtc ? "execution.displayUtc" : "execution.local" },
+          undefined,
+        ].map((message) => [message, undefined]),
+      },
+    };
   };
 
   const lines = ctx.input.text
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  if (lines.length <= 1) return { render: "text", text: convert(lines[0] ?? "") };
+  if (lines.length <= 1) {
+    const result = convert(lines[0] ?? "");
+    return { render: "text", text: result.text, tablePreview: result.preview };
+  }
 
+  const results = lines.map((line) => {
+    try {
+      return convert(line);
+    } catch (error) {
+      return {
+        text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+        message: error instanceof ToolError ? error.details?.messageRef : undefined,
+      };
+    }
+  });
   return {
     render: "list",
     labels: lines,
-    items: lines.map((line) => {
-      try {
-        return convert(line);
-      } catch (error) {
-        return `Error: ${error instanceof Error ? error.message : String(error)}`;
-      }
-    }),
+    items: results.map((result) => result.text),
+    itemMessages: results.map((result) => result.message),
   };
 };
 

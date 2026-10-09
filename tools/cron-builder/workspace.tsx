@@ -1,4 +1,5 @@
 "use client";
+import { useLocale, useTranslations as useToolTranslations } from "next-intl";
 
 import { useId } from "react";
 
@@ -30,6 +31,8 @@ const SYNTAX_EXAMPLES = [
 ] as const;
 
 export default function CronBuilderWorkspace(props: WorkspaceProps) {
+  const toolText = useToolTranslations("Tool.runtime");
+  const locale = useLocale();
   const id = useId();
   const value = (key: (typeof CRON_FIELDS)[number]["key"]) =>
     String(props.settings[key] ?? definition.settings.fields[key].default);
@@ -43,20 +46,22 @@ export default function CronBuilderWorkspace(props: WorkspaceProps) {
   return (
     <SplitStack className="h-full" defaultSize={75} minSize={75}>
       <Stack className="h-full overflow-y-auto">
-        <Stack aria-label="Edit cron schedule" className="shrink-0 px-6 pt-6" gap="md">
+        <Stack aria-label={toolText("workspace.edit_cron_schedule_7fdbcb")} className="shrink-0 px-6 pt-6" gap="md">
           <Stack aria-live="polite" aria-atomic="true" gap="xs">
-            <H2 className="text-[28px] font-medium leading-tight">{getScheduleSummary(props.settings)}</H2>
-            <P className="text-muted-foreground">In the timezone configured on your cron host.</P>
+            <H2 className="text-[28px] font-medium leading-tight">
+              {getScheduleSummary(props.settings, toolText, locale)}
+            </H2>
+            <P className="text-muted-foreground">{toolText("workspace.in_the_timezone_f954eb")}</P>
           </Stack>
 
           <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-5">
             {CRON_FIELDS.map(({ key, range }) => {
-              const field = definition.settings.fields[key];
-              const error = getCronFieldError(key, value(key));
+              const field = props.spec.settings.fields[key];
+              const error = getCronFieldError(key, value(key), toolText, field.label);
               return (
                 <Field
                   className="min-w-0"
-                  description={error ? undefined : range}
+                  description={error ? undefined : key === "dayOfWeek" ? toolText("workspace.weekdayRange") : range}
                   error={error}
                   htmlFor={`${id}-${key}`}
                   key={key}
@@ -79,18 +84,18 @@ export default function CronBuilderWorkspace(props: WorkspaceProps) {
 
           <Accordion collapsible type="single">
             <AccordionItem value="syntax-help">
-              <AccordionTrigger>Syntax help</AccordionTrigger>
+              <AccordionTrigger>{toolText("workspace.syntax_help_d0ddb5")}</AccordionTrigger>
               <AccordionContent>
                 <Stack gap="sm">
-                  <Muted>In the Minute field — other fields still apply</Muted>
+                  <Muted>{toolText("workspace.in_the_minute_830478")}</Muted>
                   <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
-                    {SYNTAX_EXAMPLES.map(([expression, meaning]) => (
+                    {SYNTAX_EXAMPLES.map(([expression], index) => (
                       <div className="grid min-w-0 grid-cols-[3.5rem_minmax(0,1fr)] items-start gap-3" key={expression}>
                         <dt className="font-mono text-code">
                           <SyntaxHighlight code={expression} language="cron" />
                         </dt>
                         <dd>
-                          <P>{meaning}</P>
+                          <P>{toolText(`workspace.syntax.${index}`)}</P>
                         </dd>
                       </div>
                     ))}
@@ -115,7 +120,7 @@ export default function CronBuilderWorkspace(props: WorkspaceProps) {
 
       <ToolOptionsPanel
         className="h-full overflow-y-auto bg-card p-[18px]"
-        title={props.spec.optionsPanel?.title ?? "SETTINGS"}
+        title={props.spec.optionsPanel?.title ?? toolText("workspace.settings")}
         variant="plain"
       >
         <SettingsPanel

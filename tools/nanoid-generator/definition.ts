@@ -1,6 +1,14 @@
+import {
+  CRYPTO_EXECUTION_MESSAGES,
+  ENCODING_EXECUTION_MESSAGES,
+} from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CRYPTO_EXECUTION_MESSAGES,
+    ...ENCODING_EXECUTION_MESSAGES,
+  },
   toolId: "devtools.nanoid-generator",
   app: "devtools",
   // `slugFromName("Nano ID Generator")` is "nano-id-generator", which is not

@@ -1,6 +1,11 @@
+import { CSV_EXECUTION_MESSAGES } from "../../lib/devtools/shared/csv-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CSV_EXECUTION_MESSAGES,
+    "csv.completeHtmlTable": "Complete HTML table",
+  },
   toolId: "devtools.csv-to-table",
   app: "devtools",
   category: "csv-data-tools",

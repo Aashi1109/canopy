@@ -32,6 +32,9 @@ export default defineConfig({
     alias: { "@": root },
   },
   test: {
+    // next-intl's Next.js entrypoints use extensionless framework imports.
+    // Run them through Vite's resolver, as Next's application bundler does.
+    server: { deps: { inline: ["next-intl"] } },
     globals: true,
     environment: "node",
     maxWorkers: 1,

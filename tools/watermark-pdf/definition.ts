@@ -1,3 +1,8 @@
+import {
+  MEDIA_FILE_ERROR_MESSAGES,
+  MEDIA_IMAGE_ERROR_MESSAGES,
+  MEDIA_PDF_ERROR_MESSAGES,
+} from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 /**
@@ -92,6 +97,36 @@ export default {
     empty: "Add a PDF to configure its watermark.",
     ready: "Your watermarked PDF is ready to download.",
     running: "Applying watermark…",
+  },
+  messages: {
+    "progress.savingPdf": "Saving PDF",
+
+    "readiness.chooseWatermark": "Choose a JPG or PNG watermark image.",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_IMAGE_ERROR_MESSAGES,
+    ...MEDIA_PDF_ERROR_MESSAGES,
+    "errors.noFiles": "Choose a PDF to watermark.",
+    "errors.emptyWatermark": "Enter watermark text.",
+    "errors.unsupportedText":
+      "This text cannot be encoded by the standard PDF font. Use an image watermark for this text.",
+    "errors.missingWatermark": "Choose a watermark image.",
+    "workspace.watermarkSettings": "Watermark settings",
+    "workspace.jpgOrPng25MibMaxPdf": "JPG or PNG · 25 MiB max · PDF and image combined: 50 MiB max",
+    "workspace.removeImage": "Remove image",
+    "workspace.fileNotAdded": "File not added",
+    "workspace.noPages": "No pages match this selection. Choose pages in your PDF.",
+    "workspace.approximateWatermark": "Approximate watermark",
+    "workspace.pdfDocument": "PDF document",
+    "workspace.chooseImage": "Choose a JPG or PNG watermark image.",
+    "workspace.enterText": "Enter watermark text.",
+    "workspace.planTitle":
+      "{count, plural, one {# page will receive a watermark} other {# pages will receive a watermark}}",
+    "workspace.planDetail":
+      "Placement is approximate. Apply the watermark and check the downloaded PDF. Your original stays unchanged.",
+    "workspace.replaceImage": "Replace watermark image",
+    "workspace.watermarkImage": "Watermark image",
+    "workspace.validPages": "Choose page numbers from 1 to {count, number}, or enter all.",
   },
   content: {
     howToUse: [

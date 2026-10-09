@@ -1,13 +1,17 @@
 import React, { act, useCallback, useEffect, useMemo, useState } from "react";
 import { expect, vi } from "vitest";
+import { NextIntlClientProvider } from "next-intl";
+import { getCommonMessages } from "../../lib/i18n/messages.ts";
+import { extractToolMessages, formatToolMessage, toolMessageTree } from "../../lib/tool-framework/translations.ts";
 import { mountTool, click, button, waitFor } from "./react-tools.mjs";
 
 export async function mountWorkspace(
   Component,
   spec,
   run,
-  { text = "", secondary = "", settings = {}, disabled = false, automatic = true } = {},
+  { text = "", secondary = "", settings = {}, disabled = false, automatic = true, locale = "en", messages = {} } = {},
 ) {
+  const toolMessages = { ...extractToolMessages(spec), ...messages };
   const onRun = vi.fn();
   const state = {};
   function Fixture() {
@@ -18,6 +22,7 @@ export async function mountWorkspace(
     });
     const [result, setResult] = useState(null);
     const [error, setError] = useState("");
+    const [errorLocation, setErrorLocation] = useState(undefined);
     const [toolbar, setToolbar] = useState(null);
     const onSettingChange = useCallback((key, value) => setValues((old) => ({ ...old, [key]: value })), []);
     const onToolbarActionsChange = useCallback((value) => setToolbar(value), []);
@@ -27,16 +32,19 @@ export async function mountWorkspace(
         const next = await run({ input, settings: values, signal: new AbortController().signal });
         setResult(next);
         setError("");
+        setErrorLocation(undefined);
       } catch (failure) {
         setResult(null);
-        setError(failure.message);
+        const message = toolMessages[`runtime.errors.${failure.code}`];
+        setError(message ? formatToolMessage(locale, message, failure.details?.values) : failure.message);
+        setErrorLocation(failure.details?.line && failure.details?.column ? failure.details : undefined);
       }
     }, [input, values]);
     useEffect(() => {
       if (automatic) void execute();
     }, [execute]);
     const primaryAction = useMemo(() => ({ onRun: execute, label: "Run", disabled, running: false }), [execute]);
-    Object.assign(state, { input, settings: values, result, error });
+    Object.assign(state, { input, settings: values, result, error, errorLocation });
     return React.createElement(
       React.Fragment,
       null,
@@ -47,6 +55,7 @@ export async function mountWorkspace(
         settings: values,
         result,
         error,
+        errorLocation,
         disabled,
         running: false,
         lifecycle: result ? "completed" : error ? "failed" : "idle",
@@ -57,7 +66,17 @@ export async function mountWorkspace(
       }),
     );
   }
-  const view = await mountTool(React.createElement(Fixture));
+  const view = await mountTool(
+    React.createElement(
+      NextIntlClientProvider,
+      {
+        locale,
+        messages: { ...getCommonMessages(locale), Tool: toolMessageTree(toolMessages) },
+        timeZone: "UTC",
+      },
+      React.createElement(Fixture),
+    ),
+  );
   if (automatic) await waitFor(() => expect(state.result || state.error).toBeTruthy());
   return { ...view, state, onRun };
 }

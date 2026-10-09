@@ -1,6 +1,24 @@
+import { ENCODING_EXECUTION_MESSAGES, INPUT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...ENCODING_EXECUTION_MESSAGES,
+    ...INPUT_EXECUTION_MESSAGES,
+    "execution.errors.invalid-username": "Username cannot contain a colon (:).",
+    "execution.recovery.invalid-username": "Use a username without a colon.",
+    "execution.errors.invalid-credentials": "Username and password cannot contain control characters.",
+    "execution.recovery.invalid-credentials": "Remove line breaks, tabs, and other control characters, then try again.",
+    "workspace.base64_is_reversible_ac9bab": "Base64 is reversible. Treat this output as a password and use HTTPS.",
+    "workspace.formatHelp.header": "Copy this complete Authorization header into your HTTP client.",
+    "workspace.formatHelp.value": "Use this value for a header named Authorization. The Basic prefix is included.",
+    "workspace.formatHelp.base64":
+      "This is the encoded username:password token. Add Basic followed by a space when using it as an Authorization header value.",
+    "workspace.formatHelp.curl":
+      "Replace https://example.com/api with your HTTPS endpoint, then run the command in your terminal.",
+    "workspace.formatHelp.fetch":
+      "Replace https://example.com/api with your HTTPS endpoint. Browser requests to another origin require the server to allow CORS.",
+  },
   toolId: "devtools.basic-auth-generator",
   app: "devtools",
   category: "jwt-api-tools",

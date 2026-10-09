@@ -22,6 +22,8 @@ vi.mock("@/components/content/CodeEditor", () => ({
   CodeEditor: (props) => React.createElement(TextEditorBoundary, props),
 }));
 vi.mock("next/navigation", () => ({
+  redirect: vi.fn(),
+  permanentRedirect: vi.fn(),
   usePathname: () => "/devtools/dns-checker",
   useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push() {}, replace() {}, refresh() {} }),
@@ -53,7 +55,8 @@ beforeEach(() => {
   vi.stubGlobal(
     "fetch",
     vi.fn((url, options) => {
-      if (String(url) === "/api/tools/ecosystem") return Promise.resolve(new Response(JSON.stringify({ groups: [] })));
+      if (String(url) === "/api/tools/ecosystem?locale=en")
+        return Promise.resolve(new Response(JSON.stringify({ groups: [] })));
       if (!String(url).startsWith("https://dns.google/resolve?")) throw new Error(`Unexpected request ${url}`);
       return new Promise((resolve, reject) => requests.push({ url: new URL(url), options, resolve, reject }));
     }),
@@ -72,6 +75,7 @@ async function mountPage() {
       spec,
       title: spec.name,
     }),
+    { spec },
   );
   await waitFor(() => expect(field(/Domain name/, view.container)).toBeTruthy());
   return view;

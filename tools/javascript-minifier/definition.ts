@@ -1,6 +1,11 @@
+import { CODE_EXECUTION_MESSAGES, INPUT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CODE_EXECUTION_MESSAGES,
+    ...INPUT_EXECUTION_MESSAGES,
+  },
   toolId: "devtools.javascript-minifier",
   app: "devtools",
   category: "web-markup-tools",

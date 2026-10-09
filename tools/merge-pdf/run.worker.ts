@@ -26,7 +26,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     ctx.input.files.map((file) => ({ size: file.size })),
     { merge: true },
   );
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
   for (const file of ctx.input.files) await validatePdfInput(file);
 
   const { PDFDocument } = await import("pdf-lib");
@@ -37,7 +37,9 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       ? items.map((item) => {
           const input = ctx.input.files.find((file) => file.id === item.id);
           if (!input) {
-            throw new ToolError("invalid-order", "The selected PDF order is invalid.");
+            throw new ToolError("invalid-order", "The selected PDF order is invalid.", undefined, {
+              messageRef: { key: "errors.invalidOrder" },
+            });
           }
           return input;
         })
@@ -46,11 +48,18 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   let totalPages = 0;
   for (let index = 0; index < ordered.length; index += 1) {
     ctx.signal.throwIfAborted();
-    ctx.progress({ completed: index, total: ordered.length, stage: "Copying PDF pages" });
+    ctx.progress({
+      completed: index,
+      total: ordered.length,
+      stage: "Copying PDF pages",
+      stageMessage: { key: "progress.copyingPdfPages" },
+    });
     const source = await loadPdf(ordered[index]);
     totalPages += source.getPageCount();
     enforcePageLimit(ordered[index], totalPages, false);
-    await addCopiedPagesWithProgress(output, source, source.getPageIndices(), "Copying PDF page", ctx.progress);
+    await addCopiedPagesWithProgress(output, source, source.getPageIndices(), "Copying PDF page", ctx.progress, {
+      key: "progress.copyingPdfPage",
+    });
   }
 
   const merged = await ctx.writeArtifact({

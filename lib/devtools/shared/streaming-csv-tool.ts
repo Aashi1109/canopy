@@ -56,6 +56,7 @@ export async function parseCsvRun(
                   completed,
                   total,
                   stage: "Processing delimited data",
+                  stageMessage: { key: "csv.processing" },
                 });
               }
             }
@@ -68,6 +69,12 @@ export async function parseCsvRun(
       `csv-${error.code}`,
       error.message,
       "Check the delimiter, quotes, and field counts, then try again.",
+      {
+        line: error.row,
+        column: error.column,
+        messageRef: error.messageRef,
+        recoveryMessage: { key: "csv.recovery.structure" },
+      },
     );
   }
 }
@@ -168,12 +175,13 @@ export async function streamCsvRows(
     truncated: sink.previewTruncated,
     tablePreview: preview?.result,
     stats: [
-      { label: "Rows", value: String(parsed.rowCount) },
-      { label: "Columns", value: String(parsed.columnCount) },
+      { label: "Rows", labelMessage: { key: "csv.rows" }, value: String(parsed.rowCount) },
+      { label: "Columns", labelMessage: { key: "csv.columns" }, value: String(parsed.columnCount) },
     ],
     sections: [
       {
         title: sink.previewTruncated ? "Complete generated file" : "Download",
+        titleMessage: { key: sink.previewTruncated ? "csv.completeFile" : "csv.download" },
         body: {
           render: "files",
           files: [artifact],

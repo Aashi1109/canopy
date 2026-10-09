@@ -1,6 +1,14 @@
+import { DATE_EXECUTION_MESSAGES, INPUT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
+import { CRON_MESSAGES } from "../../lib/devtools/shared/cron-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...DATE_EXECUTION_MESSAGES,
+    ...INPUT_EXECUTION_MESSAGES,
+    ...CRON_MESSAGES,
+    "workspace.copy_cron_expression_a3078a": "Copy cron expression",
+  },
   toolId: "devtools.cron-parser",
   sharing: { version: 1 },
   app: "devtools",

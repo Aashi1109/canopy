@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { useTranslations } from "next-intl";
 import { H2, Muted, Text, AlertBanner, Button, Card, Field, Input, Textarea } from "@/components/ui/index.tsx";
 
 type FormState = "idle" | "sending" | "success";
@@ -12,6 +13,7 @@ function value(form: FormData, name: string): string {
 }
 
 export default function ContactForm({ supportEmail }: { supportEmail?: string }) {
+  const t = useTranslations("Contact");
   const [state, setState] = useState<FormState>("idle");
   const [error, setError] = useState<string>();
 
@@ -20,7 +22,7 @@ export default function ContactForm({ supportEmail }: { supportEmail?: string })
     setError(undefined);
 
     if (!supportEmail) {
-      setError("Contact isn’t set up yet. Please use the help resources instead.");
+      setError(t("unavailableError"));
       return;
     }
 
@@ -31,7 +33,7 @@ export default function ContactForm({ supportEmail }: { supportEmail?: string })
     const message = value(form, "message");
 
     if (!name || !email || !subject || !message) {
-      setError("Complete every field before sending your message.");
+      setError(t("incompleteError"));
       return;
     }
 
@@ -47,13 +49,10 @@ export default function ContactForm({ supportEmail }: { supportEmail?: string })
         <div className="grid size-11 place-items-center rounded-lg bg-success-soft text-success">
           <Text>✓</Text>
         </div>
-        <H2>Message ready</H2>
-        <Muted className="max-w-md text-muted-foreground">
-          Your email app should be open with the message filled in. Send it there and we’ll reply within one business
-          day.
-        </Muted>
+        <H2>{t("successTitle")}</H2>
+        <Muted className="max-w-md text-muted-foreground">{t("successDescription")}</Muted>
         <Button onClick={() => setState("idle")} type="button" variant="ghost">
-          Write another message
+          {t("writeAnother")}
         </Button>
       </Card>
     );
@@ -63,18 +62,34 @@ export default function ContactForm({ supportEmail }: { supportEmail?: string })
     <Card className="w-full gap-4 p-8">
       {error ? <AlertBanner variant="error">{error}</AlertBanner> : null}
       {!supportEmail ? (
-        <AlertBanner title="Contact isn’t set up yet" variant="warning">
-          No support email has been configured for this deployment. You can keep using every tool without an account.
+        <AlertBanner title={t("unavailableTitle")} variant="warning">
+          {t("unavailableDescription")}
         </AlertBanner>
       ) : null}
-      <form className="grid gap-4" onSubmit={submit}>
+      <form
+        className="grid gap-4"
+        onInvalid={(event) => {
+          const input = event.target;
+          if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) {
+            input.setCustomValidity(
+              input.validity.valueMissing ? t("requiredField") : input.validity.typeMismatch ? t("invalidEmail") : "",
+            );
+          }
+        }}
+        onInput={(event) => {
+          const input = event.target;
+          if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) input.setCustomValidity("");
+        }}
+        onSubmit={submit}
+      >
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field htmlFor="contact-name" label="Name" variant="auth">
+          <Field htmlFor="contact-name" label={t("nameLabel")} variant="auth">
             <Input autoComplete="name" id="contact-name" name="name" placeholder="Jane Cooper" required />
           </Field>
-          <Field htmlFor="contact-email" label="Email" variant="auth">
+          <Field htmlFor="contact-email" label={t("emailLabel")} variant="auth">
             <Input
               autoComplete="email"
+              dir="ltr"
               id="contact-email"
               name="email"
               placeholder="jane@company.com"
@@ -83,20 +98,14 @@ export default function ContactForm({ supportEmail }: { supportEmail?: string })
             />
           </Field>
         </div>
-        <Field htmlFor="contact-subject" label="Subject" variant="auth">
-          <Input id="contact-subject" name="subject" placeholder="How can we help?" required />
+        <Field htmlFor="contact-subject" label={t("subjectLabel")} variant="auth">
+          <Input id="contact-subject" name="subject" placeholder={t("subjectPlaceholder")} required />
         </Field>
-        <Field htmlFor="contact-message" label="Message" variant="auth">
-          <Textarea
-            id="contact-message"
-            name="message"
-            placeholder="Tell us a little about what you need…"
-            required
-            rows={6}
-          />
+        <Field htmlFor="contact-message" label={t("messageLabel")} variant="auth">
+          <Textarea id="contact-message" name="message" placeholder={t("messagePlaceholder")} required rows={6} />
         </Field>
         <Button className="w-full" disabled={state === "sending"} type="submit">
-          {state === "sending" ? "Sending…" : "Send message"}
+          {state === "sending" ? t("sending") : t("send")}
         </Button>
       </form>
     </Card>

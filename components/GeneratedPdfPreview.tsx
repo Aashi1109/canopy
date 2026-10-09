@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { ToolError, translateToolError } from "@/lib/tool-framework/run";
+
 import { Button, MediaPreview, Muted, PdfViewer } from "@/components/ui/index.tsx";
 import { useEffect, useState } from "react";
 
@@ -19,6 +22,8 @@ export function GeneratedPdfPreview({
   definitionKey: string;
   fill?: boolean;
 }) {
+  const t = useTranslations("Workbench");
+  const toolText = useTranslations("Tool.runtime");
   const { inspect, previews, requestThumbnails, state } = useToolRun();
   const pages = usePdfPageImages(previews);
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,18 +45,26 @@ export function GeneratedPdfPreview({
         });
       })
       .catch(() => {
-        if (current) setFailure("The generated PDF could not be opened.");
+        if (current) setFailure(t("mediaGeneratedPdfOpenFailed"));
       });
     return () => {
       current = false;
     };
-  }, [file, definitionKey, inspect, attempt]);
+  }, [file, definitionKey, inspect, attempt, t]);
 
   useEffect(() => {
     if (state.status === "completed") requestThumbnails([currentPage]);
   }, [currentPage, requestThumbnails, state.status, previews]);
 
-  const error = failure || state.error?.message;
+  const error =
+    failure ||
+    (state.error
+      ? translateToolError(
+          new ToolError(state.error.code, state.error.message, state.error.recovery, state.error.details),
+          (message) => (toolText.has(message.key) ? toolText(message.key, message.values) : undefined),
+          (message) => (t.has(message.key) ? t(message.key, message.values) : undefined),
+        ).message
+      : undefined);
   const viewer = (onExpand?: () => void) => (
     <PdfViewer
       className={`min-w-0 w-full ${onExpand && !fill ? "h-[40rem]" : "h-full"}`}
@@ -62,7 +75,7 @@ export function GeneratedPdfPreview({
       onPageChange={setCurrentPage}
       outline={pages.map((entry) => ({
         id: `page-${entry.pageNumber}`,
-        title: `Page ${entry.pageNumber}`,
+        title: t("mediaPageNumber", { page: entry.pageNumber }),
         page: entry.pageNumber,
       }))}
       pageCount={pages.length}
@@ -72,7 +85,7 @@ export function GeneratedPdfPreview({
         height: page.pageHeight,
         content: (
           <PdfPreviewPage
-            alt={`Generated PDF page ${page.pageNumber}`}
+            alt={t("mediaGeneratedPdfPage", { page: page.pageNumber })}
             page={page}
             requestThumbnails={requestThumbnails}
             active={!onExpand || !expanded}
@@ -96,20 +109,20 @@ export function GeneratedPdfPreview({
       stateAction={
         error ? (
           <Button onClick={() => setAttempt((value) => value + 1)} variant="outline">
-            Retry preview
+            {t("mediaRetryPreview")}
           </Button>
         ) : undefined
       }
-      stateDescription={error ? `${error} Retry the preview, or download the PDF from Processed output.` : undefined}
-      stateTitle={error ? "Preview unavailable" : "Opening generated PDF…"}
-      title="Generated PDF"
+      stateDescription={error ? t("mediaGeneratedPreviewRetry", { error }) : undefined}
+      stateTitle={error ? t("mediaPreviewUnavailable") : t("mediaOpeningGeneratedPdf")}
+      title={t("mediaGeneratedPdf")}
     >
       {viewer(() => setExpanded(true))}
       <MediaPreview
         open={expanded}
         onOpenChange={setExpanded}
         title={file.name}
-        description={`Generated PDF · Page ${currentPage} of ${pages.length}`}
+        description={t("mediaGeneratedPdfPosition", { page: currentPage, count: pages.length })}
         actions={<ArtifactDownloadButton file={file} size="sm" />}
         viewportClassName="bg-card p-0 text-foreground sm:p-0"
       >
@@ -128,13 +141,14 @@ function PagePreview({
   previews: ReturnType<typeof usePdfPageImages>;
   requestThumbnails: (pages: readonly number[]) => void;
 }) {
+  const t = useTranslations("Workbench");
   useEffect(() => {
     requestThumbnails([pageNumber]);
   }, [pageNumber, requestThumbnails]);
   const page = previews.find((entry) => entry.pageNumber === pageNumber);
   return page?.url ? (
-    <img alt={`Page ${pageNumber}`} className="h-full w-full object-contain" src={page.url} />
+    <img alt={t("mediaPageNumber", { page: pageNumber })} className="h-full w-full object-contain" src={page.url} />
   ) : (
-    <Muted role="status">Rendering page {pageNumber}…</Muted>
+    <Muted role="status">{t("mediaRenderingPageNumber", { page: pageNumber })}</Muted>
   );
 }

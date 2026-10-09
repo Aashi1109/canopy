@@ -31,7 +31,7 @@ function Fixture() {
 test("regex workspace selects presets/languages and keeps the generated value readonly and copyable", async () => {
   const writeText = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
-  await mountTool(React.createElement(Fixture));
+  await mountTool(React.createElement(Fixture), { spec: definition });
   await click(field("Pattern preset"));
   await click(
     [...document.querySelectorAll('[role="option"]')].find((node) => node.textContent.trim() === "Hex color"),
@@ -47,7 +47,7 @@ test("regex workspace selects presets/languages and keeps the generated value re
 });
 
 test("regex workspace toggles named groups and explanation without changing the selected pattern", async () => {
-  await mountTool(React.createElement(Fixture));
+  await mountTool(React.createElement(Fixture), { spec: definition });
   await click(field("Add named groups"));
   assert.ok(field("Generated regular expression").value.startsWith("/(?<match>"));
   await click(field("Explain pattern"));

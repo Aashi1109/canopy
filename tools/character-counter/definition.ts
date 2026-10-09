@@ -1,6 +1,16 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "execution.metric": "Metric",
+    "execution.count": "Count",
+    "execution.characters": "Characters",
+    "execution.remaining": "Remaining",
+    "execution.withoutSpaces": "Characters without spaces",
+    "execution.words": "Words",
+    "execution.lines": "Lines",
+    "execution.bytes": "UTF-8 bytes",
+  },
   toolId: "devtools.character-counter",
   sharing: { version: 1 },
   app: "devtools",

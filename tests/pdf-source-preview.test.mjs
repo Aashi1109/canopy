@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { Blob as NodeBlob, File as NodeFile } from "node:buffer";
 import React, { act } from "react";
+import { createTranslator } from "next-intl";
+import { getCommonMessages } from "../lib/i18n/messages.ts";
 import { beforeEach, expect, test, vi } from "vitest";
 import { FileProcessorWorkspace } from "../components/FileProcessorWorkspace.tsx";
 import jpgSpec from "../tools/pdf-to-jpg/definition.ts";
@@ -78,7 +80,7 @@ function source(name = "source.pdf") {
   return new File([`%PDF-${name}`], name, { type: "application/pdf", lastModified: 1 });
 }
 
-async function mountWorkspace(spec = jpgSpec, overrides = {}) {
+async function mountWorkspace(spec = jpgSpec, overrides = {}, i18n = {}) {
   const onInputChange = vi.fn();
   const onValidationChange = vi.fn();
   const onRun = vi.fn();
@@ -95,7 +97,7 @@ async function mountWorkspace(spec = jpgSpec, overrides = {}) {
     ...overrides,
   };
   const element = () => React.createElement(FileProcessorWorkspace, props);
-  const view = await mountTool(element());
+  const view = await mountTool(element(), { spec, ...i18n });
   return {
     ...view,
     onInputChange,
@@ -264,4 +266,47 @@ test("synchronous preview startup failure can be retried without reselecting the
   await completeInspection();
   expect(sourceImages(view)).toHaveLength(2);
   expect(view.onInputChange).not.toHaveBeenCalled();
+});
+
+test("localized PDF navigation keeps canonical page numbers and source files intact", async () => {
+  const view = await mountWorkspace(jpgSpec, {}, { locale: "hi" });
+  await completeInspection();
+  const currentPage = view.container.querySelector('input[aria-label="वर्तमान पेज"]');
+  expect(currentPage).toBeTruthy();
+  expect(view.container.textContent).toContain("2 में से पेज 1");
+  expect([...view.container.querySelectorAll("img")].some((image) => image.alt === "मूल PDF का पेज 1")).toBe(true);
+  await fill(currentPage, "2");
+  await act(async () => currentPage.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+  expect(currentPage.value).toBe("2");
+  expect(view.container.textContent).toContain("2 में से पेज 2");
+  expect(currentInspection().message.files[0].name).toBe("source.pdf");
+  expect(view.onInputChange).not.toHaveBeenCalled();
+});
+
+test("source preview renders database-provided Hindi inspection errors without losing retry", async () => {
+  const view = await mountWorkspace(
+    jpgSpec,
+    {},
+    {
+      locale: "hi",
+      messages: {
+        "runtime.media.pdf.encryptedPdf": "पासवर्ड वाले PDF समर्थित नहीं हैं।",
+      },
+    },
+  );
+  const { worker, message } = currentInspection();
+  await act(async () =>
+    worker.emit({
+      type: "failure",
+      jobId: message.jobId,
+      code: "encrypted-pdf",
+      message: "Encrypted or password-protected PDFs are not supported.",
+      details: { messageRef: { key: "media.pdf.encryptedPdf" } },
+    }),
+  );
+  await waitFor(() => expect(view.container.textContent).toContain("पासवर्ड वाले PDF समर्थित नहीं हैं।"));
+  expect(view.container.textContent).not.toContain("Encrypted or password-protected");
+  const t = createTranslator({ locale: "hi", messages: getCommonMessages("hi"), namespace: "Workbench" });
+  await click(button(t("mediaRetryPreview"), view.container));
+  expect(requests("inspect")).toHaveLength(2);
 });

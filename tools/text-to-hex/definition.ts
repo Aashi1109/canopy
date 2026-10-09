@@ -1,6 +1,10 @@
+import { ENCODING_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...ENCODING_EXECUTION_MESSAGES,
+  },
   toolId: "devtools.text-to-hex",
   sharing: { version: 1 },
   app: "devtools",

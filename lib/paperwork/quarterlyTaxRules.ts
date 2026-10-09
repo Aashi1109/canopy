@@ -23,6 +23,15 @@ interface TaxBracket {
   rate: number;
 }
 
+const TAX_ASSUMPTION_MESSAGES = [
+  { key: "tax.assumptions.equalInstallments" },
+  { key: "tax.assumptions.deduction" },
+  { key: "tax.assumptions.credits" },
+  { key: "tax.assumptions.paymentFloor" },
+  { key: "tax.assumptions.stateEstimate" },
+  { key: "tax.assumptions.estimateOnly" },
+] as const;
+
 export const QUARTERLY_TAX_RULES_2026 = {
   version: "2026.1",
   taxYear: 2026,
@@ -154,7 +163,7 @@ function calculateProgressiveTax(taxableIncome: number, brackets: readonly TaxBr
 }
 
 export function calculateQuarterlyTax(draft: QuarterlyTaxDraft):
-  | { ok: false; error: string }
+  | { ok: false; error: string; errorMessage: { key: string; values: { year: number } } }
   | {
       ok: true;
       calculationVersion: string;
@@ -177,12 +186,14 @@ export function calculateQuarterlyTax(draft: QuarterlyTaxDraft):
         amount: number;
       }>;
       assumptions: readonly string[];
+      assumptionMessages: typeof TAX_ASSUMPTION_MESSAGES;
     } {
   const rules = draft.taxYear === QUARTERLY_TAX_RULES_2026.taxYear ? QUARTERLY_TAX_RULES_2026 : null;
   if (!rules) {
     return {
       ok: false,
       error: `Quarterly tax rules update required for ${draft.taxYear}.`,
+      errorMessage: { key: "tax.validation.rulesUpdateRequired", values: { year: draft.taxYear } },
     };
   }
 
@@ -268,5 +279,6 @@ export function calculateQuarterlyTax(draft: QuarterlyTaxDraft):
           : quarterlyPayment,
     })),
     assumptions: rules.assumptions,
+    assumptionMessages: TAX_ASSUMPTION_MESSAGES,
   };
 }

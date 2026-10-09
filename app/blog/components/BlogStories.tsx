@@ -2,6 +2,8 @@
 
 import { useRef, useState, type ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { localizeHref, type Locale } from "@/lib/i18n/config";
 import { AlertBanner, Button, Caption, P } from "@/components/ui/index.tsx";
 import type { listPublishedBlogPosts } from "@/lib/blog/queries";
 import { loadMoreBlogPosts } from "../actions";
@@ -28,6 +30,8 @@ export function BlogStories({
   emptyState,
   topics,
 }: Props) {
+  const t = useTranslations("Blog");
+  const locale = useLocale() as Locale;
   const [page, setPage] = useState(initialPage);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -39,7 +43,7 @@ export function BlogStories({
     pending.current = true;
     setBusy(true);
     setError("");
-    setAnnouncement("Loading stories…");
+    setAnnouncement(t("loadingStories"));
     try {
       const result = await loadMoreBlogPosts({
         search: filters.search,
@@ -48,7 +52,7 @@ export function BlogStories({
         cursor: page.nextCursor,
       });
       if (!result.ok) {
-        setError(result.message);
+        setError(t("loadFailed"));
         setAnnouncement("");
         return;
       }
@@ -60,10 +64,10 @@ export function BlogStories({
       });
       setPage({ items: [...page.items, ...additions], nextCursor: result.data.nextCursor });
       setAnnouncement(
-        `${additions.length} more ${additions.length === 1 ? "story" : "stories"} loaded.${result.data.nextCursor ? "" : " You’re up to date."}`,
+        `${t("loadedMore", { count: additions.length })}${result.data.nextCursor ? "" : ` ${t("upToDate")}`}`,
       );
     } catch {
-      setError("Couldn’t load more stories. Your loaded stories are still here. Check your connection and try again.");
+      setError(t("connectionFailed"));
       setAnnouncement("");
     } finally {
       pending.current = false;
@@ -82,10 +86,10 @@ export function BlogStories({
           <div className="mb-8 flex items-center justify-between gap-4 text-[13px] text-muted-foreground">
             <span>
               {busy
-                ? "Loading articles…"
-                : `${page.items.length}${page.nextCursor ? "+" : ""} ${page.items.length === 1 ? "result" : "results"}`}
+                ? t("loadingArticles")
+                : t("resultCount", { count: page.items.length, more: page.nextCursor ? "yes" : "no" })}
             </span>
-            <span>Newest first</span>
+            <span>{t("newestFirst")}</span>
           </div>
         )}
         <div className={`flex flex-col gap-7 ${filters.search ? "lg:gap-8" : "lg:gap-0"}`}>
@@ -99,9 +103,7 @@ export function BlogStories({
           ))}
         </div>
         {!page.items.length && emptyState}
-        {featuredId && !stories.length && (
-          <P className="py-6 text-muted-foreground">You’re up to date. More stories are on the way.</P>
-        )}
+        {featuredId && !stories.length && <P className="py-6 text-muted-foreground">{t("moreOnWay")}</P>}
       </section>
       {topics}
       <div
@@ -110,28 +112,28 @@ export function BlogStories({
         {error && <AlertBanner variant="error">{error}</AlertBanner>}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Caption className="text-muted-foreground">
-            {page.items.length} {page.items.length === 1 ? "story" : "stories"}
-            {page.nextCursor ? " · More available" : ""}
+            {t("storyCount", { count: page.items.length })}
+            {page.nextCursor ? ` · ${t("moreAvailable")}` : ""}
           </Caption>
-          <nav aria-label="Article pages" className="flex gap-2">
+          <nav aria-label={t("articlePages")} className="flex gap-2">
             {filters.cursor && (
               <Button asChild variant="outline" size="sm">
-                <a href={blogListingHref(filters, { cursor: undefined })}>Newest stories</a>
+                <a href={localizeHref(blogListingHref(filters, { cursor: undefined }), locale)}>{t("newestStories")}</a>
               </Button>
             )}
             {page.nextCursor && (
               <Button asChild loading={busy} variant="outline" size="sm">
                 <a
                   rel="next"
-                  href={blogListingHref(filters, { cursor: page.nextCursor })}
+                  href={localizeHref(blogListingHref(filters, { cursor: page.nextCursor }), locale)}
                   onClick={(event) => {
                     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                     event.preventDefault();
                     void loadMore();
                   }}
                 >
-                  {error ? "Try loading more" : "Load more stories"}
-                  <ArrowRight aria-hidden="true" />
+                  {error ? t("retryLoad") : t("loadMore")}
+                  <ArrowRight aria-hidden="true" className="rtl:rotate-180" />
                 </a>
               </Button>
             )}

@@ -24,18 +24,18 @@ test("SmartTools is a root-owned direct-layout Next.js application", async () =>
   expect(await exists("apps")).toBe(false);
   expect(await exists("components/canopy/PublicInfoChrome.tsx")).toBe(true);
   expect(await exists("app/paperwork/components/App.tsx")).toBe(true);
-  expect(await exists("app/layout.tsx")).toBe(true);
+  expect(await exists("app/(public)/[locale]/layout.tsx")).toBe(true);
   expect(await exists("src")).toBe(false);
 });
 
 test("public tools use scoped server-resolved dynamic slugs", async () => {
   const [paperworkCatalog, paperworkTool, devtoolsCatalog, devtoolsTool, mediaCatalog, mediaTool] = await Promise.all([
-    readFile(new URL("app/paperwork/page.tsx", root), "utf8"),
-    readFile(new URL("app/paperwork/[slug]/page.tsx", root), "utf8"),
-    readFile(new URL("app/devtools/page.tsx", root), "utf8"),
-    readFile(new URL("app/devtools/[slug]/page.tsx", root), "utf8"),
-    readFile(new URL("app/media/page.tsx", root), "utf8"),
-    readFile(new URL("app/media/[slug]/page.tsx", root), "utf8"),
+    readFile(new URL("app/(public)/[locale]/paperwork/page.tsx", root), "utf8"),
+    readFile(new URL("app/(public)/[locale]/paperwork/[slug]/page.tsx", root), "utf8"),
+    readFile(new URL("app/(public)/[locale]/devtools/page.tsx", root), "utf8"),
+    readFile(new URL("app/(public)/[locale]/devtools/[slug]/page.tsx", root), "utf8"),
+    readFile(new URL("app/(public)/[locale]/media/page.tsx", root), "utf8"),
+    readFile(new URL("app/(public)/[locale]/media/[slug]/page.tsx", root), "utf8"),
   ]);
 
   expect(paperworkCatalog).toMatch(/href=\{`\/paperwork\/\$\{tool\.slug\}`\}/);
@@ -96,14 +96,14 @@ test("contact and privacy are global while Paperwork-owned information stays sco
   const app = await readFile(new URL("components/canopy/CanopyFooter.tsx", root), "utf8");
 
   for (const slug of ["contact", "privacy"]) {
-    const page = await readFile(new URL(`app/${slug}/page.tsx`, root), "utf8");
+    const page = await readFile(new URL(`app/(public)/[locale]/${slug}/page.tsx`, root), "utf8");
     expect(app).toMatch(new RegExp(`href(?:=|:)\\s*["']/${slug}["']`));
     expect(page).toMatch(/PublicInfoChrome/);
     expect(app).not.toMatch(new RegExp(`/paperwork/${slug}`));
   }
 
   for (const slug of ["about", "terms"]) {
-    const page = await readFile(new URL(`app/paperwork/${slug}/page.tsx`, root), "utf8");
+    const page = await readFile(new URL(`app/(public)/[locale]/paperwork/${slug}/page.tsx`, root), "utf8");
     expect(page).toMatch(/InformationPage/);
   }
 });

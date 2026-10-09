@@ -12,6 +12,10 @@ export function diffLines(left: string, right: string): ToolDiffLine[] {
       "comparison-too-large",
       "This comparison is too large to align safely. Compare smaller sections.",
       "Split the inputs into smaller sections and compare them one at a time.",
+      {
+        messageRef: { key: "sharedDiff.tooLarge" },
+        recoveryMessage: { key: "sharedDiff.recovery" },
+      },
     );
   }
 

@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import {
   Overline,
@@ -59,9 +60,9 @@ export type WorkspaceSurfaceProps = Omit<HTMLAttributes<HTMLElement>, "title"> &
 };
 
 const DEFAULT_STATE_TITLES: Record<Exclude<WorkspaceSurfaceState, "ready">, string> = {
-  empty: "Nothing here yet",
-  error: "This surface needs attention",
-  loading: "Loading",
+  empty: "emptySurface",
+  error: "errorSurface",
+  loading: "loading",
 };
 
 const DEFAULT_STATE_ICONS: Record<Exclude<WorkspaceSurfaceState, "ready">, ReactNode> = {
@@ -91,6 +92,7 @@ function WorkspaceSurface({
   variant = "panel",
   ...props
 }: WorkspaceSurfaceProps) {
+  const t = useTranslations("Workbench");
   const headingId = useId();
   const content =
     state === "ready" ? (
@@ -102,7 +104,7 @@ function WorkspaceSurface({
         state={state === "empty" && purpose === "result" ? "waiting" : state}
         density={state === "empty" && purpose === "result" ? "compact" : "section"}
         icon={state === "empty" && purpose === "result" ? null : (stateIcon ?? DEFAULT_STATE_ICONS[state])}
-        title={stateTitle ?? DEFAULT_STATE_TITLES[state]}
+        title={stateTitle ?? t(DEFAULT_STATE_TITLES[state])}
         description={stateDescription}
         action={stateAction}
         announcement="polite"
@@ -199,7 +201,7 @@ function WorkspaceSurface({
         {variant === "card" ? workspaceHeader : null}
         {scroll === "content" && state === "ready" ? (
           <ScrollRegion
-            accessibleName={`${typeof title === "string" ? title : "Workspace"} content`}
+            accessibleName={t("workspaceContent", { label: typeof title === "string" ? title : t("workspace") })}
             className="flex-1"
             data-slot="workspace-content"
           >
@@ -239,6 +241,7 @@ function FileIntakeSurface({
   onFiles,
   ...surfaceProps
 }: FileIntakeSurfaceProps) {
+  const t = useTranslations("Workbench");
   const inputRef = useRef<HTMLInputElement>(null);
 
   function deliverFiles(files: FileList | readonly File[]) {
@@ -271,9 +274,7 @@ function FileIntakeSurface({
         <FileUploadZone
           className="max-w-[500px]"
           description={intakeDescription}
-          hint={
-            intakeHint ?? (multiple ? "Click to browse, or drop files here" : "Click to browse, or drop a file here")
-          }
+          hint={intakeHint ?? t(multiple ? "browseFiles" : "browseFile")}
           disabled={disabled}
           icon={intakeIcon}
           onClick={() => inputRef.current?.click()}
@@ -300,7 +301,7 @@ export type FileQueueSurfaceProps<Item> = Omit<WorkspaceSurfaceProps, "children"
 
 function FileQueueSurface<Item>({
   disabled = false,
-  emptyDescription = "Add one or more files to continue.",
+  emptyDescription,
   getIcon,
   getId,
   getMetadata,
@@ -310,13 +311,14 @@ function FileQueueSurface<Item>({
   renderAction,
   ...surfaceProps
 }: FileQueueSurfaceProps<Item>) {
+  const t = useTranslations("Workbench");
   const renderFile = (item: Item, orderable?: OrderableItemState) => (
     <div className="flex items-center gap-2 border-b border-border" key={getId(item)}>
       {orderable ? (
         <Button
           {...orderable.attributes}
           {...orderable.listeners}
-          aria-label={`Drag ${getName(item)} to reorder`}
+          aria-label={t("reorderFile", { name: String(getName(item)) })}
           className="relative size-8 shrink-0 cursor-grab touch-none text-muted-foreground before:absolute before:inset-[-6px] before:content-[''] active:cursor-grabbing"
           disabled={orderable.disabled || items.length < 2}
           ref={orderable.setActivatorNodeRef}
@@ -339,15 +341,18 @@ function FileQueueSurface<Item>({
     <WorkspaceSurface
       purpose="source"
       state={items.length === 0 ? "empty" : "ready"}
-      stateDescription={emptyDescription}
+      stateDescription={emptyDescription ?? t("addFiles")}
       stateIcon={<FileIcon aria-hidden="true" />}
-      stateTitle="No files added"
+      stateTitle={t("noFiles")}
       {...surfaceProps}
     >
-      <ScrollRegion accessibleName="File queue" className="flex-1 px-4 [&_[data-slot=scroll-area-viewport]>div]:block!">
+      <ScrollRegion
+        accessibleName={t("fileQueue")}
+        className="flex-1 px-4 [&_[data-slot=scroll-area-viewport]>div]:block!"
+      >
         {onReorder ? (
           <OrderableList
-            ariaLabel="Selected files in processing order"
+            ariaLabel={t("fileOrder")}
             disabled={disabled}
             getId={getId}
             getLabel={(item) => String(getName(item))}
@@ -379,7 +384,7 @@ export type CollectionSurfaceProps<Item> = Omit<WorkspaceSurfaceProps, "children
 function CollectionSurface<Item>({
   ariaLabel,
   disabled = false,
-  emptyDescription = "Add items to build this collection.",
+  emptyDescription,
   getId,
   getLabel,
   items,
@@ -389,12 +394,13 @@ function CollectionSurface<Item>({
   renderItem,
   ...surfaceProps
 }: CollectionSurfaceProps<Item>) {
+  const t = useTranslations("Workbench");
   return (
     <WorkspaceSurface
       purpose="editor"
       state={items.length === 0 ? "empty" : "ready"}
-      stateDescription={emptyDescription}
-      stateTitle="Collection is empty"
+      stateDescription={emptyDescription ?? t("addItems")}
+      stateTitle={t("emptyCollection")}
       {...surfaceProps}
     >
       <ScrollRegion accessibleName={ariaLabel} className="flex-1 p-4">
@@ -461,6 +467,7 @@ function CanvasSurface({
   zoomStep = 0.1,
   ...surfaceProps
 }: CanvasSurfaceProps) {
+  const t = useTranslations("Workbench");
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
@@ -560,16 +567,16 @@ function CanvasSurface({
     <TooltipProvider>
       <Stack align="center" direction="row" gap="xs">
         {actions}
-        <CanvasAction label="Zoom out" onClick={() => updateView(zoom - zoomStep, pan)}>
+        <CanvasAction label={t("zoomOut")} onClick={() => updateView(zoom - zoomStep, pan)}>
           <Minus aria-hidden="true" />
         </CanvasAction>
         <Caption aria-live="polite" className="min-w-11 text-center text-muted-foreground">
           {Math.round(zoom * 100)}%
         </Caption>
-        <CanvasAction label="Zoom in" onClick={() => updateView(zoom + zoomStep, pan)}>
+        <CanvasAction label={t("zoomIn")} onClick={() => updateView(zoom + zoomStep, pan)}>
           <Plus aria-hidden="true" />
         </CanvasAction>
-        <CanvasAction label="Fit to view" onClick={fitToView}>
+        <CanvasAction label={t("fitView")} onClick={fitToView}>
           <Maximize2 aria-hidden="true" />
         </CanvasAction>
       </Stack>
@@ -629,7 +636,7 @@ export type NavigatorSurfaceProps<Item> = Omit<WorkspaceSurfaceProps, "children"
 
 function NavigatorSurface<Item>({
   ariaLabel,
-  emptyDescription = "Nothing is available to navigate.",
+  emptyDescription,
   getDescription,
   getIcon,
   getId,
@@ -639,6 +646,7 @@ function NavigatorSurface<Item>({
   selectedId,
   ...surfaceProps
 }: NavigatorSurfaceProps<Item>) {
+  const t = useTranslations("Workbench");
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const selectedIndex = Math.max(
     0,
@@ -661,8 +669,8 @@ function NavigatorSurface<Item>({
     <WorkspaceSurface
       purpose="inspector"
       state={items.length === 0 ? "empty" : "ready"}
-      stateDescription={emptyDescription}
-      stateTitle="Nothing to navigate"
+      stateDescription={emptyDescription ?? t("nothingNavigate")}
+      stateTitle={t("noNavigation")}
       {...surfaceProps}
     >
       <ScrollRegion accessibleName={ariaLabel} className="flex-1 p-2">
@@ -723,13 +731,14 @@ function GeneratedList<Item>({
   renderAction,
   variant = "code",
 }: GeneratedListProps<Item>) {
+  const t = useTranslations("Workbench");
   const longestLine = items.reduce((longest, item) => {
     const content = `${getValue(item)}\n${getDescription?.(item) ?? ""}`;
     return content.split(/\r\n?|\n/).reduce((length, line) => Math.max(length, line.length), longest);
   }, 0);
 
   return (
-    <ScrollRegion accessibleName="Generated values" className="flex-1">
+    <ScrollRegion accessibleName={t("generatedValues")} className="flex-1">
       <ol
         className="grid min-w-0 gap-2 p-4 font-mono text-code"
         style={{

@@ -1,4 +1,5 @@
 import { CSV_MAX_FIELD_BYTES, CSV_MAX_ROW_BYTES } from "../../tool-framework/limits.ts";
+import type { ToolMessage } from "../../tool-runtime/types.ts";
 
 export type CsvChunk = string | Uint8Array;
 
@@ -15,13 +16,15 @@ export class CsvParseError extends Error {
   readonly code: CsvParseErrorCode;
   readonly row: number;
   readonly column: number;
+  readonly messageRef?: ToolMessage;
 
-  constructor(code: CsvParseErrorCode, message: string, row: number, column: number) {
+  constructor(code: CsvParseErrorCode, message: string, row: number, column: number, messageRef?: ToolMessage) {
     super(message);
     this.name = "CsvParseError";
     this.code = code;
     this.row = row;
     this.column = column;
+    this.messageRef = messageRef;
   }
 }
 
@@ -118,6 +121,10 @@ export async function parseStreamingCsv(
         `Field at row ${currentRow()}, column ${currentColumn()} exceeds the ${maxFieldBytes.toLocaleString("en-US")} byte safety limit.`,
         currentRow(),
         currentColumn(),
+        {
+          key: "csv.errors.streamFieldTooLarge",
+          values: { row: currentRow(), column: currentColumn(), limit: maxFieldBytes },
+        },
       );
     }
     if (rowBytes + fieldBytes + bytes > maxRowBytes) {
@@ -126,6 +133,10 @@ export async function parseStreamingCsv(
         `Row ${currentRow()} exceeds the ${maxRowBytes.toLocaleString("en-US")} byte safety limit.`,
         currentRow(),
         currentColumn(),
+        {
+          key: "csv.errors.streamRowTooLarge",
+          values: { row: currentRow(), column: currentColumn(), limit: maxRowBytes },
+        },
       );
     }
     field += character;
@@ -160,6 +171,10 @@ export async function parseStreamingCsv(
         `Row ${rowNumber} has ${completedRow.length} ${noun}; expected ${columnCount} ${expectedNoun}.`,
         rowNumber,
         errorColumn,
+        {
+          key: "csv.errors.streamWidth",
+          values: { row: rowNumber, column: errorColumn, actual: completedRow.length, expected: columnCount },
+        },
       );
     }
 
@@ -211,6 +226,10 @@ export async function parseStreamingCsv(
             `Unexpected character ${JSON.stringify(character)} after a closing quote at row ${currentRow()}, column ${currentColumn()}.`,
             currentRow(),
             currentColumn(),
+            {
+              key: "csv.errors.streamUnexpectedCharacter",
+              values: { character: JSON.stringify(character), row: currentRow(), column: currentColumn() },
+            },
           );
         }
       }
@@ -232,6 +251,7 @@ export async function parseStreamingCsv(
             `Unexpected quote at row ${currentRow()}, column ${currentColumn()}. Quotes must start at the beginning of a field.`,
             currentRow(),
             currentColumn(),
+            { key: "csv.errors.streamUnexpectedQuote", values: { row: currentRow(), column: currentColumn() } },
           );
         }
         state = "quoted";
@@ -259,6 +279,7 @@ export async function parseStreamingCsv(
         `Invalid UTF-8 at row ${currentRow()}, column ${currentColumn()}.`,
         currentRow(),
         currentColumn(),
+        { key: "csv.errors.streamEncoding", values: { row: currentRow(), column: currentColumn() } },
       );
     }
   };
@@ -291,6 +312,7 @@ export async function parseStreamingCsv(
       `Unclosed quoted field at row ${currentRow()}, column ${currentColumn()}.`,
       currentRow(),
       currentColumn(),
+      { key: "csv.errors.streamUnclosedQuote", values: { row: currentRow(), column: currentColumn() } },
     );
   }
   if (recordStarted || row.length || field) await emitRow();

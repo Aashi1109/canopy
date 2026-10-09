@@ -1,3 +1,4 @@
+import { INPUT_EXECUTION_MESSAGES, URL_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
@@ -74,6 +75,20 @@ export default {
     empty: "Add Disallow or Allow paths, then generate robots.txt. Leave both blank to allow crawling.",
     ready: "robots.txt is ready.",
     running: "Generating robots.txt…",
+  },
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+    ...URL_EXECUTION_MESSAGES,
+    "errors.path-root-required": "Every path must start with /.",
+    "recovery.path-root-required": "Write paths relative to the site root, such as /admin or /public.",
+
+    "workspace.onePathPerLineStartingWith": "One path per line, starting with /.",
+    "workspace.googlebotIgnoresCrawlDelay": "Googlebot ignores crawl delay.",
+    "workspace.crawlerRules": "Crawler rules",
+    "workspace.disallowIgnored": "Disallow paths are ignored while Allow all is on.",
+    "workspace.onePath": "One path per line, starting with /.",
+    "workspace.sitemapHelp": "Optional http or https URL.",
+    "workspace.delayHelp": "Seconds; 0 = off.",
   },
   content: {
     howToUse: [

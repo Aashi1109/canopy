@@ -22,6 +22,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "same-delimiter",
       "Choose different source and target delimiters.",
       "Pick a target delimiter that differs from the source, or use the CSV Formatter to normalise quoting in place.",
+      {
+        messageRef: { key: "csv.errors.sameDelimiter" },
+        recoveryMessage: { key: "csv.recovery.sameDelimiter" },
+      },
     );
   }
   if (isLargeCsvRun(ctx)) {

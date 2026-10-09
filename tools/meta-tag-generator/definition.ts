@@ -1,6 +1,12 @@
+import { INPUT_EXECUTION_MESSAGES, URL_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+    ...URL_EXECUTION_MESSAGES,
+    "workspace.generated_meta_tags_d04091": "Generated meta tags",
+  },
   toolId: "devtools.meta-tag-generator",
   sharing: { version: 1 },
   app: "devtools",

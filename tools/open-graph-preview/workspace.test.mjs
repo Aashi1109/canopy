@@ -66,7 +66,7 @@ function Fixture({
 
 test("Open Graph workspace blocks invalid URLs, links the error to its field, and submits a corrected domain", async () => {
   const onRun = vi.fn();
-  await mountTool(React.createElement(Fixture, { onRun }));
+  await mountTool(React.createElement(Fixture, { onRun }), { spec: definition });
   assert.equal(button("Scan URL").disabled, true);
   await fill(field(/^Website URL/), "javascript:alert(1)");
   const input = field(/^Website URL/);
@@ -83,7 +83,9 @@ test("Open Graph workspace blocks invalid URLs, links the error to its field, an
 test("Open Graph cancellation returns to Scan without accidentally submitting again", async () => {
   const onRun = vi.fn();
   const onCancel = vi.fn();
-  await mountTool(React.createElement(Fixture, { initial: "example.com", initiallyRunning: true, onRun, onCancel }));
+  await mountTool(React.createElement(Fixture, { initial: "example.com", initiallyRunning: true, onRun, onCancel }), {
+    spec: definition,
+  });
   assert.equal(field(/^Website URL/).disabled, true);
   await click(button("Cancel"));
   assert.equal(onCancel.mock.calls.length, 1);
@@ -101,6 +103,7 @@ test("Open Graph failed scans offer Edit URL and honor an externally disabled ac
       actionDisabled: true,
       onRun,
     }),
+    { spec: definition },
   );
   await click(button("Edit URL"));
   assert.equal(document.activeElement, field(/^Website URL/));
@@ -111,7 +114,9 @@ test("Open Graph failed scans offer Edit URL and honor an externally disabled ac
 test("Open Graph previews switch platforms and expose exact fetched tags for copying", async () => {
   const writeText = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
-  const { container } = await mountTool(React.createElement(Fixture, { initial: "example.com", result }));
+  const { container } = await mountTool(React.createElement(Fixture, { initial: "example.com", result }), {
+    spec: definition,
+  });
   assert.ok(button("Rescan"));
   for (const platform of ["Facebook", "X", "LinkedIn", "WhatsApp", "Discord"]) {
     await selectTab(platform);
@@ -126,4 +131,40 @@ test("Open Graph previews switch platforms and expose exact fetched tags for cop
   assert.deepEqual(writeText.mock.calls, [[result.tags]]);
   assert.ok(container.textContent.includes("https://example.com/old"));
   assert.ok(container.textContent.includes("https://example.com/page"));
+});
+
+test("Open Graph localizes check instructions and ICU counts while copying exact fetched tags", async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+  const parsed = parseMetadata(
+    '<meta property="og:title" content="Titre 日本"><meta property="og:title" content="Second">',
+    "https://example.com",
+  );
+  const result = {
+    render: "link-preview",
+    requestedUrl: "https://example.com",
+    resolvedUrl: "https://example.com",
+    ...parsed,
+  };
+  const { container } = await mountTool(React.createElement(Fixture, { initial: "example.com", result }), {
+    spec: definition,
+    locale: "fr",
+    messages: {
+      "runtime.checks.titleFound": "Titre Open Graph trouvé",
+      "runtime.checks.descriptionMissing": "Description Open Graph manquante",
+      "runtime.checks.addDescription": "Ajoutez og:description pour décrire la page.",
+      "runtime.checks.duplicateTags": "Balises {property} en double",
+      "runtime.checks.duplicateValues": "{count, number} valeurs trouvées.",
+    },
+  });
+  assert.ok(container.textContent.includes("Titre Open Graph trouvé"));
+  assert.ok(container.textContent.includes("Description Open Graph manquante"));
+  assert.ok(container.textContent.includes("Ajoutez og:description pour décrire la page."));
+  assert.ok(container.textContent.includes("Balises og:title en double"));
+  assert.ok(container.textContent.includes("2 valeurs trouvées."));
+  assert.ok(container.textContent.includes("Titre 日本"));
+  await selectTab("HTML tags");
+  assert.equal(field("Fetched HTML tags").value, result.tags);
+  await click(button("Tout copier"));
+  assert.deepEqual(writeText.mock.calls, [[result.tags]]);
 });

@@ -3,6 +3,7 @@
 import { Overline, H3, Muted, Caption, Strong, ToolOptionsPanel } from "@/components/ui/index.tsx";
 import { ArrowDownToLine, FileSpreadsheet } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { type DragEvent, type ReactNode, type Ref, useEffect, useRef, useState } from "react";
 
 import { textInputFileIssue } from "@/components/FileInput";
@@ -16,25 +17,22 @@ import type { ToolInputSpec, ToolLayout, ToolSpec } from "@/lib/tool-framework/s
 import { readTextFileForEditor } from "@/lib/tool-framework/textFileInput";
 import type { ToolLifecycle } from "@/lib/tool-runtime/types";
 
+function LoadingWorkspace() {
+  const t = useTranslations("Workbench");
+  return (
+    <Muted className="p-4" role="status">
+      {t("loading")}
+    </Muted>
+  );
+}
+
 const ImageConversionWorkspace = dynamic(
   () => import("@/app/media/components/ImageConversionWorkspace").then((module) => module.ImageConversionWorkspace),
-  {
-    loading: () => (
-      <Muted className="p-4" role="status">
-        Loading image workspace…
-      </Muted>
-    ),
-  },
+  { loading: LoadingWorkspace },
 );
 const FileProcessorWorkspace = dynamic(
   () => import("@/components/FileProcessorWorkspace").then((module) => module.FileProcessorWorkspace),
-  {
-    loading: () => (
-      <Muted className="p-4" role="status">
-        Loading file workspace…
-      </Muted>
-    ),
-  },
+  { loading: LoadingWorkspace },
 );
 
 export interface WorkspaceInputState {
@@ -67,6 +65,7 @@ export interface WorkspaceToolbarActions {
 export interface WorkspaceProps {
   disabled?: boolean;
   error?: string;
+  errorLocation?: { line: number; column: number };
   input: WorkspaceInputState;
   lifecycle: ToolLifecycle;
   onInputChange: (input: WorkspaceInputState) => void;
@@ -101,12 +100,7 @@ function getInputSplitSizes(inputSpec: ToolInputSpec, defaultSize: number, minSi
 }
 
 function stackedResultTitle(spec: ToolSpec) {
-  if (spec.labels.result) return spec.labels.result;
-  return (
-    spec.labels.ready
-      .replace(/^The\s+/i, "")
-      .replace(/\s+(?:is|are)\s+(?:ready.*|valid|current|up to date)\.?$/i, "") || "Result"
-  );
+  return spec.labels.result ?? "Result";
 }
 
 function InputResultWorkspace({

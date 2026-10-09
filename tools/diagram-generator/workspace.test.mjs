@@ -46,7 +46,7 @@ test("diagram workspace edits Mermaid source and copies exact SVG rather than it
   const onInputChange = vi.fn();
   const writeText = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
-  await mountTool(React.createElement(Fixture, { onInputChange }));
+  await mountTool(React.createElement(Fixture, { onInputChange }), { spec: definition });
   await fill(field("Mermaid diagram code"), "sequenceDiagram\n Alice->>Bob: Hello");
   assert.equal(onInputChange.mock.calls.at(-1)[0].text, "sequenceDiagram\n Alice->>Bob: Hello");
   await click(button("Copy SVG"));
@@ -71,7 +71,7 @@ test("diagram workspace downloads exact SVG and prepares PNG only after choosing
     downloads.push(this.download);
   });
   diagramPng.mockReset().mockResolvedValue(new NodeBlob([new Uint8Array([137, 80, 78, 71])], { type: "image/png" }));
-  await mountTool(React.createElement(Fixture));
+  await mountTool(React.createElement(Fixture), { spec: definition });
   await openDownloads();
   assert.equal(diagramPng.mock.calls.length, 0);
   await click([...document.querySelectorAll('[role="menuitem"]')].find((item) => item.textContent === "diagram.svg"));
@@ -95,6 +95,7 @@ test("diagram workspace keeps source available after a render error and restores
       error: "Mermaid diagram is invalid: unexpected token",
       onInputChange,
     }),
+    { spec: definition },
   );
   assert.ok(view.container.textContent.includes("Mermaid diagram is invalid"));
   assert.equal(Boolean(button("Copy SVG")), false);

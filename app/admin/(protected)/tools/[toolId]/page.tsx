@@ -1,20 +1,33 @@
 import { appHref } from "@/lib/routing/subdomains.ts";
 import config from "@/lib/config/config.ts";
-import { getToolContentRow, isDatabaseConfigured, type ToolContentRow } from "@/db/index.ts";
-import { BackButton, Text, Caption, H1, H3, InlineCode, Muted, Overline, StatusBadge } from "@/components/ui/index.tsx";
-import { FileText, Image, LayoutDashboard, Search, type LucideIcon } from "lucide-react";
+import { db, eq, managedToolsTable, getToolContentRow, isDatabaseConfigured, type ToolContentRow } from "@/db/index.ts";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+  BackButton,
+  Button,
+  Caption,
+  H1,
+  Overline,
+  StatusBadge,
+  Toaster,
+} from "@/components/ui/index.tsx";
+import { ExternalLink, FileText, Languages, LayoutDashboard, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePagePermission } from "../../../../../lib/admin/access";
-import { iconUploadsConfigured } from "../../../../../lib/admin/adminMutations";
+import { iconUploadsConfigured, toolTranslationSource } from "../../../../../lib/admin/adminMutations";
 import { getAdminTools } from "../../../../../lib/tool-framework/manifest";
 import { ToolContentForm } from "./components/ToolContentForm";
-import { ActivationPanel } from "./components/ToolConfigurationPanels";
+import { ActivationPanel, ToolIdentifier } from "./components/ToolConfigurationPanels";
 import { DeveloperHandoff } from "../components/DeveloperHandoff";
 import { ToolIconPanel } from "./components/ToolIconPanel";
 import { inheritedContent, loadToolSpec } from "./toolSpec";
+import { ToolTranslationsForm } from "./components/ToolTranslationsForm";
 
-type ConfigurationSection = "overview" | "catalog" | "content" | "assets";
+type ConfigurationSection = "overview" | "content" | "translations";
 
 const SECTIONS: readonly {
   readonly key: ConfigurationSection;
@@ -22,9 +35,8 @@ const SECTIONS: readonly {
   readonly icon: LucideIcon;
 }[] = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
-  { key: "catalog", label: "Catalog & SEO", icon: Search },
   { key: "content", label: "Content document", icon: FileText },
-  { key: "assets", label: "Icon & activation", icon: Image },
+  { key: "translations", label: "Translations", icon: Languages },
 ];
 
 function selectedSection(value: string | string[] | undefined): ConfigurationSection {
@@ -57,6 +69,10 @@ export default async function ToolContentPage({
     configured ? getToolContentRow(toolId) : Promise.resolve(null),
     loadToolSpec(toolId),
   ]);
+  const [managedRow] =
+    configured && section === "translations"
+      ? await db.select().from(managedToolsTable).where(eq(managedToolsTable.toolId, toolId)).limit(1)
+      : [];
   const inherited = inheritedContent(spec, tool.name, tool.description);
   const inheritedView = {
     category: inherited.category,
@@ -80,42 +96,36 @@ export default async function ToolContentPage({
   const scaffoldCommand = `pnpm tool:new ${definitionKey} --app ${tool.app} --category ${(contentRow?.category ?? inherited.category) || "<category>"}`;
 
   return (
-    <div className="mx-auto grid w-full max-w-[1240px] gap-5 pb-10">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <BackButton href={appHref("/admin/tools")} label="Back to tool catalog" />
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-[1240px] flex-col gap-3">
+      <Toaster position="top-right" />
+      <header className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <BackButton href={appHref("/admin/tools")} label="Back to tool catalog" />
+          <div className="min-w-0">
             <H1>{tool.name}</H1>
-            <StatusBadge variant={tool.enabled ? "success" : tool.hasDefinition ? "neutral" : "warning"}>
-              {tool.enabled ? "Visible" : tool.hasDefinition ? "Hidden" : "Waiting for code"}
-            </StatusBadge>
-            <StatusBadge variant={stored.published ? "info" : tool.hasDraftContent ? "warning" : "neutral"}>
-              {stored.published
-                ? "Database content live"
-                : tool.hasDraftContent
-                  ? "Draft content"
-                  : "Using default content"}
-            </StatusBadge>
+            <Caption className="mt-1 block break-words text-muted-foreground">
+              {tool.app} / {tool.slug ?? "No public URL assigned"}
+            </Caption>
           </div>
-          <Muted className="mt-1 max-w-3xl text-muted-foreground">
-            Configure catalog content, supporting documentation, icon assets, and public availability without changing
-            the tool&apos;s code-owned behavior.
-          </Muted>
         </div>
-        <div className="text-left sm:text-right">
-          <Overline className="block text-muted-foreground">Stable tool ID</Overline>
-          <InlineCode className="text-foreground">{tool.id}</InlineCode>
-        </div>
+        {tool.enabled && publicHref ? (
+          <Button asChild className="w-fit shrink-0" variant="secondary">
+            <a href={publicHref} rel="noreferrer" target="_blank">
+              Open public tool <ExternalLink aria-hidden="true" />
+            </a>
+          </Button>
+        ) : null}
       </header>
 
-      <nav aria-label="Tool configuration sections" className="overflow-x-auto border-y border-border bg-card px-1">
+      <nav aria-label="Tool configuration sections" className="shrink-0 overflow-x-auto border-b border-border">
         <div className="flex min-w-max gap-1">
           {SECTIONS.map(({ icon: Icon, key, label }) => (
             <Link
               aria-current={section === key ? "page" : undefined}
-              className={`relative inline-flex min-h-12 items-center gap-2 px-3 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${section === key ? "text-primary after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary" : "text-muted-foreground hover:text-foreground"}`}
+              className={`relative inline-flex min-h-10 items-center gap-2 px-3 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${section === key ? "text-primary after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary" : "text-muted-foreground hover:text-foreground"}`}
               href={appHref(`/admin/tools/${encodeURIComponent(tool.id)}?section=${key}`)}
               key={key}
+              scroll={false}
             >
               <Icon aria-hidden="true" className="size-4" />
               {label}
@@ -124,74 +134,55 @@ export default async function ToolContentPage({
         </div>
       </nav>
 
-      <main className="rounded-xl border border-border bg-card p-5 shadow-[0_2px_4px_#00000008,0_12px_32px_#0000000a] sm:p-6">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card p-4 sm:p-5">
         {section === "overview" ? (
-          <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.72fr)]">
-            <section>
-              <div className="border-b border-border pb-5">
-                <H3>Configuration overview</H3>
-                <Muted className="mt-1 text-muted-foreground">
-                  Code owns execution and identity. This workspace owns the database layer.
-                </Muted>
+          <div className="grid min-h-0 flex-1 content-start items-start gap-6 overflow-y-auto overscroll-contain lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-8">
+            <div className="min-w-0">
+              <ToolContentForm
+                inherited={inheritedView}
+                relatedTools={[]}
+                section="catalog"
+                stored={stored}
+                toolId={tool.id}
+              />
+              <Accordion className="mt-5 border-t border-border" collapsible type="single">
+                <AccordionItem value="technical-details">
+                  <AccordionTrigger>Technical details</AccordionTrigger>
+                  <AccordionContent className="space-y-5">
+                    <div className="flex flex-wrap items-start gap-x-12 gap-y-4">
+                      <ToolIdentifier toolId={tool.id} />
+                      <div>
+                        <Overline className="mb-1 block text-muted-foreground">Code definition</Overline>
+                        <StatusBadge variant={spec ? "success" : "warning"}>
+                          {spec ? "Deployed" : "Missing"}
+                        </StatusBadge>
+                      </div>
+                    </div>
+                    {!spec ? <DeveloperHandoff command={scaffoldCommand} /> : null}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+            <aside className="min-w-0 border-t border-border pt-5 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
+              <ActivationPanel
+                enabled={tool.enabled}
+                hasDefinition={tool.hasDefinition}
+                hasDraftContent={tool.hasDraftContent}
+                published={stored.published}
+                publishedAtLabel={stored.publishedAtLabel}
+                publicHref={publicHref}
+                toolId={tool.id}
+              />
+              <div className="mt-3 border-t border-border pt-3">
+                <ToolIconPanel
+                  iconUrl={tool.iconUrl}
+                  name={tool.name}
+                  toolId={tool.id}
+                  uploadsEnabled={iconUploadsConfigured()}
+                />
               </div>
-              <dl className="grid gap-x-5 gap-y-5 pt-5 sm:grid-cols-2">
-                <div>
-                  <dt className="text-muted-foreground">
-                    <Overline>Suite</Overline>
-                  </dt>
-                  <dd className="mt-1">
-                    <Text>{tool.app}</Text>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">
-                    <Overline>Published slug</Overline>
-                  </dt>
-                  <dd className="mt-1">
-                    <Text>{tool.slug ?? "Not set"}</Text>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">
-                    <Overline>Definition</Overline>
-                  </dt>
-                  <dd className="mt-1">
-                    <StatusBadge variant={spec ? "success" : "warning"}>
-                      {spec ? "definition.ts deployed" : "Definition missing"}
-                    </StatusBadge>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">
-                    <Overline>Content source</Overline>
-                  </dt>
-                  <dd className="mt-1">
-                    <StatusBadge variant={stored.published ? "info" : "neutral"}>
-                      {stored.published ? "Database override" : "Shipped code"}
-                    </StatusBadge>
-                  </dd>
-                </div>
-              </dl>
-              <div className="mt-6 border-t border-border pt-5">
-                <H3>What remains code-owned</H3>
-                <Caption className="block mt-1 text-muted-foreground">
-                  Input geometry, settings, execution host, trigger behavior, capabilities, result labels, and the
-                  stable tool ID are declared in the tool folder and deployed with the application.
-                </Caption>
-              </div>
-            </section>
-            <DeveloperHandoff command={scaffoldCommand} />
+            </aside>
           </div>
-        ) : null}
-
-        {section === "catalog" ? (
-          <ToolContentForm
-            inherited={inheritedView}
-            relatedTools={[]}
-            section="catalog"
-            stored={stored}
-            toolId={tool.id}
-          />
         ) : null}
 
         {section === "content" ? (
@@ -206,28 +197,19 @@ export default async function ToolContentPage({
           />
         ) : null}
 
-        {section === "assets" ? (
-          <div className="grid gap-8 lg:grid-cols-2 lg:gap-0 lg:divide-x lg:divide-border">
-            <div className="min-w-0 lg:pr-8">
-              <ToolIconPanel
-                iconUrl={tool.iconUrl}
-                name={tool.name}
-                toolId={tool.id}
-                uploadsEnabled={iconUploadsConfigured()}
-              />
-            </div>
-            <div className="lg:pl-8">
-              <ActivationPanel
-                enabled={tool.enabled}
-                hasDefinition={tool.hasDefinition}
-                hasDraftContent={tool.hasDraftContent}
-                published={stored.published}
-                publishedAtLabel={stored.publishedAtLabel}
-                publicHref={publicHref}
-                toolId={tool.id}
-              />
-            </div>
-          </div>
+        {section === "translations" && managedRow ? (
+          <ToolTranslationsForm
+            enabled={managedRow.enabled}
+            englishMessages={Object.fromEntries(
+              Object.entries(toolTranslationSource(spec, managedRow, contentRow)).map(([key, source]) => [
+                key,
+                managedRow.translations.en?.messages[key] ?? source,
+              ]),
+            )}
+            toolId={tool.id}
+            translations={managedRow.translations}
+            updatedAt={managedRow.updatedAt.toISOString()}
+          />
         ) : null}
       </main>
     </div>

@@ -12,7 +12,8 @@ import { parseDate } from "../../lib/devtools/shared/datetime.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-function dateInput(value: string, time: string, timezone: Settings["timezone"], label: string) {
+function dateInput(value: string, time: string, timezone: Settings["timezone"], endpoint: "start" | "end") {
+  const label = endpoint === "start" ? "Start date" : "End date";
   const trimmed = value.trim();
   const enteredTime = time.trim();
   const timeLabel = label.replace("date", "time");
@@ -21,11 +22,15 @@ function dateInput(value: string, time: string, timezone: Settings["timezone"], 
       "time-invalid",
       `${timeLabel} must use 24-hour HH:MM or HH:MM:SS format.`,
       `Enter ${timeLabel.toLowerCase()} from 00:00 through 23:59:59.`,
+      {
+        messageRef: { key: "execution.errors.time-invalid", values: { endpoint } },
+        recoveryMessage: { key: "execution.recovery.time-invalid", values: { endpoint } },
+      },
     );
   }
   let input = trimmed;
   if (enteredTime) {
-    const parsed = parseDate(trimmed, label);
+    const parsed = parseDate(trimmed, label, endpoint);
     const datePart =
       /^\d{4}-\d{2}-\d{2}/.exec(trimmed)?.[0] ??
       (timezone === "utc"
@@ -42,13 +47,13 @@ function dateInput(value: string, time: string, timezone: Settings["timezone"], 
     // Date-only ISO strings otherwise parse as UTC, even in local-time mode.
     if (/^\d{4}-\d{2}-\d{2}$/.test(input)) input += "T00:00:00";
   }
-  return parseDate(input, label);
+  return parseDate(input, label, endpoint);
 }
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const timezone = ctx.settings.timezone ?? "as-entered";
-  const start = dateInput(ctx.input.text, ctx.settings.startTime ?? "", timezone, "Start date");
-  const end = dateInput(ctx.input.secondary ?? "", ctx.settings.endTime ?? "", timezone, "End date");
+  const start = dateInput(ctx.input.text, ctx.settings.startTime ?? "", timezone, "start");
+  const end = dateInput(ctx.input.secondary ?? "", ctx.settings.endTime ?? "", timezone, "end");
   const milliseconds = end.getTime() - start.getTime();
   const direction = milliseconds < 0 ? "-" : "";
   const hours = Math.abs(milliseconds) / 3_600_000;
@@ -60,6 +65,20 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   return {
     render: "text",
     text,
+    verdict: {
+      level: "ok",
+      label: text,
+      labelMessage:
+        (ctx.settings.exactDuration ?? true)
+          ? {
+              key: "execution.exactDuration",
+              values: {
+                days: `${direction}${Number(days.toFixed(3))}`,
+                hours: `${direction}${Number(hours.toFixed(3))}`,
+              },
+            }
+          : { key: "execution.duration", values: { days: `${direction}${Number(days.toFixed(3))}` } },
+    },
   };
 };
 

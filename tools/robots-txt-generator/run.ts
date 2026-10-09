@@ -31,6 +31,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "path-root-required",
       "Every path must start with /.",
       "Write paths relative to the site root, such as /admin or /public.",
+      { messageRef: { key: "errors.path-root-required" }, recoveryMessage: { key: "recovery.path-root-required" } },
     );
   }
   const sitemap = ctx.settings.sitemap.trim();

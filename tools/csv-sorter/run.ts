@@ -25,6 +25,10 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "column-not-found",
       "Sort column was not found.",
       "Use the exact header text, or the one-based column number.",
+      {
+        messageRef: { key: "csv.errors.sortColumnMissing" },
+        recoveryMessage: { key: "csv.recovery.sortColumn" },
+      },
     );
   }
   const direction = ctx.settings.order === "desc" ? -1 : 1;

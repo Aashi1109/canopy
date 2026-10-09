@@ -14,7 +14,9 @@ function decodeUnicodeEscapes(value: string): string {
     .replace(/\\u\{([\da-f]{1,6})\}/gi, (match, code: string) => {
       const point = Number.parseInt(code, 16);
       if (point > 0x10ffff) {
-        throw new ToolError("out-of-range", "Unicode code point is out of range.");
+        throw new ToolError("out-of-range", "Unicode code point is out of range.", undefined, {
+          messageRef: { key: "errors.out-of-range" },
+        });
       }
       return String.fromCodePoint(point);
     })

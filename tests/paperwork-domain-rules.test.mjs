@@ -118,6 +118,7 @@ test("1099 thresholds are year-owned and unknown future years fail safely", () =
     supported: false,
     year: 2027,
     error: "1099-NEC rules update required for 2027.",
+    errorMessage: { key: "nec.validation.rulesUpdateRequired", values: { year: 2027 } },
   });
 });
 
@@ -269,6 +270,7 @@ test("quarterly tax rejects unsupported years", () => {
   expect(calculateQuarterlyTax({ ...BASE_TAX_DRAFT, taxYear: 2027 })).toEqual({
     ok: false,
     error: "Quarterly tax rules update required for 2027.",
+    errorMessage: { key: "tax.validation.rulesUpdateRequired", values: { year: 2027 } },
   });
 });
 
@@ -283,4 +285,138 @@ test("quarterly tax normalizes legacy drafts and applies the high-income safe ha
   expect(result.ok).toBe(true);
   expect(result.deductionValue).toBe(20000);
   expect(result.priorYearSafeHarbor).toBe(13200);
+});
+
+test("mileage error descriptors follow the same validation branches and deduplicate with English errors", () => {
+  const base = { taxYear: 2026, rateMode: "irs-standard", customRate: 0, fuelRecords: [] };
+  const wrongYear = calculateMileageSummary({
+    ...base,
+    trips: [
+      { id: "a", date: "2025-01-01", miles: 10 },
+      { id: "b", date: "2025-01-01", miles: 20 },
+    ],
+  });
+  expect(wrongYear.errors).toEqual(["Trip date must be within tax year 2026."]);
+  expect(wrongYear.errorMessages).toEqual([{ key: "mileage.validation.tripYearMismatch", values: { year: 2026 } }]);
+  expect(wrongYear.totalDeduction).toBe(0);
+  const unsupported = calculateMileageSummary({
+    ...base,
+    taxYear: 2027,
+    trips: [{ id: "a", date: "2027-01-01", miles: 1 }],
+  });
+  expect(unsupported.errorMessages).toEqual([
+    { key: "mileage.validation.rulesYearUnavailable", values: { year: 2027 } },
+  ]);
+  const custom = calculateMileageSummary({
+    ...base,
+    rateMode: "custom",
+    customRate: -1,
+    trips: [{ id: "a", date: "2026-01-01", miles: 1 }],
+  });
+  expect(custom.errors).toEqual(["Custom mileage rate must be zero or greater."]);
+  expect(custom.errorMessages).toEqual([{ key: "mileage.validation.customRateNonnegative" }]);
+});
+
+test("NEC issue descriptors retain year and vendor values in the existing issue order", () => {
+  const summary = calculateNecSummary(
+    {
+      reportingYear: 2027,
+      payments: [{ vendorId: "unlisted", amount: 50, includeIn1099: true }],
+      recipientAdjustments: [],
+    },
+    [],
+  );
+  expect(summary.issues).toEqual([
+    "1099-NEC rules update required for 2027.",
+    'Payment references missing vendor "unlisted".',
+  ]);
+  expect(summary.issueMessages).toEqual([
+    { key: "nec.validation.rulesUpdateRequired", values: { year: 2027 } },
+    { key: "nec.validation.missingVendor", values: { vendorId: "unlisted" } },
+  ]);
+  expect(summary.reportablePayments).toBe(50);
+});
+
+test("tax assumption descriptors are additive and preserve the printed assumptions", () => {
+  const result = calculateQuarterlyTax(BASE_TAX_DRAFT);
+  expect(result.assumptions).toEqual(QUARTERLY_TAX_RULES_2026.assumptions);
+  expect(result.assumptionMessages.map(({ key }) => key)).toEqual([
+    "tax.assumptions.equalInstallments",
+    "tax.assumptions.deduction",
+    "tax.assumptions.credits",
+    "tax.assumptions.paymentFloor",
+    "tax.assumptions.stateEstimate",
+    "tax.assumptions.estimateOnly",
+  ]);
+});
+
+test("document adapters localize validation through named keys while retaining English defaults and field paths", async () => {
+  const {
+    invoiceAdapter,
+    receiptAdapter,
+    expenseReportAdapter,
+    mileageLogAdapter,
+    quarterlyTaxAdapter,
+    w9RequestAdapter,
+    nec1099Adapter,
+  } = await import("../lib/paperwork/documentAdapters.ts");
+  const form = { sections: [] };
+  const calls = [];
+  const translate = (key, values) => {
+    calls.push({ key, values });
+    return `localized:${key}`;
+  };
+  const invoice = invoiceAdapter.getSampleDraft();
+  invoice.business.name = "";
+  expect(invoiceAdapter.validate(invoice, form)).toMatchObject({ businessName: "Enter your business name." });
+  expect(invoiceAdapter.validate(invoice, form, translate).businessName).toBe(
+    "localized:invoice.validation.businessName",
+  );
+  const cases = [
+    [
+      receiptAdapter,
+      { ...receiptAdapter.getSampleDraft(), business: { name: "" }, lineItems: [] },
+      "businessName",
+      "shared.validation.sellerNameRequired",
+    ],
+    [
+      expenseReportAdapter,
+      { ...expenseReportAdapter.getSampleDraft(), reportNumber: "", submitter: { name: "" }, expenses: [] },
+      "reportNumber",
+      "shared.validation.reportNumberRequired",
+    ],
+    [
+      mileageLogAdapter,
+      {
+        ...mileageLogAdapter.getSampleDraft(),
+        vehicleModel: "",
+        taxYear: 2027,
+        trips: [{ id: "trip", date: "2027-01-01", miles: 1 }],
+      },
+      "taxYear",
+      "mileage.validation.rulesYearUnavailable",
+    ],
+    [quarterlyTaxAdapter, { ...BASE_TAX_DRAFT, taxYear: 2027 }, "taxYear", "tax.validation.rulesUpdateRequired"],
+    [
+      w9RequestAdapter,
+      { ...w9RequestAdapter.getSampleDraft(), requesterName: "", vendors: [], reportingYear: 2027 },
+      "reportingYear",
+      "nec.validation.rulesUpdateRequired",
+    ],
+    [
+      nec1099Adapter,
+      { ...nec1099Adapter.getSampleDraft(), payerName: "", reportingYear: 2027, payments: [] },
+      "paymentRows",
+      "nec.validation.rulesUpdateRequired",
+    ],
+  ];
+  for (const [adapter, draft, field, key] of cases) {
+    const english = adapter.validate(draft, form);
+    const translated = adapter.validate(draft, form, translate);
+    expect(Object.keys(translated)).toEqual(Object.keys(english));
+    expect(translated[field]).toBe(`localized:${key}`);
+    expect(english[field]).not.toContain("localized:");
+  }
+  expect(calls).toContainEqual({ key: "mileage.validation.rulesYearUnavailable", values: { year: 2027 } });
+  expect(calls).toContainEqual({ key: "nec.validation.rulesUpdateRequired", values: { year: 2027 } });
 });

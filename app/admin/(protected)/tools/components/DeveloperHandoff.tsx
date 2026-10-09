@@ -36,7 +36,7 @@ export function DeveloperHandoff({ command }: { readonly command: string }): Rea
           {copied ? <Check aria-hidden="true" /> : <Clipboard aria-hidden="true" />}
         </Button>
       </div>
-      <CodeBlock className="block overflow-x-auto whitespace-pre bg-card px-4 py-5 text-foreground">
+      <CodeBlock className="block overflow-x-auto whitespace-pre bg-surface-ink px-4 py-5 text-on-ink">
         <SyntaxHighlight code={command} language="bash" />
       </CodeBlock>
       <Caption className="block border-t border-white/10 px-4 py-3 text-on-ink-muted">

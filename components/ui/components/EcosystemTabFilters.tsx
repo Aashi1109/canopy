@@ -1,4 +1,6 @@
 "use client";
+import { useLocale, useTranslations } from "next-intl";
+import { localizeHref, type Locale } from "@/lib/i18n/config";
 import { Caption, Strong } from "./typography.tsx";
 
 import { ArrowUpRight, ChevronDown, ChevronRight, LoaderCircle } from "lucide-react";
@@ -25,47 +27,59 @@ const FALLBACK_GROUPS: readonly Ecosystem[] = [
 
 // Public navigation data only. Share concurrent menu loads without retaining
 // failures or keeping catalog changes hidden for more than a minute.
-let cachedGroups: { value: readonly Ecosystem[]; expiresAt: number } | undefined;
-let pendingGroups: Promise<readonly Ecosystem[]> | undefined;
+const cachedGroups = new Map<string, { value: readonly Ecosystem[]; expiresAt: number }>();
+const pendingGroups = new Map<string, Promise<readonly Ecosystem[]>>();
 
-function loadEcosystemGroups(): Promise<readonly Ecosystem[]> {
-  if (cachedGroups && cachedGroups.expiresAt > Date.now()) return Promise.resolve(cachedGroups.value);
-  if (!pendingGroups) {
-    pendingGroups = fetch("/api/tools/ecosystem")
+function loadEcosystemGroups(locale: string): Promise<readonly Ecosystem[]> {
+  const cached = cachedGroups.get(locale);
+  if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.value);
+  let pending = pendingGroups.get(locale);
+  if (!pending) {
+    pending = fetch(`/api/tools/ecosystem?locale=${encodeURIComponent(locale)}`)
       .then(async (response) => {
         if (!response.ok) throw new Error("Unable to load categories");
         return response.json() as Promise<{ groups: Ecosystem[] }>;
       })
       .then(({ groups }) => {
-        cachedGroups = { value: groups, expiresAt: Date.now() + 60_000 };
+        cachedGroups.set(locale, { value: groups, expiresAt: Date.now() + 60_000 });
         return groups;
       })
       .finally(() => {
-        pendingGroups = undefined;
+        pendingGroups.delete(locale);
       });
+    pendingGroups.set(locale, pending);
   }
-  return pendingGroups;
+  return pending;
 }
 
 export function useEcosystemGroups(enabled = true) {
-  const [groups, setGroups] = useState<readonly Ecosystem[]>(FALLBACK_GROUPS);
+  const locale = useLocale();
+  const t = useTranslations("Common");
+  const [loaded, setLoaded] = useState<{ locale: string; groups: readonly Ecosystem[] }>({
+    locale,
+    groups: FALLBACK_GROUPS,
+  });
 
   useEffect(() => {
     if (!enabled) return;
     let active = true;
-    loadEcosystemGroups()
+    loadEcosystemGroups(locale)
       .then((nextGroups) => {
-        if (active) setGroups(nextGroups);
+        if (active) setLoaded({ locale, groups: nextGroups });
       })
       .catch(() => {
-        if (active) setGroups(FALLBACK_GROUPS);
+        if (active) setLoaded({ locale, groups: FALLBACK_GROUPS });
       });
     return () => {
       active = false;
     };
-  }, [enabled]);
+  }, [enabled, locale]);
 
-  return groups;
+  const groups = loaded.locale === locale ? loaded.groups : FALLBACK_GROUPS;
+  return groups.map((group) => ({
+    ...group,
+    label: ["documents", "developer", "media"].includes(group.id) ? t(group.id) : group.label,
+  }));
 }
 
 export function EcosystemTabFilters({
@@ -77,18 +91,24 @@ export function EcosystemTabFilters({
   className?: string;
   publicSiteUrl?: string;
 }) {
-  const siteHref = (path: string) => (publicSiteUrl ? new URL(path, publicSiteUrl).href : path);
+  const t = useTranslations("Common");
+  const locale = useLocale() as Locale;
+  const siteHref = (path: string) =>
+    publicSiteUrl ? new URL(localizeHref(path, locale), publicSiteUrl).href : localizeHref(path, locale);
   const [activeId, setActiveId] = useState<string | null>(null);
   const groups = useEcosystemGroups(activeId !== null).map((group) => ({
     ...group,
     href: siteHref(group.href),
     categories: group.categories.map((category) => ({ ...category, href: siteHref(category.href) })),
-    tools: group.tools.map((tool) => ({ ...tool, href: siteHref(tool.href) })),
+    tools: group.tools.map((tool) => ({
+      ...tool,
+      href: publicSiteUrl ? new URL(tool.href, publicSiteUrl).href : tool.href,
+    })),
   }));
 
   return (
     <nav
-      aria-label="Tool suites"
+      aria-label={t("toolSuites")}
       className={cn(
         "relative hidden h-[46px] shrink-0 items-center gap-0.5 rounded-full border border-border bg-card p-[5px] font-caption text-xs font-semibold navigation:flex",
         className,
@@ -98,7 +118,7 @@ export function EcosystemTabFilters({
         className="rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
         href={siteHref("/")}
       >
-        All tools
+        {t("allTools")}
       </a>
       {groups.map((group) => (
         <span
@@ -124,13 +144,14 @@ export function EcosystemTabFilters({
         className="rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:text-primary"
         href={siteHref("/blog")}
       >
-        Blog
+        {t("blog")}
       </a>
     </nav>
   );
 }
 
 function EcosystemMenu({ group, onClose }: { group: Ecosystem; onClose: () => void }) {
+  const t = useTranslations("Common");
   const showsCategories = group.id !== "documents" && group.categories.length > 0;
 
   return (
@@ -145,13 +166,13 @@ function EcosystemMenu({ group, onClose }: { group: Ecosystem; onClose: () => vo
       >
         <div className="flex items-start justify-between pb-2">
           <div>
-            <Strong className="block text-foreground">{group.label} tools</Strong>
+            <Strong className="block text-foreground">{t("groupTools", { group: group.label })}</Strong>
             <Caption className="mt-0.5 block text-muted-foreground">
-              {showsCategories ? "Choose a category to see every tool." : "Create, complete, and export paperwork."}
+              {t(showsCategories ? "chooseCategory" : "createPaperwork")}
             </Caption>
           </div>
           <span className="rounded-full bg-muted px-2 py-1 font-caption text-overline font-normal text-muted-foreground">
-            {group.count} tools
+            {t("toolCount", { count: group.count })}
           </span>
         </div>
         {showsCategories ? (
@@ -160,15 +181,14 @@ function EcosystemMenu({ group, onClose }: { group: Ecosystem; onClose: () => vo
           <ToolPreviewList tools={group.tools} />
         ) : (
           <div className="flex min-h-20 items-center justify-center gap-2 text-xs text-muted-foreground">
-            <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> Loading tools
+            <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> {t("loadingTools")}
           </div>
         )}
         <a
           className="mt-2 flex items-center gap-1.5 font-caption text-caption font-semibold text-primary no-underline hover:underline"
           href={group.href}
         >
-          View all {group.count} {group.label.toLowerCase()} tools{" "}
-          <ArrowUpRight aria-hidden="true" className="size-3.5" />
+          {t("viewAllTools", { count: group.count })} <ArrowUpRight aria-hidden="true" className="size-3.5" />
         </a>
       </div>
     </div>

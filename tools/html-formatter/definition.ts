@@ -1,6 +1,10 @@
+import { INPUT_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...INPUT_EXECUTION_MESSAGES,
+  },
   toolId: "devtools.html-formatter",
   app: "devtools",
   category: "web-markup-tools",

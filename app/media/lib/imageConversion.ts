@@ -17,7 +17,7 @@ export function resolveImageConversion(original: ToolSpec, values: Readonly<Reco
   const [source, initialTarget] = key.split("-to-");
   const choices = registered ? CONVERSIONS.filter((entry) => entry.toolId.startsWith(`media.${source}-to-`)) : [];
   const selected = choices.find((entry) => entry.toolId === `media.${source}-to-${values[IMAGE_OUTPUT_KEY]}`);
-  const spec = selected ?? original;
+  const spec = selected && selected.toolId !== original.toolId ? selected : original;
   const target = selected ? selected.toolId.split("-to-")[1] : initialTarget;
   const settingKey = (field: string) => (target === initialTarget ? field : `conversion.${target}.${field}`);
   const settings = registered

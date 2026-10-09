@@ -1,6 +1,48 @@
+import { MEDIA_FILE_ERROR_MESSAGES, MEDIA_PDF_ERROR_MESSAGES } from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "progress.croppingPdfPage": "Cropping PDF page",
+
+    "errors.cropPages": "Choose pages from 1 to {count, number}.",
+    "errors.cropDimensions": "Enter non-negative Left and Bottom values and positive Width and Height.",
+    "errors.cropBeyondPage":
+      "The crop extends beyond page {page, number}. Reduce its position or size, or change the selected pages.",
+    "errors.cropPagesTooSmall": "The selected pages are too small to crop.",
+
+    "readiness.wholeNumbers": "Enter whole-number points for Left, Bottom, Width, and Height.",
+    "readiness.positiveDimensions": "Width and Height must be greater than zero.",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_PDF_ERROR_MESSAGES,
+    "errors.noFiles": "Choose a PDF to crop.",
+    "errors.invalidCrop": "The crop box must stay within every selected page.",
+    "workspace.apply_crop_to_968ae0": "Apply crop to",
+    "workspace.all_pages_903542": "All pages",
+    "workspace.odd_pages_e31c32": "Odd pages",
+    "workspace.even_pages_bd5d2d": "Even pages",
+    "workspace.custom_pages_ffe911": "Custom pages",
+    "workspace.page_range_6578bb": "Page range",
+    "workspace.crop_box_pdf_4d9949": "Crop box · PDF points",
+    "workspace.use_whole_number_cc79b4":
+      "Use whole-number points. Bottom is measured upward from the page edge. 72 pt = 1 inch.",
+    "workspace.crop_pdf_dc4bdb": "Crop PDF",
+    "workspace.drag_to_move_22b33b":
+      "Drag to move. Drag an edge or corner to resize. Arrow keys move by 1 pt; Shift moves by 10 pt.",
+    "workspace.edit_crop_d614bb": "Edit crop",
+    "workspace.crop_another_pdf_2a6923": "Crop another PDF",
+    "workspace.pagesSelected": "{selected} of {count, plural, one {# page selected} other {# pages selected}}",
+    "workspace.pagesSelectedSummary":
+      "{selected} of {count, plural, one {# page selected} other {# pages selected}}. {unchanged} unchanged.",
+    "workspace.pagesCroppedSummary":
+      "{selected} of {count, plural, one {# page cropped} other {# pages cropped}}. {unchanged} unchanged.",
+    "workspace.dimensions.cropX": "Left",
+    "workspace.dimensions.cropY": "Bottom",
+    "workspace.dimensions.cropWidth": "Width",
+    "workspace.dimensions.cropHeight": "Height",
+    "workspace.cropSettings": "Crop settings",
+  },
   toolId: "media.crop-pdf",
   app: "media",
   category: "pdf-organization",

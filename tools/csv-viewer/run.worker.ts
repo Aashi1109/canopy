@@ -25,8 +25,8 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       showColumnDividers: true,
       truncated: parsed.previewTruncated,
       stats: [
-        { label: "Rows", value: String(Math.max(0, parsed.rowCount - 1)) },
-        { label: "Columns", value: String(parsed.columnCount) },
+        { label: "Rows", labelMessage: { key: "csv.rows" }, value: String(Math.max(0, parsed.rowCount - 1)) },
+        { label: "Columns", labelMessage: { key: "csv.columns" }, value: String(parsed.columnCount) },
       ],
     };
   }

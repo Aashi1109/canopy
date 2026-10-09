@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import {
   typographyStyles,
@@ -110,9 +111,9 @@ function isCodeShaped(value: string): boolean {
   return delimited || lines.filter((line) => /^\s*[\w"'-]+\s*:\s*\S/.test(line)).length > 1;
 }
 
-function sourceMeta(value: string, codeShaped: boolean): string {
+function sourceMeta(value: string, codeShaped: boolean, t: ReturnType<typeof useTranslations>): string {
   const count = codeShaped ? new TextEncoder().encode(value).byteLength : value.length;
-  return `${count} ${codeShaped ? "bytes" : count === 1 ? "character" : "characters"}`;
+  return t(codeShaped ? "bytes" : "characters", { count });
 }
 
 export function SourceTextarea(props: SourceTextareaProps) {
@@ -297,6 +298,7 @@ export function WorkspaceInputSurface({
   sourceRef,
   variant,
 }: InputSurfaceProps) {
+  const t = useTranslations("Workbench");
   const submitOnEnter = (event: KeyboardEvent<HTMLInputElement>) => {
     if (
       !onSubmit ||
@@ -361,13 +363,13 @@ export function WorkspaceInputSurface({
       <ToolActionButton
         action="paste"
         aria-busy={pastePending || undefined}
-        aria-label={pasteFailed ? `Paste into ${label} failed. Try again` : `Paste into ${label}`}
+        aria-label={t(pasteFailed ? "pasteIntoFailed" : "pasteInto", { label })}
         aria-live="polite"
         disabled={disabled || pastePending}
         onClick={() => void pastePrimaryInput(maxLength)}
         type="button"
       >
-        {pastePending ? "Pasting…" : pasteFailed ? "Paste failed" : "Paste"}
+        {t(pastePending ? "pasting" : pasteFailed ? "pasteFailed" : "paste")}
       </ToolActionButton>
     ) : null;
   switch (inputSpec.kind) {
@@ -377,7 +379,7 @@ export function WorkspaceInputSurface({
       const largeFile = isLargeTextFile(selectedFile, acceptedFile.maxEditableBytes);
       const chooseFile = async (file: File) => {
         if (!acceptedFile) return;
-        const issue = textInputFileIssue(file, acceptedFile);
+        const issue = textInputFileIssue(file, acceptedFile, t);
         if (issue) {
           setInputIssue(issue);
           return;
@@ -396,7 +398,7 @@ export function WorkspaceInputSurface({
             text: loaded.text,
           });
         } catch {
-          setInputIssue(`${file.name} could not be read.`);
+          setInputIssue(t("readFileFailed", { name: file.name }));
         }
       };
       const browseAction = acceptedFile ? (
@@ -420,7 +422,7 @@ export function WorkspaceInputSurface({
             onClick={() => fileInputRef.current?.click()}
             type="button"
           >
-            Upload
+            {t("upload")}
           </ToolActionButton>
         </>
       ) : null;
@@ -474,16 +476,17 @@ export function WorkspaceInputSurface({
           }
           className={cn(
             "h-full",
-            renderContent &&
+            (header || renderContent) &&
               "[&_[data-slot=workspace-content]>div]:flex! [&_[data-slot=workspace-content]>div]:min-h-full [&_[data-slot=workspace-content]>div]:flex-col",
+            header && "[&_[data-slot=workspace-content]>div]:h-full",
           )}
-          contentClassName={cn("gap-4 bg-background", renderContent && "flex-1")}
+          contentClassName={cn("gap-4 bg-background", (header || renderContent) && "flex-1")}
           meta={
             selectedFile ? (
               <FileChip
                 file={selectedFile}
                 disabled={disabled}
-                details={largeFile ? "Large-file mode" : undefined}
+                details={largeFile ? t("largeFileMode") : undefined}
                 onRemove={() => {
                   fileReadRequestRef.current += 1;
                   setInputIssue("");
@@ -492,7 +495,7 @@ export function WorkspaceInputSurface({
                 }}
               />
             ) : (
-              sourceMeta(input.text, codeShaped)
+              sourceMeta(input.text, codeShaped, t)
             )
           }
           metaPosition={selectedFile ? "start" : "actions"}
@@ -509,12 +512,7 @@ export function WorkspaceInputSurface({
               {source}
             </>
           )}
-          {largeFile ? (
-            <Muted className="px-4 pb-3 text-muted-foreground">
-              Showing the first 256 KiB. The complete file stays read-only and is processed locally when you run the
-              tool.
-            </Muted>
-          ) : null}
+          {largeFile ? <Muted className="px-4 pb-3 text-muted-foreground">{t("largeFileNotice")}</Muted> : null}
           {inputSpec.secondary ? (
             <div className="grid gap-1.5">
               <FieldLabel htmlFor={`${idPrefix}-secondary`}>{inputSpec.secondary.label}</FieldLabel>
@@ -626,7 +624,7 @@ export function WorkspaceInputSurface({
                   />
                   {field.secret ? (
                     <Button
-                      aria-label={revealed ? "Hide password" : "Show password"}
+                      aria-label={t(revealed ? "hidePassword" : "showPassword")}
                       className="absolute right-0 top-0 z-20"
                       disabled={disabled}
                       onClick={() =>
@@ -682,7 +680,7 @@ export function WorkspaceInputSurface({
       return (
         <WorkspaceSurface
           actions={
-            cardFields ? undefined : pasteAction(primaryField?.label ?? "primary input", primaryField?.maxLength)
+            cardFields ? undefined : pasteAction(primaryField?.label ?? t("primaryInput"), primaryField?.maxLength)
           }
           className={
             cardFields
@@ -699,7 +697,7 @@ export function WorkspaceInputSurface({
                   : "gap-4 bg-background p-4"
           }
           header={cardFields ? "sr-only" : "visible"}
-          meta={cardFields ? undefined : sourceMeta(values.join(""), codeShaped)}
+          meta={cardFields ? undefined : sourceMeta(values.join(""), codeShaped, t)}
           purpose="source"
           scroll={
             singleTextarea ||
@@ -734,7 +732,7 @@ export function WorkspaceInputSurface({
             maxFiles={Number.MAX_SAFE_INTEGER}
             multiple={inputSpec.multiple}
             onFiles={(files) => {
-              const selection = validateFileSelection(input.files, files, inputSpec);
+              const selection = validateFileSelection(input.files, files, inputSpec, t);
               setInputIssue(selection.issue);
               onInputChange({ ...input, files: selection.files });
             }}
@@ -742,7 +740,7 @@ export function WorkspaceInputSurface({
           />
           {inputIssue ? (
             <Alert className="m-3" variant="destructive">
-              <AlertTitle>Some files were not added</AlertTitle>
+              <AlertTitle>{t("filesNotAdded")}</AlertTitle>
               <AlertDescription>{inputIssue}</AlertDescription>
             </Alert>
           ) : null}
@@ -750,13 +748,13 @@ export function WorkspaceInputSurface({
             className="min-h-48 flex-1"
             getIcon={() => <FileText aria-hidden="true" />}
             getId={workspaceFileId}
-            getMetadata={(file) => `${file.type || "Unknown type"} · ${file.size.toLocaleString()} bytes`}
+            getMetadata={(file) => `${file.type || t("unknownType")} · ${t("bytes", { count: file.size })}`}
             getName={(file) => file.name}
             items={input.files}
             disabled={disabled}
             renderAction={(file) => (
               <Button
-                aria-label={`Remove ${file.name}`}
+                aria-label={t("removeFile", { name: file.name })}
                 disabled={disabled}
                 onClick={() => onInputChange({ ...input, files: input.files.filter((entry) => entry !== file) })}
                 size="icon"
@@ -765,7 +763,7 @@ export function WorkspaceInputSurface({
                 <X aria-hidden="true" />
               </Button>
             )}
-            title="Selected files"
+            title={t("selectedFiles")}
           />
         </Stack>
       );

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { CircleAlert, CircleCheck, Globe, ImageIcon, Search, TriangleAlert } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
@@ -40,6 +42,7 @@ const PLATFORMS = [
 type Platform = (typeof PLATFORMS)[number]["value"];
 
 function PreviewImage({ image, compact = false }: { image: ToolLinkPreviewImage | null; compact?: boolean }) {
+  const t = useTranslations("Tool.runtime");
   const [failed, setFailed] = useState(false);
   const previewUrl = image?.previewUrl;
 
@@ -54,7 +57,7 @@ function PreviewImage({ image, compact = false }: { image: ToolLinkPreviewImage 
         // The server supplies a bounded, validated raster data URL, never a page-controlled remote request.
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          alt={image.alt || "Social sharing image"}
+          alt={image.alt || t("workspace.socialImage")}
           className="absolute inset-0 size-full object-contain"
           onError={() => setFailed(true)}
           src={previewUrl}
@@ -62,7 +65,7 @@ function PreviewImage({ image, compact = false }: { image: ToolLinkPreviewImage 
       ) : (
         <div className="flex flex-col items-center gap-2 p-3 text-center">
           <ImageIcon aria-hidden="true" className="size-6" />
-          {!compact ? <Caption>{image ? "Image preview unavailable" : "No sharing image found"}</Caption> : null}
+          {!compact ? <Caption>{image ? t("workspace.imageUnavailable") : t("workspace.noImage")}</Caption> : null}
         </div>
       )}
     </div>
@@ -70,9 +73,10 @@ function PreviewImage({ image, compact = false }: { image: ToolLinkPreviewImage 
 }
 
 function SocialCard({ platform, result }: { platform: Platform; result: ToolLinkPreviewRender }) {
+  const t = useTranslations("Tool.runtime");
   const { metadata } = result;
   const twitter = platform === "x";
-  const title = (twitter && metadata.twitter.title) || metadata.title || "No title found";
+  const title = (twitter && metadata.twitter.title) || metadata.title || t("workspace.noTitle");
   const description = (twitter && metadata.twitter.description) || metadata.description;
   const image = (twitter && metadata.twitter.image) || metadata.image;
   const host = new URL(result.resolvedUrl).hostname;
@@ -82,7 +86,9 @@ function SocialCard({ platform, result }: { platform: Platform; result: ToolLink
 
   return (
     <Card
-      aria-label={`${PLATFORMS.find((item) => item.value === platform)?.label} link preview`}
+      aria-label={t("workspace.linkPreview", {
+        platform: PLATFORMS.find((item) => item.value === platform)?.label ?? platform,
+      })}
       className={cn(
         "max-h-full w-full max-w-md gap-0 overflow-hidden p-0 shadow-none",
         compact && "flex-row",
@@ -127,12 +133,13 @@ function SocialCard({ platform, result }: { platform: Platform; result: ToolLink
 }
 
 function MetadataInspector({ result }: { result: ToolLinkPreviewRender }) {
+  const t = useTranslations("Tool.runtime");
   const severityOrder = { error: 0, warn: 1, ok: 2 };
   const checks = [...result.checks].sort((left, right) => severityOrder[left.level] - severityOrder[right.level]);
 
   return (
     <>
-      <ul className="divide-y divide-border" aria-label="Metadata checks">
+      <ul className="divide-y divide-border" aria-label={t("workspace.metadataChecks")}>
         {checks.map((check, index) => {
           const Icon = check.level === "ok" ? CircleCheck : check.level === "warn" ? TriangleAlert : CircleAlert;
           return (
@@ -147,11 +154,24 @@ function MetadataInspector({ result }: { result: ToolLinkPreviewRender }) {
               <div className="min-w-0 space-y-1">
                 <div className="text-sm">
                   <span className="sr-only">
-                    {check.level === "ok" ? "Passed" : check.level === "warn" ? "Warning" : "Error"}:{" "}
+                    {check.level === "ok"
+                      ? t("workspace.passedCheck")
+                      : check.level === "warn"
+                        ? t("workspace.warningCheck")
+                        : t("workspace.errorCheck")}
+                    {": "}
                   </span>
-                  <Strong>{check.label}</Strong>
+                  <Strong>
+                    {check.labelMessage && t.has(check.labelMessage.key)
+                      ? t(check.labelMessage.key, check.labelMessage.values)
+                      : check.label}
+                  </Strong>
                 </div>
-                <Muted className="break-words">{check.detail}</Muted>
+                <Muted className="break-words">
+                  {check.detailMessage && t.has(check.detailMessage.key)
+                    ? t(check.detailMessage.key, check.detailMessage.values)
+                    : check.detail}
+                </Muted>
               </div>
             </li>
           );
@@ -160,14 +180,14 @@ function MetadataInspector({ result }: { result: ToolLinkPreviewRender }) {
       <dl className="space-y-3 border-t border-border p-4">
         <div>
           <dt>
-            <Caption className="text-muted-foreground">Scanned URL</Caption>
+            <Caption className="text-muted-foreground">{t("workspace.scannedUrl")}</Caption>
           </dt>
           <dd className="break-all text-sm">{result.resolvedUrl}</dd>
         </div>
         {result.requestedUrl !== result.resolvedUrl ? (
           <div>
             <dt>
-              <Caption className="text-muted-foreground">Redirected from</Caption>
+              <Caption className="text-muted-foreground">{t("workspace.redirectedFrom")}</Caption>
             </dt>
             <dd className="break-all text-sm">{result.requestedUrl}</dd>
           </div>
@@ -175,13 +195,16 @@ function MetadataInspector({ result }: { result: ToolLinkPreviewRender }) {
         {result.metadata.image ? (
           <div>
             <dt>
-              <Caption className="text-muted-foreground">Sharing image</Caption>
+              <Caption className="text-muted-foreground">{t("workspace.sharingImage")}</Caption>
             </dt>
             <dd className="break-all text-sm">{result.metadata.image.url}</dd>
             {result.metadata.image.width && result.metadata.image.height ? (
               <dd>
                 <Caption className="text-muted-foreground">
-                  Declared size: {result.metadata.image.width} × {result.metadata.image.height}
+                  {t("workspace.imageSize", {
+                    width: result.metadata.image.width,
+                    height: result.metadata.image.height,
+                  })}
                 </Caption>
               </dd>
             ) : null}
@@ -193,6 +216,7 @@ function MetadataInspector({ result }: { result: ToolLinkPreviewRender }) {
 }
 
 export default function OpenGraphWorkspace(props: WorkspaceProps) {
+  const t = useTranslations("Tool.runtime");
   const urlId = useId();
   const tagsId = useId();
   const urlInput = useRef<HTMLInputElement>(null);
@@ -202,16 +226,16 @@ export default function OpenGraphWorkspace(props: WorkspaceProps) {
       parseWebsiteUrl(props.input.text);
       return null;
     } catch (error) {
-      return error instanceof Error ? error.message : "Enter a valid website URL or domain.";
+      return t("errors.invalid-url");
     }
-  }, [props.input.text]);
+  }, [props.input.text, t]);
   const visibleUrlError = urlTouched ? urlError : null;
   const result = props.result?.render === "link-preview" ? props.result : null;
   const counts = { error: 0, warn: 0, ok: 0 };
   for (const check of result?.checks ?? []) counts[check.level] += 1;
   const running = Boolean(props.running || props.primaryAction?.running);
   const state = props.error ? "error" : running ? "loading" : result ? "ready" : "empty";
-  const actionLabel = result ? "Rescan" : "Scan URL";
+  const actionLabel = result ? t("workspace.rescan") : t("workspace.scan");
   const tags = result?.tags ?? "";
 
   useEffect(() => {
@@ -231,7 +255,7 @@ export default function OpenGraphWorkspace(props: WorkspaceProps) {
         }}
       >
         <FieldLabel htmlFor={urlId} required>
-          Website URL
+          {t("workspace.websiteUrl")}
         </FieldLabel>
         <div className="flex min-w-0 items-center gap-2">
           <Input
@@ -266,7 +290,7 @@ export default function OpenGraphWorkspace(props: WorkspaceProps) {
               type="button"
               variant="outline"
             >
-              Cancel
+              {t("workspace.cancel")}
             </Button>
           ) : (
             <Button disabled={!props.primaryAction || props.primaryAction.disabled || Boolean(urlError)} type="submit">
@@ -286,30 +310,27 @@ export default function OpenGraphWorkspace(props: WorkspaceProps) {
           stateAction={
             props.error ? (
               <Button onClick={() => urlInput.current?.focus()} variant="outline">
-                Edit URL
+                {t("workspace.editUrl")}
               </Button>
             ) : undefined
           }
-          stateDescription={
-            props.error ??
-            (running
-              ? "Fetching the page and checking its social metadata…"
-              : "Enter a public website URL above, then scan it to see how its links could appear.")
-          }
+          stateDescription={props.error ?? (running ? t("workspace.fetching") : t("workspace.startHelp"))}
           stateIcon={!running && !props.error ? <Globe aria-hidden="true" /> : undefined}
-          stateTitle={props.error ? "Could not scan this page" : running ? "Scanning website" : "Preview a shared link"}
-          title="Social previews"
+          stateTitle={
+            props.error ? t("workspace.failed") : running ? t("workspace.scanning") : t("workspace.previewLink")
+          }
+          title={t("workspace.socialPreviews")}
         >
           {result ? (
             <Tabs className="min-h-0 min-w-0 flex-1 gap-0" defaultValue="facebook">
               <div className="shrink-0 overflow-x-auto border-b border-border px-3">
-                <TabsList aria-label="Preview platform" className="border-0">
+                <TabsList aria-label={t("workspace.previewPlatform")} className="border-0">
                   {PLATFORMS.map((platform) => (
                     <TabsTrigger key={platform.value} value={platform.value}>
                       {platform.label}
                     </TabsTrigger>
                   ))}
-                  <TabsTrigger value="html">HTML tags</TabsTrigger>
+                  <TabsTrigger value="html">{t("workspace.htmlTags")}</TabsTrigger>
                 </TabsList>
               </div>
               {PLATFORMS.map((platform) => (
@@ -322,7 +343,7 @@ export default function OpenGraphWorkspace(props: WorkspaceProps) {
                     <SocialCard platform={platform.value} result={result} />
                   </div>
                   <Muted className="mx-auto mt-3 max-w-xl shrink-0 text-center">
-                    Approximate {platform.label} preview. Actual appearance may vary with platform caching and layout.
+                    {t("workspace.approximatePreview", { platform: platform.label })}
                   </Muted>
                 </TabsContent>
               ))}
@@ -331,13 +352,13 @@ export default function OpenGraphWorkspace(props: WorkspaceProps) {
                 value="html"
               >
                 <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-2">
-                  <FieldLabel htmlFor={tagsId}>Fetched HTML tags</FieldLabel>
+                  <FieldLabel htmlFor={tagsId}>{t("workspace.fetchedHtmlTags")}</FieldLabel>
                   <div className="flex items-center gap-1">
                     <ResultActions canCopy canDownload result={result} />
                   </div>
                 </div>
                 <SourceTextarea
-                  aria-label="Fetched HTML tags"
+                  aria-label={t("workspace.fetchedHtmlTags")}
                   className="min-h-0 flex-1"
                   id={tagsId}
                   language="html"
@@ -356,12 +377,12 @@ export default function OpenGraphWorkspace(props: WorkspaceProps) {
             result && state === "ready" ? (
               <>
                 <StatusBadge variant={counts.error ? "danger" : "neutral"}>
-                  {counts.error} {counts.error === 1 ? "error" : "errors"}
+                  {t("workspace.errorCount", { count: counts.error })}
                 </StatusBadge>
                 <StatusBadge variant={counts.warn ? "warning" : "neutral"}>
-                  {counts.warn} {counts.warn === 1 ? "warning" : "warnings"}
+                  {t("workspace.warningCount", { count: counts.warn })}
                 </StatusBadge>
-                <StatusBadge variant="success">{counts.ok} passed</StatusBadge>
+                <StatusBadge variant="success">{t("workspace.passedCount", { count: counts.ok })}</StatusBadge>
               </>
             ) : undefined
           }
@@ -369,9 +390,9 @@ export default function OpenGraphWorkspace(props: WorkspaceProps) {
           purpose="inspector"
           scroll="content"
           state={result && state === "ready" ? "ready" : "empty"}
-          stateDescription="After a scan, check which metadata is present and what needs attention."
-          stateTitle="Metadata checks"
-          title="Metadata inspector"
+          stateDescription={t("workspace.afterAScanCheckWhichMetadataIs")}
+          stateTitle={t("workspace.metadataChecks")}
+          title={t("workspace.metadataInspector")}
         >
           {result ? <MetadataInspector result={result} /> : null}
         </WorkspaceSurface>

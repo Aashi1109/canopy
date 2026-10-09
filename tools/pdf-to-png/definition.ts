@@ -1,6 +1,17 @@
+import { MEDIA_FILE_ERROR_MESSAGES, MEDIA_PDF_ERROR_MESSAGES } from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "progress.encodingPage": "Encoding page",
+    "progress.pageComplete": "Page complete",
+    "progress.packagingImages": "Packaging images",
+    "progress.imagesReady": "Images ready",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_PDF_ERROR_MESSAGES,
+    "errors.emptyRange": "Choose at least one PDF page.",
+  },
   toolId: "media.pdf-to-png",
   app: "media",
   category: "pdf-conversion",

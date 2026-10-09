@@ -44,8 +44,8 @@ for (const streaming of [false, true]) {
       truncated: false,
     });
     expect(result.stats).toEqual([
-      { label: "Rows", value: "2" },
-      { label: "Columns", value: "2" },
+      { label: "Rows", labelMessage: { key: "csv.rows" }, value: "2" },
+      { label: "Columns", labelMessage: { key: "csv.columns" }, value: "2" },
     ]);
     if (streaming) {
       expect(await result.artifacts[0].blob.text()).toBe(result.text);
@@ -105,8 +105,8 @@ for (const streaming of [false, true]) {
     expect(result.tablePreview.columns).toEqual(["note"]);
     expect(result.tablePreview.rows).toEqual([[""], [""]]);
     expect(result.stats).toEqual([
-      { label: "Rows", value: "2" },
-      { label: "Columns", value: "1" },
+      { label: "Rows", labelMessage: { key: "csv.rows" }, value: "2" },
+      { label: "Columns", labelMessage: { key: "csv.columns" }, value: "1" },
     ]);
     const headerOnly = await extract("id,note", "note", { streaming });
     expect(headerOnly.text).toBe("note");
@@ -204,8 +204,8 @@ for (const streaming of [false, true]) {
     const output = streaming ? await result.artifacts[0].blob.text() : result.text;
     expect(output === `${header},${header}\nvalue,value`, "CSV export retains repeated oversized headers").toBeTruthy();
     expect(result.stats).toEqual([
-      { label: "Rows", value: "1" },
-      { label: "Columns", value: "2" },
+      { label: "Rows", labelMessage: { key: "csv.rows" }, value: "1" },
+      { label: "Columns", labelMessage: { key: "csv.columns" }, value: "2" },
     ]);
   });
 }
@@ -220,8 +220,8 @@ test("file streaming bounds raw text while retaining complete CSV in a downloada
   expect(result.truncated).toBe(true);
   expect(new TextEncoder().encode(result.text).byteLength <= LARGE_TEXT_PREVIEW_BYTES).toBeTruthy();
   expect(result.stats).toEqual([
-    { label: "Rows", value: "1002" },
-    { label: "Columns", value: "2" },
+    { label: "Rows", labelMessage: { key: "csv.rows" }, value: "1002" },
+    { label: "Columns", labelMessage: { key: "csv.columns" }, value: "2" },
   ]);
   const output = await result.artifacts[0].blob.text();
   expect(output.split("\n").length).toBe(1003);

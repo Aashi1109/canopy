@@ -1,6 +1,15 @@
+import { MEDIA_FILE_ERROR_MESSAGES, MEDIA_IMAGE_ERROR_MESSAGES } from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "progress.decodingImage": "Decoding image",
+    "progress.encodingImage": "Encoding image",
+    "progress.imageComplete": "Image complete",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_IMAGE_ERROR_MESSAGES,
+  },
   toolId: "media.rotate-image",
   app: "media",
   category: "image-editing",

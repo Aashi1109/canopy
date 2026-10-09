@@ -52,10 +52,11 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "total-too-large",
       "Images selected for one PDF must total 50 MiB or less.",
       "Remove images or create more than one PDF.",
+      { messageRef: { key: "errors.totalTooLarge" }, recoveryMessage: { key: "recovery.totalTooLarge" } },
     );
   }
   const selection = validateImageSelection(ctx.input.files.map((file) => ({ size: file.size })));
-  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message, undefined, selection.details);
 
   const items: readonly Pick<ToolRunItem, "id" | "rotation">[] =
     ctx.input.items ?? ctx.input.files.map((file) => ({ id: file.id, rotation: 0 as const }));
@@ -65,7 +66,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const pdf = await PDFDocument.create();
   const inputs = items.map((item) => {
     const file = ctx.input.files.find(({ id }) => id === item.id);
-    if (!file) throw new ToolError("invalid-order", "The selected image order is invalid.");
+    if (!file)
+      throw new ToolError("invalid-order", "The selected image order is invalid.", undefined, {
+        messageRef: { key: "errors.invalidOrder" },
+      });
     return { file, rotation: item.rotation };
   });
   const quality = QUALITY_PRESETS[ctx.settings.quality] ?? QUALITY_PRESETS.balanced;
@@ -74,7 +78,12 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
 
   for (let index = 0; index < inputs.length; index += 1) {
     ctx.signal.throwIfAborted();
-    ctx.progress({ completed: index, total, stage: "Adding image to PDF" });
+    ctx.progress({
+      completed: index,
+      total,
+      stage: "Adding image to PDF",
+      stageMessage: { key: "progress.addingImageToPdf" },
+    });
     const { file, rotation } = inputs[index];
     const decoded = await decodeImage(file, ALLOWED);
     const sourceBytes = await readToolFile(file, ctx.signal);
@@ -111,7 +120,12 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     if (ctx.settings.fit === "fill") {
       page.pushOperators(...clipEndOperators(pdfLib));
     }
-    ctx.progress({ completed: index + 1, total, stage: "Page complete" });
+    ctx.progress({
+      completed: index + 1,
+      total,
+      stage: "Page complete",
+      stageMessage: { key: "progress.pageComplete" },
+    });
   }
 
   const requestedName = sanitizeFileName(ctx.settings.filename, "converted-images.pdf");

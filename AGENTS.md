@@ -113,6 +113,19 @@ Do not create a standalone file for a one-use wrapper, interface, constant, or t
 - Do not mix broad renames, formatting, dependency upgrades, or directory migrations into an unrelated task.
 - Preserve public behavior unless the task explicitly changes it. A file move alone must not change runtime behavior.
 
+## Tool SEO and translation audits
+
+For a combined tool translation/SEO audit, the parent agent coordinates these project roles:
+
+1. Run `canopy_content_mapper` once for the requested tool/locales. Give both reviewers the same evidence snapshot, including exact strings or retrievable references, behavior, provenance, and gaps.
+2. Run `translation_validator` in `AUDIT` mode and `seo_auditor` in `AUDIT` mode in parallel. Review every requested locale in batches; sample only when the user asks for sampling. Keep unknown facts and unavailable checks explicit.
+3. Reconcile their findings into one exact proposal bundle with an ID/version and evidence snapshot ID. Resolve conflicting edits; preserve the current values, keys/owners, English source, and runtime contracts. A changed string creates a new version.
+4. Have `translation_validator` run `VALIDATE_PROPOSAL` and `seo_auditor` run `RECHECK_PROPOSAL` against the same bundle. Candidate validation overlays proposed changes in memory; it must not validate only the old stored messages. Run independent reviews in parallel.
+5. Feed corrections into a new version and repeat the affected reviews. Finish as approved only when both reviewers approve the exact same final version and all requested coverage is complete. Never reuse approval after text or relevant evidence changes. Missing checks remain `UNVERIFIED`; new UI/content fields remain `REQUIRES_IMPLEMENTATION`.
+6. If missing evidence, repeated disagreement, or three revision rounds prevent approval, return the concrete unresolved items and checks needed to continue. Do not loop indefinitely, weaken criteria, or label the audit complete. The parent owns this handoff; these agents do not send external messages or apply changes.
+
+These reviews produce proposed fixes only. Approval of copy does not prove deployed behavior, native-speaker certification, indexing, or rankings. Use a single specialist directly for a narrower request, with only the evidence mapping it needs.
+
 ## Testing and Verification
 
 Tests use `node:test` and `node:assert`; name repository tests `tests/*.test.mjs`.

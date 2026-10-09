@@ -17,7 +17,56 @@ import {
   saveToolIcon,
   setToolContentPublished,
   updateToolContent,
+  saveToolTranslation,
+  ToolTranslationValidationError,
 } from "../../../../lib/admin/adminMutations";
+
+export type ToolTranslationActionState = ToolContentActionState & {
+  readonly issues?: readonly { key: string; message: string }[];
+  readonly updatedAt?: string;
+  readonly translationStatus?: "draft" | "published";
+  readonly sourceChanged?: boolean;
+};
+
+export async function saveToolTranslationAction(
+  _previous: ToolTranslationActionState,
+  formData: FormData,
+): Promise<ToolTranslationActionState> {
+  return measureServerAction<ToolTranslationActionState>("admin.tools.saveToolTranslationAction", async () => {
+    const toolId = text(formData, "toolId");
+    try {
+      const messages: Record<string, string> = Object.create(null);
+      for (const [key, value] of formData.entries()) {
+        if (key.startsWith("message:")) {
+          if (typeof value !== "string") throw new Error("Translation messages must be text.");
+          messages[key.slice("message:".length)] = value;
+        }
+      }
+      const status = text(formData, "status");
+      if (status !== "draft" && status !== "published") throw new Error("Choose draft or publish.");
+      const saved = await saveToolTranslation(await getActorUserId(), toolId, {
+        locale: text(formData, "locale"),
+        status,
+        messages,
+        updatedAt: text(formData, "updatedAt"),
+      });
+      revalidate(toolId);
+      revalidatePath("/", "layout");
+      return {
+        status: "success",
+        message: status === "published" ? "Translation published." : "Translation draft saved.",
+        updatedAt: saved.updatedAt,
+        translationStatus: saved.status,
+        sourceChanged: saved.sourceChanged,
+      };
+    } catch (error) {
+      if (error instanceof ToolTranslationValidationError) {
+        return { status: "error", message: error.message, issues: error.issues };
+      }
+      return failure(error);
+    }
+  });
+}
 
 export type ToolContentActionState = {
   readonly status: "idle" | "success" | "error";

@@ -1,6 +1,12 @@
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    "qr.alt": "QR code encoding {content}",
+    "errors.input-required": "Text or URL is required.",
+    "recovery.input-required": "Enter the URL or text you want the QR code to encode.",
+  },
+
   toolId: "devtools.qr-code-generator",
   sharing: { version: 1 },
   app: "devtools",

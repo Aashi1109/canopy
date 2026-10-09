@@ -24,6 +24,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "input-required",
       "Text or URL is required.",
       "Enter the URL or text you want the QR code to encode.",
+      { messageRef: { key: "errors.input-required" }, recoveryMessage: { key: "recovery.input-required" } },
     );
   }
 
@@ -49,6 +50,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     src,
     mime: "image/png",
     alt: `QR code encoding ${content}`,
+    altMessage: { key: "qr.alt", values: { content } },
     width: ctx.settings.size,
     height: ctx.settings.size,
     downloadName: "qr-code.png",

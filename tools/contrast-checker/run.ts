@@ -9,10 +9,15 @@ export const run: ToolRun<Settings> = ({ settings }) => {
     settings.canvas ?? "#FFFFFF",
   );
   const entries = [
-    { label: "Contrast ratio", value: `${value.ratio.toFixed(2)}:1` },
-    ...CONTRAST_CHECKS.map((check) => ({ label: check.label, value: value.ratio >= check.minimum ? "Pass" : "Fail" })),
-    { label: "Displayed text", value: value.foreground },
-    { label: "Displayed background", value: value.background },
+    { label: "Contrast ratio", labelMessage: { key: "contrast.ratio" }, value: `${value.ratio.toFixed(2)}:1` },
+    ...CONTRAST_CHECKS.map((check, index) => ({
+      label: check.label,
+      labelMessage: { key: `contrast.check.${index}` },
+      value: value.ratio >= check.minimum ? "Pass" : "Fail",
+      valueMessage: { key: value.ratio >= check.minimum ? "contrast.pass" : "contrast.fail" },
+    })),
+    { label: "Displayed text", labelMessage: { key: "contrast.displayedText" }, value: value.foreground },
+    { label: "Displayed background", labelMessage: { key: "contrast.displayedBackground" }, value: value.background },
   ];
   return {
     render: "key-value",
@@ -28,6 +33,7 @@ export const run: ToolRun<Settings> = ({ settings }) => {
     verdict: {
       level: value.ratio >= 4.5 ? "ok" : "warn",
       label: value.ratio >= 4.5 ? "AA normal text passes" : "AA normal text fails",
+      labelMessage: { key: value.ratio >= 4.5 ? "contrast.aaPass" : "contrast.aaFail" },
     },
   };
 };

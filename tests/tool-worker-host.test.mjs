@@ -55,6 +55,14 @@ test("worker execution and dependency failures remain processing failures", asyn
   }
 });
 
+test("JSON worker failures carry numeric locations independently of English messages", async () => {
+  const response = await dispatch("json-viewer", { text: '{\n  "missing":\n}' });
+  expect(response.type).toBe("failure");
+  expect(response.code).toBe("json-syntax");
+  expect(response.details).toMatchObject({ line: expect.any(Number), column: expect.any(Number) });
+  expect(response.details.values).toEqual({ line: response.details.line, column: response.details.column });
+});
+
 function workerFile(file) {
   return createToolRunFile(file.name, file);
 }

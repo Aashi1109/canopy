@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations, useFormatter } from "next-intl";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -31,16 +32,14 @@ function isArtifact(file: ImageFile): file is StoredToolArtifact {
   return "storage" in file;
 }
 
-function metadata(file: ImageFile) {
-  const format = file.name.split(".").pop()?.toUpperCase() || "Image";
+function metadata(file: ImageFile, imageLabel: string) {
+  const format = file.name.split(".").pop()?.toUpperCase() || imageLabel;
   return `${format} · ${sizeLabel(file.size)}`;
 }
 
-function previewFailure(file: ImageFile) {
+function previewFailureKey(file: ImageFile) {
   const mime = isArtifact(file) ? file.mime : file.type;
-  return /hei[cf]/i.test(mime) || /\.hei[cf]$/i.test(file.name)
-    ? "This browser could not preview HEIC/HEIF. You can still process this file."
-    : "Preview unavailable. Retry, or replace the source and try again.";
+  return /hei[cf]/i.test(mime) || /\.hei[cf]$/i.test(file.name) ? "mediaHeicPreviewFailed" : "mediaImagePreviewFailed";
 }
 
 function useImageFile(file: ImageFile, enabled: boolean) {
@@ -72,12 +71,13 @@ function useImageFile(file: ImageFile, enabled: boolean) {
 }
 
 function Thumbnail({ file, cover = false }: { file: ImageFile; cover?: boolean }) {
+  const t = useTranslations("Workbench");
   const image = useImageFile(file, true);
   return (
     <span className="flex h-full w-full items-center justify-center overflow-hidden text-xs text-muted-foreground">
       {image.error ? (
         <span className="whitespace-normal px-4 pt-10 text-center font-normal">
-          {previewFailure(file)} Open Preview to retry.
+          {t("mediaOpenPreviewRetry", { error: t(previewFailureKey(file)) })}
         </span>
       ) : image.url ? (
         <img
@@ -90,7 +90,7 @@ function Thumbnail({ file, cover = false }: { file: ImageFile; cover?: boolean }
           className={`h-full w-full ${cover ? "object-cover" : "object-contain"}`}
         />
       ) : (
-        "Loading…"
+        t("loading")
       )}
     </span>
   );
@@ -107,11 +107,12 @@ function OutputCard({
   disabled?: boolean;
   primary?: boolean;
 }) {
+  const t = useTranslations("Workbench");
   const { download, downloading, error } = useFileDownload(file);
   return (
     <MediaOutputCard
       name={file.name}
-      metadata={metadata(file)}
+      metadata={metadata(file, t("mediaImageType"))}
       onPreview={onPreview}
       onDownload={primary ? undefined : () => void download()}
       disabled={disabled}
@@ -138,6 +139,8 @@ function ImagePreviewDialog({
   onRemove?: (file: File) => void;
   disabled?: boolean;
 }) {
+  const t = useTranslations("Workbench");
+  const format = useFormatter();
   const file = files[selected];
   const image = useImageFile(file, true);
   const viewport = useRef<HTMLDivElement | null>(null);
@@ -195,36 +198,41 @@ function ImagePreviewDialog({
               onRemove?.(file);
             }}
           >
-            Remove image
+            {t("mediaRemoveImage")}
           </Button>
         )
       }
-      description={`${isArtifact(file) ? "Generated" : "Source"} image · ${selected + 1} of ${files.length} · ${sizeLabel(file.size)}`}
-      hint="Zoom to inspect · Drag to pan"
+      description={t("mediaImagePosition", {
+        kind: isArtifact(file) ? "generated" : "source",
+        position: selected + 1,
+        count: files.length,
+        size: sizeLabel(file.size),
+      })}
+      hint={t("mediaZoomPanHint")}
       viewportClassName="relative overflow-hidden bg-transparent"
       controls={
         <>
           <Button
             variant="secondary"
             size="icon-sm"
-            aria-label="Zoom out"
+            aria-label={t("zoomOut")}
             disabled={!image.url || image.error || scale <= 10}
             onClick={() => changeZoom(scale - 10)}
           >
             <Minus aria-hidden="true" />
           </Button>
-          <span className="min-w-10 text-center text-xs tabular-nums">{Math.round(scale)}%</span>
+          <span className="min-w-10 text-center text-xs tabular-nums">{format.number(Math.round(scale))}%</span>
           <Button
             variant="secondary"
             size="icon-sm"
-            aria-label="Zoom in"
+            aria-label={t("zoomIn")}
             disabled={!image.url || image.error || scale >= 400}
             onClick={() => changeZoom(scale + 10)}
           >
             <Plus aria-hidden="true" />
           </Button>
           <Button variant="secondary" size="sm" onClick={() => changeZoom(null)}>
-            Fit to screen
+            {t("mediaFitScreen")}
           </Button>
           <Button variant="secondary" size="sm" onClick={() => changeZoom(100)}>
             100%
@@ -265,9 +273,9 @@ function ImagePreviewDialog({
       >
         {image.error ? (
           <div role="alert" className="m-auto text-center">
-            <p>{previewFailure(file)}</p>
+            <p>{t(previewFailureKey(file))}</p>
             <Button variant="secondary" className="mt-3" onClick={image.retry}>
-              Retry preview
+              {t("mediaRetryPreview")}
             </Button>
           </div>
         ) : image.url ? (
@@ -294,13 +302,13 @@ function ImagePreviewDialog({
           />
         ) : (
           <p role="status" className="m-auto">
-            Loading preview…
+            {t("loadingPreview")}
           </p>
         )}
       </div>
       {files.length > 1 && (
         <nav
-          aria-label={isArtifact(file) ? "Output images" : "Source images"}
+          aria-label={isArtifact(file) ? t("mediaOutputImages") : t("mediaSourceImages")}
           className={`absolute bottom-4 left-4 flex max-h-[65%] max-w-[calc(100%-2rem)] gap-3 overflow-auto p-1 sm:top-1/2 sm:bottom-auto sm:max-w-none sm:-translate-y-1/2 sm:flex-col ${panning ? "opacity-0 pointer-events-none" : ""}`}
         >
           {files.map((entry, index) => (
@@ -308,7 +316,7 @@ function ImagePreviewDialog({
               key={isArtifact(entry) ? entry.id : index}
               ref={index === selected ? activeThumbnail : undefined}
               variant="secondary"
-              aria-label={`Preview image ${index + 1}: ${entry.name}`}
+              aria-label={t("mediaPreviewNamedImage", { position: index + 1, name: entry.name })}
               aria-current={index === selected ? "true" : undefined}
               className={`size-16 shrink-0 overflow-hidden p-0 sm:size-24 ${index === selected ? "ring-2 ring-primary ring-offset-2" : ""}`}
               onClick={() => onSelect(index)}
@@ -339,6 +347,7 @@ function ImageGallery<T extends ImageFile>({
   header?: "visible" | "sr-only";
   primaryOutputId?: string;
 }) {
+  const t = useTranslations("Workbench");
   const [selectedFile, setSelectedFile] = useState<T | null>(null);
   const selected = selectedFile ? files.indexOf(selectedFile) : -1;
   const input = Boolean(onRemove);
@@ -355,7 +364,7 @@ function ImageGallery<T extends ImageFile>({
       <MediaOutputCard
         key={workspaceFileId(file)}
         name={file.name}
-        metadata={metadata(file)}
+        metadata={metadata(file, t("mediaImageType"))}
         onPreview={() => setSelectedFile(file)}
         onRemove={() => onRemove?.(file)}
         disabled={disabled}
@@ -371,37 +380,32 @@ function ImageGallery<T extends ImageFile>({
       className="flex-1"
       contentClassName="gap-4 p-4 sm:p-6 max-sm:[&_button]:!min-h-11 max-sm:[&_button]:!min-w-11 [@media(pointer:coarse)]:[&_button]:!min-h-11 [@media(pointer:coarse)]:[&_button]:!min-w-11"
       data-slot={input ? "media-input-gallery" : "media-output-gallery"}
-      meta={`${files.length} ${files.length === 1 ? "image" : "images"}`}
+      meta={t("mediaImageCount", { count: files.length })}
       purpose={input ? "source" : "result"}
       title={
         header === "sr-only" ? (
           input ? (
-            "Selected images"
+            t("mediaSelectedImages")
           ) : (
-            "Converted images"
+            t("mediaConvertedImages")
           )
         ) : (
           <span role="heading" aria-level={2}>
-            {input ? "Selected images" : "Converted images"}
+            {input ? t("mediaSelectedImages") : t("mediaConvertedImages")}
           </span>
         )
       }
     >
-      {onReorder && (
-        <p className="text-xs text-muted-foreground">
-          Drag handles to change image order. With a keyboard, press Space to pick up, arrow keys to move, and Space to
-          drop.
-        </p>
-      )}
+      {onReorder && <p className="text-xs text-muted-foreground">{t("mediaImageOrderHint")}</p>}
       <div
         role="region"
-        aria-label={input ? "Selected image previews" : "Generated image previews"}
+        aria-label={input ? t("mediaSelectedImagePreviews") : t("mediaGeneratedImagePreviews")}
         tabIndex={0}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-sm focus-visible:outline-2 focus-visible:outline-primary"
       >
         {onReorder ? (
           <OrderableList
-            ariaLabel="Images in processing order"
+            ariaLabel={t("mediaImageProcessingOrder")}
             className={gridClassName}
             layout="grid"
             disabled={disabled || files.length < 2}
@@ -420,7 +424,7 @@ function ImageGallery<T extends ImageFile>({
                         {...orderable.listeners}
                         ref={orderable.setActivatorNodeRef}
                         disabled={orderable.disabled}
-                        aria-label={`Drag ${file.name} to reorder`}
+                        aria-label={t("reorderFile", { name: file.name })}
                         className="absolute left-4 top-4 cursor-grab touch-none active:cursor-grabbing"
                         size="icon-xs"
                         variant="secondary"
@@ -428,7 +432,7 @@ function ImageGallery<T extends ImageFile>({
                         <GripVertical aria-hidden="true" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Drag to reorder</TooltipContent>
+                    <TooltipContent>{t("mediaDragReorder")}</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>

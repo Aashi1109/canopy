@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Check, Link as LinkIcon, Mail, Share2 } from "lucide-react";
 import {
   Button,
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/index.tsx";
 
 export function CopyBlogLink({ url, title }: { url: string; title: string }) {
+  const t = useTranslations("Blog");
   const [status, setStatus] = useState<"idle" | "copied" | "manual">("idle");
   const [open, setOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -36,7 +38,7 @@ export function CopyBlogLink({ url, title }: { url: string; title: string }) {
     } catch {
       setStatus("manual");
       setOpen(true);
-      toast.error("Couldn't copy the link. Select and copy it from the sharing menu.");
+      toast.error(t("copyError"));
     }
   }
 
@@ -47,7 +49,7 @@ export function CopyBlogLink({ url, title }: { url: string; title: string }) {
     } catch (error) {
       if (!(error instanceof Error && error.name === "AbortError")) {
         setOpen(true);
-        toast.error("Sharing is unavailable. Copy the link or share by email instead.");
+        toast.error(t("shareError"));
       }
     } finally {
       setSharing(false);
@@ -55,7 +57,7 @@ export function CopyBlogLink({ url, title }: { url: string; title: string }) {
   }
 
   return (
-    <div className="flex shrink-0 items-center gap-1 sm:gap-2" role="group" aria-label="Share article">
+    <div className="flex shrink-0 items-center gap-1 sm:gap-2" role="group" aria-label={t("shareArticle")}>
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -63,7 +65,7 @@ export function CopyBlogLink({ url, title }: { url: string; title: string }) {
               variant="ghost"
               size="icon"
               className="size-10 text-muted-foreground max-sm:hidden"
-              aria-label={status === "copied" ? "Link copied" : "Copy article link"}
+              aria-label={status === "copied" ? t("linkCopied") : t("copyArticleLink")}
               onClick={() => {
                 void copy();
               }}
@@ -75,7 +77,7 @@ export function CopyBlogLink({ url, title }: { url: string; title: string }) {
               )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent>{status === "copied" ? "Link copied" : "Copy article link"}</TooltipContent>
+          <TooltipContent>{status === "copied" ? t("linkCopied") : t("copyArticleLink")}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
       <Popover.Root open={open} onOpenChange={setOpen}>
@@ -92,19 +94,19 @@ export function CopyBlogLink({ url, title }: { url: string; title: string }) {
             }}
           >
             <Share2 aria-hidden="true" className="size-4 text-muted-foreground" />
-            Share
+            {t("share")}
           </Button>
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content
             align="end"
             sideOffset={8}
-            aria-label="Share this article"
+            aria-label={t("shareArticle")}
             className="z-50 w-72 max-w-[calc(100vw-32px)] rounded-lg border border-input bg-popover p-3 text-popover-foreground shadow-md"
           >
             {status === "manual" && (
               <div className="mb-3 space-y-2">
-                <Label htmlFor="article-share-url">Select and copy this link</Label>
+                <Label htmlFor="article-share-url">{t("selectCopyLink")}</Label>
                 <Input id="article-share-url" readOnly value={url} onFocus={(event) => event.currentTarget.select()} />
               </div>
             )}
@@ -115,22 +117,18 @@ export function CopyBlogLink({ url, title }: { url: string; title: string }) {
                 void copy();
               }}
             >
-              <LinkIcon aria-hidden="true" /> {status === "manual" ? "Retry copy" : "Copy link"}
+              <LinkIcon aria-hidden="true" /> {status === "manual" ? t("retryCopy") : t("copyLink")}
             </Button>
             <Button asChild variant="ghost" className="w-full justify-start text-foreground">
               <a href={`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(url)}`}>
-                <Mail aria-hidden="true" /> Share by email
+                <Mail aria-hidden="true" /> {t("shareEmail")}
               </a>
             </Button>
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>
       <span role="status" className="sr-only">
-        {status === "copied"
-          ? "Link copied. Paste it to share this story."
-          : status === "manual"
-            ? "Copy is unavailable. Select and copy the article link in the sharing menu."
-            : ""}
+        {status === "copied" ? t("copiedAnnouncement") : status === "manual" ? t("manualAnnouncement") : ""}
       </span>
     </div>
   );

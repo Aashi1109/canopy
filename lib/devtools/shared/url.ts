@@ -5,15 +5,23 @@ import { ToolError } from "../../tool-framework/run.ts";
 
 export function normalizeDomain(input: string): string {
   const raw = input.trim().toLowerCase();
-  if (!raw) throw new ToolError("input-required", "Domain is required.", "Enter a value and try again.");
+  if (!raw)
+    throw new ToolError("input-required", "Domain is required.", "Enter a value and try again.", {
+      messageRef: { key: "sharedUrl.domainRequired" },
+      recoveryMessage: { key: "sharedInput.recovery" },
+    });
   let hostname: string;
   try {
     hostname = new URL(raw.includes("://") ? raw : `https://${raw}`).hostname;
   } catch {
-    throw new ToolError("invalid-domain", "Enter a valid domain name.");
+    throw new ToolError("invalid-domain", "Enter a valid domain name.", undefined, {
+      messageRef: { key: "sharedUrl.domain" },
+    });
   }
   if (!hostname.includes(".") || !/^[a-z\d.-]+$/i.test(hostname)) {
-    throw new ToolError("invalid-domain", "Enter a valid domain name.");
+    throw new ToolError("invalid-domain", "Enter a valid domain name.", undefined, {
+      messageRef: { key: "sharedUrl.domain" },
+    });
   }
   return hostname.replace(/^www\./, "");
 }
@@ -22,10 +30,14 @@ export function safeUrl(input: string, label: string): URL {
   try {
     const url = new URL(input);
     if (!/^https?:$/.test(url.protocol)) {
-      throw new ToolError("invalid-url", `${label} must be an absolute http or https URL.`);
+      throw new ToolError("invalid-url", `${label} must be an absolute http or https URL.`, undefined, {
+        messageRef: { key: "sharedUrl.absolute" },
+      });
     }
     return url;
   } catch {
-    throw new ToolError("invalid-url", `${label} must be an absolute http or https URL.`);
+    throw new ToolError("invalid-url", `${label} must be an absolute http or https URL.`, undefined, {
+      messageRef: { key: "sharedUrl.absolute" },
+    });
   }
 }

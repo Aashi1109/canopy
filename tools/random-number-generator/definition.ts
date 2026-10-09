@@ -1,6 +1,23 @@
+import {
+  CRYPTO_EXECUTION_MESSAGES,
+  ENCODING_EXECUTION_MESSAGES,
+} from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: {
+    ...CRYPTO_EXECUTION_MESSAGES,
+    ...ENCODING_EXECUTION_MESSAGES,
+    "errors.bounds-not-integers": "Min and max must be integers.",
+    "recovery.bounds-not-integers": "Remove any decimal part from the range.",
+    "errors.bounds-inverted": "Min cannot be greater than max.",
+    "recovery.bounds-inverted": "Swap the two values.",
+    "errors.invalid-random-range": "Random range is too large.",
+    "recovery.invalid-random-range": "Reduce the range or decimal places.",
+    "errors.not-enough-unique-values": "The range does not contain enough unique values.",
+    "recovery.not-enough-unique-values": "Reduce the count or widen the range.",
+  },
+
   toolId: "devtools.random-number-generator",
   app: "devtools",
   category: "developer-generators",

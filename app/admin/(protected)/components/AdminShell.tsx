@@ -26,6 +26,7 @@ export function AdminShell({
 }) {
   const pathname = internalSubdomainPath("admin", usePathname());
   const isToolsCatalog = pathname === "/admin/tools";
+  const isToolDetail = /^\/admin\/tools\/[^/]+\/?$/.test(pathname);
   const isBlogDocument = pathname.startsWith("/admin/blog/") && !pathname.startsWith("/admin/blog/taxonomy");
 
   if (isBlogDocument) {
@@ -71,8 +72,12 @@ export function AdminShell({
           className={
             isBlogDocument
               ? "min-h-0 min-w-0 flex-1 overflow-hidden"
-              : `min-h-0 min-w-0 flex-1 overscroll-contain px-4 py-6 sm:px-6 lg:px-7 lg:py-7 ${
-                  isToolsCatalog ? "overflow-y-auto lg:overflow-hidden" : "overflow-y-auto"
+              : `min-h-0 min-w-0 flex-1 overscroll-contain px-4 sm:px-6 lg:px-7 ${
+                  isToolDetail
+                    ? "overflow-hidden py-3 lg:py-4"
+                    : isToolsCatalog
+                      ? "overflow-y-auto py-6 lg:overflow-hidden lg:py-7"
+                      : "overflow-y-auto py-6 lg:py-7"
                 }`
           }
         >

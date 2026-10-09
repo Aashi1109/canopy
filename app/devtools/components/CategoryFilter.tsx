@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { Select } from "@/components/ui/index.tsx";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -9,13 +10,14 @@ export interface CategoryFilterOption {
 }
 
 export function CategoryFilter({ categories, value }: { categories: readonly CategoryFilterOption[]; value: string }) {
+  const t = useTranslations("CatalogPage");
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   return (
     <Select
-      aria-label="Filter tools by category"
+      aria-label={t("filterCategory")}
       className="h-10 w-56 bg-card"
       defaultValue={value}
       id="devtools-category-filter"
@@ -30,7 +32,7 @@ export function CategoryFilter({ categories, value }: { categories: readonly Cat
         router.push(`${pathname}?${params.toString()}`, { scroll: false });
       }}
     >
-      <option value="">All categories</option>
+      <option value="">{t("allCategories")}</option>
       {categories.map((category) => (
         <option key={category.value} value={category.value}>
           {category.label}

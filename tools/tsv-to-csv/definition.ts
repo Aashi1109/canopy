@@ -1,6 +1,8 @@
+import { CSV_EXECUTION_MESSAGES } from "../../lib/devtools/shared/csv-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
+  messages: { ...CSV_EXECUTION_MESSAGES },
   toolId: "devtools.tsv-to-csv",
   sharing: { version: 1 },
   app: "devtools",

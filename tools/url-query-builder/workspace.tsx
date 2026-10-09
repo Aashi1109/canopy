@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Stack } from "@/components/Stacks";
@@ -10,6 +12,7 @@ import type { SettingRow } from "@/lib/tool-framework/settings";
 import { parseQueryRows } from "./parameters";
 
 function QueryParameters(props: WorkspaceProps) {
+  const t = useTranslations("Tool.runtime");
   const id = useId();
   const [bulkOpen, setBulkOpen] = useState(false);
   const [draft, setDraft] = useState("");
@@ -31,9 +34,9 @@ function QueryParameters(props: WorkspaceProps) {
     try {
       return { rows: parseQueryRows(props.input.secondary ?? ""), error: "" };
     } catch {
-      return { rows: [], error: "Each line needs a parameter key followed by = and its value." };
+      return { rows: [], error: t("workspace.lineNeedsParameter") };
     }
-  }, [props.input.secondary]);
+  }, [props.input.secondary, t]);
   const rows = [...legacy.rows, ...savedRows];
   const visibleRows = rows.length ? rows : [{ key: "", value: "" }];
   const showBulk = bulkOpen || Boolean(legacy.error);
@@ -69,7 +72,7 @@ function QueryParameters(props: WorkspaceProps) {
     try {
       const imported = parseQueryRows(bulkValue);
       if (!imported.length && !legacy.error) {
-        setDraftError("Enter at least one key=value line.");
+        setDraftError(t("workspace.emptyImport"));
         return;
       }
       focusRow.current = legacy.error ? 0 : rows.length;
@@ -78,7 +81,7 @@ function QueryParameters(props: WorkspaceProps) {
       setDraft("");
       setDraftError("");
     } catch {
-      setDraftError("Each line needs a parameter key followed by = and its value. For example: tag=dev.");
+      setDraftError(t("workspace.invalidImport"));
     }
   };
 
@@ -86,10 +89,10 @@ function QueryParameters(props: WorkspaceProps) {
     <div className="@container">
       <section aria-labelledby={`${id}-heading`} className="space-y-2">
         <Stack direction="row" align="center" justify="between" gap="sm" wrap>
-          <H4 id={`${id}-heading`}>Query parameters</H4>
+          <H4 id={`${id}-heading`}>{t("workspace.queryParameters")}</H4>
           <Stack direction="row" align="center" gap="sm">
             <Button
-              aria-label="Add parameter"
+              aria-label={t("workspace.addParameter")}
               disabled={rowEditingDisabled}
               onClick={() => {
                 focusRow.current = visibleRows.length;
@@ -98,7 +101,8 @@ function QueryParameters(props: WorkspaceProps) {
               type="button"
               variant="outline"
             >
-              <Plus aria-hidden="true" /> Add
+              <Plus aria-hidden="true" />
+              {t("workspace.add")}
             </Button>
             {!showBulk ? (
               <Button
@@ -112,7 +116,7 @@ function QueryParameters(props: WorkspaceProps) {
                 type="button"
                 variant="outline"
               >
-                Paste multiple
+                {t("workspace.pasteMultiple")}
               </Button>
             ) : null}
           </Stack>
@@ -120,9 +124,9 @@ function QueryParameters(props: WorkspaceProps) {
 
         {showBulk ? (
           <div className="space-y-2">
-            <FieldLabel htmlFor={`${id}-bulk`}>Parameters to paste</FieldLabel>
+            <FieldLabel htmlFor={`${id}-bulk`}>{t("workspace.parametersToPaste")}</FieldLabel>
             <SourceTextarea
-              aria-label="Parameters to paste"
+              aria-label={t("workspace.parametersToPaste")}
               aria-describedby={`${id}-bulk-help${bulkError ? ` ${id}-bulk-error` : ""}`}
               aria-invalid={Boolean(bulkError)}
               className="h-24"
@@ -140,14 +144,12 @@ function QueryParameters(props: WorkspaceProps) {
               value={bulkValue}
             />
             <FieldDescription id={`${id}-bulk-help`}>
-              {legacy.error
-                ? "Correct the pasted lines, or clear them to discard this import. Your other parameter rows will be kept."
-                : "One key=value pair per line. These will be added to the rows below."}
+              {legacy.error ? t("workspace.correctImport") : t("workspace.addImportHelp")}
             </FieldDescription>
             {bulkError ? <FieldError id={`${id}-bulk-error`}>{bulkError}</FieldError> : null}
             <Stack direction="row" gap="sm">
               <Button disabled={props.disabled} onClick={applyBulk} type="button">
-                {legacy.error ? "Apply parameters" : "Add parameters"}
+                {legacy.error ? t("workspace.applyParameters") : t("workspace.addParameters")}
               </Button>
               {!legacy.error ? (
                 <Button
@@ -160,7 +162,7 @@ function QueryParameters(props: WorkspaceProps) {
                   type="button"
                   variant="ghost"
                 >
-                  Cancel
+                  {t("workspace.cancel")}
                 </Button>
               ) : null}
             </Stack>
@@ -175,10 +177,10 @@ function QueryParameters(props: WorkspaceProps) {
             >
               <div className="col-span-2 grid gap-1.5 @min-[24rem]:col-span-1">
                 <FieldLabel className={index ? "@min-[24rem]:sr-only" : undefined} htmlFor={`${id}-key-${index}`}>
-                  Key
+                  {t("workspace.key")}
                 </FieldLabel>
                 <Input
-                  aria-label={`Parameter key ${index + 1}`}
+                  aria-label={t("workspace.parameterKey", { number: index + 1 })}
                   autoCapitalize="off"
                   autoComplete="off"
                   disabled={rowEditingDisabled}
@@ -190,7 +192,7 @@ function QueryParameters(props: WorkspaceProps) {
                       ),
                     )
                   }
-                  placeholder="e.g. tag"
+                  placeholder={t("workspace.keyExample")}
                   ref={(element) => {
                     keyInputs.current[index] = element;
                   }}
@@ -200,10 +202,10 @@ function QueryParameters(props: WorkspaceProps) {
               </div>
               <div className="grid min-w-0 gap-1.5">
                 <FieldLabel className={index ? "@min-[24rem]:sr-only" : undefined} htmlFor={`${id}-value-${index}`}>
-                  Value
+                  {t("workspace.value")}
                 </FieldLabel>
                 <Input
-                  aria-label={`Value ${index + 1}`}
+                  aria-label={t("workspace.parameterValue", { number: index + 1 })}
                   autoCapitalize="off"
                   autoComplete="off"
                   disabled={rowEditingDisabled}
@@ -215,13 +217,13 @@ function QueryParameters(props: WorkspaceProps) {
                       ),
                     )
                   }
-                  placeholder="e.g. dev"
+                  placeholder={t("workspace.valueExample")}
                   spellCheck={false}
                   value={row.value}
                 />
               </div>
               <Button
-                aria-label={`Remove parameter ${index + 1}`}
+                aria-label={t("workspace.removeParameter", { number: index + 1 })}
                 disabled={rowEditingDisabled || rows.length === 0}
                 onClick={() => {
                   focusRow.current = Math.max(0, index - 1);
@@ -242,6 +244,7 @@ function QueryParameters(props: WorkspaceProps) {
 }
 
 export default function UrlQueryBuilderWorkspace(props: WorkspaceProps) {
+  const t = useTranslations("Tool.runtime");
   return (
     <ToolWorkspace
       {...props}
@@ -249,7 +252,7 @@ export default function UrlQueryBuilderWorkspace(props: WorkspaceProps) {
         ...props.spec,
         input: {
           kind: "fields",
-          label: "URL details",
+          label: t("workspace.urlDetails"),
           fields:
             props.spec.input.kind === "fields"
               ? props.spec.input.fields.filter((field) => field.channel === "text")

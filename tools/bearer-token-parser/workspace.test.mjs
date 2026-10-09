@@ -44,6 +44,7 @@ async function workspace({ token = jwt(), settings = {}, layout = "stacked" } = 
       onInputChange() {},
       onSettingChange() {},
     }),
+    { spec: definition },
   );
   return { ...view, result, token };
 }

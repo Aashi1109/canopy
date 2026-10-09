@@ -1,3 +1,4 @@
+import { JSON_EXECUTION_MESSAGES } from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 /**
@@ -6,6 +7,12 @@ import type { ToolSpec } from "../../lib/tool-framework/spec";
  * bundler, so it carries type-only imports and nothing else.
  */
 export default {
+  messages: {
+    ...JSON_EXECUTION_MESSAGES,
+    "json.exactNumbers": "Exact numbers preserved",
+    "json.exactNumbersDetail":
+      "Shown as code because a tree view would change some numeric values. Copy and download keep the original numbers.",
+  },
   toolId: "devtools.json-formatter",
   sharing: { version: 1 },
   app: "devtools",

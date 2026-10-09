@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useId, useRef, useState, type PointerEvent } from "react";
 import { CanvasHandle, Muted } from "@/components/ui/index.tsx";
 import { moveCropPoint, translateCrop, type CropPoint, type ImageSize } from "./geometry";
@@ -29,6 +31,7 @@ export function FreeformPreview({
   onError,
   onInvalidMove,
 }: Props) {
+  const text = useTranslations("Tool.runtime");
   const hintId = useId();
   const maskId = useId().replace(/:/g, "");
   const surface = useRef<HTMLDivElement>(null);
@@ -86,7 +89,7 @@ export function FreeformPreview({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <Muted className="shrink-0 px-4 py-2" id={hintId}>
-        Drag handles to shape the crop · Drag inside to move it
+        {text("workspace.drag_handles_to_74546a")}
       </Muted>
       <div className="flex min-h-0 flex-1 items-start justify-center overflow-auto p-6">
         <div
@@ -106,7 +109,7 @@ export function FreeformPreview({
           }}
         >
           <img
-            alt="Source image with freeform crop selection"
+            alt={text("workspace.sourceSelection")}
             className="block max-h-[520px] max-w-full object-contain outline outline-1 outline-black/10 dark:outline-white/10"
             draggable={false}
             src={url}
@@ -121,7 +124,7 @@ export function FreeformPreview({
           {ready ? (
             <>
               <svg
-                aria-label="Crop selection"
+                aria-label={text("workspace.cropSelection")}
                 className="absolute inset-0 h-full w-full overflow-visible"
                 viewBox={`0 0 ${size.width} ${size.height}`}
               >
@@ -140,7 +143,7 @@ export function FreeformPreview({
                   pointerEvents="none"
                 />
                 <polygon
-                  aria-label="Move entire crop selection"
+                  aria-label={text("workspace.moveSelection")}
                   aria-describedby={hintId}
                   role="button"
                   tabIndex={disabled ? -1 : 0}
@@ -167,7 +170,7 @@ export function FreeformPreview({
               {points.map((point, index) => (
                 <CanvasHandle
                   key={index}
-                  aria-label={`Crop point ${index + 1}`}
+                  aria-label={text("workspace.cropPoint", { number: index + 1 })}
                   aria-pressed={selected === index}
                   aria-describedby={hintId}
                   disabled={disabled}
@@ -201,7 +204,7 @@ export function FreeformPreview({
         </div>
       </div>
       <Muted aria-live={dragging ? "off" : "polite"} className="shrink-0 border-t border-border px-4 py-2">
-        Point {selected + 1} selected · Arrow keys move 1 px · Shift moves 10 px · Esc cancels a drag
+        {text("workspace.pointInstructions", { number: selected + 1 })}
       </Muted>
     </div>
   );

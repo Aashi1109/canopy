@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { Blob as NodeBlob, File as NodeFile } from "node:buffer";
 import React from "react";
+import { createTranslator } from "next-intl";
+import { getCommonMessages } from "../lib/i18n/messages.ts";
 import { beforeEach, expect, test, vi } from "vitest";
 import { MediaOutputGallery } from "../components/MediaOutputGallery.tsx";
 import { readArtifact } from "../lib/tool-framework/artifacts.ts";
@@ -53,8 +55,8 @@ function artifact(name, content) {
   };
 }
 
-async function mountGallery(props) {
-  const view = await mountTool(React.createElement(MediaOutputGallery, props));
+async function mountGallery(props, i18n = {}) {
+  const view = await mountTool(React.createElement(MediaOutputGallery, props), i18n);
   return {
     ...view,
     async update(next) {
@@ -111,4 +113,20 @@ test("processing disables card and open-preview downloads, then restores them", 
   expect(downloads).toHaveLength(1);
   expect(downloads[0].name).toBe(file.name);
   expect(await downloads[0].blob.text()).toBe("previous output");
+});
+
+test("localized image previews and downloads preserve exact artifact bytes and names", async () => {
+  const file = artifact("unchanged.png", new Uint8Array([137, 80, 78, 71, 0, 255]));
+  const gallery = await mountGallery({ files: [file] }, { locale: "hi" });
+  expect(gallery.container.textContent).toContain("1 इमेज");
+  await click(button("unchanged.png का प्रीव्यू देखें", gallery.container));
+  const dialog = document.querySelector('[role="dialog"]');
+  expect(dialog.textContent).toContain("बनाई गई इमेज");
+  const t = createTranslator({ locale: "hi", namespace: "Workbench", messages: getCommonMessages("hi") });
+  await click(button(t("mediaFileAction", { action: t("download"), name: file.name }), dialog));
+  expect(downloads).toHaveLength(1);
+  expect(downloads[0].name).toBe(file.name);
+  expect(new Uint8Array(await downloads[0].blob.arrayBuffer())).toEqual(new Uint8Array(await file.blob.arrayBuffer()));
+  await click(button(/प्रीव्यू बंद करें/, dialog));
+  expect(document.querySelector('[role="dialog"]')).toBeNull();
 });

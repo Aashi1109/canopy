@@ -31,7 +31,10 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   let pattern = PATTERNS[ctx.settings.preset];
   if (!pattern) {
-    throw new ToolError("preset-invalid", "Regex preset is invalid.", "Choose one of the listed presets.");
+    throw new ToolError("preset-invalid", "Regex preset is invalid.", "Choose one of the listed presets.", {
+      messageRef: { key: "errors.preset-invalid" },
+      recoveryMessage: { key: "recovery.preset-invalid" },
+    });
   }
   const { addNamedGroups, explain, flags, language, multiline } = ctx.settings;
   if (addNamedGroups) {

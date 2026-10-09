@@ -50,6 +50,26 @@ const post = (
   key = "test-error-tool",
 ) => POST(request, { params: Promise.resolve({ key }) });
 
+test("server execution exposes validated error coordinates and message arguments", async () => {
+  state.run = async () => {
+    throw new ToolError("json-syntax", "Parser detail", "Check syntax.", {
+      line: 2,
+      column: 3,
+      values: { line: 2, column: 3 },
+    });
+  };
+  const response = await post();
+  expect(response.status).toBe(400);
+  expect(await response.json()).toEqual({
+    error: {
+      code: "json-syntax",
+      message: "Parser detail",
+      recovery: "Check syntax.",
+      details: { line: 2, column: 3, values: { line: 2, column: 3 } },
+    },
+  });
+});
+
 for (const [name, call, fallback] of [
   ["search", () => search(new Request("https://app.test/api/tools/search?q=test")), "Unable to search tools"],
   ["ecosystem", ecosystem, "Unable to load tool categories"],

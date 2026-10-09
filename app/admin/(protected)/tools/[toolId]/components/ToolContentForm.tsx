@@ -5,20 +5,24 @@ import { useAdminQueryState } from "@/app/admin/hooks/useAdminQueryState";
 import {
   Caption,
   H3,
+  Label,
   Muted,
-  Overline,
   P,
-  Text,
   AlertBanner,
   Button,
   Input,
   OrderableList,
   Select,
   Textarea,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  toast,
   type OrderableItemState,
 } from "@/components/ui/index.tsx";
-import { Braces, GripVertical, Plus, RotateCcw, Search, Trash2, X } from "lucide-react";
-import { useActionState, useMemo, useState, type ReactElement, type ReactNode } from "react";
+import { GripVertical, Plus, RotateCcw, Search, Trash2, X } from "lucide-react";
+import { useActionState, useId, useMemo, useState, type ReactElement } from "react";
 import { TOOL_CATEGORIES, type CategoryKey } from "../../../../../../lib/tool-framework/categories";
 import { saveToolContentAction, type ToolContentActionState } from "../../actions";
 
@@ -166,46 +170,63 @@ function HiddenCatalog({ stored }: { stored: StoredContentView }) {
   );
 }
 
-function InheritedPreview({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex min-h-10 items-center gap-2.5 rounded-lg bg-muted px-3 text-muted-foreground">
-      <span className="grid size-6 shrink-0 place-items-center rounded-md bg-card text-foreground">
-        <Braces aria-hidden="true" className="size-3.5" />
-      </span>
-      <span className="min-w-0">
-        <Overline className="block">Inherited from definition.ts</Overline>
-        <Text className="block truncate text-foreground">{children || "None"}</Text>
-      </span>
-    </div>
-  );
-}
-
 function FieldHeader({
   count,
+  defaultValue,
+  htmlFor,
   label,
   onRevert,
   overridden,
 }: {
   count?: string;
+  defaultValue: string;
+  htmlFor: string;
   label: string;
   onRevert: () => void;
   overridden: boolean;
 }) {
   return (
-    <div className="flex h-8 items-center justify-between gap-3">
-      <Text className="text-foreground">{label}</Text>
-      <span className="flex items-center gap-2">
+    <div className="flex min-h-7 items-center justify-between gap-2">
+      <Label htmlFor={htmlFor}>{label}</Label>
+      <span className="flex shrink-0 items-center gap-2">
         {count ? <Caption className="text-muted-foreground">{count}</Caption> : null}
-        <Button className="h-7 px-2" disabled={!overridden} onClick={onRevert} size="xs" type="button" variant="ghost">
-          <RotateCcw aria-hidden="true" />
-          Revert to code
-        </Button>
+        {overridden ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label={`Revert ${label} to default`}
+                onClick={onRevert}
+                size="icon-xs"
+                type="button"
+                variant="ghost"
+              >
+                <RotateCcw aria-hidden="true" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs whitespace-normal [overflow-wrap:anywhere]">
+              <span className="block">Revert to default</span>
+              <span className="mt-1 block font-normal">{defaultValue || "None"}</span>
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
       </span>
     </div>
   );
 }
 
-function KeywordTagInput({ onChange, values }: { onChange: (values: string[]) => void; values: readonly string[] }) {
+function KeywordTagInput({
+  describedBy,
+  id,
+  onChange,
+  placeholder,
+  values,
+}: {
+  describedBy: string;
+  id: string;
+  onChange: (values: string[]) => void;
+  placeholder: string;
+  values: readonly string[];
+}) {
   const [draft, setDraft] = useState("");
 
   function commitDraft(): void {
@@ -221,16 +242,16 @@ function KeywordTagInput({ onChange, values }: { onChange: (values: string[]) =>
   }
 
   return (
-    <div className="flex min-h-11 flex-wrap items-center gap-1.5 rounded-lg border border-input bg-background px-2 py-1.5 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/25">
+    <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-lg border border-input bg-background px-2 py-1 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/25">
       {values.map((keyword) => (
         <Caption
-          className="inline-flex h-7 items-center gap-1 rounded-full bg-accent px-2.5 text-primary"
+          className="inline-flex min-h-6 max-w-full items-center gap-1 rounded-full bg-accent pr-0.5 pl-2.5 text-primary"
           key={keyword}
         >
-          {keyword}
+          <span className="min-w-0 [overflow-wrap:anywhere]">{keyword}</span>
           <Button
             aria-label={`Remove ${keyword}`}
-            className="size-4 rounded-full text-muted-foreground"
+            className="size-6 rounded-full text-muted-foreground"
             onClick={() => onChange(values.filter((value) => value !== keyword))}
             size="icon-xs"
             type="button"
@@ -241,9 +262,11 @@ function KeywordTagInput({ onChange, values }: { onChange: (values: string[]) =>
         </Caption>
       ))}
       <input
+        aria-describedby={describedBy}
         aria-label="Add keyword"
-        className="h-7 min-w-24 flex-1 bg-transparent px-1 outline-none placeholder:text-muted-foreground"
+        className="h-6 min-w-24 flex-1 bg-transparent px-1 outline-none placeholder:text-muted-foreground"
         disabled={values.length >= 24}
+        id={id}
         onBlur={commitDraft}
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={(event) => {
@@ -255,7 +278,7 @@ function KeywordTagInput({ onChange, values }: { onChange: (values: string[]) =>
             onChange(values.slice(0, -1));
           }
         }}
-        placeholder={values.length ? "Add keyword" : "Type a keyword and press Enter"}
+        placeholder={values.length ? "Add keyword" : placeholder}
         value={draft}
       />
     </div>
@@ -263,96 +286,130 @@ function KeywordTagInput({ onChange, values }: { onChange: (values: string[]) =>
 }
 
 function CatalogForm({ inherited, stored, toolId }: Omit<ToolContentFormProps, "relatedTools" | "section">) {
-  const [state, action, pending] = useActionState(saveToolContentAction, IDLE);
+  const formId = useId();
+  const [, action, pending] = useActionState(async (previous: ToolContentActionState, data: FormData) => {
+    const next = await saveToolContentAction(previous, data);
+    if (next.status === "success") toast.success(next.message, { id: `${formId}-feedback` });
+    if (next.status === "error") toast.error(next.message, { id: `${formId}-feedback` });
+    return next;
+  }, IDLE);
   const [category, setCategory] = useState(stored.category ?? "");
   const [keywords, setKeywords] = useState<string[]>([...(stored.keywords ?? [])]);
   const [seoTitle, setSeoTitle] = useState(stored.seoTitle ?? "");
   const [seoDescription, setSeoDescription] = useState(stored.seoDescription ?? "");
   const storedDoc = contentRecord(stored.contentDoc ?? inherited.contentDoc);
+  const inheritedCategory =
+    CATEGORY_OPTIONS.find((option) => option.key === inherited.category)?.label ?? inherited.category;
 
   return (
-    <form action={action} className="grid gap-5">
+    <form action={action} aria-labelledby={`${formId}-heading`} className="grid gap-4">
       <input name="toolId" type="hidden" value={toolId} />
       <HiddenDocument content={storedDoc} override={asRecord(stored.contentDoc) !== null} />
 
-      <div className="flex flex-col gap-2 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <H3>Catalog &amp; SEO</H3>
-          <Muted className="mt-1 text-muted-foreground">
-            Empty fields inherit their shipped values. Overrides remain draft until published.
-          </Muted>
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <H3 id={`${formId}-heading`}>Catalog &amp; SEO</H3>
+          <Button loading={pending} type="submit">
+            {pending ? "Saving…" : "Save changes"}
+          </Button>
         </div>
-        <Button loading={pending} type="submit">
-          {pending ? "Saving…" : "Save changes"}
-        </Button>
+        <Muted className="mt-1" id={`${formId}-guidance`}>
+          Blank fields use defaults.{" "}
+          {stored.published ? "Saved changes go live immediately." : "Save, then publish to go live."}
+        </Muted>
       </div>
 
-      {state.status !== "idle" ? (
-        <AlertBanner variant={state.status === "success" ? "success" : "error"}>{state.message}</AlertBanner>
-      ) : null}
+      <TooltipProvider>
+        <div className="grid gap-x-5 gap-y-3 sm:grid-cols-2">
+          <div className="grid min-w-0 content-start gap-1.5">
+            <FieldHeader
+              defaultValue={inheritedCategory}
+              htmlFor={`${formId}-category`}
+              label="Category"
+              onRevert={() => setCategory("")}
+              overridden={Boolean(category)}
+            />
+            <Select
+              aria-describedby={`${formId}-guidance`}
+              id={`${formId}-category`}
+              name="category"
+              onChange={(event) => setCategory(event.target.value)}
+              value={category}
+            >
+              <option value="">Default: {inheritedCategory || "None"}</option>
+              {CATEGORY_OPTIONS.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </div>
 
-      <div className="grid gap-x-5 gap-y-6 md:grid-cols-2">
-        <div className="grid content-start gap-2">
-          <FieldHeader label="Category" onRevert={() => setCategory("")} overridden={Boolean(category)} />
-          <Select name="category" onChange={(event) => setCategory(event.target.value)} value={category}>
-            <option value="">Inherit from code</option>
-            {CATEGORY_OPTIONS.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
-          <InheritedPreview>{inherited.category}</InheritedPreview>
-        </div>
+          <div className="grid min-w-0 content-start gap-1.5">
+            <FieldHeader
+              count={`${keywords.length} / 24`}
+              defaultValue={inherited.keywords.join(", ")}
+              htmlFor={`${formId}-keywords`}
+              label="Keywords"
+              onRevert={() => setKeywords([])}
+              overridden={keywords.length > 0}
+            />
+            <input name="keywords" type="hidden" value={keywords.join(", ")} />
+            <KeywordTagInput
+              describedBy={`${formId}-guidance ${formId}-keywords-help`}
+              id={`${formId}-keywords`}
+              onChange={setKeywords}
+              placeholder={inherited.keywords.join(", ") || "Add keyword, then press Enter"}
+              values={keywords}
+            />
+            <span className="sr-only" id={`${formId}-keywords-help`}>
+              Press Enter or comma to add a keyword.
+            </span>
+          </div>
 
-        <div className="grid content-start gap-2">
-          <FieldHeader
-            count={`${keywords.length} / 24`}
-            label="Keywords"
-            onRevert={() => setKeywords([])}
-            overridden={keywords.length > 0}
-          />
-          <input name="keywords" type="hidden" value={keywords.join(", ")} />
-          <KeywordTagInput onChange={setKeywords} values={keywords} />
-          <InheritedPreview>{inherited.keywords.join(" · ")}</InheritedPreview>
-        </div>
+          <div className="grid min-w-0 content-start gap-1.5 sm:col-span-2">
+            <FieldHeader
+              count={`${seoTitle.length} / 160`}
+              defaultValue={inherited.seoTitle}
+              htmlFor={`${formId}-seo-title`}
+              label="SEO title"
+              onRevert={() => setSeoTitle("")}
+              overridden={Boolean(seoTitle.trim())}
+            />
+            <Input
+              aria-describedby={`${formId}-guidance`}
+              id={`${formId}-seo-title`}
+              maxLength={160}
+              name="seoTitle"
+              onChange={(event) => setSeoTitle(event.target.value)}
+              placeholder={inherited.seoTitle || "Page title in search results"}
+              value={seoTitle}
+            />
+          </div>
 
-        <div className="grid content-start gap-2">
-          <FieldHeader
-            count={`${seoTitle.length} / 160`}
-            label="SEO title"
-            onRevert={() => setSeoTitle("")}
-            overridden={Boolean(seoTitle.trim())}
-          />
-          <Textarea
-            aria-label="SEO title"
-            className="min-h-[76px] resize-y"
-            maxLength={160}
-            name="seoTitle"
-            onChange={(event) => setSeoTitle(event.target.value)}
-            value={seoTitle}
-          />
-          <InheritedPreview>{inherited.seoTitle}</InheritedPreview>
+          <div className="grid min-w-0 content-start gap-1.5 sm:col-span-2">
+            <FieldHeader
+              count={`${seoDescription.length} / 320`}
+              defaultValue={inherited.seoDescription}
+              htmlFor={`${formId}-seo-description`}
+              label="SEO description"
+              onRevert={() => setSeoDescription("")}
+              overridden={Boolean(seoDescription.trim())}
+            />
+            <Textarea
+              aria-describedby={`${formId}-guidance`}
+              className="min-h-[76px] resize-y py-2 [field-sizing:fixed]"
+              id={`${formId}-seo-description`}
+              maxLength={320}
+              name="seoDescription"
+              onChange={(event) => setSeoDescription(event.target.value)}
+              placeholder={inherited.seoDescription || "Summary shown in search results"}
+              rows={3}
+              value={seoDescription}
+            />
+          </div>
         </div>
-
-        <div className="grid content-start gap-2">
-          <FieldHeader
-            count={`${seoDescription.length} / 320`}
-            label="SEO description"
-            onRevert={() => setSeoDescription("")}
-            overridden={Boolean(seoDescription.trim())}
-          />
-          <Textarea
-            aria-label="SEO description"
-            className="min-h-[76px] resize-y"
-            maxLength={320}
-            name="seoDescription"
-            onChange={(event) => setSeoDescription(event.target.value)}
-            value={seoDescription}
-          />
-          <InheritedPreview>{inherited.seoDescription}</InheritedPreview>
-        </div>
-      </div>
+      </TooltipProvider>
     </form>
   );
 }
@@ -472,7 +529,7 @@ function FaqEditor({ items, onChange }: { items: readonly FaqItem[]; onChange: (
               <Caption className="w-7 shrink-0 pt-2.5 text-muted-foreground">
                 {String(index + 1).padStart(2, "0")}
               </Caption>
-              <div className="grid min-w-0 flex-1 gap-2 md:grid-cols-[minmax(12rem,0.8fr)_minmax(16rem,1.2fr)]">
+              <div className="grid min-w-0 flex-1 gap-2 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
                 <Input
                   aria-label={`FAQ ${index + 1} question`}
                   onChange={(event) =>
@@ -757,37 +814,28 @@ function ContentDocumentForm({ inherited, relatedTools, stored, toolId }: Omit<T
   }
 
   return (
-    <form action={action} className="grid gap-5">
+    <form action={action} className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden sm:gap-4">
       <input name="toolId" type="hidden" value={toolId} />
       <HiddenCatalog stored={stored} />
       <HiddenDocument content={current} override={overrideDoc} />
 
-      <div className="flex flex-col gap-2 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+      <div className="flex shrink-0 items-center gap-2 border-b border-border pb-2 sm:items-end sm:justify-between sm:pb-4">
+        <div className="hidden sm:block">
           <H3>Content document</H3>
           <Muted className="mt-1 text-muted-foreground">
             Edit the supporting content shown below the public tool workspace.
           </Muted>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={restoreFromCode} size="sm" type="button" variant="secondary">
-            <RotateCcw aria-hidden="true" />
-            Use code document
-          </Button>
-          <Button loading={pending} onClick={() => setOverrideDoc(true)} size="sm" type="submit">
-            {pending ? "Saving…" : "Save document"}
-          </Button>
-        </div>
+        <Button onClick={restoreFromCode} size="sm" type="button" variant="secondary">
+          <RotateCcw aria-hidden="true" />
+          Use code document
+        </Button>
       </div>
 
-      {state.status !== "idle" ? (
-        <AlertBanner variant={state.status === "success" ? "success" : "error"}>{state.message}</AlertBanner>
-      ) : null}
-
-      <div className="grid min-h-[430px] gap-6 lg:grid-cols-[190px_minmax(0,1fr)]">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden sm:gap-4 lg:flex-row lg:gap-6">
         <nav
           aria-label="Content document sections"
-          className="flex gap-1 overflow-x-auto border-b border-border pb-2 lg:flex-col lg:overflow-visible lg:border-r lg:border-b-0 lg:pr-5"
+          className="flex shrink-0 gap-1 overflow-x-auto border-b border-border pb-2 lg:w-[190px] lg:flex-col lg:overflow-visible lg:border-r lg:border-b-0 lg:pr-5"
         >
           {DOCUMENT_SECTIONS.map((section) => (
             <button
@@ -803,64 +851,74 @@ function ContentDocumentForm({ inherited, relatedTools, stored, toolId }: Omit<T
           ))}
         </nav>
 
-        <section className="min-w-0">
-          <div className="mb-4 flex items-center justify-between gap-3">
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden">
+          <div className="hidden shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 sm:flex">
             <H3>{DOCUMENT_SECTIONS.find((section) => section.key === activeSection)?.label}</H3>
             <Caption className="text-muted-foreground">Drag to reorder · changes save as one document</Caption>
           </div>
-          {activeSection === "howToUse" ? (
-            <TextListEditor
-              addLabel="Add step"
-              description="Write concise ordered steps that take a first-time visitor from input to result."
-              items={howToUse}
-              label="Step"
-              onChange={(items) => {
-                setHowToUse(items);
-                setOverrideDoc(true);
-              }}
-            />
-          ) : null}
-          {activeSection === "limitations" ? (
-            <TextListEditor
-              addLabel="Add limitation"
-              description="State boundaries plainly so visitors understand what the tool does not validate or guarantee."
-              items={limitations}
-              label="Limitation"
-              onChange={(items) => {
-                setLimitations(items);
-                setOverrideDoc(true);
-              }}
-            />
-          ) : null}
-          {activeSection === "faq" ? (
-            <FaqEditor
-              items={faq}
-              onChange={(items) => {
-                setFaq(items);
-                setOverrideDoc(true);
-              }}
-            />
-          ) : null}
-          {activeSection === "examples" ? (
-            <ExamplesEditor
-              items={examples}
-              onChange={(items) => {
-                setExamples(items);
-                setOverrideDoc(true);
-              }}
-            />
-          ) : null}
-          {activeSection === "relatedToolIds" ? (
-            <RelatedToolsEditor
-              items={related}
-              onChange={(items) => {
-                setRelated(items);
-                setOverrideDoc(true);
-              }}
-              tools={relatedTools}
-            />
-          ) : null}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            {activeSection === "howToUse" ? (
+              <TextListEditor
+                addLabel="Add step"
+                description="Write concise ordered steps that take a first-time visitor from input to result."
+                items={howToUse}
+                label="Step"
+                onChange={(items) => {
+                  setHowToUse(items);
+                  setOverrideDoc(true);
+                }}
+              />
+            ) : null}
+            {activeSection === "limitations" ? (
+              <TextListEditor
+                addLabel="Add limitation"
+                description="State boundaries plainly so visitors understand what the tool does not validate or guarantee."
+                items={limitations}
+                label="Limitation"
+                onChange={(items) => {
+                  setLimitations(items);
+                  setOverrideDoc(true);
+                }}
+              />
+            ) : null}
+            {activeSection === "faq" ? (
+              <FaqEditor
+                items={faq}
+                onChange={(items) => {
+                  setFaq(items);
+                  setOverrideDoc(true);
+                }}
+              />
+            ) : null}
+            {activeSection === "examples" ? (
+              <ExamplesEditor
+                items={examples}
+                onChange={(items) => {
+                  setExamples(items);
+                  setOverrideDoc(true);
+                }}
+              />
+            ) : null}
+            {activeSection === "relatedToolIds" ? (
+              <RelatedToolsEditor
+                items={related}
+                onChange={(items) => {
+                  setRelated(items);
+                  setOverrideDoc(true);
+                }}
+                tools={relatedTools}
+              />
+            ) : null}
+          </div>
         </section>
+      </div>
+      <div className="flex shrink-0 flex-col gap-2 border-t border-border pt-2 sm:pt-4">
+        {state.status !== "idle" ? (
+          <AlertBanner variant={state.status === "success" ? "success" : "error"}>{state.message}</AlertBanner>
+        ) : null}
+        <Button className="self-end" loading={pending} onClick={() => setOverrideDoc(true)} size="sm" type="submit">
+          {pending ? "Saving…" : "Save document"}
+        </Button>
       </div>
     </form>
   );

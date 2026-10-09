@@ -1,11 +1,13 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { CopyButton } from "@/components/ResultView";
 import { SyntaxHighlight } from "@/components/content/SyntaxHighlight";
 import type { ToolFact } from "@/lib/tool-framework/result";
 
 /** Compact, individually copyable values shared by color previews and sampling. */
 export function ColorValueList({ entries, disabled = false }: { entries: readonly ToolFact[]; disabled?: boolean }) {
+  const t = useTranslations("Workbench");
   return (
     <dl className="grid min-h-0 grid-cols-[minmax(2.5rem,max-content)_minmax(0,1fr)_auto] content-start divide-y divide-border overflow-y-auto">
       {entries.map((entry) => (
@@ -14,7 +16,12 @@ export function ColorValueList({ entries, disabled = false }: { entries: readonl
           <dd className="min-w-0 break-all font-mono text-sm">
             <SyntaxHighlight code={String(entry.value)} language="css" />
           </dd>
-          <CopyButton disabled={disabled} content={String(entry.value)} iconOnly label={`Copy ${entry.label}`} />
+          <CopyButton
+            disabled={disabled}
+            content={String(entry.value)}
+            iconOnly
+            label={t("copyValue", { label: entry.label })}
+          />
         </div>
       ))}
     </dl>

@@ -44,6 +44,7 @@ async function workspace({ tokenHeader = header, tokenPayload = payload, tokenSi
       onInputChange() {},
       onSettingChange() {},
     }),
+    { spec: definition },
   );
   return { ...view, result };
 }

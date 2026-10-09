@@ -1,19 +1,17 @@
 import { readFile, readdir } from "node:fs/promises";
+import { getPaperworkToolMessages } from "../lib/paperwork/toolMessages.ts";
 import { isValidToolSlug, slugFromName, type ToolApp } from "../lib/tool-catalog/index.ts";
 import { eq, max } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema.ts";
 import { managedToolsTable, toolContentTable } from "./schema.ts";
+import { resolveContent } from "../lib/tool-framework/content.ts";
+import { escapeToolText, extractToolMessages } from "../lib/tool-framework/translations.ts";
+import type { ToolSpec } from "../lib/tool-framework/spec.ts";
 
 type SeedToolApp = Extract<ToolApp, "devtools" | "media">;
 
-interface SeedToolSpec {
-  toolId: string;
-  app: SeedToolApp;
-  slug: string;
-  name: string;
-  description: string;
-}
+type SeedToolSpec = ToolSpec & { app: SeedToolApp; slug: string };
 
 interface LoadedToolDefinition {
   definitionKey: string;
@@ -81,6 +79,7 @@ function parseToolDefinition(definitionKey: string, value: unknown): SeedToolSpe
   }
 
   return {
+    ...(value as unknown as ToolSpec),
     toolId: expectedToolId,
     app: value.app,
     slug,
@@ -151,7 +150,7 @@ export async function seedManagedTools(database: NodePgDatabase<typeof schema>):
 
   for (const { definitionKey, spec } of scan.definitions) {
     const [stored] = await database
-      .select({ slug: managedToolsTable.slug })
+      .select()
       .from(managedToolsTable)
       .where(eq(managedToolsTable.toolId, spec.toolId))
       .limit(1);
@@ -177,6 +176,7 @@ export async function seedManagedTools(database: NodePgDatabase<typeof schema>):
           description: spec.description,
           order,
           enabled: true,
+          translations: { en: { status: "published", messages: extractToolMessages(spec) } },
         })
         .onConflictDoNothing({ target: managedToolsTable.toolId });
     }
@@ -187,9 +187,90 @@ export async function seedManagedTools(database: NodePgDatabase<typeof schema>):
       .onConflictDoNothing({ target: toolContentTable.toolId });
   }
 
+  await backfillToolTranslations(database, scan);
+
   return {
     migrated: scan.migrated,
     skipped: scan.skipped,
     total: scan.total,
   };
+}
+
+/** Initializes source translations only; does not create tools, templates, or assets. */
+export async function backfillToolTranslations(
+  database: NodePgDatabase<typeof schema>,
+  loaded?: ManagedToolSeedScan,
+): Promise<number> {
+  const scan = loaded ?? (await loadManagedToolDefinitions());
+  let updated = 0;
+  // Backfill source copy without overwriting saved text, including a tool whose
+  // English name existed before its code definition was deployed.
+  const specs = new Map(scan.definitions.map(({ spec }) => [spec.toolId, spec]));
+  const rows = await database.select({ toolId: managedToolsTable.toolId }).from(managedToolsTable);
+  for (const { toolId } of rows) {
+    await database.transaction(async (transaction) => {
+      const [row] = await transaction
+        .select()
+        .from(managedToolsTable)
+        .where(eq(managedToolsTable.toolId, toolId))
+        .limit(1)
+        .for("update");
+      if (!row) return;
+      const spec = specs.get(toolId);
+      let source: Record<string, string> = {
+        name: escapeToolText(row.name),
+        description: escapeToolText(row.description),
+        ...(row.app === "paperwork" ? getPaperworkToolMessages(row.toolId.split(".")[1] ?? row.toolId) : {}),
+      };
+      if (spec) {
+        const [content] = await transaction
+          .select()
+          .from(toolContentTable)
+          .where(eq(toolContentTable.toolId, toolId))
+          .limit(1);
+        const resolved = resolveContent({ ...spec, name: row.name, description: row.description }, content ?? null);
+        source = extractToolMessages(
+          {
+            ...spec,
+            name: row.name,
+            description: row.description,
+            keywords: resolved.keywords,
+            content: resolved.content,
+          },
+          { seoTitle: resolved.seoTitle, seoDescription: resolved.seoDescription },
+        );
+      }
+      const existing = row.translations?.en;
+      const messages = Object.fromEntries(
+        Object.entries(source).map(([key, value]) => [key, existing?.messages[key] ?? value]),
+      );
+      if (
+        existing &&
+        JSON.stringify(Object.entries(existing.messages).sort()) === JSON.stringify(Object.entries(messages).sort())
+      )
+        return;
+      const translations = Object.fromEntries(
+        Object.entries(row.translations ?? {}).map(([locale, entry]) => [
+          locale,
+          { ...entry, status: "draft" as const },
+        ]),
+      );
+      updated += 1;
+      await transaction
+        .update(managedToolsTable)
+        .set({
+          translations: {
+            ...translations,
+            en: {
+              status: existing?.status ?? "published",
+              messages,
+            },
+          },
+          updatedAt: new Date(),
+        })
+        .where(eq(managedToolsTable.toolId, toolId));
+    });
+  }
+
+  return updated;
 }

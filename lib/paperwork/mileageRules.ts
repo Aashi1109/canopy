@@ -33,24 +33,49 @@ export const IRS_MILEAGE_RATE_SCHEDULE = {
 
 const money = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 
+type MileageErrorMessage = {
+  key: string;
+  values?: Record<string, string | number>;
+};
+
+class MileageValidationError extends Error {
+  constructor(
+    message: string,
+    readonly errorMessage: MileageErrorMessage,
+  ) {
+    super(message);
+  }
+}
+
 export function getMileageRate(mode: MileageRateMode, taxYear: number, tripDate: string, customRate: number): number {
   const schedule = IRS_MILEAGE_RATE_SCHEDULE[taxYear as keyof typeof IRS_MILEAGE_RATE_SCHEDULE];
   if (!schedule) {
-    throw new Error(`IRS mileage rules update required for ${taxYear}.`);
+    throw new MileageValidationError(`IRS mileage rules update required for ${taxYear}.`, {
+      key: "mileage.validation.rulesYearUnavailable",
+      values: { year: taxYear },
+    });
   }
   if (!tripDate.startsWith(`${taxYear}-`)) {
-    throw new Error(`Trip date must be within tax year ${taxYear}.`);
+    throw new MileageValidationError(`Trip date must be within tax year ${taxYear}.`, {
+      key: "mileage.validation.tripYearMismatch",
+      values: { year: taxYear },
+    });
   }
   if (mode === "custom") {
     if (!Number.isFinite(customRate) || customRate < 0) {
-      throw new Error("Custom mileage rate must be zero or greater.");
+      throw new MileageValidationError("Custom mileage rate must be zero or greater.", {
+        key: "mileage.validation.customRateNonnegative",
+      });
     }
     return customRate;
   }
 
   const rule = [...schedule].reverse().find(({ effectiveDate }) => tripDate >= effectiveDate);
   if (!rule) {
-    throw new Error(`IRS mileage rules update required for ${tripDate}.`);
+    throw new MileageValidationError(`IRS mileage rules update required for ${tripDate}.`, {
+      key: "mileage.validation.rulesDateUnavailable",
+      values: { date: tripDate },
+    });
   }
   return rule.rate;
 }
@@ -58,7 +83,7 @@ export function getMileageRate(mode: MileageRateMode, taxYear: number, tripDate:
 export function calculateMileageSummary<TTrip extends MileageRuleTrip>(
   draft: Omit<MileageRuleDraft, "trips"> & { trips: TTrip[] },
 ) {
-  const errors: string[] = [];
+  const failures = new Map<string, MileageErrorMessage>();
   const trips = draft.trips.map((trip) => {
     try {
       const rate = getMileageRate(draft.rateMode, draft.taxYear, trip.date, draft.customRate);
@@ -74,7 +99,10 @@ export function calculateMileageSummary<TTrip extends MileageRuleTrip>(
         tolls,
       };
     } catch (error) {
-      errors.push(error instanceof Error ? error.message : String(error));
+      failures.set(
+        error instanceof Error ? error.message : String(error),
+        error instanceof MileageValidationError ? error.errorMessage : { key: "mileage.validation.calculationFailed" },
+      );
       return {
         ...trip,
         rate: 0,
@@ -103,7 +131,8 @@ export function calculateMileageSummary<TTrip extends MileageRuleTrip>(
 
   return {
     trips,
-    errors: [...new Set(errors)],
+    errors: [...failures.keys()],
+    errorMessages: [...failures.values()],
     totalMiles: trips.reduce((total, trip) => total + Number(trip.miles || 0), 0),
     standardMileageDeduction,
     parkingAndTolls,

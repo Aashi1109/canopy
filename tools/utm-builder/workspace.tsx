@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useEffect, useMemo } from "react";
 import { SettingsPanel } from "@/components/SettingsPanel";
@@ -8,6 +9,7 @@ import type { SettingRow } from "@/lib/tool-framework/settings";
 import { getParameterErrors } from "./parameters";
 
 export default function UtmBuilderWorkspace(props: WorkspaceProps) {
+  const t = useTranslations("Tool.runtime");
   const fields = props.spec.settings.fields;
   const parameters = useMemo(() => {
     const value = props.settings.parameters;
@@ -18,7 +20,11 @@ export default function UtmBuilderWorkspace(props: WorkspaceProps) {
         )
       : [];
   }, [props.settings.parameters]);
-  const errors = getParameterErrors(parameters);
+  const errors = getParameterErrors(parameters, (issue) =>
+    issue.code === "standard"
+      ? t("workspace.standardParameter", { field: fields[issue.key.slice(4)]?.label ?? issue.field, key: issue.key })
+      : t(issue.code === "missing" ? "workspace.missingParameter" : "workspace.duplicateParameter"),
+  );
   const validation = errors.find(Boolean) ?? null;
   const { onValidationChange } = props;
   useEffect(() => {
@@ -40,7 +46,7 @@ export default function UtmBuilderWorkspace(props: WorkspaceProps) {
         ...props.spec,
         input: {
           kind: "fields",
-          label: "Campaign details",
+          label: t("workspace.campaignDetails"),
           fields: [
             {
               channel: "text",
@@ -74,19 +80,19 @@ export default function UtmBuilderWorkspace(props: WorkspaceProps) {
             values={props.settings}
           />
           <KeyValueFields
-            addLabel="Add parameter"
+            addLabel={t("workspace.addParameter")}
             disabled={props.disabled}
             errors={errors}
             help={fields.parameters.help}
-            keyLabel="Parameter key"
-            keyPlaceholder="e.g. utm_id"
+            keyLabel={t("workspace.parameterKey")}
+            keyPlaceholder={t("workspace.keyExample")}
             label={fields.parameters.label}
             onChange={(rows) => props.onSettingChange("parameters", rows)}
             onSubmit={onSubmit}
-            rowLabel="parameter"
+            rowLabel={t("workspace.parameter")}
             rows={parameters}
-            valueLabel="Parameter value"
-            valuePlaceholder="e.g. spring_2026"
+            valueLabel={t("workspace.parameterValue")}
+            valuePlaceholder={t("workspace.valueExample")}
           />
         </div>
       )}

@@ -15,13 +15,20 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const username = ctx.input.text;
   const password = ctx.input.secondary ?? "";
   if (username.includes(":")) {
-    throw new ToolError("invalid-username", "Username cannot contain a colon (:).", "Use a username without a colon.");
+    throw new ToolError("invalid-username", "Username cannot contain a colon (:).", "Use a username without a colon.", {
+      messageRef: { key: "execution.errors.invalid-username" },
+      recoveryMessage: { key: "execution.recovery.invalid-username" },
+    });
   }
   if (/[\u0000-\u001f\u007f]/.test(username) || /[\u0000-\u001f\u007f]/.test(password)) {
     throw new ToolError(
       "invalid-credentials",
       "Username and password cannot contain control characters.",
       "Remove line breaks, tabs, and other control characters, then try again.",
+      {
+        messageRef: { key: "execution.errors.invalid-credentials" },
+        recoveryMessage: { key: "execution.recovery.invalid-credentials" },
+      },
     );
   }
   requireUtilityInput(username, "Username");

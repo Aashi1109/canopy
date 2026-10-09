@@ -11,6 +11,7 @@ test("cron parser produces exact field meanings, a usable expression, and a time
   assert.deepEqual(result.verdict, {
     level: "ok",
     label: "Valid schedule",
+    labelMessage: { key: "cron.validSchedule" },
     detail: "At 09:00, Monday through Friday.",
   });
   assert.equal(result.sections[0].body.code, "0 9 * * 1-5");

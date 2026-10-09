@@ -8,12 +8,14 @@ import {
   resolveMissingValues,
   type JsonRepairMode,
 } from "./json.ts";
+import type { ToolMessage } from "../../tool-runtime/types.ts";
 
 export type CsvDelimiter = "," | ";" | "\t" | "|";
 
 type JsonToCsvError = {
   kind: "empty" | "syntax" | "shape" | "too-large" | "configuration";
   message: string;
+  messageRef?: ToolMessage;
 };
 
 export type JsonToCsvResult =
@@ -64,7 +66,7 @@ export function convertJsonToCsv(
   if (!input.trim()) {
     return {
       ok: false,
-      error: { kind: "empty", message: "Paste JSON to convert it to CSV." },
+      error: { kind: "empty", message: "Paste JSON to convert it to CSV.", messageRef: { key: "jsonCsv.empty" } },
     };
   }
   if (input.length > MAX_JSON_INPUT_CHARS) {
@@ -73,13 +75,18 @@ export function convertJsonToCsv(
       error: {
         kind: "too-large",
         message: `JSON must be ${MAX_JSON_INPUT_CHARS.toLocaleString("en-US")} characters or fewer.`,
+        messageRef: { key: "jsonCsv.tooLarge", values: { limit: MAX_JSON_INPUT_CHARS } },
       },
     };
   }
   if (delimiter !== "," && delimiter !== ";" && delimiter !== "\t" && delimiter !== "|") {
     return {
       ok: false,
-      error: { kind: "configuration", message: "Choose a valid CSV delimiter." },
+      error: {
+        kind: "configuration",
+        message: "Choose a valid CSV delimiter.",
+        messageRef: { key: "jsonCsv.delimiter" },
+      },
     };
   }
 
@@ -91,14 +98,14 @@ export function convertJsonToCsv(
     if (repairMode === "off") {
       return {
         ok: false,
-        error: { kind: "syntax", message: "JSON is not valid." },
+        error: { kind: "syntax", message: "JSON is not valid.", messageRef: { key: "jsonCsv.invalid" } },
       };
     }
     const repair = repairMissingPropertyValues(input);
     if (!repair.repaired) {
       return {
         ok: false,
-        error: { kind: "syntax", message: "JSON is not valid." },
+        error: { kind: "syntax", message: "JSON is not valid.", messageRef: { key: "jsonCsv.invalid" } },
       };
     }
     try {
@@ -107,7 +114,7 @@ export function convertJsonToCsv(
     } catch {
       return {
         ok: false,
-        error: { kind: "syntax", message: "JSON could not be repaired safely." },
+        error: { kind: "syntax", message: "JSON could not be repaired safely.", messageRef: { key: "jsonCsv.repair" } },
       };
     }
   }
@@ -119,6 +126,7 @@ export function convertJsonToCsv(
       error: {
         kind: "shape",
         message: "Use a JSON object or an array of JSON objects.",
+        messageRef: { key: "jsonCsv.shape" },
       },
     };
   }
@@ -146,7 +154,7 @@ export function convertJsonToCsv(
 export function parseDelimitedRows(
   input: string,
   delimiter: CsvDelimiter,
-): { ok: true; rows: string[][] } | { ok: false; message: string } {
+): { ok: true; rows: string[][] } | { ok: false; message: string; messageRef: ToolMessage } {
   const text = input.startsWith("\uFEFF") ? input.slice(1) : input;
   const rows: string[][] = [];
   let row: string[] = [];
@@ -176,11 +184,17 @@ export function parseDelimitedRows(
       return {
         ok: false,
         message: `Unexpected character ${JSON.stringify(character)} after a closing quote.`,
+        messageRef: { key: "csv.errors.unexpectedCharacter", values: { character: JSON.stringify(character) } },
       };
     }
 
     if (character === '"') {
-      if (field) return { ok: false, message: "A quoted field must start after a delimiter." };
+      if (field)
+        return {
+          ok: false,
+          message: "A quoted field must start after a delimiter.",
+          messageRef: { key: "csv.errors.unexpectedQuote" },
+        };
       quoted = true;
       afterQuote = false;
     } else if (character === delimiter) {
@@ -199,7 +213,12 @@ export function parseDelimitedRows(
     }
   }
 
-  if (quoted) return { ok: false, message: "A quoted CSV field is not closed." };
+  if (quoted)
+    return {
+      ok: false,
+      message: "A quoted CSV field is not closed.",
+      messageRef: { key: "csv.errors.unclosedQuote" },
+    };
   row.push(field);
   rows.push(row);
   return { ok: true, rows: rows.filter((values) => values.some(Boolean)) };
@@ -212,7 +231,11 @@ export function convertCsvToJson(
   if (!input.trim()) {
     return {
       ok: false,
-      error: { kind: "empty", message: "Paste CSV to convert it to JSON." },
+      error: {
+        kind: "empty",
+        message: "Paste CSV to convert it to JSON.",
+        messageRef: { key: "csv.errors.emptyJsonSource" },
+      },
     };
   }
   if (input.length > MAX_JSON_INPUT_CHARS) {
@@ -221,19 +244,24 @@ export function convertCsvToJson(
       error: {
         kind: "too-large",
         message: `CSV must be ${MAX_JSON_INPUT_CHARS.toLocaleString("en-US")} characters or fewer.`,
+        messageRef: { key: "csv.errors.inputTooLarge", values: { limit: MAX_JSON_INPUT_CHARS } },
       },
     };
   }
   if (![",", ";", "\t", "|"].includes(delimiter)) {
     return {
       ok: false,
-      error: { kind: "configuration", message: "Choose a valid CSV delimiter." },
+      error: {
+        kind: "configuration",
+        message: "Choose a valid CSV delimiter.",
+        messageRef: { key: "csv.errors.invalidCsvDelimiter" },
+      },
     };
   }
 
   const parsed = parseDelimitedRows(input, delimiter);
   if (!parsed.ok) {
-    return { ok: false, error: { kind: "syntax", message: parsed.message } };
+    return { ok: false, error: { kind: "syntax", message: parsed.message, messageRef: parsed.messageRef } };
   }
 
   const [headerRow, ...dataRows] = parsed.rows;
@@ -243,13 +271,21 @@ export function convertCsvToJson(
   if (!columns.length || columns.some((column) => !column)) {
     return {
       ok: false,
-      error: { kind: "shape", message: "Every CSV column needs a header." },
+      error: {
+        kind: "shape",
+        message: "Every CSV column needs a header.",
+        messageRef: { key: "csv.errors.emptyHeader" },
+      },
     };
   }
   if (new Set(columns).size !== columns.length) {
     return {
       ok: false,
-      error: { kind: "shape", message: "CSV headers must be unique." },
+      error: {
+        kind: "shape",
+        message: "CSV headers must be unique.",
+        messageRef: { key: "csv.errors.duplicateHeader" },
+      },
     };
   }
   if (dataRows.some((values) => values.length !== columns.length)) {
@@ -258,6 +294,7 @@ export function convertCsvToJson(
       error: {
         kind: "shape",
         message: "Every CSV row must have the same number of fields as the header.",
+        messageRef: { key: "csv.errors.headerWidth" },
       },
     };
   }

@@ -43,12 +43,13 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         language: "markdown",
         truncated: sink.previewTruncated,
         stats: [
-          { label: "Rows", value: String(Math.max(0, parsed.rowCount - 1)) },
-          { label: "Columns", value: String(parsed.columnCount) },
+          { label: "Rows", labelMessage: { key: "csv.rows" }, value: String(Math.max(0, parsed.rowCount - 1)) },
+          { label: "Columns", labelMessage: { key: "csv.columns" }, value: String(parsed.columnCount) },
         ],
         sections: [
           {
             title: sink.previewTruncated ? "Complete Markdown table" : "Download",
+            titleMessage: { key: sink.previewTruncated ? "csv.completeMarkdownTable" : "csv.download" },
             body: { render: "files", files: [artifact], outputBytes: artifact.size },
           },
         ],

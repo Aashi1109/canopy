@@ -40,6 +40,7 @@ export const run: ToolRun<Record<string, never>> = async (ctx): Promise<ToolResu
   if (image) {
     return {
       alt: "Decoded Base64 image",
+      altMessage: { key: "execution.decodedImage" },
       downloadName: `decoded.${image.extension}`,
       mime: image.mime,
       render: "image",
@@ -51,6 +52,7 @@ export const run: ToolRun<Record<string, never>> = async (ctx): Promise<ToolResu
             notification: {
               level: "ok" as const,
               label: `GIF decoded · ${width} × ${height} px`,
+              labelMessage: { key: "execution.gifDecoded", values: { width, height } },
             },
           }
         : {}),
@@ -74,7 +76,9 @@ export const run: ToolRun<Record<string, never>> = async (ctx): Promise<ToolResu
     notification: {
       level: "ok",
       label: "File decoded",
+      labelMessage: { key: "execution.fileDecoded" },
       detail: "Preview unavailable. Download to open.",
+      detailMessage: { key: "execution.downloadToOpen" },
     },
   };
 };

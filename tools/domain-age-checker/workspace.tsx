@@ -1,4 +1,5 @@
 "use client";
+import { useLocale, useTranslations as useToolTranslations } from "next-intl";
 
 import { Globe, Search } from "lucide-react";
 import { useEffect, useId, useState } from "react";
@@ -23,16 +24,16 @@ import { normalizeDomain } from "@/lib/devtools/shared/url";
 import { createDomainSummary } from "./preview";
 
 function DomainSummary({ text }: { text: string }) {
-  const summary = createDomainSummary(text);
+  const toolText = useToolTranslations("Tool.runtime");
+  const locale = useLocale();
+  const summary = createDomainSummary(text, Date.now(), toolText, locale);
 
   return (
-    <ScrollRegion accessibleName="Domain registration summary" className="min-h-0 flex-1">
+    <ScrollRegion accessibleName={toolText("workspace.registrationSummary")} className="min-h-0 flex-1">
       <div className="space-y-5 p-4">
         <div className="space-y-1">
           <H3 className="break-words">{summary.domain}</H3>
-          <P>
-            Current registration age: <Strong>{summary.age}</Strong>
-          </P>
+          <P>{toolText("workspace.registrationAge", { value: summary.age })}</P>
           <Muted>{summary.ageDetail}</Muted>
         </div>
         <dl className="grid gap-4 border-y border-border py-4 sm:grid-cols-3">
@@ -51,8 +52,8 @@ function DomainSummary({ text }: { text: string }) {
           ))}
         </dl>
         <div className="grid gap-6 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-          <section className="space-y-3" aria-label="Registration status">
-            <H4>Registration status</H4>
+          <section className="space-y-3" aria-label={toolText("workspace.registration_status_3aa459")}>
+            <H4>{toolText("workspace.registration_status_3aa459")}</H4>
             {summary.statuses.map((status, index) => (
               <div className="space-y-1" key={`${status.label}-${index}`}>
                 <P>
@@ -62,10 +63,10 @@ function DomainSummary({ text }: { text: string }) {
               </div>
             ))}
           </section>
-          <section className="min-w-0 space-y-3" aria-label="Nameservers">
+          <section className="min-w-0 space-y-3" aria-label={toolText("workspace.nameservers_08c8bf")}>
             <div className="space-y-1">
-              <H4>Nameservers</H4>
-              <Muted>These servers tell browsers and email services where to send traffic for this domain.</Muted>
+              <H4>{toolText("workspace.nameservers_08c8bf")}</H4>
+              <Muted>{toolText("workspace.these_servers_tell_390067")}</Muted>
             </div>
             {summary.nameservers.length ? (
               <ul className="space-y-1">
@@ -76,20 +77,18 @@ function DomainSummary({ text }: { text: string }) {
                 ))}
               </ul>
             ) : (
-              <P>Not reported by the registry.</P>
+              <P>{toolText("workspace.not_reported_by_fd7afc")}</P>
             )}
           </section>
         </div>
-        <Muted>
-          This record describes domain registration. It does not confirm whether the website is online. Raw contains the
-          original technical details.
-        </Muted>
+        <Muted>{toolText("workspace.this_record_describes_74f5c9")}</Muted>
       </div>
     </ScrollRegion>
   );
 }
 
 export default function DomainAgeWorkspace(props: WorkspaceProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const inputId = useId();
   const [touched, setTouched] = useState(false);
   const running = Boolean(props.running || props.primaryAction?.running);
@@ -97,7 +96,7 @@ export default function DomainAgeWorkspace(props: WorkspaceProps) {
   try {
     normalizeDomain(props.input.text);
   } catch (error) {
-    inputError = error instanceof Error ? error.message : "Enter a valid domain name.";
+    inputError = toolText(props.input.text.trim() ? "workspace.invalidDomain" : "workspace.domainRequired");
   }
   const visibleError = touched ? inputError : null;
 
@@ -121,7 +120,7 @@ export default function DomainAgeWorkspace(props: WorkspaceProps) {
           }}
         >
           <FieldLabel htmlFor={inputId} required>
-            Domain name
+            {toolText("workspace.domain_name_421b1e")}
           </FieldLabel>
           <div className="flex min-w-0 items-center gap-2 max-sm:flex-wrap">
             <Input
@@ -154,7 +153,7 @@ export default function DomainAgeWorkspace(props: WorkspaceProps) {
                 type="button"
                 variant="outline"
               >
-                Cancel
+                {toolText("workspace.cancel_19766e")}
               </Button>
             ) : (
               <Button
@@ -169,7 +168,9 @@ export default function DomainAgeWorkspace(props: WorkspaceProps) {
                 type="submit"
               >
                 <Search aria-hidden="true" />
-                {running ? "Checking domain…" : (props.primaryAction?.label ?? "Check domain age")}
+                {running
+                  ? toolText("workspace.checking_domain_89c2b4")
+                  : (props.primaryAction?.label ?? toolText("workspace.checkAge"))}
               </Button>
             )}
           </div>
@@ -182,12 +183,16 @@ export default function DomainAgeWorkspace(props: WorkspaceProps) {
             result={props.result}
             running={running}
             spec={props.spec}
-            title="Domain registration"
+            title={toolText("workspace.domain_registration_3a4fce")}
             variant="card"
           />
         </div>
       </Stack>
-      <ToolOptionsPanel className="h-full overflow-y-auto bg-card p-[18px]" title="SETTINGS" variant="plain">
+      <ToolOptionsPanel
+        className="h-full overflow-y-auto bg-card p-[18px]"
+        title={toolText("workspace.settings_02f6ea")}
+        variant="plain"
+      >
         <SettingsPanel
           disabled={props.disabled}
           onChange={props.onSettingChange}

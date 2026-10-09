@@ -56,7 +56,9 @@ export function parsePublicUrl(value: string): URL {
   const url = parseWebsiteUrl(value);
   const hostname = url.hostname.replace(/^\[|\]$/g, "").replace(/\.$/, "");
   if (isIP(hostname) && !isPublicAddress(hostname)) {
-    throw new ToolError("invalid-url", "Enter a public website URL or domain.");
+    throw new ToolError("invalid-url", "Enter a public website URL or domain.", undefined, {
+      messageRef: { key: "errors.publicUrl" },
+    });
   }
   return url;
 }
@@ -118,7 +120,9 @@ const transport: Transport = {
 async function readBody(response: ResourceResponse, limit: number, signal: AbortSignal): Promise<Buffer> {
   if (Number(response.headers.get("content-length")) > limit) {
     response.body.destroy();
-    throw new ToolError("response-too-large", "The remote response is too large to preview.");
+    throw new ToolError("response-too-large", "The remote response is too large to preview.", undefined, {
+      messageRef: { key: "errors.responseTooLarge" },
+    });
   }
   const encoding = response.headers.get("content-encoding")?.trim().toLowerCase();
   const decoder =
@@ -131,7 +135,9 @@ async function readBody(response: ResourceResponse, limit: number, signal: Abort
           : null;
   if (encoding && encoding !== "identity" && !decoder) {
     response.body.destroy();
-    throw new ToolError("unsupported-content", "The page uses an unsupported content encoding.");
+    throw new ToolError("unsupported-content", "The page uses an unsupported content encoding.", undefined, {
+      messageRef: { key: "errors.unsupportedEncoding" },
+    });
   }
   let transferred = 0;
   const source = Readable.from(
@@ -140,7 +146,9 @@ async function readBody(response: ResourceResponse, limit: number, signal: Abort
         signal.throwIfAborted();
         transferred += chunk.length;
         if (transferred > limit)
-          throw new ToolError("response-too-large", "The remote response is too large to preview.");
+          throw new ToolError("response-too-large", "The remote response is too large to preview.", undefined, {
+            messageRef: { key: "errors.responseTooLarge" },
+          });
         yield chunk;
       }
     })(),
@@ -158,7 +166,10 @@ async function readBody(response: ResourceResponse, limit: number, signal: Abort
     signal.throwIfAborted();
     for await (const chunk of stream) {
       size += chunk.length;
-      if (size > limit) throw new ToolError("response-too-large", "The remote response is too large to preview.");
+      if (size > limit)
+        throw new ToolError("response-too-large", "The remote response is too large to preview.", undefined, {
+          messageRef: { key: "errors.responseTooLarge" },
+        });
       chunks.push(Buffer.from(chunk));
     }
     return Buffer.concat(chunks);
@@ -187,18 +198,29 @@ export async function fetchPublicResource(
       const addresses = family
         ? [{ address: hostname, family: family as 4 | 6 }]
         : await abortable((network.resolve ?? transport.resolve)(hostname), operationSignal);
-      if (!addresses.length) throw new ToolError("unreachable-url", "The website's address could not be resolved.");
+      if (!addresses.length)
+        throw new ToolError("unreachable-url", "The website's address could not be resolved.", undefined, {
+          messageRef: { key: "errors.addressUnresolved" },
+        });
       if (addresses.some(({ address }) => !isPublicAddress(address)))
-        throw new ToolError("private-address", "Only public websites can be inspected.");
+        throw new ToolError("private-address", "Only public websites can be inspected.", undefined, {
+          messageRef: { key: "errors.privateAddress" },
+        });
       const response = await abortable(
         (network.request ?? transport.request)(url, addresses[0], operationSignal),
         operationSignal,
       );
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         response.body.destroy();
-        if (redirects === 5) throw new ToolError("too-many-redirects", "The website redirects too many times.");
+        if (redirects === 5)
+          throw new ToolError("too-many-redirects", "The website redirects too many times.", undefined, {
+            messageRef: { key: "errors.tooManyRedirects" },
+          });
         const location = response.headers.get("location");
-        if (!location) throw new ToolError("upstream-rejected", "The website returned an invalid redirect.");
+        if (!location)
+          throw new ToolError("upstream-rejected", "The website returned an invalid redirect.", undefined, {
+            messageRef: { key: "errors.invalidRedirect" },
+          });
         url = parsePublicUrl(new URL(location, url).href);
         continue;
       }
@@ -208,6 +230,10 @@ export async function fetchPublicResource(
           "upstream-rejected",
           `The website returned HTTP ${response.status}. It may block automated previews.`,
           "Try another public page or retry later.",
+          {
+            messageRef: { key: "errors.httpRejected", values: { status: response.status } },
+            recoveryMessage: { key: "errors.retryPublicPage" },
+          },
         );
       }
       const contentType = (response.headers.get("content-type") ?? "").split(";", 1)[0].trim().toLowerCase();
@@ -222,16 +248,28 @@ export async function fetchPublicResource(
           kind === "html"
             ? "This URL does not return an HTML page."
             : "The preview image is not a supported raster image.",
+          undefined,
+          { messageRef: { key: kind === "html" ? "errors.notHtml" : "errors.unsupportedImage" } },
         );
       }
       const bytes = await readBody(response, kind === "html" ? 2 * 1024 * 1024 : 5 * 1024 * 1024, operationSignal);
       return { url: url.href, bytes, contentType };
     }
-    throw new ToolError("too-many-redirects", "The website redirects too many times.");
+    throw new ToolError("too-many-redirects", "The website redirects too many times.", undefined, {
+      messageRef: { key: "errors.tooManyRedirects" },
+    });
   } catch (error) {
     signal.throwIfAborted();
-    if (timeout.aborted) throw new ToolError("request-timeout", "The website took too long to respond. Try again.");
+    if (timeout.aborted)
+      throw new ToolError("request-timeout", "The website took too long to respond. Try again.", undefined, {
+        messageRef: { key: "errors.timeout" },
+      });
     if (error instanceof ToolError) throw error;
-    throw new ToolError("unreachable-url", "The website could not be reached securely. Check its URL and try again.");
+    throw new ToolError(
+      "unreachable-url",
+      "The website could not be reached securely. Check its URL and try again.",
+      undefined,
+      { messageRef: { key: "errors.unreachable" } },
+    );
   }
 }

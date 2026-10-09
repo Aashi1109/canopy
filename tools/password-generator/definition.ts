@@ -1,3 +1,7 @@
+import {
+  CRYPTO_EXECUTION_MESSAGES,
+  ENCODING_EXECUTION_MESSAGES,
+} from "../../lib/devtools/shared/execution-messages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
@@ -81,6 +85,12 @@ export default {
     empty: "Choose a length and character set, then generate.",
     ready: "Passwords generated.",
     running: "Generating passwords…",
+  },
+  messages: {
+    ...CRYPTO_EXECUTION_MESSAGES,
+    ...ENCODING_EXECUTION_MESSAGES,
+    "workspace.characterSetRequired": "At least one character set must remain enabled.",
+    "workspace.generate": "Generate {count, plural, one {# password} other {# passwords}}",
   },
   content: {
     howToUse: [

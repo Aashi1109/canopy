@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations as useToolTranslations } from "next-intl";
 
 import { useId, useState } from "react";
 
@@ -13,6 +14,7 @@ import { hslToRgb, parseColor, rgbToHex, rgbToHsl, type RgbColor } from "@/lib/d
 type Channels = [number, number, number];
 
 export default function ColorPickerWorkspace(props: WorkspaceProps) {
+  const toolText = useToolTranslations("Tool.runtime");
   const id = useId();
   const [adjusted, setAdjusted] = useState<{ source: string; values: Channels }>();
   let color: RgbColor | undefined;
@@ -43,11 +45,11 @@ export default function ColorPickerWorkspace(props: WorkspaceProps) {
 
   return (
     <DesignWorkspace
-      title="Choose a color"
-      controlTitle="Color and output"
+      title={toolText("workspace.choose_a_color_ad8a9c")}
+      controlTitle={toolText("workspace.colorAndOutput")}
       previewActions={
         <Button disabled={props.disabled} onClick={() => setInput("#2563eb")} size="sm" variant="outline">
-          Default blue
+          {toolText("workspace.default_blue_9cee9a")}
         </Button>
       }
       preview={
@@ -55,14 +57,16 @@ export default function ColorPickerWorkspace(props: WorkspaceProps) {
           <ColorSwatch
             className="min-h-28"
             color={hex || "transparent"}
-            label={hex ? `Selected color ${hex}` : "Choose a color to preview it"}
+            label={hex ? toolText("workspace.selectedColor", { hex }) : toolText("workspace.choose_a_color_b1c3a1")}
           />
           <div className="grid content-center gap-3">
             {(["Hue", "Saturation", "Lightness"] as const).map((label, index) => (
               <div className="grid grid-cols-[minmax(0,1fr)_5.5rem] items-end gap-3" key={label}>
-                <Field htmlFor={`${id}-${label}`} label={label}>
+                <Field htmlFor={`${id}-${label}`} label={toolText(`workspace.channels.${label}`)}>
                   <Input
-                    aria-valuetext={`${channels[index]}${index === 0 ? " degrees" : "%"}`}
+                    aria-valuetext={toolText(index === 0 ? "workspace.degrees" : "workspace.percent", {
+                      value: channels[index],
+                    })}
                     disabled={props.disabled}
                     id={`${id}-${label}`}
                     max={index === 0 ? 360 : 100}
@@ -74,7 +78,7 @@ export default function ColorPickerWorkspace(props: WorkspaceProps) {
                   />
                 </Field>
                 <Input
-                  aria-label={`${label} value`}
+                  aria-label={toolText("workspace.channelValue", { label: toolText(`workspace.channels.${label}`) })}
                   disabled={props.disabled}
                   max={index === 0 ? 360 : 100}
                   min={0}
@@ -94,7 +98,7 @@ export default function ColorPickerWorkspace(props: WorkspaceProps) {
           <ColorControl
             layout="inline"
             disabled={props.disabled}
-            label="HEX, RGB, HSL or color name"
+            label={toolText("workspace.hex_rgb_hsl_9febbf")}
             onChange={setInput}
             value={props.input.text}
           />
@@ -118,7 +122,7 @@ export default function ColorPickerWorkspace(props: WorkspaceProps) {
           retainedResult={props.result}
           running={props.running}
           spec={props.spec}
-          title="Copy a color format"
+          title={toolText("workspace.copy_a_color_6f656b")}
         />
       }
     />

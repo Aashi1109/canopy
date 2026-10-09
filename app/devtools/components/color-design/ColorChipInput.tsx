@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Plus, X } from "lucide-react";
 import { useEffect, useId, useRef, useState, type ComponentProps } from "react";
 
@@ -34,6 +35,7 @@ export function ColorChipInput({
   placeholder,
   ...inputProps
 }: ColorChipInputProps) {
+  const t = useTranslations("Workbench");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const errorId = useId();
   const lastWritten = useRef<string | null>(null);
@@ -81,15 +83,20 @@ export function ColorChipInput({
         if (inputFormat === "hex") parseHexColor(line.trim());
         else {
           if (inputFormat === "rgb" && !/^rgba?\(/i.test(line.trim())) {
-            throw new Error("Use an rgb() or rgba() color.");
+            throw new Error(t("rgbColorRequired"));
           }
           parseColor(line.trim());
         }
-      } catch (error) {
-        setDraft(text);
-        setDraftError(
-          `${draftLines.length > 1 ? `Line ${index + 1}: ` : ""}${error instanceof Error ? error.message : "Enter a valid color."}`,
+      } catch {
+        const message = t(
+          inputFormat === "rgb"
+            ? "rgbColorRequired"
+            : inputFormat === "hex"
+              ? "hexColorRequired"
+              : "validColorRequired",
         );
+        setDraft(text);
+        setDraftError(draftLines.length > 1 ? t("colorLineIssue", { count: index + 1, message }) : message);
         inputRef.current?.focus();
         return;
       }
@@ -134,7 +141,7 @@ export function ColorChipInput({
         )}
       >
         {entries.length ? (
-          <div aria-label="Added colors" className="flex flex-wrap gap-2" role="list">
+          <div aria-label={t("addedColors")} className="flex flex-wrap gap-2" role="list">
             {entries.map((entry, index) => {
               let color: RgbColor | undefined;
               let valid = true;
@@ -161,7 +168,7 @@ export function ColorChipInput({
                       />
                     </span>
                     <Input
-                      aria-label={`Choose color ${index + 1}: ${entry}`}
+                      aria-label={t("chooseColor", { count: index + 1, value: entry })}
                       className="absolute inset-0 size-full cursor-pointer opacity-0 disabled:opacity-0"
                       disabled={disabled}
                       onChange={(event) => changeColor(index, event.target.value, color?.alpha ?? 1)}
@@ -171,7 +178,7 @@ export function ColorChipInput({
                     />
                   </span>
                   <Button
-                    aria-label={`Edit ${valid ? "color" : "invalid color"} ${index + 1}: ${entry}`}
+                    aria-label={t(valid ? "editColor" : "editInvalidColor", { count: index + 1, value: entry })}
                     aria-pressed={editingIndex === index}
                     className="min-w-0 shrink px-1"
                     disabled={disabled}
@@ -192,7 +199,7 @@ export function ColorChipInput({
                     <span className="truncate font-mono">{entry}</span>
                   </Button>
                   <Button
-                    aria-label={`Remove color ${index + 1}: ${entry}`}
+                    aria-label={t("removeColor", { count: index + 1, value: entry })}
                     className="rounded-full"
                     disabled={disabled}
                     onClick={() => remove(index)}
@@ -254,7 +261,7 @@ export function ColorChipInput({
             variant="outline"
           >
             {editingIndex === null ? <Plus aria-hidden="true" /> : null}
-            {editingIndex === null ? "Add" : "Save"}
+            {t(editingIndex === null ? "add" : "save")}
           </Button>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import type { ToolMessage } from "../../tool-runtime/types.ts";
 /**
  * Structural PDF primitives built on `pdf-lib` only.
  *
@@ -52,15 +53,21 @@ export async function loadPdf(file: ToolRunFile): Promise<PDFDocument> {
       updateMetadata: false,
     });
     if (pdf.isEncrypted) {
-      throw new ToolError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.");
+      throw new ToolError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.", undefined, {
+        messageRef: { key: "media.pdf.encryptedPdf" },
+      });
     }
     return pdf;
   } catch (error) {
     if (error instanceof ToolError) throw error;
     if (isPasswordError(error)) {
-      throw new ToolError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.");
+      throw new ToolError("encrypted-pdf", "Encrypted or password-protected PDFs are not supported.", undefined, {
+        messageRef: { key: "media.pdf.encryptedPdf" },
+      });
     }
-    throw new ToolError("malformed-pdf", "The PDF is malformed or unsupported.");
+    throw new ToolError("malformed-pdf", "The PDF is malformed or unsupported.", undefined, {
+      messageRef: { key: "media.pdf.malformedPdf" },
+    });
   }
 }
 
@@ -70,7 +77,7 @@ export async function validatePdfInput(file: ToolRunFile): Promise<void> {
     file.mime,
     ["pdf"],
   );
-  if (!result.ok) throw new ToolError(result.code, result.message);
+  if (!result.ok) throw new ToolError(result.code, result.message, undefined, result.details);
 }
 
 export function enforcePageLimit(file: ToolRunFile, pageCount: number, raster: boolean): void {
@@ -78,20 +85,27 @@ export function enforcePageLimit(file: ToolRunFile, pageCount: number, raster: b
     pageCount,
     raster,
   });
-  if (!result.ok) throw new ToolError(result.code, result.message);
+  if (!result.ok) throw new ToolError(result.code, result.message, undefined, result.details);
 }
 
 /** Validates a 1-based page list and returns it as 0-based indexes. */
 export function checkedPages(pages: readonly number[], pageCount: number, rejectDuplicates = true): number[] {
-  if (!pages.length) throw new ToolError("empty-range", "Choose at least one page.");
+  if (!pages.length)
+    throw new ToolError("empty-range", "Choose at least one page.", undefined, {
+      messageRef: { key: "media.pdf.emptyRange" },
+    });
   const indexes = pages.map((page) => {
     if (!Number.isInteger(page) || page < 1 || page > pageCount) {
-      throw new ToolError("page-out-of-range", `Choose pages between 1 and ${pageCount}.`);
+      throw new ToolError("page-out-of-range", `Choose pages between 1 and ${pageCount}.`, undefined, {
+        messageRef: { key: "media.pdf.pageOutOfRange", values: { count: pageCount } },
+      });
     }
     return page - 1;
   });
   if (rejectDuplicates && new Set(indexes).size !== indexes.length) {
-    throw new ToolError("duplicate-page", "Each selected page may appear only once.");
+    throw new ToolError("duplicate-page", "Each selected page may appear only once.", undefined, {
+      messageRef: { key: "media.pdf.duplicatePage" },
+    });
   }
   return indexes;
 }
@@ -145,7 +159,9 @@ export function pdfSize(size: PdfNamedPageSize, width?: number, height?: number)
   if (size === "custom" && width && height && width > 0 && height > 0) {
     return { width, height };
   }
-  throw new ToolError("invalid-page-size", "Choose valid custom PDF page dimensions.");
+  throw new ToolError("invalid-page-size", "Choose valid custom PDF page dimensions.", undefined, {
+    messageRef: { key: "media.pdf.invalidPageSize" },
+  });
 }
 
 /** Copies `pages` (0-based indexes) from `source` into `output`, in order. */
@@ -155,6 +171,7 @@ export async function addCopiedPagesWithProgress(
   pages: readonly number[],
   stage: string,
   progress?: PdfProgress,
+  stageMessage?: ToolMessage,
 ): Promise<void> {
   const copies = await output.copyPages(source, [...pages]);
   await processStructuralPages(
@@ -165,15 +182,16 @@ export async function addCopiedPagesWithProgress(
     (_page, index) => {
       output.addPage(copies[index]);
     },
+    stageMessage,
   );
 }
 
-/** Adapts `processStructuralPages`' four-argument report to `ctx.progress`. */
+/** Carries structural page counts and message references into `ctx.progress`. */
 export function reportStructuralProgress(
   progress?: PdfProgress,
-): (current: number, completed: number, total: number, stage: string) => void {
-  return (_current, completed, total, stage) => {
-    progress?.({ completed, total, stage });
+): (current: number, completed: number, total: number, stage: string, stageMessage?: ToolMessage) => void {
+  return (_current, completed, total, stage, stageMessage) => {
+    progress?.({ completed, total, stage, ...(stageMessage ? { stageMessage } : {}) });
   };
 }
 

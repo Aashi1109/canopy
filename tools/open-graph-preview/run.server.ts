@@ -38,7 +38,12 @@ export async function inspectPage(
         try {
           const resource = await fetchPublicResource(image.url, "image", timedSignal, network);
           if (!isRasterImage(resource.bytes, resource.contentType))
-            throw new ToolError("unsupported-content", "The image response does not match its declared format.");
+            throw new ToolError(
+              "unsupported-content",
+              "The image response does not match its declared format.",
+              undefined,
+              { messageRef: { key: "errors.imageFormatMismatch" } },
+            );
           return { ...image, previewUrl: `data:${resource.contentType};base64,${resource.bytes.toString("base64")}` };
         } catch (error) {
           signal.throwIfAborted();
@@ -46,6 +51,8 @@ export async function inspectPage(
             property: "image:fetch",
             level: "warn",
             label: "Image preview unavailable",
+            labelMessage: { key: "checks.imageUnavailable" },
+            detailMessage: error instanceof ToolError ? error.details?.messageRef : { key: "checks.imageTimedOut" },
             detail:
               error instanceof ToolError
                 ? error.message

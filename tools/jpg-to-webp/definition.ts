@@ -1,3 +1,4 @@
+import { MEDIA_FILE_ERROR_MESSAGES, MEDIA_IMAGE_ERROR_MESSAGES } from "../../lib/tool-framework/mediaErrorMessages.ts";
 import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 export default {
@@ -38,6 +39,21 @@ export default {
     empty: "Drop up to 50 JPG or JPEG images, 25 MiB each, to convert them to WebP.",
     ready: "JPG-to-WebP settings are ready.",
     running: "Converting JPG and JPEG images to WebP…",
+  },
+  messages: {
+    "progress.decodingImage": "Decoding image",
+    "progress.encodingImage": "Encoding image",
+    "progress.imageComplete": "Image complete",
+
+    ...MEDIA_FILE_ERROR_MESSAGES,
+    ...MEDIA_IMAGE_ERROR_MESSAGES,
+    "conversion.action": "Convert to {format}",
+    "conversion.running": "Converting images to {format}…",
+    "conversion.qualityLabel": "Quality",
+    "conversion.qualityHelp":
+      "{format, select, jpg {JPG is lossy. 80 is a good default; above 90 the file grows fast for little visible gain.} other {WebP is encoded lossily here. Raise quality for fine details and sharp text; lower it for smaller files.}}",
+    "conversion.backgroundLabel": "Background",
+    "conversion.backgroundHelp": "JPG has no transparency, so transparent pixels are flattened onto this colour.",
   },
   content: {
     howToUse: [

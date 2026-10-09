@@ -1,4 +1,5 @@
 import type { Access } from "../lib/authorization/index.ts";
+import type { ToolTranslations } from "../lib/tool-framework/translations.ts";
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -233,6 +234,7 @@ export const managedToolsTable = pgTable(
     name: text("name").notNull(),
     description: text("description").notNull(),
     order: integer("sort_order").default(0).notNull(),
+    translations: jsonb("translations").$type<ToolTranslations>().default({}).notNull(),
     enabled: boolean("enabled").default(false).notNull(),
     archived: boolean("archived").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -241,6 +243,7 @@ export const managedToolsTable = pgTable(
   (table) => [
     unique("managed_tools_app_slug_unique").on(table.app, table.slug),
     unique("managed_tools_app_sort_order_unique").on(table.app, table.order),
+    check("managed_tools_translations_object_check", sql`jsonb_typeof(${table.translations}) = 'object'`),
   ],
 );
 
