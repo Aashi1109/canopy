@@ -5,9 +5,9 @@ import { localizeHref, type Locale } from "@/lib/i18n/config";
 import { subdomainHref } from "../../../lib/routing/subdomains.ts";
 import { ArrowLeft, LogOut, Menu, Shield, UserRound, X } from "lucide-react";
 import { SavedToolsTrigger } from "./SavedTools.tsx";
-import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { GlobalToolSearch } from "./GlobalToolSearch.tsx";
+import { GlobalToolSearch, useToolSearch } from "./GlobalToolSearch.tsx";
 import { SITE_NAVIGATION_ITEMS, useSignOut, type AccountNavigationProps } from "./AccountNavigation.tsx";
 import { cn } from "../lib/utils.ts";
 import { matchBreakpoint } from "../lib/breakpoints.ts";
@@ -28,7 +28,8 @@ export function MobileNavigation({
 }) {
   const t = useTranslations("Common");
   const locale = useLocale() as Locale;
-  const [panel, setPanel] = useState<"menu" | "search" | null>(null);
+  const [panel, setPanel] = useState<"menu" | null>(null);
+  const { isOpen: searchOpen, closeSearch } = useToolSearch();
   const [position, setPosition] = useState({ top: 72, availableHeight: 600 });
   const root = useRef<HTMLDivElement>(null);
   const menu = useRef<HTMLDivElement>(null);
@@ -46,10 +47,9 @@ export function MobileNavigation({
     .slice(0, 2)
     .map((part) => part.charAt(0).toUpperCase())
     .join("");
-  const setSearchOpen = useCallback(
-    (open: boolean) => setPanel((previous) => (open ? "search" : previous === "search" ? null : previous)),
-    [],
-  );
+  useEffect(() => {
+    if (searchOpen) setPanel(null);
+  }, [searchOpen]);
 
   useEffect(() => {
     if (!panel) return;
@@ -105,12 +105,7 @@ export function MobileNavigation({
 
   return (
     <div ref={root} className="flex shrink-0 items-center gap-2 navigation:hidden">
-      {showSearch ? (
-        <GlobalToolSearch
-          publicSiteUrl={publicSiteUrl}
-          mobile={{ open: panel === "search", onOpenChange: setSearchOpen, ...position }}
-        />
-      ) : null}
+      {showSearch ? <GlobalToolSearch publicSiteUrl={publicSiteUrl} mobile onOpen={() => setPanel(null)} /> : null}
       <button
         ref={toggle}
         data-mobile-menu-toggle
@@ -122,7 +117,10 @@ export function MobileNavigation({
           "flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-input bg-card text-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring",
           user ? "px-2.5 compact:w-11 compact:px-0" : "w-11",
         )}
-        onClick={() => setPanel((previous) => (previous === "menu" ? null : "menu"))}
+        onClick={() => {
+          closeSearch(false);
+          setPanel((previous) => (previous === "menu" ? null : "menu"));
+        }}
       >
         {user ? (
           <span
@@ -143,10 +141,7 @@ export function MobileNavigation({
             <>
               <div
                 aria-hidden="true"
-                className={cn(
-                  "fixed inset-x-0 bottom-0 z-40 navigation:hidden",
-                  panel === "search" && "bg-black/[0.19]",
-                )}
+                className="fixed inset-x-0 bottom-0 z-40 navigation:hidden"
                 style={{ top: position.top }}
                 onPointerDown={() => setPanel(null)}
               />

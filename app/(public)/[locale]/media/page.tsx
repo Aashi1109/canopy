@@ -1,3 +1,4 @@
+import { FamilyToolSearch } from "@/components/ui/components/GlobalToolSearch";
 import { getLocale, getTranslations } from "next-intl/server";
 import { useTranslations } from "next-intl";
 import { isLocale, defaultLocale, localizeHref } from "@/lib/i18n/config";
@@ -86,29 +87,31 @@ export default async function HomePage({
         <CatalogHero suite="media" />
         <section aria-label={t("findMedia")} className="bg-muted/50">
           <AppContainer className="py-6">
-            <form
-              className="mx-auto flex w-full max-w-2xl gap-2 rounded-2xl bg-card p-2 shadow-lg"
-              method="get"
-              role="search"
-            >
-              <div className="relative min-w-0 flex-1">
-                <Search
-                  aria-hidden="true"
-                  className="pointer-events-none absolute top-1/2 start-3 size-5 -translate-y-1/2 text-muted-foreground"
-                />
-                <Input
-                  aria-label={t("searchMedia")}
-                  className="border-0 ps-10 shadow-none focus-visible:ring-0"
-                  defaultValue={query}
-                  name="q"
-                  placeholder={t("mediaPlaceholder")}
-                  type="search"
-                />
-              </div>
-              <Button type="submit" variant="default">
-                {t("search")}
-              </Button>
-            </form>
+            <FamilyToolSearch family="media" initialQuery={query}>
+              <form
+                className="mx-auto flex w-full max-w-2xl gap-2 rounded-2xl bg-card p-2 shadow-lg"
+                method="get"
+                role="search"
+              >
+                <div className="relative min-w-0 flex-1">
+                  <Search
+                    aria-hidden="true"
+                    className="pointer-events-none absolute top-1/2 start-3 size-5 -translate-y-1/2 text-muted-foreground"
+                  />
+                  <Input
+                    aria-label={t("searchMedia")}
+                    className="border-0 ps-10 shadow-none focus-visible:ring-0"
+                    defaultValue={query}
+                    name="q"
+                    placeholder={t("mediaPlaceholder")}
+                    type="search"
+                  />
+                </div>
+                <Button type="submit" variant="default">
+                  {t("search")}
+                </Button>
+              </form>
+            </FamilyToolSearch>
           </AppContainer>
         </section>
 

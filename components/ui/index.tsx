@@ -286,7 +286,7 @@ export function ProductHeader({
           href={publicSiteUrl ? new URL(localizeHref("/", locale), publicSiteUrl).href : localizeHref("/", locale)}
         >
           <SmartToolsLogoMark className={cn("shrink-0", compact ? "size-10" : "size-10 xl:size-12")} />
-          <span className={cn("flex flex-col gap-0.5", !minimal && "navigation:max-2xl:hidden")}>
+          <span className={cn("flex flex-col gap-0.5 max-[360px]:hidden", !minimal && "navigation:max-2xl:hidden")}>
             <Strong className="">
               Smart<span className="text-primary">Tools</span>
             </Strong>

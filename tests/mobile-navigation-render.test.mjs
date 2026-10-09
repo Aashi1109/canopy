@@ -9,8 +9,13 @@ vi.mock("../lib/i18n/navigation", () => ({ useRouter: () => ({ replace: vi.fn() 
 
 const renderToStaticMarkup = (node) =>
   renderMarkup(
-    createElement(NextIntlClientProvider, { locale: "en", messages: getCommonMessages("en"), timeZone: "UTC" }, node),
+    createElement(
+      NextIntlClientProvider,
+      { locale: "en", messages: getCommonMessages("en"), timeZone: "UTC" },
+      createElement(GlobalToolSearchProvider, null, node),
+    ),
   );
+import { GlobalToolSearchProvider } from "../components/ui/components/GlobalToolSearch.tsx";
 import { MobileNavigation } from "../components/ui/components/MobileNavigation.tsx";
 import { ProductHeader } from "../components/ui/index.tsx";
 

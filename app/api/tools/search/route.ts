@@ -4,15 +4,49 @@ import { errorMessage } from "@/utils/errorMessage";
 import { captureException } from "@sentry/core";
 import { defaultLocale, isLocale } from "@/lib/i18n/config";
 
-export async function GET(request: Request) {
-  const locale = new URL(request.url).searchParams.get("locale") ?? defaultLocale;
-  if (!isLocale(locale)) return Response.json({ error: "Unsupported locale" }, { status: 400 });
-  const query = new URL(request.url).searchParams.get("q")?.trim().toLowerCase() ?? "";
+// Curated discovery order; names, URLs and availability still come from the public catalog.
+const SUGGESTED_TOOL_IDS = [
+  "devtools.json-formatter",
+  "media.merge-pdf",
+  "paperwork.invoice-generator",
+  "devtools.qr-code-generator",
+  "devtools.json-editor",
+  "media.resize-image",
+  "media.compress-image",
+  "paperwork.receipt-generator",
+  "paperwork.expense-report",
+];
 
-  if (!query) return Response.json({ results: [] });
+export async function GET(request: Request) {
+  const params = new URL(request.url).searchParams;
+  const locale = params.get("locale") ?? defaultLocale;
+  if (!isLocale(locale)) return Response.json({ error: "Unsupported locale" }, { status: 400 });
+  const query = params.get("q")?.trim().toLowerCase() ?? "";
+  const family = params.get("family");
+
+  if (family !== null && !["paperwork", "devtools", "media"].includes(family)) {
+    return Response.json({ error: "Invalid tool family" }, { status: 400 });
+  }
+
+  if (!query && params.get("suggestions") !== "1") return Response.json({ results: [] });
 
   try {
-    const results = searchTools(await getPublicTools(locale), query).map((tool) => ({
+    const tools = await getPublicTools(locale);
+    const matchingTools = family === null ? tools : tools.filter((tool) => tool.app === family);
+    let selectedTools = query
+      ? searchTools(matchingTools, query)
+      : [
+          ...SUGGESTED_TOOL_IDS.flatMap((toolId) => matchingTools.filter((tool) => tool.toolId === toolId)),
+          ...matchingTools.filter((tool) => !SUGGESTED_TOOL_IDS.includes(tool.toolId)),
+        ];
+    if (!query) {
+      selectedTools = family
+        ? selectedTools.slice(0, 3)
+        : selectedTools.filter(
+            (tool, index, ordered) => ordered.findIndex((entry) => entry.app === tool.app) === index,
+          );
+    }
+    const results = selectedTools.map((tool) => ({
       category: tool.category,
       description: tool.description,
       href: tool.href,

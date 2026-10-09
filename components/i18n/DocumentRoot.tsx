@@ -1,6 +1,7 @@
 import config from "@/lib/config/config.ts";
 import type { Metadata } from "next";
 import { SavedToolsProvider } from "@/components/ui/index.tsx";
+import { GlobalToolSearchProvider } from "@/components/ui/components/GlobalToolSearch";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@/components/analytics/Analytics";
 import { measurementId } from "@/lib/analytics/ga4";
@@ -76,7 +77,9 @@ export function DocumentRoot({
         <NextIntlClientProvider locale={locale} messages={getCommonMessages(locale)} timeZone="UTC">
           <DirectionProvider dir={direction(locale)}>
             <SavedToolsProvider publicSiteUrl={config.appUrl}>
-              <Analytics measurementId={measurementId(config.analytics)}>{children}</Analytics>
+              <GlobalToolSearchProvider publicSiteUrl={config.appUrl}>
+                <Analytics measurementId={measurementId(config.analytics)}>{children}</Analytics>
+              </GlobalToolSearchProvider>
             </SavedToolsProvider>
           </DirectionProvider>
         </NextIntlClientProvider>

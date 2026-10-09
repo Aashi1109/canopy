@@ -1,3 +1,4 @@
+import { FamilyToolSearch } from "@/components/ui/components/GlobalToolSearch";
 import { getLocale, getTranslations } from "next-intl/server";
 import { useTranslations } from "next-intl";
 import { isLocale, defaultLocale, localizeHref } from "@/lib/i18n/config";
@@ -101,29 +102,31 @@ export default async function HomePage({
   const showAllTools = !hasFilter && (first(params.view) === "all" || featuredTools.length === 0);
   const categoryLabel = category ? categories(category) : "";
   const searchForm = (
-    <form
-      className="flex w-full items-center gap-2 rounded-2xl border border-input bg-card p-1.5 shadow-sm transition focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10"
-      method="get"
-      role="search"
-    >
-      <div className="relative min-w-0 flex-1">
-        <Search
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 start-4 size-5 -translate-y-1/2 text-muted-foreground"
-        />
-        <Input
-          aria-label={t("searchDeveloper")}
-          className="h-12 border-0 bg-transparent ps-11 shadow-none"
-          defaultValue={query}
-          name="q"
-          placeholder={t("developerPlaceholder")}
-          type="search"
-        />
-      </div>
-      <Button className="h-12 rounded-xl px-5" type="submit">
-        {t("search")}
-      </Button>
-    </form>
+    <FamilyToolSearch family="devtools" initialQuery={query}>
+      <form
+        className="flex w-full items-center gap-2 rounded-2xl border border-input bg-card p-1.5 shadow-sm transition focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10"
+        method="get"
+        role="search"
+      >
+        <div className="relative min-w-0 flex-1">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 start-4 size-5 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            aria-label={t("searchDeveloper")}
+            className="h-12 border-0 bg-transparent ps-11 shadow-none"
+            defaultValue={query}
+            name="q"
+            placeholder={t("developerPlaceholder")}
+            type="search"
+          />
+        </div>
+        <Button className="h-12 rounded-xl px-5" type="submit">
+          {t("search")}
+        </Button>
+      </form>
+    </FamilyToolSearch>
   );
 
   return (

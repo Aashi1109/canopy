@@ -264,6 +264,10 @@ So headings and focus rings are correct without any class. Do not re-declare the
 
 `ProductHeader` keeps its existing search icon and full-width mobile menu below `compact`. Between `compact` and `navigation`, the search field is centered and the existing menu icon remains on the right alongside account and page actions, opening a bounded popover below the header. The menu contains the same navigation, Saved tools, and account actions at both sizes. From `navigation`, the full navigation and standalone Saved action appear. Saved tools uses its mobile sheet below `compact` and its anchored popover from `compact`. Content grids and workspace breakpoints remain independent.
 
+`GlobalToolSearchProvider` owns one shared search dialog for the header, `FamilyToolSearch` catalog forms, and Cmd/Ctrl+K. Keep it inside the locale and direction providers. Family forms open the dialog with their current query and a removable filter; the shortcut searches across families while preserving an open query. The dialog uses the shared controls and Radix modal focus handling, sits below the product header on mobile, and centers in the desktop viewport. Escape and backdrop dismissal restore the launch control. Search and the mobile navigation menu are mutually exclusive.
+
+An empty query shows up to three recent searches and popular suggestions from the current public catalog: one per available family globally, or up to three within a family. Only activating a tool link saves history; removing an entry updates storage immediately. Storage failures do not prevent navigation. Query and suggestion requests carry the locale and optional family, ignore outdated responses, and preserve native links. Loading, results, empty, and retry states use a bounded scrolling card. Motion respects reduced-motion preferences; exiting controls become inert immediately.
+
 ### Layout & headings
 
 | Component                                  | Source            | Variants                                    |
