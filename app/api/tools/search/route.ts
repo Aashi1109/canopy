@@ -1,4 +1,4 @@
-import { getPublicTools } from "@/lib/tool-framework/catalog";
+import { getPublicToolListings } from "@/lib/tool-framework/catalog";
 import { searchTools } from "@/lib/tool-catalog/index";
 import { errorMessage } from "@/utils/errorMessage";
 import { captureException } from "@sentry/core";
@@ -24,14 +24,14 @@ export async function GET(request: Request) {
   const query = params.get("q")?.trim().toLowerCase() ?? "";
   const family = params.get("family");
 
-  if (family !== null && !["paperwork", "devtools", "media"].includes(family)) {
+  if (family !== null && family !== "paperwork" && family !== "devtools" && family !== "media") {
     return Response.json({ error: "Invalid tool family" }, { status: 400 });
   }
 
   if (!query && params.get("suggestions") !== "1") return Response.json({ results: [] });
 
   try {
-    const tools = await getPublicTools(locale);
+    const tools = await getPublicToolListings(locale, family ?? undefined);
     const matchingTools = family === null ? tools : tools.filter((tool) => tool.app === family);
     let selectedTools = query
       ? searchTools(matchingTools, query)

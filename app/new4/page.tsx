@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ArrowUpRight } from "lucide-react";
 import { Button, ProductFooter, ProductHeader, SmartToolsLogoMark } from "@/components/ui";
-import { getPublicTools } from "@/lib/tool-framework/catalog";
+import { getPublicToolListings } from "@/lib/tool-framework/catalog";
 import { KineticLanding } from "./components/KineticLanding";
 import styles from "./new4.module.css";
 
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function NewFourPage() {
-  const catalog = await getPublicTools("en").then(
+  const catalog = await getPublicToolListings("en").then(
     (tools) => ({ tools, unavailable: false }),
     () => ({ tools: [], unavailable: true }),
   );

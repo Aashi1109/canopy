@@ -307,6 +307,7 @@ export function resolveToolTranslation(
   )
     return null;
   const availableLocales = locales.filter((candidate) => {
+    if (candidate === "en") return true;
     const translation = records[candidate];
     return (
       translation?.status === "published" &&

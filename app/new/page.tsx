@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ArrowDown, ArrowRight, ArrowUpRight, Check, Globe2, MousePointer2, ShieldCheck } from "lucide-react";
 import { Button, H2, H3, ProductFooter, ProductHeader, SmartToolsLogoMark } from "@/components/ui";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/components/accordion";
-import { getPublicTools } from "@/lib/tool-framework/catalog";
+import { getPublicToolListings } from "@/lib/tool-framework/catalog";
 import { LandingExperience } from "./components/LandingExperience";
 import { ToolCollection } from "./components/ToolCollection";
 import styles from "./new.module.css";
@@ -38,7 +38,7 @@ const questions = [
 ];
 
 export default async function NewLandingPage() {
-  const catalog = await getPublicTools("en").then(
+  const catalog = await getPublicToolListings("en").then(
     (tools) => ({ tools, unavailable: false }),
     () => ({ tools: [], unavailable: true }),
   );

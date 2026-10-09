@@ -115,6 +115,8 @@ export async function proxy(request: NextRequest) {
       // Next may normalize an IP/local URL to its internal hostname. Locale
       // normalization is same-origin and must retain the explicit public Host.
       const destination = new URL(location);
+      // Setting host without a port retains the URL's existing container port.
+      destination.port = "";
       destination.host = host;
       response.headers.set("location", destination.toString());
     }

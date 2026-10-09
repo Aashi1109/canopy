@@ -76,6 +76,29 @@ test("public routes work on local and hosted preview origins without introducing
   }
 });
 
+test.each([
+  ["https://container:3000", "https://example.test"],
+  ["https://container:3000", "https://canopy.example.workers.dev"],
+  ["https://container:3000", "https://example.test:8443"],
+  ["http://container:3000", "http://localhost:8787"],
+  ["http://localhost:3000", "http://localhost:3000"],
+  ["https://[::1]:3000", "https://[::1]"],
+])("locale redirects replace the internal origin %s with the public host from %s", async (internal, publicOrigin) => {
+  process.env.APP_URL = publicOrigin;
+  const response = await proxy(
+    request("/en/devtools?input=x%26y", {
+      origin: internal,
+      headers: {
+        host: new URL(publicOrigin).host,
+        "x-forwarded-host": "evil.test:9999",
+        "x-forwarded-port": "9999",
+      },
+    }),
+  );
+  expect(response.status).toBe(307);
+  expect(response.headers.get("location")).toBe(`${publicOrigin}/devtools?input=x%26y`);
+});
+
 test("account, APIs, metadata and browser assets are never locale rewritten", async () => {
   for (const path of [
     "/auth/sign-in",

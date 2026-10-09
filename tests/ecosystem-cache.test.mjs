@@ -7,7 +7,7 @@ globalThis.__ecosystemCacheTest = state;
 
 vi.mock("@sentry/core", () => ({ captureException: () => {} }));
 vi.mock("@/lib/tool-framework/catalog", () => ({
-  getPublicTools: async () => {
+  getPublicToolListings: async () => {
     if (state.failure) throw new Error("Database unavailable");
     return state.tools;
   },

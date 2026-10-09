@@ -2,7 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { isLocale, defaultLocale } from "@/lib/i18n/config";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { getOptionalSession } from "@/lib/auth/session.ts";
-import { getPaperworkTools } from "@/lib/tool-framework/catalog";
+import { definitionKeyOf, getPublicToolListings } from "@/lib/tool-framework/catalog";
 import { AccountNavigation, CatalogCard, PageHero, ProductHeader, StatusBadge } from "@/components/ui/index.tsx";
 import {
   ClipboardCheck,
@@ -30,7 +30,10 @@ export default async function HomePage() {
   const [requestedLocale, t] = await Promise.all([getLocale(), getTranslations("CatalogPage")]);
   const locale = isLocale(requestedLocale) ? requestedLocale : defaultLocale;
   const requestHeaders = await headers();
-  const [tools, session] = await Promise.all([getPaperworkTools(locale), getOptionalSession(requestHeaders)]);
+  const [tools, session] = await Promise.all([
+    getPublicToolListings(locale, "paperwork"),
+    getOptionalSession(requestHeaders),
+  ]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -51,8 +54,7 @@ export default async function HomePage() {
         <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {tools.map((tool) => {
-              if (!tool.slug) return null;
-              const Icon = TOOL_ICONS[tool.componentKey] ?? FileText;
+              const Icon = TOOL_ICONS[definitionKeyOf(tool.toolId) ?? ""] ?? FileText;
 
               return (
                 <CatalogCard
@@ -60,7 +62,7 @@ export default async function HomePage() {
                   description={tool.description}
                   href={tool.href}
                   icon={<Icon aria-hidden="true" className="size-5" />}
-                  key={tool.id}
+                  key={tool.toolId}
                   status={<StatusBadge variant="success">{t("available")}</StatusBadge>}
                   title={tool.name}
                 />

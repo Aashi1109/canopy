@@ -1,7 +1,7 @@
 import { getSession } from "@/lib/auth/session.ts";
 import { captureException } from "@sentry/core";
 import { z } from "zod";
-import { getPublicTools } from "@/lib/tool-framework/catalog";
+import { getPublicToolListings } from "@/lib/tool-framework/catalog";
 import { changeSavedTools, getSavedTools } from "@/lib/user-preferences/savedTools";
 import { isSameOriginRequest } from "@/lib/routing/requestOrigin.ts";
 import { defaultLocale, isLocale, unlocalizedPathname, type Locale } from "@/lib/i18n/config";
@@ -25,7 +25,7 @@ const mutation = z
   .refine((value) => value.operation === "merge" || value.toolIds.length === 1);
 
 async function bookmarkCatalog(locale: Locale = defaultLocale) {
-  return (await getPublicTools(locale)).map(({ toolId, name, href, category, locale: toolLocale }) => ({
+  return (await getPublicToolListings(locale)).map(({ toolId, name, href, category, locale: toolLocale }) => ({
     toolId,
     name,
     href: unlocalizedPathname(href),

@@ -7,7 +7,7 @@ import { hasPermission } from "@/lib/authorization/index.ts";
 import { getUserAuthorization } from "@/lib/admin/index.ts";
 import { requirePagePermission } from "@/lib/admin/access";
 import { getBlogPost } from "@/lib/blog/queries";
-import { getTools } from "@/lib/tool-framework/catalog";
+import { getToolListings } from "@/lib/tool-framework/catalog";
 import { BlogEditor } from "../components/BlogEditor";
 import { loadBlogTaxonomyOptions } from "../lib/loadBlogTaxonomyOptions";
 
@@ -27,7 +27,7 @@ export default async function BlogEditorPage({
     loadBlogTaxonomyOptions(session.user.id, "category"),
     loadBlogTaxonomyOptions(session.user.id, "tag"),
     getUserAuthorization(session.user.id),
-    getTools(),
+    Promise.all([getToolListings("devtools"), getToolListings("media")]).then((groups) => groups.flat()),
   ]);
   if (!post) notFound();
   const generation = config.ai.enabled ? await getInitialBlogGeneration(session.user.id, id) : null;

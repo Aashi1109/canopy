@@ -6,7 +6,7 @@ import { CatalogHero } from "@/components/canopy/CatalogHero";
 import { CatalogListing } from "@/components/canopy/CatalogListing";
 import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { ToolIcon } from "@/components/ToolIcon";
-import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
+import { getToolListings, type CatalogToolListing } from "@/lib/tool-framework/catalog";
 import { searchTools } from "@/lib/tool-catalog/index";
 import { categoriesForApp, resolveCategoryKey, TOOL_CATEGORIES } from "@/lib/tool-framework/categories";
 import { getOptionalSession } from "@/lib/auth/session.ts";
@@ -37,7 +37,7 @@ function first(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value) ?? "";
 }
 
-function ToolCard({ tool }: { tool: CatalogTool }) {
+function ToolCard({ tool }: { tool: CatalogToolListing }) {
   const t = useTranslations("CatalogPage");
   return (
     <CatalogCard
@@ -68,7 +68,7 @@ export default async function HomePage({
   const query = first(params.q).trim().slice(0, 80);
   const requestedCategory = first(params.category).slice(0, 80);
   const category = resolveCategoryKey(requestedCategory, "media");
-  const [tools, session] = await Promise.all([getTools("media", locale), getOptionalSession(requestHeaders)]);
+  const [tools, session] = await Promise.all([getToolListings("media", locale), getOptionalSession(requestHeaders)]);
   const categoryLabel = category ? categories(category) : "";
   const filteredTools = searchTools(
     tools.filter((tool) => !category || tool.category === category),

@@ -1,5 +1,5 @@
 import { TOOL_CATEGORIES } from "@/lib/tool-framework/categories";
-import { getPublicTools } from "@/lib/tool-framework/catalog";
+import { getPublicToolListings } from "@/lib/tool-framework/catalog";
 import { errorMessage } from "@/utils/errorMessage";
 import { captureException } from "@sentry/core";
 import { defaultLocale, isLocale, localizeHref } from "@/lib/i18n/config";
@@ -15,7 +15,7 @@ export async function GET(request?: Request) {
   const locale = request ? (new URL(request.url).searchParams.get("locale") ?? defaultLocale) : defaultLocale;
   if (!isLocale(locale)) return Response.json({ error: "Unsupported locale" }, { status: 400 });
   try {
-    const tools = await getPublicTools(locale);
+    const tools = await getPublicToolListings(locale);
     const messages = getCommonMessages(locale);
     const groups = ECOSYSTEMS.map((ecosystem) => {
       const matchingTools = tools.filter((tool) => tool.app === ecosystem.app);

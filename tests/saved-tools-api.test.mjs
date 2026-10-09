@@ -31,7 +31,7 @@ vi.mock("@/lib/auth/session.ts", () => ({
   },
 }));
 vi.mock("@/lib/tool-framework/catalog", () => ({
-  getPublicTools: async (locale) => {
+  getPublicToolListings: async (locale) => {
     state.catalogReads++;
     state.catalogLocales.push(locale);
     state.catalogStarted?.resolve();

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ArrowUpRight, Check, Command, ShieldCheck } from "lucide-react";
 import { Button, H2, ProductFooter, ProductHeader, SmartToolsLogoMark } from "@/components/ui";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/components/accordion";
-import { getPublicTools } from "@/lib/tool-framework/catalog";
+import { getPublicToolListings } from "@/lib/tool-framework/catalog";
 import { WorktableHero } from "./components/WorktableHero";
 import { ToolIndex } from "./components/ToolIndex";
 import styles from "./new2.module.css";
@@ -33,7 +33,7 @@ const questions = [
 ];
 
 export default async function NewTwoPage() {
-  const catalog = await getPublicTools("en").then(
+  const catalog = await getPublicToolListings("en").then(
     (tools) => ({ tools, unavailable: false }),
     () => ({ tools: [], unavailable: true }),
   );

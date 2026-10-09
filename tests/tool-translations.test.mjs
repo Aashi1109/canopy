@@ -109,6 +109,18 @@ describe("embedded tool messages", () => {
     translations.en.status = "draft";
     expect(resolveToolTranslation(translations, "hi", english)).toBeNull();
   });
+  it("keeps full valid-language coverage by default", () => {
+    const english = { name: "Tool", "runtime.greeting": "Hello {name}" };
+    const translations = {
+      en: { status: "published", messages: english },
+      hi: { status: "published", messages: { ...english, name: "उपकरण" } },
+      es: { status: "draft", messages: english },
+      fr: { status: "published", messages: { ...english, name: "Outil" } },
+      de: { status: "published", messages: { ...english, "runtime.greeting": "Hallo {wrong}" } },
+    };
+    expect(resolveToolTranslation(translations, "hi", english).availableLocales).toEqual(["en", "hi", "fr"]);
+    expect(resolveToolTranslation(translations, "fr", english).messages.name).toBe("Outil");
+  });
   it("rejects unexpected and unsafe keys and invalidates old adapters with newly required text", () => {
     const english = extractToolMessages(spec);
     expect(

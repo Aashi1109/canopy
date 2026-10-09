@@ -3,18 +3,19 @@ import { searchTools } from "../lib/tool-catalog/index.ts";
 
 // Hoisted so the vi.mock factory below can read the shared catalog fixture.
 const state = vi.hoisted(() => {
-  const shared = { tools: [], reads: 0, failure: false, locales: [] };
+  const shared = { tools: [], reads: 0, failure: false, locales: [], families: [] };
   globalThis.__toolSearchTest = shared;
   return shared;
 });
 
 vi.mock("@sentry/core", () => ({ captureException: () => {} }));
 vi.mock("@/lib/tool-framework/catalog", () => ({
-  getPublicTools: async (locale) => {
+  getPublicToolListings: async (locale, family) => {
     state.reads++;
     state.locales.push(locale);
+    state.families.push(family);
     if (state.failure) throw new Error("Database unavailable");
-    return state.tools;
+    return family ? state.tools.filter((tool) => tool.app === family) : state.tools;
   },
 }));
 
@@ -183,6 +184,7 @@ test.each(["paperwork", "devtools", "media"])(
     );
     state.reads = 0;
     state.failure = false;
+    state.families = [];
     const response = await GET(new Request(`https://app.test/api/tools/search?suggestions=1&family=${family}`));
     expect((await response.json()).results.map((result) => result.toolId)).toEqual(
       state.tools
@@ -191,9 +193,11 @@ test.each(["paperwork", "devtools", "media"])(
         .map((entry) => entry.toolId),
     );
     expect(state.reads).toBe(1);
+    expect(state.families).toEqual([family]);
 
     const search = await GET(new Request(`https://app.test/api/tools/search?suggestions=1&q=tool&family=${family}`));
     expect((await search.json()).results).toHaveLength(4);
+    expect(state.families).toEqual([family, family]);
   },
 );
 
@@ -217,6 +221,7 @@ test.each(["paperwork", "devtools", "media"])(
     ]);
     state.reads = 0;
     state.failure = false;
+    state.families = [];
 
     const response = await GET(new Request(`https://app.test/api/tools/search?q=format&family=${family}`));
     expect(response.status).toBe(200);
@@ -227,6 +232,7 @@ test.each(["paperwork", "devtools", "media"])(
         .map((entry) => entry.toolId),
     );
     expect(state.reads).toBe(1);
+    expect(state.families).toEqual([family]);
 
     const missing = await GET(new Request(`https://app.test/api/tools/search?q=missing&family=${family}`));
     expect(await missing.json()).toEqual({ results: [] });
@@ -253,6 +259,7 @@ test.each(["", " ", "unknown", "MEDIA", "media,downloaders", "downloaders"])(
   async (family) => {
     state.reads = 0;
     state.failure = false;
+    state.families = [];
     for (const query of ["", "&q=format", "&suggestions=1"]) {
       const response = await GET(
         new Request(`https://app.test/api/tools/search?family=${encodeURIComponent(family)}${query}`),
@@ -261,6 +268,7 @@ test.each(["", " ", "unknown", "MEDIA", "media,downloaders", "downloaders"])(
       expect(await response.json()).toEqual({ error: "Invalid tool family" });
     }
     expect(state.reads).toBe(0);
+    expect(state.families).toEqual([]);
   },
 );
 
@@ -293,11 +301,13 @@ test.each(["q=formato", "suggestions=1"])(
     ];
     state.failure = false;
     state.locales = [];
+    state.families = [];
     const response = await GET(new Request(`https://app.test/api/tools/search?locale=es&family=devtools&${query}`));
     expect(response.status).toBe(200);
     const { category, description, href, icon, name, toolId, locale } = localized;
     expect(await response.json()).toEqual({ results: [{ category, description, href, icon, name, toolId, locale }] });
     expect(state.locales).toEqual(["es"]);
+    expect(state.families).toEqual(["devtools"]);
   },
 );
 
@@ -305,10 +315,12 @@ test("search defaults catalog selection to English", async () => {
   state.tools = [];
   state.failure = false;
   state.locales = [];
+  state.families = [];
   expect(await (await GET(new Request("https://app.test/api/tools/search?suggestions=1"))).json()).toEqual({
     results: [],
   });
   expect(state.locales).toEqual(["en"]);
+  expect(state.families).toEqual([undefined]);
 });
 
 test("tool search ranks exact names, prefixes, name substrings, keywords, descriptions, then categories", () => {

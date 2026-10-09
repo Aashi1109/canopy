@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ArrowUpRight } from "lucide-react";
 import { Button, ProductFooter, ProductHeader, SmartToolsLogoMark } from "@/components/ui";
-import { getPublicTools } from "@/lib/tool-framework/catalog";
+import { getPublicToolListings } from "@/lib/tool-framework/catalog";
 import { MotionGallery } from "./components/MotionGallery";
 import { Collection } from "./components/Collection";
 import styles from "./new3.module.css";
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function NewThreePage() {
-  const catalog = await getPublicTools("en").then(
+  const catalog = await getPublicToolListings("en").then(
     (tools) => ({ tools, unavailable: false }),
     () => ({ tools: [], unavailable: true }),
   );

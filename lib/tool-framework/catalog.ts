@@ -19,11 +19,13 @@
  * are admin-editable, so plenty of live tools have a slug that differs from
  * their folder name; deriving one from the other 404s them.
  *
- * Every export is wrapped in React's `cache()`, so a request that renders a
- * page, its related tools and its metadata pays for one query, not three.
+ * React's request-only `cache()` shares repeated reads without delaying
+ * publication changes. Discovery loads only the requested app/languages;
+ * complete locale coverage is reserved for detail metadata and sitemaps.
  */
 
 import { cache } from "react";
+import { and, eq, getTableColumns, sql } from "drizzle-orm";
 import { getPaperworkToolMessages } from "../paperwork/toolMessages.ts";
 import { defaultLocale, localizeHref, type Locale } from "../i18n/config.ts";
 import { getCommonMessages } from "../i18n/messages.ts";
@@ -34,6 +36,7 @@ import {
   formatToolMessage,
   escapeToolText,
   type ToolMessages,
+  type ToolTranslations,
 } from "./translations.ts";
 
 import {
@@ -41,6 +44,7 @@ import {
   getToolContentRows,
   isDatabaseConfigured,
   managedToolsTable,
+  toolContentTable,
   type ToolContentRow,
 } from "../../db/index.ts";
 import { getEnabledTools, isToolAvailable, isValidToolSlug, mergeToolManifest } from "../tool-catalog/index.ts";
@@ -92,6 +96,24 @@ export type PublicTool = Pick<CatalogTool, "toolId" | "name" | "description" | "
   readonly categoryKey: CategoryKey | null;
 };
 
+/** Cards do not need a translated workspace or a complete language inventory. */
+export type CatalogToolListing = Pick<
+  CatalogTool,
+  | "locale"
+  | "toolId"
+  | "app"
+  | "slug"
+  | "definitionKey"
+  | "name"
+  | "description"
+  | "order"
+  | "category"
+  | "keywords"
+  | "icon"
+  | "href"
+>;
+export type PublicToolListing = Omit<PublicTool, "availableLocales">;
+
 export function definitionKeyOf(toolId: string): string | null {
   const key = toolId.split(".")[1] ?? "";
   return DEFINITION_KEY_PATTERN.test(key) ? key : null;
@@ -131,11 +153,7 @@ export async function loadSpec(definitionKey: string): Promise<ToolSpec | null> 
   }
 }
 
-async function buildTool(
-  row: ManagedToolRow & { slug: string },
-  contentRow: ToolContentRow | null,
-  requestedLocale: Locale,
-): Promise<CatalogTool | null> {
+async function resolveToolSource(row: ManagedToolRow & { slug: string }, contentRow: ToolContentRow | null) {
   const definitionKey = definitionKeyOf(row.toolId);
   if (!definitionKey) return null;
 
@@ -153,6 +171,17 @@ async function buildTool(
     keywords: resolved.keywords,
     content: resolved.content,
   };
+  return { definitionKey, spec, resolved, sourceSpec };
+}
+
+async function buildTool(
+  row: ManagedToolRow & { slug: string },
+  contentRow: ToolContentRow | null,
+  requestedLocale: Locale,
+): Promise<CatalogTool | null> {
+  const source = await resolveToolSource(row, contentRow);
+  if (!source) return null;
+  const { definitionKey, spec, resolved, sourceSpec } = source;
   const required = extractToolMessages(sourceSpec, resolved);
   const requested = resolveToolTranslation(row.translations, requestedLocale, required);
   const translation = requested ?? resolveToolTranslation(row.translations, defaultLocale, required);
@@ -182,12 +211,158 @@ async function buildTool(
   };
 }
 
+/** Filter before transferring JSON or loading definitions; one consistent DB read. */
+const loadDiscoveryRows = cache(
+  async (locale: Locale, app?: PublicToolApp, slug?: string, toolId?: string, allLocales = false) => {
+    if (!isDatabaseConfigured()) return [];
+    const columns = getTableColumns(managedToolsTable);
+    return db
+      .select({
+        tool: {
+          ...columns,
+          translations: allLocales
+            ? columns.translations
+            : sql<ToolTranslations>`jsonb_build_object('en', ${columns.translations}->'en', ${locale}::text, ${columns.translations}->${locale}::text)`,
+        },
+        content: toolContentTable,
+      })
+      .from(managedToolsTable)
+      .leftJoin(toolContentTable, eq(toolContentTable.toolId, managedToolsTable.toolId))
+      .where(
+        and(
+          eq(managedToolsTable.enabled, true),
+          eq(managedToolsTable.archived, false),
+          app ? eq(managedToolsTable.app, app) : undefined,
+          slug !== undefined ? eq(managedToolsTable.slug, slug) : undefined,
+          toolId !== undefined ? eq(managedToolsTable.toolId, toolId) : undefined,
+        ),
+      );
+  },
+);
+
+/** Publishing validates the complete contract. Discovery only reads the visible card. */
+function resolveListingText(translations: ToolTranslations, locale: Locale, keywordCount = 0) {
+  const format = (candidate: Locale) => {
+    const translation = translations?.[candidate];
+    if (translation?.status !== "published" || !translation.messages || typeof translation.messages !== "object")
+      return null;
+    const text = (key: string) => {
+      const message = translation.messages[key];
+      if (typeof message !== "string" || !message.trim()) throw new Error("Missing card text");
+      return formatToolMessage(candidate, message);
+    };
+    try {
+      return {
+        locale: candidate,
+        name: text("name"),
+        description: text("description"),
+        keywords: Array.from({ length: keywordCount }, (_, index) => text(`keywords.${index}`)),
+      };
+    } catch {
+      return null;
+    }
+  };
+  const english = format(defaultLocale);
+  if (!english || locale === defaultLocale) return english;
+  return format(locale) ?? english;
+}
+
+async function buildToolListing(
+  row: ManagedToolRow & { slug: string },
+  contentRow: ToolContentRow | null,
+  requestedLocale: Locale,
+): Promise<CatalogToolListing | null> {
+  // Cards use category/keywords, never the body or workspace contract.
+  const source = await resolveToolSource(row, contentRow ? { ...contentRow, contentDoc: null } : null);
+  if (!source) return null;
+  const text = resolveListingText(row.translations, requestedLocale, source.sourceSpec.keywords.length);
+  if (!text) return null;
+  return {
+    toolId: row.toolId,
+    app: source.spec.app,
+    slug: row.slug,
+    definitionKey: source.definitionKey,
+    order: row.order,
+    category: source.resolved.category,
+    ...text,
+    icon: resolveIcon(row.toolId, row.name, row.iconUrl),
+    href: localizeHref(`/${source.spec.app}/${row.slug}`, text.locale),
+  };
+}
+
+const loadToolListings = cache(async (app: ToolApp | undefined, locale: Locale) => {
+  const rows = app
+    ? await loadDiscoveryRows(locale, app)
+    : (await Promise.all([loadDiscoveryRows(locale, "devtools"), loadDiscoveryRows(locale, "media")])).flat();
+  const built = await Promise.all(
+    rows.flatMap(({ tool, content }) =>
+      tool.app !== "paperwork" && isToolAvailable(tool) && isValidToolSlug(tool.app, tool.slug)
+        ? [buildToolListing(tool, content, locale)]
+        : [],
+    ),
+  );
+  return built
+    .filter((tool): tool is CatalogToolListing => tool !== null)
+    .sort((left, right) => (left.app === right.app ? left.order - right.order : left.app.localeCompare(right.app)));
+});
+
+export const getToolListings = cache(
+  async (app: ToolApp, locale: Locale = defaultLocale): Promise<readonly CatalogToolListing[]> =>
+    loadToolListings(app, locale),
+);
+
+export const getPublicToolListings = cache(
+  async (locale: Locale = defaultLocale, app?: PublicToolApp): Promise<readonly PublicToolListing[]> => {
+    const [tools, rows] = await Promise.all([
+      app === "paperwork" ? Promise.resolve([]) : loadToolListings(app, locale),
+      !app || app === "paperwork" ? loadDiscoveryRows(locale, "paperwork") : Promise.resolve([]),
+    ]);
+    const common = getCommonMessages(locale);
+    return [
+      ...tools.map((tool) => ({
+        toolId: tool.toolId,
+        app: tool.app,
+        name: tool.name,
+        description: tool.description,
+        href: tool.href,
+        icon: tool.icon,
+        keywords: tool.keywords,
+        category: common.Categories[tool.category],
+        categoryKey: tool.category,
+        locale: tool.locale,
+      })),
+      ...rows
+        .sort((left, right) => left.tool.order - right.tool.order)
+        .flatMap(({ tool }) => {
+          if (tool.app !== "paperwork" || !isToolAvailable(tool) || !isValidToolSlug(tool.app, tool.slug)) return [];
+          const text = resolveListingText(tool.translations, locale);
+          if (!text) return [];
+          return [
+            {
+              toolId: tool.toolId,
+              app: tool.app,
+              ...text,
+              href: localizeHref(`/paperwork/${tool.slug}`, text.locale),
+              icon: resolveIcon(tool.toolId, text.name, tool.iconUrl),
+              category: common.Common.documents,
+              categoryKey: null,
+            },
+          ];
+        }),
+    ];
+  },
+);
+
 /** Share queries within a request while making publication visible across app instances. */
-const loadCatalog = cache(async (locale: Locale = defaultLocale) => {
+const loadCatalog = cache(async (locale: Locale = defaultLocale, app?: PublicToolApp) => {
   if (!isDatabaseConfigured()) return { tools: [], paperworkTools: [], publicTools: [] };
 
   const load = async () => {
-    const [rows, contentRows] = await Promise.all([db.select().from(managedToolsTable), getToolContentRows()]);
+    const rowQuery = db.select().from(managedToolsTable);
+    const [rows, contentRows] = await Promise.all([
+      app ? rowQuery.where(eq(managedToolsTable.app, app)) : rowQuery,
+      app === "paperwork" ? Promise.resolve([]) : getToolContentRows(),
+    ]);
     const contentByToolId = new Map(
       contentRows.filter((row) => row.publishedAt !== null).map((row) => [row.toolId, row] as const),
     );
@@ -284,13 +459,13 @@ const loadCatalog = cache(async (locale: Locale = defaultLocale) => {
 /** Every enabled, non-archived, slugged tool. Optionally narrowed to one app. */
 export const getTools = cache(
   async (app?: ToolApp, locale: Locale = defaultLocale): Promise<readonly CatalogTool[]> => {
-    const { tools } = await loadCatalog(locale);
+    const { tools } = await loadCatalog(locale, app);
     return app ? tools.filter((tool) => tool.app === app) : tools;
   },
 );
 
 export const getPaperworkTools = cache(
-  async (locale: Locale = defaultLocale) => (await loadCatalog(locale)).paperworkTools,
+  async (locale: Locale = defaultLocale) => (await loadCatalog(locale, "paperwork")).paperworkTools,
 );
 
 export const getPublicTools = cache(
@@ -305,10 +480,11 @@ export const getPublicTools = cache(
  */
 export const resolveToolPage = cache(
   async (app: ToolApp, slug: string, locale: Locale = defaultLocale): Promise<CatalogTool | null> => {
-    const matches = (await loadCatalog(locale)).tools.filter(
-      (tool) => tool.app === app && tool.slug === slug && tool.locale === locale,
-    );
-    return matches.length === 1 ? matches[0] : null;
+    if (!isValidToolSlug(app, slug)) return null;
+    const rows = await loadDiscoveryRows(locale, app, slug, undefined, true);
+    if (rows.length !== 1 || !isToolAvailable(rows[0].tool)) return null;
+    const tool = await buildTool(rows[0].tool, rows[0].content, locale);
+    return tool?.locale === locale ? tool : null;
   },
 );
 
@@ -316,12 +492,17 @@ export const resolveToolPage = cache(
  * Curated related tools, falling back to the rest of the same category.
  */
 export const relatedTools = cache(
-  async (toolId: string, locale: Locale = defaultLocale): Promise<readonly CatalogTool[]> => {
-    const { tools } = await loadCatalog(locale);
+  async (toolId: string, locale: Locale = defaultLocale): Promise<readonly CatalogToolListing[]> => {
+    const rows = await loadDiscoveryRows(locale, undefined, undefined, toolId);
+    const row = rows[0];
+    if (!row || row.tool.app === "paperwork" || !isToolAvailable(row.tool)) return [];
+    const source = await resolveToolSource(row.tool, row.content);
+    if (!source) return [];
+    const tools = await loadToolListings(undefined, locale);
     const tool = tools.find((candidate) => candidate.toolId === toolId);
     if (!tool) return [];
 
-    const curated = (tool.content.relatedToolIds ?? [])
+    const curated = (source.resolved.content.relatedToolIds ?? [])
       .filter((id) => id !== toolId)
       .flatMap((id) => tools.filter((candidate) => candidate.toolId === id));
 

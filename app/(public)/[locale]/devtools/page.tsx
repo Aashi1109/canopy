@@ -12,7 +12,7 @@ import {
   resolveCategoryKey,
   TOOL_CATEGORIES,
 } from "@/lib/tool-framework/categories";
-import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
+import { getToolListings, type CatalogToolListing } from "@/lib/tool-framework/catalog";
 import { searchTools } from "@/lib/tool-catalog/index";
 import { getOptionalSession } from "@/lib/auth/session.ts";
 import {
@@ -45,7 +45,7 @@ function first(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value) ?? "";
 }
 
-function ToolCard({ tool }: { tool: CatalogTool }) {
+function ToolCard({ tool }: { tool: CatalogToolListing }) {
   const t = useTranslations("CatalogPage");
   return (
     <CatalogCard
@@ -80,7 +80,7 @@ export default async function HomePage({
   const params = await searchParams;
   const query = first(params.q).trim().slice(0, 80);
   const requestedCategory = first(params.category).slice(0, 80);
-  const [tools, session] = await Promise.all([getTools("devtools", locale), getOptionalSession(requestHeaders)]);
+  const [tools, session] = await Promise.all([getToolListings("devtools", locale), getOptionalSession(requestHeaders)]);
   const category = resolveCategoryKey(requestedCategory, "devtools");
   const filteredTools = searchTools(
     tools.filter((tool) => !category || tool.category === category),
