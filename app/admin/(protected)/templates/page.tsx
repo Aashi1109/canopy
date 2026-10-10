@@ -5,7 +5,9 @@ import { DOCUMENT_TYPES } from "@/lib/invoice-templates/index.ts";
 import {
   Button,
   Caption,
+  CreateMenuButton,
   Text,
+  DropdownMenuItem,
   EmptyState,
   StatusBadge,
   Table,
@@ -16,7 +18,7 @@ import {
   TableRow,
   buttonVariants,
 } from "@/components/ui/index.tsx";
-import { Ellipsis, FilePenLine, Plus, Upload } from "lucide-react";
+import { Ellipsis, FilePenLine, FileText, Upload } from "lucide-react";
 import Link from "next/link";
 import { AdminFilters } from "../components/AdminFilters";
 import { AdminPageHeader } from "../components/AdminPageHeader";
@@ -31,6 +33,25 @@ const updatedAtFormatter = new Intl.DateTimeFormat("en", {
 function filterValue(value: string | string[] | undefined, allowedValues?: readonly string[]) {
   const first = Array.isArray(value) ? value[0] : value;
   return first && (!allowedValues || allowedValues.includes(first)) ? first : "";
+}
+
+function TemplateCreateMenu() {
+  return (
+    <CreateMenuButton size="sm">
+      <DropdownMenuItem asChild>
+        <Link href={appHref("/admin/templates/new")}>
+          <FileText aria-hidden="true" />
+          Simple template
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href={appHref("/admin/templates/new/advanced")}>
+          <FilePenLine aria-hidden="true" />
+          Advanced template
+        </Link>
+      </DropdownMenuItem>
+    </CreateMenuButton>
+  );
 }
 
 export default async function TemplatesPage({
@@ -72,18 +93,15 @@ export default async function TemplatesPage({
         title="Templates"
         description="Manage reusable document layouts across every document type."
         actions={
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <Link
-              className={buttonVariants({ className: "rounded-full", variant: "secondary" })}
+              className={buttonVariants({ className: "rounded-full", variant: "secondary", size: "sm" })}
               href={appHref("/admin/templates/import")}
             >
-              <Upload aria-hidden="true" className="size-4" />
+              <Upload aria-hidden="true" />
               Import JSON
             </Link>
-            <Link className={buttonVariants({ className: "rounded-full px-5" })} href={appHref("/admin/templates/new")}>
-              <Plus aria-hidden="true" className="size-4" />
-              Create template
-            </Link>
+            <TemplateCreateMenu />
           </div>
         }
       />
@@ -207,11 +225,7 @@ export default async function TemplatesPage({
           </Table>
         ) : (
           <EmptyState
-            action={
-              <Link className={buttonVariants()} href={appHref("/admin/templates/new")}>
-                Create template
-              </Link>
-            }
+            action={<TemplateCreateMenu />}
             description={
               templates.length
                 ? "Adjust the filters to see more templates."
@@ -221,16 +235,6 @@ export default async function TemplatesPage({
           />
         )}
       </AdminListing>
-
-      <div className="mt-4 flex shrink-0 justify-end">
-        <Link
-          className="inline-flex items-center gap-2 text-primary hover:underline"
-          href={appHref("/admin/templates/new/advanced")}
-        >
-          <FilePenLine aria-hidden="true" className="size-4" />
-          Create an advanced template
-        </Link>
-      </div>
     </div>
   );
 }

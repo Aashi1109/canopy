@@ -277,11 +277,6 @@ test.skipIf(!url)(
           if (run.operation === "aux-failure") throw new Error("Optional title generation failed");
           return undefined;
         },
-        audit: {
-          prefix: `assistant.${key}`,
-          resourcePrefix: "assistant",
-          resourceMetadata: (resourceId) => ({ resourceId }),
-        },
       };
     }
     const alpha = createAssistantService(integration("fixture-alpha"));
@@ -838,5 +833,6 @@ test.skipIf(!url)(
     });
     assert.equal((await pool.query("SELECT to_regclass('blog_posts') AS table_name")).rows[0].table_name, null);
     assert.ok(deletedResponses.length > 0);
+    assert.equal((await pool.query("SELECT count(*)::int n FROM audit_events")).rows[0].n, 0);
   },
 );

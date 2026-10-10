@@ -194,6 +194,7 @@ export {
 } from "./components/table.tsx";
 export { Tabs, TabsContent, TabsList, TabsTrigger, tabsListVariants } from "./components/tabs.tsx";
 export { BackButton } from "./components/BackButton.tsx";
+export { ActionMenuButton, CreateMenuButton } from "./components/ActionMenuButton.tsx";
 export { Textarea } from "./components/textarea.tsx";
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/tooltip.tsx";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, ContentState } from "@/components/ui/index.tsx";
+import { BackButton, Button, ContentState } from "@/components/ui/index.tsx";
 import { captureException } from "@sentry/nextjs";
 import { useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
@@ -25,9 +25,7 @@ export default function BlogError({ error, reset }: { error: Error & { digest?: 
         action={
           <div className="flex flex-wrap gap-3">
             <Button onClick={reset}>{t("retry")}</Button>
-            <Button asChild variant="outline">
-              <a href={localizeHref("/blog", locale)}>{t("backToBlog")}</a>
-            </Button>
+            <BackButton href={localizeHref("/blog", locale)} label={t("backToBlog")} />
           </div>
         }
       />

@@ -23,7 +23,16 @@ export function measurementId(env: {
 }
 
 // Never send arbitrary route segments (document IDs, emails, or pasted text).
-export function publicPath(pathname: string): string | null {
+export function publicPath(pathname: string, origin?: string): string | null {
+  // Admin subdomains expose clean URLs such as "/" after routing rewrites.
+  if (origin !== undefined) {
+    try {
+      const url = new URL(origin);
+      if (!["https:", "http:"].includes(url.protocol) || url.hostname.startsWith("admin.")) return null;
+    } catch {
+      return null;
+    }
+  }
   const path = unlocalizedPathname(pathname.split(/[?#]/, 1)[0].replace(/\/$/, "") || "/");
   if (
     ["/", "/privacy", "/contact", "/media", "/devtools", "/paperwork", "/paperwork/about", "/paperwork/terms"].includes(
@@ -44,7 +53,7 @@ export function createAnalytics(browser: AnalyticsWindow, id: string | null) {
   let pageReferrer = "";
   try {
     const url = new URL(browser.document.referrer);
-    if (url.protocol === "https:" || url.protocol === "http:") pageReferrer = url.origin;
+    if (publicPath("/", url.origin)) pageReferrer = url.origin;
   } catch {
     /* No valid referrer. */
   }
@@ -57,7 +66,7 @@ export function createAnalytics(browser: AnalyticsWindow, id: string | null) {
   }
 
   function allowed() {
-    return Boolean(validId && consent === "accepted" && publicPath(browser.location.pathname));
+    return Boolean(validId && consent === "accepted" && publicPath(browser.location.pathname, browser.location.origin));
   }
 
   function send(...args: unknown[]) {
@@ -69,7 +78,7 @@ export function createAnalytics(browser: AnalyticsWindow, id: string | null) {
   }
 
   function context() {
-    const path = publicPath(browser.location.pathname)!;
+    const path = publicPath(browser.location.pathname, browser.location.origin)!;
     return {
       page_location: `${browser.location.origin}${path}`,
       page_referrer: pageReferrer,
@@ -82,7 +91,7 @@ export function createAnalytics(browser: AnalyticsWindow, id: string | null) {
       if (!validId) return;
       browser[`ga-disable-${validId}`] = !allowed();
       if (!allowed()) {
-        if (lastPath || !publicPath(browser.location.pathname)) pageReferrer = "";
+        if (lastPath || !publicPath(browser.location.pathname, browser.location.origin)) pageReferrer = "";
         lastPath = null;
         previousLocation = "";
         return;

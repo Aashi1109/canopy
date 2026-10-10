@@ -583,7 +583,7 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
           <p className="truncate text-caption text-muted-foreground">
             {integration.resourceLabel} · {integration.resourceTitle}
           </p>
-          <BackButton label="Back to chat" showLabel onClick={closePanelView} />
+          <BackButton label="Back to chat" onClick={closePanelView} />
           <div className="flex items-center gap-3 border-b border-border py-3">
             <FileText className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
             <div className="flex-1">
@@ -636,7 +636,7 @@ function AssistantPanelInstance({ resourceId, ownerId, integration, onClose }: P
             {integration.resourceLabel} · {integration.resourceTitle}
           </p>
           <div className="flex h-9 shrink-0 items-center justify-between gap-2">
-            <BackButton label="Back to chat" showLabel onClick={closePanelView} />
+            <BackButton label="Back to chat" onClick={closePanelView} />
             {!!assistant.activeThreadIds.length && (
               <span
                 className="flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-caption text-accent-text"

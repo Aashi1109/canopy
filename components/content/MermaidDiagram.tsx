@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import {
+  ActionMenuButton,
   Button,
-  Popover,
+  DropdownMenuItem,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
   toast,
 } from "@/components/ui/index.tsx";
-import { ChevronDown, Download, Maximize2 } from "lucide-react";
+import { Download, Maximize2 } from "lucide-react";
 import { MermaidPreview } from "./MermaidPreview";
 import { diagramPng } from "@/lib/markdown/diagramExport";
 
@@ -127,53 +128,32 @@ export function MermaidDiagram({ source, previewable = false }: { source: string
           svg={result.svg ?? ""}
           onClose={() => setPreviewOpen(false)}
           downloads={
-            <Popover.Root>
-              <Popover.Trigger asChild>
-                <Button variant="secondary" size="sm" loading={exporting}>
-                  <Download aria-hidden="true" />
-                  {exporting ? "Preparing PNG…" : "Download"}
-                  <ChevronDown aria-hidden="true" />
-                </Button>
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content
-                  align="end"
-                  sideOffset={4}
-                  aria-label="Download diagram"
-                  data-preview-escape-boundary
-                  className="z-50 flex flex-col gap-1 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+            <ActionMenuButton
+              label={exporting ? "Preparing PNG…" : "Download"}
+              icon={<Download aria-hidden="true" />}
+              size="sm"
+              variant="secondary"
+              loading={exporting}
+              menuLabel="Download diagram"
+              contentProps={{ "data-preview-escape-boundary": true }}
+            >
+              <DropdownMenuItem disabled={exporting} onSelect={() => void downloadPng()}>
+                Download PNG
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a
+                  href={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(result.svg ?? "")}`}
+                  download="diagram.svg"
                 >
-                  <Popover.Close asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="justify-start"
-                      loading={exporting}
-                      onClick={() => void downloadPng()}
-                    >
-                      Download PNG
-                    </Button>
-                  </Popover.Close>
-                  <Popover.Close asChild>
-                    <Button asChild variant="ghost" size="sm" className="justify-start">
-                      <a
-                        href={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(result.svg ?? "")}`}
-                        download="diagram.svg"
-                      >
-                        Download SVG
-                      </a>
-                    </Button>
-                  </Popover.Close>
-                  <Popover.Close asChild>
-                    <Button asChild variant="ghost" size="sm" className="justify-start">
-                      <a href={`data:text/plain;charset=utf-8,${encodeURIComponent(source)}`} download="diagram.mmd">
-                        Download source
-                      </a>
-                    </Button>
-                  </Popover.Close>
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
+                  Download SVG
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href={`data:text/plain;charset=utf-8,${encodeURIComponent(source)}`} download="diagram.mmd">
+                  Download source
+                </a>
+              </DropdownMenuItem>
+            </ActionMenuButton>
           }
         />
       )}

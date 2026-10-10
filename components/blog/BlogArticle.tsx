@@ -1,11 +1,12 @@
 import config from "@/lib/config/config.ts";
 import { useLocale, useTranslations } from "next-intl";
 import { localizeHref, type Locale } from "@/lib/i18n/config";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import "katex/dist/katex.min.css";
 import {
   Avatar,
   AvatarFallback,
+  BackButton,
   Button,
   Caption,
   Card,
@@ -14,10 +15,6 @@ import {
   Overline,
   P,
   TextLink,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/index.tsx";
 import { renderBlogDocument, type BlogDocument } from "@/lib/blog/document";
 import { blogImageDelivery } from "@/lib/blog/utils";
@@ -61,20 +58,7 @@ export function BlogArticle({ document, publication }: Props) {
       <BlogPageContainer>
         <header className={styles.introduction}>
           <div className="flex items-center gap-3">
-            {publication && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button asChild variant="ghost" size="icon-sm" className="text-primary">
-                      <a href={localizeHref("/blog", locale)} aria-label={t("allStories")}>
-                        <ArrowLeft aria-hidden="true" className="rtl:rotate-180" />
-                      </a>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>{t("allStories")}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+            {publication && <BackButton href={localizeHref("/blog", locale)} label={t("allStories")} />}
             <Overline className={`${styles.category} ms-auto min-w-0 break-words text-end`}>
               {publication ? (
                 <TextLink

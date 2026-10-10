@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
-  return <DocumentRoot>{children}</DocumentRoot>;
+  return <DocumentRoot publicTracking={false}>{children}</DocumentRoot>;
 }

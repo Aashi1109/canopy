@@ -58,7 +58,8 @@ export const documentMetadata: Metadata = {
 export function DocumentRoot({
   children,
   locale = defaultLocale,
-}: Readonly<{ children: React.ReactNode; locale?: Locale }>) {
+  publicTracking = true,
+}: Readonly<{ children: React.ReactNode; locale?: Locale; publicTracking?: boolean }>) {
   return (
     <html
       className={`${inter.variable} ${geist.variable} ${geistMono.variable} ${funnelSans.variable} ${caveat.variable} print:bg-white`}
@@ -67,23 +68,29 @@ export function DocumentRoot({
       dir={direction(locale)}
     >
       <head>
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5442003096820885"
-          crossOrigin="anonymous"
-        />
+        {publicTracking ? (
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5442003096820885"
+            crossOrigin="anonymous"
+          />
+        ) : null}
       </head>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased print:bg-white print:text-black">
         <NextIntlClientProvider locale={locale} messages={getCommonMessages(locale)} timeZone="UTC">
           <DirectionProvider dir={direction(locale)}>
             <SavedToolsProvider publicSiteUrl={config.appUrl}>
               <GlobalToolSearchProvider publicSiteUrl={config.appUrl}>
-                <Analytics measurementId={measurementId(config.analytics)}>{children}</Analytics>
+                {publicTracking ? (
+                  <Analytics measurementId={measurementId(config.analytics)}>{children}</Analytics>
+                ) : (
+                  children
+                )}
               </GlobalToolSearchProvider>
             </SavedToolsProvider>
           </DirectionProvider>
         </NextIntlClientProvider>
-        <SpeedInsights />
+        {publicTracking ? <SpeedInsights /> : null}
       </body>
     </html>
   );

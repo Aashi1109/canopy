@@ -31,6 +31,7 @@ export function Analytics({ measurementId, children }: { measurementId: string |
   const [consent, setConsent] = useState<AnalyticsConsent>(null);
   const [ready, setReady] = useState(false);
   const [saved, setSaved] = useState(true);
+  const isPublicPage = ready && Boolean(publicPath(pathname, window.location.origin));
 
   useEffect(() => {
     const client = initializeAnalytics(window, measurementId);
@@ -58,12 +59,12 @@ export function Analytics({ measurementId, children }: { measurementId: string |
   return (
     <AnalyticsContext.Provider value={{ enabled: Boolean(measurementId), consent, choose, saved }}>
       <div role="status" className="sr-only">
-        {ready && measurementId && !isPrivacyPage && consent
+        {isPublicPage && measurementId && !isPrivacyPage && consent
           ? t(consent === "accepted" ? "acceptedNotice" : "declinedNotice")
           : ""}
       </div>
       {children}
-      {measurementId && ready && consent === null && publicPath(pathname) && !isPrivacyPage ? (
+      {measurementId && isPublicPage && consent === null && !isPrivacyPage ? (
         <section
           aria-label={t("optional")}
           className="sticky bottom-0 z-50 border-t border-border bg-card px-6 py-4 print:hidden"
@@ -84,7 +85,7 @@ export function Analytics({ measurementId, children }: { measurementId: string |
           </div>
         </section>
       ) : null}
-      {!saved && !isPrivacyPage && publicPath(pathname) ? (
+      {!saved && !isPrivacyPage && isPublicPage ? (
         <div role="status" className="sticky bottom-0 z-50 border-t border-border bg-card px-6 py-4 print:hidden">
           <Muted>{t.rich("saveFailedLink", { privacy: privacyLink })}</Muted>
         </div>

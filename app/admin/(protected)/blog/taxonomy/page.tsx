@@ -1,9 +1,6 @@
 import { appHref, getSubdomainOrigin, internalSubdomainPath } from "@/lib/routing/subdomains.ts";
-import Link from "next/link";
 import { z } from "zod";
 import { notFound } from "next/navigation";
-import { AdminPageHeader } from "../../components/AdminPageHeader";
-import { BackButton, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/index.tsx";
 import { requirePagePermission } from "@/lib/admin/access";
 import { listBlogTaxonomy } from "@/lib/blog/queries";
 import { BlogTaxonomy } from "../components/BlogTaxonomy";
@@ -33,36 +30,14 @@ export default async function BlogTaxonomyPage({
   }
   const terms = await listBlogTaxonomy(session.user.id, kind, { page: pageNumber });
   return (
-    <Tabs value={kind} className="h-full min-h-0 min-w-0 gap-5">
-      <div className="flex shrink-0 items-start gap-2">
-        <BackButton
-          href={editorHref ?? appHref("/admin/blog")}
-          label={editorHref ? "Back to editor" : "Back to posts"}
-          className="items-start pt-2"
-        />
-        <AdminPageHeader
-          className="mb-0 min-w-0"
-          title="Categories & tags"
-          description="Manage the topics and labels used across your posts."
-        />
-      </div>
-      <TabsList aria-label="Taxonomy type" className="w-full shrink-0">
-        <TabsTrigger asChild value="category" className="flex-none">
-          <Link href={taxonomyHref("category")}>Categories</Link>
-        </TabsTrigger>
-        <TabsTrigger asChild value="tag" className="flex-none">
-          <Link href={taxonomyHref("tag")}>Tags</Link>
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value={kind} className="flex min-h-0 flex-col">
-        <BlogTaxonomy
-          key={kind}
-          kind={kind}
-          terms={terms.items}
-          returnTo={editorHref}
-          pagination={{ page: terms.page, pageCount: terms.pageCount, total: terms.total, href: taxonomyHref(kind) }}
-        />
-      </TabsContent>
-    </Tabs>
+    <BlogTaxonomy
+      key={kind}
+      kind={kind}
+      terms={terms.items}
+      backHref={editorHref ?? appHref("/admin/blog")}
+      taxonomyHrefs={{ category: taxonomyHref("category"), tag: taxonomyHref("tag") }}
+      returnTo={editorHref}
+      pagination={{ page: terms.page, pageCount: terms.pageCount, total: terms.total, href: taxonomyHref(kind) }}
+    />
   );
 }

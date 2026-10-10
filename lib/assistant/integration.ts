@@ -64,9 +64,4 @@ export interface AssistantIntegration {
     signal: AbortSignal,
     authorize: (tx: AssistantTransaction) => Promise<StoredRun>,
   ): Promise<AuxiliaryResult | undefined>;
-  audit: {
-    prefix: string;
-    resourcePrefix: string;
-    resourceMetadata(resourceId: string | null): Record<string, unknown>;
-  };
 }

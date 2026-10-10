@@ -5,6 +5,7 @@ import type { Template } from "@pdfme/common";
 import type { AdvancedDocumentTemplate } from "@/lib/invoice-templates/index.ts";
 import { useEffect, useRef, useState } from "react";
 import { applyTemplateFormatting } from "@/lib/paperwork/advancedTemplateData";
+import { withPdfmeTextFormatting } from "@/lib/invoice-templates/pdfmeTextFormatting.ts";
 
 type PdfmeSchemas = typeof import("@pdfme/schemas");
 type ViewerInstance = InstanceType<(typeof import("@pdfme/ui"))["Viewer"]>;
@@ -25,7 +26,7 @@ interface AdvancedDocumentPreviewProps extends AdvancedDocumentPdfOptions {
 
 function allPdfmePlugins(schemas: PdfmeSchemas) {
   return {
-    text: schemas.text,
+    text: withPdfmeTextFormatting(schemas.text),
     multiVariableText: schemas.multiVariableText,
     list: schemas.list,
     image: schemas.image,

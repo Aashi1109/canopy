@@ -26,6 +26,7 @@ import {
   TextLink,
   AccountNavigation,
   AppContainer,
+  BackButton,
   Button,
   CatalogCard,
   EmptyState,
@@ -35,7 +36,7 @@ import {
   SectionHeading,
   buttonVariants,
 } from "@/components/ui/index.tsx";
-import { ArrowLeft, ArrowRight, ArrowUpRight, LayoutGrid, LockKeyhole, Search, ShieldCheck } from "lucide-react";
+import { ArrowRight, ArrowUpRight, LayoutGrid, LockKeyhole, Search, ShieldCheck } from "lucide-react";
 import { headers } from "next/headers";
 import { CategoryFilter } from "@/app/devtools/components/CategoryFilter";
 
@@ -195,13 +196,11 @@ export default async function HomePage({
           <CatalogListing category={category} className="pt-6 pb-12 sm:pb-16" query={query}>
             <AppContainer>
               {hasFilter ? (
-                <TextLink
-                  className="mb-2 inline-flex min-h-11 items-center gap-2 text-muted-foreground outline-none hover:text-foreground focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                <BackButton
+                  className="mb-2"
                   href={localizeHref(category && !query ? "/devtools?view=all" : "/devtools", locale)}
-                >
-                  <ArrowLeft aria-hidden="true" className="size-4" />
-                  {category && !query ? common("allTools") : t("clearFilters")}
-                </TextLink>
+                  label={category && !query ? common("allTools") : t("clearFilters")}
+                />
               ) : null}
               <SectionHeading
                 action={

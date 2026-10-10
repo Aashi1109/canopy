@@ -1,6 +1,7 @@
 "use client";
 
 import { appHref } from "@/lib/routing/subdomains.ts";
+import { supportsAdvancedTextBold, withPdfmeTextFormatting } from "@/lib/invoice-templates/pdfmeTextFormatting.ts";
 import type { Plugins, PropPanelWidgetProps, Schema, Template } from "@pdfme/common";
 import {
   getDocumentDefinition,
@@ -31,23 +32,29 @@ import {
   CheckboxControl,
   Field,
   Input,
+  InlineTextEditor,
   Label,
   Select,
   StatusBadge,
   Textarea,
-  buttonVariants,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
   typographyStyles,
   BackButton,
 } from "@/components/ui/index.tsx";
 import { OrderableList } from "@/components/ui/components/OrderableList.tsx";
 import {
   AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
   Barcode,
   Bold,
   Braces,
   CalendarClock,
   CalendarDays,
-  Check,
   ChevronDown,
   ChevronUp,
   Circle,
@@ -74,7 +81,6 @@ import {
   Plus,
   QrCode,
   Redo2,
-  Scan,
   Search,
   Shapes,
   Square,
@@ -87,13 +93,58 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import Link from "next/link";
 import { updateAdminQuery, useAdminQueryState } from "@/app/admin/hooks/useAdminQueryState";
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import type { Designer, DesignerSelection } from "@pdfme/ui";
 import { updateAndPublishTemplateAction, updateTemplateAction } from "../../../../../actions";
+import {
+  DESIGNER_ZOOM,
+  clampDesignerZoom,
+  getCanvasPanSpace,
+  getHorizontalRevealDelta,
+} from "../lib/designerViewport.ts";
 
 type ActivePanel = "add" | "layers" | "data" | "pages" | null;
+
+function DesignerToolPanel({
+  panel,
+  titleId,
+  children,
+}: {
+  panel: Exclude<ActivePanel, null>;
+  titleId: string;
+  children: ReactNode;
+}) {
+  const isPresent = useIsPresent();
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <motion.aside
+      aria-labelledby={titleId}
+      aria-hidden={!isPresent}
+      inert={!isPresent}
+      id={`advanced-editor-${panel}-panel`}
+      data-slot="designer-tool-panel"
+      initial={reduceMotion ? false : { opacity: 0, x: -12 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -12 }}
+      transition={{ duration: reduceMotion ? 0 : isPresent ? 0.24 : 0.16, ease: [0.22, 1, 0.36, 1] }}
+      className={`${isPresent ? "pointer-events-auto" : "pointer-events-none"} -ms-px flex h-full min-h-0 min-w-0 max-h-[574px] w-80 max-w-[calc(100vw-6.5rem)] shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-card`}
+    >
+      <motion.div
+        key={panel}
+        initial={reduceMotion ? false : { opacity: 0.88, x: 8 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: reduceMotion ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
+        className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+      >
+        {children}
+      </motion.div>
+    </motion.aside>
+  );
+}
+
 type Region = "header" | "footer";
 type LayerItem = {
   id: string;
@@ -117,6 +168,8 @@ type AddTool = {
 
 const HISTORY_LIMIT = 40;
 const MAX_RUNTIME_REPEATER_ROWS = 500;
+const TEXT_ALIGNMENTS = ["left", "center", "right", "justify"] as const;
+const TEXT_ALIGNMENT_ICONS = { left: AlignLeft, center: AlignCenter, right: AlignRight, justify: AlignJustify };
 const PAGE_FORMAT_LABELS: Record<PageFormat, string> = {
   A4: "A4",
   LETTER: "Letter",
@@ -284,14 +337,27 @@ function errorMessage(error: unknown) {
 const canopyBridge: {
   toggleRepeat: () => void;
   deleteElement: () => void;
+  nativeEditor: {
+    rootElement: HTMLDivElement;
+    schemaId: string;
+    schemaIds: string[];
+    changeSchemas: PropPanelWidgetProps["changeSchemas"];
+  } | null;
 } = {
   toggleRepeat: () => {},
   deleteElement: () => {},
+  nativeEditor: null,
 };
 
 function renderCanopyControls(props: PropPanelWidgetProps): void {
   try {
-    const { rootElement, activeSchema } = props;
+    const { rootElement, activeSchema, activeElements, changeSchemas } = props;
+    canopyBridge.nativeEditor = {
+      rootElement,
+      schemaId: activeSchema.id,
+      schemaIds: activeElements.map((element) => element.id),
+      changeSchemas,
+    };
     rootElement.replaceChildren();
     const repeating = Boolean((activeSchema as { smarttoolsRegion?: string }).smarttoolsRegion);
 
@@ -369,7 +435,7 @@ function withCanopyControls(plugin: PdfmePlugin): PdfmePlugin {
 async function loadPlugins(): Promise<Plugins> {
   const schemas = await import("@pdfme/schemas");
   const raw: Plugins = {
-    text: schemas.text,
+    text: withPdfmeTextFormatting(schemas.text),
     multiVariableText: schemas.multiVariableText,
     list: schemas.list,
     image: schemas.image,
@@ -399,7 +465,7 @@ function panelButtonClass(active: boolean) {
   return [
     "size-8 rounded-lg p-0 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
     active
-      ? "bg-primary/90 text-primary-foreground shadow-sm hover:bg-primary"
+      ? "bg-primary/90 text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground hover:[&_svg]:text-primary-foreground active:bg-primary active:text-primary-foreground active:[&_svg]:text-primary-foreground"
       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
   ].join(" ");
 }
@@ -416,6 +482,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
   const initialTemplate = useRef(cloneTemplate(template.config.template as Template));
   const deletePageDialogRef = useRef<HTMLDialogElement>(null);
   const designerContainerRef = useRef<HTMLDivElement>(null);
+  const toolsRef = useRef<HTMLDivElement>(null);
   const designerRef = useRef<Designer | null>(null);
   const pluginsRef = useRef<Plugins | null>(null);
   const currentTemplateRef = useRef(initialTemplate.current);
@@ -432,17 +499,28 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
 
   const [panelQuery, setPanelQuery] = useAdminQueryState("panel", "add", ["add", "layers", "data", "pages", "none"]);
   const activePanel: ActivePanel = panelQuery === "none" ? null : panelQuery;
+  const [panelRetained, setPanelRetained] = useState(Boolean(activePanel));
+  const panelAttached = Boolean(activePanel) || panelRetained;
+
   const setActivePanel = (panel: ActivePanel) => setPanelQuery(panel ?? "none");
   const [addQuery, setAddQuery] = useAdminQueryState<string>("q", "");
   const [expandedBindingKey, setExpandedBindingKey] = useState<string | null>(null);
   const [editingRegion, setEditingRegion] = useState<Region | null>(null);
   const [canvasMode, setCanvasMode] = useAdminQueryState("canvas", "select", ["pan", "select"]);
   const [designerReady, setDesignerReady] = useState(false);
+  const [canvasElement, setCanvasElement] = useState<HTMLElement | null>(null);
+  const alignedPageCountRef = useRef<number | null>(null);
   const [stripQuery, setStripQuery] = useAdminQueryState("strip", "open", ["open", "closed"]);
   const documentStripOpen = stripQuery === "open";
   const [error, setError] = useState("");
   const [focusQuery] = useAdminQueryState("focus", "false", ["false", "true"]);
   const focusMode = focusQuery === "true";
+
+  useEffect(() => {
+    if (focusMode) setPanelRetained(false);
+    else if (activePanel) setPanelRetained(true);
+  }, [activePanel, focusMode]);
+
   const [historyIndex, setHistoryIndex] = useState(0);
   const [isDirty, setIsDirty] = useState(true);
   const [isPreviewing, setIsPreviewing] = useState(false);
@@ -472,17 +550,53 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
   const [selection, setSelection] = useState<DesignerSelection | null>(null);
   const [templateRevision, setTemplateRevision] = useState(0);
   const [warnings, setWarnings] = useState<string[]>([]);
-  const [zoom, setZoom] = useState(0.85);
+  const [zoom, setZoom] = useState<number>(DESIGNER_ZOOM.initial);
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const syncViewportRef = useRef<() => void>(() => {});
+  const revealSelectionRef = useRef<() => void>(() => {});
+  const zoomAnchorRef = useRef<{
+    pageIndex: number;
+    x: number;
+    y: number;
+    viewportX: number;
+    viewportY: number;
+    width: number;
+  } | null>(null);
 
-  const selectedSchema = selection?.schemas[0] ?? null;
+  // Match the native inspector's last selected element in page order.
+  const selectedSchema =
+    selection?.schemas.reduce<DesignerSelection["schemas"][number] | null>(
+      (active, schema) => (!active || schema.schemaIndex > active.schemaIndex ? schema : active),
+      null,
+    ) ?? null;
   const selectedPdfmeSchema = selectedSchema
     ? currentTemplateRef.current.schemas[selectedSchema.pageIndex]?.[selectedSchema.schemaIndex]
     : undefined;
   const selectedBindingType = selectedPdfmeSchema ? schemaBindingType(selectedPdfmeSchema.type) : null;
+  const canBoldSelection = supportsAdvancedTextBold(selectedPdfmeSchema);
+  const canAlignSelection =
+    selectedPdfmeSchema &&
+    (["text", "multiVariableText"].includes(selectedPdfmeSchema.type) ||
+      typeof selectedPdfmeSchema.alignment === "string");
+  const alignmentIndex = Math.max(
+    0,
+    TEXT_ALIGNMENTS.findIndex((value) => value === selectedPdfmeSchema?.alignment),
+  );
+  const nextAlignment = TEXT_ALIGNMENTS[(alignmentIndex + 1) % TEXT_ALIGNMENTS.length];
+  const AlignmentIcon = TEXT_ALIGNMENT_ICONS[TEXT_ALIGNMENTS[alignmentIndex]];
   const schemas = currentTemplateRef.current.schemas[currentPage] ?? [];
   const staticSchemas = blankBase(currentTemplateRef.current).staticSchema ?? [];
   const repeatingHeaderCount = staticSchemas.filter((schema) => schema.smarttoolsRegion === "header").length;
   const repeatingFooterCount = staticSchemas.filter((schema) => schema.smarttoolsRegion === "footer").length;
+
+  useEffect(() => {
+    const inspector = designerContainerRef.current?.querySelector<HTMLElement>(".pdfme-designer-right-sidebar");
+    if (!inspector) return;
+    const hidden = !selectedSchema || focusMode;
+    inspector.inert = hidden;
+    inspector.setAttribute("aria-hidden", String(hidden));
+  }, [designerReady, selectedSchema, focusMode]);
 
   useEffect(() => {
     canopyBridge.deleteElement = () => deleteSelectedElement();
@@ -617,7 +731,8 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
           plugins,
           options: {
             sidebarOpen: false,
-            zoomLevel: 0.85,
+            zoomLevel: zoomRef.current,
+            maxZoom: DESIGNER_ZOOM.max * 100,
             theme: {
               token: {
                 colorPrimary: "#315fea",
@@ -630,9 +745,18 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
         });
         designerRef.current = designer;
         designer.onChangeTemplate((next) => rememberTemplate(next));
-        designer.onChangeSelection((next) => setSelection(next));
+        designer.onChangeSelection((next) => {
+          const nativeEditor = canopyBridge.nativeEditor;
+          if (
+            nativeEditor &&
+            (next.schemas.length !== nativeEditor.schemaIds.length ||
+              next.schemas.some((schema) => !nativeEditor.schemaIds.includes(schema.schemaId)))
+          ) {
+            canopyBridge.nativeEditor = null;
+          }
+          setSelection(next);
+        });
         designer.onPageChange(({ currentPage: page, totalPages }) => {
-          if (page === currentPageRef.current) restoringPageRef.current = false;
           if (!restoringPageRef.current) {
             updateAdminQuery({ page: page > 0 ? String(page + 1) : null }, true);
           }
@@ -650,7 +774,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
           const selected = firstPage[selectedIndex];
           designer.selectSchemas(selected ? [{ name: selected.name, pageIndex, schemaIndex: selectedIndex }] : [], {
             pageIndex,
-            scroll: true,
+            scroll: false,
           });
         }, 300);
       })
@@ -660,6 +784,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
 
     return () => {
       disposed = true;
+      canopyBridge.nativeEditor = null;
       if (designerRef.current) {
         designerRef.current.destroy();
         designerRef.current = null;
@@ -670,70 +795,217 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
   useEffect(() => {
     const container = designerContainerRef.current;
     if (!designerReady || !container) return;
-    restoringPageRef.current = designerRef.current?.getPageCursor() !== currentPage;
-    const scrollToPage = () => {
+    let frame = 0;
+    let observedCanvas: HTMLElement | null = null;
+
+    const syncWorkspace = () => {
       const canvas = container.querySelector<HTMLElement>(".pdfme-designer-canvas");
-      const paper = canvas?.querySelectorAll<HTMLElement>("div[style*=background-image]")[currentPage];
-      if (!canvas || !paper) return false;
-      if (designerRef.current?.getPageCursor() === currentPage) restoringPageRef.current = false;
-      // pdfme's selection API cannot navigate to an empty page; scroll its actual paper.
-      canvas.scrollTop += paper.getBoundingClientRect().top - canvas.getBoundingClientRect().top;
-      return true;
+      const papers = canvas?.querySelectorAll<HTMLElement>("div[style*=background-image]");
+      if (!canvas || !papers?.length || !canvas.clientWidth || !canvas.clientHeight) return;
+      if (observedCanvas !== canvas) {
+        if (observedCanvas) resizeObserver.unobserve(observedCanvas);
+        observedCanvas = canvas;
+        setCanvasElement(canvas);
+        resizeObserver.observe(canvas);
+      }
+      const viewport = canvas.getBoundingClientRect();
+      const oldGutterX = Number.parseFloat(canvas.style.getPropertyValue("--canvas-gutter-x")) || 0;
+      const oldGutterY = Number.parseFloat(canvas.style.getPropertyValue("--canvas-gutter-y")) || 0;
+      const bounds = Array.from(papers, (paper) => paper.getBoundingClientRect());
+      const space = getCanvasPanSpace(
+        { width: canvas.clientWidth, height: canvas.clientHeight },
+        {
+          right: Math.max(...bounds.map((bounds) => bounds.right - viewport.left + canvas.scrollLeft - oldGutterX)),
+          bottom: Math.max(...bounds.map((bounds) => bounds.bottom - viewport.top + canvas.scrollTop - oldGutterY)),
+        },
+      );
+      for (const [key, value] of Object.entries({
+        "--canvas-gutter-x": space.gutterX,
+        "--canvas-gutter-y": space.gutterY,
+        "--canvas-scroll-width": space.width,
+        "--canvas-scroll-height": space.height,
+      })) {
+        const pixels = `${value}px`;
+        if (canvas.style.getPropertyValue(key) !== pixels) canvas.style.setProperty(key, pixels);
+      }
+      // Gutters are outside pdfme's scale, so resizing the workspace must not move the page.
+      canvas.scrollLeft += space.gutterX - oldGutterX;
+      canvas.scrollTop += space.gutterY - oldGutterY;
+      const anchor = zoomAnchorRef.current;
+      const page = anchor && papers[anchor.pageIndex];
+      if (anchor && page) {
+        const bounds = page.getBoundingClientRect();
+        if (Math.abs(bounds.width - anchor.width) > 0.01) {
+          // Restore the same document point after pdfme's own zoom layout has settled.
+          canvas.scrollLeft += bounds.left + anchor.x * bounds.width - viewport.left - anchor.viewportX;
+          canvas.scrollTop += bounds.top + anchor.y * bounds.height - viewport.top - anchor.viewportY;
+          zoomAnchorRef.current = null;
+          revealSelectionRef.current();
+        }
+      }
     };
-    if (scrollToPage()) return;
+    const scheduleSync = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(syncWorkspace);
+    };
+    const resizeObserver = new ResizeObserver(scheduleSync);
+    const observer = new MutationObserver(scheduleSync);
+    observer.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ["style"] });
+    resizeObserver.observe(container);
+    syncViewportRef.current = syncWorkspace;
+    syncWorkspace();
+    return () => {
+      window.cancelAnimationFrame(frame);
+      resizeObserver.disconnect();
+      observer.disconnect();
+      syncViewportRef.current = () => {};
+    };
+  }, [designerReady]);
+
+  useEffect(() => {
+    const reveal = () => {
+      const container = designerContainerRef.current;
+      const canvas = container?.querySelector<HTMLElement>(".pdfme-designer-canvas");
+      const node =
+        selectedSchema && container?.querySelector<HTMLElement>(`[id="${CSS.escape(selectedSchema.schemaId)}"]`);
+      if (!canvas || !node || focusMode) return;
+      const viewport = canvas.getBoundingClientRect();
+      let left = viewport.left + 16;
+      let right = viewport.right - 16;
+      const inspector = container?.querySelector<HTMLElement>(".pdfme-designer-right-sidebar");
+      if (inspector) {
+        const bounds = inspector.getBoundingClientRect();
+        const translation = new DOMMatrixReadOnly(getComputedStyle(inspector).transform).m41;
+        right = Math.min(right, bounds.left - translation - 16);
+      }
+      const panel = activePanel && toolsRef.current?.querySelector<HTMLElement>('[data-slot="designer-tool-panel"]');
+      if (panel) left = Math.max(left, panel.getBoundingClientRect().right + 16);
+      if (right <= left) return;
+      canvas.scrollLeft += getHorizontalRevealDelta(node.getBoundingClientRect(), { left, right });
+    };
+    revealSelectionRef.current = reveal;
+    const frame = window.requestAnimationFrame(() => {
+      syncViewportRef.current();
+      reveal();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [selectedSchema?.schemaId, activePanel, focusMode, designerReady]);
+
+  function alignPageViewport(pageIndex: number) {
+    const canvas = designerContainerRef.current?.querySelector<HTMLElement>(".pdfme-designer-canvas");
+    const paper = canvas?.querySelectorAll<HTMLElement>("div[style*=background-image]")[pageIndex];
+    if (!canvas || !paper) return false;
+    syncViewportRef.current();
+    canvas.scrollTop += paper.getBoundingClientRect().top - canvas.getBoundingClientRect().top - 16;
+    restoringPageRef.current = false;
+    return true;
+  }
+
+  useEffect(() => {
+    const container = designerContainerRef.current;
+    if (!designerReady || !container) return;
+    // Native page changes while scrolling must not recenter an ongoing pan.
+    if (
+      !restoringPageRef.current &&
+      designerRef.current?.getPageCursor() === currentPage &&
+      alignedPageCountRef.current === pageCount
+    )
+      return;
+    alignedPageCountRef.current = pageCount;
+    if (alignPageViewport(currentPage)) return;
     const observer = new MutationObserver(() => {
-      if (scrollToPage()) observer.disconnect();
+      if (alignPageViewport(currentPage)) observer.disconnect();
     });
     observer.observe(container, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, [currentPage, designerReady, pageCount]);
 
   useEffect(() => {
-    if (!designerReady || canvasMode !== "pan") return;
-    const canvas = designerContainerRef.current?.querySelector<HTMLElement>(".pdfme-designer-canvas");
+    const canvas = canvasElement;
     if (!canvas) return;
+    const zoomWithWheel = (event: WheelEvent) => {
+      if ((!event.ctrlKey && !event.metaKey) || !event.deltaY) return;
+      event.preventDefault();
+      event.stopPropagation();
+      updateZoom(zoomRef.current * Math.exp(-event.deltaY * 0.002));
+    };
+    canvas.addEventListener("wheel", zoomWithWheel, { capture: true, passive: false });
+    return () => canvas.removeEventListener("wheel", zoomWithWheel, true);
+  }, [canvasElement]);
 
-    let dragging = false;
+  useEffect(() => {
+    const canvas = canvasElement;
+    if (!canvas || canvasMode !== "pan") return;
+
+    let pointerId: number | null = null;
     let previousX = 0;
     let previousY = 0;
+    const oldCursor = canvas.style.cursor;
+    const oldTouchAction = canvas.style.touchAction;
+    const isControl = (target: EventTarget | null) =>
+      target instanceof Element && Boolean(target.closest('input, textarea, select, button, [contenteditable="true"]'));
 
     const startPan = (event: PointerEvent) => {
-      dragging = true;
+      if (!event.isPrimary || event.button !== 0 || pointerId !== null || isControl(event.target)) return;
+      const viewport = canvas.getBoundingClientRect();
+      if (event.clientX >= viewport.left + canvas.clientWidth || event.clientY >= viewport.top + canvas.clientHeight)
+        return;
+      pointerId = event.pointerId;
       previousX = event.clientX;
       previousY = event.clientY;
       canvas.setPointerCapture(event.pointerId);
+      canvas.style.cursor = "grabbing";
       event.preventDefault();
-      event.stopPropagation();
+      event.stopImmediatePropagation();
     };
     const movePan = (event: PointerEvent) => {
-      if (!dragging) return;
+      if (event.pointerId !== pointerId) return;
       canvas.scrollLeft -= event.clientX - previousX;
       canvas.scrollTop -= event.clientY - previousY;
       previousX = event.clientX;
       previousY = event.clientY;
       event.preventDefault();
-      event.stopPropagation();
+      event.stopImmediatePropagation();
     };
-    const stopPan = (event: PointerEvent) => {
-      dragging = false;
-      if (canvas.hasPointerCapture(event.pointerId)) {
-        canvas.releasePointerCapture(event.pointerId);
-      }
+    const stopPan = () => {
+      const captured = pointerId;
+      pointerId = null;
+      canvas.style.cursor = "grab";
+      if (captured !== null && canvas.hasPointerCapture(captured)) canvas.releasePointerCapture(captured);
+    };
+    const stopNativeDrag = (event: MouseEvent) => {
+      if (event.button !== 0 || isControl(event.target)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    const stopNativeTouchDrag = (event: TouchEvent) => {
+      if (event.touches.length !== 1 || isControl(event.target)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
     };
 
     canvas.style.cursor = "grab";
+    canvas.style.touchAction = "none";
     canvas.addEventListener("pointerdown", startPan, true);
     canvas.addEventListener("pointermove", movePan, true);
     canvas.addEventListener("pointerup", stopPan, true);
     canvas.addEventListener("pointercancel", stopPan, true);
+    canvas.addEventListener("lostpointercapture", stopPan, true);
+    canvas.addEventListener("mousedown", stopNativeDrag, true);
+    canvas.addEventListener("touchstart", stopNativeTouchDrag, { capture: true, passive: false });
     return () => {
-      canvas.style.cursor = "";
+      stopPan();
+      canvas.style.cursor = oldCursor;
+      canvas.style.touchAction = oldTouchAction;
       canvas.removeEventListener("pointerdown", startPan, true);
       canvas.removeEventListener("pointermove", movePan, true);
       canvas.removeEventListener("pointerup", stopPan, true);
       canvas.removeEventListener("pointercancel", stopPan, true);
+      canvas.removeEventListener("lostpointercapture", stopPan, true);
+      canvas.removeEventListener("mousedown", stopNativeDrag, true);
+      canvas.removeEventListener("touchstart", stopNativeTouchDrag, true);
     };
-  }, [canvasMode, designerReady]);
+  }, [canvasMode, canvasElement]);
 
   function togglePanel(panel: Exclude<ActivePanel, null>) {
     setActivePanel(activePanel === panel ? null : panel);
@@ -746,8 +1018,14 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
   }
 
   function closePanels() {
+    const panel = toolsRef.current?.querySelector('[data-slot="designer-tool-panel"]');
+    const trigger =
+      activePanel && panel?.contains(document.activeElement)
+        ? toolsRef.current?.querySelector<HTMLButtonElement>(`[data-panel="${activePanel}"]`)
+        : null;
     setActivePanel(null);
     setEditingRegion(null);
+    trigger?.focus({ preventScroll: true });
   }
 
   function restoreHistory(direction: -1 | 1) {
@@ -792,9 +1070,25 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
   }
 
   function updateZoom(next: number) {
-    const value = Math.min(1.5, Math.max(0.4, next));
+    const value = clampDesignerZoom(next);
+    if (value === zoomRef.current) return;
+    const canvas = designerContainerRef.current?.querySelector<HTMLElement>(".pdfme-designer-canvas");
+    const page = canvas?.querySelectorAll<HTMLElement>("div[style*=background-image]")[currentPageRef.current];
+    if (canvas && page) {
+      const viewport = canvas.getBoundingClientRect();
+      const bounds = page.getBoundingClientRect();
+      zoomAnchorRef.current = {
+        pageIndex: currentPageRef.current,
+        x: (viewport.left + canvas.clientWidth / 2 - bounds.left) / bounds.width,
+        y: (viewport.top + canvas.clientHeight / 2 - bounds.top) / bounds.height,
+        viewportX: canvas.clientWidth / 2,
+        viewportY: canvas.clientHeight / 2,
+        width: bounds.width,
+      };
+    }
+    zoomRef.current = value;
     setZoom(value);
-    designerRef.current?.updateOptions({ zoomLevel: value });
+    designerRef.current?.updateOptions({ zoomLevel: value, maxZoom: DESIGNER_ZOOM.max * 100 });
   }
 
   function replacePageSchemas(nextSchemas: Schema[]) {
@@ -849,7 +1143,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
           pageIndex: currentPage,
           schemaIndex: schemaIndex - 1,
         },
-        { pageIndex: currentPage, scroll: true },
+        { pageIndex: currentPage, scroll: false },
       );
     });
   }
@@ -861,7 +1155,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
         pageIndex: currentPage,
         schemaIndex: item.index,
       },
-      { pageIndex: currentPage, scroll: true },
+      { pageIndex: currentPage, scroll: false },
     );
   }
 
@@ -875,13 +1169,25 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
   }
 
   function updateSelectedSchema(update: (schema: Schema) => void) {
-    const selected = selection?.schemas[0];
-    if (!selected) return;
-    const next = cloneTemplate(currentTemplateRef.current);
-    const schema = next.schemas[selected.pageIndex]?.[selected.schemaIndex];
-    if (!schema) return;
-    update(schema);
-    applyTemplate(next);
+    const nativeEditor = canopyBridge.nativeEditor;
+    const selected = designerRef.current?.getSelection().schemas ?? [];
+    if (
+      !nativeEditor?.rootElement.isConnected ||
+      selected.length !== nativeEditor.schemaIds.length ||
+      selected.some((schema) => !nativeEditor.schemaIds.includes(schema.schemaId))
+    ) {
+      canopyBridge.nativeEditor = null;
+      return;
+    }
+    const active = selected.find((schema) => schema.schemaId === nativeEditor.schemaId);
+    const schema = active && currentTemplateRef.current.schemas[active.pageIndex]?.[active.schemaIndex];
+    if (!schema || schema.name !== active?.name) return;
+    const next = structuredClone(schema);
+    update(next);
+    const changes = [...new Set([...Object.keys(schema), ...Object.keys(next)])]
+      .filter((key) => JSON.stringify(schema[key]) !== JSON.stringify(next[key]))
+      .map((key) => ({ key, value: next[key], schemaId: nativeEditor.schemaId }));
+    if (changes.length > 0) nativeEditor.changeSchemas(changes);
   }
 
   function duplicateSelectedElement() {
@@ -913,7 +1219,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
           pageIndex: selected.pageIndex,
           schemaIndex,
         },
-        { pageIndex: selected.pageIndex, scroll: true },
+        { pageIndex: selected.pageIndex, scroll: false },
       );
     });
   }
@@ -958,11 +1264,12 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
     setSelection(null);
     setEditingRegion(null);
     setCurrentPage(pageIndex);
+    window.requestAnimationFrame(() => alignPageViewport(pageIndex));
     const firstSchema = currentTemplateRef.current.schemas[pageIndex]?.[0];
     if (firstSchema) {
       designerRef.current?.selectSchemas(
         { name: firstSchema.name, pageIndex, schemaIndex: 0 },
-        { pageIndex, scroll: true },
+        { pageIndex, scroll: false },
       );
     }
   }
@@ -1167,7 +1474,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
           pageIndex: currentPage,
           schemaIndex,
         },
-        { pageIndex: currentPage, scroll: true },
+        { pageIndex: currentPage, scroll: false },
       );
     });
   }
@@ -1217,12 +1524,11 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
     const panelTitleId = `advanced-editor-${activePanel}-panel-title`;
 
     return (
-      <aside
-        aria-labelledby={panelTitleId}
-        className="absolute bottom-5 left-[5.5rem] top-[4.625rem] z-30 flex min-h-0 max-h-[574px] w-[17.5rem] flex-col overflow-hidden rounded-r-xl rounded-bl-xl border border-border bg-card shadow-[0_8px_24px_rgba(17,18,20,0.06)]"
-      >
-        <div className="flex h-12 shrink-0 items-center justify-between px-3">
-          <H3 id={panelTitleId}>{panelTitle}</H3>
+      <DesignerToolPanel key="designer-tools" panel={activePanel} titleId={panelTitleId}>
+        <div className="flex h-12 min-w-0 shrink-0 items-center justify-between gap-2 px-3">
+          <H3 className="min-w-0 truncate" id={panelTitleId}>
+            {panelTitle}
+          </H3>
           <Button
             aria-label={`Close ${activePanel} panel`}
             className="text-muted-foreground"
@@ -1236,9 +1542,9 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
         </div>
 
         {activePanel === "add" ? (
-          <div className="flex min-h-0 flex-1 flex-col gap-2.5 px-3 pb-3">
-            <Label className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-border bg-muted px-2.5 text-muted-foreground focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
-              <Search aria-hidden="true" size={15} />
+          <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col gap-2.5 px-3 pb-3">
+            <Label className="flex h-9 min-w-0 w-full shrink-0 items-center gap-2 rounded-lg border border-border bg-muted px-2.5 text-muted-foreground focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
+              <Search aria-hidden="true" className="shrink-0" size={15} />
               <input
                 aria-label="Search elements"
                 className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
@@ -1248,7 +1554,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                 value={addQuery}
               />
             </Label>
-            <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto">
+            <div className="min-h-0 min-w-0 w-full flex-1 space-y-2.5 overflow-x-hidden overflow-y-auto">
               {ADD_TOOL_GROUPS.filter((group) => group !== "Codes").map((group) => {
                 const visibleTools = ADD_TOOLS.filter((tool) => {
                   const displayGroup = tool.group === "Codes" ? "Fields" : tool.group;
@@ -1265,7 +1571,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                     <Overline className="mb-1 block px-1 text-muted-foreground">
                       {group === "Fields" ? "Fields & codes" : group}
                     </Overline>
-                    <div className="grid gap-1">
+                    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1">
                       {visibleTools.map((tool) => {
                         const Icon = tool.icon;
                         return (
@@ -1281,7 +1587,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                               <Icon aria-hidden="true" size={15} />
                             </span>
                             <span className="min-w-0 flex-1">
-                              <Caption className="block text-foreground group-hover:text-accent-foreground">
+                              <Caption className="block truncate text-foreground group-hover:text-accent-foreground">
                                 {tool.label}
                               </Caption>
                               <Caption className="block truncate text-muted-foreground group-hover:text-accent-foreground">
@@ -1290,7 +1596,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                             </span>
                             <Plus
                               aria-hidden="true"
-                              className="text-muted-foreground group-hover:text-accent-foreground"
+                              className="shrink-0 text-muted-foreground group-hover:text-accent-foreground"
                               size={13}
                             />
                           </button>
@@ -1305,8 +1611,8 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
         ) : null}
 
         {activePanel === "layers" ? (
-          <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
-            <div className="mb-2 flex items-center justify-between text-muted-foreground">
+          <div className="min-h-0 min-w-0 w-full flex-1 overflow-x-hidden overflow-y-auto px-3 pb-3">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-muted-foreground">
               <Caption>
                 {layerItems.length ? "Populated" : "Empty"} · Page {currentPage + 1}
               </Caption>
@@ -1315,13 +1621,13 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
             {layerItems.length ? (
               <OrderableList
                 ariaLabel={`Layers on page ${currentPage + 1}`}
-                className="grid gap-1"
+                className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1 [&>li]:min-w-0"
                 getId={(item) => item.id}
                 items={layerItems}
                 onReorder={(items) => replacePageSchemas(items.map((item) => item.schema))}
                 renderItem={(item, state) => (
                   <div
-                    className={`flex h-8 items-center gap-1.5 rounded border px-1.5 ${
+                    className={`flex h-8 min-w-0 w-full items-center gap-1.5 rounded border px-1.5 ${
                       state.isDragging ? "border-primary bg-primary/5 shadow-md" : "border-border bg-card"
                     }`}
                   >
@@ -1343,7 +1649,9 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                     >
                       <Caption>{item.schema.name}</Caption>
                     </button>
-                    <Overline className="mr-1 text-muted-foreground">{item.schema.type}</Overline>
+                    <Overline className="mr-1 max-w-20 shrink-0 truncate text-muted-foreground">
+                      {item.schema.type}
+                    </Overline>
                   </div>
                 )}
               />
@@ -1360,19 +1668,19 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
         ) : null}
 
         {activePanel === "data" ? (
-          <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
-            <div className="mb-3 flex h-10 items-center justify-between rounded-lg bg-muted px-3">
-              <div>
+          <div className="min-h-0 min-w-0 w-full flex-1 overflow-x-hidden overflow-y-auto px-3 pb-3">
+            <div className="mb-3 flex h-10 min-w-0 items-center justify-between gap-2 rounded-lg bg-muted px-3">
+              <div className="min-w-0 flex-1">
                 <Overline className="block text-muted-foreground">Document type</Overline>
-                <Caption className="block ">{definition.label}</Caption>
+                <Caption className="block truncate">{definition.label}</Caption>
               </div>
-              <ChevronDown aria-hidden="true" className="text-muted-foreground" size={14} />
+              <ChevronDown aria-hidden="true" className="shrink-0 text-muted-foreground" size={14} />
             </div>
             <Overline className="block mb-2 text-muted-foreground">Canvas bindings</Overline>
-            <div className="grid gap-2">
+            <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2">
               {Array.from(new Set(definition.fields.map((field) => field.section))).map((fieldSection) => (
-                <section className="grid gap-1.5" key={fieldSection}>
-                  <Overline className="text-muted-foreground">{fieldSection}</Overline>
+                <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1.5" key={fieldSection}>
+                  <Overline className="break-words text-muted-foreground">{fieldSection}</Overline>
                   {definition.fields
                     .filter((field) => field.section === fieldSection)
                     .map((field) => {
@@ -1380,7 +1688,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                       const compatible =
                         selectedBindingType !== null && field.allowedBindingTypes.includes(selectedBindingType);
                       return (
-                        <div className="rounded-lg border border-border bg-card p-2" key={field.key}>
+                        <div className="min-w-0 w-full rounded-lg border border-border bg-card p-2" key={field.key}>
                           <div className="flex items-center gap-2">
                             <button
                               aria-expanded={expandedBindingKey === field.key}
@@ -1405,10 +1713,10 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                               Bind
                             </Button>
                           </div>
-                          <div className="mt-1.5 flex items-center gap-1.5">
+                          <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5">
                             <StatusBadge className="px-1.5 py-0">{field.source}</StatusBadge>
                             <StatusBadge className="px-1.5 py-0">{field.valueType}</StatusBadge>
-                            <Text className="min-w-0 truncate text-muted-foreground">
+                            <Text className="min-w-0 flex-1 truncate text-muted-foreground">
                               {String(sampleData[field.key] ?? field.sampleValue ?? "No sample")}
                             </Text>
                           </div>
@@ -1439,8 +1747,8 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
               <AccordionItem value="published-form">
                 <AccordionTrigger className="py-3 text-muted-foreground">Published form configuration</AccordionTrigger>
                 <AccordionContent className="pb-0">
-                  <div className="mt-3 flex items-center justify-between gap-2">
-                    <div>
+                  <div className="mt-3 flex min-w-0 flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
                       <H3>Published form</H3>
                       <Caption className="block text-muted-foreground">
                         Drag handles work with pointer and keyboard.
@@ -1454,13 +1762,13 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
 
                   <OrderableList
                     ariaLabel="Form sections"
-                    className="mt-3 grid gap-3"
+                    className="mt-3 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3 [&>li]:min-w-0"
                     getId={(section) => section.id}
                     getLabel={(section) => section.label}
                     items={form.sections}
                     onReorder={setFormSections}
                     renderItem={(section, sectionOrderState) => (
-                      <section className="rounded-xl border border-border bg-background p-3">
+                      <section className="min-w-0 w-full rounded-xl border border-border bg-background p-3">
                         <div className="flex items-center gap-2">
                           <Button
                             {...sectionOrderState.attributes}
@@ -1476,7 +1784,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                           </Button>
                           <Input
                             aria-label="Section label"
-                            className="h-8"
+                            className="h-8 min-w-0 flex-1"
                             onChange={(event) =>
                               updateSection(section.id, (current) => ({
                                 ...current,
@@ -1502,7 +1810,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
 
                         <OrderableList
                           ariaLabel={`Fields in ${section.label}`}
-                          className="mt-3 grid gap-2"
+                          className="mt-3 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 [&>li]:min-w-0"
                           getId={(entry) => entry.key}
                           getLabel={(entry) => entry.label}
                           items={section.entries}
@@ -1526,7 +1834,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                                   ? selectedBindingType === "table"
                                   : selectedBindingType === "text");
                             return (
-                              <div className="grid gap-2 rounded-lg border border-border bg-card p-2.5">
+                              <div className="grid min-w-0 w-full grid-cols-[minmax(0,1fr)] gap-2 rounded-lg border border-border bg-card p-2.5">
                                 <div className="flex items-center gap-2">
                                   <Button
                                     {...entryOrderState.attributes}
@@ -1567,7 +1875,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                                   <StatusBadge>
                                     {entry.kind === "builtin" ? definitionField?.source : "custom"}
                                   </StatusBadge>
-                                  <Text className="max-w-48 truncate text-muted-foreground">{entry.key}</Text>
+                                  <Text className="min-w-0 max-w-full truncate text-muted-foreground">{entry.key}</Text>
                                   <span className="ml-auto flex items-center gap-1">
                                     <CheckboxControl
                                       className="size-4"
@@ -1686,7 +1994,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                                 ) : null}
 
                                 {entry.kind === "repeater" ? (
-                                  <div className="grid gap-2 rounded-lg bg-muted/40 p-2">
+                                  <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 rounded-lg bg-muted/40 p-2">
                                     <Field
                                       className="gap-1 [&_[data-slot=field-label]]:text-foreground"
                                       htmlFor={`${section.id}-${entry.key}-min-rows`}
@@ -1712,7 +2020,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                                     </Field>
                                     <OrderableList
                                       ariaLabel={`${entry.label} columns`}
-                                      className="grid gap-1.5"
+                                      className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1.5 [&>li]:min-w-0"
                                       getId={(column) => column.key}
                                       getLabel={(column) => column.label}
                                       items={entry.columns}
@@ -1722,7 +2030,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                                         )
                                       }
                                       renderItem={(column, columnOrderState) => (
-                                        <div className="grid grid-cols-[2rem_1fr_7rem_2rem] items-center gap-1 rounded-md border border-border bg-background p-1">
+                                        <div className="grid min-w-0 w-full grid-cols-[2rem_minmax(0,1fr)_2.25rem] items-center gap-1 rounded-md border border-border bg-background p-1">
                                           <Button
                                             {...columnOrderState.attributes}
                                             {...columnOrderState.listeners}
@@ -1737,7 +2045,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                                           </Button>
                                           <Input
                                             aria-label={`${column.key} column label`}
-                                            className="h-8"
+                                            className="h-8 min-w-0"
                                             onChange={(event) =>
                                               updateFormEntry(section.id, entry.key, (current) =>
                                                 current.kind === "repeater"
@@ -1759,7 +2067,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                                           />
                                           <Select
                                             aria-label={`${column.label} control`}
-                                            className="h-8"
+                                            className="col-span-3 row-start-2 h-8 min-w-0 w-full"
                                             onChange={(event) =>
                                               updateFormEntry(section.id, entry.key, (current) =>
                                                 current.kind === "repeater"
@@ -1785,6 +2093,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                                           </Select>
                                           <Button
                                             aria-label={`Remove ${column.label} column`}
+                                            className="col-start-3 row-start-1"
                                             disabled={entry.columns.length === 1}
                                             onClick={() =>
                                               updateFormEntry(section.id, entry.key, (current) =>
@@ -1807,7 +2116,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                                           {column.control === "select" ? (
                                             <Input
                                               aria-label={`${column.label} options`}
-                                              className="col-span-4 h-8"
+                                              className="col-span-3 h-8 min-w-0"
                                               onChange={(event) =>
                                                 updateFormEntry(section.id, entry.key, (current) =>
                                                   current.kind === "repeater"
@@ -1875,7 +2184,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                           }}
                         />
 
-                        <div className="mt-3 grid grid-cols-2 gap-2">
+                        <div className="mt-3 grid min-w-0 grid-cols-1 gap-2">
                           <Button
                             onClick={() => addCustomEntry(section.id, "custom")}
                             size="sm"
@@ -1903,8 +2212,8 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
         ) : null}
 
         {activePanel === "pages" ? (
-          <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
-            <div className="flex items-center justify-between text-muted-foreground">
+          <div className="min-h-0 min-w-0 w-full flex-1 overflow-x-hidden overflow-y-auto px-3 pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-muted-foreground">
               <Overline>Document pages</Overline>
               <button
                 className="text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -1959,10 +2268,10 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                 <Plus aria-hidden="true" size={13} strokeWidth={1.75} />
               </Button>
             </div>
-            <div className="mt-2 grid gap-1.5">
+            <div className="mt-2 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1.5">
               {currentTemplateRef.current.schemas.map((page, index) => (
                 <div
-                  className={`flex h-12 items-center gap-2 rounded-lg border px-2 ${
+                  className={`flex h-12 min-w-0 w-full items-center gap-2 rounded-lg border px-2 ${
                     currentPage === index ? "border-primary bg-primary/10" : "border-border bg-card"
                   }`}
                   key={`page-${index}`}
@@ -1980,9 +2289,9 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                     >
                       {index + 1}
                     </Text>
-                    <span className="min-w-0">
-                      <Caption className="block">Page {index + 1}</Caption>
-                      <Caption className="block text-muted-foreground">{page.length} elements</Caption>
+                    <span className="min-w-0 flex-1">
+                      <Caption className="block truncate">Page {index + 1}</Caption>
+                      <Caption className="block truncate text-muted-foreground">{page.length} elements</Caption>
                     </span>
                   </button>
                   <div className="flex shrink-0 items-center gap-0.5">
@@ -2009,7 +2318,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
             </div>
 
             <div className="mt-4 border-t border-border pt-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <Overline className="text-muted-foreground">Repeating regions</Overline>
                 <Caption className={selection?.schemas.length ? "text-primary" : "text-muted-foreground"}>
                   {selection?.schemas.length ? "Elements ready" : "No selection"}
@@ -2046,8 +2355,8 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                         strokeWidth={1.75}
                       />
                       <div className="min-w-0 flex-1">
-                        <Caption className="block ">{region}</Caption>
-                        <Muted className={` ${editing || assigned ? "text-primary" : "text-muted-foreground"}`}>
+                        <Caption className="block truncate">{region}</Caption>
+                        <Muted className={`truncate ${editing || assigned ? "text-primary" : "text-muted-foreground"}`}>
                           {state}
                         </Muted>
                       </div>
@@ -2076,7 +2385,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                         className={`flex h-8 items-center justify-between gap-2 rounded-md border px-2 ${editing ? "border-primary bg-primary/10" : "border-border bg-card"}`}
                         key={`${schema.name}-${index}`}
                       >
-                        <Text className="min-w-0 truncate">
+                        <Text className="min-w-0 flex-1 truncate">
                           {schema.name} · {String(region ?? "repeat")}
                         </Text>
                         <Button
@@ -2096,7 +2405,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
             </div>
           </div>
         ) : null}
-      </aside>
+      </DesignerToolPanel>
     );
   }
 
@@ -2110,25 +2419,22 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
             Freeform positioning needs a larger workspace. You can still preview and use published templates from
             smaller devices.
           </Muted>
-          <Link
-            className={buttonVariants({ className: "mt-5", variant: "secondary" })}
-            href={appHref("/admin/templates")}
-          >
-            Back to templates
-          </Link>
+          <BackButton className="mt-5" href={appHref("/admin/templates")} label="Back to templates" />
         </Card>
       </div>
 
       <main className="relative hidden h-dvh min-w-[1024px] flex-col overflow-hidden bg-background lg:flex">
-        <header className="flex h-16 shrink-0 items-center gap-2.5 bg-card px-4">
+        <header className="flex min-h-16 shrink-0 items-center gap-2.5 bg-card px-4 py-2">
           <BackButton href={appHref("/admin/templates")} label="Back to template lifecycle" className="shrink-0" />
           <div className="w-[18.75rem] min-w-0 shrink-0">
-            <div className="flex h-8 items-center gap-2">
-              <Input
-                aria-label="Template name"
-                className="h-7 min-w-20 max-w-[210px] [field-sizing:content] bg-transparent text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                onChange={(event) => {
-                  setName(event.target.value);
+            <div className="flex min-h-8 items-start gap-2">
+              <InlineTextEditor
+                activation="click"
+                showKeyboardHint={false}
+                label="Template name"
+                className="min-w-0 max-w-[210px] py-1 text-sm font-semibold text-foreground"
+                onChange={(nextName) => {
+                  setName(nextName);
                   setIsDirty(true);
                 }}
                 value={name}
@@ -2150,56 +2456,8 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
               Templates / Advanced · {definition.label} · {PAGE_FORMAT_LABELS[pageFormat]} · Version {template.version}
             </Caption>
           </div>
-          <span className="flex h-9 w-[118px] shrink-0 items-center rounded-lg border border-border bg-muted">
-            <Select
-              aria-label="Page size"
-              className="h-9 w-full border-0 bg-transparent px-2.5 shadow-none"
-              disabled={!designerReady || isSaving}
-              onChange={(event) => changePageFormat(event.target.value as PageFormat)}
-              value={pageFormat}
-            >
-              {definition.allowedPageFormats.map((format) => (
-                <option key={format} value={format}>
-                  {definition.label} · {PAGE_FORMAT_LABELS[format]}
-                </option>
-              ))}
-            </Select>
-          </span>
 
           <div className="ml-auto flex min-w-0 items-center gap-1.5">
-            <Button
-              aria-label="Undo"
-              disabled={historyIndex === 0}
-              onClick={() => restoreHistory(-1)}
-              className="size-9 text-muted-foreground"
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <Undo2 aria-hidden="true" size={16} />
-            </Button>
-            <Button
-              aria-label="Redo"
-              disabled={historyIndex >= historyRef.current.length - 1}
-              onClick={() => restoreHistory(1)}
-              className="size-9 text-muted-foreground"
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <Redo2 aria-hidden="true" size={16} />
-            </Button>
-            <Button
-              className="h-9 px-3.5"
-              disabled={!designerReady || isPreviewing}
-              loading={isPreviewing}
-              onClick={() => void previewPdf()}
-              size="sm"
-              type="button"
-              variant="secondary"
-            >
-              Preview
-            </Button>
             <Caption
               className={`min-w-14 text-right ${
                 isPreviewing
@@ -2223,6 +2481,17 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                       ? "Saved just now"
                       : `Version ${template.version}`}
             </Caption>
+            <Button
+              className="h-9 px-3.5"
+              disabled={!designerReady || isPreviewing}
+              loading={isPreviewing}
+              onClick={() => void previewPdf()}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              Preview
+            </Button>
             <Button
               className="h-9 px-3.5"
               disabled={isSaving || name.trim().length < 2}
@@ -2252,20 +2521,27 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
             >
               Publish v{template.version}
             </Button>
-            <Button
-              aria-label={focusMode ? "Exit focus mode" : "Enter focus mode"}
-              className="size-9 text-foreground"
-              onClick={() => {
-                updateAdminQuery({ focus: focusMode ? null : "true", panel: "none" });
-                setEditingRegion(null);
-                designerRef.current?.updateOptions({ sidebarOpen: false });
-              }}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <Maximize2 aria-hidden="true" size={16} />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    aria-label={focusMode ? "Exit focus mode" : "Enter focus mode"}
+                    className="size-9 text-foreground"
+                    onClick={() => {
+                      updateAdminQuery({ focus: focusMode ? null : "true", panel: "none" });
+                      setEditingRegion(null);
+                      designerRef.current?.updateOptions({ sidebarOpen: false });
+                    }}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Maximize2 aria-hidden="true" size={16} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{focusMode ? "Exit focus mode" : "Focus mode: hide editing panels"}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </header>
 
@@ -2315,84 +2591,13 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
         ) : null}
 
         <div className="relative flex min-h-0 flex-1">
-          {!focusMode ? (
-            <nav
-              aria-label="Designer tools"
-              className={`absolute left-11 top-1/2 z-40 flex w-12 -translate-y-1/2 flex-col items-center gap-1.5 rounded-l-xl bg-card p-2 shadow-[0_8px_20px_rgba(17,18,20,0.06)] ${
-                activePanel ? "border-y border-l border-input" : "border border-input"
-              }`}
-            >
-              <Button
-                aria-pressed={activePanel === null}
-                className={panelButtonClass(activePanel === null)}
-                onClick={() => {
-                  setCanvasMode("select");
-                  closePanels();
-                }}
-                size="icon-sm"
-                type="button"
-                variant="ghost"
-              >
-                <MousePointer2 aria-hidden="true" size={16} strokeWidth={1.75} />
-                <span className="sr-only">Select</span>
-              </Button>
-              <Button
-                aria-label="Add elements"
-                aria-pressed={activePanel === "add"}
-                className={panelButtonClass(activePanel === "add")}
-                onClick={() => togglePanel("add")}
-                size="icon-sm"
-                type="button"
-                variant="ghost"
-              >
-                <CirclePlus aria-hidden="true" size={16} strokeWidth={1.75} />
-                <span className="sr-only">Add</span>
-              </Button>
-              <Button
-                aria-pressed={activePanel === "layers"}
-                className={panelButtonClass(activePanel === "layers")}
-                onClick={() => togglePanel("layers")}
-                size="icon-sm"
-                type="button"
-                variant="ghost"
-              >
-                <Layers aria-hidden="true" size={16} strokeWidth={1.75} />
-                <span className="sr-only">Layers</span>
-              </Button>
-              <span aria-hidden="true" className="h-px w-6 bg-border" />
-              <Button
-                aria-pressed={activePanel === "data"}
-                className={panelButtonClass(activePanel === "data")}
-                onClick={() => togglePanel("data")}
-                size="icon-sm"
-                type="button"
-                variant="ghost"
-              >
-                <TextCursorInput aria-hidden="true" size={16} strokeWidth={1.75} />
-                <span className="sr-only">Fields</span>
-              </Button>
-              <Button
-                aria-pressed={activePanel === "pages"}
-                className={panelButtonClass(activePanel === "pages")}
-                onClick={() => togglePanel("pages")}
-                size="icon-sm"
-                type="button"
-                variant="ghost"
-              >
-                <Files aria-hidden="true" size={16} strokeWidth={1.75} />
-                <span className="sr-only">Pages</span>
-              </Button>
-            </nav>
-          ) : null}
-
           <section
             aria-label="Template canvas"
             className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[oklch(0.965_0.004_255)]"
           >
             {!focusMode ? (
               <div className="flex h-[54px] shrink-0 items-center border-b border-border bg-card px-3.5">
-                <div className="flex h-full w-[292px] items-center gap-1 border-r border-border px-3.5">
-                  <Overline className="mr-1 text-muted-foreground">Canvas</Overline>
+                <div className="flex h-full shrink-0 items-center gap-1 border-r border-border pr-3.5">
                   <Button
                     aria-label="Select tool"
                     aria-pressed={canvasMode === "select"}
@@ -2423,18 +2628,19 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                   >
                     <Hand aria-hidden="true" size={15} />
                   </Button>
-                  <Button
-                    aria-label="Fit canvas"
-                    onClick={() => updateZoom(0.85)}
-                    size="icon-sm"
-                    type="button"
-                    variant="ghost"
+                  <Select
+                    aria-label="Page size"
+                    className="ml-2 w-auto shrink-0 bg-muted"
+                    disabled={!designerReady || isSaving}
+                    onChange={(event) => changePageFormat(event.target.value as PageFormat)}
+                    value={pageFormat}
                   >
-                    <Scan aria-hidden="true" size={15} />
-                  </Button>
-                  <Caption className="ml-1 truncate rounded-md border border-border bg-muted px-2 py-1.5">
-                    {definition.label} · {PAGE_FORMAT_LABELS[pageFormat]}
-                  </Caption>
+                    {definition.allowedPageFormats.map((format) => (
+                      <option key={format} value={format}>
+                        {definition.label} · {PAGE_FORMAT_LABELS[format]}
+                      </option>
+                    ))}
+                  </Select>
                 </div>
 
                 <div className="flex min-w-0 flex-1 items-center justify-center gap-1">
@@ -2465,7 +2671,8 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                   <span aria-hidden="true" className="mx-1 h-5 w-px bg-border" />
                   <Button
                     aria-label="Zoom out"
-                    onClick={() => updateZoom(zoom - 0.1)}
+                    disabled={!designerReady || zoom <= DESIGNER_ZOOM.min}
+                    onClick={() => updateZoom(zoomRef.current - DESIGNER_ZOOM.step)}
                     size="icon-sm"
                     type="button"
                     variant="ghost"
@@ -2475,21 +2682,13 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                   <Caption className="min-w-12 text-center">{Math.round(zoom * 100)}%</Caption>
                   <Button
                     aria-label="Zoom in"
-                    onClick={() => updateZoom(zoom + 0.1)}
+                    disabled={!designerReady || zoom >= DESIGNER_ZOOM.max}
+                    onClick={() => updateZoom(zoomRef.current + DESIGNER_ZOOM.step)}
                     size="icon-sm"
                     type="button"
                     variant="ghost"
                   >
                     <Plus aria-hidden="true" size={14} />
-                  </Button>
-                  <Button
-                    aria-label="Fit page to view"
-                    onClick={() => updateZoom(0.85)}
-                    size="icon-sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Maximize2 aria-hidden="true" size={14} />
                   </Button>
                   <span aria-hidden="true" className="mx-1 h-5 w-px bg-border" />
                   <Button
@@ -2514,89 +2713,102 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                   </Button>
                 </div>
 
-                <div className="flex h-full w-[336px] items-center justify-end gap-1 border-l border-border pl-3">
-                  <Overline className="mr-1 max-w-16 truncate text-muted-foreground">
-                    {selectedPdfmeSchema ? selectedPdfmeSchema.type : "No selection"}
-                  </Overline>
-                  {selectedPdfmeSchema ? (
-                    <>
-                      <Caption className="w-[108px] truncate rounded bg-muted px-2 py-2">
-                        {selectedPdfmeSchema.name} · {String(selectedPdfmeSchema.fontSize ?? 12)} px
-                      </Caption>
-                      <Button
-                        aria-label="Bold selected text"
-                        className={
-                          (selectedPdfmeSchema as { fontWeight?: string }).fontWeight === "bold"
-                            ? "bg-accent text-accent-foreground ring-1 ring-inset ring-primary hover:bg-accent"
-                            : undefined
-                        }
-                        onClick={() =>
-                          updateSelectedSchema((schema) => {
-                            const textSchema = schema as Schema & {
-                              fontWeight?: string;
-                            };
-                            textSchema.fontWeight = textSchema.fontWeight === "bold" ? "normal" : "bold";
-                          })
-                        }
-                        size="icon-sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <Bold aria-hidden="true" size={14} />
-                      </Button>
-                      <Button
-                        aria-label="Align selected text"
-                        onClick={() =>
-                          updateSelectedSchema((schema) => {
-                            const textSchema = schema as Schema & {
-                              alignment?: "center" | "left" | "right";
-                            };
-                            textSchema.alignment =
-                              textSchema.alignment === "left"
-                                ? "center"
-                                : textSchema.alignment === "center"
-                                  ? "right"
-                                  : "left";
-                          })
-                        }
-                        size="icon-sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <AlignCenter aria-hidden="true" size={14} />
-                      </Button>
-                      <Button
-                        aria-label="Duplicate selected element"
-                        onClick={duplicateSelectedElement}
-                        size="icon-sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <Copy aria-hidden="true" size={14} />
-                      </Button>
-                      <Button
-                        aria-label="Delete selected element"
-                        className="text-destructive"
-                        onClick={deleteSelectedElement}
-                        size="icon-sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <Trash2 aria-hidden="true" size={14} />
-                      </Button>
-                    </>
-                  ) : null}
-                </div>
+                {selectedPdfmeSchema ? (
+                  <div className="flex h-full w-[336px] items-center justify-end gap-1 border-l border-border pl-3">
+                    <Overline className="mr-1 max-w-16 truncate text-muted-foreground">
+                      {selectedPdfmeSchema.type}
+                    </Overline>
+                    <Caption className="w-[108px] truncate rounded bg-muted px-2 py-2">
+                      {selectedPdfmeSchema.name} · {String(selectedPdfmeSchema.fontSize ?? 12)} px
+                    </Caption>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex" tabIndex={!canBoldSelection ? 0 : undefined}>
+                            <Button
+                              aria-label="Bold selected text"
+                              aria-pressed={selectedPdfmeSchema.fontWeight === "bold"}
+                              disabled={!canBoldSelection}
+                              className={
+                                (selectedPdfmeSchema as { fontWeight?: string }).fontWeight === "bold"
+                                  ? "bg-accent text-accent-foreground ring-1 ring-inset ring-primary hover:bg-accent"
+                                  : undefined
+                              }
+                              onClick={() =>
+                                updateSelectedSchema((schema) => {
+                                  if (!supportsAdvancedTextBold(schema)) return;
+                                  const textSchema = schema as Schema & {
+                                    fontWeight?: string;
+                                  };
+                                  textSchema.fontWeight = textSchema.fontWeight === "bold" ? "normal" : "bold";
+                                })
+                              }
+                              size="icon-sm"
+                              type="button"
+                              variant="ghost"
+                            >
+                              <Bold aria-hidden="true" size={14} />
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {canBoldSelection ? "Bold text" : "Bold is available for plain text"}
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex" tabIndex={!canAlignSelection ? 0 : undefined}>
+                            <Button
+                              aria-label={`Align selected text ${nextAlignment}`}
+                              disabled={!canAlignSelection}
+                              onClick={() =>
+                                updateSelectedSchema((schema) => {
+                                  const textSchema = schema as Schema & {
+                                    alignment?: "center" | "left" | "right" | "justify";
+                                  };
+                                  const index = Math.max(
+                                    0,
+                                    TEXT_ALIGNMENTS.findIndex((value) => value === textSchema.alignment),
+                                  );
+                                  textSchema.alignment = TEXT_ALIGNMENTS[(index + 1) % TEXT_ALIGNMENTS.length];
+                                })
+                              }
+                              size="icon-sm"
+                              type="button"
+                              variant="ghost"
+                            >
+                              <AlignmentIcon aria-hidden="true" size={14} />
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {canAlignSelection ? `Align ${nextAlignment}` : "Alignment is available for text"}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <Button
+                      aria-label="Duplicate selected element"
+                      onClick={duplicateSelectedElement}
+                      size="icon-sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Copy aria-hidden="true" size={14} />
+                    </Button>
+                    <Button
+                      aria-label="Delete selected element"
+                      className="text-destructive"
+                      onClick={deleteSelectedElement}
+                      size="icon-sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Trash2 aria-hidden="true" size={14} />
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             ) : null}
-            <div className="pointer-events-none absolute left-7 top-[82px] z-10 text-muted-foreground">
-              <Text>Page </Text>
-              <Text>{currentPage + 1}</Text>
-              <Text> of </Text>
-              <Text>{pageCount}</Text>
-              <Text> · </Text>
-              <Text>{name}</Text>
-            </div>
             {!designerReady ? (
               <div
                 aria-live="polite"
@@ -2614,7 +2826,101 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
               data-field-inspector-open={Boolean(selectedSchema && !focusMode)}
               ref={designerContainerRef}
             />
-            {renderPanel()}
+            {!focusMode ? (
+              <div
+                data-slot="designer-tool-menu"
+                ref={toolsRef}
+                className="pointer-events-none absolute bottom-5 left-7 top-[4.625rem] z-30 flex items-center drop-shadow-lg"
+                onKeyDown={(event) => {
+                  if (event.key !== "Escape" || event.defaultPrevented || !activePanel) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  closePanels();
+                }}
+              >
+                <nav
+                  aria-label="Designer tools"
+                  data-attached={panelAttached}
+                  className="pointer-events-auto relative z-10 flex w-12 shrink-0 flex-col items-center gap-1.5 rounded-xl border border-border bg-card p-2 transition-[border-radius] duration-[180ms] ease-out motion-reduce:transition-none data-[attached=true]:rounded-l-xl data-[attached=true]:rounded-r-none data-[attached=true]:border-r-0"
+                >
+                  <Button
+                    aria-pressed={activePanel === null}
+                    className={panelButtonClass(activePanel === null)}
+                    onClick={() => {
+                      setCanvasMode("select");
+                      closePanels();
+                    }}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <MousePointer2 aria-hidden="true" size={16} strokeWidth={1.75} />
+                    <span className="sr-only">Select</span>
+                  </Button>
+                  <Button
+                    aria-label="Add elements"
+                    aria-pressed={activePanel === "add"}
+                    aria-expanded={activePanel === "add"}
+                    aria-controls={activePanel === "add" ? "advanced-editor-add-panel" : undefined}
+                    data-panel="add"
+                    className={panelButtonClass(activePanel === "add")}
+                    onClick={() => togglePanel("add")}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <CirclePlus aria-hidden="true" size={16} strokeWidth={1.75} />
+                    <span className="sr-only">Add</span>
+                  </Button>
+                  <Button
+                    aria-pressed={activePanel === "layers"}
+                    aria-expanded={activePanel === "layers"}
+                    aria-controls={activePanel === "layers" ? "advanced-editor-layers-panel" : undefined}
+                    data-panel="layers"
+                    className={panelButtonClass(activePanel === "layers")}
+                    onClick={() => togglePanel("layers")}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Layers aria-hidden="true" size={16} strokeWidth={1.75} />
+                    <span className="sr-only">Layers</span>
+                  </Button>
+                  <span aria-hidden="true" className="h-px w-6 bg-border" />
+                  <Button
+                    aria-pressed={activePanel === "data"}
+                    aria-expanded={activePanel === "data"}
+                    aria-controls={activePanel === "data" ? "advanced-editor-data-panel" : undefined}
+                    data-panel="data"
+                    className={panelButtonClass(activePanel === "data")}
+                    onClick={() => togglePanel("data")}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <TextCursorInput aria-hidden="true" size={16} strokeWidth={1.75} />
+                    <span className="sr-only">Fields</span>
+                  </Button>
+                  <Button
+                    aria-pressed={activePanel === "pages"}
+                    aria-expanded={activePanel === "pages"}
+                    aria-controls={activePanel === "pages" ? "advanced-editor-pages-panel" : undefined}
+                    data-panel="pages"
+                    className={panelButtonClass(activePanel === "pages")}
+                    onClick={() => togglePanel("pages")}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Files aria-hidden="true" size={16} strokeWidth={1.75} />
+                    <span className="sr-only">Pages</span>
+                  </Button>
+                </nav>
+                <AnimatePresence initial={false} onExitComplete={() => setPanelRetained(Boolean(activePanel))}>
+                  {renderPanel()}
+                </AnimatePresence>
+              </div>
+            ) : null}
           </section>
         </div>
 
@@ -2678,9 +2984,9 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                     </button>
                   </div>
 
-                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     <button
-                      className={`flex h-[34px] min-w-0 flex-1 items-center gap-1.5 rounded-lg border px-2.5 outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      className={`flex h-[34px] min-w-0 w-auto max-w-56 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                         editingRegion === "header" && activePanel === "pages"
                           ? "border-primary bg-primary text-primary-foreground"
                           : repeatingHeaderCount
@@ -2705,7 +3011,7 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                       </Text>
                     </button>
                     <button
-                      className={`flex h-[34px] min-w-0 flex-1 items-center gap-1.5 rounded-lg border px-2.5 outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      className={`flex h-[34px] min-w-0 w-auto max-w-56 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                         editingRegion === "footer" && activePanel === "pages"
                           ? "border-primary bg-primary text-primary-foreground"
                           : repeatingFooterCount
@@ -2763,33 +3069,6 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
                         : "Checking template"}
                 </Text>
                 <Text className="hidden 2xl:inline">{Object.keys(sampleData).length} sample fields</Text>
-                <div className="flex h-8 items-center rounded-lg border border-border bg-muted/50">
-                  <button
-                    aria-label="Zoom out"
-                    className="grid size-8 place-items-center rounded-l-lg outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                    onClick={() => updateZoom(zoom - 0.1)}
-                    type="button"
-                  >
-                    <Minus aria-hidden="true" size={14} />
-                  </button>
-                  <Caption className="min-w-10 text-center text-foreground">{Math.round(zoom * 100)}%</Caption>
-                  <button
-                    aria-label="Zoom in"
-                    className="grid size-8 place-items-center rounded-r-lg outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                    onClick={() => updateZoom(zoom + 0.1)}
-                    type="button"
-                  >
-                    <Plus aria-hidden="true" size={14} />
-                  </button>
-                </div>
-                <Text className="flex items-center gap-1.5">
-                  {designerReady ? (
-                    <Check aria-hidden="true" className="text-emerald-600" size={13} />
-                  ) : (
-                    <LoaderCircle aria-hidden="true" className="animate-spin" size={13} />
-                  )}
-                  {designerReady ? "pdfme ready" : "Loading designer"}
-                </Text>
               </div>
             </div>
           </footer>
@@ -2845,6 +3124,38 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
         </dialog>
       </main>
       <style jsx global>{`
+        [data-slot="designer-tool-menu"] nav[data-attached="true"]::before,
+        [data-slot="designer-tool-menu"] nav[data-attached="true"]::after {
+          position: absolute;
+          right: -1px;
+          width: calc(var(--radius-xl) + 1px);
+          height: calc(var(--radius-xl) + 1px);
+          pointer-events: none;
+          content: "";
+        }
+
+        [data-slot="designer-tool-menu"] nav[data-attached="true"]::before {
+          top: calc(var(--radius-xl) * -1);
+          background: radial-gradient(
+            circle at top left,
+            transparent calc(var(--radius-xl) - 1px),
+            var(--border) calc(var(--radius-xl) - 1px),
+            var(--border) var(--radius-xl),
+            var(--card) var(--radius-xl)
+          );
+        }
+
+        [data-slot="designer-tool-menu"] nav[data-attached="true"]::after {
+          bottom: calc(var(--radius-xl) * -1);
+          background: radial-gradient(
+            circle at bottom left,
+            transparent calc(var(--radius-xl) - 1px),
+            var(--border) calc(var(--radius-xl) - 1px),
+            var(--border) var(--radius-xl),
+            var(--card) var(--radius-xl)
+          );
+        }
+
         .advanced-pdfme-designer .pdfme-ui-control-bar {
           display: none !important;
         }
@@ -2865,6 +3176,23 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
 
         .advanced-pdfme-designer .pdfme-designer-canvas {
           background: var(--muted) !important;
+          overflow-anchor: none;
+          overscroll-behavior: contain;
+        }
+
+        .advanced-pdfme-designer .pdfme-designer-canvas::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: var(--canvas-scroll-width, 0px);
+          height: var(--canvas-scroll-height, 0px);
+          pointer-events: none;
+        }
+
+        .advanced-pdfme-designer .pdfme-designer-canvas > div[style*="transform: scale("] {
+          margin-left: var(--canvas-gutter-x, 0px);
+          margin-top: var(--canvas-gutter-y, 0px);
         }
 
         .advanced-pdfme-designer .pdfme-designer-left-sidebar {
@@ -2890,19 +3218,30 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
         }
 
         .advanced-pdfme-designer .pdfme-designer-right-sidebar {
-          pointer-events: none;
-        }
-
-        .advanced-pdfme-designer[data-field-inspector-open="true"] .pdfme-designer-right-sidebar {
           top: 14px !important;
-          right: 82px !important;
+          right: 1.5rem !important;
           z-index: 30 !important;
           width: 320px !important;
           height: min(578px, calc(100% - 28px)) !important;
-          pointer-events: auto;
+          opacity: 0;
+          transform: translateX(12px);
+          visibility: hidden;
+          pointer-events: none;
+          transition:
+            opacity 180ms cubic-bezier(0.22, 1, 0.36, 1),
+            transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+            visibility 0s linear 180ms;
         }
 
-        .advanced-pdfme-designer[data-field-inspector-open="true"] .pdfme-designer-right-sidebar > div {
+        .advanced-pdfme-designer[data-field-inspector-open="true"] .pdfme-designer-right-sidebar {
+          opacity: 1;
+          transform: translateX(0);
+          visibility: visible;
+          pointer-events: auto;
+          transition-delay: 0s;
+        }
+
+        .advanced-pdfme-designer .pdfme-designer-right-sidebar > div {
           position: absolute !important;
           inset: 0 !important;
           display: flex !important;
@@ -2911,13 +3250,20 @@ export default function AdvancedTemplateEditor({ template }: { template: Advance
           overflow: hidden;
           box-sizing: border-box;
           border: 1px solid var(--border) !important;
-          border-radius: 12px;
+          border-radius: var(--radius-xl);
           background: var(--card) !important;
           box-shadow: 0 8px 24px rgb(17 18 20 / 0.08);
         }
 
-        .advanced-pdfme-designer[data-field-inspector-open="true"] .pdfme-designer-detail-view {
+        .advanced-pdfme-designer .pdfme-designer-detail-view {
           height: 100% !important;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .advanced-pdfme-designer .pdfme-designer-right-sidebar {
+            transform: none;
+            transition: none;
+          }
         }
       `}</style>
     </>

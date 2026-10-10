@@ -2,19 +2,14 @@
 
 import { appHref } from "@/lib/routing/subdomains.ts";
 import { useRef, useState, type ReactNode } from "react";
-import { ChevronDown, Eye, History, SlidersHorizontal, Sparkles } from "lucide-react";
+import { Eye, History, SlidersHorizontal, Sparkles } from "lucide-react";
 import {
+  ActionMenuButton,
   BackButton,
   Button,
-  DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/index.tsx";
 
 import styles from "./BlogEditor.module.css";
@@ -155,50 +150,39 @@ export function BlogEditorShell({
                 Settings
               </Button>
             </div>
-            <div
-              className={styles.toolbarPublishActions}
-              data-split={canPublish}
-              role="group"
-              aria-label="Publishing actions"
-            >
-              {canPublish && (
-                <Button size="sm" aria-label="Review & publish" onClick={onReview} disabled={busy || needsRecovery}>
-                  <span className="sm:hidden">Review</span>
-                  <span className="hidden sm:inline">Review & publish</span>
-                </Button>
-              )}
-              <DropdownMenu>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        size={canPublish ? "icon-sm" : "sm"}
-                        variant={canPublish ? "default" : "outline"}
-                        aria-label="Preview and post actions"
-                        className={styles.publishMenuTrigger}
-                      >
-                        {!canPublish && <span>Preview & actions</span>}
-                        <ChevronDown aria-hidden="true" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent>Preview and post actions</TooltipContent>
-                </Tooltip>
-                <DropdownMenuContent
-                  align="end"
-                  sideOffset={8}
-                  collisionPadding={16}
-                  className="w-auto min-w-0 max-w-[calc(100vw-2rem)]"
-                  onEscapeKeyDown={(event) => event.stopPropagation()}
-                >
-                  <DropdownMenuItem onSelect={onPreview} disabled={busy || saveState === "conflict"}>
-                    <Eye aria-hidden="true" />
-                    Preview draft
-                  </DropdownMenuItem>
-                  {publicationActions && <DropdownMenuSeparator />}
-                  {publicationActions}
-                </DropdownMenuContent>
-              </DropdownMenu>
+            <div role="group" aria-label="Publishing actions">
+              <ActionMenuButton
+                label="Preview & actions"
+                menuLabel="Preview and post actions"
+                size="sm"
+                variant={canPublish ? "default" : "outline"}
+                primaryAction={
+                  canPublish
+                    ? {
+                        label: (
+                          <>
+                            <span className="sm:hidden">Review</span>
+                            <span className="hidden sm:inline">Review & publish</span>
+                          </>
+                        ),
+                        ariaLabel: "Review & publish",
+                        onClick: onReview,
+                        disabled: busy || needsRecovery,
+                      }
+                    : undefined
+                }
+                contentProps={{
+                  className: "w-auto min-w-0 max-w-[calc(100vw-2rem)]",
+                  onEscapeKeyDown: (event) => event.stopPropagation(),
+                }}
+              >
+                <DropdownMenuItem onSelect={onPreview} disabled={busy || saveState === "conflict"}>
+                  <Eye aria-hidden="true" />
+                  Preview draft
+                </DropdownMenuItem>
+                {publicationActions && <DropdownMenuSeparator />}
+                {publicationActions}
+              </ActionMenuButton>
             </div>
           </div>
           <nav className={styles.mobileTabs} aria-label="Editor stages">

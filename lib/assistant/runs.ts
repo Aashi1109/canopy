@@ -13,7 +13,6 @@ import {
   assistantMessagesTable as messages,
   assistantAttachmentsTable as attachments,
 } from "../../db/index.ts";
-import { writeAudit } from "../admin/adminMutations.ts";
 import { AIClient } from "../ai/client.ts";
 import { AIError } from "../ai/errors.ts";
 import type { AIResult, AIToolCall } from "../ai/types.ts";
@@ -304,19 +303,6 @@ export function createAssistantRuns(integration: AssistantIntegration, storage: 
           updatedAt: new Date(),
         })
         .where(eq(threads.id, threadId));
-      await writeAudit(
-        tx,
-        actor,
-        `${integration.audit.prefix}.run.start`,
-        `${integration.audit.resourcePrefix}_run`,
-        run.id,
-        {
-          operation: run.operation,
-          ...(run.request.agentId ? { agentId: run.request.agentId } : {}),
-          provider: run.provider,
-          threadId,
-        },
-      );
       return {
         run,
         fresh: true,
@@ -490,19 +476,6 @@ export function createAssistantRuns(integration: AssistantIntegration, storage: 
         })
         .where(eq(messages.runId, id));
       if (run.threadId) await tx.update(threads).set({ updatedAt: now }).where(eq(threads.id, run.threadId));
-      await writeAudit(
-        tx,
-        run.ownerId,
-        `${integration.audit.prefix}.run.complete`,
-        `${integration.audit.resourcePrefix}_run`,
-        id,
-        {
-          operation: run.operation,
-          ...(run.request.agentId ? { agentId: run.request.agentId } : {}),
-          provider: run.provider,
-          ...integration.audit.resourceMetadata(run.resourceId),
-        },
-      );
       return updated;
     });
   }
@@ -736,14 +709,6 @@ export function createAssistantRuns(integration: AssistantIntegration, storage: 
             updatedAt: now,
           })
           .where(eq(messages.id, message.id));
-      await writeAudit(
-        tx,
-        actor,
-        `${integration.audit.prefix}.proposal.${status}`,
-        `${integration.audit.resourcePrefix}_run`,
-        id,
-        { proposalId },
-      );
       return runView(updated);
     });
   }

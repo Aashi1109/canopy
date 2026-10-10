@@ -1,6 +1,7 @@
 "use client";
 import { appHref } from "@/lib/routing/subdomains.ts";
 import { AdminPageHeader } from "@/app/admin/(protected)/components/AdminPageHeader";
+import { TemplatePageHeader } from "@/app/admin/(protected)/templates/components/TemplatePageHeader";
 import { SyntaxHighlight } from "@/components/content/SyntaxHighlight";
 import { CodeEditor } from "@/components/content/CodeEditor";
 import { WorkbenchShell } from "@/components/ui/components/design-system-components";
@@ -37,6 +38,7 @@ import { OrderableList } from "@/components/ui/components/OrderableList.tsx";
 import { SelectionHighlight } from "@/components/ui/components/SelectionHighlight.tsx";
 import {
   AccountNavigation,
+  ActionMenuButton,
   Alert,
   AlertBanner,
   AlertDescription,
@@ -70,6 +72,7 @@ import {
   CompactAction,
   ColorControl,
   ColorSwatch,
+  CreateMenuButton,
   DownloadResult,
   FileQueueItem,
   FileChip,
@@ -77,6 +80,7 @@ import {
   CheckboxControl,
   DangerZone,
   DESIGN_SYSTEM_COMPONENTS,
+  DropdownMenuItem,
   Empty,
   EmptyContent,
   EmptyDescription,
@@ -157,6 +161,7 @@ import {
   Copy,
   FilePlus2,
   FileText,
+  Folder,
   GripVertical,
   History,
   Info,
@@ -165,6 +170,7 @@ import {
   ReceiptText,
   ShieldCheck,
   Sparkles,
+  Tag,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -518,6 +524,24 @@ export default function DesignSystemPage() {
               </Muted>
             </Specimen>
             <Separator />
+            <Specimen label="Template page header">
+              <div className="overflow-hidden rounded-xl border border-border bg-card">
+                <TemplatePageHeader
+                  title="Service invoice"
+                  status="draft"
+                  description="invoice · Standard editor · /service-invoice"
+                  actions={
+                    <Button size="sm" onClick={() => toast.info("Demo: template save action selected.")}>
+                      Save changes
+                    </Button>
+                  }
+                />
+              </div>
+              <Muted className="mt-3">
+                Template pages share back navigation, title, status, and description while supplying their own actions.
+              </Muted>
+            </Specimen>
+            <Separator />
             <Specimen label="Back navigation">
               <div className="flex items-center gap-2">
                 <BackButton href={appHref("/admin")} label="Back to overview" />
@@ -547,6 +571,46 @@ export default function DesignSystemPage() {
                 <Button loading>Loading</Button>
               </div>
             </Specimen>
+            <Separator />
+            <div className="grid gap-8 lg:grid-cols-2">
+              <Specimen label="Create menu">
+                <Muted className="mb-3">
+                  One Create button opens the available creation choices. Each choice supplies its own action.
+                </Muted>
+                <CreateMenuButton size="sm">
+                  <DropdownMenuItem onSelect={() => toast.info("Demo: category creation selected.")}>
+                    <Folder aria-hidden="true" />
+                    Category
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => toast.info("Demo: tag creation selected.")}>
+                    <Tag aria-hidden="true" />
+                    Tag
+                  </DropdownMenuItem>
+                </CreateMenuButton>
+              </Specimen>
+              <Specimen label="Split action menu">
+                <Muted className="mb-3">
+                  The main button runs the primary action. The adjacent arrow opens related alternatives.
+                </Muted>
+                <ActionMenuButton
+                  label="Export PDF"
+                  icon={<FileText aria-hidden="true" />}
+                  size="md"
+                  primaryAction={{
+                    label: "Export PDF",
+                    onClick: () => toast.info("Demo: PDF export selected."),
+                  }}
+                  menuLabel="More export formats"
+                >
+                  <DropdownMenuItem onSelect={() => toast.info("Demo: text export selected.")}>
+                    Export text
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => toast.info("Demo: Markdown export selected.")}>
+                    Export Markdown
+                  </DropdownMenuItem>
+                </ActionMenuButton>
+              </Specimen>
+            </div>
             <Separator />
             <div className="grid gap-8 lg:grid-cols-2">
               <Specimen label="Button sizes">
@@ -677,11 +741,12 @@ export default function DesignSystemPage() {
             <SectionCard>
               <SectionHeading
                 className="mb-0"
-                description="Double-click text or use the edit button. Focus and press Enter to edit with a keyboard."
+                description="Click the title, double-click the description, or use the pencil to edit. Focus and press Enter to edit with a keyboard; Escape restores the previous value."
                 title="Inline editing"
               />
               <H2>
                 <InlineTextEditor
+                  activation="click"
                   label="Example role name"
                   maxLength={160}
                   onChange={setInlineTitle}

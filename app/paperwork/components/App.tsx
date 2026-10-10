@@ -409,9 +409,9 @@ export default function App({
             <AccountNavigation {...account} />
           </div>
         }
-        className="sticky top-2 z-40 mx-2 rounded-full border shadow-sm"
-        href={localizeHref("/", locale)}
-        name="SmartTools"
+        compact
+        href={localizeHref("/paperwork", locale)}
+        name="Paperwork"
       />
 
       <main className={isInvoice ? "grow pb-20 lg:pb-0" : "grow"}>

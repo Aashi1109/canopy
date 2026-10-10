@@ -1,6 +1,5 @@
 "use client";
 
-import { appHref } from "@/lib/routing/subdomains.ts";
 import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 
 import {
@@ -20,7 +19,6 @@ import {
 import {
   Overline,
   Caption,
-  H1,
   Text,
   AlertBanner,
   Button,
@@ -31,13 +29,12 @@ import {
   SectionCard,
   SectionHeading,
   Select,
-  StatusBadge,
   Tabs,
   TabsList,
   TabsTrigger,
   Textarea,
-  BackButton,
 } from "@/components/ui/index.tsx";
+import { TemplatePageHeader } from "../../components/TemplatePageHeader.tsx";
 import { OrderableList } from "@/components/ui/components/OrderableList.tsx";
 import {
   Archive,
@@ -357,88 +354,74 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
   };
 
   return (
-    <>
-      <header className="sticky top-2 z-20 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card/95 px-3 py-2 shadow-sm backdrop-blur">
-        <div className="flex min-w-0 items-center gap-2">
-          <BackButton href={appHref("/admin/templates")} label="Back to templates" className="shrink-0" />
-          <div className="min-w-0">
-            <div className="flex min-w-0 items-center gap-2">
-              <H1 className="truncate text-foreground">Editing: {name || "Untitled template"}</H1>
-              <StatusBadge
-                className="min-h-5 shrink-0 px-2 py-0"
-                variant={
-                  template.status === "published" ? "success" : template.status === "archived" ? "archived" : "warning"
-                }
-              >
-                {template.status}
-              </StatusBadge>
-            </div>
-            <Caption className="block truncate text-muted-foreground">
-              Layout family: {layoutFamily} · /{slug || "untitled"}
-            </Caption>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap justify-end gap-1.5">
-          <Button disabled={!hasUnsavedChanges} onClick={resetEditor} size="sm" variant="outline">
-            <RotateCcw aria-hidden="true" className="size-3.5" />
-            Reset
-          </Button>
-          <Button
-            disabled={jsonDirty}
-            onClick={exportTemplate}
-            size="sm"
-            title={jsonDirty ? "Apply or reset the JSON changes before exporting." : undefined}
-            variant="outline"
-          >
-            <Download aria-hidden="true" className="size-3.5" />
-            Export
-          </Button>
-          <Button popoverTarget="duplicate-template" size="sm" variant="outline">
-            <Copy aria-hidden="true" className="size-3.5" />
-            Copy
-          </Button>
-          {template.status !== "archived" ? (
-            <Button
-              disabled={template.isDefault}
-              popoverTarget="archive-template"
-              size="sm"
-              title={template.isDefault ? "The default template cannot be archived." : undefined}
-              variant="danger-subtle"
-            >
-              <Archive aria-hidden="true" className="size-3.5" />
-              Archive
+    <div className="flex h-dvh w-full flex-col overflow-hidden bg-muted">
+      <TemplatePageHeader
+        title={`Editing: ${name || "Untitled template"}`}
+        description={`Layout family: ${layoutFamily} · /${slug || "untitled"}`}
+        status={template.status}
+        className="border-b border-border"
+        actions={
+          <div className="flex flex-wrap justify-end gap-1.5">
+            <Button disabled={!hasUnsavedChanges} onClick={resetEditor} size="sm" variant="outline">
+              <RotateCcw aria-hidden="true" className="size-3.5" />
+              Reset
             </Button>
-          ) : null}
-          <Button
-            disabled={jsonDirty || isSaving || isPublishing}
-            form="template-editor-form"
-            loading={isSaving}
-            size="sm"
-            title={jsonDirty ? "Apply or reset the JSON changes before saving." : undefined}
-            type="submit"
-            variant="strong"
-          >
-            <Save aria-hidden="true" className="size-3.5" />
-            Save changes
-          </Button>
-          <Button
-            disabled={jsonDirty || isSaving || isPublishing}
-            form="template-editor-form"
-            formAction={publishAction}
-            loading={isPublishing}
-            size="sm"
-            title={jsonDirty ? "Apply or reset the JSON changes before publishing." : undefined}
-            type="submit"
-          >
-            <CheckCircle2 aria-hidden="true" className="size-3.5" />
-            Publish version
-          </Button>
-        </div>
-      </header>
+            <Button
+              disabled={jsonDirty}
+              onClick={exportTemplate}
+              size="sm"
+              title={jsonDirty ? "Apply or reset the JSON changes before exporting." : undefined}
+              variant="outline"
+            >
+              <Download aria-hidden="true" className="size-3.5" />
+              Export
+            </Button>
+            <Button popoverTarget="duplicate-template" size="sm" variant="outline">
+              <Copy aria-hidden="true" className="size-3.5" />
+              Copy
+            </Button>
+            {template.status !== "archived" ? (
+              <Button
+                disabled={template.isDefault}
+                popoverTarget="archive-template"
+                size="sm"
+                title={template.isDefault ? "The default template cannot be archived." : undefined}
+                variant="danger-subtle"
+              >
+                <Archive aria-hidden="true" className="size-3.5" />
+                Archive
+              </Button>
+            ) : null}
+            <Button
+              disabled={jsonDirty || isSaving || isPublishing}
+              form="template-editor-form"
+              loading={isSaving}
+              size="sm"
+              title={jsonDirty ? "Apply or reset the JSON changes before saving." : undefined}
+              type="submit"
+              variant="strong"
+            >
+              <Save aria-hidden="true" className="size-3.5" />
+              Save changes
+            </Button>
+            <Button
+              disabled={jsonDirty || isSaving || isPublishing}
+              form="template-editor-form"
+              formAction={publishAction}
+              loading={isPublishing}
+              size="sm"
+              title={jsonDirty ? "Apply or reset the JSON changes before publishing." : undefined}
+              type="submit"
+            >
+              <CheckCircle2 aria-hidden="true" className="size-3.5" />
+              Publish version
+            </Button>
+          </div>
+        }
+      />
 
       {jsonDirty && editorMode !== "json" ? (
-        <AlertBanner className="mb-4" variant="warning">
+        <AlertBanner className="mx-5 mt-5 shrink-0 sm:mx-7" variant="warning">
           Apply or reset your unapplied JSON changes before saving or exporting.
           <Button
             className="ml-2"
@@ -454,7 +437,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
 
       <div
         aria-label="Editor workspace"
-        className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 lg:hidden"
+        className="mx-5 mt-5 grid shrink-0 grid-cols-2 gap-1 rounded-xl bg-muted p-1 sm:mx-7 lg:hidden"
         role="group"
       >
         <Button
@@ -479,10 +462,10 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
         </Button>
       </div>
 
-      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-2">
+      <div className="grid min-h-0 min-w-0 flex-1 items-start gap-5 overflow-y-auto p-5 sm:p-7 lg:grid-cols-2 lg:grid-rows-[minmax(0,1fr)] lg:overflow-hidden">
         <form
           action={saveAction}
-          className={`${mobilePane === "preview" ? "hidden lg:grid" : "grid"} min-w-0 gap-4`}
+          className={`${mobilePane === "preview" ? "hidden lg:grid" : "grid"} min-w-0 gap-4 lg:h-full lg:min-h-0 lg:content-start lg:overflow-y-auto lg:pe-2`}
           id="template-editor-form"
           onSubmit={validateBeforeSubmit}
         >
@@ -1001,7 +984,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
         </form>
 
         <SectionCard
-          className={`${mobilePane === "edit" ? "hidden lg:block" : "block"} min-w-0 bg-muted/50 p-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto sm:p-5`}
+          className={`${mobilePane === "edit" ? "hidden lg:block" : "block"} min-w-0 bg-muted/50 p-4 lg:h-full lg:min-h-0 lg:overflow-y-auto sm:p-5`}
         >
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-2 shadow-sm">
             <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -1107,6 +1090,6 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
           </SubmitButton>
         </form>
       </section>
-    </>
+    </div>
   );
 }

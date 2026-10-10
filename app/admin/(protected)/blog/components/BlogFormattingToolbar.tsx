@@ -40,6 +40,7 @@ import {
 import type { BlogImage } from "@/lib/blog/document";
 import { captureBlogInsertion, createBlogTable } from "../lib/editorInsertion";
 import {
+  BackButton,
   Button,
   FieldLabel,
   Input,
@@ -218,9 +219,7 @@ function BlogTablePicker({
         </p>
       )}
       <div className="flex justify-between gap-2">
-        <Button size="xs" variant="ghost" onClick={onBack}>
-          Back
-        </Button>
+        <BackButton label="Back to blocks" onClick={onBack} />
         <Button size="xs" disabled={disabled || !valid} onClick={() => onInsert(columns, rows)}>
           {valid ? `Insert ${columns} × ${rows}` : "Insert table"}
         </Button>
@@ -485,9 +484,7 @@ export function BlogBlockMenu({
                 </p>
               )}
               <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="xs" disabled={pending} onClick={backToBlocks}>
-                  Back
-                </Button>
+                <BackButton label="Back to blocks" disabled={pending} onClick={backToBlocks} />
                 <Button
                   size="xs"
                   loading={pending}

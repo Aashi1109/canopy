@@ -47,31 +47,6 @@
   background: var(--accent);
   color: var(--color-accent-text);
 }
-.toolbarPublishActions {
-  display: flex;
-  align-items: center;
-}
-.toolbarPublishActions[data-split="true"] > button:first-child {
-  border-start-end-radius: 0;
-  border-end-end-radius: 0;
-  padding-inline: calc(var(--spacing) * 3);
-}
-.toolbarPublishActions[data-split="true"] .publishMenuTrigger {
-  border-start-start-radius: 0;
-  border-end-start-radius: 0;
-  border-inline-start: 1px solid color-mix(in srgb, var(--primary-foreground) 40%, transparent);
-}
-.publishMenuTrigger svg {
-  transition: transform 150ms ease;
-}
-.publishMenuTrigger[data-state="open"] svg {
-  transform: rotate(180deg);
-}
-@media (prefers-reduced-motion: reduce) {
-  .publishMenuTrigger svg {
-    transition: none;
-  }
-}
 .mobileTabs {
   display: none;
 }

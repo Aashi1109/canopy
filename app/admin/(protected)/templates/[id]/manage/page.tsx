@@ -3,7 +3,6 @@ import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 import {
   H3,
   Caption,
-  H1,
   P,
   Text,
   Field,
@@ -12,10 +11,10 @@ import {
   StatusBadge,
   Textarea,
   buttonVariants,
-  BackButton,
 } from "@/components/ui/index.tsx";
 import { Copy, Eye, FilePenLine } from "lucide-react";
 import Link from "next/link";
+import { TemplatePageHeader } from "../../components/TemplatePageHeader";
 import { notFound } from "next/navigation";
 import { requirePagePermission } from "../../../../../../lib/admin/access";
 import { getTemplate } from "../../../../../../lib/admin/data";
@@ -46,38 +45,28 @@ export default async function ManageTemplatePage({ params }: { params: Promise<{
 
   return (
     <div className="min-h-dvh w-full bg-muted pb-8">
-      <header className="flex flex-col gap-4 bg-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <BackButton href={appHref("/admin/templates")} label="Back to templates" className="shrink-0" />
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <H1 className="truncate text-foreground">{template.name}</H1>
-              <StatusBadge
-                className="min-h-6 px-2.5"
-                variant={
-                  template.status === "published" ? "success" : template.status === "archived" ? "archived" : "warning"
-                }
-              >
-                {template.status}
-              </StatusBadge>
-            </div>
-            <Caption className="block mt-1 text-muted-foreground">
-              {template.documentType.replaceAll("-", " ")} · {isAdvanced ? "Advanced" : "Standard"} editor · /
-              {template.slug}
-            </Caption>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link className={buttonVariants({ className: "rounded-full", variant: "secondary" })} href={previewHref}>
-            <Eye aria-hidden="true" className="size-4" />
-            Preview
-          </Link>
-          <Link className={buttonVariants({ className: "rounded-full" })} href={editorHref}>
-            <FilePenLine aria-hidden="true" className="size-4" />
-            Open editor
-          </Link>
-        </div>
-      </header>
+      <TemplatePageHeader
+        title={template.name}
+        status={template.status}
+        description={
+          <>
+            {template.documentType.replaceAll("-", " ")} · {isAdvanced ? "Advanced" : "Standard"} editor · /
+            {template.slug}
+          </>
+        }
+        actions={
+          <>
+            <Link className={buttonVariants({ className: "rounded-full", variant: "secondary" })} href={previewHref}>
+              <Eye aria-hidden="true" className="size-4" />
+              Preview
+            </Link>
+            <Link className={buttonVariants({ className: "rounded-full" })} href={editorHref}>
+              <FilePenLine aria-hidden="true" className="size-4" />
+              Open editor
+            </Link>
+          </>
+        }
+      />
 
       <div className="mx-auto grid w-full max-w-6xl items-start gap-5 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_350px]">
         <main className="grid gap-5">

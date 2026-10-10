@@ -3,12 +3,11 @@ import { getOptionalSession } from "@/lib/auth/session.ts";
 import {
   AccountNavigation,
   AppContainer,
-  Button,
+  BackButton,
   Card,
   ProductHeader,
   ToolPageHeader,
 } from "@/components/ui/index.tsx";
-import { ArrowLeft } from "lucide-react";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -42,16 +41,7 @@ export default async function InformationPage({
       />
       <main className="grow py-12 sm:py-16">
         <AppContainer>
-          <Button
-            asChild
-            className="mb-8 px-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
-            variant="ghost"
-          >
-            <a href={paperworkHref}>
-              <ArrowLeft aria-hidden="true" className="size-4 rtl:rotate-180" />
-              {t("back")}
-            </a>
-          </Button>
+          <BackButton className="mb-8" href={paperworkHref} label={t("back")} />
           <ToolPageHeader className="max-w-3xl" description={description} eyebrow={eyebrow} title={title} />
           <Card className="max-w-3xl space-y-7 p-6 sm:p-8">{children}</Card>
         </AppContainer>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Button, ContentState } from "@/components/ui/index.tsx";
+import { BackButton, ContentState } from "@/components/ui/index.tsx";
 
 /** The short-lived ticket stays in the fragment, outside request URLs and referrers. */
 async function completeLocalSignIn(): Promise<string> {
@@ -57,13 +57,7 @@ export default function LocalSessionPage() {
         state={failed ? "error" : "loading"}
         title={failed ? "We couldn’t finish signing you in" : "Finishing sign-in…"}
         description={failed ? "Please return to sign in and try again." : "You’ll be taken to your workspace shortly."}
-        action={
-          failed ? (
-            <Button asChild>
-              <a href="/auth?localChecked=1">Back to sign in</a>
-            </Button>
-          ) : undefined
-        }
+        action={failed ? <BackButton href="/auth?localChecked=1" label="Back to sign in" /> : undefined}
       />
     </main>
   );

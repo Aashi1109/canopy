@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function AuthLayout({ children }: Readonly<{ children: ReactNode }>) {
-  return <DocumentRoot>{children}</DocumentRoot>;
+  return <DocumentRoot publicTracking={false}>{children}</DocumentRoot>;
 }

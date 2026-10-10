@@ -1,4 +1,5 @@
 import config from "../config/config.ts";
+import { withPdfmeTextFormatting } from "../invoice-templates/pdfmeTextFormatting.ts";
 import { getPaperworkToolMessages } from "../paperwork/toolMessages.ts";
 import { withUserCacheInvalidation } from "./index.ts";
 import {
@@ -1487,7 +1488,7 @@ async function renderAdvancedTemplateForPublication(template: AdvancedDocumentTe
     template: config.template,
     inputs: [config.sampleData],
     plugins: {
-      text: schemas.text,
+      text: withPdfmeTextFormatting(schemas.text),
       multiVariableText: schemas.multiVariableText,
       list: schemas.list,
       image: schemas.image,

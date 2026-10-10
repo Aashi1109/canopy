@@ -13,7 +13,6 @@ import {
   assistantAttachmentsTable as attachments,
   assistantMessagesTable as messages,
 } from "../../db/index.ts";
-import { writeAudit } from "../admin/adminMutations.ts";
 import config from "../config/config.ts";
 import { AIClient } from "../ai/client.ts";
 import {
@@ -413,14 +412,6 @@ export function createAssistantThreads(integration: AssistantIntegration) {
           settings: { ...integration.defaultSettings, ...integration.validateSettings(value.settings ?? {}) },
         })
         .returning();
-      await writeAudit(
-        tx,
-        actor,
-        `${integration.audit.prefix}.thread.create`,
-        `${integration.audit.resourcePrefix}_thread`,
-        thread.id,
-        integration.audit.resourceMetadata(resourceId ?? null),
-      );
       return threadView(thread);
     });
   }
@@ -598,16 +589,6 @@ export function createAssistantThreads(integration: AssistantIntegration) {
           ...(removeThread ? { title: "Deleted thread" } : {}),
         })
         .where(eq(threads.id, threadId));
-      await writeAudit(
-        tx,
-        actor,
-        removeThread ? `${integration.audit.prefix}.thread.delete` : `${integration.audit.prefix}.thread.clear`,
-        `${integration.audit.resourcePrefix}_thread`,
-        threadId,
-        {
-          ...integration.audit.resourceMetadata(thread.resourceId),
-        },
-      );
       return { files: files.filter((file) => file.type !== "artifact"), history };
     });
     for (const file of removed.files) {
@@ -675,24 +656,12 @@ export function createAssistantThreads(integration: AssistantIntegration) {
         })
         .where(eq(attachments.id, id));
       return await db.transaction(async (tx) => {
-        const thread = await requireThread(tx, actor, resourceId, threadId, { edit: true, forUpdate: true });
+        await requireThread(tx, actor, resourceId, threadId, { edit: true, forUpdate: true });
         const [row] = await tx
           .update(attachments)
           .set({ status: "ready", updatedAt: new Date() })
           .where(eq(attachments.id, id))
           .returning();
-        await writeAudit(
-          tx,
-          actor,
-          `${integration.audit.prefix}.attachment.upload`,
-          `${integration.audit.resourcePrefix}_attachment`,
-          id,
-          {
-            ...integration.audit.resourceMetadata(thread.resourceId),
-            threadId,
-            provider: config.ai.provider,
-          },
-        );
         return attachmentView(row);
       });
     } catch (error) {
@@ -725,14 +694,6 @@ export function createAssistantThreads(integration: AssistantIntegration) {
     if (provider) await new AIClient(provider.name).deleteFile(provider.fileId);
     await db.transaction(async (tx) => {
       await tx.delete(attachments).where(eq(attachments.id, id));
-      await writeAudit(
-        tx,
-        actor,
-        `${integration.audit.prefix}.attachment.delete`,
-        `${integration.audit.resourcePrefix}_attachment`,
-        id,
-        { threadId },
-      );
     });
   }
   async function attachmentsForRun(
@@ -797,7 +758,7 @@ export function createAssistantThreads(integration: AssistantIntegration) {
       .parse(input);
     const url = publicReference(value.url);
     return db.transaction(async (tx) => {
-      const thread = await requireThread(tx, actor, resourceId, threadId, { edit: true, forUpdate: true });
+      await requireThread(tx, actor, resourceId, threadId, { edit: true, forUpdate: true });
       const [row] = await tx
         .insert(attachments)
         .values({
@@ -810,18 +771,6 @@ export function createAssistantThreads(integration: AssistantIntegration) {
           status: "ready",
         })
         .returning();
-      await writeAudit(
-        tx,
-        actor,
-        `${integration.audit.prefix}.attachment.create`,
-        `${integration.audit.resourcePrefix}_attachment`,
-        row.id,
-        {
-          threadId,
-          ...integration.audit.resourceMetadata(thread.resourceId),
-          type: "link",
-        },
-      );
       return attachmentView(row);
     });
   }

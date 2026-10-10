@@ -1,6 +1,6 @@
 "use client";
 
-import { TextLink, Button } from "@/components/ui/index.tsx";
+import { BackButton } from "@/components/ui/index.tsx";
 import type { MouseEvent } from "react";
 import { shouldUseBrowserBack } from "../../_lib/security";
 
@@ -15,12 +15,5 @@ export function ProfileBackLink({ fallbackHref }: { fallbackHref: string }) {
     window.history.back();
   }
 
-  return (
-    <Button asChild size="sm" variant="ghost">
-      <a aria-label="Back to previous page" href={fallbackHref} onClick={handleClick}>
-        <span aria-hidden="true">←</span>
-        Back
-      </a>
-    </Button>
-  );
+  return <BackButton href={fallbackHref} label="Back to previous page" onClick={handleClick} />;
 }

@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { and, db, eq, sql, authUser, blogPostsTable as posts } from "../../db/index.ts";
 import { requirePermission } from "../admin/index.ts";
-import { requireTransactionPermission } from "../admin/adminMutations.ts";
+import { requireTransactionPermission, writeAudit } from "../admin/adminMutations.ts";
 import { AIClient } from "../ai/client.ts";
 import { AIError } from "../ai/errors.ts";
 import type { AIMessage, AIResult } from "../ai/types.ts";
@@ -178,6 +178,10 @@ async function auxiliary(
           version: post.version + 1,
         })
         .where(eq(posts.id, post.id));
+      await writeAudit(tx, run.ownerId, "blog.save", "blog_post", post.id, {
+        version: post.version + 1,
+        mode: "assistant",
+      });
     });
     return result;
   } catch (error) {
@@ -353,7 +357,10 @@ export const blogAssistantIntegration: AssistantIntegration = {
         version: post.version + 1,
       })
       .where(eq(posts.id, post.id));
+    await writeAudit(tx, run.ownerId, "blog.save", "blog_post", post.id, {
+      version: post.version + 1,
+      mode: "assistant",
+    });
   },
   auxiliary,
-  audit: { prefix: "blog", resourcePrefix: "blog", resourceMetadata: (resourceId) => ({ postId: resourceId }) },
 };

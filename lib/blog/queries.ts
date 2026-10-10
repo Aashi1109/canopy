@@ -1,6 +1,8 @@
 import config from "../config/config.ts";
 import { and, desc, eq, exists, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import {
+  alias,
+  authUser,
   blogCategoriesTable as categories,
   blogPostsTable as posts,
   blogPostSchedulesTable as schedules,
@@ -126,6 +128,8 @@ const summaryFields = {
 const titleText = z.string().max(200);
 const excerptText = z.string().max(500);
 const authorText = z.string().max(150);
+const taxonomyCreator = alias(authUser, "taxonomy_creator");
+const taxonomyEditor = alias(authUser, "taxonomy_editor");
 
 export async function listPublishedBlogPosts(input: unknown = {}) {
   const options = publicInput.parse(input);
@@ -405,8 +409,20 @@ export async function listBlogTaxonomy(actorUserId: string, kind: "category" | "
     const pageCount = Math.max(1, Math.ceil(total / 25));
     const pageNumber = Math.min(options.page ?? 1, pageCount);
     const rows = await transaction
-      .select()
+      .select({
+        id: table.id,
+        name: table.name,
+        slug: table.slug,
+        createdBy: table.createdBy,
+        updatedBy: table.updatedBy,
+        createdAt: table.createdAt,
+        updatedAt: table.updatedAt,
+        createdByUser: { name: taxonomyCreator.name, image: taxonomyCreator.image },
+        updatedByUser: { name: taxonomyEditor.name, image: taxonomyEditor.image },
+      })
       .from(table)
+      .leftJoin(taxonomyCreator, eq(taxonomyCreator.id, table.createdBy))
+      .leftJoin(taxonomyEditor, eq(taxonomyEditor.id, table.updatedBy))
       .where(
         and(
           filters,

@@ -56,7 +56,7 @@ export function NewToolDialog() {
   return (
     <AlertDialog onOpenChange={setOpen} open={open}>
       <AlertDialogTrigger asChild>
-        <Button size="sm">
+        <Button size="md">
           <Plus aria-hidden="true" />
           New tool
         </Button>

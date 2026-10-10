@@ -10,19 +10,21 @@ export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 export const DropdownMenuSub = DropdownMenuPrimitive.Sub;
 
 const contentClasses =
-  "z-50 min-w-32 max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto rounded-xl border border-input bg-popover p-1.5 text-popover-foreground shadow-md";
+  "group/dropdown-menu z-50 min-w-32 max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto rounded-xl border border-input bg-popover p-1.5 text-popover-foreground shadow-md data-[size=sm]:rounded-lg data-[size=sm]:p-1";
 const itemClasses =
-  "relative flex min-h-9 cursor-default items-center gap-2 rounded-lg px-3 text-sm outline-none select-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 max-md:min-h-11 [@media(pointer:coarse)]:min-h-11";
+  "relative flex min-h-9 cursor-default items-center gap-2 rounded-lg px-3 text-sm outline-none select-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 max-md:min-h-11 [@media(pointer:coarse)]:min-h-11 group-data-[size=sm]/dropdown-menu:px-2.5 group-data-[size=sm]/dropdown-menu:text-[13px] group-data-[size=sm]/dropdown-menu:[&_svg]:size-3.5 md:group-data-[size=sm]/dropdown-menu:min-h-8 [@media(pointer:coarse)]:group-data-[size=sm]/dropdown-menu:min-h-11";
 
 export function DropdownMenuContent({
   className,
   sideOffset = 4,
+  size = "default",
   ...props
-}: ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+}: ComponentProps<typeof DropdownMenuPrimitive.Content> & { size?: "default" | "sm" | "md" }) {
   return (
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
         data-slot="dropdown-menu-content"
+        data-size={size}
         sideOffset={sideOffset}
         className={cn(contentClasses, className)}
         {...props}

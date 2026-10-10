@@ -637,8 +637,8 @@
   stroke: currentColor;
 }
 
-.auth-options-row button,
-.auth-card-footer-link button {
+.auth-options-row button:not([data-slot="button"]),
+.auth-card-footer-link button:not([data-slot="button"]) {
   padding: 0;
   border: 0;
   background: transparent;
@@ -646,15 +646,15 @@
   cursor: pointer;
 }
 
-.auth-options-row button:hover,
-.auth-card-footer-link button:hover,
+.auth-options-row button:not([data-slot="button"]):hover,
+.auth-card-footer-link button:not([data-slot="button"]):hover,
 .auth-terms-row a:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-.auth-options-row button:focus-visible,
-.auth-card-footer-link button:focus-visible,
+.auth-options-row button:not([data-slot="button"]):focus-visible,
+.auth-card-footer-link button:not([data-slot="button"]):focus-visible,
 .auth-terms-row a:focus-visible {
   border-radius: 3px;
   outline: 2px solid var(--ring);

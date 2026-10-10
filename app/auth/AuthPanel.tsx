@@ -12,6 +12,7 @@ import {
   Text,
   TextLink,
   AlertBanner,
+  BackButton,
   Button,
   Card,
   CheckboxControl,
@@ -243,9 +244,7 @@ export function AuthPanel({
         <Caption>Can’t find it? Check your spam folder, or request another email.</Caption>
         <div className="auth-card-footer-link">
           <Text>Wrong email address?</Text>
-          <button disabled={pending} onClick={() => chooseMode(mode)} type="button">
-            <Caption>Go back</Caption>
-          </button>
+          <BackButton disabled={pending} onClick={() => chooseMode(mode)} label="Go back" />
         </div>
       </Card>
     );
@@ -392,13 +391,13 @@ export function AuthPanel({
 
       <div className="auth-card-footer-link">
         <Text>{isSignUp ? "Already have an account?" : isForgot ? "Remembered it?" : "New here?"}</Text>
-        <button
-          disabled={pending}
-          onClick={() => chooseMode(isSignUp || isForgot ? "sign-in" : "sign-up")}
-          type="button"
-        >
-          <Caption>{isSignUp ? "Sign in" : isForgot ? "Back to sign in" : "Create an account"}</Caption>
-        </button>
+        {isForgot ? (
+          <BackButton disabled={pending} onClick={() => chooseMode("sign-in")} label="Back to sign in" />
+        ) : (
+          <button disabled={pending} onClick={() => chooseMode(isSignUp ? "sign-in" : "sign-up")} type="button">
+            <Caption>{isSignUp ? "Sign in" : "Create an account"}</Caption>
+          </button>
+        )}
       </div>
     </Card>
   );

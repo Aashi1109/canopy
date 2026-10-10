@@ -13,6 +13,8 @@ export interface InlineTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   label: string;
+  activation?: "click" | "doubleClick";
+  showKeyboardHint?: boolean;
   multiline?: boolean;
   required?: boolean;
   maxLength?: number;
@@ -24,6 +26,8 @@ export function InlineTextEditor({
   value,
   onChange,
   label,
+  activation = "doubleClick",
+  showKeyboardHint = true,
   multiline = false,
   required = false,
   maxLength,
@@ -178,10 +182,12 @@ export function InlineTextEditor({
             )}
             <span
               className={cn(
-                "mt-1 block font-sans text-xs font-normal tracking-normal",
+                "font-sans text-xs font-normal tracking-normal",
                 error
-                  ? "text-destructive"
-                  : "w-fit max-w-full rounded border border-border bg-card px-2 py-1 text-muted-foreground shadow-sm",
+                  ? "mt-1 block text-destructive"
+                  : showKeyboardHint
+                    ? "mt-1 block w-fit max-w-full rounded border border-border bg-card px-2 py-1 text-muted-foreground shadow-sm"
+                    : "sr-only",
               )}
               id={feedbackId}
               role={error ? "alert" : undefined}
@@ -199,7 +205,8 @@ export function InlineTextEditor({
                     !disabled && "cursor-text",
                     !disabled && !suppressHover && "hover:bg-muted/60",
                   )}
-                  onDoubleClick={beginEditing}
+                  onClick={activation === "click" ? beginEditing : undefined}
+                  onDoubleClick={activation === "doubleClick" ? beginEditing : undefined}
                 >
                   {value || <span className="text-muted-foreground">{label}</span>}
                 </span>
@@ -223,7 +230,11 @@ export function InlineTextEditor({
                 )}
               </span>
             </TooltipTrigger>
-            <TooltipContent side="top">Double-click text or use the pencil to edit</TooltipContent>
+            <TooltipContent side="top">
+              {activation === "click"
+                ? "Click text or use the pencil to edit"
+                : "Double-click text or use the pencil to edit"}
+            </TooltipContent>
           </Tooltip>
         )}
       </span>

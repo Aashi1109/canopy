@@ -578,14 +578,7 @@ export function AssistantSources({
     <section className={styles.library} aria-label="Thread Sources">
       {artifactId && (
         <div className="flex min-w-0 shrink-0 items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex shrink-0">
-                <BackButton label="Back to sources" onClick={() => onOpen(null)} />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>Back to sources</TooltipContent>
-          </Tooltip>
+          <BackButton label="Back to sources" onClick={() => onOpen(null)} />
           <h3 className={styles.reportTitle} ref={heading} tabIndex={-1}>
             {selected?.attachment.id === artifactId ? selected.attachment.label : "Source"}
           </h3>
@@ -747,14 +740,14 @@ export function AssistantResultActions({
         headingLevel="h3"
         title="Unsupported output"
         description="Open Sources to inspect its saved data."
-        action={<BackButton showLabel label="Back to chat" onClick={onBack} />}
+        action={<BackButton label="Back to chat" onClick={onBack} />}
       />
     );
   const expired = !!attachment.expiresAt && Date.parse(attachment.expiresAt) <= Date.now();
   return (
     <section className={styles.library} aria-label="Agent result actions">
       <div className={styles.libraryHeader}>
-        <BackButton showLabel label="Back to chat" onClick={onBack} />
+        <BackButton label="Back to chat" onClick={onBack} />
         <h3 ref={heading} tabIndex={-1}>
           {attachment.label}
         </h3>

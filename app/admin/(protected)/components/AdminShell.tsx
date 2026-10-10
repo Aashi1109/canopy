@@ -7,12 +7,7 @@ import type { ReactNode } from "react";
 import { AdminNavigation } from "./AdminNavigation";
 
 function isFullPageTemplateLifecycle(pathname: string) {
-  return (
-    pathname === "/admin/templates/new" ||
-    pathname.startsWith("/admin/templates/new/") ||
-    pathname === "/admin/templates/import" ||
-    /^\/admin\/templates\/[^/]+\/(?:advanced|manage)\/?$/.test(pathname)
-  );
+  return pathname.replace(/\/+$/, "").startsWith("/admin/templates/");
 }
 
 export function AdminShell({

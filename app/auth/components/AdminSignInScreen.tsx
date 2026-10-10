@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Button, Card, ContentState, ProductHeader, Toaster, toast } from "@/components/ui/index.tsx";
+import { BackButton, Button, Card, ContentState, ProductHeader, Toaster, toast } from "@/components/ui/index.tsx";
 import { authClient } from "../_lib/authClient";
 import { getSafeAuthError } from "../_lib/security";
 
@@ -61,15 +61,7 @@ export function AdminSignInScreen({
         publicSiteUrl={publicSiteUrl}
         name="SmartTools"
         subtitle="Administration"
-        actions={
-          <Button asChild size="md" variant="ghost">
-            <a href={publicSiteUrl} aria-label="Back to SmartTools">
-              <ArrowLeft aria-hidden="true" />
-              <span className="hidden compact:inline">Back to SmartTools</span>
-              <span className="compact:hidden">Back</span>
-            </a>
-          </Button>
-        }
+        actions={<BackButton href={publicSiteUrl} label="Back to SmartTools" />}
       />
       <main className="flex flex-1 items-center justify-center px-4 py-10 sm:px-10">
         <div className="flex w-full max-w-[520px] flex-col gap-6">
