@@ -5,7 +5,7 @@ import { captureException } from "@sentry/core";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  return handleBlogPublishRequest(request, config.blog.schedulerSecret, async () => {
+  return handleBlogPublishRequest(request, config.schedulerSecret, async () => {
     try {
       const { publishDueBlogPosts } = await import("@/lib/blog/mutations");
       return await publishDueBlogPosts();

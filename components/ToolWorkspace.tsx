@@ -277,6 +277,7 @@ export function ToolWorkspace(
       sourceRef?: Ref<HTMLElement>;
     },
 ) {
+  const t = useTranslations("Workbench");
   const presentation = useWorkbenchPresentation();
   if (props.spec.input.kind === "files") {
     if (props.spec.input.engine === "image" && props.spec.category === "image-conversion") {
@@ -402,7 +403,7 @@ export function ToolWorkspace(
       {mainContent}
       <ToolOptionsPanel
         className="h-full overflow-y-auto bg-card p-[18px]"
-        title={props.spec.optionsPanel?.title ?? "SETTINGS"}
+        title={props.spec.optionsPanel?.title ?? t("settings")}
         variant="plain"
       >
         {props.renderSettings ? (

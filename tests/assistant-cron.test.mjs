@@ -71,7 +71,7 @@ test("scheduled handler uses its service binding and awaits the authenticated PO
   let received;
   const env = {
     APP_URL: "https://app.example.test/ignored-path",
-    ASSISTANT_SCHEDULER_SECRET: secret,
+    SCHEDULER_SECRET: secret,
     WORKER_SELF_REFERENCE: {
       async fetch(req) {
         received = req;
@@ -92,7 +92,7 @@ test("remote target is explicit, uses HTTPS, and cannot forward credentials thro
   let bindingCalls = 0;
   const env = {
     APP_URL: "https://cloudflare.example.test",
-    ASSISTANT_SCHEDULER_SECRET: secret,
+    SCHEDULER_SECRET: secret,
     ASSISTANT_MAINTENANCE_URL: `https://docker.example.test${path}`,
     WORKER_SELF_REFERENCE: {
       fetch() {
@@ -136,22 +136,19 @@ test("invalid cron configuration fails before sending any secret", async () => {
     "invalid",
   ]) {
     await expect(
-      runAssistantMaintenanceCron(
-        { ASSISTANT_SCHEDULER_SECRET: secret, ASSISTANT_MAINTENANCE_URL: target },
-        fetchRemote,
-      ),
+      runAssistantMaintenanceCron({ SCHEDULER_SECRET: secret, ASSISTANT_MAINTENANCE_URL: target }, fetchRemote),
     ).rejects.toThrow(/configuration/);
   }
   await expect(
     runAssistantMaintenanceCron({ ASSISTANT_MAINTENANCE_URL: `https://docker.example.test${path}` }, fetchRemote),
   ).rejects.toThrow(/configuration/);
-  await expect(runAssistantMaintenanceCron({ ASSISTANT_SCHEDULER_SECRET: secret })).rejects.toThrow(/configuration/);
+  await expect(runAssistantMaintenanceCron({ SCHEDULER_SECRET: secret })).rejects.toThrow(/configuration/);
   expect(calls).toBe(0);
 });
 
 test("cron consumes successful responses and rejects unsafe, oversized or failed outcomes", async () => {
   const env = {
-    ASSISTANT_SCHEDULER_SECRET: secret,
+    SCHEDULER_SECRET: secret,
     ASSISTANT_MAINTENANCE_URL: `https://docker.example.test${path}`,
   };
   const response = Response.json(counts);
@@ -175,4 +172,29 @@ test("cron consumes successful responses and rejects unsafe, oversized or failed
   ).rejects.toMatchObject({
     message: "Assistant maintenance request failed.",
   });
+});
+
+test("response cleanup failures cannot replace safe cron errors or expose secrets", async () => {
+  const env = {
+    SCHEDULER_SECRET: secret,
+    ASSISTANT_MAINTENANCE_URL: `https://docker.example.test${path}`,
+  };
+  for (const status of [503, 200]) {
+    const response = new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(new Uint8Array(4097));
+        },
+        cancel() {
+          throw new Error(`Private cleanup failure: ${secret}`);
+        },
+      }),
+      { status },
+    );
+    await expect(runAssistantMaintenanceCron(env, async () => response)).rejects.toThrow(
+      status === 503
+        ? "Assistant maintenance request returned HTTP 503."
+        : "Assistant maintenance returned an invalid response.",
+    );
+  }
 });

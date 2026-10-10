@@ -73,7 +73,7 @@ test("scheduled handler uses its service binding and awaits the authenticated PO
   let received;
   const env = {
     APP_URL: "https://app.example.test/ignored-path",
-    BLOG_SCHEDULER_SECRET: secret,
+    SCHEDULER_SECRET: secret,
     WORKER_SELF_REFERENCE: {
       async fetch(req) {
         received = req;
@@ -94,7 +94,7 @@ test("remote target is explicit, uses HTTPS, and cannot forward credentials thro
   let bindingCalls = 0;
   const env = {
     APP_URL: "https://cloudflare.example.test",
-    BLOG_SCHEDULER_SECRET: secret,
+    SCHEDULER_SECRET: secret,
     BLOG_PUBLISH_URL: `https://docker.example.test${path}`,
     WORKER_SELF_REFERENCE: {
       fetch() {
@@ -138,19 +138,19 @@ test("invalid cron configuration fails before sending any secret", async () => {
     "invalid",
   ]) {
     await expect(
-      runBlogPublishCron({ BLOG_SCHEDULER_SECRET: secret, BLOG_PUBLISH_URL: target }, fetchRemote),
+      runBlogPublishCron({ SCHEDULER_SECRET: secret, BLOG_PUBLISH_URL: target }, fetchRemote),
     ).rejects.toThrow(/configuration/);
   }
   await expect(
     runBlogPublishCron({ BLOG_PUBLISH_URL: `https://docker.example.test${path}` }, fetchRemote),
   ).rejects.toThrow(/configuration/);
-  await expect(runBlogPublishCron({ BLOG_SCHEDULER_SECRET: secret })).rejects.toThrow(/configuration/);
+  await expect(runBlogPublishCron({ SCHEDULER_SECRET: secret })).rejects.toThrow(/configuration/);
   expect(calls).toBe(0);
 });
 
 test("cron consumes successful responses and rejects unsafe, oversized or failed outcomes", async () => {
   const env = {
-    BLOG_SCHEDULER_SECRET: secret,
+    SCHEDULER_SECRET: secret,
     BLOG_PUBLISH_URL: `https://docker.example.test${path}`,
   };
   const response = Response.json(counts);
@@ -174,4 +174,27 @@ test("deployment schedules publishing twice per hour and maintenance twice daily
   const config = JSON5.parse(await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"));
   expect(config.triggers.crons).toEqual(["*/30 * * * *", "0 0,12 * * *"]);
   expect(config.env.dev.triggers.crons).toEqual([]);
+});
+
+test("response cleanup failures cannot replace safe cron errors or expose secrets", async () => {
+  const env = {
+    SCHEDULER_SECRET: secret,
+    BLOG_PUBLISH_URL: `https://docker.example.test${path}`,
+  };
+  for (const status of [503, 200]) {
+    const response = new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(new Uint8Array(4097));
+        },
+        cancel() {
+          throw new Error(`Private cleanup failure: ${secret}`);
+        },
+      }),
+      { status },
+    );
+    await expect(runBlogPublishCron(env, async () => response)).rejects.toThrow(
+      status === 503 ? "Blog publishing request returned HTTP 503." : "Blog publishing returned an invalid response.",
+    );
+  }
 });

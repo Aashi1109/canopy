@@ -243,6 +243,7 @@ test("runtime settings remain plain or secret without replacing configured bindi
       "DATABASE_URL=postgres://user:password@db.example/app",
       "REDIS_URL=redis://secret@redis.example",
       'BETTER_AUTH_SECRET="first line\nsecond line"',
+      "SCHEDULER_SECRET=scheduler-secret",
       "CLOUDFLARE_EMAIL_ACCOUNT_ID=email-account",
       "CLOUDFLARE_EMAIL_API_TOKEN=email-token",
       "CLOUDFLARE_API_TOKEN=file-token",
@@ -263,6 +264,7 @@ test("runtime settings remain plain or secret without replacing configured bindi
     DATABASE_URL: "postgres://user:password@db.example/app",
     REDIS_URL: "redis://secret@redis.example",
     BETTER_AUTH_SECRET: "first line\nsecond line",
+    SCHEDULER_SECRET: "scheduler-secret",
     CLOUDFLARE_EMAIL_API_TOKEN: "email-token",
     CUSTOM_SETTING: "unknown-secret",
   });

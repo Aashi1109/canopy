@@ -65,7 +65,7 @@ export const invoiceTemplatesTable = pgTable(
     slug: text("slug").notNull(),
     description: text("description"),
     category: text("category").notNull(),
-    status: text("status").notNull(),
+    status: text("status").$type<import("../lib/invoice-templates/templateTypes.ts").TemplateStatus>().notNull(),
     isDefault: boolean("is_default").default(false).notNull(),
     version: integer("version").default(1).notNull(),
     documentType: text("document_type")

@@ -228,11 +228,11 @@ to `DATABASE_URL`.
 
 Assistant retention and provider-resource cleanup runs at 00:00 and 12:00 UTC daily,
 independently of Blog publication's 30-minute Worker schedule. Set
-`ASSISTANT_SCHEDULER_SECRET` to the same random bearer secret in the application
+`SCHEDULER_SECRET` to the same random bearer secret in the application
 and scheduler environment. Leave `ASSISTANT_MAINTENANCE_URL` empty to use the
 Worker's self binding, or set it to an HTTPS Docker endpoint ending exactly in
-`/api/internal/assistant/maintenance`. This uses a separate secret from
-`BLOG_SCHEDULER_SECRET`; each cron trigger invokes only its corresponding operation.
+`/api/internal/assistant/maintenance`. Blog publishing and Assistant maintenance
+share this secret; each cron trigger invokes only its corresponding operation.
 Assistant cleanup is invoked only through its independent maintenance endpoint;
 Blog publishing no longer invokes conversation cleanup.
 
@@ -447,8 +447,10 @@ and measured usage before changing instance size or idle time.
    - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` if using Google login.
    - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`
      if using admin image uploads.
-   - `BLOG_SCHEDULER_SECRET` and `ASSISTANT_SCHEDULER_SECRET` — separate bearer secrets
-     for the internal jobs. Production retains the cron timings and points its
+   - `SCHEDULER_SECRET` — one shared bearer secret for all internal cron jobs.
+     Generate it with `openssl rand -hex 32`, add it to `.env.prod`, and run
+     `pnpm run deploy` to upload it and roll out the matching container environment.
+     Production retains the cron timings and points its
      Worker self binding to `canopy`; leave external target URLs unset.
    - Other integrations used by the app, including `REDIS_URL` if enabled.
 4. If using Google login, retain the production callbacks
@@ -515,8 +517,8 @@ replaced and requests reach the healthy new instance. Complete this for every
 environment whose settings changed. A Worker-only deployment, direct
 `wrangler secret put`, or `wrangler versions upload` does not guarantee a restart.
 
-Schedule secret rotations between cron runs. `BLOG_SCHEDULER_SECRET` and
-`ASSISTANT_SCHEDULER_SECRET` must each match between the Worker and container;
+Schedule secret rotations between cron runs. The shared `SCHEDULER_SECRET`
+must match between the Worker and container;
 a cron invocation during the update/rollout gap can receive `401`. Verify both jobs
 after rotation. The deployment is not transactional and this single-instance
 replacement can briefly interrupt requests. Changing dashboard settings without
@@ -568,8 +570,8 @@ Node version independently.
 The wrapper recognizes `WORKERS_CI` and deploys with `--keep-vars`, preserving
 existing Worker runtime variables and secrets without reading `.env.prod`.
 Before the first container deployment from CI, configure all runtime settings and
-secrets on the new Worker, including `DATABASE_URL`, `BETTER_AUTH_SECRET`, and both
-scheduler secrets; settings from the old Worker are not copied automatically. Configure public
+secrets on the new Worker, including `DATABASE_URL`, `BETTER_AUTH_SECRET`, and
+`SCHEDULER_SECRET`; settings from the old Worker are not copied automatically. Configure public
 `NEXT_PUBLIC_*` settings as Build Variables. Runtime secrets are not required in
 Build Variables. CI target checks and deployment output settings are retained.
 

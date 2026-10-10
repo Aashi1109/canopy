@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Code, Columns2, Eye, Maximize2, Minimize2, Rows2 } from "lucide-react";
 import {
   createContext,
@@ -114,25 +115,26 @@ export function useWorkbenchPaneView(enabled: boolean, defaultLayout?: Workbench
 }
 
 export function WorkbenchViewControl() {
+  const t = useTranslations("Workbench");
   const context = useWorkbenchPresentation();
   if (!context?.focused || !context.hasPanes) return null;
   const value = context.narrow && context.view === "split" ? "input" : context.view;
   return (
     <Tabs value={value} onValueChange={(next) => context.setView(next as WorkbenchView)}>
-      <TabsList aria-label="Workspace view" variant="line">
+      <TabsList aria-label={t("workspaceView")} variant="line">
         <TabsTrigger className="h-8 py-0 text-[13px] data-[state=active]:text-primary" value="input">
           <Code aria-hidden="true" />
-          Input
+          {t("input")}
         </TabsTrigger>
         {!context.narrow && (
           <TabsTrigger className="h-8 py-0 text-[13px] data-[state=active]:text-primary" value="split">
             <Columns2 aria-hidden="true" />
-            Split
+            {t("split")}
           </TabsTrigger>
         )}
         <TabsTrigger className="h-8 py-0 text-[13px] data-[state=active]:text-primary" value="preview">
           <Eye aria-hidden="true" />
-          Preview
+          {t("preview")}
         </TabsTrigger>
       </TabsList>
     </Tabs>
@@ -140,16 +142,17 @@ export function WorkbenchViewControl() {
 }
 
 export function WorkbenchLayoutControl() {
+  const t = useTranslations("Workbench");
   const context = useWorkbenchPresentation();
   if (!context?.defaultLayout || context.narrow) return null;
   const selected = context.layout ?? context.defaultLayout;
   return (
     <TooltipProvider>
-      <ButtonGroup aria-label="Workspace layout">
+      <ButtonGroup aria-label={t("workspaceLayout")}>
         {(
           [
-            { value: "stacked", label: "Stacked layout", icon: Rows2 },
-            { value: "side-by-side", label: "Side-by-side layout", icon: Columns2 },
+            { value: "stacked", label: t("stackedLayout"), icon: Rows2 },
+            { value: "side-by-side", label: t("sideBySideLayout"), icon: Columns2 },
           ] as const
         ).map(({ value, label, icon: Icon }) => (
           <Tooltip key={value}>
@@ -177,6 +180,7 @@ export function WorkbenchLayoutControl() {
 }
 
 export function WorkbenchFocusButton() {
+  const t = useTranslations("Workbench");
   const context = useWorkbenchPresentation();
   if (!context) return null;
   const Icon = context.focused ? Minimize2 : Maximize2;
@@ -189,7 +193,7 @@ export function WorkbenchFocusButton() {
       variant="outline"
     >
       <Icon aria-hidden="true" />
-      {context.focused ? "Exit focus mode" : "Expand workspace"}
+      {context.focused ? t("exitFocusMode") : t("expandWorkspace")}
     </Button>
   );
 }

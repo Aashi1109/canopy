@@ -487,7 +487,7 @@ The Cloudflare scheduled handler calls the application-owned endpoint:
 - Register the 30-minute trigger on the existing Cloudflare Worker and add a scheduled handler.
 - For the Workers deployment, invoke the endpoint through the existing Worker service binding so it retains the application's database request lifecycle.
 - If the application is hosted on Docker, Cloudflare remains the scheduler and sends an authenticated HTTPS request to that deployment's production endpoint. A Docker-host cron is not required.
-- Configure one production target per database. Every invocation uses `BLOG_SCHEDULER_SECRET` as a bearer secret and the same database-backed publishing implementation.
+- Configure one production target per database. Every invocation uses the shared `SCHEDULER_SECRET` as a bearer secret and the same database-backed publishing implementation. Assistant maintenance uses this same secret.
 - Await the endpoint result and report non-success responses through Worker observability. The scheduler carries no article content or direct database credentials for a remote Docker target.
 
 For each run:
@@ -596,7 +596,7 @@ The migration runner executes only the folder supplied to `pnpm db:migrate <fold
 it does not track applied migrations. Explicitly rerunning `baseline` also reruns this
 migration, which must not duplicate grants, alter article content, or reset state.
 
-Document `BLOG_SCHEDULER_SECRET` with an empty value in `.env.example`. Configure the same secret in the app and the Cloudflare scheduler. Register `*/30 * * * *` in the Worker's cron triggers and verify the configured production target.
+Document the shared `SCHEDULER_SECRET` with an empty value in `.env.example`. Generate it with `openssl rand -hex 32`, add it to `.env.prod`, and run `pnpm run deploy` to configure the same value in the app and the Cloudflare scheduler. Register `*/30 * * * *` in the Worker's cron triggers and verify the configured production target. When rotating the shared secret, complete the container rollout and verify both Blog publishing and Assistant maintenance.
 
 Deploy database changes before application changes. Verify exactly one Cloudflare scheduling trigger targets each production database; duplicate scheduling remains safe but unnecessary. Vercel Cron and host-managed cron setup are outside this phase.
 

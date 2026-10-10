@@ -5,7 +5,7 @@ type PublishCounts = { attempted: number; published: number; failed: number; rem
 
 export type BlogCronEnv = {
   APP_URL?: string;
-  BLOG_SCHEDULER_SECRET?: string;
+  SCHEDULER_SECRET?: string;
   BLOG_PUBLISH_URL?: string;
   WORKER_SELF_REFERENCE?: { fetch(request: Request): Promise<Response> };
 };
@@ -65,7 +65,7 @@ export async function runBlogPublishCron(
   env: BlogCronEnv,
   fetchRemote: (request: Request) => Promise<Response> = fetch,
 ): Promise<PublishCounts> {
-  if (!validSecret(env.BLOG_SCHEDULER_SECRET)) throw new Error("Invalid blog scheduler configuration.");
+  if (!validSecret(env.SCHEDULER_SECRET)) throw new Error("Invalid blog scheduler configuration.");
   let target: URL;
   try {
     target = env.BLOG_PUBLISH_URL
@@ -87,7 +87,7 @@ export async function runBlogPublishCron(
   }
   const request = new Request(target, {
     method: "POST",
-    headers: { Authorization: `Bearer ${env.BLOG_SCHEDULER_SECRET}` },
+    headers: { Authorization: `Bearer ${env.SCHEDULER_SECRET}` },
     redirect: "manual",
     signal: AbortSignal.timeout(30_000),
   });

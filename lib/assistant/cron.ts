@@ -5,7 +5,7 @@ type MaintenanceCounts = { files: number; runs: number; failed: number };
 
 export type AssistantCronEnv = {
   APP_URL?: string;
-  ASSISTANT_SCHEDULER_SECRET?: string;
+  SCHEDULER_SECRET?: string;
   ASSISTANT_MAINTENANCE_URL?: string;
   WORKER_SELF_REFERENCE?: { fetch(request: Request): Promise<Response> };
 };
@@ -64,7 +64,7 @@ export async function runAssistantMaintenanceCron(
   env: AssistantCronEnv,
   fetchRemote: (request: Request) => Promise<Response> = fetch,
 ): Promise<MaintenanceCounts> {
-  if (!validSecret(env.ASSISTANT_SCHEDULER_SECRET)) throw new Error("Invalid assistant scheduler configuration.");
+  if (!validSecret(env.SCHEDULER_SECRET)) throw new Error("Invalid assistant scheduler configuration.");
   let target: URL;
   try {
     target = env.ASSISTANT_MAINTENANCE_URL
@@ -86,7 +86,7 @@ export async function runAssistantMaintenanceCron(
   }
   const request = new Request(target, {
     method: "POST",
-    headers: { Authorization: `Bearer ${env.ASSISTANT_SCHEDULER_SECRET}` },
+    headers: { Authorization: `Bearer ${env.SCHEDULER_SECRET}` },
     redirect: "manual",
     signal: AbortSignal.timeout(30_000),
   });

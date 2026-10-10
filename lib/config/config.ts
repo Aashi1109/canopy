@@ -54,15 +54,16 @@ const config = {
       url: process.env.CLOUDINARY_URL,
     };
   },
+  get schedulerSecret() {
+    return process.env.SCHEDULER_SECRET;
+  },
   get blog() {
     return {
-      schedulerSecret: process.env.BLOG_SCHEDULER_SECRET,
       publishUrl: process.env.BLOG_PUBLISH_URL,
     };
   },
   get assistant() {
     return {
-      schedulerSecret: process.env.ASSISTANT_SCHEDULER_SECRET,
       maintenanceUrl: process.env.ASSISTANT_MAINTENANCE_URL,
     };
   },
