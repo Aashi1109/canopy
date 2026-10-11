@@ -44,7 +44,7 @@ type Env = BlogCronEnv &
 
 export class CanopyContainer extends Container<Env> {
   defaultPort = 3000;
-  sleepAfter = "5m";
+  sleepAfter = "2m";
   enableInternet = true;
 
   constructor(ctx: ConstructorParameters<typeof Container<Env>>[0], env: Env) {

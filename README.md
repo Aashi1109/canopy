@@ -420,7 +420,7 @@ cron triggers before enabling the new Worker's triggers to avoid duplicate jobs.
 Retain the existing authentication secret and cookie prefix so sessions remain
 compatible. Existing cloud resources require a separate, deliberate cutover.
 
-Each environment uses one shared container instance and sleeps after five idle
+Each environment uses one shared container instance and sleeps after two idle
 minutes. The first request after sleeping starts the container, so allow for a cold
 start. A single instance limits the initial deployment's resource footprint; it is
 not automatic horizontal scaling. Container CPU, memory, disk, and network usage
@@ -523,7 +523,7 @@ a cron invocation during the update/rollout gap can receive `401`. Verify both j
 after rotation. The deployment is not transactional and this single-instance
 replacement can briefly interrupt requests. Changing dashboard settings without
 running the wrapper leaves those settings pending until a real container restart;
-continuous traffic can prevent the five-minute idle shutdown.
+continuous traffic can prevent the two-minute idle shutdown.
 
 ### Verify and deploy
 

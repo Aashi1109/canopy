@@ -262,7 +262,7 @@ test("container setup forwards supported runtime settings and excludes Worker bi
   );
 
   expect(container.defaultPort).toBe(3000);
-  expect(container.sleepAfter).toBe("5m");
+  expect(container.sleepAfter).toBe("2m");
   expect(container.enableInternet).toBe(true);
   expect(container.envVars).toMatchObject({
     ...runtimeSettings,
