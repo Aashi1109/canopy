@@ -1,10 +1,9 @@
 import { getPublishedTemplates } from "@/lib/admin/index.ts";
 import { DocumentTypeSchema, getDocumentDefinition } from "@/lib/invoice-templates/index.ts";
 import { NextResponse } from "next/server";
-import { captureException } from "@sentry/core";
+import { reportPaperworkFailure } from "../_lib/input";
 
 import { getPaperworkTools } from "@/lib/tool-framework/catalog";
-import { errorMessage } from "@/utils/errorMessage";
 
 export async function GET(request: Request) {
   try {
@@ -27,8 +26,7 @@ export async function GET(request: Request) {
       templates: await getPublishedTemplates(validatedDocumentType),
     });
   } catch (error) {
-    captureException(error);
-    console.error("Failed to fetch published document templates", error);
-    return NextResponse.json({ error: errorMessage(error, "Templates are temporarily unavailable.") }, { status: 500 });
+    reportPaperworkFailure(error, "Templates are temporarily unavailable.");
+    return NextResponse.json({ error: "Templates are temporarily unavailable." }, { status: 500 });
   }
 }

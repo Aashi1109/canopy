@@ -1,5 +1,7 @@
 "use client";
 
+import { PaperworkToolHeader } from "../PaperworkWorkspace";
+
 import { useFormatter, useTranslations } from "next-intl";
 
 import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
@@ -9,10 +11,11 @@ import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import type { DocumentTemplate } from "@/lib/invoice-templates/index.ts";
 import {
   FieldDescription,
+  Checkbox,
   Metric,
   Caption,
   H3,
@@ -26,7 +29,6 @@ import {
   Label,
   Select,
   StatusBadge,
-  ToolPageHeader,
 } from "@/components/ui/index.tsx";
 import {
   FileText,
@@ -74,43 +76,24 @@ const FILING_STATUSES: Array<{ id: FilingStatus; label: string }> = [
 export default function QuarterlyTaxEstimatorPage({
   onTrackClick,
   templates = [],
+  embedded = false,
 }: {
   onTrackClick: (item: string) => void;
   templates?: readonly DocumentTemplate[];
+  embedded?: boolean;
 }) {
   const t = useTranslations("Tool.runtime");
   const format = useFormatter();
   const [draft, setDraft] = useState<QuarterlyTaxDraft>(() =>
     normalizeQuarterlyTaxDraft(DataBridge.get(DataBridgeKeys.TAX_DRAFT, DEFAULT_QUARTERLY_TAX_DRAFT)),
   );
-  const [hasImportedExpenses, setHasImportedExpenses] = useState(false);
-
-  // Auto load summaries from active expense report & active mileage logs
-  useEffect(() => {
-    let cumulativeExpenses = 0;
-
-    // 1. Load Expense report summary total
-    const expenseSummary = DataBridge.get<any | null>("paperworkkit.expenseReport.summary", null);
-    if (expenseSummary && expenseSummary.totalAmount) {
-      cumulativeExpenses += Number(expenseSummary.totalAmount || 0);
-    }
-
-    // 2. Load Mileage logs summary total
-    const mileageSummary = DataBridge.get<any | null>(DataBridgeKeys.MILEAGE_SUMMARY, null);
-    if (mileageSummary && mileageSummary.totalAmount) {
-      cumulativeExpenses += Number(mileageSummary.totalAmount || 0);
-    }
-
-    if (cumulativeExpenses > 0) {
-      setDraft((current) => ({
-        ...current,
-        businessExpenses: Math.round(cumulativeExpenses),
-      }));
-      setHasImportedExpenses(true);
-    }
-  }, []);
-
-  const results = calculateQuarterlyTax(draft);
+  const hasAdvancedTemplate = templates.some(
+    (template) =>
+      template.documentType === quarterlyTaxAdapter.documentType &&
+      template.layoutFamily === "advanced" &&
+      template.status === "published",
+  );
+  const results = useMemo(() => calculateQuarterlyTax(draft), [draft]);
   const effectiveTaxRate =
     results.ok && draft.grossRevenue > 0 ? (results.estimatedTotalLiability / draft.grossRevenue) * 100 : 0;
 
@@ -134,6 +117,7 @@ export default function QuarterlyTaxEstimatorPage({
   }, [draft.filingStatus, draft.taxYear, results]);
 
   const handlePrint = () => {
+    if (!results.ok) return;
     onTrackClick("tax_estimator_print_clicked");
     window.print();
   };
@@ -143,33 +127,24 @@ export default function QuarterlyTaxEstimatorPage({
 
   return (
     <div
-      className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      className={embedded ? "min-w-0 w-full p-4 sm:p-5" : "grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}
       id="tax-estimator-wrapper"
       data-language-switch-state={hasEdits ? "dirty" : "clean"}
     >
-      <ToolPageHeader
+      <PaperworkToolHeader
+        embedded={embedded}
         actions={
-          hasImportedExpenses ? (
-            <StatusBadge className="gap-1.5" variant="success">
-              <CheckCircle className="size-4" />
-              <span>
-                {t("tax.pulledValueFromActiveExpensesMileage", { value1: format.number(draft.businessExpenses) })}
-              </span>
-            </StatusBadge>
+          results.ok && !hasAdvancedTemplate ? (
+            <Button onClick={handlePrint} type="button" variant="strong">
+              <Printer className="size-4" />
+              <span>{t("tax.printEstimateSummary")}</span>
+            </Button>
           ) : undefined
         }
         className="print:hidden"
         description={t("tax.irsSelfEmploymentScheduleSeProjectionAndEstimated")}
         eyebrow={<StatusBadge variant="success">{t("tax.form1040EsEstimator")}</StatusBadge>}
         title={t("tax.quarterlyTaxEstimator")}
-      />
-
-      <AdvancedTemplateWorkspace
-        adapter={quarterlyTaxAdapter}
-        draft={draft}
-        onDraftChange={setDraft}
-        onTrackClick={onTrackClick}
-        templates={templates}
       />
 
       {"error" in results && (
@@ -179,10 +154,10 @@ export default function QuarterlyTaxEstimatorPage({
       )}
 
       {/* Main interactive cards split */}
-      <WorkbenchPanes className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <WorkbenchPanes className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* INPUT PARAMETERS CARD COLUMN */}
-        <div className="lg:col-span-6 space-y-6 print:hidden">
-          <Card className="space-y-5">
+        <div className="min-w-0 lg:col-span-6 space-y-4 print:hidden">
+          <Card className="gap-4">
             <H3 className="text-slate-500 border-b border-slate-100 pb-2">
               {t("tax.label1ContractorOperatingFigures")}
             </H3>
@@ -253,12 +228,11 @@ export default function QuarterlyTaxEstimatorPage({
                         ...draft,
                         businessExpenses: Math.max(0, Number(event.target.value)),
                       });
-                      setHasImportedExpenses(false);
                     }}
                   />
                 </div>
                 <FieldDescription className="text-slate-400 block mt-1" id="tax-business-expenses-description">
-                  {t("tax.operatingExpenseTotalsDateBasedMileageDeductionsAnd")}
+                  {t("tax.reviewedExpenses")}
                 </FieldDescription>
               </div>
 
@@ -331,16 +305,32 @@ export default function QuarterlyTaxEstimatorPage({
             </div>
           </Card>
 
+          <Card className="gap-3">
+            {(
+              [
+                ["priorYearTaxKnown", t("tax.priorYearTaxKnown")],
+                ["priorYearCoveredFullYear", t("tax.priorYearCoveredFullYear")],
+                ["priorYearResidentAllYear", t("tax.priorYearResidentAllYear")],
+              ] as const
+            ).map(([field, label]) => (
+              <Checkbox
+                key={field}
+                label={label}
+                checked={Boolean(draft[field])}
+                onCheckedChange={(checked) => setDraft({ ...draft, [field]: checked === true })}
+              />
+            ))}
+          </Card>
           <AlertBanner title={t("tax.estimatedTaxSafeHarborRules")}>
             <P>{t("tax.theFederalScheduleCompares90OfCurrentYear")}</P>
           </AlertBanner>
         </div>
 
         {/* OUTPUT ANALYSIS & ESTIMATE SUMMARY CARD */}
-        <div className="lg:col-span-6 space-y-6">
+        <div className="min-w-0 lg:col-span-6 space-y-4">
           {results.ok && (
             <>
-              <Card className="space-y-6 print:hidden">
+              <Card className="gap-4 print:hidden">
                 <div className="text-center pb-4 border-b">
                   <Overline className="text-slate-400">{t("tax.suggestedFederalQ1Q2Q3Q4Payment")}</Overline>
                   <div className="text-slate-900 mt-1">
@@ -361,7 +351,9 @@ export default function QuarterlyTaxEstimatorPage({
                     [t("tax.results.deductionValue"), results.deductionValue],
                     [t("tax.results.federalIncomeTax"), results.federalIncomeTax],
                     [t("tax.results.estimatedStateTax"), results.estimatedStateTax],
-                    [t("tax.results.requiredAnnualPayment"), results.requiredAnnualPayment],
+                    [t("tax.originalTarget"), results.requiredAnnualPayment],
+                    [t("tax.remainingTarget"), results.remainingAnnualPayment],
+                    [t("tax.filingBalance"), results.projectedFederalBalanceAtFiling],
                   ].map(([label, value]) => (
                     <div key={String(label)}>
                       <Overline className="text-slate-400 block">{label}</Overline>
@@ -388,68 +380,96 @@ export default function QuarterlyTaxEstimatorPage({
                     {t("tax.calculationPackValueStateTaxStaysSeparateFrom", { value1: results.calculationVersion })}
                   </Caption>
                 </div>
-
-                <Button onClick={handlePrint} className="w-full" type="button" variant="strong">
-                  <Printer className="size-4" />
-                  <span>{t("tax.printEstimateSummary")}</span>
-                </Button>
               </Card>
 
-              <div
-                className="relative group border border-slate-200 shadow-xl rounded-2xl overflow-hidden"
-                id="tax-estimate-print"
-              >
-                <div className="p-8 bg-white min-h-[750px] font-sans text-slate-800" id="receipt-print-area" dir="ltr">
-                  <div className="border-b-2 border-slate-900 pb-4 mb-6">
-                    <span className="text-[10px] font-black text-slate-400 block uppercase font-mono">
-                      SMARTTOOLS ESTIMATE SUMMARY
-                    </span>
-                    <h1 className="text-lg font-black text-slate-950 leading-tight">
-                      ESTIMATED FEDERAL TAX PAYMENT SCHEDULE
-                    </h1>
-                    <p className="text-[10px] text-slate-500 font-bold font-mono">
-                      CALENDAR TAX YEAR {draft.taxYear} · CALCULATION {results.calculationVersion}
-                    </p>
-                  </div>
+              <P className="text-sm print:hidden">{t("tax.scope")}</P>
+              {hasAdvancedTemplate && (
+                <Card className="gap-3 print:hidden">
+                  <P>{t("tax.originalSchedule")}</P>
+                  {results.paymentSchedule.map((item) => (
+                    <P key={item.installment}>
+                      {t("tax.payment", { number: item.installment })} · {t("tax.dueDate", { date: item.dueDate })} ·{" "}
+                      {format.number(item.amount, { style: "currency", currency: "USD" })}
+                    </P>
+                  ))}
+                  {results.assumptionMessages.map((message) => (
+                    <P key={message.key}>{t(message.key)}</P>
+                  ))}
+                </Card>
+              )}
+              <AdvancedTemplateWorkspace
+                mode="export"
+                alwaysShowPreview
+                adapter={quarterlyTaxAdapter}
+                draft={draft}
+                onDraftChange={setDraft}
+                onTrackClick={onTrackClick}
+                templates={templates}
+              />
+              {!hasAdvancedTemplate && (
+                <div
+                  className="relative group border border-slate-200 shadow-xl rounded-2xl overflow-hidden"
+                  id="tax-estimate-print"
+                >
+                  <div
+                    className="p-4 sm:p-5 bg-white print:min-h-[750px] font-sans text-slate-800"
+                    id="receipt-print-area"
+                    dir="ltr"
+                  >
+                    <div className="border-b-2 border-slate-900 pb-4 mb-6">
+                      <span className="text-[10px] font-black text-slate-400 block uppercase font-mono">
+                        SMARTTOOLS ESTIMATE SUMMARY
+                      </span>
+                      <h1 className="text-lg font-black text-slate-950 leading-tight">{t("tax.summaryHeading")}</h1>
+                      <p className="text-[10px] text-slate-500 font-bold font-mono">
+                        {t("tax.calendarYearVersion", { year: draft.taxYear, version: results.calculationVersion })}
+                      </p>
+                    </div>
 
-                  <div className="space-y-4">
-                    {results.paymentSchedule.map((item) => (
-                      <div
-                        key={item.installment}
-                        className="border border-slate-300 rounded-xl p-4 text-xs font-semibold"
-                      >
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <span className="text-[11px] uppercase tracking-wider text-slate-400 block font-black">
-                              Installment {item.installment}
-                            </span>
-                            <p className="text-sm font-black text-slate-950">Q{item.installment} estimated payment</p>
-                            <span className="block text-[10px] text-slate-500 font-bold font-mono mt-1">
-                              Due date: {item.dueDate}
-                            </span>
-                          </div>
-                          <div className="text-right flex flex-col justify-end">
-                            <span className="text-[11px] uppercase font-black text-slate-400">Installment amount</span>
-                            <p className="text-md font-black text-slate-900 font-mono">
-                              $
-                              {item.amount.toLocaleString("en-US", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                            </p>
+                    <div className="space-y-3">
+                      <P>{t("tax.originalSchedule")}</P>
+                      {results.paymentSchedule.map((item) => (
+                        <div
+                          key={item.installment}
+                          className="border border-slate-300 rounded-lg p-3 text-xs font-semibold"
+                        >
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <span className="text-[11px] uppercase tracking-wider text-slate-400 block font-black">
+                                {t("tax.installment", { number: item.installment })}
+                              </span>
+                              <p className="text-sm font-black text-slate-950">
+                                {t("tax.payment", { number: item.installment })}
+                              </p>
+                              <span className="block text-[10px] text-slate-500 font-bold font-mono mt-1">
+                                {t("tax.dueDate", { date: item.dueDate })}
+                              </span>
+                            </div>
+                            <div className="text-right flex flex-col justify-end">
+                              <span className="text-[11px] uppercase font-black text-slate-400">
+                                {t("tax.installmentAmount")}
+                              </span>
+                              <p className="text-md font-black text-slate-900 font-mono">
+                                $
+                                {format.number(item.amount, {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
 
-                  <div className="mt-8 space-y-1 text-[10px] text-slate-500">
-                    {results.assumptions.map((assumption) => (
-                      <p key={assumption}>• {assumption}</p>
-                    ))}
+                    <div className="mt-8 space-y-1 text-[10px] text-slate-500">
+                      {results.assumptionMessages.map((message) => (
+                        <p key={message.key}>• {t(message.key)}</p>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </div>

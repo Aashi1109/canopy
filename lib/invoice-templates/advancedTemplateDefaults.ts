@@ -590,16 +590,35 @@ function genericDocumentDefaults(
     }),
   ];
 
-  for (const binding of definition.requiredBindings) {
+  const defaultBindings =
+    documentType === "w9-request"
+      ? [
+          ...definition.requiredBindings,
+          "requesterEmail",
+          "requestDate",
+          "dueDate",
+          "message",
+          "secureSubmissionInstructions",
+        ]
+      : definition.requiredBindings;
+  for (const binding of defaultBindings) {
     const field = definition.fields.find(({ key }) => key === binding);
     if (!field) continue;
     const isTable = field.allowedBindingTypes.includes("table");
-    const height = isTable ? 38 : 9;
+    const height = isTable
+      ? 38
+      : field.key === "calculationAssumptions"
+        ? 65
+        : field.key === "message"
+          ? 80
+          : field.key === "secureSubmissionInstructions"
+            ? 30
+            : 9;
     schemas.push(
       withPdfmeDefaults({
         name: field.key,
         type: isTable ? "table" : "text",
-        content: isTable ? tableSample(field) : field.sampleValue,
+        content: isTable ? tableSample(field) : `${field.label}: ${field.sampleValue}`,
         position: { x, y },
         width,
         height,

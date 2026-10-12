@@ -26,7 +26,7 @@
 
 import { cache } from "react";
 import { and, eq, getTableColumns, sql } from "drizzle-orm";
-import { getPaperworkToolMessages } from "../paperwork/toolMessages.ts";
+import { getPaperworkToolMessages, resolvePaperworkTranslation } from "../paperwork/toolMessages.ts";
 import { defaultLocale, localizeHref, type Locale } from "../i18n/config.ts";
 import { getCommonMessages } from "../i18n/messages.ts";
 import {
@@ -385,8 +385,10 @@ const loadCatalog = cache(async (locale: Locale = defaultLocale, app?: PublicToo
           description: escapeToolText(row.description),
           ...getPaperworkToolMessages(definitionKeyOf(row.toolId) ?? row.toolId),
         };
-        const requested = resolveToolTranslation(row.translations, locale, required);
-        const translation = requested ?? resolveToolTranslation(row.translations, defaultLocale, required);
+        const componentKey = definitionKeyOf(row.toolId) ?? row.toolId;
+        const requested = resolvePaperworkTranslation(row.translations, componentKey, locale, required);
+        const translation =
+          requested ?? resolvePaperworkTranslation(row.translations, componentKey, defaultLocale, required);
         if (!translation) return [];
         const resolvedLocale = requested ? locale : defaultLocale;
         return [

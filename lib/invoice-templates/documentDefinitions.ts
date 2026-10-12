@@ -298,6 +298,7 @@ const invoiceFields = [
   computed("tax", "Tax", "totals", "$540.00"),
   computed("total", "Total", "totals", "$3,540.00"),
   computed("balanceDue", "Balance due", "totals", "$3,540.00"),
+  computed("customerCredit", "Customer credit from overpayment", "totals", "$0.00"),
 ] as const;
 
 const receiptFields = [
@@ -360,9 +361,18 @@ const receiptFields = [
       }),
       column("quantity", "Quantity", "number", "2", { required: true }),
       column("unitPrice", "Unit price", "currency", "6", { required: true }),
+      column("taxable", "Taxable", "checkbox", "true"),
     ],
     { required: true, computationRequired: true, sensitiveData: "financial" },
   ),
+  field("currency", "Currency", "transaction", "USD", { required: true }),
+  field("discountType", "Discount type", "adjustments", "none", { control: "select", computationRequired: true }),
+  field("paymentStatus", "Payment status", "payment", "Unpaid", { control: "select" }),
+  field("amountReceived", "Amount actually received", "payment", "35.40", {
+    control: "currency",
+    valueType: "number",
+    computationRequired: true,
+  }),
   field("discountValue", "Discount", "adjustments", "0", {
     control: "currency",
     valueType: "number",
@@ -406,6 +416,8 @@ const receiptFields = [
   computed("tax", "Tax", "totals", "$2.40"),
   computed("grossTotal", "Gross total", "totals", "$35.40"),
   computed("total", "Total", "totals", "$35.40"),
+  computed("netReceived", "Net amount retained after refunds", "totals", "$35.40"),
+  computed("customerCredit", "Customer credit", "totals", "$0.00"),
   computed("netPaid", "Net paid", "totals", "$35.40"),
   computed("balanceDue", "Balance", "totals", "$0.00"),
 ] as const;
@@ -501,6 +513,10 @@ const expenseFields = [
       }),
       column("miles", "Miles", "number", "110", { required: true }),
       column("rate", "Rate", "currency", "0.725", { required: true }),
+      column("startLocation", "Start", "text", "Office"),
+      column("destination", "Destination", "text", "Airport"),
+      column("parking", "Parking", "currency", "0"),
+      column("tolls", "Tolls", "currency", "0"),
     ],
     { computationRequired: true, sensitiveData: "financial" },
   ),
@@ -510,9 +526,15 @@ const expenseFields = [
     computationRequired: true,
     sensitiveData: "financial",
   }),
-  field("evidenceSummary", "Evidence summary", "evidence", "3 receipts attached", {
-    control: "textarea",
-  }),
+  field(
+    "evidenceSummary",
+    "Evidence summary",
+    "evidence",
+    "3 receipt references recorded; supporting files are held separately",
+    {
+      control: "textarea",
+    },
+  ),
   field("certification", "Certification", "approval", "I certify these expenses are accurate.", {
     control: "checkbox",
     valueType: "boolean",
@@ -529,6 +551,8 @@ const expenseFields = [
   computed("reimbursableTotal", "Reimbursable total", "totals", "$594.75"),
   computed("billableTotal", "Billable total", "totals", "$515.00"),
   computed("reportTotal", "Report total", "totals", "$594.75"),
+  computed("reimbursementDue", "Reimbursement due", "totals", "$444.75"),
+  computed("advanceToReturn", "Unused advance to return", "totals", "$0.00"),
   computed("amountDue", "Amount due", "totals", "$444.75"),
 ] as const;
 
@@ -586,7 +610,9 @@ const mileageFields = [
         required: true,
       }),
       column("startLocation", "Start", "text", "Asheville HQ"),
-      column("destination", "Destination", "text", "Broad Street Retail Lab"),
+      column("destination", "Destination", "text", "Broad Street Retail Lab", { required: true }),
+      column("startOdometer", "Starting odometer", "number", "19000"),
+      column("endOdometer", "Ending odometer", "number", "19055"),
       column("miles", "Miles", "number", "55", { required: true }),
       column("parking", "Parking", "currency", "12"),
       column("tolls", "Tolls", "currency", "4.5"),
@@ -623,6 +649,7 @@ const mileageFields = [
   computed("totalMiles", "Total miles", "totals", "90"),
   computed("parkingAndTolls", "Parking and tolls", "totals", "$19.50"),
   computed("standardMileageDeduction", "Standard-mileage deduction", "totals", "$86.00"),
+  computed("totalDeduction", "Mileage plus parking and tolls (custom mode: reimbursement)", "totals", "$86.00"),
   computed("fuelCost", "Fuel cost", "totals", "$42.00"),
   computed("fuelEconomy", "Fuel economy", "totals", "7.5 MPG"),
 ] as const;
@@ -696,6 +723,21 @@ const quarterlyTaxFields = [
     computationRequired: true,
     sensitiveData: "tax",
   }),
+  field("priorYearTaxKnown", "Prior-year total tax is known", "safe-harbor", "false", {
+    control: "checkbox",
+    valueType: "boolean",
+    computationRequired: true,
+  }),
+  field("priorYearCoveredFullYear", "Prior tax year covered 12 months", "safe-harbor", "false", {
+    control: "checkbox",
+    valueType: "boolean",
+    computationRequired: true,
+  }),
+  field("priorYearResidentAllYear", "US citizen or resident throughout prior year", "safe-harbor", "false", {
+    control: "checkbox",
+    valueType: "boolean",
+    computationRequired: true,
+  }),
   field("priorYearTax", "Prior-year tax", "safe-harbor", "12000", {
     control: "currency",
     valueType: "number",
@@ -723,23 +765,45 @@ const quarterlyTaxFields = [
   computed("selfEmploymentTax", "Self-employment tax", "summary", "$10,248.00"),
   computed("stateEstimate", "Simple state estimate", "summary", "$2,291.00"),
   computed("estimatedLiability", "Estimated liability", "summary", "$18,592.00"),
-  computed("requiredAnnualPayment", "Required annual payment", "summary", "$10,800.00"),
+  computed("requiredAnnualPayment", "Original federal annual installment target", "summary", "$10,800.00"),
+  computed("remainingAnnualPayment", "Remaining annual target after payments", "summary", "$10,800.00"),
+  computed(
+    "projectedFederalBalanceAtFiling",
+    "Projected federal filing balance (negative means credit)",
+    "summary",
+    "$0.00",
+  ),
+  system(
+    "calculationAssumptions",
+    "Scope and calculation limitations",
+    "assumptions",
+    "Ordinary US calendar-year estimate; excludes QBI, NIIT, AMT and capital-gain rates.",
+  ),
   computed(
     "quarterlyInstallments",
     "Quarterly installments",
     "schedule",
     JSON.stringify([
-      { id: "q1", dueDate: "2026-04-15", amount: 2700 },
-      { id: "q2", dueDate: "2026-06-15", amount: 2700 },
-      { id: "q3", dueDate: "2026-09-15", amount: 2700 },
-      { id: "q4", dueDate: "2027-01-15", amount: 2700 },
+      { id: "q1", installment: 1, dueDate: "2026-04-15", amount: 2700 },
+      { id: "q2", installment: 2, dueDate: "2026-06-15", amount: 2700 },
+      { id: "q3", installment: 3, dueDate: "2026-09-15", amount: 2700 },
+      { id: "q4", installment: 4, dueDate: "2027-01-15", amount: 2700 },
     ]),
-    { valueType: "table", allowedBindingTypes: ["table"] },
+    {
+      valueType: "table",
+      allowedBindingTypes: ["table"],
+      repeaterColumns: [
+        column("installment", "Installment", "number", "1"),
+        column("dueDate", "Due date", "date", "2026-04-15"),
+        column("amount", "Original installment amount", "currency", "2700"),
+      ],
+    },
   ),
-  system("calculationVersion", "Calculation version", "assumptions", "2026.1"),
+  system("calculationVersion", "Calculation version", "assumptions", "2026.2"),
 ] as const;
 
 const w9Fields = [
+  system("selectedVendorId", "Selected contractor reference", "contractor", "vendor-1"),
   field("requesterName", "Requester name", "requester", "Northstar Studio LLC", {
     required: true,
     sensitiveData: "contact",
@@ -892,6 +956,13 @@ const necFields = [
     control: "select",
     sensitiveData: "tax",
   }),
+  computed("filingRequiredCount", "Recipients needing filing review", "summary", "1"),
+  system(
+    "eligibilityWarnings",
+    "Eligibility and withholding review notes",
+    "summary",
+    "Review W-9 classification and payment network eligibility.",
+  ),
   computed("reportableTotal", "Reportable total", "summary", "$2,450.00"),
   computed("thresholdStatus", "Threshold status", "summary", "Meets the 2026 $2,000 threshold", {
     valueType: "text",
@@ -1007,6 +1078,7 @@ export const DOCUMENT_DEFINITIONS = [
       "requiredAnnualPayment",
       "quarterlyInstallments",
       "calculationVersion",
+      "calculationAssumptions",
     ],
     complianceMode: "internal-tax-report",
   }),

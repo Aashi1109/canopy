@@ -16,6 +16,9 @@ export interface QuarterlyTaxDraft {
   priorYearAdjustedGrossIncome: number;
   stateTaxRate: number;
   assumptions: string;
+  priorYearTaxKnown?: boolean;
+  priorYearCoveredFullYear?: boolean;
+  priorYearResidentAllYear?: boolean;
 }
 
 interface TaxBracket {
@@ -30,10 +33,14 @@ const TAX_ASSUMPTION_MESSAGES = [
   { key: "tax.assumptions.paymentFloor" },
   { key: "tax.assumptions.stateEstimate" },
   { key: "tax.assumptions.estimateOnly" },
+  { key: "tax.assumptions.excludedTaxes" },
+  { key: "tax.assumptions.wageScope" },
+  { key: "tax.assumptions.paymentTiming" },
+  { key: "tax.assumptions.targetMeaning" },
 ] as const;
 
 export const QUARTERLY_TAX_RULES_2026 = {
-  version: "2026.1",
+  version: "2026.2",
   taxYear: 2026,
   standardDeductions: {
     single: 16100,
@@ -94,14 +101,18 @@ export const QUARTERLY_TAX_RULES_2026 = {
     "No federal installments are suggested when estimated tax after withholding is under $1,000.",
     "State tax is a separate simple estimate and is not included in the federal payment schedule.",
     "This summary is an estimate only and is not an official payment voucher.",
+    "Ordinary US calendar-year income only. QBI deduction, capital-gain rates, NIIT, AMT, refundable credits, special deductions and loss carryovers are excluded. These omissions can materially change your tax.",
+    "W-2 wages are assumed to equal income-tax, Social Security and Medicare wages for the self-employed person. Joint returns with a working spouse need a separate calculation.",
+    "Installments show the original equal-income target; payments already made reduce only the remaining annual target. Payment timing and underpayment penalties are not calculated. Uneven income requires the annualized-income method.",
+    "Safe harbor is a penalty-avoidance target, not payment of the full projected tax. A positive filing balance is additional federal tax; a negative balance is a projected credit.",
   ],
 } as const;
 
 export const DEFAULT_QUARTERLY_TAX_DRAFT: QuarterlyTaxDraft = {
   taxYear: 2026,
   filingStatus: "single",
-  grossRevenue: 85000,
-  businessExpenses: 12500,
+  grossRevenue: 0,
+  businessExpenses: 0,
   w2Wages: 0,
   otherIncome: 0,
   aboveLineDeductions: 0,
@@ -111,12 +122,17 @@ export const DEFAULT_QUARTERLY_TAX_DRAFT: QuarterlyTaxDraft = {
   estimatedPaymentsMade: 0,
   priorYearTaxLiability: 0,
   priorYearAdjustedGrossIncome: 0,
-  stateTaxRate: 4.5,
+  stateTaxRate: 0,
   assumptions: "",
+  priorYearTaxKnown: false,
+  priorYearCoveredFullYear: false,
+  priorYearResidentAllYear: false,
 };
 
 export const SAMPLE_QUARTERLY_TAX_DRAFT: QuarterlyTaxDraft = {
   ...DEFAULT_QUARTERLY_TAX_DRAFT,
+  priorYearTaxKnown: true,
+  priorYearCoveredFullYear: true,
   grossRevenue: 120000,
   businessExpenses: 24000,
   w2Wages: 18000,
@@ -180,6 +196,8 @@ export function calculateQuarterlyTax(draft: QuarterlyTaxDraft):
       priorYearSafeHarbor: number | null;
       requiredAnnualPayment: number;
       quarterlyPayment: number;
+      remainingAnnualPayment: number;
+      projectedFederalBalanceAtFiling: number;
       paymentSchedule: Array<{
         installment: number;
         dueDate: string;
@@ -197,11 +215,39 @@ export function calculateQuarterlyTax(draft: QuarterlyTaxDraft):
     };
   }
 
+  const amountFields = [
+    "grossRevenue",
+    "businessExpenses",
+    "w2Wages",
+    "otherIncome",
+    "aboveLineDeductions",
+    "itemizedDeductions",
+    "taxCredits",
+    "federalWithholding",
+    "estimatedPaymentsMade",
+    "priorYearTaxLiability",
+    "priorYearAdjustedGrossIncome",
+    "stateTaxRate",
+  ] as const;
+  if (
+    amountFields.some(
+      (field) => !Number.isFinite(draft[field]) || draft[field] < 0 || draft[field] > Number.MAX_SAFE_INTEGER / 100,
+    ) ||
+    draft.stateTaxRate > 100 ||
+    !Object.hasOwn(rules.brackets, draft.filingStatus)
+  ) {
+    return {
+      ok: false,
+      error: "Enter finite nonnegative amounts and a state rate from 0 to 100%.",
+      errorMessage: { key: "tax.validation.invalidAmounts", values: { year: draft.taxYear } },
+    };
+  }
   const nonnegative = (value: number) => Math.max(0, Number(value || 0));
   const netSelfEmploymentProfit = money(
     Math.max(0, nonnegative(draft.grossRevenue) - nonnegative(draft.businessExpenses)),
   );
-  const netSelfEmploymentEarnings = netSelfEmploymentProfit * 0.9235;
+  const netEarnings = netSelfEmploymentProfit * 0.9235;
+  const netSelfEmploymentEarnings = netEarnings >= 400 ? netEarnings : 0;
   const remainingSocialSecurityBase = Math.max(0, rules.socialSecurityWageCap - nonnegative(draft.w2Wages));
   const socialSecurityTax = Math.min(netSelfEmploymentEarnings, remainingSocialSecurityBase) * 0.124;
   const medicareTax = netSelfEmploymentEarnings * 0.029;
@@ -232,7 +278,9 @@ export function calculateQuarterlyTax(draft: QuarterlyTaxDraft):
   const currentYearSafeHarbor = money(estimatedFederalLiability * 0.9);
   const highIncomeThreshold = draft.filingStatus === "married_separate" ? 75000 : 150000;
   const priorYearSafeHarbor =
-    nonnegative(draft.priorYearTaxLiability) > 0
+    draft.priorYearTaxKnown &&
+    draft.priorYearCoveredFullYear &&
+    (draft.priorYearTaxLiability > 0 || draft.priorYearResidentAllYear)
       ? money(
           nonnegative(draft.priorYearTaxLiability) *
             (nonnegative(draft.priorYearAdjustedGrossIncome) > highIncomeThreshold ? 1.1 : 1),
@@ -246,12 +294,7 @@ export function calculateQuarterlyTax(draft: QuarterlyTaxDraft):
   const requiredAnnualPayment =
     estimatedTaxAfterWithholding < 1000
       ? 0
-      : money(
-          Math.max(
-            0,
-            safeHarborTarget - nonnegative(draft.federalWithholding) - nonnegative(draft.estimatedPaymentsMade),
-          ),
-        );
+      : money(Math.max(0, safeHarborTarget - nonnegative(draft.federalWithholding)));
   const quarterlyPayment = money(requiredAnnualPayment / 4);
 
   return {
@@ -270,6 +313,10 @@ export function calculateQuarterlyTax(draft: QuarterlyTaxDraft):
     priorYearSafeHarbor,
     requiredAnnualPayment,
     quarterlyPayment,
+    remainingAnnualPayment: money(Math.max(0, requiredAnnualPayment - draft.estimatedPaymentsMade)),
+    projectedFederalBalanceAtFiling: money(
+      estimatedFederalLiability - draft.federalWithholding - draft.estimatedPaymentsMade,
+    ),
     paymentSchedule: rules.paymentDates.map((dueDate, index) => ({
       installment: index + 1,
       dueDate,

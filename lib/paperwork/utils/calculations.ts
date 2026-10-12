@@ -24,7 +24,7 @@ export function calculateInvoiceTotals(data: InvoiceData): CalculatedTotals {
   lineItems.forEach((item) => {
     const qty = Number(item.quantity) || 0;
     const price = Number(item.unitPrice) || 0;
-    subtotal += qty * price;
+    subtotal += roundToTwo(qty * price);
   });
 
   // 2. Calculate global discount
@@ -40,6 +40,8 @@ export function calculateInvoiceTotals(data: InvoiceData): CalculatedTotals {
     discountAmount = subtotal;
   }
 
+  discountAmount = roundToTwo(discountAmount);
+
   // 3. Tax applies only to taxable line items after proportional discount
   let taxableSubtotal = 0;
   let taxAmount = 0;
@@ -49,7 +51,7 @@ export function calculateInvoiceTotals(data: InvoiceData): CalculatedTotals {
   lineItems.forEach((item) => {
     const qty = Number(item.quantity) || 0;
     const price = Number(item.unitPrice) || 0;
-    const itemAmount = qty * price;
+    const itemAmount = roundToTwo(qty * price);
 
     if (item.taxable) {
       const itemProportionalDiscount = itemAmount * discountRatio;
@@ -60,13 +62,14 @@ export function calculateInvoiceTotals(data: InvoiceData): CalculatedTotals {
   });
 
   // 4. Shipping / additional fees
-  const shippingFee = Number(totalsConfig.shippingFee) || 0;
+  const shippingFee = roundToTwo(Number(totalsConfig.shippingFee) || 0);
 
   // 5. Compute Grand Total
-  const total = Math.max(0, subtotal - discountAmount + taxAmount + shippingFee);
+  taxAmount = roundToTwo(taxAmount);
+  const total = roundToTwo(Math.max(0, subtotal - discountAmount + taxAmount + shippingFee));
 
   // 6. Balance Due
-  const amountPaid = Number(totalsConfig.amountPaid) || 0;
+  const amountPaid = roundToTwo(Number(totalsConfig.amountPaid) || 0);
   const balanceDue = Math.max(0, total - amountPaid);
 
   return {
@@ -78,6 +81,7 @@ export function calculateInvoiceTotals(data: InvoiceData): CalculatedTotals {
     total: roundToTwo(total),
     amountPaid: roundToTwo(amountPaid),
     balanceDue: roundToTwo(balanceDue),
+    customerCredit: roundToTwo(Math.max(0, amountPaid - total)),
   };
 }
 
@@ -88,10 +92,10 @@ function roundToTwo(num: number): number {
 /**
  * Format a number to currency layout based on the USD locale.
  */
-export function formatCurrency(amount: number, currency: string = "USD"): string {
+export function formatCurrency(amount: number, currency: string = "USD", locale: string = "en-US"): string {
   const safeAmount = Number(amount) || 0;
   try {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency: currency || "USD",
       minimumFractionDigits: 2,

@@ -418,10 +418,10 @@ export default function InvoicePreviewRenderer({ data, template, isPrintMode = f
                         </td>
                         <td className="py-3 text-center font-mono align-top text-slate-600">{qty}</td>
                         <td className="py-3 text-right font-mono align-top text-slate-600">
-                          {formatCurrency(price, "USD")}
+                          {formatCurrency(price, data.invoice.currency || "USD")}
                         </td>
                         <td className="py-3 px-2 text-right font-mono font-bold align-top text-slate-900">
-                          {formatCurrency(amount, "USD")}
+                          {formatCurrency(amount, data.invoice.currency || "USD")}
                         </td>
                       </tr>
                     );
@@ -475,7 +475,9 @@ export default function InvoicePreviewRenderer({ data, template, isPrintMode = f
               {totalsBlock.showSubtotal && (
                 <div className="flex justify-between font-medium">
                   <span style={styles.mutedText}>{labels.subtotal || "Subtotal"}:</span>
-                  <span className="font-mono text-slate-900 text-right">{formatCurrency(totals.subtotal, "USD")}</span>
+                  <span className="font-mono text-slate-900 text-right">
+                    {formatCurrency(totals.subtotal, data.invoice.currency || "USD")}
+                  </span>
                 </div>
               )}
 
@@ -485,7 +487,9 @@ export default function InvoicePreviewRenderer({ data, template, isPrintMode = f
                     {labels.discount || "Discount"}{" "}
                     {data.totalsConfig.discountType === "percent" ? `(${data.totalsConfig.discountValue}%)` : ""}:
                   </span>
-                  <span className="font-mono text-right">- {formatCurrency(totals.discountAmount, "USD")}</span>
+                  <span className="font-mono text-right">
+                    - {formatCurrency(totals.discountAmount, data.invoice.currency || "USD")}
+                  </span>
                 </div>
               )}
 
@@ -494,7 +498,9 @@ export default function InvoicePreviewRenderer({ data, template, isPrintMode = f
                   <span className="truncate" style={styles.mutedText}>
                     {data.totalsConfig.taxLabel || labels.tax || "Sales Tax"} ({data.totalsConfig.taxRate}%):
                   </span>
-                  <span className="font-mono text-slate-900 text-right">{formatCurrency(totals.taxAmount, "USD")}</span>
+                  <span className="font-mono text-slate-900 text-right">
+                    {formatCurrency(totals.taxAmount, data.invoice.currency || "USD")}
+                  </span>
                 </div>
               )}
 
@@ -502,7 +508,7 @@ export default function InvoicePreviewRenderer({ data, template, isPrintMode = f
                 <div className="flex justify-between">
                   <span style={styles.mutedText}>{labels.shipping || "Shipping"}:</span>
                   <span className="font-mono text-slate-900 text-right">
-                    {formatCurrency(totals.shippingFee, "USD")}
+                    {formatCurrency(totals.shippingFee, data.invoice.currency || "USD")}
                   </span>
                 </div>
               )}
@@ -512,13 +518,17 @@ export default function InvoicePreviewRenderer({ data, template, isPrintMode = f
                 style={{ borderColor: theme.borderColor }}
               >
                 <span>{labels.total || "Total Due"}:</span>
-                <span className="font-mono text-right">{formatCurrency(totals.total, "USD")}</span>
+                <span className="font-mono text-right">
+                  {formatCurrency(totals.total, data.invoice.currency || "USD")}
+                </span>
               </div>
 
               {totalsBlock.showAmountPaid && totals.amountPaid > 0 && (
                 <div className="flex justify-between text-slate-500">
                   <span>{labels.amountPaid || "Amount Paid"}:</span>
-                  <span className="font-mono text-right">- {formatCurrency(totals.amountPaid, "USD")}</span>
+                  <span className="font-mono text-right">
+                    - {formatCurrency(totals.amountPaid, data.invoice.currency || "USD")}
+                  </span>
                 </div>
               )}
 
@@ -537,7 +547,7 @@ export default function InvoicePreviewRenderer({ data, template, isPrintMode = f
                   <span
                     className={`font-bold text-xs ${totalsBlock.style === "highlight-total" ? "text-white" : "text-slate-900"}`}
                   >
-                    {labels.balanceDue || "Balance Due"}:
+                    {totals.customerCredit > 0 ? "Customer credit" : labels.balanceDue || "Balance Due"}:
                   </span>
                   <span
                     className="font-mono text-lg font-black text-right"
@@ -545,7 +555,10 @@ export default function InvoicePreviewRenderer({ data, template, isPrintMode = f
                       color: totalsBlock.style === "highlight-total" ? theme.surfaceColor : theme.primaryColor,
                     }}
                   >
-                    {formatCurrency(totals.balanceDue, "USD")}
+                    {formatCurrency(
+                      totals.customerCredit > 0 ? totals.customerCredit : totals.balanceDue,
+                      data.invoice.currency || "USD",
+                    )}
                   </span>
                 </div>
               )}

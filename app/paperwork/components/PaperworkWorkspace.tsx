@@ -1,57 +1,70 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRef, type ReactNode } from "react";
+import { createContext, useContext, useState, type ComponentProps, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { FileText } from "lucide-react";
-import {
-  WorkbenchPresentationProvider,
-  WorkbenchFocusButton,
-  WorkbenchViewControl,
-  useWorkbenchFocus,
-} from "@/components/ui/components/workbench-presentation";
-import { cn } from "@/components/ui/lib/utils";
+import { Tabs, ToolPageHeader, WorkbenchShell } from "@/components/ui/index.tsx";
+import { useWorkbenchPresentation } from "@/components/ui/components/workbench-presentation";
 
-export function PaperworkWorkspace({ children, title }: { children: ReactNode; title: string }) {
+const ToolbarActionsContext = createContext<{ target: HTMLDivElement | null } | null>(null);
+
+export function PaperworkWorkspace({
+  children,
+  title,
+  actions,
+  status,
+}: {
+  children: ReactNode;
+  title: string;
+  actions?: ReactNode;
+  status?: ReactNode;
+}) {
+  const t = useTranslations("Tool.runtime");
+  const [toolbarTarget, setToolbarTarget] = useState<HTMLDivElement | null>(null);
   return (
-    <WorkbenchPresentationProvider>
-      <Frame title={title}>{children}</Frame>
-    </WorkbenchPresentationProvider>
+    <ToolbarActionsContext.Provider value={{ target: toolbarTarget }}>
+      <WorkbenchShell
+        aria-label={t("shared.workspace.title", { title })}
+        workspaceTitle={title}
+        className="print:h-auto print:overflow-visible print:border-0 print:shadow-none"
+        variant="utility"
+        toolbarActions={
+          <div ref={setToolbarTarget} className="flex flex-wrap items-center justify-end gap-2">
+            {actions}
+          </div>
+        }
+        status={status}
+        toolbar={<FileText aria-hidden="true" className="size-5 shrink-0 text-primary" />}
+      >
+        <div className="h-full min-h-0 overflow-auto overscroll-contain print:h-auto print:overflow-visible">
+          {children}
+        </div>
+      </WorkbenchShell>
+    </ToolbarActionsContext.Provider>
   );
 }
 
-function Frame({ children, title }: { children: ReactNode; title: string }) {
-  const t = useTranslations("Tool.runtime");
-  const ref = useRef<HTMLElement>(null);
-  const { focused, placeholderHeight } = useWorkbenchFocus(ref);
-  return (
-    <div style={focused ? { height: placeholderHeight } : undefined}>
-      <section
-        ref={ref}
-        data-focus-mode={focused}
-        aria-label={t("shared.workspace.title", { title })}
-        className={cn(focused && "fixed inset-0 z-40 flex h-dvh flex-col bg-card print:static print:h-auto")}
-      >
-        <div
-          className={cn(
-            "grid grid-cols-2 items-center gap-2 border-b border-border bg-card px-5 py-2 print:hidden min-[64rem]:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]",
-            !focused && "mx-auto max-w-7xl",
-          )}
-        >
-          <div className="flex min-w-0 items-center gap-2">
-            <FileText aria-hidden="true" className="size-5 shrink-0 text-primary" />
-            <span className="truncate text-sm font-semibold">{title}</span>
-          </div>
-          <div className="order-3 col-span-2 justify-self-center min-[64rem]:order-none min-[64rem]:col-span-1">
-            <WorkbenchViewControl />
-          </div>
-          <div className="justify-self-end">
-            <WorkbenchFocusButton />
-          </div>
-        </div>
-        <div className={cn(focused && "min-h-0 flex-1 overflow-auto overscroll-contain print:overflow-visible")}>
-          {children}
-        </div>
-      </section>
-    </div>
-  );
+export function PaperworkToolHeader({
+  embedded = false,
+  actions,
+  ...props
+}: ComponentProps<typeof ToolPageHeader> & { embedded?: boolean }) {
+  if (embedded) {
+    return <PaperworkToolbarActions>{actions}</PaperworkToolbarActions>;
+  }
+  return <ToolPageHeader actions={actions} {...props} />;
+}
+
+/** Keep tool-owned action state while rendering the controls in the shared toolbar. */
+export function PaperworkToolbarActions({ children }: { children: ReactNode }) {
+  const toolbar = useContext(ToolbarActionsContext);
+  if (!toolbar) return <>{children}</>;
+  return toolbar.target ? createPortal(children, toolbar.target) : null;
+}
+
+/** The expanded workbench owns view switching while it is open. */
+export function PaperworkMobileTabs(props: ComponentProps<typeof Tabs>) {
+  const presentation = useWorkbenchPresentation();
+  return presentation?.focused ? null : <Tabs {...props} />;
 }

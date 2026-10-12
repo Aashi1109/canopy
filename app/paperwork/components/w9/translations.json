@@ -210,7 +210,14 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "بسّط أعمالك باستخدام SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "يتوسع الهيكل الديناميكي فورًا وفقًا للتخطيط. لن تُفقد المسودة.",
         "runtime.w9.maintainComplianceFoldersForSelfEmployedSubcontractorEntities": "حافظ على مجلدات الامتثال لكيانات المقاولين من الباطن العاملين لحسابهم الخاص، وتتبع حالات التحقق، واطلب السجلات.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "بسّط سير العمل الإداري باستخدام منشئات احترافية للشركات الصغيرة بنقرة واحدة."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "بسّط سير العمل الإداري باستخدام منشئات احترافية للشركات الصغيرة بنقرة واحدة.",
+        "runtime.w9.profileUpdatedLocally": "تم تحديث ملف المقاول في هذه المسودة.",
+        "runtime.w9.selectBeforeCopy": "اختر مقاولًا له اسم قانوني قبل نسخ الطلب.",
+        "runtime.w9.copyFailedRecovery": "تعذر النسخ. حدد نص الطلب وانسخه يدويًا، أو اسمح بالوصول إلى الحافظة وحاول مجددًا.",
+        "runtime.w9.validation.requestDate": "أدخل تاريخ طلب صالحًا.",
+        "runtime.w9.validation.dueDate": "يجب أن يكون الموعد النهائي تاريخًا صالحًا يساوي تاريخ الطلب أو يأتي بعده.",
+        "runtime.w9.validation.secureReturn": "حدد طريقة آمنة معتمدة لإعادة النموذج الرسمي.",
+        "runtime.w9.validation.contractorEmail": "أدخل عنوان بريد إلكتروني صالحًا للمقاول."
       }
     },
     "de": {
@@ -422,7 +429,14 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Optimieren Sie Ihr Unternehmen mit SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "Die dynamische Struktur skaliert sofort entsprechend dem Layout. Kein Entwurf geht verloren.",
         "runtime.w9.maintainComplianceFoldersForSelfEmployedSubcontractorEntities": "Verwalten Sie Compliance-Unterlagen für selbstständige Subunternehmereinheiten, verfolgen Sie Verifizierungsstatus und fordern Sie Unterlagen an.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Vereinfachen Sie administrative Abläufe mit professionellen Ein-Klick-Generatoren für kleine Unternehmen."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Vereinfachen Sie administrative Abläufe mit professionellen Ein-Klick-Generatoren für kleine Unternehmen.",
+        "runtime.w9.profileUpdatedLocally": "Auftragnehmerprofil in diesem Entwurf aktualisiert.",
+        "runtime.w9.selectBeforeCopy": "Vor dem Kopieren einen Auftragnehmer mit rechtlichem Namen auswählen.",
+        "runtime.w9.copyFailedRecovery": "Kopieren fehlgeschlagen. Anfragetext manuell markieren und kopieren oder Zugriff auf die Zwischenablage erlauben und erneut versuchen.",
+        "runtime.w9.validation.requestDate": "Gültiges Anfragedatum eingeben.",
+        "runtime.w9.validation.dueDate": "Die Frist muss ein gültiges Datum am oder nach dem Anfragedatum sein.",
+        "runtime.w9.validation.secureReturn": "Eine zugelassene sichere Rücksendemethode für das offizielle Formular angeben.",
+        "runtime.w9.validation.contractorEmail": "Gültige E-Mail-Adresse des Auftragnehmers eingeben."
       }
     },
     "en": {
@@ -634,7 +648,14 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Streamline Your Business with SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "Dynamic structure scales immediately based on layout. No lost draft.",
         "runtime.w9.maintainComplianceFoldersForSelfEmployedSubcontractorEntities": "Maintain compliance folders for self-employed subcontractor entities, track verification status states, and request records.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplify administrative workflows with professional single-click small business generators."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplify administrative workflows with professional single-click small business generators.",
+        "runtime.w9.profileUpdatedLocally": "Contractor profile updated in this draft.",
+        "runtime.w9.selectBeforeCopy": "Select a contractor with a legal name before copying the request.",
+        "runtime.w9.copyFailedRecovery": "Could not copy. Select and copy the request text manually, or allow clipboard access and try again.",
+        "runtime.w9.validation.requestDate": "Enter a valid request date.",
+        "runtime.w9.validation.dueDate": "Due date must be a real date on or after the request date.",
+        "runtime.w9.validation.secureReturn": "Provide an approved secure method for returning the official form.",
+        "runtime.w9.validation.contractorEmail": "Enter a valid contractor email address."
       }
     },
     "es": {
@@ -846,7 +867,14 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Optimice su empresa con SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "La estructura dinámica se adapta de inmediato según el diseño. No se pierde ningún borrador.",
         "runtime.w9.maintainComplianceFoldersForSelfEmployedSubcontractorEntities": "Mantenga carpetas de cumplimiento para entidades subcontratistas autónomas, realice un seguimiento de los estados de verificación y solicite registros.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique los flujos de trabajo administrativos con generadores profesionales para pequeñas empresas con un solo clic."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique los flujos de trabajo administrativos con generadores profesionales para pequeñas empresas con un solo clic.",
+        "runtime.w9.profileUpdatedLocally": "Perfil del contratista actualizado en este borrador.",
+        "runtime.w9.selectBeforeCopy": "Seleccione un contratista con nombre legal antes de copiar la solicitud.",
+        "runtime.w9.copyFailedRecovery": "No se pudo copiar. Seleccione y copie el texto manualmente, o permita el acceso al portapapeles y vuelva a intentarlo.",
+        "runtime.w9.validation.requestDate": "Introduzca una fecha de solicitud válida.",
+        "runtime.w9.validation.dueDate": "La fecha límite debe ser válida e igual o posterior a la fecha de solicitud.",
+        "runtime.w9.validation.secureReturn": "Indique un método seguro aprobado para devolver el formulario oficial.",
+        "runtime.w9.validation.contractorEmail": "Introduzca una dirección de correo válida del contratista."
       }
     },
     "fr": {
@@ -1058,7 +1086,14 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Simplifiez votre entreprise avec SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "La structure dynamique s’adapte immédiatement à la mise en page. Aucun brouillon perdu.",
         "runtime.w9.maintainComplianceFoldersForSelfEmployedSubcontractorEntities": "Gérez les dossiers de conformité des entités de sous-traitants indépendants, suivez les états de vérification et demandez les documents.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifiez les flux de travail administratifs grâce à des générateurs professionnels pour petites entreprises en un clic."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifiez les flux de travail administratifs grâce à des générateurs professionnels pour petites entreprises en un clic.",
+        "runtime.w9.profileUpdatedLocally": "Profil du prestataire mis à jour dans ce brouillon.",
+        "runtime.w9.selectBeforeCopy": "Sélectionnez un prestataire avec un nom légal avant de copier la demande.",
+        "runtime.w9.copyFailedRecovery": "Copie impossible. Sélectionnez et copiez le texte manuellement, ou autorisez le presse-papiers et réessayez.",
+        "runtime.w9.validation.requestDate": "Saisissez une date de demande valide.",
+        "runtime.w9.validation.dueDate": "La date limite doit être valide et égale ou postérieure à la date de demande.",
+        "runtime.w9.validation.secureReturn": "Indiquez un moyen sécurisé approuvé pour retourner le formulaire officiel.",
+        "runtime.w9.validation.contractorEmail": "Saisissez une adresse e-mail valide du prestataire."
       }
     },
     "hi": {
@@ -1270,7 +1305,14 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "SmartTools Paperwork Pro के साथ अपना व्यवसाय सरल बनाएँ",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "डायनेमिक संरचना लेआउट के आधार पर तुरंत स्केल होती है। कोई ड्राफ़्ट नहीं खोता।",
         "runtime.w9.maintainComplianceFoldersForSelfEmployedSubcontractorEntities": "स्व-नियोजित उपठेकेदार इकाइयों के लिए अनुपालन फ़ोल्डर बनाए रखें, सत्यापन स्थिति ट्रैक करें और रिकॉर्ड का अनुरोध करें।",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "पेशेवर एक-क्लिक छोटे व्यवसाय जनरेटर से प्रशासनिक कार्यप्रवाह सरल बनाएँ।"
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "पेशेवर एक-क्लिक छोटे व्यवसाय जनरेटर से प्रशासनिक कार्यप्रवाह सरल बनाएँ।",
+        "runtime.w9.profileUpdatedLocally": "इस ड्राफ़्ट में ठेकेदार का प्रोफ़ाइल अपडेट किया गया।",
+        "runtime.w9.selectBeforeCopy": "अनुरोध कॉपी करने से पहले कानूनी नाम वाला ठेकेदार चुनें।",
+        "runtime.w9.copyFailedRecovery": "कॉपी नहीं हुआ। अनुरोध का पाठ चुनकर खुद कॉपी करें, या क्लिपबोर्ड की अनुमति देकर फिर प्रयास करें।",
+        "runtime.w9.validation.requestDate": "अनुरोध की सही तिथि दर्ज करें।",
+        "runtime.w9.validation.dueDate": "अंतिम तिथि सही हो और अनुरोध तिथि के बराबर या बाद में हो।",
+        "runtime.w9.validation.secureReturn": "आधिकारिक फ़ॉर्म लौटाने के लिए स्वीकृत सुरक्षित तरीका दें।",
+        "runtime.w9.validation.contractorEmail": "ठेकेदार का सही ईमेल पता दर्ज करें।"
       }
     },
     "ja": {
@@ -1482,7 +1524,14 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "SmartTools Paperwork Proでビジネスを効率化",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "動的な構成がレイアウトに基づいて即座に調整されます。下書きは失われません。",
         "runtime.w9.maintainComplianceFoldersForSelfEmployedSubcontractorEntities": "自営業の下請業者事業体に関するコンプライアンスフォルダを管理し、確認ステータスを追跡して、記録をリクエストします。",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "プロ仕様のワンクリック中小企業向け作成ツールで事務ワークフローを簡素化します。"
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "プロ仕様のワンクリック中小企業向け作成ツールで事務ワークフローを簡素化します。",
+        "runtime.w9.profileUpdatedLocally": "この下書きの委託先情報を更新しました。",
+        "runtime.w9.selectBeforeCopy": "依頼文をコピーする前に、正式名称が登録された委託先を選択してください。",
+        "runtime.w9.copyFailedRecovery": "コピーできませんでした。依頼文を選択して手動でコピーするか、クリップボードへのアクセスを許可して再試行してください。",
+        "runtime.w9.validation.requestDate": "有効な依頼日を入力してください。",
+        "runtime.w9.validation.dueDate": "期限には依頼日以降の有効な日付を指定してください。",
+        "runtime.w9.validation.secureReturn": "公式用紙を返送する承認済みの安全な方法を指定してください。",
+        "runtime.w9.validation.contractorEmail": "委託先の有効なメールアドレスを入力してください。"
       }
     },
     "ru": {
@@ -1694,7 +1743,14 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Оптимизируйте свой бизнес с помощью SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "Динамическая структура мгновенно масштабируется в зависимости от макета. Черновик не будет потерян.",
         "runtime.w9.maintainComplianceFoldersForSelfEmployedSubcontractorEntities": "Ведите папки для соблюдения требований по самозанятым субподрядчикам, отслеживайте статусы проверки и запрашивайте документы.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Упростите административные процессы с профессиональными генераторами для малого бизнеса в один клик."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Упростите административные процессы с профессиональными генераторами для малого бизнеса в один клик.",
+        "runtime.w9.profileUpdatedLocally": "Профиль подрядчика обновлён в этом черновике.",
+        "runtime.w9.selectBeforeCopy": "Перед копированием запроса выберите подрядчика с официальным именем.",
+        "runtime.w9.copyFailedRecovery": "Не удалось скопировать. Выделите и скопируйте текст вручную либо разрешите доступ к буферу обмена и повторите попытку.",
+        "runtime.w9.validation.requestDate": "Укажите действительную дату запроса.",
+        "runtime.w9.validation.dueDate": "Срок должен быть действительной датой не раньше даты запроса.",
+        "runtime.w9.validation.secureReturn": "Укажите одобренный безопасный способ возврата официальной формы.",
+        "runtime.w9.validation.contractorEmail": "Укажите действительный адрес электронной почты подрядчика."
       }
     },
     "pt-BR": {
@@ -1906,7 +1962,14 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Simplifique sua empresa com o SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "A estrutura dinâmica se ajusta imediatamente com base no layout. Nenhum rascunho é perdido.",
         "runtime.w9.maintainComplianceFoldersForSelfEmployedSubcontractorEntities": "Mantenha pastas de conformidade para entidades de subcontratados autônomos, acompanhe os status de verificação e solicite registros.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique fluxos administrativos com geradores profissionais para pequenas empresas em um clique."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique fluxos administrativos com geradores profissionais para pequenas empresas em um clique.",
+        "runtime.w9.profileUpdatedLocally": "Perfil do prestador atualizado neste rascunho.",
+        "runtime.w9.selectBeforeCopy": "Selecione um prestador com nome legal antes de copiar a solicitação.",
+        "runtime.w9.copyFailedRecovery": "Não foi possível copiar. Selecione e copie o texto manualmente, ou permita acesso à área de transferência e tente novamente.",
+        "runtime.w9.validation.requestDate": "Informe uma data de solicitação válida.",
+        "runtime.w9.validation.dueDate": "O prazo deve ser uma data válida igual ou posterior à data da solicitação.",
+        "runtime.w9.validation.secureReturn": "Informe um método seguro aprovado para devolver o formulário oficial.",
+        "runtime.w9.validation.contractorEmail": "Informe um e-mail válido do prestador."
       }
     },
     "zh-Hans": {
@@ -2118,7 +2181,14 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "使用 SmartTools Paperwork Pro 简化您的业务",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "动态结构会根据布局立即调整大小，不会丢失草稿。",
         "runtime.w9.maintainComplianceFoldersForSelfEmployedSubcontractorEntities": "维护自雇分包商实体的合规文件夹，跟踪验证状态，并请求相关记录。",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "使用专业的一键式小型企业生成器简化行政工作流程。"
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "使用专业的一键式小型企业生成器简化行政工作流程。",
+        "runtime.w9.profileUpdatedLocally": "已更新此草稿中的承包商资料。",
+        "runtime.w9.selectBeforeCopy": "复制请求前，请选择填写了法定姓名的承包商。",
+        "runtime.w9.copyFailedRecovery": "无法复制。请选中请求文本并手动复制，或允许访问剪贴板后重试。",
+        "runtime.w9.validation.requestDate": "请输入有效的请求日期。",
+        "runtime.w9.validation.dueDate": "截止日期须为有效日期，且不得早于请求日期。",
+        "runtime.w9.validation.secureReturn": "请提供经批准的安全方式，以便返回官方表格。",
+        "runtime.w9.validation.contractorEmail": "请输入有效的承包商邮箱地址。"
       }
     }
   }

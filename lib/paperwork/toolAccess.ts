@@ -13,6 +13,7 @@ const STORAGE_TOOL_SLUGS: Readonly<Record<string, string>> = {
   "paperworkkit.mileageLog.summary": "mileage-log",
   "paperworkkit.taxEstimator.draft": "quarterly-tax-estimator",
   "paperworkkit.taxEstimator.summary": "quarterly-tax-estimator",
+  "paperworkkit.w9Request.draft": "w9-request",
   "paperworkkit.1099Tracker.draft": "1099-nec-tracker",
   "paperworkkit.1099Tracker.summary": "1099-nec-tracker",
 };
@@ -39,12 +40,4 @@ export async function requireAnyAvailablePaperworkTool(slugs: readonly string[])
   const manifest = await getToolManifest();
   const tools = await Promise.all(slugs.map((slug) => getAvailableToolBySlug("paperwork", slug, manifest)));
   if (!tools.some(Boolean)) throw new PaperworkToolAccessError(404);
-}
-
-export function getAnonymousUserId(value: string | null): string {
-  if (value === null) return "default_user";
-  if (!/^[a-zA-Z0-9_-]{1,128}$/.test(value)) {
-    throw new PaperworkToolAccessError(400);
-  }
-  return value;
 }

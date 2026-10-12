@@ -1,20 +1,29 @@
+import { validatePaperworkStorageValue, PaperworkStorageValidationError } from "@/lib/paperwork/storageValidation";
+import {
+  resolvePaperworkSession,
+  assertPaperworkOwner,
+  applyPaperworkSession,
+  assertSameOriginWrite,
+  PaperworkSessionError,
+} from "../_lib/session";
 import { NextRequest, NextResponse } from "next/server";
-import { captureException } from "@sentry/core";
 import { db } from "@/db/paperwork";
 import { keyValuePairTable } from "@/db/paperworkSchema";
 import { ensureDatabaseBootstrapped, ensureUserExists } from "@/db/bootstrap";
-import { errorMessage } from "@/utils/errorMessage";
-import { ApiInputError, assertJsonPayloadSize, assertRequestContentLength } from "../_lib/input";
 import {
-  getAnonymousUserId,
-  PaperworkToolAccessError,
-  requireAvailableToolForStorageKey,
-} from "@/lib/paperwork/toolAccess";
+  reportPaperworkFailure,
+  readJsonBody,
+  ApiInputError,
+  assertJsonPayloadSize,
+  assertRequestContentLength,
+} from "../_lib/input";
+import { PaperworkToolAccessError, requireAvailableToolForStorageKey } from "@/lib/paperwork/toolAccess";
 
 export async function POST(request: NextRequest) {
   try {
+    assertSameOriginWrite(request);
     assertRequestContentLength(request.headers.get("content-length"));
-    const body: unknown = await request.json();
+    const body: unknown = await readJsonBody(request);
     assertJsonPayloadSize(body);
     if (
       body === null ||
@@ -28,7 +37,10 @@ export async function POST(request: NextRequest) {
 
     const { key, value } = body as { key: string; value: unknown };
     await requireAvailableToolForStorageKey(key);
-    const userId = getAnonymousUserId(request.headers.get("x-user-id"));
+    validatePaperworkStorageValue(key, value);
+    const session = await resolvePaperworkSession(request);
+    const { userId } = session;
+    assertPaperworkOwner(request, userId);
     await ensureDatabaseBootstrapped();
     await ensureUserExists(userId);
 
@@ -40,16 +52,18 @@ export async function POST(request: NextRequest) {
         set: { value, updatedAt: new Date() },
       });
 
-    return NextResponse.json({ success: true });
+    return applyPaperworkSession(NextResponse.json({ success: true }), session, request);
   } catch (error) {
+    if (error instanceof PaperworkSessionError) return NextResponse.json({ error: error.message }, { status: 403 });
+    if (error instanceof PaperworkStorageValidationError)
+      return NextResponse.json({ error: error.message }, { status: 400 });
     if (error instanceof ApiInputError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
     if (error instanceof PaperworkToolAccessError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
-    captureException(error);
-    console.error("Failed to save anonymous Paperwork data", error);
-    return NextResponse.json({ error: errorMessage(error, "Storage is unavailable.") }, { status: 500 });
+    reportPaperworkFailure(error, "Storage is unavailable.");
+    return NextResponse.json({ error: "Storage is unavailable." }, { status: 500 });
   }
 }

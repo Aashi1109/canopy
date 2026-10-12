@@ -1,6 +1,8 @@
 "use client";
-import { P, Text } from "@/components/ui/index.tsx";
+import { Button, P, Text } from "@/components/ui/index.tsx";
 
+import { useTranslations } from "next-intl";
+import { usePaperworkFeedback } from "./PaperworkFeedback";
 import type { Template } from "@pdfme/common";
 import type { AdvancedDocumentTemplate } from "@/lib/invoice-templates/index.ts";
 import { useEffect, useRef, useState } from "react";
@@ -150,6 +152,9 @@ export async function openAdvancedDocumentPdf({ template, data }: AdvancedDocume
 }
 
 export function AdvancedDocumentPreview({ template, data, className, onError }: AdvancedDocumentPreviewProps) {
+  const t = useTranslations("Tool.runtime");
+  const { notify } = usePaperworkFeedback();
+  const [retryKey, setRetryKey] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<ViewerInstance | null>(null);
   const fitCleanupRef = useRef<(() => void) | null>(null);
@@ -157,14 +162,20 @@ export function AdvancedDocumentPreview({ template, data, className, onError }: 
   const templateRef = useRef(template);
   const dataRef = useRef(data);
   const onErrorRef = useRef(onError);
+  const feedbackRef = useRef(notify);
+  const messagesRef = useRef({ load: t("shared.preview.loadFailed"), update: t("shared.preview.updateFailed") });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   templateRef.current = template;
   dataRef.current = data;
   onErrorRef.current = onError;
+  feedbackRef.current = notify;
+  messagesRef.current = { load: t("shared.preview.loadFailed"), update: t("shared.preview.updateFailed") };
 
   useEffect(() => {
+    setError("");
+    setIsLoading(true);
     let cancelled = false;
     let viewer: ViewerInstance | null = null;
 
@@ -184,10 +195,11 @@ export function AdvancedDocumentPreview({ template, data, className, onError }: 
         setIsLoading(false);
       } catch {
         if (cancelled) return;
-        const message = "The PDF preview could not be loaded. Please try again.";
+        const message = messagesRef.current.load;
         setError(message);
         setIsLoading(false);
         onErrorRef.current?.(message);
+        feedbackRef.current(message, "error");
       }
     }
 
@@ -200,7 +212,7 @@ export function AdvancedDocumentPreview({ template, data, className, onError }: 
       viewer.destroy();
       if (viewerRef.current === viewer) viewerRef.current = null;
     };
-  }, []);
+  }, [retryKey]);
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -217,9 +229,10 @@ export function AdvancedDocumentPreview({ template, data, className, onError }: 
       }
       setError("");
     } catch {
-      const message = "The PDF preview could not be updated. Please try again.";
+      const message = messagesRef.current.update;
       setError(message);
       onErrorRef.current?.(message);
+      feedbackRef.current(message, "error");
     }
   }, [template, data]);
 
@@ -228,7 +241,7 @@ export function AdvancedDocumentPreview({ template, data, className, onError }: 
       <div
         aria-busy={isLoading}
         aria-label={`${template.name} PDF preview`}
-        className="relative h-[48rem] min-h-[32rem] overflow-hidden rounded-xl border border-border bg-muted/30"
+        className="relative h-[min(65vh,36rem)] min-h-[20rem] overflow-hidden rounded-xl border border-border bg-muted/30"
       >
         <div className="pdfme-preview-surface size-full" ref={containerRef} />
         {isLoading ? (
@@ -237,14 +250,19 @@ export function AdvancedDocumentPreview({ template, data, className, onError }: 
             className="absolute inset-0 grid place-items-center bg-background/80 text-muted-foreground"
             role="status"
           >
-            <Text>Loading PDF preview…</Text>
+            <Text>{t("shared.preview.loading")}</Text>
           </div>
         ) : null}
       </div>
       {error ? (
-        <P className="mt-2 text-destructive" role="alert">
-          {error}
-        </P>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <P className="text-destructive" role="alert">
+            {error}
+          </P>
+          <Button type="button" variant="outline" onClick={() => setRetryKey((value) => value + 1)}>
+            {t("shared.preview.retry")}
+          </Button>
+        </div>
       ) : null}
     </div>
   );

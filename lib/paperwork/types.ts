@@ -91,4 +91,5 @@ export interface CalculatedTotals {
   total: number;
   amountPaid: number;
   balanceDue: number;
+  customerCredit: number;
 }

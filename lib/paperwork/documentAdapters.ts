@@ -1,3 +1,4 @@
+import { isCalendarDate, isNonnegativeAmount } from "./documentValidation";
 import {
   containsFullTin,
   getDocumentDefinition,
@@ -30,11 +31,18 @@ import {
   normalizeW9RequestDraft,
   type W9RequestDraft,
 } from "../../app/paperwork/components/w9/W9RequestPage";
-import { calculateInvoiceTotals } from "./utils/calculations";
+import { calculateInvoiceTotals, formatCurrency } from "./utils/calculations";
 import { validateInvoiceData } from "./utils/invoiceValidation";
 import { getInitialBlankInvoice, getSampleInvoice } from "./utils/sampleData";
 import { getInvoiceTemplateInputs, getReceiptTemplateInputs } from "./advancedTemplateData";
-import { calculateReceiptTotals, DEFAULT_RECEIPT_DATA, SAMPLE_RECEIPT_DATA, type ReceiptData } from "./receiptDocument";
+import {
+  normalizeReceiptDraft,
+  calculateReceiptTotals,
+  validateReceiptData,
+  DEFAULT_RECEIPT_DATA,
+  SAMPLE_RECEIPT_DATA,
+  type ReceiptData,
+} from "./receiptDocument";
 import {
   NEC_INTERNAL_REPORT_DISCLAIMER,
   OFFICIAL_W9_URL,
@@ -44,7 +52,7 @@ import {
   get1099ReportingRule,
   maskTinReference,
 } from "./contractorTaxRules";
-import { calculateExpenseTotals } from "./expenseReportRules";
+import { calculateExpenseTotals, validateExpenseReportData, getExpenseMileageTotal } from "./expenseReportRules";
 import { calculateMileageSummary } from "./mileageRules";
 import {
   DEFAULT_QUARTERLY_TAX_DRAFT,
@@ -93,9 +101,9 @@ export function mergeTemplateInputs(
 ): Record<string, string> {
   return Object.fromEntries(
     Object.entries({
-      ...sampleData,
-      ...builtInValues,
+      ...Object.fromEntries(Object.keys(sampleData).map((key) => [key, ""])),
       ...customValues,
+      ...builtInValues,
     }).map(([key, value]) => [key, pdfValue(value)]),
   );
 }
@@ -113,7 +121,44 @@ function documentValues<TDraft>(
   draft: TDraft,
   readField: (draft: TDraft, key: string) => unknown,
 ) {
-  return Object.fromEntries(getDocumentDefinition(documentType).fields.map(({ key }) => [key, readField(draft, key)]));
+  const monetaryResults = new Set([
+    "taxTotal",
+    "tipTotal",
+    "mileageReimbursement",
+    "reimbursableTotal",
+    "billableTotal",
+    "reportTotal",
+    "amountDue",
+    "reimbursementDue",
+    "advanceToReturn",
+    "parkingAndTolls",
+    "standardMileageDeduction",
+    "totalDeduction",
+    "fuelCost",
+    "adjustedGrossIncome",
+    "taxableIncome",
+    "incomeTax",
+    "selfEmploymentTax",
+    "stateEstimate",
+    "estimatedLiability",
+    "requiredAnnualPayment",
+    "remainingAnnualPayment",
+    "projectedFederalBalanceAtFiling",
+    "reportableTotal",
+    "box1Summary",
+    "box4Summary",
+  ]);
+  return Object.fromEntries(
+    getDocumentDefinition(documentType).fields.map(({ key, control }) => {
+      const value = readField(draft, key);
+      return [
+        key,
+        typeof value === "number" && (control === "currency" || monetaryResults.has(key))
+          ? formatCurrency(value, "USD")
+          : value,
+      ];
+    }),
+  );
 }
 
 function readPath(value: unknown, path: string): unknown {
@@ -201,6 +246,7 @@ function readInvoiceField(draft: InvoiceData, key: string): unknown {
     tax: totals.taxAmount,
     total: totals.total,
     balanceDue: totals.balanceDue,
+    customerCredit: totals.customerCredit,
   };
   return computed[key];
 }
@@ -261,8 +307,6 @@ export const invoiceAdapter: DocumentAdapter<InvoiceData> = {
       discountType: draft.totalsConfig.discountType,
       discountValue: draft.totalsConfig.discountValue,
       taxRate: draft.totalsConfig.taxRate,
-      shippingFee: draft.totalsConfig.shippingFee,
-      amountPaid: draft.totalsConfig.amountPaid,
     };
     return mergeTemplateInputs(template.config.sampleData, builtInValues, customValues);
   },
@@ -282,11 +326,15 @@ const RECEIPT_PATHS: Record<string, string> = {
   receiptTime: "receiptTime",
   transactionId: "transactionId",
   relatedInvoiceNumber: "relatedInvoiceNumber",
+  discountType: "discountType",
   discountValue: "discountValue",
   salesTaxRate: "salesTaxRate",
   tip: "tip",
   additionalFee: "additionalFee",
   amountRefunded: "amountRefunded",
+  amountReceived: "amountReceived",
+  currency: "currency",
+  paymentStatus: "paymentStatus",
   paymentMethod: "paymentMethod",
   paymentNote: "paymentNote",
   notes: "notes",
@@ -305,7 +353,10 @@ function readReceiptField(draft: ReceiptData, key: string): unknown {
     tax: totals.taxAmount,
     grossTotal: totals.total,
     total: totals.total,
-    netPaid: Math.max(0, totals.total - draft.amountRefunded),
+    netPaid: totals.netReceived,
+    amountReceived: totals.amountReceived,
+    netReceived: totals.netReceived,
+    customerCredit: totals.customerCredit,
     balanceDue: totals.balanceDue,
   };
   return computed[key];
@@ -337,7 +388,9 @@ function writeReceiptField(draft: ReceiptData, key: string, value: unknown): Rec
 export const receiptAdapter: DocumentAdapter<ReceiptData> = {
   documentType: "receipt",
   getInitialDraft() {
-    return DataBridge.get<ReceiptData>(DataBridgeKeys.RECEIPT_DRAFT, structuredClone(DEFAULT_RECEIPT_DATA));
+    return normalizeReceiptDraft(
+      DataBridge.get<ReceiptData>(DataBridgeKeys.RECEIPT_DRAFT, structuredClone(DEFAULT_RECEIPT_DATA)),
+    );
   },
   getSampleDraft() {
     return structuredClone(SAMPLE_RECEIPT_DATA);
@@ -345,7 +398,19 @@ export const receiptAdapter: DocumentAdapter<ReceiptData> = {
   readField: readReceiptField,
   writeField: writeReceiptField,
   validate(draft, _form, translate) {
-    const errors: Record<string, string> = {};
+    const source = validateReceiptData(draft);
+    const errors: Record<string, string> = Object.fromEntries(
+      Object.entries(source).map(([key, message]) => [
+        key === "business.name"
+          ? "businessName"
+          : key === "customer.name"
+            ? "customerName"
+            : key.startsWith("lineItems")
+              ? "lineItems"
+              : key,
+        message,
+      ]),
+    );
     if (!draft.business.name.trim()) {
       errors.businessName = validationMessage(
         translate,
@@ -366,10 +431,15 @@ export const receiptAdapter: DocumentAdapter<ReceiptData> = {
     const totals = calculateReceiptTotals(draft);
     const builtInValues = {
       ...getReceiptTemplateInputs(draft, totals, {}),
-      discountValue: draft.discountValue,
+      discountValue: formatCurrency(draft.discountValue, draft.currency),
       salesTaxRate: draft.salesTaxRate,
-      grossTotal: totals.total,
-      netPaid: Math.max(0, totals.total - draft.amountRefunded),
+      grossTotal: formatCurrency(totals.total, draft.currency),
+      netPaid: formatCurrency(totals.netReceived, draft.currency),
+      amountReceived: formatCurrency(totals.amountReceived, draft.currency),
+      amountRefunded: formatCurrency(totals.amountRefunded, draft.currency),
+      netReceived: formatCurrency(totals.netReceived, draft.currency),
+      customerCredit: formatCurrency(totals.customerCredit, draft.currency),
+      currency: draft.currency || "USD",
     };
     return mergeTemplateInputs(template.config.sampleData, builtInValues, customValues);
   },
@@ -418,6 +488,8 @@ function readExpenseField(draft: ExpenseReportDraft, key: string): unknown {
     billableTotal: totals.billableTotal,
     reportTotal: totals.reportTotal,
     amountDue: totals.amountDue,
+    reimbursementDue: Math.max(0, totals.amountDue),
+    advanceToReturn: Math.max(0, -totals.amountDue),
   };
   return computed[key];
 }
@@ -428,7 +500,7 @@ function writeExpenseField(draft: ExpenseReportDraft, key: string, value: unknow
       ...draft,
       expenses: value.map((row, index) => {
         const item = row as Record<string, unknown>;
-        const previous = draft.expenses[index];
+        const previous = draft.expenses.find((row) => row.id === item.id) ?? draft.expenses[index];
         return {
           id: typeof item.id === "string" ? item.id : `expense-${crypto.randomUUID()}`,
           date: String(item.date ?? ""),
@@ -460,7 +532,14 @@ function writeExpenseField(draft: ExpenseReportDraft, key: string, value: unknow
           destination: String(item.destination ?? ""),
           miles: numberInput(item.miles),
           rate: numberInput(item.rate),
-          amount: numberInput(item.miles) * numberInput(item.rate),
+          parking: numberInput(item.parking),
+          tolls: numberInput(item.tolls),
+          amount: getExpenseMileageTotal({
+            miles: numberInput(item.miles),
+            rate: numberInput(item.rate),
+            parking: numberInput(item.parking),
+            tolls: numberInput(item.tolls),
+          }),
         };
       }),
     });
@@ -482,7 +561,20 @@ export const expenseReportAdapter: DocumentAdapter<ExpenseReportDraft> = {
   readField: readExpenseField,
   writeField: writeExpenseField,
   validate(draft, _form, translate) {
-    const errors: Record<string, string> = {};
+    const source = validateExpenseReportData(draft);
+    const keys: Record<string, string> = {
+      "submitter.name": "submitterName",
+      startDate: "periodStart",
+      endDate: "periodEnd",
+      expenses: "expenseRows",
+    };
+    const errors: Record<string, string> = Object.fromEntries(
+      Object.entries(source).map(([key, message]) => [
+        keys[key] ??
+          (key.startsWith("expenses[") ? "expenseRows" : key.startsWith("mileageRows[") ? "mileageRows" : key),
+        message,
+      ]),
+    );
     if (!draft.reportNumber.trim()) {
       errors.reportNumber = validationMessage(
         translate,
@@ -497,7 +589,7 @@ export const expenseReportAdapter: DocumentAdapter<ExpenseReportDraft> = {
         "Submitter name is required.",
       );
     }
-    if (!draft.expenses.length) {
+    if (!draft.expenses.length && !draft.mileageRows.length) {
       errors.expenseRows = validationMessage(
         translate,
         "shared.validation.expenseRequired",
@@ -538,6 +630,7 @@ function readMileageField(draft: MileageLogDraft, key: string): unknown {
     totalMiles: summary.totalMiles,
     parkingAndTolls: summary.parkingAndTolls,
     standardMileageDeduction: summary.standardMileageDeduction,
+    totalDeduction: summary.totalDeduction,
     fuelCost: summary.totalFuelCost,
     fuelEconomy: summary.fuelEconomy,
   };
@@ -550,15 +643,17 @@ function writeMileageField(draft: MileageLogDraft, key: string, value: unknown):
       ...draft,
       trips: value.map((row, index) => {
         const item = row as Record<string, unknown>;
-        const previous = draft.trips[index];
+        const previous = draft.trips.find((row) => row.id === item.id) ?? draft.trips[index];
         return {
           id: typeof item.id === "string" ? item.id : `trip-${crypto.randomUUID()}`,
           date: String(item.date ?? ""),
           purpose: String(item.purpose ?? ""),
           startLocation: String(item.startLocation ?? ""),
           destination: String(item.destination ?? ""),
-          startOdometer: previous?.startOdometer,
-          endOdometer: previous?.endOdometer,
+          startOdometer:
+            item.startOdometer === "" || item.startOdometer === undefined ? undefined : numberInput(item.startOdometer),
+          endOdometer:
+            item.endOdometer === "" || item.endOdometer === undefined ? undefined : numberInput(item.endOdometer),
           miles: numberInput(item.miles),
           parking: numberInput(item.parking),
           tolls: numberInput(item.tolls),
@@ -616,6 +711,35 @@ export const mileageLogAdapter: DocumentAdapter<MileageLogDraft> = {
         "shared.validation.businessTripRequired",
         "Add at least one business trip.",
       );
+    if (
+      draft.trips.some(
+        (trip) =>
+          !String(trip.purpose ?? "").trim() ||
+          !String(trip.startLocation ?? "").trim() ||
+          !String(trip.destination ?? "").trim() ||
+          (trip.startOdometer !== undefined && !isNonnegativeAmount(trip.startOdometer)) ||
+          (trip.endOdometer !== undefined && !isNonnegativeAmount(trip.endOdometer)) ||
+          (trip.startOdometer !== undefined && trip.endOdometer !== undefined && trip.endOdometer < trip.startOdometer),
+      )
+    )
+      errors.trips = validationMessage(
+        translate,
+        "mileage.validation.completeTripRecord",
+        "Complete each trip's purpose, start and destination; odometers must be nonnegative and end at or above the start.",
+      );
+    if (
+      draft.fuelRecords.some(
+        (record) =>
+          !isCalendarDate(record.date) ||
+          !record.date.startsWith(`${draft.taxYear}-`) ||
+          !String(record.merchant ?? "").trim(),
+      )
+    )
+      errors.fuelRecords = validationMessage(
+        translate,
+        "mileage.validation.invalidFuelRecord",
+        "Fuel records require a valid date in the selected year and a merchant.",
+      );
     if (summary.errors.length)
       errors.taxYear = translate
         ? summary.errorMessages.map(({ key, values }) => translate(key, values)).join(" ")
@@ -648,6 +772,9 @@ const QUARTERLY_TAX_PATHS: Record<string, string> = {
   estimatedPaymentsMade: "estimatedPaymentsMade",
   priorYearTax: "priorYearTaxLiability",
   priorYearAgi: "priorYearAdjustedGrossIncome",
+  priorYearTaxKnown: "priorYearTaxKnown",
+  priorYearCoveredFullYear: "priorYearCoveredFullYear",
+  priorYearResidentAllYear: "priorYearResidentAllYear",
   stateTaxRate: "stateTaxRate",
   assumptions: "assumptions",
 };
@@ -667,11 +794,14 @@ function readQuarterlyTaxField(draft: QuarterlyTaxDraft, key: string): unknown {
     stateEstimate: result.estimatedStateTax,
     estimatedLiability: result.estimatedTotalLiability,
     requiredAnnualPayment: result.requiredAnnualPayment,
+    remainingAnnualPayment: result.remainingAnnualPayment,
+    projectedFederalBalanceAtFiling: result.projectedFederalBalanceAtFiling,
     quarterlyInstallments: result.paymentSchedule.map((payment) => ({
       id: `q${payment.installment}`,
       ...payment,
     })),
     calculationVersion: result.calculationVersion,
+    calculationAssumptions: result.assumptions.join("\n"),
   };
   return computed[key];
 }
@@ -709,6 +839,7 @@ export const quarterlyTaxAdapter: DocumentAdapter<QuarterlyTaxDraft> = {
 };
 
 const W9_PATHS: Record<string, string> = {
+  selectedVendorId: "selectedVendorId",
   requesterName: "requesterName",
   requesterEmail: "requesterEmail",
   requesterAddress: "requesterAddress",
@@ -727,11 +858,17 @@ const W9_VENDOR_PATHS: Record<string, string> = {
   contractorEmail: "email",
 };
 
+function selectedW9Vendor(draft: W9RequestDraft) {
+  return draft.selectedVendorId
+    ? draft.vendors.find((vendor) => vendor.id === draft.selectedVendorId)
+    : draft.vendors[0];
+}
+
 function readW9Field(draft: W9RequestDraft, key: string): unknown {
   const path = W9_PATHS[key];
   if (path) return readPath(draft, path);
   const vendorPath = W9_VENDOR_PATHS[key];
-  if (vendorPath) return readPath(draft.vendors[0], vendorPath);
+  if (vendorPath) return readPath(selectedW9Vendor(draft), vendorPath);
   if (key === "officialW9Url") return OFFICIAL_W9_URL;
   if (key === "requestOnlyDisclaimer") return W9_REQUEST_DISCLAIMER;
   return undefined;
@@ -742,10 +879,12 @@ function writeW9Field(draft: W9RequestDraft, key: string, value: unknown): W9Req
   if (path) return writePath(draft, path, value);
   const vendorPath = W9_VENDOR_PATHS[key];
   if (!vendorPath) return draft;
-  const vendor = structuredClone(draft.vendors[0] ?? DEFAULT_W9_REQUEST_DRAFT.vendors[0]);
+  const selected = selectedW9Vendor(draft);
+  if (!selected) return draft;
+  const vendor = structuredClone(selected);
   return {
     ...draft,
-    vendors: [writePath(vendor, vendorPath, value), ...draft.vendors.slice(1)],
+    vendors: draft.vendors.map((row) => (row.id === vendor.id ? writePath(vendor, vendorPath, value) : row)),
   };
 }
 
@@ -763,7 +902,7 @@ export const w9RequestAdapter: DocumentAdapter<W9RequestDraft> = {
   writeField: writeW9Field,
   validate(draft, _form, translate) {
     const errors: Record<string, string> = {};
-    const vendor = draft.vendors[0];
+    const vendor = selectedW9Vendor(draft);
     if (!draft.requesterName.trim()) {
       errors.requesterName = validationMessage(
         translate,
@@ -784,18 +923,37 @@ export const w9RequestAdapter: DocumentAdapter<W9RequestDraft> = {
         "shared.validation.contractorEmailRequired",
         "Contractor email is required.",
       );
-    }
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vendor.email))
+      errors.contractorEmail = validationMessage(
+        translate,
+        "w9.validation.contractorEmail",
+        "Enter a valid contractor email address.",
+      );
+    if (!isCalendarDate(draft.requestDate))
+      errors.requestDate = validationMessage(translate, "w9.validation.requestDate", "Enter a valid request date.");
+    if (draft.dueDate && (!isCalendarDate(draft.dueDate) || draft.dueDate < draft.requestDate))
+      errors.dueDate = validationMessage(
+        translate,
+        "w9.validation.dueDate",
+        "Due date must be a real date on or after the request date.",
+      );
+    if (!draft.secureSubmissionInstructions.trim())
+      errors.secureSubmissionInstructions = validationMessage(
+        translate,
+        "w9.validation.secureReturn",
+        "Provide an approved secure method for returning the official form.",
+      );
     const rule = get1099ReportingRule(draft.reportingYear);
     if ("error" in rule)
       errors.reportingYear = translate ? translate(rule.errorMessage.key, rule.errorMessage.values) : rule.error;
     return errors;
   },
   toPdfInputs(draft, template, customValues) {
-    const vendor = draft.vendors[0] ?? DEFAULT_W9_REQUEST_DRAFT.vendors[0];
+    const vendor = selectedW9Vendor(draft);
     const request = createW9Request({
       reportingYear: draft.reportingYear,
-      contractorName: vendor.legalName,
-      contractorBusinessName: vendor.businessName,
+      contractorName: vendor?.legalName || "",
+      contractorBusinessName: vendor?.businessName,
       secureSubmissionInstructions: draft.secureSubmissionInstructions,
     });
     return mergeTemplateInputs(
@@ -810,7 +968,8 @@ export const w9RequestAdapter: DocumentAdapter<W9RequestDraft> = {
     );
   },
   fileName(draft) {
-    const vendor = draft.vendors[0]?.businessName || draft.vendors[0]?.legalName;
+    const selected = selectedW9Vendor(draft);
+    const vendor = selected?.businessName || selected?.legalName;
     const slug = vendor?.trim().replace(/[^a-z0-9_-]+/gi, "-");
     return `w9-request-${slug || "draft"}.pdf`;
   },
@@ -843,6 +1002,7 @@ function readNecField(draft: NecTrackerDraft, key: string): unknown {
   const summary = calculateNecSummary(
     draft,
     vendors.map(({ id }) => id),
+    vendors,
   );
   const rule = summary.rule;
   const computed: Record<string, unknown> = {
@@ -851,6 +1011,8 @@ function readNecField(draft: NecTrackerDraft, key: string): unknown {
       .filter(({ maskedTinReference }) => maskedTinReference)
       .map(({ vendorId, maskedTinReference }) => `${vendorId} · ${maskedTinReference}`),
     reportableTotal: summary.reportablePayments,
+    filingRequiredCount: summary.filingRequiredVendorIds.length,
+    eligibilityWarnings: summary.warnings.join("\n"),
     thresholdStatus:
       "error" in rule
         ? rule.error
@@ -921,6 +1083,7 @@ export const nec1099Adapter: DocumentAdapter<NecTrackerDraft> = {
     const summary = calculateNecSummary(
       draft,
       necVendors().map(({ id }) => id),
+      necVendors(),
     );
     const errors: Record<string, string> = {};
     if (!draft.payerName.trim())
@@ -930,6 +1093,21 @@ export const nec1099Adapter: DocumentAdapter<NecTrackerDraft> = {
         translate,
         "shared.validation.paymentRequired",
         "Add at least one payment.",
+      );
+    if (
+      draft.payments.some(
+        (payment) =>
+          !isCalendarDate(payment.date) ||
+          !payment.date.startsWith(`${draft.reportingYear}-`) ||
+          !payment.description.trim() ||
+          !payment.paymentMethod ||
+          !payment.category,
+      )
+    )
+      errors.paymentRows = validationMessage(
+        translate,
+        "nec.validation.completePayment",
+        "Each payment needs a valid date in the reporting year, a description, payment method and category.",
       );
     if (summary.issues.length) {
       errors.paymentRows = translate

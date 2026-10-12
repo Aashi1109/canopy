@@ -1,5 +1,7 @@
 "use client";
 
+import { PaperworkToolHeader } from "../PaperworkWorkspace";
+
 import { useTranslations } from "next-intl";
 
 import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
@@ -19,6 +21,10 @@ import {
   Overline,
   P,
   Button,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
   ToolActionButton,
   Card,
   Input,
@@ -29,7 +35,6 @@ import {
   TabsList,
   TabsTrigger,
   Textarea,
-  ToolPageHeader,
 } from "@/components/ui/index.tsx";
 import {
   FileText,
@@ -57,12 +62,16 @@ import {
 import { DataBridge, DataBridgeKeys, VendorProfile } from "@/lib/paperwork/shared/dataBridge";
 import { createW9Request, W9_REQUEST_DISCLAIMER_MESSAGE } from "@/lib/paperwork/contractorTaxRules";
 import { w9RequestAdapter } from "@/lib/paperwork/documentAdapters";
+import { localDate } from "@/lib/paperwork/exportValues";
+import { usePaperworkFeedback } from "../PaperworkFeedback";
 import AdvancedTemplateWorkspace from "../AdvancedTemplateWorkspace";
 
 const ENTITY_TYPES = ["Individual", "LLC", "Partnership", "Corporation", "Unknown"];
 const W9_STATUS_OPTIONS = ["Not Requested", "Requested", "Received", "Needs Review", "Not Applicable"];
 
-export const DEFAULT_W9_VENDORS: VendorProfile[] = [
+export const DEFAULT_W9_VENDORS: VendorProfile[] = [];
+
+export const SAMPLE_W9_VENDORS: VendorProfile[] = [
   {
     id: "vendor-1",
     legalName: "Devon Lane",
@@ -88,6 +97,7 @@ export interface W9RequestDraft {
   supportContact: string;
   requestStatus: string;
   vendors: VendorProfile[];
+  selectedVendorId: string;
 }
 
 export const DEFAULT_W9_REQUEST_DRAFT: W9RequestDraft = {
@@ -95,7 +105,7 @@ export const DEFAULT_W9_REQUEST_DRAFT: W9RequestDraft = {
   requesterEmail: "",
   requesterAddress: "",
   reportingYear: 2026,
-  requestDate: new Date().toISOString().substring(0, 10),
+  requestDate: localDate(),
   dueDate: "",
   message: "Please complete the current official IRS Form W-9.",
   secureSubmissionInstructions:
@@ -103,10 +113,13 @@ export const DEFAULT_W9_REQUEST_DRAFT: W9RequestDraft = {
   supportContact: "",
   requestStatus: "Requested",
   vendors: DEFAULT_W9_VENDORS,
+  selectedVendorId: "",
 };
 
 export const SAMPLE_W9_REQUEST_DRAFT: W9RequestDraft = {
   ...DEFAULT_W9_REQUEST_DRAFT,
+  vendors: SAMPLE_W9_VENDORS,
+  selectedVendorId: "vendor-1",
   requesterName: "Northstar Studio LLC",
   requesterEmail: "accounts@northstar.example",
   requesterAddress: "42 Market Street, Austin, TX 78701",
@@ -144,16 +157,20 @@ export function normalizeW9RequestDraft(draft: Partial<W9RequestDraft>): W9Reque
     supportContact: String(draft.supportContact || ""),
     requestStatus: String(draft.requestStatus || DEFAULT_W9_REQUEST_DRAFT.requestStatus),
     vendors,
+    selectedVendorId: String(draft.selectedVendorId || vendors[0]?.id || ""),
   };
 }
 
 export default function W9RequestPage({
   onTrackClick,
   templates = [],
+  embedded = false,
 }: {
   onTrackClick: (item: string) => void;
   templates?: readonly DocumentTemplate[];
+  embedded?: boolean;
 }) {
+  const { notify, confirm } = usePaperworkFeedback();
   const t = useTranslations("Tool.runtime");
   const [draft, setDraft] = useState<W9RequestDraft>(() => {
     const storedDraft = DataBridge.get<Partial<W9RequestDraft>>("paperworkkit.w9Request.draft", {});
@@ -166,7 +183,8 @@ export default function W9RequestPage({
   const vendors = draft.vendors;
   const setVendors = (nextVendors: VendorProfile[]) => setDraft((current) => ({ ...current, vendors: nextVendors }));
 
-  const [selectedVendorId, setSelectedVendorId] = useState<string>(() => vendors[0]?.id || "");
+  const selectedVendorId = draft.selectedVendorId;
+  const setSelectedVendorId = (id: string) => setDraft((current) => ({ ...current, selectedVendorId: id }));
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -234,7 +252,7 @@ export default function W9RequestPage({
     });
 
     setVendors(updated);
-    alert(t("w9.contractorProfileParametersUpdated"));
+    notify(t("w9.profileUpdatedLocally"), "success");
     onTrackClick("w9_vendor_updated");
   };
 
@@ -256,15 +274,10 @@ export default function W9RequestPage({
     onTrackClick("w9_vendor_created");
   };
 
-  const handleRemoveVendor = (id: string) => {
-    if (vendors.length <= 1) {
-      alert(t("w9.keepAtLeastOneContractorListingToMaintain"));
-      return;
-    }
-    if (confirm(t("w9.areYouSureYouWantToRemoveThis"))) {
+  const handleRemoveVendor = async (id: string) => {
+    if (await confirm(t("w9.areYouSureYouWantToRemoveThis"))) {
       const remaining = vendors.filter((v) => v.id !== id);
-      setVendors(remaining);
-      setSelectedVendorId(remaining[0].id);
+      setDraft((current) => ({ ...current, vendors: remaining, selectedVendorId: remaining[0]?.id || "" }));
       onTrackClick("w9_vendor_removed");
     }
   };
@@ -288,12 +301,22 @@ export default function W9RequestPage({
     }).body;
   };
 
-  const handleCopyEmailText = () => {
-    const copyString = `Subject: ${getEmailSubject()}\n\n${getEmailBody()}`;
-    navigator.clipboard.writeText(copyString);
-    setCopiedEmail(true);
-    setTimeout(() => setCopiedEmail(false), 2500);
-    onTrackClick("w9_email_copied_clicked");
+  const handleCopyEmailText = async () => {
+    const validation = w9RequestAdapter.validate(draft, { sections: [] }, (key, values) => t(key, values));
+    if (Object.keys(validation).length) {
+      setErrors(validation);
+      notify(Object.values(validation).join(" "), "error");
+      document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(`Subject: ${getEmailSubject()}\n\n${getEmailBody()}`);
+      setCopiedEmail(true);
+      setTimeout(() => setCopiedEmail(false), 2500);
+      onTrackClick("w9_email_copied_clicked");
+    } catch {
+      notify(t("w9.copyFailedRecovery"), "error");
+    }
   };
 
   const initialDraft = useRef(JSON.stringify(draft));
@@ -301,11 +324,12 @@ export default function W9RequestPage({
 
   return (
     <div
-      className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      className={embedded ? "min-w-0 w-full p-4 sm:p-5" : "grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}
       id="w9-onboarding-wrapper"
       data-language-switch-state={hasEdits ? "dirty" : "clean"}
     >
-      <ToolPageHeader
+      <PaperworkToolHeader
+        embedded={embedded}
         actions={
           <Button onClick={handleCreateNewVendor} variant="strong">
             <Plus className="size-4" />
@@ -317,30 +341,22 @@ export default function W9RequestPage({
         title={t("w9.w9RequestOnboardingTracker")}
       />
 
-      <AdvancedTemplateWorkspace
-        adapter={w9RequestAdapter}
-        draft={draft}
-        onDraftChange={setDraft}
-        onTrackClick={onTrackClick}
-        templates={templates}
-      />
-
       {/* Main split panels layout */}
-      <WorkbenchPanes className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <WorkbenchPanes active={false} className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* CONTRACTOR LIST SIDEBAR ROW */}
-        <div className="lg:col-span-4 space-y-4">
-          <Card className="space-y-3">
+        <div className="min-w-0 lg:col-span-4 space-y-4">
+          <Card className="gap-3">
             <Overline className="block text-slate-400 pl-1">{t("w9.activeContractorProfiles")}</Overline>
 
             <div className="space-y-1.5 max-h-[350px] overflow-y-auto">
               {vendors.map((vend) => (
                 <div
                   key={vend.id}
-                  className={`flex items-center justify-between rounded-xl border p-3 transition-all duration-150 ${selectedVendorId === vend.id ? "border-slate-900/60 bg-slate-50" : "border-slate-200 bg-white"}`}
+                  className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border p-2 transition-all duration-150 ${selectedVendorId === vend.id ? "border-slate-900/60 bg-slate-50" : "border-slate-200 bg-white"}`}
                 >
                   <Button
                     aria-pressed={selectedVendorId === vend.id}
-                    className="h-auto min-w-0 grow justify-start whitespace-normal rounded-md px-0 text-left hover:bg-transparent hover:text-primary"
+                    className="h-auto min-w-0 grow flex-col items-start justify-start whitespace-normal rounded-md px-0 text-left hover:bg-transparent hover:text-primary"
                     onClick={() => setSelectedVendorId(vend.id)}
                     type="button"
                     variant="ghost"
@@ -363,19 +379,25 @@ export default function W9RequestPage({
                     >
                       {W9_STATUS_OPTIONS.includes(vend.w9Status) ? t(`w9.status.${vend.w9Status}`) : vend.w9Status}
                     </StatusBadge>
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        handleRemoveVendor(vend.id);
-                      }}
-                      aria-label={t("w9.removeContractorProfile")}
-                      className="text-muted-foreground hover:text-destructive"
-                      size="icon"
-                      title={t("w9.removeProfile")}
-                      variant="ghost"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              handleRemoveVendor(vend.id);
+                            }}
+                            aria-label={t("w9.removeContractorProfile")}
+                            className="text-muted-foreground hover:text-destructive"
+                            size="icon"
+                            variant="ghost"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{t("w9.removeProfile")}</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
               ))}
@@ -384,7 +406,7 @@ export default function W9RequestPage({
         </div>
 
         {/* EDITOR OR COMPLIANCE EMAIL GENERATION */}
-        <div className="lg:col-span-8 space-y-6">
+        <div className="min-w-0 lg:col-span-8 space-y-4">
           {/* Tab sub headers */}
           <Tabs onValueChange={(value) => setActiveTab(value as "onboarding" | "email")} value={activeTab}>
             <TabsList className="grid w-full grid-cols-2 border border-slate-200" id="w9-tabs" variant="segmented">
@@ -400,7 +422,10 @@ export default function W9RequestPage({
           </Tabs>
 
           {activeTab === "onboarding" ? (
-            <form onSubmit={handleUpdateVendorDetail} className="bg-white rounded-2xl border p-6 space-y-4 shadow-sm">
+            <form
+              onSubmit={handleUpdateVendorDetail}
+              className="bg-white rounded-2xl border p-4 sm:p-5 space-y-4 shadow-sm"
+            >
               <H3 className="text-slate-500 border-b pb-2">{t("w9.verificationCredentialsFormulation")}</H3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -518,7 +543,7 @@ export default function W9RequestPage({
               </div>
             </form>
           ) : (
-            <Card className="space-y-4">
+            <Card className="gap-4">
               <div className="flex items-center justify-between border-b pb-2">
                 <H3 className="text-slate-500">{t("w9.complianceEmailTemplateGenerator")}</H3>
                 <ToolActionButton
@@ -575,6 +600,15 @@ export default function W9RequestPage({
               </div>
             </Card>
           )}
+          <AdvancedTemplateWorkspace
+            mode="export"
+            alwaysShowPreview
+            adapter={w9RequestAdapter}
+            draft={draft}
+            onDraftChange={setDraft}
+            onTrackClick={onTrackClick}
+            templates={templates}
+          />
         </div>
       </WorkbenchPanes>
     </div>

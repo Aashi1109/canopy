@@ -1,6 +1,48 @@
+import source0 from "../../app/paperwork/components/translations.json";
+import source1 from "../../app/paperwork/components/receipt/translations.json";
+import source2 from "../../app/paperwork/components/expense/translations.json";
+import source3 from "../../app/paperwork/components/mileage/translations.json";
+import source4 from "../../app/paperwork/components/tax/translations.json";
+import source5 from "../../app/paperwork/components/w9/translations.json";
+import source6 from "../../app/paperwork/components/nec1099/translations.json";
+import { resolveToolTranslation, type ToolMessages, type ToolTranslations } from "../tool-framework/translations.ts";
+import { locales } from "../i18n/config.ts";
+
+const sourceMessages: Record<string, Record<string, { messages: Record<string, string> }>> = {
+  "invoice-generator": source0.translations,
+  "receipt-generator": source1.translations,
+  "expense-report": source2.translations,
+  "mileage-log": source3.translations,
+  "quarterly-tax-estimator": source4.translations,
+  "w9-request": source5.translations,
+  "1099-nec-tracker": source6.translations,
+};
+
 // English bootstrap messages for Paperwork interfaces. Published translations live
 // on managed_tools; generated document/template labels and data stay unchanged.
 const sharedMessages: Record<string, string> = {
+  "runtime.shared.storage.reload": "Reload page",
+  "runtime.shared.storage.ownerChanged": "Account changed. Reload to keep drafts separate.",
+  "runtime.shared.advanced.invalidEmail": "Enter a valid email address for {field}.",
+  "runtime.shared.advanced.invalidDate": "Enter a valid calendar date for {field}.",
+  "runtime.shared.advanced.invalidNumber":
+    "Enter a finite value for {field}; currency amounts must be nonnegative and percentages must be from 0 to 100.",
+  "runtime.shared.advanced.reviewErrors": "Review the highlighted fields before exporting.",
+  "runtime.shared.advanced.documentSettings": "Template and document settings",
+  "runtime.shared.preview.loading": "Loading PDF preview…",
+  "runtime.shared.preview.loadFailed": "The PDF preview could not load. Retry to restore it.",
+  "runtime.shared.preview.updateFailed": "The PDF preview could not update. Retry to restore it.",
+  "runtime.shared.preview.retry": "Retry preview",
+  "runtime.shared.feedback.confirmTitle": "Confirm action",
+  "runtime.shared.feedback.cancel": "Cancel",
+  "runtime.shared.feedback.confirm": "Continue",
+  "runtime.shared.storage.loading": "Loading saved drafts…",
+  "runtime.shared.storage.saving": "Saving drafts online…",
+  "runtime.shared.storage.saved": "Drafts saved",
+  "runtime.shared.storage.failed": "Online storage is unavailable. You can keep editing on this device.",
+  "runtime.shared.storage.retry": "Retry online save",
+  "runtime.shared.advanced.fields.currency": "Currency",
+  "runtime.shared.validation.currencyScope": "Choose a supported currency with two decimal places.",
   "runtime.shared.app.clearInvoiceDraft": "Clear invoice draft",
   "runtime.shared.app.clear": "Clear",
   "runtime.shared.app.receiptGenerator": "Receipt Generator",
@@ -820,5 +862,365 @@ const toolMessages: Record<string, Record<string, string>> = {
 
 export function getPaperworkToolMessages(componentKey: string): Record<string, string> {
   if (!Object.hasOwn(toolMessages, componentKey)) return {};
-  return { ...sharedMessages, ...toolMessages[componentKey] };
+  return {
+    ...sharedMessages,
+    ...toolMessages[componentKey],
+    ...Object.fromEntries(
+      Object.entries(sourceMessages[componentKey]?.en.messages ?? {}).filter(([key]) => key.startsWith("runtime.")),
+    ),
+  };
+}
+
+const sharedRuntimeCorrections: Record<string, Record<string, string>> = {
+  fr: {
+    "runtime.shared.feedback.confirmTitle": "Confirmer l’action",
+    "runtime.shared.feedback.cancel": "Annuler",
+    "runtime.shared.feedback.confirm": "Continuer",
+    "runtime.shared.storage.loading": "Chargement des brouillons enregistrés…",
+    "runtime.shared.storage.saving": "Enregistrement des brouillons en ligne…",
+    "runtime.shared.storage.saved": "Brouillons enregistrés",
+    "runtime.shared.storage.failed": "Le stockage en ligne est indisponible. Vous pouvez continuer sur cet appareil.",
+    "runtime.shared.storage.retry": "Réessayer l’enregistrement en ligne",
+    "runtime.shared.advanced.fields.currency": "Devise",
+    "runtime.shared.validation.currencyScope": "Choisissez une devise prise en charge avec deux décimales.",
+    "runtime.shared.advanced.reviewErrors": "Vérifiez les champs signalés avant l’exportation.",
+    "runtime.shared.advanced.documentSettings": "Paramètres du modèle et du document",
+    "runtime.shared.preview.loadFailed": "Impossible de charger l’aperçu PDF. Réessayez.",
+    "runtime.shared.preview.updateFailed": "Impossible de mettre à jour l’aperçu PDF. Réessayez.",
+    "runtime.shared.preview.loading": "Chargement de l’aperçu PDF…",
+    "runtime.shared.preview.retry": "Réessayer l’aperçu",
+    "runtime.shared.advanced.invalidNumber":
+      "Saisissez une valeur finie pour {field} ; les montants doivent être positifs ou nuls et les pourcentages entre 0 et 100.",
+    "runtime.shared.advanced.invalidDate": "Saisissez une date valide pour {field}.",
+    "runtime.shared.advanced.invalidEmail": "Saisissez une adresse e-mail valide pour {field}.",
+    "runtime.shared.storage.ownerChanged": "Le compte a changé. Rechargez la page pour garder les brouillons séparés.",
+    "runtime.shared.storage.reload": "Recharger la page",
+  },
+  es: {
+    "runtime.shared.feedback.confirmTitle": "Confirmar acción",
+    "runtime.shared.feedback.cancel": "Cancelar",
+    "runtime.shared.feedback.confirm": "Continuar",
+    "runtime.shared.storage.loading": "Cargando borradores guardados…",
+    "runtime.shared.storage.saving": "Guardando borradores en línea…",
+    "runtime.shared.storage.saved": "Borradores guardados",
+    "runtime.shared.storage.failed":
+      "El almacenamiento en línea no está disponible. Puede seguir editando en este dispositivo.",
+    "runtime.shared.storage.retry": "Reintentar guardado en línea",
+    "runtime.shared.advanced.fields.currency": "Moneda",
+    "runtime.shared.validation.currencyScope": "Elija una moneda compatible con dos decimales.",
+    "runtime.shared.advanced.reviewErrors": "Revise los campos marcados antes de exportar.",
+    "runtime.shared.advanced.documentSettings": "Configuración de plantilla y documento",
+    "runtime.shared.preview.loadFailed": "No se pudo cargar la vista previa del PDF. Reinténtelo.",
+    "runtime.shared.preview.updateFailed": "No se pudo actualizar la vista previa del PDF. Reinténtelo.",
+    "runtime.shared.preview.loading": "Cargando vista previa del PDF…",
+    "runtime.shared.preview.retry": "Reintentar vista previa",
+    "runtime.shared.advanced.invalidNumber":
+      "Introduzca un valor finito para {field}; los importes deben ser no negativos y los porcentajes entre 0 y 100.",
+    "runtime.shared.advanced.invalidDate": "Introduzca una fecha válida para {field}.",
+    "runtime.shared.advanced.invalidEmail": "Introduzca un correo electrónico válido para {field}.",
+    "runtime.shared.storage.ownerChanged":
+      "La cuenta ha cambiado. Recargue la página para mantener los borradores separados.",
+    "runtime.shared.storage.reload": "Recargar página",
+  },
+  de: {
+    "runtime.shared.feedback.confirmTitle": "Aktion bestätigen",
+    "runtime.shared.feedback.cancel": "Abbrechen",
+    "runtime.shared.feedback.confirm": "Fortfahren",
+    "runtime.shared.storage.loading": "Gespeicherte Entwürfe werden geladen…",
+    "runtime.shared.storage.saving": "Entwürfe werden online gespeichert…",
+    "runtime.shared.storage.saved": "Entwürfe gespeichert",
+    "runtime.shared.storage.failed":
+      "Der Online-Speicher ist nicht verfügbar. Sie können auf diesem Gerät weiterarbeiten.",
+    "runtime.shared.storage.retry": "Online-Speicherung erneut versuchen",
+    "runtime.shared.advanced.fields.currency": "Währung",
+    "runtime.shared.validation.currencyScope": "Wählen Sie eine unterstützte Währung mit zwei Dezimalstellen.",
+    "runtime.shared.advanced.reviewErrors": "Prüfen Sie die markierten Felder vor dem Export.",
+    "runtime.shared.advanced.documentSettings": "Vorlagen- und Dokumenteinstellungen",
+    "runtime.shared.preview.loadFailed": "Die PDF-Vorschau konnte nicht geladen werden. Versuchen Sie es erneut.",
+    "runtime.shared.preview.updateFailed":
+      "Die PDF-Vorschau konnte nicht aktualisiert werden. Versuchen Sie es erneut.",
+    "runtime.shared.preview.loading": "PDF-Vorschau wird geladen…",
+    "runtime.shared.preview.retry": "Vorschau erneut laden",
+    "runtime.shared.advanced.invalidNumber":
+      "Geben Sie einen endlichen Wert für {field} ein; Geldbeträge dürfen nicht negativ sein und Prozentsätze müssen zwischen 0 und 100 liegen.",
+    "runtime.shared.advanced.invalidDate": "Geben Sie ein gültiges Kalenderdatum für {field} ein.",
+    "runtime.shared.advanced.invalidEmail": "Geben Sie eine gültige E-Mail-Adresse für {field} ein.",
+    "runtime.shared.storage.ownerChanged":
+      "Das Konto wurde geändert. Laden Sie die Seite neu, damit Entwürfe getrennt bleiben.",
+    "runtime.shared.storage.reload": "Seite neu laden",
+  },
+  hi: {
+    "runtime.shared.feedback.confirmTitle": "कार्रवाई की पुष्टि करें",
+    "runtime.shared.feedback.cancel": "रद्द करें",
+    "runtime.shared.feedback.confirm": "जारी रखें",
+    "runtime.shared.storage.loading": "सहेजे गए ड्राफ़्ट लोड हो रहे हैं…",
+    "runtime.shared.storage.saving": "ड्राफ़्ट ऑनलाइन सहेजे जा रहे हैं…",
+    "runtime.shared.storage.saved": "ड्राफ़्ट सहेजे गए",
+    "runtime.shared.storage.failed": "ऑनलाइन स्टोरेज उपलब्ध नहीं है। आप इस डिवाइस पर संपादन जारी रख सकते हैं।",
+    "runtime.shared.storage.retry": "ऑनलाइन सहेजना फिर आज़माएँ",
+    "runtime.shared.advanced.fields.currency": "मुद्रा",
+    "runtime.shared.validation.currencyScope": "दो दशमलव स्थानों वाली समर्थित मुद्रा चुनें।",
+    "runtime.shared.advanced.reviewErrors": "निर्यात से पहले चिह्नित फ़ील्ड की जाँच करें।",
+    "runtime.shared.advanced.documentSettings": "टेम्प्लेट और दस्तावेज़ सेटिंग",
+    "runtime.shared.preview.loadFailed": "PDF प्रीव्यू लोड नहीं हो सका। फिर आज़माएँ।",
+    "runtime.shared.preview.updateFailed": "PDF प्रीव्यू अपडेट नहीं हो सका। फिर आज़माएँ।",
+    "runtime.shared.preview.loading": "PDF प्रीव्यू लोड हो रहा है…",
+    "runtime.shared.preview.retry": "प्रीव्यू फिर आज़माएँ",
+    "runtime.shared.advanced.invalidNumber":
+      "{field} के लिए सीमित संख्यात्मक मान डालें; रकम ऋणात्मक न हो और प्रतिशत 0 से 100 के बीच हो।",
+    "runtime.shared.advanced.invalidDate": "{field} के लिए मान्य तारीख डालें।",
+    "runtime.shared.advanced.invalidEmail": "{field} के लिए मान्य ईमेल पता डालें।",
+    "runtime.shared.storage.ownerChanged": "खाता बदल गया है। ड्राफ़्ट अलग रखने के लिए पृष्ठ फिर लोड करें।",
+    "runtime.shared.storage.reload": "पृष्ठ फिर लोड करें",
+  },
+  ar: {
+    "runtime.shared.feedback.confirmTitle": "تأكيد الإجراء",
+    "runtime.shared.feedback.cancel": "إلغاء",
+    "runtime.shared.feedback.confirm": "متابعة",
+    "runtime.shared.storage.loading": "جارٍ تحميل المسودات المحفوظة…",
+    "runtime.shared.storage.saving": "جارٍ حفظ المسودات عبر الإنترنت…",
+    "runtime.shared.storage.saved": "تم حفظ المسودات",
+    "runtime.shared.storage.failed": "التخزين عبر الإنترنت غير متاح. يمكنك متابعة التحرير على هذا الجهاز.",
+    "runtime.shared.storage.retry": "إعادة محاولة الحفظ عبر الإنترنت",
+    "runtime.shared.advanced.fields.currency": "العملة",
+    "runtime.shared.validation.currencyScope": "اختر عملة مدعومة بمنزلتين عشريتين.",
+    "runtime.shared.advanced.reviewErrors": "راجع الحقول المحددة قبل التصدير.",
+    "runtime.shared.advanced.documentSettings": "إعدادات القالب والمستند",
+    "runtime.shared.preview.loadFailed": "تعذر تحميل معاينة PDF. حاول مرة أخرى.",
+    "runtime.shared.preview.updateFailed": "تعذر تحديث معاينة PDF. حاول مرة أخرى.",
+    "runtime.shared.preview.loading": "جارٍ تحميل معاينة PDF…",
+    "runtime.shared.preview.retry": "إعادة محاولة المعاينة",
+    "runtime.shared.advanced.invalidNumber":
+      "أدخل قيمة عددية منتهية للحقل {field}؛ يجب ألا تكون المبالغ سالبة وأن تكون النسب بين 0 و100.",
+    "runtime.shared.advanced.invalidDate": "أدخل تاريخًا صحيحًا للحقل {field}.",
+    "runtime.shared.advanced.invalidEmail": "أدخل عنوان بريد إلكتروني صحيحًا للحقل {field}.",
+    "runtime.shared.storage.ownerChanged": "تغيّر الحساب. أعد تحميل الصفحة لإبقاء المسودات منفصلة.",
+    "runtime.shared.storage.reload": "إعادة تحميل الصفحة",
+  },
+  ja: {
+    "runtime.shared.feedback.confirmTitle": "操作の確認",
+    "runtime.shared.feedback.cancel": "キャンセル",
+    "runtime.shared.feedback.confirm": "続行",
+    "runtime.shared.storage.loading": "保存した下書きを読み込み中…",
+    "runtime.shared.storage.saving": "下書きをオンラインで保存中…",
+    "runtime.shared.storage.saved": "下書きを保存しました",
+    "runtime.shared.storage.failed": "オンライン保存を利用できません。この端末で編集を続けられます。",
+    "runtime.shared.storage.retry": "オンライン保存を再試行",
+    "runtime.shared.advanced.fields.currency": "通貨",
+    "runtime.shared.validation.currencyScope": "小数点以下2桁の対応通貨を選んでください。",
+    "runtime.shared.advanced.reviewErrors": "エクスポート前に強調表示された項目を確認してください。",
+    "runtime.shared.advanced.documentSettings": "テンプレートと文書の設定",
+    "runtime.shared.preview.loadFailed": "PDFプレビューを読み込めませんでした。再試行してください。",
+    "runtime.shared.preview.updateFailed": "PDFプレビューを更新できませんでした。再試行してください。",
+    "runtime.shared.preview.loading": "PDFプレビューを読み込み中…",
+    "runtime.shared.preview.retry": "プレビューを再試行",
+    "runtime.shared.advanced.invalidNumber":
+      "{field} に有限の値を入力してください。金額は0以上、割合は0〜100にしてください。",
+    "runtime.shared.advanced.invalidDate": "{field} に有効な日付を入力してください。",
+    "runtime.shared.advanced.invalidEmail": "{field} に有効なメールアドレスを入力してください。",
+    "runtime.shared.storage.ownerChanged":
+      "アカウントが変わりました。下書きを別々に管理するため、ページを再読み込みしてください。",
+    "runtime.shared.storage.reload": "ページを再読み込み",
+  },
+  "pt-BR": {
+    "runtime.shared.feedback.confirmTitle": "Confirmar ação",
+    "runtime.shared.feedback.cancel": "Cancelar",
+    "runtime.shared.feedback.confirm": "Continuar",
+    "runtime.shared.storage.loading": "Carregando rascunhos salvos…",
+    "runtime.shared.storage.saving": "Salvando rascunhos online…",
+    "runtime.shared.storage.saved": "Rascunhos salvos",
+    "runtime.shared.storage.failed": "O armazenamento online está indisponível. Você pode continuar neste dispositivo.",
+    "runtime.shared.storage.retry": "Tentar salvar online novamente",
+    "runtime.shared.advanced.fields.currency": "Moeda",
+    "runtime.shared.validation.currencyScope": "Escolha uma moeda compatível com duas casas decimais.",
+    "runtime.shared.advanced.reviewErrors": "Revise os campos destacados antes de exportar.",
+    "runtime.shared.advanced.documentSettings": "Configurações do modelo e documento",
+    "runtime.shared.preview.loadFailed": "Não foi possível carregar a prévia do PDF. Tente novamente.",
+    "runtime.shared.preview.updateFailed": "Não foi possível atualizar a prévia do PDF. Tente novamente.",
+    "runtime.shared.preview.loading": "Carregando prévia do PDF…",
+    "runtime.shared.preview.retry": "Tentar prévia novamente",
+    "runtime.shared.advanced.invalidNumber":
+      "Informe um valor finito para {field}; valores monetários devem ser não negativos e percentuais entre 0 e 100.",
+    "runtime.shared.advanced.invalidDate": "Informe uma data válida para {field}.",
+    "runtime.shared.advanced.invalidEmail": "Informe um endereço de e-mail válido para {field}.",
+    "runtime.shared.storage.ownerChanged": "A conta mudou. Recarregue a página para manter os rascunhos separados.",
+    "runtime.shared.storage.reload": "Recarregar página",
+  },
+  "zh-Hans": {
+    "runtime.shared.feedback.confirmTitle": "确认操作",
+    "runtime.shared.feedback.cancel": "取消",
+    "runtime.shared.feedback.confirm": "继续",
+    "runtime.shared.storage.loading": "正在加载已保存的草稿…",
+    "runtime.shared.storage.saving": "正在在线保存草稿…",
+    "runtime.shared.storage.saved": "草稿已保存",
+    "runtime.shared.storage.failed": "在线存储不可用。您可以继续在此设备上编辑。",
+    "runtime.shared.storage.retry": "重试在线保存",
+    "runtime.shared.advanced.fields.currency": "货币",
+    "runtime.shared.validation.currencyScope": "请选择支持两位小数的货币。",
+    "runtime.shared.advanced.reviewErrors": "导出前请检查标出的字段。",
+    "runtime.shared.advanced.documentSettings": "模板和文档设置",
+    "runtime.shared.preview.loadFailed": "无法加载 PDF 预览。请重试。",
+    "runtime.shared.preview.updateFailed": "无法更新 PDF 预览。请重试。",
+    "runtime.shared.preview.loading": "正在加载 PDF 预览…",
+    "runtime.shared.preview.retry": "重试预览",
+    "runtime.shared.advanced.invalidNumber": "请输入 {field} 的有限数值；金额必须非负，百分比必须介于 0 和 100 之间。",
+    "runtime.shared.advanced.invalidDate": "请输入 {field} 的有效日期。",
+    "runtime.shared.advanced.invalidEmail": "请输入 {field} 的有效电子邮件地址。",
+    "runtime.shared.storage.ownerChanged": "账户已更改。请重新加载页面以保持草稿相互独立。",
+    "runtime.shared.storage.reload": "重新加载页面",
+  },
+  ru: {
+    "runtime.shared.feedback.confirmTitle": "Подтвердить действие",
+    "runtime.shared.feedback.cancel": "Отмена",
+    "runtime.shared.feedback.confirm": "Продолжить",
+    "runtime.shared.storage.loading": "Загрузка сохранённых черновиков…",
+    "runtime.shared.storage.saving": "Сохранение черновиков в интернете…",
+    "runtime.shared.storage.saved": "Черновики сохранены",
+    "runtime.shared.storage.failed": "Онлайн-хранилище недоступно. Вы можете продолжить работу на этом устройстве.",
+    "runtime.shared.storage.retry": "Повторить сохранение в интернете",
+    "runtime.shared.advanced.fields.currency": "Валюта",
+    "runtime.shared.validation.currencyScope": "Выберите поддерживаемую валюту с двумя десятичными знаками.",
+    "runtime.shared.advanced.reviewErrors": "Проверьте отмеченные поля перед экспортом.",
+    "runtime.shared.advanced.documentSettings": "Настройки шаблона и документа",
+    "runtime.shared.preview.loadFailed": "Не удалось загрузить предпросмотр PDF. Повторите попытку.",
+    "runtime.shared.preview.updateFailed": "Не удалось обновить предпросмотр PDF. Повторите попытку.",
+    "runtime.shared.preview.loading": "Загрузка предпросмотра PDF…",
+    "runtime.shared.preview.retry": "Повторить предпросмотр",
+    "runtime.shared.advanced.invalidNumber":
+      "Введите конечное число в поле {field}; денежные суммы не должны быть отрицательными, а проценты должны быть от 0 до 100.",
+    "runtime.shared.advanced.invalidDate": "Введите допустимую календарную дату в поле {field}.",
+    "runtime.shared.advanced.invalidEmail": "Введите допустимый адрес электронной почты в поле {field}.",
+    "runtime.shared.storage.ownerChanged":
+      "Учётная запись изменилась. Перезагрузите страницу, чтобы черновики оставались раздельными.",
+    "runtime.shared.storage.reload": "Перезагрузить страницу",
+  },
+};
+
+// Only reviewed runtime corrections override older managed copy; metadata stays managed.
+const runtimeCorrectionKeys: Record<string, string[]> = {
+  "invoice-generator": ["runtime.invoice.faq.invoiceDraftsAndPdfGenerationStayIn"],
+  "receipt-generator": [
+    "runtime.receipt.rate",
+    "runtime.receipt.fixedAmount",
+    "runtime.receipt.tipGratuity",
+    "runtime.receipt.additionalFee",
+    "runtime.receipt.amountDeducted",
+    "runtime.receipt.amountReceived",
+    "runtime.receipt.amountRefunded",
+    "runtime.receipt.netReceived",
+    "runtime.receipt.balanceDue",
+    "runtime.receipt.subtotal",
+    "runtime.receipt.total",
+    "runtime.receipt.unpaid",
+    "runtime.receipt.partiallyPaid",
+    "runtime.receipt.currency",
+    "runtime.receipt.currencyScope",
+    "runtime.receipt.clipboardFailed",
+    "runtime.receipt.receiptTime",
+    "runtime.receipt.customerCredit",
+  ],
+  "expense-report": [
+    "runtime.expense.receiptFile",
+    "runtime.expense.printSavePdf",
+    "runtime.expense.advanceToReturn",
+    "runtime.expense.reimbursementDue",
+    "runtime.expense.baseAmount",
+    "runtime.expense.expenseTotal",
+    "runtime.expense.startLocation",
+    "runtime.expense.destination",
+    "runtime.expense.parking",
+    "runtime.expense.tolls",
+    "runtime.expense.approver",
+    "runtime.expense.evidenceReferenceOnly",
+  ],
+  "mileage-log": [
+    "runtime.mileage.recordScope",
+    "runtime.mileage.businessRecord",
+    "runtime.mileage.supportedYears",
+    "runtime.mileage.validation.invalidDate",
+    "runtime.mileage.validation.invalidAmounts",
+    "runtime.mileage.validation.completeTripRecord",
+    "runtime.mileage.validation.invalidFuelRecord",
+  ],
+  "quarterly-tax-estimator": [
+    "runtime.tax.scope",
+    "runtime.tax.reviewedExpenses",
+    "runtime.tax.priorYearTaxKnown",
+    "runtime.tax.priorYearCoveredFullYear",
+    "runtime.tax.priorYearResidentAllYear",
+    "runtime.tax.originalTarget",
+    "runtime.tax.remainingTarget",
+    "runtime.tax.filingBalance",
+    "runtime.tax.originalSchedule",
+    "runtime.tax.validation.invalidAmounts",
+    "runtime.tax.summaryHeading",
+    "runtime.tax.calendarYearVersion",
+    "runtime.tax.installment",
+    "runtime.tax.payment",
+    "runtime.tax.dueDate",
+    "runtime.tax.installmentAmount",
+    "runtime.tax.assumptions.excludedTaxes",
+    "runtime.tax.assumptions.wageScope",
+    "runtime.tax.assumptions.paymentTiming",
+    "runtime.tax.assumptions.targetMeaning",
+  ],
+  "w9-request": [
+    "runtime.w9.profileUpdatedLocally",
+    "runtime.w9.selectBeforeCopy",
+    "runtime.w9.copyFailedRecovery",
+    "runtime.w9.validation.requestDate",
+    "runtime.w9.validation.dueDate",
+    "runtime.w9.validation.secureReturn",
+    "runtime.w9.validation.contractorEmail",
+  ],
+  "1099-nec-tracker": [
+    "runtime.nec.candidateScope",
+    "runtime.nec.filingReview",
+    "runtime.nec.validation.eligibilityReview",
+    "runtime.nec.validation.invalidAdjustments",
+    "runtime.nec.warnings.cardExcluded",
+    "runtime.nec.warnings.rentExcluded",
+    "runtime.nec.warnings.corporationExcluded",
+    "runtime.nec.warnings.classificationReview",
+    "runtime.nec.warnings.backupWithholding",
+    "runtime.nec.validation.paymentAmount",
+    "runtime.nec.validation.paymentDate",
+    "runtime.nec.validation.networkReview",
+    "runtime.nec.validation.categoryReview",
+    "runtime.nec.validation.completePayment",
+  ],
+};
+
+export function getPaperworkRuntimeCorrections(componentKey: string, locale: string): Record<string, string> {
+  const sources = sourceMessages[componentKey];
+  if (!sources) return {};
+  return {
+    ...Object.fromEntries(Object.keys(sharedRuntimeCorrections.fr!).map((key) => [key, sharedMessages[key]!])),
+    ...sharedRuntimeCorrections[locale],
+    ...Object.fromEntries(
+      (runtimeCorrectionKeys[componentKey] ?? []).map((key) => [
+        key,
+        sources[locale]?.messages[key] ?? sources.en.messages[key],
+      ]),
+    ),
+  };
+}
+
+/** Apply reviewed runtime updates before completeness checks, without publishing any locale. */
+export function resolvePaperworkTranslation(
+  translations: ToolTranslations,
+  componentKey: string,
+  locale: string,
+  required: ToolMessages,
+) {
+  const updated: ToolTranslations = {};
+  for (const language of locales) {
+    const record = translations?.[language];
+    if (!record) continue;
+    updated[language] = {
+      ...record,
+      messages: { ...record.messages, ...getPaperworkRuntimeCorrections(componentKey, language) },
+    };
+  }
+  return resolveToolTranslation(updated, locale, required);
 }

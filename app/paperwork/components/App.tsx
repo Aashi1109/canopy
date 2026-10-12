@@ -3,19 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type ComponentType, type FormEvent, type ReactNode } from "react";
 import { localizeHref, type Locale } from "@/lib/i18n/config";
-import {
-  CheckCircle2,
-  CircleX,
-  Clock,
-  Eye,
-  Grid,
-  PenLine,
-  Printer,
-  RefreshCw,
-  Sparkles,
-  Trash2,
-  X,
-} from "lucide-react";
+import { ArrowUpRight, Eye, Grid, PenLine, Printer, RefreshCw, Sparkles, Trash2, X } from "lucide-react";
 import {
   Caption,
   H2,
@@ -32,10 +20,9 @@ import {
   Card,
   Field,
   Input,
-  PageHero,
-  ProductHeader,
+  ToolPageShell,
+  Overline,
   StatusBadge,
-  Tabs,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/index.tsx";
@@ -43,24 +30,23 @@ import { CanopyFooter } from "@/components/canopy/CanopyFooter";
 import { seedTemplates, type DocumentTemplate } from "@/lib/invoice-templates/index.ts";
 import type { ResolvedTool } from "@/lib/tool-catalog/index.ts";
 import AdvancedTemplateWorkspace from "./AdvancedTemplateWorkspace";
-import { PaperworkWorkspace } from "./PaperworkWorkspace";
+import { PaperworkMobileTabs, PaperworkWorkspace } from "./PaperworkWorkspace";
 import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
 import ExpenseReportPage from "./expense/ExpenseReportPage";
-import FAQSection from "./FAQSection";
 import InvoiceForm from "./InvoiceForm";
 import InvoicePreviewRenderer from "./InvoicePreviewRenderer";
 import MileageLogPage from "./mileage/MileageLogPage";
 import NecTrackerPage from "./nec1099/NecTrackerPage";
 import QuarterlyTaxEstimatorPage from "./tax/QuarterlyTaxEstimatorPage";
 import ReceiptGeneratorPage from "./receipt/ReceiptGeneratorPage";
-import RelatedTools from "./RelatedTools";
-import SEOContent from "./SEOContent";
 import TemplateSelector from "./TemplateSelector";
 import W9RequestPage from "./w9/W9RequestPage";
 import { invoiceAdapter } from "@/lib/paperwork/documentAdapters";
 import type { InvoiceData } from "@/lib/paperwork/types";
 import { validateInvoiceData } from "@/lib/paperwork/utils/invoiceValidation";
 import { getInitialBlankInvoice, getSampleInvoice } from "@/lib/paperwork/utils/sampleData";
+import { DataBridge, DataBridgeKeys } from "@/lib/paperwork/shared/dataBridge";
+import { PaperworkFeedbackProvider, usePaperworkFeedback } from "./PaperworkFeedback";
 
 function trackEvent(eventName: string, payload: Record<string, unknown> = {}) {
   console.log(`[Analytics Event] "${eventName}" tracked:`, payload);
@@ -71,6 +57,7 @@ const TOOL_COMPONENTS: Record<
   ComponentType<{
     onTrackClick: (itemName: string) => void;
     templates?: readonly DocumentTemplate[];
+    embedded?: boolean;
   }>
 > = {
   "expense-report": ExpenseReportPage,
@@ -81,7 +68,13 @@ const TOOL_COMPONENTS: Record<
 };
 
 type DialogName = "clear" | "sample" | "upgrade";
-type ToastMessage = { message: string; tone: "error" | "success" };
+type AppProps = {
+  availableLocales?: readonly Locale[];
+  account: AccountNavigationProps;
+  componentKey: string;
+  templates: readonly DocumentTemplate[];
+  tools: readonly (ResolvedTool & { href?: string })[];
+};
 
 function AppDialog({
   children,
@@ -135,28 +128,57 @@ function defaultTemplate(templates: readonly DocumentTemplate[]) {
   return template;
 }
 
-export default function App({
-  availableLocales = ["en"],
-  account,
-  componentKey,
-  templates,
-  tools,
-}: {
-  availableLocales?: readonly Locale[];
-  account: AccountNavigationProps;
-  componentKey: string;
-  templates: readonly DocumentTemplate[];
-  tools: readonly (ResolvedTool & { href?: string })[];
-}) {
+export default function App(props: AppProps) {
+  return (
+    <PaperworkFeedbackProvider>
+      <HydratedApp {...props} />
+    </PaperworkFeedbackProvider>
+  );
+}
+
+function HydratedApp(props: AppProps) {
+  const [restoration, setRestoration] = useState(() => {
+    DataBridge.holdAutomaticSaves();
+    return 0;
+  });
+  const touched = useRef(false);
+  useEffect(() => {
+    let active = true;
+    void DataBridge.whenReady().then(() => {
+      // Restoring an untouched form must not displace an edit made during sync.
+      if (active && !touched.current) setRestoration(1);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+  function beginEdit() {
+    touched.current = true;
+    DataBridge.beginUserEdit();
+  }
+  return (
+    <div onInputCapture={beginEdit} onChangeCapture={beginEdit} onClickCapture={beginEdit}>
+      <AppContent key={restoration} {...props} />
+    </div>
+  );
+}
+
+function restoredInvoice(): InvoiceData {
+  return DataBridge.getInvoiceDraft() ?? getInitialBlankInvoice();
+}
+
+function AppContent({ availableLocales = ["en"], account, componentKey, templates, tools }: AppProps) {
   const t = useTranslations("Tool.runtime");
   const locale = useLocale() as Locale;
+  const common = useTranslations("Common");
+  const workbench = useTranslations("Workbench");
   const currentTool = tools.find((tool) => tool.componentKey === componentKey);
   const [edited, setEdited] = useState(false);
   const isInvoice = componentKey === "invoice-generator";
   const isReceipt = componentKey === "receipt-generator";
   const ToolComponent = TOOL_COMPONENTS[componentKey];
   const formSectionRef = useRef<HTMLDivElement>(null);
-  const [invoiceData, setInvoiceData] = useState<InvoiceData>(getInitialBlankInvoice());
+  const [invoiceData, setInvoiceData] = useState<InvoiceData>(restoredInvoice);
   const [selectedTemplate, setSelectedTemplate] = useState(() => defaultTemplate(templates));
   const [templateSelectionReady, setTemplateSelectionReady] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -166,12 +188,26 @@ export default function App({
   const [pdfError, setPdfError] = useState("");
   const [activeDialog, setActiveDialog] = useState<DialogName | null>(null);
   const [activeMobileTab, setActiveMobileTab] = useState<"edit" | "preview">("edit");
-  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const { notify: showToast } = usePaperworkFeedback();
+  const [storageStatus, setStorageStatus] = useState({ ready: false, pending: 0, error: null } as ReturnType<
+    typeof DataBridge.getStatus
+  >);
+  useEffect(() => {
+    setStorageStatus(DataBridge.getStatus());
+    return DataBridge.subscribe(() => setStorageStatus(DataBridge.getStatus()));
+  }, []);
+  const lastStorageError = useRef<string | null>(null);
+  useEffect(() => {
+    if (storageStatus.error && storageStatus.error !== lastStorageError.current)
+      showToast(t(storageStatus.reloadRequired ? "shared.storage.ownerChanged" : "shared.storage.failed"), "error");
+    lastStorageError.current = storageStatus.error;
+  }, [storageStatus.error, storageStatus.reloadRequired, showToast, t]);
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistError, setWaitlistError] = useState("");
-  const toastTimerRef = useRef<number | null>(null);
   useEffect(() => {
-    const storedTemplateId = localStorage.getItem("paperworkkit.advanced-template.invoice.selected");
+    const storedTemplateId = localStorage.getItem(
+      DataBridge.scopedLocalKey("paperworkkit.advanced-template.invoice.selected"),
+    );
     const storedTemplate = templates.find(
       (template) => template.id === storedTemplateId && template.status === "published",
     );
@@ -181,60 +217,18 @@ export default function App({
 
   useEffect(() => {
     if (!templateSelectionReady) return;
-    localStorage.setItem("paperworkkit.advanced-template.invoice.selected", selectedTemplate.id);
+    localStorage.setItem(
+      DataBridge.scopedLocalKey("paperworkkit.advanced-template.invoice.selected"),
+      selectedTemplate.id,
+    );
   }, [selectedTemplate.id, templateSelectionReady]);
-
-  function showToast(message: string, tone: ToastMessage["tone"] = "success") {
-    if (toastTimerRef.current !== null) {
-      window.clearTimeout(toastTimerRef.current);
-    }
-    setToast({ message, tone });
-    toastTimerRef.current = window.setTimeout(() => {
-      setToast(null);
-      toastTimerRef.current = null;
-    }, 3500);
-  }
-
-  useEffect(
-    () => () => {
-      if (toastTimerRef.current !== null) {
-        window.clearTimeout(toastTimerRef.current);
-      }
-    },
-    [],
-  );
-
-  useEffect(() => {
-    if (!isInvoice) return;
-    try {
-      const saved = localStorage.getItem("paperwork_kit_invoice_draft");
-      if (saved) {
-        const parsed: unknown = JSON.parse(saved);
-        if (
-          parsed &&
-          typeof parsed === "object" &&
-          "business" in parsed &&
-          "client" in parsed &&
-          "invoice" in parsed &&
-          "lineItems" in parsed &&
-          Array.isArray(parsed.lineItems)
-        ) {
-          setInvoiceData(parsed as InvoiceData);
-          showToast(t("shared.app.draftRestored"));
-        }
-      }
-    } catch (error) {
-      console.error("Failed to restore the local invoice draft", error);
-      showToast(t("shared.app.restoreFailed"), "error");
-    }
-  }, [isInvoice]);
 
   useEffect(() => {
     if (!isInvoice) return;
     setSaveStatus("saving");
     const timer = window.setTimeout(() => {
       try {
-        localStorage.setItem("paperwork_kit_invoice_draft", JSON.stringify(invoiceData));
+        DataBridge.set(DataBridgeKeys.INVOICE_DRAFT, invoiceData);
         setSaveStatus("saved");
       } catch (error) {
         console.error("Failed to save the local invoice draft", error);
@@ -324,11 +318,6 @@ export default function App({
 
   function clearInvoice() {
     setEdited(true);
-    try {
-      localStorage.removeItem("paperwork_kit_invoice_draft");
-    } catch (error) {
-      console.error("Failed to remove the local invoice draft", error);
-    }
     setInvoiceData(getInitialBlankInvoice());
     setErrors({});
     setPdfError("");
@@ -377,6 +366,30 @@ export default function App({
     });
   }
 
+  const storageFeedback = (
+    <div className="flex w-full flex-wrap items-center justify-between gap-2" role="status">
+      <Caption aria-live="polite" role="status">
+        {!storageStatus.ready
+          ? t("shared.storage.loading")
+          : storageStatus.pending
+            ? t("shared.storage.saving")
+            : storageStatus.error
+              ? t(storageStatus.reloadRequired ? "shared.storage.ownerChanged" : "shared.storage.failed")
+              : t("shared.storage.saved")}
+      </Caption>
+      {storageStatus.error ? (
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={storageStatus.pending > 0}
+          onClick={() => (storageStatus.reloadRequired ? window.location.reload() : void DataBridge.retry())}
+        >
+          {t(storageStatus.reloadRequired ? "shared.storage.reload" : "shared.storage.retry")}
+        </Button>
+      ) : null}
+    </div>
+  );
+
   return (
     <div
       className="flex min-h-screen flex-col bg-background text-foreground selection:bg-foreground selection:text-primary-foreground"
@@ -385,81 +398,79 @@ export default function App({
       data-language-switch-state={pdfAction ? "running" : edited ? "dirty" : "clean"}
       onInputCapture={() => setEdited(true)}
     >
-      <ProductHeader
+      <ToolPageShell
         account={account}
-        actions={
-          <div className="flex items-center gap-2">
-            {isInvoice ? (
-              <>
-                <Caption className="hidden items-center gap-1 text-muted-foreground 2xl:flex">
-                  <Clock className="h-3.5 w-3.5" />
-                  {saveStatus === "saving" ? t("shared.app.saving") : t("shared.app.draftSaved")}
-                </Caption>
-                <Button
-                  aria-label={t("shared.app.clearInvoiceDraft")}
-                  onClick={() => setActiveDialog("clear")}
-                  size="sm"
-                  variant="danger-subtle"
-                >
-                  <Trash2 aria-hidden="true" className="size-3.5" />
-                  <span className="hidden 2xl:inline">{t("shared.app.clear")}</span>
-                </Button>
-              </>
-            ) : null}
-            <AccountNavigation {...account} />
-          </div>
-        }
-        compact
-        href={localizeHref("/paperwork", locale)}
-        name="Paperwork"
-      />
-
-      <main className={isInvoice ? "grow pb-20 lg:pb-0" : "grow"}>
+        headerActions={<AccountNavigation {...account} />}
+        productName="Paperwork"
+        productHref="/paperwork"
+        title={currentTool?.name ?? t("shared.app.documentWorkspace")}
+        description={currentTool?.description ?? ""}
+        category={common("documents")}
+        categoryHref={localizeHref("/paperwork", locale)}
+        breadcrumbCurrent={currentTool?.name}
+        footer={<CanopyFooter />}
+        workspaceId="tool-page-content"
+        workspaceClassName="pb-4"
+      >
         {isReceipt ? (
-          <PaperworkWorkspace title={currentTool?.name ?? t("shared.app.receiptGenerator")}>
-            <ReceiptGeneratorPage onTrackClick={handleTrackClick} templates={templates} />
+          <PaperworkWorkspace status={storageFeedback} title={currentTool?.name ?? t("shared.app.receiptGenerator")}>
+            <ReceiptGeneratorPage embedded onTrackClick={handleTrackClick} templates={templates} />
           </PaperworkWorkspace>
         ) : ToolComponent ? (
-          <PaperworkWorkspace title={currentTool?.name ?? t("shared.app.documentWorkspace")}>
-            <ToolComponent onTrackClick={handleTrackClick} templates={templates} />
+          <PaperworkWorkspace status={storageFeedback} title={currentTool?.name ?? t("shared.app.documentWorkspace")}>
+            <ToolComponent embedded onTrackClick={handleTrackClick} templates={templates} />
           </PaperworkWorkspace>
         ) : isInvoice ? (
           <>
-            <PageHero
+            <PaperworkWorkspace
+              status={storageFeedback}
+              title={currentTool?.name ?? t("shared.app.invoiceGenerator")}
               actions={
-                <>
-                  <Button onClick={() => formSectionRef.current?.scrollIntoView({ behavior: "smooth" })} size="lg">
-                    {t("shared.app.startInvoice")}
-                  </Button>
-                  <Button
-                    className="compact:hidden"
-                    onClick={() => setActiveDialog("clear")}
-                    size="lg"
-                    variant="danger-subtle"
-                  >
-                    <Trash2 aria-hidden="true" className="size-4" />
-                    {t("shared.app.clearInvoiceDraft")}
-                  </Button>
+                <div className="flex items-center gap-2">
                   {selectedTemplate.layoutFamily !== "advanced" ? (
-                    <Button onClick={() => setActiveDialog("sample")} size="lg" variant="secondary">
-                      <RefreshCw className="mr-1 inline h-4 w-4" />
+                    <Button size="sm" variant="secondary" onClick={() => setActiveDialog("sample")}>
                       {t("shared.app.loadSample")}
                     </Button>
                   ) : null}
-                </>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setShowTemplates((shown) => !shown)}
+                    aria-expanded={showTemplates}
+                    aria-controls="invoice-template-options"
+                  >
+                    <Grid aria-hidden="true" className="size-3.5" />
+                    {showTemplates ? t("shared.app.hideThemes") : t("shared.app.changeTheme")}
+                  </Button>
+                  {selectedTemplate.layoutFamily !== "advanced" ? (
+                    <>
+                      <Button
+                        disabled={pdfAction !== null}
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => void generateInvoicePdf("print")}
+                      >
+                        <Printer aria-hidden="true" className="size-3.5" />
+                        {pdfAction === "print" ? t("shared.app.opening") : t("shared.app.printPdf")}
+                      </Button>
+                      <ToolActionButton
+                        action="download"
+                        disabled={pdfAction !== null}
+                        onClick={() => void generateInvoicePdf("download")}
+                      >
+                        {pdfAction === "download" ? t("shared.app.generating") : t("shared.app.downloadPdf")}
+                      </ToolActionButton>
+                    </>
+                  ) : null}
+                  <Button size="sm" variant="danger-subtle" onClick={() => setActiveDialog("clear")}>
+                    {t("shared.app.clearInvoiceDraft")}
+                  </Button>
+                </div>
               }
-              align="center"
-              className="border-b border-border bg-card print:hidden"
-              compact
-              description={currentTool?.description ?? t("shared.app.createPreviewAndDownloadAProfessionalPdf")}
-              eyebrow={t("shared.app.usFocusedSmallBusinessToolkit")}
-              title={currentTool?.name ?? t("shared.app.freeInvoiceGeneratorForContractorsSmallBusinesses")}
-            />
-
-            <PaperworkWorkspace title={currentTool?.name ?? t("shared.app.invoiceGenerator")}>
+            >
               <div id="invoice-generator" ref={formSectionRef}>
                 <H2 className="sr-only">{t("shared.app.invoiceWorkspace")}</H2>
-                <AppContainer className="py-8">
+                <div className="min-w-0 p-3 sm:p-4">
                   {Object.keys(errors).length ? (
                     <AlertBanner
                       className="mb-6 print:hidden"
@@ -471,9 +482,9 @@ export default function App({
                   ) : null}
 
                   {selectedTemplate.layoutFamily !== "advanced" ? (
-                    <Tabs
+                    <PaperworkMobileTabs
                       id="mobile-view-tabs"
-                      className="mb-6 print:hidden lg:hidden"
+                      className="mb-4 print:hidden lg:hidden"
                       onValueChange={(value) => showMobileTab(value as "edit" | "preview")}
                       value={activeMobileTab}
                     >
@@ -501,45 +512,26 @@ export default function App({
                           {t("shared.app.livePreview")}
                         </TabsTrigger>
                       </TabsList>
-                    </Tabs>
+                    </PaperworkMobileTabs>
                   ) : null}
 
+                  {showTemplates ? (
+                    <Card id="invoice-template-options" className="mb-4 p-3">
+                      <TemplateSelector
+                        documentLabel={t("shared.app.invoice")}
+                        onSelect={(template) => {
+                          setEdited(true);
+                          setSelectedTemplate(template);
+                          setInvoiceData((current) => ({ ...current, template: template.slug }));
+                          showToast(t("shared.app.themeChanged", { name: template.name }));
+                        }}
+                        selectedTemplateId={selectedTemplate.id}
+                        templates={templates}
+                      />
+                    </Card>
+                  ) : null}
                   {selectedTemplate.layoutFamily === "advanced" ? (
-                    <div className="grid gap-6">
-                      <Card className="p-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <Grid aria-hidden="true" className="size-5 shrink-0 text-primary" />
-                            <div className="min-w-0">
-                              <H3>{t("shared.app.selectedTheme", { name: selectedTemplate.name })}</H3>
-                              <Muted className="text-muted-foreground">
-                                {t("shared.app.publishedTemplatesAreManagedCentrally")}
-                              </Muted>
-                            </div>
-                          </div>
-                          <Button onClick={() => setShowTemplates((shown) => !shown)} size="sm">
-                            {showTemplates ? t("shared.app.hideThemes") : t("shared.app.changeTheme")}
-                          </Button>
-                        </div>
-                        {showTemplates ? (
-                          <div className="mt-4">
-                            <TemplateSelector
-                              documentLabel={t("shared.app.invoice")}
-                              onSelect={(nextTemplate) => {
-                                setEdited(true);
-                                setSelectedTemplate(nextTemplate);
-                                setInvoiceData((current) => ({
-                                  ...current,
-                                  template: nextTemplate.slug,
-                                }));
-                                showToast(t("shared.app.themeChanged", { name: nextTemplate.name }));
-                              }}
-                              selectedTemplateId={selectedTemplate.id}
-                              templates={templates}
-                            />
-                          </div>
-                        ) : null}
-                      </Card>
+                    <div className="grid min-w-0 gap-4">
                       <AdvancedTemplateWorkspace
                         adapter={invoiceAdapter}
                         draft={invoiceData}
@@ -552,48 +544,18 @@ export default function App({
                       />
                     </div>
                   ) : (
-                    <WorkbenchPanes className="grid items-start gap-8 lg:grid-cols-12">
+                    <WorkbenchPanes
+                      singlePaneDisplay="block"
+                      className="grid min-w-0 items-start gap-4 lg:grid-cols-12"
+                    >
                       <div
                         aria-labelledby="mobile-edit-tab"
-                        className={`space-y-6 print:hidden lg:col-span-7 lg:block ${
+                        className={`min-w-0 space-y-4 print:hidden lg:col-span-7 lg:block ${
                           activeMobileTab === "edit" ? "block" : "hidden"
                         }`}
                         id="editor-panel"
                         role="tabpanel"
                       >
-                        <Card className="p-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="flex min-w-0 items-center gap-3">
-                              <Grid aria-hidden="true" className="size-5 shrink-0 text-primary" />
-                              <div className="min-w-0">
-                                <H3>{t("shared.app.selectedTheme", { name: selectedTemplate.name })}</H3>
-                                <Muted className="text-muted-foreground">
-                                  {t("shared.app.publishedTemplatesAreManagedCentrally")}
-                                </Muted>
-                              </div>
-                            </div>
-                            <Button onClick={() => setShowTemplates((shown) => !shown)} size="sm">
-                              {showTemplates ? t("shared.app.hideThemes") : t("shared.app.changeTheme")}
-                            </Button>
-                          </div>
-                          {showTemplates ? (
-                            <div className="mt-4">
-                              <TemplateSelector
-                                onSelect={(template) => {
-                                  setEdited(true);
-                                  setSelectedTemplate(template);
-                                  setInvoiceData((current) => ({
-                                    ...current,
-                                    template: template.slug,
-                                  }));
-                                  showToast(t("shared.app.themeChanged", { name: template.name }));
-                                }}
-                                selectedTemplateId={selectedTemplate.id}
-                                templates={templates}
-                              />
-                            </div>
-                          ) : null}
-                        </Card>
                         <InvoiceForm
                           data={invoiceData}
                           errors={errors}
@@ -605,111 +567,54 @@ export default function App({
                       </div>
                       <div
                         aria-labelledby="mobile-preview-tab"
-                        className={`space-y-4 lg:sticky lg:top-20 lg:col-span-5 lg:block ${
+                        className={`min-w-0 space-y-3 print:block lg:col-span-5 lg:block ${
                           activeMobileTab === "preview" ? "block" : "hidden"
                         }`}
                         id="preview-panel"
                         role="tabpanel"
                       >
-                        <Card className="space-y-3 p-4 print:hidden">
-                          <div className="flex items-center justify-between border-b border-border pb-2 text-muted-foreground">
-                            <Text>{t("shared.app.pdfActions")}</Text>
-                            <StatusBadge variant="success">{t("shared.app.readyToExport")}</StatusBadge>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <ToolActionButton
-                              action="download"
-                              disabled={pdfAction !== null}
-                              onClick={() => void generateInvoicePdf("download")}
-                            >
-                              {pdfAction === "download" ? t("shared.app.generating") : t("shared.app.downloadPdf")}
-                            </ToolActionButton>
-                            <Button
-                              disabled={pdfAction !== null}
-                              onClick={() => void generateInvoicePdf("print")}
-                              variant="secondary"
-                            >
-                              <Printer className="mr-1 inline h-4 w-4" />
-                              {pdfAction === "print" ? t("shared.app.opening") : t("shared.app.printPdf")}
-                            </Button>
-                          </div>
-                          {pdfError ? (
-                            <P className="text-destructive" role="alert">
-                              {pdfError}
-                            </P>
-                          ) : null}
-                          <Muted className="text-center text-muted-foreground">
-                            {t("shared.app.downloadSavesAPdfPrintOpensThe")}
-                          </Muted>
-                        </Card>
-                        <Card className="overflow-hidden p-0 shadow-xl">
+                        {pdfError ? (
+                          <P className="text-destructive" role="alert">
+                            {pdfError}
+                          </P>
+                        ) : null}
+                        <Card className="overflow-hidden p-0">
                           <InvoicePreviewRenderer data={invoiceData} template={selectedTemplate} />
                         </Card>
                       </div>
                     </WorkbenchPanes>
                   )}
-                </AppContainer>
+                </div>
               </div>
             </PaperworkWorkspace>
           </>
         ) : null}
-      </main>
-
-      <div className="mt-auto print:hidden">
-        {isInvoice ? (
-          <>
-            <SEOContent />
-            <FAQSection />
-          </>
-        ) : null}
-        <RelatedTools currentComponentKey={componentKey} onTrackClick={handleTrackClick} tools={tools} />
-        <CanopyFooter />
-      </div>
-
-      {isInvoice && selectedTemplate.layoutFamily !== "advanced" ? (
-        <div
-          className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-2 gap-2 border-t border-border bg-card/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg backdrop-blur-sm print:hidden lg:hidden"
-          id="mobile-invoice-actions"
-        >
-          <Button
-            className="min-h-11"
-            onClick={() => showMobileTab(activeMobileTab === "edit" ? "preview" : "edit")}
-            variant="secondary"
-          >
-            {activeMobileTab === "edit" ? (
-              <Eye aria-hidden="true" className="size-4" />
-            ) : (
-              <PenLine aria-hidden="true" className="size-4" />
-            )}
-            {activeMobileTab === "edit" ? t("shared.app.previewInvoice") : t("shared.app.editInvoice")}
-          </Button>
-          <ToolActionButton
-            action="download"
-            disabled={pdfAction !== null}
-            onClick={() => void generateInvoicePdf("download")}
-          >
-            {pdfAction === "download" ? t("shared.app.generating") : t("shared.app.downloadPdf")}
-          </ToolActionButton>
-        </div>
-      ) : null}
-
-      {toast ? (
-        <div
-          aria-atomic="true"
-          aria-live={toast.tone === "error" ? "assertive" : "polite"}
-          className="fixed right-4 bottom-24 z-50 flex max-w-sm items-center gap-2.5 rounded-lg bg-surface-ink px-4 py-[13px] text-on-ink shadow-[0_8px_24px_#00000026] lg:bottom-6"
-          role={toast.tone === "error" ? "alert" : "status"}
-        >
-          {toast.tone === "error" ? (
-            <CircleX aria-hidden="true" className="size-5 shrink-0 text-status-danger" />
-          ) : (
-            <Text className="grid size-5 shrink-0 place-items-center rounded-full bg-success text-on-ink">
-              <CheckCircle2 aria-hidden="true" className="size-[13px]" />
-            </Text>
-          )}
-          <Text>{toast.message}</Text>
-        </div>
-      ) : null}
+        <section className="mt-4 border-t border-border pt-4 print:hidden" data-testid="tool-support">
+          <Overline className="text-primary">{workbench("beforeContinue")}</Overline>
+          <div className="mt-4 flex min-h-20 items-center justify-between gap-6 py-3 max-[52rem]:items-start max-[52rem]:flex-col">
+            <div>
+              <Overline>{workbench("relatedTools")}</Overline>
+              <H2 className="mt-1">{workbench("continueRelated")}</H2>
+              <Muted className="mt-1">{workbench("relatedDescription")}</Muted>
+            </div>
+            <nav
+              aria-label={workbench("relatedCategory", { category: common("documents") })}
+              className="flex flex-wrap justify-end gap-2"
+            >
+              {tools
+                .filter((tool) => tool.componentKey !== componentKey)
+                .map((tool) => (
+                  <Button asChild key={tool.id} size="sm" variant="outline" className="h-9 rounded-lg">
+                    <a href={localizeHref(`/paperwork/${tool.slug}`, locale)}>
+                      {tool.name}
+                      <ArrowUpRight aria-hidden="true" className="size-3.5" />
+                    </a>
+                  </Button>
+                ))}
+            </nav>
+          </div>
+        </section>
+      </ToolPageShell>
 
       <AppDialog
         labelledBy="sample-dialog-title"

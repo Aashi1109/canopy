@@ -33,7 +33,7 @@
         "runtime.expense.drivenMiles": "الأميال المقطوعة",
         "runtime.expense.mealsDinner": "الوجبات / العشاء",
         "runtime.expense.periodStart": "بداية الفترة",
-        "runtime.expense.receiptFile": "ملف الإيصال",
+        "runtime.expense.receiptFile": "مرجع الإيصال",
         "runtime.expense.tripPurpose": "غرض الرحلة",
         "runtime.shared.app.printPdf": "طباعة PDF",
         "runtime.expense.alexBrandCom": "alex@brand.com",
@@ -255,7 +255,18 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "بسّط أعمالك باستخدام SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "يتوسع الهيكل الديناميكي فورًا وفقًا للتخطيط. لن تُفقد المسودة.",
         "runtime.expense.categorizeCorporatePurchasesReconcileItemLogsAndFormulate": "صنّف مشتريات الشركة، وطابق سجلات البنود، وحدد معايير التعويض.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "بسّط سير العمل الإداري باستخدام منشئات احترافية للشركات الصغيرة بنقرة واحدة."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "بسّط سير العمل الإداري باستخدام منشئات احترافية للشركات الصغيرة بنقرة واحدة.",
+        "runtime.expense.printSavePdf": "طباعة / حفظ بصيغة PDF",
+        "runtime.expense.advanceToReturn": "سلفة يجب إعادتها",
+        "runtime.expense.reimbursementDue": "تعويض مستحق",
+        "runtime.expense.baseAmount": "المبلغ الأساسي",
+        "runtime.expense.expenseTotal": "إجمالي المصروفات",
+        "runtime.expense.startLocation": "موقع البداية",
+        "runtime.expense.destination": "الوجهة",
+        "runtime.expense.parking": "وقوف السيارات (USD)",
+        "runtime.expense.tolls": "رسوم الطرق (USD)",
+        "runtime.expense.approver": "راجعه",
+        "runtime.expense.evidenceReferenceOnly": "مراجع إثبات فقط. الملفات غير مرفقة بهذا التقرير."
       }
     },
     "de": {
@@ -290,7 +301,7 @@
         "runtime.expense.drivenMiles": "Gefahrene Meilen",
         "runtime.expense.mealsDinner": "Mahlzeiten / Abendessen",
         "runtime.expense.periodStart": "Zeitraumbeginn",
-        "runtime.expense.receiptFile": "Belegdatei",
+        "runtime.expense.receiptFile": "Belegreferenz",
         "runtime.expense.tripPurpose": "Reisezweck",
         "runtime.shared.app.printPdf": "PDF drucken",
         "runtime.expense.alexBrandCom": "alex@brand.com",
@@ -512,7 +523,18 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Optimieren Sie Ihr Unternehmen mit SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "Die dynamische Struktur skaliert sofort entsprechend dem Layout. Kein Entwurf geht verloren.",
         "runtime.expense.categorizeCorporatePurchasesReconcileItemLogsAndFormulate": "Kategorisieren Sie Unternehmenskäufe, stimmen Sie Positionslisten ab und legen Sie erstattungsfähige Parameter fest.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Vereinfachen Sie administrative Abläufe mit professionellen Ein-Klick-Generatoren für kleine Unternehmen."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Vereinfachen Sie administrative Abläufe mit professionellen Ein-Klick-Generatoren für kleine Unternehmen.",
+        "runtime.expense.printSavePdf": "Drucken / als PDF speichern",
+        "runtime.expense.advanceToReturn": "Zurückzuzahlender Vorschuss",
+        "runtime.expense.reimbursementDue": "Ausstehende Erstattung",
+        "runtime.expense.baseAmount": "Grundbetrag",
+        "runtime.expense.expenseTotal": "Ausgabensumme",
+        "runtime.expense.startLocation": "Startort",
+        "runtime.expense.destination": "Ziel",
+        "runtime.expense.parking": "Parkgebühren (USD)",
+        "runtime.expense.tolls": "Maut (USD)",
+        "runtime.expense.approver": "Geprüft von",
+        "runtime.expense.evidenceReferenceOnly": "Nur Belegverweise. Dateien sind diesem Bericht nicht beigefügt."
       }
     },
     "en": {
@@ -547,7 +569,7 @@
         "runtime.expense.drivenMiles": "Driven Miles",
         "runtime.expense.mealsDinner": "Meals / Dinner",
         "runtime.expense.periodStart": "Period Start",
-        "runtime.expense.receiptFile": "Receipt File",
+        "runtime.expense.receiptFile": "Receipt reference",
         "runtime.expense.tripPurpose": "Trip Purpose",
         "runtime.shared.app.printPdf": "Print PDF",
         "runtime.expense.alexBrandCom": "alex@brand.com",
@@ -769,7 +791,18 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Streamline Your Business with SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "Dynamic structure scales immediately based on layout. No lost draft.",
         "runtime.expense.categorizeCorporatePurchasesReconcileItemLogsAndFormulate": "Categorize corporate purchases, reconcile item logs, and formulate reimbursable parameters.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplify administrative workflows with professional single-click small business generators."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplify administrative workflows with professional single-click small business generators.",
+        "runtime.expense.printSavePdf": "Print / save as PDF",
+        "runtime.expense.advanceToReturn": "Advance to return",
+        "runtime.expense.reimbursementDue": "Reimbursement due",
+        "runtime.expense.baseAmount": "Base amount",
+        "runtime.expense.expenseTotal": "Expense total",
+        "runtime.expense.startLocation": "Start location",
+        "runtime.expense.destination": "Destination",
+        "runtime.expense.parking": "Parking (USD)",
+        "runtime.expense.tolls": "Tolls (USD)",
+        "runtime.expense.approver": "Reviewed by",
+        "runtime.expense.evidenceReferenceOnly": "Evidence references only. Files are not attached to this report."
       }
     },
     "es": {
@@ -804,7 +837,7 @@
         "runtime.expense.drivenMiles": "Millas recorridas",
         "runtime.expense.mealsDinner": "Comidas / cena",
         "runtime.expense.periodStart": "Inicio del período",
-        "runtime.expense.receiptFile": "Archivo de recibo",
+        "runtime.expense.receiptFile": "Referencia del recibo",
         "runtime.expense.tripPurpose": "Propósito del viaje",
         "runtime.shared.app.printPdf": "Imprimir PDF",
         "runtime.expense.alexBrandCom": "alex@brand.com",
@@ -1026,7 +1059,18 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Optimice su empresa con SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "La estructura dinámica se adapta de inmediato según el diseño. No se pierde ningún borrador.",
         "runtime.expense.categorizeCorporatePurchasesReconcileItemLogsAndFormulate": "Categorice las compras corporativas, concilie los registros de partidas y defina parámetros reembolsables.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique los flujos de trabajo administrativos con generadores profesionales para pequeñas empresas con un solo clic."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique los flujos de trabajo administrativos con generadores profesionales para pequeñas empresas con un solo clic.",
+        "runtime.expense.printSavePdf": "Imprimir / guardar como PDF",
+        "runtime.expense.advanceToReturn": "Anticipo a devolver",
+        "runtime.expense.reimbursementDue": "Reembolso pendiente",
+        "runtime.expense.baseAmount": "Importe base",
+        "runtime.expense.expenseTotal": "Total de gastos",
+        "runtime.expense.startLocation": "Lugar de salida",
+        "runtime.expense.destination": "Destino",
+        "runtime.expense.parking": "Aparcamiento (USD)",
+        "runtime.expense.tolls": "Peajes (USD)",
+        "runtime.expense.approver": "Revisado por",
+        "runtime.expense.evidenceReferenceOnly": "Solo referencias de comprobantes. Los archivos no se adjuntan al informe."
       }
     },
     "fr": {
@@ -1061,7 +1105,7 @@
         "runtime.expense.drivenMiles": "Miles parcourus",
         "runtime.expense.mealsDinner": "Repas / dîner",
         "runtime.expense.periodStart": "Début de période",
-        "runtime.expense.receiptFile": "Fichier de reçu",
+        "runtime.expense.receiptFile": "Référence du reçu ",
         "runtime.expense.tripPurpose": "Motif du déplacement",
         "runtime.shared.app.printPdf": "Imprimer le PDF",
         "runtime.expense.alexBrandCom": "alex@brand.com",
@@ -1283,7 +1327,18 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Simplifiez votre entreprise avec SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "La structure dynamique s’adapte immédiatement à la mise en page. Aucun brouillon perdu.",
         "runtime.expense.categorizeCorporatePurchasesReconcileItemLogsAndFormulate": "Catégorisez les achats de l’entreprise, rapprochez les journaux d’éléments et définissez les paramètres de remboursement.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifiez les flux de travail administratifs grâce à des générateurs professionnels pour petites entreprises en un clic."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifiez les flux de travail administratifs grâce à des générateurs professionnels pour petites entreprises en un clic.",
+        "runtime.expense.printSavePdf": "Imprimer / enregistrer en PDF",
+        "runtime.expense.advanceToReturn": "Avance à restituer",
+        "runtime.expense.reimbursementDue": "Remboursement dû",
+        "runtime.expense.baseAmount": "Montant de base",
+        "runtime.expense.expenseTotal": "Total des dépenses",
+        "runtime.expense.startLocation": "Lieu de départ",
+        "runtime.expense.destination": "Destination",
+        "runtime.expense.parking": "Stationnement (USD)",
+        "runtime.expense.tolls": "Péages (USD)",
+        "runtime.expense.approver": "Vérifié par",
+        "runtime.expense.evidenceReferenceOnly": "Références de justificatifs uniquement. Aucun fichier joint au rapport."
       }
     },
     "hi": {
@@ -1318,7 +1373,7 @@
         "runtime.expense.drivenMiles": "चलाई गई मील",
         "runtime.expense.mealsDinner": "भोजन / डिनर",
         "runtime.expense.periodStart": "अवधि प्रारंभ",
-        "runtime.expense.receiptFile": "रसीद फ़ाइल",
+        "runtime.expense.receiptFile": "रसीद संदर्भ",
         "runtime.expense.tripPurpose": "यात्रा का उद्देश्य",
         "runtime.shared.app.printPdf": "PDF प्रिंट करें",
         "runtime.expense.alexBrandCom": "alex@brand.com",
@@ -1540,7 +1595,18 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "SmartTools Paperwork Pro के साथ अपना व्यवसाय सरल बनाएँ",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "डायनेमिक संरचना लेआउट के आधार पर तुरंत स्केल होती है। कोई ड्राफ़्ट नहीं खोता।",
         "runtime.expense.categorizeCorporatePurchasesReconcileItemLogsAndFormulate": "कॉर्पोरेट खरीद को वर्गीकृत करें, आइटम लॉग का मिलान करें और प्रतिपूर्ति योग्य पैरामीटर निर्धारित करें।",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "पेशेवर एक-क्लिक छोटे व्यवसाय जनरेटर से प्रशासनिक कार्यप्रवाह सरल बनाएँ।"
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "पेशेवर एक-क्लिक छोटे व्यवसाय जनरेटर से प्रशासनिक कार्यप्रवाह सरल बनाएँ।",
+        "runtime.expense.printSavePdf": "प्रिंट / PDF के रूप में सहेजें",
+        "runtime.expense.advanceToReturn": "वापस करने योग्य अग्रिम",
+        "runtime.expense.reimbursementDue": "देय प्रतिपूर्ति",
+        "runtime.expense.baseAmount": "मूल राशि",
+        "runtime.expense.expenseTotal": "खर्च का कुल योग",
+        "runtime.expense.startLocation": "प्रारंभ स्थान",
+        "runtime.expense.destination": "गंतव्य",
+        "runtime.expense.parking": "पार्किंग (USD)",
+        "runtime.expense.tolls": "टोल (USD)",
+        "runtime.expense.approver": "समीक्षक",
+        "runtime.expense.evidenceReferenceOnly": "केवल साक्ष्य संदर्भ। फ़ाइलें इस रिपोर्ट में संलग्न नहीं हैं।"
       }
     },
     "ja": {
@@ -1575,7 +1641,7 @@
         "runtime.expense.drivenMiles": "走行マイル",
         "runtime.expense.mealsDinner": "食事 / 夕食",
         "runtime.expense.periodStart": "期間開始日",
-        "runtime.expense.receiptFile": "領収書ファイル",
+        "runtime.expense.receiptFile": "領収書参照",
         "runtime.expense.tripPurpose": "出張目的",
         "runtime.shared.app.printPdf": "PDFを印刷",
         "runtime.expense.alexBrandCom": "alex@brand.com",
@@ -1797,7 +1863,18 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "SmartTools Paperwork Proでビジネスを効率化",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "動的な構成がレイアウトに基づいて即座に調整されます。下書きは失われません。",
         "runtime.expense.categorizeCorporatePurchasesReconcileItemLogsAndFormulate": "法人の購入を分類し、明細ログを照合して、精算可能な条件を設定します。",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "プロ仕様のワンクリック中小企業向け作成ツールで事務ワークフローを簡素化します。"
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "プロ仕様のワンクリック中小企業向け作成ツールで事務ワークフローを簡素化します。",
+        "runtime.expense.printSavePdf": "印刷 / PDFとして保存",
+        "runtime.expense.advanceToReturn": "返還する前払金",
+        "runtime.expense.reimbursementDue": "精算支払額",
+        "runtime.expense.baseAmount": "本体金額",
+        "runtime.expense.expenseTotal": "経費合計",
+        "runtime.expense.startLocation": "出発地",
+        "runtime.expense.destination": "目的地",
+        "runtime.expense.parking": "駐車料金 (USD)",
+        "runtime.expense.tolls": "通行料 (USD)",
+        "runtime.expense.approver": "確認者",
+        "runtime.expense.evidenceReferenceOnly": "証憑の参照情報のみです。ファイルはこの報告書に添付されません。"
       }
     },
     "ru": {
@@ -1832,7 +1909,7 @@
         "runtime.expense.drivenMiles": "Пройденные мили",
         "runtime.expense.mealsDinner": "Питание / ужин",
         "runtime.expense.periodStart": "Начало периода",
-        "runtime.expense.receiptFile": "Файл чека",
+        "runtime.expense.receiptFile": "Ссылка на чек",
         "runtime.expense.tripPurpose": "Цель поездки",
         "runtime.shared.app.printPdf": "Печать PDF",
         "runtime.expense.alexBrandCom": "alex@brand.com",
@@ -2054,7 +2131,18 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Оптимизируйте свой бизнес с помощью SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "Динамическая структура мгновенно масштабируется в зависимости от макета. Черновик не будет потерян.",
         "runtime.expense.categorizeCorporatePurchasesReconcileItemLogsAndFormulate": "Категоризируйте корпоративные покупки, сверяйте журналы позиций и определяйте параметры возмещения.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Упростите административные процессы с профессиональными генераторами для малого бизнеса в один клик."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Упростите административные процессы с профессиональными генераторами для малого бизнеса в один клик.",
+        "runtime.expense.printSavePdf": "Печать / сохранить в PDF",
+        "runtime.expense.advanceToReturn": "Аванс к возврату",
+        "runtime.expense.reimbursementDue": "Сумма возмещения",
+        "runtime.expense.baseAmount": "Основная сумма",
+        "runtime.expense.expenseTotal": "Сумма расходов",
+        "runtime.expense.startLocation": "Место отправления",
+        "runtime.expense.destination": "Место назначения",
+        "runtime.expense.parking": "Парковка (USD)",
+        "runtime.expense.tolls": "Дорожные сборы (USD)",
+        "runtime.expense.approver": "Проверил",
+        "runtime.expense.evidenceReferenceOnly": "Только ссылки на подтверждающие документы. Файлы к отчёту не приложены."
       }
     },
     "pt-BR": {
@@ -2089,7 +2177,7 @@
         "runtime.expense.drivenMiles": "Milhas percorridas",
         "runtime.expense.mealsDinner": "Refeições / jantar",
         "runtime.expense.periodStart": "Início do período",
-        "runtime.expense.receiptFile": "Arquivo do recibo",
+        "runtime.expense.receiptFile": "Referência do recibo",
         "runtime.expense.tripPurpose": "Finalidade da viagem",
         "runtime.shared.app.printPdf": "Imprimir PDF",
         "runtime.expense.alexBrandCom": "alex@brand.com",
@@ -2311,7 +2399,18 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Simplifique sua empresa com o SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "A estrutura dinâmica se ajusta imediatamente com base no layout. Nenhum rascunho é perdido.",
         "runtime.expense.categorizeCorporatePurchasesReconcileItemLogsAndFormulate": "Categorize compras corporativas, reconcilie registros de itens e defina parâmetros reembolsáveis.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique fluxos administrativos com geradores profissionais para pequenas empresas em um clique."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique fluxos administrativos com geradores profissionais para pequenas empresas em um clique.",
+        "runtime.expense.printSavePdf": "Imprimir / salvar como PDF",
+        "runtime.expense.advanceToReturn": "Adiantamento a devolver",
+        "runtime.expense.reimbursementDue": "Reembolso a pagar",
+        "runtime.expense.baseAmount": "Valor base",
+        "runtime.expense.expenseTotal": "Total de despesas",
+        "runtime.expense.startLocation": "Local de partida",
+        "runtime.expense.destination": "Destino",
+        "runtime.expense.parking": "Estacionamento (USD)",
+        "runtime.expense.tolls": "Pedágios (USD)",
+        "runtime.expense.approver": "Revisado por",
+        "runtime.expense.evidenceReferenceOnly": "Somente referências de comprovantes. Os arquivos não estão anexados ao relatório."
       }
     },
     "zh-Hans": {
@@ -2346,7 +2445,7 @@
         "runtime.expense.drivenMiles": "行驶里程",
         "runtime.expense.mealsDinner": "餐饮 / 晚餐",
         "runtime.expense.periodStart": "期间开始日期",
-        "runtime.expense.receiptFile": "收据文件",
+        "runtime.expense.receiptFile": "收据参考",
         "runtime.expense.tripPurpose": "出行目的",
         "runtime.shared.app.printPdf": "打印 PDF",
         "runtime.expense.alexBrandCom": "alex@brand.com",
@@ -2568,7 +2667,18 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "使用 SmartTools Paperwork Pro 简化您的业务",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "动态结构会根据布局立即调整大小，不会丢失草稿。",
         "runtime.expense.categorizeCorporatePurchasesReconcileItemLogsAndFormulate": "对公司采购进行分类，核对项目日志，并确定可报销参数。",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "使用专业的一键式小型企业生成器简化行政工作流程。"
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "使用专业的一键式小型企业生成器简化行政工作流程。",
+        "runtime.expense.printSavePdf": "打印 / 另存为 PDF",
+        "runtime.expense.advanceToReturn": "需退还预付款",
+        "runtime.expense.reimbursementDue": "应报销金额",
+        "runtime.expense.baseAmount": "基础金额",
+        "runtime.expense.expenseTotal": "费用合计",
+        "runtime.expense.startLocation": "出发地点",
+        "runtime.expense.destination": "目的地",
+        "runtime.expense.parking": "停车费 (USD)",
+        "runtime.expense.tolls": "通行费 (USD)",
+        "runtime.expense.approver": "审核人",
+        "runtime.expense.evidenceReferenceOnly": "仅记录凭证参考信息，文件未附加到此报告。"
       }
     }
   }

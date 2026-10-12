@@ -1,5 +1,7 @@
 "use client";
 
+import { PaperworkToolHeader } from "../PaperworkWorkspace";
+
 import { useFormatter, useTranslations } from "next-intl";
 
 import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
@@ -27,7 +29,6 @@ import {
   MetricCard,
   Select,
   StatusBadge,
-  ToolPageHeader,
 } from "@/components/ui/index.tsx";
 import {
   FileText,
@@ -59,6 +60,8 @@ import {
   maskTinReference,
 } from "@/lib/paperwork/contractorTaxRules";
 import { nec1099Adapter } from "@/lib/paperwork/documentAdapters";
+import { localDate, csvCell } from "@/lib/paperwork/exportValues";
+import { usePaperworkFeedback } from "../PaperworkFeedback";
 import AdvancedTemplateWorkspace from "../AdvancedTemplateWorkspace";
 
 export interface NecTrackerDraft {
@@ -77,19 +80,8 @@ export const DEFAULT_NEC_TRACKER_DRAFT: NecTrackerDraft = {
   payerAddress: "",
   payerEmail: "",
   filingStatus: "Review required",
-  payments: [
-    {
-      id: "pay-1",
-      date: new Date().toISOString().substring(0, 10),
-      vendorId: "vendor-1",
-      amount: 1500.0,
-      paymentMethod: "Zelle",
-      category: "Services",
-      description: "Design Consulting Consult",
-      includeIn1099: true,
-    },
-  ],
-  recipientAdjustments: [createEmptyRecipientAdjustment("vendor-1")],
+  payments: [],
+  recipientAdjustments: [],
 };
 
 export const SAMPLE_NEC_TRACKER_DRAFT: NecTrackerDraft = {
@@ -143,18 +135,6 @@ export const SAMPLE_NEC_TRACKER_DRAFT: NecTrackerDraft = {
   ],
 };
 
-const FALLBACK_VENDOR: VendorProfile = {
-  id: "vendor-1",
-  legalName: "Devon Lane",
-  businessName: "Devon Dev LLC",
-  email: "devon@lanestudio.com",
-  phone: "+1 (555) 441-2820",
-  addressLine1: "192 Silver Maple Ave, Seattle, WA 98101",
-  entityType: "LLC",
-  w9Status: "Received",
-  notes: "Ruby-on-Rails setup developer.",
-};
-
 export function normalizeNecTrackerDraft(draft: Partial<NecTrackerDraft>): NecTrackerDraft {
   return {
     reportingYear: Number(draft.reportingYear || DEFAULT_NEC_TRACKER_DRAFT.reportingYear),
@@ -190,26 +170,20 @@ export function normalizeNecTrackerDraft(draft: Partial<NecTrackerDraft>): NecTr
 export default function NecTrackerPage({
   onTrackClick,
   templates = [],
+  embedded = false,
 }: {
   onTrackClick: (item: string) => void;
   templates?: readonly DocumentTemplate[];
+  embedded?: boolean;
 }) {
+  const { notify, confirm } = usePaperworkFeedback();
   const t = useTranslations("Tool.runtime");
   const format = useFormatter();
   const [data, setData] = useState<NecTrackerDraft>(() => {
     return normalizeNecTrackerDraft(DataBridge.get(DataBridgeKeys.NEC_DRAFT, DEFAULT_NEC_TRACKER_DRAFT));
   });
 
-  const [vendors] = useState<VendorProfile[]>(() => {
-    const loaded = DataBridge.getW9Vendors();
-    return loaded.length > 0 ? loaded : [FALLBACK_VENDOR];
-  });
-  // Seed the shared vendor list so 1099 rows always resolve on first render.
-  useEffect(() => {
-    if (DataBridge.getW9Vendors().length === 0) {
-      DataBridge.saveW9Vendors(vendors);
-    }
-  }, [vendors]);
+  const [vendors] = useState<VendorProfile[]>(() => DataBridge.getW9Vendors());
 
   // Save payments draft
   useEffect(() => {
@@ -217,6 +191,7 @@ export default function NecTrackerPage({
     const summary = calculateNecSummary(
       data,
       vendors.map((vendor) => vendor.id),
+      vendors,
     );
 
     DataBridge.set(DataBridgeKeys.NEC_SUMMARY, {
@@ -233,8 +208,8 @@ export default function NecTrackerPage({
   const handleAddPayment = () => {
     const newPay: PaymentItem = {
       id: `pay-${Date.now()}`,
-      date: new Date().toISOString().substring(0, 10),
-      vendorId: vendors[0]?.id || "vendor-1",
+      date: localDate(),
+      vendorId: vendors[0]?.id || "",
       amount: 0,
       paymentMethod: "Zelle",
       category: "Services",
@@ -274,8 +249,8 @@ export default function NecTrackerPage({
     onTrackClick("nec_sample_loaded");
   };
 
-  const handleClearDraft = () => {
-    if (confirm(t("nec.areYouSureYouWantToClearPayment"))) {
+  const handleClearDraft = async () => {
+    if (await confirm(t("nec.areYouSureYouWantToClearPayment"))) {
       setData(DEFAULT_NEC_TRACKER_DRAFT);
       onTrackClick("nec_draft_cleared");
     }
@@ -284,6 +259,7 @@ export default function NecTrackerPage({
   const stats = calculateNecSummary(
     data,
     vendors.map((vendor) => vendor.id),
+    vendors,
   );
   const reportingThreshold = stats.rule.supported ? stats.rule.threshold : null;
 
@@ -313,21 +289,54 @@ export default function NecTrackerPage({
     });
   };
 
+  const validateExport = () => {
+    const errors = nec1099Adapter.validate(data, { sections: [] });
+    if (Object.keys(errors).length || stats.issues.length) {
+      notify(Object.values(errors).join(" ") || stats.issues.join(" "), "error");
+      return false;
+    }
+    return true;
+  };
   const handleExportCSV = () => {
+    if (!validateExport()) return;
     onTrackClick("nec_csv_exported");
     let content =
       "Date,Contractor Legal Name,Amount Paid,Payment Method,Deduction Classification,Description,Included In 1099\n";
     data.payments.forEach((item) => {
       const v = vendors.find((vend) => vend.id === item.vendorId);
       const name = v ? v.legalName : "Unknown Contractor";
-      content += `"${item.date}","${name.replace(/"/g, '""')}",${item.amount},"${item.paymentMethod}","${item.category}","${item.description.replace(/"/g, '""')}",${item.includeIn1099 ? "Yes" : "No"}\n`;
+      content +=
+        [
+          item.date,
+          name,
+          item.amount,
+          item.paymentMethod,
+          item.category,
+          item.description,
+          item.includeIn1099 ? "Yes" : "No",
+        ]
+          .map(csvCell)
+          .join(",") + "\n";
     });
     content += "\nANNUAL RECIPIENT ADJUSTMENTS\n";
     content +=
       "Contractor,Masked TIN Reference,Cash Tips,Occupation Codes,Qualified Overtime,Federal Withholding,State,State Income,State Withholding\n";
     data.recipientAdjustments.forEach((adjustment) => {
       const vendor = vendors.find((item) => item.id === adjustment.vendorId);
-      content += `"${vendor?.legalName || "Missing vendor"}","${adjustment.maskedTinReference}",${adjustment.cashTips},"${adjustment.occupationCodes}",${adjustment.qualifiedOvertime},${adjustment.federalWithholding},"${adjustment.state}",${adjustment.stateIncome},${adjustment.stateWithholding}\n`;
+      content +=
+        [
+          vendor?.legalName || "Missing vendor",
+          adjustment.maskedTinReference,
+          adjustment.cashTips,
+          adjustment.occupationCodes,
+          adjustment.qualifiedOvertime,
+          adjustment.federalWithholding,
+          adjustment.state,
+          adjustment.stateIncome,
+          adjustment.stateWithholding,
+        ]
+          .map(csvCell)
+          .join(",") + "\n";
     });
 
     const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
@@ -338,25 +347,43 @@ export default function NecTrackerPage({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handlePrint = () => {
+    if (!validateExport()) return;
     onTrackClick("nec_print_clicked");
     window.print();
   };
 
+  const hasAdvancedTemplate = templates.some(
+    (template) =>
+      template.documentType === nec1099Adapter.documentType &&
+      template.layoutFamily === "advanced" &&
+      template.status === "published",
+  );
   const initialDraft = useRef(JSON.stringify(data));
   const hasEdits = JSON.stringify(data) !== initialDraft.current;
 
   return (
     <div
-      className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      className={embedded ? "min-w-0 w-full p-4 sm:p-5" : "grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}
       id="nec-tracker-wrapper"
       data-language-switch-state={hasEdits ? "dirty" : "clean"}
     >
-      <ToolPageHeader
+      <PaperworkToolHeader
+        embedded={embedded}
         actions={
           <>
+            {!hasAdvancedTemplate && (
+              <Button onClick={handlePrint} type="button" variant="strong">
+                <Printer className="size-4" />
+                <span>{t("nec.saveReportPdf")}</span>
+              </Button>
+            )}
+            <ToolActionButton action="download" onClick={handleExportCSV} type="button">
+              <span>{t("nec.exportCsvSheet")}</span>
+            </ToolActionButton>
             <Button onClick={handleLoadSample} size="sm" variant="secondary">
               <RefreshCw className="size-3.5" />
               <span>{t("nec.loadSample")}</span>
@@ -372,62 +399,17 @@ export default function NecTrackerPage({
         title={t("nec.label1099NecContractorPaymentsTracker")}
       />
 
-      <AdvancedTemplateWorkspace
-        adapter={nec1099Adapter}
-        draft={data}
-        onDraftChange={setData}
-        onTrackClick={onTrackClick}
-        templates={templates}
-      />
-
       {stats.issues.length > 0 && (
         <AlertBanner title={t("nec.label1099TrackingIssues")} variant="warning">
           {stats.issueMessages.map((message) => t(message.key, message.values)).join(" ")}
         </AlertBanner>
       )}
 
-      {/* Threshold stats alerts row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 print:hidden">
-        <MetricCard
-          className="rounded-2xl border-slate-200 bg-white"
-          label={t("nec.totalPaymentsLedger")}
-          value={format.number(stats.totalPayments, { style: "currency", currency: "USD" })}
-        />
-
-        <MetricCard
-          className="rounded-2xl border-slate-200 bg-white"
-          label={
-            reportingThreshold === null
-              ? t("nec.rulesUpdateRequired")
-              : t("nec.atOrAboveValueThreshold", { value1: format.number(reportingThreshold) })
-          }
-          value={
-            <Text className="flex items-center justify-between gap-3">
-              <Text className="flex items-baseline gap-1.5">
-                <Metric className="text-amber-600">{stats.aboveThresholdCount}</Metric>
-                <Overline className="text-slate-400">{t("nec.contractors")}</Overline>
-              </Text>
-              {stats.aboveThresholdCount > 0 && (
-                <Text className="flex size-9 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-500">
-                  <AlertTriangle className="size-5 animate-bounce-slow" />
-                </Text>
-              )}
-            </Text>
-          }
-        />
-
-        <MetricCard
-          className="rounded-2xl border-slate-200 bg-white [&_strong]:text-emerald-600"
-          label={t("nec.eligible1099Payouts")}
-          value={format.number(stats.reportablePayments, { style: "currency", currency: "USD" })}
-        />
-      </div>
-
       {/* Split Columns Editor & Live Render */}
-      <WorkbenchPanes className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <WorkbenchPanes className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* PAYMENT LEDGER INPUTS */}
-        <div className="lg:col-span-7 space-y-6 print:hidden">
-          <Card className="space-y-6">
+        <div className="min-w-0 lg:col-span-7 space-y-4 print:hidden">
+          <Card className="gap-4">
             <div className="flex items-center justify-between border-b pb-2">
               <div className="flex gap-4">
                 <div className="space-y-1">
@@ -550,7 +532,7 @@ export default function NecTrackerPage({
             </div>
           </Card>
 
-          <Card className="space-y-4">
+          <Card className="gap-4">
             <div className="border-b pb-2">
               <H3 className="text-slate-500">{t("nec.annualRecipientAdjustments")}</H3>
               <P className="mt-1 text-slate-500">{t("nec.storeOnlyAMaskedLastFourReferenceHere")}</P>
@@ -621,164 +603,202 @@ export default function NecTrackerPage({
         </div>
 
         {/* PRINT SUITE AND SUMMARY COMPLIANCE VERIFICATION REPORTS */}
-        <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-20">
-          <Card className="space-y-3 p-4 print:hidden">
-            <div className="flex items-center justify-between text-slate-500 border-b pb-2">
-              <Text>{t("nec.reportExportBar")}</Text>
-              <StatusBadge variant="warning">{t("nec.internalReportNotCopyA")}</StatusBadge>
-            </div>
+        <div className="min-w-0 lg:col-span-5 space-y-4">
+          <P className="text-sm">{t("nec.candidateScope")}</P>
+          {stats.warningMessages.map((message) => (
+            <P key={message.key}>{t(message.key, message.values)}</P>
+          ))}
+          <P>{t("nec.filingReview", { count: stats.filingRequiredVendorIds.length })}</P>
 
-            <div className="grid grid-cols-2 gap-2">
-              <Button onClick={handlePrint} className="w-full" type="button" variant="strong">
-                <Printer className="size-4" />
-                <span>{t("nec.saveReportPdf")}</span>
-              </Button>
-              <ToolActionButton action="download" onClick={handleExportCSV} type="button">
-                <span>{t("nec.exportCsvSheet")}</span>
-              </ToolActionButton>
-            </div>
-          </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 gap-3 print:hidden">
+            <MetricCard
+              className="min-w-0 p-3 [&_[data-slot=typography-metric]]:break-all [&_[data-slot=typography-metric]]:text-heading-3"
+              label={t("nec.totalPaymentsLedger")}
+              value={format.number(stats.totalPayments, { style: "currency", currency: "USD" })}
+            />
 
-          {/* Formulated paper template sheet */}
-          <div className="relative group border border-slate-200 shadow-2xl rounded-2xl overflow-hidden">
-            <div
-              className="p-8 bg-white min-h-[750px] font-sans text-slate-800 font-semibold"
-              id="receipt-print-area"
-              dir="ltr"
-            >
-              <div className="border-b-2 border-slate-900 pb-4 mb-6">
-                <span className="text-[11px] font-black text-slate-400 block uppercase font-mono tracking-wider">
-                  ANNUAL CONTRACTOR COMPLIANCE VERIFICATIONS
-                </span>
-                <h1 className="text-lg font-black text-slate-950 leading-tight">1099-NEC INTERNAL REPORTING LEDGER</h1>
-                <p className="text-[10px] text-slate-400 font-bold font-mono">
-                  INTERNAL REVIEW PERIOD {data.reportingYear}
-                </p>
-              </div>
+            <MetricCard
+              className="min-w-0 p-3 [&_[data-slot=typography-metric]]:break-all [&_[data-slot=typography-metric]]:text-heading-3"
+              label={
+                reportingThreshold === null
+                  ? t("nec.rulesUpdateRequired")
+                  : t("nec.atOrAboveValueThreshold", { value1: format.number(reportingThreshold) })
+              }
+              value={
+                <Text className="flex items-center justify-between gap-3">
+                  <Text className="flex items-baseline gap-1.5">
+                    <Metric className="text-amber-600">{stats.aboveThresholdCount}</Metric>
+                    <Overline className="text-slate-400">{t("nec.contractors")}</Overline>
+                  </Text>
+                  {stats.aboveThresholdCount > 0 && (
+                    <Text className="flex size-9 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-500">
+                      <AlertTriangle className="size-5 animate-bounce-slow" />
+                    </Text>
+                  )}
+                </Text>
+              }
+            />
 
-              {/* Status parameters */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-slate-50 border rounded-lg p-3 text-xs">
-                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold block">
-                    Eligible 1099 payments
-                  </span>
-                  <p className="text-slate-900 font-black font-mono text-sm mt-0.5">
-                    ${stats.reportablePayments.toLocaleString()}
-                  </p>
-                </div>
-                <div className="bg-slate-50 border rounded-lg p-3 text-xs text-right">
-                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold block">
-                    Threshold filers alert
-                  </span>
-                  <p className="text-amber-700 font-black font-mono text-sm mt-0.5">
-                    {stats.aboveThresholdCount} contractors
-                  </p>
-                </div>
-              </div>
-
-              <div className="mb-6 grid grid-cols-2 gap-2 text-[10px] md:grid-cols-3">
-                {(
-                  [
-                    ["Cash tips", stats.boxTotals.cashTips],
-                    ["Qualified overtime", stats.boxTotals.qualifiedOvertime],
-                    ["Federal withholding", stats.boxTotals.federalWithholding],
-                    ["State income", stats.boxTotals.stateIncome],
-                    ["State withholding", stats.boxTotals.stateWithholding],
-                  ] as const
-                ).map(([label, value]) => (
-                  <div key={label} className="rounded-lg border bg-slate-50 p-2">
-                    <span className="block font-black uppercase text-slate-400">{label}</span>
-                    <span className="font-mono font-black text-slate-900">${value.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Threshold alerts contractors listing table */}
-              <div className="border border-slate-200 rounded-xl overflow-hidden text-xs mb-6">
-                <div className="bg-slate-100/50 px-3 py-2 border-b text-[11px] font-black text-slate-900 uppercase">
-                  Contractor annual payout sums{" "}
-                  {reportingThreshold === null
-                    ? "(rules update required)"
-                    : `(threshold $${reportingThreshold.toLocaleString()})`}
-                </div>
-
-                <table className="w-full text-left">
-                  <thead className="bg-slate-50 text-[11px] text-slate-400 font-black uppercase">
-                    <tr className="border-b">
-                      <th className="py-2 px-3">Contractor Name</th>
-                      <th className="py-2 px-3">Company Type / DBA</th>
-                      <th className="py-2 px-3 text-right">Deduction Sum</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vendors.map((vend) => {
-                      const sum = stats.vendorTotals[vend.id] || 0;
-                      return (
-                        <tr key={vend.id} className="border-b last:border-0 border-slate-100">
-                          <td className="py-3 px-3 font-extrabold text-slate-950">
-                            {vend.legalName}
-                            {reportingThreshold !== null && sum >= reportingThreshold && (
-                              <span className="block text-[11px] text-amber-600 font-bold uppercase tracking-wide pt-0.5">
-                                ⚠ threshold reached
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3 px-3">
-                            <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700 font-bold">
-                              {vend.entityType} {vend.businessName ? `(${vend.businessName})` : ""}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-right font-mono font-black text-slate-900">
-                            ${sum.toFixed(2)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Complete ledgers payment records lists */}
-              <div className="border border-slate-200 rounded-xl overflow-hidden text-xs mb-6">
-                <div className="bg-slate-100/50 px-3 py-2 border-b text-[11px] font-black text-slate-900 uppercase">
-                  complete Ledger Payment record logs
-                </div>
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-slate-50 border-b text-[11px] text-slate-400 font-black uppercase">
-                      <th className="py-2 px-3">Date</th>
-                      <th className="py-2 px-3">Contractor Name</th>
-                      <th className="py-2 px-3 text-right">Sum</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.payments.map((p, idx) => {
-                      const vDetail = vendors.find((vend) => vend.id === p.vendorId);
-                      return (
-                        <tr key={p.id || idx} className="border-b last:border-0 border-slate-100">
-                          <td className="py-2.5 px-3 font-mono text-slate-500">{p.date}</td>
-                          <td className="py-2.5 px-3 font-bold text-slate-700">
-                            {vDetail ? vDetail.legalName : "Unknown contractor"}
-                            {p.description && (
-                              <span className="block text-[11px] text-slate-400 font-medium">{p.description}</span>
-                            )}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-mono font-black text-slate-900">
-                            ${Number(p.amount || 0).toFixed(2)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="border-t pt-6 mt-12 text-center text-xs text-slate-600 leading-relaxed font-semibold">
-                <p className="font-extrabold text-slate-900 uppercase">Internal report disclaimer</p>
-                <p className="text-[10px] text-slate-500 max-w-xl mx-auto pt-2">{NEC_INTERNAL_REPORT_DISCLAIMER}</p>
-              </div>
-            </div>
+            <MetricCard
+              className="min-w-0 p-3 [&_[data-slot=typography-metric]]:break-all [&_[data-slot=typography-metric]]:text-heading-3 [&_[data-slot=typography-metric]]:text-success"
+              label={t("nec.eligible1099Payouts")}
+              value={format.number(stats.reportablePayments, { style: "currency", currency: "USD" })}
+            />
           </div>
+
+          <AdvancedTemplateWorkspace
+            mode="export"
+            alwaysShowPreview
+            adapter={nec1099Adapter}
+            draft={data}
+            onDraftChange={setData}
+            onTrackClick={onTrackClick}
+            templates={templates}
+          />
+          {/* Formulated paper template sheet */}
+          {!hasAdvancedTemplate && (
+            <div className="relative group border border-slate-200 shadow-2xl rounded-2xl overflow-hidden">
+              <div
+                className="p-4 sm:p-5 bg-white print:min-h-[750px] font-sans text-slate-800 font-semibold"
+                id="receipt-print-area"
+                dir="ltr"
+              >
+                <div className="border-b-2 border-slate-900 pb-4 mb-6">
+                  <span className="text-[11px] font-black text-slate-400 block uppercase font-mono tracking-wider">
+                    ANNUAL CONTRACTOR COMPLIANCE VERIFICATIONS
+                  </span>
+                  <h1 className="text-lg font-black text-slate-950 leading-tight">
+                    1099-NEC INTERNAL REPORTING LEDGER
+                  </h1>
+                  <p className="text-[10px] text-slate-400 font-bold font-mono">
+                    INTERNAL REVIEW PERIOD {data.reportingYear}
+                  </p>
+                </div>
+
+                {/* Status parameters */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-slate-50 border rounded-lg p-3 text-xs">
+                    <span className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold block">
+                      Eligible 1099 payments
+                    </span>
+                    <p className="text-slate-900 font-black font-mono text-sm mt-0.5">
+                      ${stats.reportablePayments.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="bg-slate-50 border rounded-lg p-3 text-xs text-right">
+                    <span className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold block">
+                      Threshold filers alert
+                    </span>
+                    <p className="text-amber-700 font-black font-mono text-sm mt-0.5">
+                      {stats.aboveThresholdCount} contractors
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mb-6 grid grid-cols-2 gap-2 text-[10px] md:grid-cols-3">
+                  {(
+                    [
+                      ["Cash tips", stats.boxTotals.cashTips],
+                      ["Qualified overtime", stats.boxTotals.qualifiedOvertime],
+                      ["Federal withholding", stats.boxTotals.federalWithholding],
+                      ["State income", stats.boxTotals.stateIncome],
+                      ["State withholding", stats.boxTotals.stateWithholding],
+                    ] as const
+                  ).map(([label, value]) => (
+                    <div key={label} className="rounded-lg border bg-slate-50 p-2">
+                      <span className="block font-black uppercase text-slate-400">{label}</span>
+                      <span className="font-mono font-black text-slate-900">${value.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Threshold alerts contractors listing table */}
+                <div className="border border-slate-200 rounded-xl overflow-hidden text-xs mb-6">
+                  <div className="bg-slate-100/50 px-3 py-2 border-b text-[11px] font-black text-slate-900 uppercase">
+                    Contractor annual payout sums{" "}
+                    {reportingThreshold === null
+                      ? "(rules update required)"
+                      : `(threshold $${reportingThreshold.toLocaleString()})`}
+                  </div>
+
+                  <table className="w-full text-left">
+                    <thead className="bg-slate-50 text-[11px] text-slate-400 font-black uppercase">
+                      <tr className="border-b">
+                        <th className="py-2 px-3">Contractor Name</th>
+                        <th className="py-2 px-3">Company Type / DBA</th>
+                        <th className="py-2 px-3 text-right">Deduction Sum</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {vendors.map((vend) => {
+                        const sum = stats.vendorTotals[vend.id] || 0;
+                        return (
+                          <tr key={vend.id} className="border-b last:border-0 border-slate-100">
+                            <td className="py-3 px-3 font-extrabold text-slate-950">
+                              {vend.legalName}
+                              {reportingThreshold !== null && sum >= reportingThreshold && (
+                                <span className="block text-[11px] text-amber-600 font-bold uppercase tracking-wide pt-0.5">
+                                  ⚠ threshold reached
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700 font-bold">
+                                {vend.entityType} {vend.businessName ? `(${vend.businessName})` : ""}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono font-black text-slate-900">
+                              ${sum.toFixed(2)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Complete ledgers payment records lists */}
+                <div className="border border-slate-200 rounded-xl overflow-hidden text-xs mb-6">
+                  <div className="bg-slate-100/50 px-3 py-2 border-b text-[11px] font-black text-slate-900 uppercase">
+                    complete Ledger Payment record logs
+                  </div>
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-slate-50 border-b text-[11px] text-slate-400 font-black uppercase">
+                        <th className="py-2 px-3">Date</th>
+                        <th className="py-2 px-3">Contractor Name</th>
+                        <th className="py-2 px-3 text-right">Sum</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.payments.map((p, idx) => {
+                        const vDetail = vendors.find((vend) => vend.id === p.vendorId);
+                        return (
+                          <tr key={p.id || idx} className="border-b last:border-0 border-slate-100">
+                            <td className="py-2.5 px-3 font-mono text-slate-500">{p.date}</td>
+                            <td className="py-2.5 px-3 font-bold text-slate-700">
+                              {vDetail ? vDetail.legalName : "Unknown contractor"}
+                              {p.description && (
+                                <span className="block text-[11px] text-slate-400 font-medium">{p.description}</span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono font-black text-slate-900">
+                              ${Number(p.amount || 0).toFixed(2)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="border-t pt-6 mt-12 text-center text-xs text-slate-600 leading-relaxed font-semibold">
+                  <p className="font-extrabold text-slate-900 uppercase">Internal report disclaimer</p>
+                  <p className="text-[10px] text-slate-500 max-w-xl mx-auto pt-2">{NEC_INTERNAL_REPORT_DISCLAIMER}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </WorkbenchPanes>
     </div>

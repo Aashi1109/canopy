@@ -327,10 +327,10 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
                     </td>
                     <td className="py-3 text-center font-mono align-top text-slate-600">{qty}</td>
                     <td className="py-3 text-right font-mono align-top text-slate-600">
-                      {formatCurrency(price, "USD")}
+                      {formatCurrency(price, data.invoice.currency || "USD")}
                     </td>
                     <td className="py-3 text-right font-mono font-semibold align-top text-slate-900">
-                      {formatCurrency(amount, "USD")}
+                      {formatCurrency(amount, data.invoice.currency || "USD")}
                     </td>
                   </tr>
                 );
@@ -378,7 +378,9 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
         <div className="md:col-span-5 space-y-2 text-xs text-slate-600 font-medium">
           <div className="flex justify-between font-medium">
             <span>Subtotal:</span>
-            <span className="font-mono text-slate-900 text-right">{formatCurrency(totals.subtotal, "USD")}</span>
+            <span className="font-mono text-slate-900 text-right">
+              {formatCurrency(totals.subtotal, data.invoice.currency || "USD")}
+            </span>
           </div>
 
           {totals.discountAmount > 0 && (
@@ -386,7 +388,9 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
               <span>
                 Discount {data.totalsConfig.discountType === "percent" ? `(${data.totalsConfig.discountValue}%)` : ""}:
               </span>
-              <span className="font-mono text-right">- {formatCurrency(totals.discountAmount, "USD")}</span>
+              <span className="font-mono text-right">
+                - {formatCurrency(totals.discountAmount, data.invoice.currency || "USD")}
+              </span>
             </div>
           )}
 
@@ -395,33 +399,46 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
               <span className="truncate">
                 {data.totalsConfig.taxLabel || "Sales Tax"} ({data.totalsConfig.taxRate}%):
               </span>
-              <span className="font-mono text-slate-900 text-right">{formatCurrency(totals.taxAmount, "USD")}</span>
+              <span className="font-mono text-slate-900 text-right">
+                {formatCurrency(totals.taxAmount, data.invoice.currency || "USD")}
+              </span>
             </div>
           )}
 
           {totals.shippingFee > 0 && (
             <div className="flex justify-between">
               <span>Shipping &amp; Handling:</span>
-              <span className="font-mono text-slate-900 text-right">{formatCurrency(totals.shippingFee, "USD")}</span>
+              <span className="font-mono text-slate-900 text-right">
+                {formatCurrency(totals.shippingFee, data.invoice.currency || "USD")}
+              </span>
             </div>
           )}
 
           <div className="flex justify-between border-t border-slate-100 pt-2 font-bold text-base text-slate-950">
             <span>Total Total:</span>
-            <span className="font-mono text-right">{formatCurrency(totals.total, "USD")}</span>
+            <span className="font-mono text-right">{formatCurrency(totals.total, data.invoice.currency || "USD")}</span>
           </div>
 
           {totals.amountPaid > 0 && (
             <div className="flex justify-between text-slate-500">
               <span>Amount Paid (Partial):</span>
-              <span className="font-mono text-right">- {formatCurrency(totals.amountPaid, "USD")}</span>
+              <span className="font-mono text-right">
+                - {formatCurrency(totals.amountPaid, data.invoice.currency || "USD")}
+              </span>
             </div>
           )}
 
           {/* Balance Due Pill highlighting */}
           <div className="flex justify-between items-center border-t-2 border-slate-900 pt-2 bg-slate-950 text-white rounded-lg p-3 mt-1 shadow-sm">
-            <span className="font-bold text-xs">Balance Due (USD):</span>
-            <span className="font-mono text-lg font-black text-right">{formatCurrency(totals.balanceDue, "USD")}</span>
+            <span className="font-bold text-xs">
+              {totals.customerCredit > 0 ? "Customer credit" : "Balance due"} ({data.invoice.currency || "USD"}):
+            </span>
+            <span className="font-mono text-lg font-black text-right">
+              {formatCurrency(
+                totals.customerCredit > 0 ? totals.customerCredit : totals.balanceDue,
+                data.invoice.currency || "USD",
+              )}
+            </span>
           </div>
         </div>
       </div>

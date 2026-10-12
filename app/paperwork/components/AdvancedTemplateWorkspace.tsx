@@ -1,7 +1,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { DataBridge } from "@/lib/paperwork/shared/dataBridge";
+import { isCalendarDate } from "@/lib/paperwork/documentValidation";
+import { usePaperworkFeedback } from "./PaperworkFeedback";
 import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
+import { PaperworkToolbarActions } from "./PaperworkWorkspace";
 
 import type {
   AdvancedDocumentTemplate,
@@ -50,6 +54,9 @@ type RepeaterColumn = {
 type RepeaterRow = { id: string } & Record<string, unknown>;
 
 interface AdvancedTemplateWorkspaceProps<TDraft> {
+  mode?: "editor" | "export";
+  /** Use this preview as the task surface instead of a separate native preview. */
+  alwaysShowPreview?: boolean;
   adapter: DocumentAdapter<TDraft>;
   draft: TDraft;
   onDraftChange: (draft: TDraft) => void;
@@ -258,7 +265,7 @@ function withoutFullTinValues(values: Record<string, unknown>) {
 
 function readStorage(key: string) {
   try {
-    return localStorage.getItem(key);
+    return localStorage.getItem(DataBridge.scopedLocalKey(key));
   } catch {
     return null;
   }
@@ -266,7 +273,7 @@ function readStorage(key: string) {
 
 function writeStorage(key: string, value: string) {
   try {
-    localStorage.setItem(key, value);
+    localStorage.setItem(DataBridge.scopedLocalKey(key), value);
   } catch {
     // The live draft still works when browser storage is unavailable or full.
   }
@@ -355,8 +362,15 @@ export default function AdvancedTemplateWorkspace<TDraft>({
   onDraftChange,
   onTrackClick,
   templates,
+  mode = "editor",
+  alwaysShowPreview = false,
 }: AdvancedTemplateWorkspaceProps<TDraft>) {
   const t = useTranslations("Tool.runtime");
+  const { notify } = usePaperworkFeedback();
+  const [expanded, setExpanded] = useState(false);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const exportMode = mode === "export";
+  const preserveDocumentFields = adapter.documentType === "w9-request" || adapter.documentType === "1099-nec-tracker";
   const availableTemplates = useMemo(
     () =>
       templates.filter(
@@ -437,6 +451,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
 
   function validate() {
     const next = adapter.validate(draft, selectedTemplate.config.form, t);
+    if (rejectsFullTin && containsFullTin(customValues)) next._document = t("shared.advanced.fullTinRejected");
     for (const section of selectedTemplate.config.form.sections) {
       for (const entry of section.entries) {
         if (!entry.enabled) continue;
@@ -449,8 +464,32 @@ export default function AdvancedTemplateWorkspace<TDraft>({
         if (entry.required && (control === "checkbox" ? value !== true : isEmpty(value))) {
           next[entry.key] = t("shared.advanced.fieldRequired", { field: entry.label });
         }
+        const invalidValue = (candidate: unknown, kind: string, label: string): string | undefined => {
+          if (isEmpty(candidate)) return;
+          if (
+            ["number", "currency", "percent"].includes(kind) &&
+            (!Number.isFinite(Number(candidate)) ||
+              ((kind === "currency" || kind === "percent") && Number(candidate) < 0) ||
+              (kind === "percent" && Number(candidate) > 100))
+          )
+            return t("shared.advanced.invalidNumber", { field: label });
+          if (kind === "date" && !isCalendarDate(candidate)) return t("shared.advanced.invalidDate", { field: label });
+          if (kind === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(candidate)))
+            return t("shared.advanced.invalidEmail", { field: label });
+        };
+        if (entry.kind !== "builtin" && control !== "repeater") {
+          const error = invalidValue(value, control, entry.label);
+          if (error) next[entry.key] = error;
+        }
         const columns = entry.kind === "repeater" ? entry.columns : fieldDefinition?.repeaterColumns;
         const rows = columns ? rowValue(value, entry.kind === "repeater" ? (entry.minRows ?? 0) : 0) : [];
+        if (entry.kind === "repeater" && columns) {
+          for (const row of rows)
+            for (const column of columns) {
+              const error = invalidValue(row[column.key], column.control, column.label);
+              if (error) next[entry.key] = error;
+            }
+        }
         if (entry.kind === "repeater" && rows.length < (entry.minRows ?? 0)) {
           next[entry.key] = t("shared.advanced.minimumRows", { field: entry.label, count: entry.minRows ?? 0 });
         }
@@ -466,11 +505,15 @@ export default function AdvancedTemplateWorkspace<TDraft>({
       }
     }
     setErrors(next);
+    if (exportMode && Object.values(next).some(Boolean)) setExpanded(true);
     return Object.keys(next).length === 0;
   }
 
   async function generate(action: "download" | "print") {
-    if (!validate()) return;
+    if (!validate()) {
+      window.setTimeout(() => errorRef.current?.focus(), 0);
+      return;
+    }
     setIsGenerating(true);
     try {
       if (action === "print") {
@@ -487,13 +530,12 @@ export default function AdvancedTemplateWorkspace<TDraft>({
       }
       onTrackClick?.(`${adapter.documentType.replaceAll("-", "_")}_pdf_${action}`);
     } catch (error) {
-      setErrors((current) => ({
-        ...current,
-        _document:
-          error instanceof Error && error.message === "Allow pop-ups to open the PDF preview."
-            ? t("shared.advanced.allowPopups")
-            : t("shared.advanced.pdfFailed"),
-      }));
+      notify(
+        error instanceof Error && error.message === "Allow pop-ups to open the PDF preview."
+          ? t("shared.advanced.allowPopups")
+          : t("shared.advanced.pdfFailed"),
+        "error",
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -520,6 +562,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
       return (
         <Textarea
           aria-invalid={Boolean(errors[entry.key])}
+          aria-describedby={errors[entry.key] ? `advanced-error-${entry.key.replaceAll(".", "-")}` : undefined}
           id={id}
           onChange={(event) => writeEntry(entry, event.target.value)}
           required={entry.required}
@@ -531,6 +574,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
       return (
         <Select
           aria-invalid={Boolean(errors[entry.key])}
+          aria-describedby={errors[entry.key] ? `advanced-error-${entry.key.replaceAll(".", "-")}` : undefined}
           id={id}
           onChange={(event) => writeEntry(entry, event.target.value)}
           required={entry.required}
@@ -548,6 +592,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
     return (
       <Input
         aria-invalid={Boolean(errors[entry.key])}
+        aria-describedby={errors[entry.key] ? `advanced-error-${entry.key.replaceAll(".", "-")}` : undefined}
         id={id}
         inputMode={control === "currency" || control === "percent" || control === "number" ? "decimal" : undefined}
         onBlur={(event) => {
@@ -614,6 +659,10 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                       {column.control === "select" ? (
                         <Select
                           id={id}
+                          aria-invalid={Boolean(errors[entry.key])}
+                          aria-describedby={
+                            errors[entry.key] ? `advanced-error-${entry.key.replaceAll(".", "-")}` : undefined
+                          }
                           onChange={(event) =>
                             updateRows(
                               rows.map((item) =>
@@ -641,6 +690,10 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                           checked={Boolean(value)}
                           className="size-4"
                           id={id}
+                          aria-invalid={Boolean(errors[entry.key])}
+                          aria-describedby={
+                            errors[entry.key] ? `advanced-error-${entry.key.replaceAll(".", "-")}` : undefined
+                          }
                           onCheckedChange={(checked) =>
                             updateRows(
                               rows.map((item) =>
@@ -657,6 +710,10 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                       ) : (
                         <Input
                           id={id}
+                          aria-invalid={Boolean(errors[entry.key])}
+                          aria-describedby={
+                            errors[entry.key] ? `advanced-error-${entry.key.replaceAll(".", "-")}` : undefined
+                          }
                           onChange={(event) =>
                             updateRows(
                               rows.map((item) =>
@@ -697,133 +754,216 @@ export default function AdvancedTemplateWorkspace<TDraft>({
 
   return (
     <Card
-      className="grid gap-6 p-5 print:hidden"
+      className={exportMode ? "grid min-w-0 gap-3 p-3 print:hidden" : "grid min-w-0 gap-4 p-3 print:hidden"}
       data-language-switch-state={isGenerating ? "running" : hasEdits ? "dirty" : "clean"}
     >
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="grid min-w-64 gap-1">
-          <Label htmlFor="advanced-published-template">{t("shared.advanced.publishedTemplate")}</Label>
-          <Select
-            id="advanced-published-template"
-            onChange={(event) => {
-              setHasEdits(true);
-              setSelectedTemplateId(event.target.value);
-            }}
-            value={selectedTemplate.id}
-          >
-            {availableTemplates.map((template) => (
-              <option key={template.id} value={template.id}>
-                {template.name}
-              </option>
-            ))}
-          </Select>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="grid min-w-0 flex-1 gap-1">
+          {!exportMode && availableTemplates.length > 1 ? (
+            <>
+              <Label htmlFor="advanced-published-template">{t("shared.advanced.publishedTemplate")}</Label>
+              <Select
+                id="advanced-published-template"
+                onChange={(event) => {
+                  setHasEdits(true);
+                  setSelectedTemplateId(event.target.value);
+                }}
+                value={selectedTemplate.id}
+              >
+                {availableTemplates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
+                  </option>
+                ))}
+              </Select>
+            </>
+          ) : (
+            <Caption className="font-medium text-foreground">{selectedTemplate.name}</Caption>
+          )}
         </div>
-        <div className="flex flex-wrap gap-2">
+        {exportMode && (
           <Button
-            onClick={() => {
-              setHasEdits(true);
-              onDraftChange(adapter.getSampleDraft());
-              const samples = templateCustomSampleValues(selectedTemplate);
-              setCustomValues(rejectsFullTin ? withoutFullTinValues(samples) : samples);
-              setErrors({});
-            }}
+            variant="ghost"
             size="sm"
             type="button"
-            variant="secondary"
+            aria-expanded={expanded}
+            aria-controls={`advanced-details-${adapter.documentType}`}
+            onClick={() => setExpanded((value) => !value)}
           >
-            <RefreshCw aria-hidden="true" size={15} />
-            {t("shared.advanced.loadSample")}
+            {t("shared.advanced.documentSettings")}
           </Button>
-          <Button
-            disabled={isGenerating}
-            onClick={() => void generate("print")}
-            size="sm"
-            type="button"
-            variant="secondary"
-          >
-            <Printer aria-hidden="true" size={15} />
-            {t("shared.advanced.printPdf")}
-          </Button>
-          <ToolActionButton
-            action="download"
-            disabled={isGenerating}
-            onClick={() => void generate("download")}
-            type="button"
-          >
-            {t("shared.advanced.downloadPdf")}
-          </ToolActionButton>
-        </div>
+        )}
+        <PaperworkToolbarActions>
+          <div className="flex flex-wrap items-center gap-2">
+            {exportMode && availableTemplates.length > 1 && (
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <Label className="shrink-0" htmlFor="advanced-export-template">
+                  {t("shared.advanced.publishedTemplate")}
+                </Label>
+                <Select
+                  className="w-44 max-w-full"
+                  id="advanced-export-template"
+                  onChange={(event) => {
+                    setHasEdits(true);
+                    setSelectedTemplateId(event.target.value);
+                  }}
+                  value={selectedTemplate.id}
+                >
+                  {availableTemplates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
+            {!exportMode && (
+              <Button
+                onClick={() => {
+                  setHasEdits(true);
+                  onDraftChange(adapter.getSampleDraft());
+                  const samples = templateCustomSampleValues(selectedTemplate);
+                  setCustomValues(rejectsFullTin ? withoutFullTinValues(samples) : samples);
+                  setErrors({});
+                }}
+                size="sm"
+                type="button"
+                variant="secondary"
+              >
+                <RefreshCw aria-hidden="true" size={15} />
+                {t("shared.advanced.loadSample")}
+              </Button>
+            )}
+            <Button
+              disabled={isGenerating}
+              onClick={() => void generate("print")}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              <Printer aria-hidden="true" size={15} />
+              {t("shared.advanced.printPdf")}
+            </Button>
+            <ToolActionButton
+              action="download"
+              disabled={isGenerating}
+              onClick={() => void generate("download")}
+              type="button"
+            >
+              {t("shared.advanced.downloadPdf")}
+            </ToolActionButton>
+          </div>
+        </PaperworkToolbarActions>
       </div>
-      {errors._document ? (
-        <P className="text-destructive" role="alert">
-          {errors._document}
-        </P>
+      {Object.values(errors).some(Boolean) ? (
+        <div ref={errorRef} tabIndex={-1} role="alert" className="text-destructive outline-none">
+          <P>{t("shared.advanced.reviewErrors")}</P>
+          <ul className="list-disc ps-5">
+            {Object.entries(errors)
+              .filter(([, message]) => message)
+              .map(([field, message]) => (
+                <li key={field}>
+                  {fieldDefinitions.get(field)?.label ||
+                    selectedTemplate.config.form.sections
+                      .flatMap((section) => section.entries)
+                      .find((entry) => entry.key === field)?.label ||
+                    field}
+                  : {message}
+                </li>
+              ))}
+          </ul>
+        </div>
       ) : null}
-
-      <WorkbenchPanes className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.8fr)]">
-        <div className="grid gap-5">
-          {selectedTemplate.config.form.sections.map((section) => {
-            const entries = section.entries.filter((entry) => entry.enabled);
-            if (!entries.length) return null;
-            return (
-              <section className="grid gap-4" key={section.id}>
-                <div className="flex items-center gap-2 border-b border-border pb-2">
-                  <H3>{section.label}</H3>
-                  <StatusBadge>{t("shared.advanced.fieldCount", { count: entries.length })}</StatusBadge>
-                </div>
-                {entries.map((entry) => {
-                  const fieldDefinition = entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
-                  const repeaterColumns = entry.kind === "repeater" ? entry.columns : fieldDefinition?.repeaterColumns;
-                  const scalarEntry = entry as Exclude<FormEntry, RepeaterEntry>;
-                  const scalarControl = repeaterColumns?.length ? null : fieldControl(scalarEntry, fieldDefinition);
-                  return (
-                    <div className="grid gap-1.5" key={entry.key}>
-                      {repeaterColumns?.length ? (
-                        <>
-                          <div>
-                            <P>
-                              {entry.label}
-                              {entry.required ? " *" : ""}
+      {(!exportMode || expanded) && (
+        <div id={`advanced-details-${adapter.documentType}`}>
+          <WorkbenchPanes
+            active={!exportMode}
+            className={
+              exportMode
+                ? "grid min-w-0 gap-3"
+                : "grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]"
+            }
+          >
+            <div className="grid min-w-0 gap-4">
+              {selectedTemplate.config.form.sections.map((section) => {
+                const entries = section.entries.filter(
+                  (entry) => entry.enabled && (!exportMode || preserveDocumentFields || entry.kind !== "builtin"),
+                );
+                if (!entries.length) return null;
+                return (
+                  <section className="grid min-w-0 gap-3" key={section.id}>
+                    <div className="flex items-center gap-2 border-b border-border pb-2">
+                      <H3>{section.label}</H3>
+                      <StatusBadge>{t("shared.advanced.fieldCount", { count: entries.length })}</StatusBadge>
+                    </div>
+                    {entries.map((entry) => {
+                      const fieldDefinition = entry.kind === "builtin" ? fieldDefinitions.get(entry.key) : undefined;
+                      const repeaterColumns =
+                        entry.kind === "repeater" ? entry.columns : fieldDefinition?.repeaterColumns;
+                      const scalarEntry = entry as Exclude<FormEntry, RepeaterEntry>;
+                      const scalarControl = repeaterColumns?.length ? null : fieldControl(scalarEntry, fieldDefinition);
+                      return (
+                        <div className="grid gap-1.5" key={entry.key}>
+                          {repeaterColumns?.length ? (
+                            <>
+                              <div>
+                                <P>
+                                  {entry.label}
+                                  {entry.required ? " *" : ""}
+                                </P>
+                                {entry.helpText ? (
+                                  <Muted className="text-muted-foreground">{entry.helpText}</Muted>
+                                ) : null}
+                              </div>
+                              {renderRepeater(entry, repeaterColumns, entry.kind === "repeater" ? entry.minRows : 0)}
+                            </>
+                          ) : scalarControl === "checkbox" ? (
+                            <div className="grid gap-1.5">
+                              {renderControl(scalarEntry, readEntry(entry))}
+                              {entry.helpText ? (
+                                <Caption className="text-muted-foreground">{entry.helpText}</Caption>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <Label
+                              className="grid gap-1.5"
+                              htmlFor={`advanced-field-${entry.key.replaceAll(".", "-")}`}
+                            >
+                              <span>
+                                {entry.label}
+                                {entry.required ? " *" : ""}
+                              </span>
+                              {renderControl(scalarEntry, readEntry(entry))}
+                              {entry.helpText ? (
+                                <Caption className="text-muted-foreground">{entry.helpText}</Caption>
+                              ) : null}
+                            </Label>
+                          )}
+                          {errors[entry.key] ? (
+                            <P
+                              id={`advanced-error-${entry.key.replaceAll(".", "-")}`}
+                              className="text-destructive"
+                              role="alert"
+                            >
+                              {errors[entry.key]}
                             </P>
-                            {entry.helpText ? <Muted className="text-muted-foreground">{entry.helpText}</Muted> : null}
-                          </div>
-                          {renderRepeater(entry, repeaterColumns, entry.kind === "repeater" ? entry.minRows : 0)}
-                        </>
-                      ) : scalarControl === "checkbox" ? (
-                        <div className="grid gap-1.5">
-                          {renderControl(scalarEntry, readEntry(entry))}
-                          {entry.helpText ? (
-                            <Caption className="text-muted-foreground">{entry.helpText}</Caption>
                           ) : null}
                         </div>
-                      ) : (
-                        <Label className="grid gap-1.5" htmlFor={`advanced-field-${entry.key.replaceAll(".", "-")}`}>
-                          <span>
-                            {entry.label}
-                            {entry.required ? " *" : ""}
-                          </span>
-                          {renderControl(scalarEntry, readEntry(entry))}
-                          {entry.helpText ? (
-                            <Caption className="text-muted-foreground">{entry.helpText}</Caption>
-                          ) : null}
-                        </Label>
-                      )}
-                      {errors[entry.key] ? (
-                        <P className="text-destructive" role="alert">
-                          {errors[entry.key]}
-                        </P>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </section>
-            );
-          })}
+                      );
+                    })}
+                  </section>
+                );
+              })}
+            </div>
+            {(!exportMode || !alwaysShowPreview) && (
+              <div className={exportMode ? "min-w-0" : "min-w-0 lg:sticky lg:top-0"}>
+                <AdvancedDocumentPreview data={documentData} template={selectedTemplate} />
+              </div>
+            )}
+          </WorkbenchPanes>
         </div>
-        <div className="xl:sticky xl:top-20">
-          <AdvancedDocumentPreview data={documentData} template={selectedTemplate} />
-        </div>
-      </WorkbenchPanes>
+      )}
+      {exportMode && alwaysShowPreview && <AdvancedDocumentPreview data={documentData} template={selectedTemplate} />}
     </Card>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { PaperworkMobileTabs, PaperworkToolHeader } from "../PaperworkWorkspace";
+
 import { useFormatter, useTranslations } from "next-intl";
 
 import { WorkbenchPanes } from "@/components/tool-workbench/WorkbenchPanes";
@@ -13,6 +15,7 @@ import React, { useRef, useState, useEffect, useMemo } from "react";
 import type { DocumentTemplate } from "@/lib/invoice-templates/index.ts";
 import {
   Caption,
+  FieldDescription,
   H3,
   Metric,
   P,
@@ -26,10 +29,8 @@ import {
   MetricCard,
   Select,
   StatusBadge,
-  Tabs,
   TabsList,
   TabsTrigger,
-  ToolPageHeader,
 } from "@/components/ui/index.tsx";
 import {
   FileText,
@@ -56,6 +57,8 @@ import {
 import { DataBridge, DataBridgeKeys, MileageEntry } from "@/lib/paperwork/shared/dataBridge";
 import { calculateMileageSummary, MileageRateMode } from "@/lib/paperwork/mileageRules";
 import { mileageLogAdapter } from "@/lib/paperwork/documentAdapters";
+import { localDate, csvCell } from "@/lib/paperwork/exportValues";
+import { usePaperworkFeedback } from "../PaperworkFeedback";
 import AdvancedTemplateWorkspace from "../AdvancedTemplateWorkspace";
 
 export interface MileageFuelRecord {
@@ -86,34 +89,10 @@ export const DEFAULT_MILEAGE_DRAFT: MileageLogDraft = {
   taxYear: 2026,
   rateMode: "irs-standard",
   customRate: 0.725,
-  vehicleModel: "2024 Tesla Model Y / Hybrid Utility",
-  trips: [
-    {
-      id: "trip-1",
-      date: new Date().toISOString().substring(0, 10),
-      purpose: "Consulting onsite sprint",
-      startLocation: "Asheville Office",
-      destination: "CLT Innovation hub",
-      startOdometer: 14200,
-      endOdometer: 14310,
-      miles: 110,
-      rate: 0,
-      amount: 0,
-      parking: 0,
-      tolls: 0,
-    },
-  ],
-  fuelRecords: [
-    {
-      id: "fuel-1",
-      date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10),
-      gallons: 11.2,
-      cost: 38.5,
-      merchant: "Shell Station 412",
-      odometer: 14190,
-    },
-  ],
-  notes: "Fuel records are informational and do not increase the standard-mileage deduction.",
+  vehicleModel: "",
+  trips: [],
+  fuelRecords: [],
+  notes: "",
 };
 
 export const SAMPLE_MILEAGE_DRAFT: MileageLogDraft = {
@@ -205,10 +184,13 @@ export function normalizeMileageLogDraft(draft: Partial<MileageLogDraft> & { bus
 export default function MileageLogPage({
   onTrackClick,
   templates = [],
+  embedded = false,
 }: {
   onTrackClick: (item: string) => void;
   templates?: readonly DocumentTemplate[];
+  embedded?: boolean;
 }) {
+  const { notify, confirm } = usePaperworkFeedback();
   const t = useTranslations("Tool.runtime");
   const format = useFormatter();
   const [data, setData] = useState<MileageLogDraft>(() => {
@@ -216,7 +198,12 @@ export default function MileageLogPage({
   });
 
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
-  const [copied, setCopied] = useState(false);
+  const hasAdvancedTemplate = templates.some(
+    (template) =>
+      template.documentType === mileageLogAdapter.documentType &&
+      template.layoutFamily === "advanced" &&
+      template.status === "published",
+  );
   const mileageSummary = useMemo(
     () =>
       calculateMileageSummary({
@@ -231,18 +218,10 @@ export default function MileageLogPage({
 
   // Synchronize draft states
   useEffect(() => {
-    // Save to localStorage
-    try {
-      localStorage.setItem(
-        DataBridgeKeys.MILEAGE_DRAFT,
-        JSON.stringify({
-          ...data,
-          trips: mileageSummary.trips,
-        }),
-      );
-    } catch (e) {
-      console.error(e);
-    }
+    DataBridge.set(
+      DataBridgeKeys.MILEAGE_DRAFT,
+      mileageSummary.errors.length ? data : { ...data, trips: mileageSummary.trips },
+    );
 
     // Bridge details for Quarterly tax calculation
     DataBridge.set(DataBridgeKeys.MILEAGE_SUMMARY, {
@@ -258,7 +237,7 @@ export default function MileageLogPage({
     const lastOdo = data.trips.length > 0 ? data.trips[data.trips.length - 1].endOdometer || 0 : 0;
     const newTrip: MileageLogTrip = {
       id: `trip-${Date.now()}`,
-      date: new Date().toISOString().substring(0, 10),
+      date: localDate(),
       purpose: "",
       startLocation: "",
       destination: "",
@@ -316,7 +295,7 @@ export default function MileageLogPage({
   const handleAddFuel = () => {
     const newFuel: MileageFuelRecord = {
       id: `fuel-${Date.now()}`,
-      date: new Date().toISOString().substring(0, 10),
+      date: localDate(),
       gallons: 0,
       cost: 0,
       merchant: "",
@@ -356,8 +335,8 @@ export default function MileageLogPage({
     onTrackClick("mileage_sample_loaded");
   };
 
-  const handleClearDraft = () => {
-    if (confirm(t("mileage.areYouSureYouWantToClearMileage"))) {
+  const handleClearDraft = async () => {
+    if (await confirm(t("mileage.areYouSureYouWantToClearMileage"))) {
       setData(DEFAULT_MILEAGE_DRAFT);
       onTrackClick("mileage_draft_cleared");
     }
@@ -370,19 +349,44 @@ export default function MileageLogPage({
     fuelEconomy: mileageSummary.fuelEconomy === null ? "N/A" : mileageSummary.fuelEconomy.toFixed(1),
   };
 
+  const validateExport = () => {
+    const errors = mileageLogAdapter.validate(data, { sections: [] });
+    if (Object.keys(errors).length || mileageSummary.errors.length) {
+      notify(Object.values(errors).join(" ") || mileageSummary.errors.join(" "), "error");
+      return false;
+    }
+    return true;
+  };
   const handleExportCSV = () => {
+    if (!validateExport()) return;
     onTrackClick("mileage_csv_exported");
     let content =
       "Date,Business Purpose,Start Location,Destination,Start Odometer,End Odometer,Miles,Effective Rate,Mileage Deduction,Parking,Tolls,Total Deduction\n";
     mileageSummary.trips.forEach((t) => {
-      content += `"${t.date}","${t.purpose.replace(/"/g, '""')}","${t.startLocation.replace(/"/g, '""')}","${t.destination.replace(/"/g, '""')}",${t.startOdometer || ""},${t.endOdometer || ""},${t.miles},${t.rate},${t.mileageAmount.toFixed(2)},${t.parking},${t.tolls},${t.amount.toFixed(2)}\n`;
+      content +=
+        [
+          t.date,
+          t.purpose,
+          t.startLocation,
+          t.destination,
+          t.startOdometer ?? "",
+          t.endOdometer ?? "",
+          t.miles,
+          t.rate,
+          t.mileageAmount.toFixed(2),
+          t.parking,
+          t.tolls,
+          t.amount.toFixed(2),
+        ]
+          .map(csvCell)
+          .join(",") + "\n";
     });
 
     if (data.fuelRecords.length > 0) {
       content += "\nFUEL & LOGISTIC ENTRIES\n";
       content += "Date,Merchant/Gas Station,Gallons Filled,Total Cost,Odometer Reading\n";
       data.fuelRecords.forEach((f) => {
-        content += `"${f.date}","${f.merchant.replace(/"/g, '""')}",${f.gallons},${f.cost},${f.odometer}\n`;
+        content += [f.date, f.merchant, f.gallons, f.cost, f.odometer].map(csvCell).join(",") + "\n";
       });
     }
 
@@ -394,9 +398,11 @@ export default function MileageLogPage({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handlePrint = () => {
+    if (!validateExport()) return;
     onTrackClick("mileage_print_clicked");
     window.print();
   };
@@ -406,11 +412,12 @@ export default function MileageLogPage({
 
   return (
     <div
-      className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      className={embedded ? "min-w-0 w-full p-4 sm:p-5" : "grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}
       id="mileage-tracker-wrapper"
       data-language-switch-state={hasEdits ? "dirty" : "clean"}
     >
-      <ToolPageHeader
+      <PaperworkToolHeader
+        embedded={embedded}
         actions={
           <>
             <Button onClick={handleLoadSample} size="sm" variant="secondary">
@@ -420,20 +427,25 @@ export default function MileageLogPage({
             <Button onClick={handleClearDraft} size="sm" variant="danger-subtle">
               {t("mileage.clearFields")}
             </Button>
+            {embedded ? (
+              <>
+                {!hasAdvancedTemplate ? (
+                  <Button onClick={handlePrint} size="sm" type="button" variant="secondary">
+                    <Printer className="size-4" />
+                    {t("mileage.saveToPdf")}
+                  </Button>
+                ) : null}
+                <ToolActionButton action="download" onClick={handleExportCSV} type="button">
+                  {t("mileage.exportCsvSheet")}
+                </ToolActionButton>
+              </>
+            ) : null}
           </>
         }
         className="print:hidden"
         description={t("mileage.logTaxDeductibleDrivingTripsManageFuelConsumption")}
-        eyebrow={<StatusBadge variant="success">{t("mileage.irsAuditCompliantMileageFormat")}</StatusBadge>}
+        eyebrow={<StatusBadge variant="success">{t("mileage.businessRecord")}</StatusBadge>}
         title={t("mileage.mileageLogTracker")}
-      />
-
-      <AdvancedTemplateWorkspace
-        adapter={mileageLogAdapter}
-        draft={data}
-        onDraftChange={setData}
-        onTrackClick={onTrackClick}
-        templates={templates}
       />
 
       {mileageSummary.errors.length > 0 && (
@@ -442,64 +454,9 @@ export default function MileageLogPage({
         </AlertBanner>
       )}
 
-      {/* Metrics Dashboard Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 print:hidden" id="mileage-stats-grid">
-        <MetricCard
-          className="rounded-2xl border-slate-200/85 bg-white"
-          label={t("mileage.totalDrivenMiles")}
-          value={
-            <Text className="flex items-baseline gap-1.5">
-              <Metric className="text-slate-900">{format.number(stats.totalMiles)}</Metric>
-              <Caption className="text-slate-500">{t("mileage.miles")}</Caption>
-            </Text>
-          }
-        />
-
-        <MetricCard
-          className="rounded-2xl border-slate-200/85 bg-white"
-          label={t("mileage.estimatedDeduction")}
-          value={
-            <Text className="flex items-baseline gap-1">
-              <Metric className="text-emerald-600">
-                {format.number(stats.totalDue, { style: "currency", currency: "USD" })}
-              </Metric>
-              <Caption className="text-slate-400">{t("mileage.writeOff")}</Caption>
-            </Text>
-          }
-        />
-
-        <MetricCard
-          className="rounded-2xl border-slate-200/85 bg-white"
-          label={t("mileage.averageTripLength")}
-          value={
-            <Text className="flex items-baseline gap-1">
-              <Metric className="text-slate-900">
-                {format.number(Number(stats.avgMiles), { maximumFractionDigits: 1 })}
-              </Metric>
-              <Caption className="text-slate-500">{t("mileage.miTrip")}</Caption>
-            </Text>
-          }
-        />
-
-        <MetricCard
-          className="rounded-2xl border-slate-200/85 bg-white"
-          label={t("mileage.fuelEconomyRating")}
-          value={
-            <Text className="flex items-baseline gap-1">
-              <Metric className="text-blue-600">
-                {stats.fuelEconomy !== "N/A"
-                  ? format.number(Number(stats.fuelEconomy), { maximumFractionDigits: 1 })
-                  : t("mileage.nA")}
-              </Metric>
-              {stats.fuelEconomy !== "N/A" && <Caption className="text-slate-500">{t("mileage.mpg")}</Caption>}
-            </Text>
-          }
-        />
-      </div>
-
       {/* Mobile tabs mapping */}
-      <Tabs
-        className="mb-6 md:hidden print:hidden"
+      <PaperworkMobileTabs
+        className="mb-4 lg:hidden print:hidden"
         id="mileage-tabs-switch"
         onValueChange={(value) => setActiveTab(value as "edit" | "preview")}
         value={activeTab}
@@ -512,32 +469,37 @@ export default function MileageLogPage({
             {t("mileage.label2PrintableRecordsView")}
           </TabsTrigger>
         </TabsList>
-      </Tabs>
+      </PaperworkMobileTabs>
 
       {/* Editor Grid Split */}
-      <WorkbenchPanes className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <WorkbenchPanes singlePaneDisplay="block" className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* EDITING FORM SECTION */}
-        <div className={`lg:col-span-7 space-y-6 ${activeTab === "edit" ? "block" : "hidden md:block"} print:hidden`}>
-          <Card className="space-y-6">
+        <div
+          className={`lg:col-span-7 min-w-0 space-y-4 ${activeTab === "edit" ? "block" : "hidden lg:block"} print:hidden`}
+        >
+          <Card className="min-w-0 gap-5 p-4 sm:p-5">
             {/* Rates & Vehicle info */}
             <div>
               <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
                 {t("mileage.label1VehicleParameters")}
               </H3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="mileage-tax-year">
                     {t("mileage.taxFilingYear")}
                   </Label>
-                  <Select
+                  <Input
                     id="mileage-tax-year"
+                    type="number"
+                    min="1900"
+                    max="9999"
+                    step="1"
                     value={data.taxYear}
                     onChange={(e) => setData({ ...data, taxYear: Number(e.target.value) })}
-                  >
-                    <option value={2026}>{t("mileage.taxYear2026DateBased")}</option>
-                    <option value={2025}>{t("mileage.taxYear202570Mi")}</option>
-                    <option value={2024}>{t("mileage.taxYear202467Mi")}</option>
-                  </Select>
+                  />
+                  <FieldDescription>
+                    IRS rates: 2024–2026. Other years require a custom reimbursement rate.
+                  </FieldDescription>
                 </div>
                 <div>
                   <Label className="block text-slate-400 mb-1" htmlFor="mileage-rate-mode">
@@ -582,7 +544,7 @@ export default function MileageLogPage({
 
             {/* Trip items input list */}
             <div>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 mb-3">
                 <H3 className="text-slate-500">{t("mileage.label2DrivingMileageEntries")}</H3>
                 <Button type="button" onClick={handleAddTrip} size="sm" variant="strong">
                   <Plus className="size-3.5" />
@@ -590,24 +552,24 @@ export default function MileageLogPage({
                 </Button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {data.trips.map((trip, idx) => (
                   <div
                     key={trip.id}
-                    className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl space-y-3 relative"
+                    className="relative min-w-0 p-3 pe-14 bg-muted/50 border border-border rounded-xl space-y-3"
                   >
                     <Button
                       type="button"
                       onClick={() => handleRemoveTrip(trip.id)}
                       aria-label={t("mileage.removeTrip")}
-                      className="absolute right-2 top-2 text-muted-foreground hover:text-destructive"
+                      className="absolute end-2 top-2 text-muted-foreground hover:text-destructive"
                       size="icon"
                       variant="ghost"
                     >
                       <Trash2 className="size-4" />
                     </Button>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label className="block text-slate-400 mb-1" htmlFor={`mileage-trip-${trip.id}-date`}>
                           {t("mileage.date")}
@@ -619,7 +581,7 @@ export default function MileageLogPage({
                           onChange={(e) => handleTripChange(trip.id, "date", e.target.value)}
                         />
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-2 sm:col-span-1">
                         <Label className="block text-slate-400 mb-1" htmlFor={`mileage-trip-${trip.id}-purpose`}>
                           {t("mileage.purpose")}
                         </Label>
@@ -645,7 +607,7 @@ export default function MileageLogPage({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-6 gap-3 pt-1 text-slate-500">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1 text-muted-foreground">
                       <div>
                         <Input
                           aria-label={t("mileage.tripValueStartLocation", { value1: idx + 1 })}
@@ -686,7 +648,7 @@ export default function MileageLogPage({
                           onChange={(e) => handleTripChange(trip.id, "tolls", e.target.value)}
                         />
                       </div>
-                      <div className="col-span-2 grid grid-cols-2 gap-1.5">
+                      <div className="col-span-2 sm:col-span-1 grid grid-cols-2 gap-2">
                         <Input
                           aria-label={t("mileage.tripValueStartingOdometer", { value1: idx + 1 })}
                           type="number"
@@ -710,9 +672,11 @@ export default function MileageLogPage({
               </div>
             </div>
 
+            <FieldDescription>{t("mileage.recordScope")}</FieldDescription>
+
             {/* Gasoline Fuel Receipts log */}
             <div>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 mb-3">
                 <H3 className="text-slate-500">{t("mileage.label3FuelPurchaseTrackerForMpgExpenses")}</H3>
                 <Button type="button" onClick={handleAddFuel} size="sm" variant="strong">
                   <Plus className="size-3.5" />
@@ -729,20 +693,20 @@ export default function MileageLogPage({
                   {data.fuelRecords.map((fuel) => (
                     <div
                       key={fuel.id}
-                      className="p-3 bg-slate-50 border rounded-xl relative flex flex-col md:flex-row gap-3"
+                      className="relative min-w-0 p-3 pe-14 bg-muted/50 border border-border rounded-xl flex flex-col gap-3"
                     >
                       <Button
                         type="button"
                         onClick={() => handleRemoveFuel(fuel.id)}
                         aria-label={t("mileage.removeFuelRecord")}
-                        className="absolute right-2 top-2 text-muted-foreground hover:text-destructive"
+                        className="absolute end-2 top-2 text-muted-foreground hover:text-destructive"
                         size="icon"
                         variant="ghost"
                       >
                         <Trash2 className="size-4" />
                       </Button>
 
-                      <div className="grow grid grid-cols-2 md:grid-cols-5 gap-2">
+                      <div className="min-w-0 grid grid-cols-2 sm:grid-cols-3 gap-3">
                         <div>
                           <Label className="block text-slate-400" htmlFor={`mileage-fuel-${fuel.id}-date`}>
                             {t("mileage.refuelDate")}
@@ -754,7 +718,7 @@ export default function MileageLogPage({
                             onChange={(e) => handleFuelChange(fuel.id, "date", e.target.value)}
                           />
                         </div>
-                        <div className="col-span-2 md:col-span-1">
+                        <div className="col-span-2 sm:col-span-1">
                           <Label className="block text-slate-400" htmlFor={`mileage-fuel-${fuel.id}-merchant`}>
                             {t("mileage.merchant")}
                           </Label>
@@ -819,166 +783,231 @@ export default function MileageLogPage({
 
         {/* PRINT ACTIONABLE SHEETS COLUMN */}
         <div
-          className={`lg:col-span-5 space-y-6 lg:sticky lg:top-20 ${activeTab === "preview" ? "block" : "hidden md:block"}`}
+          className={`lg:col-span-5 min-w-0 space-y-3 lg:sticky ${embedded ? "lg:top-0" : "lg:top-20"} ${activeTab === "preview" ? "block" : "hidden lg:block"}`}
         >
-          <Card className="space-y-3 p-4 print:hidden">
-            <div className="flex items-center justify-between text-slate-500 border-b border-slate-100 pb-2">
-              <Text>{t("mileage.mileageSheetDrivingReport")}</Text>
-              <StatusBadge variant="info">{t("mileage.readyToPrint")}</StatusBadge>
-            </div>
+          <div className="grid grid-cols-2 gap-2 print:hidden" id="mileage-stats-grid">
+            <MetricCard
+              className="min-w-0 p-3 [&_[data-slot=typography-metric]]:break-all"
+              label={t("mileage.totalDrivenMiles")}
+              value={
+                <Text className="flex items-baseline gap-1.5">
+                  <Metric className="text-foreground">{format.number(stats.totalMiles)}</Metric>
+                  <Caption className="text-muted-foreground">{t("mileage.miles")}</Caption>
+                </Text>
+              }
+            />
 
-            <div className="grid grid-cols-2 gap-2">
-              <Button onClick={handlePrint} className="w-full" type="button" variant="strong">
-                <Printer className="size-4" />
-                <span>{t("mileage.saveToPdf")}</span>
-              </Button>
-              <ToolActionButton action="download" onClick={handleExportCSV} type="button">
-                <span>{t("mileage.exportCsvSheet")}</span>
-              </ToolActionButton>
-            </div>
-          </Card>
+            <MetricCard
+              className="min-w-0 p-3 [&_[data-slot=typography-metric]]:break-all"
+              label={t("mileage.estimatedDeduction")}
+              value={
+                <Text className="flex items-baseline gap-1">
+                  <Metric className="text-success">
+                    {format.number(stats.totalDue, { style: "currency", currency: "USD" })}
+                  </Metric>
+                  <Caption className="text-muted-foreground">{t("mileage.writeOff")}</Caption>
+                </Text>
+              }
+            />
 
-          {/* Formulated sheets paper render */}
-          <div className="relative group border border-slate-200 shadow-2xl rounded-2xl">
-            <div className="p-8 bg-white min-h-[750px] font-sans text-slate-800" id="receipt-print-area" dir="ltr">
-              <div className="flex justify-between items-start border-b border-slate-200 pb-5 mb-6">
-                <div>
-                  <span className="text-[11px] font-black tracking-widest text-[#0066cc] uppercase">
-                    IRS TAX SCHEDULE REPORTING
-                  </span>
-                  <h1 className="text-xl font-black text-slate-950 mt-1 uppercase">
-                    MILEAGE &amp; TRIP COMPLIANCE LOG
-                  </h1>
-                  <span className="text-[10px] text-slate-400 font-bold block font-mono mt-1">
-                    TAX FILING CALENDAR YEAR {data.taxYear}
-                  </span>
-                </div>
-
-                <div className="text-right">
-                  <div className="bg-slate-100 border border-slate-200 px-3 py-1 font-black text-xs inline-block text-slate-900 rounded font-mono">
-                    LOG-M-{data.taxYear}
-                  </div>
-                  <span className="block text-[11px] text-slate-500 font-bold font-mono mt-2">
-                    {data.rateMode === "custom"
-                      ? `CUSTOM RATE: $${data.customRate}/mi`
-                      : "IRS RATE: EFFECTIVE ON EACH TRIP DATE"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Vehicle credentials */}
-              <div className="bg-slate-50 border rounded-xl p-3 mb-6 text-xs flex justify-between font-semibold">
-                <div>
-                  <span className="text-[11px] text-slate-400 font-extrabold block uppercase tracking-wider mb-0.5">
-                    Primary Vehicle
-                  </span>
-                  <p className="text-slate-900 font-extrabold">{data.vehicleModel || "Registered Tax Vehicle"}</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-[11px] text-slate-400 font-extrabold block uppercase tracking-wider mb-0.5">
-                    Deduction Sum
-                  </span>
-                  <p className="text-emerald-700 font-mono font-black">${stats.totalDue.toFixed(2)}</p>
-                </div>
-              </div>
-
-              {/* Printable Table */}
-              <div className="border border-slate-200 rounded-xl overflow-hidden mb-6 text-xs">
-                <table className="w-full text-left">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-black uppercase text-slate-400">
-                    <tr>
-                      <th className="py-2.5 px-3">Date</th>
-                      <th className="py-2.5 px-3">Trip Purpose / Coordinates</th>
-                      <th className="py-2.5 px-3 text-center w-16">Miles</th>
-                      <th className="py-2.5 px-3 text-right w-24">Write-off</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mileageSummary.trips.map((t, idx) => (
-                      <tr key={t.id || idx} className="border-b last:border-b-0 border-slate-200">
-                        <td className="py-3 px-3 font-mono text-slate-500">{t.date}</td>
-                        <td className="py-3 px-3 font-bold text-slate-900 leading-snug">
-                          {t.purpose || "Business Trip Outing"}
-                          {(t.startLocation || t.destination) && (
-                            <span className="block text-[11px] text-slate-400/80 font-mono leading-none pt-1">
-                              From: {t.startLocation || "HQ"} → To: {t.destination || "Site"}
-                            </span>
-                          )}
-                          {t.startOdometer !== undefined && t.endOdometer !== undefined && (
-                            <span className="block text-[11px] text-blue-600/80 font-mono leading-none pt-0.5">
-                              Odometer Readings: {t.startOdometer} → {t.endOdometer}
-                            </span>
-                          )}
-                          {(t.parking > 0 || t.tolls > 0) && (
-                            <span className="block text-[11px] text-slate-500 font-mono leading-none pt-0.5">
-                              Parking ${t.parking.toFixed(2)} · Tolls ${t.tolls.toFixed(2)}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3 text-center font-bold text-slate-500 font-mono">{t.miles} mi</td>
-                        <td className="py-3 px-3 text-right font-mono font-black text-slate-900">
-                          ${t.amount.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Fuel record logs representation */}
-              {data.fuelRecords.length > 0 && (
-                <div className="border border-slate-200 rounded-xl overflow-hidden mb-6 text-xs">
-                  <div className="bg-slate-100/50 px-3 py-1.5 border-b border-slate-200 text-[10px] font-black text-slate-900 uppercase">
-                    Refueling Log &amp; Reconciles
-                  </div>
-                  <table className="w-full text-left">
-                    <thead className="bg-slate-50/75 text-[11px] font-black text-slate-400 uppercase">
-                      <tr className="border-b">
-                        <th className="py-1.5 px-3">Date</th>
-                        <th className="py-1.5 px-3">Gas Station Merchant</th>
-                        <th className="py-1.5 px-3 text-center">Gallons</th>
-                        <th className="py-1.5 px-3 text-right">Cost</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.fuelRecords.map((f, idx) => (
-                        <tr key={f.id || idx} className="border-b last:border-b-0 border-slate-100">
-                          <td className="py-2.5 px-3 font-mono text-slate-500">{f.date}</td>
-                          <td className="py-2.5 px-3 font-bold text-slate-700">{f.merchant || "Fuel Fill Station"}</td>
-                          <td className="py-2.5 px-3 text-center font-mono">{f.gallons} gal</td>
-                          <td className="py-2.5 px-3 text-right font-mono font-black text-slate-800">
-                            ${f.cost.toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {/* Declarations credentials signatory info */}
-              <div className="border-t border-slate-200/80 pt-6 mt-12 text-center text-xs">
-                <p className="font-extrabold text-slate-900 uppercase">Audit Records Declaration Sign-off</p>
-                <p className="text-[10px] text-slate-500 leading-normal max-w-xl mx-auto mt-2">
-                  I hereby declare that this mileage register accurate details of actual miles, calendar dates, and
-                  coordinates driven purely in service of corporate business milestones.
-                </p>
-
-                <div className="grid grid-cols-2 gap-8 mt-8 max-w-md mx-auto">
-                  <div className="space-y-2">
-                    <div className="border-b border-slate-300 h-8" />
-                    <span className="block text-[11px] uppercase font-bold text-slate-400">Driver Signatory</span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="border-b border-slate-300 h-8" />
-                    <span className="block text-[11px] uppercase font-bold text-slate-400 font-mono">
-                      Reconciled date
-                    </span>
-                  </div>
-                </div>
-              </div>
+            <div className="col-span-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-muted-foreground">
+              <Caption>
+                {t("mileage.averageTripLength")}: {format.number(Number(stats.avgMiles), { maximumFractionDigits: 1 })}{" "}
+                {t("mileage.miTrip")}
+              </Caption>
+              <Caption>
+                {t("mileage.fuelEconomyRating")}:{" "}
+                {stats.fuelEconomy !== "N/A"
+                  ? `${format.number(Number(stats.fuelEconomy), { maximumFractionDigits: 1 })} ${t("mileage.mpg")}`
+                  : t("mileage.nA")}
+              </Caption>
             </div>
           </div>
+
+          <AdvancedTemplateWorkspace
+            mode="export"
+            alwaysShowPreview
+            adapter={mileageLogAdapter}
+            draft={data}
+            onDraftChange={setData}
+            onTrackClick={onTrackClick}
+            templates={templates}
+          />
+          {hasAdvancedTemplate && !embedded ? (
+            <ToolActionButton action="download" onClick={handleExportCSV} type="button">
+              <span>{t("mileage.exportCsvSheet")}</span>
+            </ToolActionButton>
+          ) : null}
+          {!hasAdvancedTemplate ? (
+            <>
+              <Card className={embedded ? "gap-2 p-3 print:hidden" : "gap-3 p-4 print:hidden"}>
+                <div className="flex items-center justify-between text-slate-500 border-b border-slate-100 pb-2">
+                  <Text>{t("mileage.mileageSheetDrivingReport")}</Text>
+                  <StatusBadge variant="info">{t("mileage.readyToPrint")}</StatusBadge>
+                </div>
+
+                {!embedded ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button onClick={handlePrint} className="w-full" type="button" variant="strong">
+                      <Printer className="size-4" />
+                      <span>{t("mileage.saveToPdf")}</span>
+                    </Button>
+                    <ToolActionButton action="download" onClick={handleExportCSV} type="button">
+                      <span>{t("mileage.exportCsvSheet")}</span>
+                    </ToolActionButton>
+                  </div>
+                ) : null}
+              </Card>
+
+              {/* Formulated sheets paper render */}
+              <div className="relative min-w-0 overflow-hidden border border-border shadow-sm rounded-xl">
+                <div
+                  className="p-4 sm:p-5 bg-white min-h-[32rem] print:min-h-[750px] print:p-8 font-sans text-slate-800"
+                  id="receipt-print-area"
+                  dir="ltr"
+                >
+                  <div className="flex justify-between items-start border-b border-slate-200 pb-5 mb-6">
+                    <div>
+                      <span className="text-[11px] font-black tracking-widest text-[#0066cc] uppercase">
+                        IRS TAX SCHEDULE REPORTING
+                      </span>
+                      <h1 className="text-xl font-black text-slate-950 mt-1 uppercase">
+                        MILEAGE &amp; TRIP COMPLIANCE LOG
+                      </h1>
+                      <span className="text-[10px] text-slate-400 font-bold block font-mono mt-1">
+                        TAX FILING CALENDAR YEAR {data.taxYear}
+                      </span>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="bg-slate-100 border border-slate-200 px-3 py-1 font-black text-xs inline-block text-slate-900 rounded font-mono">
+                        LOG-M-{data.taxYear}
+                      </div>
+                      <span className="block text-[11px] text-slate-500 font-bold font-mono mt-2">
+                        {data.rateMode === "custom"
+                          ? `CUSTOM RATE: $${data.customRate}/mi`
+                          : "IRS RATE: EFFECTIVE ON EACH TRIP DATE"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Vehicle credentials */}
+                  <div className="bg-slate-50 border rounded-xl p-3 mb-6 text-xs flex justify-between font-semibold">
+                    <div>
+                      <span className="text-[11px] text-slate-400 font-extrabold block uppercase tracking-wider mb-0.5">
+                        Primary Vehicle
+                      </span>
+                      <p className="text-slate-900 font-extrabold">{data.vehicleModel || "Registered Tax Vehicle"}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[11px] text-slate-400 font-extrabold block uppercase tracking-wider mb-0.5">
+                        Deduction Sum
+                      </span>
+                      <p className="text-emerald-700 font-mono font-black">${stats.totalDue.toFixed(2)}</p>
+                    </div>
+                  </div>
+
+                  {/* Printable Table */}
+                  <div className="border border-slate-200 rounded-xl overflow-hidden mb-6 text-xs">
+                    <table className="w-full text-left">
+                      <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-black uppercase text-slate-400">
+                        <tr>
+                          <th className="py-2.5 px-3">Date</th>
+                          <th className="py-2.5 px-3">Trip Purpose / Coordinates</th>
+                          <th className="py-2.5 px-3 text-center w-16">Miles</th>
+                          <th className="py-2.5 px-3 text-right w-24">Write-off</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {mileageSummary.trips.map((t, idx) => (
+                          <tr key={t.id || idx} className="border-b last:border-b-0 border-slate-200">
+                            <td className="py-3 px-3 font-mono text-slate-500">{t.date}</td>
+                            <td className="py-3 px-3 font-bold text-slate-900 leading-snug">
+                              {t.purpose || "Business Trip Outing"}
+                              {(t.startLocation || t.destination) && (
+                                <span className="block text-[11px] text-slate-400/80 font-mono leading-none pt-1">
+                                  From: {t.startLocation || "HQ"} → To: {t.destination || "Site"}
+                                </span>
+                              )}
+                              {t.startOdometer !== undefined && t.endOdometer !== undefined && (
+                                <span className="block text-[11px] text-blue-600/80 font-mono leading-none pt-0.5">
+                                  Odometer Readings: {t.startOdometer} → {t.endOdometer}
+                                </span>
+                              )}
+                              {(t.parking > 0 || t.tolls > 0) && (
+                                <span className="block text-[11px] text-slate-500 font-mono leading-none pt-0.5">
+                                  Parking ${t.parking.toFixed(2)} · Tolls ${t.tolls.toFixed(2)}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3 text-center font-bold text-slate-500 font-mono">{t.miles} mi</td>
+                            <td className="py-3 px-3 text-right font-mono font-black text-slate-900">
+                              ${t.amount.toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Fuel record logs representation */}
+                  {data.fuelRecords.length > 0 && (
+                    <div className="border border-slate-200 rounded-xl overflow-hidden mb-6 text-xs">
+                      <div className="bg-slate-100/50 px-3 py-1.5 border-b border-slate-200 text-[10px] font-black text-slate-900 uppercase">
+                        Refueling Log &amp; Reconciles
+                      </div>
+                      <table className="w-full text-left">
+                        <thead className="bg-slate-50/75 text-[11px] font-black text-slate-400 uppercase">
+                          <tr className="border-b">
+                            <th className="py-1.5 px-3">Date</th>
+                            <th className="py-1.5 px-3">Gas Station Merchant</th>
+                            <th className="py-1.5 px-3 text-center">Gallons</th>
+                            <th className="py-1.5 px-3 text-right">Cost</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {data.fuelRecords.map((f, idx) => (
+                            <tr key={f.id || idx} className="border-b last:border-b-0 border-slate-100">
+                              <td className="py-2.5 px-3 font-mono text-slate-500">{f.date}</td>
+                              <td className="py-2.5 px-3 font-bold text-slate-700">
+                                {f.merchant || "Fuel Fill Station"}
+                              </td>
+                              <td className="py-2.5 px-3 text-center font-mono">{f.gallons} gal</td>
+                              <td className="py-2.5 px-3 text-right font-mono font-black text-slate-800">
+                                ${f.cost.toFixed(2)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Declarations credentials signatory info */}
+                  <div className="border-t border-slate-200/80 pt-6 mt-12 text-center text-xs">
+                    <p className="font-extrabold text-slate-900 uppercase">Mileage record review</p>
+                    <p className="text-[10px] text-slate-500 leading-normal max-w-xl mx-auto mt-2">
+                      I hereby declare that this mileage register accurate details of actual miles, calendar dates, and
+                      coordinates driven purely in service of corporate business milestones.
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-8 mt-8 max-w-md mx-auto">
+                      <div className="space-y-2">
+                        <div className="border-b border-slate-300 h-8" />
+                        <span className="block text-[11px] uppercase font-bold text-slate-400">Driver Signatory</span>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="border-b border-slate-300 h-8" />
+                        <span className="block text-[11px] uppercase font-bold text-slate-400 font-mono">
+                          Reconciled date
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : null}
         </div>
       </WorkbenchPanes>
     </div>

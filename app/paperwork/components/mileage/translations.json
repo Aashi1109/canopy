@@ -236,7 +236,14 @@
         "runtime.mileage.taxpayersMustMaintainWrittenRecordsDetailingTripDates": "يجب على دافعي الضرائب الاحتفاظ بسجلات مكتوبة تفصّل تواريخ الرحلات، وأميال القيادة لأغراض العمل، وإحداثيات البداية، وأغراض المعاملات المهنية. احتفظ بهذا الملف المُصدَّر في مجلدات التدقيق الخاصة بك.",
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "بسّط أعمالك باستخدام SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "يتوسع الهيكل الديناميكي فورًا وفقًا للتخطيط. لن تُفقد المسودة.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "بسّط سير العمل الإداري باستخدام منشئات احترافية للشركات الصغيرة بنقرة واحدة."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "بسّط سير العمل الإداري باستخدام منشئات احترافية للشركات الصغيرة بنقرة واحدة.",
+        "runtime.mileage.recordScope": "سجل أميال العمل. لا يُخصم التنقل المعتاد بين المنزل والعمل. تحقق من الغرض التجاري والأهلية؛ لا يثبت السجل الامتثال لـIRS. المعدلات المخصصة لتقدير التعويض، لا خصم الأميال القياسي لدى IRS. يُتتبع الوقود منفصلًا ولا يُضاف إلى الخصم القياسي. يفترض حساب كفاءة الوقود تعبئات كاملة متتالية.",
+        "runtime.mileage.businessRecord": "سجل أميال العمل",
+        "runtime.mileage.supportedYears": "معدلات IRS:‏ 2024–2026. تتطلب السنوات الأخرى معدل تعويض مخصصًا.",
+        "runtime.mileage.validation.invalidDate": "أدخل تاريخ رحلة وسنة صالحين.",
+        "runtime.mileage.validation.invalidAmounts": "يجب أن تكون الأميال ورسوم الوقوف والطرق وقيم الوقود أرقامًا محدودة وغير سالبة.",
+        "runtime.mileage.validation.completeTripRecord": "أكمل غرض كل رحلة ونقطة البداية والوجهة؛ يجب أن تكون قراءة العداد غير سالبة، وأن تكون النهاية مساوية للبداية أو أكبر منها.",
+        "runtime.mileage.validation.invalidFuelRecord": "تتطلب سجلات الوقود تاريخًا صالحًا ضمن السنة المحددة واسم البائع."
       }
     },
     "de": {
@@ -474,7 +481,14 @@
         "runtime.mileage.taxpayersMustMaintainWrittenRecordsDetailingTripDates": "Steuerpflichtige müssen schriftliche Aufzeichnungen zu Fahrtdaten, geschäftlich gefahrenen Meilen, Startkoordinaten und beruflichen Zwecken der Transaktionen führen. Bewahren Sie diese exportierte Datei in Ihren Prüfungsordnern auf.",
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Optimieren Sie Ihr Unternehmen mit SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "Die dynamische Struktur skaliert sofort entsprechend dem Layout. Kein Entwurf geht verloren.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Vereinfachen Sie administrative Abläufe mit professionellen Ein-Klick-Generatoren für kleine Unternehmen."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Vereinfachen Sie administrative Abläufe mit professionellen Ein-Klick-Generatoren für kleine Unternehmen.",
+        "runtime.mileage.recordScope": "Geschäftliches Fahrtenprotokoll. Gewöhnliche Arbeitswege sind nicht abziehbar. Geschäftlichen Zweck und Berechtigung prüfen; das Protokoll bestätigt keine IRS-Konformität. Eigene Sätze schätzen die Erstattung, keinen IRS-Standardabzug. Kraftstoff wird separat erfasst und nicht zum Standardabzug addiert. Die Verbrauchsberechnung setzt aufeinanderfolgende Volltankungen voraus.",
+        "runtime.mileage.businessRecord": "Geschäftliches Fahrtenprotokoll",
+        "runtime.mileage.supportedYears": "IRS-Sätze: 2024–2026. Andere Jahre erfordern einen eigenen Erstattungssatz.",
+        "runtime.mileage.validation.invalidDate": "Gültiges Kalenderdatum und Jahr für die Fahrt eingeben.",
+        "runtime.mileage.validation.invalidAmounts": "Meilen, Parkgebühren, Maut und Kraftstoffwerte müssen endliche, nicht negative Zahlen sein.",
+        "runtime.mileage.validation.completeTripRecord": "Zweck, Start und Ziel jeder Fahrt ergänzen; Kilometerstände müssen nicht negativ sein und der Endstand darf nicht unter dem Startstand liegen.",
+        "runtime.mileage.validation.invalidFuelRecord": "Tankbelege benötigen ein gültiges Datum im gewählten Jahr und einen Händler."
       }
     },
     "en": {
@@ -712,7 +726,14 @@
         "runtime.mileage.taxpayersMustMaintainWrittenRecordsDetailingTripDates": "Taxpayers must maintain written records detailing trip dates, business miles drivings, starting coordinates, and professional transaction purposes. Keep this exported file in your audit folders.",
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Streamline Your Business with SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "Dynamic structure scales immediately based on layout. No lost draft.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplify administrative workflows with professional single-click small business generators."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplify administrative workflows with professional single-click small business generators.",
+        "runtime.mileage.recordScope": "Business mileage record. Ordinary commuting is not deductible. Confirm business purpose and eligibility; this record does not certify IRS compliance. Custom rates estimate reimbursement, not an IRS standard-mileage deduction. Fuel is tracked separately and is not added to the standard deduction. Fuel economy assumes consecutive full fills.",
+        "runtime.mileage.businessRecord": "Business mileage record",
+        "runtime.mileage.supportedYears": "IRS rates: 2024–2026. Other years require a custom reimbursement rate.",
+        "runtime.mileage.validation.invalidDate": "Enter a valid calendar trip date and year.",
+        "runtime.mileage.validation.invalidAmounts": "Miles, parking, tolls and fuel values must be finite nonnegative amounts.",
+        "runtime.mileage.validation.completeTripRecord": "Complete each trip’s purpose, start and destination; odometers must be nonnegative and end at or above the start.",
+        "runtime.mileage.validation.invalidFuelRecord": "Fuel records require a valid date in the selected year and a merchant."
       }
     },
     "es": {
@@ -950,7 +971,14 @@
         "runtime.mileage.taxpayersMustMaintainWrittenRecordsDetailingTripDates": "Los contribuyentes deben mantener registros escritos que detallen las fechas de los viajes, las millas de negocio recorridas, las coordenadas iniciales y los propósitos de las transacciones profesionales. Conserve este archivo exportado en sus carpetas de auditoría.",
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Optimice su empresa con SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "La estructura dinámica se adapta de inmediato según el diseño. No se pierde ningún borrador.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique los flujos de trabajo administrativos con generadores profesionales para pequeñas empresas con un solo clic."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique los flujos de trabajo administrativos con generadores profesionales para pequeñas empresas con un solo clic.",
+        "runtime.mileage.recordScope": "Registro de kilometraje de trabajo. Los desplazamientos habituales al trabajo no son deducibles. Confirme el propósito profesional y la elegibilidad; este registro no certifica el cumplimiento del IRS. Las tasas personalizadas estiman reembolsos, no la deducción estándar del IRS. El combustible se registra aparte y no se suma a dicha deducción. El rendimiento supone llenados completos consecutivos.",
+        "runtime.mileage.businessRecord": "Registro de kilometraje de trabajo",
+        "runtime.mileage.supportedYears": "Tasas del IRS: 2024–2026. Para otros años, indique una tasa de reembolso personalizada.",
+        "runtime.mileage.validation.invalidDate": "Introduzca una fecha y un año válidos para el viaje.",
+        "runtime.mileage.validation.invalidAmounts": "Las millas, el aparcamiento, los peajes y el combustible deben ser cantidades finitas no negativas.",
+        "runtime.mileage.validation.completeTripRecord": "Complete el propósito, el origen y el destino de cada viaje; los odómetros deben ser no negativos y el final no puede ser menor que el inicial.",
+        "runtime.mileage.validation.invalidFuelRecord": "Los registros de combustible requieren una fecha válida del año seleccionado y un proveedor."
       }
     },
     "fr": {
@@ -1188,7 +1216,14 @@
         "runtime.mileage.taxpayersMustMaintainWrittenRecordsDetailingTripDates": "Les contribuables doivent conserver des documents écrits indiquant les dates des trajets, les miles professionnels parcourus, les coordonnées de départ et les motifs professionnels des déplacements. Conservez ce fichier exporté dans vos dossiers d’audit.",
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Simplifiez votre entreprise avec SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "La structure dynamique s’adapte immédiatement à la mise en page. Aucun brouillon perdu.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifiez les flux de travail administratifs grâce à des générateurs professionnels pour petites entreprises en un clic."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifiez les flux de travail administratifs grâce à des générateurs professionnels pour petites entreprises en un clic.",
+        "runtime.mileage.recordScope": "Relevé kilométrique professionnel. Les trajets domicile-travail ordinaires ne sont pas déductibles. Vérifiez le motif professionnel et l’admissibilité ; ce relevé ne certifie pas la conformité IRS. Les taux personnalisés estiment un remboursement, pas la déduction kilométrique standard IRS. Le carburant est suivi séparément et n’est pas ajouté à cette déduction. La consommation suppose des pleins complets consécutifs.",
+        "runtime.mileage.businessRecord": "Relevé kilométrique professionnel",
+        "runtime.mileage.supportedYears": "Barèmes IRS : 2024–2026. Pour les autres années, indiquez un taux de remboursement personnalisé.",
+        "runtime.mileage.validation.invalidDate": "Saisissez une date et une année valides pour le trajet.",
+        "runtime.mileage.validation.invalidAmounts": "Les miles, le stationnement, les péages et les valeurs de carburant doivent être des nombres finis positifs ou nuls.",
+        "runtime.mileage.validation.completeTripRecord": "Complétez le motif, le départ et la destination de chaque trajet ; les compteurs doivent être positifs ou nuls et la valeur finale au moins égale à la valeur initiale.",
+        "runtime.mileage.validation.invalidFuelRecord": "Les relevés de carburant doivent indiquer une date valide de l’année choisie et un fournisseur."
       }
     },
     "hi": {
@@ -1426,7 +1461,14 @@
         "runtime.mileage.taxpayersMustMaintainWrittenRecordsDetailingTripDates": "करदाताओं को यात्रा की तारीखों, व्यावसायिक रूप से चलाई गई मील, प्रारंभिक निर्देशांकों और पेशेवर लेन-देन के उद्देश्यों का विवरण देने वाले लिखित रिकॉर्ड रखने चाहिए। इस निर्यात की गई फ़ाइल को अपने ऑडिट फ़ोल्डरों में रखें।",
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "SmartTools Paperwork Pro के साथ अपना व्यवसाय सरल बनाएँ",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "डायनेमिक संरचना लेआउट के आधार पर तुरंत स्केल होती है। कोई ड्राफ़्ट नहीं खोता।",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "पेशेवर एक-क्लिक छोटे व्यवसाय जनरेटर से प्रशासनिक कार्यप्रवाह सरल बनाएँ।"
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "पेशेवर एक-क्लिक छोटे व्यवसाय जनरेटर से प्रशासनिक कार्यप्रवाह सरल बनाएँ।",
+        "runtime.mileage.recordScope": "व्यावसायिक माइलेज रिकॉर्ड। नियमित घर से कार्यालय आवागमन कटौती योग्य नहीं है। व्यावसायिक उद्देश्य और पात्रता जाँचें; यह रिकॉर्ड IRS अनुपालन प्रमाणित नहीं करता। अपनी दरें प्रतिपूर्ति का अनुमान देती हैं, IRS मानक माइलेज कटौती का नहीं। ईंधन अलग दर्ज होता है और मानक कटौती में नहीं जुड़ता। ईंधन दक्षता के लिए लगातार पूरा टैंक भरना माना गया है।",
+        "runtime.mileage.businessRecord": "व्यावसायिक माइलेज रिकॉर्ड",
+        "runtime.mileage.supportedYears": "IRS दरें: 2024–2026। अन्य वर्षों के लिए अपनी प्रतिपूर्ति दर दर्ज करें।",
+        "runtime.mileage.validation.invalidDate": "यात्रा के लिए सही कैलेंडर तिथि और वर्ष दर्ज करें।",
+        "runtime.mileage.validation.invalidAmounts": "मील, पार्किंग, टोल और ईंधन के मान सीमित और शून्य या उससे अधिक होने चाहिए।",
+        "runtime.mileage.validation.completeTripRecord": "हर यात्रा का उद्देश्य, प्रारंभ और गंतव्य भरें; ओडोमीटर शून्य या अधिक हो और अंतिम रीडिंग प्रारंभिक रीडिंग से कम न हो।",
+        "runtime.mileage.validation.invalidFuelRecord": "ईंधन रिकॉर्ड में चयनित वर्ष की सही तिथि और विक्रेता होना चाहिए।"
       }
     },
     "ja": {
@@ -1664,7 +1706,14 @@
         "runtime.mileage.taxpayersMustMaintainWrittenRecordsDetailingTripDates": "納税者は、走行日、業務走行距離、出発時の座標、業務上の取引目的を詳述した書面の記録を保管する必要があります。このエクスポートファイルは監査用フォルダーに保管してください。",
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "SmartTools Paperwork Proでビジネスを効率化",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "動的な構成がレイアウトに基づいて即座に調整されます。下書きは失われません。",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "プロ仕様のワンクリック中小企業向け作成ツールで事務ワークフローを簡素化します。"
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "プロ仕様のワンクリック中小企業向け作成ツールで事務ワークフローを簡素化します。",
+        "runtime.mileage.recordScope": "業務走行距離記録。通常の通勤は控除対象外です。業務目的と適格性を確認してください。この記録はIRS準拠を証明するものではありません。独自単価は精算額の見積もり用で、IRS標準走行距離控除ではありません。燃料は別途記録し、標準控除額に加算しません。燃費計算は連続した満タン給油を前提とします。",
+        "runtime.mileage.businessRecord": "業務走行距離記録",
+        "runtime.mileage.supportedYears": "IRS基準単価：2024～2026年。他の年は独自の精算単価を入力してください。",
+        "runtime.mileage.validation.invalidDate": "有効な走行日付と年を入力してください。",
+        "runtime.mileage.validation.invalidAmounts": "走行マイル数、駐車料金、通行料、燃料の値には0以上の有限値を入力してください。",
+        "runtime.mileage.validation.completeTripRecord": "各走行の目的・出発地・目的地を入力してください。距離計は0以上、終了値は開始値以上にしてください。",
+        "runtime.mileage.validation.invalidFuelRecord": "燃料記録には選択した年の有効な日付と購入先が必要です。"
       }
     },
     "ru": {
@@ -1902,7 +1951,14 @@
         "runtime.mileage.taxpayersMustMaintainWrittenRecordsDetailingTripDates": "Налогоплательщики должны вести письменные записи с датами поездок, деловыми милями, начальными координатами и целями деловых операций. Храните экспортированный файл в папках для аудита.",
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Оптимизируйте свой бизнес с помощью SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "Динамическая структура мгновенно масштабируется в зависимости от макета. Черновик не будет потерян.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Упростите административные процессы с профессиональными генераторами для малого бизнеса в один клик."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Упростите административные процессы с профессиональными генераторами для малого бизнеса в один клик.",
+        "runtime.mileage.recordScope": "Журнал деловых поездок. Обычные поездки между домом и работой не дают права на вычет. Проверьте деловую цель и право на вычет; журнал не подтверждает соответствие требованиям IRS. Собственные ставки оценивают возмещение, а не стандартный вычет IRS. Топливо учитывается отдельно и не прибавляется к стандартному вычету. Расход топлива рассчитан при последовательных заправках полного бака.",
+        "runtime.mileage.businessRecord": "Журнал деловых поездок",
+        "runtime.mileage.supportedYears": "Ставки IRS: 2024–2026. Для других лет укажите собственную ставку возмещения.",
+        "runtime.mileage.validation.invalidDate": "Укажите действительную календарную дату и год поездки.",
+        "runtime.mileage.validation.invalidAmounts": "Мили, парковка, дорожные сборы и показатели топлива должны быть конечными неотрицательными числами.",
+        "runtime.mileage.validation.completeTripRecord": "Укажите цель, начало и пункт назначения каждой поездки; показания одометра должны быть неотрицательными, конечное — не меньше начального.",
+        "runtime.mileage.validation.invalidFuelRecord": "Для записей о топливе нужны действительная дата выбранного года и продавец."
       }
     },
     "pt-BR": {
@@ -2140,7 +2196,14 @@
         "runtime.mileage.taxpayersMustMaintainWrittenRecordsDetailingTripDates": "Os contribuintes devem manter registros por escrito com datas das viagens, milhas percorridas a trabalho, coordenadas iniciais e finalidades de transações profissionais. Guarde este arquivo exportado em suas pastas de auditoria.",
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Simplifique sua empresa com o SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "A estrutura dinâmica se ajusta imediatamente com base no layout. Nenhum rascunho é perdido.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique fluxos administrativos com geradores profissionais para pequenas empresas em um clique."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique fluxos administrativos com geradores profissionais para pequenas empresas em um clique.",
+        "runtime.mileage.recordScope": "Registro de quilometragem profissional. O deslocamento habitual entre casa e trabalho não é dedutível. Confirme a finalidade profissional e a elegibilidade; o registro não certifica conformidade com o IRS. Taxas personalizadas estimam reembolso, não a dedução padrão do IRS. O combustível é registrado separadamente e não é somado à dedução padrão. O consumo pressupõe abastecimentos completos consecutivos.",
+        "runtime.mileage.businessRecord": "Registro de quilometragem profissional",
+        "runtime.mileage.supportedYears": "Taxas do IRS: 2024–2026. Outros anos exigem uma taxa de reembolso personalizada.",
+        "runtime.mileage.validation.invalidDate": "Informe uma data e um ano válidos para a viagem.",
+        "runtime.mileage.validation.invalidAmounts": "Milhas, estacionamento, pedágios e valores de combustível devem ser números finitos não negativos.",
+        "runtime.mileage.validation.completeTripRecord": "Preencha a finalidade, a origem e o destino de cada viagem; os hodômetros devem ser não negativos e a leitura final não pode ser menor que a inicial.",
+        "runtime.mileage.validation.invalidFuelRecord": "Registros de combustível exigem uma data válida no ano selecionado e um fornecedor."
       }
     },
     "zh-Hans": {
@@ -2378,7 +2441,14 @@
         "runtime.mileage.taxpayersMustMaintainWrittenRecordsDetailingTripDates": "纳税人必须保留书面记录，详细说明行程日期、业务行驶里程、起始坐标和业务交易用途。请将此导出文件保存在审计文件夹中。",
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "使用 SmartTools Paperwork Pro 简化您的业务",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "动态结构会根据布局立即调整大小，不会丢失草稿。",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "使用专业的一键式小型企业生成器简化行政工作流程。"
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "使用专业的一键式小型企业生成器简化行政工作流程。",
+        "runtime.mileage.recordScope": "业务行驶里程记录。普通上下班通勤不可扣除。请确认业务用途和扣除资格；此记录不证明符合 IRS 要求。自定义费率用于估算报销金额，并非 IRS 标准里程扣除。燃油单独记录，不计入标准扣除额。油耗计算假定连续加满油箱。",
+        "runtime.mileage.businessRecord": "业务行驶里程记录",
+        "runtime.mileage.supportedYears": "IRS 标准费率：2024–2026 年。其他年份需使用自定义报销费率。",
+        "runtime.mileage.validation.invalidDate": "请输入有效的行程日期和年份。",
+        "runtime.mileage.validation.invalidAmounts": "英里数、停车费、通行费和燃油数值必须为有限的非负数。",
+        "runtime.mileage.validation.completeTripRecord": "请填写每次行程的用途、出发地点和目的地；里程表读数须为非负值，结束读数不得小于起始读数。",
+        "runtime.mileage.validation.invalidFuelRecord": "燃油记录须包含所选年份内的有效日期和商家。"
       }
     }
   }

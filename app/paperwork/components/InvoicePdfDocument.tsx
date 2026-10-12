@@ -440,9 +440,11 @@ function InvoiceTotals({ data, template, totals }: InvoicePdfDocumentProps & { t
                 },
           ]}
         >
-          <Text style={styles.bold}>{labels.balanceDue || "Balance Due"}</Text>
+          <Text style={styles.bold}>
+            {totals.customerCredit > 0 ? "Customer credit" : labels.balanceDue || "Balance Due"}
+          </Text>
           <Text style={[styles.balanceAmount, { color: highlighted ? theme.surfaceColor : theme.primaryColor }]}>
-            {formatCurrency(totals.balanceDue, currency)}
+            {formatCurrency(totals.customerCredit > 0 ? totals.customerCredit : totals.balanceDue, currency)}
           </Text>
         </View>
       ) : null}

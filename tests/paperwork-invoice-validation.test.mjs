@@ -1,4 +1,5 @@
 import { expect, test } from "vitest";
+import { getInitialBlankInvoice, getSampleInvoice } from "../lib/paperwork/utils/sampleData.ts";
 import { validateInvoiceData } from "../lib/paperwork/utils/invoiceValidation.ts";
 
 function validInvoice() {
@@ -12,10 +13,12 @@ function validInvoice() {
       email: "accounts@example.com",
     },
     invoice: {
+      currency: "USD",
       invoiceNumber: "INV-1001",
       invoiceDate: "2026-07-22",
       dueDate: "2026-08-21",
     },
+    totalsConfig: { discountType: "none", discountValue: 0, taxRate: 0, shippingFee: 0, amountPaid: 0 },
     lineItems: [
       {
         description: "Design services",
@@ -95,4 +98,58 @@ test("translated invoice validation keeps stable field paths and named error rea
   });
   expect(seen).toEqual(["businessName", "dueDateOrder", "itemQuantity"]);
   expect(validateInvoiceData(invoice)["invoice.dueDate"]).toBe("Due date must be on or after the invoice date.");
+});
+
+test("invoice rejects invalid calendar dates, config amounts and unsupported precision", () => {
+  const invoice = validInvoice();
+  invoice.invoice.invoiceDate = "2026-02-30";
+  invoice.invoice.currency = "JPY";
+  invoice.totalsConfig = {
+    discountType: "percent",
+    discountValue: 120,
+    taxRate: Infinity,
+    shippingFee: -1,
+    amountPaid: NaN,
+  };
+  const errors = validateInvoiceData(invoice);
+  for (const field of [
+    "invoice.invoiceDate",
+    "invoice.currency",
+    "totalsConfig.discountValue",
+    "totalsConfig.taxRate",
+    "totalsConfig.shippingFee",
+    "totalsConfig.amountPaid",
+  ])
+    expect(errors[field]).toBeTruthy();
+});
+
+test("new blank invoices contain no authored business, payment, or work facts and cannot be exported", () => {
+  const invoice = getInitialBlankInvoice();
+  expect(Object.values(invoice.business).every((value) => value === "")).toBe(true);
+  expect(Object.values(invoice.client).every((value) => value === "")).toBe(true);
+  expect(invoice.payment.methods).toEqual([]);
+  expect(invoice.payment.instructions).toBe("");
+  expect(invoice.payment.lateFeeNote).toBe("");
+  expect(invoice.notes.notes).toBe("");
+  expect(invoice.invoice.projectName).toBe("");
+  expect(invoice.lineItems.map((item) => item.description)).toEqual([""]);
+  const errors = validateInvoiceData(invoice);
+  expect(errors["business.name"]).toBeTruthy();
+  expect(errors["client.name"]).toBeTruthy();
+  expect(errors["lineItems[0].description"]).toBeTruthy();
+});
+
+test("explicit sample invoice retains populated examples independently of blank invoice edits", () => {
+  const invoice = getInitialBlankInvoice();
+  invoice.business.name = "Authored business";
+  invoice.payment.methods.push("bank");
+  const sample = getSampleInvoice();
+  expect(sample.business.name).toBe("Blue Ridge Web Studio");
+  expect(sample.payment.methods).toEqual(["bank", "check", "paypal"]);
+  expect(sample.payment.instructions).toContain("Chase Bank");
+  expect(sample.notes.notes).toContain("Maintenance covers");
+  expect(sample.lineItems.every((item) => item.description.length > 0)).toBe(true);
+  expect(validateInvoiceData(sample)).toEqual({});
+  expect(getInitialBlankInvoice().business.name).toBe("");
+  expect(getInitialBlankInvoice().payment.methods).toEqual([]);
 });

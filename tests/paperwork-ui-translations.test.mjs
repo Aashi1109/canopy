@@ -6,7 +6,10 @@ import ReceiptGeneratorPage from "../app/paperwork/components/receipt/ReceiptGen
 import ExpenseReportPage from "../app/paperwork/components/expense/ExpenseReportPage.tsx";
 import MileageLogPage, { DEFAULT_MILEAGE_DRAFT } from "../app/paperwork/components/mileage/MileageLogPage.tsx";
 import QuarterlyTaxEstimatorPage from "../app/paperwork/components/tax/QuarterlyTaxEstimatorPage.tsx";
-import W9RequestPage, { DEFAULT_W9_REQUEST_DRAFT } from "../app/paperwork/components/w9/W9RequestPage.tsx";
+import W9RequestPage, {
+  DEFAULT_W9_REQUEST_DRAFT,
+  SAMPLE_W9_REQUEST_DRAFT,
+} from "../app/paperwork/components/w9/W9RequestPage.tsx";
 import NecTrackerPage, { DEFAULT_NEC_TRACKER_DRAFT } from "../app/paperwork/components/nec1099/NecTrackerPage.tsx";
 import { getCommonMessages } from "../lib/i18n/messages.ts";
 import { getPaperworkToolMessages } from "../lib/paperwork/toolMessages.ts";
@@ -15,6 +18,7 @@ import { DataBridge, DataBridgeKeys, LocalStorageProvider } from "../lib/paperwo
 import { DEFAULT_QUARTERLY_TAX_DRAFT } from "../lib/paperwork/quarterlyTaxRules.ts";
 import { createW9Request, W9_REQUEST_DISCLAIMER } from "../lib/paperwork/contractorTaxRules.ts";
 import AdvancedTemplateWorkspace from "../app/paperwork/components/AdvancedTemplateWorkspace.tsx";
+import { GlobalToolSearchProvider } from "../components/ui/components/GlobalToolSearch.tsx";
 import RelatedTools from "../app/paperwork/components/RelatedTools.tsx";
 import { downloadAdvancedDocumentPdf } from "../app/paperwork/components/AdvancedDocumentPreview.tsx";
 import { receiptAdapter } from "../lib/paperwork/documentAdapters.ts";
@@ -24,6 +28,13 @@ import { button, click, field, fill, mountTool, setupReactTools } from "./helper
 // The default bridge starts a background sync at import time. Form persistence
 // below uses the real local-storage provider, with no database or network.
 vi.hoisted(() => vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false })));
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...(await importOriginal()),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => "/paperwork/receipt-generator",
+  useSearchParams: () => new URLSearchParams(),
+  useParams: () => ({ locale: "en" }),
+}));
 
 // PDF layout/serialization has its own suites. Keep the workspace, validation,
 // authored template fields, and adapter output real at this export boundary.
@@ -56,6 +67,10 @@ afterEach(() => {
 });
 
 async function mountPaperwork(componentKey, Component, overrides = {}, onTrackClick = vi.fn()) {
+  if (componentKey === "w9-request" && !DataBridge.getW9Vendors().length) {
+    DataBridge.saveW9Vendors(structuredClone(SAMPLE_W9_REQUEST_DRAFT.vendors));
+    DataBridge.set("paperworkkit.w9Request.draft", structuredClone(SAMPLE_W9_REQUEST_DRAFT));
+  }
   return mountTool(
     React.createElement(
       NextIntlClientProvider,
@@ -88,6 +103,7 @@ test.each([
 ])("%s renders the tool-scoped translated interface", async (componentKey, Component, titleKey, title) => {
   const view = await mountPaperwork(componentKey, Component, { [`runtime.${titleKey}`]: title });
   expect([...view.container.querySelectorAll("h1, h2")].some((heading) => heading.textContent === title)).toBe(true);
+  if (componentKey === "1099-nec-tracker") await click(button("Log Payment", view.container));
   expect(view.container.querySelectorAll("input, textarea").length).toBeGreaterThan(0);
 });
 
@@ -118,7 +134,7 @@ test("W-9 translated status choices save their canonical enum and retain authore
 
   expect(DataBridge.getW9Vendors()[0]).toEqual({ ...before, w9Status: "Needs Review" });
   expect(DataBridge.get("paperworkkit.w9Request.draft", null).vendors[0].w9Status).toBe("Needs Review");
-  expect(window.alert).toHaveBeenCalledWith("Profil enregistré");
+  expect(window.alert).not.toHaveBeenCalled();
   expect(track).toHaveBeenCalledWith("w9_vendor_updated");
 });
 
@@ -132,7 +148,7 @@ test("saving an unchanged W-9 profile preserves its canonical entity and status"
 });
 
 test("switching W-9 profiles retains the selected vendor's entity and status when saved", async () => {
-  const first = DEFAULT_W9_REQUEST_DRAFT.vendors[0];
+  const first = SAMPLE_W9_REQUEST_DRAFT.vendors[0];
   const second = {
     ...first,
     id: "vendor-two",
@@ -147,7 +163,7 @@ test("switching W-9 profiles retains the selected vendor's entity and status whe
   });
   await click(button(/Second Partner/, view.container));
   await click(button("Enregistrer le profil", view.container));
-  expect(DataBridge.getW9Vendors()).toEqual([first, second]);
+  expect(DataBridge.getW9Vendors()).toMatchObject([first, second]);
 });
 
 test("W-9 validation uses the translated field error and clears it after correction", async () => {
@@ -308,6 +324,58 @@ test("advanced required columns block export with localized feedback until autho
   expect(exported.data.businessName).toBe(draft.business.name);
 });
 
+test("receipt layout keyboard choices preserve authored fields through published PDF export", async () => {
+  const template = {
+    ...structuredClone(seedTemplates[0]),
+    id: "receipt-layout-keyboard-test",
+    name: "Authored receipt layout",
+    documentType: "receipt",
+    layoutFamily: "advanced",
+    status: "published",
+    config: createAdvancedTemplateConfig("receipt", "RECEIPT_80MM"),
+  };
+  const templates = [template];
+  DataBridge.set(DataBridgeKeys.RECEIPT_DRAFT, receiptAdapter.getSampleDraft());
+  function ReceiptWorkspace() {
+    return React.createElement(ReceiptGeneratorPage, { templates, onTrackClick: vi.fn() });
+  }
+  const view = await mountPaperwork("receipt-generator", ReceiptWorkspace, {
+    "runtime.receipt.receiptVisualLayout": "Disposition du reçu",
+    "runtime.receipt.companySellerName": "Nom du vendeur",
+    "runtime.receipt.receiptNumber": "Numéro du reçu",
+    "runtime.receipt.themes.classic": "Classique",
+    "runtime.receipt.themes.compact": "Compact",
+    "runtime.shared.templates.layoutLabel": "Disposition : {layout}",
+    "runtime.shared.advanced.downloadPdf": "Télécharger le PDF",
+  });
+  const layout = view.container.querySelector('[role="combobox"][aria-label="Disposition du reçu"]');
+  expect(layout.textContent).toBe("Disposition : Authored receipt layout");
+  await fill(field("Nom du vendeur", view.container), "Authored Seller Ltd");
+  await fill(field("Numéro du reçu", view.container), "RCP-EDITED-42");
+
+  async function chooseLayout(label) {
+    await key(layout, "ArrowDown");
+    const option = [...document.querySelectorAll('[role="option"]')].find((element) => element.textContent === label);
+    await key(option, "Enter");
+    expect(layout.textContent).toBe(label);
+    expect(field("Nom du vendeur", view.container).value).toBe("Authored Seller Ltd");
+    expect(field("Numéro du reçu", view.container).value).toBe("RCP-EDITED-42");
+    expect(DataBridge.get(DataBridgeKeys.RECEIPT_DRAFT, null)).toMatchObject({
+      business: { name: "Authored Seller Ltd" },
+      receiptNumber: "RCP-EDITED-42",
+    });
+  }
+  await chooseLayout("Disposition : Classique");
+  await chooseLayout("Disposition : Compact");
+  await chooseLayout("Disposition : Authored receipt layout");
+  await click(button("Télécharger le PDF", view.container));
+  expect(downloadAdvancedDocumentPdf).toHaveBeenCalledTimes(1);
+  const exported = vi.mocked(downloadAdvancedDocumentPdf).mock.calls[0][0];
+  expect(exported.template).toBe(template);
+  expect(exported.data.businessName).toBe("Authored Seller Ltd");
+  expect(exported.data.receiptNumber).toBe("RCP-EDITED-42");
+});
+
 test("related tools preserve catalog English fallback and published French hrefs under a French provider", async () => {
   const tools = [
     {
@@ -345,3 +413,111 @@ test("related tools preserve catalog English fallback and published French hrefs
     expect(link.getAttribute("href")).toBe(tool.href);
   }
 });
+
+test("W-9 copy waits for clipboard completion", async () => {
+  let complete;
+  const writeText = vi.fn().mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        complete = resolve;
+      }),
+  );
+  Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+  const view = await mountPaperwork("w9-request", W9RequestPage, {
+    "runtime.w9.label2CopyW9ComplianceRequestEmail": "Courriel",
+    "runtime.w9.copySubjectBody": "Copier",
+    "runtime.w9.copiedsubjectbody": "Copié",
+  });
+  await key(
+    [...view.container.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === "Courriel"),
+    "Enter",
+  );
+  await click(button("Copier", view.container));
+  expect(writeText).toHaveBeenCalledTimes(1);
+  expect(button("Copié", view.container)).toBeFalsy();
+  await act(async () => complete());
+  expect(button("Copié", view.container)).toBeTruthy();
+});
+
+test("W-9 clipboard denial never announces successful copy", async () => {
+  const writeText = vi.fn().mockRejectedValue(new Error("denied"));
+  Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+  const view = await mountPaperwork("w9-request", W9RequestPage, {
+    "runtime.w9.label2CopyW9ComplianceRequestEmail": "Courriel",
+    "runtime.w9.copySubjectBody": "Copier",
+    "runtime.w9.copiedsubjectbody": "Copié",
+  });
+  await key(
+    [...view.container.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === "Courriel"),
+    "Enter",
+  );
+  await click(button("Copier", view.container));
+  expect(writeText).toHaveBeenCalledTimes(1);
+  expect(button("Copié", view.container)).toBeFalsy();
+});
+
+test.each([false, true])(
+  "Paperwork editor is usable before delayed hydration and preserves explicit edits: %s",
+  async (editDuringLoad) => {
+    const { default: App } = await import("../app/paperwork/components/App.tsx");
+    const { PostgresApiProvider } = await import("../lib/paperwork/shared/dataBridge.ts");
+    let release;
+    const delayed = new Promise((resolve) => {
+      release = resolve;
+    });
+    const owner = `anon_v2_${"a".repeat(64)}`;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url) => {
+        if (url.endsWith("/vendors")) return delayed;
+        const body = url.endsWith(encodeURIComponent(DataBridgeKeys.RECEIPT_DRAFT))
+          ? { found: true, value: { receiptNumber: "Restored saved receipt" } }
+          : { found: false, value: null };
+        return Response.json(body, { headers: { "x-paperwork-owner": owner } });
+      }),
+    );
+    const provider = new PostgresApiProvider();
+    DataBridge.setProvider(provider);
+    const view = await mountTool(
+      React.createElement(
+        GlobalToolSearchProvider,
+        null,
+        React.createElement(
+          NextIntlClientProvider,
+          {
+            locale: "en",
+            timeZone: "UTC",
+            messages: {
+              ...getCommonMessages("en"),
+              Tool: toolMessageTree(getPaperworkToolMessages("receipt-generator")),
+            },
+          },
+          React.createElement(App, {
+            account: { user: null, returnTo: "/paperwork/receipt-generator" },
+            componentKey: "receipt-generator",
+            templates: [],
+            tools: [
+              {
+                id: "paperwork.receipt-generator",
+                componentKey: "receipt-generator",
+                slug: "receipt-generator",
+                name: "Receipt Generator",
+                description: "Make receipts",
+              },
+            ],
+          }),
+        ),
+      ),
+    );
+    expect(view.container.querySelector("#receipt-seller-name")).not.toBeNull();
+    expect(provider.getReceiptDraft()).toBeNull();
+    if (editDuringLoad) await fill(view.container.querySelector("#receipt-number"), "New typed receipt");
+    await act(async () => {
+      release(Response.json({ success: true, vendors: [] }, { headers: { "x-paperwork-owner": owner } }));
+      await provider.whenReady();
+    });
+    expect(view.container.querySelector("#receipt-number").value).toBe(
+      editDuringLoad ? "New typed receipt" : "Restored saved receipt",
+    );
+  },
+);

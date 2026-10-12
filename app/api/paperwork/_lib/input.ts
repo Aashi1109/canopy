@@ -1,3 +1,5 @@
+import { captureException } from "@sentry/core";
+
 export const MAX_API_JSON_BYTES = 3 * 1024 * 1024;
 
 export class ApiInputError extends Error {
@@ -82,6 +84,7 @@ export function normalizeVendorPayload(value: unknown): NormalizedVendor[] {
     throw new ApiInputError("Vendor payload contains too many records.");
   }
 
+  const ids = new Set<string>();
   return value.vendors.map((vendor, index) => {
     if (!isRecord(vendor)) {
       throw new ApiInputError(`Vendor ${index + 1} is invalid.`);
@@ -89,6 +92,8 @@ export function normalizeVendorPayload(value: unknown): NormalizedVendor[] {
     if (typeof vendor.id !== "string" || !/^[a-zA-Z0-9_-]{1,128}$/.test(vendor.id)) {
       throw new ApiInputError(`Vendor ${index + 1} has an invalid id.`);
     }
+    if (ids.has(vendor.id)) throw new ApiInputError("Vendor payload contains duplicate ids.");
+    ids.add(vendor.id);
     if (typeof vendor.legalName !== "string") {
       throw new ApiInputError(`Vendor ${index + 1} needs a legal name.`);
     }
@@ -112,4 +117,43 @@ export function normalizeVendorPayload(value: unknown): NormalizedVendor[] {
       notes: optionalString(vendor.notes, "Notes", 2_000),
     };
   });
+}
+
+export async function readJsonBody(request: Request): Promise<unknown> {
+  if (!request.body) throw new ApiInputError("Request body must be valid JSON.");
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let bytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > MAX_API_JSON_BYTES) {
+        await reader.cancel();
+        throw new ApiInputError("API payload is too large.", 413);
+      }
+      chunks.push(value);
+    }
+    const payload = new Uint8Array(bytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      payload.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(payload));
+  } catch (error) {
+    if (error instanceof ApiInputError) throw error;
+    throw new ApiInputError("Request body must be valid JSON.");
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+// Database errors can carry SQL parameters; authentication causes can carry tokens.
+export function reportPaperworkFailure(error: unknown, context: string): void {
+  const candidate = typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
+  const code = typeof candidate === "string" && /^[A-Z0-9_]{1,40}$/.test(candidate) ? candidate : "UNAVAILABLE";
+  captureException(new Error(context), { tags: { code } });
+  console.error(context, { code });
 }

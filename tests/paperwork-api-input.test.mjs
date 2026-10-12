@@ -56,3 +56,29 @@ test("vendor payloads validate every record before database writes", () => {
     expect(() => normalizeVendorPayload({ vendors })).toThrow(/vendor/i);
   }
 });
+
+test("vendor replacement rejects duplicate ids before applying any write", () => {
+  expect(() =>
+    normalizeVendorPayload({
+      vendors: [
+        { id: "same", legalName: "A" },
+        { id: "same", legalName: "B" },
+      ],
+    }),
+  ).toThrow(/duplicate ids/i);
+});
+
+test("JSON bodies are bounded without relying on a client content-length", async () => {
+  const { readJsonBody } = await import("../app/api/paperwork/_lib/input.ts");
+  await expect(
+    readJsonBody(
+      new Request("https://app.example", {
+        method: "POST",
+        body: JSON.stringify({ value: "x".repeat(MAX_API_JSON_BYTES) }),
+      }),
+    ),
+  ).rejects.toMatchObject({ status: 413 });
+  await expect(readJsonBody(new Request("https://app.example", { method: "POST", body: "{" }))).rejects.toMatchObject({
+    status: 400,
+  });
+});

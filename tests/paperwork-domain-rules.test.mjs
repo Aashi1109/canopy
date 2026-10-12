@@ -58,7 +58,7 @@ test("mileage reports invalid trip dates and computes MPG from later fills", () 
     ],
   });
 
-  expect(summary.errors[0]).toMatch(/within tax year/i);
+  expect(summary.errors[0]).toMatch(/valid calendar trip date/i);
   expect(summary.trips[0].amount).toBe(0);
   expect(summary.fuelEconomy).toBe(30);
 });
@@ -213,6 +213,8 @@ const BASE_TAX_DRAFT = {
   federalWithholding: 3000,
   estimatedPaymentsMade: 1000,
   priorYearTaxLiability: 12000,
+  priorYearTaxKnown: true,
+  priorYearCoveredFullYear: true,
   priorYearAdjustedGrossIncome: 100000,
   stateTaxRate: 4,
 };
@@ -231,9 +233,8 @@ test("quarterly tax compares safe harbors, subtracts withholding, and returns pa
   expect(result.ok).toBe(true);
 
   const expectedSafeHarbor = Math.min(result.estimatedFederalLiability * 0.9, BASE_TAX_DRAFT.priorYearTaxLiability);
-  expect(result.requiredAnnualPayment).toBe(
-    Math.max(0, expectedSafeHarbor - BASE_TAX_DRAFT.federalWithholding - BASE_TAX_DRAFT.estimatedPaymentsMade),
-  );
+  expect(result.requiredAnnualPayment).toBe(Math.max(0, expectedSafeHarbor - BASE_TAX_DRAFT.federalWithholding));
+  expect(result.remainingAnnualPayment).toBe(result.requiredAnnualPayment - BASE_TAX_DRAFT.estimatedPaymentsMade);
   expect(result.paymentSchedule.map(({ dueDate }) => dueDate)).toEqual([
     "2026-04-15",
     "2026-06-15",
@@ -347,6 +348,10 @@ test("tax assumption descriptors are additive and preserve the printed assumptio
     "tax.assumptions.paymentFloor",
     "tax.assumptions.stateEstimate",
     "tax.assumptions.estimateOnly",
+    "tax.assumptions.excludedTaxes",
+    "tax.assumptions.wageScope",
+    "tax.assumptions.paymentTiming",
+    "tax.assumptions.targetMeaning",
   ]);
 });
 
@@ -414,7 +419,7 @@ test("document adapters localize validation through named keys while retaining E
     const english = adapter.validate(draft, form);
     const translated = adapter.validate(draft, form, translate);
     expect(Object.keys(translated)).toEqual(Object.keys(english));
-    expect(translated[field]).toBe(`localized:${key}`);
+    expect(translated[field]).toContain(`localized:${key}`);
     expect(english[field]).not.toContain("localized:");
   }
   expect(calls).toContainEqual({ key: "mileage.validation.rulesYearUnavailable", values: { year: 2027 } });

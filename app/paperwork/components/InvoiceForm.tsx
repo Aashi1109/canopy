@@ -29,6 +29,7 @@ import {
   Button,
   CheckboxControl,
   Field,
+  FieldError,
   Input,
   Label,
   SectionCard,
@@ -246,7 +247,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
   };
 
   return (
-    <div className="space-y-8" id="invoice-editor-form">
+    <div className="min-w-0 space-y-4" id="invoice-editor-form">
       {/* 1. SELLER BUSINESS BLOCK */}
       <SectionCard id="biz-editor-section">
         <CardHeader className="gap-0">
@@ -651,6 +652,19 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
             />
           </Field>
 
+          <Field
+            error={errors["invoice.currency"]}
+            htmlFor="inv-currency"
+            label={t("shared.advanced.fields.currency")}
+            description={t("shared.validation.currencyScope")}
+          >
+            <Input
+              id="inv-currency"
+              value={data.invoice.currency || "USD"}
+              maxLength={3}
+              onChange={(e) => updateInvoiceMeta({ currency: e.target.value.toUpperCase() })}
+            />
+          </Field>
           {/* Optional sub-fields PO / Project */}
           <div className="mt-1 grid grid-cols-1 gap-4 border-t border-border pt-4 md:col-span-2 md:grid-cols-2">
             <Field htmlFor="inv-project" label={t("invoice.form.projectNameOptional")}>
@@ -881,7 +895,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
             <Field
               htmlFor="disc-val"
               label={t("invoice.form.discountValue", {
-                unit: data.totalsConfig.discountType === "percent" ? "(%)" : "($)",
+                unit: data.totalsConfig.discountType === "percent" ? "(%)" : `(${data.invoice.currency || "USD"})`,
               })}
             >
               <Input
@@ -904,6 +918,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
             </Field>
           )}
 
+          {errors["totalsConfig.discountValue"] && <FieldError>{errors["totalsConfig.discountValue"]}</FieldError>}
           {/* Tax rate description */}
           <Field htmlFor="tax-lbl" label={t("invoice.form.salesTaxLabel")}>
             <Input
@@ -915,7 +930,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
             />
           </Field>
 
-          <Field htmlFor="tax-rt" label={t("invoice.form.salesTaxRate")}>
+          <Field error={errors["totalsConfig.taxRate"]} htmlFor="tax-rt" label={t("invoice.form.salesTaxRate")}>
             <Input
               id="tax-rt"
               type="number"
@@ -933,7 +948,11 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
           </Field>
 
           {/* Shipping fee & amount pre-paid */}
-          <Field htmlFor="shipping-fee" label={t("invoice.form.shippingHandlingFee")}>
+          <Field
+            error={errors["totalsConfig.shippingFee"]}
+            htmlFor="shipping-fee"
+            label={t("invoice.form.shippingHandlingFee")}
+          >
             <Input
               id="shipping-fee"
               type="number"
@@ -953,7 +972,11 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
             />
           </Field>
 
-          <Field htmlFor="amt-paid" label={t("invoice.form.amountPaidAlreadyForPartialPayments")}>
+          <Field
+            error={errors["totalsConfig.amountPaid"]}
+            htmlFor="amt-paid"
+            label={t("invoice.form.amountPaidAlreadyForPartialPayments")}
+          >
             <Input
               id="amt-paid"
               type="number"

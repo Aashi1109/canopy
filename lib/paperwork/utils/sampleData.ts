@@ -38,7 +38,7 @@ export function getInitialBlankInvoice(): InvoiceData {
       city: "",
       state: "",
       zipCode: "",
-      country: "United States",
+      country: "",
       logo: "",
       taxId: "",
     },
@@ -52,7 +52,7 @@ export function getInitialBlankInvoice(): InvoiceData {
       city: "",
       state: "",
       zipCode: "",
-      country: "United States",
+      country: "",
     },
     invoice: {
       invoiceNumber: `INV-${new Date().getFullYear()}-001`,
@@ -66,7 +66,7 @@ export function getInitialBlankInvoice(): InvoiceData {
     lineItems: [
       {
         id: "default-item-1",
-        description: "Professional services",
+        description: "",
         quantity: 1,
         unitPrice: 0,
         taxable: true,
@@ -81,14 +81,13 @@ export function getInitialBlankInvoice(): InvoiceData {
       amountPaid: 0,
     },
     payment: {
-      methods: ["bank", "check"],
-      instructions:
-        "Please make bank transfers to: routing: 021000021, account: 123456789. Or write checks payable to Blue Ridge Web Studio.",
-      lateFeeNote: "Late payments may incur an interest fee of 1.5% per month.",
+      methods: [],
+      instructions: "",
+      lateFeeNote: "",
       thankYouNote: "Thank you for your business. We appreciate your partnership!",
     },
     notes: {
-      notes: "Services rendered cover design wireframes and production deployment.",
+      notes: "",
       terms: "Payment is due by the due date shown above. Please contact us with any questions about this invoice.",
     },
     template: "classic",

@@ -1,4 +1,5 @@
 import type { AdvancedDocumentTemplate } from "../invoice-templates/index.ts";
+import { getDocumentDefinition } from "../invoice-templates/documentDefinitions.ts";
 import type { InvoiceData } from "./types.ts";
 import { calculateInvoiceTotals, formatCurrency } from "./utils/calculations.ts";
 
@@ -31,6 +32,8 @@ type ReceiptTemplateSource = {
   relatedInvoiceNumber: string;
   transactionId: string;
   paymentStatus: string;
+  currency?: string;
+  amountReceived?: number;
   receiptType: string;
   lineItems: Array<{
     description: string;
@@ -56,6 +59,8 @@ type ReceiptTemplateTotals = {
   taxAmount: number;
   total: number;
   balanceDue: number;
+  amountReceived?: number;
+  netReceived?: number;
 };
 
 function address(address: Address) {
@@ -80,6 +85,48 @@ export function applyTemplateFormatting(
   ];
 
   for (const schema of schemas) {
+    if (schema.type === "table") {
+      const raw = inputs[schema.name];
+      const rows: unknown = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(rows)) throw new Error(`Table ${schema.name} must contain rows.`);
+      const custom = template.config.form.sections
+        .flatMap((section) => section.entries)
+        .find((entry) => entry.key === schema.name && entry.kind === "repeater");
+      const columns =
+        custom?.kind === "repeater"
+          ? custom.columns
+          : getDocumentDefinition(template.documentType).fields.find((field) => field.key === schema.name)
+              ?.repeaterColumns;
+      const head = Array.isArray(schema.head) ? schema.head : [];
+      const cells = rows.map((row: unknown) => {
+        if (Array.isArray(row)) {
+          if (row.length > head.length) throw new Error(`Table ${schema.name} has more cells than configured columns.`);
+          return head.map((_, index) => String(row[index] ?? ""));
+        }
+        if (!row || typeof row !== "object" || !columns || columns.length !== head.length) {
+          throw new Error(
+            `Table ${schema.name} columns must match its configured form columns. Update the template table layout to match the form before exporting.`,
+          );
+        }
+        const record = row as Record<string, unknown>;
+        return columns.map((column) => {
+          const value = record[column.key];
+          if (value === undefined || value === null) return "";
+          if (typeof value === "boolean") return value ? "Yes" : "No";
+          // Mileage rates retain their published fractional-cent precision.
+          if (column.control === "currency" && typeof value === "number" && column.key !== "rate") {
+            return formatCurrency(value, inputs.currency || "USD");
+          }
+          return String(value);
+        });
+      });
+      formatted[schema.name] = JSON.stringify(cells);
+      continue;
+    }
+    if (schema.name === "documentTitle" && !inputs.documentTitle && typeof schema.content === "string") {
+      formatted.documentTitle = schema.content;
+      continue;
+    }
     const sample = template.config.sampleData[schema.name];
     const value = inputs[schema.name];
     const content = schema.content;
@@ -146,6 +193,8 @@ export function getInvoiceTemplateInputs(
     total: money(totals.total),
     amountPaid: money(totals.amountPaid),
     balanceDue: money(totals.balanceDue),
+    customerCredit: money(totals.customerCredit),
+    currency: data.invoice.currency,
     paymentInstructions: data.payment.instructions,
     notes: data.notes.notes,
     terms: data.notes.terms,
@@ -158,7 +207,7 @@ export function getReceiptTemplateInputs(
   totals: ReceiptTemplateTotals,
   sampleData: Record<string, string>,
 ): Record<string, string> {
-  const money = (value: number) => formatCurrency(value, "USD");
+  const money = (value: number) => formatCurrency(value, data.currency || "USD");
 
   return {
     ...sampleData,
@@ -191,6 +240,8 @@ export function getReceiptTemplateInputs(
     tip: money(data.tip),
     additionalFee: money(data.additionalFee),
     amountRefunded: money(data.amountRefunded),
+    amountReceived: money(totals.amountReceived ?? data.amountReceived ?? 0),
+    netReceived: money(totals.netReceived ?? 0),
     total: money(totals.total),
     balanceDue: money(totals.balanceDue),
     paymentMethod: data.paymentMethod,

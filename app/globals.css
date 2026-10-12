@@ -77,6 +77,38 @@ body {
   margin: 1.5cm;
 }
 
+/* Native Paperwork printing includes the report, regardless of the active view.
+   Remove the surrounding application and release scrolling/focus containers. */
+@media print {
+  body:has(#app-root #receipt-print-area)
+    *:not(:has(#receipt-print-area)):not(#receipt-print-area):not(#receipt-print-area *) {
+    display: none !important;
+  }
+
+  body:has(#app-root #receipt-print-area),
+  body:has(#app-root #receipt-print-area) *:has(#receipt-print-area) {
+    display: block !important;
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    width: auto !important;
+    max-width: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  #app-root #receipt-print-area {
+    display: block !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

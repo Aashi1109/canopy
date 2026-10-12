@@ -1,9 +1,13 @@
+import { isCalendarDate, isNonnegativeAmount } from "./documentValidation.ts";
 export type MileageRateMode = "irs-standard" | "custom";
 
 export interface MileageRuleTrip {
   id: string;
   date: string;
   miles: number;
+  purpose?: string;
+  startLocation?: string;
+  destination?: string;
   parking?: number;
   tolls?: number;
 }
@@ -12,6 +16,7 @@ export interface MileageRuleFuelRecord {
   cost: number;
   gallons: number;
   odometer: number;
+  date?: string;
 }
 
 export interface MileageRuleDraft {
@@ -48,11 +53,9 @@ class MileageValidationError extends Error {
 }
 
 export function getMileageRate(mode: MileageRateMode, taxYear: number, tripDate: string, customRate: number): number {
-  const schedule = IRS_MILEAGE_RATE_SCHEDULE[taxYear as keyof typeof IRS_MILEAGE_RATE_SCHEDULE];
-  if (!schedule) {
-    throw new MileageValidationError(`IRS mileage rules update required for ${taxYear}.`, {
-      key: "mileage.validation.rulesYearUnavailable",
-      values: { year: taxYear },
+  if (!Number.isInteger(taxYear) || taxYear < 1900 || taxYear > 9999 || !isCalendarDate(tripDate)) {
+    throw new MileageValidationError("Enter a valid calendar trip date and year.", {
+      key: "mileage.validation.invalidDate",
     });
   }
   if (!tripDate.startsWith(`${taxYear}-`)) {
@@ -70,6 +73,13 @@ export function getMileageRate(mode: MileageRateMode, taxYear: number, tripDate:
     return customRate;
   }
 
+  const schedule = IRS_MILEAGE_RATE_SCHEDULE[taxYear as keyof typeof IRS_MILEAGE_RATE_SCHEDULE];
+  if (!schedule || mode !== "irs-standard") {
+    throw new MileageValidationError(`IRS mileage rules update required for ${taxYear}.`, {
+      key: "mileage.validation.rulesYearUnavailable",
+      values: { year: taxYear },
+    });
+  }
   const rule = [...schedule].reverse().find(({ effectiveDate }) => tripDate >= effectiveDate);
   if (!rule) {
     throw new MileageValidationError(`IRS mileage rules update required for ${tripDate}.`, {
@@ -84,8 +94,23 @@ export function calculateMileageSummary<TTrip extends MileageRuleTrip>(
   draft: Omit<MileageRuleDraft, "trips"> & { trips: TTrip[] },
 ) {
   const failures = new Map<string, MileageErrorMessage>();
+  if (!draft.trips.length) {
+    try {
+      getMileageRate(draft.rateMode, draft.taxYear, `${draft.taxYear}-01-01`, draft.customRate);
+    } catch (error) {
+      failures.set(
+        error instanceof Error ? error.message : String(error),
+        error instanceof MileageValidationError ? error.errorMessage : { key: "mileage.validation.calculationFailed" },
+      );
+    }
+  }
   const trips = draft.trips.map((trip) => {
     try {
+      if (![trip.miles, trip.parking ?? 0, trip.tolls ?? 0].every(isNonnegativeAmount)) {
+        throw new MileageValidationError("Miles, parking and tolls must be finite nonnegative amounts.", {
+          key: "mileage.validation.invalidAmounts",
+        });
+      }
       const rate = getMileageRate(draft.rateMode, draft.taxYear, trip.date, draft.customRate);
       const mileageAmount = money(Number(trip.miles || 0) * rate);
       const parking = Number(trip.parking || 0);
@@ -108,17 +133,29 @@ export function calculateMileageSummary<TTrip extends MileageRuleTrip>(
         rate: 0,
         amount: 0,
         mileageAmount: 0,
-        parking: Number(trip.parking || 0),
-        tolls: Number(trip.tolls || 0),
+        parking: 0,
+        tolls: 0,
+        miles: 0,
       };
     }
   });
 
+  const validFuelRecords = draft.fuelRecords.filter((record) => {
+    const validDate =
+      record.date === undefined || (isCalendarDate(record.date) && record.date.startsWith(`${draft.taxYear}-`));
+    if (!validDate)
+      failures.set("Fuel date must be a real date in the selected year.", { key: "mileage.validation.invalidDate" });
+    const validAmounts = [record.cost, record.gallons, record.odometer].every(isNonnegativeAmount);
+    const valid = validDate && validAmounts;
+    if (!validAmounts)
+      failures.set("Fuel amounts must be finite nonnegative values.", { key: "mileage.validation.invalidAmounts" });
+    return valid;
+  });
   const standardMileageDeduction = money(trips.reduce((total, trip) => total + trip.mileageAmount, 0));
   const parkingAndTolls = money(trips.reduce((total, trip) => total + trip.parking + trip.tolls, 0));
-  const totalFuelCost = money(draft.fuelRecords.reduce((total, record) => total + Number(record.cost || 0), 0));
-  const totalGallons = draft.fuelRecords.reduce((total, record) => total + Number(record.gallons || 0), 0);
-  const sortedFuelRecords = [...draft.fuelRecords].sort(
+  const totalFuelCost = money(validFuelRecords.reduce((total, record) => total + Number(record.cost || 0), 0));
+  const totalGallons = validFuelRecords.reduce((total, record) => total + Number(record.gallons || 0), 0);
+  const sortedFuelRecords = [...validFuelRecords].sort(
     (left, right) => Number(left.odometer || 0) - Number(right.odometer || 0),
   );
   const odometerDistance =

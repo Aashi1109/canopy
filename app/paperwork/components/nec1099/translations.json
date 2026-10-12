@@ -214,7 +214,21 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "بسّط أعمالك باستخدام SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "يتوسع الهيكل الديناميكي فورًا وفقًا للتخطيط. لن تُفقد المسودة.",
         "runtime.nec.monitorIndependentSubcontractorPayoutCapsTrackVerificationThresholds": "راقب حدود مدفوعات المتعاقدين من الباطن المستقلين، وتتبع عتبات التحقق، ونزّل قوائم التحقق من الامتثال.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "بسّط سير العمل الإداري باستخدام منشئات احترافية للشركات الصغيرة بنقرة واحدة."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "بسّط سير العمل الإداري باستخدام منشئات احترافية للشركات الصغيرة بنقرة واحدة.",
+        "runtime.nec.candidateScope": "مدفوعات خدمات أمريكية مرشحة للمراجعة فقط. تُستثنى البطاقات والإيجارات. تحقق مع معد الضرائب من شبكات الدفع المؤهلة وتصنيف W-9 والاستثناءات. الإكراميات جزء من التعويض وليست إضافة. العمل الإضافي المؤهل هو العلاوة فقط؛ التعديلات ملاحظات لا تُضاف للإجمالي.",
+        "runtime.nec.filingReview": "مستلمون يحتاجون مراجعة الإبلاغ (الحد أو الاستقطاع الاحتياطي): {count}. لا يؤكد ذلك وجوب الإبلاغ.",
+        "runtime.nec.validation.eligibilityReview": "راجع أهلية الدفع: {detail}",
+        "runtime.nec.validation.invalidAdjustments": "تتطلب التعديلات متعاقداً موجوداً ومبالغ محدودة غير سالبة.",
+        "runtime.nec.warnings.cardExcluded": "تُستثنى مدفوعات البطاقات من تعويض NEC؛ يتولى معالج الدفع الإبلاغ المناسب.",
+        "runtime.nec.warnings.rentExcluded": "الإيجار خارج NEC؛ راجع نموذج 1099-MISC.",
+        "runtime.nec.warnings.corporationExcluded": "تُستثنى عادة مدفوعات الشركات؛ راجع الاستثناءات مع معد الضرائب.",
+        "runtime.nec.warnings.classificationReview": "أكد التصنيف الضريبي في W-9. صفة LLC وحدها لا تحدد أهلية NEC.",
+        "runtime.nec.warnings.backupWithholding": "الاستقطاع الاحتياطي يتطلب مراجعة الإبلاغ حتى دون الحد.",
+        "runtime.nec.validation.paymentAmount": "يجب أن تكون مبالغ الدفع محدودة وغير سالبة.",
+        "runtime.nec.validation.paymentDate": "يجب أن يكون تاريخ الدفع صحيحاً وضمن سنة الإبلاغ.",
+        "runtime.nec.validation.networkReview": "راجع الشبكة: يُبلغ المعالج عن مدفوعات شبكات الطرف الثالث المؤهلة وليس NEC. سجل المدفوعات المباشرة كـ ACH أو شيك أو نقد فقط إذا كان ذلك صحيحاً.",
+        "runtime.nec.validation.categoryReview": "اختر فئة خدمة مدعومة أو استبعد الدفع حتى مراجعة معد الضرائب.",
+        "runtime.nec.validation.completePayment": "يحتاج كل دفع إلى تاريخ صحيح في سنة الإبلاغ ووصف وطريقة دفع وفئة."
       }
     },
     "de": {
@@ -430,7 +444,21 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Optimieren Sie Ihr Unternehmen mit SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "Die dynamische Struktur skaliert sofort entsprechend dem Layout. Kein Entwurf geht verloren.",
         "runtime.nec.monitorIndependentSubcontractorPayoutCapsTrackVerificationThresholds": "Überwachen Sie Auszahlungsgrenzen für unabhängige Subunternehmer, verfolgen Sie Prüfgrenzwerte und laden Sie Compliance-Checklisten herunter.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Vereinfachen Sie administrative Abläufe mit professionellen Ein-Klick-Generatoren für kleine Unternehmen."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Vereinfachen Sie administrative Abläufe mit professionellen Ein-Klick-Generatoren für kleine Unternehmen.",
+        "runtime.nec.candidateScope": "Nur zu prüfende US-Dienstleistungszahlungen. Karten und Mieten ausgeschlossen. Qualifizierte Drittnetzwerke, W-9-Klassifizierung und Ausnahmen mit dem Steuerberater prüfen. Trinkgeld ist Teil der Vergütung, kein Zusatz. Begünstigte Überstunden sind nur der Zuschlag; Anpassungen sind Notizen und erhöhen keine Vergütungssumme.",
+        "runtime.nec.filingReview": "Empfänger mit Meldeprüfung (Schwelle oder Sicherungssteuerabzug): {count}. Meldepflicht wird nicht bestätigt.",
+        "runtime.nec.validation.eligibilityReview": "Zahlungsberechtigung prüfen: {detail}",
+        "runtime.nec.validation.invalidAdjustments": "Anpassungen brauchen einen vorhandenen Auftragnehmer und endliche nicht negative Beträge.",
+        "runtime.nec.warnings.cardExcluded": "Kartenzahlungen sind von NEC ausgeschlossen; zutreffende Meldungen übernimmt der Zahlungsdienstleister.",
+        "runtime.nec.warnings.rentExcluded": "Miete ist von NEC ausgeschlossen; Formular 1099-MISC prüfen.",
+        "runtime.nec.warnings.corporationExcluded": "Zahlungen an Kapitalgesellschaften sind meist ausgeschlossen; Ausnahmen mit dem Steuerberater prüfen.",
+        "runtime.nec.warnings.classificationReview": "W-9-Steuerklassifizierung bestätigen. LLC allein begründet keine NEC-Berechtigung.",
+        "runtime.nec.warnings.backupWithholding": "Sicherungssteuerabzug erfordert eine Meldeprüfung auch unterhalb der Schwelle.",
+        "runtime.nec.validation.paymentAmount": "Zahlungsbeträge müssen endlich und nicht negativ sein.",
+        "runtime.nec.validation.paymentDate": "Das Zahlungsdatum muss gültig sein und im Meldejahr liegen.",
+        "runtime.nec.validation.networkReview": "Netzwerk prüfen: qualifizierte Drittnetzwerkzahlungen meldet der Prozessor, nicht NEC. Direkte Zahlungen nur zutreffend als ACH/Scheck/Barzahlung erfassen.",
+        "runtime.nec.validation.categoryReview": "Unterstützte Dienstleistungskategorie wählen oder bis zur Prüfung ausschließen.",
+        "runtime.nec.validation.completePayment": "Jede Zahlung braucht ein gültiges Datum im Meldejahr, Beschreibung, Zahlungsart und Kategorie."
       }
     },
     "en": {
@@ -646,7 +674,21 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Streamline Your Business with SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "Dynamic structure scales immediately based on layout. No lost draft.",
         "runtime.nec.monitorIndependentSubcontractorPayoutCapsTrackVerificationThresholds": "Monitor independent subcontractor payout caps, track verification thresholds, and download compliance checklists.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplify administrative workflows with professional single-click small business generators."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplify administrative workflows with professional single-click small business generators.",
+        "runtime.nec.candidateScope": "US service-payment candidates only. Card payments and rent are excluded. Confirm qualifying third-party network payments, W-9 tax classification and exceptions with your preparer. Tips are included components of compensation, not additional amounts. Qualified overtime means the eligible premium, not all pay; adjustment fields are preparer notes and are not added to compensation totals.",
+        "runtime.nec.filingReview": "Recipients requiring filing review (threshold or backup withholding): {count}. This does not verify filing eligibility.",
+        "runtime.nec.validation.eligibilityReview": "Review payment eligibility: {detail}",
+        "runtime.nec.validation.invalidAdjustments": "Recipient adjustments require an existing contractor and finite nonnegative amounts.",
+        "runtime.nec.warnings.cardExcluded": "Card payments are excluded from NEC compensation; the payment processor handles applicable reporting.",
+        "runtime.nec.warnings.rentExcluded": "Rent is excluded from NEC compensation; review Form 1099-MISC.",
+        "runtime.nec.warnings.corporationExcluded": "Corporation payments are generally excluded; review exceptions with your preparer.",
+        "runtime.nec.warnings.classificationReview": "Confirm the contractor's W-9 tax classification. LLC alone does not establish NEC eligibility.",
+        "runtime.nec.warnings.backupWithholding": "Backup withholding requires filing review even when compensation is below the reporting threshold.",
+        "runtime.nec.validation.paymentAmount": "Payment amounts must be finite and nonnegative.",
+        "runtime.nec.validation.paymentDate": "Payment date must be a real date within the reporting year.",
+        "runtime.nec.validation.networkReview": "Review payment network eligibility: qualifying third-party network payments belong to processor reporting, not NEC. Record direct payments as ACH/check/cash when accurate.",
+        "runtime.nec.validation.categoryReview": "Select a supported service category or exclude this payment pending preparer review.",
+        "runtime.nec.validation.completePayment": "Each payment needs a valid date in the reporting year, a description, payment method and category."
       }
     },
     "es": {
@@ -862,7 +904,21 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Optimice su empresa con SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "La estructura dinámica se adapta de inmediato según el diseño. No se pierde ningún borrador.",
         "runtime.nec.monitorIndependentSubcontractorPayoutCapsTrackVerificationThresholds": "Supervise los límites de pago a subcontratistas independientes, haga seguimiento de los umbrales de verificación y descargue listas de control de cumplimiento.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique los flujos de trabajo administrativos con generadores profesionales para pequeñas empresas con un solo clic."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique los flujos de trabajo administrativos con generadores profesionales para pequeñas empresas con un solo clic.",
+        "runtime.nec.candidateScope": "Solo pagos estadounidenses por servicios para revisar. Tarjetas y alquileres excluidos. Confirme redes de terceros aplicables, clasificación W-9 y excepciones con su asesor. Las propinas forman parte de la remuneración, no se suman. Horas extra calificadas significa solo la prima; los ajustes son notas y no aumentan el total.",
+        "runtime.nec.filingReview": "Destinatarios que requieren revisión de declaración (umbral o retención adicional): {count}. No confirma la obligación de declarar.",
+        "runtime.nec.validation.eligibilityReview": "Revise la elegibilidad del pago: {detail}",
+        "runtime.nec.validation.invalidAdjustments": "Los ajustes requieren un contratista existente e importes finitos no negativos.",
+        "runtime.nec.warnings.cardExcluded": "Los pagos con tarjeta se excluyen de NEC; el procesador gestiona la declaración correspondiente.",
+        "runtime.nec.warnings.rentExcluded": "El alquiler se excluye de NEC; revise el formulario 1099-MISC.",
+        "runtime.nec.warnings.corporationExcluded": "Los pagos a sociedades suelen excluirse; revise excepciones con su asesor.",
+        "runtime.nec.warnings.classificationReview": "Confirme la clasificación fiscal W-9. Ser LLC no basta para determinar la elegibilidad NEC.",
+        "runtime.nec.warnings.backupWithholding": "La retención adicional requiere revisar la declaración incluso por debajo del umbral.",
+        "runtime.nec.validation.paymentAmount": "Los importes deben ser finitos y no negativos.",
+        "runtime.nec.validation.paymentDate": "La fecha debe ser válida y del año de declaración.",
+        "runtime.nec.validation.networkReview": "Revise la red: los pagos de redes de terceros calificadas los declara el procesador, no NEC. Registre pagos directos como ACH/cheque/efectivo solo si corresponde.",
+        "runtime.nec.validation.categoryReview": "Seleccione una categoría de servicio admitida o excluya el pago hasta la revisión del asesor.",
+        "runtime.nec.validation.completePayment": "Cada pago necesita fecha válida del año, descripción, método de pago y categoría."
       }
     },
     "fr": {
@@ -1078,7 +1134,21 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Simplifiez votre entreprise avec SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "La structure dynamique s’adapte immédiatement à la mise en page. Aucun brouillon perdu.",
         "runtime.nec.monitorIndependentSubcontractorPayoutCapsTrackVerificationThresholds": "Surveillez les plafonds de versement des sous-traitants indépendants, suivez les seuils de vérification et téléchargez des listes de contrôle de conformité.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifiez les flux de travail administratifs grâce à des générateurs professionnels pour petites entreprises en un clic."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifiez les flux de travail administratifs grâce à des générateurs professionnels pour petites entreprises en un clic.",
+        "runtime.nec.candidateScope": "Paiements américains de services à examiner uniquement. Cartes et loyers exclus. Vérifiez les réseaux tiers admissibles, le classement W-9 et les exceptions avec votre préparateur. Les pourboires font partie de la rémunération et ne s’ajoutent pas. Les heures supplémentaires admissibles désignent seulement la majoration ; les ajustements sont des notes et n’augmentent pas le total.",
+        "runtime.nec.filingReview": "Bénéficiaires à examiner pour déclaration (seuil ou retenue de secours) : {count}. L’obligation de déclaration n’est pas vérifiée.",
+        "runtime.nec.validation.eligibilityReview": "Vérifiez l’admissibilité du paiement : {detail}",
+        "runtime.nec.validation.invalidAdjustments": "Les ajustements exigent un prestataire existant et des montants finis non négatifs.",
+        "runtime.nec.warnings.cardExcluded": "Paiements par carte exclus de la rémunération NEC ; le processeur assure la déclaration applicable.",
+        "runtime.nec.warnings.rentExcluded": "Loyers exclus de NEC ; examinez le formulaire 1099-MISC.",
+        "runtime.nec.warnings.corporationExcluded": "Paiements aux sociétés généralement exclus ; vérifiez les exceptions avec votre préparateur.",
+        "runtime.nec.warnings.classificationReview": "Confirmez le classement fiscal W-9. Le seul statut LLC ne prouve pas l’admissibilité NEC.",
+        "runtime.nec.warnings.backupWithholding": "Une retenue de secours impose un examen de déclaration même sous le seuil.",
+        "runtime.nec.validation.paymentAmount": "Les montants doivent être finis et non négatifs.",
+        "runtime.nec.validation.paymentDate": "La date doit être valide et dans l’année de déclaration.",
+        "runtime.nec.validation.networkReview": "Vérifiez le réseau : les paiements admissibles via réseau tiers relèvent du processeur, pas de NEC. Classez les paiements directs en ACH/chèque/espèces si exact.",
+        "runtime.nec.validation.categoryReview": "Choisissez une catégorie de services prise en charge ou excluez le paiement en attendant l’avis du préparateur.",
+        "runtime.nec.validation.completePayment": "Chaque paiement exige une date valide dans l’année, une description, un mode de paiement et une catégorie."
       }
     },
     "hi": {
@@ -1294,7 +1364,21 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "SmartTools Paperwork Pro के साथ अपना व्यवसाय सरल बनाएँ",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "डायनेमिक संरचना लेआउट के आधार पर तुरंत स्केल होती है। कोई ड्राफ़्ट नहीं खोता।",
         "runtime.nec.monitorIndependentSubcontractorPayoutCapsTrackVerificationThresholds": "स्वतंत्र उपठेकेदार भुगतान सीमाओं की निगरानी करें, सत्यापन सीमाएँ ट्रैक करें और अनुपालन चेकलिस्ट डाउनलोड करें।",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "पेशेवर एक-क्लिक छोटे व्यवसाय जनरेटर से प्रशासनिक कार्यप्रवाह सरल बनाएँ।"
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "पेशेवर एक-क्लिक छोटे व्यवसाय जनरेटर से प्रशासनिक कार्यप्रवाह सरल बनाएँ।",
+        "runtime.nec.candidateScope": "केवल अमेरिका के सेवा भुगतान की समीक्षा। कार्ड और किराया बाहर हैं। पात्र तृतीय-पक्ष नेटवर्क, W-9 कर वर्ग और अपवाद कर विशेषज्ञ से जाँचें। टिप पारिश्रमिक का हिस्सा है, अतिरिक्त नहीं। पात्र ओवरटाइम केवल अतिरिक्त प्रीमियम है; समायोजन टिप्पणियाँ हैं, पारिश्रमिक योग में नहीं जुड़ते।",
+        "runtime.nec.filingReview": "रिटर्न समीक्षा वाले प्राप्तकर्ता (सीमा या बैकअप विदहोल्डिंग): {count}। इससे दाखिल करने की पात्रता साबित नहीं होती।",
+        "runtime.nec.validation.eligibilityReview": "भुगतान की पात्रता जाँचें: {detail}",
+        "runtime.nec.validation.invalidAdjustments": "समायोजन के लिए मौजूदा ठेकेदार और सीमित गैर-ऋणात्मक रकम चाहिए।",
+        "runtime.nec.warnings.cardExcluded": "कार्ड भुगतान NEC पारिश्रमिक से बाहर हैं; लागू रिपोर्ट भुगतान प्रोसेसर देता है।",
+        "runtime.nec.warnings.rentExcluded": "किराया NEC से बाहर है; Form 1099-MISC जाँचें।",
+        "runtime.nec.warnings.corporationExcluded": "निगमों को भुगतान आम तौर पर बाहर हैं; अपवाद कर विशेषज्ञ से जाँचें।",
+        "runtime.nec.warnings.classificationReview": "W-9 कर वर्ग की पुष्टि करें। केवल LLC होने से NEC पात्रता तय नहीं होती।",
+        "runtime.nec.warnings.backupWithholding": "बैकअप विदहोल्डिंग हो तो सीमा से नीचे भी रिटर्न की समीक्षा आवश्यक है।",
+        "runtime.nec.validation.paymentAmount": "भुगतान राशि सीमित और गैर-ऋणात्मक होनी चाहिए।",
+        "runtime.nec.validation.paymentDate": "भुगतान तारीख सही और रिपोर्टिंग वर्ष में होनी चाहिए।",
+        "runtime.nec.validation.networkReview": "नेटवर्क जाँचें: पात्र तृतीय-पक्ष नेटवर्क का भुगतान प्रोसेसर रिपोर्ट करता है, NEC नहीं। सीधे भुगतान को ACH/चेक/नकद तभी दर्ज करें जब सही हो।",
+        "runtime.nec.validation.categoryReview": "समर्थित सेवा श्रेणी चुनें या कर विशेषज्ञ की समीक्षा तक भुगतान बाहर रखें।",
+        "runtime.nec.validation.completePayment": "हर भुगतान में रिपोर्टिंग वर्ष की सही तारीख, विवरण, भुगतान तरीका और श्रेणी चाहिए।"
       }
     },
     "ja": {
@@ -1510,7 +1594,21 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "SmartTools Paperwork Proでビジネスを効率化",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "動的な構成がレイアウトに基づいて即座に調整されます。下書きは失われません。",
         "runtime.nec.monitorIndependentSubcontractorPayoutCapsTrackVerificationThresholds": "独立下請業者への支払い上限を監視し、確認基準額を追跡して、コンプライアンスチェックリストをダウンロードできます。",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "プロ仕様のワンクリック中小企業向け作成ツールで事務ワークフローを簡素化します。"
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "プロ仕様のワンクリック中小企業向け作成ツールで事務ワークフローを簡素化します。",
+        "runtime.nec.candidateScope": "米国のサービス支払候補のみです。カードと賃料は対象外です。適格な第三者決済網、W-9税区分、例外を税務担当者と確認してください。チップは報酬に含まれ、追加計上しません。適格な残業代は割増部分のみです。調整項目は注記で報酬合計には加算しません。",
+        "runtime.nec.filingReview": "申告確認が必要な受取人（基準額または予備源泉徴収）：{count}。申告義務の確認結果ではありません。",
+        "runtime.nec.validation.eligibilityReview": "支払の対象資格を確認：{detail}",
+        "runtime.nec.validation.invalidAdjustments": "調整には既存の請負業者と有限の非負金額が必要です。",
+        "runtime.nec.warnings.cardExcluded": "カード支払はNEC報酬から除外し、決済事業者が該当する報告を行います。",
+        "runtime.nec.warnings.rentExcluded": "賃料はNEC対象外です。Form 1099-MISCを確認してください。",
+        "runtime.nec.warnings.corporationExcluded": "法人への支払は通常対象外です。例外は税務担当者と確認してください。",
+        "runtime.nec.warnings.classificationReview": "W-9税区分を確認してください。LLCというだけではNEC対象資格は確定しません。",
+        "runtime.nec.warnings.backupWithholding": "予備源泉徴収があれば、基準額未満でも申告の確認が必要です。",
+        "runtime.nec.validation.paymentAmount": "支払金額は有限の非負値である必要があります。",
+        "runtime.nec.validation.paymentDate": "支払日は報告年度内の有効な日付である必要があります。",
+        "runtime.nec.validation.networkReview": "決済網を確認してください。適格な第三者ネットワーク支払はNECではなく決済事業者が報告します。直接支払は事実に即してACH・小切手・現金として記録してください。",
+        "runtime.nec.validation.categoryReview": "対応するサービス区分を選ぶか、税務確認まで支払を除外してください。",
+        "runtime.nec.validation.completePayment": "各支払には報告年度内の有効な日付、説明、支払方法、区分が必要です。"
       }
     },
     "ru": {
@@ -1726,7 +1824,21 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Оптимизируйте свой бизнес с помощью SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "Динамическая структура мгновенно масштабируется в зависимости от макета. Черновик не будет потерян.",
         "runtime.nec.monitorIndependentSubcontractorPayoutCapsTrackVerificationThresholds": "Отслеживайте лимиты выплат независимым субподрядчикам, пороги проверки и скачивайте контрольные списки соответствия требованиям.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Упростите административные процессы с профессиональными генераторами для малого бизнеса в один клик."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Упростите административные процессы с профессиональными генераторами для малого бизнеса в один клик.",
+        "runtime.nec.candidateScope": "Только кандидаты на отчётность по услугам в США. Карты и аренда исключены. Проверьте сторонние платёжные сети, классификацию W-9 и исключения со специалистом. Чаевые входят в вознаграждение, а не добавляются. Льготные сверхурочные — только надбавка; корректировки являются заметками и не увеличивают сумму.",
+        "runtime.nec.filingReview": "Получатели для проверки отчётности (порог или резервное удержание): {count}. Обязанность подачи не подтверждается.",
+        "runtime.nec.validation.eligibilityReview": "Проверьте допустимость платежа: {detail}",
+        "runtime.nec.validation.invalidAdjustments": "Корректировки требуют существующего подрядчика и конечных неотрицательных сумм.",
+        "runtime.nec.warnings.cardExcluded": "Карточные платежи исключены из NEC; нужную отчётность подаёт процессор.",
+        "runtime.nec.warnings.rentExcluded": "Аренда исключена из NEC; проверьте форму 1099-MISC.",
+        "runtime.nec.warnings.corporationExcluded": "Платежи корпорациям обычно исключены; исключения уточните со специалистом.",
+        "runtime.nec.warnings.classificationReview": "Подтвердите налоговую классификацию W-9. Статус LLC сам по себе не определяет применимость NEC.",
+        "runtime.nec.warnings.backupWithholding": "Резервное удержание требует проверки подачи даже ниже порога.",
+        "runtime.nec.validation.paymentAmount": "Суммы должны быть конечными и неотрицательными.",
+        "runtime.nec.validation.paymentDate": "Дата должна быть действительной и относиться к отчётному году.",
+        "runtime.nec.validation.networkReview": "Проверьте сеть: подходящие платежи сторонних сетей отражает процессор, а не NEC. Прямые платежи обозначайте ACH/чек/наличные только если это верно.",
+        "runtime.nec.validation.categoryReview": "Выберите поддерживаемую услугу или исключите платёж до проверки специалистом.",
+        "runtime.nec.validation.completePayment": "Каждому платежу нужны действительная дата в отчётном году, описание, способ и категория."
       }
     },
     "pt-BR": {
@@ -1942,7 +2054,21 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "Simplifique sua empresa com o SmartTools Paperwork Pro",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "A estrutura dinâmica se ajusta imediatamente com base no layout. Nenhum rascunho é perdido.",
         "runtime.nec.monitorIndependentSubcontractorPayoutCapsTrackVerificationThresholds": "Monitore limites de pagamentos a subcontratados independentes, acompanhe limites de verificação e baixe listas de verificação de conformidade.",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique fluxos administrativos com geradores profissionais para pequenas empresas em um clique."
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "Simplifique fluxos administrativos com geradores profissionais para pequenas empresas em um clique.",
+        "runtime.nec.candidateScope": "Somente pagamentos americanos de serviços para revisão. Cartões e aluguéis excluídos. Confirme redes de terceiros qualificadas, classificação W-9 e exceções com o contador. Gorjetas fazem parte da remuneração, não se somam. Horas extras qualificadas são apenas o adicional; ajustes são notas e não aumentam o total.",
+        "runtime.nec.filingReview": "Destinatários que precisam de revisão de declaração (limite ou retenção de garantia): {count}. Não confirma a obrigação de declarar.",
+        "runtime.nec.validation.eligibilityReview": "Revise a elegibilidade do pagamento: {detail}",
+        "runtime.nec.validation.invalidAdjustments": "Ajustes exigem prestador existente e valores finitos não negativos.",
+        "runtime.nec.warnings.cardExcluded": "Pagamentos por cartão são excluídos de NEC; a processadora faz a declaração aplicável.",
+        "runtime.nec.warnings.rentExcluded": "Aluguel é excluído de NEC; revise o Formulário 1099-MISC.",
+        "runtime.nec.warnings.corporationExcluded": "Pagamentos a corporações geralmente são excluídos; revise exceções com o contador.",
+        "runtime.nec.warnings.classificationReview": "Confirme a classificação fiscal W-9. LLC por si só não comprova elegibilidade NEC.",
+        "runtime.nec.warnings.backupWithholding": "Retenção de garantia exige revisão de declaração mesmo abaixo do limite.",
+        "runtime.nec.validation.paymentAmount": "Valores devem ser finitos e não negativos.",
+        "runtime.nec.validation.paymentDate": "A data deve ser válida e pertencer ao ano de declaração.",
+        "runtime.nec.validation.networkReview": "Revise a rede: pagamentos qualificados por redes de terceiros são declarados pela processadora, não NEC. Registre pagamentos diretos como ACH/cheque/dinheiro apenas quando correto.",
+        "runtime.nec.validation.categoryReview": "Escolha categoria de serviço aceita ou exclua o pagamento até revisão do contador.",
+        "runtime.nec.validation.completePayment": "Cada pagamento exige data válida no ano, descrição, forma de pagamento e categoria."
       }
     },
     "zh-Hans": {
@@ -2158,7 +2284,21 @@
         "runtime.shared.related.streamlineYourBusinessWithSmarttoolsPaperworkPro": "使用 SmartTools Paperwork Pro 简化您的业务",
         "runtime.shared.templates.dynamicStructureScalesImmediatelyBasedOnLayout": "动态结构会根据布局立即调整大小，不会丢失草稿。",
         "runtime.nec.monitorIndependentSubcontractorPayoutCapsTrackVerificationThresholds": "监控独立分包商付款上限，跟踪核验门槛，并下载合规清单。",
-        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "使用专业的一键式小型企业生成器简化行政工作流程。"
+        "runtime.shared.related.simplifyAdministrativeWorkflowsWithProfessionalSingleClick": "使用专业的一键式小型企业生成器简化行政工作流程。",
+        "runtime.nec.candidateScope": "仅限待审核的美国服务付款。卡付款和租金除外。请与税务人员核实合格第三方支付网络、W-9税务分类及例外。小费属于报酬组成部分，不额外加计。合格加班报酬仅指加成部分；调整字段是税务备注，不加入报酬总额。",
+        "runtime.nec.filingReview": "需审核申报的收款人（达到门槛或有备用预扣税）：{count}。这不代表已确认申报义务。",
+        "runtime.nec.validation.eligibilityReview": "审核付款资格：{detail}",
+        "runtime.nec.validation.invalidAdjustments": "收款人调整须对应现有承包商，金额必须有限且非负。",
+        "runtime.nec.warnings.cardExcluded": "卡付款不计入NEC报酬；适用报告由支付处理商负责。",
+        "runtime.nec.warnings.rentExcluded": "租金不计入NEC；请审核Form 1099-MISC。",
+        "runtime.nec.warnings.corporationExcluded": "公司付款通常除外；请与税务人员核实例外。",
+        "runtime.nec.warnings.classificationReview": "请确认W-9税务分类。仅凭LLC身份不能确定NEC资格。",
+        "runtime.nec.warnings.backupWithholding": "即使低于申报门槛，有备用预扣税也须审核申报。",
+        "runtime.nec.validation.paymentAmount": "付款金额必须有限且非负。",
+        "runtime.nec.validation.paymentDate": "付款日期必须有效且在申报年度内。",
+        "runtime.nec.validation.networkReview": "审核支付网络：合格第三方网络付款由处理商申报，不属于NEC。仅在属实时将直接付款记录为ACH、支票或现金。",
+        "runtime.nec.validation.categoryReview": "选择支持的服务类别，或在税务审核前排除此付款。",
+        "runtime.nec.validation.completePayment": "每笔付款须有申报年度内的有效日期、说明、付款方式和类别。"
       }
     }
   }

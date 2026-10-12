@@ -1,3 +1,4 @@
+vi.mock("@/lib/auth/session.ts", () => ({ getSession: async () => null }));
 import { afterAll, afterEach, beforeEach, expect, test, vi } from "vitest";
 
 const fixture = vi.hoisted(() => {
@@ -50,7 +51,7 @@ const request = (path, body) =>
       ? {}
       : {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: { "content-type": "application/json", origin: "https://app.example" },
           body: JSON.stringify(body),
         },
   );
@@ -86,12 +87,12 @@ test("Paperwork APIs return the original message without the stack and retain fa
   for (const [name, call, fallback] of operations) {
     fixture.error = new Error("Service connection timed out.");
     let response = await call();
-    expect(fixture.captured.at(-1)).toBe(fixture.error);
+    expect(fixture.captured.at(-1).message).toBe(fallback);
     expect(response.status, name).toBe(500);
-    expect(await response.json(), name).toEqual({ error: fixture.error.message });
+    expect(await response.json(), name).toEqual({ error: fallback });
     fixture.error = new Error(" ");
     response = await call();
-    expect(fixture.captured.at(-1)).toBe(fixture.error);
+    expect(fixture.captured.at(-1).message).toBe(fallback);
     expect(response.status, name).toBe(500);
     expect(await response.json(), name).toEqual({ error: fallback });
   }
@@ -111,7 +112,7 @@ test("Paperwork access and input errors retain their original statuses and messa
   const oversized = await vendors.POST(
     new Request("https://app.example/api/paperwork/vendors", {
       method: "POST",
-      headers: { "content-length": "4000000" },
+      headers: { "content-length": "4000000", origin: "https://app.example" },
     }),
   );
   expect(oversized.status).toBe(413);
