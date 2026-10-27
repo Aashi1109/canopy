@@ -3,6 +3,21 @@
 .codex
 .codegraph
 
+# Automation and deployment files are not application build inputs.
+.github
+.githooks
+caddy
+compose.yml
+
+# Designs and documentation do not affect the application build.
+designs
+docs
+openspec
+README.md
+**/AGENTS.md
+MANUAL_AUDIT.md
+TOOL_FEATURE_SPECS.md
+
 node_modules
 **/node_modules
 .next
