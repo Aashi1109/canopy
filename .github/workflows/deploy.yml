@@ -45,7 +45,7 @@ jobs:
             CANOPY_PUBLIC_BUILD_ENV=${{ vars.CANOPY_PUBLIC_BUILD_ENV || '{}' }}
             CANOPY_DEPLOYMENT_REVISION=${{ github.sha }}
 
-      - name: Prepare SSH
+      - name: Set up SSH
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
@@ -61,6 +61,8 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
+          ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null && echo "key parses OK"
+          ssh-keygen -lf ~/.ssh/deploy_key.pub 2>/dev/null || ssh-keygen -y -f ~/.ssh/deploy_key | ssh-keygen -lf -
           printf 'SSH_HOST=%s\nSSH_USER=%s\n' "$SSH_HOST" "$SSH_USER" >> "$GITHUB_ENV"
 
       - name: Copy deployment files and restart Canopy
