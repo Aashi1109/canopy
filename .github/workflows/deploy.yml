@@ -27,6 +27,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Normalize image name
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: echo "CANOPY_IMAGE=ghcr.io/$(printf '%s' "$REPOSITORY" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
       - name: Build and push application image
         uses: docker/build-push-action@v6
         with:
@@ -34,7 +39,7 @@ jobs:
           platforms: linux/amd64
           target: runner
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/canopy:latest
+          tags: ${{ env.CANOPY_IMAGE }}:latest
           build-args: |
             APP_URL=${{ vars.APP_URL }}
             CANOPY_PUBLIC_BUILD_ENV=${{ vars.CANOPY_PUBLIC_BUILD_ENV || '{}' }}
