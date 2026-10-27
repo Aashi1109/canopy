@@ -1,28 +1,15 @@
 name: canopy
 
 services:
-  web:
-    image: aashishpal09/canopy:latest
-    platform: linux/amd64
-    build:
-      context: .
-      target: runner
-      args:
-        APP_URL: "${APP_URL:?Set APP_URL in .env.local}"
+  canopy:
+    image: ghcr.io/aashi1109/canopy:latest
     init: true
     restart: unless-stopped
-    environment:
-      DATABASE_URL: "${DATABASE_URL:?Set DATABASE_URL in .env.local}"
-      APP_URL: "${APP_URL:?Set APP_URL in .env.local}"
-      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env.local}"
-      EMAIL_PROVIDER: "${EMAIL_PROVIDER:-cloudflare}"
-      CLOUDFLARE_EMAIL_ACCOUNT_ID: "${CLOUDFLARE_EMAIL_ACCOUNT_ID:?Set CLOUDFLARE_EMAIL_ACCOUNT_ID in .env.local}"
-      CLOUDFLARE_EMAIL_API_TOKEN: "${CLOUDFLARE_EMAIL_API_TOKEN:?Set CLOUDFLARE_EMAIL_API_TOKEN in .env.local}"
-      ACCOUNTS_EMAIL: "${ACCOUNTS_EMAIL:?Set ACCOUNTS_EMAIL in .env.local}"
-      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
-      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-}"
-      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
-      SUPPORT_EMAIL: "${SUPPORT_EMAIL:-}"
-      AHREFS_API_KEY: "${AHREFS_API_KEY:-}"
-    ports:
-      - "3000:3000"
+    env_file:
+      - .env
+    networks:
+      - web
+
+networks:
+  web:
+    external: true

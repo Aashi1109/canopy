@@ -1,0 +1,3 @@
+smarttools.lol, www.smarttools.lol, admin.smarttools.lol {
+	reverse_proxy canopy:3000
+}

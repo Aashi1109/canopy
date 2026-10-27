@@ -1,0 +1,66 @@
+name: Deploy Canopy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: canopy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push application image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          target: runner
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/canopy:latest
+          build-args: |
+            APP_URL=${{ vars.APP_URL }}
+            CANOPY_PUBLIC_BUILD_ENV=${{ vars.CANOPY_PUBLIC_BUILD_ENV || '{}' }}
+            CANOPY_DEPLOYMENT_REVISION=${{ github.sha }}
+
+      - name: Prepare SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          test -n "$SSH_HOST"
+          test -n "$SSH_USER"
+          test -n "$SSH_KEY"
+          test -n "$SSH_KNOWN_HOSTS"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          printf 'SSH_HOST=%s\nSSH_USER=%s\n' "$SSH_HOST" "$SSH_USER" >> "$GITHUB_ENV"
+
+      - name: Copy deployment files and restart Canopy
+        run: |
+          ssh -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" 'mkdir -p ~/apps/canopy ~/apps/caddy/sites'
+          scp -i ~/.ssh/deploy_key compose.yml "$SSH_USER@$SSH_HOST:~/apps/canopy/compose.yml"
+          scp -i ~/.ssh/deploy_key caddy/canopy.caddy "$SSH_USER@$SSH_HOST:~/apps/caddy/sites/canopy.caddy"
+          ssh -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" 'test -s ~/apps/canopy/.env && cd ~/apps/canopy && docker compose pull && docker compose up -d --remove-orphans && docker exec caddy caddy reload --config /etc/caddy/Caddyfile'
