@@ -20,6 +20,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -39,6 +42,8 @@ jobs:
           platforms: linux/amd64
           target: runner
           push: true
+          cache-from: type=gha,scope=canopy
+          cache-to: type=gha,mode=max,scope=canopy
           tags: ${{ env.CANOPY_IMAGE }}:latest
           build-args: |
             APP_URL=${{ vars.APP_URL }}
