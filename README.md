@@ -376,7 +376,7 @@ Restart development or rebuild and redeploy after changing the registry or
 
 ## Docker deployment
 
-Production uses the `Deploy Canopy` GitHub Actions workflow and GitHub Container Registry (`ghcr.io/aashi1109/canopy:latest`). It builds and publishes the image, copies `compose.yml` and `caddy/canopy.caddy` into `~/apps/canopy/` and `~/apps/caddy/sites/`, checks for the server-managed `~/apps/canopy/.env`, starts the Compose service, and reloads Caddy. No application port is published; Caddy and Canopy join the pre-created external Docker network `web`. The server's Caddyfile should contain only `import /etc/caddy/sites/*.caddy`.
+Production uses the `Deploy Canopy` GitHub Actions workflow and GitHub Container Registry (`ghcr.io/akatsukihq/canopy:latest`). It builds and publishes the image, copies `compose.yml` and `caddy/canopy.caddy` into `~/apps/canopy/` and `~/apps/caddy/sites/`, checks for the server-managed `~/apps/canopy/.env`, starts the Compose service, and reloads Caddy. No application port is published; Caddy and Canopy join the pre-created external Docker network `web`. The server's Caddyfile should contain only `import /etc/caddy/sites/*.caddy`.
 
 Before the first deployment, create the external `web` network and add these GitHub Actions settings to the repository:
 

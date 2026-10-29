@@ -2,7 +2,7 @@ name: canopy
 
 services:
   canopy:
-    image: ghcr.io/aashi1109/canopy:latest
+    image: ghcr.io/akatsukihq/canopy:latest
     init: true
     restart: unless-stopped
     env_file:
