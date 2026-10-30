@@ -67,7 +67,7 @@ version. Formatting is separate from `pnpm lint`, which checks TypeScript.
 1. Copy `.env.example` to `.env.local`, then configure `APP_URL`, one strong `BETTER_AUTH_SECRET`, the database, and any optional integrations you use.
 2. Run the fresh-database migration sequence through `0007-generic-assistant` documented under [Generic Assistant migration](#generic-assistant-migration), using `pnpm db:migrate <folder>` for each folder. The baseline preserves anonymous Paperwork tables and adds Auth/control-plane tables and system roles.
 3. Run `NODE_ENV=production pnpm db:seed` to seed current tool slugs, tool content, invoice templates for an empty catalog, and missing tool icons.
-4. Deploy the repository root application. The Canopy GitHub Actions workflow builds and publishes a GHCR image, copies `compose.yml` and `caddy/canopy.caddy` to the server, writes the server runtime environment, and reloads Caddy. Configure the workflow values described below first.
+4. Deploy the repository root application using its `Dockerfile`.
 5. Create and verify the first account, then run `pnpm admin:promote <verified-email>` once.
 
 On Vercel, set `DATABASE_URL` to the **Transaction pooler** connection string from
@@ -374,37 +374,9 @@ and register its OAuth callback if using Google login. These steps remain manual
 Restart development or rebuild and redeploy after changing the registry or
 `APP_URL`.
 
-## Docker deployment
-
-Production uses the `Deploy Canopy` GitHub Actions workflow and GitHub Container Registry (`ghcr.io/akatsukihq/canopy:latest`). It builds and publishes the image, copies `compose.yml` and `caddy/canopy.caddy` into `~/apps/canopy/` and `~/apps/caddy/sites/`, checks for the server-managed `~/apps/canopy/.env`, starts the Compose service, and reloads Caddy. No application port is published; Caddy and Canopy join the pre-created external Docker network `web`. The server's Caddyfile should contain only `import /etc/caddy/sites/*.caddy`.
-
-Before the first deployment, create the external `web` network and add these GitHub Actions settings to the repository:
-
-- Variable `APP_URL`: the public origin, such as `https://smarttools.lol`.
-- Variable `CANOPY_PUBLIC_BUILD_ENV`: optional JSON object of `NEXT_PUBLIC_*` string values, for example `{"NEXT_PUBLIC_SENTRY_DSN":"https://..."}`.
-- Secret `SSH_HOST`: the server hostname or IP.
-- Secret `SSH_USER`: the SSH account that owns `~/apps`.
-- Secret `SSH_KEY`: the private SSH key for that account.
-- Secret `SSH_KNOWN_HOSTS`: the verified SSH host key line(s) for the server.
-
-Create `~/apps/canopy/.env` on the server once, with `APP_URL` and all required runtime settings. The workflow checks that the file exists and leaves it untouched on subsequent deployments; update it on the server only when configuration or credentials change. The first workflow run publishes the image, then its server pull will fail until you make that GHCR package public; change its visibility in GitHub Packages and rerun the workflow. Later deploys pull it anonymously. The workflow publishes to GHCR only; it does not publish or deploy an image to Cloudflare. Cloudflare Email Sending remains a separate application integration and still uses its `CLOUDFLARE_EMAIL_*` runtime settings.
-
-To build and run the image locally, set `APP_URL` in `.env.local` first:
-
-```bash
-docker buildx build --build-arg APP_URL=https://example.com --target runner --tag canopy:local --load .
-docker run --rm --env-file .env.local -p 3000:3000 canopy:local
-```
-
-Use the same public origin during the build and at runtime. Changing it requires
-rebuilding the image because Next.js embeds it in browser navigation and the
-derived admin URLs. The image does not include `.env.local`; PostgreSQL and
-database migrations are managed separately from the web service.
-
 ## Cloudflare Containers
 
-Cloudflare Container deployment is currently dormant; production deploys use the
-server workflow above. The manual `pnpm run deploy` and `pnpm run deploy:preview`
+Cloudflare Container deployment is currently dormant. The manual `pnpm run deploy` and `pnpm run deploy:preview`
 commands still publish to Cloudflare if intentionally invoked, but GitHub Actions
 no longer builds or publishes a Cloudflare image. The production Worker is configured
 for **https://smarttools.lol** and **https://admin.smarttools.lol**; preview uses

@@ -6,8 +6,6 @@
 # Automation and deployment files are not application build inputs.
 .github
 .githooks
-caddy
-compose.yml
 
 # Designs and documentation do not affect the application build.
 designs
