@@ -21,6 +21,83 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.aiButton {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  height: calc(var(--spacing) * 10);
+  padding-inline: calc(var(--spacing) * 2) calc(var(--spacing) * 3.5);
+  gap: calc(var(--spacing) * 2);
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--card));
+  border-radius: var(--radius-lg);
+  color: var(--color-accent-text);
+  font-size: 13px;
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--primary) 8%, var(--card)),
+    color-mix(in srgb, var(--primary) 3%, var(--card)) 65%,
+    color-mix(in srgb, #8864d8 10%, var(--card))
+  );
+  box-shadow:
+    inset 0 1px 0 var(--card),
+    0 2px 6px color-mix(in srgb, var(--primary) 10%, transparent);
+  transition:
+    border-color 180ms ease-out,
+    transform 180ms ease-out,
+    box-shadow 180ms ease-out;
+}
+.aiButton::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 25%, var(--card) 50%, transparent 75%);
+  opacity: 0.6;
+  transform: translateX(-100%);
+  transition: transform 600ms ease-out;
+}
+.aiButtonIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--spacing) * 6);
+  height: calc(var(--spacing) * 6);
+  border-radius: calc(var(--spacing) * 1.5);
+  color: var(--primary-foreground);
+  background: var(--primary);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--card) 25%, transparent);
+}
+.aiButton:not(:disabled):hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--card));
+  color: var(--color-accent-text);
+  box-shadow:
+    inset 0 1px 0 var(--card),
+    0 4px 12px color-mix(in srgb, var(--primary) 16%, transparent);
+}
+.aiButton:not(:disabled):hover::before {
+  transform: translateX(100%);
+}
+.aiButton .aiButtonIcon svg {
+  color: inherit;
+}
+.aiButton:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+.aiButton:not(:disabled):active {
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .aiButton,
+  .aiButton::before {
+    transition: none;
+  }
+  .aiButton:not(:disabled):hover {
+    transform: none;
+  }
+}
 .actions {
   display: flex;
   flex-shrink: 0;

@@ -1,14 +1,17 @@
 import { spawnSync } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { config as loadEnv } from "dotenv";
+import config from "../lib/config/config.ts";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const { values } = parseArgs({
   options: { "icons-dir": { type: "string", default: path.join(root, "scripts/seed-assets/tool-icons") } },
 });
+for (const file of [".env.local", ".env"]) {
+  loadEnv({ path: path.join(root, file), quiet: true, override: false });
+}
 
 function run(script, ...args) {
   const result = spawnSync(process.execPath, [path.join(root, script), ...args], { stdio: "inherit" });
@@ -17,9 +20,7 @@ function run(script, ...args) {
 }
 
 run("db/scripts/seed.mjs");
-const directory = await mkdtemp(path.join(tmpdir(), "canopy-icon-seed-"));
-const manifest = path.join(directory, "icons.json");
-console.log(`Icon upload manifest (retained on failure): ${manifest}`);
-run("scripts/upload-tool-icons.mjs", "--dir", values["icons-dir"], "--output", manifest);
+const manifest = path.join(root, `tmp/icons-${config.environment === "production" ? "prod" : "dev"}.json`);
+console.log(`Reusable icon upload manifest: ${manifest}`);
+run("scripts/upload-tool-icons.mjs", "--dir", values["icons-dir"], "--output", manifest, "--resume");
 run("scripts/update-tool-icons.mjs", "--manifest", manifest, "--missing-only");
-await rm(directory, { recursive: true, force: true });

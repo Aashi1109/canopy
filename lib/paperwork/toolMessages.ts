@@ -1,10 +1,10 @@
-import source0 from "../../app/paperwork/components/translations.json";
-import source1 from "../../app/paperwork/components/receipt/translations.json";
-import source2 from "../../app/paperwork/components/expense/translations.json";
-import source3 from "../../app/paperwork/components/mileage/translations.json";
-import source4 from "../../app/paperwork/components/tax/translations.json";
-import source5 from "../../app/paperwork/components/w9/translations.json";
-import source6 from "../../app/paperwork/components/nec1099/translations.json";
+import source0 from "../../app/paperwork/components/translations.json" with { type: "json" };
+import source1 from "../../app/paperwork/components/receipt/translations.json" with { type: "json" };
+import source2 from "../../app/paperwork/components/expense/translations.json" with { type: "json" };
+import source3 from "../../app/paperwork/components/mileage/translations.json" with { type: "json" };
+import source4 from "../../app/paperwork/components/tax/translations.json" with { type: "json" };
+import source5 from "../../app/paperwork/components/w9/translations.json" with { type: "json" };
+import source6 from "../../app/paperwork/components/nec1099/translations.json" with { type: "json" };
 import { resolveToolTranslation, type ToolMessages, type ToolTranslations } from "../tool-framework/translations.ts";
 import { locales } from "../i18n/config.ts";
 

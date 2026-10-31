@@ -260,10 +260,12 @@ To use another SVG directory, with filenames matching tool slugs:
 NODE_ENV=development pnpm db:seed --icons-dir /path/to/icons
 ```
 
-A failed step stops seeding. Upload manifests are kept in the system temporary
-directory on failure; fix the reported error and rerun the command. Completed
-uploads are reused, existing assignments are preserved, and successful runs clean
-up their temporary manifest. Database migrations remain a separate command.
+A failed step stops seeding. The upload manifest stays at
+`tmp/icons-prod.json` or `tmp/icons-dev.json` inside the checkout after both
+successful and failed runs. Reruns reuse successful uploads for the same Cloudinary
+cloud, folder, and SVG directory, process new or unfinished icons, and preserve existing database assignments.
+Use the standalone uploader's `--overwrite` option to replace existing assets.
+Database migrations remain a separate command.
 
 ## Admin subdomain on Vercel
 

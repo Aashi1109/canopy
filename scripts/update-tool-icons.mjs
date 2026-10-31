@@ -8,7 +8,6 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import dotenv from "dotenv";
 import pg from "pg";
-import { Cache, CACHE_NAMESPACES, closeRedis } from "../lib/cache/index.ts";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 
@@ -65,16 +64,19 @@ export async function assignToolIcons(client, rows, { missingOnly = false } = {}
 }
 
 async function main() {
+  for (const file of [".env.local", ".env"]) {
+    dotenv.config({ path: path.join(ROOT, file), quiet: true, override: false });
+  }
   const { values } = parseArgs({
     options: {
-      manifest: { type: "string", default: path.join(ROOT, "tmp/cloudinary-tool-icons.json") },
+      manifest: {
+        type: "string",
+        default: path.join(ROOT, `tmp/icons-${config.environment === "production" ? "prod" : "dev"}.json`),
+      },
       "dry-run": { type: "boolean", default: false },
       "missing-only": { type: "boolean", default: false },
     },
   });
-  for (const file of [".env.local", ".env"]) {
-    dotenv.config({ path: path.join(ROOT, file), quiet: true, override: false });
-  }
   if (!config.databaseUrl) throw new Error("DATABASE_URL is required.");
   const manifest = JSON.parse(await readFile(values.manifest, "utf8"));
   const cloudName = publicConfig.cloudinaryCloudName?.trim() || config.cloudinary.cloudName?.trim();
@@ -99,14 +101,7 @@ async function main() {
       await client.query("ROLLBACK");
       throw error;
     }
-    if (!values["dry-run"]) {
-      await Promise.all([
-        new Cache(CACHE_NAMESPACES.CATALOG).delete("all"),
-        new Cache(CACHE_NAMESPACES.ECOSYSTEM).delete("all"),
-      ]);
-    }
   } finally {
-    closeRedis();
     await client.end();
   }
 }

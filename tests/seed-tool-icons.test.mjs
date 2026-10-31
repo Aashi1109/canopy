@@ -1,5 +1,3 @@
-import { rm } from "node:fs/promises";
-import { dirname } from "node:path";
 import { expect, test, vi } from "vitest";
 
 // The seed script is re-imported to re-run its top-level orchestration; vi.mock
@@ -10,6 +8,8 @@ vi.mock("node:child_process", () => ({
 
 test("db seed uploads and assigns icons after catalog seeding, stopping on failures", async () => {
   const argv = process.argv;
+  const environment = process.env;
+  process.env = { ...environment };
   const calls = [];
   const manifests = new Set();
   let failingStep;
@@ -30,6 +30,8 @@ test("db seed uploads and assigns icons after catalog seeding, stopping on failu
     expect(calls[1][0].endsWith("/scripts/upload-tool-icons.mjs")).toBeTruthy();
     expect(calls[2][0].endsWith("/scripts/update-tool-icons.mjs")).toBeTruthy();
     expect(calls[1][calls[1].indexOf("--dir") + 1]).toBe("/tmp/custom icons");
+    expect(calls[1].includes("--resume")).toBeTruthy();
+    expect([...manifests][0]).toMatch(/\/tmp\/icons-(?:prod|dev)\.json$/);
     expect(calls[2][calls[2].indexOf("--manifest") + 1]).toBe([...manifests][0]);
     expect(calls[2].includes("--missing-only")).toBeTruthy();
     for (failingStep of [1, 2, 3]) {
@@ -40,7 +42,7 @@ test("db seed uploads and assigns icons after catalog seeding, stopping on failu
     }
   } finally {
     process.argv = argv;
+    process.env = environment;
     delete globalThis.__seedIconProcess;
-    for (const manifest of manifests) await rm(dirname(manifest), { recursive: true, force: true });
   }
 });

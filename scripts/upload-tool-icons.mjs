@@ -16,9 +16,10 @@ const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export async function uploadToolIcons({
   dir = path.join(ROOT, "scripts/seed-assets/tool-icons"),
   folder = "platform/assets/default/icons",
-  output = path.join(ROOT, "tmp/cloudinary-tool-icons.json"),
+  output = path.join(ROOT, `tmp/icons-${config.environment === "production" ? "prod" : "dev"}.json`),
   dryRun = false,
   failedOnly = false,
+  resume = false,
   overwrite = false,
   concurrency = 5,
   client = cloudinary,
@@ -36,20 +37,43 @@ export async function uploadToolIcons({
     throw new Error("--output must be outside the SVG directory.");
   }
   let previous;
-  if (failedOnly) {
+  if (failedOnly || resume) {
     try {
       previous = JSON.parse(await readFile(output, "utf8"));
-    } catch {
-      throw new Error(`--failed-only requires a readable JSON manifest: ${output}`);
+    } catch (error) {
+      if (failedOnly || error.code !== "ENOENT") {
+        throw new Error(`Upload retry requires a readable JSON manifest: ${output}`);
+      }
     }
+  }
+  if (previous !== undefined) {
     if (
       !previous ||
-      previous.folder !== folder ||
+      typeof previous.folder !== "string" ||
       !Array.isArray(previous.icons) ||
       !Array.isArray(previous.failures)
     ) {
-      throw new Error("Invalid retry manifest or folder mismatch.");
+      throw new Error("Invalid retry manifest.");
     }
+    const cloudName = config.cloudinary.cloudName?.trim();
+    const namespaceChanged =
+      previous.folder !== folder ||
+      (resume && previous.sourceDirectory !== dir) ||
+      (resume &&
+        cloudName &&
+        ((previous.cloudName && previous.cloudName !== cloudName) ||
+          previous.icons.some(
+            (icon) =>
+              typeof icon?.secureUrl !== "string" ||
+              !icon.secureUrl.startsWith(`https://res.cloudinary.com/${cloudName}/image/upload/`),
+          )));
+    if (namespaceChanged) {
+      if (failedOnly) throw new Error("Invalid retry manifest or folder mismatch.");
+      log("Cloudinary cloud, folder, or SVG directory changed; starting a new upload manifest.");
+      previous = undefined;
+    }
+  }
+  if (previous) {
     const entries = [...previous.icons, ...previous.failures];
     if (
       entries.some(
@@ -63,7 +87,7 @@ export async function uploadToolIcons({
     ) {
       throw new Error("Invalid retry manifest: invalid or duplicate tool slugs/public IDs.");
     }
-    if (!previous.failures.length) {
+    if (failedOnly && !previous.failures.length) {
       log("No failed uploads to retry; manifest unchanged.");
       return previous;
     }
@@ -88,6 +112,32 @@ export async function uploadToolIcons({
     const missing = [...failedSlugs].filter((slug) => !available.has(slug));
     if (missing.length) throw new Error(`Missing SVG files for failed uploads: ${missing.join(", ")}`);
   }
+  if (resume && previous && !failedOnly) {
+    const available = new Set(icons.map(({ slug }) => slug));
+    previous = {
+      ...previous,
+      icons: previous.icons.filter(({ slug }) => available.has(slug)),
+      failures: previous.failures.filter(({ slug }) => available.has(slug)),
+    };
+  }
+  if (resume && previous) {
+    for (const icon of previous.icons) {
+      if (
+        icon.format !== "svg" ||
+        ![icon.version, icon.width, icon.height].every((value) => Number.isSafeInteger(value) && value > 0) ||
+        icon.width > 2147483647 ||
+        icon.height > 2147483647 ||
+        typeof icon.secureUrl !== "string" ||
+        !icon.secureUrl.endsWith(`/image/upload/v${icon.version}/${icon.publicId}.svg`)
+      ) {
+        throw new Error(`Invalid cached SVG metadata for ${icon.slug}; refresh or remove the manifest.`);
+      }
+    }
+  }
+  const cachedSlugs = new Set(resume && !overwrite ? previous?.icons.map(({ slug }) => slug) : []);
+  const reused = icons.filter(({ slug }) => cachedSlugs.has(slug)).length;
+  icons = icons.filter(({ slug }) => !cachedSlugs.has(slug));
+  if (reused) log(`Reusing ${reused} successful uploads from ${output}.`);
   if (dryRun) {
     for (const { file, publicId } of icons) log(`${file} -> ${publicId}`);
     log(`Dry run: ${icons.length} SVGs; no uploads or manifest writes.`);
@@ -97,12 +147,19 @@ export async function uploadToolIcons({
   const manifest = {
     ...previous,
     folder,
+    cloudName: config.cloudinary.cloudName?.trim(),
+    sourceDirectory: dir,
     generatedAt: new Date().toISOString(),
     icons: [...(previous?.icons ?? [])],
     failures: [...(previous?.failures ?? [])],
   };
-  const previousSuccesses = manifest.icons.length;
+  let completed = 0;
   await mkdir(path.dirname(output), { recursive: true });
+  async function saveManifest() {
+    const temporaryOutput = `${output}.${process.pid}.tmp`;
+    await writeFile(temporaryOutput, `${JSON.stringify(manifest, null, 2)}\n`);
+    await rename(temporaryOutput, output);
+  }
   async function upload({ file, slug, publicId }) {
     let stage = "upload";
     try {
@@ -166,19 +223,21 @@ export async function uploadToolIcons({
     const results = await Promise.all(icons.slice(index, index + concurrency).map(upload));
     for (const { icon, failure } of results) {
       const slug = (icon ?? failure).slug;
+      manifest.icons = manifest.icons.filter((entry) => entry.slug !== slug);
       manifest.failures = manifest.failures.filter((entry) => entry.slug !== slug);
-      if (icon) manifest.icons.push(icon);
-      else manifest.failures.push(failure);
+      if (icon) {
+        manifest.icons.push(icon);
+        completed += 1;
+      } else manifest.failures.push(failure);
     }
     manifest.icons.sort((a, b) => a.slug.localeCompare(b.slug));
     manifest.failures.sort((a, b) => a.slug.localeCompare(b.slug));
     // One atomic checkpoint per batch avoids concurrent manifest writes.
-    const temporaryOutput = `${output}.${process.pid}.tmp`;
-    await writeFile(temporaryOutput, `${JSON.stringify(manifest, null, 2)}\n`);
-    await rename(temporaryOutput, output);
+    await saveManifest();
   }
+  if (!icons.length) await saveManifest();
   log(
-    `${manifest.icons.length - previousSuccesses}/${icons.length} uploaded or already present this run; ${manifest.icons.length} total successful; ${manifest.failures.length} failed. Manifest: ${output}`,
+    `${completed}/${icons.length} uploaded or already present this run; ${reused} reused; ${manifest.icons.length} total successful; ${manifest.failures.length} failed. Manifest: ${output}`,
   );
   return manifest;
 }
@@ -191,6 +250,7 @@ async function main() {
       output: { type: "string" },
       "dry-run": { type: "boolean", default: false },
       "failed-only": { type: "boolean", default: false },
+      resume: { type: "boolean", default: false },
       overwrite: { type: "boolean", default: false },
       concurrency: { type: "string", default: "5" },
     },

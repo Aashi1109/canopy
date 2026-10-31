@@ -3,6 +3,7 @@
 import { appHref } from "@/lib/routing/subdomains.ts";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Sparkles } from "lucide-react";
 import { BackButton, Button, Label, Textarea, toast, Toaster } from "@/components/ui/index.tsx";
 import { BLOG_TITLE_WORD_LIMIT, blogTitleWordCount } from "@/lib/blog/utils";
 import { mutateBlogAction } from "../actions";
@@ -66,7 +67,8 @@ export function NewBlogPost({ userId }: { userId: string }) {
         <h1 className={styles.title}>{aiMode ? "New blog" : title || "Untitled post"}</h1>
         <Button
           variant="outline"
-          size="sm"
+          size={aiMode ? "sm" : "default"}
+          className={aiMode ? undefined : styles.aiButton}
           disabled={pending || generation.busy}
           onClick={() => {
             const nextMode = !aiMode;
@@ -74,6 +76,11 @@ export function NewBlogPost({ userId }: { userId: string }) {
             requestAnimationFrame(() => document.getElementById(nextMode ? "blog-ai-idea" : "new-blog-title")?.focus());
           }}
         >
+          {!aiMode && (
+            <span className={styles.aiButtonIcon} aria-hidden="true">
+              <Sparkles className="size-4" />
+            </span>
+          )}
           {aiMode ? "Write manually" : "Generate with AI"}
         </Button>
       </header>

@@ -36,3 +36,4 @@ playwright-report
 test-results
 *.log
 *.tsbuildinfo
+tmp
